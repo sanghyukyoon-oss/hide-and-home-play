@@ -683,3 +683,45 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 /* chapter titles (the card before a new region): 한국기계연구원체 — 공공누리 제1유형, credit in fonts/README.md */
 .cine-title { font-family: 'Chapter', var(--font-display); letter-spacing: -.01em; }
 .credits { margin-top: 10px; font-size: 10.5px; line-height: 1.45; color: #9a86ab; text-align: left; word-break: keep-all; }
+
+/* ── UI slim pass (user, 10/18: "유아이들 너무 크고 투박하고… 정렬도 안 됨… 마진이 안 맞아") ───────────────────────────────
+   One step lighter everywhere: thinner ink borders (3–4 → 2.5–3px), shallower 3D bottoms (7–12 → 4.5–7px), smaller
+   type on buttons and ribbons, and one 12px gutter for everything that hugs a screen edge. */
+.ol { -webkit-text-stroke-width: 3px; text-shadow: 0 1.5px 0 var(--ink); }
+.ol3 { -webkit-text-stroke-width: 4.5px; text-shadow: 0 2px 0 var(--ink); }
+.btn { font-size: 19px; padding: .5em .95em .55em; border-width: 2.5px; border-bottom-width: 5px; border-radius: 15px; }
+.btn::after { left: 6px; right: 6px; top: 3px; border-radius: 11px 11px 40% 40% / 11px 11px 60% 60%; }
+.btn.down { transform: translateY(2.5px); border-bottom-width: 2.5px; }
+.btn.big { font-size: 25px; border-width: 3px; border-bottom-width: 6.5px; border-radius: 20px; padding: .45em 1.1em .5em; }
+.btn.big::after { left: 7px; right: 7px; top: 4px; border-radius: 14px 14px 40% 40% / 14px 14px 60% 60%; }
+.btn.big.down { border-bottom-width: 3px; transform: translateY(3.5px); }
+.btn.sm { font-size: 15px; padding: .42em .75em .5em; border-radius: 12px; }
+.btn .sub { -webkit-text-stroke-width: 2px; }
+.ibtn { width: 44px; height: 44px; border-radius: 14px; }
+.ibtn svg { width: 24px; height: 24px; }
+.pill { height: 30px; border-width: 2px; }
+.panel { width: min(86vw, 380px); border-width: 3px; border-bottom-width: 7px; border-radius: 24px; padding: 48px 18px 18px; }
+.panel .ribbon { top: -24px; padding: 7px 20px 10px; border-width: 3px; border-bottom-width: 6px; border-radius: 16px; font-size: 24px; }
+.panel .close { right: -10px; top: -10px; }
+.panel .row { gap: 10px; margin-top: 14px; }
+.panel .txt { font-size: 16px; }
+.panel .big-txt { font-size: 22px; }
+.topbar { left: 12px; right: 12px; gap: 6px; }
+.timer { height: 46px; padding-left: 48px; border-width: 2.5px; border-bottom-width: 5.5px; border-radius: 16px; }
+.timer .face { width: 46px; height: 46px; left: -6px; border-width: 2.5px; border-bottom-width: 5px; }
+.timer .num { font-size: 24px; }
+.timer .tbar { height: 14px; border-width: 2px; }
+.stagetag { padding: 6px 10px 8px; border-width: 2.5px; border-bottom-width: 5px; border-radius: 13px; font-size: 13px; }
+.stagetag b { font-size: 19px; }
+.tray { left: 12px; right: 12px; border-width: 2.5px; border-bottom-width: 5px; border-radius: 18px; }
+.slot { border-width: 2px; border-radius: 13px; }
+.dlg-card { border-width: 3px; border-radius: 22px; }
+.toast { border-width: 1.5px; }
+.mong, .zgauge { right: 12px; }
+.modebadge { right: 12px; }
+.inv, .side { left: 12px; }
+.homeside { right: 12px; gap: 6px; }
+.homeside .btn.sm { font-size: 14px; }
+.profile { left: 12px; }
+.homebar { left: 12px; right: 12px; }
+.homebar .row2 .btn { font-size: 18px; }
