@@ -6,7 +6,8 @@ import { disposeTree, put, rbox } from '../gfx/kit.js';
 import { Ambient } from '../ambient.js';
 import { Companion } from '../companion.js';
 import { BOSS_AFTER } from './boss.js';
-import { MINI_AFTER, MINI_INFO } from '../minis.js';
+import { MINI_AFTER, MINI_INFO, BOSS_GAMES } from '../minis.js';
+import { BOSS_GAME_INFO } from './bossgame.js';
 import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO } from '../stages.js';
 import { spinePuzzle } from '../showcase.js';
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
@@ -438,6 +439,7 @@ export class StageScene {
       const o = this.th.friend, pe = persona(o);
       let nx = null;
       if (BOSS_AFTER.includes(this.idx) && !G.save.bossDone?.[this.idx]) nx = { boss: true };
+      else if (BOSS_GAMES[this.idx] && !G.save.bossDone?.['g' + this.idx]) nx = { mini: BOSS_GAME_INFO[BOSS_GAMES[this.idx].kind]?.name };
       else if (MINI_AFTER[this.idx]?.boss && !G.save.bossDone?.['m' + this.idx]) nx = { mini: MINI_INFO[MINI_AFTER[this.idx].kind]?.name };
       else if (this.idx + 1 < STAGE_COUNT) { const sp = stageSpec(this.idx + 1), t2 = THEMES[sp.room] || layoutFor(sp.room)?.theme; const nm = CHAR_DEFS[t2?.friend]?.name; nx = { gray: sp.gray, timed: sp.timed, name: nm && t2?.friend !== o ? ga(nm) : null }; }
       const hook = nextHook(nx);
@@ -1415,7 +1417,7 @@ export class StageScene {
         G.persist();
       }
     }
-    const bossNext = BOSS_AFTER.includes(this.idx) && !G.save.bossDone?.[this.idx], miniNext = !bossNext && !!MINI_AFTER[this.idx] && !G.save.bossDone?.['m' + this.idx];
+    const bossNext = BOSS_AFTER.includes(this.idx) && !G.save.bossDone?.[this.idx], gameNext = !bossNext && !!BOSS_GAMES[this.idx] && !G.save.bossDone?.['g' + this.idx], miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && !G.save.bossDone?.['m' + this.idx];
     const starEls = [0, 1, 2].map(() => h('div', { class: 'st', html: ICON.star }));
     const cv = h('span', {}, '0');
     const p = G.ui.panel({
@@ -1437,8 +1439,8 @@ export class StageScene {
         this.nextBtn = this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'green', icon: 'home', cls: 'big', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })
           : this.preview ? G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })
-          : G.ui.btn(bossNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '놀이 한 판!' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : '다음', { color: 'green', icon: 'play', cls: 'big',
-              onClick: () => bossNext ? G.go('boss', { after: this.idx }) : miniNext ? G.go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx }) : G.go('stage', { idx: this.idx + 1 }) })],
+          : G.ui.btn(bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '놀이 한 판!' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : '다음', { color: 'green', icon: 'play', cls: 'big',
+              onClick: () => bossNext ? G.go('boss', { after: this.idx }) : gameNext ? G.go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? G.go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx }) : G.go('stage', { idx: this.idx + 1 }) })],
     });
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }
     const paid = first?.awarded ?? coins;

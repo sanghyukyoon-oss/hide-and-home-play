@@ -42,6 +42,7 @@ import { MyHomeScene } from './scenes/myhome.js';
 import { VisitScene } from './scenes/visit.js';
 import { BossScene } from './scenes/boss.js';
 import { MiniScene } from './scenes/mini.js';
+import { BossGameScene } from './scenes/bossgame.js';
 import { LayEditScene } from './scenes/layedit.js';
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
 installI18n();   // English players see English everywhere (see i18n.js)
@@ -231,7 +232,7 @@ window.G = G;
 // 배치 편집 is the author's tool: shown to the artifact's owner only (and always when running outside claude.ai)
 G.owner = false;
 G.ownerP = (async () => { try { if (!window.claude?.use) return (G.owner = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || qs.has('owner')); const u = await window.claude.use('user'); return (G.owner = !!(await u?.isOwner?.())); } catch { return false; } })();   // the public web copy (GitHub Pages) shows no author tools
-const SCENES = { home: HomeScene, stage: StageScene, myhome: MyHomeScene, visit: VisitScene, boss: BossScene, mini: MiniScene, layedit: LayEditScene };
+const SCENES = { home: HomeScene, stage: StageScene, myhome: MyHomeScene, visit: VisitScene, boss: BossScene, mini: MiniScene, bossgame: BossGameScene, layedit: LayEditScene };
 
 // ── 3D icons
 async function bgFurnThumbs() {

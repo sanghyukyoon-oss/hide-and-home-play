@@ -469,23 +469,31 @@ export const GAMES = { sneak: Sneak, spot: Spot, redlight: RedLight, shell: Shel
 export const MINI_AFTER = {
   2: { kind: 'whack', p: { goal: 8, time: 30 } },
   7: { kind: 'shell', p: { map: 'cat', rounds: 2 } },
-  11: { kind: 'sneak', boss: true },
   14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },
-  20: { kind: 'spot', boss: true },
-  23: { kind: 'shell', p: { map: 'alley3', rounds: 2 } },
+  23: { kind: 'redlight', p: { time: 55 } },
   26: { kind: 'whack', p: { goal: 10, time: 32 } },
-  30: { kind: 'redlight', boss: true },
   33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },
-  39: { kind: 'shell', boss: true, p: { rounds: 3 } },
   42: { kind: 'lamp', p: { map: 'park1', time: 45 } },
-  45: { kind: 'sneak', p: { time: 75 } },
-  48: { kind: 'whack', boss: true, p: { goal: 14, time: 35 } },
   51: { kind: 'spot', p: { map: 'camp1', n: 3, time: 40 } },
+  45: { kind: 'shell', p: { map: 'park2', rounds: 3 } },
   57: { kind: 'shell', p: { map: 'camp2', rounds: 3 } },
-  59: { kind: 'lamp', boss: true },
   62: { kind: 'redlight', p: { time: 55 } },
-  65: { kind: 'spot', p: { map: 'officefloor', n: 4, time: 45 } },
-  69: { kind: 'finale', boss: true },
+};
+// 보스전 (10/18): the five games from the new-game session (scenes/bossgame.js) — each region ends on one, the good ones come
+// back (user: "보스판은 여러 종류로 갈 거고 재미있는 판은 다시 나올 거"), 엄마 몰래 야식 first and last ("이건 대박"). lv = which
+// of the game's three set-ups. 보물 지키기 (boss.js BOSS_AFTER) fills three more boss slots.
+export const BOSS_GAMES = {
+  // user, 10/18: "보스전에 어울리는 건 엄마 몰래 야식이 가장 잘 어울려.. 그리고 자는 애 깨우는 거" — those two carry the campaign
+  // (three nights, three mornings); villa / tag / photo hold their region's slot until the new boss games come in
+  4: { kind: 'yasik', lv: 0 },     // 첫 보스
+  11: { kind: 'wakeup', lv: 0 },   // 몽글 마을 집 끝
+  20: { kind: 'villa', lv: 0 },    // 우리 아파트 — 새 보스 자리 (임시)
+  30: { kind: 'tag', lv: 0 },      // 동네 골목 — 새 보스 자리 (임시)
+  39: { kind: 'yasik', lv: 1 },    // 편의점·상가
+  48: { kind: 'photo', lv: 0 },    // 공원 — 새 보스 자리 (임시)
+  59: { kind: 'wakeup', lv: 1 },   // 산길·캠핑 (텐트의 아침)
+  65: { kind: 'wakeup', lv: 2 },   // 빌딩 중간 보스
+  69: { kind: 'yasik', lv: 2 },    // 마지막 보스
 };
 export const MINI_INFO = {
   sneak: { name: '냥냥이 몰래 야식', face: 'cat' },
