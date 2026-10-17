@@ -1,0 +1,272 @@
+// Cartoon post: one clean closed ink line around every object + optional creases + soft AO, supersampled.
+//
+// Outline source = an object-ID buffer. Every outline group (a furniture body, a drawer/door, an item, a character,
+// a wall, the floor…) is drawn with its own ID. A line is drawn where the ID changes, on the nearer object's side
+// (ties broken by ID so only one side draws). That closes every silhouette even where objects touch (bed leg on the
+// floor, wardrobe against the wall), which depth-only edges cannot do, and it never fires inside a smooth surface.
+// Inside one object, a large depth jump (an ear over a head) still draws a line ("overlap"). Normal creases are an
+// opt-in extra. Targets get exactly the same treatment as everything else, and nothing outlines through a wall.
+//
+// Layers: 0 = drawn + outlined, 1 = pick proxies (never drawn), 2 = drawn but not outlined (blob shadows, blush).
+// Everything renders at ~2x internal resolution and is box-filtered down, which anti-aliases the ink.
+import * as THREE from 'three';
+
+const VERT = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }';
+const COMMON = `
+uniform sampler2D tDepth, tId;
+uniform float near, far;
+uniform vec4 fr;            // orthographic frustum in view space: left, right, bottom, top (zoom applied)
+#ifdef PACKED
+float rawD(vec2 uv){ vec2 b = texture2D(tId, uv).ba; return (floor(b.x * 255. + .5) * 256. + floor(b.y * 255. + .5)) / 65535.; }
+#else
+float rawD(vec2 uv){ return texture2D(tDepth, uv).x; }
+#endif
+float lin(vec2 uv){ return near + rawD(uv) * (far - near); }
+vec3 viewPos(vec2 uv){ return vec3(mix(fr.x, fr.y, uv.x), mix(fr.z, fr.w, uv.y), -lin(uv)); }
+float idAt(vec2 uv){ vec4 t = texture2D(tId, uv); return floor(t.r * 255. + .5) + floor(t.g * 255. + .5) * 256.; }
+vec3 nor(vec2 uv){ vec2 xy = texture2D(tId, uv).ba * 2. - 1.; return vec3(xy, sqrt(max(0., 1. - dot(xy, xy)))); }
+`;
+const ID_VERT = 'varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }';
+const ID_FRAG = `
+uniform float uId; varying vec3 vN;
+void main(){
+#ifdef PACKED
+  float v = floor(gl_FragCoord.z * 65535. + .5);
+  gl_FragColor = vec4(mod(uId, 256.) / 255., floor(uId / 256.) / 255., floor(v / 256.) / 255., mod(v, 256.) / 255.);
+#else
+  vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n;
+  gl_FragColor = vec4(mod(uId, 256.) / 255., floor(uId / 256.) / 255., n.x * .5 + .5, n.y * .5 + .5);
+#endif
+}`;
+const AO = `
+varying vec2 vUv;
+uniform vec2 res; uniform float radius, bias;
+${COMMON}
+float bayer(vec2 p){ vec2 q = mod(floor(p), 4.); int i = int(q.x + q.y * 4.);
+  float m[16]; m[0]=0.;m[1]=8.;m[2]=2.;m[3]=10.;m[4]=12.;m[5]=4.;m[6]=14.;m[7]=6.;m[8]=3.;m[9]=11.;m[10]=1.;m[11]=9.;m[12]=15.;m[13]=7.;m[14]=13.;m[15]=5.;
+  for (int k = 0; k < 16; k++) if (k == i) return m[k] / 16.; return 0.; }
+void main(){
+  if (rawD(vUv) > .9999) { gl_FragColor = vec4(0.); return; }
+  vec3 P = viewPos(vUv), N = nor(vUv);
+  vec3 up = abs(N.y) < .9 ? vec3(0., 1., 0.) : vec3(1., 0., 0.);
+  vec3 T = normalize(cross(up, N)), B = cross(N, T);
+  float rot = bayer(gl_FragCoord.xy) * 6.2832;
+  float occ = 0.;
+  const int S = 12;
+  for (int i = 0; i < S; i++) {
+    float f = (float(i) + .5) / float(S);
+    float a = rot + float(i) * 2.39996;
+    float r = radius * mix(.15, 1., f);
+    vec3 s = P + (T * cos(a) + B * sin(a)) * r * .9 + N * (r * .45 + .01);
+    vec2 suv = vec2((s.x - fr.x) / (fr.y - fr.x), (s.y - fr.z) / (fr.w - fr.z));
+    if (suv.x < 0. || suv.x > 1. || suv.y < 0. || suv.y > 1.) continue;
+    float sz = viewPos(suv).z;
+    float range = smoothstep(0., 1., radius / max(abs(P.z - sz), 1e-4));
+    occ += step(s.z + bias, sz) * range;
+  }
+  gl_FragColor = vec4(occ / float(S), 0., 0., 1.);
+}`;
+const BLUR = `
+varying vec2 vUv;
+uniform sampler2D tAO; uniform vec2 aoRes;
+void main(){
+  vec2 px = 1. / aoRes; float s = 0.;
+  for (int y = -2; y < 2; y++) for (int x = -2; x < 2; x++) s += texture2D(tAO, vUv + (vec2(x, y) + .5) * px).r;
+  gl_FragColor = vec4(s / 16., 0., 0., 1.);
+}`;
+const EDGE = `
+varying vec2 vUv;
+uniform sampler2D tColor, tAOb;
+uniform vec2 res; uniform float thick, innerRatio, overlap, nLo, nHi, innerStr, lineAlpha, tint, tintDark, levels, aoStr, useAO;
+uniform vec3 ink, aoTint; uniform float dbg, gray;
+${COMMON}
+void main(){
+  vec2 px = 1. / res;
+  float id0 = idAt(vUv), d0 = lin(vUv);
+  vec2 o[8];
+  o[0]=vec2(1,0); o[1]=vec2(-1,0); o[2]=vec2(0,1); o[3]=vec2(0,-1);
+  o[4]=vec2(.7071,.7071); o[5]=vec2(-.7071,.7071); o[6]=vec2(.7071,-.7071); o[7]=vec2(-.7071,-.7071);
+  // distance (in internal px) to the nearest boundary this pixel owns; coverage = brush width minus that distance
+  float dist = 1e5;
+  if (id0 > .5) {
+    for (int k = 0; k < 3; k++) {
+      float r = thick * (float(k) + 1.) / 3.;
+      for (int i = 0; i < 8; i++) {
+        vec2 uv = vUv + o[i] * r * px;
+#ifdef PACKED
+        vec4 tt = texture2D(tId, uv);
+        float id1 = floor(tt.r * 255. + .5) + floor(tt.g * 255. + .5) * 256.;
+        float d1 = near + (floor(tt.b * 255. + .5) * 256. + floor(tt.a * 255. + .5)) / 65535. * (far - near);
+#else
+        float id1 = idAt(uv), d1 = lin(uv);
+#endif
+        bool owns = false;
+        if (abs(id1 - id0) > .5) owns = d0 < d1 - .02 || (abs(d0 - d1) <= .02 && id0 > id1);
+        else owns = d1 - d0 > overlap;        // same object folding over itself (ear over head)
+        if (owns) dist = min(dist, r);
+      }
+    }
+  }
+  float step4 = thick / 3.;
+  float eo = clamp((thick + step4 * .5 - dist) / step4, 0., 1.);
+  float ei = 0.;
+#ifndef PACKED
+  if (innerStr > 0. && innerRatio > 0. && id0 > .5) {
+    vec3 n0 = nor(vUv); float ne = 0.;
+    for (int i = 0; i < 8; i++) { vec2 uv = vUv + o[i] * thick * innerRatio * px; if (abs(idAt(uv) - id0) < .5) ne = max(ne, 1. - dot(n0, nor(uv))); }
+    ei = smoothstep(nLo, nHi, ne) * innerStr * smoothstep(.22, .5, n0.z) * (1. - eo);
+  }
+#endif
+  float e = max(eo, ei) * lineAlpha;
+  vec4 c = texture2D(tColor, vUv);   // premultiplied (opaque scene over a transparent clear)
+  vec3 col = c.rgb;
+  if (useAO > .5) { float ao = texture2D(tAOb, vUv).r * aoStr; col = mix(col, col * aoTint, clamp(ao, 0., 1.)); }
+  // 흑백판: everything drained of colour except what has been found (IDs from 40000 up, see assignIds)
+  if (gray > 0. && id0 < 39999.5) { float l = dot(col, vec3(.299, .587, .114)); col = mix(col, vec3(l * 1.04 + .02), gray); }
+  if (levels > 0.) col = floor(col * levels + .5) / levels;
+  // colour-trace line: a darker, slightly richer version of the object's own colour, mixed with the picked ink.
+  // darkened in display (gamma) space so 'tintDark' reads as perceived brightness: .5 = half as bright as the object
+  vec3 obj = sqrt(max(col, 0.)) * tintDark; obj *= obj;
+  obj = max(mix(vec3(dot(obj, vec3(.299, .587, .114))), obj, 1.25), 0.);
+  vec3 line = mix(ink, obj, tint);
+  gl_FragColor = vec4(col * (1. - e) + line * e, c.a * (1. - e) + e);
+  if (dbg > .5) gl_FragColor = vec4(eo, fract(id0 * .137), dist > 1e4 ? 0. : 1., 1.);
+}`;
+const DOWN = `
+varying vec2 vUv;
+uniform sampler2D tSrc; uniform vec2 outRes; uniform float sharpen;
+void main(){
+  vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint
+  vec4 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)) + texture2D(tSrc, vUv + vec2(q.x, -q.y))
+         + texture2D(tSrc, vUv + vec2(-q.x, q.y)) + texture2D(tSrc, vUv + vec2(q.x, q.y))) * .25;
+  if (sharpen > .001) {
+    // unsharp mask: a blur about one output pixel wide, the difference added back
+    vec2 r = 1.1 / outRes;
+    vec4 b = (texture2D(tSrc, vUv + vec2(-r.x, 0.)) + texture2D(tSrc, vUv + vec2(r.x, 0.)) + texture2D(tSrc, vUv + vec2(0., -r.y)) + texture2D(tSrc, vUv + vec2(0., r.y))) * .25;
+    c.rgb = max(c.rgb + (c.rgb - b.rgb) * sharpen, 0.);
+  }
+  gl_FragColor = linearToOutputTexel(c);
+}`;
+
+// Outline groups: which meshes share one closed outline.
+function groupKey(m) {
+  for (let o = m; o; o = o.parent) {
+    const u = o.userData;
+    if (u.item) return o;              // an item group (inside a drawer or not)
+    if (u.char) return u.char;         // a whole character
+    if (u.og) return u.og;             // any group that should read as one shape (a cloud, a tree)
+  }
+  const u = m.userData;
+  if (u.part) return u.part;           // a drawer, door, lid, cushion… (moves on its own)
+  if (u.furn) return u.furn;           // the furniture body
+  if (u.wall) return 'wall-' + u.wall;
+  if (u.floor) return 'floor';
+  return m;                            // anything else outlines on its own
+}
+
+export class ToonPost {
+  constructor(renderer, { budget = 4.5e6, maxSS = 2 } = {}) {
+    this.r = renderer; this.budget = budget; this.maxSS = maxSS; this.ss = 1;
+    const rt = (o = {}) => new THREE.WebGLRenderTarget(1, 1, o);
+    // half-float colour needs one of these; without them (some older GPUs) the target is incomplete and nothing draws
+    const ex = renderer.extensions, CT = ex.has('EXT_color_buffer_float') || ex.has('EXT_color_buffer_half_float') ? THREE.HalfFloatType : THREE.UnsignedByteType;
+    this.color = rt({ samples: 4, type: CT });
+    this.nd = rt({ depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType) });
+    this.nd.texture.minFilter = this.nd.texture.magFilter = THREE.NearestFilter;
+    this.ao = rt(); this.aoB = rt();
+    this.comp = rt({ type: CT });
+    this.idMat = new THREE.ShaderMaterial({ uniforms: { uId: { value: 0 } }, vertexShader: ID_VERT, fragmentShader: ID_FRAG, side: THREE.DoubleSide, blending: THREE.NoBlending });
+    const shared = { tDepth: { value: this.nd.depthTexture }, tId: { value: this.nd.texture }, near: { value: .1 }, far: { value: 200 }, fr: { value: new THREE.Vector4(-1, 1, -1, 1) } };
+    this.shared = shared;
+    this.u = {
+      ...shared, tColor: { value: this.color.texture }, tAOb: { value: this.aoB.texture },
+      res: { value: new THREE.Vector2(1, 1) }, thick: { value: 2 }, innerRatio: { value: .6 }, overlap: { value: .25 },
+      nLo: { value: .3 }, nHi: { value: .48 }, innerStr: { value: 0 }, lineAlpha: { value: 1 },
+      ink: { value: new THREE.Color('#3d2233') }, tint: { value: .35 }, tintDark: { value: .45 }, levels: { value: 0 },
+      aoStr: { value: .5 }, useAO: { value: 1 }, dbg: { value: 0 }, aoTint: { value: new THREE.Color('#6e5a8f') }, gray: { value: 0 },
+    };
+    this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
+    this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
+    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 } };
+    const quad = m => { const s = new THREE.Scene(); s.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m)); return s; };
+    const sm = (uniforms, fragmentShader) => new THREE.ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader, depthTest: false, depthWrite: false, blending: THREE.NoBlending });
+    this.aoScene = quad(sm(this.au, AO));
+    this.packed = false;
+    this.blurScene = quad(sm(this.bu, BLUR));
+    this.edgeScene = quad(sm(this.u, EDGE));
+    this.downScene = quad(sm(this.du, DOWN));
+    this.qCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.lineCss = 2.2; this.dpr = 1; this.pixelArt = false;
+    this.bgClear = new THREE.Color().setRGB(0, 0, .5, THREE.LinearSRGBColorSpace);
+    const idMat = this.idMat;
+    this._hook = function (r, s, c, g, material) { if (material === idMat) { material.uniforms.uId.value = this.userData.oid || 0; material.uniformsNeedUpdate = true; } };
+  }
+  // Give every mesh under root its outline-group ID. Call after building or changing the scene.
+  assignIds(root) {
+    const ids = new Map(); let next = 1;
+    root.traverse(m => {
+      if (!m.isMesh) return;
+      const k = groupKey(m);
+      if (!ids.has(k)) ids.set(k, next++);
+      // anything under a group marked `colored` keeps its colour in a 흑백판 (its IDs live from 40000 up)
+      let col = false; for (let o = m; o && !col; o = o.parent) col = !!o.userData.colored;
+      m.userData.oid = ids.get(k) % 39000 + (col ? 40000 : 0);
+      m.onBeforeRender = this._hook;
+    });
+    return next - 1;
+  }
+  // w, h = drawing-buffer size of the canvas.
+  setSize(w, h, { dpr = this.dpr, lineCss = this.lineCss, pixelArt = this.pixelArt, maxSS = this.maxSS } = {}) {
+    this.dpr = dpr; this.lineCss = lineCss; this.pixelArt = pixelArt; this.maxSS = maxSS; this.w = w; this.h = h;
+    this.ss = pixelArt ? 1 : Math.max(1, Math.min(maxSS, Math.sqrt(this.budget / (w * h))));
+    const iw = Math.round(w * this.ss), ih = Math.round(h * this.ss);
+    this.color.setSize(iw, ih); this.nd.setSize(iw, ih); this.comp.setSize(iw, ih);
+    const aw = Math.max(1, Math.round(iw / 2)), ah = Math.max(1, Math.round(ih / 2));
+    this.ao.setSize(aw, ah); this.aoB.setSize(aw, ah);
+    this.u.res.value.set(iw, ih); this.au.res.value.set(aw, ah); this.bu.aoRes.value.set(aw, ah); this.du.outRes.value.set(w, h);
+    this.setLine(lineCss);
+    const f = pixelArt ? THREE.NearestFilter : THREE.LinearFilter;
+    this.comp.texture.minFilter = this.comp.texture.magFilter = f;
+  }
+  // Pack depth into the ID buffer (half the texture reads) whenever creases and AO are both off.
+  syncPacking() {
+    const want = this.u.innerStr.value <= 0 && this.u.aoStr.value <= .001;
+    if (want === this.packed) return;
+    this.packed = want;
+    for (const m of [this.idMat, this.edgeScene.children[0].material]) { if (want) m.defines.PACKED = ''; else delete m.defines.PACKED; m.needsUpdate = true; }
+  }
+  // at least ~2.2 device px: on a 1x desktop screen the 1.5 px line broke up along long diagonals (roof edges)
+  setLine(lineCss) { this.lineCss = lineCss; this.u.thick.value = this.pixelArt ? 1 : Math.max(2.2 * this.ss, lineCss * this.dpr * this.ss); }
+  render(scene, cam) {
+    const r = this.r, s = this.shared;
+    this.syncPacking();
+    s.near.value = cam.near; s.far.value = cam.far;
+    s.fr.value.set(cam.left / cam.zoom, cam.right / cam.zoom, cam.bottom / cam.zoom, cam.top / cam.zoom);
+    const prevMask = cam.layers.mask;
+    // 1) colour, layers 0 + 2
+    cam.layers.set(0); cam.layers.enable(2);
+    r.setRenderTarget(this.color); r.clear(); r.render(scene, cam);
+    // 2) object IDs + view normals + depth, layer 0 only
+    const bg = scene.background; scene.background = null;
+    cam.layers.set(0);
+    const sm = r.shadowMap.enabled; r.shadowMap.enabled = false;
+    scene.overrideMaterial = this.idMat;
+    // empty background: id 0 and, when depth is packed into b/a, the FARTHEST depth (a mid value used to sit behind
+    // everything only while the camera range was huge; with a tight range it cut outlines off the back half of a scene)
+    this.bgClear.setRGB(0, 0, this.packed ? 1 : .5, THREE.LinearSRGBColorSpace);
+    r.setRenderTarget(this.nd); r.setClearColor(this.bgClear, this.packed ? 1 : .5); r.clear(); r.render(scene, cam);
+    scene.overrideMaterial = null; r.shadowMap.enabled = sm; scene.background = bg;
+    r.setClearColor(0x000000, 0);
+    cam.layers.mask = prevMask;
+    // 3) AO at half internal resolution + 4x4 blur (cancels the 4x4 Bayer rotation pattern)
+    const useAO = this.u.aoStr.value > .001 && !this.pixelArt;
+    this.u.useAO.value = useAO ? 1 : 0;
+    if (useAO) {
+      r.setRenderTarget(this.ao); r.clear(); r.render(this.aoScene, this.qCam);
+      r.setRenderTarget(this.aoB); r.clear(); r.render(this.blurScene, this.qCam);
+    }
+    // 4) ink + AO at internal resolution, 5) box-filter down to the screen
+    r.setRenderTarget(this.comp); r.clear(); r.render(this.edgeScene, this.qCam);
+    r.setRenderTarget(null); r.clear(); r.render(this.downScene, this.qCam);
+  }
+}

@@ -1,0 +1,307 @@
+// 곰돌이의 몽글 미술관 (2026-10-17, user: "가끔 앨범커버? 유명한 오마주해서 넣어도 괜찮을거같기도… 대놓고 베끼면 안되겠지만").
+// Homage, not copies: four public-domain masterpieces redrawn here from scratch as their composition only, with this town's
+// own characters in them — a great wave with mochi rowers (Hokusai, 1831), a swirling starry night over 몽글 마을 (van Gogh,
+// 1889), 몽나리자 (Leonardo, c.1503) and 토순이 with a pearl earring (Vermeer, c.1665). All drawn on canvases in code.
+// A painting swings out from the wall (something may be tucked behind it); a draped piece can be unveiled; a crate with a
+// lid; an easel; the guide desk's drawer; a bench; velvet ropes; the Thinker as a bronze 몽글이.
+import * as THREE from 'three';
+import { put, grp, canvasTex } from './kit.js';
+import { HG as G, hmc as mc } from './house-props.js';
+
+const PI = Math.PI, HP = PI / 2;
+const GOLD = '#d9a94a', GOLD2 = '#a8782e', INK = '#2a1d33', BRONZE = '#7a6a52', BRONZE2 = '#9a8664', MARBLE = '#f3efe8';
+const B = {};
+
+// ── the paintings (drawn once, cached) ──────────────────────────────────────────────────────────────────────────────
+const TEX = {};
+const tex = (key, w, h, draw) => TEX[key] || (TEX[key] = canvasTex(w, h, draw));
+const mochi = (c, x, y, r, body = '#fff6ee', ear = '#ffcfae', look = 0) => {   // a little round 몽글이 face
+  c.fillStyle = ear; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(x + s * r * .78, y - r * .35, r * .32, r * .42, s * .5, 0, 7); c.fill(); }
+  c.fillStyle = body; c.beginPath(); c.ellipse(x, y, r, r * .9, 0, 0, 7); c.fill();
+  c.fillStyle = INK; for (const s of [-1, 1]) { c.beginPath(); c.arc(x + s * r * .32 + look * r * .15, y - r * .05, r * .1, 0, 7); c.fill(); }
+  c.fillStyle = 'rgba(255,140,160,.55)'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(x + s * r * .55, y + r * .22, r * .16, r * .1, 0, 0, 7); c.fill(); }
+};
+const PAINT = {
+  // 몽글 파도: a great clawed wave over three boats of mochi rowers, a small snowy mountain far off
+  wave: () => tex('wave', 640, 400, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#efe0bf'); g.addColorStop(1, '#e6d3ad'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(160,140,110,.25)'; for (let k = 0; k < 18; k++) { c.beginPath(); c.ellipse(80 + k * 33, 40 + (k % 4) * 9, 30, 6, 0, 0, 7); c.fill(); }   // clouds
+    // the mountain
+    c.fillStyle = '#566a98'; c.beginPath(); c.moveTo(360, 318); c.lineTo(420, 252); c.lineTo(484, 318); c.fill();
+    c.fillStyle = '#fbf7ee'; c.beginPath(); c.moveTo(402, 272); c.lineTo(420, 252); c.lineTo(440, 274); c.lineTo(430, 270); c.lineTo(421, 278); c.lineTo(411, 269); c.fill();
+    // the sea and a small wave
+    c.fillStyle = '#284c86'; c.fillRect(0, 318, w, h - 318);
+    const crest = (x0, y0, s, deep, light) => {
+      c.fillStyle = deep; c.beginPath(); c.moveTo(x0, h); c.bezierCurveTo(x0 + 10 * s, y0 + 120 * s, x0 + 40 * s, y0 + 10 * s, x0 + 150 * s, y0);
+      c.bezierCurveTo(x0 + 230 * s, y0 - 6 * s, x0 + 270 * s, y0 + 40 * s, x0 + 250 * s, y0 + 70 * s); c.bezierCurveTo(x0 + 220 * s, y0 + 40 * s, x0 + 180 * s, y0 + 60 * s, x0 + 170 * s, y0 + 110 * s);
+      c.bezierCurveTo(x0 + 160 * s, y0 + 180 * s, x0 + 230 * s, h - 40, x0 + 300 * s, h); c.fill();
+      c.strokeStyle = light; c.lineWidth = 7 * s; c.lineCap = 'round';
+      for (let k = 1; k < 5; k++) { c.beginPath(); c.moveTo(x0 + 20 * s + k * 18 * s, h); c.bezierCurveTo(x0 + 30 * s + k * 16 * s, y0 + 110 * s, x0 + 60 * s + k * 12 * s, y0 + 30 * s + k * 10 * s, x0 + 150 * s, y0 + k * 14 * s); c.stroke(); }
+      // the foam claws along the crest
+      c.fillStyle = '#fbf7ee';
+      for (let k = 0; k < 12; k++) { const t = k / 11, x = x0 + (150 + 100 * t) * s, y = y0 + (-4 + 70 * t * t) * s; c.beginPath(); c.arc(x, y, (7 - t * 3) * s, 0, 7); c.fill();
+        c.beginPath(); c.moveTo(x - 4 * s, y + 2 * s); c.lineTo(x + 2 * s, y + 14 * s); c.lineTo(x + 6 * s, y + 3 * s); c.fill(); }
+      for (let k = 0; k < 26; k++) { c.beginPath(); c.arc(x0 + (120 + Math.random() * 170) * s, y0 - (10 + Math.random() * 40) * s, (1.5 + Math.random() * 3) * s, 0, 7); c.fill(); }   // spray
+    };
+    crest(-30, 110, 1.15, '#1f3f7a', '#4f7fc0');
+    crest(330, 300, .38, '#2a5290', '#6f9bd4');
+    // boats with mochi rowers
+    for (const [x, y, n] of [[150, 352, 4], [330, 372, 3], [470, 340, 3]]) {
+      c.fillStyle = '#f2e6c8'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(x - 70, y); c.quadraticCurveTo(x, y + 26, x + 70, y - 6); c.lineTo(x + 66, y + 4); c.quadraticCurveTo(x, y + 30, x - 66, y + 8); c.closePath(); c.fill(); c.stroke();
+      for (let k = 0; k < n; k++) mochi(c, x - 40 + k * 26, y - 2, 9);
+    }
+    c.fillStyle = '#f6eedc'; c.fillRect(22, 22, 70, 30); c.strokeStyle = '#9a8a6a'; c.lineWidth = 2; c.strokeRect(22, 22, 70, 30);   // the cartouche
+    c.fillStyle = '#c4473a'; c.fillRect(100, 26, 16, 16);
+  }),
+  // 별이 빛나는 몽글 마을: swirling sky, eleven stars, a crescent moon, a dark cypress, a sleeping village with a pink roof
+  stars: () => tex('stars', 640, 400, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#1b2f7a'); g.addColorStop(.7, '#2c4ea6'); g.addColorStop(1, '#22397e'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.lineCap = 'round';
+    const swirl = (cx, cy, r0, turns, col, lw) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); for (let a = 0; a < turns * PI * 2; a += .08) { const r = r0 * (1 - a / (turns * PI * 2 + 1)); const x = cx + Math.cos(a) * r * 1.6, y = cy + Math.sin(a) * r * .7; a ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); };
+    swirl(300, 150, 90, 1.6, '#8fb3ee', 7); swirl(300, 150, 70, 1.4, '#cfe0ff', 4); swirl(190, 120, 50, 1.2, '#6f9be0', 6);
+    for (let k = 0; k < 60; k++) { const x = (k * 97) % w, y = 20 + (k * 53) % 230, a = (k * 1.7) % PI; c.strokeStyle = ['#4f78c8', '#6f9be0', '#9fc0f2'][k % 3]; c.lineWidth = 5; c.beginPath(); c.arc(x, y, 14, a, a + 1.4); c.stroke(); }
+    for (const [x, y, r] of [[70, 60, 11], [150, 40, 9], [240, 70, 10], [400, 50, 12], [470, 120, 10], [110, 160, 9], [380, 200, 8], [230, 210, 9], [520, 190, 8], [30, 130, 8], [300, 30, 7]]) {
+      c.strokeStyle = 'rgba(255,240,160,.55)'; c.lineWidth = 4; for (const rr of [r * 1.8, r * 2.5]) { c.beginPath(); c.arc(x, y, rr, 0, 7); c.stroke(); }
+      c.fillStyle = '#ffd84a'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.fillStyle = '#fff6c0'; c.beginPath(); c.arc(x - r * .3, y - r * .3, r * .4, 0, 7); c.fill();
+    }
+    c.fillStyle = '#ffb238'; c.beginPath(); c.arc(570, 60, 30, 0, 7); c.fill(); c.fillStyle = '#20357f'; c.beginPath(); c.arc(582, 52, 27, 0, 7); c.fill();   // crescent
+    c.strokeStyle = 'rgba(255,200,90,.6)'; c.lineWidth = 5; c.beginPath(); c.arc(570, 60, 42, 0, 7); c.stroke();
+    // hills and the village
+    c.fillStyle = '#2b3f7a'; c.beginPath(); c.moveTo(0, 300); c.bezierCurveTo(160, 250, 360, 290, 640, 260); c.lineTo(640, 400); c.lineTo(0, 400); c.fill();
+    c.fillStyle = '#1f2f5e'; c.beginPath(); c.moveTo(0, 340); c.bezierCurveTo(200, 310, 420, 345, 640, 320); c.lineTo(640, 400); c.lineTo(0, 400); c.fill();
+    for (let k = 0; k < 9; k++) {
+      const x = 170 + k * 46, y = 330 + (k % 3) * 10, pink = k === 4;
+      c.fillStyle = pink ? '#ffe8f0' : '#3a4f86'; c.fillRect(x, y - 18, 30, 22);
+      c.fillStyle = pink ? '#ff6f9a' : '#283a6e'; c.beginPath(); c.moveTo(x - 4, y - 18); c.lineTo(x + 15, y - 34); c.lineTo(x + 34, y - 18); c.fill();
+      c.fillStyle = '#ffd84a'; c.fillRect(x + 6, y - 12, 6, 6); if (k % 2) c.fillRect(x + 18, y - 12, 6, 6);
+    }
+    // the cypress
+    c.fillStyle = '#16301f'; c.beginPath(); c.moveTo(70, 400); for (let k = 0; k <= 14; k++) { const t = k / 14; c.lineTo(70 + Math.sin(k * 1.7) * 14 - t * 10 - 26 * (1 - t), 400 - t * 320); } for (let k = 14; k >= 0; k--) { const t = k / 14; c.lineTo(70 + Math.cos(k * 1.3) * 14 + t * 6 + 26 * (1 - t), 400 - t * 320); } c.fill();
+    c.strokeStyle = '#2d5a3a'; c.lineWidth = 4; for (let k = 0; k < 12; k++) { c.beginPath(); c.arc(70 + (k % 2 ? 8 : -8), 380 - k * 25, 12, 3.6, 5.4); c.stroke(); }
+  }),
+  // 몽나리자: a mochi in a dark dress, paws folded, a veil, the faint smile, a hazy road and hills behind
+  lisa: () => tex('lisa', 360, 480, (c, w, h) => {
+    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#6f7c58'); g.addColorStop(.55, '#a59a6c'); g.addColorStop(1, '#5d4c32'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(120,150,140,.6)'; c.beginPath(); c.moveTo(0, 200); c.bezierCurveTo(60, 150, 120, 190, 180, 170); c.bezierCurveTo(240, 150, 300, 190, 360, 160); c.lineTo(360, 260); c.lineTo(0, 260); c.fill();
+    c.strokeStyle = '#c8b07a'; c.lineWidth = 6; c.beginPath(); c.moveTo(20, 300); c.bezierCurveTo(60, 260, 30, 230, 70, 210); c.stroke();
+    c.beginPath(); c.moveTo(340, 280); c.bezierCurveTo(300, 250, 330, 230, 300, 205); c.stroke();
+    // the dress and folded paws
+    c.fillStyle = '#2c2a24'; c.beginPath(); c.moveTo(70, 480); c.bezierCurveTo(80, 330, 120, 300, 180, 296); c.bezierCurveTo(240, 300, 280, 330, 290, 480); c.fill();
+    c.fillStyle = '#5a4630'; c.beginPath(); c.ellipse(180, 316, 42, 16, 0, 0, PI); c.fill();   // neckline
+    c.fillStyle = '#f4e4cc'; c.beginPath(); c.ellipse(150, 430, 34, 20, -.2, 0, 7); c.fill(); c.beginPath(); c.ellipse(198, 422, 34, 20, -.1, 0, 7); c.fill();
+    // head, veil, the smile
+    c.fillStyle = 'rgba(30,25,20,.75)'; c.beginPath(); c.ellipse(180, 210, 96, 104, 0, PI, 0); c.fill();
+    c.fillStyle = '#ffcfae'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(180 + s * 70, 196, 20, 30, s * .4, 0, 7); c.fill(); }
+    c.fillStyle = '#fbeedd'; c.beginPath(); c.ellipse(180, 222, 78, 72, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(40,30,20,.45)'; c.beginPath(); c.ellipse(180, 170, 86, 40, 0, PI, 0); c.fill();   // veil edge over the brow
+    c.fillStyle = INK; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(180 + s * 26 + 6, 218, 6, 7, 0, 0, 7); c.fill(); }
+    c.strokeStyle = '#7a4a3a'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(166, 252); c.quadraticCurveTo(182, 258, 198, 249); c.stroke();
+    c.fillStyle = 'rgba(255,150,150,.3)'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(180 + s * 44, 244, 13, 8, 0, 0, 7); c.fill(); }
+    c.fillStyle = 'rgba(140,110,40,.16)'; c.fillRect(0, 0, w, h);   // old varnish
+  }),
+  // 진주 귀걸이를 한 토순이: a bunny looking over her shoulder, blue turban (her ears poke out of it), yellow cloth, the pearl
+  pearl: () => tex('pearl', 360, 480, (c, w, h) => {
+    const g = c.createRadialGradient(150, 200, 40, 180, 240, 300); g.addColorStop(0, '#2a2620'); g.addColorStop(1, '#0f0d0b'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#b8893a'; c.beginPath(); c.moveTo(60, 480); c.bezierCurveTo(80, 380, 150, 350, 220, 360); c.bezierCurveTo(290, 370, 320, 420, 330, 480); c.fill();
+    c.fillStyle = '#f2efe6'; c.beginPath(); c.moveTo(130, 370); c.quadraticCurveTo(180, 400, 230, 368); c.lineTo(222, 392); c.quadraticCurveTo(180, 418, 138, 392); c.fill();
+    c.fillStyle = '#e8c25a'; c.beginPath(); c.moveTo(225, 150); c.bezierCurveTo(275, 190, 270, 280, 250, 330); c.lineTo(220, 320); c.bezierCurveTo(240, 260, 230, 200, 205, 170); c.fill();   // cloth
+    c.fillStyle = '#ffb3cd'; c.strokeStyle = '#f6e3ea'; c.lineWidth = 8;   // ears out of the turban
+    for (const [x, a] of [[150, -.35], [200, .25]]) { c.save(); c.translate(x, 110); c.rotate(a); c.beginPath(); c.ellipse(0, -46, 18, 50, 0, 0, 7); c.fillStyle = '#ffe6f0'; c.fill(); c.fillStyle = '#ffb3cd'; c.beginPath(); c.ellipse(0, -44, 9, 36, 0, 0, 7); c.fill(); c.restore(); }
+    c.fillStyle = '#ffe6f0'; c.beginPath(); c.ellipse(175, 240, 82, 86, -.1, 0, 7); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(222, 250, 40, 80, -.1, -HP, HP); c.fill();   // light from the left
+    c.fillStyle = '#2f5aa8'; c.beginPath(); c.ellipse(170, 168, 86, 50, -.12, PI * .95, PI * 2.05); c.fill(); c.fillRect(90, 160, 160, 26);
+    c.strokeStyle = '#4f7ac8'; c.lineWidth = 6; for (let k = 0; k < 4; k++) { c.beginPath(); c.arc(170, 200 + k * 2, 60 + k * 12, 3.6, 5.6); c.stroke(); }
+    c.fillStyle = INK; c.beginPath(); c.ellipse(145, 240, 13, 15, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(198, 238, 11, 14, 0, 0, 7); c.fill();
+    c.fillStyle = '#ffffff'; c.beginPath(); c.arc(140, 234, 4.5, 0, 7); c.fill(); c.beginPath(); c.arc(194, 233, 4, 0, 7); c.fill();
+    c.fillStyle = '#e8708a'; c.beginPath(); c.ellipse(166, 284, 9, 6, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,140,160,.4)'; c.beginPath(); c.ellipse(118, 270, 16, 10, 0, 0, 7); c.fill();
+    const pg = c.createRadialGradient(240, 300, 2, 244, 304, 16); pg.addColorStop(0, '#ffffff'); pg.addColorStop(.4, '#dfe3ea'); pg.addColorStop(1, '#7d8494');   // the pearl
+    c.fillStyle = pg; c.beginPath(); c.arc(244, 304, 15, 0, 7); c.fill();
+  }),
+};
+const ART_MAT = {};
+const artMat = key => ART_MAT[key] || (ART_MAT[key] = new THREE.MeshBasicMaterial({ map: PAINT[key](), color: '#f1ebe1' }));
+
+// a gilt frame (W×H outer) with the painting in it and a brass plaque; the whole thing hinges at its top and swings out
+function painting(f, key, W, H, Y, label, spotLabel) {
+  f.add(mc('artnail', ({ add }) => add(G.cyl(.015, .015, .02, 8), '#8f97b2', 0, Y + H / 2 + .02, .01, HP, 0, 0)));
+  // hinged on its left edge: it swings out like a cabinet door and the niche behind is in plain view
+  const hinge = grp(); put(hinge, -W / 2, 0, .03); f.add(hinge);
+  const pv = grp(); put(pv, W / 2, Y + H / 2, 0); hinge.add(pv);
+  const T = .09;
+  pv.add(mc('artframe|' + W + 'x' + H, ({ add }) => {
+    const s = new THREE.Shape(); s.moveTo(-W / 2, -H); s.lineTo(W / 2, -H); s.lineTo(W / 2, 0); s.lineTo(-W / 2, 0); s.lineTo(-W / 2, -H);
+    const hole = new THREE.Path(); hole.moveTo(-W / 2 + T, -H + T); hole.lineTo(-W / 2 + T, -T); hole.lineTo(W / 2 - T, -T); hole.lineTo(W / 2 - T, -H + T); hole.lineTo(-W / 2 + T, -H + T); s.holes.push(hole);
+    add(G.ext(s, .05, .012, 2), GOLD, 0, 0, -.02);
+    add(G.box(W - T * 2 + .02, H - T * 2 + .02, .01, .002), GOLD2, 0, -H / 2, .01);
+    for (const [x, y] of [[-W / 2 + .04, -.04], [W / 2 - .04, -.04], [-W / 2 + .04, -H + .04], [W / 2 - .04, -H + .04]]) add(G.sph(.035, 8, 6), '#f0c76a', x, y, .05);
+  }));
+  const art = new THREE.Mesh(new THREE.PlaneGeometry(W - T * 2, H - T * 2), artMat(key)); art.position.set(0, -H / 2, .022); pv.add(art);
+  const plaque = grp(); put(plaque, 0, -H - .08, .006); pv.add(plaque);
+  plaque.add(mc('artplaque', ({ add }) => add(G.box(.22, .06, .012, .004), '#c9a24a', 0, 0, 0)));
+  // a dark little niche in the wall behind it
+  f.add(mc('artniche|' + W, ({ add }) => add(G.box(Math.min(.36, W * .4), .22, .006, .002), '#4a3a52', 0, Y - .02, .004)));
+  const p = f.part('flip', hinge, t => { hinge.rotation.y = -1.45 * t; }, { label, sfx: 'open', dur: .4 });
+  f.spot('inside', null, 0, Y - .1, .012, { part: p, maxH: .09, label: spotLabel, wallFace: true });
+}
+B.artwave = f => painting(f, 'wave', 1.62, 1.06, 1.42, '몽글 파도 그림', '파도 그림 뒤');
+B.artstars = f => painting(f, 'stars', 1.62, 1.06, 1.42, '별밤 그림', '별밤 그림 뒤');
+B.artlisa = f => painting(f, 'lisa', .7, .92, 1.42, '몽나리자 그림', '몽나리자 뒤');
+B.artpearl = f => painting(f, 'pearl', .7, .92, 1.42, '진주 귀걸이 토순이 그림', '진주 귀걸이 그림 뒤');
+
+// 생각하는 몽글이: a bronze mochi, chin on paw, on a marble plinth
+B.thinker = f => {
+  const PH = .78;
+  f.add(mc('thinker', ({ add, tube }) => {
+    add(G.box(.52, PH, .52, .03), MARBLE, 0, PH / 2, 0);
+    add(G.box(.58, .05, .58, .02), '#e2dccf', 0, PH + .025, 0); add(G.box(.58, .05, .58, .02), '#e2dccf', 0, .025, 0);
+    add(G.box(.22, .05, .012, .006), '#c9a24a', 0, PH * .62, .265);   // its plaque
+    add(G.box(.32, .1, .26, .03), BRONZE, 0, PH + .1, 0);   // the rock it sits on
+    add(G.sph(.17, 14, 10), BRONZE2, 0, PH + .3, 0, 0, 0, 0, [1, .95, .9]);   // body
+    add(G.sph(.13, 14, 10), BRONZE2, .02, PH + .5, .06);   // head, bowed forward
+    for (const s of [-1, 1]) add(G.sph(.045, 8, 6), BRONZE, .02 + s * .1, PH + .6, .04);   // ears
+    tube([.1, PH + .25, .1], [.04, PH + .42, .14], .04, BRONZE, 8);   // the arm up to the chin
+    add(G.sph(.05, 8, 6), BRONZE2, .04, PH + .43, .15);
+    for (const s of [-1, 1]) add(G.sph(.06, 8, 6), BRONZE, s * .08, PH + .17, .12);   // feet
+  }));
+  f.spot('behind', null, 0, 0, -.38, { maxH: .35, label: '조각상 뒤', scale: .7 });
+  f.spot('on', null, .19, PH + .05, .17, { maxH: .14, label: '조각상 받침 위', scale: .5 });
+};
+
+// 천 덮인 작품: a draped piece on a plinth — lift the cloth and it's a golden mochi bust
+B.veiled = f => {
+  const PH = .62;
+  f.add(mc('veiledbase', ({ add }) => {
+    add(G.box(.5, PH, .5, .03), MARBLE, 0, PH / 2, 0); add(G.box(.56, .05, .56, .02), '#e2dccf', 0, PH + .025, 0);
+    add(G.sph(.15, 14, 10), '#e6b94a', 0, PH + .2, 0, 0, 0, 0, [1, .9, 1]); add(G.box(.18, .08, .14, .02), '#c9973a', 0, PH + .08, 0);
+    for (const s of [-1, 1]) add(G.sph(.05, 8, 6), '#e6b94a', s * .12, PH + .32, 0);
+  }));
+  const cloth = grp(); put(cloth, 0, PH + .03, 0); f.add(cloth);
+  cloth.add(mc('veilcloth', ({ add }) => {
+    add(G.cone(.3, .52, 10), '#f6f2ff', 0, .26, 0); add(G.sph(.17, 12, 8), '#f6f2ff', 0, .48, 0);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * PI * 2; add(G.cyl(.03, .05, .4, 6), '#e6e0f4', Math.cos(a) * .2, .2, Math.sin(a) * .2, Math.sin(a) * .12, 0, -Math.cos(a) * .12); }
+  }));
+  const p = f.part('lift', cloth, (t, b) => { cloth.position.y = b.p.y + .55 * t; cloth.position.x = b.p.x + .35 * t; cloth.rotation.z = -.9 * t; cloth.scale.setScalar(1 - .35 * t); }, { label: '작품 덮개 천', sfx: 'swish', dur: .45 });
+  f.spot('inside', null, .13, PH + .05, .13, { part: p, maxH: .14, label: '덮개 천 속', scale: .55 });
+};
+
+// 이젤: a wooden easel with a canvas in progress (a sketched mochi) and a palette on its tray
+B.easel = f => {
+  f.add(mc('easel', ({ add, tube }) => {
+    tube([-.25, 0, .12], [0, 1.5, -.02], .022, '#b9834e', 6); tube([.25, 0, .12], [0, 1.5, -.02], .022, '#b9834e', 6); tube([0, 0, -.3], [0, 1.4, -.04], .02, '#a8733f', 6);
+    add(G.box(.62, .04, .09, .01), '#b9834e', 0, .66, .1);
+    add(G.cyl(.11, .11, .015, 16), '#e9d3a8', .16, .7, .1, 0, 0, 0, [1.3, 1, 1]);
+    for (const [x, c] of [[.08, '#ff7fb0'], [.15, '#8fd3f4'], [.22, '#ffe14d'], [.13, '#7fd6c0']]) add(G.sph(.018, 6, 4), c, x, .715, .08 + (x * 50 % 3) * .02);
+  }));
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(.56, .68), new THREE.MeshBasicMaterial({ map: tex('sketch', 256, 312, (c, w, h) => {
+    c.fillStyle = '#fbf8f1'; c.fillRect(0, 0, w, h); c.strokeStyle = '#8a7a6a'; c.lineWidth = 3; c.lineCap = 'round';
+    c.beginPath(); c.ellipse(128, 170, 70, 62, 0, 0, 7); c.stroke(); for (const s of [-1, 1]) { c.beginPath(); c.ellipse(128 + s * 56, 130, 20, 28, s * .5, 0, 7); c.stroke(); }
+    c.fillStyle = '#5a4a5a'; for (const s of [-1, 1]) { c.beginPath(); c.arc(128 + s * 22, 165, 5, 0, 7); c.fill(); }
+    c.fillStyle = 'rgba(255,150,170,.5)'; c.beginPath(); c.ellipse(90, 190, 12, 7, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(166, 190, 12, 7, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,207,174,.6)'; c.fillRect(40, 240, 70, 26);
+  }), color: '#f4eee4' }));
+  board.position.set(0, 1.06, .1); board.rotation.x = -.1; f.add(board);
+  f.add(mc('easelboard', ({ add }) => add(G.box(.6, .72, .02, .006), '#efe6d6', 0, 1.06, .085, -.1, 0, 0)));
+  f.spot('on', null, -.15, .69, .11, { maxH: .14, label: '이젤 받침 위', scale: .5 });
+  f.spot('behind', null, 0, 0, -.34, { maxH: .35, label: '이젤 뒤', scale: .7 });
+};
+
+// 작품 운반 상자: a crate with a lid (lockable) and a red "handle with care" stamp
+B.artcrate = f => {
+  const H = .52;
+  f.add(mc('artcrate', ({ add }) => {
+    add(G.box(.76, H, .62, .02), '#d9b07a', 0, H / 2, 0);
+    for (const y of [.1, H - .1]) add(G.box(.78, .05, .64, .01), '#b98a52', 0, y, 0);
+    add(G.box(.26, .12, .01, .004), '#d9564a', -.12, H * .55, .315); add(G.box(.08, .08, .01, .004), '#d9564a', .14, H * .55, .315);
+  }));
+  const lid = grp(); put(lid, 0, H, -.31); f.add(lid);
+  lid.add(mc('artcratelid', ({ add }) => { add(G.box(.8, .05, .66, .015), '#c99a62', 0, .025, .31); add(G.box(.7, .02, .08, .006), '#b98a52', 0, .055, .31); }));
+  const p = f.part('lift', lid, t => { lid.rotation.x = -1.7 * t; }, { label: '작품 상자 뚜껑', sfx: 'open', dur: .35 });
+  p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: -.05, z: .66, parent: lid };
+  // packing straw fills it nearly to the rim, so what's tucked in shows once the lid is up
+  f.add(mc('artcratestraw', ({ add }) => { add(G.box(.7, .06, .56, .02), '#f2d58a', 0, H - .09, 0); for (let k = 0; k < 9; k++) add(G.box(.22, .015, .02, .006), '#e8c46a', -.25 + (k % 3) * .25, H - .055, -.18 + Math.floor(k / 3) * .18, 0, k * .7, 0); }));
+  f.spot('inside', null, 0, H - .05, .04, { part: p, maxH: .26, label: '작품 상자 안', scale: .75 });
+  f.spot('on', null, .2, H + .05, .05, { maxH: .3, label: '작품 상자 위', scale: .65 });
+};
+
+// 관람 벤치 (2×1): a long padded bench
+B.museumbench = f => {
+  f.add(mc('museumbench', ({ add }) => {
+    add(G.box(1.6, .14, .46, .06), '#8a4b5a', 0, .38, 0); add(G.box(1.5, .06, .4, .02), '#6a3a46', 0, .29, 0);
+    for (const sx of [-1, 1]) add(G.box(.1, .28, .38, .02), '#c9a46a', sx * .68, .14, 0);
+  }));
+  f.spot('under', null, -.3, 0, 0, { maxH: .22, label: '관람 벤치 밑', scale: .7 });
+  f.spot('on', null, .4, .45, 0, { maxH: .3, label: '관람 벤치 위', scale: .7 });
+};
+
+// 관람선 (2×1): two brass posts with a red velvet rope sagging between them
+B.stanchion = f => {
+  f.add(mc('stanchion', ({ add, tube }) => {
+    for (const sx of [-1, 1]) { add(G.cyl(.12, .14, .04, 16), '#c9a24a', sx * .7, .02, 0); tube([sx * .7, 0, 0], [sx * .7, .82, 0], .025, '#d9b45a', 8); add(G.sph(.05, 10, 8), '#e6c46a', sx * .7, .86, 0); }
+    let prev = null; for (let k = 0; k <= 10; k++) { const x = -.68 + k * .136, y = .78 - Math.sin(k / 10 * PI) * .16, pt = [x, y, 0]; if (prev) tube(prev, pt, .028, '#c8324a', 6); prev = pt; }
+  }));
+  f.spot('behind', null, 0, 0, -.32, { maxH: .35, label: '관람선 뒤', scale: .7 });
+};
+
+// 안내 데스크 (2×1): brochures, a bell, a drawer (lockable with a code)
+B.guidedesk = f => {
+  const TH = .8;
+  f.add(mc('guidedesk', ({ add }) => {
+    add(G.box(1.6, TH, .56, .03), '#f6f1e8', 0, TH / 2, 0); add(G.box(1.66, .05, .62, .015), '#c9a46a', 0, TH + .025, 0);
+    add(G.box(1.4, .08, .02, .01), '#8a6a9a', 0, TH * .78, .29);
+    for (let k = 0; k < 3; k++) add(G.box(.16, .02, .22, .004), ['#ff9ec2', '#8fd3f4', '#ffe27a'][k], -.5 + k * .2, TH + .06 + k * .006, .05, 0, k * .1, 0);
+    add(G.cyl(.06, .07, .05, 14), '#d9b45a', .5, TH + .075, .08); add(G.sph(.02, 8, 6), '#d9b45a', .5, TH + .11, .08);
+  }));
+  // the drawer is a real tray: it slides out with whatever is in it
+  const dr = grp(); put(dr, .35, TH * .5, .28); f.add(dr);
+  dr.add(mc('guidedrawer', ({ add }) => {
+    add(G.box(.5, .2, .04, .01), '#efe7da', 0, 0, 0); add(G.box(.12, .03, .03, .008), '#c9a46a', 0, 0, .03);
+    add(G.box(.44, .02, .4, .006), '#e2d6c2', 0, -.08, -.2); for (const sx of [-1, 1]) add(G.box(.02, .12, .4, .006), '#e2d6c2', sx * .21, -.03, -.2); add(G.box(.44, .12, .02, .006), '#e2d6c2', 0, -.03, -.39);
+  }));
+  const p = f.part('door', dr, (t, b) => { dr.position.z = b.p.z + .36 * t; }, { label: '안내 데스크 서랍', sfx: 'open', dur: .3 });
+  p.lockable = true; p.lockKind = 'code'; f.lockAt = { x: .14, y: 0, z: .03, parent: dr };
+  f.spot('inside', dr, 0, -.07, -.18, { part: p, maxH: .12, label: '데스크 서랍 안', scale: .6 });
+  f.spot('on', null, .05, TH + .05, .02, { maxH: .3, label: '안내 데스크 위', scale: .65 });
+};
+
+// 그리스 항아리: a black-figure amphora on a low plinth — orange clay, a black band of little running mochi
+B.amphora = f => {
+  const PH = .34;
+  f.add(mc('amphora', ({ add, tube }) => {
+    add(G.box(.46, PH, .46, .03), MARBLE, 0, PH / 2, 0); add(G.box(.5, .04, .5, .015), '#e2dccf', 0, PH + .02, 0);
+    const pts = [[.05, 0], [.13, .03], [.2, .14], [.21, .3], [.17, .44], [.09, .52], [.075, .62], [.11, .66]].map(([r, y]) => new THREE.Vector2(r, y));
+    add(new THREE.LatheGeometry(pts, 20), '#e08a3c', 0, PH + .04, 0);
+    add(G.cyl(.205, .21, .1, 20, true), '#2a1d22', 0, PH + .04 + .26, 0);   // the black band
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; add(G.sph(.028, 8, 6), '#e08a3c', Math.cos(a) * .213, PH + .04 + .27, Math.sin(a) * .213, 0, 0, 0, [1, 1, .4]); }
+    for (const sx of [-1, 1]) tube([sx * .08, PH + .04 + .6, 0], [sx * .19, PH + .04 + .4, 0], .018, '#d97a30', 6);   // handles
+  }));
+  f.spot('behind', null, 0, 0, -.36, { maxH: .35, label: '항아리 뒤', scale: .7 });
+};
+// 도넛 조각상: a giant pink-glazed donut standing on its edge on a plinth — pop art
+B.donutart = f => {
+  const PH = .4;
+  f.add(mc('donutart', ({ add }) => {
+    add(G.box(.5, PH, .4, .03), MARBLE, 0, PH / 2, 0); add(G.box(.54, .04, .44, .015), '#e2dccf', 0, PH + .02, 0);
+    add(G.tor(.2, .1, Math.PI * 2, 12, 28), '#e9b47a', 0, PH + .04 + .3, 0);
+    add(G.tor(.2, .085, Math.PI * 2, 12, 28), '#ff8fb8', 0, PH + .04 + .3, .03, 0, 0, 0, [1, 1, .9]);   // the glaze
+    [['#ffe14d', .12, .14], ['#8fd3f4', -.16, .05], ['#7fd6c0', .05, -.18], ['#ffffff', -.08, .2], ['#ffe14d', .2, -.06]].forEach(([c, x, y]) => add(G.box(.05, .016, .016, .006), c, x, PH + .04 + .3 + y, .1, 0, 0, x * 5));
+  }));
+  f.spot('behind', null, 0, 0, -.32, { maxH: .35, label: '도넛 조각상 뒤', scale: .7 });
+  f.spot('on', null, .17, .44, .12, { maxH: .14, label: '조각상 받침 위', scale: .5 });
+};
+export const MUSEUM_BUILDERS = B;
+export const MUSEUM_INFO = {
+  artwave: { wall: true, span: 2, name: '몽글 파도 그림', price: 520, region: 'building' },
+  artstars: { wall: true, span: 2, name: '별밤 그림', price: 520, region: 'building' },
+  artlisa: { wall: true, span: 1, name: '몽나리자', price: 480, region: 'building' },
+  artpearl: { wall: true, span: 1, name: '진주 귀걸이 토순이', price: 480, region: 'building' },
+  thinker: { w: 1, d: 1, name: '생각하는 몽글이', price: 420, region: 'building' },
+  veiled: { w: 1, d: 1, name: '천 덮인 작품', price: 380, region: 'building' },
+  easel: { w: 1, d: 1, name: '이젤', price: 180, region: 'building' },
+  artcrate: { w: 1, d: 1, name: '작품 운반 상자', price: 160, region: 'building' },
+  museumbench: { w: 2, d: 1, name: '관람 벤치', price: 220, region: 'building' },
+  stanchion: { w: 2, d: 1, name: '관람선', price: 140, region: 'building' },
+  guidedesk: { w: 2, d: 1, name: '안내 데스크', price: 300, region: 'building' },
+  amphora: { w: 1, d: 1, name: '그리스 항아리', price: 320, region: 'building' },
+  donutart: { w: 1, d: 1, name: '도넛 조각상', price: 360, region: 'building' },
+};

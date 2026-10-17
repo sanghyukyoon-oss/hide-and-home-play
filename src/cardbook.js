@@ -1,0 +1,101 @@
+// 도감: every friend and every hideable thing as a collectible card. Cards you have show their art, rarity stars, number,
+// home region and a line; rare ones have a holo foil that follows your finger. Missing ones show the card back with a
+// hint. Tap a card to hold it up close (it tilts with your finger). Card art is rendered once per tab on first open.
+import { h } from './ui.js';
+import { CHAR_DEFS, Char, charLine } from './gfx/chars.js';
+import { ITEMS, buildItem } from './gfx/items.js';
+import { THEMES, stageSpec, STAGE_COUNT, CHAR_UNLOCK, REGIONS } from './stages.js';
+import { STARTER_ITEMS } from './catalog.js';
+import { STORY_ITEMS } from './gfx/story-props.js';
+import { renderThumbs } from './thumbs.js';
+
+const ART = {};   // key → data URL, filled per tab
+const regionOf = idx => REGIONS.find(r => idx >= r.from && idx < r.to) || REGIONS[0];
+// friends who are rewards or specials shine (★★★); stage hosts are ★★; everyone else in the neighbourhood ★
+const SPECIAL = new Set(['churro', 'raccoon', ...Object.values(CHAR_UNLOCK)]);
+
+function friendCards(G) {
+  const S = G.save, met = new Set(['mong', ...(S.chars || []), ...Object.keys(S.met || {})]);
+  const first = {}, hosts = new Set();
+  for (let i = 0; i < STAGE_COUNT; i++) {
+    const sp = stageSpec(i), k = sp.timed ? 'raccoon' : THEMES[sp.room]?.friend;
+    if (k) { hosts.add(k); if (first[k] == null) first[k] = i; if (i < (S.stage || 0)) met.add(k); }
+  }
+  for (const [i, k] of Object.entries(CHAR_UNLOCK)) if (first[k] == null || +i < first[k]) first[k] = +i;
+  const keys = Object.keys(CHAR_DEFS).filter(k => k !== 'mom' && !k.includes('_'));
+  return keys.map((k, n) => {
+    const at = first[k], reg = at != null ? regionOf(at) : null;
+    return { id: 'c:' + k, art: 'card_' + k, no: n + 1, of: keys.length, name: CHAR_DEFS[k].name, have: met.has(k),
+      rar: SPECIAL.has(k) ? 3 : hosts.has(k) ? 2 : 1, region: reg?.id || 'home', regionName: reg?.name || '동네',
+      line: charLine(k), hint: at != null ? `${at + 1}탄에서 만나요` : '판에서 만난 친구를 톡 눌러 봐', build: () => buildCharArt(k) };
+  });
+}
+function itemCards(G) {
+  const own = new Set(G.save.collection || []);
+  const keys = Object.keys(ITEMS).filter(k => !ITEMS[k].decoy && k !== 'key' && k !== 'note');
+  return keys.map((k, n) => {
+    const it = ITEMS[k], starter = STARTER_ITEMS.includes(k);
+    const size = it.h < .09 ? '납작' : it.h < .18 ? '작음' : it.h < .3 ? '보통' : '큼';
+    return { id: 'i:' + k, art: 'card_item_' + k, no: n + 1, of: keys.length, name: it.name, have: own.has(k),
+      rar: starter ? 1 : STORY_ITEMS[k] ? 3 : 2, region: 'item', regionName: `크기 ${size}`,
+      line: it.flat ? '얇아서 틈새에 쏙 들어가요' : starter ? '처음부터 내 방에 있던 물건' : '판에서 찾아 모은 물건',
+      hint: '판에서 찾으면 모여요', build: () => buildItem(k, { code: '★★★' }), item: true };
+  });
+}
+function buildCharArt(k) { const c = new Char(k); c.setFace('happy'); c.pose = 'wave'; c.update(0); c.shadow.visible = false; return c.root; }
+
+function ensureArt(cards) {
+  const jobs = cards.filter(c => c.have && !ART[c.art]).map(c => c.item
+    ? { key: c.art, build: c.build, dir: [.45, .6, 1], fit: 1.05 }
+    : { key: c.art, build: c.build, dir: [.32, .38, 1], fit: 1.02 });
+  if (jobs.length) Object.assign(ART, renderThumbs(jobs, 300));
+}
+
+function cardEl(c, G, { big = false } = {}) {
+  const seen = G.save.cardSeen || (G.save.cardSeen = {});
+  if (!c.have) return h('div', { class: 'tcard back' + (big ? ' big' : '') }, h('div', { class: 'cb-q' }, '?'), h('div', { class: 'cb-hint' }, c.hint), h('div', { class: 'cb-no' }, `No.${String(c.no).padStart(3, '0')}`));
+  const el = h('div', { class: `tcard r${c.rar} reg-${c.region}` + (big ? ' big' : ''), role: 'button', tabindex: '0', 'aria-label': `${c.name} 카드` },
+    h('div', { class: 'cb-top' }, h('span', { class: 'cb-name' }, c.name), h('span', { class: 'cb-rar' }, '★'.repeat(c.rar))),
+    h('div', { class: 'cb-art' }, h('img', { src: ART[c.art] || '', alt: '' })),
+    h('div', { class: 'cb-line' }, c.line ? `“${c.line}”` : ''),
+    h('div', { class: 'cb-foot' }, h('span', {}, `No.${String(c.no).padStart(3, '0')}/${c.of}`), h('span', {}, c.regionName)),
+    h('div', { class: 'cb-holo' }));
+  if (!big && !seen[c.id]) el.append(h('div', { class: 'cb-new' }, 'NEW'));
+  return el;
+}
+
+// hold a card up close: it tilts toward the finger and the foil slides with it
+function zoom(c, G) {
+  const seen = G.save.cardSeen || (G.save.cardSeen = {}); if (!seen[c.id]) { seen[c.id] = 1; G.persist(); }
+  const card = cardEl(c, G, { big: true });
+  // a friend card can be made your own character: it walks with you in stages and hides in the boss stages
+  const kind = c.id.startsWith('c:') ? c.id.slice(2) : null, isHero = kind && (G.save.hero || 'mong') === kind;
+  const heroBtn = kind ? G.ui.btn(isHero ? '지금 내 캐릭터' : '내 캐릭터로 하기', { color: isHero ? 'gray' : 'pink', cls: 'sm', disabled: isHero,
+    onClick: dis => { if (dis) return; G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(`${c.name}(이)가 이제 함께 다녀요!`, 'green'); layer.remove(); } }) : null;
+  const layer = h('div', { class: 'cb-zoom' }, card, ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
+  const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = (x - r.left) / r.width - .5, ny = (y - r.top) / r.height - .5;
+    card.style.transform = `rotateY(${nx * 24}deg) rotateX(${-ny * 24}deg)`; card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`); };
+  layer.addEventListener('pointermove', e => tilt(e.clientX, e.clientY));
+  layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target)) return; if (!card.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });
+  for (const ev of ['pointerup', 'wheel']) layer.addEventListener(ev, e => e.stopPropagation());
+  G.audio.sfx('special');
+  document.getElementById('app').append(layer);
+}
+
+export function openCardBook(G, tab = 'friends') {
+  const cards = tab === 'items' ? itemCards(G) : friendCards(G);
+  if (cards.some(c => c.have && !ART[c.art])) G.ui.toast('카드 인쇄 중…', '');
+  // let the toast paint, then print the cards (a short pause on first open per tab)
+  requestAnimationFrame(() => setTimeout(() => {
+    ensureArt(cards);
+    const have = cards.filter(c => c.have).length;
+    const grid = h('div', { class: 'cb-grid' });
+    for (const c of cards) { const el = cardEl(c, G); if (c.have) el.addEventListener('click', () => { zoom(c, G); el.querySelector('.cb-new')?.remove(); }); grid.append(el); }
+    const tabs = h('div', { class: 'cb-tabs' },
+      G.ui.btn('친구', { color: tab === 'friends' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'friends' && openCardBook(G, 'friends') }),
+      G.ui.btn('물건', { color: tab === 'items' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'items' && openCardBook(G, 'items') }));
+    const bar = h('div', { class: 'cb-prog' }, h('i', { style: `width:${Math.round(have / cards.length * 100)}%` }));
+    G.ui.panel({ title: `도감 ${have}/${cards.length}`, color: 'pink', cls: 'cardbook', body: [tabs, bar, grid],
+      buttons: [G.ui.btn('닫기', { color: 'blue', cls: 'sm', onClick: () => G.ui.closePanel() })] });
+  }, 30));
+}
