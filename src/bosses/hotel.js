@@ -908,6 +908,7 @@ export class Game {
   update(dt) {
     const L = this.L, W = L.world;
     this.t += dt; this.tw.update(dt);
+    if (!this.rooms || !this.guests) return;   // (숨바꼭집, 10/18: on the web the stylesheet loads first and frames run meanwhile)
     this.lobby?.update(dt); for (const f of this.floors || []) f.update(dt);
     this.mong?.update(dt);
     if (this.evalT > 0) { this.evalT -= dt; if (this.evalT <= 0 && this.phase === 'checkin') this.refresh(true); }
