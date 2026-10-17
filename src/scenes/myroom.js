@@ -119,6 +119,7 @@ export class MyRoomScene {
     this.cardsEl.innerHTML = '';
     const inv = this.M.inventory;
     if (!inv.length) this.cardsEl.append(h('div', { style: 'padding:14px;font-size:16px;color:#8a6a9a' }, '보관함이 비었어. 상점에서 가구를 사봐!'));
+    G.needThumbs?.(inv.map(t => 'furn_' + t));
     inv.forEach((t, i) => {
       const c = h('div', { class: 'card', onclick: () => this.placeFromInv(i) }, h('img', { src: G.thumbs['furn_' + t] }), h('div', {}, FURN_INFO[t].name));
       this.cardsEl.append(c);
@@ -127,6 +128,7 @@ export class MyRoomScene {
   openShop() {
     const G = this.G, ui = G.ui;
     const grid = h('div', { class: 'shopgrid' });
+    G.needThumbs?.(SHOP.map(t => 'furn_' + t));
     for (const t of SHOP) {
       const inf = FURN_INFO[t];
       const owned = this.M.furniture.filter(f => f.type === t).length + this.M.inventory.filter(x => x === t).length;

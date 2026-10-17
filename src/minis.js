@@ -484,15 +484,18 @@ export const MINI_AFTER = {
 // of the game's three set-ups. 보물 지키기 (boss.js BOSS_AFTER) fills three more boss slots.
 export const BOSS_GAMES = {
   // user, 10/18: "보스전에 어울리는 건 엄마 몰래 야식이 가장 잘 어울려.. 그리고 자는 애 깨우는 거" — those two carry the campaign
-  // (three nights, three mornings); villa / tag / photo hold their region's slot until the new boss games come in
+  // (three nights, three mornings). From the new-game session's second hand-off (10/18 night): 몽글 호텔 X박 X일 (user:
+  // "방배정 할까봐. 대신 x박x일 여행 식으로 호텔로 해주고 한판만 하면 뭐지 할 거 같아서" → a two-night trip) and 추로야!!!
+  // ("추로 주인공으로"); third hand-off: 엄마 몰래 성적표 (the user's pick, 야식's pair) and 손전등 숨바꼭질 ("일단 해봐").
+  // villa / tag / photo are no longer in the campaign (their files stay in src/bosses).
   4: { kind: 'yasik', lv: 0 },     // 첫 보스
   11: { kind: 'wakeup', lv: 0 },   // 몽글 마을 집 끝
-  20: { kind: 'villa', lv: 0 },    // 우리 아파트 — 새 보스 자리 (임시)
-  30: { kind: 'tag', lv: 0 },      // 동네 골목 — 새 보스 자리 (임시)
+  20: { kind: 'hotel', lv: 1 },    // 우리 아파트 끝 — 몽글 호텔 2박 3일 (두 밤; lv 0 = 1박 2일, 2 = 3박 4일)
+  30: { kind: 'churro', lv: 0 },   // 동네 골목 — 추로야!!! (사용자네 고양이 추로가 주인공)
   39: { kind: 'yasik', lv: 1 },    // 편의점·상가
-  48: { kind: 'photo', lv: 0 },    // 공원 — 새 보스 자리 (임시)
+  48: { kind: 'report', lv: 0 },   // 공원 끝 — 엄마 몰래 성적표 1일 (야식과 짝인 '엄마 몰래' 시리즈)
   59: { kind: 'wakeup', lv: 1 },   // 산길·캠핑 (텐트의 아침)
-  65: { kind: 'wakeup', lv: 2 },   // 빌딩 중간 보스
+  65: { kind: 'flashlight', lv: 0 }, // 빌딩 중간 — 손전등 숨바꼭질 ("일단 해봐"; 아침 깨우기 3아침 자리였음)
   69: { kind: 'yasik', lv: 2 },    // 마지막 보스
 };
 export const MINI_INFO = {

@@ -342,6 +342,7 @@ export class LayEditScene {
     let tab = 'all';
     const grid = h('div', { class: 'le-grid' });
     const fill = () => {
+      G.needThumbs?.(types.map(t => 'furn_' + t));
       grid.innerHTML = '';
       for (const t of types) {
         if (tab === 'in' && outdoor(t)) continue;

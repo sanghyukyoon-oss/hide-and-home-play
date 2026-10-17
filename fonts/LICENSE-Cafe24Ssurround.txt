@@ -1,0 +1,12 @@
+Cafe24 Ssurround (카페24 써라운드) — copyright Cafe24 Corp. (주식회사 카페24)
+
+Used under Cafe24's free font licence, as published on the font's page:
+  - free for everyone, personal and commercial use
+  - allowed without restriction of scope: web, print, video, BI/CI, software bundling and embedding in programs
+  - the font files may be modified, copied and redistributed; modified versions are under the SIL Open Font License (OFL)
+  - selling the font file itself is not allowed
+Sources: https://fonts.cafe24.com/ , https://noonnu.cc/font_page/669 (licence table and text, checked 2026-10-17)
+Modification here: subset to Hangul syllables + the characters the game uses, converted to WOFF2 (fonttools pyftsubset).
+
+Also covers 카페24 써라운드 에어 (Cafe24 Ssurround air, ssurround-air.woff2), same maker and licence; webfont from
+https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24SsurroundAir.woff, subset (KS X 1001 Hangul + game text), WOFF2.

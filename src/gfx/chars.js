@@ -329,7 +329,8 @@ export const CHAR_DEFS = {
     pattern: [['#ffffff', P(0, -.02, .4, .22), P(0, .42, .07, .24), P(0, -.6, .42, .38)]], acc: [['bowtie', { color: '#ff4f6d' }]], look: { mouth: 'smile' }, idle: 'cat', react: 'tuxedo' },
   // 추로: the owner's own cat (photo 2026-10-16) — a blue-grey dilute calico: peach blaze up the forehead and peach
   // cheeks, white muzzle, chin, chest and socks, pink nose, big peach-lined ears, green-gold eyes, a cool half-lidded stare
-  churro: { name: '추로', body: '#b3b7cb', ear: 'kitty', earC: '#f6bd98', earSide: ['#b3b7cb', '#f7c09a'], limbC: '#fbf7f2', scale: .62, nose: '#f7a9b2', tail: 'cat', tailC: '#959ab0', twitch: true,
+  // eyeC: the real 추로's round green-gold eyes (the 추로야!!! boss had them first, 10/18)
+  churro: { name: '추로', body: '#b3b7cb', ear: 'kitty', earC: '#f6bd98', earSide: ['#b3b7cb', '#f7c09a'], limbC: '#fbf7f2', scale: .62, nose: '#f7a9b2', tail: 'cat', tailC: '#959ab0', twitch: true, eyeC: '#b2d660',
     pattern: [['#fffaf4', P(0, -.03, .4, .2), P(0, -.55, .5, .46)], ['#f7c09a', P(-.4, .68, .3, .24, .3), P(-2.3, .3, .2, .16)]],
     look: { mouth: 'smile' }, faceF: { ex: .2, s: 1.25 }, squish: [1.08, .95], idle: 'cat', react: 'churro' },
 };

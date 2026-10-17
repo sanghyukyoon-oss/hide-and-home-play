@@ -1,0 +1,86 @@
+/* 📄 엄마 몰래 성적표 — every rule is under .rp-* (no globals: it shares the page with 숨바꼭집's style.css) */
+#app.rp-eve { background: radial-gradient(120% 80% at 50% 28%, #ffe6cc 0%, #f6b58f 42%, #8e6cbc 100%); }
+#app.rp-eve #bg { display: none; }
+
+/* the top bar: mom's face + what she's after + the clock, the day */
+#hud .rp-timer { height: 50px; padding-left: 50px; }
+#hud .rp-timer .face { width: 50px; height: 50px; }
+.rp-tcol { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 4px; }
+#hud .rp-tcol .tbar { flex: 0 0 auto; height: 14px; }
+#hud .rp-timer .tl { font-size: 14px; color: #7a5a8c; }
+#hud .rp-timer.rp-alert { animation: rpShake .45s ease-in-out infinite; border-color: #c4213f; }
+#hud .rp-timer.rp-alert .tl { color: #e2334f; }
+#hud .rp-timer.rp-alert .face { background: radial-gradient(#fff, #ffb3bf); }
+@keyframes rpShake { 0%, 100% { translate: 0 0; } 25% { translate: -2px 0; } 75% { translate: 2px 0; } }
+#hud .rp-day { background: #ff9f6b; }
+
+/* one short line at the bottom (only when there is something to say) */
+.rp-hint { position: absolute; left: 50%; bottom: calc(24px + var(--safeB)); transform: translateX(-50%); color: #fff; font-size: 18px; white-space: nowrap; display: flex; align-items: center; gap: 8px;
+  background: rgba(42, 26, 61, .62); padding: 8px 17px 10px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, .4); pointer-events: none; transition: opacity .25s; }
+.rp-hint.gone { opacity: 0; }
+.rp-hand { display: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; }
+.rp-hint.first .rp-hand { display: block; animation: rpDrag 1.5s ease-in-out infinite; }
+@keyframes rpDrag { 0% { transform: translate(-6px, 0) scale(1); } 30% { transform: translate(-6px, 0) scale(.8); } 70% { transform: translate(8px, -4px) scale(.8); } 100% { transform: translate(8px, -4px) scale(1); opacity: .4; } }
+
+/* "엄마! 저기 봐!" */
+#hud .rp-look { position: absolute; right: 12px; bottom: calc(78px + var(--safeB)); font-size: 18px; padding: .5em .9em .55em; }
+#hud .rp-look .badge { position: absolute; right: -8px; top: -10px; }
+#hud .rp-look.rp-new { animation: rpNew .6s cubic-bezier(.2, 1.7, .4, 1) 0s 4; }
+@keyframes rpNew { 0% { transform: scale(.7); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+/* badges over the hiding places */
+.rp-spot { position: absolute; transform: translate(-50%, -100%); pointer-events: none; display: none; place-items: center; }
+.rp-spot.card, .rp-spot.tgt, .rp-spot.chk, .rp-spot.dest { display: grid; }
+.rp-spot i { font-style: normal; font-family: var(--font-display); line-height: 1; }
+.rp-spot.chk { width: 22px; height: 22px; border-radius: 50%; background: #5fd59a; border: 2.5px solid var(--ink); color: #fff; font-size: 13px; opacity: .9; }
+.rp-spot.tgt { width: 34px; height: 34px; border-radius: 50%; background: #ff4f66; border: 3px solid var(--ink); color: #fff; font-size: 22px; box-shadow: 0 3px 0 var(--ink); animation: rpBob .5s ease-in-out infinite; }
+.rp-spot.card { width: 38px; height: 38px; border-radius: 12px; background: #ffe3ee; border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink); }
+.rp-spot.card img { width: 34px; height: 34px; }
+.rp-spot.card.tgt { background: #ffd0d8; animation: rpShake .3s ease-in-out infinite; }
+.rp-spot.card.tgt i { position: absolute; right: -10px; top: -12px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #ff4f66; border: 2.5px solid var(--ink); font-size: 14px; }
+.rp-spot.card.hand::after { content: ''; position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; border: 3px solid #fff; animation: rpRing 1.2s ease-out infinite; }
+.rp-spot.card.smell { background: #ffd9a8; animation: rpWob .9s ease-in-out infinite; }
+.rp-spot.card.smell::before { content: '~ ~'; position: absolute; top: -18px; left: 50%; translate: -50% 0; font-size: 15px; color: #fff; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+@keyframes rpWob { 0%, 100% { rotate: -6deg; } 50% { rotate: 6deg; } }
+@keyframes rpRing { from { transform: scale(.7); opacity: 1; } to { transform: scale(2.1); opacity: 0; } }
+.rp-spot.dest { padding: 4px 10px 6px; border-radius: 12px; background: #ffe16b; border: 3px solid var(--ink); color: #fff; font-size: 16px; white-space: nowrap; box-shadow: 0 3px 0 var(--ink); }
+@keyframes rpBob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+
+.rp-vig { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0; transition: opacity .15s; background: radial-gradient(ellipse at center, transparent 52%, rgba(255, 40, 80, .6) 100%); }
+.rp-vig.pulse { animation: rpVig .7s ease-out; }
+@keyframes rpVig { 0% { opacity: .8; } 100% { opacity: 0; } }
+
+/* "새로 얻었다!" */
+.rp-get { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%); z-index: 30; pointer-events: none; background: #fffaf2; border: 4px solid var(--ink); border-radius: 22px;
+  padding: 12px 20px 14px; text-align: center; box-shadow: 0 6px 0 var(--ink); animation: rpGet .45s cubic-bezier(.2, 1.7, .4, 1); color: var(--ink); min-width: 240px; }
+.rp-get.out { opacity: 0; transition: opacity .35s; }
+.rp-get-t { font-family: var(--font-display); color: #ffcf3c; font-size: 26px; }
+.rp-get-n { font-size: 22px; margin-top: 2px; }
+.rp-get-s { font-size: 14px; opacity: .8; margin-top: 4px; }
+@keyframes rpGet { from { transform: translate(-50%, -50%) scale(.6); } to { transform: translate(-50%, -50%) scale(1); } }
+
+/* the report card she reads out */
+.rp-reveal { position: absolute; left: 50%; top: 25%; z-index: 28; width: 210px; padding-bottom: 14px; background: #fff; border: 4px solid var(--ink); border-radius: 14px; box-shadow: 0 8px 0 var(--ink);
+  transform: translate(-50%, -50%) rotate(-5deg); animation: rpReveal .55s cubic-bezier(.2, 1.6, .4, 1); color: var(--ink); pointer-events: none; text-align: left; transition: opacity .3s; }
+.rp-reveal.out { opacity: 0; }
+.rp-reveal .hd { background: #7aa7ff; color: #fff; font-family: var(--font-display); font-size: 26px; text-align: center; padding: 8px 0 10px; border-radius: 9px 9px 0 0; }
+.rp-reveal .nm { font-size: 13px; opacity: .7; padding: 6px 18px 2px; }
+.rp-reveal .row { display: flex; justify-content: space-between; align-items: center; padding: 5px 20px 0; font-size: 19px; }
+.rp-reveal .row b { font-weight: normal; }
+.rp-reveal .row.math { margin-top: 6px; }
+.rp-reveal .row.math b { position: relative; font-family: var(--font-display); font-size: 44px; color: #ff4d5e; line-height: 1; }
+.rp-reveal .row.math b::after { content: ''; position: absolute; left: -12px; top: -8px; right: -12px; bottom: -6px; border: 4px solid #ff4d5e; border-radius: 50%; transform: rotate(-8deg); }
+@keyframes rpReveal { 0% { transform: translate(-50%, -50%) rotate(8deg) scale(.3); } 100% { transform: translate(-50%, -50%) rotate(-5deg) scale(1); } }
+
+/* end panels */
+.rp-endface { display: flex; justify-content: center; margin-bottom: 6px; }
+.rp-endface img { width: 84px; height: 84px; }
+.rp-tip { font-size: 14px; opacity: .75; text-align: center; margin-top: 6px; }
+.rp-stats { display: flex; justify-content: center; gap: 22px; margin: 2px 0 8px; }
+.rp-stats > div { display: flex; flex-direction: column; align-items: center; }
+.rp-stats b { font-family: var(--font-display); font-weight: normal; font-size: 34px; line-height: 1.05; }
+.rp-stats span { font-size: 14px; opacity: .8; }
+
+/* small bubbles for the minor lines, small floating words */
+.bubble.rp-sm { font-size: 15px; padding: 4px 10px 6px; }
+.ftxt.rp-f { font-size: 17px; color: #fff; opacity: .9; }

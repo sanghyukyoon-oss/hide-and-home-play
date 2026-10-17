@@ -21,7 +21,7 @@ import { Trickster } from '../trickster.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
 const JAIL_LINES = ['억울해요! 난 그냥 숨바꼭질 하던 중이었다고요!', '진짜 도둑은 잉키라니까요~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
 const ROBOT_COST = 50;
-import { h, ICON, fullscreenBtn } from '../ui.js';
+import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
 import { openTune } from '../tune.js';
 import { retrieve, canGrab, grab } from '../raid.js';
@@ -283,10 +283,7 @@ export class StageScene {
     this.zoomTools = h('div', { class: 'zoomtools' }, all);
     side.prepend(this.zoomTools);
     side.append(this.hintBtn); col.append(side);
-    // turn buttons: the easy way round the room — one press, 45° (user, 10/17: "조작도 어렵고"); dragging still works
-    const turn = d => () => { if (this.paused || this.result) return; const W = G.world; G.audio.sfx('whoosh'); W.flyTo(this.tw, { yaw: W.yaw + d * Math.PI / 4, dur: .35 }); this.rotAccum += Math.PI / 4; };
-    col.append(h('div', { class: 'turnbar', style: `bottom:${bottomY}` },
-      h('button', { class: 'turnbtn', 'aria-label': '왼쪽으로 돌리기', onclick: turn(-1) }, '⟲'), h('button', { class: 'turnbtn', 'aria-label': '오른쪽으로 돌리기', onclick: turn(1) }, '⟳')));
+    // (the ⟲ ⟳ turn buttons came out 10/18 — user: "이거 필요없지않아?"; the 회전|이동 badge and dragging turn the room)
   }
   setMong(face, anim) {
     const G = this.G;
@@ -455,11 +452,12 @@ export class StageScene {
     // a few pieces of furniture join the list: big and easy, they set how hard the stage is
     const RS = this.room.rooms || [this.room], k = this.idx < 12 ? 2 : 3, used = new Set();
     const tall = e => new THREE.Box3().setFromObject(e.f.group).getSize(new THREE.Vector3()).y > .3;   // not a flat thing on the ground (a hopscotch, a manhole): hard to tap
-    const cands = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && tall(e) && G.thumbs['furn_' + e.type]));
+    const cands = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && tall(e) && G.hasThumb('furn_' + e.type)));
     this.grayFurn = new Map();
-    for (const e of cands) {
-      if (this.grayFurn.size >= k || used.has(e.type)) continue;
-      used.add(e.type);
+    const pick = [];
+    for (const e of cands) { if (pick.length >= k || used.has(e.type)) continue; used.add(e.type); pick.push(e); }
+    G.needThumbs(pick.map(e => 'furn_' + e.type));   // just these icons, in one batch
+    for (const e of pick) {
       const it = { type: 'furn:' + e.type, role: 'target', furnTarget: e, g: e.f.group, spot: { kind: 'on', label: FURN_NAME(e.type), part: null }, found: false, thumb: G.thumbs['furn_' + e.type] };
       this.grayFurn.set(e.f, it); this.targets.push(it);
     }
@@ -1509,26 +1507,43 @@ export class StageScene {
     this.friend.root.rotation.y = Math.atan2(this.friend.root.position.x, this.friend.root.position.z);
   }
   pause() {
-    const G = this.G;
+    const G = this.G, ui = G.ui;
     if (this.result || !this.running) return;
     this.paused = true;
-    const snd = G.ui.btn(G.audio.muted ? '소리 켜기' : '소리 끄기', { color: 'purple', icon: G.audio.muted ? 'mute' : 'sound', cls: 'sm', onClick: () => { G.audio.setMuted(!G.audio.muted); snd.querySelector('.lbl').textContent = G.audio.muted ? '소리 켜기' : '소리 끄기'; } });
-    // rotation feel: free (default) or snapping to the four diagonal views
+    // one aligned list (user, 10/18: "정렬도 안 됨… 마진이 안 맞아"): every setting is a full-width row — name on the left,
+    // its value on the right, tap to change. Author tools (look tuning, fps, 배치 고치기) only for the owner.
     const S = G.save.settings || (G.save.settings = {});
-    const rotLbl = () => S.snap ? '회전: 4방향 스냅' : '회전: 자유';
-    const rot = G.ui.btn(rotLbl(), { color: 'blue', cls: 'sm', onClick: () => { S.snap = !S.snap; G.world.snap = S.snap; G.persist(); rot.querySelector('.lbl').textContent = rotLbl(); } });
-    const perfLbl = () => S.perf ? '성능 표시 끄기' : '성능 표시';
-    const perf = G.ui.btn(perfLbl(), { color: 'gray', cls: 'sm', onClick: () => { S.perf = !S.perf; G.persist(); perf.querySelector('.lbl').textContent = perfLbl(); } });
-    const tune = G.ui.btn('세팅', { color: 'blue', cls: 'sm', onClick: () => { G.ui.closePanel(); openTune(G, { onClose: () => { if (!this.dead && !this.result) this.pause(); } }); } });   // stays paused while tuning
-    const joyLbl = () => G.world.joyOn ? '이동 패드 끄기' : '이동 패드 켜기';
-    const joy = G.ui.btn(joyLbl(), { color: 'pink', cls: 'sm', onClick: () => { S.joy = !G.world.joyOn; G.world.joyOn = S.joy; G.persist(); joy.querySelector('.lbl').textContent = joyLbl(); } });
-    const ctrlLbl = () => ({ D: '조작: 끌어 회전·패드', B: '조작 B: 톡-끌기', C: '조작 C: 스위치' })[S.ctrl] || '조작: 기본 (끌면 이동·톡 회전)';
-    const ctrl = G.ui.btn(ctrlLbl(), { color: 'purple', cls: 'sm', onClick: () => { S.ctrl = { E: 'D', D: 'B', B: 'C', C: 'E' }[S.ctrl || 'E']; G.world.scheme = S.ctrl; if (S.joy === undefined) G.world.joyOn = S.ctrl === 'D'; G.persist(); ctrl.querySelector('.lbl').textContent = ctrlLbl(); joy.querySelector('.lbl').textContent = joyLbl(); } });
-    const giveUp = this.custom ? [G.ui.btn('포기하기', { color: 'red', cls: 'sm', onClick: () => this.lose('giveup') })] : [];
-    if (G.owner && !this.custom && !this.preview && this.idx >= 0 && this.idx < 70) giveUp.push(G.ui.btn('배치 고치기', { color: 'orange', cls: 'sm', onClick: () => G.go('layedit', { idx: this.idx }) }));
-    G.ui.panel({
-      title: '잠깐 쉬기', color: 'purple', body: [h('div', { class: 'txt' }, `${this.th.name} · 찾은 물건 ${this.found}/${this.targets.length}`), h('div', { class: 'row' }, snd, rot, ...giveUp), h('div', { class: 'row' }, ctrl, joy), h('div', { class: 'row' }, perf, tune, ...[fullscreenBtn(G.ui)].filter(Boolean))],
-      buttons: [G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }), G.ui.btn('다시하기', { color: 'orange', cls: 'sm', onClick: () => G.go('stage', this.retryArgs()) }), G.ui.btn('계속', { color: 'green', icon: 'play', onClick: () => { G.ui.closePanel(); this.paused = false; } })],
+    const row = (k, val, tap) => {
+      const v = h('b', { class: 'v' }, val());
+      const el = h('div', { class: 'setrow', role: 'button', tabindex: '0' }, h('span', { class: 'k' }, k), v);
+      el.addEventListener('pointerup', e => { e.stopPropagation(); G.audio.sfx('click'); tap(); v.textContent = val(); });
+      el.addEventListener('pointerdown', e => e.stopPropagation());
+      el.refresh = () => { v.textContent = val(); };
+      return el;
+    };
+    const snd = row('소리', () => G.audio.muted ? '꺼짐' : '켜짐', () => G.audio.setMuted(!G.audio.muted));
+    const rot = row('회전', () => S.snap ? '4방향 딱딱' : '자유롭게', () => { S.snap = !S.snap; G.world.snap = S.snap; G.persist(); });
+    const joy = row('이동 패드', () => G.world.joyOn ? '켜짐' : '꺼짐', () => { S.joy = !G.world.joyOn; G.world.joyOn = S.joy; G.persist(); });
+    const ctrl = row('조작', () => ({ D: '끌어 회전·패드', B: 'B: 톡-끌기', C: 'C: 스위치' })[S.ctrl] || '기본 (끌면 이동)', () => { S.ctrl = { E: 'D', D: 'B', B: 'C', C: 'E' }[S.ctrl || 'E']; G.world.scheme = S.ctrl; if (S.joy === undefined) G.world.joyOn = S.ctrl === 'D'; G.persist(); joy.refresh(); });
+    const rows = [snd, rot, ctrl, joy];
+    const fsOk = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && document.fullscreenEnabled !== false;
+    if (fsOk) rows.push(row('전체화면', () => document.fullscreenElement || document.webkitFullscreenElement ? '켜짐' : '꺼짐', async () => {
+      const el = document.documentElement;
+      try { if (document.fullscreenElement || document.webkitFullscreenElement) await (document.exitFullscreen || document.webkitExitFullscreen).call(document); else await (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); } catch { ui.toast('이 브라우저는 전체화면이 안 돼요', 'red'); }
+    }));
+    const tools = [];
+    if (this.custom) tools.push(ui.btn('포기하기', { color: 'red', cls: 'sm', onClick: () => this.lose('giveup') }));
+    if (G.owner) {
+      if (!this.custom && !this.preview && this.idx >= 0 && this.idx < 70) tools.push(ui.btn('배치 고치기', { color: 'orange', cls: 'sm', onClick: () => G.go('layedit', { idx: this.idx }) }));
+      tools.push(ui.btn('세팅', { color: 'blue', cls: 'sm', onClick: () => { ui.closePanel(); openTune(G, { onClose: () => { if (!this.dead && !this.result) this.pause(); } }); } }));   // stays paused while tuning
+      const perfLbl = () => S.perf ? '성능 표시 끄기' : '성능 표시';
+      const perf = ui.btn(perfLbl(), { color: 'gray', cls: 'sm', onClick: () => { S.perf = !S.perf; G.persist(); perf.querySelector('.lbl').textContent = perfLbl(); } });
+      tools.push(perf);
+    }
+    ui.panel({
+      title: '잠깐 쉬기', color: 'purple', cls: 'pausep',
+      body: [h('div', { class: 'txt' }, `${this.th.name} · 찾은 물건 ${this.found}/${this.targets.length}`), h('div', { class: 'setlist' }, ...rows), ...(tools.length ? [h('div', { class: 'row tools' }, ...tools)] : [])],
+      buttons: [ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }), ui.btn('다시하기', { color: 'orange', cls: 'sm', onClick: () => G.go('stage', this.retryArgs()) }), ui.btn('계속', { color: 'green', icon: 'play', onClick: () => { ui.closePanel(); this.paused = false; } })],
     });
   }
 

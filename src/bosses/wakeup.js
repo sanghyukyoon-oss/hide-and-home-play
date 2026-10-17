@@ -115,6 +115,9 @@ function makeClock() {
   return { root, body };
 }
 
+// the story opening and the find phase play only the first time this boss is met (per page; 다시 / later mornings skip it)
+let INTRO_SEEN = false;
+
 // HUD icons, rendered once per page (every new morning would otherwise spin up another WebGL context)
 let ICONS = null;
 function pieceIcons() {
@@ -173,9 +176,10 @@ function synth(A) {
 
 export class Game {
   constructor(L) { this.L = L; this.tw = new Tweens(); this.t = 0; this.objs = {}; this.slots = []; this.phase = 'intro'; this.result = null; this.tries = 0; this.freeze = 0; this.shake = 0; this.shOff = new THREE.Vector3(); this.marks = []; this.bookN = 0; this.focus = new THREE.Vector3(); this.snd = synth(L.audio); this.stars = 0; this.wins = 0; }
-  async enter({ lv = 0 } = {}) {
+  async enter({ lv = 0, intro = null } = {}) {
     const L = this.L, W = L.world, ui = L.ui;
     this.lvIdx = clamp(lv | 0, 0, S.LEVELS.length - 1); const LV = this.LV = S.LEVELS[this.lvIdx];
+    this.intro = !!(LV.hide && (intro ?? !INTRO_SEEN));
     const app = document.getElementById('app'); app.dataset.night = ''; app.dataset.morning = '1';
     L.setBg(THEME.bg); W.setLight(MORNING);
     const map = this.map = new MapRooms(W, roomDef(LV));
@@ -187,16 +191,127 @@ export class Game {
     this.buildBoard();
     this.buildCast();
     this.icons = pieceIcons();
+    if (this.intro) this.hideThings();
     L.makeThumbs({ items: ['cookie'], faces: [['sleepy', 'wow'], ['sleepy', 'normal']] });
     this.buildHud();
     this.bindInput();
     W.idsDirty = true; W.shadowDirty = true;
-    this.refresh();
-    await ui.banner(LV.name, LV.sub, 1500);
-    if (this.dead) return;
+    if (this.intro) {
+      // 몽글이 drops by to play; 졸졸이 is still asleep → find the ball and the alarm clock → build the contraption
+      this.phase = 'story'; this.refresh();
+      await this.story(); if (this.dead) return;
+      await this.findPhase(); if (this.dead) return;
+    } else {
+      this.refresh();
+      await ui.banner(LV.name, LV.sub, 1500);
+      if (this.dead) return;
+    }
     this.phase = 'edit';
+    this.setTrays();
     this.announceNew();
     this.refresh();
+  }
+
+  // ── the opening: three beats, each auto-advances (a tap skips ahead)
+  async story() {
+    const L = this.L, W = L.world, m = this.mong, tw = this.tw;
+    const door = this.map.rooms[0].decors.find(d => d.type === 'door'), dp = door?.f.doorPart || door?.f.parts[0];
+    const dz = door ? door.f.group.getWorldPosition(new THREE.Vector3()).z : this.mongHome.z, x0 = -this.LV.w / 2;
+    m.root.position.set(x0 - .7, 0, dz); m.root.rotation.y = Math.PI / 2;
+    await tw.wait(.35);
+    if (dp) { L.audio.sfx('door'); tw.run(.35, k => dp.setOpen(k)); }
+    await tw.wait(.3);
+    await m.hopTo(tw, x0 + .45, dz, { height: .35, dur: .4, sfx: n => L.audio.sfx(n) });
+    await m.walkTo(tw, this.mongHome.x, this.mongHome.z);
+    m.root.rotation.y = Math.atan2(this.zz.root.position.x - m.root.position.x, this.zz.root.position.z - m.root.position.z);
+    if (dp) tw.run(.35, k => dp.setOpen(1 - k)).then(() => L.audio.sfx('close'));
+    m.setFace('happy'); m.pose = 'wave';
+    await this.beat(m, '졸졸아~ 놀자!', 1.5);
+    m.pose = 'idle';
+    W.flyTo(tw, { target: this.zz.root.position.clone().setY(.6), zoom: 1.55, dur: .55 });
+    await tw.wait(.45);
+    this.zz.bump(.2); L.audio.sfx('hmm');
+    await this.beat(this.zz, '드르렁~ 쿨쿨…', 1.5, 'think');
+    W.flyTo(tw, { target: W.home.clone(), zoom: 1.06, dur: .55 });
+    m.setFace('sweat');
+    await this.beat(m, '아직 자네… 깨워야겠다!', 1.7);
+    m.setFace('normal'); m.root.rotation.y = YAW(this.LV.mong.dir);
+  }
+  // one speech beat: shows the bubble, waits (or until a tap), takes it down
+  beat(ch, text, dur, cls = '') {
+    const b = this.say(ch, text, dur * 1000 + 400, cls);
+    return new Promise(res => { const done = () => { if (this._beatRes === done) this._beatRes = null; b.remove(); res(); }; this._beatRes = done; this.tw.wait(dur).then(done); });
+  }
+
+  // ── the find phase: the ball and the alarm clock are tucked away in easy spots; tap them (or what hides them)
+  hideThings() {
+    const W = this.L.world;
+    this.hidden = this.LV.hide.map(hd => {
+      const o = this.objs[hd.id], host = this.map.furns.find(r => r.type === hd.furn);
+      const b = host ? new THREE.Box3().setFromObject(host.f.group) : null, c = b ? b.getCenter(new THREE.Vector3()) : this.tw3(0, 0);
+      const pos = hd.top && b ? new THREE.Vector3(c.x, b.max.y - .02, c.z + .08) : new THREE.Vector3(c.x + (hd.dx || 0), 0, c.z + (hd.dz || 0));
+      o.root.position.copy(pos);
+      return { ...hd, o, host, pos, found: false };
+    });
+    W.idsDirty = true;
+  }
+  async findPhase() {
+    const L = this.L, ui = L.ui;
+    this.phase = 'find'; this.findT = 0; this.found = 0; this.setTrays(); this.refresh();
+    this.setHint('공이랑 자명종을 찾아서 톡!');
+    await new Promise(res => { this._findDone = res; });
+    if (this.dead) return;
+    INTRO_SEEN = true;
+    this.setHint('');
+    await this.tw.wait(.6);
+    await this.beat(this.mong, '좋아, 이걸로 깨우자!', 1.2);
+    await ui.banner('준비 완료!', '장치를 만들자', 1300);
+    if (this.dead) return;
+    // the found things hop out of the tray to where the contraption needs them
+    for (const it of this.hidden) {
+      const o = it.o, r = it.slotEl.getBoundingClientRect(), tgt = this.L.world.toScreen(V.copy(this.tw3(o.home.i, o.home.j)).setY(.3));
+      const dot = L.h('div', { style: `position:absolute;left:${tgt.x - 2}px;top:${tgt.y - 2}px;width:4px;height:4px;pointer-events:none` }); document.getElementById('app').append(dot);
+      it.slotEl.classList.remove('wk-have');
+      L.audio.sfx('whoosh');
+      await ui.flyImg(this.icons[it.icon], r.left + r.width / 2, r.top + r.height / 2, dot, { size: 60, dur: 480 });
+      dot.remove(); if (this.dead) return;
+      this.resetPiece(o); o.root.visible = true; this.pop(o.root, .45); L.audio.sfx('place');
+      L.world.fx.burst(tgt.x, tgt.y, { n: 14, speed: 200, size: 9, life: .55 });
+      await this.tw.wait(.15);
+    }
+    this.findTray.classList.add('wk-gone');
+  }
+  // a tap during the find phase: did it land on (or near) a hidden thing, or on what hides it?
+  tapFind(x, y) {
+    const W = this.L.world;
+    for (const it of this.hidden) {
+      if (it.found) continue;
+      const s = W.toScreen(V.copy(it.o.root.position).setY(it.o.root.position.y + .25));
+      const near = Math.hypot(s.x - x, s.y - y) < 46, hit = W.pick(x, y, [it.o.root, ...(it.host ? [it.host.f.group] : [])]).length > 0;
+      if (near || hit) { this.foundIt(it); return true; }
+    }
+    this.L.audio.sfx('tap');
+    return false;
+  }
+  foundIt(it) {
+    const L = this.L, W = L.world, ui = L.ui, o = it.o;
+    it.found = true; this.found++; this.findT = 0; if (this.hintIt === it) this.hintIt = null;
+    L.audio.sfx('found', this.found * 3); this.freeze = .06;
+    const p0 = o.root.position.clone();
+    const sp = W.toScreen(V.copy(p0).setY(p0.y + .4));
+    W.fx.burst(sp.x, sp.y, { n: 22, speed: 280, size: 11, up: 80 }); W.fx.ring(sp.x, sp.y, { r: 60, color: '#ffe16b', width: 7, life: .5 });
+    ui.floatText(sp.x, sp.y - 30, '찾았다!', 'gold big');
+    this.mong.setFace('happy'); this.mong.bump(.35); this.say(this.mong, it.line, 1300);
+    this.tw.run(.45, k => { o.root.position.set(p0.x, p0.y + Math.sin(k * Math.PI) * .7 + k * .2, p0.z); o.root.scale.setScalar(1 + .45 * Math.sin(k * Math.PI)); o.root.rotation.y += .25; }, ease.linear).then(async () => {
+      if (this.dead) return;
+      o.root.visible = false; o.root.scale.setScalar(1);
+      const s2 = W.toScreen(V.copy(o.root.position).setY(o.root.position.y + .3));
+      await ui.flyImg(this.icons[it.icon], s2.x, s2.y, it.slotEl, { size: 70, dur: 600 });
+      if (this.dead) return;
+      it.slotEl.classList.remove('wk-sil', 'got'); void it.slotEl.offsetWidth; it.slotEl.classList.add('wk-have', 'got');
+      L.audio.sfx('pop', 6 + this.found);
+      if (this.hidden.every(h => h.found)) { this.mong.setFace('happy'); this._findDone?.(); }
+    });
   }
   tw3(i, j) { return new THREE.Vector3(-this.LV.w / 2 + i + .5, 0, -this.LV.d / 2 + j + .5); }
   frame() {
@@ -376,8 +491,18 @@ export class Game {
       return s;
     });
     this.goBtn = ui.btn('시작!', { color: 'green', cls: 'big wk-go', onClick: () => this.start() });
-    col.append(h('div', { class: 'wk-bar' }, tray, this.goBtn));
+    // the find tray (first time only): silhouettes of what to look for
+    this.findTray = h('div', { class: 'wk-tray wk-find wk-gone' });
+    for (const it of this.hidden || []) { it.slotEl = h('div', { class: 'wk-slot wk-sil' }, h('img', { src: this.icons[it.icon] }), h('div', { class: 'wk-chk', html: ICON.check }), h('span', { class: 'wk-lbl' }, it.name)); this.findTray.append(it.slotEl); }
+    col.append(h('div', { class: 'wk-bar' }, this.findTray, tray, this.goBtn));
+    this.setTrays();
     this.flashEl = h('div', { class: 'wk-flash' }); document.getElementById('app').append(this.flashEl);
+  }
+  setTrays() {
+    const finding = this.phase === 'story' || this.phase === 'find';
+    this.findTray?.classList.toggle('wk-gone', !finding || !this.hidden);
+    this.trayEl?.classList.toggle('wk-gone', finding);
+    this.goBtn?.classList.toggle('wk-gone', finding);
   }
   announceNew() {
     const L = this.L, W = L.world, LV = this.LV;
@@ -401,6 +526,7 @@ export class Game {
   // everything that depends on the edit state: slot looks, glow tiles, the path, the hint, the button
   refresh() {
     const edit = this.phase === 'edit';
+    this.setTrays();
     for (const s of this.slots) { s.el.classList.toggle('sel', this.sel === s.k); s.el.classList.toggle('out', s.out); }
     this.trayEl?.classList.toggle('off', !edit);
     const anyOut = this.slots.some(s => s.out);
@@ -408,10 +534,10 @@ export class Game {
     this.goBtn?.classList.toggle('pulse', edit && anyOut && this.lvIdx === 0 && !this.tries);
     const showGlow = !!(edit && (this.sel != null || this.drag));
     for (const key in this.glowT) { const [i, j] = key.split(',').map(Number); this.glowT[key].visible = showGlow && !!this.isFree(i, j, this.drag?.o); }
-    if (this.grid) this.grid.material.opacity = edit || this.phase === 'intro' ? .9 : .25;
+    if (this.grid) { this.grid.visible = this.phase !== 'story' && this.phase !== 'find'; this.grid.material.opacity = edit || this.phase === 'intro' ? .9 : .25; }
     this.drawPath();
     // first morning: one short line that follows what to do next
-    if (this.lvIdx === 0 && this.hintEl) {
+    if (this.lvIdx === 0 && this.hintEl && this.phase !== 'story' && this.phase !== 'find') {
       const first = !this.wins;
       let t = '';
       if (first && edit) {
@@ -460,6 +586,8 @@ export class Game {
     });
   }
   onTap(x, y) {
+    if (this.phase === 'story') { this._beatRes?.(); return; }
+    if (this.phase === 'find') { this.tapFind(x, y); return; }
     if (this.phase !== 'edit') return;
     const t = this.tileAt(x, y);
     if (this.sel != null && t && this.isFree(t[0], t[1])) { this.tapTile(t[0], t[1]); return; }
@@ -880,10 +1008,21 @@ export class Game {
     if (this.phase === 'edit' && !this.LV.ear) { this._snore = (this._snore ?? 3) - dt; if (this._snore <= 0) { this._snore = 6 + Math.random() * 3; this.say(this.zz, '드르렁~', 1100, 'think'); } }
     if (this.phase === 'edit' && this.LV.ear) { this._snore = (this._snore ?? 3) - dt; if (this._snore <= 0) { this._snore = 6 + Math.random() * 3; this.say(this.zz, '♪ 쿨쿨~', 1100, 'think'); } }
     for (const m of this.marks) this.placeMark(m);
+    // find phase: after ~5 s without a find, the next hidden thing sparkles (and keeps sparkling until it's found)
+    if (this.phase === 'find') {
+      this.findT += dt;
+      if (!this.hintIt && this.findT > 5) this.hintIt = this.hidden.find(h => !h.found) || null;
+      if (this.hintIt) {
+        const it = this.hintIt; this._spT = (this._spT || 0) - dt;
+        if (this._spT <= 0) { this._spT = .55; const s = W.toScreen(V.copy(it.o.root.position).setY(it.o.root.position.y + .3)); W.fx.burst(s.x, s.y, { n: 7, speed: 120, size: 9, life: .6, colors: ['#ffe16b', '#ffffff'] }); W.fx.ring(s.x, s.y, { r: 44, color: '#ffe16b', width: 5, life: .5 }); }
+        it.o.root.position.y = it.pos.y + Math.abs(Math.sin(this.t * 6)) * .08;
+      }
+    }
   }
   exit() {
     this.dead = true; const W = this.L.world;
-    const app = document.getElementById('app'); app.dataset.morning = '1';
+    const app = document.getElementById('app'); delete app.dataset.morning;
+    this._findDone = null; this._beatRes = null;
     for (const o of Object.values(this.objs)) { W.root.remove(o.root); disposeTree(o.root); }
     for (const o of [this.map.group, this.mong.root, this.zz.root, this.cookie?.root, this.cookie?.item, this.grid, this.glow, this.hover, this.pathG, this.trailG].filter(Boolean)) { W.root.remove(o); disposeTree(o); }
     this.clearMarks(); this.flashEl?.remove();
@@ -895,6 +1034,18 @@ export class Game {
   // smart: the brute-force solver's best arrangement. random: every piece on a random free tile, random turns.
   botStep(dt, mode) {
     if (this.phase === 'won') { this._bt = (this._bt || 0) + dt; if (this._bt > 1.9 && this.L.ui.panelOpen && this.nextBtn) { this._bt = 0; this.nextBtn.press(); } return; }
+    if (this.phase === 'story' || this.phase === 'find') {
+      this._bt = (this._bt || 0) - dt; if (this._bt > 0) return; this._bt = mode === 'random' ? .3 : .45;
+      if (this.phase === 'story') { this.onTap(innerWidth / 2, innerHeight / 2); return; }
+      const W = this.L.world, next = this.hidden.find(h => !h.found);
+      if (!next) return;
+      // smart: taps the next hidden thing; random: taps anywhere on the floor until something sparkles, then that
+      let p;
+      if (mode === 'random' && this.hintIt !== next) { const t = this.tw3(Math.floor(Math.random() * this.LV.w), Math.floor(Math.random() * this.LV.d)); p = W.toScreen(t); }
+      else { p = W.toScreen(V.copy(next.o.root.position).setY(next.o.root.position.y + .25)); }
+      this.onTap(p.x, p.y);
+      return;
+    }
     if (this.phase !== 'edit' || this.drag) return;
     this._bt = (this._bt || 0) - dt; if (this._bt > 0) return; this._bt = .28;
     if (mode === 'random') { if (!this.rplan) this.rplan = S.randomPlacement(this.LV); if (this.execPlan(this.rplan)) this.goBtn.press(); return; }
@@ -913,7 +1064,7 @@ export class Game {
     return true;
   }
   state() {
-    return { scene: 'wakeup', lv: this.lvIdx + 1, phase: this.phase, result: this.result, placed: this.placedSpecs().length, tries: this.tries, stars: this.stars, combo: this.combo || 0,
+    return { scene: 'wakeup', lv: this.lvIdx + 1, phase: this.phase, intro: !!this.intro, found: this.found || 0, result: this.result, placed: this.placedSpecs().length, tries: this.tries, stars: this.stars, combo: this.combo || 0,
       cookie: !!this.lastRun?.cookie && this.result === 'win' };
   }
   get api() {

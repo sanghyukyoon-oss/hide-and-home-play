@@ -18,9 +18,11 @@ export function hasWebGL2() { try { return !!document.createElement('canvas').ge
 export class World {
   constructor(canvas, fxCanvas) {
     this.canvas = canvas;
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-    r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    // memory (iPhone 13 mini reloaded the tab after ~3 stages, 10/18): in the cartoon look the canvas only receives the
+    // post's full-screen quad, so a multisampled canvas (~40 MB on a phone) buys nothing — antialias is the post's job
     const toon = this.toon = STYLE.mode !== 'std';
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !toon, alpha: true, powerPreference: 'high-performance' });
+    r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     if (toon) r.toneMapping = THREE.NoToneMapping;
     else { r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.08; }
     r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.shadowMap.autoUpdate = false;
@@ -37,7 +39,10 @@ export class World {
     this.scene.add(sun); this.scene.add(sun.target);
     this.fill = new THREE.DirectionalLight('#cfe6ff', toon ? 0 : .45); this.fill.position.set(-6, 4, -3); this.scene.add(this.fill);
     // cartoon post: ink outlines by object ID, supersampled (see gfx/toonpost.js)
-    if (toon) { this.post = new ToonPost(r, { budget: PHONE ? 2.6e6 : 4.5e6 }); applyArt(this.post); }
+    // phones: no MSAA on the supersampled colour target (4x half-float MSAA + its depth was ~125 MB of the ~250 MB the post
+    // held on an iPhone; the 1.4x supersampling still smooths the edges). ?msaa=N overrides for A/B checks.
+    const msaa = new URLSearchParams(location.search).get('msaa');
+    if (toon) { this.post = new ToonPost(r, { budget: PHONE ? 2.6e6 : 4.5e6, samples: msaa != null ? +msaa : PHONE ? 0 : 4 }); applyArt(this.post); }
     this.maxSS = 2; this.frameN = 0; this.phone = PHONE; this.lastActive = performance.now();
     this.root = new THREE.Group(); this.scene.add(this.root);
     // camera rig
@@ -54,10 +59,14 @@ export class World {
     this._bindInput();
     this._bindJoystick();
     this.resize();
-    addEventListener('resize', () => this.resize());
+    // a phone's toolbar slides in and out in a burst of resizes: settle first, then size the buffers once
+    addEventListener('resize', () => { clearTimeout(this._rzT); if (PHONE) this._rzT = setTimeout(() => this.resize(), 220); else this.resize(); });
   }
   resize() {
     const w = innerWidth, h = innerHeight;
+    // the same size again (iOS fires resize on scroll / toolbar changes): don't re-create the post's buffers
+    const key = w + 'x' + h + '@' + this.renderer.getPixelRatio() + '/' + this.maxSS;
+    if (key === this._sizeKey) return; this._sizeKey = key;
     this.W = w; this.H = h;
     this.renderer.setSize(w, h, false);
     this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';

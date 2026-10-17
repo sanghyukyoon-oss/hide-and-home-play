@@ -165,16 +165,17 @@ function groupKey(m) {
 }
 
 export class ToonPost {
-  constructor(renderer, { budget = 4.5e6, maxSS = 2 } = {}) {
+  constructor(renderer, { budget = 4.5e6, maxSS = 2, samples = 4 } = {}) {
     this.r = renderer; this.budget = budget; this.maxSS = maxSS; this.ss = 1;
     const rt = (o = {}) => new THREE.WebGLRenderTarget(1, 1, o);
     // half-float colour needs one of these; without them (some older GPUs) the target is incomplete and nothing draws
     const ex = renderer.extensions, CT = ex.has('EXT_color_buffer_float') || ex.has('EXT_color_buffer_half_float') ? THREE.HalfFloatType : THREE.UnsignedByteType;
-    this.color = rt({ samples: 4, type: CT });
+    this.color = rt({ samples, type: CT });
     this.nd = rt({ depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType) });
     this.nd.texture.minFilter = this.nd.texture.magFilter = THREE.NearestFilter;
-    this.ao = rt(); this.aoB = rt();
-    this.comp = rt({ type: CT });
+    // full-screen passes only: no depth buffer (they never depth-test; each one was a screen-sized buffer for nothing)
+    this.ao = rt({ depthBuffer: false }); this.aoB = rt({ depthBuffer: false });
+    this.comp = rt({ type: CT, depthBuffer: false });
     this.idMat = new THREE.ShaderMaterial({ uniforms: { uId: { value: 0 } }, vertexShader: ID_VERT, fragmentShader: ID_FRAG, side: THREE.DoubleSide, blending: THREE.NoBlending });
     const shared = { tDepth: { value: this.nd.depthTexture }, tId: { value: this.nd.texture }, near: { value: .1 }, far: { value: 200 }, fr: { value: new THREE.Vector4(-1, 1, -1, 1) } };
     this.shared = shared;

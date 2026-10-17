@@ -1,0 +1,106 @@
+/* 몽글 호텔 (boss: 방 배정 여행). Loaded by games/hotel/game.js itself (and removed in exit), so it also works in the hub.
+   Everything is prefixed ht-; no global custom properties are defined here. */
+#app.ht { background: radial-gradient(circle at 82% 15%, #fff6d8 0 20px, rgba(255, 236, 190, .45) 21px 42px, rgba(255, 236, 190, 0) 43px), linear-gradient(180deg, #7f78d2 0%, #b49be0 38%, #ffc3a6 78%, #ffd9b8 100%); transition: background .8s; }
+#app.ht #bg { display: none; }
+#app.ht.ht-night { background: radial-gradient(circle at 80% 14%, #fffbe8 0 18px, rgba(255, 250, 220, .22) 19px 40px, rgba(255, 250, 220, 0) 41px), linear-gradient(180deg, #17163d 0%, #2a2760 45%, #3d3373 80%, #50407c 100%); }
+#app.ht.ht-morning { background: radial-gradient(circle at 18% 18%, #fff8d0 0 26px, rgba(255, 240, 180, .5) 27px 58px, rgba(255, 240, 180, 0) 59px), linear-gradient(180deg, #9fd8ff 0%, #c9ecff 45%, #fff2d6 85%, #ffe6c2 100%); }
+
+/* top right: today's 방 바꾸기 and the trip's stars */
+.ht-topr { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+.ht-pill { position: relative; height: 30px; min-width: 64px; padding: 0 11px 0 32px; box-sizing: border-box; border-radius: 999px; background: rgba(42, 26, 61, .62); border: 2.5px solid #3a2453;
+  display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: #fff; font-size: 12px; white-space: nowrap; }
+.ht-pill b { font-family: var(--font-display); font-weight: normal; font-size: 19px; line-height: 1; }
+.ht-pill .ico { position: absolute; left: -8px; top: 50%; translate: 0 -50%; width: 36px; height: 36px; filter: drop-shadow(0 2px 0 #3a2453); }
+.ht-pill .ico svg { width: 100%; height: 100%; }
+.ht-pill.low { background: rgba(214, 40, 70, .82); }
+.ht-pill.bump { animation: htBump .35s; }
+@keyframes htBump { 40% { transform: scale(1.2); } }
+
+/* tonight's event cards, pinned under the top bar */
+.ht-notes { position: absolute; left: 10px; right: 10px; top: calc(74px + var(--safeT, 0px)); display: flex; flex-direction: column; align-items: flex-start; gap: 5px; pointer-events: none; }
+.ht-note { display: flex; align-items: center; gap: 6px; max-width: 100%; box-sizing: border-box; padding: 3px 11px 4px 6px; border-radius: 12px; background: #fff7d6; border: 2.5px solid #3a2453; border-bottom-width: 4px;
+  color: #3a2453; font-size: 13px; line-height: 1.25; word-break: keep-all; transform-origin: left center; animation: htNote .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.ht-note svg { flex: 0 0 auto; width: 22px; height: 22px; }
+.ht-note.fight { background: #ffe0e8; } .ht-note.party { background: #ffe9ff; } .ht-note.cold { background: #e3f0ff; } .ht-note.shut { background: #fff1b8; }
+@keyframes htNote { 0% { transform: translateX(-30px) rotate(-6deg) scale(.6); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+/* bottom: one line of info + the big button (불 끄기 / 다음 날 / 체크아웃) */
+.ht-bottom { position: absolute; left: 8px; right: 8px; bottom: calc(10px + var(--safeB, 0px)); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: auto; touch-action: none; }
+.ht-info { max-width: 100%; box-sizing: border-box; padding: 6px 14px 7px; border-radius: 14px; background: rgba(42, 26, 61, .74); color: #fff; font-size: 14px; line-height: 1.3; text-align: center; word-break: keep-all;
+  border: 2px solid rgba(255, 255, 255, .55); min-height: 18px; }
+.ht-info b { font-weight: normal; color: var(--tc, #ffe16b); }
+.ht-info .nw { font-style: normal; font-size: 11px; background: #fff; color: #ff4f86; border-radius: 8px; padding: 2px 6px 3px; margin-right: 6px; vertical-align: 1px; }
+.ht-info.new { background: rgba(255, 80, 130, .9); }
+.ht-info.new b { color: #fff; text-decoration: underline 2px; text-underline-offset: 3px; }
+.ht-info.warn { background: rgba(214, 40, 70, .9); }
+.ht-info.night { background: rgba(20, 18, 50, .85); color: #c9d2ff; }
+.ht-info.recap { background: #fffaf0; color: #3a2453; border: 3px solid #3a2453; border-bottom-width: 5px; font-size: 15px; padding: 8px 16px 9px; animation: htNote .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.ht-info.flash { animation: htBump .3s; }
+.ht-btn { min-width: 200px; }
+.ht-btn.disabled { filter: grayscale(.5) brightness(.95); }
+.ht-btn.ready { animation: htReady 1.1s ease-in-out infinite; }
+@keyframes htReady { 50% { transform: scale(1.06); } }
+
+/* the hotel's sign, room plates, names under waiting guests */
+.ht-sign { position: absolute; left: 0; top: 0; pointer-events: none; transform: translate(-50%, -100%); padding: 3px 14px 5px; border-radius: 10px; background: #fff7e8; border: 3px solid #3a2453; border-bottom-width: 5px;
+  font-family: var(--font-display); font-size: 18px; color: #ff7aa2; white-space: nowrap; transition: background .4s, color .4s, box-shadow .4s; }
+#app.ht-night .ht-sign { background: #ffe57a; color: #ff4f86; box-shadow: 0 0 20px 6px rgba(255, 210, 120, .75); }
+.ht-plate { position: absolute; left: 0; top: 0; pointer-events: none; padding: 1px 6px 2px; border-radius: 7px; background: rgba(255, 250, 240, .92); border: 2px solid #3a2453; font-family: var(--font-display);
+  font-size: 11px; line-height: 1.1; color: #3a2453; white-space: nowrap; will-change: transform; }
+.ht-plate.party { background: #ffd6f4; color: #c2338f; }
+.ht-plate.shut { background: #ffd23f; }
+.ht-name { position: absolute; left: 0; top: 0; display: none; pointer-events: none; margin: 0 0 0 -30px; width: 60px; justify-content: center; align-items: center; gap: 2px; white-space: nowrap;
+  font-size: 11px; line-height: 1; color: #fff; will-change: transform; }
+.ht-name > * { pointer-events: none; }
+.ht-name.on { display: flex; }
+.ht-name { text-shadow: 0 1px 0 #3a2453, 1px 0 0 #3a2453, -1px 0 0 #3a2453, 0 -1px 0 #3a2453; }
+.ht-name i { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 2px; box-sizing: border-box; border-radius: 8px; background: var(--tc); border: 1.5px solid #3a2453;
+  font-style: normal; font-size: 9px; text-shadow: none; }
+.ht-name i svg { width: 10px; height: 10px; }
+.ht-name.sel { color: #ffe16b; }
+
+/* moods (live) and the morning's stars */
+.ht-mood { position: absolute; left: 0; top: 0; width: 25px; height: 25px; margin: -25px 0 0 -12.5px; box-sizing: border-box; border-radius: 50%; border: 2.5px solid #3a2453; display: none; align-items: center; justify-content: center; will-change: transform; }
+.ht-mood svg { width: 19px; height: 19px; }
+.ht-mood.on { display: flex; }
+.ht-mood.ok { background: #5fd38a; }
+.ht-mood.no { background: #ff5d6c; }
+.ht-mood.no svg { animation: htJit .35s steps(2) infinite; }
+.ht-mood.pv { border-style: dashed; }
+.ht-mood.pop svg { animation: htPop .4s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes htJit { 50% { transform: translateX(1.5px) rotate(6deg); } }
+@keyframes htPop { 0% { transform: scale(2); } 100% { transform: scale(1); } }
+.ht-stars { position: absolute; left: 0; top: 0; display: flex; gap: 0; margin: -24px 0 0 -30px; width: 60px; justify-content: center; pointer-events: none; will-change: transform; }
+.ht-stars i { width: 20px; height: 20px; display: block; animation: htStar .45s cubic-bezier(.2, 1.8, .4, 1) both; }
+.ht-stars i:nth-child(2) { animation-delay: .08s; } .ht-stars i:nth-child(3) { animation-delay: .16s; }
+.ht-stars i svg { width: 100%; height: 100%; }
+.ht-stars i:not(.on) { opacity: .35; filter: grayscale(1); }
+@keyframes htStar { 0% { transform: scale(2.4) rotate(-30deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+/* world pops: notes out of 둠칫이's room, 쿵!, 쾅쾅!, 드르렁 */
+.ht-fx { position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap; font-family: var(--font-display); line-height: 1; will-change: transform, opacity; }
+.ht-fx > span { display: block; transform: translate(-50%, -50%); }
+.ht-fx.note { font-size: 23px; color: #c9b5ff; -webkit-text-stroke: 3px #3a2453; paint-order: stroke fill; }
+.ht-fx.note.n2 { color: #ffb3d4; } .ht-fx.note.n3 { color: #9ff0d6; } .ht-fx.note.hrt { color: #ff6f9c; font-size: 21px; }
+.ht-fx.boom > span { font-size: 25px; color: #ffe16b; -webkit-text-stroke: 4px #3a2453; paint-order: stroke fill; animation: htBoom .75s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.ht-fx.bang > span { font-size: 27px; color: #ff8a8a; -webkit-text-stroke: 4px #3a2453; paint-order: stroke fill; animation: htBoom .7s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.ht-fx.zz > span { font-size: 17px; color: #b7c4ff; -webkit-text-stroke: 3px #3a2453; paint-order: stroke fill; animation: htZz 1.5s ease-out forwards; }
+@keyframes htBoom { 0% { transform: translate(-50%, -50%) scale(.3) rotate(-12deg); opacity: 0; } 25% { transform: translate(-50%, -60%) scale(1.25) rotate(4deg); opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(-50%, -95%) scale(1) rotate(0); opacity: 0; } }
+@keyframes htZz { 0% { transform: translate(-50%, -50%) scale(.4); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(-10%, -260%) scale(1.1); opacity: 0; } }
+
+/* first trip, first night: a finger carrying a guest up into a room */
+.ht-hand { position: absolute; width: 46px; height: 46px; pointer-events: none; z-index: 12; animation: htHand 1.9s ease-in-out infinite; filter: drop-shadow(0 3px 0 rgba(42, 26, 61, .5)); }
+.ht-hand svg { width: 100%; height: 100%; }
+@keyframes htHand { 0% { transform: translate(0, 0) scale(1); opacity: 0; } 12% { opacity: 1; } 22% { transform: translate(0, 0) scale(.86); } 72% { transform: translate(var(--hx), var(--hy)) scale(.86); opacity: 1; } 88%, 100% { transform: translate(var(--hx), var(--hy)) scale(1); opacity: 0; } }
+
+/* the group photo */
+.ht-flash { position: absolute; inset: 0; z-index: 40; background: #fff; pointer-events: none; animation: htFlash .6s ease-out forwards; }
+@keyframes htFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+.ht-photo { width: min(70vw, 280px); margin: -6px auto 8px; padding: 8px 8px 26px; background: #fff; border: 3px solid #3a2453; border-radius: 6px; box-shadow: 0 5px 0 #3a2453; transform: rotate(-2.5deg); position: relative; animation: htPhoto .6s cubic-bezier(.2, 1.5, .4, 1) both; }
+.ht-photo img { display: block; width: 100%; border-radius: 2px; }
+.ht-photo span { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; font-size: 13px; color: #6b4a7d; }
+.ht-photo.bad img { filter: saturate(.55) contrast(.95) brightness(.92); }
+@keyframes htPhoto { 0% { transform: translateY(-60px) rotate(-14deg) scale(.6); opacity: 0; } 100% { transform: rotate(-2.5deg); opacity: 1; } }
+.ht-panel .stars { margin: 0 0 4px; }
+.ht-panel .stars .st { width: 56px; height: 56px; }
+.ht-panel .stars .st:nth-child(2) { width: 70px; height: 70px; margin-top: -10px; }

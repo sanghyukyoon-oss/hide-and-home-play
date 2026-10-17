@@ -268,10 +268,21 @@ function buildThumbs() {
   face('mong', 'normal', 'face_mong'); face('mong', 'happy', 'face_mong_happy'); face('mong', 'wow', 'face_mong_wow'); face('mong', 'dizzy', 'face_mong_dizzy'); face('mong', 'sweat', 'face_mong_sweat');
   for (const k in CHAR_DEFS) if (!['mong', 'mom'].includes(k)) face(k, 'normal', 'face_' + k);
   const store = renderThumbs(jobs, 160);
+  // a furniture icon not drawn yet is drawn when asked for — just that one. (It used to draw every remaining piece, ~200,
+  // in one go: 2+ s frozen and +140 MB, which is what reloaded the page on an iPhone 13 mini at stage 3 — the 흑백판
+  // museum asks for its furniture targets' icons. user, 10/18: "아이폰13미니에서 3판 하면 튕긴다")
   G.thumbs = new Proxy(store, { get(t, k) {
-    if (typeof k === 'string' && !(k in t) && G.furnJobs?.has(k)) { const rest = [...G.furnJobs.values()]; G.furnJobs.clear(); Object.assign(t, renderThumbs(rest, 160)); }
+    if (typeof k === 'string' && !(k in t) && G.furnJobs?.has(k)) G.needThumbs([k]);
     return t[k];
   } });
+  // draw the given furniture icons that are still missing, in one batch (a grid that shows many asks for them all first)
+  G.needThumbs = keys => {
+    const jobs = keys.map(k => G.furnJobs?.get(k)).filter(Boolean);
+    if (!jobs.length) return;
+    for (const j of jobs) G.furnJobs.delete(j.key);
+    Object.assign(store, renderThumbs(jobs, 160));
+  };
+  G.hasThumb = k => k in store || !!G.furnJobs?.has(k);   // there is (or can be) an icon, without drawing it
   G.thumbStore = store;
   // default (D): one finger turns around the pressed spot, the pad moves, the gauge or a pinch zooms; B and C are options
   { const S = G.save.settings || (G.save.settings = {}); if (!S.ctrlV4) { S.ctrlV4 = 1; delete S.ctrl; delete S.joy; G.persist(); } }   // 2026-10-17: everyone to the new default once
@@ -312,8 +323,10 @@ function frame(now) {
       const capped = fpsNow >= 27 && fpsNow <= 31;
       slow = ((fpsNow < 32 && !capped && world.level < 2) || fpsNow < 22) ? slow + 1 : 0;
       fast = fpsNow >= 55 ? fast + 1 : 0;
-      if (slow >= 10 && world.level < QUALITY.length - 1) { world.setLevel(world.level + 1); slow = 0; settleUntil = now + 4000; }
-      else if (fast >= 16 && world.level > 0) { world.setLevel(world.level - 1); fast = 0; settleUntil = now + 4000; }
+      if (slow >= 10 && world.level < QUALITY.length - 1) { world.setLevel(world.level + 1); slow = 0; settleUntil = now + (world.phone ? 15000 : 4000); }
+      // phones only ever step down: every step re-creates the screen-sized buffers, and going back up and down (60 fps while
+      // the view moves, less when it doesn't) piled up memory until iOS reloaded the tab (iPhone 13 mini, 10/18)
+      else if (fast >= 16 && world.level > 0 && !world.phone) { world.setLevel(world.level - 1); fast = 0; settleUntil = now + 4000; }
     }
   }
   let gdt = rdt * (G.timeScaleUser || 1) * (G.fast || 1);
@@ -335,7 +348,7 @@ function frame(now) {
 
 async function boot() {
   const tb0 = performance.now();
-  try { await Promise.all(['20px LatinRound', '20px Jua', '20px TitleKo', '700 20px Chapter'].flatMap(f => [document.fonts?.load(f, 'Aa1'), document.fonts?.load(f, '가나')])); } catch {}
+  try { await Promise.all(['600 20px LatinRound', '600 20px Ssurround', '600 20px SsurroundAir', '20px TitleKo', '700 20px Chapter'].flatMap(f => [document.fonts?.load(f, 'Aa1'), document.fonts?.load(f, '가나')])); } catch {}
   const tb1 = performance.now();
   buildThumbs();
   G.bootMs = { fonts: Math.round(tb1 - tb0), thumbs: Math.round(performance.now() - tb1), sinceStart: Math.round(performance.now()) };

@@ -35,6 +35,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
     note.textContent = '';
     if (tab === 'furn') {
       note.textContent = zone ? `${zone.name}에 놓을 수 있는 가구예요. 숨을 곳이 많을수록 찾기 어려워져요.` : '';
+      G.needThumbs?.(SHOP_FURN.map(it => 'furn_' + it.type));   // the grid's icons in one batch, not one by one
       for (const it of SHOP_FURN) {
         if (ztype && !(ztype.indoor ? it.indoor : it.outdoor)) continue;
         const inf = FURN_INFO[it.type]; if (!inf) continue;

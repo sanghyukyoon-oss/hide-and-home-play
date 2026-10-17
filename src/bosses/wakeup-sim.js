@@ -30,7 +30,10 @@ export const LEVELS = [
     bed: [5, 0], mong: { at: [0, 4], dir: 1 },
     furn: [{ type: 'wardrobe', i: 0, j: 0 }, { type: 'bookshelf', i: 1, j: 0 }, { type: 'plant', i: 0, j: 2 }],
     fixed: [{ type: 'book', i: 4, j: 3, face: 'z' }, { type: 'book', i: 4, j: 2, face: 'z' }, { type: 'book', i: 4, j: 1, face: 'z' }, { type: 'clock', i: 4, j: 0 }],
-    cookie: [3, 4], tray: ['defl'], par: 1, isNew: ['defl'] },
+    cookie: [3, 4], tray: ['defl'], par: 1, isNew: ['defl'],
+    // the first time only: the ball and the alarm clock are hidden in easy spots and found first (game.js; the sim ignores it)
+    hide: [{ id: 'ball0', furn: 'plant', dx: .12, dz: -.4, line: '공 찾았다!', name: '공', icon: 'ball' },
+      { id: 'f3', furn: 'bookshelf', top: true, line: '자명종 찾았다!', name: '자명종', icon: 'clock' }] },
   { key: 'l2', name: '둘째 아침', sub: '자명종은 침대 옆에 둬야 들려', w: 6, d: 5,
     bed: [5, 0], mong: { at: [0, 4], dir: 1 },
     furn: [{ type: 'wardrobe', i: 0, j: 0 }, { type: 'desk', i: 1, j: 0, w: 2 }, { type: 'plant', i: 2, j: 2 }],

@@ -208,6 +208,7 @@ export class MyHomeScene {
     const inv = this.H.inventory;
     const shown = inv.map((t, i) => [t, i]).filter(([t]) => FURN_INFO[t]);
     if (!shown.length) this.cardsEl.append(h('div', { style: 'padding:14px;font-size:16px;color:#8a6a9a' }, '보관함이 비었어요. 상점에서 가구를 사 보세요!'));
+    G.needThumbs?.(shown.map(([t]) => 'furn_' + t));
     for (const [t, i] of shown) {
       const ok = this.fits(t);
       this.cardsEl.append(h('div', { class: 'card' + (ok ? '' : ' lockedc'), onclick: () => ok ? this.placeFromInv(i) : G.ui.toast(ZONE_TYPES[this.zone.type].indoor ? '야외용이에요' : '실내용이에요', 'red') },

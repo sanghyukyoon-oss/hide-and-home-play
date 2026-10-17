@@ -14,13 +14,20 @@ import { disposeTree } from '../gfx/kit.js';
 const LOAD = {
   yasik: () => import('../bosses/yasik.js'), villa: () => import('../bosses/villa.js'), tag: () => import('../bosses/tag.js'),
   wakeup: () => import('../bosses/wakeup.js'), photo: () => import('../bosses/photo.js'),
+  // 추가 인계 2 (10/18 밤): 몽글 호텔 X박 X일 (user: "방배정 할까봐. 대신 x박x일 여행 식으로 호텔로"), 추로야!!! ("추로 주인공으로")
+  hotel: () => import('../bosses/hotel.js'), churro: () => import('../bosses/churro.js'),
+  // 추가 인계 3: 엄마 몰래 성적표 (user picked it, "추천"), 손전등 숨바꼭질 ("일단 해봐")
+  report: () => import('../bosses/report.js'), flashlight: () => import('../bosses/flashlight.js'),
 };
+// a game whose stylesheet does not come with it: linked here for the game's time on screen
+const SHEETS = { flashlight: new URL('../bosses/flashlight.css', import.meta.url).href };
 export const BOSS_GAME_INFO = {
   yasik: { name: '엄마 몰래 야식' }, villa: { name: '몽글 빌라 방 배정' }, tag: { name: '다 잡았다! 술래잡기' },
   wakeup: { name: '아침 깨우기 장치' }, photo: { name: '찰칵! 동네 사진관' },
+  hotel: { name: '몽글 호텔 X박 X일' }, churro: { name: '추로야!!!' }, report: { name: '엄마 몰래 성적표' }, flashlight: { name: '손전등 숨바꼭질' },
 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
-const APP_FLAGS = { yasik: { night: '1' }, wakeup: { morning: '1' } };
+const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };
 
 // a face icon framed on the head (the lab's own framing, so the games' HUD faces look as they did there)
 function faceJob(k, f, key) {
@@ -33,22 +40,29 @@ function faceJob(k, f, key) {
 
 export class BossGameScene {
   constructor(G) { this.G = G; this.name = 'bossgame'; }
-  async enter({ kind = 'yasik', after = 4, lv = 0 } = {}) {
+  async enter({ kind = 'yasik', after = 4, lv = 0, ...more } = {}) {
     const G = this.G, W = G.world;
     this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this.fails = G._bossFails?.[after] || 0;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
     W.scheme = 'E'; W.joyOn = false; W.joyHidden = true; W.gaugeOn = false; W.camLock = false;
     const app = document.getElementById('app'); for (const [k, v] of Object.entries(APP_FLAGS[this.kind] || {})) app.dataset[k] = v;
+    // 아침 깨우기 opens with a little story and a find-the-ball-and-clock phase the first time only — remembered in the save
+    // (the lab kept it per page)
+    if (this.kind === 'wakeup' && more.intro == null) { const seen = G.save.bossIntro || (G.save.bossIntro = {}); more.intro = !seen.wakeup; if (!seen.wakeup) { seen.wakeup = true; G.persist(); } }
+    if (SHEETS[this.kind] && ![...document.styleSheets].some(x => x.href === SHEETS[this.kind])) {
+      const l = this.sheet = document.createElement('link'); l.rel = 'stylesheet'; l.href = SHEETS[this.kind]; document.head.append(l);
+      await new Promise(res => { l.onload = l.onerror = res; setTimeout(res, 2000); });
+    }
     const mod = await LOAD[this.kind](); if (this.dead) return;
     this.L = this.makeL();
     this.game = new mod.Game(this.L);
-    await this.game.enter({ lv: this.lv });
+    await this.game.enter({ lv: this.lv, ...more });   // (more: a game's own extras, e.g. the hotel's night)
   }
   makeL() {
     const G = this.G, S = this;
     const L = {
       THREE, world: G.world, ui: G.ui, audio: G.audio, h, title: BOSS_GAME_INFO[this.kind].name, scene: null, pending: null,
-      thumbs: {}, get bot() { return !!G.bot; }, get botMode() { return G.botMode || 'smart'; }, stats: { log: [], wins: 0, fails: 0 },
+      thumbs: G._bossThumbs || (G._bossThumbs = {}), get bot() { return !!G.bot; }, get botMode() { return G.botMode || 'smart'; }, stats: { log: [], wins: 0, fails: 0 },
       get fast() { return G.fast || 1; }, get gameTime() { return S.t || 0; },
       setBg: bg => G.setBg(bg),
       makeThumbs({ faces = [], items = [] } = {}) {
@@ -67,7 +81,7 @@ export class BossGameScene {
       // the lab restarts a game with a level: here a won boss goes on with the campaign, anything else replays the boss
       go(d = {}) {
         if (S.won && (d.lv == null || d.lv !== S.lv)) return S.finish();
-        return G.go('bossgame', { kind: S.kind, after: S.after, lv: d.lv ?? S.lv });
+        return G.go('bossgame', { ...d, kind: S.kind, after: S.after, lv: d.lv ?? S.lv });
       },
       homeBtn: () => G.ui.btn(null, { color: 'purple', icon: 'pause', cls: 'ibtn', onClick: () => S.menu() }),
       setGame() {}, leave() {},
@@ -109,7 +123,8 @@ export class BossGameScene {
   exit() {
     this.dead = true; const W = this.G.world;
     this.game?.exit?.();
-    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party');
+    this.sheet?.remove(); this.sheet = null;
+    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night');
     Object.assign(W, { scheme: this._was.scheme, joyOn: this._was.joyOn, joyHidden: this._was.joyHidden, gaugeOn: this._was.gauge, camLock: this._was.camLock });
     W.onTap = null; W.onDragStart = null; W.onPad = null; W.onRotate = null;
     this.G.ui.clear();

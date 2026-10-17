@@ -1,7 +1,7 @@
 // Renders 3D icons (items, furniture, character faces) to data URLs once at boot, so the HUD matches the 3D look.
 // In the cartoon style the icons go through the same ink-outline post as the game.
 import * as THREE from 'three';
-import { STYLE } from './gfx/kit.js';
+import { STYLE, disposeTree } from './gfx/kit.js';
 import { ToonPost } from './gfx/toonpost.js';
 import { ART, applyArt, sortLayers } from './gfx/style.js';
 
@@ -45,7 +45,8 @@ export function thumbCtx(size = 160) {
     if (post) { sortLayers(scene); post.assignIds(scene); post.render(scene, cam); }
     else r.render(scene, cam);
     const url = canvas.toDataURL('image/png');
-    scene.remove(obj);
+    // the model was built only for its picture: free it now (a batch of 200 pieces left ~140 MB behind, 10/18)
+    scene.remove(obj); disposeTree(obj);
     return url;
   };
   return { one, done() { r.dispose(); r.forceContextLoss?.(); } };

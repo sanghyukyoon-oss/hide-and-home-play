@@ -1,9 +1,11 @@
-/* Fonts (10/18, user: "국문은 원본 폰트가 더 나은 거 같아… 주아체… 일단 복구"): Hangul is 주아 (Jua, Google Fonts) everywhere
-   again; Latin/digits in Fredoka, a rounded face that sits with Jua (the English font gets its own design pass later);
-   the game title keeps its lettering; chapter titles (우리 아파트로!) in 한국기계연구원체 to stand out. See fonts/README.md. */
+/* Fonts (10/18, user picked draft B of _handoff/font-drafts: "폰트는 일단 b로"): Hangul in 카페24 써라운드, dialogue lines in
+   써라운드 에어, Latin/digits in Fredoka, all at weight 600 as on the draft sheet; the game title keeps its lettering; chapter
+   titles (우리 아파트로!) stay in 한국기계연구원체. Jua is only the fallback. See fonts/README.md. */
 @font-face { font-family: 'LatinRound'; src: url('fonts/fredoka-latin.woff2') format('woff2'); font-weight: 100 900; font-display: swap; unicode-range: U+0020-007E, U+00A0-00FF, U+2010-2027, U+2030-203A, U+20A9, U+2122; }
 @font-face { font-family: 'TitleKo'; src: url('fonts/bagelfat.woff2') format('woff2'); font-display: swap; }
 @font-face { font-family: 'TitleKo'; src: url('fonts/fredoka-latin.woff2') format('woff2'); font-weight: 100 900; font-display: swap; unicode-range: U+0020-007E, U+00A0-00FF, U+2010-2027, U+2030-203A, U+20A9, U+2122; }
+@font-face { font-family: 'Ssurround'; src: url('fonts/ssurround.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'SsurroundAir'; src: url('fonts/ssurround-air.woff2') format('woff2'); font-display: swap; }
 @font-face { font-family: 'Chapter'; src: url('fonts/kimm-bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
 :root {
   --ink: #3a2453; --ink2: #2a1a3d;
@@ -14,18 +16,18 @@
   --p1: #dcc2ff; --p2: #9b6cff; --p3: #6a3fd1;
   --k1: #ffbcd6; --k2: #ff6fa6; --k3: #d1437c;
   --y1: #fff08a; --y2: #ffcc2e; --y3: #d99a0b;
-  /* UI: 카페24 써라운드 (round, reads well small, solid Latin); titles: Bagel Fat One. Both bundled (fonts/, licences there);
-     Jua stays as the fallback for any glyph they lack (user, 10/17: the English looked cheap in Jua) */
-  --font: 'LatinRound', 'Jua', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
-  --font-display: 'LatinRound', 'Jua', 'Apple SD Gothic Neo', sans-serif;
+  /* font roles: see the note at the top */
+  --font: 'LatinRound', 'Ssurround', 'Jua', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --font-display: var(--font);
   --font-body: var(--font);
-  --font-talk: var(--font);
+  --font-talk: 'LatinRound', 'SsurroundAir', 'Ssurround', 'Jua', 'Apple SD Gothic Neo', sans-serif;
   --bgA: #ffe3ee; --bgB: #ffd0e2;
   --safeT: env(safe-area-inset-top, 0px); --safeB: env(safe-area-inset-bottom, 0px);
   --eo: cubic-bezier(.16, 1, .3, 1);   /* strong ease-out for every transition (user, 10/17) */
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #ffe6ef; font-family: var(--font); -webkit-user-select: none; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; color: var(--ink); }
+button, input, select, textarea { font-weight: inherit; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #ffe6ef; font-family: var(--font); font-weight: 600; -webkit-user-select: none; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; color: var(--ink); }
 #app { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(120% 80% at 50% 30%, #ffffff 0%, var(--bgA) 45%, var(--bgB) 100%); transition: background .6s var(--eo); }
 #bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 #bg i { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .55); filter: blur(2px); animation: drift 18s ease-in-out infinite alternate; }
@@ -69,7 +71,7 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .btn::after { content: ''; position: absolute; left: 7px; right: 7px; top: 4px; height: 40%; border-radius: 13px 13px 40% 40% / 13px 13px 60% 60%; background: linear-gradient(180deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, 0)); pointer-events: none; }
 .btn.down { transform: translateY(4px); border-bottom-width: 3px; }
 .btn .lbl { position: relative; z-index: 1; }
-.btn svg { width: 1.2em; height: 1.2em; position: relative; z-index: 1; }
+.btn svg { width: 1.2em; height: 1.2em; position: relative; z-index: 1; flex: none; }
 .btn.green { --c1: var(--g1); --c2: var(--g2); --c3: var(--g3); }
 .btn.blue { --c1: var(--b1); --c2: var(--b2); --c3: var(--b3); }
 .btn.orange { --c1: var(--o1); --c2: var(--o2); --c3: var(--o3); }
@@ -136,7 +138,7 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .timer.danger .tbar i { background: linear-gradient(#ff9aa8, #ff4f66); }
 @keyframes danger { 50% { scale: 1.04; } }
 .stagetag { flex: 0 0 auto; padding: 8px 12px 10px; border-radius: 16px; background: var(--p2); border: 3px solid var(--ink); box-shadow: none; font-size: 15px; text-align: center; line-height: 1; border-bottom-width: 7px;}
-.stagetag b { font-family: var(--font-display); display: block; font-size: 22px; font-weight: normal; }
+.stagetag b { font-family: var(--font-display); display: block; font-size: 22px; font-weight: 600; }
 .inv { position: absolute; left: 12px; top: calc(80px + var(--safeT)); display: flex; gap: 8px; }
 .inv .pill { min-width: 0; padding: 0 12px 0 32px; }
 .inv .pill.need { background: rgba(255, 79, 102, .75); animation: need 1s infinite; }
@@ -303,7 +305,7 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .dlg-face { width: 84px; height: 84px; box-sizing: border-box; overflow: hidden; flex: none; border-radius: 22px; background: #fff; border: 3px solid var(--ink); }
 .dlg-body { flex: 1; min-width: 0; }
 .dlg-name { font-size: 19px; color: #fff; -webkit-text-stroke: 4px var(--p2); paint-order: stroke fill; text-shadow: 0 2px 0 var(--p3, #5b3fb0); margin-bottom: 4px; letter-spacing: 0; }
-.dlg-text { font-family: var(--font-talk); font-size: 20px; color: #4a3a5e; line-height: 1.4; word-break: keep-all; letter-spacing: -.01em; }
+.dlg-text { font-family: var(--font-talk); font-size: 20px; color: #4a3a5e; line-height: 1.4; word-break: keep-all; letter-spacing: 0; }
 .dlg-next { position: absolute; right: 16px; bottom: 6px; font-size: 14px; color: var(--p2); animation: bob 1s ease-in-out infinite; }
 .dlg-card.right .dlg-next { right: auto; left: 16px; }
 .dlg-skip { margin-top: 10px; font-size: 15px; color: #fff; opacity: .9; padding: 6px 14px; border-radius: 999px; background: rgba(42, 26, 61, .5); }
@@ -381,7 +383,7 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 #tune .ghead { font-size: 15px; color: var(--p3); margin: 10px 0 2px; border-top: 2px dashed #e6d3c0; padding-top: 8px; }
 #tune .row { display: block; margin: 6px 0; font-size: 14px; color: #5b4270; }
 #tune .rtop { display: flex; justify-content: space-between; gap: 8px; }
-#tune .rtop b { font-weight: normal; color: var(--ink); font-variant-numeric: tabular-nums; }
+#tune .rtop b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 #tune input[type=range] { width: 100%; accent-color: var(--k2); height: 26px; }
 #tune input[type=color] { width: 100%; height: 34px; border: 2px solid #e6d3c0; border-radius: 10px; background: #fff; padding: 2px; }
 #tune .tbtns { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
@@ -697,8 +699,9 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .btn.big.down { border-bottom-width: 3px; transform: translateY(3.5px); }
 .btn.sm { font-size: 15px; padding: .42em .75em .5em; border-radius: 12px; }
 .btn .sub { -webkit-text-stroke-width: 2px; }
-.ibtn { width: 44px; height: 44px; border-radius: 14px; }
-.ibtn svg { width: 24px; height: 24px; }
+.ibtn { width: 44px; height: 44px; border-radius: 14px; padding: 0; }
+/* the slim .btn padding above squeezed icon-only buttons' svg to ~3px wide (user, 10/18: "특정 픽토그램들이 너무 작게") */
+.ibtn svg { width: 26px; height: 26px; flex: none; }
 .pill { height: 30px; border-width: 2px; }
 .panel { width: min(86vw, 380px); border-width: 3px; border-bottom-width: 7px; border-radius: 24px; padding: 48px 18px 18px; }
 .panel .ribbon { top: -24px; padding: 7px 20px 10px; border-width: 3px; border-bottom-width: 6px; border-radius: 16px; font-size: 24px; }
@@ -782,7 +785,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .vl-topr { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; }
 .vl-moves { position: relative; height: 32px; min-width: 70px; padding: 0 12px 0 34px; box-sizing: border-box; border-radius: 999px; background: rgba(42, 26, 61, .62);
   border: 2.5px solid var(--ink); display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: #fff; font-size: 13px; }
-.vl-moves b { font-family: var(--font-display); font-weight: normal; font-size: 21px; line-height: 1; }
+.vl-moves b { font-family: var(--font-display); font-weight: 600; font-size: 21px; line-height: 1; }
 .vl-moves .ico { position: absolute; left: -8px; top: 50%; translate: 0 -50%; width: 38px; height: 38px; filter: drop-shadow(0 2px 0 var(--ink)); }
 .vl-moves .ico svg { width: 100%; height: 100%; }
 .vl-moves.low { background: rgba(214, 40, 70, .82); animation: vlLow .8s ease-in-out infinite; }
@@ -798,7 +801,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .vl-tray { position: absolute; left: 8px; right: 8px; bottom: calc(8px + var(--safeB)); display: flex; flex-direction: column; align-items: stretch; gap: 6px; pointer-events: auto; touch-action: none; }
 .vl-info { align-self: center; max-width: 100%; box-sizing: border-box; padding: 6px 14px 7px; border-radius: 14px; background: rgba(42, 26, 61, .74); color: #fff; font-size: 14px; line-height: 1.3;
   text-align: center; word-break: keep-all; border: 2px solid rgba(255, 255, 255, .55); min-height: 18px; transition: background .2s; }
-.vl-info b { font-weight: normal; color: var(--tc, #ffe16b); }
+.vl-info b { font-weight: 600; color: var(--tc, #ffe16b); }
 .vl-info.new b { color: #fff; text-decoration: underline 2px; text-underline-offset: 3px; }
 .vl-info .nw { font-style: normal; font-size: 11px; background: #fff; color: #ff4f86; border-radius: 8px; padding: 2px 6px 3px; margin-right: 6px; vertical-align: 1px; }
 .vl-info.new { background: rgba(255, 80, 130, .88); }
@@ -873,7 +876,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .tg-timer { flex: 1; max-width: 220px; height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 6px; border-radius: 18px;
   background: linear-gradient(#fffaf2, #ffe7c9); border: 3px solid var(--ink); border-bottom-width: 6px; box-sizing: border-box; pointer-events: none; }
 .tg-timer svg { width: 28px; height: 28px; flex: 0 0 auto; }
-.tg-timer b { font-family: var(--font-display); font-size: 23px; font-weight: normal; min-width: 32px; text-align: center; }
+.tg-timer b { font-family: var(--font-display); font-size: 23px; font-weight: 600; min-width: 32px; text-align: center; }
 .tg-tbar { flex: 1; height: 13px; border-radius: 8px; background: #5b4270; border: 2.5px solid var(--ink); overflow: hidden; position: relative; }
 .tg-tbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#b8f58c, #5ccf36); border-radius: 6px; transition: width .2s linear; }
 .tg-timer.danger { animation: tgPulse .5s ease-in-out infinite; }
@@ -981,6 +984,18 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .wk-endface { display: flex; justify-content: center; margin: -6px 0 4px; }
 .wk-endface img { width: 78px; height: 78px; }
 
+/* the find phase (first time only): what to look for, as silhouettes that fill in */
+.wk-gone { display: none !important; }
+.wk-find .wk-slot { width: 66px; height: 66px; cursor: default; }
+.wk-find .wk-slot img { width: 80%; height: 80%; margin-top: -8px; }
+.wk-slot.wk-sil img { filter: brightness(0) opacity(.38); }
+.wk-slot.wk-have { background: #dcf8cb; border-color: #78cf55; }
+.wk-slot .wk-chk { position: absolute; right: -8px; top: -8px; width: 26px; height: 26px; border-radius: 50%; background: var(--g2); border: 2.5px solid var(--ink); display: none; align-items: center; justify-content: center; }
+.wk-slot .wk-chk svg { width: 16px; height: 16px; }
+.wk-slot.wk-have .wk-chk { display: flex; animation: wkStamp .4s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes wkStamp { 0% { transform: scale(2.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.wk-slot .wk-lbl { position: absolute; bottom: 3px; left: 0; right: 0; text-align: center; font-size: 12px; color: #8a6a5a; line-height: 1; }
+
 /* ⑤ 찰칵! 동네 사진관 */
 #app[data-scene="photo"] #bg { opacity: .7; }
 #app[data-scene="photo"] .lab-title { font-size: 17px; white-space: nowrap; }
@@ -991,7 +1006,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .ph-pill { height: 34px; padding: 0 11px 0 6px; border-radius: 999px; background: rgba(42, 26, 61, .62); border: 2.5px solid var(--ink); color: #fff; font-size: 18px;
   display: flex; align-items: center; gap: 4px; pointer-events: none; }
 .ph-pill svg { width: 26px; height: 26px; }
-.ph-pill b { font-weight: normal; min-width: 1.2em; text-align: center; }
+.ph-pill b { font-weight: 600; min-width: 1.2em; text-align: center; }
 .ph-pill.time b { min-width: 2.3em; }
 .ph-pill.low { background: rgba(214, 48, 78, .9); }
 .ph-pill.time.low { animation: phPulse .5s ease-in-out infinite alternate; }
@@ -1061,9 +1076,31 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .ph-roll { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px 7px; margin: 6px 2px 8px; }
 .ph-mini { position: relative; background: #fff; padding: 3px 3px 12px; border-radius: 3px; box-shadow: 0 0 0 2px var(--ink); transform: rotate(var(--r)); }
 .ph-mini img { width: 100%; aspect-ratio: 1; display: block; }
-.ph-mini b { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); font-weight: normal; font-size: 12px; white-space: nowrap; -webkit-text-stroke-width: 3px; }
+.ph-mini b { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); font-weight: 600; font-size: 12px; white-space: nowrap; -webkit-text-stroke-width: 3px; }
 .ph-mini.perfect { box-shadow: 0 0 0 2px var(--ink), 0 0 0 5px #ffd23f; }
 .ph-mini.perfect b { color: #ffe16b; }
 .ph-mini.meh, .ph-mini.miss { opacity: .75; }
 .panel .txt.ph-sm { font-size: 15px; margin-top: 2px; }
 .ph-say { font-size: 20px; }
+
+/* ── 10/18 night: layout pass (agent-hyeok layout rules measured on the real boxes: one gutter, shared lines, no tiny
+   targets — tools in _handoff/ui-layout-20261018.md) ── */
+/* pause panel: settings as one aligned list, actions in one row */
+.setlist { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.setrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 14px; box-sizing: border-box;
+  border: 2.5px solid var(--ink); border-bottom-width: 4px; border-radius: 14px; background: #fff; cursor: pointer; pointer-events: auto; font-size: 16px; color: var(--ink); }
+.setrow .k { color: #7a6a8a; }
+.setrow .v { font-weight: 600; color: var(--p3); white-space: nowrap; }
+.setrow:active { transform: translateY(2px); border-bottom-width: 2.5px; }
+.panel .row.tools { gap: 8px; margin-top: 10px; }
+.panel.pausep > .row:last-of-type { flex-wrap: nowrap; }
+/* panel buttons: a thumb-sized target on a phone (they measured 36 px) */
+.panel .row .btn { min-height: 42px; }
+.panel .row.tools .btn { min-height: 36px; }
+.homeside .btn.sm { min-height: 36px; }
+.btn .sub { font-size: max(11px, .55em); }
+.vl-card .new { font-size: 11px; }
+/* a computer's big window: the play HUD at full size, a little bigger on tall screens (it was drawn at 82 % for phones;
+   user, 10/18: "컴으로 하는데 특정 픽토그램들이 너무 작게") */
+@media (pointer: fine) and (min-height: 700px) { #app[data-scene="stage"], #app[data-scene="boss"] { --hudz: 1; } }
+@media (pointer: fine) and (min-height: 860px) and (min-width: 1000px) { #app[data-scene="stage"], #app[data-scene="boss"] { --hudz: 1.12; } }
