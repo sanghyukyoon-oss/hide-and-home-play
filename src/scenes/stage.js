@@ -37,7 +37,8 @@ import { retrieve, canGrab, grab } from '../raid.js';
 // you don't watch the friend hide ("눈 감아! 하나, 둘, 셋" and only the sounds), 2–3 big hideouts are candidates, a trail of
 // crumbs leads toward the real one, a wrong one says "여긴 없지롱~" and the real one giggles; giggles/wobbles only after 15 s
 // of nothing. (Prototype simplification: after 3 wrong guesses the real one gives itself away instead of the friend moving.)
-const HIDE_R1 = /[?&]hide=1(&|$)/.test(location.search);
+// R1 몰래 숨기 is the default since 10/18 (user: "좋아 알원"); ?hide=0 brings back the old watch-it-hide version
+const HIDE_R1 = !/[?&]hide=0(&|$)/.test(location.search);
 const R1_HIDE = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic', 'bookshelf', 'desk', 'toybox', 'cabinet', 'closet', 'sideboard', 'shoerack', 'laundrybasket', 'dresser']; 
 
 const V = new THREE.Vector3();
@@ -462,7 +463,7 @@ export class StageScene {
   }
   // ── 사건 판: the owner runs and hides, giggles from the hideout, and pops out when it is opened
   async friendHides() {
-    if (HIDE_R1) return this.r1Hide();
+    if (HIDE_R1 && this.spec.tut !== 1) return this.r1Hide();   // (1판 still shows the hide: it teaches what hiding is)
     const G = this.G, W = G.world, f = this.friend, part = this.plan.incident.part, tw = this.tw;
     this.friendHome = f.root.position.clone();
     const pc = this.partCenter(part), from = f.root.position.clone();
@@ -1771,7 +1772,7 @@ export class StageScene {
     this.hero?.update(dt, this.tw, !!this.result || !!this.talking);
     if (this.dizzy > 0) { this.dizzy -= dt; if (this.dizzy <= 0) { this.mong.classList.remove('spin'); this.mongImg.src = G.thumbs.face_mong; } }
     if (this.jailed?.in && this.running && !this.result && (this._jT = (this._jT ?? 9) - dt) <= 0) { this._jT = 11 + Math.random() * 5; this.say(this.jailed.ch, JAIL_LINES[(this._jn = (this._jn || 0) + 1) % JAIL_LINES.length], 2000); }   // the one in the cell keeps pleading
-    if (this.incident && this.friendHidden && this.running && !this.result && (!HIDE_R1 || this.idle > 15) && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = (this.idle > 8 ? 4 : 6.5) + Math.random() * 3; this.giggle(); }
+    if (this.incident && this.friendHidden && this.running && !this.result && (!this.r1 || this.idle > 15) && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = (this.idle > 8 ? 4 : 6.5) + Math.random() * 3; this.giggle(); }
     if (this.spec.night && !this.result && (this._starT = (this._starT || 0) - dt) <= 0) {
       this._starT = .45 + Math.random() * .5;
       W.fx.burst(Math.random() * W.W, Math.random() * W.H * .28 + 40, { n: 1, shape: 'star', speed: 6, gravity: 0, life: 1.3, size: 7, colors: ['#fff6c0', '#ffffff', '#cfe0ff'] });
