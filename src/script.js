@@ -769,34 +769,35 @@ export const sceneAfter = idx => sceneAt(idx)?.after || (bind().type[idx] === 'h
 
 // ── 엿보는 친구 (hunt.js CAMEO, 검토 세션 10/18): the host of a stage still to come, peeking from behind furniture; find it
 // and it says one line. Before you've met them: a shy hello. After: a friend's tease. 먹물이 has its own three, by the story.
-const CAMEO = {
-  bunny: [K('킥, 들켰다! 다음 판은 나랑 놀자!', 'Hee, busted! Play with me next round!')],
-  bear: [K('으헤헤… 몰래 보고 있었어. 나 곰돌이야.', "Ehehe… I was watching. I'm Bearie."), K('으헤헤, 들켰다. 다음엔 나랑 놀자!', 'Ehehe, busted. Play with me next!')],
-  frog: [K('개굴! 들켰다~ 난 개굴이. 낚시터 챔피언!', "Ribbit! Busted~ I'm Froggy. Fishing champ!"), K('개굴! 들켰다~ 다음 판은 내 차례!', "Ribbit! Busted~ Next round's mine!")],
-  nerd: [K('흠. 관찰력이 좋군. 언제 내 서재로 와 보게.', 'Hm. Sharp eyes. Drop by my study sometime.'), K('흠. 관찰력은 여전하군.', 'Hm. Sharp as ever.')],
-  peng: [K('펭! 몰래 구경 중이었어. 나는 동네 숨기 2등!', "Peng! Just watching. I'm the town's second-best hider!"), K('펭! 비결 5번… 엿볼 땐 머리 숙이기.', 'Peng! Tip number five… keep your head down when you peek.')],
-  cat: [K('흥. 그냥 지나가던 거다냥.', 'Hmph. Just passing by.'), K('흥. 또 지나가던 거다냥.', 'Hmph. Just passing by. Again.')],
-  shiba: [K('킁! 잠복 중이었는데… 들켰다. 난 멍뭉이 순경!', "Sniff! I was on stakeout… busted. I'm Officer Woofy!"), K('킁! 잠복 실패. 순찰 같이 가자!', 'Sniff! Stakeout failed. Come on patrol!')],
-  grumpy: [K('…뭘 봐. 그냥 있던 거야.', '…What? I was just standing here.'), K('…뭘 봐. 우리 골목 오든가.', '…What? Come to my alley, then.')],
-  hamster: [K('웁! 볼 때문에 들켰어! 난 햄찌야.', "Mmf! My cheeks gave me away! I'm Hammy."), K('웁! 또 볼 때문에…!', 'Mmf! My cheeks again…!')],
-  sundae: [K('앗, 녹기 전에 들켰다! 난 파르페야.', "Oh, busted before I melted! I'm Parfait."), K('앗, 또 들켰다! 녹기 전에 놀자!', "Oh, busted again! Let's play before I melt!")],
-  squirrel: [K('헉, 도토리 줍다 들켰어! 난 다람이.', "Eek, caught picking up acorns! I'm Chippy."), K('헉, 또 들켰다! 도토리 하나 줄게.', 'Eek, busted again! Have an acorn.')],
-  panda: [K('천천히 와. 산에서 기다릴게.', "Take your time. I'll wait on the mountain."), K('들켰다. 천천히 찾아도 되는데.', 'Busted. You could have taken your time.')],
-  sleepy: [K('음냐… 여기서 자다 들켰네…', 'Mmh… caught napping here…'), K('음냐… 또 자다 들켰네…', 'Mmh… caught napping again…')],
-  robot: [K('삐빅. 관찰 결과: 들킴.', 'BEEP. Observation: spotted.'), K('삐빅. 숨기 성공률 0% 갱신.', 'BEEP. Hiding success rate: still 0%.')],
-  dj: [K('둠칫! 비트 맞추다 들켰다!', 'Boom-chk! Caught mid-beat!'), K('둠칫! 다음 무대에서 보자!', 'Boom-chk! See you at the next show!')],
-  skater: [K('요! 다음엔 파크로 와!', 'Yo! Hit the park next!'), K('요! 또 들켰네. 보드 타러 와!', 'Yo! Busted again. Come ride!')],
-  raccoon: [K('히히, 들켰네~ 다음 판은 시간 재기다!', 'Hee-hee, you caught me~ Next round, we race the clock!')],
+const CAMEO = {   // a: before you've met them (a shy hello) · b: after (a friend's tease); each list takes turns
+  bunny: { b: [K('킥, 들켰다! 다음 판은 나랑 놀자!', 'Hee, busted! Play with me next round!'), K('푸핫, 엿보다 웃음이 나서 들켰어!', 'Pfft, I giggled while peeking and got caught!'), K('킥… 이번엔 안 웃었는데!', "Hee… I didn't even giggle this time!")] },
+  bear: { a: [K('으헤헤… 몰래 보고 있었어. 나 곰돌이야.', "Ehehe… I was watching. I'm Bearie.")], b: [K('으헤헤, 들켰다. 다음엔 나랑 놀자!', 'Ehehe, busted. Play with me next!'), K('으헤헤… 엿보다 졸았어.', 'Ehehe… I dozed off peeking.'), K('으헤헤, 꿀 냄새 때문에 들켰나?', 'Ehehe, was it the honey smell?')] },
+  frog: { a: [K('개굴! 들켰다~ 난 개굴이. 낚시터 챔피언!', "Ribbit! Busted~ I'm Froggy. Fishing champ!")], b: [K('개굴! 들켰다~ 다음 판은 내 차례!', "Ribbit! Busted~ Next round's mine!"), K('개굴! 엿보기도 챔피언인 줄 알았는데!', 'Ribbit! I thought I was the peeking champ too!')] },
+  nerd: { a: [K('흠. 관찰력이 좋군. 언제 내 서재로 와 보게.', 'Hm. Sharp eyes. Drop by my study sometime.')], b: [K('흠. 관찰력은 여전하군.', 'Hm. Sharp as ever.'), K('흠. 엿보기도 계산했는데. 변수는 너야.', "Hm. I calculated the peek too. You're the variable."), K('흠. …사실 찾아 주길 바랐어.', "Hm. …Truth is, I hoped you'd find me.")] },
+  peng: { a: [K('펭! 몰래 구경 중이었어. 나는 동네 숨기 2등!', "Peng! Just watching. I'm the town's second-best hider!")], b: [K('펭! 엿볼 땐 숨도 참았는데…', 'Peng! I even held my breath while peeking…'), K('펭! 비결 노트에 적어야지. 「엿보기 금지.」', "Peng! Into the tip notebook: 'No peeking.'")] },
+  cat: { a: [K('흥. 그냥 지나가던 거다냥.', 'Hmph. Just passing by.')], b: [K('흥. 또 지나가던 거다냥.', 'Hmph. Just passing by. Again.')] },
+  shiba: { a: [K('킁! 잠복 중이었는데… 들켰다. 난 멍뭉이 순경!', "Sniff! I was on stakeout… busted. I'm Officer Woofy!")], b: [K('킁! 잠복 실패. 순찰 같이 가자!', 'Sniff! Stakeout failed. Come on patrol!'), K('킁! 꼬리가 또 나와 있었어?', 'Sniff! Was my tail sticking out again?')] },
+  grumpy: { a: [K('…뭘 봐. 그냥 있던 거야.', '…What? I was just standing here.')], b: [K('…뭘 봐. 우리 골목 오든가.', '…What? Come to my alley, then.'), K('…엿본 거 아니야. 경치 본 거야.', "…I wasn't peeking. I was enjoying the view.")] },
+  hamster: { a: [K('웁! 볼 때문에 들켰어! 난 햄찌야.', "Mmf! My cheeks gave me away! I'm Hammy.")], b: [K('웁! 또 볼 때문에…!', 'Mmf! My cheeks again…!')] },
+  sundae: { a: [K('앗, 녹기 전에 들켰다! 난 파르페야.', "Oh, busted before I melted! I'm Parfait."), K('앗, 들켰다! 이따 빨래방에서 봐!', 'Oh, busted! See you at the laundromat!')], b: [K('앗, 또 들켰다! 녹기 전에 놀자!', "Oh, busted again! Let's play before I melt!")] },
+  squirrel: { a: [K('헉, 도토리 줍다 들켰어! 난 다람이.', "Eek, caught picking up acorns! I'm Chippy.")], b: [K('헉, 또 들켰다! 도토리 하나 줄게.', 'Eek, busted again! Have an acorn.')] },
+  panda: { a: [K('천천히 와. 산에서 기다릴게.', "Take your time. I'll wait on the mountain.")], b: [K('들켰다. 천천히 찾아도 되는데.', 'Busted. You could have taken your time.'), K('들켰네. 엿보는 것도 고수인데.', "Busted. And I'm a pro at peeking, too.")] },
+  sleepy: { a: [K('음냐… 여기서 자다 들켰네…', 'Mmh… caught napping here…')], b: [K('음냐… 또 자다 들켰네…', 'Mmh… caught napping again…')] },
+  robot: { a: [K('삐빅. 관찰 결과: 들킴.', 'BEEP. Observation: spotted.')], b: [K('삐빅. 숨기 성공률 0% 갱신.', 'BEEP. Hiding success rate: still 0%.')] },
+  dj: { a: [K('둠칫! 비트 맞추다 들켰다!', 'Boom-chk! Caught mid-beat!'), K('둠칫! 볼륨 낮췄는데 들켰다!', 'Boom-chk! Turned the volume down and still got caught!')], b: [K('둠칫! 다음 무대에서 보자!', 'Boom-chk! See you at the next show!')] },
+  skater: { a: [K('요! 다음엔 파크로 와!', 'Yo! Hit the park next!')], b: [K('요! 또 들켰네. 보드 타러 와!', 'Yo! Busted again. Come ride!')] },
+  raccoon: { b: [K('히히, 들켰네~ 다음 판은 시간 재기다!', 'Hee-hee, you caught me~ Next round, we race the clock!')] },
 };
-// 먹물이 (hunt.js: 13·41·63판): a dare → puzzled → the question 64판 answers
 const CAMEO_INKY = [K('…킥. 나도 숨는 거 잘해.', "…Heh. I'm good at hiding too."), K('…엿보는 것까지 찾아? 이상한 애.', '…You even find the ones peeking? Weird kid.'), K('…다음엔, 나도 끝까지 찾아 줄 거야?', '…Next time, will you look for me till the end too?')];
 const CAMEO_ANY = K('들켰다! 다음에 또 보자!', 'Busted! See you next time!');
-export function CAMEO_LINE(kind, idx = 0) {
+// n = how many times this friend has peeked before (hunt.js counts it), so the same friend doesn't say the same thing twice
+export function CAMEO_LINE(kind, idx = 0, n = 0) {
   const R = id => REGIONS.find(r => r.id === id)?.from ?? 999;
   if (kind === 'inky') return CAMEO_INKY[idx < R('park') ? 0 : idx < R('camp') ? 1 : 2];
-  const L2 = CAMEO[kind]; if (!L2) return CAMEO_ANY;
+  const C = CAMEO[kind]; if (!C) return CAMEO_ANY;
   const b = bind(), met = Object.keys(b.host).some(j => +j <= idx && b.host[j] === kind);
-  return L2[met ? L2.length - 1 : 0];
+  const list = (met ? C.b : C.a) || C.b || C.a;
+  return list[n % list.length];
 }
 
 // ── 숨은그림 판 (stage.js calls these): the host's opening talk, the banner, and four bubbles while you look

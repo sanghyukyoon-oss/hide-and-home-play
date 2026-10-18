@@ -1627,7 +1627,7 @@ export class StageScene {
     W.fx.confetti(130);
     this.bubble.style.display = 'none';
     const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);
-    if (!this.incident) this.say(f, '우와! 다 찾았네!', 1800);   // (사건 판: the host has just had their say)
+    if (!this.incident && !this.hiddenStage) this.say(f, '우와! 다 찾았네!', 1800);   // (사건 판: the host has just had their say; 숨은그림 판: its closing talk starts with it)
     for (const n of this.npcs || []) { if (n === this.villain) continue; n.on = false; n.ch.pose = 'cheer'; n.ch.setFace('happy'); n.ch.faceTo(W.cam.position.x, W.cam.position.z); n.ch.bump(.4); }
     // 먹물이 loses: a sulk, then it bolts off the edge of the room and is gone
     if (this.villain) {
