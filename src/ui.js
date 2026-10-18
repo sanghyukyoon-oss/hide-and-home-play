@@ -52,7 +52,7 @@ export class UI {
     this.iris = document.getElementById('iris');
     this.panelOpen = null;
   }
-  clear() { this.hud.innerHTML = ''; this.wui.innerHTML = ''; this.tut.innerHTML = ''; this.closePanel(); }
+  clear() { this.hud.innerHTML = ''; this.wui.innerHTML = ''; this.tut.innerHTML = ''; this.closePanel(); this.overlay.querySelectorAll('.chooser, .endcard').forEach(e => e.remove()); }   // (a choice left from the last scene — QA 10/18)
   col() { const c = h('div', { class: 'col' }); this.hud.append(c); return c; }
   btn(label, { color = 'green', icon = null, sub = null, cls = '', onClick = null, sfx = 'btn', disabled = false } = {}) {
     const b = h('div', { class: `btn ${color} ${cls}${disabled ? ' disabled' : ''}`, role: 'button' });

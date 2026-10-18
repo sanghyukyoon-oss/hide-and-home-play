@@ -88,6 +88,7 @@ export class Trickster {
   gone() { return this.S.dead || this.S.result || this.state === 'off'; }
   async walk(route) {
     for (const t of route.slice(0, 40)) {
+      while (this.S.paused && !this.gone()) await this.S.tw.wait(.1);   // (the pause menu, a close-up or a lock dial: it waits too — QA 10/18)
       if (this.gone() || this.state !== 'run') return false;
       const p = this.ch.root.position, y0 = p.y, y1 = t.y || 0;
       if (y1 !== y0) this.S.tw.run(.17, k => { p.y = y0 + (y1 - y0) * k; });

@@ -660,7 +660,7 @@ export class World {
       if (e.target !== this.canvas && e.target.id !== 'fx') return;
       if (!this.inputEnabled) return;
       try { el.setPointerCapture?.(e.pointerId); } catch {}
-      this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now(), type: e.pointerType });
+      this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now(), type: e.pointerType, btn: e.button });
       if (this.ptrs.size === 1) {
         this.yawGoal = null; this.vPan = null; this.zoomGoal = null;
         this.drag = { moved: false, lastX: e.clientX, lastY: e.clientY, vx: 0, t: performance.now(), custom: null };
@@ -808,6 +808,8 @@ export class World {
         } else if (dr.moved) {
           if (dr.custom) dr.custom.end(e.clientX, e.clientY);
           // nothing coasts or glides after the fingers lift: the view stays exactly where it was left
+        } else if (p.type === 'mouse' && p.btn !== 0) {
+          dr.custom?.cancel?.();   // PC: a right / middle click that didn't move is no tap (QA 10/18: it opened drawers and cost a 톡)
         } else {
           dr.custom?.cancel?.();
           if (this.scheme === 'B') {
@@ -822,11 +824,14 @@ export class World {
           // a still press is a tap however slowly it is released; two quick taps in one place zoom there (or back out)
           const lt = this._lastTap;
           // (on in F too since 10/18 — user: "더블클릭하면 누른 데 줌인해서 보여주는 걸로" — the wall clock was hard to reach)
-          if (this.scheme !== 'E' && lt && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
+          // the second tap of a quick double tap on a thing just found lands on whatever was behind it: it does nothing
+          // (QA 10/18: it hit the shelf or the floor and cost a 톡)
+          if (lt?.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36) this._lastTap = null;
+          else if (this.scheme !== 'E' && lt && !lt.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
             this._lastTap = null; this.onDoubleTap?.(e.clientX, e.clientY);   // (the first tap of the two already went out as a tap: the stage takes it back)
             if (this.zoom > 1.8) { this.zoomGoal = { z: 1, x: null }; }
             else this.zoomGoal = { z: Math.min(this.maxZoom, 3), x: e.clientX, y: e.clientY };
-          } else { this._lastTap = this.tapInstant?.(e.clientX, e.clientY) ? null : { t: now, x: e.clientX, y: e.clientY }; this.onTap?.(e.clientX, e.clientY); }
+          } else { this._lastTap = { t: now, x: e.clientX, y: e.clientY, instant: !!this.tapInstant?.(e.clientX, e.clientY) }; this.onTap?.(e.clientX, e.clientY); }
         }
         this.drag = null;
       }
@@ -858,6 +863,7 @@ export class World {
     el.addEventListener('mousedown', e => {
       if ((this.scheme !== 'E' && this.scheme !== 'F') || e.button !== 2 || !(e.buttons & 1) || !this.drag || this.camLock || !this.inputEnabled) return;
       e.preventDefault();
+      this.drag.moved = true;   // (like the second finger: letting go after the switch is no tap — QA 10/18)
       this.eMode = this.eMode === 'turn' ? 'move' : 'turn';
       this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? this._turnPivot() : undefined; this.drag.ft = null; this.rawYaw = this.yaw;
       this.switchFx?.(this.eMode); this.onModeSwitch?.(this.eMode);

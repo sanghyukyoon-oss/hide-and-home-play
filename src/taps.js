@@ -50,6 +50,7 @@ export const somethingIn = part => part.spots.some(s => s.item && !s.item.found 
 // one tap that found nothing
 export function spendTap(S, x, y) {
   if (S.tapsLeft == null || S.result || !S.running) return;
+  if (S.targets.every(t => t.found)) return;   // (QA 10/18: everything found, the win is on its way — a stray tap there lost a won stage)
   const G = S.G, p = S.tapPill;
   S.tapsLeft = Math.max(0, S.tapsLeft - 1);
   if (p) {
@@ -59,7 +60,9 @@ export function spendTap(S, x, y) {
   }
   if (x != null) G.ui.floatText(x, y - 34, '-1', 'red');
   if (S.tapsLeft === 3 && !S._tapLow) { S._tapLow = true; G.ui.toast(TAP_TXT.low, 'red'); }
-  if (S.tapsLeft <= 0) S.lose('taps');
+  // (QA 10/18: a moment's wait — this may be the first tap of a double-tap zoom, which gives the tap back; at 1 left the
+  // zoom used to end the stage before the second tap came)
+  if (S.tapsLeft <= 0) { clearTimeout(S._loseT); S._loseT = setTimeout(() => { if (!S.dead && !S.result && S.tapsLeft <= 0) S.lose('taps'); }, 360); }
 }
 // the hidden-object stage's third star: at least half the taps left (it was "no more wrong taps than things to find")
 export const tapsStarOk = S => (S.tapsLeft == null ? S.missCount <= S.targets.length : S.tapsLeft * 2 >= S.tapBudget);

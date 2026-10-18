@@ -23,7 +23,7 @@ export class MiniScene {
   constructor(G) { this.G = G; this.name = 'mini'; }
   async enter({ kind = 'spot', after = 20, p = null } = {}) {
     const G = this.G, W = G.world;
-    this.tw = new Tweens(); this.kind = kind; this.after = after; this.objs = []; this.chars = []; this.fails = 0;
+    this.tw = new Tweens(); this.kind = kind; this.after = after; this.p = p; this.objs = []; this.chars = []; this.fails = 0;
     this.info = MINI_INFO[kind] || MINI_INFO.spot;
     this.slot = p ? { kind, p } : MINI_AFTER[after]?.kind === kind ? MINI_AFTER[after] : { kind, boss: true }; this.boss = !!this.slot.boss;   // p: 놀이 모음's own settings   // a region's boss game, or a lighter one in between
     this._was = { camLock: W.camLock, joyOn: W.joyOn, gauge: W.gaugeOn };
@@ -138,7 +138,7 @@ export class MiniScene {
       G.stats.log.push({ mini: this.kind, result: 'fail' });
       setTimeout(() => !this.dead && G.ui.panel({ title: '아깝다…!', color: 'red', body: [h('div', { class: 'txt' }, detail || this.game?.tip || '한 번 더 해 보자!')],
         buttons: [G.ui.btn('건너뛰기', { color: 'gray', cls: 'sm', onClick: () => G.go('stage', { idx: this.after + 1 }) }),
-          this.nextBtn = G.ui.btn('다시 하기', { color: 'orange', cls: 'big', onClick: () => G.go('mini', { kind: this.kind, after: this.after }) })] }), 900);
+          this.nextBtn = G.ui.btn('다시 하기', { color: 'orange', cls: 'big', onClick: () => G.go('mini', { kind: this.kind, after: this.after, p: this.p }) })] }), 900);   // (놀이 모음's own settings stay — QA 10/18)
     }
   }
   pause() {

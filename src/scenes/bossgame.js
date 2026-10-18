@@ -136,16 +136,17 @@ export class BossGameScene {
   }
   async finish() {
     const G = this.G;
+    G.ui.closePanel(true);   // (the game's result panel went on taking taps under the ending — QA 10/18)
     // 대본: a word after the first win; after the last 야식, the ending (once) and "hide something at home / keep playing"
     // (the ending comes after the last 야식 even when it was skipped from the pause menu — 검토 H6)
     const GLe = gameLines(this.kind, this.lv);
     if ((this.won || GLe?.ending) && !this._out && !G.bot && !G.skipTalk) {
-      this._out = true;
+      this._out = true; this.talking = true;   // (the game waits under these words — QA 10/18: a caught-panel wiped the ending)
       const GL = GLe, said = G.save.gameTalk || (G.save.gameTalk = {});
       if (this.won && GL?.out && !said['o' + this.kind + this.lv]) { said['o' + this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.out); }
-      if (GL?.ending && !G.save.ending) {
-        G.save.ending = true; G.persist();
+      if (GL?.ending && !G.save.ending && !G.playMode) {   // (놀이 모음's 셋째 밤 is practice: no ending there — QA 10/18)
         await playDialog(G, ENDING); await endCard(G);
+        G.save.ending = true; G.persist();   // (saved once seen: a reload mid-ending shows it again — QA 10/18)
         if (await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0) return G.go('myhome');
       }
     }
@@ -161,6 +162,7 @@ export class BossGameScene {
   }
   update(dt) {
     if (this.menuOpen && this.G.ui.panelOpen) return;   // 잠깐! menu open: the game waits (GPT QA 10/18 P2)
+    if (this.talking) return;   // the after-words / the ending (finish)
     this.menuOpen = false;
     this.t = (this.t || 0) + dt;
     this.game?.update(dt);

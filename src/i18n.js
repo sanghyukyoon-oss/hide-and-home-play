@@ -191,6 +191,17 @@ const PAT = [
   [/^(?:(.+?!) )?조각 (\d+)개로도 돼!$/, (a, b) => `${a ? tr(a) + ' ' : ''}You can do it with ${b} piece${b === '1' ? '' : 's'}!`],
   // bossgame.js · stage.js
   [/^보스 클리어! 코인 \+(\d+)$/, a => `Boss cleared! Coins +${a}`],
+  // QA 10/18: English gaps found in the campaign (before the broad patterns at the end)
+  [/^쉬어가기 성공! 코인 \+(\d+)$/, a => `Break cleared! Coins +${a}`],
+  [/^★ 헛짚기 (\d+)번$/, a => `★ Wrong picks: ${a}`],
+  [/^헛탭 (\d+)$/, a => `Missed taps: ${a}`],
+  [/^남은 물건 (\d+)개도 찾아 줘!$/, a => `Find the other ${a} things too!`],
+  [/^(\d+)판$/, a => `Stage ${a}`],
+  [/^(.+?)[을를] 톡 하면 엄마가 가요$/, n => `Tap the ${n.charAt(0).toLowerCase() + n.slice(1)} and Mom goes to it`],
+  [/^톡 하면 (술래|엄마)가 끄러 가요 · 한 번만$/, w => `Tap it and ${w === 'Mom' ? 'Mom' : 'the seeker'} goes to turn it off · once`],
+  [/^꺼내는 중… (\d+)\/(\d+)$/, (a, b) => `Taking one out… ${a}/${b}`],
+  [/^(.+) = (.+)$/, (a, b) => `${a} = ${b}`],   // 이불 속 누구게?: a miss names the clue
+  [/^(\d+)점부터 성공! 이불 모양이랑 꼬리를 잘 봐$/, a => `Clear at ${a} pts! Watch the lump's shape and the tails`],
   [/^내 집에 (.+?)이\(가\) 생겼어!$/, a => `Your home now has a ${tr(a)}!`],
   // 엄마 몰래 성적표 (report.js)
   [/^엄마: (.+?) 뒤지는 중$/, a => `Mom's searching: ${tr(a)}`],
@@ -233,6 +244,18 @@ const PAT = [
   [/^(.+?)의 (.+)$/, (a, b) => `${a}'s ${b}`],   // broad ones last
 ];
 
+// QA 10/18: words that showed in Korean on English screens
+Object.assign(EN, {
+  '★ 명탐정 (헛짚기 0)': '★ Master detective (0 wrong picks)', '방탈출': 'Escape room', '돌림판': 'Turn dial', '톡 전환': 'Tap to switch',
+  '토끼 귀 흉내 내는 너굴이!': 'Rocky in fake bunny ears!', '삐죽 나온 줄무늬 꼬리를 봐': 'Look for the striped tail poking out',
+  '고양이 친구들이 왔다!': 'The cat friends are here!', '꼬리 색이랑 생선을 잘 봐': 'Watch the tail colors and the fish',
+  '길쭉한 귀 모양': 'long ears', '까만 발이랑 동그란 귀': 'black paws and round ears', '조그만 이불': 'a tiny lump', '말린 꼬리': 'a curly tail',
+  '동그란 눈 두 개': 'two round eyes', '삐죽 나온 보드': 'a board poking out', '쿨쿨 Zzz': 'snoring Zzz', '학사모랑 책': 'a grad cap and a book',
+  '커다란 꼬리': 'a big bushy tail', '삐죽삐죽 가시': 'spiky quills', '헤드폰이랑 음표': 'headphones and music notes', '동그란 귀, 꼬리는 없음': 'round ears, no tail',
+  '주황 꼬리랑 생선': 'an orange tail and a fish', '까만 꼬리': 'a black tail', '하얀 꼬리': 'a white tail', '주황 꼬리, 생선은 없음': 'an orange tail, no fish',
+  '줄무늬 꼬리': 'a striped tail', '반짝반짝': 'sparkles',
+});
+
 export function tr(s) {
   if (LANG !== 'en' || s == null) return s;
   s = String(s);
@@ -240,9 +263,12 @@ export function tr(s) {
   if (EN[s] != null) return EN[s];
   const t = s.trim(), i = s.indexOf(t), lead = s.slice(0, i), tail = s.slice(i + t.length);
   if (EN[t] != null) return lead + EN[t] + tail;
+  // 'name!' (every find, QA 10/18: '도넛!' stayed Korean): the word, then its punctuation
+  const pm = t.match(/^([\s\S]*?[가-힣)])([!?~…]+)$/); if (pm && EN[pm[1]] != null) return lead + EN[pm[1]] + pm[2] + tail;
   // a quoted line: translate what is inside the quotes (“흥, …?” was only in the dictionary without them)
   const q = t.match(/^([“"‘'「])([\s\S]+)([”"’'」])$/); if (q) return lead + q[1] + tr(q[2]) + q[3] + tail;
-  for (const [re, f] of PAT) { const m = t.match(re); if (m) return lead + f(...m.slice(1).map(x => (x == null ? '' : HAN.test(x) ? P(x) : x))) + tail; }
+  // (a capture that is the whole text isn't translated again: '이', '다'… matched the chant pattern and looped forever — QA 10/18)
+  for (const [re, f] of PAT) { const m = t.match(re); if (m) return lead + f(...m.slice(1).map(x => (x == null ? '' : HAN.test(x) && x !== t ? P(x) : x))) + tail; }
   // pieces joined with " · " (a visit card's details, the time and hints after a clear): each piece on its own
   if (t.includes(' · ')) return lead + t.split(' · ').map(x => tr(x)).join(' · ') + tail;
   return lead + phrases(t) + tail;

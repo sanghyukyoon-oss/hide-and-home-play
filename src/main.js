@@ -242,15 +242,21 @@ const G = {
   async go(name, data = {}) {
     if (G.pending) return;
     // 놀이 모음 practice: going on to a stage or home ends it — the save goes back to how it was, and the list opens again
-    if (G.playMode && (name === 'stage' || name === 'home')) {
-      const snap = JSON.parse(G.playMode.snap); for (const k of Object.keys(save)) delete save[k]; Object.assign(save, snap);
-      G.playMode = null; name = 'home'; data = { gallery: true };   // (nothing to write: practice never persisted)
-    }
+    // (QA 10/18: also 내 집 / 놀러 가기 — the ending's "hide at home" took the practice save there; and the real save comes back
+    // only after the practice scene has gone, so a game that ends during the iris can't pay into it)
+    const endPractice = G.playMode && !['bossgame', 'mini', 'boss'].includes(name);
+    if (endPractice) { name = 'home'; data = { gallery: true }; }
     G.pending = name;
     audio.sfx('whoosh');
     await ui.irisOut();
     G.scene?.exit();
     G.scene = null;
+    if (endPractice) {
+      const snap = JSON.parse(G.playMode.snap); for (const k of Object.keys(save)) delete save[k]; Object.assign(save, snap);
+      G.playMode = null;   // (nothing to write: practice never persisted)
+      // the practice link (?play=…&lv=…) leaves the address too: a reload (iOS drops big tabs) went back into practice (QA 10/18)
+      if (WEB && /[?&]play=/.test(location.search)) { const u = new URLSearchParams(location.search); u.delete('play'); u.delete('lv'); try { history.replaceState(null, '', location.pathname + (u.toString() ? '?' + u : '') + location.hash); } catch {} }
+    }
     world.vYaw = 0; world.yawGoal = null; world.snap = !!save.settings?.snap; world.clearTap(); settleUntil = performance.now() + 5000;
     const S = new SCENES[name](G);
     G.scene = S;

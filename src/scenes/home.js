@@ -20,6 +20,7 @@ import { h, ICON, fullscreenBtn } from '../ui.js';
 import { Tweens, ease, rng } from '../util.js';
 import { tr, LANG, setLang } from '../i18n.js';
 import { openGallery } from '../gallery.js';
+import { BOSS_GAMES } from '../minis.js';
 
 // ═════════════════════════════════════════ village kit ═════════════════════════════════════════
 // Every building is a few "parts". A part is one ink-outline shape (userData.og) drawn as 1–3 merged meshes: all plain
@@ -1039,7 +1040,12 @@ export class HomeScene {
     // no title on the home any more (10/18): the start screen shows the logo, and 몽글이's house with its nameplate says the rest
     const idx = S.stage || 0, sp = stageSpec(idx), th = THEMES[sp.room] || THEMES.bunny, reg = regionOf(idx), endless = idx >= STAGE_COUNT;
     const bar = h('div', { class: 'homebar' });
-    this.playBtn = ui.btn(`스테이지 ${idx + 1}`, { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: (endless ? `무한 모드 ${idx - STAGE_COUNT + 1} · ${(REGIONS.find(r => r.id === sp.region) || reg).name}` : `${reg.name} ${idx - reg.from + 1}/${reg.to - reg.from}`) + (sp.boss ? ' · 방탈출' : sp.hard ? ' · 하드' : ''), onClick: () => G.go('stage', { idx }) });
+    // the ending comes after the last 야식 boss: whoever went home from 70판's result panel (or reloaded before the ending
+    // played) is sent to that boss first — it was the only way to the ending (QA 10/18)
+    const fin = BOSS_GAMES[STAGE_COUNT - 1], finPending = endless && fin && !S.ending && !G.bot;
+    this.playBtn = finPending
+      ? ui.btn('보스 등장!', { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: `${STAGE_COUNT}판 · 셋째 밤`, onClick: () => G.go('bossgame', { kind: fin.kind, lv: fin.lv, after: STAGE_COUNT - 1 }) })
+      : ui.btn(`스테이지 ${idx + 1}`, { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: (endless ? `무한 모드 ${idx - STAGE_COUNT + 1} · ${(REGIONS.find(r => r.id === sp.region) || reg).name}` : `${reg.name} ${idx - reg.from + 1}/${reg.to - reg.from}`) + (sp.boss ? ' · 방탈출' : sp.hard ? ' · 하드' : ''), onClick: () => G.go('stage', { idx }) });
     const unlocked = G.homeOpen();
     const roomBtn = ui.btn('내 집', { color: 'orange', icon: unlocked ? 'home' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '꾸미고 숨기기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려요!', 'red') : G.go('myhome') });
     if (unlocked && !G.save.tut?.home) roomBtn.classList.add('pulse');   // just opened: point the way

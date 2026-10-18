@@ -144,6 +144,9 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .inv .pill.need { background: rgba(255, 79, 102, .75); animation: need 1s infinite; }
 @keyframes need { 50% { scale: 1.08; } }
 .tray { position: absolute; left: 10px; right: 10px; bottom: calc(10px + var(--safeB)); padding: 7px; display: flex; gap: 6px; justify-content: center; background: linear-gradient(#fffaf2, #ffe7c9); border: 3px solid var(--ink); border-radius: 20px; box-shadow: none; border-bottom-width: 7px;}
+/* the tray and the top bar are solid: a tap on them must not fall through to the room (QA 10/18: tapping an item's picture
+   or the stage tag cost a 톡 — #hud passes touches through) */
+.tray, .topbar .timer, .topbar .stagetag { pointer-events: auto; }
 .slot { flex: 1 1 0; max-width: 62px; aspect-ratio: 1; border-radius: 16px; background: #fff; border: 2.5px solid #e9cfae; position: relative; display: flex; align-items: center; justify-content: center; }
 .slot img { width: 94%; height: 94%; object-fit: contain; pointer-events: none; }
 .slot.sil img { filter: brightness(0) opacity(.72); }
@@ -167,6 +170,8 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 /* world-anchored UI */
 .bubble { position: absolute; transform: translate(-50%, -100%); background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 6px 13px 8px; font-size: 18px; color: var(--ink); white-space: nowrap; box-shadow: 0 4px 0 var(--ink); }
 .bubble::after { content: ''; position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%) rotate(45deg); width: 13px; height: 13px; background: inherit; border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
+/* a line longer than the screen wraps instead of running off both edges (QA 10/18: English lines up to ~650 px) */
+.bubble:not(.count) { white-space: normal; width: max-content; max-width: min(300px, calc(100vw - 32px)); word-break: keep-all; text-align: center; }
 .bubble.count { font-size: 28px; min-width: 52px; text-align: center; padding: 2px 10px 4px; }
 .bubble.red { background: #ffe0e5; color: var(--r3); }
 .bubble.pop { animation: bpop .25s cubic-bezier(.2, 1.8, .4, 1); }
@@ -1266,9 +1271,14 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
   background: radial-gradient(ellipse at 50% 50%, rgba(255, 246, 200, 0) 52%, rgba(255, 238, 160, .8) 100%); animation: lastGlow 1s ease-out forwards; }
 @keyframes lastGlow { 18% { opacity: 1; } 100% { opacity: 0; } }
 /* '새로 얻었다!' as a small badge that comes and goes (10/18 — no blocking card) */
-.ncard-mini { position: absolute; left: 50%; top: calc(15% + var(--safeT, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 10px; border-radius: 999px; background: #fffaf2; border: 3px solid #3b2a55; box-shadow: 0 5px 0 rgba(42, 26, 61, .35); color: #3b2a55; white-space: nowrap; pointer-events: none; z-index: 60; animation: pop .35s cubic-bezier(.2, 1.5, .4, 1); transition: opacity .45s, transform .45s; }
+.ncard-mini { position: absolute; left: 50%; top: calc(200px + var(--safeT, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 10px; border-radius: 999px; background: #fffaf2; border: 3px solid #3b2a55; box-shadow: 0 5px 0 rgba(42, 26, 61, .35); color: #3b2a55; white-space: nowrap; pointer-events: none; z-index: 60; animation: pop .35s cubic-bezier(.2, 1.5, .4, 1); transition: opacity .45s, transform .45s; }
 .ncard-mini b { background: #ff6f91; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 13px; }
 .ncard-mini span { font-size: 18px; }
 .ncard-mini small { font-size: 12px; color: #8a6a9a; }
 .ncard-mini.out { opacity: 0; transform: translateX(-50%) translateY(-12px); }
 
+
+/* English: the few labels drawn by CSS 'content' (the translator never sees them — QA 10/18) */
+html[lang="en"] .ys-ear.quiet span::after { content: ' · snoring'; }
+html[lang="en"] .ys-ear.lull span::after { content: ' · lullaby'; }
+html[lang="en"] .rl-fr.out::after { content: 'OUT'; }
