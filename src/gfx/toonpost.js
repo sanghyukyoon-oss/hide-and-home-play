@@ -294,6 +294,12 @@ export class ToonPost {
     const R = Math.max(Math.ceil(K / B), Math.floor((B - 1 + K) / B));
     if (this.dilMat.defines.R !== R) { this.dilMat.defines.R = R; this.dilMat.needsUpdate = true; }
   }
+  // how far (internal px) an AO sample reaches from its pixel: radius·(.9 + .45) + .01 view units along the screen
+  // (see AO: tangent offset ·.9, normal offset ·.45 + .01), plus a pixel for rounding the depth lookups
+  aoReach() {
+    const fr = this.shared.fr.value, ppu = this.color.width / Math.max(1e-6, fr.y - fr.x);
+    return Math.ceil((this.au.radius.value * 1.35 + .01) * ppu) + 3;
+  }
   // a depth attachment nobody reads again: tell a tiled GPU not to write it back to memory
   _dropDepth() { if (this.opt.inval) this.gl.invalidateFramebuffer(this.gl.FRAMEBUFFER, [this.gl.DEPTH_ATTACHMENT]); }
   // rects: null = the whole frame; else only these boxes (internal px, [x0,y0,x1,y1], y up) are drawn again — the rest
@@ -336,7 +342,14 @@ export class ToonPost {
     // 3) AO at half internal resolution + 4x4 blur (cancels the 4x4 Bayer rotation pattern)
     const useAO = this.u.aoStr.value > .001 && !this.pixelArt;
     this.u.useAO.value = useAO ? 1 : 0;
-    if (useAO) {
+    // a box redraw: AO only where a sample could reach the box (its radius on screen), the blur a little further
+    const aoReach = useAO && rects ? this.aoReach() : 0;
+    if (useAO && rects) {
+      const aw = this.ao.width, ah = this.ao.height, h = aoReach + 2;
+      const aoBoxes = rects.map(b => [Math.max(0, Math.floor((b[0] - h) / 2)), Math.max(0, Math.floor((b[1] - h) / 2)), Math.min(aw, Math.ceil((b[2] + h) / 2)), Math.min(ah, Math.ceil((b[3] + h) / 2))]);
+      scene3(this.ao, aoBoxes, () => { r.clear(); r.render(this.aoScene, this.qCam); });
+      scene3(this.aoB, aoBoxes.map(b => [Math.max(0, b[0] - 3), Math.max(0, b[1] - 3), Math.min(aw, b[2] + 3), Math.min(ah, b[3] + 3)]), () => { r.clear(); r.render(this.blurScene, this.qCam); });
+    } else if (useAO) {
       r.setRenderTarget(this.ao); r.clear(); r.render(this.aoScene, this.qCam);
       r.setRenderTarget(this.aoB); r.clear(); r.render(this.blurScene, this.qCam);
     }
@@ -349,7 +362,8 @@ export class ToonPost {
       r.setRenderTarget(this.maskD); r.render(this.dilScene, this.qCam);
     }
     // 4) ink + AO at internal resolution (a box redraw reaches one brush width past the box), 5) box-filter down
-    const reach = Math.ceil(this.u.thick.value) + 2, W = this.comp.width, H = this.comp.height;
+    // (with AO the ink pass must also redo every pixel whose blurred AO moved: the AO reach + blur + filtering)
+    const reach = Math.max(Math.ceil(this.u.thick.value) + 2, aoReach ? aoReach + 10 : 0), W = this.comp.width, H = this.comp.height;
     const er = rects && rects.map(b => [Math.max(0, b[0] - reach), Math.max(0, b[1] - reach), Math.min(W, b[2] + reach), Math.min(H, b[3] + reach)]);
     scene3(this.comp, er, () => { r.clear(); r.render(this.edgeScene, this.qCam); });
     r.setRenderTarget(null);

@@ -268,6 +268,26 @@ export class World {
     const sh = PHONE ? Math.min(1024, L.shadow) : L.shadow;
     if (this.sun.shadow.mapSize.x !== sh) { this.sun.shadow.mapSize.set(sh, sh); this.sun.shadow.map?.dispose(); this.sun.shadow.map = null; }
     this.maxSS = L.ss; this.resize();
+    this._applyAO();
+  }
+  // AO (ART.ao) is on unless this phone gave it up: any step down the quality ladder, or _aoWatch below
+  _applyAO() {
+    const p = this.post; if (!p) return;
+    p.aoOff = (this.level || 0) >= 1 || !!this.aoAuto;
+    p.u.aoStr.value = p.aoOff ? 0 : ART.ao;
+  }
+  // while the view moves, frames should come at ≥ 36 fps; if over 3 s of moving time (added up across drags) they
+  // don't, AO goes off for the rest of this run — the first and cheapest thing to give up (세팅's AO turns it back on)
+  _aoWatch(now) {
+    const p = this.post;
+    if (!p || this.aoAuto || p.u.aoStr.value <= .001) { this._aw = null; return; }
+    const a = this._aw || (this._aw = { t: 0, n: 0, last: now });
+    const dt = now - a.last; a.last = now;
+    // moving = the view changed since the previous drawn frame (render stamps lastActive then); a gap over 1.5 s is a
+    // pause or a tab switch, not a slow frame
+    if (dt <= 0 || dt > 1500 || now - this.lastActive > dt + 50) return;
+    a.t += dt; a.n++;
+    if (a.t >= 3000) { const fps = a.n * 1000 / a.t; a.t = 0; a.n = 0; if (fps < 36) { this.aoAuto = true; this._applyAO(); } }
   }
   nearestView(y, bias = 0) { const k = Math.round((y - Math.PI / 4) / (Math.PI / 2) + bias); return Math.PI / 4 + k * Math.PI / 2; }
   turnView(dir) { this.yawGoal = this.nearestView(this.yawGoal ?? this.yaw) + dir * Math.PI / 2; this.vYaw = 0; }
@@ -413,6 +433,7 @@ export class World {
     return () => { s.set(sx, sy, sz); o.updateMatrixWorld(true); };
   }
   _render() {
+    this._aoWatch(performance.now());
     const ck = this.yaw.toFixed(4) + this.pitch.toFixed(4) + this.zoom.toFixed(4) + this.target.x.toFixed(3) + this.target.y.toFixed(3) + this.target.z.toFixed(3);
     if (ck !== this._ck) { this._ck = ck; this.lastActive = performance.now(); }   // the view is moving: full frame rate
     if (this.shadowDirty) { this.renderer.shadowMap.needsUpdate = true; this.shadowDirty = false; }

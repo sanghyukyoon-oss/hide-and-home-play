@@ -30,6 +30,7 @@ export function installPerfHud(world) {
     q = p;
     const fps = Math.round(n / dt), dfps = Math.round(drawn / dt), pct = n ? Math.round(100 * area / n) : 0;
     const post = world.post, res = post ? `${post.color.width}×${post.color.height}` : '';
-    el.innerHTML = `${on ? '최적화 켬' : '원본(최적화 끔)'} · 갱신 ${fps} · 그림 ${dfps}fps · 다시 그린 면적 ${pct}%<br><span style="font-weight:400;opacity:.85">${res} · ${gpu} · 탭=${on ? '끄기' : '켜기'}</span>`;
+    const ao = post && post.u.aoStr.value > .001 ? 'AO 켬' : world.aoAuto ? 'AO 자동 꺼짐' : (world.level || 0) >= 1 ? `AO 꺼짐(화질 ${world.level}단계)` : 'AO 꺼짐';
+    el.innerHTML = `${on ? '최적화 켬' : '원본(최적화 끔)'} · 갱신 ${fps} · 그림 ${dfps}fps · 다시 그린 면적 ${pct}%<br><span style="font-weight:400;opacity:.85">${ao} · ${res} · ${gpu} · 탭=${on ? '끄기' : '켜기'}</span>`;
   }, 1000);
 }

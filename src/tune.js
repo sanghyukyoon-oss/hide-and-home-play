@@ -62,6 +62,7 @@ export function openTune(G, { onClose } = {}) {
     if (k === 'camZoom') { W.minZoom = Math.min(W.minZoom, v); W.maxZoom = Math.max(W.maxZoom, v); W.zoom = v; return; }
     if (k === 'camPitch') { W.minPitch = Math.min(W.minPitch, v); W.maxPitch = Math.max(W.maxPitch, v); W.pitch = v; return; }
     apply(W, { [k]: v }); save();
+    if (k === 'ao' || k === 'aoR') { W.aoAuto = false; W._applyAO?.(); }   // touching AO here undoes a slow phone's auto-off
   }
   // camera: the turn dial (default) or the second-finger tap — the only two left (10/18)
   const ST = G.save.settings || (G.save.settings = {});

@@ -29,7 +29,8 @@ export class DirtyTracker {
     for (const L of [world.hemi, world.sun, world.fill]) a.push(L.intensity, L.color.r, L.color.g, L.color.b, L.position.x, L.position.y, L.position.z, L.shadow?.intensity ?? 0);
     const u = post.u;
     for (const k of ['thick', 'innerRatio', 'overlap', 'nLo', 'nHi', 'innerStr', 'lineAlpha', 'tint', 'tintDark', 'levels', 'aoStr', 'dbg', 'gray']) a.push(u[k].value);
-    a.push(u.ink.value.r, u.ink.value.g, u.ink.value.b, post.du.sharpen.value, post.packed ? 1 : 0);
+    a.push(u.ink.value.r, u.ink.value.g, u.ink.value.b, post.du.sharpen.value, post.packed ? 1 : 0, post.au.radius.value, post.au.bias.value);
+    for (const k of ['aoTint']) { const c = u[k].value; a.push(c.r, c.g, c.b); }
     a.push(world.styleGrad?.version ?? 0, world.renderer.shadowMap.needsUpdate ? 1 : 0, world.scene.background ? 1 : 0);
     return a;
   }
@@ -40,9 +41,6 @@ export class DirtyTracker {
     const same = this.g && this.g.length === g.length && g.every((v, i) => v === this.g[i]);
     this.g = g;
     if (!same) { this.still = false; this.stats.full++; return { full: true }; }
-    // AO (세팅 panel) samples far past the outline's reach, so a box redraw would leave its old shading at the box
-    // edges: whole frames only while it is on (GPT review 10/18: up to 2/255 off with AO .65)
-    if (post.u.aoStr.value > .001 && !post.pixelArt) { this.still = false; this.stats.full++; return { full: true }; }
     const scene = world.scene, cam = world.cam;   // (world matrices: World.render updated them for this frame)
     const W = post.color.width, H = post.color.height;
     M.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
