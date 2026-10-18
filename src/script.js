@@ -425,7 +425,8 @@ SCENES.push(
   { id: 'catH', keep: true, type: 'hidden', room: 'cat',
     intro: [L('cat', '흥. 몽글이라는 애가 너냐냥.', "Hmph. So you're this Mongle, meow."), L('cat', '곰돌이가 하도 떠들어서. 별로 안 궁금했다냥.', "Bearie wouldn't stop talking about you. Not that I care."), L('mong', '…꼬리는 궁금해 보이는데.', '…Your tail looks curious.'), L('cat', '…! 내 물건이나 찾아보라냥.', '…! Just find my stuff, meow.')],
     say: { first: K('흥. 그 정도는 찾겠지냥.', 'Hmph. Anyone could find that one.'), half: K('…제법이다냥.', '…Not bad, meow.'), last: K('마지막 건 내 자리에 있다냥. …앗.', "The last one's in my spot, meow. …Oops.") },
-    after: [L('cat', '…다들 네 일기장에 나온다길래. 나도 있나 궁금했다냥.', "…Everyone said they're in your diary. I wanted to see if I was."), L('mong', '냥냥이 칸은… 오늘 쓰면 돼.', 'Your page… I can write it today.'), L('mong', '꼬리는 못 숨김.', "Can't hide that tail."), L('cat', '…! 수, 숨길 수 있거든?!', '…! I c-can so hide it!')] },
+    after: [L('cat', '…다들 네 일기장에 나온다길래. 나도 있나 궁금했다냥.', "…Everyone said they're in your diary. I wanted to see if I was."), L('mong', '냥냥이 칸은… 오늘 쓰면 돼.', 'Your page… I can write it today.'), L('mong', '꼬리는 못 숨김.', "Can't hide that tail."), L('cat', '…! 수, 숨길 수 있거든?!', '…! I c-can so hide it!'),
+      L('cat', '이거, 캣타워. 네 방에 둬. 내가 가면 앉게.', 'Here. A cat tower. Keep it at your place. For when I visit.')] },   // v98: the first clear gives the cat tower
   // 14판: 멍뭉이 first — the patrol promise that 3장's opening cashes in
   { id: 'policeH', keep: true, type: 'hidden', room: 'police', goal: ['분실물', 'lost items'],
     intro: [L('shiba', '킁킁! 네가 몽글이야? 동네에 소문 다 났어.', "Sniff sniff! You're Mongle? The whole town's talking."), L('shiba', '난 멍뭉이 순경. 분실물 신고가 산더미야.', "I'm Officer Woofy. The lost-item reports are piling up."), L('mong', '…같이 찾을게.', "…I'll help look.")],
