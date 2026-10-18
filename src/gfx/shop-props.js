@@ -692,10 +692,10 @@ B.snackshelf = (f, T) => {
   const ROWS = [
     { sz: 1, y: S[0], list: [['bag', -.74, 0], ['bag', -.17, 0], ['bag', .0, 1], ['bag', .17, 1], ['box', .34, 9], ['box', .51, 9], ['bag', .69, 8]] },
     { sz: 1, y: S[1], list: [['box', -.75, 2], ['box', -.59, 2], ['box', -.43, 4], ['bag', -.26, 5], ['bag', -.09, 5], ['bag', .08, 6], ['box', .72, 3]] },
-    { sz: 1, y: S[2], list: [['cup', -.76, 0], ['cup', -.62, 0], ['cup', -.48, 1], ['cup', -.34, 1], ['box', -.18, 7], ['box', -.02, 7], ['bag', .15, 0], ['bag', .32, 1], ['box', .5, 3], ['box', .67, 4]] },
-    { sz: -1, y: S[0], list: [['bag', -.72, 6], ['bag', -.55, 6], ['bag', -.38, 8], ['bag', -.21, 8], ['bag', -.04, 0], ['bag', .13, 0], ['box', .31, 9], ['box', .48, 9], ['box', .66, 2]] },
+    { sz: 1, y: S[2], list: [['cup', -.76, 0], ['cup', -.62, 0], ['cup', -.48, 1], ['cup', -.34, 1], ['box', -.18, 7], ['box', -.02, 7], ['box', .5, 3], ['box', .67, 4]] },
+    { sz: -1, y: S[0], list: [['bag', -.72, 6], ['bag', -.55, 6], ['bag', -.38, 8], ['bag', -.21, 8], ['box', .31, 9], ['box', .48, 9], ['box', .66, 2]] },
     { sz: -1, y: S[1], list: [['box', -.73, 4], ['box', .0, 4], ['bag', .17, 5], ['bag', .34, 1], ['bag', .51, 1], ['box', .69, 3]] },
-    { sz: -1, y: S[2], list: [['cup', -.75, 1], ['cup', -.61, 1], ['cup', -.47, 0], ['box', -.31, 7], ['box', -.14, 2], ['bag', .04, 5], ['bag', .21, 6], ['box', .39, 4], ['box', .56, 9], ['box', .72, 3]] },
+    { sz: -1, y: S[2], list: [['cup', -.75, 1], ['cup', -.61, 1], ['cup', -.47, 0], ['bag', .04, 5], ['bag', .21, 6], ['box', .39, 4], ['box', .56, 9], ['box', .72, 3]] },
   ];
   const packM = (r, x, i, k) => xf(x, r.y, r.sz * PZ, 0, r.sz < 0 ? PI : 0, (k % 3 - 1) * .035);
   f.add(mg('snackshelf-spine|' + body, mat('#ffffff', { map: pegTex(body) }), ({ addM }) => addM(planarUV(ni(G.pbox(HX * 2, TOP - .1, .04)).translate(0, (TOP + .1) / 2, 0), .12), I4)));
@@ -738,6 +738,10 @@ B.snackshelf = (f, T) => {
   f.spot('behind', null, -.45, S[0], .24, { maxH: .3, label: '과자 진열대 아래칸', scale: .8 });
   f.spot('behind', null, .38, S[1], .24, { maxH: .3, label: '과자 봉지 사이', scale: .8 });
   f.spot('behind', null, -.36, S[1], -.24, { maxH: .3, label: '진열대 뒤편', scale: .8 });
+  // (레벨 보고서 10/18: the konbini had 3 places in plain sight — three gaps on the shelves, front and back)
+  f.spot('on', null, .235, S[2], .25, { maxH: .3, label: '과자 진열대 맨 윗칸', scale: .8 });
+  f.spot('on', null, .045, S[0], -.25, { maxH: .3, label: '진열대 뒤편 아랫칸', scale: .8 });
+  f.spot('on', null, -.225, S[2], -.25, { maxH: .3, label: '진열대 뒤편 맨 윗칸', scale: .8 });
 };
 
 // 음료 냉장고 (2×1, tall): a blue walk-up drinks cooler — a glowing 시원한 음료 header, two glass doors (they open together)
@@ -817,6 +821,7 @@ B.drinkfridge = (f, T) => {
   const p = f.part('door', [L, R], t => { L.rotation.y = -1.75 * t; R.rotation.y = 1.75 * t; }, { label: '음료 냉장고', sfx: 'open', dur: .32 });
   f.spot('inside', null, -.3, SY[1], BZ, { part: p, maxH: .34, label: '음료 냉장고 둘째 칸', scale: .8 });
   f.spot('inside', null, .5, SY[0], BZ, { part: p, maxH: .36, label: '음료 냉장고 아래칸', scale: .85 });
+  f.spot('on', null, .45, HT, z0, { maxH: .4, label: '음료 냉장고 위', scale: .8 });   // (레벨 보고서 10/18)
 };
 
 // 계산대 (2×1): the till counter — the konbini front print with the bear mascot, a wood-grain top with a POS screen,
@@ -892,6 +897,22 @@ B.counter2 = (f, T) => {
   f.spot('inside', null, SX + .09, TY + .075, SZ + .07, { part: p, maxH: .2, label: '호빵 찜기 안', scale: .62 });
   f.spot('on', null, .08, TY, .05, { maxH: .45, label: '계산대 위', scale: .8 });
   f.spot('under', null, .72, .07, .06, { maxH: .36, label: '계산대 밑', scale: .8 });
+  // (레벨 보고서 10/18) the counter's front edge, and 돈통: a cash drawer under the top on the cashier side (the back), its own mesh,
+  // with a code lock on its face — the konbini had no lockable piece, so no chain could end here
+  f.spot('on', null, -.62, TY, .17, { maxH: .4, label: '계산대 앞쪽', scale: .75 });
+  const dv = new THREE.Group(); put3(dv, -.5, .74, back - .003); dv.rotation.y = PI;   // turned round: its face looks out of the back
+  dv.add(mc('counter2-till|' + tk, ({ add }) => {
+    add(G.box(.46, .2, .03, .012), body, 0, 0, 0);
+    add(G.box(.16, .03, .03, .01), STEEL2, 0, .045, .025);
+    add(G.pbox(.42, .012, .36), inner, 0, -.09, -.19);
+    for (const sx of [-1, 1]) add(G.pbox(.012, .12, .36), inner, sx * .205, -.04, -.19);
+    add(G.pbox(.42, .12, .012), inner, 0, -.04, -.37);
+    for (let k = 0; k < 4; k++) add(G.pbox(.085, .02, .11), k % 2 ? GOLD : SILVER, -.15 + k * .1, -.075, -.08);   // coin trays
+  }));
+  f.add(dv);
+  const tp = f.part('drawer', dv, (t, b) => { dv.position.z = b.p.z - .32 * t; }, { label: '계산대 돈통', sfx: 'drawer', dur: .26 });
+  tp.lockable = true; tp.lockKind = 'code'; tp.noHide = true; f.lockAt = { x: .12, y: -.03, z: .03, parent: dv };   // noHide: a friend never hides in a till
+  f.spot('inside', dv, -.05, -.084, -.24, { part: tp, maxH: .13, label: '계산대 돈통 안', scale: .7 });
 };
 
 // 아이스크림 냉동고 (1×1): a white chest freezer wrapped in a printed ice-cream decal (popsicles, a cone, 1+1), steel rims
@@ -1022,6 +1043,7 @@ B.cupnoodlebar = (f, T) => {
   }));
   f.spot('under', null, .32, 0, .27, { maxH: .3, label: '벤치 밑', scale: .85 });
   f.spot('on', null, .47, BT, -.24, { maxH: .45, label: '컵라면 바 위', scale: .8 });
+  f.spot('on', null, -.45, .475, .27, { maxH: .4, label: '빨간 벤치 위', scale: .75 });   // (레벨 보고서 10/18)
 };
 
 // ═════════════════════════════════════════════ 빨래방 ═════════════════════════════════════════════
@@ -1084,6 +1106,7 @@ B.washer3 = (f, T) => {
     if (u.key === 'w') { p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: .245 + RH + .05, y: .1, z: .06, parent: pv }; }
     f.spot('inside', null, 0, u.yb + CY - .125, fz - .17, { part: p, maxH: .26, label: u.lbl + ' 안', scale: .6 });
   }
+  f.spot('on', null, .16, Y0 + 2 * UH + .03 + .15, z0 - .02, { maxH: .3, label: '수건 더미 위', scale: .7 });   // (레벨 보고서 10/18: the laundromat had 3 places in plain sight)
 };
 
 // 빨래 개는 테이블 (2×1): a long folding table — a speckled mustard laminate top on steel legs, a sky laundry basket of towels
@@ -1123,6 +1146,7 @@ B.foldingtable2 = (f, T) => {
   f.add(mg('foldingtable2-prints', atlasMat(), ({ add }) => add(quadGeo(.11, .07, RG.det), .66, TH + .11, -.15 + .006)));
   f.spot('under', null, .42, 0, .02, { maxH: .45, label: '테이블 밑', scale: .85 });
   f.spot('on', null, .5, TH, .17, { maxH: .45, label: '빨래 테이블 위', scale: .8 });
+  f.spot('on', null, .14, TH, .25, { maxH: .4, label: '빨래 테이블 앞쪽', scale: .75 });   // (레벨 보고서 10/18)
 };
 
 // 동전 교환기 (1×1): a mustard coin changer — a printed instruction panel (bill in, two 500원 coins out), a green-lit LED,
@@ -1166,6 +1190,7 @@ B.vendcoin = (f, T) => {
   const p = f.part('door', pv, t => { pv.rotation.y = -1.75 * t; }, { label: '동전 교환기', sfx: 'open', dur: .32 });
   p.lockable = true; p.lockKind = 'code'; f.lockAt = { x: cx, y: -.37, z: .045, parent: pv };
   f.spot('inside', null, 0, .62, z0 - .02, { part: p, maxH: .28, label: '동전 교환기 안', scale: .7 });
+  f.spot('on', null, 0, BT + .05, z0, { maxH: .4, label: '동전 교환기 위', scale: .75 });   // (레벨 보고서 10/18)
 };
 
 // ═════════════════════════════════════════════ 동네 카페 ═════════════════════════════════════════════

@@ -740,6 +740,9 @@ B.reception = (f, T) => {
   f.spot('inside', dv, -.08, -.124, -.24, { part: p, maxH: .12, label: '안내 데스크 서랍', scale: .7 });
   f.spot('under', null, -.45, 0, .2, { maxH: .13, label: '안내 데스크 밑', scale: .8 });
   f.spot('on', null, .4, top, -.06, { maxH: .45, label: '안내 데스크 위', scale: .75 });
+  // (레벨 보고서 10/18: the lobby had 3 places in plain sight)
+  f.spot('on', null, -.55, top, .22, { maxH: .4, label: '안내 데스크 앞쪽', scale: .75 });
+  f.spot('on', null, .74, top, -.2, { maxH: .4, label: '안내 데스크 안쪽 끝', scale: .75 });
 };
 
 // 로비 소파 (2×1): a teal velvet lobby sofa, diamond-tufted back and rolled arms, on honey legs — a mustard-striped pillow,
@@ -775,6 +778,7 @@ B.lobbysofa = (f, T) => {
   f.spot('inside', null, .35, .3, .12, { part: p, maxH: .3, label: '로비 소파 쿠션 밑', scale: .8 });
   f.spot('under', null, -.45, 0, .3, { maxH: .09, label: '로비 소파 밑', scale: .8 });
   f.spot('on', null, -.18, seat, .2, { maxH: .4, label: '로비 소파 위', scale: .75 });
+  f.spot('on', null, -.8, .655, .1, { maxH: .35, label: '소파 팔걸이 위', scale: .7 });   // (레벨 보고서 10/18)
 };
 
 // 우편함 벽 (wall, span 2): a honey-framed bank of 24 brushed-steel mailboxes with number plates and slots (letters poke out of
@@ -905,6 +909,7 @@ B.securitygate = (f, T) => {
   })));
   f.spot('under', null, -.43, PLATE, .17, { maxH: .4, label: '보안 게이트 밑', scale: .85 });
   f.spot('on', null, 0, PH, -.2, { maxH: .4, label: '게이트 위', scale: .65 });
+  for (const x of [PX[0], PX[2]]) f.spot('on', null, x, PH, -.2, { maxH: .4, label: x < 0 ? '게이트 왼쪽 기둥 위' : '게이트 오른쪽 기둥 위', scale: .65 });   // (레벨 보고서 10/18)
 };
 
 // 게시판 (wall, span 1): a cork notice board in a navy frame over a wood pen ledge — a recycling guide, an elevator-check notice, a lost cat,
@@ -1118,6 +1123,7 @@ B.outdoorunit = (f, T) => {
   f.add(pv);
   const p = f.part('door', pv, t => { pv.rotation.y = -1.6 * t; }, { label: '실외기 그릴', sfx: 'open', dur: .3 });
   f.spot('inside', null, fcx - .02, y0 + .02, -.2, { part: p, maxH: .4, label: '실외기 안', scale: .8 });
+  f.spot('on', null, 0, y0 + H, BZ + D / 2, { maxH: .4, label: '실외기 위', scale: .75 });   // (레벨 보고서 10/18: the rooftop had 2 places in plain sight)
 };
 
 // 옥상 텃밭 상자 (1×1): two styrofoam boxes from the market (제주 감귤, 싱싱 수산) turned vegetable beds on a pallet — green and
@@ -1189,6 +1195,7 @@ B.rooftopgarden = (f, T) => {
   f.add(pv);
   const p = f.part('lift', pv, (t, b) => { pv.position.y = b.p.y + .3 * t; pv.position.x = b.p.x - .03 * t; pv.rotation.z = .45 * t; }, { label: '작은 화분', sfx: 'lift' });
   f.spot('inside', null, -.28, 0, .36, { part: p, maxH: .28, label: '작은 화분 밑', scale: .6 });
+  f.spot('on', null, .3, PY, .21, { maxH: .35, label: '화분 받침 위', scale: .7 });   // (레벨 보고서 10/18)
 };
 
 // 옥상 빨랫줄 (2×1): two poles set in concrete-filled buckets carry a white and a yellow line — a red flowered blanket (꽃무늬
@@ -1281,6 +1288,7 @@ B.deckchair = (f, T) => {
   }));
   f.spot('under', null, .15, 0, .1, { maxH: .21, label: '선베드 밑', scale: .85 });
   f.spot('on', null, .88, .435, -.02, { maxH: .4, label: '선베드 옆 탁자', scale: .6 });
+  f.spot('on', null, .2, ST + .06, Z0, { maxH: .35, label: '선베드 위', scale: .7 });   // (레벨 보고서 10/18)
 };
 
 // 안테나 (1×1): a TV antenna mast on crossed cinder blocks, guyed to little anchors — a fishbone aerial at the top with a
@@ -1384,6 +1392,7 @@ B.rooftopdoor = (f, T) => {
   pv.add(mg('rooftopdoor-note', atlasMat(), ({ add }) => add(quadGeo(.16, .189, RG.doornote), .2, -.06, .006, 0, 0, .04)));
   f.add(pv);
   const p = f.part('door', pv, t => { pv.rotation.y = -1.75 * t; }, { label: '옥상 문', sfx: 'door', dur: .36 });
+  p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: DW - .07, y: -.17, z: .03, parent: pv };   // (레벨 보고서 10/18) a padlock under the handle: the rooftop had nothing to lock
   f.spot('inside', null, .08, SY, .49, { part: p, maxH: .45, label: '옥상 계단실 안', scale: .85 });
 };
 

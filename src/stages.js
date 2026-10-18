@@ -598,7 +598,25 @@ const LOCK_PLAN = [[], ['pad'], [], ['code'], ['color'], [], ['lever'], ['pad', 
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 90, 4: 80, 5: 85, 6: 110, 7: 100, 8: 105, 9: 95, 10: 125, 11: 105};
 // 흑백판: the room has lost its colour; what you find (things AND a few pieces of furniture) gets it back
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")
-export const GRAY = new Set([2, ...planAt('gray')]);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
+export const GRAY = new Set([2, ...planAt('gray')]);
+// 숨은그림 되살리기 (10/18, user: "계속 캐릭터가 숨어대니까 짜증난다. 진득하게 숨은그림찾는 코어가 사라진거같아"): the owner
+// hides only on these stages (0-based; 1판 is its own tutorial hide) — the ★장치판, three chapter openings where the friend says
+// so, 8 (night bedroom, right before the pajama party) and 16 (classroom). Every other ordinary stage is a hidden-object stage
+// again, the owner standing by. Story + level sessions' plan: _handoff/stage-mix-plan-20261018.md, level-mix-shape-20261018.md.
+// ?mix=0 brings back the 10/17 rule (every ordinary stage a friend hunt) to compare.
+export const FRIEND_HIDE = new Set([5, 7, 15, 19, 21, 29, 38, 40, 47, 49, 58, 67]);
+// 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
+// really see on that map, chains ≤ the map's lockable pieces; 32·33·35·61·65 count the spots added 10/18)
+const HO_SHAPE = {
+  2: [6, 0], 4: [7, 1], 5: [7, 1], 7: [7, 1], 9: [8, 2], 10: [8, 1], 11: [8, 2],
+  13: [8, 2], 15: [7, 1], 19: [8, 2],
+  23: [9, 2], 25: [10, 2], 26: [11, 3], 27: [10, 2],
+  32: [10, 1], 33: [9, 2], 35: [10, 1], 36: [11, 2],
+  43: [10, 2], 44: [9, 2], 45: [10, 1],
+  51: [10, 2], 52: [10, 2], 54: [12, 3], 55: [9, 2], 57: [12, 3],
+  61: [10, 2], 62: [11, 2], 63: [11, 2], 65: [9, 1], 67: [12, 3],
+};
+const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(location.search);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
 export function stageSpec(idx) {
   idx = Math.max(0, idx);
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
@@ -609,7 +627,20 @@ export function stageSpec(idx) {
   // 사건 판 (10/17 pivot): from stage 3 on, every ordinary stage is a small incident — the owner hides behind a lock and
   // you work your way to them; 흑백판 keep their own colour game, timed and boss stages theirs
   // (대본 10/18: the 열쇠·비밀번호 lessons, tut 4 and 7, are friend-finding stages too; only the two tutorials aren't)
-  if (idx >= 2 && !s.timed && !s.boss && !s.gray && !(s.tut <= 2)) s.incident = true;
+  if (idx >= 2 && !s.timed && !s.boss && !s.gray && !(s.tut <= 2) && (MIX_OLD || FRIEND_HIDE.has(idx))) s.incident = true;
+  // a hidden-object stage (레벨 세션 B2): hard spots (under / behind) 0 in chapters 1-2, 1 in 3-4, 2 from 5; inside a drawer
+  // or door 30 % early, 40 % later
+  if (!MIX_OLD && s.tut === 2 && HO_SHAPE[2]) s.n = HO_SHAPE[2][0];   // the things tutorial keeps its own spots, just the count
+  if (!MIX_OLD && !s.incident && !s.timed && !s.boss && !(s.tut <= 2)) {   // (4판 key, 7판 code lessons are hidden-object stages too)
+    const ch = REGIONS.indexOf(regionOf(idx)), shape = HO_SHAPE[idx + 1];
+    if (shape) {   // how many things, and how many of them sit at the end of a lock chain
+      s.n = shape[0];
+      const kinds = (Array.isArray(s.lock) ? s.lock : s.lock === 'both' ? ['pad', 'code'] : s.lock ? [s.lock] : []).slice(0, shape[1]);   // (chapter 1 writes one lock as a word)
+      for (const k of ['pad', 'code', 'lever', 'color']) if (kinds.length < shape[1] && !kinds.includes(k) && !(k === 'color' && (s.gray || s.night || s.dark))) kinds.push(k);
+      s.lock = kinds;
+    }
+    s.behind = ch <= 1 ? 0 : ch <= 3 ? 1 : 2; s.inside = Math.round((s.n || 6) * (ch <= 1 ? .3 : .4));
+  }
   return s;
 }
 // After stage 50: endless mode, every region in turn, new seed every time, a 4-lock boss every 10th
@@ -775,9 +806,10 @@ export function planStage(room, spec, story = null) {
     // lockable piece — never the region's favourite small box (a coin changer is no hideout)
     let part = null;
     if (spec.hideout && lk === lockKinds[0]) {
-      for (const t of spec.hideout) if ((part = free.find(p => p.furn.type === t))) break;
+      const hf = free.filter(p => !p.noHide);   // a till's cash drawer is lockable but no hideout (레벨 세션 10/18)
+      for (const t of spec.hideout) if ((part = hf.find(p => p.furn.type === t))) break;
       const vol = p => { const f = FURN_INFO[p.furn.type] || {}; return (f.w || 1) * (f.d || 1) * (f.h || 1); };
-      part ||= free.slice().sort((a, b) => vol(b) - vol(a))[0] || null;
+      part ||= hf.slice().sort((a, b) => vol(b) - vol(a))[0] || null;
     }
     part ||= free.find(p => pref.includes(p.furn.type)) || free.find(p => p.lockKind === lk) || free[0];
     if (!part) continue;
@@ -877,7 +909,10 @@ export function planStage(room, spec, story = null) {
 // the clue of the friend's lock waits inside the other one (key → box → note → safe → friend). A couple of things to
 // find remain as a bonus. Built on planStage: the friend's marker is forced in as the first target, so the first lock
 // guards it and every rule about clues and dead ends still holds.
-const HIDEOUT = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic'];
+const HIDEOUT = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic',
+  // 10/18 (레벨 세션): stages 41 / 48 / 50 had no hideout at all (or one) — 103동 door, recycling bins, ice-cream cart,
+  // grill, park bin, wish box, hiking pack; and 8's shower curtain and bed as R1 decoys
+  'aptwall', 'recyclebins', 'icecart', 'bbqgrill', 'parkbin', 'shrinebox', 'backpack2', 'bathtub', 'bed'];
 export function planIncident(room, spec, story = null) {
   const given = Array.isArray(spec.lock) ? spec.lock.slice() : spec.lock === 'both' ? ['pad', 'code'] : spec.lock ? [spec.lock] : [];
   const DOOR = ['pad', 'code', 'color'];

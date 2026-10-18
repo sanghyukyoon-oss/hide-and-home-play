@@ -8,7 +8,7 @@ import { Companion } from '../companion.js';
 import { BOSS_AFTER } from './boss.js';
 import { MINI_AFTER, MINI_INFO, BOSS_GAMES } from '../minis.js';
 import { BOSS_GAME_INFO } from './bossgame.js';
-import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO } from '../stages.js';
+import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO, REGIONS, regionOf } from '../stages.js';
 import { spinePuzzle } from '../showcase.js';
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
@@ -24,7 +24,7 @@ import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incid
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
-  timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro } from '../script.js';
+  timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay } from '../script.js';
 import { tr } from '../i18n.js';
 const JAIL_LINES = ['억울해! 난 그냥 여기 숨어 있었다고!', '진짜 도둑은 그 까만 애라니까~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
 const ROBOT_COST = 50;
@@ -39,7 +39,8 @@ import { retrieve, canGrab, grab } from '../raid.js';
 // of nothing. (Prototype simplification: after 3 wrong guesses the real one gives itself away instead of the friend moving.)
 // R1 몰래 숨기 is the default since 10/18 (user: "좋아 알원"); ?hide=0 brings back the old watch-it-hide version
 const HIDE_R1 = !/[?&]hide=0(&|$)/.test(location.search);
-const R1_HIDE = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic', 'bookshelf', 'desk', 'toybox', 'cabinet', 'closet', 'sideboard', 'shoerack', 'laundrybasket', 'dresser']; 
+const R1_HIDE = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic', 'bookshelf', 'desk', 'toybox', 'cabinet', 'closet', 'sideboard', 'shoerack', 'laundrybasket', 'dresser',
+  'aptwall', 'recyclebins', 'icecart', 'bbqgrill', 'parkbin', 'shrinebox', 'backpack2', 'bathtub', 'bed'];   // 10/18 레벨 세션: 8·41·48·50판 had 0-1 candidates 
 
 const V = new THREE.Vector3();
 const fmtTime = s => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`; };
@@ -203,11 +204,14 @@ export class StageScene {
     this.bubble = h('div', { class: 'bubble count' }, ''); G.ui.wui.append(this.bubble);
     if (this.plan.light) this.goDark();
     if (this.spec.intro && this.spec.chapter && !custom) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }
+    // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
+    this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !this.spec.tut && isHidden(this.idx);
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
-    await G.ui.banner(th.name, custom ? `숨겨 둔 물건 ${this.targets.length}개를 찾아라!` : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
+    await G.ui.banner(th.name, custom ? `숨겨 둔 물건 ${this.targets.length}개를 찾아라!` : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
     if (this.dead) return;
     if (this.story?.intro) { await this.talk(this.story.intro, { title: this.story.title }); if (this.dead) return; }
     if ((this.scene?.type === 'tut2' || (this.scene?.always && !this.incident)) && this.scene.intro) { await this.talk(this.scene.intro, { title: th.name }); if (this.dead) return; }   // 2판 · 편의점
+    else if (this.hiddenStage) { const lines = hiddenIntro(this.idx, th.friend); if (lines?.length) { await this.talk(lines, { title: th.name }); if (this.dead) return; } }
     if (this.spec.gray && !custom) {
       // 대본: the owner, then 먹물이 by where we are in the story (a voice → caught again → quiet → helping)
       await this.talk(grayIntro(this.idx, th.friend, !!this.villain), { title: '색을 잃은 방' });
@@ -495,10 +499,14 @@ export class StageScene {
     this.r1 = { real, cands: [real, ...others.slice(0, 2)], miss: 0, told: new Set(), objs: [] };
     this.say(f, hideLine(this.idx, this.th.friend), 1100);
     await tw.wait(.6);
-    const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, R1.close), this.r1N = h('span', { class: 'ol' }, ''));
+    // the full "눈 감아! 하나, 둘, 셋" only the first time; after that a short dark "쉿…" — the hiding sounds stay, they're the
+    // clue (user, 10/18: "하나둘셋이것도 계속보니까 짜증나")
+    const full = !G.save.r1Counted;
+    const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, full ? R1.close : '쉿…'), this.r1N = h('span', { class: 'ol' }, ''));
     document.getElementById('overlay').append(ov);
     f.root.visible = false;
-    for (const n of R1.nums) { if (this.dead) return; this.r1N.textContent = n; G.audio.sfx('tock'); await tw.wait(.6); }
+    if (full) { for (const n of R1.nums) { if (this.dead) return; this.r1N.textContent = n; G.audio.sfx('tock'); await tw.wait(.6); } G.save.r1Counted = true; G.persist?.(); }
+    else { await tw.wait(.35); if (this.dead) return; }
     G.audio.sfx('tap', 12); await tw.wait(.15); G.audio.sfx('tap', 14); await tw.wait(.2); G.audio.sfx(real.sfx || 'open'); await tw.wait(.35); G.audio.sfx('close');
     ov.classList.add('out'); setTimeout(() => ov.remove(), 300);
     this.friendHidden = true; this.r1Trail();
@@ -636,6 +644,12 @@ export class StageScene {
     else if (!this.custom && !this.preview && this.idx < 6) {
       const P = ['잘 찾았어!', '눈썰미 최고!', '우와 천재야!', '어떻게 알았어?!', '탐정 소질 있다!', '완벽해!', '역시 너야!', '반짝반짝 눈!'];
       setTimeout(() => !this.dead && G.ui.floatText(s.x, s.y - 92, P[(this.found + this.idx * 3) % P.length], 'gold big'), 220);
+    }
+    if (this.hiddenStage && left > 0) {   // the owner's three bubbles: first find · half · one left (each once; one left wins a tie)
+      const n = this.targets.length, said = this._hs ||= new Set();
+      const which = left === 1 ? 'last' : this.found === 1 ? 'first' : this.found === Math.ceil(n / 2) ? 'half' : null;
+      const line = which && !said.has(which) && hiddenSay(this.idx, this.th.friend, which);
+      if (line) { said.add(which); setTimeout(() => !this.dead && !this.result && this.say(this.friend, line, 1600), 350); }
     }
     if (this.spec.timed) this.tlEl.textContent = `너굴이가 세는 중 · ${this.found}/${this.targets.length}`;
     else if (this.incident) { const b = this.targets.filter(t => !t.friend), bf = b.filter(t => t.found).length; this.tnum.textContent = `${bf}/${b.length}`; this.tbarI.style.width = (bf / Math.max(1, b.length) * 100) + '%'; }
@@ -1785,7 +1799,10 @@ export class StageScene {
     if (this.running && !this.result && !this.paused) {
       this.idle += dt;
       if (this.idle > 11) this.taunt('idle');
-      if (this.idle > 9) {   // a sparkle on something findable after 9 s of nothing (was 15)
+      // a sparkle on something findable after a while of nothing: 9 s on a friend hunt; on a hidden-object stage you get
+      // time to look yourself first — 12 s in chapters 1-2, 20 s from 3 (레벨 세션 B3, user: "진득하게")
+      if (this.sparkAfter == null) { const ch = REGIONS.indexOf(regionOf(this.idx)); this.sparkAfter = this.incident || this.custom || this.spec.timed ? 9 : ch <= 1 ? 12 : 20; }
+      if (this.idle > this.sparkAfter) {
         this.twinkleT -= dt;
         if (this.twinkleT <= 0) {
           this.twinkleT = 4;

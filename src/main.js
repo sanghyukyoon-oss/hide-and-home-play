@@ -198,9 +198,11 @@ const G = {
     const out = {};
     save.best[idx] = Math.max(save.best[idx] || 0, stars);
     save.stars = Object.values(save.best).reduce((a, b) => a + b, 0);
-    save.coins += coins; out.awarded = coins;
     const before = save.stage || 0;
     out.firstClear = idx + 1 > before;
+    // a stage you'd already cleared pays a third (레벨 세션 B5: no farming one stage over and over)
+    if (!out.firstClear) coins = Math.round(coins / 3);
+    save.coins += coins; out.awarded = coins;
     save.stage = Math.max(before, idx + 1);
     if (before < 2 && save.stage >= 2) out.unlockedHome = true;
     if (before < STAGE_COUNT && save.stage >= STAGE_COUNT) out.allClear = true;

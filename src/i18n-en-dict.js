@@ -3416,4 +3416,5 @@ export const EN = {
 "열린 냉장고를 꾹 누르고 있으면 꺼내요": "Hold the open fridge to grab snacks",
 "놀이를 불러오지 못했어요 · 다음 판으로 갈게요": "Couldn't load the game · moving on to the next stage",
 "놀이": "Break",   // the tag on a 쉬어가기 (scenes/mini.js)
+"쉿…": "Shh…",   // R1 hide after the first count (stage.js r1Hide)
 };
