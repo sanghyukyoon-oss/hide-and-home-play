@@ -19,7 +19,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   addEventListener('pointerdown', A.unlock, { capture: true });
   A.setMuted = m => { A.muted = m; store.set(storageKey, m); if (A.master) A.master.gain.setTargetAtTime(m ? 0 : .9, A.ctx.currentTime, .02); };
 
-  function tone({ type = 'sine', f = 440, f2 = null, dur = .12, vol = .5, attack = .004, at = 0, bus = A.sfxBus, q = 0, filter = null, detune = 0, vib = 0 }) {
+  function tone({ type = 'sine', f = 440, f2 = null, dur = .12, vol = .5, attack = .004, at = 0, bus = A._bus || A.sfxBus, q = 0, filter = null, detune = 0, vib = 0 }) {
     const c = A.ctx; if (!c) return;
     const t0 = c.currentTime + at;
     const o = c.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t0); o.detune.value = detune;
@@ -39,7 +39,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t0); fl.Q.value = q;
     if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
     const g = c.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
-    s.connect(fl).connect(g).connect(A.sfxBus); s.start(t0);
+    s.connect(fl).connect(g).connect(A._bus || A.sfxBus); s.start(t0);
   }
   const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28];
   const hz = semi => 440 * 2 ** ((semi - 9) / 12);
@@ -89,9 +89,29 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'giggle': for (let i = 0; i < 4; i++) tone({ type: 'sine', f: 900 + (i % 2) * 220, f2: 1200 + (i % 2) * 200, dur: .07, vol: .14, at: i * .075 }); break;
       case 'place': tone({ type: 'sine', f: 260, f2: 520, dur: .1, vol: .26 }); tone({ type: 'triangle', f: 780, dur: .08, vol: .1, at: .06 }); break;
       case 'buy': [0, 7, 12].forEach((s, i) => tone({ type: 'square', f: hz(s + 12), dur: .1, vol: .08, at: i * .06, filter: 'lowpass', q: 3500 })); break;
+      // 몰래 숨기 v2: each hideout's own sound, and the friends' tells from inside
+      case 'thump': tone({ type: 'sine', f: 170, f2: 80, dur: .14, vol: .38 }); noise({ dur: .07, vol: .14, type: 'lowpass', f: 600 }); break;
+      case 'latch': tone({ type: 'square', f: 1800, dur: .025, vol: .09, filter: 'lowpass', q: 4000 }); tone({ type: 'square', f: 1250, dur: .03, vol: .09, at: .07, filter: 'lowpass', q: 3500 }); tone({ type: 'sine', f: 260, f2: 200, dur: .08, vol: .16, at: .07 }); break;
+      case 'rustle': for (let i = 0; i < 4; i++) noise({ dur: .06, vol: .13, f: 3200 + i * 300, q: 1.4, at: i * .06 }); break;
+      case 'clink': tone({ type: 'triangle', f: 2100, dur: .09, vol: .12 }); tone({ type: 'triangle', f: 2750, dur: .12, vol: .08, at: .05 }); break;
+      case 'slide': noise({ dur: .4, vol: .15, f: 500, f2: 1300, q: 1.8 }); tone({ type: 'sine', f: 180, dur: .06, vol: .14, at: .36 }); break;
+      case 'creak': tone({ type: 'sawtooth', f: 330, f2: 520, dur: .45, vol: .06, filter: 'lowpass', q: 1400, vib: 18 }); break;
+      case 'thunk': noise({ dur: .12, vol: .16, type: 'lowpass', f: 900 }); tone({ type: 'sine', f: 120, f2: 70, dur: .16, vol: .35, at: .02 }); break;
+      case 'snore': noise({ dur: .55, vol: .16, type: 'lowpass', f: 260, f2: 520, q: 2 }); tone({ type: 'sawtooth', f: 85, f2: 110, dur: .5, vol: .05, filter: 'lowpass', q: 400 }); noise({ dur: .4, vol: .07, f: 1600, f2: 900, q: 1, at: .65 }); break;
+      case 'blub': for (let i = 0; i < 3; i++) tone({ type: 'sine', f: 380 + i * 140, f2: 900 + i * 220, dur: .06, vol: .2, at: i * .09 }); break;
       case 'door': noise({ dur: .3, vol: .14, f: 500, f2: 900, q: 3 }); tone({ type: 'triangle', f: 160, f2: 120, dur: .3, vol: .12, vib: 8 }); break;
       default: tone({ f: 600, dur: .05, vol: .2 });
     }
+  };
+
+  // a sound from a place: left/right by where it is on screen, quieter when it is off screen (몰래 숨기 v2)
+  A.sfxAt = (name, pan = 0, gain = 1) => {
+    if (!ensure() || A.muted) return A.sfx(name);
+    const c = A.ctx, g = c.createGain(), p = c.createStereoPanner ? c.createStereoPanner() : null;
+    g.gain.value = gain;
+    if (p) { p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p).connect(A.sfxBus); } else g.connect(A.sfxBus);
+    A._bus = g; try { A.sfx(name); } finally { A._bus = null; }
+    setTimeout(() => { try { g.disconnect(); p?.disconnect(); } catch {} }, 3000);
   };
 
   // Music box loop. mood: 'home' | 'play' | 'tense'

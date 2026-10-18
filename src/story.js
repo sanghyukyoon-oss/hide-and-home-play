@@ -214,7 +214,8 @@ export function playDialog(G, lines, { title = null, onLine = null, parent = nul
     };
     root.addEventListener('pointerup', e => {
       e.stopPropagation();
-      if (e.target === skip) { clearInterval(typing); i = lines.length - 1; return show(); }
+      if (i >= lines.length) return;   // already done and fading out (a skip left the typing id set, so a later tap read past the end)
+      if (e.target === skip) { clearInterval(typing); typing = null; i = lines.length - 1; return show(); }
       if (typing) { clearInterval(typing); typing = null; text.textContent = tr(lines[i].text); return; }
       show();
     });

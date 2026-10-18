@@ -752,7 +752,8 @@ export function planStage(room, spec, story = null) {
   let tv = null;
   if (spec.tv) { const e = (room.rooms || [room]).flatMap(Rm => Rm.furns).find(e => e.type === 'tvlow'); if (e) tv = tvPuzzle(e.f); }
   // a part that may only open a crack (a rug with a table on it, a gate against a vending machine) hides nothing
-  const all = room.spots.filter(s => !s.reserved && (!s.part || (s.part.reach ?? 1) >= .55));
+  // 숨은그림 판: places no view can see into, even opened (measured per room, src/hunt-blind.js), are never used
+  const all = room.spots.filter(s => !s.reserved && (!s.part || (s.part.reach ?? 1) >= .55) && !spec.avoid?.(s));
   const used = new Set();
   const take = (pred, type) => {
     const c = r.shuffle(all.filter(s => !used.has(s) && pred(s) && (!type || fits(type, s))));
@@ -869,10 +870,17 @@ export function planStage(room, spec, story = null) {
   const lockedParts = new Set(locks.map(l => l.part));
   const partsUsed = new Set();
   const want = { inside: spec.inside || 0, behind: spec.behind || 0 };
+  // 숨은그림 판 (10/18): about half the things go where the host would put them (곰돌이 by food, 개굴이 by water…) —
+  // knowing the friend helps you look ("이 친구라면 여기 숨겼겠지")
+  const habit = spec.prefer?.length ? x => !!x.furn?.type && spec.prefer.some(w => x.furn.type.includes(w)) : null;
   for (; ti < targets.length; ti++) {
     const type = targets[ti];
     let s = null;
-    if (want.inside > 0) {
+    if (habit && ti % 2 === 0) {
+      s = take(x => habit(x) && !(x.part && lockedParts.has(x.part)) && !(x.part && partsUsed.has(x.part)), type);
+      if (s) { if (s.kind === 'inside') { want.inside--; partsUsed.add(s.part); } else if (s.kind !== 'on') want.behind--; }
+    }
+    if (!s && want.inside > 0) {
       s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part), type) || take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part), type);
       if (s) { want.inside--; partsUsed.add(s.part); }
     }

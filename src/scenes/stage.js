@@ -26,6 +26,10 @@ import { R1, r1Line } from '../script.js';   // R1 몰래 숨기 lines (story se
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay } from '../script.js';
 import { tr } from '../i18n.js';
+// 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
+// friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
+import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound } from '../hunt.js';
+import { v2Wanted, v2Setup, v2Prep, v2Hide, v2Tell, v2PointAll, v2KeyToast, v2OpenSound, v2Wrong, v2Hint, v2AfterFound, v2Stars, v2StarWhy, v2Stamp, v2Title, v2Update, v2PeekTap } from '../r1v2.js';
 const JAIL_LINES = ['억울해! 난 그냥 여기 숨어 있었다고!', '진짜 도둑은 그 까만 애라니까~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
 const ROBOT_COST = 50;
 import { h, ICON } from '../ui.js';
@@ -117,11 +121,16 @@ export class StageScene {
     this.room = layout.rooms ? new MapRooms(W, layout) : new Room(W, layout);
     W.root.add(this.room.group);
     this.ambient = new Ambient(this.room);   // plants sway, clothes sway, warm things steam
+    // 숨은그림 판: about half the things where this host would put them, never a place nobody can see into (hunt.js)
+    this.hunt = !custom && !this.preview && isHunt(this.spec);
+    if (this.hunt) this.spec = huntExtras(this.spec, th.friend);
     this.story = custom ? null : storyFor(this.idx);
     // 사건 판 (10/17 pivot): the owner hides behind a lock and finding them is the goal (세팅 → 더보기 has the old way)
     this.incident = !custom && !this.preview && (!!this.spec.incident || this.spec.tut === 1) && !G.save.settings?.oldMode;
     this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, this.spec, this.story)) || planStage(this.room, this.spec, this.story);
     if (this.incident && !this.plan.incident) this.incident = false;
+    this.v2 = null; const wantV2 = v2Wanted(this);
+    if (wantV2) this.plan.placements = this.plan.placements.filter(p => p.role !== 'decoy');   // v2: a friend-finding stage has no decoys
     for (const l of this.plan.locks) {
       if (l.kind === 'treat') { l.part.lock = { kind: 'treat' }; continue; }   // guarded by a character, no lock hardware
       if (l.kind === 'dig') { l.part.lock = { kind: 'dig' }; continue; }       // the red X in the sand: dig it with the shovel
@@ -130,6 +139,7 @@ export class StageScene {
       l.part._hadLock = true;
       l.part.furn.setLock(l.part, l.kind, l.code); if (l.lever) l.part.leverPart = l.lever; if (l.puzzle) l.part.lock.puzzle = l.puzzle; if (l.tv) l.part.lock.tv = true;
     }
+    if (wantV2) v2Setup(this);   // three candidates, one lock kind
     this.treats = 0; this.secretFound = false; this.guard = null;
     this.items = []; this.friendItem = null;   // (the last stage's hidden friend must not carry over)
     const r = this.plan.rotSeed;
@@ -187,6 +197,11 @@ export class StageScene {
     }
     // camera
     this.frameCamera();
+    if (this.hunt) {   // things that can be seen, the key where the start view sees it, the next friend peeking (not on the list)
+      this.blindFixed = fixBlindSpots(this); chainToView(this);
+      const c = placeCameo(this); if (c) { this.cameo = c; this.items.push(c); }
+    }
+    if (this.v2) v2Prep(this);
     W.shadowDirty = true;
     // state
     Object.assign(this, { time: this.spec.time, timeMax: this.spec.time, timerOn: false, running: false, paused: false, combo: 0, bestCombo: 0, lastFind: -99, misses: [], dizzy: 0, keys: 0, codes: new Set(),
@@ -205,7 +220,7 @@ export class StageScene {
     if (this.plan.light) this.goDark();
     if (this.spec.intro && this.spec.chapter && !custom) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
-    this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !this.spec.tut && isHidden(this.idx);
+    this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
     await G.ui.banner(th.name, custom ? `숨겨 둔 물건 ${this.targets.length}개를 찾아라!` : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
     if (this.dead) return;
@@ -259,6 +274,7 @@ export class StageScene {
     for (const n of this.npcs || []) { n.on = false; G.world.root.remove(n.ch.root); }
     this.ambient?.dispose(); if (this.hero) { disposeTree(this.hero.ch.root); this.hero.dispose(); }
     // this stage's own meshes, materials and textures (not the shared caches) go with it
+    if (this.cameo) { G.world.root.remove(this.cameo.ch.root); disposeTree(this.cameo.ch.root); }
     for (const r of [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root)]) disposeTree(r);
     G.world.onTap = null; G.world.onRotate = null; G.world.tapInstant = null; G.world.onPress = null;
     G.ui.clear(); this.tw.clear();
@@ -326,6 +342,7 @@ export class StageScene {
   classify(o) {
     for (let p = o; p; p = p.parent) {
       const u = p.userData;
+      if (u.peek) return { kind: 'peek', node: p };   // v2: the friend's tell poking out
       if (u.item) return { kind: 'item', item: u.item, node: p };
       if (u.part) return { kind: 'part', part: u.part, node: p };
       if (u.char) return { kind: 'char', char: u.char, node: p };
@@ -335,7 +352,7 @@ export class StageScene {
     }
     return { kind: 'none' };
   }
-  pickRoots() { return [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root), ...(this.trick?.ch ? [this.trick.ch.root] : [])]; }
+  pickRoots() { return [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root), ...(this.trick?.ch ? [this.trick.ch.root] : []), ...(this.cameo ? [this.cameo.ch.root] : [])]; }
   // 손맛 1: a fingertip is ~44 px, but a small thing is drawn 12–38 px and its tap area was 28–34 px across at the whole
   // view (stage 4, 375-wide phone, measured 10/18) — a near miss landed on the floor or a cabinet and counted as a miss
   // (몽글이 sweats, −2 s on a timed stage, dizzy after four). When nothing to find is right under the finger, the nearest
@@ -383,7 +400,7 @@ export class StageScene {
     const d0 = hits[0].distance;
     const ih = hits.find(hh => hh.distance - d0 < .3 && this.classify(hh.object).kind === 'item');
     const first = this.classify((ih || hits[0]).object);
-    if (first.kind === 'char') {
+    if (first.kind === 'char' && !first.char?._cameo) {
       const behind = hits.map(hh => this.classify(hh.object)).find(c => c.kind === 'item' || c.kind === 'part');
       if (behind) return behind;
     }
@@ -395,12 +412,14 @@ export class StageScene {
     if (this.dizzy > 0) { G.audio.sfx('wobble'); return; }
     const hit = this.pickAt(x, y);
     this.lastTapAt = { x, y };
+    if (hit.kind === 'peek') return v2PeekTap(this);
     if (hit.kind === 'item') {
       const it = hit.item;
       if (it.found) return;
       // the hidden friend is only ever found by its door opening (revealFriend): a tap on it while the door is still swinging
       // used to go to onFound and the stage could never end (level report 10/18 B1, stage 20)
       if (it.friend) { const pt = it.spot?.part; if (!pt || (!pt.busy && pt.t > .5)) this.revealFriend(it); return; }
+      if (it.cameo) return cameoFound(this, it);
       if (it.role === 'target') return this.onFound(it);
       if (it.role === 'key' || it.role === 'note' || it.role === 'color' || it.role === 'treat' || it.role === 'tool' || it.role === 'sock' || it.role === 'book' || it.role === 'gadget') return this.onChain(it);
       if (it.role === 'secret') return this.onSecret(it);
@@ -414,6 +433,7 @@ export class StageScene {
     const ff = hit.kind === 'furn' ? hit.furn : hit.kind === 'part' ? hit.part.furn : null, ft = ff && this.grayTarget(ff);
     if (ft && !ft.found) return this.onFoundFurn(ft);
     if (hit.kind === 'part') return this.onPart(hit.part, x, y);
+    if (hit.kind === 'char' && hit.char?._cameo) return cameoFound(this, hit.char._cameo);
     if (hit.kind === 'char' && this.trick?.ch && hit.char === this.trick.ch) return this.trick.caught();
     if (hit.kind === 'char') return this.tapChar(hit.char);
     if (hit.kind === 'furn' && hit.furn.type === 'puzzleframe') return this.openPuzzle(hit.furn);
@@ -468,6 +488,7 @@ export class StageScene {
   }
   // ── 사건 판: the owner runs and hides, giggles from the hideout, and pops out when it is opened
   async friendHides() {
+    if (this.v2) return v2Hide(this);
     if (HIDE_R1 && this.spec.tut !== 1) return this.r1Hide();   // (1판 still shows the hide: it teaches what hiding is)
     const G = this.G, W = G.world, f = this.friend, part = this.plan.incident.part, tw = this.tw;
     this.friendHome = f.root.position.clone();
@@ -534,6 +555,7 @@ export class StageScene {
   }
   hideSay(lines) { if (this.t - (this._hsT ?? -99) < 4) return; this._hsT = this.t; this.giggle(lines[(this._hn = (this._hn || 0) + 1) % lines.length]); this.gigT = 7; }
   giggle(line) {
+    if (this.v2) return v2Tell(this, line ?? null);   // v2: a voice at the bottom, never a wobble or a bubble on the hideout
     const part = this.plan.incident?.part; if (!part) return;
     const L = hidePool(this.idx, this.th.friend, 'stuck');   // 대본: the host's own tell (토순이's tail, 곰돌이's snore…)
     const pc = this.partCenter(part);
@@ -561,7 +583,7 @@ export class StageScene {
     await tw.wait(.9);
     // 대본: the host says what was really going on — once, after the pop-out (no bubble + dialog twice, no stock "next room" ad)
     if (!this.dead && !G.skipTalk && !G.bot) await this.talk(incidentReveal(this.idx, this.th.friend), { title: this.th.name });
-    if (!this.result && !this.dead) this.win();
+    if (!this.result && !this.dead) { if (this.v2) return v2AfterFound(this); this.win(); }
   }
   cutFlash() { const f = h('div', { class: 'cutflash' }); document.getElementById('app').append(f); setTimeout(() => f.remove(), 260); }
   // ── 흑백판
@@ -672,7 +694,7 @@ export class StageScene {
     it.slot.classList.add('found', 'bump');
     G.audio.sfx('pop', this.found);
     if (this.incident && this.friendHidden && !it.friend && Math.random() < .5) setTimeout(() => !this.dead && this.hideSay(BONUS_SAY), 700);
-    if (!this.incident && this.targets.every(t => t.found) && !this.result) this.win();   // 사건 판: finding the friend ends it, the rest is bonus
+    if ((!this.incident || this.v2?.after) && this.targets.every(t => t.found) && !this.result) this.win();   // 사건 판: finding the friend ends it, the rest is bonus
   }
   async onChain(it) {
     const G = this.G, W = G.world;
@@ -729,7 +751,7 @@ export class StageScene {
       this.keyPill.style.display = ''; this.keyPill.classList.remove('need'); this.keyPill.set(String(this.keys));
       await G.ui.flyImg(G.thumbs.item_key, s.x, s.y, this.keyPill, { size: 64 });
       this.keyPill.classList.add('pop'); setTimeout(() => this.keyPill.classList.remove('pop'), 300);
-      G.ui.toast('열쇠 획득! 잠긴 상자를 열어봐', 'green');
+      G.ui.toast(this.v2 ? v2KeyToast() : '열쇠 획득! 잠긴 상자를 열어봐', 'green');
       this.pointAt(it.forPart);
     } else if (it.role === 'color') {
       this.colorCodes.add(it.code);
@@ -762,6 +784,7 @@ export class StageScene {
   // hops, and if it is the hideout the friend inside panics. Each step of the chain points at the next.
   async pointAt(part) {
     if (!this.incident || !part?.lock || this.dead) return;
+    if (this.v2?.cands.includes(part)) return v2PointAll(this);   // v2: the key fits all three
     const G = this.G, W = G.world, tw = this.tw, pc = this.partCenter(part), sc = W.toScreen(pc);
     const off = !(sc.x > 30 && sc.x < W.W - 30 && sc.y > 90 && sc.y < W.H - 170);
     const keep = { target: W.target.clone(), zoom: W.zoom };
@@ -932,7 +955,7 @@ export class StageScene {
     // friend hiding behind it gives themselves away
     if (part.lock && !this.custom && !this.canOpen(part)) {
       if (['pad', 'code', 'color', 'lever', 'treat'].includes(part.lock.kind) && !part.lock.tv) { this.paused = true; await newCard(G, part.lock.kind); this.paused = false; if (this.dead) return; }
-      if (part === this.plan.incident?.part && this.friendHidden) this.hideSay(hidePool(this.idx, this.th.friend, 'lock'));
+      if (part === this.plan.incident?.part && this.friendHidden && !this.v2) this.hideSay(hidePool(this.idx, this.th.friend, 'lock'));
     }
     if (part.lock) {
       const L = part.lock;
@@ -972,7 +995,7 @@ export class StageScene {
       part.busy = true;
       const lp = part.lockMesh ? W.toScreen(part.lockMesh.getWorldPosition(new THREE.Vector3())) : { x, y };
       if (L.kind === 'pad') {
-        if (!this.custom) this.keys--;   // a player's room has one master key for all its padlocks
+        if (!this.custom && !this.v2) this.keys--;   // a player's room has one master key for all its padlocks (v2: the key comes back too)
         this.keyPill.set(String(this.keys));
         await G.ui.flyImg(G.thumbs.item_key, this.keyPill.getBoundingClientRect().left + 20, this.keyPill.getBoundingClientRect().top + 16, { getBoundingClientRect: () => ({ left: lp.x - 1, top: lp.y - 1, width: 2, height: 2 }) }, { size: 56, dur: 420 });
         if (this.keys <= 0) this.keyPill.style.display = 'none';
@@ -1168,12 +1191,13 @@ export class StageScene {
     part.busy = true;
     if (opening) {
       part.spots.forEach(s => { if (s.itemGroup && s.item) s.itemGroup.visible = true; });
-      G.audio.sfx(part.sfx);
+      if (this.v2?.cands.includes(part)) v2OpenSound(this, part); else G.audio.sfx(part.sfx);
       this.partsOpened++;
       await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
       for (const s of part.spots) if (s.item && !s.item.found) { const p = W.toScreen(this.worldCenter(s.item)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 }); }
       if (this.jailed?.in && part === this.jailed.door) this.freeJailed();
       const fi = part.spots.map(s => s.item).find(it => it?.friend && !it.found); if (fi) this.revealFriend(fi);
+      else if (this.v2 && this.friendHidden && this.v2.cands.includes(part) && !this.r1.told.has(part)) v2Wrong(this, part);
       else if (this.r1 && this.friendHidden && this.r1.cands.includes(part) && !this.r1.told.has(part)) this.r1Wrong(part);
       else if (this.incident && this.friendHidden && part._hadLock && !part._told) { part._told = true; setTimeout(() => !this.dead && this.hideSay(hidePool(this.idx, this.th.friend, 'clue')), 500); }
       // 2판: a drawer of hers (with something in it, or only socks) — once each way
@@ -1204,6 +1228,7 @@ export class StageScene {
     this.hints--; this.hintsUsed = (this.hintsUsed || 0) + 1;
     this.hintBtn.badge.textContent = this.hints > 0 ? this.hints : '60'; this.hintBtn.badge.classList.toggle('price', this.hints <= 0);
     G.audio.sfx('whoosh');
+    if (this.v2 && await v2Hint(this)) return;   // v2: the trail → the sound and the tell → the hideout
     const goal = this.nextGoal(true);
     if (!goal) return;
     const pos = goal.pos;
@@ -1591,7 +1616,7 @@ export class StageScene {
     this.result = 'clear'; this.running = false; this.tEnd = this.t;
     (this.tutEls || []).forEach(e => e.remove()); this.tutEls = [];
     // ★ found everything · ★ no hint · ★ careful (no more wrong taps than there were things to find)
-    const stars = this.incident ? 1 + (this.hintsUsed === 0 ? 1 : 0) + (this.targets.every(t => t.found) ? 1 : 0)   // ★ found them · ★ no hint · ★ every bonus thing
+    const stars = this.v2 ? v2Stars(this) : this.incident ? 1 + (this.hintsUsed === 0 ? 1 : 0) + (this.targets.every(t => t.found) ? 1 : 0)   // ★ found them · ★ no hint · ★ every bonus thing
       : this.spec.timed ? 1 + (this.time / this.timeMax >= .3 ? 1 : 0) + (this.hintsUsed === 0 ? 1 : 0)
       : 1 + (this.hintsUsed === 0 ? 1 : 0) + ((this.story?.secret ? this.secretFound : this.missCount <= this.targets.length) ? 1 : 0);
     const coins = this.custom ? 40 + this.targets.length * 15 + (this.plan.locks.length ? 20 : 0) + stars * 5 : 30 + this.targets.length * 10 + stars * 10 + (this.bestCombo >= 3 ? 20 : 0);
@@ -1653,10 +1678,12 @@ export class StageScene {
     const starEls = [0, 1, 2].map(() => h('div', { class: 'st', html: ICON.star }));
     const cv = h('span', {}, '0');
     const p = G.ui.panel({
-      title: first?.allClear ? `${STAGE_COUNT}판 올클리어!` : this.spec.hard ? '하드 클리어!' : (!this.custom && this.idx < 6) ? ['대단해!', '최고야!', '숨바꼭질 천재!', '멋져!', '완벽해!', '진짜 잘한다!'][this.idx] : '다 찾았다!', color: 'green',
+      title: first?.allClear ? `${STAGE_COUNT}판 올클리어!` : this.v2 ? v2Title(this) : this.spec.hard ? '하드 클리어!' : (!this.custom && this.idx < 6) ? ['대단해!', '최고야!', '숨바꼭질 천재!', '멋져!', '완벽해!', '진짜 잘한다!'][this.idx] : '다 찾았다!', color: 'green',
       body: [h('div', { class: 'stars' }, ...starEls),
         // 사건 판: what each star is for, so a missing one says how to get it (GPT QA 10/18: 보너스 0/2 → '다 찾았네', 별 2개)
-        ...(this.incident ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 친구 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: this.targets.every(t => t.found) ? 'on' : '' }, `★ 보너스 ${this.targets.filter(t => t.found && !t.friend).length}/${this.targets.length - 1}`))] : []),
+        ...(this.v2 ? [h('div', { class: 'starwhy' }, ...v2StarWhy(this).map(([t, on]) => h('span', { class: on ? 'on' : '' }, t)))].concat(v2Stamp(this) || [])
+          : this.hiddenStage ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: this.missCount <= this.targets.length ? 'on' : '' }, `★ 꼼꼼하게 · 헛탭 ${this.missCount}`))]   // 숨은그림 판: what each star is for
+          : this.incident ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 친구 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: this.targets.every(t => t.found) ? 'on' : '' }, `★ 보너스 ${this.targets.filter(t => t.found && !t.friend).length}/${this.targets.length - 1}`))] : []),
         h('div', { class: 'reward', html: ICON.coin }, cv),
         h('div', { class: 'txt' }, `걸린 시간 ${fmtTime((this.tEnd ?? this.t) - (this.tStart ?? 0))}` + (this.hintsUsed ? ` · 힌트 ${this.hintsUsed}번` : ' · 힌트 없이!') + (this.bestCombo >= 2 ? ` · 최고 콤보 x${this.bestCombo}` : '')),
         ...(first?.allClear ? [h('div', { class: 'txt' }, '몽글이가 마을 최고의 숨바꼭질 탐정이 됐어! 이제 무한 모드가 열렸어.')] : []),
@@ -1786,7 +1813,8 @@ export class StageScene {
     if (this.paused) return;
     this.t += dt;
     this.room.update(dt); this.ambient?.update(dt);
-    this.friend.update(dt); this.trick?.update(dt);
+    this.friend.update(dt); this.trick?.update(dt); this.cameo?.ch.update(dt);
+    if (this.v2) v2Update(this, dt);
     for (const n of this.npcs || []) n.ch.update(dt);
     this.hero?.update(dt, this.tw, !!this.result || !!this.talking);
     if (this.dizzy > 0) { this.dizzy -= dt; if (this.dizzy <= 0) { this.mong.classList.remove('spin'); this.mongImg.src = G.thumbs.face_mong; } }
