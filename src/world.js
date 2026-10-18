@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { clamp, lerp, ease } from './util.js';
 import { STYLE } from './gfx/kit.js';
 import { ToonPost } from './gfx/toonpost.js';
+import { DirtyTracker } from './gfx/dirty.js';
 import { ART, TUNE, applyArt, sortLayers } from './gfx/style.js';
 
 const V = new THREE.Vector3(), V2 = new THREE.Vector3();
@@ -13,6 +14,12 @@ const B_WINDOW = 280;   // ms: how long a tap waits for a second press (one-hand
 export const PHONE = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
 export const QUALITY = [{ ss: 2, dpr: 2, shadow: 2048 }, { ss: 1.5, dpr: 2, shadow: 2048 }, { ss: 1, dpr: 2, shadow: 2048 }, { ss: 1, dpr: 1.5, shadow: 1024 }, { ss: 1, dpr: 1, shadow: 1024 }];
 // can this browser draw the game at all? (three r170 needs WebGL2: roughly iOS 15+ / Android Chrome from ~2017)
+// heat (2026-10-18): ?opt=0 turns every frame-cost saving off (the A/B baseline); ?dirty=0 / ?inval=0 / ?sort=0 /
+// ?fpscap=0 / ?cdepth=1 one each. ?mask=1 tries the edge block mask (exact, but slower on the Mac GPU: off by default)
+const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+export const OPT_STORE = 'sbk-opt';   // the heat test build's on/off switch, kept per device (perfhud.js)
+const OPT_ON = QS.get('opt') !== '0' && (() => { try { return localStorage.getItem(OPT_STORE) !== '0'; } catch { return true; } })();
+export const OPT = { dirty: OPT_ON && QS.get('dirty') !== '0', mask: OPT_ON && QS.get('mask') === '1', inval: OPT_ON && QS.get('inval') !== '0', depth0: OPT_ON && QS.get('cdepth') !== '1', sort: OPT_ON && QS.get('sort') !== '0', fpsCap: OPT_ON && QS.get('fpscap') !== '0' };
 export function hasWebGL2() { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } }
 
 export class World {
@@ -21,7 +28,13 @@ export class World {
     // memory (iPhone 13 mini reloaded the tab after ~3 stages, 10/18): in the cartoon look the canvas only receives the
     // post's full-screen quad, so a multisampled canvas (~40 MB on a phone) buys nothing — antialias is the post's job
     const toon = this.toon = STYLE.mode !== 'std';
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !toon, alpha: true, powerPreference: 'high-performance' });
+    // the canvas itself only ever gets the post's full-screen quad (no depth test): no depth buffer for it either
+    // a still view that redraws only a few boxes keeps the rest of the canvas as it was (preserveDrawingBuffer)
+    const msaa = QS.get('msaa'), boxes = toon && OPT.dirty && (msaa != null ? +msaa === 0 : PHONE);
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !toon, alpha: true, depth: !(toon && OPT.depth0), preserveDrawingBuffer: boxes, powerPreference: 'high-performance' });
+    // opaque things nearest first, so the GPU's depth test drops what is hidden before shading it (a pixel was shaded
+    // 1.8–3x; front to back ~1.2–1.4x). Draw order among opaque, depth-tested things doesn't change the picture.
+    if (OPT.sort) r.setOpaqueSort(window.__optSort = (a, b) => a.groupOrder - b.groupOrder || a.renderOrder - b.renderOrder || a.z - b.z || a.material.id - b.material.id || a.id - b.id);
     r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     if (toon) r.toneMapping = THREE.NoToneMapping;
     else { r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.08; }
@@ -41,9 +54,20 @@ export class World {
     // cartoon post: ink outlines by object ID, supersampled (see gfx/toonpost.js)
     // phones: no MSAA on the supersampled colour target (4x half-float MSAA + its depth was ~125 MB of the ~250 MB the post
     // held on an iPhone; the 1.4x supersampling still smooths the edges). ?msaa=N overrides for A/B checks.
-    const msaa = new URLSearchParams(location.search).get('msaa');
-    if (toon) { this.post = new ToonPost(r, { budget: PHONE ? 2.6e6 : 4.5e6, samples: msaa != null ? +msaa : PHONE ? 0 : 4 }); applyArt(this.post); }
+    if (toon) { this.post = new ToonPost(r, { budget: PHONE ? 2.6e6 : 4.5e6, samples: msaa != null ? +msaa : PHONE ? 0 : 4, opt: { mask: OPT.mask, inval: OPT.inval } }); applyArt(this.post); }
+    // a still view redraws only what changed (needs a plain, non-multisampled colour target: phones, or ?msaa=0)
+    if (this.post && boxes && this.post.color.samples === 0) {
+      this.dirty = new DirtyTracker(); this.styleGrad = STYLE.grad; this._culled = [];
+      // a box redraw only issues draw calls for meshes whose screen box meets the box (layers 0 = skipped by the camera,
+      // children still drawn); everything is put back right after the post's scene passes
+      this.post.cullFor = (b, on) => {
+        for (const [o, m] of this._culled) o.layers.mask = m; this._culled.length = 0;
+        if (!on) return;
+        for (const [o, e] of this.dirty.objs) { const q = e.r; if (!q || q[2] <= b[0] || q[0] >= b[2] || q[3] <= b[1] || q[1] >= b[3]) { this._culled.push([o, o.layers.mask]); o.layers.mask = 0; } }
+      };
+    }
     this.maxSS = 2; this.frameN = 0; this.phone = PHONE; this.lastActive = performance.now();
+    this.perf = { frames: 0, area: 0 };   // frames drawn and the share of the screen drawn again (1 = whole), for the HUD
     this.root = new THREE.Group(); this.scene.add(this.root);
     // camera rig
     this.yaw = Math.PI / 4; this.pitch = .62; this.zoom = 1; this.target = new THREE.Vector3(0, .6, 0);
@@ -243,7 +267,10 @@ export class World {
     if (this.post) {
       // outline groups + layers are refreshed every few frames (cheap: a few hundred nodes), or at once when asked
       if (this.idsDirty || this.frameN++ % 8 === 0) { sortLayers(this.scene); this.post.assignIds(this.scene); this.idsDirty = false; }
-      this.post.render(this.scene, this.cam);
+      const plan = this.dirty?.plan(this, this.post);
+      this.perf.frames++; this.perf.area += plan?.skip ? 0 : plan?.rects ? plan.area : 1;
+      if (plan?.skip) return;   // nothing on screen changed: the canvas keeps the last frame, the GPU rests
+      this.post.render(this.scene, this.cam, plan?.rects || null);
     } else this.renderer.render(this.scene, this.cam);
   }
   // a theme's light: { amb, ambColor, sun, sunColor } (anything left out uses the house style); null = house style

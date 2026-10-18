@@ -1,8 +1,8 @@
-// 놀이 모음 (2026-10-19, user: "미니게임만 플레이할 수 있게 하위 채팅에서 했듯이 줄 수도 있음? 문서화해서"): every boss game and
+// 놀이 모음 (2026-10-18, user: "미니게임만 플레이할 수 있게 하위 채팅에서 했듯이 줄 수도 있음? 문서화해서"): every boss game and
 // 쉬어가기 in one list, each level playable on its own — home → 더보기 → 놀이 모음, or the web address ?play=<id>&lv=<n>.
 // Played this way nothing counts: main.js keeps a copy of the save when you start and puts it back when you come back
 // to the list (or home), so campaign progress, coins and the bosses' done marks stay exactly as they were.
-// Documentation: _handoff/minigames-20261019.md
+// Documentation: _handoff/minigames-20261018.md
 import { h } from './ui.js';
 
 const L = (...names) => names.map((label, lv) => ({ label, lv }));

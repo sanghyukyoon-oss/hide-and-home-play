@@ -17,7 +17,12 @@ function vmat() {
 }
 const plain = m => !m.map && !m.transparent && m.side === THREE.FrontSide && (!m.emissive || m.emissive.getHex() === 0 || !m.emissiveIntensity) && (m.isMeshToonMaterial || m.isMeshStandardMaterial);
 
-const MODE = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('bake')) || 'all';   // QA: off | body | all
+const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+const MODE = QS.get('bake') || 'all';   // QA: off | body | all
+// heat (2026-10-18, from GPT's exact-reindex experiment): merged meshes come out non-indexed, so every triangle corner is
+// its own vertex and the GPU transforms each shared corner 3–6 times, in every pass (shadow, colour, IDs). Corners whose
+// every attribute is bit-for-bit the same become one indexed vertex; triangles, their order and all values stay the same.
+const REINDEX = QS.get('opt') !== '0' && QS.get('rx') !== '0';
 export function bakeStatic(f, key = null, theme = null) {
   deFlush(f.group, f.parts, key && 'f:' + key, theme);
   if (MODE === 'off') return f;
@@ -223,9 +228,10 @@ function bakeUnder(root, stop, tag) {
       g.clearGroups();
       return g;
     });
-    const merged = mergeGeometries(geos, false);
+    let merged = mergeGeometries(geos, false);
     geos.forEach(g => g.dispose());
     if (!merged) continue;
+    if (REINDEX) merged = reindexExact(merged);
     const mesh = new THREE.Mesh(merged, vc ? vmat() : list[0].material);
     mesh.castShadow = list[0].castShadow; mesh.receiveShadow = list[0].receiveShadow;
     Object.assign(mesh.userData, tag, { baked: true });
@@ -239,4 +245,47 @@ function flip(g) {
   if (g.index) { const a = g.index.array; for (let i = 0; i < a.length; i += 3) { const t = a[i + 1]; a[i + 1] = a[i + 2]; a[i + 2] = t; } g.index.needsUpdate = true; return; }
   const n = g.attributes.position.count;
   for (const at of Object.values(g.attributes)) { const s = at.itemSize, arr = at.array; for (let i = 0; i + 2 < n; i += 3) for (let k = 0; k < s; k++) { const t = arr[(i + 1) * s + k]; arr[(i + 1) * s + k] = arr[(i + 2) * s + k]; arr[(i + 2) * s + k] = t; } at.needsUpdate = true; }
+}
+
+// one vertex per distinct corner: compares every attribute as raw 32-bit words (float32 bits), so only corners that are
+// exactly equal merge; the triangle list (corner order, winding, groups, draw range) is unchanged
+export function reindexExact(g) {
+  const pos = g.attributes.position; if (!pos) return g;
+  const n = pos.count, cnt = g.index ? g.index.count : n;
+  const at = Object.values(g.attributes);
+  if (Object.keys(g.morphAttributes || {}).length || at.some(a => a.isInterleavedBufferAttribute || a.count !== n || a.array.BYTES_PER_ELEMENT !== 4)) return g;
+  const words = at.map(a => new Uint32Array(a.array.buffer, a.array.byteOffset, n * a.itemSize)), sizes = at.map(a => a.itemSize);
+  const remap = new Int32Array(n).fill(-1), rep = [], table = new Map(), idx = new Uint32Array(cnt);
+  const same = (a, b) => { for (let k = 0; k < words.length; k++) { const w = words[k], s = sizes[k]; for (let j = 0; j < s; j++) if (w[a * s + j] !== w[b * s + j]) return false; } return true; };
+  for (let i = 0; i < cnt; i++) {
+    const v = g.index ? g.index.array[i] : i;
+    let id = remap[v];
+    if (id < 0) {
+      let h = 2166136261;
+      for (let k = 0; k < words.length; k++) { const w = words[k], s = sizes[k]; for (let j = 0; j < s; j++) h = Math.imul(h ^ w[v * s + j], 16777619); }
+      h >>>= 0;
+      let list = table.get(h);
+      if (list) for (const c of list) if (same(v, rep[c])) { id = c; break; }
+      if (id < 0) { id = rep.length; rep.push(v); if (list) list.push(id); else table.set(h, [id]); }
+      remap[v] = id;
+    }
+    idx[i] = id;
+  }
+  const u = rep.length;
+  if (u * 1.15 >= n) return g;   // hardly any sharing: keep it as it is
+  const out = new THREE.BufferGeometry();
+  at.forEach((a, k) => {
+    const s = sizes[k], src = words[k], arr = new a.array.constructor(u * s), dst = new Uint32Array(arr.buffer);
+    for (let id = 0; id < u; id++) { const v = rep[id]; for (let j = 0; j < s; j++) dst[id * s + j] = src[v * s + j]; }
+    const b = new THREE.BufferAttribute(arr, s, a.normalized); b.name = a.name; b.usage = a.usage;
+    out.setAttribute(Object.keys(g.attributes)[k], b);
+  });
+  out.setIndex(new THREE.BufferAttribute(u <= 65535 ? new Uint16Array(idx) : idx, 1));
+  for (const gr of g.groups) out.addGroup(gr.start, gr.count, gr.materialIndex);
+  out.setDrawRange(g.drawRange.start, g.drawRange.count);
+  out.userData = { ...g.userData };
+  if (g.boundingBox) out.boundingBox = g.boundingBox.clone(); else out.computeBoundingBox();
+  if (g.boundingSphere) out.boundingSphere = g.boundingSphere.clone(); else out.computeBoundingSphere();
+  g.dispose();
+  return out;
 }

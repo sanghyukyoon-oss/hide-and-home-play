@@ -1,6 +1,6 @@
 // 숨바꼭집 — boot, scene flow, save, game loop, debug/bot contract (window.__jam).
 import * as THREE from 'three';
-import { World, QUALITY, hasWebGL2 } from './world.js';
+import { World, QUALITY, hasWebGL2, OPT } from './world.js';
 import { UI } from './ui.js';
 import { purgeGeo } from './gfx/kit.js';
 import { createAudio } from './audio.js';
@@ -166,6 +166,7 @@ if (!hasWebGL2()) {
   throw new Error('WebGL2 not supported');
 }
 const world = new World(document.getElementById('gl'), document.getElementById('fx'));
+if (window.SBK_PERF_TEST || qs.get('hud') === '1') import('./perfhud.js').then(m => m.installPerfHud(world)).catch(e => console.error(e));
 // weaker phones (few cores or little memory) start a couple of steps down the quality ladder; it adapts from there
 // (Safari under-reports CPU cores, so only a reported small memory counts — that is Android Chrome on a low-end phone)
 const weak = (navigator.deviceMemory || 8) <= 3;
@@ -320,14 +321,22 @@ const PLAY_HASH = /^#play-(?:mini-)?([a-z]+)(?:-(\d+))?$/.exec(location.hash || 
 // ── loop
 let last = performance.now(), gameTime = 0, frames = 0, fpsNow = 60, fpsAcc = 0, fpsN = 0, updMs = 0, drawMs = 0, slow = 0, fast = 0, settleUntil = 0;
 let lastDraw = 0;
+// the screen's refresh (median gap between animation callbacks): on a 90/120 Hz phone the browser calls us 90/120
+// times a second, so even while a finger moves we draw only every Nth call — at most ~60 fps (120 Hz → 60, 90 → 45);
+// counted in callbacks, not milliseconds, so a 60 Hz screen never drops a frame to timestamp jitter
+let rafLast = 0, rafN = 1, rafTick = 0, rafCount = 0; const rafGaps = [];
 function frame(now) {
   // phones draw less often whenever nothing is being touched or moved — the picture is the same, only the frame count
   // drops (user, 10/18: "아트 유지하면서 최적화 가능할까?"): 60 fps while a finger is on the screen or the view moves, 30 fps
   // a moment after it settles (was 1.5 s), 20 fps behind a menu / result panel
+  if (rafLast) { rafGaps.push(now - rafLast); if (rafGaps.length > 40) rafGaps.shift(); }
+  rafLast = now;
+  if (OPT.fpsCap && (++rafCount & 15) === 0 && rafGaps.length >= 20) { const g = rafGaps.slice().sort((a, b) => a - b)[rafGaps.length >> 1]; rafN = g > 0 ? Math.max(1, Math.round(1000 / g / 60)) : 1; }
   const gap = !world.phone ? 0 : ui.panelOpen ? 48 : now - world.lastActive > 350 ? 30 : 0;
   world.capped = gap > 0;
   if (gap && now - lastDraw < gap) { requestAnimationFrame(frame); return; }
-  lastDraw = now;
+  if (!gap && rafN > 1 && ++rafTick < rafN) { requestAnimationFrame(frame); return; }
+  rafTick = 0; lastDraw = now;
   const rdt = Math.min((now - last) / 1000, 1 / 12); last = now;
   frames++; fpsAcc += rdt; fpsN++;
   if (fpsAcc > .5) {

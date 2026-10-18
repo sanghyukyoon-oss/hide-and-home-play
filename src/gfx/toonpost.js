@@ -79,16 +79,21 @@ varying vec2 vUv;
 uniform sampler2D tColor, tAOb;
 uniform vec2 res; uniform float thick, innerRatio, overlap, nLo, nHi, innerStr, lineAlpha, tint, tintDark, levels, aoStr, useAO;
 uniform vec3 ink, aoTint; uniform float dbg, gray;
+uniform sampler2D tMask; uniform float useMask, blk;
 ${COMMON}
 void main(){
   vec2 px = 1. / res;
   float id0 = idAt(vUv), d0 = lin(vUv);
+  // the block mask (see MASK): 0 = no ID change and no steep depth step anywhere this pixel's brush can reach, so the
+  // search below could only end with dist = 1e5 — skip it (same result, ~2 taps instead of 25)
+  bool look = id0 > .5;
+  if (look && useMask > .5) look = texelFetch(tMask, ivec2(gl_FragCoord.xy / blk), 0).r > .5;
   vec2 o[8];
   o[0]=vec2(1,0); o[1]=vec2(-1,0); o[2]=vec2(0,1); o[3]=vec2(0,-1);
   o[4]=vec2(.7071,.7071); o[5]=vec2(-.7071,.7071); o[6]=vec2(.7071,-.7071); o[7]=vec2(-.7071,-.7071);
   // distance (in internal px) to the nearest boundary this pixel owns; coverage = brush width minus that distance
   float dist = 1e5;
-  if (id0 > .5) {
+  if (look) {
     for (int k = 0; k < 3; k++) {
       float r = thick * (float(k) + 1.) / 3.;
       for (int i = 0; i < 8; i++) {
@@ -132,6 +137,35 @@ void main(){
   gl_FragColor = vec4(col * (1. - e) + line * e, c.a * (1. - e) + e);
   if (dbg > .5) gl_FragColor = vec4(eo, fract(id0 * .137), dist > 1e4 ? 0. : 1., 1.);
 }`;
+// Block mask for the edge pass (packed ID+depth only). One texel per BLK×BLK block of internal pixels: 1 when, inside
+// the block (and one pixel past its right/top side), two side-by-side pixels have different IDs or a depth step above
+// T. T = overlap / (2K) with K = the brush reach in pixels, so any same-ID depth jump the edge pass could see over its
+// reach (a path of at most 2K steps) shows up as at least one step above T. Then DILATE spreads it over the blocks a
+// pixel's brush can reach. Where the result is 0 the edge pass finds nothing anyway.
+const MASK = `
+uniform sampler2D tId; uniform vec2 res; uniform float near, far, T;
+float dAt(vec4 t){ return near + (floor(t.b * 255. + .5) * 256. + floor(t.a * 255. + .5)) / 65535. * (far - near); }
+float iAt(vec4 t){ return floor(t.r * 255. + .5) + floor(t.g * 255. + .5) * 256.; }
+void main(){
+  ivec2 b0 = ivec2(gl_FragCoord.xy) * BLK, mx = ivec2(res) - 1;
+  float pid[BLK + 1], pd[BLK + 1];
+  float f = 0., lid = 0., ld = 0.;
+  for (int j = 0; j <= BLK; j++) for (int i = 0; i <= BLK; i++) {
+    vec4 t = texelFetch(tId, clamp(b0 + ivec2(i, j), ivec2(0), mx), 0);
+    float id = iAt(t), d = dAt(t);
+    if (i > 0 && (abs(id - lid) > .5 || abs(d - ld) > T)) f = 1.;
+    if (j > 0 && (abs(id - pid[i]) > .5 || abs(d - pd[i]) > T)) f = 1.;
+    pid[i] = id; pd[i] = d; lid = id; ld = d;
+  }
+  gl_FragColor = vec4(f, 0., 0., 1.);
+}`;
+const DILATE = `
+uniform sampler2D tM; uniform vec2 mres;
+void main(){
+  ivec2 c = ivec2(gl_FragCoord.xy), mx = ivec2(mres) - 1; float f = 0.;
+  for (int y = -R; y <= R; y++) for (int x = -R; x <= R; x++) f = max(f, texelFetch(tM, clamp(c + ivec2(x, y), ivec2(0), mx), 0).r);
+  gl_FragColor = vec4(f, 0., 0., 1.);
+}`;
 const DOWN = `
 varying vec2 vUv;
 uniform sampler2D tSrc; uniform vec2 outRes; uniform float sharpen;
@@ -165,7 +199,7 @@ function groupKey(m) {
 }
 
 export class ToonPost {
-  constructor(renderer, { budget = 4.5e6, maxSS = 2, samples = 4 } = {}) {
+  constructor(renderer, { budget = 4.5e6, maxSS = 2, samples = 4, opt = {} } = {}) {
     this.r = renderer; this.budget = budget; this.maxSS = maxSS; this.ss = 1;
     const rt = (o = {}) => new THREE.WebGLRenderTarget(1, 1, o);
     // half-float colour needs one of these; without them (some older GPUs) the target is incomplete and nothing draws
@@ -185,6 +219,7 @@ export class ToonPost {
       nLo: { value: .3 }, nHi: { value: .48 }, innerStr: { value: 0 }, lineAlpha: { value: 1 },
       ink: { value: new THREE.Color('#3d2233') }, tint: { value: .35 }, tintDark: { value: .45 }, levels: { value: 0 },
       aoStr: { value: .5 }, useAO: { value: 1 }, dbg: { value: 0 }, aoTint: { value: new THREE.Color('#6e5a8f') }, gray: { value: 0 },
+      tMask: { value: null }, useMask: { value: 0 }, blk: { value: 8 },
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
     this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
@@ -196,6 +231,18 @@ export class ToonPost {
     this.blurScene = quad(sm(this.bu, BLUR));
     this.edgeScene = quad(sm(this.u, EDGE));
     this.downScene = quad(sm(this.du, DOWN));
+    // the edge pass's block mask (opt.mask) and the redraw-only-what-changed path (render(…, rects))
+    this.opt = { mask: false, inval: true, ...opt };
+    const BLK = 8; this.blk = BLK;
+    this.mask = rt({ depthBuffer: false }); this.maskD = rt({ depthBuffer: false });
+    for (const t of [this.mask, this.maskD]) t.texture.minFilter = t.texture.magFilter = THREE.NearestFilter;
+    this.mu = { tId: shared.tId, res: { value: new THREE.Vector2(1, 1) }, near: shared.near, far: shared.far, T: { value: .02 } };
+    this.mdu = { tM: { value: this.mask.texture }, mres: { value: new THREE.Vector2(1, 1) } };
+    const msm = (uniforms, fragmentShader, defines) => Object.assign(sm(uniforms, fragmentShader), { defines });
+    this.maskScene = quad(msm(this.mu, MASK, { BLK }));
+    this.dilMat = msm(this.mdu, DILATE, { R: 1 }); this.dilScene = quad(this.dilMat);
+    this.u.tMask.value = this.maskD.texture; this.u.blk.value = BLK;
+    this.gl = renderer.getContext();
     this.qCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.lineCss = 2.2; this.dpr = 1; this.pixelArt = false;
     this.bgClear = new THREE.Color().setRGB(0, 0, .5, THREE.LinearSRGBColorSpace);
@@ -224,6 +271,8 @@ export class ToonPost {
     this.color.setSize(iw, ih); this.nd.setSize(iw, ih); this.comp.setSize(iw, ih);
     const aw = Math.max(1, Math.round(iw / 2)), ah = Math.max(1, Math.round(ih / 2));
     this.ao.setSize(aw, ah); this.aoB.setSize(aw, ah);
+    const mw = Math.ceil(iw / this.blk), mh = Math.ceil(ih / this.blk);
+    this.mask.setSize(mw, mh); this.maskD.setSize(mw, mh); this.mu.res.value.set(iw, ih); this.mdu.mres.value.set(mw, mh);
     this.u.res.value.set(iw, ih); this.au.res.value.set(aw, ah); this.bu.aoRes.value.set(aw, ah); this.du.outRes.value.set(w, h);
     this.setLine(lineCss);
     const f = pixelArt ? THREE.NearestFilter : THREE.LinearFilter;
@@ -238,15 +287,37 @@ export class ToonPost {
   }
   // at least ~2.2 device px: on a 1x desktop screen the 1.5 px line broke up along long diagonals (roof edges)
   setLine(lineCss) { this.lineCss = lineCss; this.u.thick.value = this.pixelArt ? 1 : Math.max(2.2 * this.ss, lineCss * this.dpr * this.ss); }
-  render(scene, cam) {
+  // the brush reach in internal px (K, one extra for float rounding at texel edges) → mask threshold and dilation radius
+  _maskSetup() {
+    const K = Math.floor(this.u.thick.value + .5) + 1, B = this.blk;
+    this.mu.T.value = this.u.overlap.value / (2 * K);
+    const R = Math.max(Math.ceil(K / B), Math.floor((B - 1 + K) / B));
+    if (this.dilMat.defines.R !== R) { this.dilMat.defines.R = R; this.dilMat.needsUpdate = true; }
+  }
+  // a depth attachment nobody reads again: tell a tiled GPU not to write it back to memory
+  _dropDepth() { if (this.opt.inval) this.gl.invalidateFramebuffer(this.gl.FRAMEBUFFER, [this.gl.DEPTH_ATTACHMENT]); }
+  // rects: null = the whole frame; else only these boxes (internal px, [x0,y0,x1,y1], y up) are drawn again — the rest
+  // of every buffer still holds the previous frame, which is the same picture there
+  render(scene, cam, rects = null) {
     const r = this.r, s = this.shared;
     this.syncPacking();
     s.near.value = cam.near; s.far.value = cam.far;
     s.fr.value.set(cam.left / cam.zoom, cam.right / cam.zoom, cam.bottom / cam.zoom, cam.top / cam.zoom);
     const prevMask = cam.layers.mask;
+    const canDrop = this.color.samples === 0;   // (a multisampled target is resolved by three after the pass)
+    const scene3 = (target, scis, fn) => {
+      r.setRenderTarget(target);
+      for (const b of scis || [null]) {
+        if (b) { target.scissor.set(b[0], b[1], b[2] - b[0], b[3] - b[1]); target.scissorTest = true; r.setRenderTarget(target); }
+        fn(b);
+      }
+      target.scissorTest = false;
+    };
+    const cull = rects && this.cullFor;   // hide meshes that miss a box (no draw call; the picture is the same)
     // 1) colour, layers 0 + 2
     cam.layers.set(0); cam.layers.enable(2);
-    r.setRenderTarget(this.color); r.clear(); r.render(scene, cam);
+    scene3(this.color, rects, b => { cull?.(b, true); r.clear(); r.render(scene, cam); });
+    if (canDrop) this._dropDepth();
     // 2) object IDs + view normals + depth, layer 0 only
     const bg = scene.background; scene.background = null;
     cam.layers.set(0);
@@ -255,7 +326,10 @@ export class ToonPost {
     // empty background: id 0 and, when depth is packed into b/a, the FARTHEST depth (a mid value used to sit behind
     // everything only while the camera range was huge; with a tight range it cut outlines off the back half of a scene)
     this.bgClear.setRGB(0, 0, this.packed ? 1 : .5, THREE.LinearSRGBColorSpace);
-    r.setRenderTarget(this.nd); r.setClearColor(this.bgClear, this.packed ? 1 : .5); r.clear(); r.render(scene, cam);
+    r.setClearColor(this.bgClear, this.packed ? 1 : .5);
+    scene3(this.nd, rects, b => { cull?.(b, true); r.clear(); r.render(scene, cam); });
+    if (this.packed) this._dropDepth();   // packed: depth lives in the ID buffer, the depth texture is never read
+    cull?.(null, false);
     scene.overrideMaterial = null; r.shadowMap.enabled = sm; scene.background = bg;
     r.setClearColor(0x000000, 0);
     cam.layers.mask = prevMask;
@@ -266,8 +340,30 @@ export class ToonPost {
       r.setRenderTarget(this.ao); r.clear(); r.render(this.aoScene, this.qCam);
       r.setRenderTarget(this.aoB); r.clear(); r.render(this.blurScene, this.qCam);
     }
-    // 4) ink + AO at internal resolution, 5) box-filter down to the screen
-    r.setRenderTarget(this.comp); r.clear(); r.render(this.edgeScene, this.qCam);
-    r.setRenderTarget(null); r.clear(); r.render(this.downScene, this.qCam);
+    // 3b) block mask for the edge pass (full frames: a redraw of a few small boxes just runs the full search there)
+    const useMask = this.opt.mask && this.packed && !rects && this.u.dbg.value < .5;
+    this.u.useMask.value = useMask ? 1 : 0;
+    if (useMask) {
+      this._maskSetup();
+      r.setRenderTarget(this.mask); r.render(this.maskScene, this.qCam);
+      r.setRenderTarget(this.maskD); r.render(this.dilScene, this.qCam);
+    }
+    // 4) ink + AO at internal resolution (a box redraw reaches one brush width past the box), 5) box-filter down
+    const reach = Math.ceil(this.u.thick.value) + 2, W = this.comp.width, H = this.comp.height;
+    const er = rects && rects.map(b => [Math.max(0, b[0] - reach), Math.max(0, b[1] - reach), Math.min(W, b[2] + reach), Math.min(H, b[3] + reach)]);
+    scene3(this.comp, er, () => { r.clear(); r.render(this.edgeScene, this.qCam); });
+    r.setRenderTarget(null);
+    if (er) {
+      // the canvas keeps its pixels (preserveDrawingBuffer): only the screen boxes these comp boxes reach are redone
+      // (the down pass reads up to ~1.6 output px around a pixel). setScissor takes CSS px.
+      const k = 1 / this.ss, pr = r.getPixelRatio(), cw = this.w, ch = this.h;
+      r.setScissorTest(true);
+      for (const b of er) {
+        const x0 = Math.max(0, Math.floor(b[0] * k) - 3), y0 = Math.max(0, Math.floor(b[1] * k) - 3), x1 = Math.min(cw, Math.ceil(b[2] * k) + 3), y1 = Math.min(ch, Math.ceil(b[3] * k) + 3);
+        r.setScissor(Math.floor(x0 / pr), Math.floor(y0 / pr), Math.ceil((x1 - x0) / pr) + 1, Math.ceil((y1 - y0) / pr) + 1);
+        r.clear(); r.render(this.downScene, this.qCam);
+      }
+      r.setScissorTest(false);
+    } else { r.clear(); r.render(this.downScene, this.qCam); }
   }
 }
