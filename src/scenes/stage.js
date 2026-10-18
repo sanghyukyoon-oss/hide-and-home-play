@@ -1589,7 +1589,7 @@ export class StageScene {
       if (!ch || ch.shades || !ch.buildAcc) continue;
       try { ch.buildAcc('sunglasses', {}, CHAR_DEFS[ch.kind] || {}); ch.bump?.(.4); } catch {}
     }
-    this.G.audio.sfx('pop', 6); this.G.ui.toast('특수 선글라스 착용!', 'green');
+    this.G.audio.sfx('pop', 6); /* (no '특수 선글라스 착용!' toast: the 흑백판 opening now says why — 스토리 C안 10/18) */
   }
   // the 흑백판 owner needles you: not too often, never over another bubble of theirs
   taunt(kind) {
