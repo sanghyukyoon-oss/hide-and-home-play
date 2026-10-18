@@ -32,7 +32,7 @@ import { tr } from '../i18n.js';
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
-const HABIT_BREAK = new Set([0, 29, 40]);
+const HABIT_BREAK = new Set([0, 29]);   // (41판 is 다람이's lever stage since v96 — no habit-breaking line there)
 import { v2Wanted, v2Setup, v2Prep, v2Hide, v2Tell, v2PointAll, v2KeyToast, v2OpenSound, v2Wrong, v2Hint, v2AfterFound, v2Stars, v2StarWhy, v2Stamp, v2Title, v2Update, v2PeekTap } from '../r1v2.js';
 const JAIL_LINES = ['억울해! 난 그냥 여기 숨어 있었다고!', '진짜 도둑은 그 까만 애라니까~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
 const ROBOT_COST = 50;
@@ -262,7 +262,8 @@ export class StageScene {
     this.running = true; this.tStart = this.t;
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
     if (this.spec.tut === 2) this.tutorial2();
-    if (this.scene?.card) newCard(G, this.scene.card);   // e.g. 비밀 서재: 🆕 연쇄 장치
+    if (this.scene?.card) newCard(G, this.scene.card);
+    else if (this.obs) newCard(G, 'obs');   // 61판: the observation locks' card, once (스토리 v96 CARDS.obs)   // e.g. 비밀 서재: 🆕 연쇄 장치
     if (this.scene?.teachMove && !G.save.tut?.move) this.teachMove();
     if (this.spec.boss) G.ui.toast('방탈출 보스판! 단서를 차례로 풀어 봐', 'red');
     else if (this.spec.night && !this.incident) G.ui.toast('밤이 됐어! 달빛 아래 숨은 물건을 찾아봐', 'green');
@@ -1034,7 +1035,7 @@ export class StageScene {
       }
       if (L.kind === 'treat') {
         if (this.treats <= 0) {
-          const f = this.friend, ls = this.story?.lines?.blocked || ['비켜 줄 생각 없어!'];
+          const f = this.friend, ls = this.story?.lines?.blocked || sceneAt(this.idx)?.lines?.blocked || ['비켜 줄 생각 없어!'];
           f.react(this.tw, (n, p) => G.audio.sfx(n, p)); this.say(f, ls[(this._blk = (this._blk || 0) + 1) % ls.length], 1500);
           G.ui.toast(`${CHAR_DEFS[f.kind]?.name || '친구'}가 비켜 주지 않아! 좋아하는 간식을 찾아 줘`, 'red');
           return;
@@ -1532,7 +1533,7 @@ export class StageScene {
   async feedGuard() {
     const G = this.G, W = G.world, f = this.friend;
     f.pose = 'idle'; f.setFace('happy');
-    this.say(f, this.story?.lines?.fed || '냠냠! 고마워!', 1600);
+    this.say(f, this.story?.lines?.fed || sceneAt(this.idx)?.lines?.fed || '냠냠! 고마워!', 1600);
     G.audio.sfx('special'); const s = W.toScreen(f.root.position.clone().setY(f.root.position.y + f.headTop()));
     W.fx.burst(s.x, s.y, { n: 12, shape: 'heart', colors: ['#ff6fa6', '#ffb3d1'], speed: 160, gravity: -60 });
     await this.tw.wait(.6);
