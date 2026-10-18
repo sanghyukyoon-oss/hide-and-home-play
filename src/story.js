@@ -175,13 +175,15 @@ export async function playCinematic(G, c) {
   G.audio.sfx('whoosh');
   await new Promise(res => { const t = setTimeout(res, 1900); root.addEventListener('pointerdown', () => { clearTimeout(t); res(); }, { once: true }); });
   root.classList.add('talk');   // the bottom bar slides away so the dialogue card is clear
-  await playDialog(G, c.lines || []);
+  // the lines go inside the cinematic: in #overlay (z 20) they sat under it (z 30), so a tap never reached them and the
+  // chapter start froze (user, 10/18 13판 'CHAPTER 2'; bots skip cinematics, so no run had caught it)
+  await playDialog(G, c.lines || [], { parent: root });
   root.classList.add('out');
   await new Promise(res => setTimeout(res, 350));
   root.remove();
 }
 // onLine(line, i): called as each line shows (a stage uses it to bring the camera in on whoever is talking)
-export function playDialog(G, lines, { title = null, onLine = null } = {}) {
+export function playDialog(G, lines, { title = null, onLine = null, parent = null } = {}) {
   return new Promise(res => {
     const root = h('div', { class: 'dlg' });
     const card = h('div', { class: 'dlg-card' });
@@ -193,7 +195,7 @@ export function playDialog(G, lines, { title = null, onLine = null } = {}) {
     card.append(faceBox, h('div', { class: 'dlg-body' }, name, text), next);
     if (title) root.append(h('div', { class: 'dlg-title ol3' }, title));
     root.append(card, skip);
-    document.getElementById('overlay').append(root);
+    (parent || document.getElementById('overlay')).append(root);
     let i = -1, typing = null;
     const NAMES = { mong: '몽글이' };
     const show = () => {
