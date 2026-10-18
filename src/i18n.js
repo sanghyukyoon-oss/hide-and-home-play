@@ -20,6 +20,7 @@ const P = s => tr(s);                       // translate a captured piece
 const obj = n => /^(the|a|an) /i.test(n) || /^[A-Z]/.test(n) ? n : 'the ' + n;   // "the remote", but "Bunbun"
 // [pattern, english(...captures)] — captures arrive already translated
 const PAT = [
+  [/^([\d · ]+)판 뒤( \(.+\))?$/, (a, b) => `after stage ${a.trim()}${b ? ' ' + tr(b.trim().slice(1, -1)).replace(/^/, '(') + ')' : ''}`],
   [/^(\d+)명 찾았어… 남은 친구들이 킥킥 웃고 있어$/, n => `Found ${n}… the rest are still giggling`],
   [/^(\d+)라운드 · 잘 봐!$/, n => `Round ${n} · watch closely!`],
   [/^(\d+)명 찾았어… (\d+)명까지 조금만 더!$/, (a, b) => `Found ${a}… just a few more to ${b}!`],

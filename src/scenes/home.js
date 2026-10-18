@@ -19,6 +19,7 @@ import { THEMES, stageSpec, regionOf, STAGE_COUNT, REGIONS, CHAR_UNLOCK } from '
 import { h, ICON, fullscreenBtn } from '../ui.js';
 import { Tweens, ease, rng } from '../util.js';
 import { tr, LANG, setLang } from '../i18n.js';
+import { openGallery } from '../gallery.js';
 
 // ═════════════════════════════════════════ village kit ═════════════════════════════════════════
 // Every building is a few "parts". A part is one ink-outline shape (userData.og) drawn as 1–3 merged meshes: all plain
@@ -1039,6 +1040,7 @@ export class HomeScene {
       const fs = fullscreenBtn(ui);
       const layBtn = G.owner ? [ui.btn('배치 편집', { color: 'orange', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
       ui.panel({ title: '더보기', color: 'blue', close: () => {}, body: [h('div', { class: 'row wrap' },
+        ui.btn('놀이 모음', { color: 'green', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
         ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
         ui.btn('새 아트', { color: 'yellow', onClick: () => { ui.closePanel(); preview('apt'); } }),
         ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),

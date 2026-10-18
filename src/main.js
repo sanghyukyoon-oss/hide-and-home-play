@@ -45,6 +45,7 @@ import { MiniScene } from './scenes/mini.js';
 import { BossGameScene } from './scenes/bossgame.js';
 import { LayEditScene } from './scenes/layedit.js';
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
+import { openGallery, playGame } from './gallery.js';
 installI18n();   // English players see English everywhere (see i18n.js)
 
 // outdoor props (alley / park / camp) join the furniture registry, the room shell and the shop
@@ -220,6 +221,11 @@ const G = {
   },
   async go(name, data = {}) {
     if (G.pending) return;
+    // 놀이 모음 practice: going on to a stage or home ends it — the save goes back to how it was, and the list opens again
+    if (G.playMode && (name === 'stage' || name === 'home')) {
+      const snap = JSON.parse(G.playMode.snap); for (const k of Object.keys(save)) delete save[k]; Object.assign(save, snap);
+      G.playMode = null; G.persist(); name = 'home'; data = { gallery: true };
+    }
     G.pending = name;
     audio.sfx('whoosh');
     await ui.irisOut();
@@ -238,7 +244,10 @@ const G = {
     G.pending = null;
     await ui.irisIn();
     await p;
+    if (name === 'home' && data.gallery && G.scene === S) openGallery(G);
   },
+  // 놀이 모음: play a boss or 쉬어가기 on its own (a copy of the save is kept and put back afterwards — see go)
+  startPlay() { if (!G.playMode) G.playMode = { snap: JSON.stringify(save) }; },
 };
 // make sure every zone that is already open exists in the save
 for (const z of HOME_ZONES) if (G.zoneOpen(z.id)) G.ensureZone(z.id);
@@ -304,6 +313,9 @@ function buildThumbs() {
   world.scheme = ['B', 'C', 'D'].includes(G.save.settings?.ctrl) ? G.save.settings.ctrl : 'E';
   world.joyOn = G.save.settings?.joy ?? world.scheme === 'D';
 }
+
+const galleryPlay = (id, k) => playGame(G, id, k);
+const PLAY_HASH = /^#play-(?:mini-)?([a-z]+)(?:-(\d+))?$/.exec(location.hash || '');
 
 // ── loop
 let last = performance.now(), gameTime = 0, frames = 0, fpsNow = 60, fpsAcc = 0, fpsN = 0, updMs = 0, drawMs = 0, slow = 0, fast = 0, settleUntil = 0;
@@ -372,8 +384,12 @@ async function boot() {
   G.bootMs = { fonts: Math.round(tb1 - tb0), thumbs: Math.round(performance.now() - tb1), sinceStart: Math.round(performance.now()) };
   requestAnimationFrame(frame);
   await splash();
-  const lv = qs.get('lv'), sc = qs.get('scene');
-  const going = lv ? G.go('stage', { idx: Math.max(0, +lv - 1) })
+  const lv = qs.get('lv'), sc = qs.get('scene'), play = qs.get('play') || PLAY_HASH?.[1];
+  // one game of 놀이 모음 straight away: ?play=<id>&lv=<n> on the web, #play-<id>-<n> on the artifact (claude.ai passes the
+  // address's # part to the page; n is 1-based; 'mini-' before the id is allowed) — links from the docs and the lab hub
+  const playLv = qs.get('play') ? +(qs.get('lv') || 1) : +(PLAY_HASH?.[2] || 1);
+  const going = play ? (galleryPlay(play, playLv - 1) || G.go('home'))
+    : lv ? G.go('stage', { idx: Math.max(0, +lv - 1) })
     : sc === 'myhome' ? G.go('myhome', { mode: qs.get('mode') || 'view' })
     : sc === 'visit' ? G.go('visit') : G.go('home');
   // lift the boot cover once the scene is built — a stage can open with a dialog that waits for a tap behind it
@@ -391,7 +407,7 @@ async function boot() {
 // Key art from GPT (art/keyart/*.png) shows as a title splash when present; otherwise the 3D home is the title.
 function loadImg(src, ms = 2500) { return new Promise(res => { const im = new Image(); const t = setTimeout(() => res(null), ms); im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); res(null); }; im.src = src; }); }
 async function splash() {
-  if (qs.has('lv') || qs.has('scene') || G.bot) return;
+  if (qs.has('lv') || qs.has('scene') || qs.has('play') || PLAY_HASH || G.bot) return;
   // WebP first (the logo 541 → 97 KB, same picture), the original files if the browser can't show WebP
   const art = await loadImg('art/keyart/keyart-title.webp') || await loadImg('art/keyart/keyart-title.jpg');
   if (!art) return;
