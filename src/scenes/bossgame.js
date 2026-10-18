@@ -60,7 +60,8 @@ export class BossGameScene {
     if (this.kind === 'wakeup' && more.intro == null) { const seen = G.save.bossIntro || (G.save.bossIntro = {}); more.intro = !seen.wakeup; if (!seen.wakeup) { seen.wakeup = true; G.persist(); } }
     // 엄마 몰래 야식, 첫째 밤: a step-by-step practice until it's been won once (bossIntro.yasik — 1: the basics done, the
     // trip still guided; 2: done; the game logs { practice } as it goes); never for the bots
-    if (this.kind === 'yasik' && this.lv === 0 && more.practice == null && !G.bot) { const n = G.save.bossIntro?.yasik || 0; more.practice = n >= 2 ? null : n ? 'go' : 'press'; }
+    // (off by default since 10/18 — user: "너무 친절함 튜토가. 게임을 못하겠어 튜토 보느라"; ?yspr=1 brings the step-by-step back)
+    if (this.kind === 'yasik' && this.lv === 0 && more.practice == null && !G.bot && /[?&]yspr=1(&|$)/.test(location.search)) { const n = G.save.bossIntro?.yasik || 0; more.practice = n >= 2 ? null : n ? 'go' : 'press'; }
     if (SHEETS[this.kind] && ![...document.styleSheets].some(x => x.href === SHEETS[this.kind])) {
       const l = this.sheet = document.createElement('link'); l.rel = 'stylesheet'; l.href = SHEETS[this.kind]; document.head.append(l);
       await new Promise(res => { l.onload = l.onerror = res; setTimeout(res, 2000); });

@@ -1238,3 +1238,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 @keyframes thIn { from { opacity: 0; transform: scale(.8); } }
 @keyframes thNudgeR { 50% { transform: translateX(6px); } }
 @keyframes thNudgeL { 50% { transform: translateX(-6px); } }
+/* 엄마 몰래 야식: the hold gauge over the fridge (10/18) */
+.ys-grab { position: absolute; width: 64px; height: 12px; margin-left: -32px; border-radius: 8px; background: rgba(36, 26, 52, .75); border: 3px solid #fff; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); overflow: hidden; pointer-events: none; z-index: 6; }
+.ys-grab i { display: block; height: 100%; width: 0; background: #ffd23f; transition: width .06s linear; }
+.ys-grab.open i { background: #7ee08a; }

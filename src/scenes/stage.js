@@ -1904,7 +1904,7 @@ export class StageScene {
           const vis = this.targets.filter(t => !t.found && !(t.spot.part && t.spot.part.t < .5) && !W.occluded(t.g, this.worldCenter(t), [this.room.group]));
           const pick = vis[Math.floor(Math.random() * vis.length)];
           if (pick) { const s = W.toScreen(this.worldCenter(pick)); W.fx.burst(s.x, s.y, { n: 5, shape: 'star', speed: 60, gravity: -30, life: .9, size: 9, colors: ['#ffffff', '#fff3a0'] }); }
-          else this.turnHint();   // R7: all of them hidden from here — show which way to turn
+          // (R7's '이쪽으로 돌려 봐' arrow is off: the user couldn't tell what it meant, 10/18 — turnHint() kept for later)
         }
       }
     }

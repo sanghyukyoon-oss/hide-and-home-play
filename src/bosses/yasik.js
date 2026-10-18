@@ -382,6 +382,7 @@ export class Game {
     return Math.hypot(s.x - x, s.y - y) < 46;   // a fat finger on the fridge counts too
   }
   atFridge() { return this.pos.distanceTo(this.fridgeAt) < .8; }
+  touchFridge() { return !!(this.touch?.fridge || this.botFridge); }
   setDoor(open) {
     if (this.doorOpen === open) return;
     this.doorOpen = open; this.L.audio.sfx(open ? 'open' : 'close');
@@ -428,6 +429,9 @@ export class Game {
       col.append(this.ear);
     }
     this.hint = h('div', { class: 'ys-hint ol' }, h('span', { class: 'ys-hand' }), this.hintTx = h('span', {}, '가고 싶은 곳을 꾹 누르고 있기'));
+    // the fridge gauge (10/18, user: "냉장고 앞에서 꾹 누르고 있으면 문 열리고 프로그레스 게이지 나오는 게 나을 거 같아"): over the
+    // fridge while you hold it — fills while the door opens, then once per snack
+    this.grabG = h('div', { class: 'ys-grab' }, this.grabI = h('i')); ui.wui.append(this.grabG);
     col.append(this.hint);
     this.vig = h('div', { class: 'ys-vig' }); document.getElementById('app').append(this.vig);
     // a badge over every gadget you can still set off (a note for a speaker, a bolt for a machine; drawn, since the
@@ -722,6 +726,11 @@ export class Game {
     const L = this.L, part = this.fridge?.f.parts[0];
     this.fridgeOpen += ((this.doorOpen ? 1 : 0) - this.fridgeOpen) * (1 - Math.exp(-dt * 9));
     part?.setOpen(this.fridgeOpen);
+    // the gauge over the fridge: the door's hold, then each snack's
+    const holding = this.atFridge() && this.snacks.length < 3 && this.touchFridge();
+    const fill = this.grabbing ? this.grabT / .7 : !this.doorOpen && holding ? Math.min(1, (this.fHold || 0) / .35) : 0;
+    this.grabG.style.display = holding || this.grabbing ? '' : 'none';
+    if (this.grabG.style.display === '') { const s = L.world.toScreen(this.fridgeTop || new THREE.Vector3(this.fridgeAt.x, 1.6, this.fridgeAt.y)); this.grabG.style.left = s.x + 'px'; this.grabG.style.top = (s.y - 18) + 'px'; this.grabI.style.width = Math.round(Math.min(1, fill) * 100) + '%'; this.grabG.classList.toggle('open', this.doorOpen); }
     if (this.grabbing) {
       this.grabT += dt;
       if (this.grabT > .7) { this.grabT = 0; this.takeSnack(); }
@@ -946,6 +955,7 @@ export class Game {
     }, 1200);
   }
   exit() {
+    this.grabG?.remove();
     this.dead = true; const W = this.L.world, app = document.getElementById('app');
     app.dataset.night = '';
     app.removeEventListener('pointerdown', this._down); removeEventListener('pointermove', this._move); removeEventListener('pointerup', this._up); removeEventListener('pointercancel', this._up);
