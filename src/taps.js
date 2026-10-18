@@ -7,6 +7,7 @@
 import { EN } from './i18n-en-dict.js';
 import { REGIONS, regionOf } from './stages.js';
 import { h, ICON } from './ui.js';
+import { lensNudge } from './lens.js';   // 경제 B5 (10/19)
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
 export const TAP_TXT = {
@@ -60,6 +61,7 @@ export function spendTap(S, x, y) {
   }
   if (x != null) G.ui.floatText(x, y - 34, '-1', 'red');
   if (S.tapsLeft === 3 && !S._tapLow) { S._tapLow = true; G.ui.toast(TAP_TXT.low, 'red'); }
+  if (G.econ && S.tapsLeft === 3) lensNudge(S);   // 경제 B5 (10/19): a magnifier in hand → the hint button bounces once (설계서 5-4)
   // (QA 10/18: a moment's wait — this may be the first tap of a double-tap zoom, which gives the tap back; at 1 left the
   // zoom used to end the stage before the second tap came)
   if (S.tapsLeft <= 0) { clearTimeout(S._loseT); S._loseT = setTimeout(() => { if (!S.dead && !S.result && S.tapsLeft <= 0) S.lose('taps'); }, 360); }

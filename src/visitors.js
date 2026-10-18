@@ -62,10 +62,11 @@ export class Visitors {
   }
   async come() {
     const G = this.G, tw = this.tw, mong = this.o.mong;
-    const kinds = Object.keys(CHAR_DEFS).filter(k => !NO.includes(k) && !this.recent.includes(k));
+    const skip = this.o.skip?.() || null;   // (friends already sitting in the room don't drop by — 경제·로비)
+    const kinds = Object.keys(CHAR_DEFS).filter(k => !NO.includes(k) && !this.recent.includes(k) && !skip?.has(k));
     const met = (G.save.chars || []).filter(k => kinds.includes(k));
     // whoever gave a piece that's out in this room comes to sit at it first; after that, anyone (still to their seat)
-    const seats = this.o.seats?.() || [], due = seats.find(s => !this.sat.has(s.who));
+    const seats = (this.o.seats?.() || []).filter(s => !skip?.has(s.who)), due = seats.find(s => !this.sat.has(s.who));
     const kind = due ? due.who : met.length && Math.random() < .6 ? pick(met) : pick(kinds); this.recent = [...this.recent.slice(-4), kind];
     const seat = seats.find(s => s.who === kind) || null;
     let [ex, ez] = this.o.entry(), [mx, mz] = seat ? seat.stand : this.o.meet();

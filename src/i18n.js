@@ -106,6 +106,13 @@ const PAT = [
   [/^숨긴 물건 (\d+)개$/, n => `${n} hidden`],
   [/^(.+?) 구입! 보관함에서 꺼내 놓자$/, n => `Bought ${n}! Take it out of storage`],
   [/^보유 (\d+)$/, n => `Owned ${n}`],
+  // 경제·로비 (10/19)
+  [/^돋보기 가방 (\d+)\/5$/, n => `Magnifier bag ${n}/5`],
+  [/^친구 (\d+)명이 놀러 왔어!$/, n => `${n} friends came over!`],
+  [/^(.+?)(?:이|가) 놀러 왔어!$/, n => `${n} came over!`],
+  [/^친구 (\d+)\/(\d+)$/, (a, b) => `Friends ${a}/${b}`],
+  [/^도감 \+(\d+)$/, n => `Card book +${n}`],
+  [/^(.+?) · 이제 내 집에 숨길 수 있어$/, n => `${n} · you can hide it at home now`],
   [/^숨을 곳 (\d+)$/, n => `Hiding spots ${n}`],
   [/^엄마의 촉: 다음엔 '(.+?)'부터 의심할걸\?$/, n => `Mom's hunch: next time she'll check '${n}' first`],
   [/^(\d+)분 (\d+)초$/, (m, s) => `${m}m ${s}s`],

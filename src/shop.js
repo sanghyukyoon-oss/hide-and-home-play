@@ -5,6 +5,8 @@ import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STY
 import { Room } from './room.js';
 import { layoutFor, LAYOUTS } from './stages.js';
 import { renderThumbs } from './thumbs.js';
+import { PICK_ITEMS } from './econ.js';
+import { ITEMS } from './gfx/items.js';
 
 // a little 3D picture of each home style (its stage set, or the plain zone with the starter furniture), made once
 const STYLE_ART = {};
@@ -19,7 +21,7 @@ function styleArt(list) {
   return STYLE_ART;
 }
 
-const TABS = [['furn', '가구'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
+const TABS = [['items', '물건'], ['furn', '가구'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
 
 // ctx: { G, zone (current zone object or null), onChange() }
 export function openShop(G, ctx = {}, tab = 'furn') {
@@ -30,13 +32,33 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   const note = h('div', { class: 'txt', style: 'font-size:14px;margin:4px 0 8px' });
   const render = () => {
     tabsEl.innerHTML = '';
-    for (const [k, label] of TABS) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
+    for (const [k, label] of TABS) if (k !== 'items' || G.econ) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
     grid.innerHTML = '';
     note.textContent = '';
-    if (tab === 'furn') {
+    if (tab === 'items') {
+      // 경제·로비 on (설계서 3-2 · 4-1): a magnifier for the bag (60, up to 5), and a thing you've found in a stage (도감) to hide
+      // at home (40). Something a resident took isn't for sale: go and get it back.
+      const L = G.save.lens || (G.save.lens = { bag: 0 }), full = (L.bag || 0) >= 5;
+      note.textContent = `돋보기 가방 ${L.bag || 0}/5 · 판에서 무료 2개를 다 쓰면 가방에서 꺼내 써요`;
+      grid.append(card(G, { img: G.thumbs.item_magnifier || null, swatch: h('div', { class: 'swatch', style: 'display:grid;place-items:center;font-size:34px' }, '🔍'), name: '돋보기', sub: full ? '가방이 가득 찼어요' : '가방에 1개', price: full ? null : 60, action: full ? '가득' : '',
+        onBuy: () => { L.bag = Math.min(5, (L.bag || 0) + 1); G.persist(); ui.toast(`돋보기 가방 ${L.bag}/5`, 'green'); render(); } }));
+      const took = new Set(Object.values(G.save.raid?.stolen || {}).flat());   // (raid.js: room id → the things taken from you)
+      for (const t of (G.save.seen || []).filter(t => ITEMS[t] && !G.save.collection.includes(t))) {
+        grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: took.has(t) ? '털려 갔어 · 되찾으러 가기' : '도감에서 본 것', price: took.has(t) ? null : 40, action: took.has(t) ? '되찾기' : '',
+          onBuy: () => { G.collect(t); ui.toast(`${ITEMS[t].name} · 이제 내 집에 숨길 수 있어`, 'green'); render(); },
+          onUse: took.has(t) ? () => { ui.closePanel(); G.go('visit'); } : null }));
+      }
+      if (!(G.save.seen || []).some(t => ITEMS[t] && !G.save.collection.includes(t))) grid.append(h('div', { class: 'txt', style: 'font-size:14px;padding:8px' }, '판에서 찾은 물건이 도감에 모이면 여기서 가져올 수 있어요'));
+    } else if (tab === 'furn') {
       note.textContent = zone ? `${zone.name}에 놓을 수 있는 가구예요. 숨을 곳이 많을수록 찾기 어려워져요.` : '';
       G.needThumbs?.(SHOP_FURN.map(it => 'furn_' + it.type));   // the grid's icons in one batch, not one by one
+      // 경제·로비 on: a chapter box's pieces stay out until the box has shown them; then the two you didn't pick are here
+      // as 기념품, at their price, on top (and they go in any room)
+      const offered = G.econ ? (H.offered || []).filter(t => FURN_INFO[t]) : [];
+      for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: '장 끝 상자에서 본 것', price: furnPrice(t), tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
+        onBuy: () => { H.inventory.push(t); G.persist(); ui.toast(`${FURN_INFO[t].name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } })); }
       for (const it of SHOP_FURN) {
+        if (G.econ && PICK_ITEMS.has(it.type) && (offered.includes(it.type) || !countOwned(H, it.type))) continue;
         if (ztype && !(ztype.indoor ? it.indoor : it.outdoor)) continue;
         const inf = FURN_INFO[it.type]; if (!inf) continue;
         const owned = countOwned(H, it.type);

@@ -12,6 +12,7 @@ import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCu
 import { spinePuzzle } from '../showcase.js';
 import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js';
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
+import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, lensClear } from '../lens.js';   // 돋보기 가방 (경제 B5, G.econ only, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
@@ -35,6 +36,7 @@ const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
 import { blindFor } from '../hunt-blind.js';
+import { PICKS, pickPanel, takePick } from '../econ.js';   // 경제·로비 (10/19)
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
@@ -236,6 +238,7 @@ export class StageScene {
     Object.assign(this, { time: this.spec.time, timeMax: this.spec.time, timerOn: false, running: false, paused: false, combo: 0, bestCombo: 0, lastFind: -99, misses: [], dizzy: 0, keys: 0, codes: new Set(),
       result: null, scraps: {}, t: 0, idle: 0, rotAccum: 0, found: 0, missCount: 0, continued: false, botT: 0, tutStep: 0, lastSec: 99, needKey: false, needCode: false, partsOpened: 0, twinkleT: 0 });
     this.hints = 3; this.hintsUsed = 0;   // 3 magnifiers a stage (was 2; easier, user 10/17)
+    if (G.econ) { this.hints = LENS_FREE; this.bagUsed = 0; }   // 경제 B5 (10/19): 2 free a stage, then the bag (lens.js)
     this.tail = null; this._dF = this._dE = false;   // (대본 bits that must not carry over from the last stage)
     this.buildHud();
     if (this.plan.first) this.tnum.textContent = '';   // 1판: only 토순이 to find, no bonus count
@@ -367,6 +370,7 @@ export class StageScene {
     const side = h('div', { class: 'side', style: `bottom:${bottomY}` });
     this.hintBtn = ui.ibtn('hint', 'blue', () => this.useHint(), this.hints);
     this.hintBtn.style.width = this.hintBtn.style.height = '52px';
+    if (G.econ) lensBadge(this);   // (경제 B5: free + bag)
     // zoomed in, one finger moves you around: these turn the room (or go back to the whole view) one-handed
     // back to the starting view (angle, tilt, zoom and position) whenever the view has wandered off
     const all = ui.btn('처음 시점', { color: 'gray', cls: 'sm', onClick: () => { const v = this.view0 || { yaw: Math.PI / 4, pitch: .62 }; G.world.flyTo(this.tw, { zoom: 1, target: G.world.home, yaw: v.yaw, pitch: v.pitch, dur: .45 }); } });
@@ -1216,13 +1220,16 @@ export class StageScene {
     if (G.ui.panelOpen || this.paused) return;
     this.paused = true;
     const close = () => { G.ui.closePanel(); this.paused = false; };
-    G.ui.panel({ title: '척척 로봇', color: 'blue', close, body: [h('div', { class: 'txt' }, `막혔어? 삐빅! 코인 ${cost}개면 내가 대신 열어 줄게.`), h('div', { class: 'txt', style: 'font-size:14px;color:#8a6a9a' }, `가진 코인 ${G.save.coins}`)],
-      buttons: [G.ui.btn(`부탁해 (${cost})`, { color: 'green', onClick: () => { close(); this.robotSolve(part); } }), G.ui.btn('내가 할래', { color: 'gray', onClick: close })] });
+    const L = G.econ;   // 경제 B5 (10/19): the robot takes a magnifier (a free one first), not coins
+    G.ui.panel({ title: '척척 로봇', color: 'blue', close, body: [h('div', { class: 'txt' }, L ? '막혔어? 삐빅! 돋보기 1개면 내가 대신 열어 줄게.' : `막혔어? 삐빅! 코인 ${cost}개면 내가 대신 열어 줄게.`), h('div', { class: 'txt', style: 'font-size:14px;color:#8a6a9a' }, L ? `가진 돋보기 ${lensLeft(this)}` : `가진 코인 ${G.save.coins}`)],
+      buttons: [G.ui.btn(L ? '부탁해 (돋보기 1)' : `부탁해 (${cost})`, { color: 'green', onClick: () => { close(); this.robotSolve(part); } }), G.ui.btn('내가 할래', { color: 'gray', onClick: close })] });
   }
   async robotSolve(part) {
     const G = this.G, W = G.world, L = part.lock; if (!L) return;
+    if (G.econ) { if (!takeLens(this)) return noLens(this); } else {   // 경제 B5 (10/19): one magnifier; none → the "no magnifier" sparkle, no robot
     if (G.save.coins < ROBOT_COST) { G.ui.toast(`코인이 모자라! (${ROBOT_COST} 필요)`, 'red'); return; }
     G.addCoins(-ROBOT_COST);
+    }
     // the robot hops in beside the lock, beeps, and the lock gives
     const c = this.partCenter(part), bot = new Char('robot'), R0 = this.room.rooms?.find(R => Math.abs(c.x - R.group.position.x) <= R.w / 2 && Math.abs(c.z - R.group.position.z) <= R.d / 2) || this.room;
     const dir = new THREE.Vector3(W.cam.position.x - c.x, 0, W.cam.position.z - c.z).normalize();
@@ -1377,6 +1384,8 @@ export class StageScene {
     const G = this.G, W = G.world;
     if (!this.running || this.result || this.paused) return;
     if (!this.nextGoal(true)) { G.ui.toast('지금은 더 알려 줄 게 없어!', ''); return; }
+    // 경제 B5 (10/19): a free one, else one from the bag — no coins inside a stage; none → the idle sparkle at once
+    if (G.econ) { if (!lensHint(this)) return; } else {
     if (this.hints <= 0 && !paid) {
       if (G.save.coins < 60) { G.ui.toast('돋보기가 없어! (코인 60 필요)', 'red'); return; }
       this.paused = true;
@@ -1387,6 +1396,7 @@ export class StageScene {
     }
     this.hints--; this.hintsUsed = (this.hintsUsed || 0) + 1;
     this.hintBtn.badge.textContent = this.hints > 0 ? this.hints : '60'; this.hintBtn.badge.classList.toggle('price', this.hints <= 0);
+    }
     G.audio.sfx('whoosh');
     if (this.v2 && await v2Hint(this)) return;   // v2: the trail → the sound and the tell → the hideout
     const goal = this.nextGoal(true);
@@ -1826,8 +1836,13 @@ export class StageScene {
     this.setMong('happy', 'hop');
     // one new thing to hide at home, on the first clear — given BEFORE the progress is saved, so a page closed in the
     // next second can't keep the cleared stage and lose the thing (GPT QA 10/18)
-    let newItem = null;
-    if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
+    let newItem = null, seenN = 0;
+    // 경제·로비 on: no thing given per stage any more — what you found goes into the card book (save.seen); things to hide
+    // come from the shop's 물건 tab and 하나 슬쩍 (설계서 4-1)
+    if (G.econ && !this.preview && !this.custom) { const seen = G.save.seen || (G.save.seen = []), add = [...new Set(this.targets.map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !seen.includes(t)); seen.push(...add); seenN = add.length; }
+    else if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
+    // 경제 B5 (10/19): no free magnifier used → one into the bag (not a preview / model kit, not testing my own room)
+    const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this) : null;
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
     await this.tw.wait(1.0);
@@ -1876,6 +1891,13 @@ export class StageScene {
       endLines = aft.filter(l => pick.has(l)); aft = null;
     }
     if (aft && !G.skipTalk && !G.bot) { await this.talk(aft); if (this.dead) return; }
+    // 경제·로비 on: a chapter's last stage, the first time — its box: one of three pieces (설계서 4-2)
+    let picked = null;
+    if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) {
+      picked = await pickPanel(G, PICKS[this.idx], { title: '장 끝 선물 상자!', line: '이 장에서 본 것 중 하나를 골라! 나머지 둘은 상점 기념품 칸에 올라가' });
+      if (this.dead) return;
+      takePick(G, this.idx, picked);
+    }
     // 2판 (home just opened): go and hide something at home now, or keep going — both on the result panel
     const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;
     // the first run doesn't offer the home after 1판: the home first shows after 2판, when 내 집 opens (기획안 7장)
@@ -1898,8 +1920,11 @@ export class StageScene {
         ...(this.model ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · 내 집 보관함에 들어갔어요` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))]
           : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
         h('div', { class: 'txt' }, `걸린 시간 ${fmtTime((this.tEnd ?? this.t) - (this.tStart ?? 0))}` + (this.hintsUsed ? ` · 힌트 ${this.hintsUsed}번` : ' · 힌트 없이!') + (this.bestCombo >= 2 ? ` · 최고 콤보 x${this.bestCombo}` : '')),
+        ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, `${ITEMS[newItem].name} · 내 집에 숨길 수 있어요`)))] : []),
+        ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · 내 집 보관함에 들어갔어요`)))] : []),
+        ...(seenN ? [h('div', { class: 'txt' }, `도감 +${seenN}`)] : []),
         ...(newFriend ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
@@ -1945,6 +1970,7 @@ export class StageScene {
     const G = this.G, W = G.world;
     G.ui.closePanel?.();
     this.result = 'fail'; this.running = false; this.tEnd = this.t;
+    const lensBk = G.econ && reason === 'taps' ? lensBack(this) : 0;   // 경제 B5 (10/19): lost to taps → the bag's magnifiers go back
     G.audio.sfx('lose');
     const f = this.friend; f.pose = 'idle'; f.setFace('wow'); f.faceTo(0, 0); f.bump(.4);
     this.bubble.style.display = 'none';
@@ -1957,9 +1983,10 @@ export class StageScene {
     const contFree = !this.continued;
     G.ui.panel({
       title: reason === 'giveup' ? '포기했어요' : reason === 'taps' ? TAP_TXT.title : '시간 초과!', color: 'red',
-      body: [h('div', { class: 'big-txt' }, `${this.found} / ${this.targets.length} 찾음`), h('div', { class: 'txt' }, reason === 'giveup' ? '숨긴 사람이 한 수 위였네! 집주인에게 코인이 가요' : reason === 'taps' ? TAP_TXT.body : '조금만 더 하면 다 찾을 수 있어!')],
+      body: [h('div', { class: 'big-txt' }, `${this.found} / ${this.targets.length} 찾음`), h('div', { class: 'txt' }, reason === 'giveup' ? '숨긴 사람이 한 수 위였네! 집주인에게 코인이 가요' : reason === 'taps' ? TAP_TXT.body : '조금만 더 하면 다 찾을 수 있어!'),
+        ...(lensBk ? [h('div', { class: 'txt lensline' }, '가방에서 꺼낸 돋보기는 돌려줬어!')] : [])],
       buttons: [
-        ...(reason === 'giveup' || reason === 'taps' ? [] : [G.ui.btn('이어하기', { color: 'orange', cls: 'stack', sub: contFree ? '+20초 (무료)' : '+20초 · 코인 80', onClick: () => this.continueRun(contFree) })]),
+        ...(reason === 'giveup' || reason === 'taps' ? [] : [G.ui.btn('이어하기', { color: 'orange', cls: 'stack', sub: contFree ? '+20초 (무료)' : G.econ ? '+20초 · 돋보기 1' : '+20초 · 코인 80', onClick: () => this.continueRun(contFree) })]),
         G.ui.btn('다시하기', { color: 'green', onClick: () => G.go('stage', this.retryArgs()) }),
         this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'blue', cls: 'sm', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'blue', cls: 'sm', onClick: () => G.go('visit') }) : G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }),
@@ -1975,6 +2002,8 @@ export class StageScene {
   retryArgs() { return this.model ? { model: this.model.kind } : this.custom ? { custom: this.custom } : this.preview ? { idx: this.idx, spec: this.spec, preview: true } : { idx: this.idx, retry: true }; }
   continueRun(free) {
     const G = this.G;
+    // 경제 B5 (10/19): from the 2nd on it takes a magnifier (a free one first), not coins; none → stays on the panel
+    if (!free && G.econ) { if (!takeLens(this)) { G.ui.toast('돋보기가 없어!', 'red'); return; } free = true; }
     if (!free) { if (G.save.coins < 80) { G.ui.toast('코인이 부족해!', 'red'); return; } G.addCoins(-80); }
     this.continued = true; G.ui.closePanel();
     this.time = 20; this.timeMax = Math.max(this.timeMax, 20); this.result = null; this.running = true;

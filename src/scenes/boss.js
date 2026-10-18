@@ -13,6 +13,7 @@ import { layoutFor, stageSpec, THEMES, REGIONS, BOSS_MAZE } from '../stages.js';
 import { Char, CHAR_DEFS, defineChar } from '../gfx/chars.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
 import { h } from '../ui.js';
+import { lensGameWin, lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { Tweens, clamp } from '../util.js';
 import { walkGrid, gridPath, nearestTile, crossOK } from '../companion.js';
 import { Ambient } from '../ambient.js';
@@ -386,12 +387,14 @@ export class BossScene {
     if (!left) { this.result = null; return this.lose(); }   // the clock ran out in the moment after the last one was found (GPT QA 10/18)
     const coins = 80 + left * 40 + this.tier * 30; G.addCoins(coins);
     const done = G.save.bossDone || (G.save.bossDone = {}); const first = !done[this.after]; done[this.after] = true; G.persist();
+    const lens = lensGameWin(G);   // 경제 B5 (10/19): treasures kept → a magnifier into the bag (not in practice)
     G.audio.sfx('win'); G.world.fx.confetti(140); this.seek.setFace?.('sad'); this.say(this.seek, '으아~ 다 못 찾았어!', 1800); this.hero.pose = 'cheer';
     G.stats.log.push({ boss: this.tier + 1, result: 'win', left });
     setTimeout(() => !this.dead && G.ui.panel({ title: '보물 지키기 성공!', color: 'green',
       body: [h('div', { class: 'tslots end' }, ...this.treasures.map(t => h('div', { class: 'tslot ' + (t.lost ? 'lost' : 'hidden') }, h('img', { src: G.thumbs['item_' + t.type] })))),
         h('div', { class: 'txt' }, `보물 ${left}개를 지켰어!`), h('div', { class: 'reward' }, `코인 +${coins}`), ...(first ? [h('div', { class: 'txt' }, '다음 너굴이는 코가 더 좋아질 거야…!')] : [])],
       buttons: [this.nextBtn = G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', { idx: this.after + 1 }) })] }), 1200);
+    if (lens) setTimeout(() => !this.dead && G.ui.panelOpen?.querySelector('.reward')?.after(lensPlus()), 1200);   // ("+ 돋보기 1" under the coins; same delay, so right after that panel)
   }
   lose() {
     if (this.result) return;

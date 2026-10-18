@@ -891,6 +891,36 @@ function buildVillage(root) {
   return { main, fh, solids };
 }
 
+// the big play button (the home and, with 경제·로비 on, the lobby): the next stage — or, once 70판 is behind you and the
+// ending hasn't played, the last 야식 boss (the only way to the ending — QA 10/18)
+export function playButton(G) {
+  const ui = G.ui, S = G.save, idx = S.stage || 0, sp = stageSpec(idx), reg = regionOf(idx), endless = idx >= STAGE_COUNT;
+  const fin = BOSS_GAMES[STAGE_COUNT - 1], finPending = endless && fin && !S.ending && !G.bot;
+  return finPending
+    ? ui.btn('보스 등장!', { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: `${STAGE_COUNT}판 · 셋째 밤`, onClick: () => G.go('bossgame', { kind: fin.kind, lv: fin.lv, after: STAGE_COUNT - 1 }) })
+    : ui.btn(`스테이지 ${idx + 1}`, { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: (endless ? `무한 모드 ${idx - STAGE_COUNT + 1} · ${(REGIONS.find(r => r.id === sp.region) || reg).name}` : `${reg.name} ${idx - reg.from + 1}/${reg.to - reg.from}`) + (sp.boss ? ' · 방탈출' : sp.hard ? ' · 하드' : ''), onClick: () => G.go('stage', { idx }) });
+}
+// 더보기: 놀이 모음, 세팅, 언어, 판 방식, 배치 편집 (owner), credits — and, with 경제·로비 on, 동네 구경 (the old home)
+export function openMore(G, extra = []) {
+  const ui = G.ui;
+  // art preview (2026-10-15): the everyday apartment living room in the new look, outside the campaign
+  const preview = room => G.go('stage', { idx: 2, preview: true, spec: { room, n: 6, inside: 3, behind: 1, time: 90, clutter: .7, tut: 0 } });
+  const fs = fullscreenBtn(ui);
+  const layBtn = G.owner ? [ui.btn('배치 편집', { color: 'orange', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
+  ui.panel({ title: '더보기', color: 'blue', close: () => {}, body: [h('div', { class: 'row wrap' },
+    ui.btn('놀이 모음', { color: 'green', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
+    ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
+    ui.btn('새 아트', { color: 'yellow', onClick: () => { ui.closePanel(); preview('apt'); } }),
+    ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),
+    // compare the new incident stages with the old find-the-list stages (10/17 pivot)
+    ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
+    ...layBtn, ...extra, ...(fs ? [fs] : [])),
+    // font credits (한국기계연구원 서체 is 공공누리 제1유형: the credit has to be shown)
+    h('div', { class: 'credits' }, '글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 \'한국기계연구원 서체\'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.')],
+    buttons: [ui.btn('닫기', { color: 'gray', onClick: () => ui.closePanel() })] });
+  if (!G.owner) G.ownerP.then(o => { if (o && ui.panelOpen) { ui.closePanel(); openMore(G, extra); } });
+}
+
 const HOME_LIGHT = { ambColor: '#fff0e0', amb: 1.5, sunColor: '#fff6e6', sun: 2.3 };
 
 export class HomeScene {
@@ -1042,10 +1072,7 @@ export class HomeScene {
     const bar = h('div', { class: 'homebar' });
     // the ending comes after the last 야식 boss: whoever went home from 70판's result panel (or reloaded before the ending
     // played) is sent to that boss first — it was the only way to the ending (QA 10/18)
-    const fin = BOSS_GAMES[STAGE_COUNT - 1], finPending = endless && fin && !S.ending && !G.bot;
-    this.playBtn = finPending
-      ? ui.btn('보스 등장!', { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: `${STAGE_COUNT}판 · 셋째 밤`, onClick: () => G.go('bossgame', { kind: fin.kind, lv: fin.lv, after: STAGE_COUNT - 1 }) })
-      : ui.btn(`스테이지 ${idx + 1}`, { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: (endless ? `무한 모드 ${idx - STAGE_COUNT + 1} · ${(REGIONS.find(r => r.id === sp.region) || reg).name}` : `${reg.name} ${idx - reg.from + 1}/${reg.to - reg.from}`) + (sp.boss ? ' · 방탈출' : sp.hard ? ' · 하드' : ''), onClick: () => G.go('stage', { idx }) });
+    this.playBtn = playButton(G);
     const unlocked = G.homeOpen();
     const roomBtn = ui.btn('내 집', { color: 'orange', icon: unlocked ? 'home' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '꾸미고 숨기기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려요!', 'red') : G.go('myhome') });
     if (unlocked && !G.save.tut?.home) roomBtn.classList.add('pulse');   // just opened: point the way
@@ -1053,28 +1080,10 @@ export class HomeScene {
     // the side column stays short so it never reaches the play button on a short screen (Safari with its bars, a phone
     // turned sideways): 지도 and 도감 stay out, everything else lives behind 더보기
     const side = h('div', { class: 'homeside' });
-    // art preview (2026-10-15): the everyday apartment living room in the new look, outside the campaign
-    const preview = room => G.go('stage', { idx: 2, preview: true, spec: { room, n: 6, inside: 3, behind: 1, time: 90, clutter: .7, tut: 0 } });
-    const more = () => {
-      const fs = fullscreenBtn(ui);
-      const layBtn = G.owner ? [ui.btn('배치 편집', { color: 'orange', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
-      ui.panel({ title: '더보기', color: 'blue', close: () => {}, body: [h('div', { class: 'row wrap' },
-        ui.btn('놀이 모음', { color: 'green', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
-        ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
-        ui.btn('새 아트', { color: 'yellow', onClick: () => { ui.closePanel(); preview('apt'); } }),
-        ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),
-        // compare the new incident stages with the old find-the-list stages (10/17 pivot)
-        ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
-        ...layBtn, ...(fs ? [fs] : [])),
-        // font credits (한국기계연구원 서체 is 공공누리 제1유형: the credit has to be shown)
-        h('div', { class: 'credits' }, '글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 \'한국기계연구원 서체\'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.')],
-        buttons: [ui.btn('닫기', { color: 'gray', onClick: () => ui.closePanel() })] });
-      if (!G.owner) G.ownerP.then(o => { if (o && ui.panelOpen) { ui.closePanel(); more(); } });
-    };
     side.append(snd,
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
       ui.btn('도감', { color: 'pink', cls: 'sm', onClick: () => openCardBook(G) }),
-      ui.btn('더보기', { color: 'blue', cls: 'sm', onClick: more }));
+      ui.btn('더보기', { color: 'blue', cls: 'sm', onClick: () => openMore(G) }));
     col.append(side);
     bar.append(this.playBtn, h('div', { class: 'row2' }, roomBtn, raidBtn));
     col.append(bar);

@@ -6,6 +6,7 @@
 // button in the game's top bar opens 계속 / 건너뛰기 / 홈.
 import * as THREE from 'three';
 import { h } from '../ui.js';
+import { lensGameWin, lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { ITEMS, buildItem } from '../gfx/items.js';
 import { renderThumbs } from '../thumbs.js';
@@ -124,8 +125,10 @@ export class BossGameScene {
     const st = e.max ? Math.round(3 * (e.stars || 0) / e.max) : Math.max(0, Math.min(3, e.stars || 0));   // (GPT QA 10/18 P2: hotel reported 45 of 48)
     const coins = this.interlude ? 40 + st * 15 : 150 + st * 30; G.addCoins(coins);
     const done = G.save.bossDone || (G.save.bossDone = {}); done[(this.interlude ? 'm' : 'g') + this.after] = true; G.persist();
+    const lens = lensGameWin(G);   // 경제 B5 (10/19): a won 놀이 / boss → a magnifier into the bag (not in practice)
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
     G.ui.toast(this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
+    if (lens) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
   }
   // an interlude lost: still on to the next stage, with a small reward
   pass() {

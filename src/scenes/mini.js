@@ -11,6 +11,7 @@ import { MapRooms } from '../map.js';
 import { layoutFor, THEMES } from '../stages.js';
 import { Char } from '../gfx/chars.js';
 import { h } from '../ui.js';
+import { lensGameWin, lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { Tweens } from '../util.js';
 import { disposeTree } from '../gfx/kit.js';
 import { playDialog } from '../story.js';
@@ -128,11 +129,13 @@ export class MiniScene {
     if (win) {
       const coins = this.boss ? 120 + this.si * 30 : 50; G.addCoins(coins);
       const done = G.save.bossDone || (G.save.bossDone = {}); done['m' + this.after] = true; G.persist();
+      const lens = lensGameWin(G);   // 경제 B5 (10/19): a won 놀이 → a magnifier into the bag (not in practice)
       G.audio.sfx('win'); G.world.fx.confetti(140);
       G.stats.log.push({ mini: this.kind, result: 'win' });
       setTimeout(() => !this.dead && G.ui.panel({ title: this.boss ? `${this.info.name} 승리!` : `${this.info.name} 성공!`, color: 'green',
         body: [h('div', { class: 'txt' }, detail || this.info.winLine || '해냈다!'), h('div', { class: 'reward' }, `코인 +${coins}`)],
         buttons: [this.nextBtn = G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', { idx: this.after + 1 }) })] }), 900);
+      if (lens) setTimeout(() => !this.dead && G.ui.panelOpen?.querySelector('.reward')?.after(lensPlus()), 900);   // ("+ 돋보기 1" under the coins; same delay, so right after that panel)
     } else {
       G.audio.sfx('lose'); this.fails++;
       G.stats.log.push({ mini: this.kind, result: 'fail' });

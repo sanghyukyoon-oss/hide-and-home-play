@@ -47,6 +47,8 @@ import { BossScene } from './scenes/boss.js';
 import { MiniScene } from './scenes/mini.js';
 import { BossGameScene } from './scenes/bossgame.js';
 import { LayEditScene } from './scenes/layedit.js';
+import { LobbyScene } from './scenes/lobby.js';
+import { ECON, econMigrate, econSaveFields } from './econ.js';
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
 import { openGallery, playGame } from './gallery.js';
 installI18n();   // English players see English everywhere (see i18n.js)
@@ -134,9 +136,11 @@ setOutdoorKit({ groundTex, boundary });
 registerOutdoorShop(OUTDOOR_INFO);
 
 const KEY = 'sumbakkokjip.v1';
-const newZone = id => { const z = HOME_ZONES.find(x => x.id === id); return { id, type: z.type, name: z.name, ...(z.type === 'room' ? { style: 'st-open' } : {}), furniture: (STARTER[id] || []).map((f, i) => ({ ...f, id: id + '-' + i })), paint: {} }; };
-const defaultHome = () => ({ zones: { room1: newZone('room1') }, current: 'room1', inventory: ['wardrobe'], bought: [], owned: { wall: [], floor: [] }, hide: { zoneId: 'room1', items: [], locks: {}, code: null }, published: null, claimedFails: 0 });
-const defaultSave = () => ({ v: 2, stage: 0, best: {}, coins: 150, stars: 0, home: defaultHome(), collection: STARTER_ITEMS.slice(), visits: {} });
+// (경제·로비 on: 몽글이's room starts as a rug and 몽글이, nothing else — 설계서 2-2)
+const starterOf = id => ECON && id === 'room1' ? STARTER[id].filter(f => f.type === 'rug') : STARTER[id] || [];
+const newZone = id => { const z = HOME_ZONES.find(x => x.id === id); return { id, type: z.type, name: z.name, ...(z.type === 'room' ? { style: 'st-open' } : {}), furniture: starterOf(id).map((f, i) => ({ ...f, id: id + '-' + i })), paint: {} }; };
+const defaultHome = () => ({ zones: { room1: newZone('room1') }, current: 'room1', inventory: ECON ? [] : ['wardrobe'], bought: [], owned: { wall: [], floor: [] }, hide: { zoneId: 'room1', items: [], locks: {}, code: null }, published: null, claimedFails: 0 });
+const defaultSave = () => econSaveFields({ v: 2, stage: 0, best: {}, coins: 150, stars: 0, home: defaultHome(), collection: STARTER_ITEMS.slice(), visits: {} });
 // v1 (with the old Mom-inspection room) → v2: keep coins, progress and the furniture you placed
 function migrate(s) {
   if (!s) return defaultSave();
@@ -161,7 +165,7 @@ let stored = store.get(KEY, null);
 // which copy is newer: every save carries a revision (GPT QA 10/18 P1: an old bookmark with more coins rolled back later
 // purchases, furniture and collection) — the address only wins when it is newer, or when there is nothing in storage
 if (hashSave && (!stored || (hashSave.rev || 0) > (stored.rev || 0))) stored = hashSave;
-let save = migrate(stored);
+let save = econMigrate(migrate(stored));   // (경제·로비: new fields only, and only with it on — coins, stages, stars, furniture untouched)
 // 처음 하는 사람 (기획안 7장 '처음 20분', 사용자 10/18 밤 승인): 저장이 하나도 없으면 타이틀 다음 바로 1판으로 간다. 홈은
 // 2판 뒤 '내 집 열림'과 함께 처음 본다. (주소의 #s= 저장도 stored에 들어 있으니, 그걸로 이어 하는 사람은 처음이 아니다)
 const firstRun = !stored;
@@ -190,7 +194,7 @@ loadTune(world);   // the look the user set in the 세팅 panel, kept on this de
 const ui = new UI(audio);
 
 const G = {
-  world, ui, audio, save, thumbs: {}, scene: null, pending: null, bot: qs.has('bot'), botMode: qs.get('bot') === 'random' ? 'random' : 'smart', botErr: +(qs.get('err') ?? .25),
+  world, ui, audio, save, thumbs: {}, scene: null, econ: ECON, pending: null, bot: qs.has('bot'), botMode: qs.get('bot') === 'random' ? 'random' : 'smart', botErr: +(qs.get('err') ?? .25),
   timeScaleUser: 1, fast: +(qs.get('fast') || 1), hitstopUntil: 0, coinPills: [],
   stats: { cleared: 0, fails: 0, levelSecs: [], log: [], visits: 0, stageStart: 0 },
   // (practice runs from 놀이 모음 never reach storage: a reload mid-practice keeps the real save — GPT QA 10/18 P2)
@@ -281,7 +285,8 @@ window.G = G;
 // 배치 편집 is the author's tool: shown to the artifact's owner only (and always when running outside claude.ai)
 G.owner = false;
 G.ownerP = (async () => { try { if (!window.claude?.use) return (G.owner = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || qs.has('owner')); const u = await window.claude.use('user'); return (G.owner = !!(await u?.isOwner?.())); } catch { return false; } })();   // the public web copy (GitHub Pages) shows no author tools
-const SCENES = { home: HomeScene, stage: StageScene, myhome: MyHomeScene, visit: VisitScene, boss: BossScene, mini: MiniScene, bossgame: BossGameScene, layedit: LayEditScene };
+// 경제·로비 on: home (the first screen) is 몽글이's room, and 내 집 goes there too; the neighbourhood is 더보기 → 동네 구경
+const SCENES = { home: ECON ? LobbyScene : HomeScene, town: HomeScene, stage: StageScene, myhome: ECON ? LobbyScene : MyHomeScene, visit: VisitScene, boss: BossScene, mini: MiniScene, bossgame: BossGameScene, layedit: LayEditScene };
 
 // ── 3D icons
 async function bgFurnThumbs() {

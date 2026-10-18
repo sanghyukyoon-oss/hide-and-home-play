@@ -219,6 +219,14 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .homebar { position: absolute; left: 12px; right: 12px; bottom: calc(18px + var(--safeB)); display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .homebar .row2 { display: flex; gap: 12px; width: 100%; justify-content: center; }
 .homebar .row2 .btn { flex: 1; max-width: 200px; }
+/* 경제·로비 (10/19): 꾸미기 [가구 | 친구] above the cards, and the magnifier bag pill */
+.invtabs { display: flex; gap: 6px; justify-content: center; pointer-events: auto; }
+.invtabs .shoptab { flex: 0 0 auto; }
+.pill.lens { pointer-events: auto; }
+.lobbypills { gap: 10px; }
+.lobbypills .pill { min-width: 0; padding: 0 10px 0 30px; }
+.homebar .row2.three { gap: 8px; }
+.homebar .row2.three .btn { min-width: 0; font-size: 17px; padding-left: .45em; padding-right: .5em; }
 .playbtn { width: min(86%, 380px); }
 /* the play button with the ▶ beside the words, not above them: about two-thirds the height, more of the town shows (user: "유아이가 너무 크고") */
 .playbtn.stack { flex-direction: row; gap: 14px; padding: .36em 1em .42em; }
@@ -671,6 +679,14 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 /* the magnifier's badge once the free ones are gone: its price in coins, gold */
 .badge.price { background: #ffd23f; color: var(--ink); }
 .badge.price::before { content: '🪙'; font-size: .8em; margin-right: 1px; }
+/* 경제 B5 (10/19, G.econ): the free ones gone, the number is what's left in the bag — orange; 톡 running low with one in
+   hand, the hint button bounces once (translate/scale, so the pressed .down transform still works); "+ 돋보기 1" lines */
+.badge.bag { background: var(--o2); color: #fff; }
+.btn.nudge { animation: nudge .7s var(--eo); }
+@keyframes nudge { 25% { translate: 0 -14px; scale: 1.12; } 55% { translate: 0 0; scale: 1.04 .96; } 80% { translate: 0 -5px; scale: 1.02; } }
+.lensplus { font-size: 15px; margin-top: 4px; }
+.toast .lensplus { font-size: 13px; margin-top: 1px; }
+.txt.lensline { color: var(--o3); }
 
 /* English home: the title runs longer and the side buttons ("Collection") are wider than in Korean — a smaller title
    and a narrower middle so nothing overlaps the profile or the side column (Codex QA 10/17) */

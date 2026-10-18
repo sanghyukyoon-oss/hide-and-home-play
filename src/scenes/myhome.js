@@ -17,6 +17,7 @@ import { HOME_TUT, giftSeats } from '../script.js';
 import { tr } from '../i18n.js';
 import { openShop } from '../shop.js';
 import { net, initNet, publishRoom, roomStats } from '../net.js';
+import { seatedAll } from '../econ.js';
 
 const V = new THREE.Vector3();
 const MAX_HIDE = 5;
@@ -42,7 +43,7 @@ export class MyHomeScene {
     // first visit (home opens after stage 2) — 대본 (10/18): 토순이 comes over, you hide one thing, she looks for it.
     // Decorating, the shop, locks and posting each come when they're needed, not as a speech up front.
     const tut = G.save.tut || (G.save.tut = {});
-    if (!tut.home && !G.bot && !G.skipTalk) {
+    if (!tut.home && !G.bot && !G.skipTalk && !this.lobby) {   // (the lobby — 경제·로비 on — runs its own: lobby.js roomOpens)
       tut.home = true; G.persist();
       await this.tw.wait(.6); if (this.dead) return;
       await playDialog(G, HOME_TUT.hello, { title: '내 집' }); if (this.dead) return;
@@ -70,7 +71,7 @@ export class MyHomeScene {
     document.getElementById('app').style.setProperty('--joyB', '330px');   // above the cards and buttons
     W.bounds = Math.max(2.4, Math.max(R.w, R.d) * .48); W.minPitch = .06; W.maxPitch = 1.45; W.minZoom = .85; W.maxZoom = 7;
     // hiding and decorating have cards and buttons at the bottom: the room sits higher and a little smaller there
-    const busy = this.mode === 'hide' || this.mode === 'edit';
+    const busy = this.mode === 'hide' || this.mode === 'edit' || this.mode === 'lobby';   // (the lobby: the play button and its row)
     W.setFit(Math.max(7.5, span), Math.max(6.6, span * .62) * (busy ? 1.05 : 1), busy ? .405 : .45);
   }
   exit() { document.getElementById('app').style.removeProperty('--joyB'); this.dead = true; this.visitors?.dispose(); const W = this.G.world; W.root.remove(this.room.group); freeRoom(this.room.group); W.onTap = null; W.onDragStart = null; this.G.ui.clear(); this.tw.clear(); }
@@ -101,13 +102,14 @@ export class MyHomeScene {
       }
       for (const pk in hid.locks) { const p = this.partByKey[pk]; if (p) p.furn.setLock(p, hid.locks[pk], hid.code); else delete hid.locks[pk]; }
     }
-    this.mong = new Char('mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8; this.room.group.add(this.mong.root);
+    this.mong = new Char(this.lobby ? G.save.hero || 'mong' : 'mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8; this.room.group.add(this.mong.root);
+    if (this.lobby) this.seatFriends();   // the friends sitting in this room (lobby.js)
     W.idsDirty = true;
     // friends drop by while you just look at your home
     this.visitors?.dispose();
     const door = this.room.doorDecor ? this.room.frontOf(this.room.doorDecor.f) : null;
     this.visitors = new Visitors(G, { parent: this.room.group, mong: this.mong, tw: this.tw, indoorRoom: !!ZONE_TYPES[this.zone.type].indoor,
-      active: () => this.mode === 'view' && !G.ui.panelOpen,
+      active: () => (this.mode === 'view' || this.mode === 'lobby') && !G.ui.panelOpen && !this.busyTut, skip: () => this.lobby ? seatedAll(this.H) : null,
       entry: () => door ? [door.x, door.z] : [-1.9, 2.1], meet: () => [1.9 - .8, 1.9 - .3], say: (ch, t, ms) => this.say(ch, t, ms),
       clear: (x, z, r) => this.room.clearAt(x, z, r), seats: () => giftSeats(G, this.room) });   // 대본: a gift is its friend's seat
   }
@@ -140,7 +142,8 @@ export class MyHomeScene {
     this.mode = mode; this.sel = null; this.markers = null; this.ftool = null;
     ui.clear(); if (this.room) this.fitCam();
     const col = this.col = ui.col();
-    const back = ui.ibtn('home', 'blue', () => mode === 'view' ? G.go('home') : this.setMode('view'));
+    if (mode === 'lobby') return this.lobbyHud();   // the lobby (경제·로비 on, lobby.js): its own top bar, no zone tabs
+    const back = ui.ibtn('home', 'blue', () => mode === 'view' ? G.go('home') : this.setMode(this.lobby ? 'lobby' : 'view'));
     back.style.cssText += 'position:absolute;left:12px;top:calc(12px + var(--safeT))';
     col.append(back);
     const pills = h('div', { class: 'pills' }); const cp = ui.pill('coin', G.save.coins); pills.append(cp); col.append(pills); G.coinPills = [cp];
