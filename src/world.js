@@ -581,7 +581,7 @@ export class World {
     const setFromY = y => { const b = track.getBoundingClientRect(), k = clamp(1 - (y - b.top) / b.height, 0, 1);
       const z = this.minZoom * Math.pow(this.maxZoom / this.minZoom, k); this.zoomGoal = null; this.zoomAt(z / this.zoom, this.W / 2, this.H / 2); };
     let zid = null;
-    zg.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); const t = e.target;
+    zg.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); const t = e.target; if (this.drag) this.drag.moved = true;   // (a finger resting on the room isn't a tap when it lifts — QA N2)
       if (t.classList.contains('zp')) { this.zoomAt(1.35, this.W / 2, this.H / 2); return; }
       if (t.classList.contains('zm')) { this.zoomAt(1 / 1.35, this.W / 2, this.H / 2); return; }
       zid = e.pointerId; try { zg.setPointerCapture(zid); } catch {} setFromY(e.clientY); });
@@ -597,7 +597,7 @@ export class World {
     td.innerHTML = '<i class="td-glass"><i class="td-band"><i class="td-mi"></i><i class="td-ma"></i></i><i class="td-shade"></i><i class="td-gloss"></i></i>' + ['l', 'r', 'lu', 'ld', 'ru', 'rd'].map(c => `<i class="td-ar td-${c}"></i>`).join('');
     app.append(td);
     { let tid = null, lx = 0, ly = 0; const o = {};
-      td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; o.piv = this._turnPivot(); this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });
+      td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.drag) this.drag.moved = true; if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; o.piv = this._turnPivot(); this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });
       td.addEventListener('pointermove', e => {
         e.stopPropagation(); if (e.pointerId !== tid) return;
         if (e.pointerType === 'mouse' && e.buttons === 0) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; return; }

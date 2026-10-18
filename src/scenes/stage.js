@@ -34,6 +34,7 @@ import { EN } from '../i18n-en-dict.js';
 const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★ 시간 넉넉히'), secret: (EN['★ 비밀 아이템'] = '★ Secret item', '★ 비밀 아이템') };
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
+import { blindFor } from '../hunt-blind.js';
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
@@ -144,6 +145,7 @@ export class StageScene {
     // 숨은그림 판: about half the things where this host would put them, never a place nobody can see into (hunt.js)
     this.hunt = !custom && !this.preview && isHunt(this.spec);
     if (this.hunt) this.spec = huntExtras(this.spec, th.friend);
+    else if (!custom && !this.preview) this.spec = { ...this.spec, avoid: this.spec.avoid || blindFor(this.spec.room) };   // a 사건 판's bonus things, a 흑백판's too: never where nobody can see (QA N11)
     this.story = custom ? null : storyFor(this.idx);
     // 사건 판 (10/17 pivot): the owner hides behind a lock and finding them is the goal (세팅 → 더보기 has the old way)
     this.incident = !custom && !this.preview && (!!this.spec.incident || this.spec.tut === 1) && !G.save.settings?.oldMode;
@@ -452,6 +454,7 @@ export class StageScene {
   tap(x, y) {
     if (!this.running || this.paused || this.result || this.cine) return;
     const G = this.G;
+    if (G.world.flying) return;   // (the camera gliding by itself — a key's tour, a lever, a hint: a tap would land on a moving view — QA N1)
     if (this.dizzy > 0) { G.audio.sfx('wobble'); return; }
     const hit = this.pickAt(x, y);
     this.lastTapAt = { x, y }; this._lastMiss = null;   // (a double tap gives back only the tap right before it — QA 10/18)

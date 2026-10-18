@@ -281,7 +281,9 @@ function phrases(t) {
     let done = false;
     for (let j = w.length; j > i; j--) {
       const ph = w.slice(i, j).join(' ');
-      const hit = EN[ph] ?? (PARTICLE.test(ph) ? EN[ph.replace(PARTICLE, '')] : null);
+      // (one Korean letter on its own is not a word to swap inside a sentence: 수 → Wed, 무 → Radish, 톡 → Pat — QA N9)
+      const one = s => s.length < 2 && w.length > 1;
+      const hit = one(ph) ? null : EN[ph] ?? (PARTICLE.test(ph) && !one(ph.replace(PARTICLE, '')) ? EN[ph.replace(PARTICLE, '')] : null);
       if (hit != null) { out.push(hit); i = j; done = true; break; }
     }
     if (!done) { if (HAN.test(w[i])) miss.add(w[i]); out.push(w[i]); i++; }
