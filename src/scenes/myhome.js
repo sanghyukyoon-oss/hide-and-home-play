@@ -629,9 +629,14 @@ export class MyHomeScene {
     ch.bump(.4); G.audio.sfx('giggle');
   }
   say(ch, text, ms = 1300) {
-    const b = h('div', { class: 'bubble pop' }, text);
+    // a long line (English) wraps instead of running off the screen, and the bubble stays inside the screen
+    const b = h('div', { class: 'bubble pop', style: 'white-space:normal;width:max-content;max-width:min(300px,calc(100vw - 32px));text-align:center' }, text);
     this.G.ui.wui.append(b);
-    const upd = () => { const p = this.G.world.toScreen(V.copy(ch.root.getWorldPosition(new THREE.Vector3())).setY(ch.root.position.y + ch.headTop() + .2)); b.style.left = p.x + 'px'; b.style.top = p.y + 'px'; };   // (+ y: up on a seat)
+    const upd = () => {
+      const p = this.G.world.toScreen(V.copy(ch.root.getWorldPosition(new THREE.Vector3())).setY(ch.root.position.y + ch.headTop() + .2));   // (+ y: up on a seat)
+      const hw = b.offsetWidth / 2, W = b.parentElement?.clientWidth || innerWidth;
+      b.style.left = clamp(p.x, 16 + hw, Math.max(16 + hw, W - 16 - hw)) + 'px'; b.style.top = p.y + 'px';
+    };
     upd(); const iv = setInterval(upd, 30);
     setTimeout(() => { clearInterval(iv); b.remove(); }, ms);
   }
