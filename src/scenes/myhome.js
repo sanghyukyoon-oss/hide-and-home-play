@@ -2,6 +2,7 @@
 // and strangers who open the shared game come to find what you hid.
 import * as THREE from 'three';
 import { Room, attachItem, indexSpots } from '../room.js';
+import { cachedGeos, STYLE } from '../gfx/kit.js';
 import { validateRoom } from '../roomdoc.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
 import { FURN_INFO } from '../gfx/furniture.js';
@@ -72,15 +73,17 @@ export class MyHomeScene {
     const busy = this.mode === 'hide' || this.mode === 'edit';
     W.setFit(Math.max(7.5, span), Math.max(6.6, span * .62) * (busy ? 1.05 : 1), busy ? .405 : .45);
   }
-  exit() { document.getElementById('app').style.removeProperty('--joyB'); this.dead = true; this.visitors?.dispose(); const W = this.G.world; W.root.remove(this.room.group); W.onTap = null; W.onDragStart = null; this.G.ui.clear(); this.tw.clear(); }
+  exit() { document.getElementById('app').style.removeProperty('--joyB'); this.dead = true; this.visitors?.dispose(); const W = this.G.world; W.root.remove(this.room.group); freeRoom(this.room.group); W.onTap = null; W.onDragStart = null; this.G.ui.clear(); this.tw.clear(); }
 
   build() {
     const G = this.G, W = G.world;
-    if (this.room) W.root.remove(this.room.group);
+    const old = this.room;   // (freed below, once the new room exists — GPT QA 10/18: every rebuild left ~3 textures behind)
+    if (old) W.root.remove(old.group);
     const z = this.zone, lay = zoneLayout(z);
     G.setBg(lay.theme.bg || (ZONE_TYPES[z.type].indoor ? ['#fff3e3', '#ffe2c4'] : ['#e4f6ff', '#d6f3d8'])); G.world.setLight(lay.theme.light || null);
     this.room = new Room(W, zoneLayout(z));
     W.root.add(this.room.group);
+    if (old) freeRoom(old.group, this.room.group);
     const idx = indexSpots(this.room); this.spotByKey = idx.spots; this.partByKey = idx.parts;
     this.items = {};
     const hid = this.H.hide;
@@ -664,4 +667,17 @@ export class MyHomeScene {
     }
   }
   state() { return { scene: 'myhome', zone: this.zoneId, mode: this.mode, hidden: this.targetCount() }; }
+}
+
+// a room that's gone: its own shapes and textures go back (the shared, cached shapes stay; anything the new room still
+// uses stays too, so a rebuild after placing a piece re-uploads nothing). Materials stay, as in kit.js disposeTree.
+function freeRoom(root, keepRoot = null) {
+  const keepG = cachedGeos(), keepT = new Set([STYLE.grad]);
+  keepRoot?.traverse(o => { if (o.geometry) keepG.add(o.geometry); for (const m of [].concat(o.material || [])) for (const k in m) if (m[k]?.isTexture) keepT.add(m[k]); });
+  const doneG = new Set(), texs = new Set();
+  root.traverse(o => {
+    if (o.geometry && !keepG.has(o.geometry) && !doneG.has(o.geometry)) { doneG.add(o.geometry); o.geometry.dispose(); }
+    for (const m of [].concat(o.material || [])) for (const k in m) if (m[k]?.isTexture && !keepT.has(m[k])) texs.add(m[k]);
+  });
+  for (const t of texs) t.dispose();
 }

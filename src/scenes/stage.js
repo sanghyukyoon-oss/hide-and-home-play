@@ -1801,14 +1801,18 @@ export class StageScene {
       }
     }
     this.setMong('happy', 'hop');
+    // one new thing to hide at home, on the first clear — given BEFORE the progress is saved, so a page closed in the
+    // next second can't keep the cleared stage and lose the thing (GPT QA 10/18)
+    let newItem = null;
+    if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
     await this.tw.wait(1.0);
     if (this.dead) return;
-    let memento = null, newFriend = null, back = [], got = null, newItem = null;
+    let memento = null, newFriend = null, back = [], got = null;
     const kitFurn = this.model && KITS[this.model.kit].furn, kitNew = this.model ? kitReward(this) : null;   // the finished model goes home (once)
     // one new thing to hide at home per stage, the first time it is cleared (not every find — that gave away too much)
-    if (first?.firstClear) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }   // (not the hidden friend's marker: GPT QA 10/18)
+    // (the first-clear thing is given before the progress is saved, above — 10/18 GPT QA: leaving during the 1 s wait lost it)
     // 털기: take back what was mine, then pocket one thing from this room
     if (this.custom && !this.custom.selfTest && !this.preview) {
       back = retrieve(G, this.custom);

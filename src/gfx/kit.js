@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const GEO = new Map(), MAT = new Map();
+export const cachedGeos = () => new Set(GEO.values());   // (myhome.js frees a rebuilt room but keeps the shared shapes)
 // Free the GPU side of what a scene built: its own geometries and every texture it used — canvas textures are made per
 // scene, and a cached material keyed by such a texture would otherwise keep it (and itself) forever, so those cache
 // entries go too. Shared cached geometries stay. Safe even if something is still referenced elsewhere: three uploads a
