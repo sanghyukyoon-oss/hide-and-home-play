@@ -3028,4 +3028,5 @@ export const EN = {
 "킥킥 소리가 나면 바로 그쪽을 비춰!": "When you hear a giggle, shine that way right away!",
 "엄마 몰래 성적표": "Report Card Sneak",
 "오리!": "Duck!",
+"이 브라우저는 저장이 안 돼요 · 지금 주소를 북마크하면 이어서 할 수 있어요": "This browser can't save · bookmark this page to keep your progress",
 };

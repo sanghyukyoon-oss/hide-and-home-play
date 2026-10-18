@@ -141,7 +141,20 @@ function migrate(s) {
   return n;
 }
 if (qs.has('reset')) store.del(KEY);
-let save = migrate(store.get(KEY, null));
+// progress also rides in the page address (#s=…) on the web copy: a tab Safari reloads after a crash, a bookmark, or a
+// browser that keeps no storage (in-app browsers, private tabs, blocked cookies) still continue where you were
+// (user, 10/18: "웹 버전 내가 한 곳까지 기억해 주는 것도 가능? 계속 첫 판부터 하고 있음")
+const WEB = !window.claude;
+const b64e = str => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = str => decodeURIComponent(escape(atob(str.replace(/-/g, '+').replace(/_/g, '/'))));
+const hashSave = (() => { if (!WEB || qs.has('reset')) return null; try { const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); return m ? JSON.parse(b64d(m[1])) : null; } catch { return null; } })();
+const storageOk = (() => { try { localStorage.setItem('sumbakkokjip.t', '1'); return localStorage.getItem('sumbakkokjip.t') === '1'; } catch { return false; } })();
+try { navigator.storage?.persist?.(); } catch {}   // ask the browser to keep this site's storage
+let stored = store.get(KEY, null);
+if (hashSave && (!stored || (hashSave.stage || 0) > (stored.stage || 0) || ((hashSave.stage || 0) === (stored.stage || 0) && (hashSave.coins || 0) > (stored.coins || 0)))) stored = hashSave;
+let save = migrate(stored);
+let hashT = 0;
+const saveToHash = () => { if (!WEB) return; clearTimeout(hashT); hashT = setTimeout(() => { try { history.replaceState(null, '', location.pathname + location.search + '#s=' + b64e(JSON.stringify(save))); } catch {} }, 400); };
 
 // locked cartoon art direction (?style=std shows the original soft render for comparison)
 if (qs.get('style') !== 'std') useCartoonStyle();
@@ -163,7 +176,8 @@ const G = {
   world, ui, audio, save, thumbs: {}, scene: null, pending: null, bot: qs.has('bot'), botMode: qs.get('bot') === 'random' ? 'random' : 'smart', botErr: +(qs.get('err') ?? .25),
   timeScaleUser: 1, fast: +(qs.get('fast') || 1), hitstopUntil: 0, coinPills: [],
   stats: { cleared: 0, fails: 0, levelSecs: [], log: [], visits: 0, stageStart: 0 },
-  persist() { store.set(KEY, save); },
+  persist() { store.set(KEY, save); saveToHash(); },
+  storageOk,
   setBg([a, b]) { const app = document.getElementById('app'); app.style.setProperty('--bgA', a); app.style.setProperty('--bgB', b); },
   hitstop(sec) { G.hitstopUntil = performance.now() + sec * 1000; },
   makeFurniture: t => makeFurniture(t, THEMES.my),
@@ -369,6 +383,9 @@ async function boot() {
   await going;
   // (no background drawing of all ~200 furniture icons any more: each grid draws the icons it shows — see G.needThumbs)
   installJam();
+  // keep the two copies in step (a save that came from the address goes back into storage) and say so when this browser
+  // cannot keep anything — then the address is what remembers
+  if (WEB) { G.persist(); if (!storageOk) setTimeout(() => ui.toast('이 브라우저는 저장이 안 돼요 · 지금 주소를 북마크하면 이어서 할 수 있어요', 'red'), 1500); }
 }
 
 // Key art from GPT (art/keyart/*.png) shows as a title splash when present; otherwise the 3D home is the title.
