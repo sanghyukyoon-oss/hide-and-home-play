@@ -128,7 +128,7 @@ const MORE = {
       [L('shiba', '리본이 문제였어…', 'The ribbon was the problem…'), L('shiba', '내일은 꼬리를 주머니에 넣어 올게.', 'Tomorrow my tail goes in my pocket.')],
       [L('shiba', '멍! 졌다. 간식은 네 거야.', 'Woof! You win. The snacks are yours.'), L('shiba', '…냄새만 맡을게.', "…I'll just smell them.")],
       [L('shiba', '방금 멍 해서 들킨 거지?', 'I gave myself away with that woof, didn\'t I?'), L('shiba', '순찰 일지에 적어 둬야지. 「오늘도 들킴」.', 'Into the patrol log it goes: "Caught again."')],
-      [L('shiba', '멍멍! 순찰 끝!', 'Woof woof! Patrol complete!'), L('shiba', '오늘도 같이 돌아 줘서 고마워.', 'Thanks for walking the route with me again.')]] },
+      [L('shiba', '멍멍! 순찰은 계속!', "Woof woof! Patrol's not over!"), L('shiba', '오늘도 같이 돌아 줘서 고마워.', 'Thanks for walking the route with me again.')]] },
   panda: { intro: [
       [L('panda', '흑백 무늬라 그늘에선 안 보일걸.', 'With black-and-white fur, I vanish in the shade.')],
       [L('panda', '산에선 소리가 멀리 가. 귀를 잘 기울여.', 'Sounds carry far on a mountain. Listen closely.')],
@@ -144,7 +144,7 @@ const MORE = {
       [L('frog', '큰 공원이다! 연못이 있으니까 내가 유리해!', "Big park! There's a pond, so I've got the edge!")]],
     reveals: [null, [L('frog', '거품 연습은… 실패야.', 'Bubble practice… failed.'), L('frog', '한 판 더! 다음엔 진짜야!', 'One more! For real next time!')],
       [L('frog', '개굴?! 밤에도 보여?', 'Ribbit?! You can see me at night?'), L('frog', '…야광 개구리였나 봐, 나.', "…Guess I'm a glow-in-the-dark frog.")],
-      [L('frog', '연못만 쳐다보다가 들켰어…', 'I got caught staring at the pond…'), L('frog', '그래도 이번 판은 재밌었다, 개굴!', 'Still, that was a fun round. Ribbit!')]] },
+      [L('frog', '연못만 쳐다보다가 들켰어…', 'I got caught staring at the pond…'), L('frog', '남은 것도 찾아 봐, 개굴!', 'Go find the rest, ribbit!')]] },
   bear: { reveals: [null, [L('bear', '으헤헤… 또 졸았어.', 'Ehehe… dozed off again.'), L('bear', '…베개가 너무 푹신했어.', '…The pillow was too soft.')],
       [L('bear', '으헤헤, 꿀 냄새 때문이지?', 'Ehehe, it was the honey smell, right?'), L('bear', '반 숟갈씩 나눠 먹자.', 'Half a spoon each.')]] },
   nerd: { intro: [[L('nerd', '흠. 정전도 변수일 뿐이지.', 'Hm. A blackout is just another variable.')]],
@@ -228,7 +228,7 @@ const SCENES = [
     reveal: [L('peng', '비결 4번. 소방관 모자는 벗고 숨기…', 'Tip number four. Take the helmet off before you hide…'), L('mong', '…몇 번까지 있어?', '…How many tips are there?'), L('peng', '1등 될 때까지!', 'As many as it takes to be number one!')] },
   { id: 'aptmap', type: 'incident', room: 'aptmap', host: 'bear', hide: K('으헤헤, 맛있는 냄새 나는 데로 가야지~', "Ehehe, I'll go wherever smells tasty~"),
     intro: [L('bunny', '곰돌이도 집들이 왔어! 숨바꼭질 하재.', 'Bearie came to the housewarming too! Wants to play hide-and-seek.'), L('bunny', '청소기가 자꾸 이상한 걸 물고 다녀. 조심해!', 'And the robot vacuum keeps carrying weird stuff around. Careful!')],
-    reveal: [L('bear', '어… 다 끝났어? 따뜻해서 그만.', 'Huh… is it over? It was just so warm up there.'), L('mong', '…높은 데서도 자네.', '…You even sleep up high.')] },
+    reveal: [L('bear', '어… 벌써 찾았어? 따뜻해서 그만.', 'Huh… found me already? It was just so warm up there.'), L('mong', '…높은 데서도 자네.', '…You even sleep up high.')] },
   // 동네 골목
   { id: 'alley1', type: 'incident', room: 'alley1',
     reveal: [L('grumpy', '…진짜 찾았네.', '…You actually found me.'), L('mong', '…의자가 두 개네.', '…There are two chairs.'), L('grumpy', '하, 하나는 가방 놓는 거야.', "O-one's for my bag.")] },
