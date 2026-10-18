@@ -12,7 +12,7 @@ import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCu
 import { spinePuzzle } from '../showcase.js';
 import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js';
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
-import { tierPass } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
+import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
@@ -126,6 +126,7 @@ export class StageScene {
       const ho = hostAt(idx); if (ho) this.th = { ...this.th, friend: ho };   // e.g. 펭펭이 at the fire station
       if (this.scene?.name) this.th = { ...this.th, name: this.scene.name };   // the stage's title, when the map's own says someone else's home
       if (this.spec.tut === 1 && !G.save.settings?.oldMode) layout = firstLayout(layout);   // 1판: the toy box faces away from you
+      if (this.spec.tut === 2) layout = tiltLayout(layout);   // 2판: the loft curtained — the tilt lesson's place (tiers.js)
       if (this.spec.showcase) layout = deviceLayout(this.spec.room, layout);   // R6 장치판: the map's device piece, this stage only
     }
     if (custom) this.scene = null;
@@ -541,7 +542,7 @@ export class StageScene {
 
   worldCenter(it) { const b = new THREE.Box3().setFromObject(it.g); return b.getCenter(new THREE.Vector3()); }
   // 갓겜 기획안 P0 (손맛, 10/18): the two helps below are for 숨은그림 and 흑백 stages only
-  get feelHelp() { return !this.model && (this.hiddenStage || (!!this.spec.gray && !this.incident && !this.spec.timed && !this.spec.boss && !this.custom && !this.preview)); }
+  get feelHelp() { return !this.model && (this.hiddenStage || this.spec.tut === 2 || (!!this.spec.gray && !this.incident && !this.spec.timed && !this.spec.boss && !this.custom && !this.preview)); }
   // F1 시선 힌트: one thing left for 20 s — the owner slowly turns (0.4 s) to look at it; no words, no sparkle, no arrow
   // (user: "F1은 화살표 빼고 친구 시선만"). The sparkle is the second help, 10 s after the look.
   gazeHint(t) {
@@ -675,7 +676,8 @@ export class StageScene {
     const pc = this.partCenter(part);
     this.hero?.react('event', pc, this.tw);
     this.wobble(part.furn.group); this.G.audio.sfx('wobble');
-    this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300);
+    // (the words at most every 13 s, or when you've been still a while — 1판 had "킥…"/"삐죽… 쏙!" every 4-5 s; 검토 재검토 5)
+    if (line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10) { this._gigSayT = this.t; this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300); }
   }
   async revealFriend(it) {
     if (it.found || this.result) return;
@@ -1153,7 +1155,8 @@ export class StageScene {
       part.lock = null; part.busy = false;
       G.ui.toast('철컥! 열렸다!', 'green');
     }
-    if (part.t < .5 && !part.lock && !somethingIn(part)) spendTap(this, x, y);   // 톡: a door or drawer opened on nothing
+    // (opening a door, drawer or lid never costs a tap, even on nothing — user, 10/18: '서랍·문 열기 공짜')
+    // (was: an empty door / drawer cost a tap)
     await this.togglePart(part);
   }
   // the park's dig puzzle: no shovel, no digging; with it, three scoops and what was buried pops out (found at once)
@@ -1491,8 +1494,8 @@ export class StageScene {
     const over = () => this.dead || !!this.result || this.botOn();
     while (!over() && !done()) {
       const dt = this.t - t0;
-      if (!said && dt > 8 && more) { said = true; tip.textContent = tr(more); }
-      if (dt > 8 && this.t - ringT > 2) { ringT = this.t; const p = posFn?.(); if (p) { const s = p.sx != null ? { x: p.sx, y: p.sy } : W.toScreen(p); W.fx.ring(s.x, s.y, { r: dt > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); } }
+      if (!said && dt > 18 && more) { said = true; tip.textContent = tr(more); }   // (8 → 18 s — 검토 재검토 4)
+      if (dt > 18 && this.t - ringT > 2) { ringT = this.t; const p = posFn?.(); if (p) { const s = p.sx != null ? { x: p.sx, y: p.sy } : W.toScreen(p); W.fx.ring(s.x, s.y, { r: dt > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); } }
       await this.tw.wait(.1);
     }
     tip.remove(); hand.remove(); this.tutEls = null; this.tutHand = null; this.tutHandPos = null;
@@ -1559,7 +1562,7 @@ export class StageScene {
   async tutorial2() {
     await this.tw.wait(6);
     if (this.dead || this.result || this.partsOpened > 0) return;
-    const g = this.targets.find(t => !t.found && t.spot.part && t.spot.part.t < .5);
+    const g = this.targets.find(t => !t.found && t.spot.part && t.spot.part.t < .5 && t.spot.furn?.type !== 'futon') || this.targets.find(t => !t.found && t.spot.part && t.spot.part.t < .5);   // (not the curtained loft's quilt)
     if (!g) return;
     const part = g.spot.part;
     await this.teach(DO.drawer, 'tap', () => this.partCenter(part), () => this.partsOpened > 0, DO.drawer2);
@@ -1571,7 +1574,7 @@ export class StageScene {
     const loft = this.targets.find(t => !t.found && t.spot.furn?.type === 'futon'); if (!loft) return;
     await this.tw.wait(14);
     while (!this.dead && !this.result && !loft.found && this.tutEls) await this.tw.wait(.5);   // (not over the drawer lesson)
-    if (this.dead || this.result || loft.found) return;
+    if (this.dead || this.result || loft.found || !this.targets.some(t => !t.found && t.spot.furn?.type === 'futon')) return;
     const dial = document.querySelector('.turndial'), r = dial?.getBoundingClientRect(); if (!r?.width) return;
     const p1 = W.pitch;
     await this.teach(DO.tilt, 'vswipe', () => ({ sx: r.left + r.width / 2, sy: r.top + r.height / 2 }), () => loft.found || Math.abs(W.pitch - p1) > .2, DO.tilt2);
@@ -2114,7 +2117,7 @@ export class StageScene {
     let x = s.x, y = s.y;
     if (Math.random() < err) { x += (Math.random() < .5 ? -1 : 1) * (40 + Math.random() * 60); y += (Math.random() - .5) * 80; }
     else {   // (톡: a person taps what they see — when the finger isn't on it, turn instead of wasting a tap)
-      const hit = this.pickAt(x, y), gp = goal.part, on = goal.kind === 'item' ? hit.item === goal.item : hit.part === gp || (!!gp && (hit.furn === gp || hit.furn === gp.furn || hit.part?.furn === gp.furn));   // (a puzzle / TV goal is the furniture itself)
+      const hit = this.pickAt(x, y), gp = goal.part, ft = goal.item?.furnTarget, on = goal.kind === 'item' ? hit.item === goal.item || (!!ft && !hit.item && (hit.furn === ft.f || hit.part?.furn === ft.f)) : hit.part === gp || (!!gp && (hit.furn === gp || hit.furn === gp.furn || hit.part?.furn === gp.furn));   // (a puzzle / TV goal is the furniture itself; a 흑백 furniture target is found by tapping the furniture)
       if (!on) { this._stuck = (this._stuck || 0) + 1; W.rotateBy(this._stuck % 2 ? -110 : 110, 0); this.botT = .25; return; }
     }
     this.tap(x, y);

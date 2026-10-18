@@ -33,12 +33,16 @@ export function tierPass(S) {
   // the table: start view (the real camera, on screen and clear of the HUD), 12 directions round, one turn, from above
   const tab = new Map(C.map(s => [s, { L0: false, around: 0, low: 0, near: false, top: 0 }]));
   const cam = W.cam.position.clone();
-  for (const s of C) { const p = P.get(s), sc = W.toScreen(p); tab.get(s).L0 = sc.x > 24 && sc.x < W.W - 24 && sc.y > 130 && sc.y < W.H - 150 && clear(cam, p); }
+  // (the start view checks five points of the thing — its middle, top and sides — and counts it seen if any is: a person
+  // spots a star whose tip peeks through a railing; one ray at the middle called 2판's loft star hidden — 검토 재검토 1)
+  const pts = s => { const p = P.get(s), k = s.scale || 1, r = .05 * k; return [p, p.clone().add(new THREE.Vector3(0, .06 * k, 0)), p.clone().add(new THREE.Vector3(r, 0, 0)), p.clone().add(new THREE.Vector3(-r, 0, 0)), p.clone().add(new THREE.Vector3(0, 0, r)), p.clone().add(new THREE.Vector3(0, 0, -r))]; };
+  const onScreen = p => { const sc = W.toScreen(p); return sc.x > 24 && sc.x < W.W - 24 && sc.y > 110 && sc.y < W.H - 120; };
+  for (const s of C) tab.get(s).L0 = pts(s).some(p => onScreen(p) && clear(cam, p));
   const sweep = (y, pi, fn) => { W.yaw = y; W.updateCam(); R.update(1); R.group.updateMatrixWorld(true); for (const s of C) if (along(P.get(s), y, pi)) fn(tab.get(s)); };
   for (let k = 0; k < 6; k++) for (const pi of [.62, .95]) sweep(start.y + k * Math.PI / 3, pi, t => { t.around++; if (pi === .62) t.low++; });
   for (const d of [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2]) sweep(start.y + d, start.p, t => { t.near = true; });
-  if (S.idx === 1) for (let k = 0; k < 6; k++) sweep(start.y + k * Math.PI / 3, 1.25, t => { t.top++; });
-  restore();
+  if (S.idx === 1) for (let k = 0; k < 6; k++) sweep(start.y + k * Math.PI / 3, W.maxPitch ?? 1.15, t => { t.top++; });   // (as far as the dial tilts)
+  restore(); S._tierTab = { tab, pts };   // (for the level tools)
   const L1 = s => !tab.get(s).L0 && tab.get(s).around >= 3, near = s => L1(s) && tab.get(s).near;
   const L2 = s => !tab.get(s).L0 && tab.get(s).low <= 1 && tab.get(s).top >= 2;
   // moving things
@@ -72,3 +76,8 @@ export function tierPass(S) {
   W.idsDirty = true; W.shadowDirty = true;
   return out;
 }
+
+// 2판's room: a curtain round the loft (room.js buildLoft) so the quilt is seen only from above — the tilt lesson's place.
+// Nothing else in 토순이네 침실 is hidden at the first view and seen from above (measured at phone size, 10/18): the loft
+// is open through its railing, the wardrobe top shows from everywhere.
+export const tiltLayout = Lay => ({ ...Lay, lofts: (Lay.lofts || []).map(l => ({ ...l, curtain: true })) });

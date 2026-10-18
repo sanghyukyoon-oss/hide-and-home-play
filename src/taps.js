@@ -12,7 +12,7 @@ const K = (ko, en) => { EN[ko] = en; return ko; };
 export const TAP_TXT = {
   title: K('톡을 다 썼어!', 'Out of taps!'),
   body: K('아무 데나 누르면 톡이 줄어. 잘 보고 눌러 보자!', 'Every tap on nothing uses one up. Look first, then tap!'),
-  intro: K('아무것도 없는 데를 누르면 왼쪽 위 손가락 수가 줄어. 다 쓰면 처음부터!', 'Tapping on nothing uses up the hand count at the top left. Run out and you start over!'),
+  intro: K('빈 바닥이나 엉뚱한 걸 누르면 왼쪽 위 손가락 수가 줄어. 서랍·문 열기는 괜찮아. 다 쓰면 처음부터!', 'Tapping the floor or the wrong thing uses up the hand count at the top left. Opening drawers and doors is free. Run out and you start over!'),
   low: K('톡이 얼마 안 남았어! 잘 보고 눌러', 'Only a few taps left! Look before you tap'),
   star: K('★ 톡 절반 남기기', '★ Half the taps left'),
   friend: K('헤헤, 못 찾았지?', "Hehe, couldn't find me?"),
@@ -40,7 +40,9 @@ export function tapsSetup(S) {
   S.inv.prepend(p);
   if (!G.bot && !G.save.seenTaps) {
     G.save.seenTaps = 1; G.persist?.();
-    setTimeout(() => !S.dead && !S.result && G.ui.toast(TAP_TXT.intro, ''), 2600);
+    // (after the opening talk, never over a dialog card — 검토 재검토 6)
+    const show = () => { if (S.dead || S.result) return; if (S.talking || !S.running) return setTimeout(show, 600); G.ui.toast(TAP_TXT.intro, ''); };
+    setTimeout(show, 2600);
   }
 }
 // a thing to find, a clue or the friend is still in there (a decoy doesn't count)

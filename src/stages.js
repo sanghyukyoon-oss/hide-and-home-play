@@ -467,9 +467,9 @@ export const STAGES = [
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4 },   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55 },
   { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' } },
-  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6 },
   { room: 'house3', n: 8, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .6 },
-  { room: 'museum', n: 8, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .6 },
+  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6 },   // (then 이불 속 누구게 — the pajama party)
+  { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55 },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .65 },
   { room: 'study', n: 4, inside: 1, behind: 0, time: 110, clutter: .5, showcase: true },   // 비밀 서재 ★ — the chapter's finale (friend game)
 ];
@@ -585,21 +585,21 @@ export const REGION_INTRO = {
 // the chapter's first stage (its 🆕 card comes with the first lock of the kind); 흑백 / 장치 / 미니게임 at most one a chapter,
 // 정전 (a light switch) from 6장, after the lever. Kinds as before, plus treat (the host sits on a box till fed).
 export const PLAN = {
-  apt: ['apt', 'police', 'oneroom', 'school', 'aptkitchen', 'duplex:timed', 'firestation', 'aptmap:show', 'policefront:boss'],
-  alley: ['street', 'alley1', 'skatepark', 'alley3', 'alleyhouse', 'street:night', 'alley1:timed', 'skatepark', 'alleyhouse:show', 'alleywide:boss'],
-  shop: ['konbini:gray', 'laundry', 'cafe', 'konbini', 'shopmap:night', 'cafe', 'konbini:timed', 'laundry:show', 'shopmap:boss'],
-  park: ['park2', 'park1', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
-  camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide', 'camp2', 'cabin:show', 'campwide:boss'],
-  building: ['lobby', 'kpop', 'museum', 'officefloor:gray', 'rooftop:night', 'lobbymap:timed', 'officefloor:dark', 'kpop:show', 'lobby', 'lobbymap:boss'],
+  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'duplex:timed', 'firestation', 'aptmap:show', 'policefront:boss'],
+  alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'street:night', 'alley1:timed', 'skatepark:gray', 'alleyhouse:show', 'alleywide:boss'],
+  shop: ['konbini:gray', 'laundry', 'cafe', 'konbini', 'shopmap:night', 'cafe:gray', 'konbini:timed', 'laundry:show', 'shopmap:boss'],
+  park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
+  camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide', 'camp2:gray', 'cabin:show', 'campwide:boss'],
+  building: ['lobby', 'kpop', 'museum', 'officefloor:gray', 'rooftop:night', 'lobbymap:timed', 'officefloor:dark', 'kpop:show', 'lobby:gray', 'lobbymap:boss'],
 };
 // each chapter's locks: the kinds it may use (a boss takes them all), then each stage's locks in order — the chapter's new
 // kind first and most, the older ones mixed back in; a timed / ★ / boss stage's entry is not used
 const REGION_LOCKS = {
   home: { kinds: ['pad'] },
   apt: { kinds: ['pad', 'code'], plan: [['code'], ['pad'], ['code'], ['code'], ['code'], [], ['pad', 'code']] },
-  alley: { kinds: ['pad', 'code', 'color'], plan: [['color'], ['pad'], ['color'], ['code'], ['pad', 'color'], ['code'], [], ['color']] },
+  alley: { kinds: ['pad', 'code', 'color'], plan: [['color'], ['color'], [], ['code'], ['color', 'pad'], ['code'], [], []] },   // (v2: 24·29 are 흑백 — no colour in grey — so the colour lock moves onto 23: 22·23·26 then the boss; alley3 takes no colour lock, and 26 loses it when the padlock goes first)
   shop: { kinds: ['pad', 'code', 'color'], plan: [[], ['pad'], [], ['code'], ['pad', 'code'], []] },   // (the café has nothing that locks; no colour lock at night)
-  park: { kinds: ['pad', 'code', 'color', 'lever'], plan: [['lever'], ['pad'], ['code'], ['lever', 'color'], ['pad'], [], ['pad']] },
+  park: { kinds: ['pad', 'code', 'color', 'lever'], plan: [['lever'], ['pad'], ['code'], ['lever', 'color'], ['pad'], [], ['lever']] },   // (47 park2 흑백 takes the lever too: 41·44·47 then the boss)
   camp: { kinds: ['pad', 'code', 'color', 'lever'], plan: [[], ['lever'], ['pad'], ['code'], ['pad', 'color'], ['lever', 'code'], [], ['pad', 'color', 'lever'], ['code', 'lever']] },
   building: { kinds: ['pad', 'code', 'color', 'lever'], plan: [['code'], ['color'], ['pad', 'code'], ['pad'], ['pad'], [], ['code', 'pad'], [], ['pad', 'color']] },
 };
@@ -622,7 +622,9 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 100, 8: 105, 9: 105, 10: 110, 11: 110 };
 // 흑백판: the room has lost its colour; what you find (things AND a few pieces of furniture) gets it back
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")
-export const GRAY = new Set(planAt('gray'));   // (from 4장, one a chapter — 1장's 흑백 museum is a plain stage now)
+// (10/18 밤 user: "좀 더 미니게임과 흑백버전판 늘리는 게 좋을 거 같은데" — two a chapter again, 1장 one: the museum at 10판;
+// 흑백 is still finding things, the colour coming back as you do, so the core stays hidden objects)
+export const GRAY = new Set([9, ...planAt('gray')]);
 // 숨은그림 되살리기 (10/18, user: "계속 캐릭터가 숨어대니까 짜증난다. 진득하게 숨은그림찾는 코어가 사라진거같아"): the owner
 // hides only on these stages (0-based; 1판 is its own tutorial hide) — the ★장치판, three chapter openings where the friend says
 // so, 8 (night bedroom, right before the pajama party) and 16 (classroom). Every other ordinary stage is a hidden-object stage
@@ -632,13 +634,13 @@ export const FRIEND_HIDE = new Set([11, 15, 19, 21, 29, 38, 40, 47, 50, 58, 67])
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
 // really see on that map, chains ≤ the map's lockable pieces; 32·33·35·61·65 count the spots added 10/18)
 const HO_SHAPE = {
-  2: [4, 0], 3: [6, 0], 4: [7, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [7, 1], 9: [8, 1], 10: [8, 1], 11: [8, 1],
-  13: [8, 1], 14: [8, 1], 15: [7, 1], 17: [8, 1], 19: [8, 2],
-  23: [9, 1], 24: [9, 1], 25: [10, 1], 26: [11, 2], 27: [10, 1], 29: [9, 1],
-  33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 2], 37: [9, 0],
-  42: [9, 1], 43: [10, 1], 44: [9, 2], 45: [10, 1],
-  50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 2], 57: [12, 3], 58: [10, 2],
-  61: [7, 1], 62: [11, 1], 63: [11, 2], 65: [7, 1], 67: [12, 2], 69: [9, 2],
+  2: [4, 0], 3: [6, 0], 4: [7, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [8, 1], 9: [7, 1], 11: [8, 1],
+  13: [8, 1], 15: [7, 1], 19: [8, 2],
+  23: [9, 1], 25: [10, 1], 26: [11, 2], 27: [10, 1],
+  33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 2],
+  43: [10, 1], 44: [9, 2], 45: [10, 1],
+  50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 2], 57: [12, 3],
+  61: [7, 1], 62: [11, 1], 63: [11, 2], 65: [7, 1], 67: [12, 2],
 };
 const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(location.search);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
 export function stageSpec(idx) {
@@ -718,7 +720,7 @@ function baseSpec(idx) {
     torn: EXTRA.torn && ri >= 1 && (boss || local % 3 === 1),
     dig: EXTRA.dig && R.id === 'park' && (boss || local % 2 === 0),
     tv: EXTRA.tv && R.id === 'apt' && lock.includes('code'),
-    sock: EXTRA.sock && (room === 'laundry' || room === 'shopmap'),   // the pair puzzle only where there are washers (it was every shop stage)
+    sock: (EXTRA.sock || R.id === 'shop') && room === 'laundry',   // 4장's new thing: the laundromat's pair puzzle (흑백 comes from 1장 now)
     dark: P ? kind === 'dark' : false,
     treat: kind === 'treat' ? TREAT[room] || null : null,
   };
@@ -797,7 +799,8 @@ export function planStage(room, spec, story = null) {
   const ownN = Math.min(own.length, Math.max(1, (spec.n || 1) - (spec.n > 7 ? 2 : 1)));
   // the first stages only ask for things with a readable shape (a thin pencil under a loft was hard even with a hint)
   const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard'];
-  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && t === 'sock') || (spec.idx >= 0 && spec.idx < 6 && THIN.includes(t));   // a stage's tool is never a target or a decoy
+  // (짝 양말 판: no pair of socks on the list either — it would read as the puzzle's sock, and the odd ones lying about say "무늬가 달라")
+  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 6 && THIN.includes(t));   // a stage's tool is never a target or a decoy
   // the common things rotate through the stages (a window that moves on 5 places a stage) so the same milk carton
   // doesn't turn up stage after stage (user, 10/17: "계속 찾는것만 찾게"); the place's own things come first
   const common = TARGET_POOL.filter(t => !own.includes(t) && !tool(t)), off = ((spec.idx ?? 0) * 5) % Math.max(1, common.length);
