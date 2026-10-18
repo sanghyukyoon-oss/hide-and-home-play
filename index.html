@@ -24,7 +24,12 @@
        "터치해서 시작" (the tap also wakes the audio). -->
   <div id="boot">
     <div class="boot-pat"></div>
-    <img class="boot-logo-img" src="art/keyart/logo.webp" alt="숨바꼭집" onerror="this.onerror=null;this.src='art/keyart/logo.png'">
+    <img class="boot-logo-img" alt="">
+<script>/* the Korean logo, or its English twin "Hide & Home" (GPT, 10/18) — picked before it loads, same rule as src/i18n.js LANG */
+(() => { const i = document.currentScript.previousElementSibling; let l = null; try { l = localStorage.getItem('sumbakkokjip.lang'); } catch (e) {}
+  if (l !== 'ko' && l !== 'en') l = (navigator.language || 'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en';
+  const n = l === 'en' ? 'logo-en' : 'logo'; i.alt = l === 'en' ? 'Hide & Home' : '숨바꼭집';
+  i.onerror = function () { this.onerror = null; this.src = 'art/keyart/' + n + '.png'; }; i.src = 'art/keyart/' + n + '.webp'; })();</script>
     <div class="boot-load">
       <div class="boot-wait"><div class="boot-bar"><i></i></div><div class="boot-sub">몽글몽글 집 짓는 중...</div></div>
       <div class="boot-go ol">터치해서 시작</div>

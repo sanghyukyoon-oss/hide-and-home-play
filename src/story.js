@@ -204,7 +204,7 @@ export function playDialog(G, lines, { title = null, onLine = null, parent = nul
       const L = lines[i];
       onLine?.(L, i);
       face.src = G.thumbs['face_' + L.who] || G.thumbs.face_mong;
-      name.textContent = NAMES[L.who] || CHAR_DEFS[L.who]?.name || L.who;
+      name.textContent = L.name ? tr(L.name) : (NAMES[L.who] || CHAR_DEFS[L.who]?.name || L.who);   // (a line can carry its own name tag: 먹물이 is '???' until 64판)
       card.classList.toggle('right', L.who !== 'mong');
       card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
       G.audio.sfx('pop', L.who === 'mong' ? 4 : 1);

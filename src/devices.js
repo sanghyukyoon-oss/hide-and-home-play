@@ -14,7 +14,9 @@ import { blindFor } from './hunt-blind.js';
 const K = (ko, en) => { EN[ko] = en; return ko; };
 for (const [ko, en] of [['수문 손잡이', 'Sluice handle'], ['수문 연못', 'Sluice pond'], ['수문 바퀴', 'Sluice wheel'], ['보물상자', 'Treasure chest'], ['보물상자 안', 'In the treasure chest'],
   ['연못 바닥', 'Pond bottom'], ['연못 돌담 뒤', 'Behind the pond wall'], ['연못 돌담 위', 'On the pond wall'],
-  ['천 원 지폐', '1000-won bill'], ['500원 동전', '500-won coin'], ['동전 컵', 'Coin cup']]) EN[ko] ??= en;
+  ['천 원 지폐', '1000-won bill'], ['500원 동전', '500-won coin'], ['동전 컵', 'Coin cup'], ['도르래 손잡이', 'Pulley handle'], ['도르래 장독대', 'Pulley jar stand'],
+  ['응원봉', 'Light-stick'], ['무대 리프트', 'Stage lift'], ['리프트 무대', 'Lift stage'],
+  ['성냥', 'Matches'], ['다락 문', 'Attic hatch'], ['다락 안', 'In the attic'], ['다락 사다리', 'Attic ladder'], ['사다리 옆', 'By the ladder']]) EN[ko] ??= en;
 const fits = (type, s) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat);
 
 // which piece of which map becomes the device (the rest of the map stays as it is)
@@ -22,6 +24,9 @@ const fits = (type, s) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.
 const SWAP = {
   parkwide: { pond: 'sluicepond' },                         // 48판 큰 공원
   laundry: { 'washer3#2': 'dryergo', vendcoin: 'changergo' },   // 39판 빨래방: the washer next to the coin changer
+  alleyhouse: { jangdok: 'pulleyjang' },                      // 30판 마당 2층집
+  kpop: { kpopstage: 'liftstage' },                           // 68판 K-pop 무대
+  cabin: { 'drawers#1': 'starloft' },                         // 59판 통나무 오두막: the attic's chest of drawers
 };
 export function deviceLayout(key, L) {
   const m = SWAP[key]; if (!m) return L;
@@ -111,6 +116,54 @@ PLANS.dryer = (room, spec, story, planStage, dd) => {
   plan.targets.unshift('friendtoken');
   plan.incident = { part: dd, lock: dl };
   plan.showcase = { kind: 'dryer', dd, ch };
+  return plan;
+};
+// 30판 마당 2층집 '장독대 도르래': colour card → colour lock (the gate's milk box, say) → key → padlock (mailbox 102…) →
+// the 도르래 handle → the pulley hoists the 누름돌 off the big jar → the lid pops → 시바
+PLANS.pulley = (room, spec, story, planStage, big) => {
+  const plan = planStage(room, { ...spec, lock: ['pad', 'color'], n: 4, avoid: blindFor(spec.room) }, story);
+  if (!toolBehindPad(plan, room, spec, 'pulleyhandle', big)) return null;
+  nest(plan, 'pad', 'color');
+  const bl = { part: big, kind: 'gadget', code: 'pulleyhandle' };
+  plan.locks.push(bl);
+  big.needMsg = K('누름돌이 너무 무거워서 뚜껑이 안 열려! 도르래로 들면 될 텐데… 손잡이가 빠졌네', "The pressing stone is too heavy to lift! The pulley could hoist it… but its handle is missing");
+  big.needItem = 'pulleyhandle';
+  plan.placements.push({ type: 'friendtoken', spot: big.spots[0], role: 'target' });
+  plan.targets.unshift('friendtoken');
+  plan.incident = { part: big, lock: bl };
+  plan.showcase = { kind: 'pulley', big };
+  return plan;
+};
+// 68판 K-pop 무대 '센터 리프트': colour card → the stage curtain (colour lock) → key → padlock → the 응원봉 → the
+// lighting console: lights sweep, smoke, the lift rises → 둠칫이 at centre stage
+PLANS.stagelift = (room, spec, story, planStage, lift) => {
+  const plan = planStage(room, { ...spec, lock: ['color', 'pad'], n: 4, avoid: blindFor(spec.room) }, story);
+  if (!toolBehindPad(plan, room, spec, 'lightstick', lift)) return null;
+  nest(plan, 'pad', 'color');
+  const ll = { part: lift, kind: 'gadget', code: 'lightstick' };
+  plan.locks.push(ll);
+  lift.needMsg = K('무대 리프트 조종판이야. 응원봉을 꽂는 자리가 비어 있어!', "The stage lift's console. The light-stick holder is empty!");
+  lift.needItem = 'lightstick';
+  plan.placements.push({ type: 'friendtoken', spot: lift.spots[0], role: 'target' });
+  plan.targets.unshift('friendtoken');
+  plan.incident = { part: lift, lock: ll };
+  plan.showcase = { kind: 'stagelift', lift };
+  return plan;
+};
+// 59판 통나무 오두막 '별자리 다락': password note → code lock → key → padlock → the matches → the star lantern throws a
+// constellation on the wall, it runs into the hatch's star latch → the hatch opens, the ladder comes down → 판다
+PLANS.starloft = (room, spec, story, planStage, hatch) => {
+  const plan = planStage(room, { ...spec, lock: ['code', 'pad'], n: 4, torn: false, avoid: blindFor(spec.room) }, story);
+  if (!toolBehindPad(plan, room, spec, 'matches', hatch)) return null;
+  nest(plan, 'pad', 'code');
+  const hl = { part: hatch, kind: 'gadget', code: 'matches' };
+  plan.locks.push(hl);
+  hatch.needMsg = K('다락 문이 꽉 닫혀 있어. 별 모양 걸쇠네… 아래 별 랜턴에 불을 켜 볼까? 성냥이 필요해', "The attic hatch is shut tight. A star-shaped latch… Light the star lantern below? You'll need matches");
+  hatch.needItem = 'matches';
+  plan.placements.push({ type: 'friendtoken', spot: hatch.spots[0], role: 'target' });
+  plan.targets.unshift('friendtoken');
+  plan.incident = { part: hatch, lock: hl };
+  plan.showcase = { kind: 'starloft', hatch };
   return plan;
 };
 export function planDevice(room, spec, story, planStage) {
@@ -226,6 +279,93 @@ RUN.dryer = async (S, part) => {
   W.fx.burst(sd.x, sd.y, { n: 16, shape: 'rect', colors: ['#9fd3b0', '#ffc23d', '#8fd3f4', '#ffffff', '#ffb3cf'], speed: 240, up: 140, size: 14, life: .8 });
   await S.togglePart(part, true);
 };
+// 30판: the handle on the crank, the pulley hoists the 누름돌, the lid jiggles and pops
+RUN.pulley = async (S, part) => {
+  const G = S.G, W = G.world, tw = S.tw, f = part.furn;
+  S.cine = true;
+  const at = f.group.localToWorld(f.jarAt.clone()), zoom = Math.max(W.zoom, 1.9);
+  await W.flyTo(tw, { yaw: clearYaw(S, [f.stone, part.pivots[0]], at, zoom), target: at, zoom, dur: .6 });
+  if (S.dead) return;
+  f.crank.visible = true; G.audio.sfx('pop', 2);
+  await tw.wait(.25);
+  if (S.friendHidden) S.hideSay([K('킁…? 돌이 움직인다?!', 'Sniff…? The stone is moving?!')]);
+  G.audio.sfx('creak');
+  const y0 = f.stone.position.y; let last = 0;
+  await tw.run(1.7, k => {
+    f.crank.rotation.z = -k * Math.PI * 8;
+    f.stone.position.y = y0 + .55 * k; f.stone.rotation.y = Math.sin(k * 7) * .2; f.setRope(); W.shadowDirty = true;
+    if (k - last > .12) { last = k; G.audio.sfx('tick'); }
+  }, ease.inOutSine);
+  // the lid, free at last: three jiggles, then it pops
+  const lid = part.pivots[0], ly = lid.position.y;
+  for (let i = 0; i < 3 && !S.dead; i++) { G.audio.sfx('tock', 3 + i); await tw.run(.16, k => { lid.position.y = ly + Math.sin(k * Math.PI) * .05; lid.rotation.z = Math.sin(k * Math.PI) * .12 * (i % 2 ? 1 : -1); }, ease.linear); }
+  lid.position.y = ly; lid.rotation.z = 0;
+  S.cine = false;
+  if (S.dead) return;
+  await S.togglePart(part, true);
+};
+// 68판: the stick in the console, a light show, smoke, the lift comes up
+RUN.stagelift = async (S, part) => {
+  const G = S.G, W = G.world, tw = S.tw, f = part.furn;
+  S.cine = true;
+  const at = f.group.localToWorld(f.centerAt.clone()), zoom = Math.max(W.zoom, 1.6);
+  await W.flyTo(tw, { yaw: clearYaw(S, [f.lift], at, zoom), target: at, zoom, dur: .6 });
+  if (S.dead) return;
+  f.stick.visible = true; G.audio.sfx('pop', 4);
+  await tw.wait(.3);
+  if (S.friendHidden) S.hideSay([K('둠칫…! 조명 켜졌다?!', 'Boom-chk…! The lights are on?!')]);
+  // the light show: beams sweep, notes go up, sparkles over the stage
+  f.beams.forEach(b => { b.visible = true; });
+  const notes = [0, 2, 4, 7, 9, 12]; let n = 0, last = 0;
+  await tw.run(2.0, k => {
+    f.beams.forEach((b, i) => { b.rotation.z = Math.sin(k * Math.PI * 3 + i * 2.1) * .55; b.rotation.x = -(.45 + Math.cos(k * Math.PI * 2 + i) * .2); });   // (tilted forward, over the stage)
+    if (k - last > .16 && n < notes.length) { last = k; G.audio.sfx('star', notes[n++] % 5); const s = W.toScreen(at); W.fx.burst(s.x + (Math.random() - .5) * 220, s.y - 80 + (Math.random() - .5) * 60, { n: 6, shape: 'star', colors: ['#ff7fb0', '#ffe27a', '#7fe0c8', '#8fc8ff'], speed: 120, gravity: 60, size: 9 }); }
+  }, ease.linear);
+  // smoke round the lift, and up it comes
+  const s0 = W.toScreen(f.group.localToWorld(f.centerAt.clone().setY(.4)));
+  for (let i = 0; i < 3; i++) W.fx.burst(s0.x + (i - 1) * 60, s0.y + 10, { n: 8, shape: 'circle', colors: ['#ffffff', '#f2eefc', '#e8e2f6'], speed: 90, up: 60, gravity: -30, size: 16, life: 1.0 });
+  G.audio.sfx('whoosh');
+  S.cine = false;
+  if (S.dead) return;
+  await S.togglePart(part, true);
+  f.beams.forEach(b => { b.visible = false; });
+};
+// 59판: strike a match, the lantern glows, its stars land on the wall one by one, run into the latch, the hatch opens
+RUN.starloft = async (S, part) => {
+  const G = S.G, W = G.world, tw = S.tw, f = part.furn, V = THREE.Vector3;
+  S.cine = true;
+  const at = f.group.localToWorld(f.unitAt.clone()), zoom = Math.max(W.zoom, 1.8);
+  await W.flyTo(tw, { yaw: clearYaw(S, [part.pivots[0], part.pivots[2]], at, zoom), target: at, zoom, dur: .6 });
+  if (S.dead) return;
+  const lp = W.toScreen(f.glow.getWorldPosition(new V()));
+  G.audio.sfx('swish'); W.fx.burst(lp.x, lp.y, { n: 10, colors: ['#ffb347', '#ffe27a', '#ffffff'], speed: 120, up: 60, size: 7, life: .5 });
+  f.glow.visible = true; G.audio.sfx('pop', 1);
+  await tw.run(.45, k => f.glow.scale.setScalar(.3 + .7 * k), ease.outBack);
+  if (S.friendHidden) S.hideSay([K('…어? 별이 떴다…', '…Huh? Stars came out…')]);
+  // the stars come out on the wall one by one, then the lines between them
+  f.sky.visible = true; f.sky.children.forEach(c => { c.visible = false; });
+  const s0 = f.stars.map(m => m.scale.x);
+  for (let i = 0; i < f.stars.length && !S.dead; i++) {
+    const m = f.stars[i]; m.visible = true; G.audio.sfx('star', i % 5);
+    tw.run(.25, k => m.scale.setScalar(s0[i] * (k < .7 ? k / .7 * 1.3 : 1.3 - .3 * (k - .7) / .3)), ease.linear);
+    await tw.wait(.13);
+  }
+  f.sky.children[f.sky.children.length - 1].visible = true;   // the lines
+  await tw.run(.9, k => f.stars.forEach((m, i) => m.scale.setScalar(s0[i] * (1 + .25 * Math.sin(k * Math.PI * 6 + i)))), ease.linear);
+  // they run into the star latch on the hatch
+  f.sky.children[f.sky.children.length - 1].visible = false;
+  const to = f.group.worldToLocal(f.latch.getWorldPosition(new V())), from = f.stars.map(m => m.position.clone());
+  G.audio.sfx('whoosh');
+  await tw.run(.6, k => f.stars.forEach((m, i) => { m.position.lerpVectors(from[i], to, k); m.scale.setScalar(s0[i] * (1 - .6 * k)); }), ease.inCubic);
+  f.sky.visible = false;
+  const ls = W.toScreen(f.latch.getWorldPosition(new V()));
+  W.fx.burst(ls.x, ls.y, { n: 18, shape: 'star', colors: ['#ffe27a', '#fff3a8', '#ffffff'], speed: 220 }); W.fx.ring(ls.x, ls.y, { r: 70, color: '#ffe27a', width: 6 });
+  G.audio.sfx('unlock');
+  await tw.run(.45, k => { f.latch.rotation.z = k * Math.PI * 2; }, ease.outCubic);
+  S.cine = false;
+  if (S.dead) return;
+  await S.togglePart(part, true);
+};
 export async function runDevice(S, part) {
   const R = RUN[part.device];
   return R ? R(S, part) : S.togglePart(part, true);
@@ -234,6 +374,34 @@ export async function runDevice(S, part) {
 // the hiding friend's tell from inside a device (else the plain wobble):
 //   the pond — bubbles and rings while it's full;  the dryer — melting pink drips under its door, the door jiggles
 const TELL = {
+  // the attic hatch: it rattles in its frame and a little dust drifts down from the crack
+  starloft(S, dev, line) {
+    const f = dev.furn, W = S.G.world, door = dev.pivots[0], r0 = door.rotation.x, p = f.group.localToWorld(f.hatchAt.clone());
+    S.tw.run(.5, k => { door.rotation.x = r0 + Math.abs(Math.sin(k * Math.PI * 5)) * .05 * (1 - k); }, ease.linear).then(() => { door.rotation.x = r0; });
+    S.G.audio.sfx('thunk');
+    const s = W.toScreen(p.clone().setY(p.y - .3));
+    W.fx.burst(s.x, s.y, { n: 6, shape: 'circle', colors: ['#e8dcc8', '#d6c6ad'], speed: 30, up: 0, gravity: 90, size: 6, life: .9 });
+    S.say({ root: { position: p }, headTop: () => .3 }, line, 1300);
+    return true;
+  },
+  // the lift stage: the lift thumps to a beat from below ("둠칫")
+  stagelift(S, dev, line) {
+    const f = dev.furn, lf = f.lift, y0 = lf.position.y;
+    S.tw.run(.9, k => { const b = Math.max(0, Math.sin(k * Math.PI * 4)); lf.position.y = y0 + b * b * .05; }, ease.linear).then(() => { lf.position.y = y0; });
+    for (let i = 0; i < 2; i++) setTimeout(() => !S.dead && S.G.audio.sfx('heart'), i * 450);
+    S.say({ root: { position: f.group.localToWorld(f.centerAt.clone()) }, headTop: () => .1 }, line, 1300);
+    return true;
+  },
+  // the pulley 장독대: a curly tail pokes out from under the big lid and wags, the lid jiggles
+  pulley(S, dev, line) {
+    const f = dev.furn, W = S.G.world, tl = f.tail, lid = dev.pivots[0], r0 = lid.rotation.z;
+    tl.visible = true; W.shadowDirty = true;
+    S.tw.run(1.3, k => { tl.rotation.z = Math.sin(k * Math.PI * 8) * .45; tl.scale.setScalar(Math.min(1, k * 6, (1 - k) * 6)); lid.rotation.z = r0 + Math.sin(k * Math.PI * 6) * .03 * (1 - k); }, ease.linear)
+      .then(() => { tl.visible = false; tl.scale.setScalar(1); lid.rotation.z = r0; });
+    S.G.audio.sfx('wobble');
+    S.say({ root: { position: f.group.localToWorld(f.jarAt.clone()) }, headTop: () => .1 }, line, 1300);
+    return true;
+  },
   dryer(S, dev, line) {
     const f = dev.furn, W = S.G.world, p = f.group.localToWorld(new THREE.Vector3(0, .05 + .9 + .16, .3)), pv = dev.pivots[0], r0 = pv.rotation.y;
     S.tw.run(.4, k => { pv.rotation.y = r0 - Math.sin(k * Math.PI * 4) * .04 * (1 - k); }, ease.linear).then(() => { pv.rotation.y = r0; });
@@ -268,4 +436,7 @@ export const DEVICE_FOUND = {
   sluicehandle: K('수문 손잡이다! 연못 수문 바퀴에 끼워 보자', 'The sluice handle! Fit it on the pond gate wheel'),
   bill1000: K('천 원짜리 지폐다! 동전 교환기에 넣어 보자', 'A 1000-won bill! Try the coin changer'),
   coin500: K('500원 동전! 건조기에 넣어 보자', 'A 500-won coin! Put it in the dryer'),
+  pulleyhandle: K('도르래 손잡이다! 장독대 도르래에 끼워 보자', 'The pulley handle! Fit it on the pulley over the jars'),
+  lightstick: K('응원봉이다! 무대 조종판에 꽂아 보자', 'A light-stick! Put it in the stage console'),
+  matches: K('성냥이다! 다락 밑 별 랜턴에 불을 켜 보자', 'Matches! Light the star lantern under the attic hatch'),
 };

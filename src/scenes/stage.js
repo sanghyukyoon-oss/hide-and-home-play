@@ -230,24 +230,30 @@ export class StageScene {
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
     await G.ui.banner(th.name, custom ? `숨겨 둔 물건 ${this.targets.length}개를 찾아라!` : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
     if (this.dead) return;
+    // 말 줄이기 (스토리 v2, 10/18 — user: "판 시작할 때마다 뭔가가 계속 말 거니까 되게 짜증"): a talk card only where it
+    // carries something — the two tutorials, a chapter's first stage, a region boss, the first time you meet this friend;
+    // otherwise the first line as the speaker's bubble and straight into play
+    this.talkKeep = !!(custom || this.preview || this.spec.tut <= 2 || this.spec.intro || this.spec.boss || G.save.settings?.oldMode || this.firstMeet(th.friend));
     if (this.story?.intro) { await this.talk(this.story.intro, { title: this.story.title }); if (this.dead) return; }
     if ((this.scene?.type === 'tut2' || (this.scene?.always && !this.incident)) && this.scene.intro) { await this.talk(this.scene.intro, { title: th.name }); if (this.dead) return; }   // 2판 · 편의점
-    else if (this.hiddenStage) { const lines = hiddenIntro(this.idx, th.friend); if (lines?.length) { await this.talk(lines, { title: th.name }); if (this.dead) return; } }
+    else if (this.hiddenStage) { await this.openTalk(hiddenIntro(this.idx, th.friend), { title: th.name }); if (this.dead) return; }
     if (this.spec.gray && !custom) {
       // 대본: the owner, then 먹물이 by where we are in the story (a voice → caught again → quiet → helping)
-      await this.talk(grayIntro(this.idx, th.friend, !!this.villain), { title: '색을 잃은 방' });
+      // (the first three 흑백판 keep their card: they say the rule — 스토리 C안)
+      let grayN = 0; for (let j = 0; j < this.idx; j++) if (stageSpec(j).gray) grayN++;
+      await this.openTalk(grayIntro(this.idx, th.friend, !!this.villain), { title: '색을 잃은 방' }, grayN < 3);
       if (this.dead) return;
       this.giveShades();   // everyone puts the special shades on
     }
     if (this.spec.timed && !this.custom) {
-      await this.talk(timedIntro(this.idx), { title: '너굴이의 숨바꼭질' });   // 대본: the champion, a new excuse each time
+      await this.openTalk(timedIntro(this.idx), { title: '너굴이의 숨바꼭질' });   // 대본: the champion, a new excuse each time
       if (this.dead) return;
       this.timerOn = true;
     }
     if (this.incident) {
       // 대본: this map's scene, else the host's own lines for how many times you've met (a joke from last time comes back)
       const lines = incidentIntro(this.idx, th.friend);
-      if (lines.length) { await this.talk(lines, { title: th.name }); if (this.dead) return; }
+      if (lines.length) { await this.openTalk(lines, { title: th.name }); if (this.dead) return; }
       await this.friendHides(); if (this.dead) return;
     } else if (!custom && !this.preview && this.spec.incident && !this.scene?.always && !G.save.settings?.oldMode) {
       // a 사건 판 that fell back to finding things (no big furniture to hide in): the host says so, not a hiding line
@@ -514,6 +520,19 @@ export class StageScene {
     try { await playDialog(G, lines, { ...opts, onLine }); }
     finally { this.talking = false; app.classList.remove('cine'); }
   }
+  // the first stage this friend hosts (a card is worth it then)
+  firstMeet(host) {
+    if (!host) return false;
+    for (let j = 0; j < this.idx; j++) { const s = stageSpec(j); if ((hostAt(j) || (s.timed ? 'raccoon' : THEMES[s.room]?.friend)) === host) return false; }
+    return true;
+  }
+  // a stage's opening talk: the card when it's worth stopping for (talkKeep / keep), else just its first line as a bubble
+  async openTalk(lines, opts, keep = false) {
+    if (!lines?.length) return;
+    if (keep || this.talkKeep) return this.talk(lines, opts);
+    const L0 = lines[0], ch = this.charFor(L0.who) || this.friend;
+    setTimeout(() => !this.dead && !this.result && this.say(ch, L0.text, 2200), 350);
+  }
   // ── 사건 판: the owner runs and hides, giggles from the hideout, and pops out when it is opened
   async friendHides() {
     if (this.v2) return v2Hide(this);
@@ -701,7 +720,7 @@ export class StageScene {
     }
     if (this.hiddenStage && left > 0) {   // the owner's three bubbles: first find · half · one left (each once; one left wins a tie)
       const n = this.targets.length, said = this._hs ||= new Set();
-      const which = left === 1 ? 'last' : this.found === 1 ? 'first' : this.found === Math.ceil(n / 2) ? 'half' : null;
+      const which = left === 1 ? 'last' : null;   // (말 줄이기: only "one left" — the first / half bubbles talked over the looking)
       const line = which && !said.has(which) && hiddenSay(this.idx, this.th.friend, which);
       if (line) { said.add(which); setTimeout(() => !this.dead && !this.result && this.say(this.friend, line, 1600), 350); }
     }
@@ -1189,6 +1208,8 @@ export class StageScene {
     part.lock = null; part.busy = false;
     G.ui.toast('짝꿍 완성! 세탁기 문이 열렸어', 'green');
     await this.togglePart(part, true);
+    // what's in the drum counts as found the moment the door opens, like digging (the drum is hard to see into)
+    for (const it of part.spots.map(s => s.item).filter(i => i && !i.found)) { if (it.role === 'target') await this.onFound(it); else if (it.role !== 'decoy') await this.onChain(it); }
   }
   shakePart(part) {
     const g = part.furn.group, s0 = g.position.x;
@@ -1715,7 +1736,8 @@ export class StageScene {
       }
     }
     // 대본: a few words after the clear — 2판's "이번엔 네가 숨겨 봐", a 흑백판's footprints, 너굴이's excuse
-    const aft = this.custom || this.preview ? null : this.spec.timed ? timedWin(this.idx) : sceneAfter(this.idx);
+    let aft = this.custom || this.preview ? null : this.spec.timed ? timedWin(this.idx) : sceneAfter(this.idx);
+    if (aft && !this.talkKeep && !this.incident && !this.spec.boss && (this.hiddenStage || this.spec.gray || this.spec.timed) && !sceneAt(this.idx)?.keep) aft = null;   // 말 줄이기
     if (aft && !G.skipTalk && !G.bot) { await this.talk(aft); if (this.dead) return; }
     // 2판 (home just opened): go and hide something at home now, or keep going — both on the result panel
     const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;

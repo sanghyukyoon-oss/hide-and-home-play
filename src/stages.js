@@ -640,7 +640,11 @@ export function stageSpec(idx) {
       for (const k of ['pad', 'code', 'lever', 'color']) if (kinds.length < shape[1] && !kinds.includes(k) && !(k === 'color' && (s.gray || s.night || s.dark))) kinds.push(k);
       s.lock = kinds;
     }
-    s.behind = ch <= 1 ? 0 : ch <= 3 ? 1 : 2; s.inside = Math.round((s.n || 6) * (ch <= 1 ? .3 : .4));
+    s.behind = ch <= 1 ? 0 : ch <= 3 ? 1 : 2;
+    // 열어야 하는 것 (잠금 안 포함) = n × 30 % (1~2장) / 40 %; minus the chain ends = things found by opening, at least 1,
+    // at most 2 in chapter 1 (레벨 세션 비율 가이드 10/18 — GPT QA found 58.5 % inside, "서랍 열기" the user agreed)
+    const chains = Array.isArray(s.lock) ? s.lock.length : 0, open = Math.round((s.n || 6) * (ch <= 1 ? .3 : .4));
+    s.ho = true; s.inside = Math.max(1, open - chains); if (ch === 0) s.inside = Math.min(2, s.inside);
   }
   return s;
 }
@@ -827,7 +831,10 @@ export function planStage(room, spec, story = null) {
   if (dig) locks.push({ part: dig, kind: 'dig', code: 'dig' });
   // the laundromat's pair puzzle: a washer door won't open until you bring the missing sock of the one pinned on it
   if (spec.sock) {
-    const wd = r.shuffle(room.parts.filter(p => p.furn.type === 'washer3' && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p)))[0];
+    // (a washer door whose inside the 숨은그림 table marks as unseeable would lose its sock and the whole puzzle — prefer one
+    // with a place you can see; 검토 세션 10/18)
+    const wds = room.parts.filter(p => p.furn.type === 'washer3' && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p));
+    const wd = r.shuffle(wds.filter(p => p.spots.some(s => !spec.avoid?.(s))))[0] || r.shuffle(wds)[0];
     if (wd) locks.push({ part: wd, kind: 'sock', code: String(r.int(0, 3)) });
   }
   placements.push(...chainPlaced);
@@ -865,7 +872,9 @@ export function planStage(room, spec, story = null) {
       continue;
     }
     // a stage can say where a clue waits (2층집: the key comes down in the pulley basket)
-    const cs = (spec.clueIn?.[L.kind] && take(x => x.furn.type === spec.clueIn[L.kind] && x.part && !inLocked(x), chainType)) || take(x => !inLocked(x) && x.kind !== 'on', chainType) || take(x => !inLocked(x), chainType);
+    const cs = (spec.clueIn?.[L.kind] && take(x => x.furn.type === spec.clueIn[L.kind] && x.part && !inLocked(x), chainType))
+      || (spec.ho && take(x => !inLocked(x) && x.kind === 'on', chainType))   // 숨은그림 판: a key / note / card is where you can see it
+      || take(x => !inLocked(x) && x.kind !== 'on', chainType) || take(x => !inLocked(x), chainType);
     if (cs) placements.push({ type: chainType, spot: cs, role, code: L.code, forPart: L.part });
   }
   const lockedParts = new Set(locks.map(l => l.part));
@@ -874,19 +883,28 @@ export function planStage(room, spec, story = null) {
   // 숨은그림 판 (10/18): about half the things go where the host would put them (곰돌이 by food, 개굴이 by water…) —
   // knowing the friend helps you look ("이 친구라면 여기 숨겼겠지")
   const habit = spec.prefer?.length ? x => !!x.furn?.type && spec.prefer.some(w => x.furn.type.includes(w)) : null;
+  // 숨은그림 판: one thing to open per piece of furniture (emptying a chest of drawers isn't looking), and the first
+  // free find in plain sight (a first success inside 10 s)
+  const furnUsed = new Set(), fk = x => x.furn || x.part?.furn;
+  const okIn = x => !spec.ho || !furnUsed.has(fk(x));
+  let firstFree = !!spec.ho;
   for (; ti < targets.length; ti++) {
     const type = targets[ti];
     let s = null;
-    if (habit && ti % 2 === 0) {
-      s = take(x => habit(x) && !(x.part && lockedParts.has(x.part)) && !(x.part && partsUsed.has(x.part)), type);
-      if (s) { if (s.kind === 'inside') { want.inside--; partsUsed.add(s.part); } else if (s.kind !== 'on') want.behind--; }
+    if (firstFree) { firstFree = false; s = take(x => x.kind === 'on', type); }
+    if (!s && habit && ti % 2 === 0) {
+      // the habit place, out in the open first; inside only while there are things left to open
+      s = take(x => habit(x) && x.kind !== 'inside' && (spec.ho ? x.kind === 'on' || want.behind > 0 : true), type)
+        || (want.inside > 0 && take(x => habit(x) && x.kind === 'inside' && !(x.part && lockedParts.has(x.part)) && !(x.part && partsUsed.has(x.part)) && okIn(x), type));
+      if (!s && !spec.ho) s = take(x => habit(x) && !(x.part && lockedParts.has(x.part)) && !(x.part && partsUsed.has(x.part)), type);
+      if (s) { if (s.kind === 'inside') { want.inside--; partsUsed.add(s.part); furnUsed.add(fk(s)); } else if (s.kind !== 'on') want.behind--; }
     }
     if (!s && want.inside > 0) {
-      s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part), type) || take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part), type);
-      if (s) { want.inside--; partsUsed.add(s.part); }
+      s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && okIn(x), type) || (!spec.ho && take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part), type));
+      if (s) { want.inside--; partsUsed.add(s.part); furnUsed.add(fk(s)); }
     }
     if (!s && want.behind > 0) { s = take(x => x.kind === 'under' || x.kind === 'behind', type); if (s) want.behind--; }
-    if (!s) s = take(x => x.kind === 'on', type) || take(x => (x.kind === 'under' || x.kind === 'behind'), type) || take(x => x.kind === 'inside' && !lockedParts.has(x.part), type);
+    if (!s) s = take(x => x.kind === 'on', type) || (!spec.ho && take(x => (x.kind === 'under' || x.kind === 'behind'), type)) || take(x => x.kind === 'inside' && !lockedParts.has(x.part) && okIn(x), type) || (spec.ho && take(x => (x.kind === 'under' || x.kind === 'behind'), type));
     if (s) placements.push({ type, spot: s, role: 'target' });
   }
   // decoys: clutter in plain sight + red herrings inside containers

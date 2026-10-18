@@ -101,6 +101,9 @@ export function fixBlindSpots(S) {
       if (views(it) >= 2) { moved.push(`${it.type}: ${old.label} → ${s.label}`); ok = true; break; }
       moveItem(it, old);
     }
+    // (only a plain lock comes off: a puzzle lock — sock, dig, spine, gadget, marble, treat, lever — has its own way of
+    // opening, and losing it lost the 33·36판 sock puzzle; 검토 세션 10/18)
+    if (!ok && lockedIn && !['pad', 'code', 'color'].includes(lockedIn.lock.kind)) continue;
     if (!ok && lockedIn) {
       const L = S.plan.locks.find(l => l.part === lockedIn); if (L) S.plan.locks.splice(S.plan.locks.indexOf(L), 1);
       lockedIn.lock = null; if (lockedIn.lockMesh) { lockedIn.lockMesh.parent?.remove(lockedIn.lockMesh); lockedIn.lockMesh = null; }
