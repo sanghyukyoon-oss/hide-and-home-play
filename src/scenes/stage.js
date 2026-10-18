@@ -249,7 +249,8 @@ export class StageScene {
     // the first run builds 1판 behind the start screen: the banner, the talk and the hide wait for the tap
     while (G.booting && !this.dead) await new Promise(r => setTimeout(r, 100));
     if (this.dead) return;
-    if (this.spec.intro && this.spec.chapter && !custom && !retry) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }   // ('다시하기' doesn't replay the chapter film — QA 10/18)
+    const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
+    if (cine) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }   // ('다시하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
@@ -258,16 +259,17 @@ export class StageScene {
     // 말 줄이기 (스토리 v2, 10/18 — user: "판 시작할 때마다 뭔가가 계속 말 거니까 되게 짜증"): a talk card only where it
     // carries something — the two tutorials, a chapter's first stage, a region boss, the first time you meet this friend;
     // otherwise the first line as the speaker's bubble and straight into play
-    this.talkKeep = !retry && !!(custom || this.preview || this.spec.tut <= 2 || this.spec.intro || this.spec.boss || G.save.settings?.oldMode || this.firstMeet(th.friend));   // (a retry: the first line only — QA 10/18)
+    // (after a chapter's film the stage's own talk is a bubble, even on a first meeting: one card, not two — 검토 2차 3, 13판)
+    this.talkKeep = !retry && !!(custom || this.preview || this.spec.tut <= 2 || G.save.settings?.oldMode || this.spec.boss || (!cine && (this.spec.intro || this.firstMeet(th.friend))));   // (a retry: the first line only — QA 10/18)
     if (this.story?.intro) { await this.talk(this.story.intro, { title: this.story.title }); if (this.dead) return; }
     if (this.model) setTimeout(() => !this.dead && !this.result && this.say(this.friend, this.model.hello, 2400), 350);   // one line, no card
     if ((this.scene?.type === 'tut2' || (this.scene?.always && !this.incident)) && this.scene.intro) { await this.talk(this.scene.intro, { title: th.name }); if (this.dead) return; }   // 2판 · 편의점
     else if (this.hiddenStage) { await this.openTalk(hiddenIntro(this.idx, th.friend), { title: th.name }); if (this.dead) return; }
     if (this.spec.gray && !custom) {
       // 대본: the owner, then 먹물이 by where we are in the story (a voice → caught again → quiet → helping)
-      // (the first three 흑백판 keep their card: they say the rule — 스토리 C안)
+      // (the first 흑백판 keeps its card: it says the rule; the next ones say it in a bubble — 레벨 v3 개선 1, was the first three)
       let grayN = 0; for (let j = 0; j < this.idx; j++) if (stageSpec(j).gray) grayN++;
-      await this.openTalk(grayIntro(this.idx, th.friend, !!this.villain), { title: '색을 잃은 방' }, grayN < 3);
+      await this.openTalk(grayIntro(this.idx, th.friend, !!this.villain), { title: '색을 잃은 방' }, grayN < 1);
       if (this.dead) return;
       this.giveShades();   // everyone puts the special shades on
     }
@@ -1492,21 +1494,23 @@ export class StageScene {
   }
   // ── 1판 (대본 10/18, GPT 첫판 안): one thing to do at a time, each only once it's needed, done only when it's really
   // done — never because time passed. Stuck for a while: the line says more and the spot rings.
-  async teach(text, cls, posFn, done, more = null) {
+  async teach(text, cls, posFn, done, more = null, maxT = 0) {
     const G = this.G, W = G.world, ui = G.ui;
     const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, text);
     const hand = h('div', { class: 'hand ' + cls, html: ICON.hand });
     ui.tut.append(tip, hand); this.tutEls = [tip, hand]; this.tutHand = hand; this.tutHandPos = posFn;
     const t0 = this.t; let said = false, ringT = 0;
     const over = () => this.dead || !!this.result || this.botOn();
+    let gaveUp = false;
     while (!over() && !done()) {
       const dt = this.t - t0;
+      if (maxT && dt > maxT) { gaveUp = true; break; }   // (a lesson that may end by itself: no chime then)
       if (!said && dt > 18 && more) { said = true; tip.textContent = tr(more); }   // (8 → 18 s — 검토 재검토 4)
       if (dt > 18 && this.t - ringT > 2) { ringT = this.t; const p = posFn?.(); if (p) { const s = p.sx != null ? { x: p.sx, y: p.sy } : W.toScreen(p); W.fx.ring(s.x, s.y, { r: dt > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); } }
       await this.tw.wait(.1);
     }
     tip.remove(); hand.remove(); this.tutEls = null; this.tutHand = null; this.tutHandPos = null;
-    if (over()) return false;
+    if (over() || gaveUp) return false;
     G.audio.sfx('special'); await this.tw.wait(.3);
     return !over();
   }
@@ -1569,10 +1573,14 @@ export class StageScene {
   async tutorial2() {
     await this.tw.wait(6);
     if (this.dead || this.result || this.partsOpened > 0) return;
-    const g = this.targets.find(t => !t.found && t.spot.part && t.spot.part.t < .5 && t.spot.furn?.type !== 'futon') || this.targets.find(t => !t.found && t.spot.part && t.spot.part.t < .5);   // (not the curtained loft's quilt)
+    const shut = t => !t.found && t.spot.part && t.spot.part.t < .5;
+    const g = this.targets.find(t => shut(t) && t.spot.part.kind === 'drawer') || this.targets.find(t => shut(t) && t.spot.furn?.type !== 'futon') || this.targets.find(shut);   // (a real drawer first; not the curtained loft's quilt)
     if (!g) return;
-    const part = g.spot.part;
-    await this.teach(DO.drawer, 'tap', () => this.partCenter(part), () => this.partsOpened > 0, DO.drawer2);
+    // the words name what the hand points at (검토 2차 1: it said 서랍 over 2판's curtain), and the lesson ends by itself
+    // after 30 s or once that thing is found, so the loft's tilt lesson isn't kept waiting behind it (검토 2차 2)
+    const part = g.spot.part, k = part.kind, t0 = this.t;
+    const say = k === 'drawer' ? DO.drawer : k === 'curtain' ? '커튼을 톡 해서 열기' : k === 'door' ? '문을 톡 해서 열기' : k === 'lid' ? '뚜껑을 톡 해서 열기' : '톡 해서 들춰 보기';
+    await this.teach(say, 'tap', () => this.partCenter(part), () => this.partsOpened > 0 || part.t > .5 || g.found, k === 'drawer' ? DO.drawer2 : '닫힌 곳을 톡! 안에 물건이 숨어 있어', 30);
   }
   // 2판: tilting, moved here from 1판 (검토 H3) — only if the thing on the loft futon is still there a while later, once
   async teachTilt() {
@@ -1580,9 +1588,14 @@ export class StageScene {
     if (W.scheme !== 'F' || G.save.tut?.tilt) return;
     const loft = this.targets.find(t => !t.found && t.spot.furn?.type === 'futon'); if (!loft) return;
     await this.tw.wait(14);
-    while (!this.dead && !this.result && !loft.found && this.tutEls) await this.tw.wait(.5);   // (not over the drawer lesson)
-    if (this.dead || this.result || loft.found || !this.targets.some(t => !t.found && t.spot.furn?.type === 'futon')) return;
-    const dial = document.querySelector('.turndial'), r = dial?.getBoundingClientRect(); if (!r?.width) return;
+    // not over the drawer lesson (it ends by itself now), and not while the dial is hidden — that used to end this lesson
+    // for good, silently (검토 2차 2)
+    let r = null;
+    while (!this.dead && !this.result && !loft.found) {
+      if (!this.tutEls) { r = document.querySelector('.turndial.on')?.getBoundingClientRect(); if (r?.width) break; }
+      await this.tw.wait(.5);
+    }
+    if (this.dead || this.result || loft.found || !r?.width) return;
     const p1 = W.pitch;
     await this.teach(DO.tilt, 'vswipe', () => ({ sx: r.left + r.width / 2, sy: r.top + r.height / 2 }), () => loft.found || Math.abs(W.pitch - p1) > .2, DO.tilt2);
     (G.save.tut || (G.save.tut = {})).tilt = 1; G.persist();
@@ -1849,8 +1862,16 @@ export class StageScene {
       if (!done.grumpycat) { done.grumpycat = true; G.save.home.inventory.push('cattower'); memento = 'cattower'; G.persist(); }
     }
     // 대본: a few words after the clear — 2판's "이번엔 네가 숨겨 봐", a 흑백판's footprints, 너굴이's excuse
-    let aft = this.custom || this.preview ? null : this.spec.timed ? timedWin(this.idx) : sceneAfter(this.idx);
-    if (aft && !this.talkKeep && !this.incident && !this.spec.boss && (this.hiddenStage || this.spec.gray || this.spec.timed) && !sceneAt(this.idx)?.keep) { aft = aft.filter(l => l.keep); if (!aft.length) aft = null; }   // 말 줄이기 (but the lines the script keeps — 66판 너굴이 "…인정. 너 1등.")
+    let aft = this.custom || this.preview ? null : this.spec.timed ? timedWin(this.idx) : sceneAfter(this.idx), endLines = null;
+    // 말 줄이기 2 (검토 2차 3 · 레벨 리포트 v3 개선 1, 10/19): the words after a clear sit in the result panel — the
+    // speaker's face and two lines at most, the script's keep lines first — instead of stopping the screen. A card only
+    // where the story turns: a 사건 판 (friend found), a boss, 1·2판, or a scene the script marks keep / endCard.
+    const sc0 = sceneAt(this.idx), endCard = this.incident || this.spec.boss || this.spec.tut <= 2 || !!sc0?.keep || !!sc0?.endCard;
+    if (aft && !endCard) {
+      const pan = aft.filter(l => l.panel), pick = new Set(pan.length ? pan.slice(0, 2) : aft.filter(l => l.keep).slice(0, 2));
+      for (const l of aft) { if (pick.size >= 2) break; pick.add(l); }
+      endLines = aft.filter(l => pick.has(l)); aft = null;
+    }
     if (aft && !G.skipTalk && !G.bot) { await this.talk(aft); if (this.dead) return; }
     // 2판 (home just opened): go and hide something at home now, or keep going — both on the result panel
     const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;
@@ -1870,6 +1891,7 @@ export class StageScene {
             ? [h('span', { class: this.time / this.timeMax >= .3 ? 'on' : '' }, STAR_TXT.time), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이')]
             : [h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), this.story?.secret ? h('span', { class: this.secretFound ? 'on' : '' }, STAR_TXT.secret)
               : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star)]))]),
+        ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, tr(L.text)))))] : []),
         ...(this.model ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · 내 집 보관함에 들어갔어요` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))]
           : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
         h('div', { class: 'txt' }, `걸린 시간 ${fmtTime((this.tEnd ?? this.t) - (this.tStart ?? 0))}` + (this.hintsUsed ? ` · 힌트 ${this.hintsUsed}번` : ' · 힌트 없이!') + (this.bestCombo >= 2 ? ` · 최고 콤보 x${this.bestCombo}` : '')),

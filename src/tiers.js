@@ -59,6 +59,21 @@ export function tierPass(S) {
   const mid = it => { const sc = W.toScreen(P.get(it.spot)); return Math.hypot(sc.x - W.W / 2, sc.y - W.H * .47); };
   const zero = T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b));
   for (const it of zero.slice(1)) { const s = free(it, s => L1(s) && !tab.get(s).L0)[0]; if (s) put(it, s, 'L0→L1'); }
+  // (폰 세로 화면은 방이 한눈에 다 보여서 '처음엔 안 보이는 빈자리'가 모자라요 — 7판 2층집 8개 중 4개, 11판 냥냥이 부엌 5개가
+  // 처음부터 보였어요, 리포트 v3 개선 5): what still shows goes, in turn, to a place a turn away or seen from a side or two,
+  // then behind something you open (a curtain, a frame, a drawer, a door — opening is free) — never more than half the list
+  // behind a door, so it stays a looking game
+  const opened = () => S.targets.filter(it => !it.found && !it.friend && it.spot?.part).length;
+  const soft = s => !tab.get(s).L0 && (tab.get(s).near || tab.get(s).around >= 1);
+  const doors = R.spots.filter(s => s.part && !s.part.lock && !s.part.isLever && !s.part.device && !s.reserved && s.anchor && s.kind !== 'on');
+  for (const it of T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b)).slice(1)) {
+    const s1 = free(it, soft)[0];
+    if (s1) { put(it, s1, 'L0→돌리면'); continue; }
+    if (opened() * 2 >= S.targets.length) break;
+    const at = P.get(it.spot), s2 = doors.filter(s => s !== it.spot && fits(it.type, s) && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
+      .sort((a, b) => a.anchor.getWorldPosition(V()).distanceTo(at) - b.anchor.getWorldPosition(V()).distanceTo(at))[0];
+    if (s2) put(it, s2, 'L0→열어야');
+  }
   if (!zero.length) { const it = T().find(x => x.spot.kind === 'on') || T()[0]; const s = it && free(it, s => tab.get(s).L0 && s.kind === 'on')[0]; if (s) put(it, s, '→L0'); }
   // L1: at least two, one a turn away
   const spare = () => T().filter(it => !tab.get(it.spot).L0 && !L1(it.spot));

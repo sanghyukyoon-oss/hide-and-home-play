@@ -351,7 +351,9 @@ export const MAPS = {
     { at: [-3.5, 0], layout: { ...LAYOUTS.playground, theme: THEMES.playground } },
     { at: [3.5, 0], layout: { w: 7, d: 6, theme: THEMES.playground, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
       furniture: [F('aptwall', 0, 0), F('aptwall', 2, 0), F('pavilion2', 4, 0), F('planter', 0, 2), F('picnic2', 2, 2),
-        F('bbqgrill', 6, 2), F('streetlamp2', 0, 4), F('swings2', 1, 4), F('springrider', 4, 3), F('catfeeder', 6, 4), F('icecart', 4, 5)] } },
+        F('bbqgrill', 6, 2), F('streetlamp2', 0, 4), F('swings2', 1, 4), F('springrider', 4, 3), F('catfeeder', 6, 4), F('icecart', 4, 5),
+        // (리포트 v3 개선 4: the 공원 boss had nothing to lock but one box — a lost-property locker, a park bin, the recycling)
+        F('lostbox', 6, 0), F('parkbin', 6, 5), F('recyclebins', 0, 5)] } },
   ] }),
   // 편의점 + 빨래방: two shops side by side, one door between
   shopmap: () => ({ theme: THEMES.konbini, friendAt: [2.5, 1.2], nBonus: 3, rooms: [
@@ -463,7 +465,7 @@ export const STAGES = [
   { room: 'bunny', n: 3, inside: 0, behind: 0, time: 60, tut: 1, clutter: .4 },
   { room: 'bunny', n: 4, inside: 2, behind: 0, time: 70, tut: 2, clutter: .5 },
   { room: 'fishing', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },
-  { room: 'peng', n: 7, inside: 2, behind: 0, time: 85, clutter: .5 },
+  { room: 'peng', n: 5, inside: 1, behind: 0, time: 85, clutter: .5 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 5 things + 2 grey furniture — the first 흑백
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4 },   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55 },
   { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' } },
@@ -624,7 +626,8 @@ export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")
 // (10/18 밤 user: "좀 더 미니게임과 흑백버전판 늘리는 게 좋을 거 같은데" — two a chapter again, 1장 one: the museum at 10판;
 // 흑백 is still finding things, the colour coming back as you do, so the core stays hidden objects)
-export const GRAY = new Set([9, ...planAt('gray')]);
+// (10/19 user: "초반에 흑백 하나 넣어줄래 한 4정도에" — 펭펭이네 다락방 at 4판 comes first, the museum at 10판 second)
+export const GRAY = new Set([3, 9, ...planAt('gray')]);
 // 숨은그림 되살리기 (10/18, user: "계속 캐릭터가 숨어대니까 짜증난다. 진득하게 숨은그림찾는 코어가 사라진거같아"): the owner
 // hides only on these stages (0-based; 1판 is its own tutorial hide) — the ★장치판, three chapter openings where the friend says
 // so, 8 (night bedroom, right before the pajama party) and 16 (classroom). Every other ordinary stage is a hidden-object stage
@@ -634,12 +637,12 @@ export const FRIEND_HIDE = new Set([11, 15, 19, 21, 29, 38, 40, 47, 50, 58, 67])
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
 // really see on that map, chains ≤ the map's lockable pieces; 32·33·35·61·65 count the spots added 10/18)
 const HO_SHAPE = {
-  2: [4, 0], 3: [6, 0], 4: [7, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [8, 1], 9: [7, 1], 11: [8, 1],
+  2: [4, 0], 3: [6, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [8, 1], 9: [7, 1], 11: [8, 1],
   13: [8, 1], 15: [7, 1], 19: [8, 2],
-  23: [9, 1], 25: [10, 1], 26: [11, 2], 27: [10, 1],
+  23: [8, 1], 25: [9, 1], 26: [11, 2], 27: [10, 1],
   33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 2],
   43: [10, 1], 44: [9, 2], 45: [10, 1],
-  50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 2], 57: [12, 3],
+  50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 1], 57: [12, 3],
   61: [7, 1], 62: [11, 1], 63: [11, 2], 65: [7, 1], 67: [12, 2],
 };
 const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(location.search);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
@@ -649,6 +652,7 @@ export function stageSpec(idx) {
   const s = baseSpec(idx);
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }
+  if (s.boss && s.sock) s.n = Math.max(5, (s.n || 8) - 1);   // (the 상가 boss's fourth lock, the sock: one thing fewer to find)
   if (GRAY.has(idx) && !s.timed && !s.boss) { s.gray = true; s.night = false; if (Array.isArray(s.lock)) s.lock = s.lock.filter(k => k !== 'color'); }   // a colour lock can't be read in grey
   // 사건 판 (10/17 pivot): from stage 3 on, every ordinary stage is a small incident — the owner hides behind a lock and
   // you work your way to them; 흑백판 keep their own colour game, timed and boss stages theirs
@@ -720,9 +724,12 @@ function baseSpec(idx) {
     torn: EXTRA.torn && ri >= 1 && (boss || local % 3 === 1),
     dig: EXTRA.dig && R.id === 'park' && (boss || local % 2 === 0),
     tv: EXTRA.tv && R.id === 'apt' && lock.includes('code'),
-    sock: (EXTRA.sock || R.id === 'shop') && room === 'laundry',   // 4장's new thing: the laundromat's pair puzzle (흑백 comes from 1장 now)
+    // 4장's new thing: the laundromat's pair puzzle (흑백 comes from 1장 now) — and once more on the 상가 boss, whose laundry
+    // corner has the same washers (리포트 v3 개선 2: a chapter's rule comes back at its boss)
+    sock: (EXTRA.sock || R.id === 'shop') && (room === 'laundry' || (room === 'shopmap' && boss)),
     dark: P ? kind === 'dark' : false,
-    treat: kind === 'treat' ? TREAT[room] || null : null,
+    // 6장 간식: 50판 teaches it, the night trail (55판) uses it again — 졸졸이 dozes on the box (리포트 v3 개선 3)
+    treat: kind === 'treat' || (kind === 'night' && R.id === 'camp') ? TREAT[room] || null : null,
   };
 }
 // Every stage stands on ground that runs on past it (bleed) — no floating diorama slab (user, 2026-10-15).
