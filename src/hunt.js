@@ -13,7 +13,7 @@ import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { ITEMS } from './gfx/items.js';
 import { attachItem } from './room.js';
 import { THEMES, stageSpec, STAGE_COUNT } from './stages.js';
-import { hostAt } from './script.js';
+import { hostAt, CAMEO_LINE } from './script.js';
 import { blindFor } from './hunt-blind.js';
 
 const K = (ko, en) => { if (en) EN[ko] = en; return ko; };
@@ -138,26 +138,8 @@ function peekers() {
   return PEEK;
 }
 export const cameoKind = idx => peekers()[idx] || null;
-const CAMEO = {
-  bunny: K('킥, 들켰다! 다음엔 우리 집에서도 찾아 줘!', "Hee, busted! Come find things at my place next!"),
-  bear: K('으헤헤, 몰래 보고 있었어. 다음엔 우리 집!', 'Ehehe, I was watching. My place next!'),
-  frog: K('개굴! 들켰다~ 내 낚시터에도 와!', 'Ribbit! Busted~ Come to my fishing spot!'),
-  nerd: K('흠. 관찰력이 좋군. 내 서재로 와 보게.', 'Hm. Sharp eyes. Come to my study.'),
-  peng: K('펭! 몰래 구경 중이었어. 다음은 우리 집이야!', "Peng! Just watching. My house is next!"),
-  cat: K('흥. 그냥 지나가던 거다냥.', 'Hmph. Just passing by.'),
-  inky: K('…킥. 나도 숨는 거 잘해.', "…Heh. I'm good at hiding too."),
-  shiba: K('킁! 잠복 중이었는데… 순찰 같이 가자!', 'Sniff! I was on stakeout… Come on patrol!'),
-  grumpy: K('…뭘 봐. 우리 골목 오든가.', "…What? Come to my alley, then."),
-  hamster: K('웁! 볼 때문에 들켰어!', 'Mmf! My cheeks gave me away!'),
-  sundae: K('앗, 녹기 전에 들켰다! 우리 가게도 와!', 'Oh, busted before I melted! Come to my shop!'),
-  squirrel: K('헉, 도토리 줍다 들켰어!', 'Eek, caught picking up acorns!'),
-  panda: K('천천히 와. 산에서 기다릴게.', "Take your time. I'll wait on the mountain."),
-  sleepy: K('음냐… 여기서 자다 들켰네…', 'Mmh… caught napping here…'),
-  robot: K('삐빅. 관찰 결과: 들킴.', 'BEEP. Observation: spotted.'),
-  dj: K('둠칫! 비트 맞추다 들켰다!', 'Boom-tss! Caught mid-beat!'),
-  skater: K('요! 다음엔 파크로 와!', 'Yo! Hit the park next!'),
-};
-const CAMEO_ANY = K('들켰다! 다음에 또 보자!', 'Busted! See you next time!');
+// (the peeker's line comes from the script: script.js CAMEO_LINE — hello before you've met, a tease after, a new one
+// each time the same friend peeks; 먹물이's three follow its story. 스토리 세션 10/18)
 // a real character, crouched behind a big piece of furniture with only part of it showing (not on the list)
 export function placeCameo(S) {
   const kind = !NO_PEEK && cameoKind(S.idx); if (!kind) return null;
@@ -221,6 +203,7 @@ export async function cameoFound(S, it) {
   await S.tw.run(.45, k => { ch.root.position.lerpVectors(p, to, k); ch.root.position.y = p.y + Math.sin(k * Math.PI) * .5; });
   if (S.dead) return;
   ch.faceTo?.(W.cam.position.x, W.cam.position.z);
-  S.say(ch, CAMEO[it.kind] || CAMEO_ANY, 2000);
+  const P = peekers(), n = Object.keys(P).filter(j => +j < S.idx && P[j] === it.kind).length;
+  S.say(ch, CAMEO_LINE(it.kind, S.idx, n), 2000);
   setTimeout(() => { if (!S.dead) { ch.pose = 'idle'; ch.setFace?.('happy'); } }, 1600);
 }
