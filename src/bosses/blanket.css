@@ -1,0 +1,58 @@
+/* 이불 속 누구게? (bk-) */
+#app.bk { background: radial-gradient(120% 80% at 50% 30%, #fff8fb 0%, #ffe8f1 48%, #f9d6e6 100%); }
+.bk-clock { margin-left: auto; position: relative; width: 120px; height: 30px; border-radius: 999px; background: rgba(42, 26, 61, .55); border: 2.5px solid #3a2453; overflow: hidden; pointer-events: none; }
+.bk-clock i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #ffb3d1, #ff7fae); transition: width .2s linear; }
+.bk-clock b { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 17px; font-weight: 400; }
+.bk-clock.hurry i { background: linear-gradient(90deg, #ff9aa8, #ff4f66); animation: bkHurry .5s ease-in-out infinite; }
+@keyframes bkHurry { 50% { filter: brightness(1.25); } }
+.bk-head { position: absolute; left: 50%; top: calc(62px + var(--safeT)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
+.bk-score { font-family: var(--font-display); font-size: 44px; line-height: 1; color: #fff; position: relative; }
+.bk-score.pop { animation: bkPop .25s cubic-bezier(.2, 1.8, .4, 1); }
+.bk-score::after { content: attr(data-combo); position: absolute; left: 100%; top: 6px; margin-left: 8px; font-family: var(--font); font-size: 15px; white-space: nowrap; color: #ffe16b; }
+@keyframes bkPop { from { transform: scale(1.35); } to { transform: scale(1); } }
+.bk-bar { position: relative; width: 200px; height: 12px; border-radius: 999px; background: rgba(42, 26, 61, .35); border: 2px solid #3a2453; }
+.bk-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, #ffe16b, #ffb300); transition: width .25s cubic-bezier(.16, 1, .3, 1); }
+.bk-mark { position: absolute; top: 12px; transform: translateX(-50%); font-size: 11px; color: #d99a0b; text-shadow: 0 1px 0 #fff; white-space: nowrap; }
+.bk-hint { position: absolute; left: 50%; bottom: calc(136px + var(--safeB)); transform: translateX(-50%); color: #fff; font-size: 17px; white-space: nowrap; background: rgba(42, 26, 61, .55); padding: 7px 15px 9px; border-radius: 999px; pointer-events: none; transition: opacity .4s; }
+.bk-hint.gone { opacity: 0; }
+
+/* the face cards */
+.bk-cards { position: absolute; left: 50%; bottom: calc(18px + var(--safeB)); transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; transition: transform .28s cubic-bezier(.3, 1.4, .5, 1), opacity .25s; }
+.bk-cards.out { transform: translate(-50%, 150%); opacity: 0; pointer-events: none; transition: transform .22s ease-in, opacity .2s; }
+.bk-card { position: relative; width: 82px; padding: 5px 0 6px; border-radius: 18px; background: #fffaf2; border: 3.5px solid #3a2453; box-shadow: 0 5px 0 #3a2453;
+  display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  animation: bkCardIn .34s cubic-bezier(.2, 1.6, .4, 1) both; transition: transform .08s, box-shadow .08s, opacity .25s, filter .25s; }
+.bk-card img { width: 66px; height: 66px; pointer-events: none; }
+.bk-card b { font-size: 15px; line-height: 1.1; color: #3a2453; font-weight: 400; white-space: nowrap; pointer-events: none; }
+.bk-card.down { transform: translateY(4px); box-shadow: 0 1px 0 #3a2453; }
+.bk-card.gold { background: linear-gradient(#fff7cf, #ffe27a); border-color: #b9820b; box-shadow: 0 5px 0 #b9820b; }
+.bk-card.used { pointer-events: none; }
+.bk-card.ok { background: #e4ffd6; }
+.bk-card.ok::after { content: '✓'; position: absolute; right: -8px; top: -10px; width: 28px; height: 28px; border-radius: 50%; background: #5ccf4a; border: 3px solid #3a2453; color: #fff; font-size: 17px; display: grid; place-items: center; }
+.bk-card.no { opacity: .4; filter: grayscale(.7); }
+.bk-card.shown { opacity: .55; }
+@keyframes bkCardIn { from { transform: translateY(60px) scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* the bouncing "?" over the lump being asked */
+.bk-q { position: absolute; transform: translate(-50%, -100%); width: 42px; height: 42px; border-radius: 50%; background: #ff7fae; border: 3px solid #3a2453; box-shadow: 0 4px 0 #3a2453;
+  display: grid; place-items: center; color: #fff; font-family: var(--font-display); font-size: 27px; line-height: 1; pointer-events: none; z-index: 4; animation: bkBob .8s ease-in-out infinite; }
+.bk-q.pop { animation: bkQIn .3s cubic-bezier(.2, 1.8, .4, 1), bkBob .8s .3s ease-in-out infinite; }
+@keyframes bkBob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+@keyframes bkQIn { from { scale: .3; } to { scale: 1; } }
+
+.bk-fever { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(255, 210, 60, .45) 85%, rgba(255, 120, 180, .5) 100%); }
+.bk-fever.on { opacity: 1; animation: bkFever .6s ease-in-out infinite alternate; }
+@keyframes bkFever { to { filter: hue-rotate(60deg); } }
+.bk-night { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .18s;
+  background: radial-gradient(ellipse at 50% 48%, rgba(30, 24, 80, .3) 0%, rgba(16, 12, 44, .72) 75%, rgba(10, 8, 30, .85) 100%); }
+.bk-night.on { opacity: 1; }
+.bk-get { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%); z-index: 30; pointer-events: none; display: flex; align-items: center; gap: 10px; background: #fffaf2; border: 4px solid #3a2453;
+  border-radius: 20px; padding: 10px 16px; box-shadow: 0 6px 0 #3a2453; color: #3a2453; animation: bkGet .45s cubic-bezier(.2, 1.7, .4, 1); width: max-content; max-width: 88vw; }
+.bk-get img { width: 64px; height: 64px; }
+.bk-get-t { font-family: var(--font-display); color: #ffcf3c; font-size: 22px; }
+.bk-get-s { font-size: 14px; }
+.bk-get.out { opacity: 0; transition: opacity .35s; }
+@keyframes bkGet { from { transform: translate(-50%, -50%) scale(.6); } to { transform: translate(-50%, -50%) scale(1); } }
+.bk-stars { display: flex; justify-content: center; gap: 6px; font-size: 40px; color: #d8cfe4; margin-bottom: 4px; }
+.bk-stars .on { color: #ffd23f; text-shadow: 0 3px 0 #d99a0b; }

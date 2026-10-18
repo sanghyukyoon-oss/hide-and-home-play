@@ -13,19 +13,23 @@ export const GALLERY = [
     { id: 'yasik', type: 'bossgame', name: '엄마 몰래 야식', desc: '엄마가 안 볼 때 간식을 몰래 챙겨 와요. 들키면 끝!', slots: '5 · 40 · 70판 뒤', lvs: L('첫째 밤', '둘째 밤', '셋째 밤') },
     { id: 'wakeup', type: 'bossgame', name: '아침 깨우기 장치', desc: '장난감을 이어 붙인 연쇄 장치로 졸졸이를 깨워요', slots: '12 · 60판 뒤', lvs: L('첫째 아침', '둘째 아침', '셋째 아침') },
     { id: 'hotel', type: 'bossgame', name: '몽글 호텔 X박 X일', desc: '손님 방을 정해 모두 꿀잠 재우기. 밤마다 사건 카드', slots: '21판 뒤 (3박 4일)', lvs: L('1박 2일', '2박 3일', '3박 4일') },
-    { id: 'report', type: 'bossgame', name: '엄마 몰래 성적표', desc: '엄마가 뒤지는 곳을 피해 성적표를 몰래 옮겨요', slots: '49판 뒤', lvs: L('첫째 날', '둘째 날', '셋째 날') },
-    { id: 'flashlight', type: 'bossgame', name: '손전등 숨바꼭질', desc: '정전된 밤, 손전등으로 숨은 친구를 비춰 찾아요', slots: '31 · 66판 뒤', lvs: L('토순이네 침실', '곰돌이네 거실', '말썽이네 집', '펭펭이네 2층집') },
+    { id: 'flashlight', type: 'bossgame', name: '손전등 숨바꼭질', desc: '정전된 밤, 손전등으로 숨은 친구를 비춰 찾아요', slots: '31 · 49 · 66판 뒤', lvs: L('토순이네 침실', '곰돌이네 거실', '말썽이네 집', '펭펭이네 2층집') },
     { id: 'treasure', type: 'boss', name: '보물 지키기', desc: '보물을 숨기고 휘슬로 너굴이를 따돌려요', slots: '17 · 36 · 55판 뒤', lvs: [{ label: '2층집', after: 16 }, { label: '편의점·빨래방', after: 35 }, { label: '오두막·캠핑장', after: 54 }] },
   ] },
   { sec: '쉬어가기', items: [
-    { id: 'whack', type: 'bossgame', interlude: true, name: '두더지 숨바꼭질', desc: '수풀에서 쏙 나온 친구를 톡! 너굴이는 꾹 참기', slots: '3 · 27판 뒤', lvs: L('공원 수풀', '변장한 너굴이', '피버 수풀') },
-    { id: 'shell', type: 'mini', name: '햄찌의 야바위', desc: '섞이는 컵을 잘 보고 간식 든 컵 고르기', slots: '8 · 46 · 58판 뒤', lvs: [{ label: '냥냥이네', after: 7 }, { label: '공원', after: 45 }, { label: '캠핑장', after: 57 }] },
-    { id: 'spot', type: 'mini', name: '잉키의 바꿔치기', desc: '잠깐 사이 바뀐 곳 찾기', slots: '34 · 52판 뒤', lvs: [{ label: '편의점', after: 33 }, { label: '캠핑장', after: 51 }] },
-    { id: 'redlight', type: 'mini', name: '무궁화 꽃이 피었습니다', desc: '술래가 돌아볼 때 딱 멈추기', slots: '24 · 63판 뒤', lvs: [{ label: '1판', after: 23 }, { label: '2판', after: 62 }] },
+    { id: 'whack', type: 'bossgame', interlude: true, name: '두더지 숨바꼭질', desc: '수풀에서 쏙 나온 친구를 톡! 너굴이는 꾹 참기', slots: '3 · 27 · 58판 뒤', lvs: L('공원 수풀', '변장한 너굴이', '피버 수풀') },
+    { id: 'redlight', type: 'bossgame', interlude: true, name: '무궁화 꽃이 피었습니다', desc: '구호가 끝나기 전에 살금살금, 돌아보면 딱 멈추기', slots: '24 · 63판 뒤', lvs: L('운동장', '킥킥 너굴이', '두 번 돌아보기') },
+    { id: 'inky', type: 'bossgame', interlude: true, name: '잉키의 바꿔치기', desc: '물건으로 둔갑한 먹물이를 찾아 방 색을 되찾아요', slots: '새 버전 · 보류', lvs: L('곰돌이네 거실', '냥냥이네 부엌', '토순이네 침실') },
+    { id: 'picnic', type: 'bossgame', interlude: true, name: '소풍 보물찾기', desc: '바위·덤불·새집을 들춰 보물 쪽지 찾기. 꽁꽁~뜨거워!', slots: '보류', lvs: L('공원', '바람 부는 날', '멍뭉이랑 소풍') },
+    { id: 'blanket', type: 'bossgame', interlude: true, name: '이불 속 누구게?', desc: '이불 밖으로 삐져나온 귀·꼬리로 누군지 맞히기', slots: '8 · 46판 뒤', lvs: L('파자마 파티', '변장한 너굴이', '고양이 친구들') },
     { id: 'lamp', type: 'mini', name: '손전등 술래', desc: '어두운 방을 손전등으로 비춰 친구 찾기', slots: '15 · 43판 뒤', lvs: [{ label: '원룸', after: 14 }, { label: '공원', after: 42 }] },
+    { id: 'spot', type: 'mini', name: '잉키의 바꿔치기 (지금 판)', desc: '잠깐 사이 바뀐 곳 찾기', slots: '34 · 52판 뒤', lvs: [{ label: '편의점', after: 33 }, { label: '캠핑장', after: 51 }] },
   ] },
   { sec: '캠페인 밖', items: [
-    { id: 'finale', type: 'mini', name: '숨바꼭질 왕 결정전', desc: '바꿔치기 · 야바위 · 두더지(옛 판) 세 판 연속', slots: '안 쓰임', lvs: [{ label: '세 판 연속', after: 990 }] },
+    { id: 'redlight0', kind: 'redlight', type: 'mini', name: '무궁화 꽃이 피었습니다 (옛 판)', desc: '술래가 돌아볼 때 딱 멈추기', slots: '안 쓰임 (10/18 새 판으로)', lvs: [{ label: '1판', after: 23, p: { time: 55 } }, { label: '2판', after: 62, p: { time: 55 } }] },
+    { id: 'report', type: 'bossgame', name: '엄마 몰래 성적표', desc: '엄마가 뒤지는 곳을 피해 성적표를 몰래 옮겨요', slots: '안 쓰임 (10/18 뺌)', lvs: L('첫째 날', '둘째 날', '셋째 날') },
+    { id: 'shell', type: 'mini', name: '햄찌의 야바위', desc: '섞이는 컵을 잘 보고 간식 든 컵 고르기', slots: '안 쓰임 (10/18 뺌)', lvs: [{ label: '냥냥이네', after: 7, p: { map: 'cat', rounds: 2 } }, { label: '공원', after: 45, p: { map: 'park2', rounds: 3 } }, { label: '캠핑장', after: 57, p: { map: 'camp2', rounds: 3 } }] },
+    { id: 'finale', type: 'mini', name: '숨바꼭질 왕 결정전', desc: '바꿔치기 · 야바위 · 두더지(옛 판) 세 판 연속', slots: '안 쓰임', lvs: [{ label: '세 판 연속', after: 993 }] },
     { id: 'sneak', type: 'mini', name: '냥냥이 몰래 야식', desc: '옛 쉬어가기 시제품', slots: '안 쓰임', lvs: [{ label: '1판', after: 991 }] },
     { id: 'villa', type: 'bossgame', name: '몽글 빌라 방 배정', desc: '호텔의 원래 버전', slots: '안 쓰임', lvs: L('첫 입주', '새 이웃', '꽉 찬 빌라') },
     { id: 'tag', type: 'bossgame', name: '다 잡았다! 술래잡기', desc: '시제품', slots: '안 쓰임', lvs: L('1판', '2판', '3판') },
@@ -37,12 +41,13 @@ const ALL = GALLERY.flatMap(s => s.items);
 export const galleryItem = id => ALL.find(it => it.id === id);
 
 // start one level of one game in practice mode
-export function playGame(G, id, k = 0) {
-  const it = galleryItem(id); if (!it) return false;
+export function playGame(G, id, k = 0, mini = false) {
+  const it = (mini && ALL.find(x => x.type === 'mini' && (x.kind || x.id) === id)) || galleryItem(id); if (!it) return false;
   const v = it.lvs[Math.max(0, Math.min(it.lvs.length - 1, k | 0))];
   G.startPlay();
-  if (it.type === 'bossgame') return G.go('bossgame', { kind: it.id, lv: v.lv, after: -1, interlude: !!it.interlude });
-  if (it.type === 'mini') return G.go('mini', { kind: it.id, after: v.after });
+  const kind = it.kind || it.id;
+  if (it.type === 'bossgame') return G.go('bossgame', { kind, lv: v.lv, after: -1, interlude: !!it.interlude });
+  if (it.type === 'mini') return G.go('mini', { kind, after: v.after, p: v.p || null });
   return G.go('boss', { after: v.after });
 }
 

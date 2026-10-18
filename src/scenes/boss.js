@@ -139,7 +139,9 @@ export class BossScene {
     const W = this.G.world, R = this.room, big = R.rooms ? R : null;
     const c = big ? big.center : new THREE.Vector3(), span = (R.w + R.d) / Math.SQRT2 + .5;
     W.home.set(c.x, .6, c.z); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .7; W.zoom = 1.25;
-    W.bounds = 99; W.slack = null; W.minZoom = .85; W.maxZoom = 3; W.minPitch = .35; W.maxPitch = 1.2;
+    // the view is yours like in a stage (user, 10/18: "카메라가 고정이냐? 찾을 때만 캐릭터 따라가게 하고 숨은그림찾기 할 때처럼 자유롭게"):
+    // drag / turn / pinch freely while you hide; while 너굴이 searches it follows 몽글이 unless you are looking round
+    W.bounds = Math.max(2.6, Math.max(R.w, R.d) * .5); W.slack = null; W.minZoom = .85; W.maxZoom = 5; W.minPitch = .2; W.maxPitch = 1.35; W.camLock = false; W.inputEnabled = true;
     W.setFit(Math.min(span, 8.6), Math.max(6.6, Math.min(span, 8.6) * .62), .47);
   }
   exit() {
@@ -348,8 +350,12 @@ export class BossScene {
     this.tw.update(dt);
     this.t = (this.t || 0) + dt;
     this.room.update(dt); this.ambient?.update(dt); this.hero.update(dt); this.seek.update(dt);
-    const hp = this.hero.root.position;
-    W.target.x += (hp.x - W.target.x) * (1 - Math.exp(-dt * 5)); W.target.z += (hp.z - W.target.z) * (1 - Math.exp(-dt * 5)); W.target.y += (hp.y + .6 - W.target.y) * (1 - Math.exp(-dt * 4));
+    // follow 몽글이 only while 너굴이 searches, and not for 2.5 s after you dragged, turned or pinched the view yourself
+    if (W.drag?.moved || W.ptrs?.size > 1) this.lookT = this.t;
+    if (this.phase === 'seek' && !this.result && this.t - (this.lookT ?? -99) > 2.5) {
+      const hp = this.hero.root.position;
+      W.target.x += (hp.x - W.target.x) * (1 - Math.exp(-dt * 5)); W.target.z += (hp.z - W.target.z) * (1 - Math.exp(-dt * 5)); W.target.y += (hp.y + .6 - W.target.y) * (1 - Math.exp(-dt * 4));
+    }
     if (!this.result && this.phase !== 'intro') this.stepHero(dt);
     this.whT = Math.max(0, (this.whT || 0) - dt);
     this.hideBtn.style.visibility = this.phase === 'seek' && !this.result ? '' : 'hidden';

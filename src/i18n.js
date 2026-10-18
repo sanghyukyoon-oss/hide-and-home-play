@@ -205,6 +205,28 @@ const PAT = [
   [/^(\d+)점 · 친구 (\d+)명 찾음 · 최고 (\d+)연속$/, (a, b, c) => `${a} pts · ${b} friend${b === '1' ? '' : 's'} found · best ${c} in a row`],
   [/^(\d+)점부터 성공! 너굴이는 꾹 참기$/, a => `Clear at ${a} pts! Don't tap Rocky`],
   [/^(\d+) 연속$/, a => `${a} in a row`],   // the combo tag: shown through CSS attr(data-combo), so it needs tr() in updCombo()
+  // 무궁화 꽃이 피었습니다 (redlight.js)
+  [/^(.+?[!?]) (\S+) 아웃!$/, (a, b) => `${tr(a)} ${tr(b)}'s out!`],
+  [/^(\d+)초 안에 땡 하면 별 하나 더!$/, a => `Tag within ${a}s for an extra star!`],
+  [/^친구 (\d+)명 구출 · (\d+)초에 땡(?: · 아슬아슬 (\d+)번)?$/, (a, b, c) => `${a} friend${a === '1' ? '' : 's'} rescued · tagged at ${b}s${c ? ` · ${c} close call${c === '1' ? '' : 's'}` : ''}`],
+  [/^잡힌 횟수 (\d+)번(?: · 친구 (\d+)명 구출)?$/, (a, b) => `Caught ${a} time${a === '1' ? '' : 's'}${b ? ` · ${b} friend${b === '1' ? '' : 's'} rescued` : ''}`],
+  // 잉키의 바꿔치기 (inky.js): the real thing talks back; the noun comes with its particle (화분이), tr() drops it
+  [/^나 진짜 (.+)거든\?$/, a => `I'm a real ${a.replace(/^[A-Z](?=[a-z])/, c => c.toLowerCase())}, honest!`],
+  [/^난 그냥 (.+)야!$/, a => `Just a plain old ${a.replace(/^[A-Z](?=[a-z])/, c => c.toLowerCase())}!`],
+  [/^진짜 (.+)라니까~$/, a => `I'm a real ${a.replace(/^[A-Z](?=[a-z])/, c => c.toLowerCase())}, I tell ya~`],
+  [/^색만 뺏긴 진짜 (.+)야 ㅠㅠ$/, a => `A real ${a.replace(/^[A-Z](?=[a-z])/, c => c.toLowerCase())}, just drained of color T_T`],
+  [/^(\d+)점 · (\d+)번 찾음 · 최고 (\d+)연속$/, (a, b, c) => `${a} pts · found ${b} time${b === '1' ? '' : 's'} · best ${c} in a row`],
+  [/^(\d+)점이면 성공! 깜빡 눈을 노려봐$/, a => `Clear at ${a} pts! Watch for blinking eyes`],
+  // 소풍 보물찾기 (picnic.js)
+  [/^남은 쪽지 (\d+)장$/, a => `${a} slip${a === '1' ? '' : 's'} left`],
+  [/^가을 소풍 · 몽글이 쪽지 (\d+)장$/, a => `Autumn Picnic · Mongle's slips: ${a}`],
+  [/^몽글이 · 쪽지 (\d+)장$/, a => `Mongle · ${a} slip${a === '1' ? '' : 's'}`],
+  [/^(\d+)점부터 성공! "뜨거워~" 쪽 옆을 뒤져 봐$/, a => `Clear at ${a} pts! Search next to the "hot~" spots`],
+  // 이불 속 누구게? (blanket.js)
+  [/^냠! \+(\d+)$/, a => `Nom! +${a}`],
+  [/^(\d+)점부터 성공! 삐죽 나온 귀·꼬리를 잘 봐$/, a => `Clear at ${a} pts! Watch the ears and tails poking out`],
+  // 놀이 모음 (gallery.js): slot note for a game taken out of the campaign (the '…판 뒤' notes already have a pattern in i18n.js)
+  [/^안 쓰임 \(([\d/]+) 뺌\)$/, a => `not in the story (cut ${a})`],
   [/^(.+?) 쏙!$/, n => `${n} — slipped in!`],
   [/^(.+?) \+(\d+)$/, (a, n) => `${a} +${n}`],
   [/^(.+?)의 (.+)$/, (a, b) => `${a}'s ${b}`],   // broad ones last

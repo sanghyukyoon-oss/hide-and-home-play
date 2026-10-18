@@ -499,16 +499,16 @@ export const GAMES = { sneak: Sneak, spot: Spot, redlight: RedLight, shell: Shel
 export const MINI_AFTER = {
   2: { kind: 'whack', lab: true, lv: 0 },   // 두더지 숨바꼭질 새 버전 (인계 4; user: "새롭게 좀 더 재밌게") — boss wrapper, interlude
 
-  7: { kind: 'shell', p: { map: 'cat', rounds: 2 } },
+  7: { kind: 'blanket', lab: true, lv: 0 },   // 이불 속 누구게? 파자마 파티 (user, 10/18: "야바위 별로 재미없는데? … 제거하자. 다른 걸로 바꾸거나")
   14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },
-  23: { kind: 'redlight', p: { time: 55 } },
+  23: { kind: 'redlight', lab: true, lv: 0 },   // 무궁화 새 판 운동장 (user, 10/18: "무궁화 꽃이 피었습니다 재밌어. 개선판. 정본에 교체된 거지?", "글자가 하나씩 나오는 게 넘 재밌어서")
   26: { kind: 'whack', lab: true, lv: 1 },  // 변장한 너굴이 첫 등장
   33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },
   42: { kind: 'lamp', p: { map: 'park1', time: 45 } },
   51: { kind: 'spot', p: { map: 'camp1', n: 3, time: 40 } },
-  45: { kind: 'shell', p: { map: 'park2', rounds: 3 } },
-  57: { kind: 'shell', p: { map: 'camp2', rounds: 3 } },
-  62: { kind: 'redlight', p: { time: 55 } },
+  45: { kind: 'blanket', lab: true, lv: 1 },   // 이불 속 누구게? 변장한 너굴이 (소풍은 보류 — user: "보물찾기는 애매함")
+  57: { kind: 'whack', lab: true, lv: 2 },   // 두더지 피버 수풀
+  62: { kind: 'redlight', lab: true, lv: 1 },   // 무궁화 새 판 킥킥 너굴이
 };
 // 보스전 (10/18): the five games from the new-game session (scenes/bossgame.js) — each region ends on one, the good ones come
 // back (user: "보스판은 여러 종류로 갈 거고 재미있는 판은 다시 나올 거"), 엄마 몰래 야식 first and last ("이건 대박"). lv = which
@@ -524,7 +524,7 @@ export const BOSS_GAMES = {
   20: { kind: 'hotel', lv: 2 },    // 우리 아파트 끝 — 몽글 호텔 3박 4일 (user, 10/18: "실제에서 3박 4일 정도로 하는 거지?")
   30: { kind: 'flashlight', lv: 1 }, // 동네 골목 — 손전등 숨바꼭질 곰돌이네 거실 (user, 10/18: "추로는 빼자. 손전등 숨바꼭질을 더 넣는 게 낫겠어")
   39: { kind: 'yasik', lv: 1 },    // 편의점·상가
-  48: { kind: 'report', lv: 0 },   // 공원 끝 — 엄마 몰래 성적표 1일 (야식과 짝인 '엄마 몰래' 시리즈)
+  48: { kind: 'flashlight', lv: 2 }, // 공원 끝 — 손전등 숨바꼭질 말썽이네 집 (성적표 대신 — user, 10/18: "엄마 몰래 성적표 이것도 애매하다. 제거하자")
   59: { kind: 'wakeup', lv: 1 },   // 산길·캠핑 (텐트의 아침)
   65: { kind: 'flashlight', lv: 3 }, // 빌딩 중간 — 손전등 숨바꼭질 펭펭이네 2층 집 (계단 오르내리기, 인계 4)
   69: { kind: 'yasik', lv: 2 },    // 마지막 보스

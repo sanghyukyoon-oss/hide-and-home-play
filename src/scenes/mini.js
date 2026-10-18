@@ -20,11 +20,11 @@ const V = new THREE.Vector3();
 
 export class MiniScene {
   constructor(G) { this.G = G; this.name = 'mini'; }
-  async enter({ kind = 'spot', after = 20 } = {}) {
+  async enter({ kind = 'spot', after = 20, p = null } = {}) {
     const G = this.G, W = G.world;
     this.tw = new Tweens(); this.kind = kind; this.after = after; this.objs = []; this.chars = []; this.fails = 0;
     this.info = MINI_INFO[kind] || MINI_INFO.spot;
-    this.slot = MINI_AFTER[after] || { kind, boss: true }; this.boss = !!this.slot.boss;   // a region's boss game, or a lighter one in between
+    this.slot = p ? { kind, p } : MINI_AFTER[after]?.kind === kind ? MINI_AFTER[after] : { kind, boss: true }; this.boss = !!this.slot.boss;   // p: 놀이 모음's own settings   // a region's boss game, or a lighter one in between
     this._was = { camLock: W.camLock, joyOn: W.joyOn, gauge: W.gaugeOn };
     W.joyOn = false; W.camLock = true; W.gaugeOn = false; W.onTap = null; W.onDragStart = null; W.onRotate = null;
     this.seq = this.info.seq || [kind]; this.si = 0;

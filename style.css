@@ -1118,3 +1118,6 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .gal-lvs { display: flex; flex-wrap: wrap; gap: 6px; }
 .gal-lv { font-family: var(--font); font-weight: 600; font-size: 13px; color: #fff; background: linear-gradient(180deg, var(--g1), var(--g2)); border: 2px solid var(--ink); border-bottom-width: 3.5px; border-radius: 10px; padding: 5px 10px 6px; cursor: pointer; min-height: 32px; }
 .gal-lv:active { transform: translateY(1.5px); border-bottom-width: 2px; }
+/* boss / break game titles stay on one line on narrow phones (GPT QA 10/18: the new 무궁화 title wrapped over its subtitle at 360–390 px) */
+#app[data-scene="bossgame"] .lab-title { white-space: nowrap; font-size: min(20px, 4.6vw); min-width: 0; flex-shrink: 1; overflow: hidden; }
+#app[data-scene="bossgame"] .lab-title small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -1,0 +1,63 @@
+/* 무궁화 꽃이 피었습니다 (rl-) */
+#app.rl { background: radial-gradient(120% 80% at 50% 30%, #fbfff4 0%, #e3f5da 48%, #c9ebc4 100%); }
+.rl-clock { margin-left: auto; position: relative; width: 112px; height: 30px; border-radius: 999px; background: rgba(42, 26, 61, .55); border: 2.5px solid #3a2453; overflow: hidden; pointer-events: none; }
+.rl-clock i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #8be36b, #4cc62e); transition: width .2s linear; }
+.rl-clock b { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 17px; font-weight: 400; }
+.rl-clock.hurry i { background: linear-gradient(90deg, #ff9aa8, #ff4f66); animation: rlHurry .5s ease-in-out infinite; }
+.rl-clock.stop i { background: linear-gradient(90deg, #ffe16b, #ffb300); }
+@keyframes rlHurry { 50% { filter: brightness(1.25); } }
+
+/* the chant: ten syllables that light up one by one; the bar goes green while his back is turned, red while he looks */
+.rl-chant { position: absolute; left: 50%; top: calc(60px + var(--safeT)); transform: translateX(-50%); display: flex; align-items: center; gap: 1px; pointer-events: none;
+  padding: 4px 10px 5px 4px; border-radius: 999px; background: rgba(42, 26, 61, .5); border: 2.5px solid #3a2453; transition: background .12s; white-space: nowrap; }
+.rl-chant.safe { background: rgba(46, 150, 82, .72); }
+.rl-chant.look { background: rgba(232, 52, 84, .88); animation: rlShake .32s; }
+.rl-chant img { width: 40px; height: 40px; margin-right: 3px; flex: none; }
+.rl-syl { font-family: var(--font-display); font-size: 27px; line-height: 1.1; width: 29px; text-align: center; display: inline-block; opacity: .3; color: #fff; }
+.rl-syl.on { opacity: 1; }
+.rl-syl.now { color: #ffe16b; animation: rlSyl .32s cubic-bezier(.2, 1.8, .4, 1); }
+.rl-syl.da.on { color: #ff4f66; -webkit-text-stroke-color: #fff; }
+.rl-chant.look .rl-syl.da.on { color: #fff; -webkit-text-stroke-color: #3a2453; transform: scale(1.25); }
+.rl-chant.stall .rl-syl.da { animation: rlBlink .42s ease-in-out infinite alternate; }
+.rl-chant.kik { animation: rlKik .18s linear infinite; }
+.rl-kik { position: absolute; left: -4px; top: -16px; font-size: 16px; color: #fff; background: #ff8f3c; border: 2.5px solid #3a2453; border-radius: 999px; padding: 1px 8px 3px; transform: rotate(-12deg); display: none; }
+.rl-chant.kik .rl-kik { display: block; animation: rlSyl .3s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes rlSyl { from { transform: scale(1.9) translateY(-5px); } to { transform: scale(1); } }
+@keyframes rlBlink { from { opacity: .25; } to { opacity: .7; } }
+@keyframes rlShake { 0%, 100% { translate: 0 0; } 25% { translate: -6px 0; } 50% { translate: 6px 0; } 75% { translate: -3px 0; } }
+@keyframes rlKik { 0%, 100% { rotate: 0deg; } 25% { rotate: -2deg; } 75% { rotate: 2deg; } }
+
+/* hearts (left) and the friends racing (right) */
+.rl-row { position: absolute; left: 12px; right: 12px; top: calc(112px + var(--safeT)); display: flex; align-items: center; pointer-events: none; }
+.rl-hearts { display: flex; gap: 1px; font-size: 24px; line-height: 1; }
+.rl-hearts span { color: #ff5d79; text-shadow: 0 2px 0 #3a2453, 1px 0 0 #3a2453, -1px 0 0 #3a2453, 0 -1px 0 #3a2453; transition: transform .25s; }
+.rl-hearts span.off { color: #d9cfe0; transform: scale(.8); }
+.rl-friends { margin-left: auto; display: flex; gap: 4px; }
+.rl-fr { position: relative; width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, .55); border: 2.5px solid #3a2453; display: grid; place-items: center; }
+.rl-fr img { width: 32px; height: 32px; }
+.rl-fr.out { background: #ffd6dd; border-color: #e8344f; }
+.rl-fr.out::after { content: '아웃'; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #fff; background: #e8344f; border-radius: 6px; padding: 0 4px 1px; white-space: nowrap; }
+.rl-fr.free { background: #fff1b8; border-color: #e0a100; }
+
+.rl-hint { position: absolute; left: 50%; bottom: calc(24px + var(--safeB)); transform: translateX(-50%); color: #fff; font-size: 18px; white-space: nowrap; background: rgba(42, 26, 61, .58); padding: 8px 16px 10px; border-radius: 999px; pointer-events: none; transition: opacity .4s; }
+.rl-hint.gone { opacity: 0; }
+.rl-hint.go { background: rgba(232, 52, 84, .85); }
+
+/* "톡! 땡!" over 너굴이's head once 몽글이 can reach his back */
+.rl-tang { position: absolute; transform: translate(-50%, -100%); font-family: var(--font-display); font-size: 30px; pointer-events: none; color: #ffe16b; white-space: nowrap; animation: rlTang .5s ease-in-out infinite alternate; }
+.rl-tang.wait { color: #ff6f86; animation: none; font-size: 24px; }
+@keyframes rlTang { from { margin-top: 0; } to { margin-top: -10px; } }
+
+/* a red edge while he is looking */
+.rl-vig { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0; transition: opacity .12s; background: radial-gradient(ellipse at center, transparent 58%, rgba(255, 40, 80, .42) 100%); }
+.rl-vig.on { opacity: 1; }
+
+.rl-get { position: absolute; left: 50%; top: 33%; transform: translate(-50%, -50%); z-index: 30; pointer-events: none; display: flex; align-items: center; gap: 10px; background: #fffaf2; border: 4px solid #3a2453;
+  border-radius: 20px; padding: 10px 16px; box-shadow: 0 6px 0 #3a2453; color: #3a2453; animation: rlGet .45s cubic-bezier(.2, 1.7, .4, 1); width: max-content; max-width: 88vw; }
+.rl-get img { width: 64px; height: 64px; flex: none; }
+.rl-get-t { font-family: var(--font-display); color: #ffcf3c; font-size: 22px; }
+.rl-get-s { font-size: 14px; line-height: 1.35; }
+.rl-get.out { opacity: 0; transition: opacity .35s; }
+@keyframes rlGet { from { transform: translate(-50%, -50%) scale(.6); } to { transform: translate(-50%, -50%) scale(1); } }
+.rl-stars { display: flex; justify-content: center; gap: 6px; font-size: 40px; color: #d8cfe4; margin-bottom: 4px; }
+.rl-stars .on { color: #ffd23f; text-shadow: 0 3px 0 #d99a0b; }

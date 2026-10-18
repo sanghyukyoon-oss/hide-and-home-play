@@ -1,6 +1,10 @@
 // ① 엄마 몰래 야식 — a midnight sneak to the fridge.
 //   move:  press and hold anywhere on the floor — 몽글이 tiptoes toward your finger (far away = a scurry, which is noisy);
 //          let go and it freezes and crouches. Press the fridge and keep holding: it walks there and grabs snacks.
+//   fridge (숨바꼭집, 10/18 — user: "냉장고를 눌러도 아무 변화가 없고… 그 앞에 가서 냉장고 한번 누르면 열리고 그 안에 냉장고
+//          누르고 있으면 먹을 거 가져오게끔"): in front of it, tap the fridge = the door opens (tap again = shut); hold the
+//          open fridge = take snacks. Holding it from afar walks you to its front. An open door lights up for mom; walk
+//          away and it swings shut.
 //   lure:  tap a gadget (the robot vacuum, the bluetooth speaker) — it goes off, and mom gets up, walks over to switch
 //          it off and walks back. That's your window. Each gadget works once a night.
 //   mom:   now and then she says "흠…?" (a red preview of where she's about to look) and glances round (the warm light on
@@ -151,7 +155,7 @@ export class Game {
     if (!LV.key) { this.moon = this.glow(-2.7, .9, 1.0, '#dfe6ff'); this.moon.scale.set(.8, 1, 1.5); this.moon.material.opacity = .16; }
     this.goal = new THREE.Mesh(new THREE.RingGeometry(.22, .3, 28), new THREE.MeshBasicMaterial({ color: '#ffe36b', transparent: true, opacity: .6, depthWrite: false }));
     this.goal.rotation.x = -Math.PI / 2; this.goal.position.set(this.fridgeAt.x, .03, this.fridgeAt.y); W.root.add(this.goal);
-    this.snacks = []; this.grabT = 0; this.fridgeOpen = 0;
+    this.snacks = []; this.grabT = 0; this.fridgeOpen = 0; this.doorOpen = false;
     this.touch = null; this.result = null; this.moving = false; this.noise = 0; this.everMoved = false;
     this.frame();
     this.gk = LV.guard || 'mom';
@@ -292,16 +296,32 @@ export class Game {
       if (e.button > 0 || this.result || this.touch || !this.started) return;
       const d = this.lureAt(e.clientX, e.clientY);
       if (d) { this.fireLure(d); return; }
-      this.touch = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      this.touch = { id: e.pointerId, x: e.clientX, y: e.clientY, fridge: this.onFridge(e.clientX, e.clientY), t0: performance.now() };
     };
     this._move = e => { const T = this.touch; if (T && e.pointerId === T.id) { T.x = e.clientX; T.y = e.clientY; } };
-    this._up = e => { if (this.touch && (e?.pointerId == null || e.pointerId === this.touch.id)) this.touch = null; };
+    this._up = e => {
+      const T = this.touch; if (!T || (e?.pointerId != null && e.pointerId !== T.id)) return;
+      this.touch = null;
+      // a tap on the fridge while standing at it opens it (or shuts it again)
+      if (T.fridge && performance.now() - T.t0 < 320 && this.atFridge() && !this.result) this.setDoor(!this.doorOpen);
+    };
     this.keys = new Set();
     this._kd = e => { if (/^(Arrow|Key[WASD])/.test(e.code) || e.code === 'Space') { this.keys.add(e.code); e.preventDefault(); } };
     this._ku = e => this.keys.delete(e.code);
     app.addEventListener('pointerdown', this._down); addEventListener('pointermove', this._move); addEventListener('pointerup', this._up); addEventListener('pointercancel', this._up);
     this._blur = () => { this._up({}); this.keys.clear(); }; addEventListener('blur', this._blur);
     addEventListener('keydown', this._kd); addEventListener('keyup', this._ku);
+  }
+  onFridge(x, y) {
+    if (!this.fridge) return false;
+    const W = this.L.world; if (W.pick(x, y, [this.fridge.f.group])[0]) return true;
+    const b = new THREE.Box3().setFromObject(this.fridge.f.group), s = W.toScreen(b.getCenter(new THREE.Vector3()));
+    return Math.hypot(s.x - x, s.y - y) < 46;   // a fat finger on the fridge counts too
+  }
+  atFridge() { return this.pos.distanceTo(this.fridgeAt) < .8; }
+  setDoor(open) {
+    if (this.doorOpen === open) return;
+    this.doorOpen = open; this.L.audio.sfx(open ? 'open' : 'close');
   }
   lureAt(x, y) {
     const live = this.lures.filter(d => !d.used); if (!live.length) return null;
@@ -317,8 +337,9 @@ export class Game {
     if (kx || ky) { const y = this.L.world.yaw, rx = Math.cos(y), rz = -Math.sin(y), fx = -Math.sin(y), fz = -Math.cos(y), n = Math.hypot(kx, ky);
       return { down: true, dir: [(rx * kx - fx * ky) / n, (rz * kx - fz * ky) / n], run: K.has('ShiftLeft') }; }
     if (K.has('Space')) return { down: true };
+    if (this.touch?.fridge) return { down: true, fridge: true, target: this.atFridge() ? null : this.fridgeAt.clone() };   // held on the fridge: go to its front, then reach in
     if (this.touch) { const g = this.L.world.screenToGround(this.touch.x, this.touch.y, 0); return { down: true, target: g ? new THREE.Vector2(g.x, g.z) : null }; }
-    if (this.botDown) return { down: true, target: this.botTarget || null };
+    if (this.botDown) return { down: true, target: this.botTarget || null, fridge: !!this.botFridge };
     return { down: false };
   }
   buildHud() {
@@ -501,9 +522,11 @@ export class Game {
       me.squash = Math.max(me.squash, .22);
     }
     this.placeMe(dt);
-    // at the fridge: keep pressing (and stay put) to grab
-    const nearFridge = p.distanceTo(this.fridgeAt) < .6 && this.snacks.length < 3;
-    this.grabbing = nearFridge && I.down && !this.moving;
+    // at the fridge: the door opens with a tap (or after a moment's hold), and holding the open fridge takes snacks
+    const nearFridge = this.atFridge() && this.snacks.length < 3;
+    if (I.fridge && nearFridge && !this.moving) { this.fHold = (this.fHold || 0) + dt; if (!this.doorOpen && this.fHold > .35) this.setDoor(true); } else this.fHold = 0;
+    if (this.doorOpen && p.distanceTo(this.fridgeAt) > 1.1) this.setDoor(false);   // walked off: it swings shut
+    this.grabbing = nearFridge && this.doorOpen && I.fridge && I.down && !this.moving;
     this.stepFridge(dt);
     if (this.snacks.length && p.distanceTo(this.door) < .55) return this.win();
     this.goal.position.set(...(this.snacks.length ? [this.door.x, .03, this.door.y] : [this.fridgeAt.x, .03, this.fridgeAt.y]));
@@ -539,7 +562,7 @@ export class Game {
     // the hint says what a press does right now
     const n = this.snacks.length, live = this.lures.some(d => !d.used);
     if (AWAY.has(this.mState) && this.mState !== 'sit') this.setHint(this.mState === 'check' ? '지금이야! 엄마가 딴 데 봐' : '엄마가 일어났어…');
-    else if (nearFridge) this.setHint(this.grabbing ? `꺼내는 중… ${n}/3` : n ? '꾹 누르고 있으면 하나 더' : '냉장고를 꾹 누르고 있기');
+    else if (nearFridge) this.setHint(this.grabbing ? `꺼내는 중… ${n}/3` : !this.doorOpen ? '냉장고를 톡 하면 열려' : n ? '냉장고를 꾹 누르면 하나 더' : '열린 냉장고를 꾹 누르고 있으면 꺼내요');
     else if (n) this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
     else this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '가고 싶은 곳을 꾹 누르고 있기' : live ? `${this.lures.find(d => !d.used).name}를 톡 하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
@@ -553,15 +576,13 @@ export class Game {
   fridgeLitBy(yaw) { const s = this.mState, y = this.momYaw; this.mState = 'look'; this.momYaw = yaw; const r = this.fridgeSeen(); this.mState = s; this.momYaw = y; return r; }
   stepFridge(dt) {
     const L = this.L, part = this.fridge?.f.parts[0];
-    this.fridgeOpen += ((this.grabbing ? 1 : 0) - this.fridgeOpen) * (1 - Math.exp(-dt * 9));
+    this.fridgeOpen += ((this.doorOpen ? 1 : 0) - this.fridgeOpen) * (1 - Math.exp(-dt * 9));
     part?.setOpen(this.fridgeOpen);
     if (this.grabbing) {
-      if (this.fridgeOpen > .5 && !this._opened) { this._opened = true; L.audio.sfx('open'); }
       this.grabT += dt;
       if (this.grabT > .7) { this.grabT = 0; this.takeSnack(); }
       this.me.pose = 'push'; if (this.fridge) { const b = new THREE.Box3().setFromObject(this.fridge.f.group); this.face = Math.atan2((b.min.x + b.max.x) / 2 - this.pos.x, (b.min.z + b.max.z) / 2 - this.pos.y); }
     } else {
-      if (this._opened && this.fridgeOpen < .3) { this._opened = false; L.audio.sfx('close'); }
       this.grabT = 0;
     }
   }
@@ -633,8 +654,8 @@ export class Game {
   // ── bots (QA) press the floor the way a finger would. smart: sets the first gadget off from the door and sneaks
   // while mom is away, otherwise goes while she's busy and the next cover is in reach and stops in cover at "흠";
   // grabs two. random: random presses and stops, now and then a random gadget.
-  botGo(tx, tz) { this.botDown = true; this.botTarget = new THREE.Vector2(tx, tz); }
-  botStop(down = false) { this.botDown = down; this.botTarget = down ? this.pos.clone() : null; }
+  botGo(tx, tz) { this.botDown = true; this.botFridge = false; this.botTarget = new THREE.Vector2(tx, tz); }
+  botStop(down = false) { this.botDown = down; this.botFridge = false; this.botTarget = down ? this.pos.clone() : null; }
   botStep(dt, mode) {
     if (this.result) { this.botStop(); this._endT = (this._endT || 0) + dt; if (this._endT > 1.6 && this.L.ui.panelOpen) { this._endT = 0; (this.result === 'win' ? this.nextBtn : this.againBtn)?.press(); } return; }
     if (!this.started) return;
@@ -657,7 +678,8 @@ export class Game {
     if ((st === 'rise' || (st === 'walk' && !away)) && this.hiddenAt(s)) { this.botStop(); return; }
     if (this.pos.distanceTo(this.fridgeAt) < .5 && this.snacks.length < 2) {
       const lit = this.fridgeLitBy(this.yawTo(this.fridgeAt.x, this.fridgeAt.y)), more = !danger && (away || !lit || (st === 'busy' && this.mT > 1.0));
-      if (more) { this.botStop(true); return; }        // keep pressing where you stand = grab
+      if (more) { this.botStop(true); this.botFridge = true; if (!this.doorOpen) this.setDoor(true); return; }   // open it and hold = grab
+      if (this.doorOpen) this.setDoor(false);
       if (this.fridgeOpen > .15 || !this.snacks.length) { this.botStop(); return; }   // let it shut / wait for a safe moment
     }
     if (!danger) {

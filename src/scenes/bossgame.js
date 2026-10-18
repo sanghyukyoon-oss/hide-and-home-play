@@ -20,6 +20,8 @@ const LOAD = {
   report: () => import('../bosses/report.js'), flashlight: () => import('../bosses/flashlight.js'),
   // 인계 4: 두더지 숨바꼭질 새 버전 (a 쉬어가기, played through this wrapper with interlude: true)
   whack: () => import('../bosses/whack.js'),
+  // 인계 5: 쉬어가기 4종 — 무궁화·바꿔치기를 새로 (옛 minis.js 것 대신), 소풍 보물찾기·이불 속 누구게? 새로
+  redlight: () => import('../bosses/redlight.js'), inky: () => import('../bosses/inky.js'), picnic: () => import('../bosses/picnic.js'), blanket: () => import('../bosses/blanket.js'),
 };
 // a game whose stylesheet does not come with it: linked here for the game's time on screen
 const SHEETS = { flashlight: new URL('../bosses/flashlight.css', import.meta.url).href };
@@ -27,6 +29,7 @@ export const BOSS_GAME_INFO = {
   yasik: { name: '엄마 몰래 야식' }, villa: { name: '몽글 빌라 방 배정' }, tag: { name: '다 잡았다! 술래잡기' },
   wakeup: { name: '아침 깨우기 장치' }, photo: { name: '찰칵! 동네 사진관' },
   hotel: { name: '몽글 호텔 X박 X일' }, churro: { name: '추로야!!!' }, report: { name: '엄마 몰래 성적표' }, flashlight: { name: '손전등 숨바꼭질' }, whack: { name: '두더지 숨바꼭질' },
+  redlight: { name: '무궁화 꽃이 피었습니다' }, inky: { name: '잉키의 바꿔치기' }, picnic: { name: '소풍 보물찾기' }, blanket: { name: '이불 속 누구게?' },
 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
 const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };
@@ -99,7 +102,8 @@ export class BossGameScene {
   }
   win(e) {
     const G = this.G; this.won = true;
-    const coins = this.interlude ? 40 + (e.stars || 0) * 15 : 150 + (e.stars || 0) * 30; G.addCoins(coins);
+    const st = e.max ? Math.round(3 * (e.stars || 0) / e.max) : Math.max(0, Math.min(3, e.stars || 0));   // (GPT QA 10/18 P2: hotel reported 45 of 48)
+    const coins = this.interlude ? 40 + st * 15 : 150 + st * 30; G.addCoins(coins);
     const done = G.save.bossDone || (G.save.bossDone = {}); done[(this.interlude ? 'm' : 'g') + this.after] = true; G.persist();
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
     G.ui.toast(this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
@@ -114,19 +118,23 @@ export class BossGameScene {
   finish() { this.G.go('stage', { idx: this.after + 1 }); }
   menu() {
     const G = this.G; if (G.ui.panelOpen) return;
+    this.menuOpen = true;
     G.ui.panel({ title: '잠깐!', color: 'purple', close: () => G.ui.closePanel(), body: [h('div', { class: 'txt' }, BOSS_GAME_INFO[this.kind].name)],
       buttons: [G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => { G.ui.closePanel(); G.go('home'); } }),
         G.ui.btn('건너뛰기', { color: 'gray', cls: 'sm', onClick: () => { G.ui.closePanel(); this.finish(); } }),
         G.ui.btn('계속', { color: 'green', icon: 'play', onClick: () => G.ui.closePanel() })] });
   }
   update(dt) {
+    if (this.menuOpen && this.G.ui.panelOpen) return;   // 잠깐! menu open: the game waits (GPT QA 10/18 P2)
+    this.menuOpen = false;
     this.t = (this.t || 0) + dt;
     this.game?.update(dt);
     // the win panel's next button reads the lab's '다음 밤 / 다음 빌라…': in the campaign it goes to the next stage
     const nb = this.game?.nextBtn; if ((this.won || this.passed) && nb && !nb._relabel) {
       nb._relabel = true; const l = nb.querySelector('.lbl'); if (l) l.textContent = '다음 판';
       // a lost interlude's big button was '다시 하기': here it goes on ('다시' still replays)
-      if (this.passed && !this.won) { nb.press = () => this.finish(); nb.addEventListener('pointerup', e => { e.stopImmediatePropagation(); this.finish(); }, { capture: true }); }
+      if (this.passed && !this.won) { nb.press = () => this.finish(); nb.addEventListener('pointerup', e => { e.stopImmediatePropagation(); this.finish(); }, { capture: true });
+        nb.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopImmediatePropagation(); this.finish(); } }, { capture: true }); }
     }
   }
   // QA bot: the game's own bot plays; a boss lost twice is skipped
@@ -139,7 +147,7 @@ export class BossGameScene {
     this.dead = true; const W = this.G.world;
     this.game?.exit?.();
     this.sheet?.remove(); this.sheet = null;
-    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night', 'wh');
+    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night', 'wh', 'rl', 'ik', 'tr', 'bk');
     Object.assign(W, { scheme: this._was.scheme, joyOn: this._was.joyOn, joyHidden: this._was.joyHidden, gaugeOn: this._was.gauge, camLock: this._was.camLock });
     W.onTap = null; W.onDragStart = null; W.onPad = null; W.onRotate = null;
     this.G.ui.clear();

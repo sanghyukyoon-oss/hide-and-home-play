@@ -152,7 +152,9 @@ const hashSave = (() => { if (!WEB || qs.has('reset')) return null; try { const 
 const storageOk = (() => { try { localStorage.setItem('sumbakkokjip.t', '1'); return localStorage.getItem('sumbakkokjip.t') === '1'; } catch { return false; } })();
 try { navigator.storage?.persist?.(); } catch {}   // ask the browser to keep this site's storage
 let stored = store.get(KEY, null);
-if (hashSave && (!stored || (hashSave.stage || 0) > (stored.stage || 0) || ((hashSave.stage || 0) === (stored.stage || 0) && (hashSave.coins || 0) > (stored.coins || 0)))) stored = hashSave;
+// which copy is newer: every save carries a revision (GPT QA 10/18 P1: an old bookmark with more coins rolled back later
+// purchases, furniture and collection) — the address only wins when it is newer, or when there is nothing in storage
+if (hashSave && (!stored || (hashSave.rev || 0) > (stored.rev || 0))) stored = hashSave;
 let save = migrate(stored);
 let hashT = 0;
 const saveToHash = () => { if (!WEB) return; clearTimeout(hashT); hashT = setTimeout(() => { try { history.replaceState(null, '', location.pathname + location.search + '#s=' + b64e(JSON.stringify(save))); } catch {} }, 400); };
@@ -178,7 +180,8 @@ const G = {
   world, ui, audio, save, thumbs: {}, scene: null, pending: null, bot: qs.has('bot'), botMode: qs.get('bot') === 'random' ? 'random' : 'smart', botErr: +(qs.get('err') ?? .25),
   timeScaleUser: 1, fast: +(qs.get('fast') || 1), hitstopUntil: 0, coinPills: [],
   stats: { cleared: 0, fails: 0, levelSecs: [], log: [], visits: 0, stageStart: 0 },
-  persist() { store.set(KEY, save); saveToHash(); },
+  // (practice runs from 놀이 모음 never reach storage: a reload mid-practice keeps the real save — GPT QA 10/18 P2)
+  persist() { if (G.playMode) return; save.rev = (save.rev || 0) + 1; store.set(KEY, save); saveToHash(); },
   storageOk,
   setBg([a, b]) { const app = document.getElementById('app'); app.style.setProperty('--bgA', a); app.style.setProperty('--bgB', b); },
   hitstop(sec) { G.hitstopUntil = performance.now() + sec * 1000; },
@@ -225,7 +228,7 @@ const G = {
     // 놀이 모음 practice: going on to a stage or home ends it — the save goes back to how it was, and the list opens again
     if (G.playMode && (name === 'stage' || name === 'home')) {
       const snap = JSON.parse(G.playMode.snap); for (const k of Object.keys(save)) delete save[k]; Object.assign(save, snap);
-      G.playMode = null; G.persist(); name = 'home'; data = { gallery: true };
+      G.playMode = null; name = 'home'; data = { gallery: true };   // (nothing to write: practice never persisted)
     }
     G.pending = name;
     audio.sfx('whoosh');
@@ -315,8 +318,9 @@ function buildThumbs() {
   world.joyOn = G.save.settings?.joy ?? world.scheme === 'D';
 }
 
-const galleryPlay = (id, k) => playGame(G, id, k);
-const PLAY_HASH = /^#play-(?:mini-)?([a-z]+)(?:-(\d+))?$/.exec(location.hash || '');
+// '#play-mini-<kind>' = the campaign's current (minis.js) version of a break game that also has a new one
+const PLAY_HASH = /^#play-(?:mini-)?([a-z][a-z0-9]*)(?:-(\d+))?$/.exec(location.hash || '');
+const galleryPlay = (id, k) => playGame(G, id, k, !!PLAY_HASH?.[0]?.startsWith('#play-mini-'));
 
 // ── loop
 let last = performance.now(), gameTime = 0, frames = 0, fpsNow = 60, fpsAcc = 0, fpsN = 0, updMs = 0, drawMs = 0, slow = 0, fast = 0, settleUntil = 0;
