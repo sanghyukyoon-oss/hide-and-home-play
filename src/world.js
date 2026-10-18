@@ -317,6 +317,9 @@ export class World {
     if (this.turnDial) {
       const on = this.scheme === 'F' && !this.joyHidden && !this.camLock;
       if (on !== this._tdShown) { this._tdShown = on; this.turnDial.classList.toggle('on', on); }
+      // until the player has tilted with the dial once, its idle arrows take turns (‹ › then ˄ ˅): it does both
+      // (user, 10/18: "회전은 수직 움직임도 가능하다는 걸 설명 해줘야할 듯"); remembered on this device
+      if (this._tdTeach === undefined) { try { this._tdTeach = localStorage.getItem('sbk-dial-tilt') !== '1'; } catch { this._tdTeach = true; } this.turnDial.classList.toggle('teach', this._tdTeach); }
       // the ruler moves under the thumb at the thumb's own speed: sideways as the room turns (ticks every 15°, pink ones =
       // the four diagonal views; a pink tick between the pointers = a diagonal view), its dashes up / down as it tilts
       if (on) { const ppr = Math.max(this.W, 360) / 3.6, T = this.turnDial;
@@ -522,6 +525,9 @@ export class World {
         const k = 3.6 / Math.max(this.W, 360), dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
         if (!this.camLock) this.turnAround(null, -dx * k, dy * k * .65);
         this._tdAx = this._domAxis(o, dx, dy); if (this._tdAx !== 'wait' && td.dataset.ax !== this._tdAx) td.dataset.ax = this._tdAx;
+        if (this._tdTeach && this._tdAx === 'y' && (o.ty = (o.ty || 0) + Math.abs(dy)) > 24) {   // a real tilt with the dial: learned
+          this._tdTeach = false; td.classList.remove('teach'); try { localStorage.setItem('sbk-dial-tilt', '1'); } catch {}
+        }
       });
       const tend = e => { e.stopPropagation(); if (e.pointerId === tid) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; } };
       td.addEventListener('pointerup', tend); td.addEventListener('pointercancel', tend); td.addEventListener('lostpointercapture', tend); }
