@@ -5,9 +5,11 @@ import { STYLE } from './gfx/kit.js';
 import { ToonPost } from './gfx/toonpost.js';
 import { DirtyTracker } from './gfx/dirty.js';
 import { ART, TUNE, applyArt, sortLayers } from './gfx/style.js';
+import { FEEL, haptic } from './feel.js';
 
 const V = new THREE.Vector3(), V2 = new THREE.Vector3();
 const SHADE_TINT = new THREE.Color('#c9c2ff');
+const TWIST = 1;          // F: which way a two-finger twist turns the room (checked so the room turns with the fingers)
 const B_WINDOW = 280;   // ms: how long a tap waits for a second press (one-hand scheme B)
 // a phone (touch, small screen): fewer supersampled pixels, a smaller shadow map, 30 fps while nothing is moving — it ran hot
 // and an iPhone 13 dropped the page in stage 1 (user, 10/18). The look stays: same lines, same light, same palette.
@@ -21,6 +23,31 @@ export const OPT_STORE = 'sbk-opt';   // the heat test build's on/off switch, ke
 const OPT_ON = QS.has('opt') ? QS.get('opt') !== '0' : (() => { try { return localStorage.getItem(OPT_STORE) !== '0'; } catch { return true; } })();
 export const OPT_IS_ON = OPT_ON;
 export const OPT = { dirty: OPT_ON && QS.get('dirty') !== '0', mask: OPT_ON && QS.get('mask') === '1', inval: OPT_ON && QS.get('inval') !== '0', depth0: OPT_ON && QS.get('cdepth') !== '1', sort: OPT_ON && QS.get('sort') !== '0', fpsCap: OPT_ON && QS.get('fpscap') !== '0' };
+// A see-through double-sided material makes three draw every mesh twice (back faces, then front) and flip .side with
+// needsUpdate in between — a full shader re-check twice a frame for each (the window sunlight patches). A flat mesh has
+// no back faces in front of its front faces, so one pass gives the same picture: switch it on when every mesh using
+// the material is flat (and back off the moment a non-flat one uses it).
+const _fa = new THREE.Vector3(), _fb = new THREE.Vector3(), _fc = new THREE.Vector3(), _fn = new THREE.Vector3();
+function isFlat(g) {
+  const p = g.attributes?.position; if (!p || p.count > 400) return false;
+  const ud = g.userData; if (ud._flatV === p.version) return ud._flat;
+  let flat = true, n = null, d = 0;
+  for (let i = 0; i + 2 < p.count && !n; i++) {
+    _fa.fromBufferAttribute(p, 0); _fb.fromBufferAttribute(p, i + 1); _fc.fromBufferAttribute(p, i + 2);
+    _fn.subVectors(_fb, _fa).cross(_fc.sub(_fa)); if (_fn.lengthSq() > 1e-12) { n = _fn.normalize().clone(); d = n.dot(_fa); }
+  }
+  if (!n) flat = false;
+  else for (let i = 0; i < p.count; i++) { _fa.fromBufferAttribute(p, i); if (Math.abs(n.dot(_fa) - d) > 1e-5) { flat = false; break; } }
+  ud._flatV = p.version; ud._flat = flat; return flat;
+}
+function flatOnePass(scene) {
+  const seen = new Map();
+  scene.traverse(o => {
+    const m = o.material; if (!o.isMesh || !m || Array.isArray(m) || !m.transparent || m.side !== THREE.DoubleSide) return;
+    const f = isFlat(o.geometry); seen.set(m, (seen.get(m) ?? true) && f);
+  });
+  for (const [m, f] of seen) if (m.forceSinglePass !== f) { m.forceSinglePass = f; m.needsUpdate = true; }
+}
 export function hasWebGL2() { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } }
 
 export class World {
@@ -61,10 +88,15 @@ export class World {
       this.dirty = new DirtyTracker(); this.styleGrad = STYLE.grad; this._culled = [];
       // a box redraw only issues draw calls for meshes whose screen box meets the box (layers 0 = skipped by the camera,
       // children still drawn); everything is put back right after the post's scene passes
+      this._cullM = [];
       this.post.cullFor = (b, on) => {
-        for (const [o, m] of this._culled) o.layers.mask = m; this._culled.length = 0;
+        const C = this._culled, M = this._cullM;
+        for (let i = 0; i < C.length; i++) C[i].layers.mask = M[i];
+        C.length = 0; M.length = 0;
         if (!on) return;
-        for (const [o, e] of this.dirty.objs) { const q = e.r; if (!q || q[2] <= b[0] || q[0] >= b[2] || q[3] <= b[1] || q[1] >= b[3]) { this._culled.push([o, o.layers.mask]); o.layers.mask = 0; } }
+        let hide = b._hide;   // a box is culled twice (colour, IDs): work the list out once
+        if (!hide) { hide = b._hide = []; for (const [o, e] of this.dirty.objs) { const q = e.r; if (!q || q[2] <= b[0] || q[0] >= b[2] || q[3] <= b[1] || q[1] >= b[3]) hide.push(o); } }
+        for (const o of hide) { C.push(o); M.push(o.layers.mask); o.layers.mask = 0; }
       };
     }
     // a lost-and-restored GPU context (iOS drops it under memory pressure or in the background): three re-creates its
@@ -84,7 +116,7 @@ export class World {
     this.snap = true; this.yawGoal = null;
     this.fx = new FX(fxCanvas);
     this.ptrs = new Map(); this.drag = null; this.onTap = null; this.onDragStart = null; this.inputEnabled = true;
-    this.stick = { x: 0, y: 0 }; this.keys = new Set(); this.joyOn = false; this.scheme = 'E'; this.eMode = 'move'; this.eBase = 'move'; this.oneMode = 'turn';   // C: a switch picks what one finger does   // A: one finger turns · B: one finger moves, tap-and-drag turns/zooms
+    this.stick = { x: 0, y: 0 }; this.keys = new Set(); this.joyOn = false; this.scheme = 'F'; this.eMode = 'move'; this.eBase = 'move'; this.oneMode = 'turn';   // C: a switch picks what one finger does   // A: one finger turns · B: one finger moves, tap-and-drag turns/zooms
     this._bindInput();
     this._bindJoystick();
     this.resize();
@@ -126,11 +158,38 @@ export class World {
     if (axis !== 'pitch') {
       this.rawYaw = (this.rawYaw ?? this.yaw) - dx * k;
       const nv = this.nearestView(this.rawYaw), d = this.rawYaw - nv, H = this.snap ? .22 : .08, B = this.snap ? .34 : .16, a = Math.abs(d);
-      const y = a < H ? nv : a < B ? nv + Math.sign(d) * (a - H) * B / (B - H) : this.rawYaw;
+      // 손맛 8: the room follows the finger exactly — no stop-then-jump near the four diagonal views (a notch is felt instead)
+      const y = FEEL.cleanturn && !this.snap ? this.rawYaw : a < H ? nv : a < B ? nv + Math.sign(d) * (a - H) * B / (B - H) : this.rawYaw;
       const dyaw = this.yaw - y; this.yaw = y; this.yawGoal = null; this.vYaw = 0;
-      if (dyaw) this.onRotate?.(dyaw);
+      if (dyaw) { this.onRotate?.(dyaw); this._notch(); }
     }
     if (axis !== 'yaw') this.pitch = clamp(this.pitch + dy * k * .65, this.minPitch, this.maxPitch);
+  }
+  // 손맛 8: passing one of the four diagonal views gives a small tick (feel the notch, nothing sticks)
+  _notch() {
+    if (!FEEL.cleanturn) return;
+    const q = Math.floor((this.yaw - Math.PI / 4) / (Math.PI / 2));
+    if (this._vq != null && q !== this._vq) { haptic(); const T = this.turnDial; if (T) { T.classList.remove('notch'); void T.offsetWidth; T.classList.add('notch'); } }
+    this._vq = q;
+  }
+  // the dial's ruler shows one direction at a time — whichever the thumb is moving more — while the camera itself turns
+  // and tilts freely, diagonals included (user, 10/18: "게이지 움직임만 대각선 금지고 카메라는 원래처럼 자유롭게"). The first
+  // ~5 px decide; later the other direction takes over only once it clearly leads (1.8x over the last few moves).
+  _domAxis(o, dx, dy) {
+    o.tsx = (o.tsx || 0) * .8 + dx; o.tsy = (o.tsy || 0) * .8 + dy;
+    const ax = Math.abs(o.tsx), ay = Math.abs(o.tsy);
+    if (!o.tAxis) { if (Math.hypot(ax, ay) >= 5) o.tAxis = ax >= ay ? 'x' : 'y'; }
+    else if (o.tAxis === 'x' && ay > ax * 1.8 && ay > 6) o.tAxis = 'y';
+    else if (o.tAxis === 'y' && ax > ay * 1.8 && ax > 6) o.tAxis = 'x';
+    return o.tAxis || 'wait';
+  }
+  // F: turn by exactly these angles round the spot P (null: round the middle of the view), P staying where it is on screen
+  turnAround(P, dyaw, dpitch = 0) {
+    this.updateCam(); const s0 = P && this.toScreen(P);
+    this.yaw += dyaw; this.rawYaw = this.yaw; this.yawGoal = null; this.vYaw = 0;
+    this.pitch = clamp(this.pitch + dpitch, this.minPitch, this.maxPitch);
+    if (P) { this.updateCam(); const after = this.screenToGround(s0.x, s0.y, P.y); if (after) { this.target.x += P.x - after.x; this.target.z += P.z - after.z; this.clampTarget(); } }
+    if (dyaw) { this.onRotate?.(-dyaw); this._notch(); }
   }
   clearTap() { if (this._pendTap) { clearTimeout(this._pendTap.timer); this._pendTap = null; } this._ring(null); this.eMode = this.eBase; this._lastTap = null; }
   // a little ring under the finger while tap-and-drag turns (↻) or zooms (±), so the mode is never a surprise
@@ -158,23 +217,45 @@ export class World {
     const after = this.screenToGround(cx, cy, this.target.y);
     if (before && after) { this.target.x += before.x - after.x; this.target.z += before.z - after.z; this.clampTarget(); }
   }
-  panBy(dx, dy) {
+  panBy(dx, dy, hard = false) {
     this.onPan?.(Math.hypot(dx, dy));
     const unitsPerPx = this.viewH / this.zoom / this.H;
     const right = V.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const fwd = V2.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     this.target.addScaledVector(right, -dx * unitsPerPx).addScaledVector(fwd, dy * unitsPerPx / Math.max(.4, Math.sin(this.pitch)));
-    this.clampTarget();
+    this.clampTarget(hard);
   }
-  clampTarget() {
+  // the box the view's centre may move in (around home; wider when zoomed in or on a wide map)
+  _box() {
     const b = this.bounds * Math.max(this.panFree ?? .45, 1 - 1 / this.zoom) + .01 + this.bounds * .35, sx = this.slack?.x || 0, sz = this.slack?.z || 0;
-    this.target.x = clamp(this.target.x, this.home.x - b - sx, this.home.x + b + sx);
-    this.target.z = clamp(this.target.z, this.home.z - b - sz, this.home.z + b + sz);
+    return [this.home.x - b - sx, this.home.x + b + sx, this.home.z - b - sz, this.home.z + b + sz];
+  }
+  // 손맛 4: a finger may pull the view past the edge; ~90 px of pull shows as ~30 px (rubber band), never more than ~60 px
+  _rbL() { return 90 * this.viewH / this.zoom / Math.max(this.H, 1); }
+  clampTarget(hard = false) {
+    const [x0, x1, z0, z1] = this._box(), t = this.target;
+    if (FEEL.rubber && !hard && (this.ptrs.size || this._rbOver)) {
+      const o = this._rbL() * 4;
+      t.x = clamp(t.x, x0 - o, x1 + o); t.z = clamp(t.z, z0 - o, z1 + o);
+      if (t.x < x0 || t.x > x1 || t.z < z0 || t.z > z1) this._rbOver = true;
+      return;
+    }
+    t.x = clamp(t.x, x0, x1); t.z = clamp(t.z, z0, z1);
+  }
+  // the centre as shown: past the edge (손맛 4) it only gives a little, harder the further it is pulled
+  _shownTarget() {
+    if (!this._rbOver) return this.target;
+    const [x0, x1, z0, z1] = this._box(), L = this._rbL(), t = this.target, s = this._rbT || (this._rbT = new THREE.Vector3());
+    const rub = o => L * (1 - 1 / (o * .55 / L + 1));
+    s.copy(t);
+    if (t.x < x0) s.x = x0 - rub(x0 - t.x); else if (t.x > x1) s.x = x1 + rub(t.x - x1);
+    if (t.z < z0) s.z = z0 - rub(z0 - t.z); else if (t.z > z1) s.z = z1 + rub(t.z - z1);
+    return s;
   }
   updateCam() {
-    const d = 40, cp = Math.cos(this.pitch);
-    this.cam.position.set(this.target.x + d * cp * Math.sin(this.yaw), this.target.y + d * Math.sin(this.pitch), this.target.z + d * cp * Math.cos(this.yaw));
-    this.cam.lookAt(this.target);
+    const d = 40, cp = Math.cos(this.pitch), T = this._shownTarget();
+    this.cam.position.set(T.x + d * cp * Math.sin(this.yaw), T.y + d * Math.sin(this.pitch), T.z + d * cp * Math.cos(this.yaw));
+    this.cam.lookAt(T);
     if (this.cam.zoom !== this.zoom) { this.cam.zoom = this.zoom; this.cam.updateProjectionMatrix(); }
     this.cam.updateMatrixWorld();
   }
@@ -202,10 +283,18 @@ export class World {
     this.flying = false;
   }
   update(dt) {
+    // 손맛 6: a finger resting on the glass keeps the full frame rate, so the first frame of the next drag is not late
+    if (FEEL.hold && this.ptrs.size) this.lastActive = performance.now();
+    // 손맛 4: let go past the edge → back inside in ~0.2 s
+    if (this._rbOver && !this.ptrs.size) {
+      const [x0, x1, z0, z1] = this._box(), t = this.target, cx = clamp(t.x, x0, x1), cz = clamp(t.z, z0, z1), k = 1 - Math.exp(-dt / .06);
+      t.x += (cx - t.x) * k; t.z += (cz - t.z) * k;
+      if (Math.abs(cx - t.x) + Math.abs(cz - t.z) < 1e-3) { t.x = cx; t.z = cz; this._rbOver = false; }
+    }
     // arrow / WASD keys move the view (PC), Q/E turn it
     const kx = (this.keys.has('ArrowRight') || this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('ArrowLeft') || this.keys.has('KeyA') ? 1 : 0);
     const ky = (this.keys.has('ArrowDown') || this.keys.has('KeyS') ? 1 : 0) - (this.keys.has('ArrowUp') || this.keys.has('KeyW') ? 1 : 0);
-    if (!this.camLock && (kx || ky)) { const sp = Math.min(this.W, this.H) * .95 * dt; this.panBy(-kx * sp, -ky * sp); }
+    if (!this.camLock && (kx || ky)) { const sp = Math.min(this.W, this.H) * .95 * dt; this.panBy(-kx * sp, -ky * sp, true); }
     const kr = (this.keys.has('KeyE') ? 1 : 0) - (this.keys.has('KeyQ') ? 1 : 0);
     if (!this.camLock && kr) { if (!this._keyTurn) { this._keyTurn = true; this.rawYaw = this.yaw; } this.turnBy(kr * 1.8 * dt * Math.max(this.W, 360) / 3.6, 0, 'yaw'); }
     else this._keyTurn = false;
@@ -218,12 +307,28 @@ export class World {
       const v = this._padV || 0, k = 1 - Math.exp(-dt / (want > v ? .1 : .06));
       this._padV = v + (want - v) * k; if (this._padV < .003 && !m) this._padV = 0;
       if (this.onPad) this.onPad(dir, this._padV, dt);   // a scene can drive something else with the pad (the boss stage's runner)
-      else if (!this.camLock && this._padV) { const sp = Math.min(this.W, this.H) * .62 * this._padV * dt; this.panBy(-dir[0] * sp, -dir[1] * sp); } }
+      else if (!this.camLock && this._padV) { const sp = Math.min(this.W, this.H) * .62 * this._padV * dt; this.panBy(-dir[0] * sp, -dir[1] * sp, true); } }
     if (this.zoomGauge) {
       const on = this.gaugeOn !== false && !this.joyHidden && !this.camLock;
       if (on !== this._zgShown) { this._zgShown = on; this.zoomGauge.classList.toggle('on', on); }
       if (on) { const k = Math.log(this.zoom / this.minZoom) / Math.log(this.maxZoom / this.minZoom), kk = clamp(isFinite(k) ? k : 0, 0, 1);
         if (Math.abs(kk - (this._zgK ?? -1)) > .002) { this._zgK = kk; this.zoomGauge.style.setProperty('--k', kk.toFixed(3)); } }
+    }
+    if (this.turnDial) {
+      const on = this.scheme === 'F' && !this.joyHidden && !this.camLock;
+      if (on !== this._tdShown) { this._tdShown = on; this.turnDial.classList.toggle('on', on); }
+      // the ruler moves under the thumb at the thumb's own speed: sideways as the room turns (ticks every 15°, pink ones =
+      // the four diagonal views; a pink tick between the pointers = a diagonal view), its dashes up / down as it tilts
+      if (on) { const ppr = Math.max(this.W, 360) / 3.6, T = this.turnDial;
+        if (!this._tdHeld && !this.ptrs.size) this._tdAx = null;
+        const ax = this._tdAx, c = 1 - Math.exp(-dt / .05);
+        this._tdY ??= this.yaw; this._tdP ??= this.pitch;
+        if (ax === 'x') this._tdY = this.yaw; else if (ax == null) this._tdY += (this.yaw - this._tdY) * c;
+        if (ax === 'y') this._tdP = this.pitch; else if (ax == null) this._tdP += (this.pitch - this._tdP) * c;
+        const off = (-(this._tdY - Math.PI / 4) * ppr % (ppr * Math.PI / 2)).toFixed(1), ky = (this._tdP * ppr / .65 % 10).toFixed(1);
+        if (ppr !== this._tdPpr) { this._tdPpr = ppr; T.style.setProperty('--mi', (ppr * Math.PI / 12).toFixed(2) + 'px'); T.style.setProperty('--ma', (ppr * Math.PI / 2).toFixed(2) + 'px'); }
+        if (off !== this._tdOff) { this._tdOff = off; T.style.setProperty('--off', off + 'px'); }
+        if (ky !== this._tdKy) { this._tdKy = ky; T.style.setProperty('--ky', ky + 'px'); } }
     }
     if (this.modeBadge) {
       const on = this.scheme === 'E' && !this.joyHidden && !this.camLock && !this.joyOn;
@@ -266,18 +371,64 @@ export class World {
     s.target.position.copy(this.home); s.target.updateMatrixWorld();
   }
   render() {
+    const unsquish = this._squish();
+    try { this._render(); } finally { unsquish?.(); }
+  }
+  // ── 손맛 7: what the finger presses dips a little and pops back on release. Only the drawing sees it — the object's
+  // own scale is put back right after each frame, so no animation or tap code ever reads a squashed value
+  _pressStart(x, y) {
+    clearTimeout(this._pressT);
+    if (!FEEL.press || !this.onPress) return;
+    // a short wait first: a drag that starts at once (a pan) never shows a dip
+    this._pressT = setTimeout(() => {
+      const dr = this.drag;
+      if (!FEEL.press || !dr || dr.moved || this.ptrs.size !== 1 || !this.onPress) return;
+      const hit = this.onPress(x, y); if (!hit?.obj) return;
+      this._press = { obj: hit.obj, m: hit.m || .06, t0: performance.now(), on: true };
+      this.lastActive = performance.now();
+    }, 40);
+  }
+  // bounce: a tap (pops back past its size and settles); otherwise it just eases back
+  _pressEnd(bounce = false) {
+    clearTimeout(this._pressT);
+    const P = this._press; if (!P || !P.on) return;
+    const now = performance.now(); P.a0 = this._pressA(P, now); P.on = false; P.t1 = now; P.bounce = bounce;
+  }
+  _pressA(P, now) {
+    if (P.on) { const k = Math.min(1, (now - P.t0) / 70); return 1 - (1 - k) * (1 - k); }
+    const t = (now - P.t1) / (P.bounce ? 240 : 90);
+    if (t >= 1) return null;
+    return P.bounce ? P.a0 * Math.cos(t * Math.PI * 1.5) * (1 - t) : P.a0 * (1 - t);
+  }
+  _squish() {
+    const P = this._press; if (!P) return null;
+    const a = this._pressA(P, performance.now()), o = P.obj;
+    if (a == null || !o.parent) { this._press = null; return null; }
+    const s = o.scale, sx = s.x, sy = s.y, sz = s.z, m = P.m * a;
+    s.set(sx * (1 + m * .55), sy * (1 - m), sz * (1 + m * .55)); o.updateMatrixWorld(true);
+    this.lastActive = performance.now();
+    return () => { s.set(sx, sy, sz); o.updateMatrixWorld(true); };
+  }
+  _render() {
     const ck = this.yaw.toFixed(4) + this.pitch.toFixed(4) + this.zoom.toFixed(4) + this.target.x.toFixed(3) + this.target.y.toFixed(3) + this.target.z.toFixed(3);
     if (ck !== this._ck) { this._ck = ck; this.lastActive = performance.now(); }   // the view is moving: full frame rate
     if (this.shadowDirty) { this.renderer.shadowMap.needsUpdate = true; this.shadowDirty = false; }
     if (this.post) {
       // outline groups + layers are refreshed every few frames (cheap: a few hundred nodes), or at once when asked
-      if (this.idsDirty || this.frameN++ % 8 === 0) { sortLayers(this.scene); this.post.assignIds(this.scene); this.idsDirty = false; }
+      if (this.idsDirty || this.frameN++ % 8 === 0) { sortLayers(this.scene); this.post.assignIds(this.scene); flatOnePass(this.scene); this.idsDirty = false; }
+      // world matrices once per frame: three would redo the whole scene's for every pass (colour, IDs, each box)
+      const sc = this.scene; sc.updateMatrixWorld(); sc.matrixWorldAutoUpdate = false;
+      try { this._renderPost(); } finally { sc.matrixWorldAutoUpdate = true; }
+    } else this.renderer.render(this.scene, this.cam);
+  }
+  _renderPost() {
+    {
       const plan = this.dirty?.plan(this, this.post);
       this.perf.frames++; this.perf.area += plan?.skip ? 0 : plan?.rects ? plan.area : 1;
       if (plan?.skip) this.perf.skips++; else if (plan?.rects) this.perf.parts++; else this.perf.fulls++;
       if (plan?.skip) return;   // nothing on screen changed: the canvas keeps the last frame, the GPU rests
       this.post.render(this.scene, this.cam, plan?.rects || null);
-    } else this.renderer.render(this.scene, this.cam);
+    }
   }
   // a theme's light: { amb, ambColor, sun, sunColor } (anything left out uses the house style); null = house style
   setLight(l) {
@@ -358,11 +509,27 @@ export class World {
     app.append(zg);
     // E: a small badge (where the pad would be) that shows what one finger is doing — move, or turn after a 2nd tap
     // tapping it picks what one finger does from now on (it stays until tapped again)
+    // F: the turn dial (돌림판) — slide it sideways and the room turns exactly as far as the thumb went, like spinning a
+    // turntable; slide it up / down to tilt. One hand, no mode, nothing moves after the thumb lifts.
+    const td = this.turnDial = document.createElement('div'); td.className = 'turndial';
+    td.innerHTML = '<i class="td-band"><i class="td-mi"></i><i class="td-ma"></i></i>' + ['l', 'r', 'lu', 'ld', 'ru', 'rd'].map(c => `<i class="td-ar td-${c}"></i>`).join('');
+    app.append(td);
+    { let tid = null, lx = 0, ly = 0; const o = {};
+      td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });
+      td.addEventListener('pointermove', e => {
+        e.stopPropagation(); if (e.pointerId !== tid) return;
+        if (e.pointerType === 'mouse' && e.buttons === 0) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; return; }
+        const k = 3.6 / Math.max(this.W, 360), dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
+        if (!this.camLock) this.turnAround(null, -dx * k, dy * k * .65);
+        this._tdAx = this._domAxis(o, dx, dy); if (this._tdAx !== 'wait' && td.dataset.ax !== this._tdAx) td.dataset.ax = this._tdAx;
+      });
+      const tend = e => { e.stopPropagation(); if (e.pointerId === tid) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; } };
+      td.addEventListener('pointerup', tend); td.addEventListener('pointercancel', tend); td.addEventListener('lostpointercapture', tend); }
     const mb = this.modeBadge = document.createElement('div'); mb.className = 'modebadge'; mb.innerHTML = '<span class="mt">회전</span><span class="mm">이동</span>'; app.append(mb);
     mb.addEventListener('pointerdown', e => {
       e.stopPropagation(); e.preventDefault();
       const m = e.target.closest('.mt') ? 'turn' : e.target.closest('.mm') ? 'move' : (this.eBase === 'turn' ? 'move' : 'turn');
-      this.eBase = this.eMode = m; navigator.vibrate?.(10); this.onModeSwitch?.(m);
+      this.eBase = this.eMode = m; if (FEEL.haptic) haptic(); else navigator.vibrate?.(10); this.onModeSwitch?.(m);
     });
     for (const ev of ['pointerup', 'pointermove']) mb.addEventListener(ev, e => e.stopPropagation());
     // C: a two-way switch (↻ turn | ✥ move) for what one finger does
@@ -422,12 +589,14 @@ export class World {
           if (pt) { clearTimeout(pt.timer); this._pendTap = null; if (!pt.instant) this.onTap?.(pt.x, pt.y); }   // a separate tap elsewhere: the waiting one happens now, never lost or late
           if (this.onDragStart) this.drag.custom = this.onDragStart(e.clientX, e.clientY);
         }
+        if (!this.drag.custom && !this.camLock) this._pressStart(e.clientX, e.clientY);
       } else if (this.ptrs.size === 2) {
+        this._pressEnd();
         if (this.drag?.custom?.cancel) this.drag.custom.cancel();
         if (this.drag) { this.drag.moved = true; this.drag.custom = null; }
         const [a, b] = [...this.ptrs.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        this.pinch = { d, mx, my, d0: d, tap: this.scheme === 'E' ? { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY } : null, zoomOn: this.scheme !== 'E', s2: { id: e.pointerId, x: e.clientX, y: e.clientY } };
+        this.pinch = { d, mx, my, d0: d, mx0: mx, my0: my, tap: this.scheme === 'E' ? { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY } : null, zoomOn: this.scheme !== 'E', s2: { id: e.pointerId, x: e.clientX, y: e.clientY } };
       }
     });
     el.addEventListener('pointermove', e => {
@@ -438,20 +607,48 @@ export class World {
         // two fingers move the view like a map: the spot between them stays under them (drag = move, spread = zoom)
         const [a, b] = [...this.ptrs.values()], P = this.pinch;
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        if (this.scheme === 'E') {
+        if (this.scheme === 'F') {
+          // F: spread = zoom, twist = turn (after ~12°, so a pinch never turns by accident), and the spot between the
+          // fingers travels with them — all at the same time, like a photo or a map
+          const ang = Math.atan2(b.y - a.y, b.x - a.x); P.ang ??= ang;
+          let da = ang - P.ang; da = Math.atan2(Math.sin(da), Math.cos(da)); P.ang = ang; P.tw = (P.tw || 0) + da;
+          if (!P.zoomOn && Math.abs(d - P.d0) > 16) { P.zoomOn = true; P.d = P.d0; }   // catch up the first 16 px
+          if (!P.twOn && Math.abs(P.tw) > .21) P.twOn = true;
+          if (!this.camLock) {
+            if (P.zoomOn) this.zoomAt(d / P.d, P.mx, P.my);
+            this.panBy(mx - P.mx, my - P.my);
+            if (P.twOn && da) this.turnAround(this.screenToGround(mx, my, this.target.y), TWIST * da);
+            this.zoomGoal = null;
+          }
+          if (!P.zoomOn) { Object.assign(P, { mx, my }); return; }
+        } else if (this.scheme === 'E') {
           // E: two fingers only zoom (spread / pinch), and only once they really spread — a quick second-finger tap
           // must not nudge the zoom
           if (P.tap) { const q = this.ptrs.get(P.tap.id); if (q && Math.hypot(q.x - P.tap.x, q.y - P.tap.y) > 14) P.tap = null; }
           const q2 = this.ptrs.get(P.s2?.id), moved2 = q2 ? Math.hypot(q2.x - P.s2.x, q2.y - P.s2.y) : 99;
-          if (!P.zoomOn && Math.abs(d - P.d0) > 16 && moved2 > 10) { P.zoomOn = true; P.tap = null; P.d = d; }
-          if (P.zoomOn && !this.camLock) { this.zoomAt(d / P.d, mx, my); this.zoomGoal = null; }
+          if (!P.zoomOn && Math.abs(d - P.d0) > 16 && moved2 > 10) {
+            P.zoomOn = true; P.tap = null;
+            // 손맛 5: start from where the fingers landed, not from here (the first 16 px of spread are not lost)
+            if (FEEL.pinch) { P.d = P.d0; P.mx = P.mx0; P.my = P.my0; } else P.d = d;
+          }
+          if (P.zoomOn && !this.camLock) {
+            // 손맛 5: zoom round the old midpoint, then carry that spot to the new midpoint — it stays between the fingers
+            if (FEEL.pinch) { this.zoomAt(d / P.d, P.mx, P.my); this.panBy(mx - P.mx, my - P.my); }
+            else this.zoomAt(d / P.d, mx, my);
+            this.zoomGoal = null;
+          }
         } else if (!this.camLock) { this.zoomAt(d / P.d, P.mx, P.my); this.panBy(mx - P.mx, my - P.my); this.zoomGoal = null; }
         Object.assign(P, { d, mx, my });
         return;
       }
       const dr = this.drag; if (!dr) return;
+      if (!dr.moved && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 9) {
+        dr.moved = true; this._pressEnd();
+        // 손맛 3: the first 9 px (still a possible tap) used to be dropped, so the view trailed the finger by that much
+        // for the whole drag; now the drag takes them too and the spot under the finger stays under it
+        if (FEEL.catchup && !dr.custom && !dr.second) { dr.lastX = p.x0; dr.lastY = p.y0; }
+      }
       const dx = e.clientX - dr.lastX, dy = e.clientY - dr.lastY;
-      if (!dr.moved && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 9) dr.moved = true;
       if (dr.moved) {
         if (dr.custom) dr.custom.move(e.clientX, e.clientY);
         // one finger turns the room (side to side) or tilts it (up and down), whichever the drag starts as;
@@ -462,7 +659,8 @@ export class World {
           this.turnBy(dx, dy, S2.mode); dr.turned = true;
           this._ring(e.clientX, e.clientY, S2.mode);
         }
-        else if (!this.camLock && (this.scheme === 'B' || (this.scheme === 'C' && this.oneMode === 'move')) && !(e.pointerType === 'mouse' && (e.buttons & 2))) this.panBy(dx, dy);
+        else if (!this.camLock && (this.scheme === 'B' || this.scheme === 'F' || (this.scheme === 'C' && this.oneMode === 'move')) && !(e.pointerType === 'mouse' && (e.buttons & 2))) this.panBy(dx, dy);
+        else if (!this.camLock && this.scheme === 'F') { const k = 3.6 / Math.max(this.W, 360); this.turnAround(null, -dx * k, dy * k * .65); this._tdAx = this._domAxis(dr, dx, dy); }
         else if (!this.camLock && (e.shiftKey || (e.pointerType === 'mouse' && (e.buttons & 2) && !(this.scheme === 'E' && (e.buttons & 1))))) { if (this.scheme === 'B') { if (!dr.axis) { dr.axis = 'yaw'; this.rawYaw = this.yaw; } this.turnBy(dx, dy, 'yaw'); } else this.panBy(dx, dy); }
         else if (!this.camLock && this.scheme === 'E') {
           // E: one finger moves the view; after a second-finger tap it turns round the middle of the screen; with the badge
@@ -492,11 +690,11 @@ export class World {
         // (user, 2026-10-17 evening: "톡 건들면 바뀌는데 떼면 다시 원래대로", the badge switch stays as it is)
         // a turn borrowed by the tap spins round the middle of the screen; a turn that is the badge's mode spins round
         // the spot under the finger (user, 10/17 night)
-        this.eMode = this.eMode === 'turn' ? 'move' : 'turn'; navigator.vibrate?.(10); if (this.drag) this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? null : undefined; this.rawYaw = this.yaw; this.onModeSwitch?.(this.eMode);
+        this.eMode = this.eMode === 'turn' ? 'move' : 'turn'; if (FEEL.haptic) haptic(); else navigator.vibrate?.(10); if (this.drag) this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? null : undefined; this.rawYaw = this.yaw; this.onModeSwitch?.(this.eMode);
       }
       this.ptrs.delete(e.pointerId);
       if (this.ptrs.size < 2) this.pinch = null;
-      if (this.ptrs.size === 0) this.eMode = this.eBase;
+      if (this.ptrs.size === 0) { this.eMode = this.eBase; this._pressEnd(!!this.drag && !this.drag.moved); }
       const dr = this.drag;
       // two fingers → one: carry on from where the remaining finger is now (not from before the pinch)
       if (this.ptrs.size === 1 && dr) { const q = [...this.ptrs.values()][0]; dr.lastX = q.x; dr.lastY = q.y; dr.t = performance.now(); dr.moved = true; dr.axis = null; q.x0 = q.x; q.y0 = q.y; }
@@ -522,7 +720,7 @@ export class World {
           }
           // a still press is a tap however slowly it is released; two quick taps in one place zoom there (or back out)
           const lt = this._lastTap;
-          if (this.scheme !== 'E' && lt && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
+          if (this.scheme !== 'E' && this.scheme !== 'F' && lt && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
             this._lastTap = null;
             if (this.zoom > 1.6) { this.zoomGoal = { z: 1, x: null }; }
             else this.zoomGoal = { z: Math.min(this.maxZoom, 2.6), x: e.clientX, y: e.clientY };
@@ -535,6 +733,7 @@ export class World {
     const cancel = e => {
       if (!this.ptrs.has(e.pointerId)) return;
       this.ptrs.delete(e.pointerId);
+      this._pressEnd();
       if (this.ptrs.size < 2) this.pinch = null;
       if (this.ptrs.size === 1 && this.drag) { const q = [...this.ptrs.values()][0]; Object.assign(this.drag, { lastX: q.x, lastY: q.y, t: performance.now(), vx: 0, pv: null, moved: true }); }
       if (this.ptrs.size === 0 && this.drag) { this.drag.custom?.cancel?.(); this.drag = null; this._ring(null); }

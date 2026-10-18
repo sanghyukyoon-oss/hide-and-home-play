@@ -828,7 +828,7 @@ export class Game {
     const looking = st === 'hmm' || st === 'turn' || st === 'look' || st === 'back' || st === 'sit', away = AWAY.has(st) && st !== 'sit';
     if (st === 'busy' && P.prev !== 'busy') P.backAt = this.t;
     P.prev = st;
-    const coming = st === 'hmm' && this.canSee(p.x, p.y, CROUCH_H, this.lookYaw, { half: this.lv.half * Math.PI / 180, range: this.lv.range });
+    const coming = (st === 'hmm' || st === 'turn') && this.canSee(p.x, p.y, CROUCH_H, this.lookYaw, { half: this.lv.half * Math.PI / 180, range: this.lv.range });
     const exposed = this.seen() || coming, covered = !away && !exposed && this.hidAt(p.x, p.y);
     const s = this.sOf(p), dir = this.snacks.length ? -1 : 1;
     const step = n => { P.step = n; P.stepT = this.t; };
@@ -871,11 +871,14 @@ export class Game {
     else if (away) { say = DO.away; more = DO.cover2; at = toward(dir > 0 ? this.total : 0); hand = 'hold'; kind = 'move'; }
     else {
       // the trip, while she watches TV: cover to cover; at the edge of cover, go only with time to cross the open floor
-      const n = this.nextStop(dir, s), need = n.gap / (SNEAK * (1 - this.snacks.length * .1)) + .9;
-      if (n.edge && st === 'busy' && this.mT < need) say = DO.edge;
-      else { say = this.t - P.backAt < 3.5 ? DO.now : P.step === 'home' ? DO.home : DO.go; more = DO.cover2; at = toward(n.s); hand = 'hold'; kind = 'move'; }   // ("지금이야!" just after she turns back: that's the moment)
+      // (the bots' rule: her countdown and most of the "흠…?" against the time to the next cover)
+      const n = this.nextStop(dir, s), v = SNEAK * (1 - this.snacks.length * .1), left = st === 'busy' ? this.mT + this.lv.tel * .8 : 9;
+      const inCover = !n.edge && n.gap === 0 && n.s !== (dir > 0 ? this.total : 0);
+      const ok = left >= (inCover ? Math.abs(n.s - s) + this.nextStop(dir, n.s).gap : n.gap) / v + .3;
+      if (n.edge && !ok) say = DO.edge;
+      else { say = ok && this.t - P.backAt < 3.5 ? DO.now : P.step === 'home' ? DO.home : DO.go; more = DO.cover2; at = toward(n.s); hand = 'hold'; kind = 'move'; }   // ("지금이야!" just after she turns back: that's the moment)
     }
-    if (P.easy && !exposed) P.easy = false;
+    if (P.easy && !exposed && (covered || st === 'busy')) P.easy = false;   // (the scare lasts till you're hidden or her look is over)
     // the line (a new one pops in), stuck → more and a ring on the spot
     const tip = this.prTip;
     if (say !== P.key) {
@@ -931,7 +934,7 @@ export class Game {
     if (this.pr) { L.log({ practice: 2 }); this.endPractice(); }
     L.audio.sfx('win'); this.me.setFace('happy'); this.me.pose = 'cheer'; L.world.fx.confetti(90);
     L.say(this.me, '냠냠… 성공!', 1500);
-    L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n });
+    L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n, stars: n, max: 3 });   // (stars: the snacks you brought back; the campaign's reward reads them)
     setTimeout(() => {
       if (this.dead) return;
       const h = L.h, last = this.lvIdx >= this.levelCount - 1;

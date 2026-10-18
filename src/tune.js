@@ -63,18 +63,16 @@ export function openTune(G, { onClose } = {}) {
     if (k === 'camPitch') { W.minPitch = Math.min(W.minPitch, v); W.maxPitch = Math.max(W.maxPitch, v); W.pitch = v; return; }
     apply(W, { [k]: v }); save();
   }
-  // the rotation joystick (몽글이 knob, bottom-left) can be switched off
+  // camera: the turn dial (default) or the second-finger tap — the only two left (10/18)
   const ST = G.save.settings || (G.save.settings = {});
-  const joyLbl = () => W.joyOn ? '이동 패드: 켜짐' : '이동 패드: 꺼짐';
-  const joyBtn = G.ui.btn(joyLbl(), { color: 'pink', cls: 'sm', onClick: () => { ST.joy = !W.joyOn; W.joyOn = ST.joy; G.persist(); joyBtn.querySelector('.lbl').textContent = joyLbl(); } });
-  const ctrlLbl = () => ({ D: '조작: 끌어 회전 · 패드 이동', B: '조작: B 한 손 (톡하고 끌면 회전)', C: '조작: C 스위치 (회전/이동 전환)' })[ST.ctrl] || '조작: 기본 (끌면 이동 · 다른 손 톡 = 회전)';
-  const ctrlBtn = G.ui.btn(ctrlLbl(), { color: 'purple', cls: 'sm', onClick: () => { ST.ctrl = { E: 'D', D: 'B', B: 'C', C: 'E' }[ST.ctrl || 'E']; W.scheme = ST.ctrl; if (ST.joy === undefined) W.joyOn = ST.ctrl === 'D'; G.persist(); ctrlBtn.querySelector('.lbl').textContent = ctrlLbl(); joyBtn.querySelector('.lbl').textContent = joyLbl(); } });
+  const ctrlLbl = () => ST.ctrl === 'E' ? '조작: 톡 (끌면 이동 · 다른 손 톡 = 회전)' : '조작: 기본 (끌면 이동 · 돌림판이나 두 손가락 비틀기 = 회전)';
+  const ctrlBtn = G.ui.btn(ctrlLbl(), { color: 'purple', cls: 'sm', onClick: () => { ST.ctrl = ST.ctrl === 'E' ? 'F' : 'E'; W.scheme = ST.ctrl; W.eMode = W.eBase = 'move'; G.persist(); ctrlBtn.querySelector('.lbl').textContent = ctrlLbl(); } });
   // quick switches for the two looks the user wanted to try: AO and the vinyl-toy sheen on characters
   const aoLbl = () => ART.ao > .001 ? 'AO: 켜짐' : 'AO: 꺼짐';
   const aoBtn = G.ui.btn(aoLbl(), { color: 'blue', cls: 'sm', onClick: () => { set('ao', ART.ao > .001 ? 0 : .5); aoBtn.querySelector('.lbl').textContent = aoLbl(); if (inputs.ao) { inputs.ao.inp.value = ART.ao; inputs.ao.val.textContent = (+ART.ao).toFixed(2); } } });
   const glLbl = () => ART.gloss ? '캐릭터 광택: 켜짐 (다음 화면부터)' : '캐릭터 광택: 꺼짐';
   const glBtn = G.ui.btn(glLbl(), { color: 'blue', cls: 'sm', onClick: () => { ART.gloss = ART.gloss ? 0 : .4; save(); glBtn.querySelector('.lbl').textContent = glLbl(); } });
-  body.append(h('div', { class: 'ghead' }, '조작'), h('div', { class: 'tbtns' }, ctrlBtn, joyBtn), h('div', { class: 'ghead' }, '룩 스위치'), h('div', { class: 'tbtns' }, aoBtn, glBtn));
+  body.append(h('div', { class: 'ghead' }, '조작'), h('div', { class: 'tbtns' }, ctrlBtn), h('div', { class: 'ghead' }, '룩 스위치'), h('div', { class: 'tbtns' }, aoBtn, glBtn));
   const copyArea = h('textarea', { class: 'copyarea', readonly: true }); copyArea.hidden = true;
   const btns = h('div', { class: 'tbtns' },
     G.ui.btn('값 복사', { color: 'green', cls: 'sm', onClick: () => {

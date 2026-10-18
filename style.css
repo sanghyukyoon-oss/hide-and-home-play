@@ -775,15 +775,6 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .ys-get-n { font-size: 20px; margin-top: 2px; }
 .ys-get-s { font-size: 14px; opacity: .8; margin-top: 4px; }
 @keyframes ysGet { from { transform: translate(-50%, -50%) scale(.6); } to { transform: translate(-50%, -50%) scale(1); } }
-/* 첫째 밤 연습 (10/18): the line under the top bar, a finger that presses and stays down, 안전 / 보여요 under 몽글이 */
-.tip.ys-tip { left: 50%; top: calc(148px + var(--safeT, 0px)); font-size: 19px; }
-.tip.ys-tip.ok { border-color: #7dffc4; }
-.tip.ys-tip.warn { border-color: #ff8aa0; background: rgba(120, 22, 56, .9); }
-.hand.hold { animation: handhold 1.5s ease-in-out infinite; }
-@keyframes handhold { 0%, 100% { transform: translate(-30%, -8%) scale(1); } 22%, 78% { transform: translate(-30%, 4%) scale(.86); } }
-.ys-tag { position: absolute; transform: translate(-50%, 0); z-index: 4; pointer-events: none; padding: 1px 10px 3px; border-radius: 999px; font-size: 14px; font-weight: 800; white-space: nowrap;
-  color: #12352a; background: #7dffc4; border: 2px solid #12352a; box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
-.ys-tag.seen { color: #fff; background: #ff5f7a; border-color: #5a1024; animation: ysBob .5s ease-in-out infinite; }
 
 /* ② 몽글 빌라 방 배정 */
 #app.vl { background: radial-gradient(circle at 82% 17%, #fff6d8 0 22px, rgba(255, 236, 190, .45) 23px 46px, rgba(255, 236, 190, 0) 47px), linear-gradient(180deg, #7f78d2 0%, #b49be0 38%, #ffc3a6 78%, #ffd9b8 100%); }
@@ -1147,3 +1138,51 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .r1-eyes b { font-size: 34px; -webkit-text-stroke-width: 5px; }
 .r1-eyes span { font-size: 56px; color: #ffe16b; -webkit-text-stroke-width: 6px; }
 .r1-eyes.out { opacity: 0; }
+
+/* F (the default camera since 10/18): the turn dial (돌림판). In the turn/move badge's place and size, shrinking with the rest of the HUD on a
+   phone (--hudz); drawn like the first, cleaner one (user 10/18: "이전에 빨간 게이지 있던거 깔끔했던거같은데"): a cream ruler,
+   ink ticks every 15°, pink ticks on the four diagonal views, two ink pointers in the middle. The ruler slides sideways
+   as the room turns and rides up / down as it tilts; while held, small arrows show which of the two the thumb is doing. */
+.turndial { position: absolute; right: 14px; bottom: calc(var(--joyB, 132px) + 24px + var(--safeB)); z-index: 12; display: none; width: 116px; height: 40px;
+  border-radius: 20px; background: #fffaf2; border: 3px solid var(--ink); border-bottom-width: 6px; box-shadow: inset 0 2px 0 #fff; overflow: hidden;
+  touch-action: none; pointer-events: auto; cursor: grab; user-select: none; -webkit-user-select: none; }
+.turndial.on { display: block; }
+.turndial.held { background: #ffeaf2; cursor: grabbing; }
+.turndial .td-band { position: absolute; left: 0; right: 0; top: 50%; height: 22px; margin-top: -11px; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 5%, #000 27%, #000 73%, transparent 95%); mask-image: linear-gradient(90deg, transparent 5%, #000 27%, #000 73%, transparent 95%); }
+.turndial .td-mi, .turndial .td-ma { position: absolute; inset: 0; background-repeat: repeat-x; background-position: calc(50% + var(--off, 0px)) 0; }
+/* the 15° ticks are dashed: the dashes run up / down with the tilt */
+.turndial .td-mi { background-size: var(--mi, 27px) 100%;
+  background-image: linear-gradient(90deg, transparent calc(50% - 1px), rgba(58, 36, 83, .42) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+  -webkit-mask-image: linear-gradient(180deg, #000 0 6px, transparent 6px); mask-image: linear-gradient(180deg, #000 0 6px, transparent 6px);
+  -webkit-mask-size: 100% 10px; mask-size: 100% 10px; -webkit-mask-position: 0 var(--ky, 0px); mask-position: 0 var(--ky, 0px); }
+.turndial .td-ma { background-size: var(--ma, 163px) 100%;
+  background-image: linear-gradient(90deg, transparent calc(50% - 2px), #ff6f9c calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)); }
+/* the pointers: ink notches top and bottom in the middle; they flash pink when a diagonal view passes */
+.turndial::before, .turndial::after { content: ''; position: absolute; left: 50%; margin-left: -6px; width: 0; height: 0; border: 6px solid transparent; pointer-events: none; z-index: 1; }
+.turndial::before { top: -1px; border-top: 7px solid var(--ink); border-bottom-width: 0; }
+.turndial::after { bottom: -1px; border-bottom: 7px solid var(--ink); border-top-width: 0; }
+.turndial.notch::before { animation: tdPtrT .35s ease-out; } .turndial.notch::after { animation: tdPtrB .35s ease-out; }
+@keyframes tdPtrT { 0%, 40% { border-top-color: #ff6f9c; } }
+@keyframes tdPtrB { 0%, 40% { border-bottom-color: #ff6f9c; } }
+/* while held, pink arrows at both ends say which one the thumb is doing: ‹ › turn, ˄ ˅ tilt */
+.turndial .td-ar { position: absolute; width: 0; height: 0; border: 5px solid transparent; opacity: 0; pointer-events: none; transition: opacity .12s; }
+.turndial .td-l { left: 8px; top: 50%; margin-top: -5px; border-right: 6px solid #ff6f9c; border-left-width: 0; }
+.turndial .td-r { right: 8px; top: 50%; margin-top: -5px; border-left: 6px solid #ff6f9c; border-right-width: 0; }
+.turndial :is(.td-lu, .td-ru) { top: 50%; margin-top: -9px; border-bottom: 6px solid #ff6f9c; border-top-width: 0; }
+.turndial :is(.td-ld, .td-rd) { top: 50%; margin-top: 3px; border-top: 6px solid #ff6f9c; border-bottom-width: 0; }
+.turndial :is(.td-lu, .td-ld) { left: 7px; } .turndial :is(.td-ru, .td-rd) { right: 7px; }
+.turndial[data-ax="x"] :is(.td-l, .td-r), .turndial[data-ax="y"] :is(.td-lu, .td-ld, .td-ru, .td-rd) { opacity: 1; }
+#app[data-scene="stage"] .turndial, #app[data-scene="boss"] .turndial {
+  zoom: var(--hudz); --safeB: calc(env(safe-area-inset-bottom, 0px) / var(--hudz)); }
+#app.cine .turndial { opacity: 0; transition: opacity .3s var(--eo); pointer-events: none; }
+
+/* ① 엄마 몰래 야식 — 첫째 밤 연습 (10/18): the line under the top bar, a finger that presses and stays down, 안전 / 보여요 under 몽글이 */
+.tip.ys-tip { left: 50%; top: calc(148px + var(--safeT, 0px)); font-size: 19px; }
+.tip.ys-tip.ok { border-color: #7dffc4; }
+.tip.ys-tip.warn { border-color: #ff8aa0; background: rgba(120, 22, 56, .9); }
+.hand.hold { animation: handhold 1.5s ease-in-out infinite; }
+@keyframes handhold { 0%, 100% { transform: translate(-30%, -8%) scale(1); } 22%, 78% { transform: translate(-30%, 4%) scale(.86); } }
+.ys-tag { position: absolute; transform: translate(-50%, 0); z-index: 4; pointer-events: none; padding: 1px 10px 3px; border-radius: 999px; font-size: 14px; font-weight: 800; white-space: nowrap;
+  color: #12352a; background: #7dffc4; border: 2px solid #12352a; box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
+.ys-tag.seen { color: #fff; background: #ff5f7a; border-color: #5a1024; animation: ysBob .5s ease-in-out infinite; }

@@ -19,6 +19,7 @@ export class DirtyTracker {
     this.objs = new Map();    // mesh → { s: Float64Array, r: [x0,y0,x1,y1] | null, f: frame }
     this.frame = 0;
     this.stats = { full: 0, part: 0, skip: 0, area: 0 };
+    this.scr = new Float64Array(SIG);   // scratch fingerprint (no garbage per mesh per frame)
   }
   invalidate() { this.still = false; this.g = null; }
   // global fingerprint: anything that changes every pixel at once
@@ -42,8 +43,7 @@ export class DirtyTracker {
     // AO (세팅 panel) samples far past the outline's reach, so a box redraw would leave its old shading at the box
     // edges: whole frames only while it is on (GPT review 10/18: up to 2/255 off with AO .65)
     if (post.u.aoStr.value > .001 && !post.pixelArt) { this.still = false; this.stats.full++; return { full: true }; }
-    const scene = world.scene, cam = world.cam;
-    scene.updateMatrixWorld();
+    const scene = world.scene, cam = world.cam;   // (world matrices: World.render updated them for this frame)
     const W = post.color.width, H = post.color.height;
     M.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
     const first = !this.still, rects = [], f = this.frame, objs = this.objs;
@@ -57,11 +57,11 @@ export class DirtyTracker {
         return;
       }
       if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine) || !(o.layers.mask & 5)) return;
-      const s = this._sig(o);
+      const s = this._sig(o, this.scr);
       let e = objs.get(o);
-      if (!e) { e = { s, r: box(o), f }; objs.set(o, e); if (!first && e.r) rects.push(e.r); return; }
+      if (!e) { e = { s: s.slice(), r: box(o), f }; objs.set(o, e); if (!first && e.r) rects.push(e.r); return; }
       e.f = f;
-      if (!same32(e.s, s)) { e.s = s; const r = box(o); if (e.r) rects.push(e.r); if (r) rects.push(r); e.r = r; }
+      if (!same32(e.s, s)) { e.s.set(s); const r = box(o); if (e.r) rects.push(e.r); if (r) rects.push(r); e.r = r; }
     });
     // gone (removed or hidden): its last box
     for (const [o, e] of objs) if (e.f !== f) { if (e.r) rects.push(e.r); objs.delete(o); }
@@ -70,7 +70,7 @@ export class DirtyTracker {
     // (the fingerprints taken above are this frame's, so the next still frame can go back to boxes)
     if (first || !lit) { this.still = true; this.stats.full++; return { full: true }; }
     if (!rects.length) { this.stats.skip++; return { skip: true }; }
-    const merged = mergeRects(rects, W, H);
+    const merged = mergeRects(rects);
     const area = merged.reduce((a, r) => a + (r[2] - r[0]) * (r[3] - r[1]), 0) / (W * H);
     this.stats.area = area;
     if (area > .55) { this.stats.full++; return { full: true }; }
@@ -92,8 +92,8 @@ export class DirtyTracker {
     x0 = Math.max(0, Math.floor(x0) - 2); y0 = Math.max(0, Math.floor(y0) - 2); x1 = Math.min(W, Math.ceil(x1) + 2); y1 = Math.min(H, Math.ceil(y1) + 2);
     return x1 > x0 && y1 > y0 ? [x0, y0, x1, y1] : null;
   }
-  _sig(o) {
-    const s = new Float64Array(SIG), e = o.matrixWorld.elements;
+  _sig(o, s) {
+    s.fill(0); const e = o.matrixWorld.elements;
     for (let i = 0; i < 16; i++) s[i] = e[i];
     const ms = Array.isArray(o.material) ? o.material : [o.material];
     let k = 16;
@@ -124,19 +124,29 @@ export class DirtyTracker {
 }
 function verOf(g) { const p = g.attributes?.position; return (p ? p.version : 0) + (g.index ? g.index.version * 1e4 : 0); }
 function same32(a, b) { for (let i = 0; i < SIG; i++) if (a[i] !== b[i]) return false; return true; }
-// merge boxes that overlap or nearly touch (each merge only when it doesn't waste much area), few big draws beat many tiny
-function mergeRects(rs, W, H) {
+// merge boxes that overlap or nearly touch, then keep merging the pair that grows the least until at most MAXR are
+// left: every box is one more pass over the whole scene for three (colour + IDs), so a few slightly bigger boxes cost
+// the phone's CPU far less than many tight ones (stage 20 had 6–7 a frame). In place, no garbage.
+const MAXR = 3;
+function mergeRects(rs) {
   const out = rs.map(r => r.slice());
-  const ar = r => (r[2] - r[0]) * (r[3] - r[1]);
-  let again = true;
-  while (again) {
+  const ar = (x0, y0, x1, y1) => (x1 - x0) * (y1 - y0);
+  const join = (i, j) => { const a = out[i], b = out[j]; a[0] = Math.min(a[0], b[0]); a[1] = Math.min(a[1], b[1]); a[2] = Math.max(a[2], b[2]); a[3] = Math.max(a[3], b[3]); out[j] = out[out.length - 1]; out.pop(); };
+  for (let again = true; again;) {
     again = false;
     for (let i = 0; i < out.length && !again; i++) for (let j = i + 1; j < out.length; j++) {
       const a = out[i], b = out[j];
-      const u = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
-      const near = a[0] <= b[2] + 24 && b[0] <= a[2] + 24 && a[1] <= b[3] + 24 && b[1] <= a[3] + 24;
-      if (near || ar(u) <= (ar(a) + ar(b)) * 1.25 + 4096) { out[i] = u; out.splice(j, 1); again = true; break; }
+      if (a[0] <= b[2] + 24 && b[0] <= a[2] + 24 && a[1] <= b[3] + 24 && b[1] <= a[3] + 24) { join(i, j); again = true; break; }
     }
   }
-  return out.slice(0, 64);
+  while (out.length > MAXR) {
+    let bi = 0, bj = 1, best = Infinity;
+    for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) {
+      const a = out[i], b = out[j];
+      const grow = ar(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])) - ar(a[0], a[1], a[2], a[3]) - ar(b[0], b[1], b[2], b[3]);
+      if (grow < best) { best = grow; bi = i; bj = j; }
+    }
+    join(bi, bj);
+  }
+  return out;
 }

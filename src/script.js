@@ -109,8 +109,51 @@ const FR = {
 const ANY = { hide: K('숨는다~!', 'Hiding~!'), intro: [[L('?', '숨바꼭질 하자! 내가 숨을게~', "Let's play hide-and-seek! I'll hide~")]],
   found: [L('?', '들켰다~! 어떻게 찾았어?!', 'Busted~! How did you find me?!'), L('?', '다음에도 같이 놀자!', "Let's play again next time!")],
   clue: [K('헉, 그걸 찾았어?!', 'Whoa, you found that?!')], lock: [K('어, 어? 거기 열면 안 돼~', "W-wait, don't open that~")], stuck: [K('킥킥…', 'Hee hee…')] };
+// The friends who host many stages (70판 대본 점검 10/18: 멍뭉이 8번, 판다 6번…) get more meetings, each intro paired with
+// its own reveal (the same index), so a joke set up when they hide is the one paid off when they're found. Index 0 is the
+// first meeting; after that they go round in order.
+const MORE = {
+  shiba: { intro: [
+      [L('shiba', '순찰 중엔 잠복이 기본이지. 나 찾아 봐!', 'On patrol, you stake out. Come find me!')],
+      [L('shiba', '오늘은 꼬리에 리본 묶었어. 무거워서 안 흔들릴걸?', "I tied a ribbon on my tail. Too heavy to wag, I bet."), L('mong', '…리본이 더 눈에 띄어.', "…The ribbon's even easier to spot.")],
+      [L('shiba', '킁… 너한테서 간식 냄새 나. 찾으면 그거 줘!', 'Sniff… you smell like snacks. Find me and hand them over!')],
+      [L('shiba', '이번엔 진짜 진짜 조용히. …멍.', 'Really, really quiet this time. …Woof.')],
+      [L('shiba', '마지막 순찰 코스야. 여기서 숨바꼭질 한 판!', 'Last stop on the patrol route. One round here!')]],
+    reveals: [null, [L('shiba', '멍! 꼬리야, 약속했잖아…', 'Woof! Tail, we had a deal…'), L('shiba', '…그래도 3초는 참았어.', '…I held still for three seconds, though.')],
+      [L('shiba', '킁, 잠복 실패.', 'Sniff. Stakeout failed.'), L('shiba', '너 탐정 해도 되겠다. 순찰 파트너로 임명!', "You could be a detective. You're my patrol partner now!")],
+      [L('shiba', '리본이 문제였어…', 'The ribbon was the problem…'), L('shiba', '내일은 꼬리를 주머니에 넣어 올게.', "Tomorrow I'll bring my tail in a pocket.")],
+      [L('shiba', '멍! 졌다. 간식은 네 거야.', 'Woof! You win. The snacks are yours.'), L('shiba', '…냄새만 맡을게.', "…I'll just smell them.")],
+      [L('shiba', '방금 멍 해서 들킨 거지?', 'I gave myself away with that woof, didn\'t I?'), L('shiba', '순찰 일지에 적어 둬야지. 「오늘도 들킴」.', "I'll log it in my patrol diary: 'Caught again.'")],
+      [L('shiba', '멍멍! 순찰 끝!', 'Woof woof! Patrol complete!'), L('shiba', '오늘도 같이 돌아 줘서 고마워.', 'Thanks for walking the route with me again.')]] },
+  panda: { intro: [
+      [L('panda', '흑백 무늬라 그늘에선 안 보일걸.', 'With black-and-white fur, I vanish in the shade.')],
+      [L('panda', '산에선 소리가 멀리 가. 귀를 잘 기울여.', 'Sounds carry far on a mountain. Listen closely.')],
+      [L('panda', '여기서 꼭대기까지 금방이야. 마지막 연습!', "It's not far to the top from here. One last practice!")],
+      [L('panda', '오두막은 숨을 데가 많아. 천천히 둘러봐.', 'The cabin has lots of hiding spots. Take a slow look.')]],
+    reveals: [null, [L('panda', '오, 왔구나. 딱 좋은 속도야.', "Oh, you're here. Just the right speed."), L('panda', '기다리는 것도 숨바꼭질이야.', 'Waiting is part of hide-and-seek, too.')],
+      [L('panda', '그늘에서도 찾네. 눈이 좋구나.', 'You found me even in the shade. Good eyes.'), L('panda', '…어릴 때 그 애도 그늘을 좋아했는데.', '…That kid back then liked the shade, too.')],
+      [L('panda', '아삭 소리 때문이지? 대나무는 못 참겠어.', "It was the crunching, right? I can't resist bamboo."), L('panda', '다음엔 씹지 않고 기다릴게.', "Next time I'll wait without chewing.")],
+      [L('panda', '좋아. 이제 꼭대기에 가도 되겠다.', "Good. You're ready for the top."), L('panda', '거기 묻은 거, 너한테 꼭 보여 주고 싶어.', 'I really want to show you what we buried there.')],
+      [L('panda', '찾았다. 역시 너야.', "Found me. Of course it's you."), L('panda', '…다 같이 찾으러 오는 거, 좋다.', '…I like it when everyone comes looking.')]] },
+  frog: { intro: [
+      [L('frog', '개굴! 밤엔 개구리 세상이야. 못 찾을걸!', "Ribbit! Night belongs to frogs. You won't find me!")],
+      [L('frog', '큰 공원이다! 연못이 있으니까 내가 유리해!', "Big park! There's a pond, so I've got the edge!")]],
+    reveals: [null, [L('frog', '거품 연습은… 실패야.', 'Bubble practice… failed.'), L('frog', '한 판 더! 다음엔 진짜야!', 'One more! For real next time!')],
+      [L('frog', '개굴?! 밤에도 보여?', 'Ribbit?! You can see me at night?'), L('frog', '…야광 개구리였나 봐, 나.', "…Guess I'm a glow-in-the-dark frog.")],
+      [L('frog', '연못만 쳐다보다가 들켰어…', 'I got caught staring at the pond…'), L('frog', '그래도 이번 판은 재밌었다, 개굴!', 'Still, that was a fun round. Ribbit!')]] },
+  bear: { reveals: [null, [L('bear', '으헤헤… 또 졸았어.', 'Heh heh… dozed off again.'), L('bear', '…베개가 너무 푹신했어.', '…The pillow was too soft.')],
+      [L('bear', '으헤헤, 꿀 냄새 때문이지?', 'Heh heh, it was the honey smell, right?'), L('bear', '반 숟갈씩 나눠 먹자.', 'Half a spoon each.')]] },
+  nerd: { intro: [[L('nerd', '흠. 정전도 변수일 뿐이지.', 'Hm. A blackout is just another variable.')]],
+    reveals: [null, [L('nerd', '놀랍군. 이 빌딩 퍼즐, 거의 다 풀었어.', "Remarkable. You've nearly solved the whole building."), L('nerd', '마지막 층에서 기다리지.', "I'll be waiting on the last floor.")],
+      [L('nerd', '어둠 속에서도 찾다니. 계산 밖이야.', 'Even in the dark. Outside my calculations.'), L('nerd', '…솔직히 이런 친구, 처음이야.', "…Honestly, I've never had a friend like you.")]] },
+  dj: { reveals: [null, [L('dj', '볼륨은 줄였는데 심장 소리가 커서…', 'I turned the volume down, but my heartbeat was so loud…'), L('dj', '다음 곡 제목은 「또 찾았다」!', "Next track: 'Found You Again'!")]] },
+  sundae: { reveals: [null, [L('sundae', '시원한 데도 금방 찾네!', 'You found me even somewhere cool!'), L('sundae', '다음엔 냉동고에 숨을까… 아니, 그건 너무 추워.', 'Maybe the freezer next time… no, too cold.')]] },
+};
+for (const [k, m] of Object.entries(MORE)) { if (m.intro) FR[k].intro.push(...m.intro); if (m.reveals) FR[k].reveals = m.reveals; }
 const fr = k => FR[k] || ANY;
 const as = (lines, who) => lines.map(l => (l.who === '?' ? { ...l, who } : l));
+// which of a friend's meetings this is → which intro (and its paired reveal): the first once, then the rest in turn
+const turn = (n, len) => (n === 0 || len < 2 ? 0 : 1 + ((n - 1) % (len - 1)));
 K('숨는다~!', 'Hiding~!');
 export const BONUS_SAY = [K('그것도 찾았어? 눈 좋다!', 'You found that too? Sharp eyes!'), K('앗, 그거 내 보물인데!', "Hey, that's my treasure!")];
 
@@ -344,6 +387,45 @@ const MINI = {
   'lamp:boss': [L('nerd', '불 끄고 손전등 술래. 이번엔 여덟 명이야.', 'Lights off, flashlight tag. Eight of us this time.'), L('raccoon', '나도 숨는다~ 가짜도 섞어 놨지롱.', "I'm hiding too~ And I mixed in some fakes."), L('mong', '…다 찾을게.', "…I'll find all of you.")],
 };
 export const miniLead = (kind, boss) => MINI[kind + (boss ? ':boss' : '')] || null;
+
+// ── R1 몰래 숨기 (레벨 보고서 R1, ?hide=1 시제품 — stage.js r1Hide / r1Trail / r1Wrong): you can't watch them hide any more.
+// The friend talks from the hideout in their own way: ready, a wrong spot ("여긴 없지롱"), the real spot's tell, close by.
+export const R1 = { close: K('눈 감아! 엿보면 안 돼!', 'Close your eyes! No peeking!'), nums: [K('하나', 'One'), K('둘', 'Two'), K('셋', 'Three')] };
+// [hidden (from the hideout, after 셋), wrong (a wrong spot was opened), near (3 wrong: close by), trail (몽글이, first look at the trail)]
+const R1F = {
+  bunny: [['다 숨었다~! (킥)', 'All hidden~! (hee)'], ['여긴 아니지롱~ 킥', 'Not there~ hee'], ['흡, 가, 가까워…!', "Mmph, y-you're close…!"], ['…부스러기. 토순이가 흘렸네.', '…Crumbs. Bunbun dropped them.']],
+  bear: [['다 숨었어… 으헤헤…', 'All hidden… heh heh…'], ['거긴… 쿨… 아니야…', 'Not… zzz… there…'], ['으헤헤, 꿀 냄새 나지?', 'Heh heh, smell the honey?'], ['…부스러기. 곰돌이는 먹으면서 숨는구나.', '…Crumbs. Bearie snacks while hiding.']],
+  frog: [['개굴! 준비 완료!', 'Ribbit! Ready!'], ['개굴~ 거긴 마른 데잖아!', "Ribbit~ that spot's dry!"], ['개, 개굴… 물 튀었나?', 'R-ribbit… did I splash?'], ['…젖은 발자국. 개굴이다.', "…Wet footprints. That's Froggy."]],
+  peng: [['펭! 1등 자리 확보!', 'Peng! Number-one spot secured!'], ['펭! 거긴 너무 따뜻해!', "Peng! That spot's way too warm!"], ['비결 1번… 숨 참기…', 'Tip one… hold your breath…'], ['…바닥이 살짝 차가워. 펭펭이 지나갔어.', '…The floor is a little cold. Pengpeng went by.']],
+  cat: [['…다 숨었다냥.', '…Hidden.'], ['흥. 거긴 내 자리가 아니다냥.', "Hmph. That's not my spot."], ['…꼬리 안 나왔지?', "…My tail's not showing, right?"], ['…털. 냥냥이 거.', "…Fur. That's Nyannyan's."]],
+  shiba: [['숨었어! 조용히! …멍!', 'Hidden! Quietly! …Woof!'], ['킁… 거긴 냄새도 안 나잖아!', "Sniff… that spot doesn't even smell!"], ['꼬리야, 가만있어…!', 'Tail, stay still…!'], ['…간식 부스러기. 멍뭉이는 못 참지.', "…Snack crumbs. Woofy can't resist."]],
+  grumpy: [['…됐어. 찾든가.', "…Done. Find me or don't."], ['틀렸어. …한 번 더 해도 돼.', 'Wrong. …You can try again.'], ['흥, 거의 다 왔네.', 'Hmph. Almost.'], ['…부스러기. 일부러 흘린 것 같은데.', '…Crumbs. Looks like they were dropped on purpose.']],
+  squirrel: [['다 숨었어! 나까지!', 'All hidden! Me too!'], ['거긴 도토리만 있지롱!', 'Only acorns there!'], ['헉, 내 비상식량 근처야!', "Eek, that's near my snack stash!"], ['…도토리 껍질. 다람이 길이다.', "…Acorn shells. Chippy's trail."]],
+  hamster: [['웁웁! 됐어!', 'Mmf mmf! Ready!'], ['웁! 거긴 씨앗만 있어!', 'Mmf! Only seeds there!'], ['볼이… 빵빵해서… 들킬 것 같아…', "My cheeks… too full… gonna get caught…"], ['…씨앗 껍질. 햄찌다.', "…Seed shells. That's Hammy."]],
+  sundae: [['다 숨었어~ 녹기 전에 와!', 'All hidden~ Come before I melt!'], ['거긴 아니야~ 빨리빨리!', 'Not there~ Hurry, hurry!'], ['맞아, 시원한 쪽!', 'Yes, the cool side!'], ['…끈적한 시럽 자국.', '…A sticky syrup trail.']],
+  skater: [['요! 착지 완료!', 'Yo! Landed it!'], ['거긴 보드도 없잖아~', 'No board over there~'], ['와우, 거의 킥플립 속도다!', 'Whoa, almost kickflip speed!'], ['…바퀴 자국.', '…Wheel tracks.']],
+  panda: [['숨었어. 천천히 와.', 'Hidden. Come slowly.'], ['거긴 아니야. 천천히 해.', 'Not there. Take your time.'], ['오, 가까워. 기다릴게.', "Ooh, close. I'll wait."], ['…대나무 잎.', '…A bamboo leaf.']],
+  sleepy: [['숨었어… 이제… 잘게…', 'Hidden… now… nap…'], ['거기… 아니야… 쿨…', 'Not… there… zzz…'], ['음냐… 발소리… 가깝다…', 'Mmh… footsteps… close…'], ['…하품 소리가 저쪽에서 났어.', '…A yawn, from over there.']],
+  robot: [['삐빅. 은신 완료.', 'BEEP. Stealth complete.'], ['삐빅. 오답. 재탐색 권장.', 'BEEP. Wrong. Recommend new search.'], ['삐빅. 거리 1미터 이내.', 'BEEP. Distance under one meter.'], ['…나사 하나. 큐브봇이다.', "…A loose screw. That's Cubebot."]],
+  nerd: [['흠. 준비됐다.', 'Hm. Ready.'], ['흠. 논리적으로 다시 생각해 봐.', 'Hm. Think it through again.'], ['흠, 그 근처가 합리적이지.', 'Hm, that area is the logical choice.'], ['…연필 자국. 박사님 계산 메모.', "…Pencil marks. Doc's math notes."]],
+  dj: [['둠칫! 셋업 끝!', 'Boom-tss! Setup done!'], ['거긴 비트가 안 들리잖아!', "Can't hear the beat there!"], ['볼륨 줄여야 하나…', 'Should I turn it down…'], ['…음표 스티커.', '…A music-note sticker.']],
+};
+const R1_ANY = [['다 숨었다~!', 'All hidden~!'], ['여긴 없지롱~', 'Not here~'], ['히히~ 여기 근처야!', "Hee hee~ I'm close by!"], ['…부스러기가 저쪽으로 이어져.', '…Crumbs, leading that way.']];
+for (const v of [...Object.values(R1F), R1_ANY]) for (const [ko, en] of v) K(ko, en);
+const R1_AT = { hidden: 0, wrong: 1, near: 2, trail: 3 };
+// r1Line(friend kind, 'hidden' | 'wrong' | 'near' | 'trail' | 'real', n): one line to show. 'wrong' takes turns between the
+// friend's own and the plain "여긴 없지롱~" (n = how many wrong so far); 'real' is the friend's tell from the true hideout.
+// 'trail' names that friend's own trace (개굴이 wet footprints, 냥냥이 fur…); 'crumbs' is for the crumb trail the prototype
+// drops now — the friend's line where it is about crumbs, else the plain one.
+const CRUMBY = new Set(['bunny', 'bear', 'shiba', 'grumpy']);
+export function r1Line(kind, what, n = 0) {
+  if (what === 'real') return fr(kind).lock?.[0] || K('킥킥', 'Hee hee');
+  if (what === 'crumbs') return (CRUMBY.has(kind) ? R1F[kind] : R1_ANY)[3][0];
+  const row = R1F[kind] || R1_ANY, i = R1_AT[what];
+  if (i == null) return '';
+  if (what === 'wrong' && n % 2 === 1) return R1_ANY[1][0];
+  return row[i][0];
+}
 export const ENDING = [L('bunny', '(속닥) 다음엔 어디서 놀까?', '(whispering) Where do we play next?'), L('mong', '우리 집. 이번엔 내가 숨겨 둘게.', "My place. I'll hide something this time."), L('bunny', '좋아. 웃음은 내가 참을게.', "Deal. I'll try not to giggle."),
   L('inky', '(현관문 틈으로 빼꼼) …다음에, 나도 돼?', '(peeking in at the door) …Is "next time" for me too?'), L('mong', '응. 색은 두고 와.', 'Yeah. Leave the colors at home.')];
 export const ENDING_CARD = K('숨는 건, 누가 찾아 주길 바라서야.', 'We only hide because we hope someone will come looking.');
@@ -365,8 +447,8 @@ export const DO = {
   turnDrag: K('옆으로 끌어서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 끌어 봐', 'Keep dragging until you can see the front of the box'),
   turnAny: K('방을 돌려서 상자 앞을 봐', 'Turn the room to see the front of the box'),
   // 기본 조작 F (조작감 세션, 10/18): the turn dial bottom right — push it sideways to turn, up/down to tilt
-  turnDial: K('오른쪽 아래 돌림판을 옆으로 밀어 방 돌리기', 'Push the dial (bottom right) sideways to turn the room'),
-  turnDial2: K('돌림판을 옆으로 쭉 밀어서 상자 앞이 보이게 해 봐', 'Keep pushing the dial sideways until you see the front of the box'),
+  turnDial: K('돌림판을 옆으로 밀어 방 돌리기', 'Push the dial sideways to turn the room'),
+  turnDial2: K('오른쪽 아래 돌림판을 쭉 밀어서 상자 앞을 봐', 'Push the dial (bottom right) until you see the box front'),
   box: K('상자를 톡', 'Tap the box'), box2: K('흔들리는 상자를 톡 눌러 봐', 'Tap the shaking box'),
   drawer: K('서랍을 톡 해서 열기', 'Tap a drawer to open it'), drawer2: K('서랍이나 문을 톡! 안에 물건이 있어', 'Tap a drawer or door! Things are inside'),
   zoom: K('두 손가락을 벌려 크게 보기', 'Spread two fingers to zoom in'),

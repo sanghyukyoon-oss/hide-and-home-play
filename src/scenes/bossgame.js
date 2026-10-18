@@ -65,7 +65,15 @@ export class BossGameScene {
       const l = this.sheet = document.createElement('link'); l.rel = 'stylesheet'; l.href = SHEETS[this.kind]; document.head.append(l);
       await new Promise(res => { l.onload = l.onerror = res; setTimeout(res, 2000); });
     }
-    const mod = await LOAD[this.kind](); if (this.dead) return;
+    // a game file that fails to arrive (a dropped request on a shaky phone network) is asked for again twice, with a fresh
+    // address (the browser remembers a failed module); if it still won't come, say so and go on rather than freeze
+    let mod = null;
+    for (let i = 0; i < 3 && !mod && !this.dead; i++) {
+      try { mod = i ? await import(`../bosses/${this.kind}.js?retry=${i}`) : await LOAD[this.kind](); }
+      catch (e) { console.warn('boss game load failed', this.kind, i, e?.message); await new Promise(r => setTimeout(r, 700 * (i + 1))); }
+    }
+    if (this.dead) return;
+    if (!mod) { G.ui.toast('놀이를 불러오지 못했어요 · 다음 판으로 갈게요', 'red'); setTimeout(() => !this.dead && this.finish(), 1200); return; }
     // 대본: the lead-in, the first time this game and set-up comes up (the game's own rules come after, in the game)
     const GL = gameLines(this.kind, this.lv), said = G.save.gameTalk || (G.save.gameTalk = {});
     if (GL?.lead && !said[this.kind + this.lv] && !G.bot && !G.skipTalk) { said[this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.lead); if (this.dead) return; }

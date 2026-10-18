@@ -3414,4 +3414,5 @@ export const EN = {
 "냉장고를 톡 하면 열려": "Tap the fridge to open it",
 "냉장고를 꾹 누르면 하나 더": "Hold the fridge for one more",
 "열린 냉장고를 꾹 누르고 있으면 꺼내요": "Hold the open fridge to grab snacks",
+"놀이를 불러오지 못했어요 · 다음 판으로 갈게요": "Couldn't load the game · moving on to the next stage",
 };

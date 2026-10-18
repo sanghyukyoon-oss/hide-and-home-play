@@ -31,9 +31,11 @@ const TOP = .16, QB = .045;           // mattress top, quilt thickness
 const QX = [-1.78, 1.78], QZ = [-1.2, .42];
 const MX = [-1.7, 1.7], MZ = [QZ[0] - .62, QZ[1] + .95];   // the mattress: pillows behind the quilt, a strip in front of the hem
 const HEM = .6;                       // a friend sits this far (body units) behind the hem: the face just under it
+const FOOT_Y = .1, FOOT_TILT = -2.09;  // a sole standing at the hem: its middle this high, leaning back (toes up) to face the camera
+const BEANS = [[0, -.028, .046], [-.047, .05, .02], [0, .062, .021], [.047, .05, .02]];   // toe beans on a sole: x, z, r (foot units)
 const SLOTS = { 1: [0], 2: [-.56, .56], 3: [-1.02, 0, 1.02] };
 // the hem line for n friends: with three, the middle one sits forward and the outer two further back
-const hemFor = n => n === 3 ? u => QZ[1] - .62 * (1 - Math.exp(-((u / .5) ** 2))) : n === 2 ? () => QZ[1] - .32 : () => QZ[1] - .2;
+const hemFor = n => n === 3 ? u => QZ[1] - .4 * (1 - Math.exp(-((u / .6) ** 2))) : n === 2 ? () => QZ[1] - .32 : () => QZ[1] - .2;
 const toW = (u, w) => ({ x: C0.x + (u + w) * SQ, z: C0.z + (w - u) * SQ });
 const toL = (x, z) => { const dx = x - C0.x, dz = z - C0.z; return { u: (dx - dz) * SQ, w: (dx + dz) * SQ }; };
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -163,7 +165,7 @@ class Quilt {
       const H = L.H * L.k * (1 + .9 * L.yank) * L.breath, R = L.R * (1 - .42 * L.yank), u = L.u + L.ou, w = L.w + L.ow;
       this.around(u, w, R * 2.2, (i, x, z) => {
         const q = Math.hypot(x - u, z - w) / R; if (q > 2.2) return;
-        const y = B[i] + H * E[i] / (1 + Math.pow(q / .9, 6));
+        const y = B[i] + H * E[i] / (1 + Math.pow(q / .98, 6));   // a broad top, so a big friend's sides stay under the cloth
         if (y > a[i * 3 + 1]) a[i * 3 + 1] = y;
       });
     }
@@ -240,13 +242,28 @@ function prepHide(c, side) {
   }
   r.position.copy(P); r.quaternion.copy(Q); r.scale.copy(S0); r.updateMatrixWorld(true);
   // the things that come out from under the hem
-  if (c.feet?.length === 2 && !c.board) { T.feet = c.feet.map(f => f.position.clone()); T.feetS = c.feet.map(f => f.scale.clone()); }
+  if (c.feet?.length === 2 && !c.board) {
+    T.feet = c.feet.map(f => f.position.clone()); T.feetS = c.feet.map(f => f.scale.clone());
+    // the soles show (user 10/19: feet lying out on the mattress looked cut off): toe beans on each, seen only while hidden
+    const bean = new THREE.MeshBasicMaterial({ color: '#ff8fb0', polygonOffset: true, polygonOffsetFactor: -2 });
+    T.beans = c.feet.map(f => {
+      const g = new THREE.Group();
+      for (const [x, z, r] of BEANS) {
+        const m = new THREE.Mesh(new THREE.CircleGeometry(1, 18).rotateX(Math.PI / 2), bean); m.scale.setScalar(r);
+        m.position.set(x, -Math.sqrt(Math.max(0, .0121 - x * x - z * z)) - .004, z); g.add(m);
+      }
+      g.visible = false; f.add(g); return g;
+    });
+  }
+  // the face goes dark under the cloth (a big friend's eyes would show through it) until a peek lifts the hem
+  T.face = [...new Set([...(c.eyeSlots || []), ...[...(c.blush || []), ...(c.tears || []), ...(c.brows || []), ...Object.values(c.mouths || {}), c.mouthO].filter(Boolean).map(o => o.parent)])].filter(o => o && o !== c.inner);
+  T.arms = c.arms || [];
   if (c.tail) {
     const k = c.def.tail, t = c.tail, curl = k === 'fluffy' ? -1 : k === 'cat' ? 1 : 0;
     const lie = k === 'fluffy' || k === 'cat';   // the long ones lie flat and point out toward you, a little outward
     T.tail = { t, p0: t.position.clone(), r0: t.userData.r0.clone(), kids: t.children.map(m => [m, m.scale.clone()]), lie, flip: curl && curl !== side,
       rot: lie ? new THREE.Euler(Math.PI / 2 + (k === 'fluffy' ? .2 : .1), 0, 0, 'YXZ') : null,
-      out: new THREE.Vector3(side * .26, lie ? .03 : .07, lie ? .42 : .74), inn: new THREE.Vector3(side * .12, .04, lie ? -.65 : -.25) };
+      out: lie ? new THREE.Vector3(side * .26, .03, .42) : new THREE.Vector3(side * .5, .07, HEM + .05), inn: new THREE.Vector3(side * .12, .04, lie ? -.65 : -.25) };   // a short tail peeks out at the side of the hem
   }
   if (c.held?.userData.two) T.held = [c.held, c.held.userData, c.held.userData.two.slice(), c.held.scale.clone()];
   if (c.phones) T.phones = [c.phones, c.phones.position.clone(), c.phones.rotation.clone(), c.phones.scale.clone()];
@@ -258,9 +275,20 @@ function setTell(c, b, hid) {
   const ek = H ? (1 + (T.earB - 1) * out) * (1 + .75 * dn) : 1;
   for (const E of T.ears) E.e.scale.copy(E.s0).multiplyScalar(ek);
   for (const o of T.hide) o.visible = !H;
-  if (T.feet) c.feet.forEach((f, i) => { const f0 = T.feet[i]; f.position.x = f0.x * (H ? 1 + .25 * out : 1); f.position.z = H ? f0.z + .64 * out : f0.z; f.scale.copy(T.feetS[i]).multiplyScalar(H ? 1 + .35 * out : 1); });
+  // feet: standing up at the hem, soles to you and toes up, their tops tucked under the cloth (so they read as the
+  // friend's own feet sticking out, not two blobs on the mattress)
+  if (T.feet) c.feet.forEach((f, i) => {
+    const f0 = T.feet[i];
+    if (H) { const k = 1 + .3 * out; f.position.set(f0.x * (1.15 + .1 * out), FOOT_Y * k, (T.hemZ ?? HEM) + .03 + .05 * out); f.rotation.set(FOOT_TILT, 0, 0); f.scale.copy(T.feetS[i]).multiplyScalar(k); }
+    else { f.position.copy(f0); f.rotation.set(0, 0, 0); f.scale.copy(T.feetS[i]); }
+    T.beans[i].visible = H;
+  });
+  for (const a of T.arms) a.visible = !H;   // hands stay under the covers
+  const face = !H || (T.pk || 0) > .2; for (const o of T.face) o.visible = face;
   if (T.tail) {
     const L = T.tail, t = L.t;
+    if (!L.lie) L.out.z = (T.hemSide ?? HEM) + .05;
+    if (c.def.tail === 'short') t.visible = !H;   // a little round tail on its own by the hem only read as a stray ball
     if (H) {
       if (L.lie) { t.rotation.order = 'YXZ'; t.userData.r0.copy(L.rot); }
       t.position.lerpVectors(L.inn, L.out, out);
@@ -272,7 +300,7 @@ function setTell(c, b, hid) {
   }
   if (T.held) {
     const [h, u, two, s0] = T.held;
-    if (H) { u.two[0] = 0; u.two[1] = .03; u.two[2] = .25 + .75 * out; u.two[3] = -1.45; h.scale.copy(s0).multiplyScalar(1 + .3 * out); }
+    if (H) { u.two[0] = 0; u.two[1] = .03; u.two[2] = (T.hemZ ?? HEM) + .06 + .16 * out; u.two[3] = -1.45; h.scale.copy(s0).multiplyScalar(1 + .3 * out); }
     else { for (let i = 0; i < 4; i++) u.two[i] = two[i]; h.scale.copy(s0); }
   }
   if (T.phones) {
@@ -354,7 +382,7 @@ export class Game {
   }
   frame() {
     const W = this.L.world, c = toW(0, -.25);
-    W.home.set(c.x, .45, c.z); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .98; W.zoom = 1;
+    W.home.set(c.x, .45, c.z); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .75; W.zoom = 1.05;   // lower than a room view (user 10/19): the bumps stand up against the wall and the soles face you
     W.bounds = 99; W.slack = null; W.camLock = true;
     W.setFit(3.3, 4.2, .56);
   }
@@ -418,7 +446,7 @@ export class Game {
   // ── lumps: a friend sitting just behind the hem, facing you, the quilt over it
   makeLump(kind, u) {
     const who = isRaccoon(kind) ? 'raccoon' : kind, info = WHO[who] || {};
-    const c = new Char(kind), size = (info.size || 1) * CS, sc = c.S * size, w = this.quilt.hemAt(u) - HEM * sc;
+    const c = new Char(kind), size = (info.size || 1) * CS, sc = c.S * size, w = this.seatW(u, sc);
     const side = u < -.2 ? -1 : u > .2 ? 1 : (Math.random() < .5 ? -1 : 1);   // a tail goes out on the outer side
     c.root.scale.setScalar(size); c.root.rotation.y = Math.PI / 4; c.shadow.visible = false;
     if (isRaccoon(kind)) stripeTail(c);
@@ -432,6 +460,9 @@ export class Game {
     return l;
   }
   place(l) { const p = toW(l.u + l.ou, l.w + l.ow); l.x = p.x; l.z = p.z; }
+  // how far forward a friend at u can sit: HEM behind the hem, where the hem is furthest back across its body (so the
+  // curved hem never cuts into its sides)
+  seatW(u, sc) { const Q = this.quilt, hw = .4 * sc; return Math.min(Q.hemAt(u - hw), Q.hemAt(u), Q.hemAt(u + hw)) - HEM * sc; }
   // the soft peaks this friend's ears / hat / spikes raise in the cloth, in futon coordinates
   tentsOf(l) {
     const c = l.c, T = c._bk, ws = l.sc, out = [];
@@ -710,14 +741,16 @@ export class Game {
     l.tell += (l.tellGoal - l.tell) * (1 - Math.exp(-dt * 14));
     l.shake = Math.max(0, l.shake - dt * 1.4);
     l.ou = Math.sin(this.t * 38 + l.ph) * .045 * l.shake;
-    if (hide) l.w = this.quilt.hemAt(l.u) - HEM * l.sc;
+    if (hide) { l.w = this.seatW(l.u, l.sc); const Q = this.quilt, T = c._bk; if (T) { T.hemZ = (Q.hemAt(l.u) - l.w) / l.sc; T.hemSide = (Q.hemAt(l.u + T.side * .5 * l.sc) - l.w) / l.sc; } }
     this.place(l);
     if (hide) {
       const kk = Math.min(1, Math.max(0, l.k));
       c.root.position.set(l.x, TOP - (1 - kk) * 1.0 * l.sc + (l.breath - 1) * l.H * .8, l.z);
     }
+    if (c._bk) c._bk.pk = l.pk;
     setTell(c, l.tell, l.hid);
     c.update(dt);
+    if (c._bk?.feet && l.hid > .5) c.feet.forEach(f => { f.position.y = FOOT_Y * f.scale.y / c._bk.feetS[0].y; });
     l.tents = hide ? this.tentsOf(l) : null;
   }
 

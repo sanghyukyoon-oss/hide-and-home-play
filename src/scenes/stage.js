@@ -18,8 +18,11 @@ const FURN_NAME = t => FURN_INFO[t]?.name || t;
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { storyFor, playDialog, playCinematic, slidePuzzle, setFrameSolved } from '../story.js';
 import { Trickster } from '../trickster.js';
+import { FEEL } from '../feel.js';
+import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
+import { R1, r1Line } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI } from '../script.js';
 import { tr } from '../i18n.js';
@@ -193,6 +196,7 @@ export class StageScene {
     W.tapInstant = (x, y) => { const hit = this.pickAt(x, y); return hit.kind === 'item' && !hit.item.found && hit.item.role !== 'decoy'; };
     W.onRotate = d => { this.rotAccum += Math.abs(d); };
     W.onDragStart = null;
+    W.onPress = (x, y) => this.pressAt(x, y);   // 손맛 7
     G.audio.music('play');
     this.bubble = h('div', { class: 'bubble count' }, ''); G.ui.wui.append(this.bubble);
     if (this.plan.light) this.goDark();
@@ -247,7 +251,7 @@ export class StageScene {
     this.ambient?.dispose(); if (this.hero) { disposeTree(this.hero.ch.root); this.hero.dispose(); }
     // this stage's own meshes, materials and textures (not the shared caches) go with it
     for (const r of [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root)]) disposeTree(r);
-    G.world.onTap = null; G.world.onRotate = null; G.world.tapInstant = null;
+    G.world.onTap = null; G.world.onRotate = null; G.world.tapInstant = null; G.world.onPress = null;
     G.ui.clear(); this.tw.clear();
   }
 
@@ -313,17 +317,59 @@ export class StageScene {
   classify(o) {
     for (let p = o; p; p = p.parent) {
       const u = p.userData;
-      if (u.item) return { kind: 'item', item: u.item };
-      if (u.part) return { kind: 'part', part: u.part };
-      if (u.char) return { kind: 'char', char: u.char };
-      if (u.furn) return u.furn.parts[0]?.isLever ? { kind: 'part', part: u.furn.parts[0] } : { kind: 'furn', furn: u.furn };
+      if (u.item) return { kind: 'item', item: u.item, node: p };
+      if (u.part) return { kind: 'part', part: u.part, node: p };
+      if (u.char) return { kind: 'char', char: u.char, node: p };
+      if (u.furn) return u.furn.parts[0]?.isLever ? { kind: 'part', part: u.furn.parts[0], node: p } : { kind: 'furn', furn: u.furn, node: p };
       if (u.wall) return { kind: 'wall' };
       if (u.floor) return { kind: 'floor' };
     }
     return { kind: 'none' };
   }
+  pickRoots() { return [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root), ...(this.trick?.ch ? [this.trick.ch.root] : [])]; }
+  // 손맛 1: a fingertip is ~44 px, but a small thing is drawn 12–38 px and its tap area was 28–34 px across at the whole
+  // view (stage 4, 375-wide phone, measured 10/18) — a near miss landed on the floor or a cabinet and counted as a miss
+  // (몽글이 sweats, −2 s on a timed stage, dizzy after four). When nothing to find is right under the finger, the nearest
+  // thing still to find whose tap area comes within 22 px of the finger, and that can really be seen there, is taken.
+  // A direct hit on a drawer, a friend, a decoy or a gray-stage piece of furniture stays what it is.
   pickAt(x, y) {
-    const hits = this.G.world.pick(x, y, [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root), ...(this.trick?.ch ? [this.trick.ch.root] : [])]);
+    const hit = this.pickExact(x, y);
+    if (!FEEL.fat) return hit;
+    const soft = hit.kind === 'none' || hit.kind === 'floor' || hit.kind === 'wall' || (hit.kind === 'item' && hit.item.found)
+      || (hit.kind === 'furn' && hit.furn.type !== 'puzzleframe' && hit.furn !== this.plan.tv?.f && !(this.grayFurn?.get(hit.furn) && !this.grayFurn.get(hit.furn).found));
+    if (!soft) return hit;
+    const W = this.G.world, pxPer = W.H / (W.viewH / W.zoom), R = 22, roots = this.pickRoots(), c = new THREE.Vector3();
+    let best = null, bd = Infinity;
+    // reachable = a tap on its centre would take it (the game's own rule, proxies included), or some part of it is
+    // the first thing seen (hollow things)
+    const same = (a, b) => a.kind === b.kind && (a.item ? a.item === b.item : a.char === b.char);
+    const consider = (obj, center, rPx, res) => {
+      const sp = W.toScreen(center), d = Math.hypot(sp.x - x, sp.y - y) - rPx;
+      if (d > R || d >= bd || !isShown(obj)) return;
+      if (!same(this.pickExact(sp.x, sp.y), res) && !W.visibleAt(obj, center, roots)) return;
+      best = res; bd = d;
+    };
+    for (const it of this.items) {
+      if (it.found || it.role === 'decoy' || !it.g) continue;
+      let px = null; for (const ch of it.g.children) if (ch.userData.proxy) { px = ch; break; }
+      if (px) { px.getWorldPosition(c); const e = px.matrixWorld.elements; consider(it.g, c, Math.hypot(e[0], e[1], e[2]) * pxPer, { kind: 'item', item: it, node: it.g }); }
+      else { const b = new THREE.Box3().setFromObject(it.g); if (!b.isEmpty()) consider(it.g, b.getCenter(c), b.getSize(new THREE.Vector3()).length() / 2 * pxPer, { kind: 'item', item: it, node: it.g }); }
+    }
+    // the trickster on the run is caught the same way
+    const tc = this.trick?.ch;
+    if (tc?.root) { const b = new THREE.Box3().setFromObject(tc.root); if (!b.isEmpty()) consider(tc.root, b.getCenter(c), Math.max(...b.getSize(new THREE.Vector3()).toArray()) / 2 * pxPer, { kind: 'char', char: tc, node: tc.root }); }
+    return best || hit;
+  }
+  // 손맛 7: what a press lands on dips a little (the same pick as the tap, so the dip also shows what the tap will take)
+  pressAt(x, y) {
+    if (!this.running || this.paused || this.result || this.cine) return null;
+    const hit = this.pickAt(x, y);
+    if (!hit.node) return null;
+    if (hit.kind === 'item') return hit.item.found ? null : { obj: hit.node, m: .16 };
+    return { obj: hit.node, m: hit.kind === 'furn' ? .035 : hit.kind === 'char' ? .07 : .06 };
+  }
+  pickExact(x, y) {
+    const hits = this.G.world.pick(x, y, this.pickRoots());
     if (!hits.length) return { kind: 'none' };
     const d0 = hits[0].distance;
     const ih = hits.find(hh => hh.distance - d0 < .3 && this.classify(hh.object).kind === 'item');
@@ -444,13 +490,15 @@ export class StageScene {
     this.r1 = { real, cands: [real, ...others.slice(0, 2)], miss: 0, told: new Set(), objs: [] };
     this.say(f, hideLine(this.idx, this.th.friend), 1100);
     await tw.wait(.6);
-    const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, '눈 감아!'), this.r1N = h('span', { class: 'ol' }, ''));
+    const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, R1.close), this.r1N = h('span', { class: 'ol' }, ''));
     document.getElementById('overlay').append(ov);
     f.root.visible = false;
-    for (const n of ['하나', '둘', '셋']) { if (this.dead) return; this.r1N.textContent = n; G.audio.sfx('tock'); await tw.wait(.6); }
+    for (const n of R1.nums) { if (this.dead) return; this.r1N.textContent = n; G.audio.sfx('tock'); await tw.wait(.6); }
     G.audio.sfx('tap', 12); await tw.wait(.15); G.audio.sfx('tap', 14); await tw.wait(.2); G.audio.sfx(real.sfx || 'open'); await tw.wait(.35); G.audio.sfx('close');
     ov.classList.add('out'); setTimeout(() => ov.remove(), 300);
     this.friendHidden = true; this.r1Trail();
+    // a word from the hideout once it's done (the bubble over the hiding place, not the friend)
+    setTimeout(() => !this.dead && this.friendHidden && this.say({ root: { position: this.partCenter(real) }, headTop: () => .25 }, r1Line(this.th.friend, 'hidden'), 1300), 400);
   }
   r1Trail() {
     const real = this.r1.real, pc = this.partCenter(real), y = new THREE.Vector3(); real.furn.group.getWorldPosition(y);
@@ -462,12 +510,14 @@ export class StageScene {
       g.rotation.y = Math.random() * 6; this.room.group.attach(g); this.r1.objs.push(g);
     }
     this.G.world.idsDirty = true; this.G.world.shadowDirty = true;
+    if (this.hero?.ch) setTimeout(() => !this.dead && this.say(this.hero.ch, r1Line(this.th.friend, 'crumbs'), 1500), 1900);   // 몽글이 notices the trail
   }
   r1Wrong(part) {
     const R = this.r1; R.told.add(part); R.miss++;
     const pc = this.partCenter(part);
-    this.say({ root: { position: pc }, headTop: () => .25 }, '여긴 없지롱~', 1200); this.G.audio.sfx('miss');
-    setTimeout(() => { if (this.dead || !this.friendHidden) return; if (R.miss >= 3) { this.giggle('히히~ 여기 근처야!'); setTimeout(() => !this.dead && this.friendHidden && this.giggle('킥킥'), 900); } else this.giggle('킥'); }, 700);
+    const k = this.th.friend;
+    this.say({ root: { position: pc }, headTop: () => .25 }, r1Line(k, 'wrong', R.miss - 1), 1200); this.G.audio.sfx('miss');
+    setTimeout(() => { if (this.dead || !this.friendHidden) return; if (R.miss >= 3) { this.giggle(r1Line(k, 'near')); setTimeout(() => !this.dead && this.friendHidden && this.giggle(r1Line(k, 'real')), 900); } else this.giggle(r1Line(k, 'real')); }, 700);
   }
   hideSay(lines) { if (this.t - (this._hsT ?? -99) < 4) return; this._hsT = this.t; this.giggle(lines[(this._hn = (this._hn || 0) + 1) % lines.length]); this.gigT = 7; }
   giggle(line) {
@@ -1683,10 +1733,8 @@ export class StageScene {
       return el;
     };
     const snd = row('소리', () => G.audio.muted ? '꺼짐' : '켜짐', () => G.audio.setMuted(!G.audio.muted));
-    const rot = row('회전', () => S.snap ? '4방향 딱딱' : '자유롭게', () => { S.snap = !S.snap; G.world.snap = S.snap; G.persist(); });
-    const joy = row('이동 패드', () => G.world.joyOn ? '켜짐' : '꺼짐', () => { S.joy = !G.world.joyOn; G.world.joyOn = S.joy; G.persist(); });
-    const ctrl = row('조작', () => ({ D: '끌어 회전·패드', B: 'B: 톡-끌기', C: 'C: 스위치' })[S.ctrl] || '기본 (끌면 이동)', () => { S.ctrl = { E: 'D', D: 'B', B: 'C', C: 'E' }[S.ctrl || 'E']; G.world.scheme = S.ctrl; if (S.joy === undefined) G.world.joyOn = S.ctrl === 'D'; G.persist(); joy.refresh(); });
-    const rows = [snd, rot, ctrl, joy];
+    const ctrl = row('조작', () => S.ctrl === 'E' ? '톡 전환' : '돌림판', () => { S.ctrl = S.ctrl === 'E' ? 'F' : 'E'; G.world.scheme = S.ctrl; G.world.eMode = G.world.eBase = 'move'; G.persist(); });
+    const rows = [snd, ctrl];
     const fsOk = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && document.fullscreenEnabled !== false;
     if (fsOk) rows.push(row('전체화면', () => document.fullscreenElement || document.webkitFullscreenElement ? '켜짐' : '꺼짐', async () => {
       const el = document.documentElement;

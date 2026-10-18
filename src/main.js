@@ -313,9 +313,12 @@ function buildThumbs() {
   G.thumbStore = store;
   // default (D): one finger turns around the pressed spot, the pad moves, the gauge or a pinch zooms; B and C are options
   { const S = G.save.settings || (G.save.settings = {}); if (!S.ctrlV4) { S.ctrlV4 = 1; delete S.ctrl; delete S.joy; G.persist(); } }   // 2026-10-17: everyone to the new default once
-  // default (E): one finger moves the view, a tap with a second finger turns it, two fingers spread to zoom; D/B/C and the pad are options
-  world.scheme = ['B', 'C', 'D'].includes(G.save.settings?.ctrl) ? G.save.settings.ctrl : 'E';
-  world.joyOn = G.save.settings?.joy ?? world.scheme === 'D';
+  // 2026-10-18 (user, after the feel lab: "원래 톡이랑 이거랑 두 가지만 남기고 이동 패드랑 나머지 카메라 옵션은 없어도 될 거 같아.
+  // 지금 만든 게 기본으로"): F (one finger moves, the turn dial or a two-finger twist turns) is the default for everyone once;
+  // E (a second-finger tap turns) is the only other choice; no pad, no 4-way snap
+  { const S = G.save.settings || (G.save.settings = {}); if (!S.ctrlV5) { S.ctrlV5 = 1; delete S.ctrl; delete S.joy; delete S.snap; world.snap = false; G.persist(); } }
+  world.scheme = G.save.settings?.ctrl === 'E' ? 'E' : 'F';
+  world.joyOn = false;
 }
 
 // '#play-mini-<kind>' = the campaign's current (minis.js) version of a break game that also has a new one

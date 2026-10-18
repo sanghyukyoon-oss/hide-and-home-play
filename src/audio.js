@@ -1,5 +1,6 @@
 // WebAudio-synthesized SFX + generative music box BGM. No asset files.
 import { store } from './util.js';
+import { hapticFor } from './feel.js';
 
 export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   const A = { ctx: null, master: null, sfxBus: null, musicBus: null, muted: store.get(storageKey, false), _timer: null, _step: 0, mood: 'home' };
@@ -44,6 +45,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   const hz = semi => 440 * 2 ** ((semi - 9) / 12);
 
   A.sfx = (name, p = 0) => {
+    hapticFor(name);   // 손맛 2: a tap's sound also buzzes (even with the sound off)
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
     switch (name) {
