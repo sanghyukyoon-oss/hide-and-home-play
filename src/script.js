@@ -326,13 +326,24 @@ const GAME = {
     out: [L('sleepy', '음냐… 까만 애? 봤어… 매일 밤 혼자 걸어가.', 'Mmh… the black one? Yeah… it walks by alone every night.'), L('sleepy', '아파트 쪽으로… 쿨…', 'Toward the apartments… zzz…'), L('mong', '…혼자.', '…Alone.'),
       L('bunny', '몽글아! 나 아파트로 이사 가!', "Mongle! I'm moving to the apartments!"), L('bunny', '집들이 와 줄 거지?', "You'll come to my housewarming, right?"), L('mong', '응. 다음엔 너네 새 집에서.', 'Yeah. Next time, at your new place.'), L('bunny', '그리고 그다음엔 너네 집! 약속!', 'And after that, your place! Promise!')] },
   'hotel:2': { lead: [L('bunny', '몽글 호텔 3박 4일! 집들이 기념 여행이야!', 'Mongle Hotel, four days, three nights! Housewarming trip!')] },
-  'flashlight:1': { lead: [L('grumpy', '밤엔 손전등 숨바꼭질이지. …한 판만.', 'Nights are for flashlight hide-and-seek. …One game.')] },
   'yasik:1': { lead: [L('sundae', '같이 먹을 건 이미 준비했어. 문제는…', 'The snacks are ready. The problem is…'), L('mong', '…엄마.', '…Mom.')], out: [L('mong', '…귤 껍질 소리에 맞춰 걸었어.', '…I walked in time with the tangerine peeling.')] },
-  'flashlight:2': { lead: [L('squirrel', '밤 소풍은 손전등 들고! 다들 숨어!', 'Night picnics need flashlights! Everybody hide!')] },
   'wakeup:1': { lead: [L('panda', '졸졸이 또 안 일어나.', "Dozy won't get up again."), L('mong', '…약속했으니까. 깨워서 같이 내려가자.', "…I promised. Let's wake Dozy and walk down together.")], out: [L('sleepy', '음냐… 응. 같이.', 'Mmh… yeah. Together.')] },
-  'flashlight:3': { lead: [L('peng', '펭! 우리 2층집에서 손전등 숨바꼭질! 비결 5번 보여 줄게.', 'Peng! Flashlight hide-and-seek at my place! Watch tip number five.')] },
+  // 쉬어가기 (10/18 정본 배치: 두더지 3·27·58, 이불 8·46, 무궁화 24·63) — 너굴이 rivalry runs through them
+  'whack:1': { lead: [L('raccoon', '이번엔 변장했지롱. 날 찾을 수 있을까~?', "I'm in disguise this time. Think you can spot me~?"), L('mong', '…꼬리가 보이는데.', '…I can see your tail.')] },
+  'whack:2': { lead: [L('frog', '개굴! 수풀 피버 타임! 다들 엄청 빨라.', "Ribbit! Bush fever time! Everyone's super fast.")] },
+  'blanket:1': { lead: [L('bunny', '소풍 끝나고 낮잠 파티! 근데… 이불 하나가 수상해.', 'Post-picnic nap party! But… one blanket looks suspicious.'), L('raccoon', '(이불 속에서) 쉿.', '(under a blanket) Shh.')] },
+  'redlight:0': { lead: [L('raccoon', '운동장에선 이거지. 무궁화 꽃이 피었습니다!', 'Schoolyard rules: Red light, green light!'), L('mong', '…또 너굴이.', '…Rocky again.')] },
+  'redlight:1': { lead: [L('raccoon', '마지막 무궁화 승부다! 이번엔 안 봐줘.', 'Final red light, green light! No going easy this time.')] },
   'yasik:2': { lead: [L('bunny', '약속했지! 마지막은 너네 집!', 'You promised! The last one is at your place!'), L('shiba', '(벌써 잠듦) 쿨… (꼬리만 붕붕)', '(already asleep) zzz… (tail still wagging)'), L('mong', '…멍뭉이는 뛰면 깨. 살금살금.', '…Woofy wakes up if we run. Tiptoe.')], ending: true },
 };
+// the small games run by scenes/mini.js: their talk in place of the one in minis.js — the old 손전등 intro was 판다's
+// "캠핑의 꽃은…", which came up first in an apartment and again as the building's boss. The rule stays in the host's mouth
+// as a game rule (the way kids explain a game); how to touch the screen is on screen.
+const MINI = {
+  lamp: [L('hamster', '웁웁! 불 꺼진 김에 손전등 술래 하자!', "Mmf! The lights are out anyway. Let's play flashlight tag!"), L('hamster', '불빛에 비친 친구를 톡 하면 찾은 거야!', "Tap whoever's in the light. That's a catch!")],
+  'lamp:boss': [L('nerd', '불 끄고 손전등 술래. 이번엔 여덟 명이야.', 'Lights off, flashlight tag. Eight of us this time.'), L('raccoon', '나도 숨는다~ 가짜도 섞어 놨지롱.', "I'm hiding too~ And I mixed in some fakes."), L('mong', '…다 찾을게.', "…I'll find all of you.")],
+};
+export const miniLead = (kind, boss) => MINI[kind + (boss ? ':boss' : '')] || null;
 export const ENDING = [L('bunny', '(속닥) 다음엔 어디서 놀까?', '(whispering) Where do we play next?'), L('mong', '우리 집. 이번엔 내가 숨겨 둘게.', "My place. I'll hide something this time."), L('bunny', '좋아. 웃음은 내가 참을게.', "Deal. I'll try not to giggle."),
   L('inky', '(현관문 틈으로 빼꼼) …다음에, 나도 돼?', '(peeking in at the door) …Is "next time" for me too?'), L('mong', '응. 색은 두고 와.', 'Yeah. Leave the colors at home.')];
 export const ENDING_CARD = K('숨는 건, 누가 찾아 주길 바라서야.', 'We only hide because we hope someone will come looking.');
@@ -353,11 +364,32 @@ export const DO = {
   turnBadge: K('↻ 회전을 톡', 'Tap ↻ Rotate'), turnBadge2: K('오른쪽 아래 ↻ 회전 버튼을 톡', 'Tap the ↻ Rotate button, bottom right'),
   turnDrag: K('옆으로 끌어서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 끌어 봐', 'Keep dragging until you can see the front of the box'),
   turnAny: K('방을 돌려서 상자 앞을 봐', 'Turn the room to see the front of the box'),
+  // 기본 조작 F (조작감 세션, 10/18): the turn dial bottom right — push it sideways to turn, up/down to tilt
+  turnDial: K('오른쪽 아래 돌림판을 옆으로 밀어 방 돌리기', 'Push the dial (bottom right) sideways to turn the room'),
+  turnDial2: K('돌림판을 옆으로 쭉 밀어서 상자 앞이 보이게 해 봐', 'Keep pushing the dial sideways until you see the front of the box'),
   box: K('상자를 톡', 'Tap the box'), box2: K('흔들리는 상자를 톡 눌러 봐', 'Tap the shaking box'),
   drawer: K('서랍을 톡 해서 열기', 'Tap a drawer to open it'), drawer2: K('서랍이나 문을 톡! 안에 물건이 있어', 'Tap a drawer or door! Things are inside'),
   zoom: K('두 손가락을 벌려 크게 보기', 'Spread two fingers to zoom in'),
   move: K('한 손가락으로 끌어서 옆으로 가 봐', 'Drag with one finger to move around'),
   moveE: K('✥ 이동을 톡 하고, 끌어서 옆으로 가 봐', 'Tap ✥ Move, then drag to look around'),
+};
+// ── 엄마 몰래 야식, 첫째 밤: the practice the first time (bosses/yasik.js; GPT 안 10/18). The same rules: one action, over
+// only when it's done, a more exact line (…2) when you're stuck. Never "stand still and you're safe": in her eyes,
+// standing still gets you caught too
+export const YASIK_DO = {
+  press: K('가고 싶은 바닥을 꾹 누르고 있기', 'Press and hold the floor where you want to go'), press2: K('반짝이는 바닥을 손가락으로 꾹! 떼면 멈춰요', 'Hold your finger on the glowing spot! Let go to stop'),
+  cover: K('가구 뒤 반짝이는 곳까지 가기', 'Go to the glowing spot behind the furniture'), cover2: K('반짝이는 곳을 꾹 누르고 있으면 거기로 가요', "Hold the glowing spot and you'll walk there"),
+  safe: K('가구 뒤는 엄마 눈에 안 보여요', "Mom can't see you behind furniture"), back: K('가구 뒤로 돌아가기', 'Get back behind the furniture'),
+  wait: K('엄마가 돌아봐요! 가구 뒤에서 기다리기', "Mom's looking! Wait behind the furniture"),
+  hide: K('얼른 가구 뒤로!', 'Quick, behind the furniture!'), still: K('보이는 데선 멈춰도 들켜요! 가구 뒤로', 'In her sight, standing still gets you caught too! Get behind furniture'),
+  phew: K('휴~ 안 들켰다!', "Phew~ she didn't see me!"), now: K('지금이야! 엄마가 다시 TV 봐요', "Now! Mom's watching TV again"),
+  go: K('엄마가 TV 볼 때 냉장고 쪽으로', 'While Mom watches TV, head for the fridge'), edge: K('엄마가 돌아볼 때까지 여기서 기다리기', 'Wait here until Mom looks around'),
+  away: K('지금이야! 엄마가 딴 데 봐', "Now! Mom's looking away"),
+  open: K('냉장고를 톡 해서 열기', 'Tap the fridge to open it'), open2: K('냉장고 문을 손가락으로 한 번 톡!', 'Tap the fridge door once!'),
+  grab: K('냉장고를 꾹 눌러 간식 꺼내기', 'Press and hold the fridge to take a snack'), grab2: K('냉장고에서 손가락을 떼지 말고 꾹', "Keep your finger on the fridge, don't let go"),
+  shut: K('불빛이 보여요! 냉장고를 톡 해서 닫기', 'She can see the light! Tap the fridge to close it'),
+  home: K('방문으로 돌아가기', 'Go back to your door'),
+  safeTag: K('안전', 'Safe'), seenTag: K('보여요', 'Seen'),
 };
 // ── 🆕 cards: a new mechanic, gained the first time you run into it (메모리 teach-by-acquisition)
 const CARDS = {

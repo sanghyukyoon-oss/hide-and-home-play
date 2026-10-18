@@ -19,6 +19,9 @@ import { buildItem, ITEMS } from '../gfx/items.js';
 import { walkGrid, gridPath, nearestTile } from '../companion.js';
 import { Tweens, clamp } from '../util.js';
 import { disposeTree, rbox, cyl, sph, put } from '../gfx/kit.js';
+import { ICON } from '../ui.js';
+import { tr } from '../i18n.js';
+import { YASIK_DO as DO } from '../script.js';
 
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const D = (type, wall, u, opts) => ({ type, wall, u, opts });
@@ -114,9 +117,11 @@ const LOOKS = new Set(['look', 'turn', 'patrol', 'pause', 'awake']);   // states
 
 export class Game {
   constructor(L) { this.L = L; this.tw = new Tweens(); this.t = 0; }
-  async enter({ lv = 0 } = {}) {
+  async enter({ lv = 0, practice = null } = {}) {
     const L = this.L, W = L.world, ui = L.ui;
     const LV = this.lv = this.levelFor(lv);
+    // 첫째 밤, the first time (scenes/bossgame.js says where to start: 'press' from the top, 'go' with the basics done)
+    this.prFrom = practice && this.lvIdx === 0 && !L.bot ? practice : null;
     document.getElementById('app').dataset.night = LV.day ? '' : '1';
     L.setBg(LV.bg || ['#3b3a6e', '#1d1c3a']); W.setLight(LV.light || NIGHT);
     const map = this.map = new MapRooms(W, this.mapDef(LV));
@@ -193,6 +198,7 @@ export class Game {
     // a new gadget tonight: "새로 얻었다" (that's how the lure is taught)
     const fresh = this.lures.find(d => !(this.lvIdx > 0 && LEVELS[this.lvIdx - 1]?.lures?.some(p => p.name === d.name)));
     if (fresh) this.gotCard(fresh);
+    if (this.prFrom) this.startPractice(this.prFrom, fresh ? 2.8 : 0);   // (its first line once the card is gone)
   }
   // hooks a variant overrides (the boss version builds them from any stage map)
   levelFor(lv) { this.lvIdx = clamp(lv | 0, 0, LEVELS.length - 1); return LEVELS[this.lvIdx]; }
@@ -207,7 +213,7 @@ export class Game {
     const t = this.lv.patrol.pts[this.wi], p = this.mom.root.position; return Math.atan2(t[0] - p.x, t[1] - p.z);
   }
   toBase() {
-    const LV = this.lv;
+    const LV = this.lv; this.slow = 0;
     if (this.mode === 'patrol') { this.mState = 'patrol'; this.mom.setFace('normal'); }
     else if (this.mode === 'doze') { this.mState = 'doze'; this.hear = Math.min(this.hear, .5); this.snT = 0; this.sleepFace(true); this.msay('…꿈이었나', 1200, 'think'); }
     else { this.mState = 'busy'; this.mT = LV.busy[0] + Math.random() * (LV.busy[1] - LV.busy[0]); }
@@ -446,6 +452,7 @@ export class Game {
     switch (this.mState) {
       case 'busy':
         turnTo(LV.mom.busyYaw, dt * 6);
+        if (this.pr?.calm) this.mT = Math.max(this.mT, .5);   // the practice's first steps: her eyes stay on the TV
         if (this.mT <= 0) this.startHmm();
         break;
       case 'hmm': {
@@ -454,13 +461,13 @@ export class Game {
         turnTo(this.hmmYaw + wrap(this.lookYaw - this.hmmYaw) * .18 * k, dt * 8);
         if (this.mT <= 0) {
           if (this.fakeOut) { this.toBase(); if (this.mState === 'busy') this.mT *= .6; this.msay('…아닌가', 900); this.mom.setFace('normal'); }
-          else { this.mState = 'turn'; this.mT = .28; L.audio.sfx('swish'); }
+          else { this.mState = 'turn'; this.mT = this.slow ? .8 : .28; L.audio.sfx('swish'); }
         }
         break;
       }
       case 'turn':
-        turnTo(this.lookYaw, dt * 16);
-        if (this.mT <= 0) { this.mState = 'look'; this.mT = rnd(LV.look); this.sweep0 = this.t; }
+        turnTo(this.lookYaw, dt * (this.slow ? 5 : 16));   // (the practice's first look comes round slowly)
+        if (this.mT <= 0) { this.mState = 'look'; this.mT = this.slow ? 2.6 : rnd(LV.look); this.sweep0 = this.t; }
         break;
       case 'look':
         turnTo(this.lookYaw + Math.sin((this.t - this.sweep0) * 1.6) * .16, dt * 10);
@@ -529,7 +536,7 @@ export class Game {
   }
   startHmm(urgent = false) {
     const LV = this.lv, L = this.L;
-    if (AWAY.has(this.mState)) return;
+    if (AWAY.has(this.mState) || this.pr?.calm) return;
     if (!this.isBase() && !urgent) return;
     this.hmmYaw = this.momYaw;
     this.mState = 'hmm'; this.telDur = this.mT = urgent ? Math.min(LV.tel, .55) : LV.tel;
@@ -571,7 +578,8 @@ export class Game {
   }
   seen() { return this.canSee(this.pos.x, this.pos.y, this.moving || this.grabbing ? BODY_H : CROUCH_H); }
   // would 몽글이 be hidden from her looking straight at it (from her seat) at route position s? (the bots plan with it)
-  hiddenAt(s) { const p = this.at(s); return !sees({ x: this.seat.x, z: this.seat.y, h: EYE_H }, this.occSeat, p.x, p.y, CROUCH_H) || Math.hypot(p.x - this.seat.x, p.y - this.seat.y) > this.lv.range; }
+  hiddenAt(s) { const p = this.at(s); return this.hidAt(p.x, p.y); }
+  hidAt(x, z) { return !sees({ x: this.seat.x, z: this.seat.y, h: EYE_H }, this.occSeat, x, z, CROUCH_H) || Math.hypot(x - this.seat.x, z - this.seat.y) > this.lv.range; }
 
   // ── per frame
   update(dt) {
@@ -642,6 +650,7 @@ export class Game {
     else this.sus = Math.max(0, this.sus - dt * .4);
     if (this.sus > .3 && !this._eh) { this._eh = true; L.say(this.mom, '어?', 700, 'think'); L.audio.sfx('gasp'); }
     if (this.sus < .05) this._eh = false;
+    if (this.pr && (this.pr.forgive || this.pr.easy)) this.sus = Math.min(this.sus, .9);   // the practice: a scare, not a loss
     this.susBar.style.width = Math.min(100, this.sus * 100) + '%';
     this.momIcon.classList.toggle('alert', this.mState === 'hmm' || lookin || seen);
     this.vig.style.opacity = this.mState === 'hmm' ? '.45' : seen ? String(.25 + this.sus * .5) : '0';
@@ -665,6 +674,7 @@ export class Game {
     else if (n) this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
     else this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '가고 싶은 곳을 꾹 누르고 있기' : live ? `${this.lures.find(d => !d.used).name}를 톡 하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
+    this.stepPractice(dt);
   }
   // 셋째 밤: what mom hears. Every noise fills the gauge (closer to her = louder); her snores and the lullaby cover
   // you; past .6 she stirs (a warning), full = she wakes and looks round
@@ -738,10 +748,166 @@ export class Game {
     if (this.mode === 'doze') this.hear = Math.min(1, this.hear + .5); else this.startHmm(true);
   }
 
+  // ── 첫째 밤, the first time: a step-by-step practice (user 10/18, having played it: "어케하는지 잘 모르겠어, 어느 타이밍에
+  //    가야되는지"; GPT's order). One action at a time, over only when it's really done — never because time passed;
+  //    stuck 8 s, the line says more and the spot rings. ① hold the floor ② the glowing spot behind furniture: 안전
+  //    ③ her first look, slow: wait behind it ④ whenever you stand still in her eyes: "멈춰도 들켜요" (a scare the first
+  //    time, not a loss) ⑤ at the fridge: tap it open ⑥ hold it: a snack ⑦ back to your door. Between them the trip goes
+  //    cover to cover: on while she watches TV, wait behind furniture while she looks, off again right after she turns
+  //    back. A finger shows each press, a glowing spot where to, a tag under 몽글이 whether she can see you.
+  startPractice(from, delay) {
+    const L = this.L, W = L.world, h = L.h;
+    this.cover = this.coverStretches();
+    const c0 = this.cover[0];
+    this.prC1 = c0 && c0[1] < this.total - .3 ? Math.max(.6, c0[1] - .2) : Math.min(2, this.total / 3);   // the first cover's far edge
+    const fb = this.fridge && new THREE.Box3().setFromObject(this.fridge.f.group);
+    this.prFC = fb ? fb.getCenter(new THREE.Vector3()) : new THREE.Vector3(this.fridgeAt.x, 1, this.fridgeAt.y);
+    this._pv = new THREE.Vector3();
+    const mk = this.prMark = new THREE.Group();
+    mk.add(new THREE.Mesh(new THREE.CircleGeometry(.3, 32), new THREE.MeshBasicMaterial({ color: '#fff3a6', transparent: true, opacity: .35, depthWrite: false })));
+    mk.add(new THREE.Mesh(new THREE.RingGeometry(.3, .38, 32), new THREE.MeshBasicMaterial({ color: '#ffe36b', transparent: true, opacity: .85, depthWrite: false })));
+    for (const m of mk.children) { m.rotation.x = -Math.PI / 2; m.renderOrder = 3; }
+    mk.visible = false; W.root.add(mk); W.idsDirty = true;
+    this.prTip = h('div', { class: 'tip ys-tip', style: 'display:none' });
+    this.prHand = h('div', { class: 'hand hold', html: ICON.hand, style: 'display:none' });
+    this.prTag = h('div', { class: 'ys-tag', style: 'display:none' });
+    L.ui.tut.append(this.prTip, this.prHand); L.ui.wui.append(this.prTag);
+    const basics = from !== 'go';
+    this.pr = { step: basics ? 'press' : 'go', t0: this.t + delay, calm: basics, forgive: basics, easy: false, warned: false, looked: false,
+      moved: 0, last: this.pos.clone(), key: null, stuck: 0, said: false, ringT: 0, stepT: this.t, backAt: -9, prev: this.mState };
+    this.hint.style.display = 'none';
+  }
+  endPractice() {
+    if (!this.pr) return;
+    this.pr = null; this.slow = 0;
+    for (const el of [this.prTip, this.prHand, this.prTag]) el?.remove();
+    if (this.prMark) this.prMark.visible = false;
+    this.hint.style.display = '';
+  }
+  // the stretches of the route she can't see from her seat ([s0, s1] along it)
+  coverStretches() {
+    const out = [], n = Math.ceil(this.total / .05); let a = null;
+    for (let k = 0; k <= n; k++) {
+      const s = Math.min(this.total, k * .05), hid = this.hiddenAt(s);
+      if (hid && a == null) a = s;
+      if (a != null && (!hid || k === n)) { const b = hid ? s : s - .05; if (b - a >= .25) out.push([a, b]); a = null; }
+    }
+    return out;
+  }
+  // where to stop next on the way (dir 1 = to the fridge, -1 = home): the far edge of the cover you're in, else the next
+  // cover past the open floor (or the goal, if it's in there). edge: you're at the edge, gap: the open floor ahead
+  nextStop(dir, s) {
+    const C = this.cover, goal = dir > 0 ? this.total : 0, has = c => c[0] - .05 <= goal && goal <= c[1] + .05, edgeOf = c => dir > 0 ? c[1] - .2 : c[0] + .2;
+    const cur = C.find(c => s >= c[0] - .05 && s <= c[1] + .05);
+    if (cur && has(cur)) return { s: goal, edge: false, gap: 0 };
+    if (cur && (edgeOf(cur) - s) * dir > .3) return { s: edgeOf(cur), edge: false, gap: 0 };
+    const next = C.filter(c => dir > 0 ? c[0] > s : c[1] < s).sort((a, b) => dir * (a[0] - b[0]))[0];
+    const gap = next ? (dir > 0 ? next[0] - s : s - next[1]) : Math.abs(goal - s);
+    return { s: !next || has(next) ? goal : edgeOf(next), edge: !!cur, gap: Math.max(0, gap) };
+  }
+  nearCover(s) {
+    let best = null, bd = 1e9;
+    for (const [a, b] of this.cover) { const c = clamp(s, a + .15, Math.max(a + .15, b - .15)), d = Math.abs(c - s); if (d < bd) { bd = d; best = c; } }
+    return best;
+  }
+  // a floor spot toward route position t, never more than 2 ahead (a finger farther than that is a noisy scurry)
+  leadTo(s, t) { return this.at(Math.abs(t - s) > 2 ? s + Math.sign(t - s) * 2 : t); }
+  // her first look round, slow: a long "흠…?", then she comes round slowly, straight at you, and looks a good while
+  practiceLook() {
+    this.pr.calm = false; this.startHmm();
+    if (this.mState !== 'hmm') return;
+    this.slow = 1; this.fakeOut = false; this.telDur = this.mT = 2.4; this.lookYaw = this.yawTo(this.pos.x, this.pos.y);
+    this.msay('흠…?', 2300, 'think');
+  }
+  stepPractice(dt) {
+    const P = this.pr; if (!P) return;
+    if (this.L.bot) return this.endPractice();
+    const L = this.L, W = L.world, p = this.pos, st = this.mState;
+    P.moved += p.distanceTo(P.last); P.last.copy(p);
+    if (this.t < P.t0) { P.moved = 0; return; }   // the gadget card first
+    const looking = st === 'hmm' || st === 'turn' || st === 'look' || st === 'back' || st === 'sit', away = AWAY.has(st) && st !== 'sit';
+    if (st === 'busy' && P.prev !== 'busy') P.backAt = this.t;
+    P.prev = st;
+    const coming = st === 'hmm' && this.canSee(p.x, p.y, CROUCH_H, this.lookYaw, { half: this.lv.half * Math.PI / 180, range: this.lv.range });
+    const exposed = this.seen() || coming, covered = !away && !exposed && this.hidAt(p.x, p.y);
+    const s = this.sOf(p), dir = this.snacks.length ? -1 : 1;
+    const step = n => { P.step = n; P.stepT = this.t; };
+    // moving on: each step ends when it's done
+    if (P.step === 'press' && P.moved >= .45) step('cover');
+    if ((P.step === 'press' || P.step === 'cover') && covered && p.distanceTo(this.at(this.prC1)) < .45) {
+      step('safe'); L.audio.sfx('special');
+      const q = W.toScreen(this._pv.set(p.x, .3, p.y)); W.fx.ring(q.x, q.y, { r: 80, color: '#7dffc4', width: 8 });
+    }
+    if (P.step === 'safe' && this.t - P.stepT > 1.6 && covered && st === 'busy') { step('look'); this.practiceLook(); return; }
+    if (P.step === 'look' && st !== 'busy') P.looked = true;
+    if (P.step === 'look' && P.looked && st === 'busy') {
+      this.mT = Math.max(this.mT, 6.5); P.forgive = false; P.backAt = this.t;
+      L.say(this.me, DO.phew, 1500); L.log({ practice: 1 }); step('go');
+    }
+    if (this.snacks.length && ['go', 'open', 'grab'].includes(P.step)) step('home');
+    if (P.step === 'go' && this.atFridge()) step('open');
+    if (P.step === 'open' && !this.atFridge()) step('go');
+    if (P.step === 'open' && this.doorOpen) step('grab');
+    if (P.step === 'grab' && !this.doorOpen) step(this.atFridge() ? 'open' : 'go');
+    // what to do right now: say, more (when stuck), where (a floor spot, or the fridge), how the finger goes, what kind
+    let say, more = null, at = null, hand = null, cls = '', kind = 'wait';
+    const fridge = 'fridge', toward = t => this.leadTo(s, t);
+    if (P.step === 'press') { say = DO.press; more = DO.press2; at = toward(this.prC1); hand = 'hold'; kind = 'move'; }
+    else if (P.step === 'cover') { say = DO.cover; more = DO.cover2; at = toward(this.prC1); hand = 'hold'; kind = 'move'; }
+    else if (P.step === 'safe' && !exposed && (covered || away)) { say = DO.safe; cls = 'ok'; }
+    else if (P.step === 'safe' && !exposed) { say = DO.back; more = DO.cover2; at = toward(this.prC1); hand = 'hold'; kind = 'move'; }
+    // ④ in her eyes (or about to be): get behind furniture — standing still won't save you
+    else if (exposed) {
+      const c = this.nearCover(s); at = c != null ? this.at(c) : null; hand = 'hold'; cls = 'warn';
+      if (this.moving) say = DO.hide; else { say = DO.still; if (!P.warned) { P.warned = true; P.easy = true; } }
+    }
+    // ③ she's looking round: wait behind the furniture (shut the fridge if its light shows)
+    else if (looking) {
+      if (this.doorOpen && this.fridgeLitBy(st === 'hmm' ? this.lookYaw : this.momYaw)) { say = DO.shut; at = fridge; hand = 'tap'; cls = 'warn'; kind = 'act'; }
+      else say = DO.wait;
+    }
+    else if (P.step === 'open') { say = DO.open; more = DO.open2; at = fridge; hand = 'tap'; kind = 'act'; }
+    else if (P.step === 'grab') { say = DO.grab; more = DO.grab2; at = fridge; hand = 'hold'; kind = 'act'; }
+    else if (away) { say = DO.away; more = DO.cover2; at = toward(dir > 0 ? this.total : 0); hand = 'hold'; kind = 'move'; }
+    else {
+      // the trip, while she watches TV: cover to cover; at the edge of cover, go only with time to cross the open floor
+      const n = this.nextStop(dir, s), need = n.gap / (SNEAK * (1 - this.snacks.length * .1)) + .9;
+      if (n.edge && st === 'busy' && this.mT < need) say = DO.edge;
+      else { say = this.t - P.backAt < 3.5 ? DO.now : P.step === 'home' ? DO.home : DO.go; more = DO.cover2; at = toward(n.s); hand = 'hold'; kind = 'move'; }   // ("지금이야!" just after she turns back: that's the moment)
+    }
+    if (P.easy && !exposed) P.easy = false;
+    // the line (a new one pops in), stuck → more and a ring on the spot
+    const tip = this.prTip;
+    if (say !== P.key) {
+      P.key = say; P.stuck = 0; P.said = false; P.ringT = this.t;
+      tip.textContent = tr(say); tip.className = 'tip ys-tip ' + cls; tip.style.display = '';
+      tip.style.animation = 'none'; void tip.offsetWidth; tip.style.animation = '';
+      if (say === DO.now) L.audio.sfx('special'); else if (cls === 'warn') L.audio.sfx('pop', 6);
+    }
+    if ((kind === 'move' && this.moving) || kind === 'wait') P.stuck = 0; else P.stuck += dt;
+    if (more && P.stuck > 8 && !P.said) { P.said = true; tip.textContent = tr(more); }
+    const spot = at === fridge ? W.toScreen(this.prFC) : at ? W.toScreen(this._pv.set(at.x, 0, at.y)) : null;
+    if (spot && P.stuck > 8 && this.t - P.ringT > 2) { P.ringT = this.t; W.fx.ring(spot.x, spot.y, { r: P.stuck > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); }
+    // the finger, the glowing spot on the floor
+    const hd = this.prHand;
+    if (hand && spot) { const c = 'hand ' + hand; if (hd.className !== c) hd.className = c; hd.style.display = ''; hd.style.left = spot.x + 'px'; hd.style.top = spot.y + 'px'; }
+    else hd.style.display = 'none';
+    const mk = this.prMark; mk.visible = !!at && at !== fridge;
+    if (mk.visible) { mk.position.set(at.x, .045, at.y); mk.scale.setScalar(1 + Math.sin(this.t * 5) * .08); mk.children[0].material.opacity = .28 + Math.sin(this.t * 5) * .12; }
+    // the tag under 몽글이: 보여요 in her eyes; 안전 behind furniture (from ② on), with the ring under you mint
+    const tag = exposed ? 'seen' : covered && !['press', 'cover'].includes(P.step) ? 'safe' : null, tg = this.prTag;
+    if (tag) {
+      const q = W.toScreen(this._pv.set(p.x, 0, p.y)), tx = tag === 'seen' ? DO.seenTag : DO.safeTag;
+      if (tg.dataset.k !== tag) { tg.dataset.k = tag; tg.textContent = tr(tx); tg.className = 'ys-tag' + (tag === 'seen' ? ' seen' : ''); }
+      tg.style.display = ''; tg.style.left = q.x + 'px'; tg.style.top = q.y + 18 + 'px';
+      if (tag === 'safe') { this.ring.material.color.set('#7dffc4'); this.ring.material.opacity = .6; }
+    } else tg.style.display = 'none';
+  }
+
   // ── end
   caught() {
     if (this.result) return;
-    const L = this.L, me = this.me, mom = this.mom; this.result = 'fail'; this._up({});
+    const L = this.L, me = this.me, mom = this.mom; this.result = 'fail'; this._up({}); this.endPractice();
     L.audio.sfx('angry'); L.world.fx.ring(innerWidth / 2, innerHeight / 2, { r: 120, color: '#ff5d6c', width: 10, life: .5 });
     mom.setFace('angry'); mom.bump(.5); me.setFace('wow'); me.pose = 'flail';
     const p = this.pos; mom.root.rotation.y = this.yawTo(p.x, p.y); this.momYaw = mom.root.rotation.y;
@@ -762,6 +928,7 @@ export class Game {
   win() {
     if (this.result) return;
     const L = this.L, n = this.snacks.length; this.result = 'win'; this._up({});
+    if (this.pr) { L.log({ practice: 2 }); this.endPractice(); }
     L.audio.sfx('win'); this.me.setFace('happy'); this.me.pose = 'cheer'; L.world.fx.confetti(90);
     L.say(this.me, '냠냠… 성공!', 1500);
     L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n });
@@ -780,8 +947,9 @@ export class Game {
     app.dataset.night = '';
     app.removeEventListener('pointerdown', this._down); removeEventListener('pointermove', this._move); removeEventListener('pointerup', this._up); removeEventListener('pointercancel', this._up);
     removeEventListener('blur', this._blur); removeEventListener('keydown', this._kd); removeEventListener('keyup', this._ku);
-    for (const o of [this.map.group, this.me.root, this.mom.root, this.dog?.root, this.vmesh, this.fridgeGlow, this.ring, this.aim, this.goal, this.tvGlow, this.moon, ...(this.creaks || []).map(c => c.m), ...this.lures.filter(d => d.own).map(d => d.g)].filter(Boolean)) { W.root.remove(o); disposeTree(o); }
+    for (const o of [this.map.group, this.me.root, this.mom.root, this.dog?.root, this.vmesh, this.fridgeGlow, this.ring, this.aim, this.goal, this.tvGlow, this.moon, this.prMark, ...(this.creaks || []).map(c => c.m), ...this.lures.filter(d => d.own).map(d => d.g)].filter(Boolean)) { W.root.remove(o); disposeTree(o); }
     for (const d of this.lures) d.badge?.remove();
+    for (const el of [this.prTip, this.prHand, this.prTag]) el?.remove();
     this.vig?.remove(); this.vtex?.dispose(); W.camLock = false;
   }
 
@@ -879,6 +1047,6 @@ export class Game {
     if (this.doorOpen && back) this.setDoor(false);
     if (quiet && this.hear < .55) go(); else this.botStop();
   }
-  state() { return { scene: 'yasik', lv: this.lvIdx + 1, mom: this.mState, x: +this.pos.x.toFixed(2), z: +this.pos.y.toFixed(2), sus: +this.sus.toFixed(2), snacks: this.snacks.length, lures: this.lures.filter(d => d.used).length, mode: this.mode, hear: +(this.hear || 0).toFixed(2), result: this.result || null }; }
+  state() { return { scene: 'yasik', lv: this.lvIdx + 1, mom: this.mState, x: +this.pos.x.toFixed(2), z: +this.pos.y.toFixed(2), sus: +this.sus.toFixed(2), snacks: this.snacks.length, lures: this.lures.filter(d => d.used).length, mode: this.mode, hear: +(this.hear || 0).toFixed(2), result: this.result || null, pr: this.pr?.step || null, tip: this.pr?.key || null }; }
   get api() { return { win: () => this.win(), caught: () => this.caught(), look: () => this.startHmm(true), lure: i => this.fireLure(this.lures[i || 0]), noise: v => { this.hear = v; } }; }
 }

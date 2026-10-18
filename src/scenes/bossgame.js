@@ -58,6 +58,9 @@ export class BossGameScene {
     // 아침 깨우기 opens with a little story and a find-the-ball-and-clock phase the first time only — remembered in the save
     // (the lab kept it per page)
     if (this.kind === 'wakeup' && more.intro == null) { const seen = G.save.bossIntro || (G.save.bossIntro = {}); more.intro = !seen.wakeup; if (!seen.wakeup) { seen.wakeup = true; G.persist(); } }
+    // 엄마 몰래 야식, 첫째 밤: a step-by-step practice until it's been won once (bossIntro.yasik — 1: the basics done, the
+    // trip still guided; 2: done; the game logs { practice } as it goes); never for the bots
+    if (this.kind === 'yasik' && this.lv === 0 && more.practice == null && !G.bot) { const n = G.save.bossIntro?.yasik || 0; more.practice = n >= 2 ? null : n ? 'go' : 'press'; }
     if (SHEETS[this.kind] && ![...document.styleSheets].some(x => x.href === SHEETS[this.kind])) {
       const l = this.sheet = document.createElement('link'); l.rel = 'stylesheet'; l.href = SHEETS[this.kind]; document.head.append(l);
       await new Promise(res => { l.onload = l.onerror = res; setTimeout(res, 2000); });
@@ -99,6 +102,7 @@ export class BossGameScene {
       setGame() {}, leave() {},
       log(e) {
         L.stats.log.push(e);
+        if (e.practice) { const seen = G.save.bossIntro || (G.save.bossIntro = {}); if ((seen[S.kind] || 0) < e.practice) { seen[S.kind] = e.practice; G.persist(); } }
         if (e.result === 'win' && !S.won) S.win(e);
         if (e.result === 'fail' && S.interlude && !S.won && !S.passed) S.pass();
         if (e.result === 'fail') { S.fails++; (G._bossFails || (G._bossFails = {}))[S.after] = S.fails; G.stats.log.push({ bossgame: S.kind, result: 'fail' }); }

@@ -15,6 +15,7 @@ import { Tweens } from '../util.js';
 import { disposeTree } from '../gfx/kit.js';
 import { playDialog } from '../story.js';
 import { GAMES, MINI_INFO, MINI_AFTER } from '../minis.js';
+import { miniLead } from '../script.js';
 
 const V = new THREE.Vector3();
 
@@ -50,7 +51,9 @@ export class MiniScene {
     this.setStatus(game.goal || '', '');
     // the full explanation the first time a game comes up; after that just the banner (the status line says what to do)
     const seen = G.save.miniSeen || (G.save.miniSeen = {});
-    if (!G.skipTalk && !G.bot && game.intro?.length && (this.boss || !seen[kind])) { await playDialog(G, this.boss ? game.intro : game.intro.slice(0, 2), { title: first ? `${this.boss ? '보스' : '쉬어가기'} · ${this.info.name}` : game.title }); if (this.dead) return; }
+    // 대본 (script.js miniLead): lines that fit where the game happens (the panda's camping line came up in the flat too)
+    const intro = miniLead(kind, this.boss) || game.intro;
+    if (!G.skipTalk && !G.bot && intro?.length && (this.boss || !seen[kind])) { await playDialog(G, this.boss ? intro : intro.slice(0, 2), { title: first ? `${this.boss ? '보스' : '쉬어가기'} · ${this.info.name}` : game.title }); if (this.dead) return; }
     seen[kind] = true; G.persist();
     await G.ui.banner(game.title, '준비… 시작!', 1100); if (this.dead) return;
     this.t = 0; this.running = true; game.start?.();

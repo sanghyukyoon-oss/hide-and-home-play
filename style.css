@@ -775,6 +775,15 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .ys-get-n { font-size: 20px; margin-top: 2px; }
 .ys-get-s { font-size: 14px; opacity: .8; margin-top: 4px; }
 @keyframes ysGet { from { transform: translate(-50%, -50%) scale(.6); } to { transform: translate(-50%, -50%) scale(1); } }
+/* 첫째 밤 연습 (10/18): the line under the top bar, a finger that presses and stays down, 안전 / 보여요 under 몽글이 */
+.tip.ys-tip { left: 50%; top: calc(148px + var(--safeT, 0px)); font-size: 19px; }
+.tip.ys-tip.ok { border-color: #7dffc4; }
+.tip.ys-tip.warn { border-color: #ff8aa0; background: rgba(120, 22, 56, .9); }
+.hand.hold { animation: handhold 1.5s ease-in-out infinite; }
+@keyframes handhold { 0%, 100% { transform: translate(-30%, -8%) scale(1); } 22%, 78% { transform: translate(-30%, 4%) scale(.86); } }
+.ys-tag { position: absolute; transform: translate(-50%, 0); z-index: 4; pointer-events: none; padding: 1px 10px 3px; border-radius: 999px; font-size: 14px; font-weight: 800; white-space: nowrap;
+  color: #12352a; background: #7dffc4; border: 2px solid #12352a; box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
+.ys-tag.seen { color: #fff; background: #ff5f7a; border-color: #5a1024; animation: ysBob .5s ease-in-out infinite; }
 
 /* ② 몽글 빌라 방 배정 */
 #app.vl { background: radial-gradient(circle at 82% 17%, #fff6d8 0 22px, rgba(255, 236, 190, .45) 23px 46px, rgba(255, 236, 190, 0) 47px), linear-gradient(180deg, #7f78d2 0%, #b49be0 38%, #ffc3a6 78%, #ffd9b8 100%); }
@@ -1133,3 +1142,8 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
   border: 2.5px solid var(--ink); background: linear-gradient(180deg, #b9a0ff, #9b7bff); box-shadow: inset 0 -3px 0 #7d5ce6; text-shadow: 0 1.5px 0 #6d4fd6; margin-bottom: 6px; }
 .dlg-text { font-size: 19px; color: var(--ink); line-height: 1.45; }
 .dlg-next { color: #a385ff; }
+/* 레벨 보고서 R1 시제품 (?hide=1): eyes shut while the friend hides */
+.r1-eyes { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(28, 16, 44, .92); color: #fff; pointer-events: auto; transition: opacity .3s; }
+.r1-eyes b { font-size: 34px; -webkit-text-stroke-width: 5px; }
+.r1-eyes span { font-size: 56px; color: #ffe16b; -webkit-text-stroke-width: 6px; }
+.r1-eyes.out { opacity: 0; }

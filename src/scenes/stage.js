@@ -30,6 +30,13 @@ import { ease, clamp, Tweens } from '../util.js';
 import { openTune } from '../tune.js';
 import { retrieve, canGrab, grab } from '../raid.js';
 
+// 레벨 보고서 R1 '몰래 숨기' 시제품 (10/18) — only with ?hide=1 (the user compares it on the phone before anything changes):
+// you don't watch the friend hide ("눈 감아! 하나, 둘, 셋" and only the sounds), 2–3 big hideouts are candidates, a trail of
+// crumbs leads toward the real one, a wrong one says "여긴 없지롱~" and the real one giggles; giggles/wobbles only after 15 s
+// of nothing. (Prototype simplification: after 3 wrong guesses the real one gives itself away instead of the friend moving.)
+const HIDE_R1 = /[?&]hide=1(&|$)/.test(location.search);
+const R1_HIDE = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic', 'bookshelf', 'desk', 'toybox', 'cabinet', 'closet', 'sideboard', 'shoerack', 'laundrybasket', 'dresser']; 
+
 const V = new THREE.Vector3();
 const fmtTime = s => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`; };
 // subject particle: 삐딱이가 / 보드킹이
@@ -406,6 +413,7 @@ export class StageScene {
   }
   // ── 사건 판: the owner runs and hides, giggles from the hideout, and pops out when it is opened
   async friendHides() {
+    if (HIDE_R1) return this.r1Hide();
     const G = this.G, W = G.world, f = this.friend, part = this.plan.incident.part, tw = this.tw;
     this.friendHome = f.root.position.clone();
     const pc = this.partCenter(part), from = f.root.position.clone();
@@ -421,6 +429,45 @@ export class StageScene {
     this.giggle('쏙!');
     if (off) await W.flyTo(tw, { ...keep, dur: .45 });
     // (the goal is on the banner and the HUD face; no extra toast on top — 대본 10/18)
+  }
+  // R1: eyes shut while the friend hides; candidates and a crumb trail
+  async r1Hide() {
+    const G = this.G, W = G.world, f = this.friend, real = this.plan.incident.part, tw = this.tw;
+    this.friendHome = f.root.position.clone();
+    const others = [];
+    for (const e of (this.room.rooms || [this.room]).flatMap(R => R.furns)) {
+      if (!R1_HIDE.includes(e.type) || e.f === real.furn) continue;
+      const p = (e.f.parts || []).find(q => q !== real && !q.lock && !q.isLever && !q.isGadget && !q.dig && !q.secret && !q.secretShelf && ['door', 'lid', 'drawer', 'lift'].includes(q.kind));
+      if (p) others.push(p);
+    }
+    others.sort(() => Math.random() - .5);
+    this.r1 = { real, cands: [real, ...others.slice(0, 2)], miss: 0, told: new Set(), objs: [] };
+    this.say(f, hideLine(this.idx, this.th.friend), 1100);
+    await tw.wait(.6);
+    const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, '눈 감아!'), this.r1N = h('span', { class: 'ol' }, ''));
+    document.getElementById('overlay').append(ov);
+    f.root.visible = false;
+    for (const n of ['하나', '둘', '셋']) { if (this.dead) return; this.r1N.textContent = n; G.audio.sfx('tock'); await tw.wait(.6); }
+    G.audio.sfx('tap', 12); await tw.wait(.15); G.audio.sfx('tap', 14); await tw.wait(.2); G.audio.sfx(real.sfx || 'open'); await tw.wait(.35); G.audio.sfx('close');
+    ov.classList.add('out'); setTimeout(() => ov.remove(), 300);
+    this.friendHidden = true; this.r1Trail();
+  }
+  r1Trail() {
+    const real = this.r1.real, pc = this.partCenter(real), y = new THREE.Vector3(); real.furn.group.getWorldPosition(y);
+    const from = this.friendHome || new THREE.Vector3(), n = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const k = .45 + i * .2, g = buildItem(['candy', 'cookie', 'acorn'][i % 3]);
+      g.scale.multiplyScalar(.55); g.traverse(o => { o.raycast = () => {}; });
+      g.position.set(from.x + (pc.x - from.x) * k + (Math.random() - .5) * .25, y.y + .02, from.z + (pc.z - from.z) * k + (Math.random() - .5) * .25);
+      g.rotation.y = Math.random() * 6; this.room.group.attach(g); this.r1.objs.push(g);
+    }
+    this.G.world.idsDirty = true; this.G.world.shadowDirty = true;
+  }
+  r1Wrong(part) {
+    const R = this.r1; R.told.add(part); R.miss++;
+    const pc = this.partCenter(part);
+    this.say({ root: { position: pc }, headTop: () => .25 }, '여긴 없지롱~', 1200); this.G.audio.sfx('miss');
+    setTimeout(() => { if (this.dead || !this.friendHidden) return; if (R.miss >= 3) { this.giggle('히히~ 여기 근처야!'); setTimeout(() => !this.dead && this.friendHidden && this.giggle('킥킥'), 900); } else this.giggle('킥'); }, 700);
   }
   hideSay(lines) { if (this.t - (this._hsT ?? -99) < 4) return; this._hsT = this.t; this.giggle(lines[(this._hn = (this._hn || 0) + 1) % lines.length]); this.gigT = 7; }
   giggle(line) {
@@ -1058,6 +1105,7 @@ export class StageScene {
       for (const s of part.spots) if (s.item && !s.item.found) { const p = W.toScreen(this.worldCenter(s.item)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 }); }
       if (this.jailed?.in && part === this.jailed.door) this.freeJailed();
       const fi = part.spots.map(s => s.item).find(it => it?.friend && !it.found); if (fi) this.revealFriend(fi);
+      else if (this.r1 && this.friendHidden && this.r1.cands.includes(part) && !this.r1.told.has(part)) this.r1Wrong(part);
       else if (this.incident && this.friendHidden && part._hadLock && !part._told) { part._told = true; setTimeout(() => !this.dead && this.hideSay(hidePool(this.idx, this.th.friend, 'clue')), 500); }
       // 2판: a drawer of hers (with something in it, or only socks) — once each way
       else if (this.scene?.drawerFull && !this.incident && part.kind === 'drawer') { const full = part.spots.some(s => s.item && !s.item.found && s.item.role === 'target'), k = full ? '_dF' : '_dE'; if (!this[k]) { this[k] = true; this.say(this.friend, full ? this.scene.drawerFull : this.scene.drawerEmpty, 1400); } }
@@ -1229,7 +1277,10 @@ export class StageScene {
     if (donut && !donut.found && !await this.teach(DO.donut, 'tap', () => (donut.found ? null : this.worldCenter(donut)), () => donut.found, DO.donut2)) return;
     // ② the box shook, but that's its back: turn the room until its front shows
     if (!front() && !this.friendItem?.found) {
-      if (W.scheme === 'E' && !W.joyOn) {
+      // 기본 조작 F (조작감 세션 10/18): one finger always moves; the turn dial bottom right turns the room (or a two-finger twist)
+      const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
+      if (W.scheme === 'F' && dial) { if (!await this.teach(DO.turnDial, 'swipe', () => at(dial), front, DO.turnDial2)) return; }
+      else if (W.scheme === 'E' && !W.joyOn) {
         const mt = W.modeBadge?.querySelector('.mt');
         if (W.eBase !== 'turn' && !await this.teach(DO.turnBadge, 'tap', () => at(mt), () => W.eBase === 'turn' || front(), DO.turnBadge2)) return;
         if (!front() && !await this.teach(DO.turnDrag, 'swipe', mid, front, DO.turnDrag2)) return;
@@ -1669,7 +1720,7 @@ export class StageScene {
     this.hero?.update(dt, this.tw, !!this.result || !!this.talking);
     if (this.dizzy > 0) { this.dizzy -= dt; if (this.dizzy <= 0) { this.mong.classList.remove('spin'); this.mongImg.src = G.thumbs.face_mong; } }
     if (this.jailed?.in && this.running && !this.result && (this._jT = (this._jT ?? 9) - dt) <= 0) { this._jT = 11 + Math.random() * 5; this.say(this.jailed.ch, JAIL_LINES[(this._jn = (this._jn || 0) + 1) % JAIL_LINES.length], 2000); }   // the one in the cell keeps pleading
-    if (this.incident && this.friendHidden && this.running && !this.result && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = (this.idle > 8 ? 4 : 6.5) + Math.random() * 3; this.giggle(); }
+    if (this.incident && this.friendHidden && this.running && !this.result && (!HIDE_R1 || this.idle > 15) && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = (this.idle > 8 ? 4 : 6.5) + Math.random() * 3; this.giggle(); }
     if (this.spec.night && !this.result && (this._starT = (this._starT || 0) - dt) <= 0) {
       this._starT = .45 + Math.random() * .5;
       W.fx.burst(Math.random() * W.W, Math.random() * W.H * .28 + 40, { n: 1, shape: 'star', speed: 6, gravity: 0, life: 1.3, size: 7, colors: ['#fff6c0', '#ffffff', '#cfe0ff'] });
