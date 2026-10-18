@@ -25,6 +25,9 @@
 .bk-card img { width: 66px; height: 66px; pointer-events: none; }
 .bk-card b { font-size: 15px; line-height: 1.1; color: #3a2453; font-weight: 400; white-space: nowrap; pointer-events: none; }
 .bk-card.down { transform: translateY(4px); box-shadow: 0 1px 0 #3a2453; }
+.bk-card:focus { outline: none; }
+.bk-card:focus-visible, .bk-cards.kb .bk-card:focus { outline: 4px solid #ff5d9e; outline-offset: 3px; }
+.bk-cards.kb .bk-card::before { content: attr(data-key); position: absolute; left: 6px; top: 4px; font-size: 13px; line-height: 1; color: #fff; background: #3a2453; border-radius: 6px; padding: 2px 5px 3px; }
 .bk-card.gold { background: linear-gradient(#fff7cf, #ffe27a); border-color: #b9820b; box-shadow: 0 5px 0 #b9820b; }
 .bk-card.used { pointer-events: none; }
 .bk-card.ok { background: #e4ffd6; }

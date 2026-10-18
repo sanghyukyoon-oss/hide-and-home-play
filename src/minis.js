@@ -440,8 +440,17 @@ class Lamp {
     this.tip = '말풍선 "킥킥"이 뜬 곳 근처를 비춰 봐!';
     this.intro = [{ who: 'panda', text: '캠핑의 꽃은 밤 숨바꼭질! 손전등 하나로 다섯 명 찾아 봐~' },
       { who: 'mong', text: '화면을 문지르면 손전등이 따라와. 불빛에 보이는 친구를 톡!' }];
-    this.time = P.time || 50; this.n = 5;
+    this.time = P.time || 50; this.n = P.n || 5; this.decoys = P.decoys || 0;
     this.bg = ['#1d2250', '#2c2a5e']; this.light = { ambColor: '#5a63b8', amb: .7, sunColor: '#9fa9ff', sun: .45 };
+    // the boss version (user, 10/18: "손전등 술래를 보스로 키우기" — it was more fun than the flashlight boss): a bigger floor,
+    // more friends, and 너굴이 hiding among them — lighting it up and tapping it costs time while it laughs at you
+    if (P.boss) {
+      this.title = '손전등 술래 · 보스';
+      this.goal = `불 꺼진 층에서 친구 ${this.n}명 찾기! 너굴이를 톡 하면 시간이 줄어`;
+      this.tip = '"킥킥"은 친구, "흐흐흐"는 너굴이야!';
+      this.intro = [{ who: 'raccoon', text: '불 다 껐지롱! 친구들 사이에 나도 숨었다~ 나를 비추면 시간 뺏을 거야!' },
+        { who: 'mong', text: '"킥킥"은 친구, "흐흐흐"는 너굴이! 손전등으로 잘 보고 톡!' }];
+    }
   }
   map() { return this.P.map || 'camp1'; }
   build() {
@@ -456,38 +465,50 @@ class Lamp {
     const kinds = ['bunny', 'hamster', 'squirrel', 'frog', 'sleepy', 'shiba'].sort(() => Math.random() - .5);
     this.friends = [];
     for (const b of spots) {
-      if (this.friends.length >= this.n) break;
+      if (this.friends.length >= this.n + this.decoys) break;
       const cc = b.getCenter(new THREE.Vector3()), p = new THREE.Vector3(cc.x + (b.max.x - cc.x) * .7, 0, cc.z - (b.max.z - cc.z) * .55);
       if (this.friends.some(f => f.p.distanceTo(p) < 1.2)) continue;
       const s = W.toScreen(p); if (s.x < 30 || s.x > W.W - 30 || s.y < 140 || s.y > W.H - 190) continue;
-      const ch = S.char(kinds[this.friends.length % kinds.length], p.x, p.z); ch.root.scale.setScalar(.8); ch.faceTo(W.cam.position.x, W.cam.position.z);
-      this.friends.push({ ch, p, found: false });
+      const bad = this.friends.length >= this.n;   // after the friends: 너굴이 decoys
+      const ch = S.char(bad ? 'raccoon' : kinds[this.friends.length % kinds.length], p.x, p.z); ch.root.scale.setScalar(.8); ch.faceTo(W.cam.position.x, W.cam.position.z);
+      this.friends.push({ ch, p, found: false, bad });
     }
     this.dark = h('div', { class: 'mini-dark' }); S.G.ui.wui.prepend(this.dark);
     this.lx = W.W / 2; this.ly = W.H / 2; this.setLamp(this.lx, this.ly);
-    this.n = this.friends.length;
+    this.n = this.friends.filter(f => !f.bad).length;
   }
   setLamp(x, y) { this.lx = x; this.ly = y; this.dark.style.setProperty('--lx', x + 'px'); this.dark.style.setProperty('--ly', y + 'px'); }
   start() { this.left = this.time; this.gig = 2.5; }
   down(x, y) { this.setLamp(x, y); } move(x, y) { this.setLamp(x, y); }
   update(dt) {
     const S = this.S; this.left -= dt; S.setClock(this.left, this.time);
-    const n = this.friends.filter(f => f.found).length; S.setStatus(`찾은 친구 ${n} / ${this.n}`, '');
+    const n = this.friends.filter(f => f.found && !f.bad).length; S.setStatus(`찾은 친구 ${n} / ${this.n}`, '');
     if (this.left <= 0) return S.done(false, `${n}명 찾았어… 남은 친구들이 킥킥 웃고 있어`);
-    if ((this.gig -= dt) <= 0) { this.gig = 3.2; const f = pick(this.friends.filter(q => !q.found) || []); if (f) S.say(f.ch, '킥킥', 900); }
+    if ((this.gig -= dt) <= 0) { this.gig = this.decoys ? 2.6 : 3.2; const f = pick(this.friends.filter(q => !q.found) || []); if (f) S.say(f.ch, f.bad ? '흐흐흐' : '킥킥', 900); }
   }
   tap(x, y) {
     const S = this.S; this.setLamp(x, y);
     for (const f of this.friends) {
       if (f.found) continue;
       const d = near(S, f.p.clone().setY(.4), x, y, 70); if (d == null) continue;
+      const sp = S.screen(f.p.clone().setY(.4));
+      if (f.bad) {
+        // 너굴이: it leaps out laughing and takes 6 seconds; then it scurries to another dark spot
+        this.left = Math.max(.5, this.left - 6); S.G.audio.sfx('locked');
+        f.ch.setFace('happy'); f.ch.pose = 'point'; S.say(f.ch, '메롱~ 나였지롱!', 1100); f.ch.hopTo(S.tw, f.p.x, f.p.z, { height: .6, dur: .45 });
+        S.G.ui.floatText(sp.x, sp.y - 30, '-6초', 'red');
+        document.getElementById('app').animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'none' }], { duration: 220 });
+        const to = pick(this.friends.filter(q => q !== f && !q.found)) || f; const np = to.p.clone().add(new THREE.Vector3(.5, 0, .4));
+        S.tw.wait(.9).then(() => { if (f.found) return; f.ch.root.position.set(np.x, 0, np.z); f.p.copy(np); f.ch.pose = 'idle'; });
+        return;
+      }
       f.found = true; S.G.audio.sfx('special'); f.ch.setFace('wow'); S.say(f.ch, '들켰다~!', 1000); f.ch.hopTo(S.tw, f.p.x, f.p.z, { height: .5, dur: .4 });
-      const sp = S.screen(f.p.clone().setY(.4)); S.G.world.fx.burst(sp.x, sp.y, { n: 14, shape: 'star' });
-      if (this.friends.every(q => q.found)) return S.done(true, '어둠 속 친구들을 다 찾았어! 손전등 탐정');
+      S.G.world.fx.burst(sp.x, sp.y, { n: 14, shape: 'star' });
+      if (this.friends.every(q => q.found || q.bad)) return S.done(true, this.decoys ? '너굴이를 피해 친구들을 다 찾았어! 손전등 탐정' : '어둠 속 친구들을 다 찾았어! 손전등 탐정');
       return;
     }
   }
-  bot(dt) { if ((this._bt = (this._bt || 0) + dt) < 1.0) return; this._bt = 0; const f = this.friends.find(q => !q.found); if (f) { const s = this.S.screen(f.p.clone().setY(.4)); this.tap(s.x, s.y); } }
+  bot(dt) { if ((this._bt = (this._bt || 0) + dt) < 1.0) return; this._bt = 0; const f = this.friends.find(q => !q.found && !q.bad); if (f) { const s = this.S.screen(f.p.clone().setY(.4)); this.tap(s.x, s.y); } }
   dispose() { this.dark?.remove(); }
 }
 
@@ -509,6 +530,8 @@ export const MINI_AFTER = {
   45: { kind: 'blanket', lab: true, lv: 1 },   // 이불 속 누구게? 변장한 너굴이 (소풍은 보류 — user: "보물찾기는 애매함")
   57: { kind: 'whack', lab: true, lv: 2 },   // 두더지 피버 수풀
   62: { kind: 'redlight', lab: true, lv: 1 },   // 무궁화 새 판 킥킥 너굴이
+  // 66판 뒤 보스: 손전등 술래를 키운 판 (user, 10/18: 보스 손전등은 "ㅈㄴ 재미없다", "손전등 술래 재밌는데" → "손전등 술래를 보스로 키우기")
+  65: { kind: 'lamp', boss: true, p: { map: 'officefloor', time: 80, n: 8, decoys: 2, boss: true } },
 };
 // 보스전 (10/18): the five games from the new-game session (scenes/bossgame.js) — each region ends on one, the good ones come
 // back (user: "보스판은 여러 종류로 갈 거고 재미있는 판은 다시 나올 거"), 엄마 몰래 야식 first and last ("이건 대박"). lv = which
@@ -522,11 +545,8 @@ export const BOSS_GAMES = {
   4: { kind: 'yasik', lv: 0 },     // 첫 보스
   11: { kind: 'wakeup', lv: 0 },   // 몽글 마을 집 끝
   20: { kind: 'hotel', lv: 2 },    // 우리 아파트 끝 — 몽글 호텔 3박 4일 (user, 10/18: "실제에서 3박 4일 정도로 하는 거지?")
-  30: { kind: 'flashlight', lv: 1 }, // 동네 골목 — 손전등 숨바꼭질 곰돌이네 거실 (user, 10/18: "추로는 빼자. 손전등 숨바꼭질을 더 넣는 게 낫겠어")
   39: { kind: 'yasik', lv: 1 },    // 편의점·상가
-  48: { kind: 'flashlight', lv: 2 }, // 공원 끝 — 손전등 숨바꼭질 말썽이네 집 (성적표 대신 — user, 10/18: "엄마 몰래 성적표 이것도 애매하다. 제거하자")
   59: { kind: 'wakeup', lv: 1 },   // 산길·캠핑 (텐트의 아침)
-  65: { kind: 'flashlight', lv: 3 }, // 빌딩 중간 — 손전등 숨바꼭질 펭펭이네 2층 집 (계단 오르내리기, 인계 4)
   69: { kind: 'yasik', lv: 2 },    // 마지막 보스
 };
 export const MINI_INFO = {

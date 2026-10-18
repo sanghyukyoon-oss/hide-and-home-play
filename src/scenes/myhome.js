@@ -12,6 +12,8 @@ import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
 import { HOME_ZONES, ZONE_TYPES, zoneLayout, SHOP_FURN } from '../catalog.js';
 import { playDialog } from '../story.js';
+import { HOME_TUT } from '../script.js';
+import { tr } from '../i18n.js';
 import { openShop } from '../shop.js';
 import { net, initNet, publishRoom, roomStats } from '../net.js';
 
@@ -36,20 +38,29 @@ export class MyHomeScene {
     G.audio.music('home');
     this.setMode(mode);
     this.loadStats();
-    // first visit (home opens after stage 2): 몽글이 shows how decorating, hiding and sharing work
+    // first visit (home opens after stage 2) — 대본 (10/18): 토순이 comes over, you hide one thing, she looks for it.
+    // Decorating, the shop, locks and posting each come when they're needed, not as a speech up front.
     const tut = G.save.tut || (G.save.tut = {});
     if (!tut.home && !G.bot && !G.skipTalk) {
       tut.home = true; G.persist();
       await this.tw.wait(.6); if (this.dead) return;
-      await playDialog(G, [
-        { who: 'mong', text: '여기가 우리 집이야! 스테이지에서 찾은 물건이랑 가구로 마음대로 꾸밀 수 있어.' },
-        { who: 'mong', text: "'꾸미기'에선 가구를 끌어서 옮기고 돌려 봐. 상점에선 가구, 테마, 방 크기까지 살 수 있어!" },
-        { who: 'mong', text: "'숨기기'에선 찾은 물건을 아무 데나 숨겨. 서랍을 열고 안쪽에 쏙 넣어도 되고!" },
-        { who: 'mong', text: "다 숨겼으면 '방 올리기'! 친구들이 내 방에 찾으러 와. 기발하게 숨겨 보자~" },
-      ], { title: '내 집' });
-      if (this.dead) return;
-      const b = [...document.querySelectorAll('.btn')].find(x => x.textContent.includes('꾸미기'));
-      b?.classList.add('pulse');
+      await playDialog(G, HOME_TUT.hello, { title: '내 집' }); if (this.dead) return;
+      const n0 = this.targetCount();
+      const raidLater = !tut.raidTip; tut.raidTip = 1;   // (the 털기 tip waits until 토순이 is done, so two tips don't stack)
+      if (n0 < MAX_HIDE) {
+        this.setMode('hide');
+        const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .16}px` }, tr(HOME_TUT.both));
+        G.ui.tut.append(tip);
+        while (!this.dead && this.targetCount() === n0) await this.tw.wait(.1);   // done when something is really hidden
+        tip.remove(); if (this.dead) return;
+        await this.tw.wait(.6); if (this.dead) return;
+        const rec = this.H.hide.items[this.H.hide.items.length - 1], inside = !!(rec?.free?.part || (rec?.spot && this.spotByKey?.[rec.spot]?.part));
+        await playDialog(G, HOME_TUT.count); if (this.dead) return;
+        await this.tw.wait(.7); if (this.dead) return;
+        await playDialog(G, inside ? HOME_TUT.missed : HOME_TUT.found); if (this.dead) return;   // tucked inside → she gives up
+      }
+      await playDialog(G, HOME_TUT.bye);
+      if (raidLater && !this.dead) G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가요', '');
     }
   }
   // frame the zone whatever its size (rooms can be widened in the shop)

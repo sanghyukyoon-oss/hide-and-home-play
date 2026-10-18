@@ -608,7 +608,8 @@ export function stageSpec(idx) {
   if (GRAY.has(idx) && !s.timed && !s.boss) { s.gray = true; s.night = false; if (Array.isArray(s.lock)) s.lock = s.lock.filter(k => k !== 'color'); }   // a colour lock can't be read in grey
   // 사건 판 (10/17 pivot): from stage 3 on, every ordinary stage is a small incident — the owner hides behind a lock and
   // you work your way to them; 흑백판 keep their own colour game, timed and boss stages theirs
-  if (idx >= 2 && !s.timed && !s.boss && !s.gray && !s.tut) s.incident = true;
+  // (대본 10/18: the 열쇠·비밀번호 lessons, tut 4 and 7, are friend-finding stages too; only the two tutorials aren't)
+  if (idx >= 2 && !s.timed && !s.boss && !s.gray && !(s.tut <= 2)) s.incident = true;
   return s;
 }
 // After stage 50: endless mode, every region in turn, new seed every time, a 4-lock boss every 10th

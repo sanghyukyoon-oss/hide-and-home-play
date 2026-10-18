@@ -899,6 +899,11 @@ export class HomeScene {
     this.tw = new Tweens();
     G.setBg(['#eaf4ff', '#fff0dc']); G.world.setLight(HOME_LIGHT);
     const root = this.root = new THREE.Group();
+    // the geometry this visit makes for itself, given back on exit (홈 왕복마다 geometry +21 → 0, GPT review 10/18): the
+    // ground planes, merged furniture bodies, deFlush's lifted copies, the chimney smoke. Shared caches (PARTS, kit
+    // GEO/MAT, every texture) stay — no disposeTree here. Materials aren't disposed (see kit.js disposeTree: that only
+    // deleted warm shader programs); they go with the garbage collector.
+    const owned = this.owned = { g: new Set() };
     // the neighbourhood on the ground: houses, yards, sidewalk and a street running off past the screen
     const V = buildVillage(root);
     const main = this.main = V.main;
@@ -908,7 +913,10 @@ export class HomeScene {
       ch.root.position.set(f.x + Math.sin(f.ry) * d + Math.cos(f.ry) * f.dx, 0, f.z + Math.cos(f.ry) * d - Math.sin(f.ry) * f.dx); ch.root.rotation.y = f.ry + (f.x < 0 ? .45 : -.45); root.add(ch.root);
       this.fh.push({ k: f.k, g: f.g, ch, x: f.x, z: f.z });
     }
+    root.traverse(o => { if (o.isMesh && (o.userData.ground || o.userData.baked)) owned.g.add(o.geometry); });
+    const pre = new Map(); root.traverse(o => { if (o.isMesh) pre.set(o, o.geometry); });
     deFlush(root, [], 'home-village', null, true);   // flush faces (a sign on a wall, a lid on a box) would flicker
+    for (const [o, g] of pre) if (o.geometry !== g) owned.g.add(o.geometry);   // deFlush's private copies
     // what characters must keep out of: every house (roof overhang, porch and steps included), wall, hedge, tree and
     // street prop. Everyone stands and walks a body's width away from them.
     root.updateMatrixWorld(true);
@@ -933,7 +941,7 @@ export class HomeScene {
     // chimney smoke from the top of 몽글이's chimney (world space)
     this.chimney = main.userData.chimney ? main.localToWorld(main.userData.chimney.clone()) : null;
     this.smoke = [];
-    if (this.chimney) for (let i = 0; i < 4; i++) { const p = new THREE.Mesh(new THREE.SphereGeometry(.16, 16, 12), mat('#ffffff', { opacity: .8, rim: .5 }).clone()); p.castShadow = false; root.add(p); this.smoke.push({ m: p, t: i / 4 }); }
+    if (this.chimney) for (let i = 0; i < 4; i++) { const p = new THREE.Mesh(new THREE.SphereGeometry(.16, 16, 12), mat('#ffffff', { opacity: .8, rim: .5 }).clone()); p.castShadow = false; root.add(p); this.smoke.push({ m: p, t: i / 4 }); owned.g.add(p.geometry); }
     this.clouds = [];
     // 몽글이, front and centre on the yard in front of its door
     const m = this.mong = new Char('mong'); m.root.position.set(0, 0, 1.55); m.root.scale.setScalar(1.8); m.pose = 'wave'; root.add(m.root);   // the hero: big, front and centre
@@ -1001,7 +1009,11 @@ export class HomeScene {
     upd(); const iv = setInterval(upd, 30);
     setTimeout(() => { clearInterval(iv); b.remove(); }, ms);
   }
-  exit() { this.dead = true; this.visitors?.dispose(); this.locals?.forEach(c => c.stopWander()); this.G.world.root.remove(this.root); this.G.world.autoSpin = 0; this.G.world.onTap = null; this.G.ui.clear(); }
+  exit() {
+    if (this.gone) return; this.gone = true;
+    this.dead = true; this.visitors?.dispose(); this.locals?.forEach(c => c.stopWander()); this.G.world.root.remove(this.root); this.G.world.autoSpin = 0; this.G.world.onTap = null; this.G.ui.clear();
+    if (this.owned) { for (const g of this.owned.g) g?.dispose(); this.owned = null; }
+  }
   buildHud() {
     const G = this.G, ui = G.ui, col = ui.col(), S = G.save;
     const lv = 1 + Math.floor((S.stars || 0) / 6);

@@ -326,16 +326,23 @@ const galleryPlay = (id, k) => playGame(G, id, k, !!PLAY_HASH?.[0]?.startsWith('
 let last = performance.now(), gameTime = 0, frames = 0, fpsNow = 60, fpsAcc = 0, fpsN = 0, updMs = 0, drawMs = 0, slow = 0, fast = 0, settleUntil = 0;
 let lastDraw = 0;
 // the screen's refresh (median gap between animation callbacks): on a 90/120 Hz phone the browser calls us 90/120
-// times a second, so even while a finger moves we draw only every Nth call — at most ~60 fps (120 Hz → 60, 90 → 45);
-// counted in callbacks, not milliseconds, so a 60 Hz screen never drops a frame to timestamp jitter
-let rafLast = 0, rafN = 1, rafTick = 0, rafCount = 0; const rafGaps = [];
+// times a second, so even while a finger moves we draw only every Nth call — counted in callbacks, not milliseconds,
+// so frames stay evenly spaced and a 60 Hz screen never drops a frame to timestamp jitter. N = the highest even rate
+// up to ~60 fps, unless that falls under 40 fps (then one step up): 60 Hz → 60, 75 → 75, 90 → 45, 100 → 50,
+// 120 → 60, 144 → 48, 165 → 55, 240 → 60. The boundaries (64/128/192 Hz, and 80 Hz for the 40 fps floor) sit well away
+// from real screens' rates, and a new N must come out the same three checks in a row, so it never flips.
+export function capN(hz) { let n = Math.max(1, Math.ceil(hz / 64)); if (n > 1 && hz / n < 40) n--; return n; }
+let rafLast = 0, rafN = 1, rafTick = 0, rafCount = 0, rafWant = 1, rafAgree = 0; const rafGaps = [];
 function frame(now) {
   // phones draw less often whenever nothing is being touched or moved — the picture is the same, only the frame count
   // drops (user, 10/18: "아트 유지하면서 최적화 가능할까?"): 60 fps while a finger is on the screen or the view moves, 30 fps
   // a moment after it settles (was 1.5 s), 20 fps behind a menu / result panel
   if (rafLast) { rafGaps.push(now - rafLast); if (rafGaps.length > 40) rafGaps.shift(); }
   rafLast = now;
-  if (OPT.fpsCap && (++rafCount & 15) === 0 && rafGaps.length >= 20) { const g = rafGaps.slice().sort((a, b) => a - b)[rafGaps.length >> 1]; rafN = g > 0 ? Math.max(1, Math.round(1000 / g / 60)) : 1; }
+  if (OPT.fpsCap && (++rafCount & 15) === 0 && rafGaps.length >= 20) {
+    const g = rafGaps.slice().sort((a, b) => a - b)[rafGaps.length >> 1], want = g > 0 ? capN(1000 / g) : 1;
+    if (want !== rafWant) { rafWant = want; rafAgree = 1; } else if (++rafAgree >= 3) rafN = want;
+  }
   const gap = !world.phone ? 0 : ui.panelOpen ? 48 : now - world.lastActive > 350 ? 30 : 0;
   world.capped = gap > 0;
   if (gap && now - lastDraw < gap) { requestAnimationFrame(frame); return; }
@@ -409,9 +416,11 @@ async function boot() {
   while (G.pending) await new Promise(r => requestAnimationFrame(r));
   document.getElementById('boot').classList.add('gone');
   setTimeout(() => document.getElementById('boot')?.remove(), 600);
+  // the QA hooks go in before the first scene settles (a stage that opens with a dialogue waits for a tap, and the bots /
+  // headless checks need __jam meanwhile — story session 10/18)
+  installJam();
   await going;
   // (no background drawing of all ~200 furniture icons any more: each grid draws the icons it shows — see G.needThumbs)
-  installJam();
   // keep the two copies in step (a save that came from the address goes back into storage) and say so when this browser
   // cannot keep anything — then the address is what remembers
   if (WEB) { G.persist(); if (!storageOk) setTimeout(() => ui.toast('이 브라우저는 저장이 안 돼요 · 지금 주소를 북마크하면 이어서 할 수 있어요', 'red'), 1500); }

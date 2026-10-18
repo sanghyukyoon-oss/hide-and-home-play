@@ -10,6 +10,9 @@ import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { ITEMS, buildItem } from '../gfx/items.js';
 import { renderThumbs } from '../thumbs.js';
 import { disposeTree } from '../gfx/kit.js';
+import { playDialog } from '../story.js';
+// 대본 (10/18): who you're with and what's at stake before a game's first time, a word after the first win, and the ending
+import { gameLines, ENDING, endCard, choose, UI as SUI } from '../script.js';
 
 const LOAD = {
   yasik: () => import('../bosses/yasik.js'), villa: () => import('../bosses/villa.js'), tag: () => import('../bosses/tag.js'),
@@ -48,7 +51,7 @@ export class BossGameScene {
   async enter({ kind = 'yasik', after = 4, lv = 0, interlude = false, ...more } = {}) {
     const G = this.G, W = G.world;
     // interlude: a 쉬어가기 between stages, not a boss — a loss still goes on (smaller reward), marked done as 'm'+after
-    this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
+    this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this._out = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
     W.scheme = 'E'; W.joyOn = false; W.joyHidden = true; W.gaugeOn = false; W.camLock = false;
     const app = document.getElementById('app'); for (const [k, v] of Object.entries(APP_FLAGS[this.kind] || {})) app.dataset[k] = v;
@@ -60,6 +63,9 @@ export class BossGameScene {
       await new Promise(res => { l.onload = l.onerror = res; setTimeout(res, 2000); });
     }
     const mod = await LOAD[this.kind](); if (this.dead) return;
+    // 대본: the lead-in, the first time this game and set-up comes up (the game's own rules come after, in the game)
+    const GL = gameLines(this.kind, this.lv), said = G.save.gameTalk || (G.save.gameTalk = {});
+    if (GL?.lead && !said[this.kind + this.lv] && !G.bot && !G.skipTalk) { said[this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.lead); if (this.dead) return; }
     this.L = this.makeL();
     this.game = new mod.Game(this.L);
     await this.game.enter({ lv: this.lv, ...more });   // (more: a game's own extras, e.g. the hotel's night)
@@ -115,7 +121,21 @@ export class BossGameScene {
     const done = G.save.bossDone || (G.save.bossDone = {}); done['m' + this.after] = true; G.persist();
     G.stats.log.push({ mini: this.kind, result: 'pass' });
   }
-  finish() { this.G.go('stage', { idx: this.after + 1 }); }
+  async finish() {
+    const G = this.G;
+    // 대본: a word after the first win; after the last 야식, the ending (once) and "hide something at home / keep playing"
+    if (this.won && !this._out && !G.bot && !G.skipTalk) {
+      this._out = true;
+      const GL = gameLines(this.kind, this.lv), said = G.save.gameTalk || (G.save.gameTalk = {});
+      if (GL?.out && !said['o' + this.kind + this.lv]) { said['o' + this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.out); }
+      if (GL?.ending && !G.save.ending) {
+        G.save.ending = true; G.persist();
+        await playDialog(G, ENDING); await endCard(G);
+        if (await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0) return G.go('myhome');
+      }
+    }
+    G.go('stage', { idx: this.after + 1 });
+  }
   menu() {
     const G = this.G; if (G.ui.panelOpen) return;
     this.menuOpen = true;

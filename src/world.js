@@ -18,7 +18,8 @@ export const QUALITY = [{ ss: 2, dpr: 2, shadow: 2048 }, { ss: 1.5, dpr: 2, shad
 // ?fpscap=0 / ?cdepth=1 one each. ?mask=1 tries the edge block mask (exact, but slower on the Mac GPU: off by default)
 const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
 export const OPT_STORE = 'sbk-opt';   // the heat test build's on/off switch, kept per device (perfhud.js)
-const OPT_ON = QS.get('opt') !== '0' && (() => { try { return localStorage.getItem(OPT_STORE) !== '0'; } catch { return true; } })();
+const OPT_ON = QS.has('opt') ? QS.get('opt') !== '0' : (() => { try { return localStorage.getItem(OPT_STORE) !== '0'; } catch { return true; } })();
+export const OPT_IS_ON = OPT_ON;
 export const OPT = { dirty: OPT_ON && QS.get('dirty') !== '0', mask: OPT_ON && QS.get('mask') === '1', inval: OPT_ON && QS.get('inval') !== '0', depth0: OPT_ON && QS.get('cdepth') !== '1', sort: OPT_ON && QS.get('sort') !== '0', fpsCap: OPT_ON && QS.get('fpscap') !== '0' };
 export function hasWebGL2() { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } }
 
@@ -66,8 +67,12 @@ export class World {
         for (const [o, e] of this.dirty.objs) { const q = e.r; if (!q || q[2] <= b[0] || q[0] >= b[2] || q[3] <= b[1] || q[1] >= b[3]) { this._culled.push([o, o.layers.mask]); o.layers.mask = 0; } }
       };
     }
+    // a lost-and-restored GPU context (iOS drops it under memory pressure or in the background): three re-creates its
+    // buffers, but they come back empty — the still-view boxes, the shadow map and the outline IDs all start over
+    // (GPT review 10/18: the box path kept skipping and the restored screen stayed blank)
+    canvas.addEventListener('webglcontextrestored', () => { this.dirty?.invalidate(); this.shadowDirty = true; this.idsDirty = true; this._sizeKey = null; });
     this.maxSS = 2; this.frameN = 0; this.phone = PHONE; this.lastActive = performance.now();
-    this.perf = { frames: 0, area: 0 };   // frames drawn and the share of the screen drawn again (1 = whole), for the HUD
+    this.perf = { frames: 0, area: 0, fulls: 0, parts: 0, skips: 0 };   // frames drawn and the share of the screen drawn again (1 = whole), for the HUD
     this.root = new THREE.Group(); this.scene.add(this.root);
     // camera rig
     this.yaw = Math.PI / 4; this.pitch = .62; this.zoom = 1; this.target = new THREE.Vector3(0, .6, 0);
@@ -269,6 +274,7 @@ export class World {
       if (this.idsDirty || this.frameN++ % 8 === 0) { sortLayers(this.scene); this.post.assignIds(this.scene); this.idsDirty = false; }
       const plan = this.dirty?.plan(this, this.post);
       this.perf.frames++; this.perf.area += plan?.skip ? 0 : plan?.rects ? plan.area : 1;
+      if (plan?.skip) this.perf.skips++; else if (plan?.rects) this.perf.parts++; else this.perf.fulls++;
       if (plan?.skip) return;   // nothing on screen changed: the canvas keeps the last frame, the GPU rests
       this.post.render(this.scene, this.cam, plan?.rects || null);
     } else this.renderer.render(this.scene, this.cam);

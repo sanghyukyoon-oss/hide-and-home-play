@@ -35,18 +35,32 @@ const LEVELS = [
       F('dryrack', 1, 2, 1), F('plant', 2, 2), F('laundrybasket', 3, 2), F('monstera', 4, 2), F('sofa2', 2, 3), F('tvlow', 2, 4, 2), F('robovac', 0, 3), F('diningset', 4, 4), F('floorlamp', 0, 4), F('plant', 6, 4)],
     lures: [{ furn: 'robovac', name: '로봇청소기', line: '어머, 청소기가 왜 켜졌지?' }],
     route: [TW(0, 1), TW(6, 1)] },
-  { name: '둘째 밤', sub: '엄마가 식탁에서 귤 까먹는 중', tel: 1.0, busy: [3.0, 5.0], look: [1.4, 2.1], fake: .2, half: 54, range: 7.5, tv: { half: 26, range: 1.6 },
-    mom: { at: [.5, 1.74], y: .12, busyYaw: 0, own: 'diningset' },
-    furniture: [F('monstera', 0, 0), F('bookshelf', 1, 0, 0, { seed: 7 }), F('recordcab', 2, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0), F('bigfridge', 6, 0),
-      F('plant', 1, 2), F('monstera', 2, 2), F('dryrack', 4, 2), F('plant', 5, 2), F('sofa2', 0, 3, 1), F('diningset', 3, 3), F('floorlamp', 6, 4), F('plant', 5, 4)],
-    lures: [{ speaker: TW(1.1, 4.1), name: '블루투스 스피커', line: '어머, 노래가 왜 나와?' }],
-    route: [TW(0, 1), TW(6, 1)] },
-  { name: '셋째 밤', sub: '멍뭉이가 자고 있어. 뛰면 깨!', tel: .85, busy: [3.0, 5.0], look: [1.5, 2.3], fake: .25, half: 54, range: 7, tv: { half: 30, range: 4 },
-    mom: { at: [-.5, 1.06], y: .3, busyYaw: 0, sit: 'sofa2' }, dog: { at: TW(3, 1.85), yaw: Math.PI * .5 },
-    furniture: [F('monstera', 0, 0), F('bookshelf', 1, 0, 0, { seed: 7 }), F('recordcab', 2, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0), F('bigfridge', 6, 0),
-      F('dryrack', 1, 2, 1), F('plant', 2, 2), F('monstera', 4, 2), F('sofa2', 2, 3), F('tvlow', 2, 4, 2), F('robovac', 0, 3), F('diningset', 4, 4), F('floorlamp', 0, 4), F('plant', 6, 4)],
-    lures: [{ furn: 'robovac', name: '로봇청소기', line: '어머, 청소기가 왜 켜졌지?' }, { speaker: TW(6, 3), name: '블루투스 스피커', line: '어머, 노래가 왜 나와?' }],
-    route: [TW(0, 1), TW(6, 1)] },
+  // 둘째 밤 — mom walks the house ("누가 안 자니~?"): her eyes move with her. The kitchen is on the west wall now, your door
+  // on the north wall; you cross the house while she paces between the living room and the dining table
+  { name: '둘째 밤', sub: '엄마가 집 안을 순찰 중', mode: 'patrol', half: 46, range: 4.6, tel: .9, busy: [3, 5], look: [1.4, 2.1], fake: 0, tv: { half: 26, range: 1.6 },
+    mom: { at: [2.5, 1.0], y: 0, busyYaw: -Math.PI / 2 },
+    patrol: { pts: [[2.5, 1.0], [-.9, 1.0]], speed: .72, pause: [1.3, 2.1], lines: ['누가 안 자니~?', '흠흠~ 문단속 했나?', '몽글이 자나…?'] },
+    decor: [D('door', 'N', 2.3), D('catclock', 'N', -.4), D('window', 'N', .9), D('wallshelf2', 'W', .5)],
+    zones: [{ i: 0, j: 0, w: 2, d: 5, kind: 'checker', a: '#fffaf0', b: '#cfe8d6' }],
+    furniture: [F('snackcart', 0, 0, 1), F('counter', 0, 1, 1, { variant: 'stove' }), F('counter', 0, 2, 1), F('kimchifridge', 0, 3, 1), F('bigfridge', 0, 4, 1),
+      F('bookshelf', 2, 0, 0, { seed: 9 }), F('recordcab', 3, 0), F('plant', 6, 0),
+      F('monstera', 2, 2), F('laundrybasket', 3, 2), F('dryrack', 4, 2, 1), F('plant', 6, 2),
+      F('diningset', 2, 4), F('sofa2', 4, 4), F('floorlamp', 6, 4)],
+    lures: [{ speaker: TW(6, 3.1), name: '블루투스 스피커', line: '어머, 노래가 왜 나와?' }], moon: { at: [.9, -1.7], s: [1.4, .8] },
+    snacks: ['apple', 'cookie', 'donut'],
+    route: [[2.3, -2.0], [2.3, -1.05], [-2.0, -1.05], [-2.0, 2.0]] },
+  // 셋째 밤 — lights out, mom dozing on the sofa: she can't see you, she HEARS you. A sound gauge fills with every noise
+  // (creaky boards, scurrying, the fridge's door alarm, the dog); her snores cover you; full gauge = she wakes and looks
+  { name: '셋째 밤', sub: '불 꺼진 거실, 엄마가 소파에서 조는 중', mode: 'doze', half: 62, range: 6.5, tel: .6, busy: [3, 5], look: [2.4, 2.8], fake: 0, tv: { half: 0, range: 0 },
+    mom: { at: [-.5, .06], y: .3, busyYaw: 0, sit: 'sofa2' }, dog: { at: [2.0, -.25], yaw: -Math.PI * .75 },
+    light: { ambColor: '#6c72b8', amb: .86, sunColor: '#b4bcff', sun: .72 }, bg: ['#2b2a55', '#141327'], tvOff: true, moon: { at: [-2.7, -1.2], s: [.8, 1.5] },
+    doze: { snore: 3.6, loud: 1.8, alarm: 1.9, lull: 9 }, creaks: [[-1.6, -1.0], [.4, -1.0], [-2.4, 1.9], [1.6, 1.4]],
+    decor: [D('door', 'W', -1.0), D('catclock', 'N', -1.0), D('balconywin', 'W', 1.2), D('wallrack', 'N', 1.5)],
+    furniture: [F('monstera', 0, 0), F('bookshelf', 1, 0, 0, { seed: 7 }), F('recordcab', 3, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0), F('bigfridge', 6, 0),
+      F('sofa2', 2, 2), F('plant', 1, 2), F('monstera', 5, 3), F('tvlow', 2, 4, 2), F('floorlamp', 0, 4), F('diningset', 4, 4), F('plant', 6, 4)],
+    lures: [{ speaker: TW(1.1, 3.6), name: '자장가 스피커', line: '', lullaby: true, card: '톡 하면 자장가 · 엄마가 더 깊이 잠들어요' }],
+    snacks: ['snack', 'candy', 'icecream'],
+    route: [[-3.0, 1.0], [-2.85, -1.45], [-.6, -1.45], [1.0, -1.45], [3.0, -1.0]] },
 ];
 export const SNACKS = ['milk', 'cupcake', 'icecream'];
 export { LEVELS };
@@ -56,8 +70,8 @@ const EYE_H = 1.25, BODY_H = .58, CROUCH_H = .3, ME_R = .16;
 
 export function mapFor(lv) {
   const room = { w: 7, d: 5, theme: THEMES.apt, wallH: 2.9, walls: { N: 'wall', W: 'wall' },
-    floorZones: [{ i: 4, j: 0, w: 3, d: 2, kind: 'checker', a: '#fffaf0', b: '#cfe8d6' }],
-    furniture: lv.furniture, decor: [D('door', 'W', 1.0), D('catclock', 'N', -1.0), D('balconywin', 'W', -1.2), D('wallrack', 'N', 1.5)] };
+    floorZones: lv.zones || [{ i: 4, j: 0, w: 3, d: 2, kind: 'checker', a: '#fffaf0', b: '#cfe8d6' }],
+    furniture: lv.furniture, decor: lv.decor || [D('door', 'W', 1.0), D('catclock', 'N', -1.0), D('balconywin', 'W', -1.2), D('wallrack', 'N', 1.5)] };
   return { theme: THEMES.apt, bleed: true, rooms: [{ at: [0, 0], layout: room }] };
 }
 // a little bluetooth speaker (the house toy style: round boxes, a ring that glows while it plays)
@@ -95,6 +109,8 @@ export function sees(eye, occ, px, pz, ph) {
 }
 export const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
 const AWAY = new Set(['rise', 'walk', 'check', 'walkback', 'sit']);
+const DOZING = new Set(['doze', 'stir']);   // night 3: asleep (no eyes), or half awake
+const LOOKS = new Set(['look', 'turn', 'patrol', 'pause', 'awake']);   // states whose eyes are open and searching
 
 export class Game {
   constructor(L) { this.L = L; this.tw = new Tweens(); this.t = 0; }
@@ -141,6 +157,11 @@ export class Game {
     this.mState = 'busy'; this.mT = LV.busy[0]; this.sus = 0;
     this.momBody = { x: LV.mom.at[0], z: LV.mom.at[1], r: .3 };
     this.bodies = [this.momBody];
+    // 첫째 밤 'watch': she sits and looks round now and then · 둘째 밤 'patrol': she walks between her points, eyes
+    // ahead · 셋째 밤 'doze': she sleeps on the sofa — no eyes, but she hears (the sound gauge)
+    this.mode = LV.mode || 'watch'; this.hear = 0; this.lullT = 0; this.openT = 0; this.mask = 1;
+    if (this.mode === 'patrol') { this.wi = 1; this.mState = 'patrol'; this.occ = this.occFull; this.momYaw = this.baseYaw(); mom.root.rotation.y = this.momYaw; }
+    if (this.mode === 'doze') { this.mState = 'doze'; this.snT = 0; this.sleepFace(true); }
     if (LV.dog) {
       const dog = this.dog = new Char('shiba'); W.root.add(dog.root);
       dog.root.position.set(LV.dog.at[0], 0, LV.dog.at[1]); dog.root.rotation.y = LV.dog.yaw; dog.setFace('happy'); dog.awake = false;
@@ -151,21 +172,24 @@ export class Game {
     this.buildVision();
     this.fridgeGlow = this.glow(this.fridgeAt.x, this.fridgeAt.y, 1.1, '#fff2b0'); this.fridgeGlow.material.opacity = 0;
     const tv = map.furns.find(r => r.type === 'tvlow');
-    if (tv) { const b = new THREE.Box3().setFromObject(tv.f.group); this.tvGlow = this.glow((b.min.x + b.max.x) / 2, b.min.z - .7, 1.0, '#8fc8ff'); this.tvGlow.scale.set(1.4, 1, .8); }
-    if (!LV.key) { this.moon = this.glow(-2.7, .9, 1.0, '#dfe6ff'); this.moon.scale.set(.8, 1, 1.5); this.moon.material.opacity = .16; }
+    if (tv && !LV.tvOff) { const b = new THREE.Box3().setFromObject(tv.f.group); this.tvGlow = this.glow((b.min.x + b.max.x) / 2, b.min.z - .7, 1.0, '#8fc8ff'); this.tvGlow.scale.set(1.4, 1, .8); }
+    if (!LV.key) { const M = LV.moon || { at: [-2.7, .9], s: [.8, 1.5] }; this.moon = this.glow(M.at[0], M.at[1], 1.0, '#dfe6ff'); this.moon.scale.set(M.s[0], 1, M.s[1]); this.moon.material.opacity = .16; }
+    this.creaks = (LV.creaks || []).map(([x, z]) => ({ x, z, on: false, flash: 0, m: this.creakMark(x, z) }));
+    if (this.fridge) { const b = new THREE.Box3().setFromObject(this.fridge.f.group); this.fridgeTop = new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y, (b.min.z + b.max.z) / 2); }
     this.goal = new THREE.Mesh(new THREE.RingGeometry(.22, .3, 28), new THREE.MeshBasicMaterial({ color: '#ffe36b', transparent: true, opacity: .6, depthWrite: false }));
     this.goal.rotation.x = -Math.PI / 2; this.goal.position.set(this.fridgeAt.x, .03, this.fridgeAt.y); W.root.add(this.goal);
     this.snacks = []; this.grabT = 0; this.fridgeOpen = 0; this.doorOpen = false;
     this.touch = null; this.result = null; this.moving = false; this.noise = 0; this.everMoved = false;
     this.frame();
     this.gk = LV.guard || 'mom';
-    L.makeThumbs({ items: this.snackTypes, faces: [[this.gk, 'normal'], [this.gk, 'angry'], ['mong', 'happy']] });
+    L.makeThumbs({ items: this.snackTypes, faces: [[this.gk, 'normal'], [this.gk, 'angry'], ['mong', 'happy'], ...(this.mode === 'doze' ? [[this.gk, 'happy']] : [])] });
     this.buildHud();
     this.bindInput();
     W.idsDirty = true; W.shadowDirty = true;
     await ui.banner(LV.name, LV.sub, 1300);
     if (this.dead) return;
     this.started = true;
+    if (this.mode === 'patrol') this.msay(LV.patrol.lines[0], 1500, 'think');
     // a new gadget tonight: "새로 얻었다" (that's how the lure is taught)
     const fresh = this.lures.find(d => !(this.lvIdx > 0 && LEVELS[this.lvIdx - 1]?.lures?.some(p => p.name === d.name)));
     if (fresh) this.gotCard(fresh);
@@ -176,6 +200,37 @@ export class Game {
   mapDef(LV) { return mapFor(LV); }
   goalFurn(map) { return map.furns.find(r => r.type === 'bigfridge'); }
   yawTo(x, z) { return Math.atan2(x - this.eye.x, z - this.eye.z); }
+  // her resting state for tonight, and the way she faces in it
+  isBase() { return ['busy', 'patrol', 'pause', 'doze', 'stir'].includes(this.mState); }
+  baseYaw() {
+    if (this.mode !== 'patrol') return this.lv.mom.busyYaw;
+    const t = this.lv.patrol.pts[this.wi], p = this.mom.root.position; return Math.atan2(t[0] - p.x, t[1] - p.z);
+  }
+  toBase() {
+    const LV = this.lv;
+    if (this.mode === 'patrol') { this.mState = 'patrol'; this.mom.setFace('normal'); }
+    else if (this.mode === 'doze') { this.mState = 'doze'; this.hear = Math.min(this.hear, .5); this.snT = 0; this.sleepFace(true); this.msay('…꿈이었나', 1200, 'think'); }
+    else { this.mState = 'busy'; this.mT = LV.busy[0] + Math.random() * (LV.busy[1] - LV.busy[0]); }
+  }
+  // asleep: the sleepy eye arcs instead of open eyes
+  sleepFace(on) {
+    const m = this.mom; m.setFace('normal');
+    if (on) { m.eyes.forEach(e => (e.visible = false)); m.eyesSleep.forEach(e => (e.visible = true)); }
+    if (this.momImg) this.momImg.src = this.L.thumbs[`face_${this.gk}_${on ? 'happy' : 'normal'}`];
+  }
+  // mom's speech bubble (a new line replaces the last one)
+  msay(t, ms, cls) { this._mb?.remove(); this._mb = this.L.say(this.mom, t, ms, cls); return this._mb; }
+  // a loose floorboard: a lighter plank with cracks (you learn it the first time it goes 삐걱)
+  creakMark(x, z) {
+    const cv = document.createElement('canvas'); cv.width = 96; cv.height = 64; const c = cv.getContext('2d');
+    c.fillStyle = 'rgba(222,178,126,.8)'; c.beginPath(); c.roundRect(6, 14, 84, 36, 8); c.fill();
+    c.strokeStyle = 'rgba(96,58,30,.9)'; c.lineWidth = 3.4; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(18, 27); c.lineTo(32, 32); c.lineTo(44, 25); c.moveTo(50, 40); c.lineTo(64, 34); c.lineTo(78, 39); c.stroke();
+    c.fillStyle = 'rgba(96,58,30,.9)'; c.beginPath(); c.arc(15, 41, 2.8, 0, 7); c.fill(); c.beginPath(); c.arc(81, 23, 2.8, 0, 7); c.fill();
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(.66, .44), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, .022, z); this.L.world.root.add(m); return m;
+  }
   buildOccluders() {
     // two sets: with mom on her seat (her own sofa hides only behind its back, her own table hides nothing) and with
     // her up and about (everything counts)
@@ -222,7 +277,9 @@ export class Game {
   // { half (rad), range, k (how fast she notices) } of her eyes right now
   sight() {
     const LV = this.lv, s = this.mState, D = Math.PI / 180;
-    if (s === 'look' || s === 'turn') return { half: LV.half * D, range: LV.range, k: 1, warm: true };
+    if (this.mode === 'doze' && s !== 'look' && s !== 'turn') return { half: 0, range: 0, k: 0, warm: false };   // eyes shut
+    if (this.mode === 'patrol' && !AWAY.has(s) && s !== 'look' && s !== 'turn') return { half: LV.half * D, range: LV.range, k: .9, warm: true };   // eyes ahead as she walks
+    if (s === 'look' || s === 'turn') return { half: LV.half * D, range: LV.range, k: this.mode === 'doze' ? .7 : 1, warm: true };
     if (s === 'walk' || s === 'walkback' || s === 'rise') return { half: 48 * D, range: 5, k: .8, warm: true };
     if (s === 'check' || s === 'sit') return { half: 36 * D, range: 2.6, k: .7, warm: true };
     return { half: LV.tv.half * D, range: LV.tv.range, k: .55, warm: false };
@@ -322,6 +379,7 @@ export class Game {
   setDoor(open) {
     if (this.doorOpen === open) return;
     this.doorOpen = open; this.L.audio.sfx(open ? 'open' : 'close');
+    if (this.mode === 'doze') this.hear = Math.min(1, this.hear + .04 * this.mask);
   }
   lureAt(x, y) {
     const live = this.lures.filter(d => !d.used); if (!live.length) return null;
@@ -349,17 +407,31 @@ export class Game {
     this.slots = this.snackTypes.map(t => h('div', { class: 'ys-slot' }, h('img', { src: L.thumbs['item_' + t] })));
     top.append(h('div', { class: 'ys-slots' }, ...this.slots));
     col.append(top);
-    this.momIcon = h('div', { class: 'ys-mom' }, h('img', { src: L.thumbs[`face_${this.gk}_normal`] }), this.susBar = h('i'));
+    this.momIcon = h('div', { class: 'ys-mom' }, this.momImg = h('img', { src: L.thumbs[`face_${this.gk}_${this.mode === 'doze' ? 'happy' : 'normal'}`] }), this.susBar = h('i'));
     col.append(this.momIcon);
+    if (this.mode === 'doze') {
+      if (!document.getElementById('ys-css-ear')) document.head.append(h('style', { id: 'ys-css-ear' }, `
+.ys-ear { position: absolute; left: 10px; top: calc(146px + var(--safeT, 0px)); display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; font-weight: 800; font-size: 13px; color: #fff; }
+.ys-ear b { display: block; width: 62px; height: 10px; border-radius: 6px; background: rgba(20, 16, 40, .6); border: 2px solid rgba(255, 255, 255, .55); overflow: hidden; }
+.ys-ear b i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #9fd8ff, #c48bff 60%, #ff5f86); transition: width .12s linear; }
+.ys-ear.hot b { border-color: #ff8aa0; animation: ysEar .5s ease-in-out infinite alternate; }
+.ys-ear.quiet span::after { content: ' · 드르렁'; color: #9fd8ff; }
+.ys-ear.lull span::after { content: ' · 자장가'; color: #9fd8ff; }
+@keyframes ysEar { to { transform: scale(1.08); } }`));
+      this.ear = h('div', { class: 'ys-ear' }, h('span', { class: 'ol' }, '소리'), h('b', {}, this.earBar = h('i')));
+      col.append(this.ear);
+    }
     this.hint = h('div', { class: 'ys-hint ol' }, h('span', { class: 'ys-hand' }), this.hintTx = h('span', {}, '가고 싶은 곳을 꾹 누르고 있기'));
     col.append(this.hint);
     this.vig = h('div', { class: 'ys-vig' }); document.getElementById('app').append(this.vig);
-    // a ♪ badge over every gadget you can still set off
-    for (const d of this.lures) { d.badge = h('div', { class: 'ys-lure' }, d.speaker ? '♪' : '⚡'); ui.wui.append(d.badge); }
+    // a badge over every gadget you can still set off (a note for a speaker, a bolt for a machine; drawn, since the
+    // body font draws ♪ as a blank)
+    const ICON = { note: '<path d="M9 17.5a3 3 0 1 1-2-2.83V5l11-2v11.5a3 3 0 1 1-2-2.83V6.4l-7 1.27z"/>', bolt: '<path d="M13.5 2 4.5 13.5h6l-1.5 8.5 9.5-12h-6.2z"/>' };
+    for (const d of this.lures) { d.badge = h('div', { class: 'ys-lure' }); d.badge.innerHTML = `<svg viewBox="0 0 24 24" width="21" height="21" fill="#2a1a3d">${ICON[d.speaker ? 'note' : 'bolt']}</svg>`; ui.wui.append(d.badge); }
   }
   gotCard(d) {
     const L = this.L, h = L.h;
-    const c = h('div', { class: 'ys-get' }, h('div', { class: 'ys-get-t ol' }, '새로 얻었다!'), h('div', { class: 'ys-get-n' }, `${d.name} 리모컨`), h('div', { class: 'ys-get-s' }, `톡 하면 ${this.lv.guard && this.lv.guard !== 'mom' ? '술래가' : '엄마가'} 끄러 가요 · 한 번만`));
+    const c = h('div', { class: 'ys-get' }, h('div', { class: 'ys-get-t ol' }, '새로 얻었다!'), h('div', { class: 'ys-get-n', style: 'word-break: keep-all' }, `${d.name} 리모컨`), h('div', { class: 'ys-get-s' }, d.card || `톡 하면 ${this.lv.guard && this.lv.guard !== 'mom' ? '술래가' : '엄마가'} 끄러 가요 · 한 번만`));
     document.getElementById('app').append(c); L.audio.sfx('special');
     setTimeout(() => { c.classList.add('out'); setTimeout(() => c.remove(), 400); }, 2600);
   }
@@ -379,9 +451,9 @@ export class Game {
       case 'hmm': {
         // her head starts to come round; the preview shows where she'll look
         const k = 1 - this.mT / this.telDur;
-        turnTo(LV.mom.busyYaw + wrap(this.lookYaw - LV.mom.busyYaw) * .18 * k, dt * 8);
+        turnTo(this.hmmYaw + wrap(this.lookYaw - this.hmmYaw) * .18 * k, dt * 8);
         if (this.mT <= 0) {
-          if (this.fakeOut) { this.mState = 'busy'; this.mT = rnd(LV.busy) * .6; L.say(this.mom, '…아닌가', 900); this.mom.setFace('normal'); }
+          if (this.fakeOut) { this.toBase(); if (this.mState === 'busy') this.mT *= .6; this.msay('…아닌가', 900); this.mom.setFace('normal'); }
           else { this.mState = 'turn'; this.mT = .28; L.audio.sfx('swish'); }
         }
         break;
@@ -395,8 +467,28 @@ export class Game {
         if (this.mT <= 0) { this.mState = 'back'; this.mT = .4; this.mom.setFace('normal'); }
         break;
       case 'back':
-        turnTo(LV.mom.busyYaw, dt * 9);
-        if (this.mT <= 0) { this.mState = 'busy'; this.mT = rnd(LV.busy); }
+        turnTo(this.baseYaw(), dt * 9);
+        if (this.mT <= 0) this.toBase();
+        break;
+      // 둘째 밤: walking to her next point, eyes ahead; there she stops and looks round
+      case 'patrol': {
+        const P = LV.patrol, t = P.pts[this.wi], p = this.mom.root.position, dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz), st = P.speed * dt;
+        if (d <= st) {
+          p.x = t[0]; p.z = t[1]; this.wi = (this.wi + 1) % P.pts.length;
+          this.mState = 'pause'; this.mT = rnd(P.pause); this.pauseYaw = this.momYaw; this.sweep0 = this.t;
+          if (Math.random() < .35) this.startHmm();   // now and then a real look round (the red preview first)
+          else if (Math.random() < .5) this.msay(P.lines[Math.floor(Math.random() * P.lines.length)], 1300, 'think');
+        } else { p.x += dx / d * st; p.z += dz / d * st; turnTo(Math.atan2(dx, dz), dt * 7); this.mom.lift = Math.abs(Math.sin(this.t * 8)) * .035; }
+        break;
+      }
+      case 'pause':
+        turnTo(this.pauseYaw + Math.sin((this.t - this.sweep0) * 1.7) * .85, dt * 5);
+        if (this.mT <= 0) this.mState = 'patrol';
+        break;
+      // 셋째 밤: asleep (snoring now and then), or stirring a moment when it got noisy
+      case 'doze': case 'stir':
+        turnTo(LV.mom.busyYaw, dt * 3);
+        if (this.mState === 'stir' && this.mT <= 0) { this.mState = 'doze'; this.sleepFace(true); }
         break;
       // lured: up, over to the gadget, a while switching it off, back, down
       case 'rise': {
@@ -408,7 +500,8 @@ export class Game {
       case 'walk': case 'walkback': {
         const path = this.lure.path, p = this.mom.root.position;
         if (!path.length) {
-          if (this.mState === 'walk') { this.mState = 'check'; this.mT = CHECK_T; L.say(this.mom, '누가 켰지…?', 1400, 'think'); }
+          if (this.mState === 'walk') { this.mState = 'check'; this.mT = CHECK_T; this.msay('누가 켰지…?', 1400, 'think'); }
+          else if (this.mode === 'patrol') { this.lure = null; this.toBase(); }   // back on her round
           else { this.mState = 'sit'; this.mT = .5; }
           break;
         }
@@ -419,7 +512,7 @@ export class Game {
       }
       case 'check': {
         const c = this.lure.devAt; turnTo(Math.atan2(c.x - this.eye.x, c.y - this.eye.z), dt * 8);
-        if (this.mT < .9 && !this.lure.off) { this.lure.off = true; this.stopGadget(this.lure.d); L.say(this.mom, '휴, 껐다', 900); L.audio.sfx('click'); }
+        if (this.mT < .9 && !this.lure.off) { this.lure.off = true; this.stopGadget(this.lure.d); this.msay('휴, 껐다', 900); L.audio.sfx('click'); }
         if (this.mT <= 0) { this.mState = 'walkback'; this.lure.path = this.lure.back; }
         break;
       }
@@ -437,13 +530,15 @@ export class Game {
   startHmm(urgent = false) {
     const LV = this.lv, L = this.L;
     if (AWAY.has(this.mState)) return;
-    if (this.mState !== 'busy' && !urgent) return;
+    if (!this.isBase() && !urgent) return;
+    this.hmmYaw = this.momYaw;
     this.mState = 'hmm'; this.telDur = this.mT = urgent ? Math.min(LV.tel, .55) : LV.tel;
     this.fakeOut = !urgent && Math.random() < LV.fake;
     // she looks toward where the sound came from (roughly where you are), never quite straight at you
     const p = this.pos;
     this.lookYaw = this.yawTo(p.x, p.y) + (Math.random() - .5) * .5;
-    this.mom.setFace('sus'); L.say(this.mom, '흠…?', Math.max(700, this.telDur * 1000), 'think');
+    if (this.mode === 'doze') this.sleepFace(false);
+    this.mom.setFace('sus'); this.msay(this.mode === 'doze' ? '흠냐…?!' : '흠…?', Math.max(700, this.telDur * 1000), 'think');
     L.audio.sfx('hmm');
   }
   // set a gadget off: it plays (notes / a beep and a wiggle) and mom goes to switch it off
@@ -452,17 +547,19 @@ export class Game {
     if (d.used) return;
     d.used = true; d.badge?.remove(); d.on = true; L.audio.sfx('pop', 8); L.audio.sfx(d.speaker ? 'special' : 'wobble');
     L.log({ lure: d.name, t: +this.t.toFixed(1), mom: this.mState });
+    if (d.lullaby) { this.lullT = LV.doze?.lull || 9; if (DOZING.has(this.mState)) this.msay('쿨… 쿨…', 1500, 'think'); return; }   // she sleeps deeper while it plays
     if (AWAY.has(this.mState)) return;   // she's already up: it just plays until she gets to it
     // her walk: from the floor tile beside her seat to the tile in front of the gadget, and back
     const b = new THREE.Box3().setFromObject(d.g), c = b.getCenter(new THREE.Vector3());
-    const from = nearestTile(this.grid, this.seat.x, this.seat.y), toward = new THREE.Vector2(c.x, c.z).lerp(this.seat, .0);
-    const goals = this.grid.filter(t => Math.hypot(t.x - c.x, t.z - c.z) < 1.1).sort((a, q) => Math.hypot(a.x - this.seat.x, a.z - this.seat.y) - Math.hypot(q.x - this.seat.x, q.z - this.seat.y));
+    const home = this.mode === 'patrol' ? new THREE.Vector2(this.eye.x, this.eye.z) : this.seat;   // on patrol she comes back to where she was
+    const from = nearestTile(this.grid, home.x, home.y);
+    const goals = this.grid.filter(t => Math.hypot(t.x - c.x, t.z - c.z) < 1.1).sort((a, q) => Math.hypot(a.x - home.x, a.z - home.y) - Math.hypot(q.x - home.x, q.z - home.y));
     const to = goals[0] || nearestTile(this.grid, c.x, c.z);
     const tiles = from && to ? [from, ...(gridPath(from, to) || [])] : [];
     const path = tiles.map(t => new THREE.Vector2(t.x, t.z));
-    this.lure = { d, path: path.slice(), back: [...path].reverse().concat([this.seat.clone()]), devAt: new THREE.Vector2(c.x, c.z), target: new THREE.Vector2(c.x, c.z), off: false };
+    this.lure = { d, path: path.slice(), back: [...path].reverse().concat([home.clone()]), devAt: new THREE.Vector2(c.x, c.z), target: new THREE.Vector2(c.x, c.z), off: false };
     this.mState = 'rise'; this.mT = .6; this.mom.setFace('wow');
-    L.say(this.mom, d.line, 1400);
+    this.msay(d.line, 1400);
   }
   stopGadget(d) { d.on = false; if (d.g.userData.led) d.g.userData.led.material.color?.set('#3b3f5c'); d.g.rotation.z = 0; d.g.position.y = 0; }
   // can mom see a point (x, z) at body height ph right now, with yaw / sight?
@@ -484,7 +581,7 @@ export class Game {
     const p = this.pos;
     for (const d of this.lures) {
       if (d.badge) { const s = W.toScreen(d.g.getWorldPosition(new THREE.Vector3()).setY(.7)); d.badge.style.left = s.x + 'px'; d.badge.style.top = s.y + 'px'; }
-      if (d.on) { d.g.position.y = Math.abs(Math.sin(this.t * 14)) * .03 + (d.own ? 0 : d.g.position.y * 0); d.g.rotation.z = Math.sin(this.t * 22) * .05; if (Math.random() < dt * 2.2) { const s = W.toScreen(d.g.getWorldPosition(new THREE.Vector3()).setY(.15)); L.ui.floatText(s.x + (Math.random() - .5) * 40, s.y + 10, d.speaker ? '♪' : '삐-', 'gold'); } }
+      if (d.on) { d.g.position.y = Math.abs(Math.sin(this.t * 14)) * .03 + (d.own ? 0 : d.g.position.y * 0); d.g.rotation.z = Math.sin(this.t * 22) * .05; if (Math.random() < dt * 2.2) { const s = W.toScreen(d.g.getWorldPosition(new THREE.Vector3()).setY(.15)); L.ui.floatText(s.x + (Math.random() - .5) * 40, s.y + 10, d.lullaby ? '자장~' : d.speaker ? '랄라~' : '삐-', 'gold'); } }
     }
     if (this.camHold) { this.paintVision(); return; }
     // the camera drifts a little toward 몽글이
@@ -528,12 +625,13 @@ export class Game {
     if (this.doorOpen && p.distanceTo(this.fridgeAt) > 1.1) this.setDoor(false);   // walked off: it swings shut
     this.grabbing = nearFridge && this.doorOpen && I.fridge && I.down && !this.moving;
     this.stepFridge(dt);
+    if (this.mode === 'doze') this.stepHear(dt);
     if (this.snacks.length && p.distanceTo(this.door) < .55) return this.win();
     this.goal.position.set(...(this.snacks.length ? [this.door.x, .03, this.door.y] : [this.fridgeAt.x, .03, this.fridgeAt.y]));
     // the dog wakes to a scurry nearby
     if (this.dog && !this.dog.awake && this.noise && Math.hypot(this.dog.root.position.x - p.x, this.dog.root.position.z - p.y) < 1.9) this.wakeDog();
     // a scurry close to mom makes her look at once
-    if (this.noise && this.mState === 'busy' && Math.hypot(p.x - this.eye.x, p.y - this.eye.z) < 3.2 && Math.random() < dt * 1.6) { L.say(this.me, '후다닥', 600); this.startHmm(true); }
+    if (this.noise && ['busy', 'patrol', 'pause'].includes(this.mState) && Math.hypot(p.x - this.eye.x, p.y - this.eye.z) < 3.2 && Math.random() < dt * 1.6) { L.say(this.me, '후다닥', 600); this.startHmm(true); }
     // suspicion: moving in her eyes fills it fast (a moment to freeze — she says "어?"), standing still in them slowly
     // (faster up close); an open fridge in her eyes glows
     const S = this.sight(), seen = this.seen(), lookin = this.mState === 'look' || this.mState === 'turn', fridgeLit = this.fridgeOpen > .3 && this.fridgeSeen();
@@ -553,7 +651,7 @@ export class Game {
     // a heartbeat while you're in her eyes (or she's about to look and you're out in the open)
     if ((seen || (this.mState === 'hmm' && this.canSee(p.x, p.y, CROUCH_H, this.lookYaw, { half: this.lv.half * Math.PI / 180, range: this.lv.range }))) && (this._hb = (this._hb || 0) - dt) <= 0) { this._hb = .42 - Math.min(.2, this.sus * .2); L.audio.sfx(this._hbk = !this._hbk ? 'tick' : 'tock'); }
     // the ring under you: mint = hidden from the coming / current look, orange = in plain sight
-    { const watch = this.mState === 'hmm' ? this.lookYaw : (lookin || AWAY.has(this.mState)) ? this.momYaw : null, m = this.ring.material;
+    { const watch = this.mState === 'hmm' ? this.lookYaw : (lookin || AWAY.has(this.mState) || this.mode === 'patrol') ? this.momYaw : null, m = this.ring.material;
       const hid = watch == null ? !this.canSee(p.x, p.y, CROUCH_H) : !this.canSee(p.x, p.y, CROUCH_H, watch, this.mState === 'hmm' ? { half: this.lv.half * Math.PI / 180, range: this.lv.range } : S);
       const danger = watch != null || !hid;
       m.color.set(!danger ? '#ffffff' : hid ? '#7dffc4' : '#ff9a3c'); m.opacity = !danger ? .35 : .55 + Math.sin(this.t * 14) * .2;
@@ -562,10 +660,46 @@ export class Game {
     // the hint says what a press does right now
     const n = this.snacks.length, live = this.lures.some(d => !d.used);
     if (AWAY.has(this.mState) && this.mState !== 'sit') this.setHint(this.mState === 'check' ? '지금이야! 엄마가 딴 데 봐' : '엄마가 일어났어…');
-    else if (nearFridge) this.setHint(this.grabbing ? `꺼내는 중… ${n}/3` : !this.doorOpen ? '냉장고를 톡 하면 열려' : n ? '냉장고를 꾹 누르면 하나 더' : '열린 냉장고를 꾹 누르고 있으면 꺼내요');
+    else if (nearFridge) this.setHint(this.mode === 'doze' && this.doorOpen && this.openT > 1.1 ? '오래 열어 두면 띠링! 톡 해서 닫기' : this.grabbing ? `꺼내는 중… ${n}/3` : !this.doorOpen ? '냉장고를 톡 하면 열려' : n ? '냉장고를 꾹 누르면 하나 더' : '열린 냉장고를 꾹 누르고 있으면 꺼내요');
+    else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '가고 싶은 곳을 꾹 누르고 있기' : '코 골 때 움직이면 안 들려');
     else if (n) this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
     else this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '가고 싶은 곳을 꾹 누르고 있기' : live ? `${this.lures.find(d => !d.used).name}를 톡 하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
+  }
+  // 셋째 밤: what mom hears. Every noise fills the gauge (closer to her = louder); her snores and the lullaby cover
+  // you; past .6 she stirs (a warning), full = she wakes and looks round
+  stepHear(dt) {
+    const Z = this.lv.doze, L = this.L, W = L.world, p = this.pos, mom = this.mom, asleep = DOZING.has(this.mState);
+    this.snT += dt;
+    const snoring = asleep && this.snT % Z.snore < Z.loud;
+    if (snoring && !this._snoring) { this.msay('드르렁~', Z.loud * 1000 - 150, 'think'); mom.bump(.15); }
+    this._snoring = snoring;
+    if (this.lullT > 0 && (this.lullT -= dt) <= 0) { const d = this.lures.find(x => x.lullaby && x.on); if (d) this.stopGadget(d); }
+    const lull = this.lullT > 0, mask = this.mask = (snoring ? .22 : 1) * (lull ? .35 : 1);
+    const near = clamp(1.3 - Math.hypot(p.x - this.eye.x, p.y - this.eye.z) * .17, .4, 1);
+    let add = 0;
+    if (this.moving) add += dt * (this.scurry ? .9 : .3) * near;
+    for (const c of this.creaks) {   // loose boards
+      const on = Math.hypot(p.x - c.x, p.y - c.z) < .3;
+      if (on && !c.on) { add += .3 * near; c.flash = 1; L.audio.sfx('drawer'); const s = W.toScreen(new THREE.Vector3(c.x, .25, c.z)); L.ui.floatText(s.x, s.y, '삐걱!', 'red'); L.log({ creak: [c.x, c.z], hear: +this.hear.toFixed(2) }); }
+      c.on = on;
+      if (c.flash > 0) { c.flash -= dt * 2.5; c.m.scale.setScalar(1 + Math.max(0, c.flash) * .3); }
+    }
+    // the fridge door left open too long: 띠링!
+    if (this.doorOpen) {
+      this.openT += dt;
+      if (this.openT > Z.alarm && (this._beep = (this._beep || 0) - dt) <= 0) { this._beep = .7; add += .14; L.audio.sfx('pop', 14); const s = W.toScreen(this.fridgeTop || new THREE.Vector3(this.fridgeAt.x, 1.6, this.fridgeAt.y)); L.ui.floatText(s.x, s.y, '띠링!', 'gold'); }
+    } else { this.openT = 0; this._beep = 0; }
+    this.hear = clamp(this.hear + add * mask, 0, 1); const full = this.hear >= 1;
+    this.hear = Math.max(0, this.hear - dt * (lull ? .2 : .06));
+    if (asleep) {
+      if (full) this.startHmm(true);
+      else if (this.hear > .6 && !this._stirred) { this._stirred = true; this.mState = 'stir'; this.mT = 1; this.msay('음냐…', 1000, 'think'); mom.bump(.3); L.audio.sfx('hmm'); }
+      if (this.hear < .4) this._stirred = false;
+    }
+    this.earBar.style.width = Math.min(100, this.hear * 100) + '%';
+    this.ear.classList.toggle('quiet', snoring && !lull); this.ear.classList.toggle('lull', lull);
+    this.ear.classList.toggle('hot', this.hear > .6);
   }
   fridgeSeen() {
     const S = this.sight(); if (!S.warm) return false;
@@ -601,7 +735,7 @@ export class Game {
     const L = this.L, dog = this.dog; dog.awake = true; this.zzz?.remove();
     dog.setFace('wow'); dog.bump(.5); L.say(dog, '멍! 멍!', 1100, 'red'); L.audio.sfx('gasp');
     setTimeout(() => !this.dead && dog.setFace('normal'), 1200);
-    this.startHmm(true);
+    if (this.mode === 'doze') this.hear = Math.min(1, this.hear + .5); else this.startHmm(true);
   }
 
   // ── end
@@ -646,7 +780,7 @@ export class Game {
     app.dataset.night = '';
     app.removeEventListener('pointerdown', this._down); removeEventListener('pointermove', this._move); removeEventListener('pointerup', this._up); removeEventListener('pointercancel', this._up);
     removeEventListener('blur', this._blur); removeEventListener('keydown', this._kd); removeEventListener('keyup', this._ku);
-    for (const o of [this.map.group, this.me.root, this.mom.root, this.dog?.root, this.vmesh, this.fridgeGlow, this.ring, this.aim, this.goal, this.tvGlow, this.moon, ...this.lures.filter(d => d.own).map(d => d.g)].filter(Boolean)) { W.root.remove(o); disposeTree(o); }
+    for (const o of [this.map.group, this.me.root, this.mom.root, this.dog?.root, this.vmesh, this.fridgeGlow, this.ring, this.aim, this.goal, this.tvGlow, this.moon, ...(this.creaks || []).map(c => c.m), ...this.lures.filter(d => d.own).map(d => d.g)].filter(Boolean)) { W.root.remove(o); disposeTree(o); }
     for (const d of this.lures) d.badge?.remove();
     this.vig?.remove(); this.vtex?.dispose(); W.camLock = false;
   }
@@ -668,6 +802,8 @@ export class Game {
       }
       return;
     }
+    if (this.mode === 'patrol') return this.botPatrol();
+    if (this.mode === 'doze') return this.botDoze();
     const back = this.snacks.length > 0, dir = back ? -1 : 1, s = this.sOf(this.pos), st = this.mState;
     const danger = st === 'hmm' || st === 'turn' || st === 'look', away = st === 'check' || (st === 'walk' && this.lure?.path.length < 3);
     const v = SNEAK * (1 - this.snacks.length * .1);
@@ -699,6 +835,50 @@ export class Game {
     }
     this.botStop();
   }
-  state() { return { scene: 'yasik', lv: this.lvIdx + 1, mom: this.mState, x: +this.pos.x.toFixed(2), z: +this.pos.y.toFixed(2), sus: +this.sus.toFixed(2), snacks: this.snacks.length, lures: this.lures.filter(d => d.used).length, result: this.result || null }; }
-  get api() { return { win: () => this.win(), caught: () => this.caught(), look: () => this.startHmm(true), lure: i => this.fireLure(this.lures[i || 0]) }; }
+  // 둘째 밤 bot: moves only where her eyes are not — now, and once she turns at her next point; sets the speaker off
+  // when she's heading that way anyway; grabs while her back is turned
+  botPatrol() {
+    const st = this.mState, back = this.snacks.length > 0, dir = back ? -1 : 1, s = this.sOf(this.pos), P = this.lv.patrol;
+    const D = Math.PI / 180, S = { half: this.lv.half * D + .25, range: this.lv.range + .4 }, mp = this.mom.root.position;
+    const next = P.pts[this.wi], toNext = Math.hypot(next[0] - mp.x, next[1] - mp.z);
+    const yaws = [this.momYaw];
+    if (st === 'pause' || (st === 'patrol' && toNext < 1.3)) { const n2 = P.pts[(this.wi + (st === 'pause' ? 0 : 1)) % P.pts.length]; yaws.push(Math.atan2(n2[0] - (st === 'pause' ? mp.x : next[0]), n2[1] - (st === 'pause' ? mp.z : next[1])), this.momYaw + .85, this.momYaw - .85); }
+    if (st === 'hmm') yaws.push(this.lookYaw);
+    const safe = q => !yaws.some(y => this.canSee(q.x, q.y, BODY_H, y, S));
+    const go = () => { const t = this.at(s + dir * .45); this.botGo(t.x, t.y); };
+    const d = this.lures.find(x => !x.used);
+    if (d && !back && s > 3 && this.wi === 0 && st === 'patrol' && mp.x > .6) { this.fireLure(d); this.botStop(); return; }
+    if (this.pos.distanceTo(this.fridgeAt) < .5 && this.snacks.length < 2) {
+      const ok = st === 'check' || (AWAY.has(st) && st !== 'walkback') || (this.wi === 0 && st === 'patrol' && mp.x > -.2);
+      if (ok && !this.fridgeLitBy(this.momYaw)) { this.botStop(true); this.botFridge = true; if (!this.doorOpen) this.setDoor(true); return; }
+      if (this.doorOpen) this.setDoor(false);
+      this.botStop(); return;
+    }
+    if (st === 'check') { go(); return; }
+    const ahead = this.at(s + dir * .55), here = this.pos;
+    if (safe(ahead) && safe(here)) { go(); return; }
+    // caught out in the open: keep going if the next spot is safe, else hold still
+    if (!safe(here) && safe(ahead)) { go(); return; }
+    this.botStop();
+  }
+  // 셋째 밤 bot: moves while she snores (or the lullaby plays) or while the gauge is low; freezes while she's awake;
+  // the lullaby at the fridge; two snacks before the door alarm
+  botDoze() {
+    const st = this.mState, back = this.snacks.length > 0, dir = back ? -1 : 1, s = this.sOf(this.pos), Z = this.lv.doze;
+    const go = () => { const t = this.at(s + dir * .45); this.botGo(t.x, t.y); };
+    if (!DOZING.has(st)) { if (this.doorOpen) this.setDoor(false); this.botStop(); return; }
+    const quiet = this._snoring || this.lullT > 0 || this.hear < .28;
+    const d = this.lures.find(x => !x.used);
+    if (this.pos.distanceTo(this.fridgeAt) < .5 && this.snacks.length < 2) {
+      if (d && !back) this.fireLure(d);
+      if (this.openT > Z.alarm - .25) { this.setDoor(false); this.botStop(); return; }
+      if (this.hear < .7) { this.botStop(true); this.botFridge = true; if (!this.doorOpen) this.setDoor(true); return; }
+      if (this.doorOpen) this.setDoor(false);
+      this.botStop(); return;
+    }
+    if (this.doorOpen && back) this.setDoor(false);
+    if (quiet && this.hear < .55) go(); else this.botStop();
+  }
+  state() { return { scene: 'yasik', lv: this.lvIdx + 1, mom: this.mState, x: +this.pos.x.toFixed(2), z: +this.pos.y.toFixed(2), sus: +this.sus.toFixed(2), snacks: this.snacks.length, lures: this.lures.filter(d => d.used).length, mode: this.mode, hear: +(this.hear || 0).toFixed(2), result: this.result || null }; }
+  get api() { return { win: () => this.win(), caught: () => this.caught(), look: () => this.startHmm(true), lure: i => this.fireLure(this.lures[i || 0]), noise: v => { this.hear = v; } }; }
 }

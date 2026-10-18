@@ -156,7 +156,11 @@ Object.assign(STORIES, {
     reward: { furn: 'recordcab', coins: 600 } },
 });
 
-export function storyFor(idx) { return STORIES[idx] || null; }
+// script.js (대본, 10/18) re-pins STORIES onto stages by map, not by stage number, the first time a story is asked for;
+// the texts above are the old ones, script.js replaces them
+let binder = null;
+export const setStoryBinder = f => { binder = f; };
+export function storyFor(idx) { binder?.(); return STORIES[idx] || null; }
 
 // ── dialogue: a bottom card with the speaker's face; tap to advance, ≫ to skip
 // A chapter cinematic when the journey moves somewhere new: letterbox bars, a title card, the cast hopping in, then

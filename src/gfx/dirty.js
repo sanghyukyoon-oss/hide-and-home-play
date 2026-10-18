@@ -39,6 +39,9 @@ export class DirtyTracker {
     const same = this.g && this.g.length === g.length && g.every((v, i) => v === this.g[i]);
     this.g = g;
     if (!same) { this.still = false; this.stats.full++; return { full: true }; }
+    // AO (세팅 panel) samples far past the outline's reach, so a box redraw would leave its old shading at the box
+    // edges: whole frames only while it is on (GPT review 10/18: up to 2/255 off with AO .65)
+    if (post.u.aoStr.value > .001 && !post.pixelArt) { this.still = false; this.stats.full++; return { full: true }; }
     const scene = world.scene, cam = world.cam;
     scene.updateMatrixWorld();
     const W = post.color.width, H = post.color.height;

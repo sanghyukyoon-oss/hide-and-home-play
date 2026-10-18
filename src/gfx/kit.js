@@ -3,10 +3,14 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const GEO = new Map(), MAT = new Map();
-// Free the GPU side of what a scene built: its own geometries and materials, and every texture it used — canvas
-// textures are made per scene, and a cached material keyed by such a texture would otherwise keep it (and itself)
-// forever, so those cache entries go too. Shared cached geometries stay. Safe even if something is still referenced
-// elsewhere: three uploads a disposed geometry or texture again the next time it is drawn.
+// Free the GPU side of what a scene built: its own geometries and every texture it used — canvas textures are made per
+// scene, and a cached material keyed by such a texture would otherwise keep it (and itself) forever, so those cache
+// entries go too. Shared cached geometries stay. Safe even if something is still referenced elsewhere: three uploads a
+// disposed geometry or texture again the next time it is drawn.
+// Materials are NOT disposed (2026-10-18): a material holds no GPU memory of its own (its textures are freed above,
+// the object is garbage-collected), but disposing the last material of a kind made three delete that shader program,
+// so every stage entry compiled 5 shaders again (home: 2) — a hitch at each stage start on phones that compile on the
+// main thread (most Android). Keeping them leaves the programs warm.
 export function disposeTree(root) {
   const keepG = new Set(GEO.values()), keepM = new Set(MAT.values());
   const doneG = new Set(), mats = new Set(), texs = new Set();
@@ -14,8 +18,7 @@ export function disposeTree(root) {
     if (o.geometry && !keepG.has(o.geometry) && !doneG.has(o.geometry)) { doneG.add(o.geometry); o.geometry.dispose(); }
     for (const m of [].concat(o.material || [])) { mats.add(m); for (const k in m) if (m[k]?.isTexture && m[k] !== STYLE.grad) texs.add(m[k]); }
   });
-  for (const [k, m] of MAT) if (m.map && texs.has(m.map)) { MAT.delete(k); keepM.delete(m); m.dispose(); }
-  for (const m of mats) if (!keepM.has(m)) m.dispose();
+  for (const [k, m] of MAT) if (m.map && texs.has(m.map)) MAT.delete(k);
   for (const t of texs) t.dispose();
 }
 // Shared shapes are cached by key, and the key carries theme colours, so every new room adds a few. They used to stay on
