@@ -162,6 +162,9 @@ let stored = store.get(KEY, null);
 // purchases, furniture and collection) — the address only wins when it is newer, or when there is nothing in storage
 if (hashSave && (!stored || (hashSave.rev || 0) > (stored.rev || 0))) stored = hashSave;
 let save = migrate(stored);
+// 처음 하는 사람 (기획안 7장 '처음 20분', 사용자 10/18 밤 승인): 저장이 하나도 없으면 타이틀 다음 바로 1판으로 간다. 홈은
+// 2판 뒤 '내 집 열림'과 함께 처음 본다. (주소의 #s= 저장도 stored에 들어 있으니, 그걸로 이어 하는 사람은 처음이 아니다)
+const firstRun = !stored;
 let hashT = 0;
 const saveToHash = () => { if (!WEB) return; clearTimeout(hashT); hashT = setTimeout(() => { try { history.replaceState(null, '', location.pathname + location.search + '#s=' + b64e(JSON.stringify(save))); } catch {} }, 400); };
 
@@ -193,6 +196,7 @@ const G = {
   // (practice runs from 놀이 모음 never reach storage: a reload mid-practice keeps the real save — GPT QA 10/18 P2)
   persist() { if (G.playMode) return; save.rev = (save.rev || 0) + 1; store.set(KEY, save); saveToHash(); },
   storageOk,
+  firstRun,   // (this session started with no save at all — see boot)
   setBg([a, b]) { const app = document.getElementById('app'); app.style.setProperty('--bgA', a); app.style.setProperty('--bgB', b); },
   hitstop(sec) { G.hitstopUntil = performance.now() + sec * 1000; },
   makeFurniture: t => makeFurniture(t, THEMES.my),
@@ -211,7 +215,7 @@ const G = {
     const before = save.stage || 0;
     out.firstClear = idx + 1 > before;
     // a stage you'd already cleared pays a third (레벨 세션 B5: no farming one stage over and over)
-    if (!out.firstClear) coins = Math.round(coins / 3);
+    if (!out.firstClear) { coins = Math.round(coins / 3); out.repeat = true; }
     save.coins += coins; out.awarded = coins;
     save.stage = Math.max(before, idx + 1);
     if (before < 2 && save.stage >= 2) out.unlockedHome = true;
@@ -432,7 +436,10 @@ async function boot() {
   const going = play ? (galleryPlay(play, playLv - 1) || G.go('home'))
     : lv ? G.go('stage', { idx: Math.max(0, +lv - 1) })
     : sc === 'myhome' ? G.go('myhome', { mode: qs.get('mode') || 'view' })
-    : sc === 'visit' ? G.go('visit') : G.go('home');
+    : sc === 'visit' ? G.go('visit')
+    : tapToStart && firstRun ? G.go('stage', { idx: 0 })   // the very first time: straight into 1판 (bots and QA links keep the home)
+    : G.go('home');
+  if (firstRun) G.persist();   // the next launch is not the first any more, even if this one ends inside 1판
   // lift the boot cover once the scene is built — a stage can open with a dialog that waits for a tap behind it
   bootBar(90);
   while (G.pending) await new Promise(r => requestAnimationFrame(r));

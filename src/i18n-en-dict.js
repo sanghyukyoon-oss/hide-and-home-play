@@ -3415,6 +3415,10 @@ export const EN = {
 "냉장고를 꾹 누르면 하나 더": "Hold the fridge for one more",
 "열린 냉장고를 꾹 누르고 있으면 꺼내요": "Hold the open fridge to grab snacks",
 "놀이를 불러오지 못했어요 · 다음 판으로 갈게요": "Couldn't load the game · moving on to the next stage",
+"너굴이의 바꿔치기": "Rocky's Switcheroo",
+"너굴이의 바꿔치기 (지금 판)": "Rocky's Switcheroo (current)",
+"너굴이의 바꿔치기를 전부 찾아냈어!": "You caught all of Rocky's switcheroos!",
+"도감 '배운 것'에 적었어": "Saved to What I Learned",
 "놀이": "Break",   // the tag on a 쉬어가기 (scenes/mini.js)
 "쉿…": "Shh…",   // R1 hide after the first count (stage.js r1Hide)
 "숨는 버릇": "How they hide",   // card book (R2)

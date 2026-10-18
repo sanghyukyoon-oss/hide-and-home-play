@@ -624,6 +624,7 @@ B.futon = (f, T) => {
   bl.add(mc('futon-fold|' + tk, ({ add }) => { add(G.cyl(.024, .024, .88, 12), sheet, 0, .03, -.5, 0, 0, HP); }));
   const bp = f.part('lift', bl, (t, b) => { bl.position.y = b.p.y + .45 * t; bl.position.z = b.p.z + .05 * t; bl.scale.z = 1 - .45 * t; bl.rotation.x = .2 * t; }, { label: '이불', sfx: 'lift' });
   f.spot('inside', null, 0, .1, .2, { part: bp, maxH: .26, label: '이불 속' });
+  f.spot('on', bl, .12, .026, .12, { maxH: .3, label: '이불 위', scale: .8 });   // (on a loft only seen tilting down — 2판's tilt lesson, 10/18)
 };
 
 // 옷장 (1×1): a cream wardrobe with a honey crown and plinth, two panelled doors with brass knobs and cream hearts. Inside:

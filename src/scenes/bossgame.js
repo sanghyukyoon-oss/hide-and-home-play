@@ -137,10 +137,12 @@ export class BossGameScene {
   async finish() {
     const G = this.G;
     // 대본: a word after the first win; after the last 야식, the ending (once) and "hide something at home / keep playing"
-    if (this.won && !this._out && !G.bot && !G.skipTalk) {
+    // (the ending comes after the last 야식 even when it was skipped from the pause menu — 검토 H6)
+    const GLe = gameLines(this.kind, this.lv);
+    if ((this.won || GLe?.ending) && !this._out && !G.bot && !G.skipTalk) {
       this._out = true;
-      const GL = gameLines(this.kind, this.lv), said = G.save.gameTalk || (G.save.gameTalk = {});
-      if (GL?.out && !said['o' + this.kind + this.lv]) { said['o' + this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.out); }
+      const GL = GLe, said = G.save.gameTalk || (G.save.gameTalk = {});
+      if (this.won && GL?.out && !said['o' + this.kind + this.lv]) { said['o' + this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.out); }
       if (GL?.ending && !G.save.ending) {
         G.save.ending = true; G.persist();
         await playDialog(G, ENDING); await endCard(G);

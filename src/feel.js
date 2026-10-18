@@ -34,10 +34,11 @@ export function haptic(kind = 'tick') {
   if (!FEEL.haptic) return;
   if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;   // before the first touch the browser refuses anyway
   const now = performance.now(); if (now - lastBuzz < 60) return; lastBuzz = now;
-  if (navigator.vibrate) { navigator.vibrate(kind === 'ok' ? [14, 70, 22] : kind === 'bad' ? [16, 60, 16, 60, 16] : 12); return; }
+  if (navigator.vibrate) { navigator.vibrate(kind === 'ok' ? [14, 70, 22] : kind === 'bad' ? [16, 60, 16, 60, 16] : kind === 'big' ? [24, 60, 32, 60, 44] : 12); return; }
   tick1();
   if (kind === 'ok') setTimeout(tick1, 110);
   if (kind === 'bad') { setTimeout(tick1, 100); setTimeout(tick1, 200); }
+  if (kind === 'big') { setTimeout(tick1, 80); setTimeout(tick1, 160); setTimeout(tick1, 260); }   // the last thing found (stage.js lastOneFx)
 }
 // which sounds also buzz (sounds that only come from a tap; timers, voices and ambience never do)
 const BUZZ = {

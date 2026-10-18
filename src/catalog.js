@@ -66,7 +66,8 @@ export function registerOutdoorShop(info) {
   for (const t in info) if (!info[t].wall && !SHOP_FURN.some(x => x.type === t)) SHOP_FURN.push({ type: t, indoor: false, outdoor: true, region: info[t].region });
 }
 // story furniture for indoor rooms; mementos (cat tower …) are rewards, not for sale
-const MEMENTOS = ['cattower'];
+// (every boss story's gift, not only the cat tower — 검토 H5: they were on sale and the reward meant nothing)
+const MEMENTOS = ['cattower', 'kotatsu', 'tteokstall', 'snackcart', 'bench2', 'lantern', 'recordcab'];
 export function registerStoryShop(info) {
   for (const t in info) if (!info[t].wall && !MEMENTOS.includes(t) && !SHOP_FURN.some(x => x.type === t)) SHOP_FURN.push({ type: t, indoor: true, outdoor: false });
 }

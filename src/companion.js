@@ -103,23 +103,62 @@ export class Companion {
     return s;
   }
   path(from, to, block) { return gridPath(from, to, block); }
+  // It used to trail the middle of the view, hopping after every move and turn — eye-catching motion nobody asked for
+  // while you look for things (user, 10/18: "이동하면 내 캐릭터가 따라가잖아. 응근 거슬리는데"). Now it stays where it is;
+  // once the view has settled (no finger on the glass or the dial, the camera still for .4 s) and it is out of sight,
+  // it pops up at the nearest edge of the screen. It moves otherwise only to react (react()).
   update(dt, tw, paused) {
     if (!this.on) return;
     this.ch.update(dt);
     if (this.busy || paused) return;
-    this.wait -= dt; if (this.wait > 0) return;
-    this.wait = .25;
-    const W = this.G.world, block = this.taken();
-    block.delete(this.t);
-    // aim a little in front of the middle of the view, so it stays in sight rather than under the HUD
-    const goal = this.nearestView(W, block);
-    if (!goal || goal === this.t || (Math.abs((goal.y || 0) - (this.t.y || 0)) < .5 && Math.hypot(goal.x - this.t.x, goal.z - this.t.z) < 1.4)) return;
-    const route = this.path(this.t, goal, block);
-    if (!route?.length) return;
-    // a few hops at a time — but once on the stairs, on to the far landing whatever the view does next
-    let n = Math.min(4, route.length);
-    while (n < route.length && (route[n - 1].stair || route[n]?.stair)) n++;
-    this.walk(route.slice(0, n), tw);
+    const W = this.G.world, key = [W.yaw, W.pitch, W.zoom, W.target.x, W.target.z].map(v => v.toFixed(3)).join();
+    const still = !W.ptrs?.size && !W._tdHeld && !W.flying && key === this._key;
+    this._key = key; this._still = still ? (this._still || 0) + dt : 0;
+    if (this._still < .4 || this.inSight(W)) return;
+    this.popIn(W, tw);
+  }
+  // the part of the screen it should stand in: clear of the top bar, the list and the dial at the bottom
+  rect(W) { return { x0: 28, x1: W.W - 28, y0: 110, y1: W.H - 190 }; }
+  inSight(W) {
+    const p = this.ch.root.position, s = W.toScreen(new THREE.Vector3(p.x, p.y + .3, p.z)), r = this.rect(W);
+    return s.x >= r.x0 - 20 && s.x <= r.x1 + 20 && s.y >= r.y0 - 30 && s.y <= r.y1 + 40;
+  }
+  // pop up on free floor nearest the edge it went out by (its screen point pulled back inside), facing you
+  popIn(W, tw) {
+    const p = this.ch.root.position, s = W.toScreen(new THREE.Vector3(p.x, p.y + .3, p.z)), r = this.rect(W);
+    const qx = Math.min(r.x1 - 30, Math.max(r.x0 + 30, s.x)), qy = Math.min(r.y1 - 20, Math.max(r.y0 + 20, s.y));
+    const block = this.taken(); block.delete(this.t);
+    let best = null, bd = Infinity; const v = new THREE.Vector3();
+    for (const t of this.tiles) {
+      if (block.has(t) || t.stair) continue;
+      const q = W.toScreen(v.set(t.x, (t.y || 0) + .3, t.z));
+      if (q.x < r.x0 || q.x > r.x1 || q.y < r.y0 || q.y > r.y1) continue;
+      const d = (q.x - qx) ** 2 + (q.y - qy) ** 2; if (d < bd) { bd = d; best = t; }
+    }
+    if (!best) { this._still = 0; return; }   // no free floor on screen (zoomed into a wall): try again after the next move
+    this.busy = true; this.t = best;
+    const root = this.ch.root, s0 = root.scale.x;
+    root.position.set(best.x, best.y || 0, best.z);
+    root.rotation.y = Math.atan2(W.cam.position.x - best.x, W.cam.position.z - best.z);
+    root.scale.setScalar(s0 * .01); this.G.world.idsDirty = true;
+    const sp = W.toScreen(new THREE.Vector3(best.x, (best.y || 0) + .25, best.z));
+    W.fx.burst(sp.x, sp.y, { n: 7, shape: 'circle', colors: ['#ffffff', '#ffeaf2'], speed: 90, gravity: -20, life: .45, size: 8 });
+    this.G.audio.sfx('pop', 3);
+    tw.run(.28, k => root.scale.setScalar(s0 * (k < .7 ? k / .7 * 1.12 : 1.12 - .12 * (k - .7) / .3))).then(() => { root.scale.setScalar(s0); this.busy = false; this._still = 0; });
+  }
+  // a find ('find': looks at it, a happy hop) or something happening ('event': looks at it, 'wow', a small jump)
+  async react(kind, at, tw) {
+    if (!this.on || this.busy) return;
+    const ch = this.ch, root = ch.root, p = root.position;
+    this.busy = true;
+    try {
+      if (at) { const r0 = root.rotation.y; let d = Math.atan2(at.x - p.x, at.z - p.z) - r0; d = Math.atan2(Math.sin(d), Math.cos(d)); await tw.run(.18, k => { root.rotation.y = r0 + d * k; }); }
+      const face0 = ch.face;
+      ch.setFace(kind === 'find' ? 'happy' : 'wow');
+      if (kind === 'find') await ch.hopTo(tw, p.x, p.z, { height: .2, dur: .3 }); else ch.bump(.45);
+      await tw.wait(kind === 'find' ? .7 : .9);
+      if (this.on) ch.setFace(face0 === 'wow' || face0 === 'happy' ? 'normal' : face0);
+    } finally { this.busy = false; this._still = 0; }
   }
   async walk(route, tw) {
     this.busy = true;

@@ -1260,3 +1260,15 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kitbp-name { position: absolute; right: 11px; bottom: 6px; font-size: 12px; color: #5b78b8; }
 .kitbp.done { animation: kitdone .45s ease-in-out 4 alternate; }
 @keyframes kitdone { to { box-shadow: 0 0 0 5px #ffe14d, 0 0 26px 10px #fff3a0; } }
+
+/* 갓겜 F2: the last thing found — the screen's edges glow warm for a moment (stage.js lastOneFx) */
+.lastglow { position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 246, 200, 0) 52%, rgba(255, 238, 160, .8) 100%); animation: lastGlow 1s ease-out forwards; }
+@keyframes lastGlow { 18% { opacity: 1; } 100% { opacity: 0; } }
+/* '새로 얻었다!' as a small badge that comes and goes (10/18 — no blocking card) */
+.ncard-mini { position: absolute; left: 50%; top: calc(15% + var(--safeT, 0px)); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 10px; border-radius: 999px; background: #fffaf2; border: 3px solid #3b2a55; box-shadow: 0 5px 0 rgba(42, 26, 61, .35); color: #3b2a55; white-space: nowrap; pointer-events: none; z-index: 60; animation: pop .35s cubic-bezier(.2, 1.5, .4, 1); transition: opacity .45s, transform .45s; }
+.ncard-mini b { background: #ff6f91; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 13px; }
+.ncard-mini span { font-size: 18px; }
+.ncard-mini small { font-size: 12px; color: #8a6a9a; }
+.ncard-mini.out { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+

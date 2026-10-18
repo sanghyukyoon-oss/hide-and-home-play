@@ -823,7 +823,7 @@ export class World {
           const lt = this._lastTap;
           // (on in F too since 10/18 — user: "더블클릭하면 누른 데 줌인해서 보여주는 걸로" — the wall clock was hard to reach)
           if (this.scheme !== 'E' && lt && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
-            this._lastTap = null;
+            this._lastTap = null; this.onDoubleTap?.(e.clientX, e.clientY);   // (the first tap of the two already went out as a tap: the stage takes it back)
             if (this.zoom > 1.8) { this.zoomGoal = { z: 1, x: null }; }
             else this.zoomGoal = { z: Math.min(this.maxZoom, 3), x: e.clientX, y: e.clientY };
           } else { this._lastTap = this.tapInstant?.(e.clientX, e.clientY) ? null : { t: now, x: e.clientX, y: e.clientY }; this.onTap?.(e.clientX, e.clientY); }

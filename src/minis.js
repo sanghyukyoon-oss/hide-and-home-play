@@ -109,10 +109,10 @@ class Sneak {
 const TINTS = ['#ff8fb8', '#7fd6c0', '#ffd23f', '#9f8fff'];
 class Spot {
   constructor(S, P) {
-    this.S = S; this.P = P; this.title = '먹물이의 바꿔치기'; this.face = 'inky';
+    this.S = S; this.P = P; this.title = '너굴이의 바꿔치기'; this.face = 'raccoon';   // (너굴이, not 먹물이: its name isn't known before 64판 — 검토 H7)
     this.goal = '먹물이가 바꿔 놓은 곳을 톡! (틀리면 3초, 다시 보기는 4초가 줄어)';
     this.tip = '처음 모습을 잘 봐 둬! 색이 바뀐 것, 사라진 것, 돌아간 것, 새로 생긴 것.';
-    this.intro = [{ who: 'inky', text: '히히, 이 방 내가 몰래 바꿔 놓을 거야. 어디가 바뀌었는지 맞혀 볼래?' },
+    this.intro = [{ who: 'raccoon', text: '히히, 이 방 내가 몰래 바꿔 놓을 거야. 어디가 바뀌었는지 맞혀 볼래?' },
       { who: 'mong', text: '처음 모습을 잘 봐 두고, 바뀐 곳을 톡! 헷갈리면 "처음 모습"을 잠깐 볼 수 있어.' }];
     this.n = P.n || 3; this.time = P.time || 40;
   }
@@ -121,7 +121,7 @@ class Spot {
     const S = this.S, box = roomBox(S.room);
     const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
     S.frame({ x: c.x, z: c.z, yaw: Math.PI / 4, pitch: .72, zoom: 1.1, w: Math.min(10, (sz.x + sz.z) / Math.SQRT2 * .95), hh: 5.6 });
-    this.inky = S.char('inky', c.x + sz.x * .38, c.z + sz.z * .38); this.inky.faceTo(S.G.world.cam.position.x, S.G.world.cam.position.z);
+    this.inky = S.char('raccoon', c.x + sz.x * .38, c.z + sz.z * .38); this.inky.faceTo(S.G.world.cam.position.x, S.G.world.cam.position.z);
     this.marks = [];
   }
   start() {
@@ -185,7 +185,7 @@ class Spot {
     if (best) {
       best.found = true; S.G.audio.sfx('special'); W.fx.ring(x, y, { r: 60, color: '#ffe14d', width: 8 }); W.fx.burst(x, y, { n: 14, shape: 'star' });
       const el = h('div', { class: 'mini-mark' }, '✓'); S.G.ui.wui.append(el); this.marks.push({ el, p: best.c });
-      if (this.changes.every(c => c.found)) { S.say(this.inky, '으앗, 다 들켰다!', 1400); return S.done(true, '먹물이의 바꿔치기를 전부 찾아냈어!'); }
+      if (this.changes.every(c => c.found)) { S.say(this.inky, '으앗, 다 들켰다!', 1400); return S.done(true, '너굴이의 바꿔치기를 전부 찾아냈어!'); }
     } else { this.left -= 3; S.G.audio.sfx('wobble'); S.G.ui.floatText(x, y - 30, '아니야~ -3초', ''); }
   }
   bot(dt) { if (this.phase !== 'find') return; if ((this._bt = (this._bt || 0) + dt) < 1.4) return; this._bt = 0; const c = this.changes.find(q => !q.found); if (c) { const s = this.S.screen(c.c); this.tap(s.x, s.y); } }
@@ -555,7 +555,7 @@ export const BOSS_GAMES = {
 };
 export const MINI_INFO = {
   sneak: { name: '냥냥이 몰래 야식', face: 'cat' },
-  spot: { name: '먹물이의 바꿔치기', face: 'inky' },
+  spot: { name: '너굴이의 바꿔치기', face: 'raccoon' },
   redlight: { name: '무궁화 꽃이 피었습니다', face: 'raccoon' },
   shell: { name: '햄찌의 야바위', face: 'hamster' },
   whack: { name: '두더지 숨바꼭질', face: 'frog' },

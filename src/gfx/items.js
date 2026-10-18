@@ -349,7 +349,7 @@ export const ITEMS = {
   } },
 };
 
-export const TARGET_POOL = ['donut', 'candy', 'cookie', 'console', 'teddy', 'duck', 'sock', 'star', 'milk', 'apple', 'crown', 'gift', 'icecream', 'cupcake', 'glasses', 'ball', 'pencil', 'heart'];
+export const TARGET_POOL = ['donut', 'candy', 'cookie', 'console', 'teddy', 'duck', 'star', 'milk', 'apple', 'crown', 'gift', 'icecream', 'cupcake', 'glasses', 'ball', 'pencil', 'heart'];   // (no sock: laundromat only, 10/18)
 export const DECOY_POOL = ['mug', 'books', 'block', 'pot', 'yarn'];
 export const TREASURES = ['console', 'snack', 'report'];
 

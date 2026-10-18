@@ -1,0 +1,74 @@
+// 보이는 층 (갓겜 기획안 P0 L3, 10/18 밤 user "진행하자"; 1장 2~11판): how much of the list the first screen gives away.
+//   L0  seen from the start view            — one per stage, the first find (≤ 20 % of the list)
+//   L1  hidden at the start, seen along at least 3 of 12 directions round it (the plan's ray measure) — at least two, one
+//       of them a single turn of the dial (±45°, ±90°) away, so the first "turn to find" comes inside a minute
+//   L2  hidden at the start and from the usual tilt, seen from above — 2판 puts one on the loft quilt: the tilt lesson
+//   (L3 inside a drawer or door, L4 behind a lock: left as the planner put them)
+// Every candidate place is measured once — a ray per direction from far out back to the place, walls cut the way that
+// direction cuts them, the things themselves left out — then things move (a decoy in the way swaps places; never onto a
+// lid or a rock that opens). Runs once at the start after the planner and hunt.js; returns what it did (stage.tiers).
+import * as THREE from 'three';
+import { ITEMS } from './gfx/items.js';
+import { moveItem } from './hunt.js';
+
+const fits = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat); };
+const shown = o => { for (let p = o; p; p = p.parent) if (p.visible === false) return false; return true; };
+const V = () => new THREE.Vector3();
+
+export function tierPass(S) {
+  const W = S.G.world, R = S.room, t0 = performance.now();
+  const start = { y: W.yaw, p: W.pitch, z: W.zoom, t: W.target.clone() };
+  const restore = () => { W.yaw = start.y; W.pitch = start.p; W.zoom = start.z; W.target.copy(start.t); W.updateCam(); R.update(1); R.group.updateMatrixWorld(true); };
+  restore();
+  // what can hide a place: the room's meshes, not the things to find or the tap proxies
+  const skip = new Set(); for (const it of S.items) it.g?.traverse(o => skip.add(o));
+  const meshes = []; R.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !skip.has(o)) meshes.push(o); });
+  const pivots = new Set(R.parts.flatMap(p => p.pivots));
+  const rides = s => { for (let o = s.anchor?.parent; o; o = o.parent) { if (pivots.has(o)) return true; if (o === s.furn?.group) return false; } return false; };
+  const rc = new THREE.Raycaster();
+  const C = R.spots.filter(s => !s.reserved && !s.wallFace && !s.part && s.anchor && s.kind !== 'inside');
+  const P = new Map(C.map(s => [s, s.anchor.getWorldPosition(V()).add(new THREE.Vector3(0, .07 * (s.scale || 1), 0))]));
+  const clear = (from, to) => { const d = V().subVectors(to, from), L = d.length(); rc.set(from, d.normalize()); rc.far = L - .1; return !rc.intersectObjects(meshes, false).some(h => shown(h.object)); };
+  const along = (p, y, pi) => clear(p.clone().addScaledVector(new THREE.Vector3(Math.sin(y) * Math.cos(pi), Math.sin(pi), Math.cos(y) * Math.cos(pi)), 40), p);
+  // the table: start view (the real camera, on screen and clear of the HUD), 12 directions round, one turn, from above
+  const tab = new Map(C.map(s => [s, { L0: false, around: 0, low: 0, near: false, top: 0 }]));
+  const cam = W.cam.position.clone();
+  for (const s of C) { const p = P.get(s), sc = W.toScreen(p); tab.get(s).L0 = sc.x > 24 && sc.x < W.W - 24 && sc.y > 130 && sc.y < W.H - 150 && clear(cam, p); }
+  const sweep = (y, pi, fn) => { W.yaw = y; W.updateCam(); R.update(1); R.group.updateMatrixWorld(true); for (const s of C) if (along(P.get(s), y, pi)) fn(tab.get(s)); };
+  for (let k = 0; k < 6; k++) for (const pi of [.62, .95]) sweep(start.y + k * Math.PI / 3, pi, t => { t.around++; if (pi === .62) t.low++; });
+  for (const d of [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2]) sweep(start.y + d, start.p, t => { t.near = true; });
+  if (S.idx === 1) for (let k = 0; k < 6; k++) sweep(start.y + k * Math.PI / 3, 1.25, t => { t.top++; });
+  restore();
+  const L1 = s => !tab.get(s).L0 && tab.get(s).around >= 3, near = s => L1(s) && tab.get(s).near;
+  const L2 = s => !tab.get(s).L0 && tab.get(s).low <= 1 && tab.get(s).top >= 2;
+  // moving things
+  const T = () => S.targets.filter(it => !it.found && !it.friend && it.spot && !it.spot.part && tab.has(it.spot));
+  const out = { l0Before: T().filter(it => tab.get(it.spot).L0).length, moved: [] };
+  const free = (it, ok) => C.filter(s => s !== it.spot && ok(s) && fits(it.type, s) && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
+    .map(s => ({ s, d: P.get(s).distanceTo(P.get(it.spot) || P.get(s)) + (s.kind === 'on' ? 0 : .6) + (s.item ? .3 : 0) })).sort((a, b) => a.d - b.d).map(o => o.s);
+  const put = (it, s, why) => {
+    const old = it.spot, d = s.item && s.item.role === 'decoy' ? s.item : null;
+    if (d) moveItem(d, old);
+    moveItem(it, s); out.moved.push(`${it.type}: ${old.label} → ${s.label} (${why})`);
+  };
+  // L0: one — the most central stays
+  const mid = it => { const sc = W.toScreen(P.get(it.spot)); return Math.hypot(sc.x - W.W / 2, sc.y - W.H * .47); };
+  const zero = T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b));
+  for (const it of zero.slice(1)) { const s = free(it, s => L1(s) && !tab.get(s).L0)[0]; if (s) put(it, s, 'L0→L1'); }
+  if (!zero.length) { const it = T().find(x => x.spot.kind === 'on') || T()[0]; const s = it && free(it, s => tab.get(s).L0 && s.kind === 'on')[0]; if (s) put(it, s, '→L0'); }
+  // L1: at least two, one a turn away
+  const spare = () => T().filter(it => !tab.get(it.spot).L0 && !L1(it.spot));
+  if (!T().some(it => near(it.spot))) { const it = spare()[0] || T().filter(it => L1(it.spot)).pop(); const s = it && free(it, near)[0]; if (s) put(it, s, '→L1 한 번 돌리면'); }
+  while (T().filter(it => L1(it.spot)).length < 2 && spare().length) { const it = spare()[0], s = free(it, L1)[0]; if (!s) break; put(it, s, '→L1'); }
+  // 2판: one on the loft quilt (or another place only seen from above)
+  if (S.idx === 1 && !T().some(it => L2(it.spot))) {
+    const it = spare()[0] || T().filter(it => !tab.get(it.spot).L0 && !near(it.spot)).pop() || T().filter(it => !tab.get(it.spot).L0).pop();
+    const s = it && (free(it, s => s.label === '이불 위' && L2(s))[0] || free(it, L2)[0] || free(it, s => s.label === '이불 위')[0]);
+    if (s) put(it, s, 'L2 기울이기');
+  }
+  const t = T();
+  Object.assign(out, { l0After: t.filter(it => tab.get(it.spot).L0).length, l1: t.filter(it => L1(it.spot)).length, near: t.filter(it => near(it.spot)).length,
+    l2: t.filter(it => L2(it.spot)).length, n: S.targets.length, places: C.length, ms: Math.round(performance.now() - t0) });
+  W.idsDirty = true; W.shadowDirty = true;
+  return out;
+}

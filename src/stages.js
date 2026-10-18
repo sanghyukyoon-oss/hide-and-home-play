@@ -9,6 +9,7 @@ import { digPatch } from './gfx/outdoor.js';
 import { tvPuzzle } from './gfx/apt-props.js';
 import { applyEdit } from './layedits.js';
 import { planDevice } from './devices.js';
+import { ROOM_POOLS, SOCKS, SOCK_ROOMS } from './pools.js';
 
 export const THEMES = {
   bunny: { name: '토순이네 침실', friend: 'bunny', bg: ['#fff4ea', '#ffe6d4'], base: '#e8b98c', floorKind: 'planks', floor: '#d9a066', floor2: '#a96c3c', wallKind: 'heart', wall: '#fff7ef', wall2: '#ffb3a3', wainscot: '#bfe3d3', trim: '#ffffff', wallEdge: '#fffaf4',
@@ -791,8 +792,9 @@ export function planStage(room, spec, story = null) {
     used.add(c[0]); return c[0];
   };
   // a theme can bring its own things to find first (the everyday rooms hide a remote, slippers, a tangerine…)
-  const own = (room.T?.pool || []).filter(t => ITEMS[t]);
-  const ownN = Math.min(own.length, Math.ceil(spec.n / 2));
+  // (B-1 그 집 물건 10/18: nearly the whole list from the place's own things — n−1, n−2 from 8 up; socks only at the laundromat)
+  const own = (ROOM_POOLS[spec.room] || room.T?.pool || []).filter(t => ITEMS[t] && (!SOCKS.has(t) || SOCK_ROOMS.has(spec.room)));
+  const ownN = Math.min(own.length, Math.max(1, (spec.n || 1) - (spec.n > 7 ? 2 : 1)));
   // the first stages only ask for things with a readable shape (a thin pencil under a loft was hard even with a hint)
   const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard'];
   const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && t === 'sock') || (spec.idx >= 0 && spec.idx < 6 && THIN.includes(t));   // a stage's tool is never a target or a decoy
@@ -947,7 +949,8 @@ export function planStage(room, spec, story = null) {
     if (s) placements.push({ type, spot: s, role: 'target' });
   }
   // decoys: clutter in plain sight + red herrings inside containers
-  const decoyTypes = DECOY_POOL.concat(TARGET_POOL.filter(t => !targets.includes(t))).filter(t => !tool(t));
+  // (함정, 10/18: the place's own unused things + DECOY_POOL only — never the common pool, never another stage's answers)
+  const decoyTypes = DECOY_POOL.concat(own.filter(t => !targets.includes(t))).filter(t => !tool(t));
   const fill = (pred, frac) => {
     const c = r.shuffle(all.filter(s => !used.has(s) && pred(s)));
     const n = Math.round(c.length * frac);
@@ -960,7 +963,11 @@ export function planStage(room, spec, story = null) {
   };
   // the story's secret collectible: tucked away somewhere open (not inside anything locked)
   if (story?.secret) { const ss = take(x => (x.kind === 'under' || x.kind === 'behind') && !inLocked(x), story.secret) || take(x => !inLocked(x) && x.kind !== 'on', story.secret); if (ss) placements.push({ type: story.secret, spot: ss, role: 'secret' }); }
-  fill(s => s.kind === 'on', spec.clutter ?? .5);
+  // (no decoy on a place that rides a lid, a rock or a bush that opens: tapping the thing to open it hit the decoy — and
+  // with 톡 that cost a tap every time; a thing to find may sit there, it moves away when found — 레벨 세션 10/18)
+  const pivots = new Set(room.parts.flatMap(p => p.pivots));
+  const rides = s => { for (let o = s.anchor?.parent; o; o = o.parent) { if (pivots.has(o)) return true; if (o === s.furn?.group) return false; } return false; };
+  fill(s => s.kind === 'on' && !rides(s), spec.clutter ?? .5);
   fill(s => s.kind === 'under' || s.kind === 'behind', (spec.clutter ?? .5) * .45);
   fill(s => s.kind === 'inside' && !lockedParts.has(s.part), .35);
   // a dark room: the lights are out until you find the switch (a lever on a wall where it can be seen)
