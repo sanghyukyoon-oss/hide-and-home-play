@@ -208,7 +208,7 @@ const SCENES = [
     reveal: [L('bunny', '푸핫! 상자가 너무 좁아서 웃겼어!', 'Pfft! The box was so tight it made me laugh!'), L('bunny', '집들이 와 줘서 고마워. 진짜로.', 'Thanks for coming to my housewarming. Really.')] },
   { id: 'police', type: 'gray', room: 'police',
     intro: [L('shiba', '킁킁. 색깔 도둑 신고가 들어왔어. 파출소까지 회색이야!', 'Sniff, sniff. Someone reported a color thief. Even the police box went gray!'), L('shiba', '나는 조용히 잠복할게. 넌 색을 찾아 줘.', "I'll stake out quietly. You find the colors.")],
-    caught: K('…또 너야?', '…You again?'),
+    caught: K('…파출소는 반칙이야.', '…A police box? No fair.'),
     after: [L('shiba', '나는 조용했어. 꼬리는 아니었지만.', "I was quiet. My tail wasn't."), L('shiba', '근데 저 애 이름이 뭐지? 동네 명부에 없어.', "But what's its name? It's not on the town list."), L('shiba', '다음 순찰엔 같이 가자.', 'Come on patrol with me next time.')] },
   { id: 'oneroom', type: 'incident', room: 'oneroom',
     intro: [L('hamster', '웁웁! 불 나갔어! 해바라기씨 먹다가!', 'Mmf! The lights went out! Mid-snack!'), L('mong', '스위치부터 찾자. 옆에 있을게.', "Let's find the switch. I'm right here.")],
@@ -275,7 +275,16 @@ const INKY = [
   { intro: K('이번엔 내가 같이 찾을게. 어디 뒀는지 알거든.', 'This time I\'ll help. I know where I put everything.'), caught: K('그거 내가 제일 잘 숨긴 건데.', 'That was my best hiding spot.'),
     miss: [K('거기 말고. 그 옆.', 'Not there. Next to it.')], idle: [K('위. 더 위.', 'Up. Higher.'), K('…그건 내가 봐도 어렵다.', "…Okay, even I think that one's hard.")], found: [K('그거 내가 제일 잘 숨긴 건데.', 'That was my best hiding spot.')], furn: [K('맞아, 그거.', "Yep, that one.")] },
 ];
-const GRAY_OWNER = [K('앗, 색깔이 몽땅 사라졌어!', 'Whoa, all the colors are gone!'), K('또 회색이야. 그 까만 애 짓이야!', "Gray again. It's that black kid!"), K('내 방이 흑백 영화가 됐어…', 'My room turned into a black-and-white movie…')];
+// more of 먹물이 per phase, taken in turn by the 흑백판 count, so it doesn't say the same thing every time (70판 점검 10/18)
+const INKY_V = [
+  { intro: [], caught: [] },
+  { intro: [K('오늘 색깔은 특히 예뻤는데. 내 거야.', 'Today\'s colors were extra pretty. Mine now.'), K('…넌 왜 맨날 끝까지 찾아?', '…Why do you always look till the end?'), K('알록달록한 건 다 숨겨 버렸지롱.', 'I hid everything colorful. Nyah.')],
+    caught: [K('…또 들켰다.', '…Caught again.'), K('…빠르네.', "…You're fast."), K('흥, 이번만이야.', 'Hmph. Just this once.')] },
+  { intro: [K('…다른 애들은 벌써 집에 갔는데.', '…Everyone else already went home.'), K('…오늘도 찾으러 온 거야?', '…You came looking again today?')],
+    caught: [K('…해 지기 전에 찾았네.', '…Found it before sundown.'), K('…응.', '…Yeah.')] },
+  { intro: [K('여긴 내가 제일 잘 숨긴 데야. 같이 찾자.', "This is where I hid things best. Let's look together.")], caught: [K('봐, 다 돌아왔지?', 'See? All back.')] },
+];
+const GRAY_OWNER = [K('앗, 색깔이 몽땅 사라졌어!', 'Whoa, all the colors are gone!'), K('또 회색이야. 그 까만 애 짓이야!', "Gray again. It's that black kid!"), K('여기가 흑백 영화가 됐어…', 'This place turned into a black-and-white movie…')];
 const GRAY_MONG = K('찾는 것마다 색을 돌려놓자.', "Let's bring the colors back, one by one.");
 
 // ── 너굴이's timed stages: the champion, a new excuse every time
@@ -349,12 +358,12 @@ const BOSS = [
 
 // ── chapter cinematics: why we go somewhere new (stages.js REGION_INTRO, rewritten in place)
 const REGION = {
-  apt: { title: K('토순이네 새 집', "Bunbun's New Place"), cast: ['mong', 'bunny'], lines: [L('bunny', '몽글아! 새 집이야! 아직 상자투성이지만.', 'Mongle! New place! Still all boxes, though.'), L('bunny', '집들이 와 줘서 고마워!', 'Thanks for coming to my housewarming!'), L('mong', '…발자국도 이쪽으로 왔어.', '…The footprints came this way, too.')] },
+  apt: { title: K('토순이네 새 집', "Bunbun's New Place"), cast: ['mong', 'bunny'], lines: [L('bunny', '몽글아! 새 집이야! 아직 상자투성이지만.', 'Mongle! New place! Still all boxes, though.'), L('bunny', '짐 정리는 아직이야. 헤헤.', 'Still unpacking. Hehe.'), L('mong', '…발자국도 이쪽으로 왔어.', '…The footprints came this way, too.')] },
   alley: { title: K('순찰 가자!', 'Patrol Time!'), cast: ['mong', 'shiba', 'grumpy'], lines: [L('shiba', '약속한 순찰이다! 오늘은 골목.', 'Patrol time, like I promised! Today, the alleys.'), L('shiba', '삐딱이네 골목은 조심해. 걔는 말을 좀… 삐딱하게 해.', "Careful in Grumpy's alley. Grumpy talks a little… grumpy."), L('mong', '…그래서 삐딱이구나.', '…Hence the name.')] },
   shop: { title: K('배고픈데 편의점 가자!', "Snack Run!"), cast: ['mong', 'shiba', 'grumpy'], lines: [L('mong', '(꼬르륵)', '(grumble)'), L('shiba', '사건이다. 네 배에서.', "We've got an emergency. In your stomach."), L('grumpy', '…나도 간다. 배고파서야. 너 때문 아니고.', "…I'm coming too. 'Cause I'm hungry. Not 'cause of you.")] },
   park: { title: K('공원으로 소풍', 'Picnic in the Park'), cast: ['mong', 'frog', 'squirrel'], lines: [L('frog', '개굴! 배도 불렀으니 공원으로 소풍 가자!', "Ribbit! We're full, so let's picnic in the park!"), L('squirrel', '먹을 건 내가 챙겼어. …숨겨 놨지만.', "I packed the food. …And hid it.")] },
   camp: { title: K('산길 따라 캠핑장', 'Up the Trail to Camp'), cast: ['mong', 'panda', 'sleepy'], lines: [L('panda', '주말엔 산이지. 어릴 때 다 같이 캠핑장에 뭘 묻었어.', 'Weekends are for mountains. We all buried something at the campsite as kids.'), L('panda', '꼭대기에 가면 보여 줄게. 천천히 가자. 기다려 줄게.', "I'll show you at the top. Let's take it slow. I'll wait for you.")] },
-  building: { title: K('약속한 퍼즐', 'The Promised Puzzle'), cast: ['mong', 'nerd', 'robot'], lines: [L('nerd', '몽글아, 약속 기억하지? 너만을 위한 퍼즐.', 'Mongle, remember my promise? A puzzle just for you.'), L('robot', '삐빅. 로비부터 옥상까지, 단서가 층마다 숨겨져 있음.', 'BEEP. Clues hidden on every floor, lobby to rooftop.'), L('mong', '…옥상에서 색깔 빛이 새어 나와.', "…There's colored light leaking from the rooftop.")] },
+  building: { title: K('약속한 퍼즐', 'The Promised Puzzle'), cast: ['mong', 'nerd', 'robot'], lines: [L('nerd', '몽글아, 약속 기억하지? 너만을 위한 퍼즐.', 'Mongle, remember my promise? A puzzle just for you.'), L('robot', '삐빅. 로비부터 옥상까지, 단서가 층마다 숨겨져 있음.', 'BEEP. Clues hidden on every floor, lobby to rooftop.'), L('mong', '…발자국이 이 빌딩으로 들어갔어.', '…The footprints go into this building.')] },
 };
 
 // ── the boss games: a few lines before (lead) and after the first win (out), by game and set-up
@@ -368,8 +377,8 @@ const GAME = {
   'wakeup:0': { lead: [L('cat', '졸졸이는 밤새 창밖 보고 아침에 자.', 'Dozy watches the window all night and sleeps all morning.'), L('mong', '졸졸아, 까만 애 봤어?', 'Dozy, did you see a black one?'), L('sleepy', '드르렁~ 쿨쿨…', 'Zzz… snore…'), L('cat', '…깨워야겠다냥.', "…We'll have to wake Dozy up.")],
     out: [L('sleepy', '음냐… 까만 애? 봤어… 매일 밤 혼자 걸어가.', 'Mmh… the black one? Yeah… it walks by alone every night.'), L('sleepy', '아파트 쪽으로… 쿨…', 'Toward the apartments… zzz…'), L('mong', '…혼자.', '…Alone.'),
       L('bunny', '몽글아! 나 아파트로 이사 가!', "Mongle! I'm moving to the apartments!"), L('bunny', '집들이 와 줄 거지?', "You'll come to my housewarming, right?"), L('mong', '응. 다음엔 너네 새 집에서.', 'Yeah. Next time, at your new place.'), L('bunny', '그리고 그다음엔 너네 집! 약속!', 'And after that, your place! Promise!')] },
-  'hotel:2': { lead: [L('bunny', '몽글 호텔 3박 4일! 집들이 기념 여행이야!', 'Mongle Hotel, four days, three nights! Housewarming trip!')] },
-  'yasik:1': { lead: [L('sundae', '같이 먹을 건 이미 준비했어. 문제는…', 'The snacks are ready. The problem is…'), L('mong', '…엄마.', '…Mom.')], out: [L('mong', '…귤 껍질 소리에 맞춰 걸었어.', '…I walked in time with the tangerine peeling.')] },
+  'hotel:2': { lead: [L('bunny', '베개 챙겼지? 3박 4일 동안 매일 밤 놀 거야!', "Got your pillow? We're playing every night for four days!")] },
+  'yasik:1': { lead: [L('sundae', '간식은 챙겼고… 문제는 집에 가져가는 거.', 'Snacks: packed. Problem: getting them home.'), L('mong', '…엄마.', '…Mom.')], out: [L('mong', '…귤 껍질 소리에 맞춰 걸었어.', '…I walked in time with the tangerine peeling.')] },
   'wakeup:1': { lead: [L('panda', '졸졸이 또 안 일어나.', "Dozy won't get up again."), L('mong', '…약속했으니까. 깨워서 같이 내려가자.', "…I promised. Let's wake Dozy and walk down together.")], out: [L('sleepy', '음냐… 응. 같이.', 'Mmh… yeah. Together.')] },
   // 쉬어가기 (10/18 정본 배치: 두더지 3·27·58, 이불 8·46, 무궁화 24·63) — 너굴이 rivalry runs through them
   'whack:1': { lead: [L('raccoon', '이번엔 변장했지롱. 날 찾을 수 있을까~?', "I'm in disguise this time. Think you can spot me~?"), L('mong', '…꼬리가 보이는데.', '…I can see your tail.')] },
@@ -580,22 +589,30 @@ export function incidentIntro(idx, host) {
   const sc = sceneAt(idx); if (sc?.intro) return sc.intro;
   const F = fr(host), n = bind().meet[idx] || 0, list = F.intro.filter(x => x.length);
   if (!list.length) return [];
-  return as(n === 0 ? list[0] : list[1 + ((n - 1) % Math.max(1, list.length - 1))] || list[0], host);
+  return as(list[turn(n, list.length)] || list[0], host);
 }
-export const incidentReveal = (idx, host) => sceneAt(idx)?.reveal || as(fr(host).found, host);
+// when found: the scene's lines, else the reveal paired with this meeting's intro (or the host's usual one)
+export function incidentReveal(idx, host) {
+  const sc = sceneAt(idx); if (sc?.reveal) return sc.reveal;
+  const F = fr(host), n = bind().meet[idx] || 0, R = F.reveals;
+  return as((R && R[turn(n, R.length)]) || F.found, host);
+}
+// a 사건 판 that fell back to a find-the-things stage (no big furniture to hide in): the host says so, no hiding lines
+export const fallbackIntro = host => [L(host || 'bunny', '오늘은 숨을 데가 없네. 대신 내 물건 찾기!', 'No good hiding spots today. Find my stuff instead!')];
 export const hideLine = (idx, host) => sceneAt(idx)?.hide || fr(host).hide;
 // bubbles from the hideout: 'clue' (you found something), 'lock' (you touched the locked door), 'stuck' (a while, nothing)
 export const hidePool = (idx, host, kind) => sceneAt(idx)?.[kind] || fr(host)[kind] || ANY[kind];
 // 흑백판
 export const grayPhase = idx => bind().inky(idx);
+const inkyV = (idx, what) => { const p = grayPhase(idx), g = bind().gray[idx] || 0, all = [INKY[p][what], ...INKY_V[p][what]]; return all[g % all.length]; };
 export function grayIntro(idx, owner, villain) {
-  const sc = sceneAt(idx); if (sc?.intro) return villain && !sc.intro.some(l => l.who === 'inky') ? [...sc.intro, L('inky', INKY[grayPhase(idx)].intro)] : sc.intro;
+  const sc = sceneAt(idx); if (sc?.intro) return villain && !sc.intro.some(l => l.who === 'inky') ? [...sc.intro, L('inky', inkyV(idx, 'intro'))] : sc.intro;
   const g = bind().gray[idx] || 0, out = [L(owner, GRAY_OWNER[g % GRAY_OWNER.length]), L('mong', GRAY_MONG)];
-  if (villain) out.push(L('inky', INKY[grayPhase(idx)].intro));
+  if (villain) out.push(L('inky', inkyV(idx, 'intro')));
   return out;
 }
 export const inkyTaunt = (idx, kind) => INKY[grayPhase(idx)][kind] || null;
-export const inkyCaught = idx => sceneAt(idx)?.caught || INKY[grayPhase(idx)].caught;
+export const inkyCaught = idx => sceneAt(idx)?.caught || inkyV(idx, 'caught');
 // 먹물이 stays to talk (빌딩 흑백판) and, after that, stays as a friend — no more running off
 export const inkyStays = idx => sceneAt(idx)?.id === 'office' || grayPhase(idx) === 3;
 export const sceneAfter = idx => sceneAt(idx)?.after || null;

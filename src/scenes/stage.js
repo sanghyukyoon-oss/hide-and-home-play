@@ -24,7 +24,7 @@ import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incid
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
-  timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI } from '../script.js';
+  timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro } from '../script.js';
 import { tr } from '../i18n.js';
 const JAIL_LINES = ['억울해요! 난 그냥 숨바꼭질 하던 중이었다고요!', '진짜 도둑은 잉키라니까요~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
 const ROBOT_COST = 50;
@@ -222,6 +222,9 @@ export class StageScene {
       const lines = incidentIntro(this.idx, th.friend);
       if (lines.length) { await this.talk(lines, { title: th.name }); if (this.dead) return; }
       await this.friendHides(); if (this.dead) return;
+    } else if (!custom && !this.preview && this.spec.incident && !this.scene?.always && !G.save.settings?.oldMode) {
+      // a 사건 판 that fell back to finding things (no big furniture to hide in): the host says so, not a hiding line
+      await this.talk(fallbackIntro(th.friend), { title: th.name }); if (this.dead) return;
     }
     this.running = true; this.tStart = this.t;
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
