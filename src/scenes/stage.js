@@ -1743,6 +1743,12 @@ export class StageScene {
         G.persist();
       }
     }
+    // 11판, meeting 냥냥이: the cat tower — the gift of the 냥냥이 escape boss that the 1장 trim removed — so her seat at
+    // your place (script.js giftSeats) still comes (user picked this, 10/18). Marked as that story's gift, once.
+    if (this.idx === 10 && !this.custom && !this.preview) {
+      const done = G.save.storyDone || (G.save.storyDone = {});
+      if (!done.grumpycat) { done.grumpycat = true; G.save.home.inventory.push('cattower'); memento = 'cattower'; G.persist(); }
+    }
     // 대본: a few words after the clear — 2판's "이번엔 네가 숨겨 봐", a 흑백판's footprints, 너굴이's excuse
     let aft = this.custom || this.preview ? null : this.spec.timed ? timedWin(this.idx) : sceneAfter(this.idx);
     if (aft && !this.talkKeep && !this.incident && !this.spec.boss && (this.hiddenStage || this.spec.gray || this.spec.timed) && !sceneAt(this.idx)?.keep) aft = null;   // 말 줄이기
