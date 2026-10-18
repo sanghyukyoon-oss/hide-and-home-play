@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { rbox, sph, hemi, cyl, tor, cone, cap, disc, plane, put, grp, mat, mesh, geo, extrude, canvasTex, roundRect, shade } from './kit.js';
+import { rbox, sph, hemi, cyl, tor, cone, cap, disc, plane, put, grp, mat, mesh, geo, extrude, canvasTex, texCache, roundRect, shade } from './kit.js';
 import { Furn } from './furniture.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
@@ -117,8 +117,8 @@ function liveTex(w, h, draw, o = {}) {
   }
   return t;
 }
-const TEX = new Map();
-const tex = (key, w, h, draw, o) => TEX.get(key) || (TEX.set(key, liveTex(w, h, draw, o)), TEX.get(key));
+const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
+const tex = (key, w, h, draw, o) => TEX.get(key, () => liveTex(w, h, draw, o));
 const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(); };
 // draw something at (x, y) and at its wrapped copies so the texture tiles seamlessly
 const wrap = (S, x, y, m, fn) => { for (const dx of [-S, 0, S]) for (const dy of [-S, 0, S]) { const X = x + dx, Y2 = y + dy; if (X > -m && X < S + m && Y2 > -m && Y2 < S + m) fn(X, Y2); } };

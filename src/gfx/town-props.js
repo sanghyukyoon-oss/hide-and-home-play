@@ -12,15 +12,15 @@
 //   hosereel (1×1)  호스 릴 — a red reel of flat hose on a stand with its nozzle
 //   firebell (wall, span 1) 출동 벨 — a big red bell with a pull handle
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, roundRect } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, texCache, roundRect } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
 const INK = '#2a1d33', WHITE = '#ffffff', STEEL = '#c9cfe0', STEEL2 = '#a9b2c8', DARK = '#5b5672', RED = '#e8433d', RED2 = '#b8322e',
   NAVY = '#2f3f7a', BLUE = '#3f6fd8', WOOD = '#e9b77c', WOODD = '#b97a45', BRASS = '#e2b448', CORK = '#d9a066', GREEN = '#3f7a5a', YEL = '#ffd23f';
 const B = {};
-const TEX = {};
-const tex = (key, w, h, draw) => TEX[key] || (TEX[key] = canvasTex(w, h, draw));
+const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
+const tex = (key, w, h, draw) => TEX.get(key, () => canvasTex(w, h, draw));
 const decal = (w, h, t) => { const m = mesh(new THREE.PlaneGeometry(w, h), mat('#ffffff', { map: t }), { cast: false }); return m; };
 const font = (px, bold = true) => `${bold ? '700 ' : ''}${px}px "Ssurround", "BagelFat", system-ui, sans-serif`;
 

@@ -21,7 +21,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import { grp, mat, mesh, geo, canvasTex, roundRect, shade, starShape, heartShape, STYLE } from './kit.js';
+import { grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, starShape, heartShape, STYLE } from './kit.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
 
@@ -252,8 +252,8 @@ function liveTex(w, h, draw, o = {}) {
   }
   return t;
 }
-const TEX = new Map();
-const tex = (key, w, h, draw, o) => TEX.get(key) || (TEX.set(key, liveTex(w, h, draw, o)), TEX.get(key));
+const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
+const tex = (key, w, h, draw, o) => TEX.get(key, () => liveTex(w, h, draw, o));
 const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(); };
 // draw at (x, y) and at its wrapped copies so a texture tiles seamlessly
 const wrap = (W, H, x, y, m, fn) => { for (const dx of [-W, 0, W]) for (const dy of [-H, 0, H]) { const X = x + dx, Y2 = y + dy; if (X > -m && X < W + m && Y2 > -m && Y2 < H + m) fn(X, Y2); } };

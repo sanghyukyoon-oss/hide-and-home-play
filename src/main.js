@@ -363,7 +363,7 @@ async function boot() {
   document.getElementById('boot').classList.add('gone');
   setTimeout(() => document.getElementById('boot')?.remove(), 600);
   await going;
-  setTimeout(bgFurnThumbs, 1200);
+  // (no background drawing of all ~200 furniture icons any more: each grid draws the icons it shows — see G.needThumbs)
   installJam();
 }
 

@@ -5,7 +5,7 @@
 // A painting swings out from the wall (something may be tucked behind it); a draped piece can be unveiled; a crate with a
 // lid; an easel; the guide desk's drawer; a bench; velvet ropes; the Thinker as a bronze 몽글이.
 import * as THREE from 'three';
-import { put, grp, canvasTex } from './kit.js';
+import { put, grp, canvasTex, texCache } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -13,8 +13,8 @@ const GOLD = '#d9a94a', GOLD2 = '#a8782e', INK = '#2a1d33', BRONZE = '#7a6a52', 
 const B = {};
 
 // ── the paintings (drawn once, cached) ──────────────────────────────────────────────────────────────────────────────
-const TEX = {};
-const tex = (key, w, h, draw) => TEX[key] || (TEX[key] = canvasTex(w, h, draw));
+const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
+const tex = (key, w, h, draw) => TEX.get(key, () => canvasTex(w, h, draw));
 const mochi = (c, x, y, r, body = '#fff6ee', ear = '#ffcfae', look = 0) => {   // a little round 몽글이 face
   c.fillStyle = ear; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(x + s * r * .78, y - r * .35, r * .32, r * .42, s * .5, 0, 7); c.fill(); }
   c.fillStyle = body; c.beginPath(); c.ellipse(x, y, r, r * .9, 0, 0, 7); c.fill();

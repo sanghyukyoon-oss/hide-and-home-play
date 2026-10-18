@@ -17,7 +17,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { grp, mat, mesh, geo, canvasTex, roundRect, shade, STYLE } from './kit.js';
+import { grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, STYLE } from './kit.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -183,8 +183,8 @@ function liveTex(w, h, draw, o = {}) {
   }
   return t;
 }
-const TEX = new Map();
-const tex = (key, w, h, draw, o) => TEX.get(key) || (TEX.set(key, liveTex(w, h, draw, o)), TEX.get(key));
+const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
+const tex = (key, w, h, draw, o) => TEX.get(key, () => liveTex(w, h, draw, o));
 const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(); };
 function clip(c, x, y, w, h, fn) { c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); fn(); c.restore(); }
 function daisy(c, x, y, r, petal = '#ffffff', mid = '#ffc23d') { c.fillStyle = petal; for (let i = 0; i < 5; i++) { const a = i / 5 * PI * 2; blob(c, x + Math.cos(a) * r, y + Math.sin(a) * r, r * .78); } c.fillStyle = mid; blob(c, x, y, r * .6); }

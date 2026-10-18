@@ -27,6 +27,15 @@ export function geo(key, make) { let g = GEO.get(key); if (!g) { g = make(); GEO
 export function purgeGeo() {
   GEN++;
   for (const [k, g] of GEO) if ((USED.get(k) ?? -9) < GEN - 2) { g.dispose(); GEO.delete(k); USED.delete(k); }
+  for (const m of TEXCACHES) for (const [k, e] of m) if (e.gen < GEN - 2) { e.t.dispose(); m.delete(k); }
+}
+// The props' painted textures (signs, labels, patterns — keyed by theme colours and text) are cached the same way. They
+// used to live forever: ~5 more canvases every stage, 146 canvases / ~60 MB after 28 stages, on top of what each scene
+// needs (user, 10/18: "몇 판 하다 보면 하얗게 변하고 처음 로딩 화면"). texCache().get(key, make) = cached per generation.
+const TEXCACHES = [];
+export function texCache() {
+  const m = new Map(); TEXCACHES.push(m);
+  return { get(key, make) { let e = m.get(key); if (!e) m.set(key, e = { t: make(), gen: GEN }); e.gen = GEN; return e.t; }, get size() { return m.size; } };
 }
 
 // Soft fresnel rim on every material: the "몽글몽글" glow that makes flat pastel shapes read as soft and squishy.

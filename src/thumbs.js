@@ -5,13 +5,16 @@ import { STYLE, disposeTree } from './gfx/kit.js';
 import { ToonPost } from './gfx/toonpost.js';
 import { ART, applyArt, sortLayers } from './gfx/style.js';
 
-// one offscreen renderer that draws icons one at a time (renderThumbs uses it for a whole batch; main.js keeps one alive
-// to draw the furniture icons a few at a time after boot)
-export function thumbCtx(size = 160) {
+// ONE offscreen renderer for every icon, made the first time and kept (10/18). Each batch used to make its own WebGL
+// context and drop it, but the shared shape / material caches keep listeners pointing at every renderer that ever drew
+// them, so the old contexts never went away: a few more each stage and boss, until Safari dropped the game's own context
+// or reloaded the tab (user: "몇 판 하다 보면 하얗게 변하고 처음 로딩 화면", even on an iPhone 18 Pro).
+let SHARED = null;
+function shared() {
+  if (SHARED) return SHARED;
   const canvas = document.createElement('canvas');
   const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
-  r.setPixelRatio(1); r.setSize(size, size, false);
-  r.setClearColor(0x000000, 0);
+  r.setPixelRatio(1); r.setClearColor(0x000000, 0);
   const toon = STYLE.mode !== 'std';
   const scene = new THREE.Scene();
   let post = null;
@@ -19,15 +22,21 @@ export function thumbCtx(size = 160) {
     r.toneMapping = THREE.NoToneMapping;
     scene.add(new THREE.AmbientLight(ART.ambColor, ART.amb + .25));
     const d = new THREE.DirectionalLight(ART.sunColor, ART.sun); d.position.set(2, 4, 3); scene.add(d);
-    post = new ToonPost(r, { budget: size * size * 4 }); applyArt(post);
-    post.setSize(size, size, { dpr: 1, lineCss: 2.4, maxSS: 2 });
+    post = new ToonPost(r, { budget: 300 * 300 * 4 }); applyArt(post);
   } else {
     r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.1;
     scene.add(new THREE.HemisphereLight('#ffffff', '#d9c6ff', 1.6));
     const d = new THREE.DirectionalLight('#fff4e6', 1.6); d.position.set(2, 4, 3); scene.add(d);
   }
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 100);   // orthographic like the game (the ink pass assumes it)
+  let cur = 0;
+  const size = n => { if (n === cur) return; cur = n; r.setSize(n, n, false); post?.setSize(n, n, { dpr: 1, lineCss: 2.4, maxSS: 2 }); };
+  return (SHARED = { r, canvas, scene, post, cam, toon, size });
+}
+export function thumbCtx(size = 160) {
+  const { r, canvas, scene, post, cam, toon, size: setSize } = shared();
   const one = job => {
+    setSize(size);   // (a batch of another size may have run in between)
     const obj = job.build();
     scene.add(obj);
     obj.updateMatrixWorld(true);
@@ -49,7 +58,7 @@ export function thumbCtx(size = 160) {
     scene.remove(obj); disposeTree(obj);
     return url;
   };
-  return { one, done() { r.dispose(); r.forceContextLoss?.(); } };
+  return { one, done() {} };   // the renderer stays for the next batch
 }
 export function renderThumbs(jobs, size = 160) {
   const C = thumbCtx(size), out = {};
