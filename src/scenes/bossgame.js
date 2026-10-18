@@ -18,13 +18,15 @@ const LOAD = {
   hotel: () => import('../bosses/hotel.js'), churro: () => import('../bosses/churro.js'),
   // 추가 인계 3: 엄마 몰래 성적표 (user picked it, "추천"), 손전등 숨바꼭질 ("일단 해봐")
   report: () => import('../bosses/report.js'), flashlight: () => import('../bosses/flashlight.js'),
+  // 인계 4: 두더지 숨바꼭질 새 버전 (a 쉬어가기, played through this wrapper with interlude: true)
+  whack: () => import('../bosses/whack.js'),
 };
 // a game whose stylesheet does not come with it: linked here for the game's time on screen
 const SHEETS = { flashlight: new URL('../bosses/flashlight.css', import.meta.url).href };
 export const BOSS_GAME_INFO = {
   yasik: { name: '엄마 몰래 야식' }, villa: { name: '몽글 빌라 방 배정' }, tag: { name: '다 잡았다! 술래잡기' },
   wakeup: { name: '아침 깨우기 장치' }, photo: { name: '찰칵! 동네 사진관' },
-  hotel: { name: '몽글 호텔 X박 X일' }, churro: { name: '추로야!!!' }, report: { name: '엄마 몰래 성적표' }, flashlight: { name: '손전등 숨바꼭질' },
+  hotel: { name: '몽글 호텔 X박 X일' }, churro: { name: '추로야!!!' }, report: { name: '엄마 몰래 성적표' }, flashlight: { name: '손전등 숨바꼭질' }, whack: { name: '두더지 숨바꼭질' },
 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
 const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };
@@ -40,9 +42,10 @@ function faceJob(k, f, key) {
 
 export class BossGameScene {
   constructor(G) { this.G = G; this.name = 'bossgame'; }
-  async enter({ kind = 'yasik', after = 4, lv = 0, ...more } = {}) {
+  async enter({ kind = 'yasik', after = 4, lv = 0, interlude = false, ...more } = {}) {
     const G = this.G, W = G.world;
-    this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this.fails = G._bossFails?.[after] || 0;
+    // interlude: a 쉬어가기 between stages, not a boss — a loss still goes on (smaller reward), marked done as 'm'+after
+    this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
     W.scheme = 'E'; W.joyOn = false; W.joyHidden = true; W.gaugeOn = false; W.camLock = false;
     const app = document.getElementById('app'); for (const [k, v] of Object.entries(APP_FLAGS[this.kind] || {})) app.dataset[k] = v;
@@ -80,14 +83,15 @@ export class BossGameScene {
       },
       // the lab restarts a game with a level: here a won boss goes on with the campaign, anything else replays the boss
       go(d = {}) {
-        if (S.won && (d.lv == null || d.lv !== S.lv)) return S.finish();
-        return G.go('bossgame', { ...d, kind: S.kind, after: S.after, lv: d.lv ?? S.lv });
+        if ((S.won || S.passed) && (d.lv == null || d.lv !== S.lv)) return S.finish();
+        return G.go('bossgame', { ...d, kind: S.kind, after: S.after, lv: d.lv ?? S.lv, interlude: S.interlude });
       },
       homeBtn: () => G.ui.btn(null, { color: 'purple', icon: 'pause', cls: 'ibtn', onClick: () => S.menu() }),
       setGame() {}, leave() {},
       log(e) {
         L.stats.log.push(e);
         if (e.result === 'win' && !S.won) S.win(e);
+        if (e.result === 'fail' && S.interlude && !S.won && !S.passed) S.pass();
         if (e.result === 'fail') { S.fails++; (G._bossFails || (G._bossFails = {}))[S.after] = S.fails; G.stats.log.push({ bossgame: S.kind, result: 'fail' }); }
       },
     };
@@ -95,10 +99,17 @@ export class BossGameScene {
   }
   win(e) {
     const G = this.G; this.won = true;
-    const coins = 150 + (e.stars || 0) * 30; G.addCoins(coins);
-    const done = G.save.bossDone || (G.save.bossDone = {}); done['g' + this.after] = true; G.persist();
-    G.stats.log.push({ bossgame: this.kind, result: 'win' });
-    G.ui.toast(`보스 클리어! 코인 +${coins}`, 'green');
+    const coins = this.interlude ? 40 + (e.stars || 0) * 15 : 150 + (e.stars || 0) * 30; G.addCoins(coins);
+    const done = G.save.bossDone || (G.save.bossDone = {}); done[(this.interlude ? 'm' : 'g') + this.after] = true; G.persist();
+    G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
+    G.ui.toast(this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
+  }
+  // an interlude lost: still on to the next stage, with a small reward
+  pass() {
+    const G = this.G; this.passed = true;
+    G.addCoins(15);
+    const done = G.save.bossDone || (G.save.bossDone = {}); done['m' + this.after] = true; G.persist();
+    G.stats.log.push({ mini: this.kind, result: 'pass' });
   }
   finish() { this.G.go('stage', { idx: this.after + 1 }); }
   menu() {
@@ -112,7 +123,11 @@ export class BossGameScene {
     this.t = (this.t || 0) + dt;
     this.game?.update(dt);
     // the win panel's next button reads the lab's '다음 밤 / 다음 빌라…': in the campaign it goes to the next stage
-    const nb = this.game?.nextBtn; if (this.won && nb && !nb._relabel) { nb._relabel = true; const l = nb.querySelector('.lbl'); if (l) l.textContent = '다음 판'; }
+    const nb = this.game?.nextBtn; if ((this.won || this.passed) && nb && !nb._relabel) {
+      nb._relabel = true; const l = nb.querySelector('.lbl'); if (l) l.textContent = '다음 판';
+      // a lost interlude's big button was '다시 하기': here it goes on ('다시' still replays)
+      if (this.passed && !this.won) { nb.press = () => this.finish(); nb.addEventListener('pointerup', e => { e.stopImmediatePropagation(); this.finish(); }, { capture: true }); }
+    }
   }
   // QA bot: the game's own bot plays; a boss lost twice is skipped
   botStep(dt, mode) {
@@ -124,7 +139,7 @@ export class BossGameScene {
     this.dead = true; const W = this.G.world;
     this.game?.exit?.();
     this.sheet?.remove(); this.sheet = null;
-    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night');
+    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night', 'wh');
     Object.assign(W, { scheme: this._was.scheme, joyOn: this._was.joyOn, joyHidden: this._was.joyHidden, gaugeOn: this._was.gauge, camLock: this._was.camLock });
     W.onTap = null; W.onDragStart = null; W.onPad = null; W.onRotate = null;
     this.G.ui.clear();

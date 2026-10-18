@@ -497,11 +497,12 @@ export const GAMES = { sneak: Sneak, spot: Spot, redlight: RedLight, shell: Shel
 // stages so the searching never runs on too long — each region ends on its own boss game, and in between come lighter
 // ones on that region's maps (the same game never twice within ~8 stages). 보물 지키기 (boss.js) adds a mid-boss now and then.
 export const MINI_AFTER = {
-  2: { kind: 'whack', p: { goal: 8, time: 30 } },
+  2: { kind: 'whack', lab: true, lv: 0 },   // 두더지 숨바꼭질 새 버전 (인계 4; user: "새롭게 좀 더 재밌게") — boss wrapper, interlude
+
   7: { kind: 'shell', p: { map: 'cat', rounds: 2 } },
   14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },
   23: { kind: 'redlight', p: { time: 55 } },
-  26: { kind: 'whack', p: { goal: 10, time: 32 } },
+  26: { kind: 'whack', lab: true, lv: 1 },  // 변장한 너굴이 첫 등장
   33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },
   42: { kind: 'lamp', p: { map: 'park1', time: 45 } },
   51: { kind: 'spot', p: { map: 'camp1', n: 3, time: 40 } },
@@ -521,11 +522,11 @@ export const BOSS_GAMES = {
   4: { kind: 'yasik', lv: 0 },     // 첫 보스
   11: { kind: 'wakeup', lv: 0 },   // 몽글 마을 집 끝
   20: { kind: 'hotel', lv: 2 },    // 우리 아파트 끝 — 몽글 호텔 3박 4일 (user, 10/18: "실제에서 3박 4일 정도로 하는 거지?")
-  30: { kind: 'flashlight', lv: 0 }, // 동네 골목 — 손전등 숨바꼭질 (user, 10/18: "추로는 빼자. 손전등 숨바꼭질을 더 넣는 게 낫겠어")
+  30: { kind: 'flashlight', lv: 1 }, // 동네 골목 — 손전등 숨바꼭질 곰돌이네 거실 (user, 10/18: "추로는 빼자. 손전등 숨바꼭질을 더 넣는 게 낫겠어")
   39: { kind: 'yasik', lv: 1 },    // 편의점·상가
   48: { kind: 'report', lv: 0 },   // 공원 끝 — 엄마 몰래 성적표 1일 (야식과 짝인 '엄마 몰래' 시리즈)
   59: { kind: 'wakeup', lv: 1 },   // 산길·캠핑 (텐트의 아침)
-  65: { kind: 'flashlight', lv: 2 }, // 빌딩 중간 — 손전등 숨바꼭질 3판 (말썽이·추로; 실험실에서 다듬은 판·칸이 오면 바꿈)
+  65: { kind: 'flashlight', lv: 3 }, // 빌딩 중간 — 손전등 숨바꼭질 펭펭이네 2층 집 (계단 오르내리기, 인계 4)
   69: { kind: 'yasik', lv: 2 },    // 마지막 보스
 };
 export const MINI_INFO = {

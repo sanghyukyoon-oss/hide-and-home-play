@@ -200,6 +200,10 @@ const PAT = [
   [/^(\d+)명 중 (\d+)명 찾았어!$/, (a, b) => `Found ${b} of ${a}!`],
   [/^(.+?)에서 찾았다!$/, a => `Found you! (${tr(a)})`],
   [/^-(\d+)초$/, a => `-${a}s`],
+  // 두더지 숨바꼭질 (whack.js)
+  [/^(\d+)점 · 친구 (\d+)명 찾음 · 최고 (\d+)연속$/, (a, b, c) => `${a} pts · ${b} friend${b === '1' ? '' : 's'} found · best ${c} in a row`],
+  [/^(\d+)점부터 성공! 너굴이는 꾹 참기$/, a => `Clear at ${a} pts! Don't tap Rocky`],
+  [/^(\d+) 연속$/, a => `${a} in a row`],   // the combo tag: shown through CSS attr(data-combo), so it needs tr() in updCombo()
   [/^(.+?) 쏙!$/, n => `${n} — slipped in!`],
   [/^(.+?) \+(\d+)$/, (a, n) => `${a} +${n}`],
   [/^(.+?)의 (.+)$/, (a, b) => `${a}'s ${b}`],   // broad ones last

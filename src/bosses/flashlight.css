@@ -60,3 +60,11 @@
 .fl-stars svg.on { animation: flGot .5s cubic-bezier(.2, 1.8, .4, 1) backwards; }
 .fl-stars svg.on:nth-child(2) { animation-delay: .15s; } .fl-stars svg.on:nth-child(3) { animation-delay: .3s; }
 .panel .fl-tip { font-size: 15px; color: #9a7aa8; margin-top: -2px; word-break: keep-all; }
+
+/* the stairs badge (two-storey house): tap to go up / down */
+.fl-stairs { position: absolute; z-index: 12; transform: translate(-50%, -50%); pointer-events: auto; touch-action: none; cursor: pointer;
+  font-family: var(--font-display); font-size: 19px; color: #3a2453; background: #ffe36b; border: 3px solid #3a2453; border-radius: 999px; padding: 5px 13px 7px;
+  box-shadow: 0 4px 0 #3a2453, 0 0 14px rgba(255, 227, 107, .55); animation: flStairs 1.2s ease-in-out infinite; white-space: nowrap; }
+.fl-stairs.off { opacity: .35; pointer-events: none; animation: none; }
+.fl-stairs.gone { display: none; }
+@keyframes flStairs { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
