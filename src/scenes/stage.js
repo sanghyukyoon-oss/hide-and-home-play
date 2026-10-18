@@ -26,7 +26,7 @@ import { R1, r1Line } from '../script.js';   // R1 몰래 숨기 lines (story se
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro } from '../script.js';
 import { tr } from '../i18n.js';
-const JAIL_LINES = ['억울해요! 난 그냥 숨바꼭질 하던 중이었다고요!', '진짜 도둑은 잉키라니까요~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
+const JAIL_LINES = ['억울해! 난 그냥 여기 숨어 있었다고!', '진짜 도둑은 그 까만 애라니까~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
 const ROBOT_COST = 50;
 import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
@@ -103,7 +103,8 @@ export class StageScene {
       this.th = THEMES[this.spec.room] || layout.theme;   // a map without its own THEMES entry wears its first room's look
       if (this.spec.timed) this.th = { ...this.th, friend: 'raccoon' };   // 너굴이 hosts the timed hide-and-seek
       this.scene = sceneAt(idx);   // 대본: this stage's own scene, if the script pins one here
-      const ho = hostAt(idx); if (ho) this.th = { ...this.th, friend: ho };   // e.g. 먹물이 hiding on the rooftop
+      const ho = hostAt(idx); if (ho) this.th = { ...this.th, friend: ho };   // e.g. 펭펭이 at the fire station
+      if (this.scene?.name) this.th = { ...this.th, name: this.scene.name };   // the stage's title, when the map's own says someone else's home
       if (this.spec.tut === 1 && !G.save.settings?.oldMode) layout = firstLayout(layout);   // 1판: the toy box faces away from you
     }
     if (custom) this.scene = null;
@@ -203,7 +204,7 @@ export class StageScene {
     if (this.plan.light) this.goDark();
     if (this.spec.intro && this.spec.chapter && !custom) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
-    await G.ui.banner(th.name, custom ? `숨겨 둔 물건 ${this.targets.length}개를 찾아라!` : this.incident ? goalLine(th.friend) : `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
+    await G.ui.banner(th.name, custom ? `숨겨 둔 물건 ${this.targets.length}개를 찾아라!` : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
     if (this.dead) return;
     if (this.story?.intro) { await this.talk(this.story.intro, { title: this.story.title }); if (this.dead) return; }
     if ((this.scene?.type === 'tut2' || (this.scene?.always && !this.incident)) && this.scene.intro) { await this.talk(this.scene.intro, { title: th.name }); if (this.dead) return; }   // 2판 · 편의점
@@ -808,7 +809,7 @@ export class StageScene {
   async freeJailed() {
     const J = this.jailed, ch = J.ch, W = this.G.world; J.in = false;
     const P = ch.root.position, t = (this.freeTiles || []).filter(q => Math.hypot(q.x - P.x, q.z - P.z) < 3).sort((a, b) => Math.hypot(a.x - P.x, a.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z))[0] || null;
-    ch.setFace?.('happy'); this.say(ch, '드디어 자유다~! 고마워! 진짜 범인은 잉키야!', 2000); this.G.audio.sfx('special');
+    ch.setFace?.('happy'); this.say(ch, '드디어 자유다~! 범인은 그 까만 애야!', 2000); this.G.audio.sfx('special');
     if (t) { await ch.hopTo?.(this.tw, t.x, t.z, { height: .6, dur: .55 }); ch.root.position.y = t.y || 0; ch.faceTo?.(W.cam.position.x, W.cam.position.z); }
   }
   // ── 아파트 장치판: the remote wakes the robot vacuum, the crank winds the drying rack down
@@ -1326,14 +1327,18 @@ export class StageScene {
     const front = () => { if (!this.tail) return true; const c = this.tail.center, v = new THREE.Vector3(W.cam.position.x - c.x, 0, W.cam.position.z - c.z).normalize(); return v.dot(this.tail.front) > .3; };
     const donut = this.items.find(i => i.role === 'clue');
     const at = el => { const b = el?.getBoundingClientRect(); return b?.width ? { sx: b.left + b.width / 2, sy: b.top + b.height / 2 } : null; };
-    const mid = () => ({ sx: innerWidth / 2, sy: innerHeight * .58 });
+    const mid = () => ({ sx: innerWidth / 2, sy: innerHeight * .58 }), pitch0 = W.pitch;
     // ① the donut she dropped — the very first tap gets an answer from the box
     if (donut && !donut.found && !await this.teach(DO.donut, 'tap', () => (donut.found ? null : this.worldCenter(donut)), () => donut.found, DO.donut2)) return;
     // ② the box shook, but that's its back: turn the room until its front shows
     if (!front() && !this.friendItem?.found) {
       // 기본 조작 F (조작감 세션 10/18): one finger always moves; the turn dial bottom right turns the room (or a two-finger twist)
       const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
-      if (W.scheme === 'F' && dial) { if (!await this.teach(DO.turnDial, 'swipe', () => at(dial), front, DO.turnDial2)) return; }
+      if (W.scheme === 'F' && dial) {
+        if (!await this.teach(DO.turnDial, 'swipe', () => at(dial), front, DO.turnDial2)) return;
+        // the same dial up / down tilts — one more push, right while the thumb is still on it (skipped if they found it already)
+        if (Math.abs(W.pitch - pitch0) < .2) { const p1 = W.pitch; if (!await this.teach(DO.tilt, 'vswipe', () => at(dial), () => Math.abs(W.pitch - p1) > .2, DO.tilt2)) return; }
+      }
       else if (W.scheme === 'E' && !W.joyOn) {
         const mt = W.modeBadge?.querySelector('.mt');
         if (W.eBase !== 'turn' && !await this.teach(DO.turnBadge, 'tap', () => at(mt), () => W.eBase === 'turn' || front(), DO.turnBadge2)) return;

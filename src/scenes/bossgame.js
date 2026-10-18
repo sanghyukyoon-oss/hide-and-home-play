@@ -32,7 +32,7 @@ export const BOSS_GAME_INFO = {
   yasik: { name: '엄마 몰래 야식' }, villa: { name: '몽글 빌라 방 배정' }, tag: { name: '다 잡았다! 술래잡기' },
   wakeup: { name: '아침 깨우기 장치' }, photo: { name: '찰칵! 동네 사진관' },
   hotel: { name: '몽글 호텔 X박 X일' }, churro: { name: '추로야!!!' }, report: { name: '엄마 몰래 성적표' }, flashlight: { name: '손전등 숨바꼭질' }, whack: { name: '두더지 숨바꼭질' },
-  redlight: { name: '무궁화 꽃이 피었습니다' }, inky: { name: '잉키의 바꿔치기' }, picnic: { name: '소풍 보물찾기' }, blanket: { name: '이불 속 누구게?' },
+  redlight: { name: '무궁화 꽃이 피었습니다' }, inky: { name: '먹물이의 바꿔치기' }, picnic: { name: '소풍 보물찾기' }, blanket: { name: '이불 속 누구게?' },
 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
 const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };

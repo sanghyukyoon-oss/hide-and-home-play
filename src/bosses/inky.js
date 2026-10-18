@@ -536,7 +536,7 @@ export class Game {
   buildHud() {
     const L = this.L, ui = L.ui, h = L.h, col = ui.col(), LV = this.lv;
     const top = h('div', { class: 'topbar' });
-    top.append(L.homeBtn(), h('div', { class: 'lab-title ol' }, '잉키의 바꿔치기', h('small', {}, LV.name)));
+    top.append(L.homeBtn(), h('div', { class: 'lab-title ol' }, '먹물이의 바꿔치기', h('small', {}, LV.name)));
     this.clock = h('div', { class: 'ik-clock' }, this.clockI = h('i'), this.clockN = h('b', { class: 'ol' }, String(LV.time)));
     top.append(this.clock);
     col.append(top);

@@ -18,11 +18,11 @@ export const GALLERY = [
   { sec: '쉬어가기', items: [
     { id: 'whack', type: 'bossgame', interlude: true, name: '두더지 숨바꼭질', desc: '수풀에서 쏙 나온 친구를 톡! 너굴이는 꾹 참기', slots: '3 · 27 · 58판 뒤', lvs: L('공원 수풀', '변장한 너굴이', '피버 수풀') },
     { id: 'redlight', type: 'bossgame', interlude: true, name: '무궁화 꽃이 피었습니다', desc: '구호가 끝나기 전에 살금살금, 돌아보면 딱 멈추기', slots: '24 · 63판 뒤', lvs: L('운동장', '킥킥 너굴이', '두 번 돌아보기') },
-    { id: 'inky', type: 'bossgame', interlude: true, name: '잉키의 바꿔치기', desc: '물건으로 둔갑한 먹물이를 찾아 방 색을 되찾아요', slots: '새 버전 · 보류', lvs: L('곰돌이네 거실', '냥냥이네 부엌', '토순이네 침실') },
+    { id: 'inky', type: 'bossgame', interlude: true, name: '먹물이의 바꿔치기', desc: '물건으로 둔갑한 먹물이를 찾아 방 색을 되찾아요', slots: '새 버전 · 보류', lvs: L('곰돌이네 거실', '냥냥이네 부엌', '토순이네 침실') },
     { id: 'picnic', type: 'bossgame', interlude: true, name: '소풍 보물찾기', desc: '바위·덤불·새집을 들춰 보물 쪽지 찾기. 꽁꽁~뜨거워!', slots: '보류', lvs: L('공원', '바람 부는 날', '멍뭉이랑 소풍') },
     { id: 'blanket', type: 'bossgame', interlude: true, name: '이불 속 누구게?', desc: '이불 밖으로 삐져나온 귀·꼬리로 누군지 맞히기', slots: '8 · 46판 뒤', lvs: L('파자마 파티', '변장한 너굴이', '고양이 친구들') },
     { id: 'lamp', type: 'mini', name: '손전등 술래', desc: '어두운 방을 손전등으로 비춰 친구 찾기', slots: '15 · 43판 뒤 · 66판 뒤 보스', lvs: [{ label: '원룸', after: 14 }, { label: '공원', after: 42 }, { label: '보스: 불 꺼진 사무실', after: 65 }] },
-    { id: 'spot', type: 'mini', name: '잉키의 바꿔치기 (지금 판)', desc: '잠깐 사이 바뀐 곳 찾기', slots: '34 · 52판 뒤', lvs: [{ label: '편의점', after: 33 }, { label: '캠핑장', after: 51 }] },
+    { id: 'spot', type: 'mini', name: '먹물이의 바꿔치기 (지금 판)', desc: '잠깐 사이 바뀐 곳 찾기', slots: '34 · 52판 뒤', lvs: [{ label: '편의점', after: 33 }, { label: '캠핑장', after: 51 }] },
   ] },
   { sec: '캠페인 밖', items: [
     { id: 'flashlight', type: 'bossgame', name: '손전등 숨바꼭질', desc: '정전된 밤, 손전등으로 숨은 친구를 비춰 찾아요', slots: '안 쓰임 (10/18 뺌)', lvs: L('토순이네 침실', '곰돌이네 거실', '말썽이네 집', '펭펭이네 2층집') },

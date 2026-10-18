@@ -60,7 +60,7 @@ const WANTED = () => tex('wanted', 256, 320, (c, w, h) => {
   c.fillStyle = '#3a3048'; c.beginPath(); c.ellipse(w / 2, 168, 70, 64, 0, 0, 7); c.fill();   // 잉키: a round ink blob
   c.fillStyle = '#ffffff'; for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(w / 2 + sx * 24, 160, 13, 16, 0, 0, 7); c.fill(); }
   c.fillStyle = '#2a1d33'; for (const sx of [-1, 1]) { c.beginPath(); c.arc(w / 2 + sx * 24, 163, 6, 0, 7); c.fill(); }
-  c.fillStyle = '#2a1d33'; c.font = font(30); c.fillText('색깔 도둑 잉키', w / 2, 270);
+  c.fillStyle = '#2a1d33'; c.font = font(30); c.fillText('색깔 도둑 먹물이', w / 2, 270, w - 24);
   c.font = font(20, false); c.fillText('보면 파출소로!', w / 2, 302);
 });
 const NOTICE = () => tex('notice', 220, 260, (c, w, h) => {
