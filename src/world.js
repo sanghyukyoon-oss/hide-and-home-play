@@ -161,9 +161,19 @@ export class World {
       // 손맛 8: the room follows the finger exactly — no stop-then-jump near the four diagonal views (a notch is felt instead)
       const y = FEEL.cleanturn && !this.snap ? this.rawYaw : a < H ? nv : a < B ? nv + Math.sign(d) * (a - H) * B / (B - H) : this.rawYaw;
       const dyaw = this.yaw - y; this.yaw = y; this.yawGoal = null; this.vYaw = 0;
-      if (dyaw) { this.onRotate?.(dyaw); this._notch(); }
+      if (dyaw) { this.onRotate?.(dyaw); this._notch(); this._rat(dyaw); }
     }
-    if (axis !== 'yaw') this.pitch = clamp(this.pitch + dy * k * .65, this.minPitch, this.maxPitch);
+    if (axis !== 'yaw') { const p0 = this.pitch; this.pitch = clamp(this.pitch + dy * k * .65, this.minPitch, this.maxPitch); this._rat(this.pitch - p0); }
+  }
+  // turning (and tilting) clicks like a ratchet: a soft "드르륵" every few degrees, a very light buzz every third click
+  // (user, 10/18: "회전할 때 … ㄷ드드드득 하는 기분 좋은 느낌의 asmr과 아주 약한 햅틱"); main.js plays it (world.ratchet)
+  _rat(d) {
+    if (!d || !this.ratchet) return;
+    this._ratAcc = (this._ratAcc || 0) + Math.abs(d);
+    if (this._ratAcc < .06) return;
+    this._ratAcc %= .06;
+    const now = performance.now(); if (now - (this._ratT || 0) < 38) return; this._ratT = now;
+    this._ratN = ((this._ratN || 0) + 1) % 3; this.ratchet(this._ratN === 0);
   }
   // 손맛 8: passing one of the four diagonal views gives a small tick (feel the notch, nothing sticks)
   _notch() {
@@ -218,7 +228,7 @@ export class World {
   turnAround(P, dyaw, dpitch = 0) {
     this.updateCam(); const s0 = P && this.toScreen(P);
     this.yaw += dyaw; this.rawYaw = this.yaw; this.yawGoal = null; this.vYaw = 0;
-    this.pitch = clamp(this.pitch + dpitch, this.minPitch, this.maxPitch);
+    const p0 = this.pitch; this.pitch = clamp(this.pitch + dpitch, this.minPitch, this.maxPitch); this._rat(Math.abs(dyaw) + Math.abs(this.pitch - p0));
     if (P) { this.updateCam(); const after = this.screenToGround(s0.x, s0.y, P.y); if (after) { this.target.x += P.x - after.x; this.target.z += P.z - after.z; this.clampTarget(); } }
     if (dyaw) { this.onRotate?.(-dyaw); this._notch(); }
   }
@@ -772,7 +782,7 @@ export class World {
         // (user, 2026-10-17 evening: "톡 건들면 바뀌는데 떼면 다시 원래대로", the badge switch stays as it is)
         // a turn borrowed by the tap spins round the middle of the screen; a turn that is the badge's mode spins round
         // the spot under the finger (user, 10/17 night)
-        this.eMode = this.eMode === 'turn' ? 'move' : 'turn'; if (FEEL.haptic) haptic(); else navigator.vibrate?.(10); if (this.drag) { this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? this._turnPivot() : undefined; this.drag.ft = null; } this.rawYaw = this.yaw; this.onModeSwitch?.(this.eMode);
+        this.eMode = this.eMode === 'turn' ? 'move' : 'turn'; if (FEEL.haptic) haptic(); else navigator.vibrate?.(10); if (this.drag) { this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? this._turnPivot() : undefined; this.drag.ft = null; } this.rawYaw = this.yaw; this.switchFx?.(this.eMode); this.onModeSwitch?.(this.eMode);
       }
       this.ptrs.delete(e.pointerId);
       if (this.ptrs.size < 2) this.pinch = null;
@@ -841,7 +851,7 @@ export class World {
       e.preventDefault();
       this.eMode = this.eMode === 'turn' ? 'move' : 'turn';
       this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? this._turnPivot() : undefined; this.drag.ft = null; this.rawYaw = this.yaw;
-      this.onModeSwitch?.(this.eMode);
+      this.switchFx?.(this.eMode); this.onModeSwitch?.(this.eMode);
     });
     el.addEventListener('contextmenu', e => { if (e.target === this.canvas || e.target.id === 'fx') e.preventDefault(); });
     el.addEventListener('wheel', e => { if (e.target !== this.canvas && e.target.id !== 'fx') return; e.preventDefault(); if (!this.camLock) this.zoomAt(Math.exp(-e.deltaY * .0015), e.clientX, e.clientY); }, { passive: false });

@@ -12,7 +12,7 @@ import { EN } from './i18n-en-dict.js';
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { ITEMS } from './gfx/items.js';
 import { attachItem } from './room.js';
-import { THEMES, stageSpec, STAGE_COUNT } from './stages.js';
+import { THEMES, stageSpec, STAGE_COUNT, REGIONS, regionOf } from './stages.js';
 import { hostAt, CAMEO_LINE } from './script.js';
 import { blindFor } from './hunt-blind.js';
 
@@ -147,6 +147,8 @@ export const cameoKind = idx => peekers()[idx] || null;
 // each time the same friend peeks; 먹물이's three follow its story. 스토리 세션 10/18)
 // a real character, crouched behind a big piece of furniture with only part of it showing (not on the list)
 export function placeCameo(S) {
+  // (not in chapter 1: one thing at a time while you're learning — 1장 덜어내기, 10/18)
+  if (REGIONS.indexOf(regionOf(S.idx)) === 0) return null;
   const kind = !NO_PEEK && cameoKind(S.idx); if (!kind) return null;
   const W = S.G.world, furns = (S.room.rooms || [S.room]).flatMap(R => R.furns);
   const boxes = furns.map(e => ({ e, b: new THREE.Box3().setFromObject(e.f.group) })).filter(o => o.b.max.y - o.b.min.y > .06);

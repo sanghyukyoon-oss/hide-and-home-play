@@ -45,4 +45,13 @@ const BUZZ = {
   dizzy: 'bad',
   miss: 'tick', wobble: 'tick', drawer: 'tick', open: 'tick', close: 'tick', lift: 'tick', locked: 'tick', door: 'tick', place: 'tick', pop: 'tick', btn: 'tick', tap: 'tick',
 };
+// the faintest buzz there is (the turn ratchet): 3 ms on Android, the system's light tick on iPhone, at most ~8 a second
+let lastLight = 0;
+export function hapticLight() {
+  if (!FEEL.haptic) return;
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+  const now = performance.now(); if (now - lastLight < 120) return; lastLight = now;
+  try { if (navigator.vibrate) { navigator.vibrate(3); return; } } catch {}
+  tick1();
+}
 export function hapticFor(sound) { const k = BUZZ[sound]; if (k) haptic(k); }

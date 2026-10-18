@@ -1,6 +1,7 @@
 // 숨바꼭집 — boot, scene flow, save, game loop, debug/bot contract (window.__jam).
 import * as THREE from 'three';
 import { World, QUALITY, hasWebGL2, OPT } from './world.js';
+import { hapticLight } from './feel.js';
 import { UI } from './ui.js';
 import { purgeGeo } from './gfx/kit.js';
 import { createAudio } from './audio.js';
@@ -164,12 +165,16 @@ const saveToHash = () => { if (!WEB) return; clearTimeout(hashT); hashT = setTim
 // locked cartoon art direction (?style=std shows the original soft render for comparison)
 if (qs.get('style') !== 'std') useCartoonStyle();
 const audio = createAudio();
+// the turn ratchet and the move ⇄ turn latch (10/18, user: "회전할 때 ㄷ드드드득 … asmr과 아주 약한 햅틱", "이동하면서 톡 할 때도
+// 효과음과 햅틱으로 알려 주는 거지") — world.js calls these; the latch's buzz is world.js's own haptic()
+const ratchetFx = buzz => { audio.sfx('ratchet'); if (buzz) hapticLight(); };
 if (!hasWebGL2()) {
   const b = document.querySelector('#boot .boot-load') || document.getElementById('boot');
   b.innerHTML = '<div class="boot-sub">이 폰의 브라우저는 3D 그림(WebGL2)을 지원하지 않아요.<br>최신 크롬이나 사파리에서 열어 주세요.</div>';
   throw new Error('WebGL2 not supported');
 }
 const world = new World(document.getElementById('gl'), document.getElementById('fx'));
+world.ratchet = ratchetFx; world.switchFx = m => audio.sfx(m === 'turn' ? 'gearUp' : 'gearDown');
 if (window.SBK_PERF_TEST || qs.get('hud') === '1') import('./perfhud.js').then(m => m.installPerfHud(world)).catch(e => console.error(e));
 // weaker phones (few cores or little memory) start a couple of steps down the quality ladder; it adapts from there
 // (Safari under-reports CPU cores, so only a reported small memory counts — that is Android Chrome on a low-end phone)
