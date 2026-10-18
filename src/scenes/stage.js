@@ -634,7 +634,13 @@ export class StageScene {
     await tw.wait(.9);
     // 대본: the host says what was really going on — once, after the pop-out (no bubble + dialog twice, no stock "next room" ad)
     if (!this.dead && !G.skipTalk && !G.bot) await this.talk(incidentReveal(this.idx, this.th.friend), { title: this.th.name });
-    if (!this.result && !this.dead) { if (this.v2) return v2AfterFound(this); this.win(); }
+    if (!this.result && !this.dead) {
+      if (this.v2) return v2AfterFound(this);
+      // the friend is found, but the stage ends only when everything is (user, 10/18: "캐릭터 찾으면 나머지 물건 안 찾아도
+      // 깨지는 거 ㅈ같다니까") — the friend stays out and asks for the rest
+      if (this.targets.every(t => t.found)) this.win();
+      else { const n = this.targets.filter(t => !t.found).length; this.say(f, `남은 물건 ${n}개도 찾아 줘!`, 2200); this.idle = 0; }
+    }
   }
   cutFlash() { const f = h('div', { class: 'cutflash' }); document.getElementById('app').append(f); setTimeout(() => f.remove(), 260); }
   // ── 흑백판
@@ -745,7 +751,7 @@ export class StageScene {
     it.slot.classList.add('found', 'bump');
     G.audio.sfx('pop', this.found);
     if (this.incident && this.friendHidden && !it.friend && Math.random() < .5) setTimeout(() => !this.dead && this.hideSay(BONUS_SAY), 700);
-    if ((!this.incident || this.v2?.after) && this.targets.every(t => t.found) && !this.result) this.win();   // 사건 판: finding the friend ends it, the rest is bonus
+    if ((!this.v2 || this.v2.after) && this.targets.every(t => t.found) && !this.result) this.win();   // (사건 판 too: everything, the friend and the things — 10/18)
   }
   async onChain(it) {
     const G = this.G, W = G.world;
@@ -1682,7 +1688,8 @@ export class StageScene {
     this.result = 'clear'; this.running = false; this.tEnd = this.t;
     (this.tutEls || []).forEach(e => e.remove()); this.tutEls = [];
     // ★ found everything · ★ no hint · ★ careful (no more wrong taps than there were things to find)
-    const stars = this.v2 ? v2Stars(this) : this.incident ? 1 + (this.hintsUsed === 0 ? 1 : 0) + (this.targets.every(t => t.found) ? 1 : 0)   // ★ found them · ★ no hint · ★ every bonus thing
+    const wrong = this.r1?.miss || 0;
+    const stars = this.v2 ? v2Stars(this) : this.incident ? 1 + (this.hintsUsed === 0 ? 1 : 0) + (wrong <= 2 ? 1 : 0)   // ★ found them all · ★ no hint · ★ 헛짚기 2번 이하 (R3)
       : this.spec.timed ? 1 + (this.time / this.timeMax >= .3 ? 1 : 0) + (this.hintsUsed === 0 ? 1 : 0)
       : 1 + (this.hintsUsed === 0 ? 1 : 0) + ((this.story?.secret ? this.secretFound : this.missCount <= this.targets.length) ? 1 : 0);
     const coins = this.custom ? 40 + this.targets.length * 15 + (this.plan.locks.length ? 20 : 0) + stars * 5 : 30 + this.targets.length * 10 + stars * 10 + (this.bestCombo >= 3 ? 20 : 0);
@@ -1750,7 +1757,7 @@ export class StageScene {
         // 사건 판: what each star is for, so a missing one says how to get it (GPT QA 10/18: 보너스 0/2 → '다 찾았네', 별 2개)
         ...(this.v2 ? [h('div', { class: 'starwhy' }, ...v2StarWhy(this).map(([t, on]) => h('span', { class: on ? 'on' : '' }, t)))].concat(v2Stamp(this) || [])
           : this.hiddenStage ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: this.missCount <= this.targets.length ? 'on' : '' }, `★ 꼼꼼하게 · 헛탭 ${this.missCount}`))]   // 숨은그림 판: what each star is for
-          : this.incident ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 친구 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: this.targets.every(t => t.found) ? 'on' : '' }, `★ 보너스 ${this.targets.filter(t => t.found && !t.friend).length}/${this.targets.length - 1}`))] : []),
+          : this.incident ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 친구 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: (this.r1?.miss || 0) <= 2 ? 'on' : '' }, (this.r1?.miss || 0) === 0 ? '★ 명탐정 (헛짚기 0)' : `★ 헛짚기 ${this.r1?.miss || 0}번`))] : []),
         h('div', { class: 'reward', html: ICON.coin }, cv),
         h('div', { class: 'txt' }, `걸린 시간 ${fmtTime((this.tEnd ?? this.t) - (this.tStart ?? 0))}` + (this.hintsUsed ? ` · 힌트 ${this.hintsUsed}번` : ' · 힌트 없이!') + (this.bestCombo >= 2 ? ` · 최고 콤보 x${this.bestCombo}` : '')),
         ...(first?.allClear ? [h('div', { class: 'txt' }, '몽글이가 마을 최고의 숨바꼭질 탐정이 됐어! 이제 무한 모드가 열렸어.')] : []),
@@ -1765,7 +1772,7 @@ export class StageScene {
         this.nextBtn = this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'green', icon: 'home', cls: 'big', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })
           : this.preview ? G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })
-          : G.ui.btn(bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '놀이 한 판!' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: 'green', icon: 'play', cls: 'big',
+          : G.ui.btn(bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: 'green', icon: 'play', cls: 'big',
               onClick: () => bossNext ? G.go('boss', { after: this.idx }) : gameNext ? G.go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? (MINI_AFTER[this.idx].lab ? G.go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : G.go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx })) : G.go('stage', { idx: this.idx + 1 }) })],
     });
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }

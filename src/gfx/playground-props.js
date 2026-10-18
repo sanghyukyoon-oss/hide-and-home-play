@@ -863,6 +863,7 @@ B.swings2 = (f, T) => {
   }));
   f.add(mg('swings2-star', atlasMat(), ({ addM }) => addM(discGeo(.19, RG.star), xf(SX[1], .012 + .006, 0))));
   f.spot('under', null, SX[1], .012, 0, { maxH: .34, label: '그네 밑', scale: .8 });
+  f.spot('on', null, SX[1], SY + .023, 0, { maxH: .35, label: '그네 의자 위', scale: .65 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 시소 (2×1): a mustard plank with red seat pads and blue handles, balanced on a green stand with blue axle caps; a
@@ -951,6 +952,7 @@ B.sandbox2 = (f, T) => {
   const p = f.part('lift', cv, (t, b) => { cv.position.y = b.p.y + .48 * t; cv.position.x = b.p.x + .1 * t; cv.rotation.z = -.32 * t; }, { label: '모래성', sfx: 'lift' });
   f.spot('inside', null, CX, SY, CZ, { part: p, maxH: .3, label: '모래성 밑', scale: .7 });
   f.spot('under', null, BX, SY + .012, BZ, { maxH: .2, label: '모래 양동이 안', scale: .6 });
+  f.spot('on', null, O - CW / 2, CH + .04, -.3, { maxH: .35, label: '모래놀이터 테두리 위', scale: .7 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 스프링 놀이기구 (1×1): a blue horse on a big dark spring — yellow mane, saddle and tail, red handle and foot pegs, dot
@@ -986,6 +988,7 @@ B.springrider = (f, T) => {
     tuft(add, .32, .32, .9); tuft(add, -.34, .26, .8, 0, LEAF2, LEAF);
   }));
   f.spot('behind', null, 0, 0, -.42, { maxH: .45, label: '스프링 말 뒤', scale: .7 });
+  f.spot('on', null, 0, HY + .15, z0 - .04, { maxH: .3, label: '스프링 말 안장 위', scale: .7 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // ═════════════════════════════════════════════ COMPLEX FURNITURE ═════════════════════════════════════════════
@@ -1311,6 +1314,7 @@ B.bbqgrill = (f, T) => {
   f.add(lid);
   const p = f.part('lift', lid, (t2, b) => { lid.position.y = b.p.y + .27 * t2; lid.position.x = b.p.x - .12 * t2; lid.rotation.z = .6 * t2; }, { label: '그릴 뚜껑', sfx: 'lift' });
   f.spot('inside', null, -.02, GY - .025, z0 + .02, { part: p, maxH: .24, label: '바비큐 그릴 안', scale: .6 });
+  f.spot('on', null, .31, .335, .3, { maxH: .3, label: '숯 봉지 위', scale: .6 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 길고양이 급식소 (1×1): a little plank house on legs — low walls with a door, a pink cushion and a bowl inside, a
@@ -1487,6 +1491,7 @@ B.hopscotch = (f, T) => {
   tin.add(pv); f.add(tin);
   const p = f.part('lid', pv, t2 => { pv.rotation.x = -1.9 * t2; }, { label: '분필 통', sfx: 'open', dur: .26 });
   f.spot('inside', tin, .0, .004, .025, { part: p, maxH: .016, label: '분필 통 안', scale: .75 });
+  f.spot('on', null, -.15, .01, -.5, { maxH: .45, label: '사방치기 칸 위', scale: .8 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 아파트 동 외벽 (2×1, backdrop): the bottom of 103동 — a tiled façade with a stone base and a terracotta floor band, a

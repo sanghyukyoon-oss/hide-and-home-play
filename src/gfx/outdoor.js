@@ -811,6 +811,7 @@ B.bush = (f, T) => {
   const p = f.part('lift', [L, R], (t, bl, br) => { L.rotation.z = .55 * t; L.position.x = bl.p.x - .08 * t; R.rotation.z = .55 * t; R.position.x = br.p.x + .08 * t; }, { label: '덤불', sfx: 'swish' });
   f.spot('inside', null, 0, 0, .04, { part: p, maxH: .4, label: '덤불 속', scale: .9 });
   f.spot('behind', null, 0, 0, -.4, { maxH: .4, label: '덤불 뒤', scale: .8 });
+  f.spot('on', L, .3, .7, .05, { maxH: .3, label: '덤불 위', scale: .7 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 공원 쓰레기통: 일반 / 재활용 lids
@@ -828,6 +829,7 @@ B.parkbin = (f, T) => {
     f.spot('inside', null, sx * W / 4, .6, z0, { part: p, maxH: .35, label: lab, scale: .8 });
   }
   f.spot('behind', null, 0, 0, -.42, { maxH: .4, label: '쓰레기통 뒤', scale: .8 });
+  f.spot('on', f.parts[1].pivots[0], 0, .062, D / 2 - .02, { maxH: .35, label: '쓰레기통 뚜껑 위', scale: .75 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 시소: push it the other way to see what the down seat was sitting on
@@ -894,6 +896,7 @@ B.cooler = (f, T) => {
   p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: H - .13, z: fz + .045 };
   f.spot('inside', null, .1, .22, z0 + .04, { part: p, maxH: .3, label: '아이스박스 안', scale: .85 });
   f.spot('behind', null, 0, 0, -.4, { maxH: .4, label: '아이스박스 뒤', scale: .8 });
+  f.spot('on', lid, 0, .105, D / 2 + .02, { maxH: .35, label: '아이스박스 위', scale: .8 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 캠핑 의자 with a plaid blanket thrown over it
@@ -944,6 +947,7 @@ B.rock = (f, T) => {
   f.add(put(mesh(rockGeo(7), mat(shade(rc, .04))), -.34, .09, .32, 0, 1, 0, [.17, .16, .15]));
   f.add(mg('rock-grass', '#7cc45a', ({ add }) => { for (const [x, z] of [[.34, -.32], [-.4, -.14], [.36, .38]]) for (let i = 0; i < 3; i++) add(G.cone(.03, .14, 5), x + (i - 1) * .04, .06, z, 0, 0, (i - 1) * .35); }));
   f.spot('behind', null, .18, 0, -.38, { maxH: .4, label: '바위 뒤', scale: .8 });
+  f.spot('on', rk, .03, .37, -.02, { maxH: .35, label: '바위 위', scale: .75 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 장작더미 under a tarp, a chopping stump with an axe
@@ -1065,6 +1069,7 @@ B.lostbox = (f, T) => {
   f.spot('inside', null, 0, y0 + .035, z0 + .02, { part: p, maxH: .19, label: '보관함 아래 칸', scale: .7 });
   f.spot('inside', null, 0, y0 + H * .45 + .013, z0 + .02, { part: p, maxH: .2, label: '보관함 위 칸', scale: .7 });
   f.spot('under', null, .18, 0, z0 + .15, { maxH: .4, label: '보관함 밑', scale: .85 });
+  f.spot('on', null, .2, y0 + H + .05, z0 - .04, { maxH: .3, label: '보관함 위', scale: .7 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 // 캠핑 트렁크: a strapped wooden trunk with brass corners; the domed lid locks
@@ -1082,6 +1087,7 @@ B.trunk = (f, T) => {
   p.lockable = true; p.lockKind = 'code'; f.lockAt = { x: 0, y: -.02, z: D + .045, parent: lid };
   f.spot('inside', null, 0, .04, z0, { part: p, maxH: .28, label: '트렁크 안', scale: .85 });
   f.spot('behind', null, 0, 0, -.42, { maxH: .4, label: '트렁크 뒤', scale: .8 });
+  f.spot('on', lid, 0, .17, D / 2 + .015, { maxH: .35, label: '트렁크 위', scale: .8 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
 export const OUTDOOR_BUILDERS = B;

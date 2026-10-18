@@ -643,7 +643,8 @@ export function stageSpec(idx) {
     s.behind = ch <= 1 ? 0 : ch <= 3 ? 1 : 2;
     // 열어야 하는 것 (잠금 안 포함) = n × 30 % (1~2장) / 40 %; minus the chain ends = things found by opening, at least 1,
     // at most 2 in chapter 1 (레벨 세션 비율 가이드 10/18 — GPT QA found 58.5 % inside, "서랍 열기" the user agreed)
-    const chains = Array.isArray(s.lock) ? s.lock.length : 0, open = Math.round((s.n || 6) * (ch <= 1 ? .3 : .4));
+    const chains = (Array.isArray(s.lock) ? s.lock.length : 0) + (s.dig ? 1 : 0), open =   // (a sandbox dig is a chain end too — 레벨 세션)
+      Math.round((s.n || 6) * (ch <= 1 ? .3 : .4));
     s.ho = true; s.inside = Math.max(1, open - chains); if (ch === 0) s.inside = Math.min(2, s.inside);
   }
   return s;

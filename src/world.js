@@ -259,7 +259,10 @@ export class World {
   }
   // the box the view's centre may move in (around home; wider when zoomed in or on a wide map)
   _box() {
-    const b = this.bounds * Math.max(this.panFree ?? .45, 1 - 1 / this.zoom) + .01 + this.bounds * .35, sx = this.slack?.x || 0, sz = this.slack?.z || 0;
+    // zoomed in, the view may go well past the walls: a clock high on the back wall sits 'behind' the floor's edge on
+    // screen (user, 10/18: "맵 끝을 줌인해서 못 봄. 좀 여유 주라니까")
+    const zin = Math.max(0, 1 - 1 / this.zoom);
+    const b = this.bounds * Math.max(this.panFree ?? .45, zin) + .01 + this.bounds * .35 + zin * (this.bounds * .6 + 1.5), sx = this.slack?.x || 0, sz = this.slack?.z || 0;
     return [this.home.x - b - sx, this.home.x + b + sx, this.home.z - b - sz, this.home.z + b + sz];
   }
   // 손맛 4: a finger may pull the view past the edge; ~90 px of pull shows as ~30 px (rubber band), never more than ~60 px
@@ -799,10 +802,11 @@ export class World {
           }
           // a still press is a tap however slowly it is released; two quick taps in one place zoom there (or back out)
           const lt = this._lastTap;
-          if (this.scheme !== 'E' && this.scheme !== 'F' && lt && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
+          // (on in F too since 10/18 — user: "더블클릭하면 누른 데 줌인해서 보여주는 걸로" — the wall clock was hard to reach)
+          if (this.scheme !== 'E' && lt && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
             this._lastTap = null;
-            if (this.zoom > 1.6) { this.zoomGoal = { z: 1, x: null }; }
-            else this.zoomGoal = { z: Math.min(this.maxZoom, 2.6), x: e.clientX, y: e.clientY };
+            if (this.zoom > 1.8) { this.zoomGoal = { z: 1, x: null }; }
+            else this.zoomGoal = { z: Math.min(this.maxZoom, 3), x: e.clientX, y: e.clientY };
           } else { this._lastTap = this.tapInstant?.(e.clientX, e.clientY) ? null : { t: now, x: e.clientX, y: e.clientY }; this.onTap?.(e.clientX, e.clientY); }
         }
         this.drag = null;
