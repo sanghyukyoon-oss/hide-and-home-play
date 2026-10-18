@@ -91,8 +91,13 @@ B.schooldesk = (f, T) => {
   const top = .66, DW = .62, DD = .44, dz = -.1, cz = .3;
   f.add(mc('schooldesk', ({ add }) => {
     add(G.box(DW, .035, DD, .012), '#e9c28a', 0, top, dz);
-    add(G.box(DW - .04, .12, DD - .06, .01), '#9fb4d8', 0, top - .09, dz - .02);   // the cubby
-    add(G.pbox(DW - .1, .09, .01), '#2f3f7a', 0, top - .09, dz + DD / 2 - .05);   // its dark mouth (seen from the chair side)
+    // the cubby under the top, open toward the chair: a floor, a dark back and two sides (레벨 세션 10/18: it was one solid box,
+    // so whatever sat in '책상 서랍 속' was inside the box — no view could see it)
+    const CW = DW - .04, CD = DD - .06, cy0 = top - .15, cz0 = dz - .02;
+    add(G.pbox(CW, .012, CD), '#7d93bd', 0, cy0 + .006, cz0);
+    add(G.pbox(CW, .12, .012), '#9fb4d8', 0, cy0 + .06, cz0 - CD / 2 + .006);           // back, the same blue outside
+    add(G.pbox(CW - .03, .1, .004), '#2f3f7a', 0, cy0 + .06, cz0 - CD / 2 + .014);       // its dark inside
+    for (const sx of [-1, 1]) add(G.pbox(.012, .12, CD), '#9fb4d8', sx * (CW / 2 - .006), cy0 + .06, cz0);
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.016, .016, top - .03, 8), STEEL2, sx * (DW / 2 - .05), (top - .03) / 2, dz + sz * (DD / 2 - .05));
     // the chair
     add(G.box(.38, .03, .36, .01), '#e9c28a', 0, .42, cz);
@@ -104,7 +109,7 @@ B.schooldesk = (f, T) => {
     add(G.cap(.03, .14, 2, 8), '#ff9fb5', .17, top + .045, dz - .08, 0, 0, HP);
   }));
   f.spot('on', null, .14, top + .02, dz + .06, { maxH: .3, label: '책상 위', scale: .8 });
-  f.spot('under', null, 0, top - .14, dz - .02, { maxH: .1, label: '책상 서랍 속', scale: .7 });
+  f.spot('under', null, 0, top - .138, dz + .15, { maxH: .1, label: '책상 서랍 속', scale: .7 });   // at the mouth of the open cubby: a peek of it shows
   f.spot('on', null, 0, .44, cz - .02, { maxH: .3, label: '의자 위', scale: .8 });
 };
 

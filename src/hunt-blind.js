@@ -17,7 +17,7 @@ export const BLIND = {
   laundry: ['washer3|건조기 안|1|-20,-20'],
   officefloor: ['window|커튼 뒤 창틀|0|50,0'],
   peng: ['futon|이불 속|1|20,-20'],
-  school: ['schooldesk|책상 서랍 속|1|-10,25', 'schooldesk|책상 서랍 속|1|-10,5', 'schooldesk|책상 서랍 속|1|-20,25', 'schooldesk|책상 서랍 속|1|-20,5', 'schooldesk|책상 서랍 속|1|10,25', 'schooldesk|책상 서랍 속|1|10,5', 'schooldesk|책상 서랍 속|1|20,25', 'schooldesk|책상 서랍 속|1|20,5'],
+  // school: the 8 '책상 서랍 속' spots left 10/18 — the desk cubby was a solid box; it's an open shelf now (town-props B.schooldesk)
   shopmap: ['washer3|세탁기 안|0|25,-20'],
 };
 const P = new THREE.Vector3();
