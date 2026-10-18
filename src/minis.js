@@ -517,20 +517,16 @@ export const GAMES = { sneak: Sneak, spot: Spot, redlight: RedLight, shell: Shel
 // 레벨 디자인 (user, 10/18: "미니게임… 숨은그림찾기 너무 계속 나오면 지겨워서 넣는거야"): a little game about every three
 // stages so the searching never runs on too long — each region ends on its own boss game, and in between come lighter
 // ones on that region's maps (the same game never twice within ~8 stages). 보물 지키기 (boss.js) adds a mid-boss now and then.
+// one game between stages per chapter, mid-chapter (레벨 세션 10/18, user "ㅇ" to "미니게임은 장마다 많아야 하나"): 1장 has none
+// (its end is 야식), 두더지 and 이불 moved on from 1장; the ones off the campaign (whack lv1·2, blanket lv1, redlight lv1, spot,
+// the oneroom lamp) are still in 놀이 모음. 6장's game is 보물 지키기 (scenes/boss.js BOSS_AFTER); chapter ends keep BOSS_GAMES.
 export const MINI_AFTER = {
-  2: { kind: 'whack', lab: true, lv: 0 },   // 두더지 숨바꼭질 새 버전 (인계 4; user: "새롭게 좀 더 재밌게") — boss wrapper, interlude
-
-  7: { kind: 'blanket', lab: true, lv: 0 },   // 이불 속 누구게? 파자마 파티 (user, 10/18: "야바위 별로 재미없는데? … 제거하자. 다른 걸로 바꾸거나")
-  14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },
-  23: { kind: 'redlight', lab: true, lv: 0 },   // 무궁화 새 판 운동장 (user, 10/18: "무궁화 꽃이 피었습니다 재밌어. 개선판. 정본에 교체된 거지?", "글자가 하나씩 나오는 게 넘 재밌어서")
-  26: { kind: 'whack', lab: true, lv: 1 },  // 변장한 너굴이 첫 등장
-  33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },
-  42: { kind: 'lamp', p: { map: 'park1', time: 45 } },
-  51: { kind: 'spot', p: { map: 'camp1', n: 3, time: 40 } },
-  45: { kind: 'blanket', lab: true, lv: 1 },   // 이불 속 누구게? 변장한 너굴이 (소풍은 보류 — user: "보물찾기는 애매함")
-  57: { kind: 'whack', lab: true, lv: 2 },   // 두더지 피버 수풀
-  62: { kind: 'redlight', lab: true, lv: 1 },   // 무궁화 새 판 킥킥 너굴이
-  // 66판 뒤 보스: 손전등 술래를 키운 판 (user, 10/18: 보스 손전등은 "ㅈㄴ 재미없다", "손전등 술래 재밌는데" → "손전등 술래를 보스로 키우기")
+  15: { kind: 'whack', lab: true, lv: 0 },   // 2장: 두더지 숨바꼭질 새 버전 (was after 3판; user: "새롭게 좀 더 재밌게")
+  23: { kind: 'redlight', lab: true, lv: 0 },   // 3장: 무궁화 새 판 운동장 (user, 10/18: "무궁화 꽃이 피었습니다 재밌어")
+  33: { kind: 'blanket', lab: true, lv: 0 },   // 4장: 이불 속 누구게? 파자마 파티 (was after 8판)
+  42: { kind: 'lamp', p: { map: 'park1', time: 45 } },   // 5장: 손전등 술래
+  // 6장: 보물 지키기 after 55판 (boss.js)
+  // 7장: 66판 뒤 보스: 손전등 술래를 키운 판 (user, 10/18: 보스 손전등은 "ㅈㄴ 재미없다", "손전등 술래 재밌는데" → "손전등 술래를 보스로 키우기")
   65: { kind: 'lamp', boss: true, p: { map: 'officefloor', time: 80, n: 8, decoys: 2, boss: true } },
 };
 // 보스전 (10/18): the five games from the new-game session (scenes/bossgame.js) — each region ends on one, the good ones come
@@ -542,8 +538,8 @@ export const BOSS_GAMES = {
   // "방배정 할까봐. 대신 x박x일 여행 식으로 호텔로 해주고 한판만 하면 뭐지 할 거 같아서" → a two-night trip) and 추로야!!!
   // ("추로 주인공으로"); third hand-off: 엄마 몰래 성적표 (the user's pick, 야식's pair) and 손전등 숨바꼭질 ("일단 해봐").
   // villa / tag / photo are no longer in the campaign (their files stay in src/bosses).
-  4: { kind: 'yasik', lv: 0 },     // 첫 보스
-  11: { kind: 'wakeup', lv: 0 },   // 몽글 마을 집 끝
+  11: { kind: 'yasik', lv: 0 },    // 첫 보스: 1장 끝 (was after 5판 — 10/18: "5판 가니까 하기 싫어진다"; one game, at the end)
+  30: { kind: 'wakeup', lv: 0 },   // 동네 골목 끝 (was 1장 끝)
   20: { kind: 'hotel', lv: 2 },    // 우리 아파트 끝 — 몽글 호텔 3박 4일 (user, 10/18: "실제에서 3박 4일 정도로 하는 거지?")
   39: { kind: 'yasik', lv: 1 },    // 편의점·상가
   59: { kind: 'wakeup', lv: 1 },   // 산길·캠핑 (텐트의 아침)

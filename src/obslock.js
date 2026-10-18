@@ -16,7 +16,7 @@ import { newCard, obsCards } from './script.js';
 
 const K = (ko, en) => { if (en) EN[ko] = en; return ko; };
 export const OBS = !/[?&]obs=0(&|$)/.test(location.search);
-if (OBS) obsCards();   // the 🆕 cards and 펭펭이's clock slip in 7판 (script.js, 스토리 세션) follow the new locks; ?obs=0 keeps the old ones
+// (the cards' observation wording is no longer switched on here: chapters 2-6 use plain notes — 10/18)
 
 const T = {
   noteWall: K('쪽지: "벽시계를 봐! 몇 시 몇 분?"', 'Note: "Look at the wall clock! What time is it?"'),
@@ -176,7 +176,8 @@ function groundSpot(S, L, build, used, rand, t0) {
   return null;
 }
 export function obsSetup(S) {
-  if (!OBS || S.custom || S.spec.boss || S.spec.endless) return null;
+  // (from chapter 7 only — 1장 덜어내기 10/18: the code / colour locks of chapters 2-6 are plain notes again)
+  if (!OBS || S.custom || S.spec.boss || S.spec.endless || S.idx < 60) return null;
   const locks = (S.plan.locks || []).filter(L => (L.kind === 'code' || L.kind === 'color') && L.part?.lock);
   if (!locks.length) return null;
   const O = { src: new Map(), wrong: new Map(), free: new Set() }, used = new Set(), t0 = performance.now(), rand = rng(1 + S.idx * 7919 + locks.length);

@@ -21,7 +21,7 @@ import { disposeTree } from '../gfx/kit.js';
 // once in the middle of each region (level design 10/18): the first after stage 5 as a gentle try, then after 17, 26, 36, 45,
 // 55, 65 — no longer right after a region's escape-room boss (two bosses back to back)
 // 10/18: also the old flashlight-boss slots after 31 and 49 (user chose 보물 지키기 new maps there)
-export const BOSS_AFTER = [16, 30, 35, 48, 54];
+export const BOSS_AFTER = [48, 54];   // 5장 끝, 6장 가운데 (10/18: one game a chapter — 17·31·36판 뒤 것은 빠짐; tiers now 0·1)
 const BOSS_MAPS = { 16: 'house2f', 30: 'alleyhouse', 35: 'shopmap', 48: 'parkwide', 54: 'cabin' };
 // the nearest walkable tile to a point, floors counted (a tile right under an upper room is not near a thing up there)
 const near3 = (tiles, x, y, z) => { let b = null, bd = 1e9; for (const t of tiles) { const d = Math.hypot(t.x - x, t.z - z) + Math.abs((t.y || 0) - y) * 2; if (d < bd) { bd = d; b = t; } } return b; };   // now and then, like a mid-boss (user, 10/18: "중간 보스처럼 간간히"); each region ends on a minigame boss (minis.js)   // stage index after which a boss stage comes
