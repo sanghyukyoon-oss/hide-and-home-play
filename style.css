@@ -1186,3 +1186,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .ys-tag { position: absolute; transform: translate(-50%, 0); z-index: 4; pointer-events: none; padding: 1px 10px 3px; border-radius: 999px; font-size: 14px; font-weight: 800; white-space: nowrap;
   color: #12352a; background: #7dffc4; border: 2px solid #12352a; box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
 .ys-tag.seen { color: #fff; background: #ff5f7a; border-color: #5a1024; animation: ysBob .5s ease-in-out infinite; }
+
+/* 🆕 '새로 얻었다!' 카드 · 고르기 버튼 · 엔딩 카드 (script.js가 #overlay에 넣는 층): #overlay는 탭을 아래로 흘려보내니까
+   이 층들은 직접 받아야 함 (10/18 사용자: "새로 얻었다에서 알겠어 눌러도 안 돌아감" — 버튼이 안 눌려 판이 멈춰 있었음) */
+.ncard, .chooser, .endcard { pointer-events: auto; }
