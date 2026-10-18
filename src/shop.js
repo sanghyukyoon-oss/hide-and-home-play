@@ -5,7 +5,7 @@ import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STY
 import { Room } from './room.js';
 import { layoutFor, LAYOUTS } from './stages.js';
 import { renderThumbs } from './thumbs.js';
-import { PICK_ITEMS } from './econ.js';
+import { PICK_ITEMS, chapterOfFurn, chapterNow } from './econ.js';
 import { ITEMS } from './gfx/items.js';
 
 // a little 3D picture of each home style (its stage set, or the plain zone with the starter furniture), made once
@@ -59,6 +59,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         onBuy: () => { H.inventory.push(t); G.persist(); ui.toast(`${FURN_INFO[t].name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } })); }
       for (const it of SHOP_FURN) {
         if (G.econ && PICK_ITEMS.has(it.type) && (offered.includes(it.type) || !countOwned(H, it.type))) continue;
+        if (G.econ && chapterOfFurn(it.type) > chapterNow(G.save) && !countOwned(H, it.type)) continue;   // (a later chapter's piece: not in yet)
         if (ztype && !(ztype.indoor ? it.indoor : it.outdoor)) continue;
         const inf = FURN_INFO[it.type]; if (!inf) continue;
         const owned = countOwned(H, it.type);

@@ -16,9 +16,11 @@ import { HOME_TUT } from '../script.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
-import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick } from '../econ.js';
+import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow } from '../econ.js';
+import { SHOP_FURN } from '../catalog.js';
 import { regionOf } from '../stages.js';
 const REGION_NAME = i => regionOf(i)?.name || '';
+const REGIONS_AT = ch => [0, 12, 21, 31, 40, 49, 60][ch - 1] ?? 0;   // (the first stage of chapter ch)
 
 const GIFTS = ['drawers', 'chest', 'wardrobe'];   // 집들이 선물: each has a drawer, a lid or a door — "inside, nobody finds it" follows
 const MAX_HIDE = 5;
@@ -37,6 +39,12 @@ export class LobbyScene extends MyHomeScene {
     if (G.homeOpen() && !tut.home) await this.roomOpens();
     else if (G.homeOpen() && this.H.giftDue) { const t = await this.giftCards(GIFTS); if (this.dead) return; this.giveGift(t); this.frameLobby(); this.arrivals(); }   // (left before picking)
     else if (G.homeOpen()) this.arrivals();
+    // a new chapter's furniture is in the shop now (설계서 N3): one toast, once per chapter
+    const ch = chapterNow(G.save);
+    if (G.homeOpen() && ch > (this.H.shopCh || 1)) {
+      const n = SHOP_FURN.filter(it => chapterOfFurn(it.type) === ch).length; this.H.shopCh = ch; G.persist();
+      if (n) setTimeout(() => !this.dead && G.ui.toast(`상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개가 들어왔어!`, 'green'), 3200);
+    }
   }
 
   // ── the lobby's HUD: profile, ★ · coins · magnifiers, the side column, the play button and the three room buttons

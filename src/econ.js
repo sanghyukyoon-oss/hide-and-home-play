@@ -1,7 +1,7 @@
 // 경제·내 방 로비 (경제·메타 설계서 /Users/sh/sumbak-econ/econ-design-20261019.md, 10/19 — user: "로비는 내 방으로 변경하는게
 // 좋겠어 … 처음엔 빈 공간에 캐릭터 혼자 … 내가 좋아하는 캐릭터 배치할 수 있게"). Built in but off until the user picks:
 // ?econ=1 turns it on on this device (remembered), ?econ=0 turns it off again.
-import { stageSpec, THEMES, STAGE_COUNT, CHAR_UNLOCK } from './stages.js';
+import { stageSpec, THEMES, STAGE_COUNT, CHAR_UNLOCK, REGIONS, regionOf } from './stages.js';
 import { CHAR_DEFS } from './gfx/chars.js';
 import { FURN_INFO } from './gfx/furniture.js';
 import { h } from './ui.js';
@@ -88,3 +88,9 @@ export function takePick(G, idx, chosen) {
   H.boxQ = (H.boxQ || []).filter(i => i !== idx);
   G.persist();
 }
+
+// ── 상점 장별 입고 (설계서 6장 N3): a piece of furniture comes into the shop with its chapter (its region: none/home → 1장,
+// apt → 2, alley → 3, shop → 4, park → 5, trail/camp → 6, building → 7); what you already own always shows
+const CH_OF_REGION = { home: 1, apt: 2, alley: 3, shop: 4, park: 5, trail: 6, camp: 6, building: 7 };
+export const chapterOfFurn = t => CH_OF_REGION[FURN_INFO[t]?.region] || 1;
+export const chapterNow = save => REGIONS.indexOf(regionOf(save.stage || 0)) + 1;

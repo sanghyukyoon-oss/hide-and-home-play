@@ -112,6 +112,7 @@ const PAT = [
   [/^(.+?)(?:이|가) 놀러 왔어!$/, n => `${n} came over!`],
   [/^친구 (\d+)\/(\d+)$/, (a, b) => `Friends ${a}/${b}`],
   [/^도감 \+(\d+)$/, n => `Card book +${n}`],
+  [/^상점에 '(.+?)' 가구 (\d+)개가 들어왔어!$/, (r, n) => `${n} pieces from '${r}' are in the shop!`],
   [/^🎁 지난 장 선물 (\d+)$/, n => `🎁 Past chapter gifts ${n}`],
   [/^(.+?) 선물 상자!$/, n => `${n} gift box!`],
   [/^(.+?) · 꾸미기 보관함에 들어갔어$/, n => `${n} · in your decorating storage`],
