@@ -8,6 +8,8 @@ import { renderThumbs } from './thumbs.js';
 import { PICK_ITEMS, chapterOfFurn, chapterNow } from './econ.js';
 import { ITEMS } from './gfx/items.js';
 
+const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
+
 // a little 3D picture of each home style (its stage set, or the plain zone with the starter furniture), made once
 const STYLE_ART = {};
 const fakeWorld = { shadowDirty: false, yaw: Math.PI / 4 };
@@ -40,7 +42,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       // at home (40). Something a resident took isn't for sale: go and get it back.
       const L = G.save.lens || (G.save.lens = { bag: 0 }), full = (L.bag || 0) >= 5;
       note.textContent = `돋보기 가방 ${L.bag || 0}/5 · 판에서 무료 2개를 다 쓰면 가방에서 꺼내 써요`;
-      grid.append(card(G, { img: G.thumbs.item_magnifier || null, swatch: h('div', { class: 'swatch', style: 'display:grid;place-items:center;font-size:34px' }, '🔍'), name: '돋보기', sub: full ? '가방이 가득 찼어요' : '가방에 1개', price: full ? null : 60, action: full ? '가득' : '',
+      grid.append(card(G, { img: G.thumbs.item_magnifier || null, swatch: h('div', { class: 'swatch', style: 'display:grid;place-items:center;font-size:34px' }, '🔍'), name: '돋보기', sub: full ? '가방이 꽉 찼어' : '가방에 1개', price: full ? null : 60, action: full ? '가득' : '',
         onBuy: () => { L.bag = Math.min(5, (L.bag || 0) + 1); G.persist(); ui.toast(`돋보기 가방 ${L.bag}/5`, 'green'); render(); } }));
       const took = new Set(Object.values(G.save.raid?.stolen || {}).flat());   // (raid.js: room id → the things taken from you)
       for (const t of (G.save.seen || []).filter(t => ITEMS[t] && !G.save.collection.includes(t))) {
@@ -75,7 +77,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
           onBuy: owned ? null : () => { H.owned.wall.push(wp.id); apply(); },
           onUse: () => apply() }));
         function apply() {
-          if (!zone || !ztype.indoor) { ui.toast('실내 구역에서만 바를 수 있어요', 'red'); G.persist(); render(); return; }
+          if (!zone || !ztype.indoor) { ui.toast('실내에서만 바를 수 있어', 'red'); G.persist(); render(); return; }
           zone.paint = { ...(zone.paint || {}), wallId: wp.id, wallKind: wp.wallKind, wall: wp.wall, wall2: wp.wall2, ...(wp.wainscot ? { wainscot: wp.wainscot } : {}) };
           G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render();
         }
@@ -107,16 +109,16 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         function apply() {
           if (!zone) return;
           zone.style = st.id; zone.paint = {};
-          G.persist(); G.audio.sfx('place'); ui.toast(`${zone.name}이(가) '${st.name}'(으)로 바뀌었어요!`, 'green'); ctx.onChange?.('paint'); render();
+          G.persist(); G.audio.sfx('place'); ui.toast(`${ga(zone.name)} '${st.name}' 테마로 바뀌었어!`, 'green'); ctx.onChange?.('paint'); render();
         }
       }
     } else if (tab === 'size') {
       const cur = zone?.size || 0;
-      note.textContent = zone ? `${zone.name}을(를) 한 칸씩 넓혀요. 놓아 둔 가구와 숨긴 물건은 그대로예요.` : '';
+      note.textContent = zone ? `${zone.name} 크기를 한 칸씩 넓혀요. 놓아 둔 가구와 숨긴 물건은 그대로예요.` : '';
       ZONE_SIZES.forEach((S, k) => {
         const owned = k <= cur, next = k === cur + 1;
         grid.append(card(G, { swatch: swatch('#fff3e0', '#e8c49a', 'wood'), name: `${S.w} × ${S.d}`, sub: (k === 0 ? '기본 크기' : owned ? '넓힘' : next ? '다음 단계' : '앞 단계를 먼저') + (G.econ && k >= 1 && k <= 3 ? ' · 친구 자리 +1' : ''), price: owned || !next ? null : S.price, tag: k === cur ? '지금 크기' : owned ? '보유' : null,
-          onBuy: owned || !next ? null : () => { if (!zone) return; pinZoneFurniture(zone); zone.size = k; G.persist(); G.audio.sfx('win'); ui.toast(`${zone.name}이(가) ${S.w}×${S.d}로 넓어졌어요!`, 'green'); ctx.onChange?.('paint'); render(); } }));
+          onBuy: owned || !next ? null : () => { if (!zone) return; pinZoneFurniture(zone); zone.size = k; G.persist(); G.audio.sfx('win'); ui.toast(`${ga(zone.name)} ${S.w}×${S.d}로 넓어졌어!`, 'green'); ctx.onChange?.('paint'); render(); } }));
       });
     } else if (tab === 'zone') {
       note.textContent = '스테이지를 깨면 무료로 열리고, 미리 사서 열 수도 있어요.';
@@ -124,7 +126,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         const open = G.zoneOpen(z.id);
         grid.append(card(G, { swatch: swatch(z.type === 'yard' || z.type === 'park' ? '#9be07f' : '#ffe6c8', z.type === 'storage' ? '#c99c6c' : '#ffffff', z.type === 'park' ? 'dots' : 'wood'),
           name: z.name, sub: open ? '열림' : `스테이지 ${z.unlock.stage}에서 무료`, price: open ? null : z.unlock.price, tag: open ? '보유' : null,
-          onBuy: open ? null : () => { H.bought.push(z.id); G.ensureZone(z.id); G.persist(); ui.toast(`${z.name}이(가) 열렸어요!`, 'green'); ctx.onChange?.('zone'); } }));
+          onBuy: open ? null : () => { H.bought.push(z.id); G.ensureZone(z.id); G.persist(); ui.toast(`${ga(z.name)} 열렸어!`, 'green'); ctx.onChange?.('zone'); } }));
       }
     }
   };
@@ -143,7 +145,7 @@ function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse 
     price != null ? h('div', { class: 'pr', html: ICON.coin + price }) : h('div', { class: 'pr', style: 'color:#2f8f1b' }, action || ''));
   c.addEventListener('click', () => {
     if (price != null && onBuy) {
-      if (G.save.coins < price) { G.ui.toast('코인이 부족해요!', 'red'); G.audio.sfx('miss'); return; }
+      if (G.save.coins < price) { G.ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
       G.addCoins(-price); G.audio.sfx('buy'); onBuy();
     } else if (onUse) onUse();
   });

@@ -77,11 +77,11 @@ export class LobbyScene extends MyHomeScene {
     const side = h('div', { class: 'homeside' }, snd,
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
       ui.btn('도감', { color: 'pink', cls: 'sm', onClick: () => openCardBook(G) }),
-      ui.btn('상점', { color: 'yellow', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려요!', 'red') }),
+      ui.btn('상점', { color: 'yellow', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
       ui.btn('더보기', { color: 'blue', cls: 'sm', onClick: () => openMore(G, [town]) }));
     col.append(side);
     this.playBtn = playButton(G);
-    const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려요!', 'red') : go() });
+    const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : go() });
     const row = h('div', { class: 'row2 three' },
       lock('꾸미기', 'orange', 'paint', () => this.setMode('edit')),
       lock('숨기기', 'purple', 'hide', () => this.setMode('hide')),
@@ -91,7 +91,7 @@ export class LobbyScene extends MyHomeScene {
     const q = (this.H.boxQ || []).filter(i => PICKS[i] && !(i in (this.H.picks || {})));
     if (q.length && open) {
       const gift = ui.btn(`🎁 지난 장 선물 ${q.length}`, { color: 'yellow', cls: 'sm pulse', onClick: async () => {
-        const i = q[0], t = await pickPanel(G, PICKS[i], { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 나머지 둘은 상점 기념품 칸에 올라가' });
+        const i = q[0], t = await pickPanel(G, PICKS[i], { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 나머지 둘은 상점 기념품 칸에서 살 수 있어' });
         takePick(G, i, t); ui.toast(`${FURN_INFO[t].name} · 꾸미기 보관함에 들어갔어`, 'green'); this.setMode('lobby');
       } });
       gift.style.cssText += 'position:absolute;left:12px;top:calc(76px + var(--safeT));pointer-events:auto';
@@ -186,7 +186,7 @@ export class LobbyScene extends MyHomeScene {
   placeFriend(k) {
     const G = this.G, z = this.zone;
     if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(seatsOf(z) >= 6 ? '자리가 꽉 찼어 (최대 6)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
-    const p = this.freeSpot(); if (!p) { G.ui.toast('앉을 자리가 없어요! 가구를 조금 치워 봐', 'red'); return; }
+    const p = this.freeSpot(); if (!p) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
     this.seatOne(k, p, false).then(() => { if (!this.dead && this.mode === 'edit') this.setMode('edit'); });
   }
   selectFriend(s) {
@@ -219,7 +219,7 @@ export class LobbyScene extends MyHomeScene {
             cur = { x: nx, z: nz, ok: R.clearAt(nx, nz, .3) }; s.ch.root.position.set(nx, .1, nz);
           },
           end: () => {
-            if (!cur.ok) { cur = start; this.G.ui.toast('거긴 앉을 수 없어요', 'red'); }
+            if (!cur.ok) { cur = start; this.G.ui.toast('거긴 못 앉아', 'red'); }
             s.rec.x = +cur.x.toFixed(2); s.rec.z = +cur.z.toFixed(2); s.ch.root.position.set(s.rec.x, 0, s.rec.z); s.ch.bump(.3);
             this.G.audio.sfx('place'); this.G.persist();
           },
@@ -296,7 +296,7 @@ export class LobbyScene extends MyHomeScene {
     const p = this.freeSpot(bun.root.position) || meet;
     const z = this.zone, rec = { k: 'bunny', x: p.x, z: p.z, a: Math.atan2(2.2 - p.x, 2.2 - p.z) };
     z.friends = z.friends || []; z.friends.push(rec); this.addSeated(rec).ch.bump(.4);
-    G.audio.sfx('special'); G.ui.toast('토순이가 네 방 친구가 됐어!', 'green'); G.persist(); this.frameLobby();
+    G.audio.sfx('special'); G.ui.toast('토순이 자리가 생겼어! 이제 자주 놀러 올 거야', 'green'); G.persist(); this.frameLobby();
     this.busyTut = false;
     this.arrivals();
     this.playBtn?.classList.add('pulse');

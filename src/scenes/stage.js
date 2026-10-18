@@ -255,7 +255,7 @@ export class StageScene {
     while (G.booting && !this.dead) await new Promise(r => setTimeout(r, 100));
     if (this.dead) return;
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
-    if (cine) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }   // ('다시하기' doesn't replay the chapter film — QA 10/18)
+    if (cine) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
@@ -1670,7 +1670,7 @@ export class StageScene {
     G.audio.sfx('special'); G.hitstop(.06);
     it.g.visible = false; it.spot.item = null; it.g.parent?.remove(it.g);
     G.addCoins(50); G.ui.floatText(s.x, s.y - 50, '비밀 발견! +50', 'gold big');
-    G.ui.toast(`비밀 아이템 ${ITEMS[it.type].name}을(를) 찾았어!`, 'green');
+    G.ui.toast(`비밀 아이템 발견! ${ITEMS[it.type].name}`, 'green');
   }
 
   frameCamera() {
@@ -1895,7 +1895,7 @@ export class StageScene {
     // 경제·로비 on: a chapter's last stage, the first time — its box: one of three pieces (설계서 4-2)
     let picked = null;
     if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) {
-      picked = await pickPanel(G, PICKS[this.idx], { title: '장 끝 선물 상자!', line: '이 장에서 본 것 중 하나를 골라! 나머지 둘은 상점 기념품 칸에 올라가' });
+      picked = await pickPanel(G, PICKS[this.idx], { title: '장 끝 선물 상자!', line: '이 장에서 본 것 중 하나를 골라! 나머지 둘은 상점 기념품 칸에서 살 수 있어' });
       if (this.dead) return;
       takePick(G, this.idx, picked);
     }
@@ -1917,21 +1917,22 @@ export class StageScene {
             ? [h('span', { class: this.time / this.timeMax >= .3 ? 'on' : '' }, STAR_TXT.time), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이')]
             : [h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), this.story?.secret ? h('span', { class: this.secretFound ? 'on' : '' }, STAR_TXT.secret)
               : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star)]))]),
-        ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, tr(L.text)))))] : []),
-        ...(this.model ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · 내 집 보관함에 들어갔어요` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))]
+        // (each line with its speaker's face and, but for 몽글이's own, a small name — two friends can share the two lines)
+        ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, L.who !== 'mong' && CHAR_DEFS[L.who] ? h('b', { class: 'who' }, CHAR_DEFS[L.who].name) : '', tr(L.text)))))] : []),
+        ...(this.model ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · 꾸미기 보관함에 들어갔어` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))]
           : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
         h('div', { class: 'txt' }, `걸린 시간 ${fmtTime((this.tEnd ?? this.t) - (this.tStart ?? 0))}` + (this.hintsUsed ? ` · 힌트 ${this.hintsUsed}번` : ' · 힌트 없이!') + (this.bestCombo >= 2 ? ` · 최고 콤보 x${this.bestCombo}` : '')),
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, `${ITEMS[newItem].name} · 내 집에 숨길 수 있어요`)))] : []),
-        ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · 내 집 보관함에 들어갔어요`)))] : []),
+        ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · 꾸미기 보관함에 들어갔어`)))] : []),
         ...(seenN ? [h('div', { class: 'txt' }, `도감 +${seenN}`)] : []),
         ...(newFriend ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
         ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, got.isNew ? `${ITEMS[got.item]?.name || ''} · 내 수집품에 추가! 내 집에 숨길 수 있어` : `${ITEMS[got.item]?.name || ''} · 이미 있어서 코인 +${got.coins}`)))] : []),
-        ...(got && this.custom?.resident ? [h('div', { class: 'txt' }, `${ga(this.custom.nick)} 눈치챘을지도… 복수하러 올 수 있어! 내 집 숨김을 단단히 해 둬`)] : []),
-        ...(memento ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · 내 집 보관함에 들어갔어요`)))] : [])],
+        ...(got && this.custom?.resident ? [h('div', { class: 'txt' }, `${ga(this.custom.nick)} 눈치챘을지도… 복수하러 올 수 있어! 내 집 물건을 더 꼭꼭 숨겨 둬`)] : []),
+        ...(memento ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · 꾸미기 보관함에 들어갔어`)))] : [])],
       buttons: this.model ? [G.ui.btn('놀이 모음', { color: 'blue', cls: 'sm', onClick: () => G.go('home', { gallery: true }) }),
         this.nextBtn = G.ui.btn('다시 조립', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })]
         : [...(noHome ? [] : [homeNow ? G.ui.btn(SUI.homeHide, { color: 'orange', icon: 'home', cls: 'sm', onClick: () => G.go('myhome') }) : G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') })]),
@@ -1947,7 +1948,7 @@ export class StageScene {
     if (first?.repeat) cv.after(h('div', { class: 'txt' }, '다시 찾은 방이라 보상이 1/3이에요'));
     if (first?.unlockedHome) setTimeout(() => G.ui.toast('내 집이 열렸어! 방을 꾸미고 물건을 숨겨 봐', 'green'), 900);
     if (first?.allClear) { W.fx.confetti(220); setTimeout(() => !this.dead && W.fx.confetti(160), 900); }
-    for (const z of first?.newZones || []) setTimeout(() => G.ui.toast(`내 집에 ${z}이(가) 생겼어!`, 'green'), 1700);
+    for (const z of first?.newZones || []) setTimeout(() => G.ui.toast(`내 집에 ${ga(z)} 생겼어!`, 'green'), 1700);
   }
   // 털기: one of the things found here goes home with 몽글이
   pickLoot(back = []) {
@@ -1983,12 +1984,12 @@ export class StageScene {
     if (this.dead) return;
     const contFree = !this.continued;
     G.ui.panel({
-      title: reason === 'giveup' ? '포기했어요' : reason === 'taps' ? TAP_TXT.title : '시간 초과!', color: 'red',
+      title: reason === 'giveup' ? '포기했어' : reason === 'taps' ? TAP_TXT.title : '시간 초과!', color: 'red',
       body: [h('div', { class: 'big-txt' }, `${this.found} / ${this.targets.length} 찾음`), h('div', { class: 'txt' }, reason === 'giveup' ? '숨긴 사람이 한 수 위였네! 집주인에게 코인이 가요' : reason === 'taps' ? TAP_TXT.body : '조금만 더 하면 다 찾을 수 있어!'),
         ...(lensBk ? [h('div', { class: 'txt lensline' }, '가방에서 꺼낸 돋보기는 돌려줬어!')] : [])],
       buttons: [
         ...(reason === 'giveup' || reason === 'taps' ? [] : [G.ui.btn('이어하기', { color: 'orange', cls: 'stack', sub: contFree ? '+20초 (무료)' : G.econ ? '+20초 · 돋보기 1' : '+20초 · 코인 80', onClick: () => this.continueRun(contFree) })]),
-        G.ui.btn('다시하기', { color: 'green', onClick: () => G.go('stage', this.retryArgs()) }),
+        G.ui.btn('다시 하기', { color: 'green', onClick: () => G.go('stage', this.retryArgs()) }),
         this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'blue', cls: 'sm', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'blue', cls: 'sm', onClick: () => G.go('visit') }) : G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }),
       ],
@@ -2005,7 +2006,7 @@ export class StageScene {
     const G = this.G;
     // 경제 B5 (10/19): from the 2nd on it takes a magnifier (a free one first), not coins; none → stays on the panel
     if (!free && G.econ) { if (!takeLens(this)) { G.ui.toast('돋보기가 없어!', 'red'); return; } free = true; }
-    if (!free) { if (G.save.coins < 80) { G.ui.toast('코인이 부족해!', 'red'); return; } G.addCoins(-80); }
+    if (!free) { if (G.save.coins < 80) { G.ui.toast('코인이 모자라!', 'red'); return; } G.addCoins(-80); }
     this.continued = true; G.ui.closePanel();
     this.time = 20; this.timeMax = Math.max(this.timeMax, 20); this.result = null; this.running = true;
     this.friend.pose = 'count'; this.friend.setFace('happy'); this.bubble.style.display = '';
@@ -2046,7 +2047,7 @@ export class StageScene {
     ui.panel({
       title: '잠깐 쉬기', color: 'purple', cls: 'pausep',
       body: [h('div', { class: 'txt' }, `${this.th.name} · 찾은 물건 ${this.found}/${this.targets.length}`), h('div', { class: 'setlist' }, ...rows), ...(tools.length ? [h('div', { class: 'row tools' }, ...tools)] : [])],
-      buttons: [ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }), ui.btn('다시하기', { color: 'orange', cls: 'sm', onClick: () => G.go('stage', this.retryArgs()) }), ui.btn('계속', { color: 'green', icon: 'play', onClick: () => { ui.closePanel(); this.paused = false; } })],
+      buttons: [ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }), ui.btn('다시 하기', { color: 'orange', cls: 'sm', onClick: () => G.go('stage', this.retryArgs()) }), ui.btn('계속', { color: 'green', icon: 'play', onClick: () => { ui.closePanel(); this.paused = false; } })],
     });
   }
 

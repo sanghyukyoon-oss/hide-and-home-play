@@ -949,7 +949,7 @@ export class Game {
       const h = L.h, last = this.lvIdx >= this.levelCount - 1;
       L.ui.panel({ title: '야식 성공!', color: 'green', body: [
         h('div', { class: 'ys-endslots' }, ...this.snackTypes.map((t, i) => h('div', { class: 'ys-slot big' + (i < n ? ' got' : '') }, h('img', { src: L.thumbs['item_' + t] })))),
-        h('div', { class: 'txt' }, n >= 3 ? '세 개 다! 완벽한 밤이야' : n === 2 ? '두 개! 하나만 더 욕심내 볼까?' : '하나 성공! 더 챙길 수 있었는데…')],
+        h('div', { class: 'txt' }, n >= 3 ? '세 개 다! 완벽한 밤이야' : n === 2 ? '두 개! 하나만 더 욕심내 볼까?' : '하나 성공! 다음엔 두 개 노려 볼까?')],
         buttons: [L.ui.btn('다시', { color: 'gray', cls: 'sm', onClick: () => L.go({ lv: this.lvIdx }) }),
           this.nextBtn = L.ui.btn(this.lv.nextLabel ? this.lv.nextLabel(last) : last ? '처음 밤부터' : '다음 밤', { color: 'green', cls: 'big', onClick: () => L.go({ lv: last ? 0 : this.lvIdx + 1 }) })] });
     }, 1200);

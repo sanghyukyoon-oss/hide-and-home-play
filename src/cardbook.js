@@ -58,7 +58,7 @@ function friendCards(G) {
     const at = first[k], reg = at != null ? regionOf(at) : null;
     return { id: 'c:' + k, art: 'card_' + k, no: n + 1, of: keys.length, name: CHAR_DEFS[k].name, have: met.has(k),
       rar: SPECIAL.has(k) ? 3 : hosts.has(k) ? 2 : 1, region: reg?.id || 'home', regionName: reg?.name || '동네',
-      line: charLine(k), hint: at != null ? `${at + 1}탄에서 만나요` : '판에서 만난 친구를 톡 눌러 봐', build: () => buildCharArt(k) };
+      line: charLine(k), hint: at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '판에서 만난 친구를 톡 눌러 봐', build: () => buildCharArt(k) };
   });
 }
 function itemCards(G) {
@@ -102,7 +102,7 @@ function zoom(c, G) {
   // a friend card can be made your own character: it walks with you in stages and hides in the boss stages
   const kind = c.id.startsWith('c:') ? c.id.slice(2) : null, isHero = kind && (G.save.hero || 'mong') === kind;
   const heroBtn = kind ? G.ui.btn(isHero ? '지금 내 캐릭터' : '내 캐릭터로 하기', { color: isHero ? 'gray' : 'pink', cls: 'sm', disabled: isHero,
-    onClick: dis => { if (dis) return; G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(`${c.name}(이)가 이제 함께 다녀요!`, 'green'); layer.remove(); } }) : null;
+    onClick: dis => { if (dis) return; G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(`이제 내 캐릭터는 ${c.name}!`, 'green'); layer.remove(); } }) : null;
   // 몽글이's diary line for this friend: the tell, the promise
   const line = kind && diaryLine(kind);
   // R2: how this friend hides — '???' until you've found them hiding three times, then their habit fills in

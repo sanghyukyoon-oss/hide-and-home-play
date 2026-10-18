@@ -921,7 +921,7 @@ export class Game {
     const list = [['깨웠다', true], ['쿠키 냠', !!r.cookie], [`조각 ${LV.par}개로`, n <= LV.par]];
     const row = h('div', { class: 'wk-stars' }, ...list.map(([t, on]) => h('div', { class: 'wk-star' + (on ? '' : ' off') }, h('div', { class: 'ico', html: on ? ICON.star : ICON.starGray }), h('span', {}, t))));
     const quip = { clock: '따르릉 한 방에 벌떡!', cat: '추로 점프 대성공!', wind: '이불이 날아갔다!', sun: '햇살 공격 성공!' }[r.how] || '기상 성공!';
-    const more = !r.cookie && LV.cookie ? '쿠키도 지나가게 해 볼까?' : n > LV.par ? `조각 ${LV.par}개로도 돼!` : '완벽한 아침!';
+    const more = !r.cookie && LV.cookie ? '다음엔 쿠키도 거쳐 가게 해 볼까?' : n > LV.par ? `조각 ${LV.par}개로도 돼!` : '완벽한 아침!';
     L.ui.panel({ title: '기상 성공!', color: 'green', body: [h('div', { class: 'wk-endface' }, h('img', { src: L.thumbs.face_sleepy_wow })), row, h('div', { class: 'txt' }, quip + ' ' + more)],
       buttons: [this.againBtn = L.ui.btn('고쳐 보기', { color: 'gray', cls: 'sm', onClick: () => this.backToEdit() }),
         this.nextBtn = L.ui.btn(last ? '처음 아침부터' : '다음 아침', { color: 'green', cls: 'big', onClick: () => L.go({ lv: last ? 0 : this.lvIdx + 1 }) })] });

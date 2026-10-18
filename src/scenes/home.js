@@ -1031,7 +1031,7 @@ export class HomeScene {
     for (const k of keys) {
       const ok = met.has(k), at = firstStage[k];
       grid.append(h('div', { class: 'fcell' + (ok ? '' : ' locked') }, h('img', { src: G.thumbs['face_' + k] }),
-        h('div', { class: 'fname' }, ok ? CHAR_DEFS[k].name : '???'), h('div', { class: 'fhint' }, ok ? '' : at != null ? `${at + 1}탄에서 만나요` : '동네 어딘가에')));
+        h('div', { class: 'fname' }, ok ? CHAR_DEFS[k].name : '???'), h('div', { class: 'fhint' }, ok ? '' : at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '동네 어딘가에')));
     }
     G.ui.panel({ title: `친구 도감 ${[...met].filter(k => keys.includes(k)).length}/${keys.length}`, color: 'pink', body: [grid], buttons: [G.ui.btn('닫기', { color: 'blue', cls: 'sm', onClick: () => G.ui.closePanel() })] });
   }
@@ -1076,9 +1076,9 @@ export class HomeScene {
     // played) is sent to that boss first — it was the only way to the ending (QA 10/18)
     this.playBtn = playButton(G);
     const unlocked = G.homeOpen();
-    const roomBtn = ui.btn('내 집', { color: 'orange', icon: unlocked ? 'home' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '꾸미고 숨기기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려요!', 'red') : G.go('myhome') });
+    const roomBtn = ui.btn('내 집', { color: 'orange', icon: unlocked ? 'home' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '꾸미고 숨기기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : G.go('myhome') });
     if (unlocked && !G.save.tut?.home) roomBtn.classList.add('pulse');   // just opened: point the way
-    const raidBtn = ui.btn('놀러 가기', { color: 'pink', icon: unlocked ? 'play' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '남이 숨긴 방 찾기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려요!', 'red') : G.go('visit') });
+    const raidBtn = ui.btn('놀러 가기', { color: 'pink', icon: unlocked ? 'play' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '남이 숨긴 방 찾기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : G.go('visit') });
     // the side column stays short so it never reaches the play button on a short screen (Safari with its bars, a phone
     // turned sideways): 지도 and 도감 stay out, everything else lives behind 더보기
     const side = h('div', { class: 'homeside' });
@@ -1101,7 +1101,7 @@ export class HomeScene {
       for (let o = hh.object; o; o = o.parent) {
         const ch = o.userData.char;
         if (ch) { const r = ch.react(this.tw, (n, p) => G.audio.sfx(n, p)); this.say(ch, r.line); return; }
-        if (o === this.main) { G.audio.sfx('door'); if (G.homeOpen()) G.go('myhome'); else G.ui.toast('몽글이 집! 스테이지 2를 깨면 들어갈 수 있어요', ''); return; }
+        if (o === this.main) { G.audio.sfx('door'); if (G.homeOpen()) G.go('myhome'); else G.ui.toast('몽글이 집! 스테이지 2를 깨면 들어갈 수 있어', ''); return; }
         const fh = this.fh.find(f => f.g === o);
         if (fh) { G.audio.sfx('pop', 3); G.ui.toast(`${CHAR_DEFS[fh.k].name}네 집`, ''); return; }
       }

@@ -464,7 +464,7 @@ export class Game {
     const here = this.guests.filter(G => this.present(G.i)), wait = here.filter(G => this.pos[G.i] === -1).length, ok = here.filter(G => G.mood?.ok).length;
     if (this.lvIdx === 0 && this.n === 0 && this.movesUsed === 0 && wait === here.length) return '로비의 손님을 끌어서 방에 넣어 주세요';
     if (wait) return `로비에서 기다리는 손님 <b>${wait}</b>명 · 행복한 손님 ${ok}/${here.length}`;
-    return ok === here.length ? '모두 행복해요! 불을 꺼 볼까요?' : `행복한 손님 <b>${ok}</b> / ${here.length} · 그래도 불 끌까요?`;
+    return ok === here.length ? '모두 행복해! 불 끌까?' : `행복한 손님 <b>${ok}</b> / ${here.length} · 그래도 불 끌까?`;
   }
   noMoves(G) {
     this.setInfo('오늘 방 바꾸기를 다 썼어요', 'warn'); this.L.audio.sfx('miss');

@@ -31,7 +31,7 @@ export function takeLens(S) {
 }
 // none left: never a button that does nothing — the idle sparkle starts now. It counts as a hint (★ 힌트 없이 is gone)
 export function noLens(S) {
-  S.G.ui.toast('돋보기가 없어! 반짝이를 불러 줄게', '');
+  S.G.ui.toast('돋보기가 없네! 대신 반짝이로 알려 줄게', '');
   S.hintsUsed = (S.hintsUsed || 0) + 1;
   S.idle = Math.max(S.idle || 0, S.sparkAfter ?? 20); S.twinkleT = 0;   // (stage.js update: it sparkles once idle > sparkAfter)
   // (one thing left on a 숨은그림 판, F1: the sparkle waits for the owner's look — have the look now, no wait after it)

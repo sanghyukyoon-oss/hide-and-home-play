@@ -134,7 +134,7 @@ export class MyRoomScene {
       const owned = this.M.furniture.filter(f => f.type === t).length + this.M.inventory.filter(x => x === t).length;
       const nSpots = this.countSpots(t);
       const c = h('div', { class: 'card', onclick: () => {
-        if (G.save.coins < inf.price) { ui.toast('코인이 부족해!', 'red'); G.audio.sfx('miss'); return; }
+        if (G.save.coins < inf.price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
         G.addCoins(-inf.price); this.M.inventory.push(t); G.persist(); G.audio.sfx('buy');
         ui.toast(`${inf.name} 구입! 보관함에서 꺼내 놓자`, 'green'); ui.closePanel(); this.renderInv();
       } }, owned ? h('div', { class: 'tag' }, `보유 ${owned}`) : null, h('img', { src: G.thumbs['furn_' + t] }), h('div', {}, inf.name), h('div', { style: 'font-size:11px;color:#9b6cff' }, `숨을 곳 ${nSpots}`), h('div', { class: 'pr', html: ICON.coin + inf.price }));

@@ -62,7 +62,7 @@ export class MyHomeScene {
         await playDialog(G, inside ? HOME_TUT.missed : HOME_TUT.found); if (this.dead) return;   // tucked inside → she gives up
       }
       await playDialog(G, HOME_TUT.bye);
-      if (raidLater && !this.dead) G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가요', '');
+      if (raidLater && !this.dead) G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', '');
     }
   }
   // frame the zone whatever its size (rooms can be widened in the shop)
@@ -132,7 +132,7 @@ export class MyHomeScene {
   switchZone(id) {
     if (id === this.zoneId) return;
     const G = this.G;
-    if (!G.zoneOpen(id)) { const z = HOME_ZONES.find(x => x.id === id); G.ui.toast(`스테이지 ${z.unlock.stage}에서 열려요 · 상점에서 미리 열 수도 있어요`, 'red'); return; }
+    if (!G.zoneOpen(id)) { const z = HOME_ZONES.find(x => x.id === id); G.ui.toast(`스테이지 ${z.unlock.stage}에서 열려 · 상점에서 미리 열 수도 있어`, 'red'); return; }
     this.zoneId = id; this.H.current = id; G.persist();
     G.audio.sfx('whoosh');
     this.build(); this.setMode(this.mode === 'hide' ? 'hide' : this.mode);
@@ -230,7 +230,7 @@ export class MyHomeScene {
     G.needThumbs?.(shown.map(([t]) => 'furn_' + t));
     for (const [t, i] of shown) {
       const ok = this.fits(t);
-      this.cardsEl.append(h('div', { class: 'card' + (ok ? '' : ' lockedc'), onclick: () => ok ? this.placeFromInv(i) : G.ui.toast(ZONE_TYPES[this.zone.type].indoor ? '야외용이에요' : '실내용이에요', 'red') },
+      this.cardsEl.append(h('div', { class: 'card' + (ok ? '' : ' lockedc'), onclick: () => ok ? this.placeFromInv(i) : G.ui.toast(ZONE_TYPES[this.zone.type].indoor ? '야외용이야' : '실내용이야', 'red') },
         h('img', { src: G.thumbs['furn_' + t] }), h('div', {}, FURN_INFO[t].name)));
     }
   }
@@ -239,7 +239,7 @@ export class MyHomeScene {
     const cands = [];
     for (let z = -R.d / 2 + .5; z <= R.d / 2 - .5; z += .5) for (let x = -R.w / 2 + .5; x <= R.w / 2 - .5; x += .5) for (const a of [0, Math.PI / 2])
       if (R.canPlaceAt(t, x, z, a)) cands.push({ x, z, a, d: Math.hypot(x, z) + a * .05 });
-    if (!cands.length) { G.ui.toast('자리가 없어요! 가구를 보관함에 넣어 보세요', 'red'); return; }
+    if (!cands.length) { G.ui.toast('자리가 없어! 가구를 보관함에 조금 넣어 봐', 'red'); return; }
     cands.sort((a, b) => a.d - b.d);
     const c = cands[0], id = 'f' + Date.now().toString(36) + i;
     this.H.inventory.splice(i, 1);
@@ -277,7 +277,7 @@ export class MyHomeScene {
   rotateSel() {
     const r = this.sel; if (!r) return;
     for (let k = 1; k <= 8; k++) { const a = r.a + k * Math.PI / 4; if (this.room.canPlaceAt(r.type, r.x, r.z, a, r.id)) { this.room.moveFurnitureAt(r, r.x, r.z, ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)); this.syncRec(r); this.updFootprint(r.x, r.z, r.a, true); this.G.audio.sfx('swish'); return; } }
-    this.G.ui.toast('돌릴 자리가 없어요!', 'red');
+    this.G.ui.toast('돌릴 자리가 없어!', 'red');
   }
   storeSel() {
     const r = this.sel; if (!r) return;
@@ -311,7 +311,7 @@ export class MyHomeScene {
       },
       end: () => {
         if (cur.ok && (cur.x !== start.x || cur.z !== start.z)) { R.moveFurnitureAt(r, cur.x, cur.z, r.a); this.syncRec(r); this.G.audio.sfx('place'); this.G.persist(); }
-        else { R.moveFurnitureAt(r, start.x, start.z, r.a); if (!cur.ok) this.G.ui.toast('거긴 놓을 수 없어요', 'red'); }
+        else { R.moveFurnitureAt(r, start.x, start.z, r.a); if (!cur.ok) this.G.ui.toast('거긴 놓을 수 없어', 'red'); }
         this.updFootprint(r.x, r.z, r.a, true);
       },
       cancel: () => {},
@@ -349,9 +349,9 @@ export class MyHomeScene {
   async freePlace(s, type = this.selItem, moving = false) {
     const G = this.G, hid = this.H.hide;
     if (!type) return false;
-    if ((type === 'key' || type === 'note') && s.part && hid.locks[s.part.key]) { G.ui.toast('잠근 곳 안에 열쇠를 넣으면 안 돼요!', 'red'); return false; }
+    if ((type === 'key' || type === 'note') && s.part && hid.locks[s.part.key]) { G.ui.toast('잠근 곳 안에 열쇠를 넣으면 못 열어!', 'red'); return false; }
     const isTarget = type !== 'key' && type !== 'note';
-    if (isTarget && !this.items[type] && this.targetCount() >= MAX_HIDE) { G.ui.toast(`한 번에 ${MAX_HIDE}개까지 숨길 수 있어요`, 'red'); return false; }
+    if (isTarget && !this.items[type] && this.targetCount() >= MAX_HIDE) { G.ui.toast(`한 번에 ${MAX_HIDE}개까지 숨길 수 있어`, 'red'); return false; }
     const prevAt = hid.items.findIndex(e => e.item === type), prev = prevAt >= 0 ? hid.items[prevAt] : null;
     if (this.items[type]) this.removeItem(type);
     const local = toLocal(s, s.point), ry = +((Math.random() - .5) * 1.2).toFixed(2);
@@ -359,7 +359,7 @@ export class MyHomeScene {
     if (!viewsOf(G.world, this.room, it)) {
       this.removeItem(type); G.audio.sfx('miss');
       if (prev) { hid.items.splice(prevAt, 0, prev); this.restoreItem(prev); }   // the old place stays
-      G.ui.toast('여긴 아무도 못 찾아요! 조금이라도 보이는 곳에 놓아 주세요', 'red');
+      G.ui.toast('여긴 아무도 못 찾아! 조금이라도 보이는 곳에 둬', 'red');
       return false;
     }
     const rec = { item: type, free: { host: s.key, ...(s.via ? { part: s.via } : {}), p: [local.x, local.y, local.z].map(v => +v.toFixed(3)), ry } };
@@ -384,14 +384,14 @@ export class MyHomeScene {
       const drafts = this.H.drafts || (this.H.drafts = {});
       if (hid.zoneId && (hid.items.length || Object.keys(hid.locks).length)) drafts[hid.zoneId] = { items: hid.items, locks: hid.locks, code: hid.code };
       const d = drafts[this.zoneId]; delete drafts[this.zoneId];
-      if (hid.items.length && hid.zoneId) G.ui.toast(`숨김 방을 ${this.zone.name}(으)로 바꿨어요 · 전 방 배치는 저장해 뒀어요`, '');
+      if (hid.items.length && hid.zoneId) G.ui.toast(`이제 ${this.zone.name}에 숨겨! 전에 숨긴 방은 저장해 뒀어`, '');
       hid.zoneId = this.zoneId; hid.items = d?.items || []; hid.locks = d?.locks || {}; if (d?.code) hid.code = d.code;
       G.persist();
       this.build();
     }
     this.col.append(h('div', { class: 'hint' }, h('span', {}, `물건 고르고 숨길 곳 탭 · 최대 ${MAX_HIDE}개`)));
     const tut = G.save.tut || (G.save.tut = {});
-    if (!tut.raidTip) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가요', ''), 900); }
+    if (!tut.raidTip) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', ''), 900); }
     const bar = h('div', { class: 'modebar' });
     this.cardsEl = h('div', { class: 'cards' });
     bar.append(this.cardsEl);
@@ -463,13 +463,13 @@ export class MyHomeScene {
       const c = kind === 'pad' ? 'key' : 'note';
       if (!this.chainNeeded().includes(c)) this.removeItem(c);
     } else {
-      if (p.spots.some(s => s.item && (s.item.type === 'key' || s.item.type === 'note'))) { G.ui.toast('열쇠나 쪽지가 들어 있는 곳은 잠글 수 없어요', 'red'); G.audio.sfx('miss'); return; }
+      if (p.spots.some(s => s.item && (s.item.type === 'key' || s.item.type === 'note'))) { G.ui.toast('열쇠나 쪽지가 든 곳은 못 잠가', 'red'); G.audio.sfx('miss'); return; }
       const kind = p.furn.type === 'safe' ? 'code' : 'pad';
       hid.locks[p.key] = kind; hid.code = hid.code || String(100 + Math.floor(Math.random() * 900));
       p.furn.setLock(p, kind, hid.code);
       G.audio.sfx('unlock');
       this.selItem = kind === 'pad' ? 'key' : 'note';
-      G.ui.toast(kind === 'pad' ? '잠갔어요! 열쇠를 다른 곳에 숨겨 주세요' : '잠갔어요! 비밀번호 쪽지를 다른 곳에 숨겨 주세요', 'green');
+      G.ui.toast(kind === 'pad' ? '잠갔어! 이제 열쇠를 다른 곳에 숨겨' : '잠갔어! 이제 비밀번호 쪽지를 다른 곳에 숨겨', 'green');
       G.world.idsDirty = true;
     }
     G.persist(); this.renderHideCards();
@@ -485,10 +485,10 @@ export class MyHomeScene {
     const G = this.G, t = this.selItem, hid = this.H.hide;
     if (!t || !spot) return;
     const def = ITEMS[t];
-    if (def.h * (spot.scale || 1) > spot.maxH + .001 || (spot.maxH < .1 && !def.flat)) { G.ui.toast('여긴 너무 좁아요! 납작한 것만 들어가요', 'red'); G.audio.sfx('miss'); return; }
-    if ((t === 'key' || t === 'note') && spot.part && hid.locks[spot.part.key]) { G.ui.toast('잠근 곳 안에 열쇠를 넣으면 안 돼요!', 'red'); return; }
+    if (def.h * (spot.scale || 1) > spot.maxH + .001 || (spot.maxH < .1 && !def.flat)) { G.ui.toast('여긴 너무 좁아! 납작한 것만 들어가', 'red'); G.audio.sfx('miss'); return; }
+    if ((t === 'key' || t === 'note') && spot.part && hid.locks[spot.part.key]) { G.ui.toast('잠근 곳 안에 열쇠를 넣으면 못 열어!', 'red'); return; }
     const isTarget = t !== 'key' && t !== 'note';
-    if (isTarget && !this.items[t] && this.targetCount() >= MAX_HIDE) { G.ui.toast(`한 번에 ${MAX_HIDE}개까지 숨길 수 있어요`, 'red'); return; }
+    if (isTarget && !this.items[t] && this.targetCount() >= MAX_HIDE) { G.ui.toast(`한 번에 ${MAX_HIDE}개까지 숨길 수 있어`, 'red'); return; }
     if (spot.item && spot.item.type !== t) this.removeItem(spot.item.type);
     if (this.items[t]) this.removeItem(t);
     this.putItem(t, spot);
@@ -625,7 +625,7 @@ export class MyHomeScene {
       }
       if (hit.kind === 'part' && !hit.part.lock) { this.openPart(hit.part, hit.part.t < .5); return; }
       if (hit.kind === 'part' && hit.part.lock) { G.audio.sfx('locked'); return; }
-      if (this.selItem) G.ui.toast('바닥이나 가구 위, 열어 둔 서랍 안을 눌러 숨겨요', '');
+      if (this.selItem) G.ui.toast('바닥이나 가구 위, 열어 둔 서랍 안을 톡 해서 숨겨', '');
       return;
     }
     if (hit.kind === 'part' && !hit.part.lock) this.openPart(hit.part, hit.part.t < .5);

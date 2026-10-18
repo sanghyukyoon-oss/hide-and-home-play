@@ -776,7 +776,7 @@ export class Game {
       L.makeThumbs({ faces: this.ten.map(T => [T.def.kind, 'happy']) });
       const last = this.lvIdx >= LEVELS.length - 1;
       const msg = stars === 3 ? '완벽한 방 배정!' : stars === 2 ? '조금만 덜 옮기면 별 셋!' : '휴, 겨우 모두 행복해졌다!';
-      L.ui.panel({ title: '모두 행복해요!', color: 'green', body: [
+      L.ui.panel({ title: '모두 행복해!', color: 'green', body: [
         h('div', { class: 'stars' }, ...[0, 1, 2].map(k => h('div', { class: 'st' + (k < stars ? ' on' : ''), html: k < stars ? ICON.star : ICON.starGray }))),
         h('div', { class: 'vl-faces' }, ...this.ten.map(T => h('img', { src: L.thumbs[`face_${T.def.kind}_happy`] }))),
         h('div', { class: 'txt' }, `이사 ${this.moves}번 · ${msg}`)],

@@ -365,6 +365,7 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .endtalk .et span::before { content: ''; position: absolute; left: -9px; top: 50%; margin-top: -6px; border: 6px solid transparent; border-right: 6px solid var(--ink); }
 .endtalk .et.me { flex-direction: row-reverse; }
 .endtalk .et.me span { background: #fff7d6; }
+.endtalk .et span b.who { display: block; font-size: 12px; line-height: 1.1; color: var(--o3); margin-bottom: 1px; }
 .endtalk .et.me span::before { left: auto; right: -9px; border-right-color: transparent; border-left: 6px solid var(--ink); }
 .inv .pill.treat { padding: 0 12px 0 40px; }
 .inv .pill.treat img { position: absolute; left: 2px; top: -6px; width: 40px; height: 40px; }
