@@ -336,14 +336,20 @@ export class StageScene {
     if (hit.kind === 'item') {
       const it = hit.item;
       if (it.found) return;
+      // the hidden friend is only ever found by its door opening (revealFriend): a tap on it while the door is still swinging
+      // used to go to onFound and the stage could never end (level report 10/18 B1, stage 20)
+      if (it.friend) { const pt = it.spot?.part; if (!pt || (!pt.busy && pt.t > .5)) this.revealFriend(it); return; }
       if (it.role === 'target') return this.onFound(it);
       if (it.role === 'key' || it.role === 'note' || it.role === 'color' || it.role === 'treat' || it.role === 'tool' || it.role === 'sock' || it.role === 'book' || it.role === 'gadget') return this.onChain(it);
       if (it.role === 'secret') return this.onSecret(it);
       if (it.role === 'clue') return this.onClue(it);   // 1판: 토순이's dropped donut
+      // 흑백판: a decoy sitting on a furniture target must not swallow the tap meant for the furniture (level report B3: 17판
+      // snack cart, 175 of 204 taps lost)
+      const gt = this.grayAt(x, y); if (gt) return this.onFoundFurn(gt);
       return this.onDecoy(it, x, y);
     }
     // 흑백판: a piece of furniture on the list is found by tapping any bit of it
-    const ff = hit.kind === 'furn' ? hit.furn : hit.kind === 'part' ? hit.part.furn : null, ft = ff && this.grayFurn?.get(ff);
+    const ff = hit.kind === 'furn' ? hit.furn : hit.kind === 'part' ? hit.part.furn : null, ft = ff && this.grayTarget(ff);
     if (ft && !ft.found) return this.onFoundFurn(ft);
     if (hit.kind === 'part') return this.onPart(hit.part, x, y);
     if (hit.kind === 'char' && this.trick?.ch && hit.char === this.trick.ch) return this.trick.caught();
@@ -467,6 +473,23 @@ export class StageScene {
     if (G.skipTalk || G.bot) setTimeout(() => !this.dead && G.ui.toast('색을 잃은 방! 찾을 때마다 색이 돌아와 — 큰 가구도 찾아 봐', 'green'), 1500);
   }
   colorIn(g) { g.userData.colored = true; this.G.world.idsDirty = true; }
+  // 흑백판: the list names a kind of furniture, so any piece of that kind counts (level report B4: two art crates on stage 3,
+  // only one — off screen — was accepted). The one you tapped is the one that gets its colour back.
+  grayTarget(ff) {
+    if (!this.grayFurn?.size) return null;
+    const own = this.grayFurn.get(ff); if (own && !own.found) return own;
+    const type = (this.room.rooms || [this.room]).flatMap(R => R.furns).find(r => r.f === ff)?.type; if (!type) return own || null;
+    const t = [...this.grayFurn.values()].find(q => !q.found && q.type === 'furn:' + type); if (!t) return own || null;
+    t.g = ff.group; return t;
+  }
+  grayAt(x, y) {
+    if (!this.grayFurn?.size) return null;
+    for (const hh of this.G.world.pick(x, y, [this.room.group])) {
+      const c = this.classify(hh.object), f2 = c.kind === 'furn' ? c.furn : c.kind === 'part' ? c.part.furn : null;
+      const t = f2 && this.grayTarget(f2); if (t && !t.found) return t;
+    }
+    return null;
+  }
   async onFoundFurn(it) {
     const G = this.G, W = G.world;
     it.found = true; this.idle = 0; this.found++;

@@ -8,8 +8,38 @@ import { THEMES, stageSpec, STAGE_COUNT, CHAR_UNLOCK, REGIONS } from './stages.j
 import { STARTER_ITEMS } from './catalog.js';
 import { STORY_ITEMS } from './gfx/story-props.js';
 import { renderThumbs } from './thumbs.js';
+import { diaryLine, learnedCards, BOOK } from './script.js';
+import { tr } from './i18n.js';
 
 const ART = {};   // key → data URL, filled per tab
+// 대본 (10/18): the 도감 is also 몽글이's play diary — a friend's tell and promise under their card, and a page of the
+// 🆕 cards you've gained (배운 것)
+let css = false;
+function style() {
+  if (css) return; css = true;
+  const s = document.createElement('style');
+  s.textContent = `.cb-diary{width:min(74vw,340px);box-sizing:border-box;background:#fffdf4 repeating-linear-gradient(transparent 0 25px,#eadcc4 25px 26px);border-left:6px solid #ff9fb8;border-radius:6px 14px 14px 6px;padding:8px 12px 9px 14px;color:#3b2a55;line-height:26px;transform:rotate(-1.2deg);box-shadow:0 5px 0 rgba(20,10,30,.35);word-break:keep-all}
+.cb-diary b{display:block;font-size:12px;line-height:18px;margin-bottom:2px;color:#c0577f}
+.cb-diary span{font-size:15px}
+.cb-learned{display:flex;flex-direction:column;gap:10px;max-height:min(58vh,560px);overflow-y:auto;padding:4px 4px 8px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.cl-card{background:#fffaf2;border:3px solid var(--ink,#3b2a55);border-radius:16px;padding:8px 10px 10px;color:#3b2a55;box-shadow:0 4px 0 rgba(42,26,61,.25)}
+.cl-card.off{border-style:dashed;opacity:.65;display:flex;align-items:center;gap:10px;box-shadow:none}
+.cl-t{font-size:19px;margin-bottom:6px}
+.cl-card.off .cl-t{margin:0;font-size:24px;width:30px;text-align:center}
+.cl-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cl-s{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:13px;line-height:1.3;word-break:keep-all;background:#fff;border-radius:10px;padding:6px 4px}
+.cl-s b{font-size:24px;line-height:1.2}
+.cl-hint{font-size:14px;word-break:keep-all}`;
+  document.head.append(s);
+}
+function learnedPage(G) {
+  const list = learnedCards(G);
+  const grid = h('div', { class: 'cb-learned' }, ...list.map(c => (c.have
+    ? h('div', { class: 'cl-card' }, h('div', { class: 'cl-t ol' }, tr(c.t)),
+      h('div', { class: 'cl-steps' }, ...c.s.map(([e, t]) => h('div', { class: 'cl-s' }, h('b', {}, e), h('span', {}, tr(t))))))
+    : h('div', { class: 'cl-card off' }, h('div', { class: 'cl-t' }, '?'), h('div', { class: 'cl-hint' }, tr(BOOK.notYet))))));
+  return { grid, have: list.filter(c => c.have).length, total: list.length };
+}
 const regionOf = idx => REGIONS.find(r => idx >= r.from && idx < r.to) || REGIONS[0];
 // friends who are rewards or specials shine (★★★); stage hosts are ★★; everyone else in the neighbourhood ★
 const SPECIAL = new Set(['churro', 'raccoon', ...Object.values(CHAR_UNLOCK)]);
@@ -72,30 +102,38 @@ function zoom(c, G) {
   const kind = c.id.startsWith('c:') ? c.id.slice(2) : null, isHero = kind && (G.save.hero || 'mong') === kind;
   const heroBtn = kind ? G.ui.btn(isHero ? '지금 내 캐릭터' : '내 캐릭터로 하기', { color: isHero ? 'gray' : 'pink', cls: 'sm', disabled: isHero,
     onClick: dis => { if (dis) return; G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(`${c.name}(이)가 이제 함께 다녀요!`, 'green'); layer.remove(); } }) : null;
-  const layer = h('div', { class: 'cb-zoom' }, card, ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
+  // 몽글이's diary line for this friend: the tell, the promise
+  const line = kind && diaryLine(kind), diary = line ? h('div', { class: 'cb-diary' }, h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))) : null;
+  if (diary) style();
+  const layer = h('div', { class: 'cb-zoom' }, card, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
   const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = (x - r.left) / r.width - .5, ny = (y - r.top) / r.height - .5;
     card.style.transform = `rotateY(${nx * 24}deg) rotateX(${-ny * 24}deg)`; card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`); };
   layer.addEventListener('pointermove', e => tilt(e.clientX, e.clientY));
-  layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target)) return; if (!card.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });
+  layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target) || diary?.contains(e.target)) return; if (!card.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });
   for (const ev of ['pointerup', 'wheel']) layer.addEventListener(ev, e => e.stopPropagation());
   G.audio.sfx('special');
   document.getElementById('app').append(layer);
 }
 
 export function openCardBook(G, tab = 'friends') {
-  const cards = tab === 'items' ? itemCards(G) : friendCards(G);
+  const cards = tab === 'learned' ? [] : tab === 'items' ? itemCards(G) : friendCards(G);
   if (cards.some(c => c.have && !ART[c.art])) G.ui.toast('카드 인쇄 중…', '');
   // let the toast paint, then print the cards (a short pause on first open per tab)
   requestAnimationFrame(() => setTimeout(() => {
-    ensureArt(cards);
-    const have = cards.filter(c => c.have).length;
-    const grid = h('div', { class: 'cb-grid' });
-    for (const c of cards) { const el = cardEl(c, G); if (c.have) el.addEventListener('click', () => { zoom(c, G); el.querySelector('.cb-new')?.remove(); }); grid.append(el); }
+    let grid, have, total;
+    if (tab === 'learned') { style(); ({ grid, have, total } = learnedPage(G)); }
+    else {
+      ensureArt(cards);
+      have = cards.filter(c => c.have).length; total = cards.length;
+      grid = h('div', { class: 'cb-grid' });
+      for (const c of cards) { const el = cardEl(c, G); if (c.have) el.addEventListener('click', () => { zoom(c, G); el.querySelector('.cb-new')?.remove(); }); grid.append(el); }
+    }
     const tabs = h('div', { class: 'cb-tabs' },
       G.ui.btn('친구', { color: tab === 'friends' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'friends' && openCardBook(G, 'friends') }),
-      G.ui.btn('물건', { color: tab === 'items' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'items' && openCardBook(G, 'items') }));
-    const bar = h('div', { class: 'cb-prog' }, h('i', { style: `width:${Math.round(have / cards.length * 100)}%` }));
-    G.ui.panel({ title: `도감 ${have}/${cards.length}`, color: 'pink', cls: 'cardbook', body: [tabs, bar, grid],
+      G.ui.btn('물건', { color: tab === 'items' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'items' && openCardBook(G, 'items') }),
+      G.ui.btn(tr(BOOK.learned), { color: tab === 'learned' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'learned' && openCardBook(G, 'learned') }));
+    const bar = h('div', { class: 'cb-prog' }, h('i', { style: `width:${Math.round(have / Math.max(1, total) * 100)}%` }));
+    G.ui.panel({ title: `도감 ${have}/${total}`, color: 'pink', cls: 'cardbook', body: [tabs, bar, grid],
       buttons: [G.ui.btn('닫기', { color: 'blue', cls: 'sm', onClick: () => G.ui.closePanel() })] });
   }, 30));
 }

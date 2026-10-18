@@ -369,6 +369,59 @@ const CARDS = {
   chain: { t: K('연쇄 장치', 'Chain Gadgets'), s: [['🧩', K('하나를 풀면', 'Solve one thing')], ['⚙️', K('다음 장치가 움직여요', 'and the next one moves')], ['👀', K('방이 바뀌는 걸 잘 봐요', 'Watch the room change')]] },
 };
 K('새로 얻었다!', 'New!'); K('알겠어!', 'Got it!');
+// the 🆕 cards for the diary's '배운 것' page: every card, and whether it's been gained yet
+export const learnedCards = G => Object.entries(CARDS).map(([k, c]) => ({ k, t: c.t, s: c.s, have: !!G.save.cards?.[k] }));
+
+// ── a gift is the friend's seat at your place (원칙 2: "네 방에 둬. 내가 가면 앉게."): when it's out in the room, that
+// friend comes by, goes to it and says so. top: where they sit on it (local to the piece); none = they stand at its front.
+const SEATS = {
+  cattower: { who: 'cat', top: [-.02, 1.38, -.2], say: K('내 자리, 그대로네.', 'You kept my spot.'), mong: K('꼭대기 비워 뒀어.', 'Kept the top free.') },
+  kotatsu: { who: 'bunny', say: K('내 자리 남겨 뒀네! …안 웃을게.', "You saved my spot! …I won't giggle."), mong: K('…벌써 웃잖아.', "…You're already giggling.") },
+  tteokstall: { who: 'grumpy', say: K('…의자 두 개, 그대로네. 한 판만 앉았다 갈게.', "…Still two stools. I'll sit for one game."), mong: K('시간은 많잖아.', "You've got time.") },
+  snackcart: { who: 'sundae', say: K('간식 카트 잘 있네! 오늘 건 내가 채워 왔어.', "The snack cart's still here! I brought today's refill."), mong: K('…체리는 내 거.', "…The cherry's mine.") },
+  bench2: { who: 'squirrel', top: [0, .44, -.16], say: K('벤치 그대로네. 밑에 도토리 숨겨 놨어.', 'You kept the bench. I hid acorns under it.'), mong: K('…어디 숨겼는지는 기억나?', '…Remember where?') },
+  lantern: { who: 'panda', say: K('랜턴, 아직 켜 두는구나.', 'You still keep the lantern lit.'), mong: K('…누가 올지 모르니까.', '…In case someone comes.') },
+  recordcab: { who: 'nerd', say: K('레코드장이 여기 있군. 퍼즐은 끝, 음악은 계속.', "There's the record cabinet. Puzzles end, music doesn't."), mong: K('…다음 퍼즐은?', '…And the next puzzle?') },
+};
+// the seats out in this room: only a piece the friend really gave you (its boss story done) — a kotatsu from the shop is
+// just a kotatsu. Positions are in the room group's space (the visitors walk in it).
+export function giftSeats(G, room) {
+  const done = G.save.storyDone || {}, out = [];
+  room.group.updateMatrixWorld(true);
+  for (const r of room.furns || []) {
+    const S = SEATS[r.type];
+    if (!S || out.some(o => o.who === S.who) || !BOSS.some(b => b.reward?.furn === r.type && done[b.id])) continue;
+    const g = r.f.group, st = room.frontOf(r.f), top = S.top ? room.group.worldToLocal(g.localToWorld(new THREE.Vector3(...S.top))) : null;
+    out.push({ who: S.who, type: r.type, stand: [st.x, st.z], top, at: [g.position.x, g.position.z], say: S.say, mong: S.mong });
+  }
+  return out;
+}
+
+// ── 몽글이's play diary (도감 카드 → 크게 보기): one line per friend — the tell you catch them by, and what you two promised
+const DIARY = {
+  mong: K('나. 본 건 다 적어 둠.', 'Me. I write down everything I see.'),
+  bunny: K('웃음을 못 참음. 다음엔 진짜 안 웃기로 약속.', "Can't hold in a giggle. Promised: no giggling next time."),
+  bear: K('기다리다 잠듦. 숟가락은 꼭 두 개 챙김.', 'Falls asleep waiting. Always brings two spoons.'),
+  frog: K('거품 때문에 들킴. 지면 꼭 "한 판 더".', 'Bubbles give Froggy away. Loses? "One more round."'),
+  nerd: K('퍼즐 자랑하다 힌트를 흘림. 다음 퍼즐은 나만을 위해.', 'Drops hints while showing off. Next puzzle: just for me.'),
+  peng: K('추우면 덜덜. 1등 비결이 만날 때마다 하나씩 늚.', 'Shivers in the cold. One more pro tip every time.'),
+  cat: K('꼬리는 못 숨김. 캣타워 꼭대기는 냥냥이 자리.', "Can't hide that tail. The top of the cat tower is Nyannyan's."),
+  shiba: K('조용히 해도 꼬리가 먼저 움직임. 순찰은 같이.', 'Stays quiet, but the tail moves first. We patrol together.'),
+  grumpy: K('"한 판만"이라면서 다음 판을 준비해 둠. 내일도 이 시간.', 'Says "one game," has the next one ready. Same time tomorrow.'),
+  squirrel: K('뭐든 다 숨김. 어디 숨겼는지 적은 메모도.', 'Hides everything. Even the note saying where.'),
+  hamster: K('볼이 빵빵해서 들킴. 씨앗은 비상식량.', 'Full cheeks give Hammy away. Seeds are emergency rations.'),
+  sundae: K('녹기 전에 찾아 줘야 함. 같이 먹을 간식은 늘 준비.', 'Find Parfait before the melting starts. Always has snacks for two.'),
+  skater: K('보드 끝이 삐죽 나옴. 다음엔 보드 태워 주기로.', 'The board tip sticks out. Promised me a ride next time.'),
+  panda: K('대나무 씹는 소리로 들킴. 천천히 와도 기다려 줌.', 'Bamboo munching gives Panda away. Waits for me, however slow.'),
+  sleepy: K('코 고는 소리로 들킴. 끝나면 깨워서 같이 돌아가기.', 'Snoring gives Dozy away. Wake Dozy at the end, walk home together.'),
+  robot: K('삐빅 소리로 들킴. 같이 간 기록은 지우지 않음.', 'Beeps give Cubebot away. Never deletes a trip together.'),
+  raccoon: K('자랑하다 들킴. 지면 "봐준 거야".', 'Gets caught bragging. Loses? "I went easy on you."'),
+  dj: K('숨어도 베이스 소리가 남. 새 곡은 내가 제일 먼저 듣기.', 'Still loud while hiding. I hear every new track first.'),
+  trickster: K('내가 숨긴 걸 몰래 딴 데 옮김. 눈 떼지 말 것.', 'Sneaks my hidden things somewhere else. Keep an eye out.'),
+  inky: K('색 묻은 발자국을 남김. 다음엔 같이 놀기.', 'Leaves colored footprints. Next time, we play together.'),
+};
+export const diaryLine = k => DIARY[k] || null;
+export const BOOK = { diary: K('몽글이 일기장', "Mongle's diary"), learned: K('배운 것', 'Learned'), notYet: K('판에서 처음 만나면 얻어요', 'You get it the first time you run into it') };
 export const UI = { homeHide: K('내 집에서 숨겨 보기', 'Hide something at home'), keepGoing: K('계속 찾기', 'Keep searching'), homeHideEnd: K('내 집에서 숨기기', 'Hide something at home'), keepPlaying: K('계속 놀기', 'Keep playing') };
 
 // ── binding: walk the campaign once (after the themes are registered) and pin every scene / boss story / count

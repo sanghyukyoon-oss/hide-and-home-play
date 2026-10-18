@@ -12,7 +12,7 @@ import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
 import { HOME_ZONES, ZONE_TYPES, zoneLayout, SHOP_FURN } from '../catalog.js';
 import { playDialog } from '../story.js';
-import { HOME_TUT } from '../script.js';
+import { HOME_TUT, giftSeats } from '../script.js';
 import { tr } from '../i18n.js';
 import { openShop } from '../shop.js';
 import { net, initNet, publishRoom, roomStats } from '../net.js';
@@ -106,7 +106,7 @@ export class MyHomeScene {
     this.visitors = new Visitors(G, { parent: this.room.group, mong: this.mong, tw: this.tw, indoorRoom: !!ZONE_TYPES[this.zone.type].indoor,
       active: () => this.mode === 'view' && !G.ui.panelOpen,
       entry: () => door ? [door.x, door.z] : [-1.9, 2.1], meet: () => [1.9 - .8, 1.9 - .3], say: (ch, t, ms) => this.say(ch, t, ms),
-      clear: (x, z, r) => this.room.clearAt(x, z, r) });
+      clear: (x, z, r) => this.room.clearAt(x, z, r), seats: () => giftSeats(G, this.room) });   // 대본: a gift is its friend's seat
   }
   putItem(type, spot) {
     const g = buildItem(type, { code: this.H.hide.code || '000' });
@@ -631,7 +631,7 @@ export class MyHomeScene {
   say(ch, text, ms = 1300) {
     const b = h('div', { class: 'bubble pop' }, text);
     this.G.ui.wui.append(b);
-    const upd = () => { const p = this.G.world.toScreen(V.copy(ch.root.getWorldPosition(new THREE.Vector3())).setY(ch.headTop() + .2)); b.style.left = p.x + 'px'; b.style.top = p.y + 'px'; };
+    const upd = () => { const p = this.G.world.toScreen(V.copy(ch.root.getWorldPosition(new THREE.Vector3())).setY(ch.root.position.y + ch.headTop() + .2)); b.style.left = p.x + 'px'; b.style.top = p.y + 'px'; };   // (+ y: up on a seat)
     upd(); const iv = setInterval(upd, 30);
     setTimeout(() => { clearInterval(iv); b.remove(); }, ms);
   }

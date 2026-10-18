@@ -924,7 +924,9 @@ B.log = (f, T) => {
       mg('logplug2|' + c2, c2, ({ add }) => { for (const [y, z] of [[-.06, -.12], [.1, .08], [-.12, .1]]) add(G.sph(.06, 10, 8), .04, y, z, 0, 0, 0, [.6, 1, 1.2]); }));
     put(pv, sx * (ex - .06), cy, 0); f.add(pv);
     const p = f.part('lift', pv, (t, b) => { pv.position.x = b.p.x + sx * .3 * t; pv.position.y = b.p.y - .16 * t; pv.rotation.z = -sx * .5 * t; pv.scale.setScalar(1 - .25 * t); }, { label, sfx: 'swish' });
-    f.spot('inside', null, sx * (ex - .13), cy - r + .01, 0, { part: p, maxH: .3, label: '통나무 속', scale: .66 });
+    // the thing sits at the log's mouth (it shows only once the plug is lifted, so it reads as rolled out): deep inside the
+    // tube it could not be seen from any angle — stage 59's key was lost there (level report 10/18 B2)
+    f.spot('inside', null, sx * (ex + .06), .02, .05, { part: p, maxH: .3, label: '통나무 속', scale: .66 });
   };
   plug(1, '#ff9f43', '#ffd23f', '낙엽 뭉치'); plug(-1, '#6fc45a', '#a8e07a', '이끼 뭉치');
   f.add(mg('log-mush-s', '#fff3dc', ({ add }) => { add(G.cyl(.025, .03, .1, 8), -.3, 2 * R + .02, .08); add(G.cyl(.02, .025, .07, 8), -.16, 2 * R + .01, .12); }));
