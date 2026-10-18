@@ -10,6 +10,7 @@ import { THEMES, layoutFor } from './stages.js';
 import { buildItem } from './gfx/items.js';
 import { mat } from './gfx/kit.js';
 import { h } from './ui.js';
+import { ease } from './util.js';
 
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const D = (type, wall, u, opts) => ({ type, wall, u, opts });
@@ -364,9 +365,12 @@ class Whack {
   }
   build() {
     const S = this.S, R = S.room;
-    let holes = (R.furns || []).filter(r => r.type === 'bush').map(r => new THREE.Box3().setFromObject(r.f.group).getCenter(new THREE.Vector3()));
-    if (holes.length < 4) holes = [-1, 0, 1].flatMap(k => [new THREE.Vector3(k * 1.6, 0, -.6), new THREE.Vector3(k * 1.6, 0, 1.2)]);
-    this.holes = holes.map(p => ({ p: new THREE.Vector3(p.x, 0, p.z - .18), who: null }));
+    // (user, 10/18: "수풀 클릭해도 성공으로 쳐 줄래? 캐릭도 좀 더 밖으로 나오게. 클릭하면 캐릭터 뿅 나왔다가 다시 들어가는 걸로.
+    // 너구리는 실패니까 연출해 줘") — friends come up in the middle of the bush with the whole face above the leaves, a tap on
+    // the bush counts, a found friend pops right out and ducks back, and 너굴이 jumps out to laugh at you when you get it wrong
+    let holes = (R.furns || []).filter(r => r.type === 'bush').map(r => new THREE.Box3().setFromObject(r.f.group));
+    if (holes.length < 4) holes = [-1, 0, 1].flatMap(k => [new THREE.Box3(new THREE.Vector3(k * 1.6 - .4, 0, -1), new THREE.Vector3(k * 1.6 + .4, .6, -.2)), new THREE.Box3(new THREE.Vector3(k * 1.6 - .4, 0, .8), new THREE.Vector3(k * 1.6 + .4, .6, 1.6))]);
+    this.holes = holes.map(b => { const c = b.getCenter(new THREE.Vector3()); return { p: new THREE.Vector3(c.x, 0, c.z), bush: new THREE.Vector3(c.x, b.max.y * .6, c.z), up: Math.max(.2, b.max.y - .22), who: null }; });
     S.frame({ x: 0, z: .3, yaw: Math.PI / 4, pitch: .8, zoom: 1.15, w: 7.2, hh: 5.6 });
     this.score = 0; this.spawnT = .8;
   }
@@ -374,13 +378,20 @@ class Whack {
   pop() {
     const S = this.S, free = this.holes.filter(o => !o.who); if (!free.length) return;
     const hole = pick(free), bad = Math.random() < .24, kind = bad ? 'raccoon' : pick(POPPERS);
-    const ch = S.char(kind, hole.p.x, hole.p.z, -.75); ch.faceTo(S.G.world.cam.position.x, S.G.world.cam.position.z); ch.setFace(bad ? 'sus' : 'happy');
-    const who = hole.who = { ch, bad, up: 0, stay: rnd(.8, 1.25) * (this.left < 12 ? .8 : 1), hit: false };
-    S.tw.run(.14, k => { ch.root.position.y = -.75 + .75 * k; }).then(() => { who.up = 1; });
+    const ch = S.char(kind, hole.p.x, hole.p.z, -1); ch.faceTo(S.G.world.cam.position.x, S.G.world.cam.position.z); ch.setFace(bad ? 'sus' : 'happy');
+    const who = hole.who = { ch, bad, up: 0, stay: rnd(.85, 1.3) * (this.left < 12 ? .8 : 1), hit: false };
+    S.tw.run(.15, k => { if (!who.hit) ch.root.position.y = -1 + (1 + hole.up) * k; }, ease.outBack).then(() => { who.up = 1; });
   }
   sink(hole) {
     const w = hole.who; if (!w || w.sinking) return; w.sinking = true; w.up = 0;
-    this.S.tw.run(.14, k => { w.ch.root.position.y = -.75 * k; }).then(() => { this.S.G.world.root.remove(w.ch.root); hole.who = null; });
+    const y0 = w.ch.root.position.y;
+    this.S.tw.run(.18, k => { w.ch.root.position.y = y0 + (-1 - y0) * k; }).then(() => { this.S.G.world.root.remove(w.ch.root); hole.who = null; });
+  }
+  // a tapped one jumps right out of the bush (뿅), stays a beat, and ducks back in
+  jumpOut(hole, hold) {
+    const S = this.S, w = hole.who, ch = w.ch, y0 = ch.root.position.y, top = hole.up + .75;
+    S.tw.run(.2, k => { ch.root.position.y = y0 + (top - y0) * k; }, ease.outBack)
+      .then(() => S.tw.wait(hold)).then(() => { if (hole.who === w) this.sink(hole); });
   }
   update(dt) {
     const S = this.S;
@@ -391,13 +402,32 @@ class Whack {
     for (const o of this.holes) if (o.who?.up && (o.who.stay -= dt) <= 0) this.sink(o);
   }
   tap(x, y) {
-    const S = this.S; let best = null, bd = 75;
-    for (const o of this.holes) { const w = o.who; if (!w || !w.up || w.hit) continue; const d = near(S, w.ch.root.position.clone().setY(.45), x, y, 75); if (d != null && d < bd) { bd = d; best = o; } }
+    const S = this.S; let best = null, bd = 95;
+    // the friend or the bush it is in (a little more room round the bush: the leaves are what you see)
+    for (const o of this.holes) {
+      const w = o.who; if (!w || w.hit || w.sinking) continue;
+      const d1 = near(S, w.ch.root.position.clone().setY(w.ch.root.position.y + .45), x, y, 80), d2 = near(S, o.bush, x, y, 95);
+      const d = Math.min(d1 ?? 1e9, d2 ?? 1e9); if (d < bd) { bd = d; best = o; }
+    }
     if (!best) return;
-    const w = best.who; w.hit = true;
-    if (w.bad) { this.score = Math.max(0, this.score - 1); S.G.audio.sfx('locked'); S.say(w.ch, '나는 술래라고~!', 900); S.G.ui.floatText(x, y - 30, '-1', ''); }
-    else { this.score++; S.G.audio.sfx('pop', 2 + this.score % 6); w.ch.setFace('wow'); S.G.world.fx.burst(x, y, { n: 10, shape: 'star' }); S.G.ui.floatText(x, y - 30, '+1', 'gold'); }
-    setTimeout(() => this.sink(best), 180);
+    const w = best.who, ch = w.ch; w.hit = true;
+    const s = S.screen(ch.root.position.clone().setY(best.up + .9));
+    if (w.bad) {
+      // wrong one: 너굴이 leaps out, points and laughs; the screen shakes
+      this.score = Math.max(0, this.score - 1);
+      S.G.audio.sfx('locked'); S.G.audio.sfx('miss');
+      ch.setFace('happy'); ch.pose = 'point';
+      S.say(ch, pick(['헤헤, 나는 술래지롱~!', '나 눌렀지? 하나 빼기~!', '메롱~ 나였어!']), 1100);
+      S.G.ui.floatText(s.x, s.y - 20, '-1', 'red');
+      S.G.world.fx.ring(s.x, s.y + 30, { r: 70, color: '#ff5d6c', width: 8, life: .45 });
+      document.getElementById('app').animate([{ transform: 'translateX(-7px)' }, { transform: 'translateX(7px)' }, { transform: 'translateX(-4px)' }, { transform: 'none' }], { duration: 260 });
+      this.jumpOut(best, .7);
+    } else {
+      this.score++; S.G.audio.sfx('pop', 2 + this.score % 6);
+      ch.setFace('wow'); ch.pose = 'cheer';
+      S.G.world.fx.burst(s.x, s.y + 20, { n: 12, shape: 'star' }); S.G.ui.floatText(s.x, s.y - 20, '+1', 'gold');
+      this.jumpOut(best, .32);
+    }
   }
   bot(dt) { if ((this._bt = (this._bt || 0) + dt) < .35) return; this._bt = 0; const o = this.holes.find(q => q.who?.up && !q.who.bad && !q.who.hit); if (o) { const s = this.S.screen(o.who.ch.root.position.clone().setY(.45)); this.tap(s.x, s.y); } }
 }
@@ -490,12 +520,12 @@ export const BOSS_GAMES = {
   // villa / tag / photo are no longer in the campaign (their files stay in src/bosses).
   4: { kind: 'yasik', lv: 0 },     // 첫 보스
   11: { kind: 'wakeup', lv: 0 },   // 몽글 마을 집 끝
-  20: { kind: 'hotel', lv: 1 },    // 우리 아파트 끝 — 몽글 호텔 2박 3일 (두 밤; lv 0 = 1박 2일, 2 = 3박 4일)
-  30: { kind: 'churro', lv: 0 },   // 동네 골목 — 추로야!!! (사용자네 고양이 추로가 주인공)
+  20: { kind: 'hotel', lv: 2 },    // 우리 아파트 끝 — 몽글 호텔 3박 4일 (user, 10/18: "실제에서 3박 4일 정도로 하는 거지?")
+  30: { kind: 'flashlight', lv: 0 }, // 동네 골목 — 손전등 숨바꼭질 (user, 10/18: "추로는 빼자. 손전등 숨바꼭질을 더 넣는 게 낫겠어")
   39: { kind: 'yasik', lv: 1 },    // 편의점·상가
   48: { kind: 'report', lv: 0 },   // 공원 끝 — 엄마 몰래 성적표 1일 (야식과 짝인 '엄마 몰래' 시리즈)
   59: { kind: 'wakeup', lv: 1 },   // 산길·캠핑 (텐트의 아침)
-  65: { kind: 'flashlight', lv: 0 }, // 빌딩 중간 — 손전등 숨바꼭질 ("일단 해봐"; 아침 깨우기 3아침 자리였음)
+  65: { kind: 'flashlight', lv: 2 }, // 빌딩 중간 — 손전등 숨바꼭질 3판 (말썽이·추로; 실험실에서 다듬은 판·칸이 오면 바꿈)
   69: { kind: 'yasik', lv: 2 },    // 마지막 보스
 };
 export const MINI_INFO = {

@@ -295,8 +295,12 @@ function buildThumbs() {
 let last = performance.now(), gameTime = 0, frames = 0, fpsNow = 60, fpsAcc = 0, fpsN = 0, updMs = 0, drawMs = 0, slow = 0, fast = 0, settleUntil = 0;
 let lastDraw = 0;
 function frame(now) {
-  // a phone at rest (no touch for 1.5 s, the view still) draws at 30 fps: half the heat, and idle sway still reads
-  if (world.phone && now - world.lastActive > 1500 && now - lastDraw < 30) { requestAnimationFrame(frame); return; }
+  // phones draw less often whenever nothing is being touched or moved — the picture is the same, only the frame count
+  // drops (user, 10/18: "아트 유지하면서 최적화 가능할까?"): 60 fps while a finger is on the screen or the view moves, 30 fps
+  // a moment after it settles (was 1.5 s), 20 fps behind a menu / result panel
+  const gap = !world.phone ? 0 : ui.panelOpen ? 48 : now - world.lastActive > 350 ? 30 : 0;
+  world.capped = gap > 0;
+  if (gap && now - lastDraw < gap) { requestAnimationFrame(frame); return; }
   lastDraw = now;
   const rdt = Math.min((now - last) / 1000, 1 / 12); last = now;
   frames++; fpsAcc += rdt; fpsN++;
@@ -316,7 +320,7 @@ function frame(now) {
       }
       el.textContent = `${fpsNow} fps · 화질 ${world.level}단계(x${world.maxSS}, dpr ${world.renderer.getPixelRatio()}) · 메시 ${el.dataset.n} · 삼각형 ${el.dataset.t}k`;
     } else document.getElementById('perf')?.remove();
-    if (now < settleUntil || document.visibilityState !== 'visible' || G.pending) { slow = fast = 0; }
+    if (now < settleUntil || document.visibilityState !== 'visible' || G.pending || world.capped) { slow = fast = 0; }   // (a frame rate we lowered on purpose is not a struggling GPU)
     else {
       // a steady ~30 fps is a capped screen (low power mode, some in-app browsers), not a struggling GPU: never trade
       // crispness for it. Supersampling goes first under real strain; resolution only when frames really drop (<22).
