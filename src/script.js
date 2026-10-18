@@ -355,7 +355,7 @@ SCENES.push(
   { id: 'alley3H', type: 'hidden', room: 'alley3', host: 'grumpy', name: K('동네 슈퍼', 'Corner Store'), goal: ['쏟아진 물건', 'spilled things'],
     intro: [L('grumpy', '…장 보다가 가방이 터졌어.', '…My bag split open while I was shopping.'), L('grumpy', '…줍는 거 도와주든가. 말든가.', "…Help me pick it up. Or don't."), L('mong', '…도와줄게.', "…I'll help.")],
     say: { first: K('…그거 내 거 맞아. 고마운 건 아니고.', "…Yeah, that's mine. Not that I'm grateful."), half: K('…반. 생각보다 빠르네.', '…Half. Faster than I thought.'), last: K('…하나 남았어. 그건 꼭 찾아야 돼.', '…One left. That one I really need.') },
-    after: [L('grumpy', '…다 찾았네. 가방은 새로 사야겠다.', '…You found it all. Guess I need a new bag.'), L('mong', '…새 가방도 그 의자에 앉히면 되겠다.', '…The new bag can have that chair.')] },
+    after: [L('grumpy', '…다 찾았네. 가방은 새로 사야겠다.', '…You found it all. Guess I need a new bag.'), LP('mong', '…가방 놓을 의자는 있어?', '…Got a chair for the bag?'), LP('grumpy', '…있어. 두 개.', '…Yeah. Two.')] },   // 의자 두 개 사슬 23 → 25 → 31 → 내 집 (검토 세션 10/19)
   { id: 'alleyhouseH', type: 'hidden', room: 'alleyhouse',
     intro: [L('shiba', '여긴 우리 집! 마당이랑 집 곳곳에 보물을 숨겨 뒀거든.', "This is my place! I've stashed treasures all over the yard and the house."), L('shiba', '순경 눈썰미 시험이야. 다 찾으면 명예 순경!', "It's an officer's eye test. Find them all and you're an honorary officer!"), L('mong', '…해 볼게.', "…I'll try.")],
     say: { first: K('킁! 그거 내가 아끼는 거!', "Sniff! That's one of my favorites!"), half: K('반이나! 시험 점수 벌써 50점!', 'Half! Fifty points already!'), last: K('하나 남았어. 이건 순경도 못 찾는 데야.', "One left. Even officers can't find this spot.") },
