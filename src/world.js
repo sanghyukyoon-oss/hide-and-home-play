@@ -256,7 +256,16 @@ export class World {
     this.zoom = clamp(this.zoom * f, this.minZoom, this.maxZoom);
     this.updateCam();
     const after = this.screenToGround(cx, cy, this.target.y);
-    if (before && after) { this.target.x += before.x - after.x; this.target.z += before.z - after.z; this.clampTarget(); }
+    if (before && after) {
+      // keep the spot under the fingers still — but on a nearly flat view (eye level) the floor under a finger high on
+      // the screen is far away, and that turned a small pinch into a jump of 6 m. Never move the view more than the
+      // fingers' distance from the middle would on a plain screen (user, 10/18: "아이레벨이거나 탑 레벨일 때 이동, 줌 에러")
+      let dx = before.x - after.x, dz = before.z - after.z;
+      const per = this.viewH / this.zoom / Math.max(this.H, 1), off = Math.hypot(cx - this.W / 2, cy - this.H / 2);
+      const cap = off * per * Math.abs(f - 1) * 1.6 + .02, d = Math.hypot(dx, dz);
+      if (d > cap) { dx *= cap / d; dz *= cap / d; }
+      this.target.x += dx; this.target.z += dz; this.clampTarget();
+    }
   }
   panBy(dx, dy, hard = false) {
     this.onPan?.(Math.hypot(dx, dy));
@@ -264,7 +273,7 @@ export class World {
     if (!(unitsPerPx > 0 && isFinite(unitsPerPx))) return;
     const right = V.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const fwd = V2.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
-    this.target.addScaledVector(right, -dx * unitsPerPx).addScaledVector(fwd, dy * unitsPerPx / Math.max(.4, Math.sin(this.pitch)));
+    this.target.addScaledVector(right, -dx * unitsPerPx).addScaledVector(fwd, dy * unitsPerPx / Math.max(.75, Math.sin(this.pitch)));   // (.4 made a low view run 2.5x — 10/18)
     this.clampTarget(hard);
   }
   // the box the view's centre may move in (around home; wider when zoomed in or on a wide map)
