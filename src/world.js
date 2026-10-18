@@ -325,7 +325,7 @@ export class World {
         this._tdY ??= this.yaw; this._tdP ??= this.pitch;
         if (ax === 'x') this._tdY = this.yaw; else if (ax == null) this._tdY += (this.yaw - this._tdY) * c;
         if (ax === 'y') this._tdP = this.pitch; else if (ax == null) this._tdP += (this.pitch - this._tdP) * c;
-        const off = (-(this._tdY - Math.PI / 4) * ppr % (ppr * Math.PI / 2)).toFixed(1), ky = (this._tdP * ppr / .65 % 10).toFixed(1);
+        const off = (-(this._tdY - Math.PI / 4) * ppr % (ppr * Math.PI / 2)).toFixed(1), ky = (this._tdP * ppr / .65 % 9).toFixed(1);
         if (ppr !== this._tdPpr) { this._tdPpr = ppr; T.style.setProperty('--mi', (ppr * Math.PI / 12).toFixed(2) + 'px'); T.style.setProperty('--ma', (ppr * Math.PI / 2).toFixed(2) + 'px'); }
         if (off !== this._tdOff) { this._tdOff = off; T.style.setProperty('--off', off + 'px'); }
         if (ky !== this._tdKy) { this._tdKy = ky; T.style.setProperty('--ky', ky + 'px'); } }
@@ -512,7 +512,7 @@ export class World {
     // F: the turn dial (돌림판) — slide it sideways and the room turns exactly as far as the thumb went, like spinning a
     // turntable; slide it up / down to tilt. One hand, no mode, nothing moves after the thumb lifts.
     const td = this.turnDial = document.createElement('div'); td.className = 'turndial';
-    td.innerHTML = '<i class="td-band"><i class="td-mi"></i><i class="td-ma"></i></i>' + ['l', 'r', 'lu', 'ld', 'ru', 'rd'].map(c => `<i class="td-ar td-${c}"></i>`).join('');
+    td.innerHTML = '<i class="td-glass"><i class="td-band"><i class="td-mi"></i><i class="td-ma"></i></i><i class="td-shade"></i><i class="td-gloss"></i></i>' + ['l', 'r', 'lu', 'ld', 'ru', 'rd'].map(c => `<i class="td-ar td-${c}"></i>`).join('');
     app.append(td);
     { let tid = null, lx = 0, ly = 0; const o = {};
       td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });

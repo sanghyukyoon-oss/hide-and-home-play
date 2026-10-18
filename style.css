@@ -1139,40 +1139,48 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .r1-eyes span { font-size: 56px; color: #ffe16b; -webkit-text-stroke-width: 6px; }
 .r1-eyes.out { opacity: 0; }
 
-/* F (the default camera since 10/18): the turn dial (돌림판). In the turn/move badge's place and size, shrinking with the rest of the HUD on a
-   phone (--hudz); drawn like the first, cleaner one (user 10/18: "이전에 빨간 게이지 있던거 깔끔했던거같은데"): a cream ruler,
-   ink ticks every 15°, pink ticks on the four diagonal views, two ink pointers in the middle. The ruler slides sideways
-   as the room turns and rides up / down as it tilts; while held, small arrows show which of the two the thumb is doing. */
-.turndial { position: absolute; right: 14px; bottom: calc(var(--joyB, 132px) + 24px + var(--safeB)); z-index: 12; display: none; width: 116px; height: 40px;
-  border-radius: 20px; background: #fffaf2; border: 3px solid var(--ink); border-bottom-width: 6px; box-shadow: inset 0 2px 0 #fff; overflow: hidden;
-  touch-action: none; pointer-events: auto; cursor: grab; user-select: none; -webkit-user-select: none; }
+/* F (the default camera since 10/18): the turn dial (돌림판). In the turn/move badge's place, shrinking with the rest of the HUD on a
+   phone (--hudz). Look ① 크림 유리관, picked by the user on 10/18 from five drafts (dial-drafts.html): a cream bezel in the game's
+   ink outline with the thicker bottom every button has, and a clear glass tube in it (inner shadow, gloss, darker curved ends)
+   holding the ruler — ink ticks every 15° (dashed: the dashes run up / down with the tilt) and pink ticks on the four diagonal
+   views. Ink pointers top and bottom flash pink when one passes. Purple arrows on the bezel ends, never the ticks' colour: a hint
+   when still, solid while the thumb turns (‹ ›) or tilts (˄ ˅). It sinks a little while held, like a pressed button. */
+.turndial { position: absolute; right: 14px; bottom: calc(var(--joyB, 132px) + 24px + var(--safeB)); z-index: 12; display: none; width: 120px; height: 48px;
+  box-sizing: border-box; border-radius: 24px; border: 3px solid var(--ink); border-bottom-width: 6px;
+  background: linear-gradient(180deg, #fffdf8 0%, #ffeedb 100%); box-shadow: inset 0 2px 0 #fff;
+  touch-action: none; pointer-events: auto; cursor: grab; user-select: none; -webkit-user-select: none; transition: transform .08s, border-bottom-width .08s; }
 .turndial.on { display: block; }
-.turndial.held { background: #ffeaf2; cursor: grabbing; }
-.turndial .td-band { position: absolute; left: 0; right: 0; top: 50%; height: 22px; margin-top: -11px; pointer-events: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent 5%, #000 27%, #000 73%, transparent 95%); mask-image: linear-gradient(90deg, transparent 5%, #000 27%, #000 73%, transparent 95%); }
-.turndial .td-mi, .turndial .td-ma { position: absolute; inset: 0; background-repeat: repeat-x; background-position: calc(50% + var(--off, 0px)) 0; }
-/* the 15° ticks are dashed: the dashes run up / down with the tilt */
-.turndial .td-mi { background-size: var(--mi, 27px) 100%;
-  background-image: linear-gradient(90deg, transparent calc(50% - 1px), rgba(58, 36, 83, .42) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+.turndial.held { transform: translateY(2px); border-bottom-width: 4px; cursor: grabbing; }
+.turndial i { position: absolute; display: block; pointer-events: none; }
+.turndial .td-glass { left: 17px; right: 17px; top: 5px; bottom: 5px; border-radius: 999px; overflow: hidden; box-sizing: border-box;
+  border: 1.5px solid rgba(58, 36, 83, .75); background: linear-gradient(180deg, #e3efff 0%, #ffffff 52%, #eef5ff 100%);
+  box-shadow: inset 0 3px 3px rgba(58, 36, 83, .32), inset 0 -2px 2px rgba(255, 255, 255, .95); }
+.turndial.held .td-glass { background: linear-gradient(180deg, #ffe3ef 0%, #ffffff 52%, #fff0f6 100%); }
+.turndial .td-band { left: 0; right: 0; top: 0; bottom: 0; }
+.turndial .td-mi, .turndial .td-ma { left: 0; right: 0; background-repeat: repeat-x; background-position: calc(50% + var(--off, 0px)) 0; }
+.turndial .td-mi { top: 6px; bottom: 6px; background-size: var(--mi, 27px) 100%;
+  background-image: linear-gradient(90deg, transparent calc(50% - 1px), rgba(58, 36, 83, .45) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
   -webkit-mask-image: linear-gradient(180deg, #000 0 6px, transparent 6px); mask-image: linear-gradient(180deg, #000 0 6px, transparent 6px);
-  -webkit-mask-size: 100% 10px; mask-size: 100% 10px; -webkit-mask-position: 0 var(--ky, 0px); mask-position: 0 var(--ky, 0px); }
-.turndial .td-ma { background-size: var(--ma, 163px) 100%;
+  -webkit-mask-size: 100% 9px; mask-size: 100% 9px; -webkit-mask-position: 0 var(--ky, 0px); mask-position: 0 var(--ky, 0px); }
+.turndial .td-ma { top: 3px; bottom: 3px; background-size: var(--ma, 163px) 100%;
   background-image: linear-gradient(90deg, transparent calc(50% - 2px), #ff6f9c calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)); }
-/* the pointers: ink notches top and bottom in the middle; they flash pink when a diagonal view passes */
-.turndial::before, .turndial::after { content: ''; position: absolute; left: 50%; margin-left: -6px; width: 0; height: 0; border: 6px solid transparent; pointer-events: none; z-index: 1; }
-.turndial::before { top: -1px; border-top: 7px solid var(--ink); border-bottom-width: 0; }
-.turndial::after { bottom: -1px; border-bottom: 7px solid var(--ink); border-top-width: 0; }
+.turndial .td-shade { left: 0; right: 0; top: 0; bottom: 0; background: linear-gradient(90deg, rgba(58, 36, 83, .26) 0%, transparent 26%, transparent 74%, rgba(58, 36, 83, .26) 100%); }
+.turndial .td-gloss { left: 11%; right: 11%; top: 2px; height: 32%; border-radius: 999px; background: linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(255, 255, 255, 0)); }
+.turndial::before, .turndial::after { content: ''; position: absolute; left: 50%; margin-left: -5px; width: 0; height: 0; border: 5px solid transparent; z-index: 2; pointer-events: none; }
+.turndial::before { top: -1px; border-top: 6px solid var(--ink); border-bottom-width: 0; }
+.turndial::after { bottom: -1px; border-bottom: 6px solid var(--ink); border-top-width: 0; }
 .turndial.notch::before { animation: tdPtrT .35s ease-out; } .turndial.notch::after { animation: tdPtrB .35s ease-out; }
 @keyframes tdPtrT { 0%, 40% { border-top-color: #ff6f9c; } }
 @keyframes tdPtrB { 0%, 40% { border-bottom-color: #ff6f9c; } }
-/* while held, pink arrows at both ends say which one the thumb is doing: ‹ › turn, ˄ ˅ tilt */
-.turndial .td-ar { position: absolute; width: 0; height: 0; border: 5px solid transparent; opacity: 0; pointer-events: none; transition: opacity .12s; }
-.turndial .td-l { left: 8px; top: 50%; margin-top: -5px; border-right: 6px solid #ff6f9c; border-left-width: 0; }
-.turndial .td-r { right: 8px; top: 50%; margin-top: -5px; border-left: 6px solid #ff6f9c; border-right-width: 0; }
-.turndial :is(.td-lu, .td-ru) { top: 50%; margin-top: -9px; border-bottom: 6px solid #ff6f9c; border-top-width: 0; }
-.turndial :is(.td-ld, .td-rd) { top: 50%; margin-top: 3px; border-top: 6px solid #ff6f9c; border-bottom-width: 0; }
-.turndial :is(.td-lu, .td-ld) { left: 7px; } .turndial :is(.td-ru, .td-rd) { right: 7px; }
-.turndial[data-ax="x"] :is(.td-l, .td-r), .turndial[data-ax="y"] :is(.td-lu, .td-ld, .td-ru, .td-rd) { opacity: 1; }
+.turndial .td-ar { width: 0; height: 0; border: 4px solid transparent; opacity: .3; transition: opacity .12s; }
+.turndial .td-l { left: 5px; top: 50%; margin-top: -4px; border-right: 6px solid #8b5cf6; border-left-width: 0; }
+.turndial .td-r { right: 5px; top: 50%; margin-top: -4px; border-left: 6px solid #8b5cf6; border-right-width: 0; }
+.turndial :is(.td-lu, .td-ru) { top: 50%; margin-top: -9px; border-bottom: 6px solid #8b5cf6; border-top-width: 0; opacity: 0; }
+.turndial :is(.td-ld, .td-rd) { top: 50%; margin-top: 3px; border-top: 6px solid #8b5cf6; border-bottom-width: 0; opacity: 0; }
+.turndial :is(.td-lu, .td-ld) { left: 4px; } .turndial :is(.td-ru, .td-rd) { right: 4px; }
+.turndial[data-ax="x"] :is(.td-l, .td-r) { opacity: 1; }
+.turndial[data-ax="y"] :is(.td-l, .td-r) { opacity: 0; }
+.turndial[data-ax="y"] :is(.td-lu, .td-ld, .td-ru, .td-rd) { opacity: 1; }
 #app[data-scene="stage"] .turndial, #app[data-scene="boss"] .turndial {
   zoom: var(--hudz); --safeB: calc(env(safe-area-inset-bottom, 0px) / var(--hudz)); }
 #app.cine .turndial { opacity: 0; transition: opacity .3s var(--eo); pointer-events: none; }
