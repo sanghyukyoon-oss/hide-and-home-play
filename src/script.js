@@ -596,7 +596,7 @@ export const DO = {
   turnDrag: K('옆으로 끌어서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 끌어 봐', 'Drag until the box faces you'),
   turnAny: K('방을 돌려서 상자 앞을 봐', 'Turn the room to face the box'),
   // 기본 조작 F (조작감 세션, 10/18): the turn dial bottom right — push it sideways to turn, up/down to tilt
-  turnDial: K('돌림판을 옆으로 밀어 방 돌리기', 'Slide the dial to turn the room'),
+  turnDial: K('방을 돌려 봐! 돌림판을 밀거나, 끌면서 다른 손가락으로 톡', 'Turn the room! Slide the dial, or drag and tap with another finger'),
   tilt: K('돌림판을 위아래로 밀어 기울이기', 'Slide the dial up or down to tilt'), tilt2: K('돌림판을 위아래로 쭉 밀면 위에서 내려다볼 수 있어', 'Slide the dial up or down to look from above'),
   turnDial2: K('오른쪽 아래 돌림판을 쭉 밀어서 상자 앞을 봐', 'Slide the dial till the box faces you'),
   box: K('상자를 톡', 'Tap the box'), box2: K('흔들리는 상자를 톡 눌러 봐', 'Tap the shaking box'),
@@ -633,6 +633,18 @@ const CARDS = {
   chain: { t: K('연쇄 장치', 'Domino Gadgets'), s: [['🧩', K('하나를 풀면', 'Solve one thing')], ['⚙️', K('다음 장치가 움직여', 'The next one moves')], ['👀', K('방이 바뀌는 걸 잘 봐', 'Watch the room change')]] },
 };
 K('새로 얻었다!', 'New card!'); K('알겠어!', 'Got it!');
+// R4 관찰 자물쇠 (검토 세션 10/18): the note only says where to look — the code is the time on a clock in the room (시 : 분
+// dials), the colors are the vases read smallest first. obslock.js calls obsCards() when it loads, so the cards (and 7판
+// 펭펭이's slip about the stopped clock) change only once that lock is really in the game.
+const CARDS_OBS = {
+  code: { t: K('비밀번호 금고', 'Code Safe'), s: [['📝', K('쪽지가 어디를 볼지 알려 줘', 'The note tells you where to look')], ['🕐', K('방 안 시계가 가리키는 시각이 비밀번호', 'The time on the clock is the code')], ['🔢', K('금고를 톡, 다이얼을 돌려 맞춰', 'Tap the safe and turn the dials')]] },
+  color: { t: K('색깔 자물쇠', 'Color Lock'), s: [['📝', K('쪽지가 어디를 볼지 알려 줘', 'The note tells you where to look')], ['🏺', K('꽃병 색을 작은 것부터 읽어', 'Read the vases, smallest first')], ['🎨', K('자물쇠를 톡, 색 버튼을 순서대로', 'Tap the lock, then the colors in order')]] },
+};
+const CLOCK_SLIP = L('peng', '참, 다락 시계는 멈춰 있어. 멈춘 시각이… 앗, 이건 비밀!', "Oh, the attic clock is stopped. The time it stopped at… oops, that's a secret!");
+export function obsCards() {
+  Object.assign(CARDS, CARDS_OBS);
+  for (const sc of SCENES) if ((sc.id === 'pengH' || sc.id === 'peng') && sc.intro && !sc.intro.includes(CLOCK_SLIP)) sc.intro = [...sc.intro, CLOCK_SLIP];
+}
 // the 🆕 cards for the diary's '배운 것' page: every card, and whether it's been gained yet
 export const learnedCards = G => Object.entries(CARDS).map(([k, c]) => ({ k, t: c.t, s: c.s, have: !!G.save.cards?.[k] }));
 

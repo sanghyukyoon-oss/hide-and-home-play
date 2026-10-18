@@ -21,6 +21,7 @@ import { KPOP_BUILDERS, KPOP_INFO } from './gfx/kpop-props.js';
 import { MAZE_BUILDERS, MAZE_INFO } from './gfx/maze-props.js';
 import { MUSEUM_BUILDERS, MUSEUM_INFO } from './gfx/museum-props.js';
 import { SHOWCASE_BUILDERS, SHOWCASE_INFO } from './gfx/showcase-props.js';
+import { DEVICE_BUILDERS, DEVICE_INFO, DEVICE_ITEMS } from './gfx/device-props.js';
 import { TOWN_BUILDERS, TOWN_INFO } from './gfx/town-props.js';
 import { APT_BUILDERS, APT_INFO, APT_THEMES, APT_ITEMS } from './gfx/apt-props.js';
 import { loadTune } from './tune.js';
@@ -64,6 +65,7 @@ registerFurniture(KPOP_BUILDERS, KPOP_INFO);
 registerFurniture(MAZE_BUILDERS, MAZE_INFO);
 registerFurniture(MUSEUM_BUILDERS, MUSEUM_INFO);
 registerFurniture(SHOWCASE_BUILDERS, SHOWCASE_INFO);
+registerFurniture(DEVICE_BUILDERS, DEVICE_INFO); Object.assign(ITEMS, DEVICE_ITEMS);   // R6 장치판
 registerFurniture(TOWN_BUILDERS, TOWN_INFO);
 Object.assign(ITEMS, APT_ITEMS);
 const WARM = { ambColor: '#ffeedd', amb: 1.5, sunColor: '#fff4e0', sun: 2.3 };

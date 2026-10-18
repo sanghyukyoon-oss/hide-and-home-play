@@ -1173,12 +1173,12 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
   background: linear-gradient(180deg, #fffdf8 0%, #ffeedb 100%); box-shadow: inset 0 2px 0 #fff;
   touch-action: none; pointer-events: auto; cursor: grab; user-select: none; -webkit-user-select: none; transition: transform .08s, border-bottom-width .08s; }
 .turndial.on { display: block; }
-.turndial.held { transform: translateY(2px); border-bottom-width: 4px; cursor: grabbing; }
+.turndial:is(.held, .fturn) { transform: translateY(2px); border-bottom-width: 4px; cursor: grabbing; }
 .turndial i { position: absolute; display: block; pointer-events: none; }
 .turndial .td-glass { left: 17px; right: 17px; top: 5px; bottom: 5px; border-radius: 999px; overflow: hidden; box-sizing: border-box;
   border: 1.5px solid rgba(58, 36, 83, .75); background: linear-gradient(180deg, #e3efff 0%, #ffffff 52%, #eef5ff 100%);
   box-shadow: inset 0 3px 3px rgba(58, 36, 83, .32), inset 0 -2px 2px rgba(255, 255, 255, .95); }
-.turndial.held .td-glass { background: linear-gradient(180deg, #ffe3ef 0%, #ffffff 52%, #fff0f6 100%); }
+.turndial:is(.held, .fturn) .td-glass { background: linear-gradient(180deg, #ffe3ef 0%, #ffffff 52%, #fff0f6 100%); }
 .turndial .td-band { left: 0; right: 0; top: 0; bottom: 0; }
 .turndial .td-mi, .turndial .td-ma { left: 0; right: 0; background-repeat: repeat-x; background-position: calc(50% + var(--off, 0px)) 0; }
 .turndial .td-mi { top: 6px; bottom: 6px; background-size: var(--mi, 27px) 100%;
@@ -1228,3 +1228,13 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 /* 🆕 '새로 얻었다!' 카드 · 고르기 버튼 · 엔딩 카드 (script.js가 #overlay에 넣는 층): #overlay는 탭을 아래로 흘려보내니까
    이 층들은 직접 받아야 함 (10/18 사용자: "새로 얻었다에서 알겠어 눌러도 안 돌아감" — 버튼이 안 눌려 판이 멈춰 있었음) */
 .ncard, .chooser, .endcard { pointer-events: auto; }
+
+/* R7: "이쪽으로 돌려 봐" — at the edge to turn toward, when every target left is hidden from this side (stage.js turnHint) */
+.turnhint { position: absolute; top: 46%; z-index: 14; pointer-events: none; padding: 8px 14px 9px; border-radius: 18px; background: #fffaf2;
+  border: 3px solid var(--ink); border-bottom-width: 5px; color: var(--ink); font-size: 15px; white-space: nowrap; animation: thIn .35s var(--eo); }
+.turnhint.r { right: 10px; } .turnhint.l { left: 10px; }
+.turnhint.r { animation: thIn .35s var(--eo), thNudgeR 1s .35s ease-in-out 3; } .turnhint.l { animation: thIn .35s var(--eo), thNudgeL 1s .35s ease-in-out 3; }
+.turnhint.out { opacity: 0; transition: opacity .35s; }
+@keyframes thIn { from { opacity: 0; transform: scale(.8); } }
+@keyframes thNudgeR { 50% { transform: translateX(6px); } }
+@keyframes thNudgeL { 50% { transform: translateX(-6px); } }

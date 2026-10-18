@@ -40,6 +40,8 @@ const HABIT = {
   dj: ['speaker', 'stage', 'kpop', 'amp', 'light', 'stand'],
   robot: ['drawer', 'cabinet', 'locker', 'file', 'box', 'shelf'],
 };
+// R2 (10/18): the same table steers where a friend really hides on a 친구 숨기 판 (stage.js → planIncident spec.habit)
+export const habitOf = k => HABIT[k] || null;
 // the planner gets the host's habit places and the room's blind places (stages.js planStage: spec.prefer / spec.avoid)
 export const huntExtras = (spec, host) => ({ ...spec, prefer: HABIT[host] || null, avoid: blindFor(spec.room) });
 

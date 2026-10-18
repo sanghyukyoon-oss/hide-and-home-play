@@ -3417,4 +3417,8 @@ export const EN = {
 "놀이를 불러오지 못했어요 · 다음 판으로 갈게요": "Couldn't load the game · moving on to the next stage",
 "놀이": "Break",   // the tag on a 쉬어가기 (scenes/mini.js)
 "쉿…": "Shh…",   // R1 hide after the first count (stage.js r1Hide)
+"숨는 버릇": "How they hide",   // card book (R2)
+"도감에 새 칸: 숨는 버릇!": "New in your card book: how they hide!",
+"이쪽으로 돌려 봐 ▶": "Turn this way ▶",   // R7 turn hint (stage.js turnHint)
+"◀ 이쪽으로 돌려 봐": "◀ Turn this way",
 };

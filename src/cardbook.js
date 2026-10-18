@@ -8,7 +8,7 @@ import { THEMES, stageSpec, STAGE_COUNT, CHAR_UNLOCK, REGIONS } from './stages.j
 import { STARTER_ITEMS } from './catalog.js';
 import { STORY_ITEMS } from './gfx/story-props.js';
 import { renderThumbs } from './thumbs.js';
-import { diaryLine, learnedCards, BOOK } from './script.js';
+import { diaryLine, learnedCards, BOOK, HABIT_LINE } from './script.js';
 import { tr } from './i18n.js';
 
 const ART = {};   // key → data URL, filled per tab
@@ -21,6 +21,7 @@ function style() {
   s.textContent = `.cb-diary{width:min(74vw,340px);box-sizing:border-box;background:#fffdf4 repeating-linear-gradient(transparent 0 25px,#eadcc4 25px 26px);border-left:6px solid #ff9fb8;border-radius:6px 14px 14px 6px;padding:8px 12px 9px 14px;color:#3b2a55;line-height:26px;transform:rotate(-1.2deg);box-shadow:0 5px 0 rgba(20,10,30,.35);word-break:keep-all}
 .cb-diary b{display:block;font-size:12px;line-height:18px;margin-bottom:2px;color:#c0577f}
 .cb-diary span{font-size:15px}
+.cb-diary .cb-habit{margin-top:4px}
 .cb-learned{display:flex;flex-direction:column;gap:10px;max-height:min(58vh,560px);overflow-y:auto;padding:4px 4px 8px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .cl-card{background:#fffaf2;border:3px solid var(--ink,#3b2a55);border-radius:16px;padding:8px 10px 10px;color:#3b2a55;box-shadow:0 4px 0 rgba(42,26,61,.25)}
 .cl-card.off{border-style:dashed;opacity:.65;display:flex;align-items:center;gap:10px;box-shadow:none}
@@ -103,7 +104,11 @@ function zoom(c, G) {
   const heroBtn = kind ? G.ui.btn(isHero ? '지금 내 캐릭터' : '내 캐릭터로 하기', { color: isHero ? 'gray' : 'pink', cls: 'sm', disabled: isHero,
     onClick: dis => { if (dis) return; G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(`${c.name}(이)가 이제 함께 다녀요!`, 'green'); layer.remove(); } }) : null;
   // 몽글이's diary line for this friend: the tell, the promise
-  const line = kind && diaryLine(kind), diary = line ? h('div', { class: 'cb-diary' }, h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))) : null;
+  const line = kind && diaryLine(kind);
+  // R2: how this friend hides — '???' until you've found them hiding three times, then their habit fills in
+  const hn = kind ? (G.save.habitSeen?.[kind] || 0) : 0, habit = kind && HABIT_LINE[kind];
+  const habitEl = habit ? h('div', { class: 'cb-habit' }, h('b', {}, tr('숨는 버릇')), h('span', {}, hn >= 3 ? tr(habit) : `??? (${hn}/3)`)) : null;
+  const diary = line || habitEl ? h('div', { class: 'cb-diary' }, ...(line ? [h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))] : []), ...(habitEl ? [habitEl] : [])) : null;
   if (diary) style();
   const layer = h('div', { class: 'cb-zoom' }, card, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
   const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = (x - r.left) / r.width - .5, ny = (y - r.top) / r.height - .5;

@@ -10,6 +10,7 @@ import { MINI_AFTER, MINI_INFO, BOSS_GAMES } from '../minis.js';
 import { BOSS_GAME_INFO } from './bossgame.js';
 import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO, REGIONS, regionOf } from '../stages.js';
 import { spinePuzzle } from '../showcase.js';
+import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js';
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
@@ -28,7 +29,10 @@ import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hid
 import { tr } from '../i18n.js';
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
-import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound } from '../hunt.js';
+import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf } from '../hunt.js';
+import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
+// R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
+const HABIT_BREAK = new Set([0, 29, 40]);
 import { v2Wanted, v2Setup, v2Prep, v2Hide, v2Tell, v2PointAll, v2KeyToast, v2OpenSound, v2Wrong, v2Hint, v2AfterFound, v2Stars, v2StarWhy, v2Stamp, v2Title, v2Update, v2PeekTap } from '../r1v2.js';
 const JAIL_LINES = ['억울해! 난 그냥 여기 숨어 있었다고!', '진짜 도둑은 그 까만 애라니까~!', '여기 의자 딱딱해…', '열쇠 찾으면 나 좀 꺼내 줘!', '술래가 갇히면 숨바꼭질은 누가 해…'];
 const ROBOT_COST = 50;
@@ -111,6 +115,7 @@ export class StageScene {
       const ho = hostAt(idx); if (ho) this.th = { ...this.th, friend: ho };   // e.g. 펭펭이 at the fire station
       if (this.scene?.name) this.th = { ...this.th, name: this.scene.name };   // the stage's title, when the map's own says someone else's home
       if (this.spec.tut === 1 && !G.save.settings?.oldMode) layout = firstLayout(layout);   // 1판: the toy box faces away from you
+      if (this.spec.showcase) layout = deviceLayout(this.spec.room, layout);   // R6 장치판: the map's device piece, this stage only
     }
     if (custom) this.scene = null;
     const th = this.th;
@@ -127,7 +132,7 @@ export class StageScene {
     this.story = custom ? null : storyFor(this.idx);
     // 사건 판 (10/17 pivot): the owner hides behind a lock and finding them is the goal (세팅 → 더보기 has the old way)
     this.incident = !custom && !this.preview && (!!this.spec.incident || this.spec.tut === 1) && !G.save.settings?.oldMode;
-    this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, this.spec, this.story)) || planStage(this.room, this.spec, this.story);
+    this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, { ...this.spec, habit: HABIT_BREAK.has(this.idx) ? null : habitOf(th.friend) }, this.story)) || planStage(this.room, this.spec, this.story);
     if (this.incident && !this.plan.incident) this.incident = false;
     this.v2 = null; const wantV2 = v2Wanted(this);
     if (wantV2) this.plan.placements = this.plan.placements.filter(p => p.role !== 'decoy');   // v2: a friend-finding stage has no decoys
@@ -201,6 +206,7 @@ export class StageScene {
       this.blindFixed = fixBlindSpots(this); chainToView(this);
       const c = placeCameo(this); if (c) { this.cameo = c; this.items.push(c); }
     }
+    this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
     if (this.v2) v2Prep(this);
     W.shadowDirty = true;
     // state
@@ -420,6 +426,7 @@ export class StageScene {
       // used to go to onFound and the stage could never end (level report 10/18 B1, stage 20)
       if (it.friend) { const pt = it.spot?.part; if (!pt || (!pt.busy && pt.t > .5)) this.revealFriend(it); return; }
       if (it.cameo) return cameoFound(this, it);
+      if (it.obs) return obsLook(this, it);   // R4: a big look at the clock / the vases
       if (it.role === 'target') return this.onFound(it);
       if (it.role === 'key' || it.role === 'note' || it.role === 'color' || it.role === 'treat' || it.role === 'tool' || it.role === 'sock' || it.role === 'book' || it.role === 'gadget') return this.onChain(it);
       if (it.role === 'secret') return this.onSecret(it);
@@ -438,8 +445,29 @@ export class StageScene {
     if (hit.kind === 'char') return this.tapChar(hit.char);
     if (hit.kind === 'furn' && hit.furn.type === 'puzzleframe') return this.openPuzzle(hit.furn);
     if (hit.kind === 'furn' && this.plan.tv && hit.furn === this.plan.tv.f) return this.useTv();
+    // R7 (level report): a locked piece of furniture answers a tap on its body — its nearest locked door or drawer reacts
+    if (hit.kind === 'furn') { const lp = this.lockedPartNear(hit.furn, x, y); if (lp) return this.onPart(lp, x, y); }
     if (hit.kind === 'furn') { this.wobble(hit.furn.group); G.audio.sfx('wobble'); this.addMiss(x, y, false); return; }
     this.addMiss(x, y, true);
+  }
+  // R7 (level report): every target left is behind something from this side. Try turning ±45°, ±90° and 180° (camera
+  // only, put back at once) and point to the nearest turn that shows one — an arrow at that edge of the screen, on the
+  // side the thumb would slide the dial (the room's front moves the way the thumb goes)
+  turnHint() {
+    const W = this.G.world, y0 = W.yaw, roots = [this.room.group];
+    const hid = this.targets.filter(t => !t.found && !(t.spot.part && t.spot.part.t < .5));
+    let best = null;
+    for (const d of [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2, Math.PI]) {
+      W.yaw = y0 + d; W.updateCam();
+      if (hid.some(t => !W.occluded(t.g, this.worldCenter(t), roots))) { best = d; break; }
+    }
+    W.yaw = y0; W.updateCam();
+    if (best == null) return;
+    const right = best < 0;   // the dial: a slide to the right lowers the yaw
+    this.turnHintEl?.remove();
+    const el = this.turnHintEl = h('div', { class: 'turnhint ' + (right ? 'r' : 'l') }, right ? '이쪽으로 돌려 봐 ▶' : '◀ 이쪽으로 돌려 봐');
+    this.G.ui.wui.append(el);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 3200);
   }
   wobble(g) {
     const s0 = g.scale.clone();
@@ -558,14 +586,18 @@ export class StageScene {
     if (this.v2) return v2Tell(this, line ?? null);   // v2: a voice at the bottom, never a wobble or a bubble on the hideout
     const part = this.plan.incident?.part; if (!part) return;
     const L = hidePool(this.idx, this.th.friend, 'stuck');   // 대본: the host's own tell (토순이's tail, 곰돌이's snore…)
+    const say = line || L[(this._gn = (this._gn || 0) + 1) % L.length];
+    if (part.furn.parts.some(p => p.device) && deviceTell(this, part, say)) return;   // 장치판: bubbles from the pond…
     const pc = this.partCenter(part);
     this.wobble(part.furn.group); this.G.audio.sfx('wobble');
-    this.say({ root: { position: pc }, headTop: () => .25 }, line || L[(this._gn = (this._gn || 0) + 1) % L.length], 1300);
+    this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300);
   }
   async revealFriend(it) {
     if (it.found || this.result) return;
     const G = this.G, W = G.world, f = this.friend, tw = this.tw;
     it.found = true; this.found++; this.friendHidden = false; this.idle = 0;
+    // R2: the third time you find the same friend, their hiding habit fills in on their card (획득감, not a popup)
+    if (!this.custom && !this.preview) { const hs = G.save.habitSeen ||= {}, k = this.th.friend; hs[k] = (hs[k] || 0) + 1; if (hs[k] === 3) setTimeout(() => !this.dead && G.ui.toast('도감에 새 칸: 숨는 버릇!', 'green'), 1800); }
     const pc = this.partCenter(it.spot.part), fy = new THREE.Vector3(); it.spot.part.furn.group.getWorldPosition(fy);
     const d = new THREE.Vector3(W.cam.position.x - pc.x, 0, W.cam.position.z - pc.z).normalize(), to = pc.clone().addScaledVector(d, .95); to.y = fy.y;
     f.root.visible = true; f.root.position.copy(pc); f.root.scale.setScalar(.25); f.setFace('happy'); f.pose = 'cheer';
@@ -717,7 +749,7 @@ export class StageScene {
       const P = this.toolPill; P.style.display = ''; P.classList.remove('need'); P.querySelector('.v').textContent = ITEMS[it.type].name; P.querySelector('img').src = G.thumbs['item_' + it.type];
       await G.ui.flyImg(G.thumbs['item_' + it.type], s.x, s.y, P, { size: 64 });
       P.classList.add('pop'); setTimeout(() => P.classList.remove('pop'), 300);
-      G.ui.toast(it.code === 'vacremote' ? '청소기 리모컨이다! 로봇청소기를 깨워 볼까?' : '건조대 손잡이 찾았다! 벽의 손잡이 구멍에 끼워 보자', 'green');
+      G.ui.toast(DEVICE_FOUND[it.type] || (it.code === 'vacremote' ? '청소기 리모컨이다! 로봇청소기를 깨워 볼까?' : '건조대 손잡이 찾았다! 벽의 손잡이 구멍에 끼워 보자'), 'green');
       this.pointAt(it.forPart);
       return;
     }
@@ -746,6 +778,7 @@ export class StageScene {
       G.ui.toast(it.type === 'remote' ? '리모컨 획득! TV를 톡 눌러서 켜 보자' : `${ITEMS[it.type].name} 획득! 모래밭의 빨간 X를 톡!`, 'green');
       return;
     }
+    if (this.obs && await obsClue(this, it, s)) return;   // R4: the note says where to look, not the answer
     if (it.role === 'key') {
       this.keys++;
       this.keyPill.style.display = ''; this.keyPill.classList.remove('need'); this.keyPill.set(String(this.keys));
@@ -854,14 +887,15 @@ export class StageScene {
     const G = this.G, L = part.lock;
     if (!this.gadgets.has(L.code)) {
       G.audio.sfx('locked'); this.wobble(part.furn.group);
-      G.ui.toast(L.code === 'vacremote' ? '로봇청소기가 쿨쿨 자고 있어… 리모컨이 있으면 깨울 수 있을 텐데' : '손잡이가 빠져 있어! 건조대를 내릴 손잡이를 찾아봐', 'red');
-      const P = this.toolPill; P.style.display = ''; P.classList.add('need'); P.querySelector('.v').textContent = '?'; P.querySelector('img').src = G.thumbs['item_' + (L.code === 'vacremote' ? 'vacremote' : 'crank')];
+      G.ui.toast(part.needMsg || (L.code === 'vacremote' ? '로봇청소기가 쿨쿨 자고 있어… 리모컨이 있으면 깨울 수 있을 텐데' : '손잡이가 빠져 있어! 건조대를 내릴 손잡이를 찾아봐'), 'red');
+      const P = this.toolPill; P.style.display = ''; P.classList.add('need'); P.querySelector('.v').textContent = '?'; P.querySelector('img').src = G.thumbs['item_' + (part.needItem || (L.code === 'vacremote' ? 'vacremote' : 'crank'))];
       return;
     }
     this.gadgets.delete(L.code); this.toolPill.style.display = 'none';
     part.lock = null; this.idle = 0;
     if (part.robotVac) return this.runVacuum(part);
     if (part.dryRack) return this.lowerRack(part);
+    if (part.device) return runDevice(this, part);   // R6 장치판 (devices.js)
     return this.togglePart(part, true);
   }
   async runVacuum(part) {
@@ -930,6 +964,15 @@ export class StageScene {
     G.ui.floatText(x, y - 30, it.type === 'sockp' ? '무늬가 달라~' : '이건 아니야~', '');
     this.addMiss(x, y + 20, true);
   }
+  lockedPartNear(furn, x, y) {
+    const W = this.G.world; let best = null, bd = Infinity;
+    for (const p of furn.parts || []) {
+      if (!p.lock || p.busy || p.t > .5 || p.isLever) continue;
+      const s = W.toScreen(this.partCenter(p)), d = Math.hypot(s.x - x, s.y - y);
+      if (d < bd) { bd = d; best = p; }
+    }
+    return best;
+  }
   partCenter(part) { const b = new THREE.Box3(); part.pivots.forEach(p => b.expandByObject(p)); return b.getCenter(new THREE.Vector3()); }
   async onPart(part, x, y) {
     const G = this.G, W = G.world;
@@ -992,6 +1035,7 @@ export class StageScene {
         else { G.ui.toast(L.tv ? '비밀번호가 필요해! TV에 나올지도…?' : '비밀번호가 필요해! 쪽지를 찾아봐', 'red'); this.codePill.style.display = ''; this.codePill.classList.add('need'); this.codePill.set('? ? ?'); }
         return;
       }
+      if (this.obs && (L.kind === 'code' || L.kind === 'color') && !(await obsInput(this, part))) return;   // R4: dial it in / tap the colours
       part.busy = true;
       const lp = part.lockMesh ? W.toScreen(part.lockMesh.getWorldPosition(new THREE.Vector3())) : { x, y };
       if (L.kind === 'pad') {
@@ -1083,6 +1127,7 @@ export class StageScene {
     else if (L.kind === 'color') this.colorCodes.add(L.code);
     else { this.codes.add(L.code); if (L.puzzle) setFrameSolved(L.puzzle.f || L.puzzle, L.code); }
     this.say(bot, '해결! 삐빅~', 1000);
+    this.obs?.free.add(part);   // R4: no dial for the robot
     if (part.lock) await this.onPart(part, 0, 0);
     await this.tw.wait(.6);
     W.root.remove(bot.root); W.idsDirty = true;
@@ -1837,6 +1882,7 @@ export class StageScene {
           const vis = this.targets.filter(t => !t.found && !(t.spot.part && t.spot.part.t < .5) && !W.occluded(t.g, this.worldCenter(t), [this.room.group]));
           const pick = vis[Math.floor(Math.random() * vis.length)];
           if (pick) { const s = W.toScreen(this.worldCenter(pick)); W.fx.burst(s.x, s.y, { n: 5, shape: 'star', speed: 60, gravity: -30, life: .9, size: 9, colors: ['#ffffff', '#fff3a0'] }); }
+          else this.turnHint();   // R7: all of them hidden from here — show which way to turn
         }
       }
     }

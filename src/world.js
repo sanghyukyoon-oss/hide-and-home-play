@@ -183,6 +183,37 @@ export class World {
     else if (o.tAxis === 'y' && ax > ay * 1.8 && ax > 6) o.tAxis = 'x';
     return o.tAxis || 'wait';
   }
+  // F, one finger: moves the view; after a second-finger tap it turns round the middle of the view exactly like the dial
+  // (1:1, turn and tilt free), and the dial's ruler follows (one direction at a time)
+  _fDrag(dr, dx, dy) {
+    if (this.eMode !== 'turn') { this.panBy(dx, dy); return; }
+    this._fTurn(dr, dx, dy);
+  }
+  _fTurn(dr, dx, dy) {
+    if (!dr.ft) { dr.ft = {}; dr.piv = this._turnPivot(); }   // a new turn: its pivot is fixed for the whole of it
+    const k = 3.6 / Math.max(this.W, 360);
+    this.turnAround(dr.piv, -dx * k, dy * k * .65); dr.turned = true;
+    this._tdAx = this._domAxis(dr.ft, dx, dy);
+  }
+  // R7 (level report): what a turn goes round — the middle of the part of the room that is on screen, so the room stays
+  // in the picture after the view was moved off to one side (it used to be the view's centre). Screen points are put on
+  // the floor plane and the ones inside the room's floor are averaged; nothing of the room on screen → null (view centre)
+  _turnPivot() {
+    const b = this._floorBox(); if (!b) return null;
+    const y = this.target.y; let sx = 0, sz = 0, n = 0;
+    this.updateCam();
+    for (let i = 0; i <= 6; i++) for (let j = 0; j <= 8; j++) {
+      const g = this.screenToGround(this.W * (.04 + .92 * i / 6), this.H * (.12 + .76 * j / 8), y);
+      if (g && g.x >= b.min.x && g.x <= b.max.x && g.z >= b.min.z && g.z <= b.max.z) { sx += g.x; sz += g.z; n++; }
+    }
+    return n ? new THREE.Vector3(sx / n, y, sz / n) : null;
+  }
+  // the room's floor (meshes marked userData.floor), measured again for each turn — rooms change between scenes
+  _floorBox() {
+    const b = this._fb || (this._fb = new THREE.Box3()), m = new THREE.Box3(); b.makeEmpty();
+    this.root.traverseVisible(o => { if (o.isMesh && o.userData.floor) { o.geometry.boundingBox || o.geometry.computeBoundingBox(); b.union(m.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } });
+    return b.isEmpty() ? null : b;
+  }
   // F: turn by exactly these angles round the spot P (null: round the middle of the view), P staying where it is on screen
   turnAround(P, dyaw, dpitch = 0) {
     this.updateCam(); const s0 = P && this.toScreen(P);
@@ -220,6 +251,7 @@ export class World {
   panBy(dx, dy, hard = false) {
     this.onPan?.(Math.hypot(dx, dy));
     const unitsPerPx = this.viewH / this.zoom / this.H;
+    if (!(unitsPerPx > 0 && isFinite(unitsPerPx))) return;
     const right = V.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const fwd = V2.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     this.target.addScaledVector(right, -dx * unitsPerPx).addScaledVector(fwd, dy * unitsPerPx / Math.max(.4, Math.sin(this.pitch)));
@@ -337,6 +369,10 @@ export class World {
     if (this.turnDial) {
       const on = this.scheme === 'F' && !this.joyHidden && !this.camLock;
       if (on !== this._tdShown) { this._tdShown = on; this.turnDial.classList.toggle('on', on); }
+      // a finger turning after the second-finger tap: the dial looks held and its arrows say which way
+      const ft = on && this.eMode === 'turn' && this.ptrs.size > 0 && !this._tdHeld;
+      if (ft !== this._tdFt) { this._tdFt = ft; this.turnDial.classList.toggle('fturn', ft); if (!ft && !this._tdHeld) delete this.turnDial.dataset.ax; }
+      if (ft && (this._tdAx === 'x' || this._tdAx === 'y') && this.turnDial.dataset.ax !== this._tdAx) this.turnDial.dataset.ax = this._tdAx;
       // until the player has tilted with the dial once, its idle arrows take turns (‹ › then ˄ ˅): it does both
       // (user, 10/18: "회전은 수직 움직임도 가능하다는 걸 설명 해줘야할 듯"); remembered on this device
       if (this._tdTeach === undefined) { try { this._tdTeach = localStorage.getItem('sbk-dial-tilt') !== '1'; } catch { this._tdTeach = true; } this.turnDial.classList.toggle('teach', this._tdTeach); }
@@ -539,12 +575,12 @@ export class World {
     td.innerHTML = '<i class="td-glass"><i class="td-band"><i class="td-mi"></i><i class="td-ma"></i></i><i class="td-shade"></i><i class="td-gloss"></i></i>' + ['l', 'r', 'lu', 'ld', 'ru', 'rd'].map(c => `<i class="td-ar td-${c}"></i>`).join('');
     app.append(td);
     { let tid = null, lx = 0, ly = 0; const o = {};
-      td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });
+      td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; o.piv = this._turnPivot(); this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });
       td.addEventListener('pointermove', e => {
         e.stopPropagation(); if (e.pointerId !== tid) return;
         if (e.pointerType === 'mouse' && e.buttons === 0) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; return; }
         const k = 3.6 / Math.max(this.W, 360), dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
-        if (!this.camLock) this.turnAround(null, -dx * k, dy * k * .65);
+        if (!this.camLock) this.turnAround(o.piv, -dx * k, dy * k * .65);
         this._tdAx = this._domAxis(o, dx, dy); if (this._tdAx !== 'wait' && td.dataset.ax !== this._tdAx) td.dataset.ax = this._tdAx;
         if (this._tdTeach && this._tdAx === 'y' && (o.ty = (o.ty || 0) + Math.abs(dy)) > 24) {   // a real tilt with the dial: learned
           this._tdTeach = false; td.classList.remove('teach'); try { localStorage.setItem('sbk-dial-tilt', '1'); } catch {}
@@ -623,7 +659,8 @@ export class World {
         if (this.drag) { this.drag.moved = true; this.drag.custom = null; }
         const [a, b] = [...this.ptrs.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        this.pinch = { d, mx, my, d0: d, mx0: mx, my0: my, tap: this.scheme === 'E' ? { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY } : null, zoomOn: this.scheme !== 'E', s2: { id: e.pointerId, x: e.clientX, y: e.clientY } };
+        this.pinch = { d, mx, my, d0: d, mx0: mx, my0: my, tap: this.scheme === 'E' || this.scheme === 'F' ? { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY } : null, zoomOn: this.scheme !== 'E', s2: { id: e.pointerId, x: e.clientX, y: e.clientY } };
+        if (this.scheme === 'F') { this.pinch.ang0 = Math.atan2(b.y - a.y, b.x - a.x); const f1 = [...this.ptrs.entries()].find(([id]) => id !== e.pointerId); if (f1) { this.pinch.f1 = f1[0]; this.pinch.f1x = f1[1].x; this.pinch.f1y = f1[1].y; } }
       }
     });
     el.addEventListener('pointermove', e => {
@@ -635,6 +672,20 @@ export class World {
         const [a, b] = [...this.ptrs.values()], P = this.pinch;
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
         if (this.scheme === 'F') {
+          // F: a quick tap with a second finger turns the drag (below, in up). Until it clearly isn't one — the second
+          // finger moved 14 px or stayed 320 ms — the first finger goes on as before and nothing pinches yet
+          if (P.tap) {
+            const q = this.ptrs.get(P.tap.id);
+            if (q && Math.hypot(q.x - P.tap.x, q.y - P.tap.y) <= 14 && performance.now() - P.tap.t <= 320) {
+              const f = this.ptrs.get(P.f1);
+              if (e.pointerId === P.f1 && f && this.drag && !this.camLock) { this._fDrag(this.drag, f.x - P.f1x, f.y - P.f1y); P.f1x = f.x; P.f1y = f.y; }
+              return;
+            }
+            // a real two-finger gesture from here: the first finger has already moved the view, so the spot between the
+            // fingers starts where they are now; the spread and the twist still count from where the second finger landed
+            const a1 = Math.atan2(b.y - a.y, b.x - a.x);
+            P.tap = null; P.mx = mx; P.my = my; P.ang = a1; P.tw = Math.atan2(Math.sin(a1 - P.ang0), Math.cos(a1 - P.ang0));
+          }
           // F: spread = zoom, twist = turn (after ~12°, so a pinch never turns by accident), and the spot between the
           // fingers travels with them — all at the same time, like a photo or a map
           const ang = Math.atan2(b.y - a.y, b.x - a.x); P.ang ??= ang;
@@ -686,8 +737,9 @@ export class World {
           this.turnBy(dx, dy, S2.mode); dr.turned = true;
           this._ring(e.clientX, e.clientY, S2.mode);
         }
-        else if (!this.camLock && (this.scheme === 'B' || this.scheme === 'F' || (this.scheme === 'C' && this.oneMode === 'move')) && !(e.pointerType === 'mouse' && (e.buttons & 2))) this.panBy(dx, dy);
-        else if (!this.camLock && this.scheme === 'F') { const k = 3.6 / Math.max(this.W, 360); this.turnAround(null, -dx * k, dy * k * .65); this._tdAx = this._domAxis(dr, dx, dy); }
+        else if (!this.camLock && this.scheme === 'F' && !(e.pointerType === 'mouse' && (e.buttons & 2))) this._fDrag(dr, dx, dy);
+        else if (!this.camLock && (this.scheme === 'B' || (this.scheme === 'C' && this.oneMode === 'move')) && !(e.pointerType === 'mouse' && (e.buttons & 2))) this.panBy(dx, dy);
+        else if (!this.camLock && this.scheme === 'F') this._fTurn(dr, dx, dy);
         else if (!this.camLock && (e.shiftKey || (e.pointerType === 'mouse' && (e.buttons & 2) && !(this.scheme === 'E' && (e.buttons & 1))))) { if (this.scheme === 'B') { if (!dr.axis) { dr.axis = 'yaw'; this.rawYaw = this.yaw; } this.turnBy(dx, dy, 'yaw'); } else this.panBy(dx, dy); }
         else if (!this.camLock && this.scheme === 'E') {
           // E: one finger moves the view; after a second-finger tap it turns round the middle of the screen; with the badge
@@ -712,12 +764,12 @@ export class World {
       const p = this.ptrs.get(e.pointerId); if (!p) return;
       const P = this.pinch;
       // E: the second finger tapped (down and up quickly, barely moving, no spread): switch the held drag to turning
-      if (this.scheme === 'E' && P?.tap && P.tap.id === e.pointerId && performance.now() - P.tap.t < 320 && this.ptrs.size === 2) {
+      if ((this.scheme === 'E' || this.scheme === 'F') && P?.tap && P.tap.id === e.pointerId && performance.now() - P.tap.t < 320 && this.ptrs.size === 2) {
         // a second-finger tap flips the mode only while the drag lasts; lifting goes back to the badge's mode
         // (user, 2026-10-17 evening: "톡 건들면 바뀌는데 떼면 다시 원래대로", the badge switch stays as it is)
         // a turn borrowed by the tap spins round the middle of the screen; a turn that is the badge's mode spins round
         // the spot under the finger (user, 10/17 night)
-        this.eMode = this.eMode === 'turn' ? 'move' : 'turn'; if (FEEL.haptic) haptic(); else navigator.vibrate?.(10); if (this.drag) this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? null : undefined; this.rawYaw = this.yaw; this.onModeSwitch?.(this.eMode);
+        this.eMode = this.eMode === 'turn' ? 'move' : 'turn'; if (FEEL.haptic) haptic(); else navigator.vibrate?.(10); if (this.drag) { this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? this._turnPivot() : undefined; this.drag.ft = null; } this.rawYaw = this.yaw; this.onModeSwitch?.(this.eMode);
       }
       this.ptrs.delete(e.pointerId);
       if (this.ptrs.size < 2) this.pinch = null;
@@ -781,10 +833,10 @@ export class World {
     // holding the left button, a click of the right one is the second-finger tap — the drag switches between moving and
     // turning; letting go of the left button goes back to the badge's mode
     el.addEventListener('mousedown', e => {
-      if (this.scheme !== 'E' || e.button !== 2 || !(e.buttons & 1) || !this.drag || this.camLock || !this.inputEnabled) return;
+      if ((this.scheme !== 'E' && this.scheme !== 'F') || e.button !== 2 || !(e.buttons & 1) || !this.drag || this.camLock || !this.inputEnabled) return;
       e.preventDefault();
       this.eMode = this.eMode === 'turn' ? 'move' : 'turn';
-      this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? null : undefined; this.rawYaw = this.yaw;
+      this.drag.anchor = this.eMode === 'turn' && this.eBase === 'move' ? this._turnPivot() : undefined; this.drag.ft = null; this.rawYaw = this.yaw;
       this.onModeSwitch?.(this.eMode);
     });
     el.addEventListener('contextmenu', e => { if (e.target === this.canvas || e.target.id === 'fx') e.preventDefault(); });

@@ -8,6 +8,7 @@ import { FURN_INFO } from './gfx/furniture.js';
 import { digPatch } from './gfx/outdoor.js';
 import { tvPuzzle } from './gfx/apt-props.js';
 import { applyEdit } from './layedits.js';
+import { planDevice } from './devices.js';
 
 export const THEMES = {
   bunny: { name: '토순이네 침실', friend: 'bunny', bg: ['#fff4ea', '#ffe6d4'], base: '#e8b98c', floorKind: 'planks', floor: '#d9a066', floor2: '#a96c3c', wallKind: 'heart', wall: '#fff7ef', wall2: '#ffb3a3', wainscot: '#bfe3d3', trim: '#ffffff', wallEdge: '#fffaf4',
@@ -929,7 +930,8 @@ export function planIncident(room, spec, story = null) {
   if (spec.idx >= 9 && !order.some((k, i) => i > 0 && DOOR.includes(k))) order.push(kind0 === 'pad' ? 'code' : 'pad');   // from stage 10 on, two doors in a row
   const bonus = Math.max(2, Math.min(3, Math.round((spec.n || 4) / 2)));
   const s2 = { ...spec, n: 1 + bonus, lock: order, force: ['friendtoken'], inside: Math.min(spec.inside || 0, 1), behind: Math.min(spec.behind || 0, 1),
-    hideout: HIDEOUT };
+    // R2 (10/18): the host's habit places first — "멍뭉이는 또 쓰레기통이겠지?" (not on the stages where the story breaks the habit)
+    hideout: spec.habit ? [...HIDEOUT.filter(t => spec.habit.some(k => t.includes(k))), ...HIDEOUT.filter(t => !spec.habit.some(k => t.includes(k)))] : HIDEOUT };
   const plan = planStage(room, s2, story);
   const fp = plan.placements.find(p => p.type === 'friendtoken');
   const L0 = fp && plan.locks.find(l => l.part === fp.spot.part);
@@ -1009,6 +1011,7 @@ export function planRobovac(room, spec, story = null) {
 export function planShow(room, spec, story = null) {
   if (room.parts.some(p => p.secretShelf)) return planShowcase(room, spec, story);
   if (room.parts.some(p => p.robotVac)) return planRobovac(room, spec, story);
+  if (room.parts.some(p => p.device)) return planDevice(room, spec, story, planStage);   // R6 장치판 (devices.js)
   return null;
 }
 export function planCustom(room, doc, seed = 1) {
