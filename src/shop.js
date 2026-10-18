@@ -114,7 +114,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       note.textContent = zone ? `${zone.name}을(를) 한 칸씩 넓혀요. 놓아 둔 가구와 숨긴 물건은 그대로예요.` : '';
       ZONE_SIZES.forEach((S, k) => {
         const owned = k <= cur, next = k === cur + 1;
-        grid.append(card(G, { swatch: swatch('#fff3e0', '#e8c49a', 'wood'), name: `${S.w} × ${S.d}`, sub: k === 0 ? '기본 크기' : owned ? '넓힘' : next ? '다음 단계' : '앞 단계를 먼저', price: owned || !next ? null : S.price, tag: k === cur ? '지금 크기' : owned ? '보유' : null,
+        grid.append(card(G, { swatch: swatch('#fff3e0', '#e8c49a', 'wood'), name: `${S.w} × ${S.d}`, sub: (k === 0 ? '기본 크기' : owned ? '넓힘' : next ? '다음 단계' : '앞 단계를 먼저') + (G.econ && k >= 1 && k <= 3 ? ' · 친구 자리 +1' : ''), price: owned || !next ? null : S.price, tag: k === cur ? '지금 크기' : owned ? '보유' : null,
           onBuy: owned || !next ? null : () => { if (!zone) return; pinZoneFurniture(zone); zone.size = k; G.persist(); G.audio.sfx('win'); ui.toast(`${zone.name}이(가) ${S.w}×${S.d}로 넓어졌어요!`, 'green'); ctx.onChange?.('paint'); render(); } }));
       });
     } else if (tab === 'zone') {

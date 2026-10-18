@@ -16,7 +16,9 @@ import { HOME_TUT } from '../script.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
-import { metFriends, seatsOf, seatedAll } from '../econ.js';
+import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick } from '../econ.js';
+import { regionOf } from '../stages.js';
+const REGION_NAME = i => regionOf(i)?.name || '';
 
 const GIFTS = ['drawers', 'chest', 'wardrobe'];   // 집들이 선물: each has a drawer, a lid or a door — "inside, nobody finds it" follows
 const MAX_HIDE = 5;
@@ -76,6 +78,16 @@ export class LobbyScene extends MyHomeScene {
       lock('숨기기', 'purple', 'hide', () => this.setMode('hide')),
       lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
+    // the boxes of chapters you'd already finished before this update (설계서 8장): one 🎁 each, opened here
+    const q = (this.H.boxQ || []).filter(i => PICKS[i] && !(i in (this.H.picks || {})));
+    if (q.length && open) {
+      const gift = ui.btn(`🎁 지난 장 선물 ${q.length}`, { color: 'yellow', cls: 'sm pulse', onClick: async () => {
+        const i = q[0], t = await pickPanel(G, PICKS[i], { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 나머지 둘은 상점 기념품 칸에 올라가' });
+        takePick(G, i, t); ui.toast(`${FURN_INFO[t].name} · 꾸미기 보관함에 들어갔어`, 'green'); this.setMode('lobby');
+      } });
+      gift.style.cssText += 'position:absolute;left:12px;top:calc(76px + var(--safeT));pointer-events:auto';
+      col.append(gift);
+    }
   }
 
   // ── friends in the room
