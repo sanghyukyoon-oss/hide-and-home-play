@@ -163,8 +163,8 @@ const saveToHash = () => { if (!WEB) return; clearTimeout(hashT); hashT = setTim
 if (qs.get('style') !== 'std') useCartoonStyle();
 const audio = createAudio();
 if (!hasWebGL2()) {
-  const b = document.getElementById('boot');
-  b.innerHTML = '<div class="boot-logo ol3">숨바꼭집</div><div class="boot-sub">이 폰의 브라우저는 3D 그림(WebGL2)을 지원하지 않아요.<br>최신 크롬이나 사파리에서 열어 주세요.</div>';
+  const b = document.querySelector('#boot .boot-load') || document.getElementById('boot');
+  b.innerHTML = '<div class="boot-sub">이 폰의 브라우저는 3D 그림(WebGL2)을 지원하지 않아요.<br>최신 크롬이나 사파리에서 열어 주세요.</div>';
   throw new Error('WebGL2 not supported');
 }
 const world = new World(document.getElementById('gl'), document.getElementById('fx'));
@@ -401,12 +401,18 @@ function frame(now) {
 
 async function boot() {
   const tb0 = performance.now();
+  bootBar(40);   // the modules (three.js and the game) are in
   try { await Promise.all(['600 20px LatinRound', '600 20px Ssurround', '600 20px SsurroundAir', '20px TitleKo', '700 20px Chapter'].flatMap(f => [document.fonts?.load(f, 'Aa1'), document.fonts?.load(f, '가나')])); } catch {}
   const tb1 = performance.now();
+  bootBar(55);
+  await new Promise(r => { requestAnimationFrame(r); setTimeout(r, 60); });   // let the bar paint before the thumbnails block the thread
   buildThumbs();
   G.bootMs = { fonts: Math.round(tb1 - tb0), thumbs: Math.round(performance.now() - tb1), sinceStart: Math.round(performance.now()) };
+  bootBar(72);
   requestAnimationFrame(frame);
-  await splash();
+  // a person starts from the start screen and taps it; QA links (?lv, ?scene, ?play) and the bots go straight in
+  const tapToStart = !(qs.has('lv') || qs.has('scene') || qs.has('play') || PLAY_HASH || G.bot);
+  G.booting = tapToStart;
   const lv = qs.get('lv'), sc = qs.get('scene'), play = qs.get('play') || PLAY_HASH?.[1];
   // one game of 놀이 모음 straight away: ?play=<id>&lv=<n> on the web, #play-<id>-<n> on the artifact (claude.ai passes the
   // address's # part to the page; n is 1-based; 'mini-' before the id is allowed) — links from the docs and the lab hub
@@ -416,7 +422,11 @@ async function boot() {
     : sc === 'myhome' ? G.go('myhome', { mode: qs.get('mode') || 'view' })
     : sc === 'visit' ? G.go('visit') : G.go('home');
   // lift the boot cover once the scene is built — a stage can open with a dialog that waits for a tap behind it
+  bootBar(90);
   while (G.pending) await new Promise(r => requestAnimationFrame(r));
+  bootBar(100);
+  if (tapToStart) await bootTap();
+  G.booting = false;
   document.getElementById('boot').classList.add('gone');
   setTimeout(() => document.getElementById('boot')?.remove(), 600);
   // the QA hooks go in before the first scene settles (a stage that opens with a dialogue waits for a tap, and the bots /
@@ -429,21 +439,18 @@ async function boot() {
   if (WEB) { G.persist(); if (!storageOk) setTimeout(() => ui.toast('이 브라우저는 저장이 안 돼요 · 지금 주소를 북마크하면 이어서 할 수 있어요', 'red'), 1500); }
 }
 
-// Key art from GPT (art/keyart/*.png) shows as a title splash when present; otherwise the 3D home is the title.
-function loadImg(src, ms = 2500) { return new Promise(res => { const im = new Image(); const t = setTimeout(() => res(null), ms); im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); res(null); }; im.src = src; }); }
-async function splash() {
-  if (qs.has('lv') || qs.has('scene') || qs.has('play') || PLAY_HASH || G.bot) return;
-  // WebP first (the logo 541 → 97 KB, same picture), the original files if the browser can't show WebP
-  const art = await loadImg('art/keyart/keyart-title.webp') || await loadImg('art/keyart/keyart-title.jpg');
-  if (!art) return;
-  const logo = await loadImg('art/keyart/logo.webp', 1500) || await loadImg('art/keyart/logo.png', 1500);
-  const boot = document.getElementById('boot');
-  boot.innerHTML = '';
-  boot.classList.add('splash');
-  boot.style.backgroundImage = `url(${art.src})`;
-  if (logo) { const l = document.createElement('img'); l.src = logo.src; l.className = 'splash-logo'; boot.append(l); }
-  const go = document.createElement('div'); go.className = 'splash-go ol'; go.textContent = '터치해서 시작'; boot.append(go);
-  await new Promise(res => boot.addEventListener('pointerdown', res, { once: true }));
+// start screen (index.html #boot): the bar follows the boot steps; the CSS creep covers the module download before this runs
+function bootBar(p) {
+  const i = document.querySelector('#boot .boot-bar i'); if (!i) return;
+  if (i.style.animation !== 'none') { const w = i.getBoundingClientRect().width; i.style.animation = 'none'; i.style.width = w + 'px'; i.offsetWidth; }
+  i.style.width = p + '%';
+}
+// full bar → "터치해서 시작"; the tap wakes the audio (audio.unlock listens on pointerdown) and lifts the cover
+async function bootTap() {
+  const boot = document.getElementById('boot'); if (!boot) return;
+  await new Promise(r => setTimeout(r, 380));   // let the bar visibly reach the end
+  boot.classList.add('ready');
+  await new Promise(res => boot.addEventListener('pointerup', res, { once: true }));
   audio.sfx('btn');
 }
 

@@ -397,7 +397,7 @@ export class Game {
     this.scoreEl = h('div', { class: 'bk-score ol' }, '0');
     this.bar = h('div', { class: 'bk-bar' }, this.barI = h('i'), ...LV.stars.map((s, k) => h('span', { class: 'bk-mark', style: `left:${s / max * 100}%` }, '★'.repeat(k + 1))));
     col.append(h('div', { class: 'bk-head' }, this.scoreEl, this.bar));
-    this.hint = h('div', { class: 'bk-hint ol' }, '이불 모양이랑 삐죽 나온 걸 보고 톡!'); col.append(this.hint);
+    this.hint = h('div', { class: 'bk-hint ol' }, '? 붙은 이불부터! 삐죽 나온 걸 보고 톡'); col.append(this.hint);
     this.cardsEl = h('div', { class: 'bk-cards out' }); col.append(this.cardsEl);
     this.qEl = h('div', { class: 'bk-q ol3' }, '?'); this.qEl.style.display = 'none'; ui.wui.append(this.qEl);
     this.feverEl = h('div', { class: 'bk-fever' }); app.append(this.feverEl);
@@ -555,8 +555,26 @@ export class Game {
   answer(kind, card) {
     if (this.phase !== 'play' || this.result || !this.cur || card?.classList.contains('used')) return;
     if (this.lock) { card?.animate([{ transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'none' }], { duration: 160 }); return; }
-    const l = this.cur; this.lock = true; this.qEl.style.display = 'none';
+    const l = this.cur;
+    // a friend who IS under the quilt, just not under the ? (and not 너굴이's trap): not a miss, a nudge to go in order
+    const other = kind !== l.who && !(l.trap && kind === l.trap) && this.lumps.find(o => o !== l && o.state === 'hide' && o.who === kind);
+    if (other) { this.notYet(l, other, card); return; }
+    this.lock = true; this.qEl.style.display = 'none';
     if (kind === l.who) this.right(l, card); else this.wrong(l, kind, card);
+  }
+  // 사용자 10/18: "다른거 먼저 맞추면 왼쪽부터 순서대로 해줘라고 안내" — the named lump hops "I'm here, go left to right",
+  // the ? one wiggles and the question stays. No miss and the combo holds; the pause is the only cost.
+  async notYet(l, other, card) {
+    const L = this.L; this.lock = true;
+    L.audio.sfx('hmm');
+    card?.animate([{ transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'none' }], { duration: 220 });
+    other.shake = 1; this.tw.run(.3, k => { other.yank = Math.sin(k * Math.PI) * .35; });
+    this.sayL(other, this._orderTold ? '나 아직 차례 아니야~' : '나 여기! 왼쪽부터 차례로~', this._orderTold ? 900 : 1500);
+    this._orderTold = true;
+    await this.tw.wait(.45); if (this.dead || this.phase !== 'play' || this.cur !== l) return;
+    l.shake = 1; this.qEl.classList.remove('pop'); void this.qEl.offsetWidth; this.qEl.classList.add('pop');
+    await this.tw.wait(.35); if (this.dead || this.phase !== 'play' || this.cur !== l) return;
+    this.lock = false;
   }
   async right(l, card) {
     const L = this.L, W = L.world, fast = this.fever > 0 ? .6 : 1;

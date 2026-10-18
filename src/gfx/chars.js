@@ -189,9 +189,10 @@ function decal(key, make, color, o = {}) {
 }
 // a glossy eye: an ink (or coloured iris + ink pupil) bead with one big and one small catch-light
 const SHINE = { rim: 0, emissive: '#ffffff', ei: .9 };
-function eyeBead(r, iris) {
+// pk: pupil size (1 = the usual ring of iris round it; bigger reads softer and cuter on a coloured or white eye)
+function eyeBead(r, iris, pk = 1) {
   const g = grp(put(sph(r, iris || INK, { rough: .2, rim: 0 }, 18, 14), 0, 0, 0, 0, 0, 0, [.92, 1.2, .42]));
-  if (iris) g.add(put(sph(r, INK, { rough: .2, rim: 0 }, 16, 12), 0, -r * .05, r * .1, 0, 0, 0, [.56, .84, .42]));
+  if (iris) g.add(put(sph(r, INK, { rough: .2, rim: 0 }, 16, 12), 0, -r * .05 * pk, r * .1, 0, 0, 0, [.56 * pk, .84 * pk, .42]));
   g.add(put(sph(r * .4, '#ffffff', SHINE, 12, 10), -r * .34, r * .5, r * .34, 0, 0, 0, [1, 1, .5]));
   g.add(put(sph(r * .2, '#ffffff', SHINE, 8, 6), r * .36, -r * .48, r * .33, 0, 0, 0, [1, 1, .5]));
   return g;
@@ -299,11 +300,11 @@ export const CHAR_DEFS = {
     pattern: [['#fff4fb', P(0, -.45, .6, .42), P(.32, .04, .3, .2, -.2), P(-.32, .04, .3, .2, .2)]],
     acc: [['cap', { back: true, color: '#ffcf3c', tilt: .3 }]], look: { mouth: 'smile' }, idle: 'squirrel', react: 'squirrel' },
   // 먹물이 (2026-10-17, user: "빌런느낌의 검정색 캐릭터. 귀엽게 생기긴하게"): the colour thief of the 흑백판 — an ink-black mochi
-  // splashed with the colours it gobbled, kitty ears, a purple scarf, its trademark shades and a smirk. It hands you a pair
-  // of "special shades" and dares you to find everything.
-  inky: { name: '먹물이', body: '#2e2838', ear: 'kitty', earC: '#b98cff', scale: .58, nose: '#ff8fb0', eyeC: '#ff5a8a', eyeInk: '#ffe3ee', faceInk: '#ffe3ee', blushC: '#ff7fa8',
-    tail: 'cat', tailC: '#2e2838', twitch: true,
-    pattern: [['#ff7fb0', P(.62, .32, .12, .1), P(-1.8, .1, .1, .08)], ['#ffd23f', P(-.55, .52, .1, .09), P(2.2, .2, .09, .08)], ['#7fd6c0', P(1.45, -.1, .11, .09), P(-.25, -.42, .1, .08)]],
+  // with kitty ears, a purple scarf and a smirk. It hands you a pair of "special shades" and dares you to find everything.
+  // 10/18: the colour spots are gone and the pink-ringed eyes became big white eyes with big pupils (user: "동그라미들 너무
+  // 많으니까 빼고 눈만 좀더 이쁘게… 징그러워", picked draft A 흰 눈)
+  inky: { name: '먹물이', body: '#2e2838', ear: 'kitty', earC: '#b98cff', scale: .58, nose: '#ff8fb0', eyeC: '#ffffff', pupil: 1.32, eyeInk: '#ffe3ee', faceInk: '#ffe3ee', blushC: '#ff7fa8',
+    tail: 'cat', tailC: '#2e2838', twitch: true, faceF: { ex: .18, s: 1.18 },
     acc: [['scarf', { color: '#8a5cf0' }]], look: { mouth: 'smirk' }, idle: 'cool', react: 'kkamang' },   // it hands the shades out rather than wearing them
   dj: { name: '둠칫이', body: '#b9ecd8', ear: 'none', scale: .6, look: { mouth: 'smile' }, acc: [['headphones', { color: '#ff6f91' }]], idle: 'groove', react: 'dj' },
   snowy: { name: '눈송이', body: '#f3f7ff', ear: 'none', scale: .6, carrot: '#ff8a3d', look: { mouth: 'smile' },
@@ -437,7 +438,7 @@ export class Char {
     for (const sx of [-1, 1]) {
       const h = d.eyeAt ? this._fixedSlot(sx * d.eyeAt[0], d.eyeAt[1], d.eyeAt[2], .34) : this._slot(sx * ex, F.ey || 0, -.004 * s);
       this.eyeSlots.push(h);
-      const e = into(h, eyeBead(er, Array.isArray(iris) ? iris[sx < 0 ? 0 : 1] : iris)); e.userData.x0 = 0; this.eyes.push(e);
+      const e = into(h, eyeBead(er, Array.isArray(iris) ? iris[sx < 0 ? 0 : 1] : iris, d.pupil)); e.userData.x0 = 0; this.eyes.push(e);
       this.eyesClosed.push(into(h, put(decal('eyc' + K, () => lineShapes(arcPts(0, -.03 * s, .05 * s, Math.PI * .12, Math.PI * .88, 12), .0135 * s), eyeInk), 0, 0, .006)));
       this.eyesSleep.push(into(h, put(decal('eys' + K, () => lineShapes(arcPts(0, .032 * s, .05 * s, Math.PI * 1.13, Math.PI * 1.87, 12), .0125 * s), eyeInk), 0, 0, .006)));
       this.eyesSpin.push(into(h, put(decal('eyz' + K, () => lineShapes(spiralPts(.012 * s, .056 * s, 1.7, 44), .0075 * s), eyeInk), 0, 0, .006, 0, 0, sx * 1.3)));

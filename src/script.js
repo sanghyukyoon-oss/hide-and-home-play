@@ -387,7 +387,7 @@ const GAME = {
     out: [L('frog', '손 빠르다! 내 낚시터에도 와. 거기선 못 찾을걸?', "Fast hands! Come to my fishing spot. You won't find me there.")] },
   'yasik:0': { lead: [L('bunny', '몽글아! 오늘 너네 집에서 자도 돼?', 'Mongle! Can I sleep over at your place tonight?'), L('bunny', '(꼬르륵) …들었어?', '(grumble) …Did you hear that?'), L('mong', '네 배.', 'Your stomach.'), L('bunny', '냉장고에 푸딩 있잖아…', "There's pudding in the fridge…"), L('mom', '얘들아~ 이제 자야지~', 'Kids! Bedtime!'), L('mong', '…이번엔 우리가 안 들킬 차례.', '…Our turn to stay out of sight.')],
     out: [L('bunny', '푸딩 두 개야! 하나는 내 거.', "Two puddings! One's mine."), L('mom', '…냉장고 문은 닫고 자라~', '…And close the fridge before bed, dears.'), L('mong', '…!!', '…!!')] },
-  'blanket:0': { lead: [L('bunny', '오늘 다 같이 파자마 파티! 불 끄고 이불 뒤집어쓰기!', "Pajama party tonight! Lights off, blankets on!"), L('bunny', '누가 누군지 맞혀 봐!', "Guess who's who!")],
+  'blanket:0': { lead: [L('bunny', '오늘 다 같이 파자마 파티! 불 끄고 이불 뒤집어쓰기!', "Pajama party tonight! Lights off, blankets on!"), L('bunny', '왼쪽부터 한 명씩, 누군지 맞혀 봐!', "Left to right, one by one. Guess who's who!")],
     out: [L('bear', '으헤헤… 이제 자도 돼?', 'Ehehe… can I sleep now?'), L('bunny', '안 돼! 아직 밤 안 샜어!', "No! We haven't stayed up all night yet!")] },
   'wakeup:0': { lead: [L('cat', '졸졸이는 아침엔 꼭 잔다냥.', 'Only thing is, Dozy sleeps all morning.'), L('mong', '졸졸아, 까만 애 봤어?', 'Dozy, did you see the inky one?'), L('sleepy', '드르렁~ 쿨쿨…', 'Zzz… snore…'), L('cat', '…깨워야겠다냥.', "…We'll have to wake Dozy up.")],
     out: [L('sleepy', '음냐… 까만 애? 봤어… 매일 밤 혼자 걸어가.', 'Mmh… the inky one? Yeah… it walks by alone every night.'), L('sleepy', '아파트 쪽으로… 쿨…', 'Toward the apartments… zzz…'), L('mong', '…혼자.', '…Alone.'),
@@ -743,3 +743,5 @@ K('둠칫이가 또 왔어요… 이번엔 여섯 명!', "DJ Bop's back… six g
 // 흑백판·보스판 배너: 숨긴 건 그 판 친구가 아님 (3차 리뷰) — stage.js banner
 for (let n = 1; n <= 12; n++) { K(`숨겨진 물건 ${n}개를 찾아 색을 되찾아라!`, `Find the ${n} hidden things to bring the colors back!`); K(`숨겨진 물건 ${n}개를 찾아라!`, `Find the ${n} hidden things!`); }
 K('억울해! 난 그냥 여기 숨어 있었다고!', 'Not fair! I was just hiding in here!'); K('진짜 도둑은 그 까만 애라니까~!', "The real thief is that inky kid, I'm telling you~!"); K('드디어 자유다~! 범인은 그 까만 애야!', "Free at last~! The culprit's that inky kid!");
+// 파자마 파티 순서 안내 (사용자 10/18) — bosses/blanket.js
+K('나 여기! 왼쪽부터 차례로~', "I'm here! Left to right~"); K('나 아직 차례 아니야~', "Not my turn yet~"); K('? 붙은 이불부터! 삐죽 나온 걸 보고 톡', 'Start with the ? lump. Look at what pokes out, then tap');

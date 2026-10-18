@@ -293,9 +293,30 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .swatch { width: 100%; aspect-ratio: 1; border-radius: 12px; border: 2px solid #e6d3c0; }
 .cdot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; margin: 0 1px; vertical-align: middle; }
 
-#boot.splash { background-size: cover; background-position: center; justify-content: flex-end; padding-bottom: calc(60px + var(--safeB)); cursor: pointer; }
-.splash-logo { position: absolute; top: calc(34px + var(--safeT)); left: 0; right: 0; margin: 0 auto; width: min(84%, 440px); filter: drop-shadow(0 6px 10px rgba(60, 30, 80, .25)); animation: bob 2.4s ease-in-out infinite; }
-.splash-go { font-size: 26px; animation: btnpulse 1.1s ease-in-out infinite; }
+/* start screen (10/18, user: "그냥 로고만 나오고 로딩창 나와도 괜찮을듯 뒤에는 깔끔한 패턴 움직이는거"): the logo over one
+   tone-on-tone pattern of little houses and sparkles drifting diagonally (the user picked it from four drafts: houses, 몽글이
+   faces, dots, gingham) — a single layer moved by transform, one tile per loop, so it costs no repaint — a loading bar in
+   the timer's look under it, then "터치해서 시작". */
+#boot { --t: 120px; background: #ffd9e8; overflow: hidden; padding-bottom: 6vh; gap: 0; }
+#boot > * { position: relative; z-index: 2; }
+#boot .boot-pat { position: absolute; z-index: 0; inset: calc(-1 * var(--t)); background-size: var(--t) var(--t); animation: patmove 9s linear infinite; will-change: transform; }
+@keyframes patmove { to { transform: translate(var(--t), var(--t)); } }
+#boot .boot-pat { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23fff' fill-opacity='.8'%3E%3Cpath d='M30 15 L46 29 H41 V45 H19 V29 H14 Z' stroke='%23fff' stroke-opacity='.8' stroke-width='5' stroke-linejoin='round'/%3E%3Cpath d='M90 79 Q92 88 101 90 Q92 92 90 101 Q88 92 79 90 Q88 88 90 79Z'/%3E%3C/g%3E%3Crect x='26.5' y='35' width='7' height='10' rx='3.5' fill='%23ffd9e8'/%3E%3C/svg%3E"); }
+/* a soft light behind the logo so the pattern never fights the letters */
+#boot::after { content: ''; position: absolute; z-index: 1; left: 50%; top: 44%; width: 150vmin; height: 110vmin; translate: -50% -50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .7), rgba(255, 255, 255, 0)); pointer-events: none; }
+.boot-logo-img { width: min(78vw, 390px); animation: bob 2.6s ease-in-out infinite; }
+.boot-load { display: grid; place-items: center; width: min(62vw, 260px); height: 70px; margin-top: 26px; }
+.boot-wait, .boot-go { grid-area: 1 / 1; }
+.boot-wait { width: 100%; text-align: center; transition: opacity .25s, transform .25s; }
+.boot-bar { position: relative; height: 22px; border-radius: 12px; background: #5b4270; border: 3px solid var(--ink); border-bottom-width: 5px; overflow: hidden; }
+.boot-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 8px; background: linear-gradient(#b8f58c, #5ccf36); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .4); transition: width .45s var(--eo); animation: bootcreep 2.5s cubic-bezier(.2, .7, .3, 1) forwards; }
+@keyframes bootcreep { to { width: 30%; } }
+.boot-wait .boot-sub { margin-top: 10px; font-size: 16px; color: #a0578a; }
+.boot-go { font-size: 28px; opacity: 0; transform: scale(.5); pointer-events: none; }
+#boot.ready { cursor: pointer; }
+#boot.ready .boot-wait { opacity: 0; transform: scale(.85); }
+#boot.ready .boot-go { opacity: 1; transform: none; transition: opacity .2s, transform .45s cubic-bezier(.2, 1.7, .4, 1); animation: btnpulse 1.1s .45s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { #boot .boot-pat, .boot-logo-img { animation: none; } }
 
 /* ── story: dialogue card, slide puzzle, memento reward */
 .dlg { position: absolute; inset: 0; pointer-events: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 12px calc(28px + var(--safeB)); background: linear-gradient(transparent 45%, rgba(42, 20, 60, .35)); z-index: 30; transition: opacity .2s var(--eo); }

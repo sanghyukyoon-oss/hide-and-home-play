@@ -967,6 +967,7 @@ export class HomeScene {
   raidNews(tries = 0) {
     const G = this.G; if (this.dead) return;
     const list = unseen(G.save); if (!list.length) return;
+    if (G.booting) { this.tw.wait(.5).then(() => this.raidNews(tries)); return; }   // still on the start screen
     if (G.ui.panelOpen || G.pending) { if (tries < 20) this.tw.wait(1.5).then(() => this.raidNews(tries + 1)); return; }
     const took = list.filter(e => e.kind === 'steal');
     const rows = list.slice(-4).map(e => h('div', { class: 'raidrow' + (e.kind === 'steal' ? ' bad' : ' good') }, h('img', { src: G.thumbs['face_' + e.face] || G.thumbs.face_mong }),
@@ -1035,7 +1036,7 @@ export class HomeScene {
     G.coinPills = [this.coinPill];
     const snd = ui.ibtn(G.audio.muted ? 'mute' : 'sound', 'purple', () => { G.audio.setMuted(!G.audio.muted); snd.innerHTML = ''; snd.insertAdjacentHTML('beforeend', ICON[G.audio.muted ? 'mute' : 'sound']); });
     snd.style.cssText += 'width:44px;height:44px';
-    col.append(h('div', { class: 'logo' }, h('div', { class: 'l1 ol3' }, '숨바꼭집'), h('div', { class: 'l2' }, '몽글이랑 숨은 물건 찾고, 내 방에 숨기기!')));
+    // no title on the home any more (10/18): the start screen shows the logo, and 몽글이's house with its nameplate says the rest
     const idx = S.stage || 0, sp = stageSpec(idx), th = THEMES[sp.room] || THEMES.bunny, reg = regionOf(idx), endless = idx >= STAGE_COUNT;
     const bar = h('div', { class: 'homebar' });
     this.playBtn = ui.btn(`스테이지 ${idx + 1}`, { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: (endless ? `무한 모드 ${idx - STAGE_COUNT + 1} · ${(REGIONS.find(r => r.id === sp.region) || reg).name}` : `${reg.name} ${idx - reg.from + 1}/${reg.to - reg.from}`) + (sp.boss ? ' · 방탈출' : sp.hard ? ' · 하드' : ''), onClick: () => G.go('stage', { idx }) });
