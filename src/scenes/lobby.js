@@ -35,6 +35,7 @@ export class LobbyScene extends MyHomeScene {
     this.tw.wait(.8).then(() => !this.dead && HomeScene.prototype.raidNews.call(this));
     const tut = G.save.tut || (G.save.tut = {});
     if (G.homeOpen() && !tut.home) await this.roomOpens();
+    else if (G.homeOpen() && this.H.giftDue) { const t = await this.giftCards(GIFTS); if (this.dead) return; this.giveGift(t); this.frameLobby(); this.arrivals(); }   // (left before picking)
     else if (G.homeOpen()) this.arrivals();
   }
 
@@ -111,7 +112,7 @@ export class LobbyScene extends MyHomeScene {
   freeSpot(near = null) {
     const R = this.room, taken = [this.mong.root.position, ...this.seated.map(s => s.rec)], c = [];   // (a seat, not where its friend is walking from)
     for (let x = -R.w / 2 + .6; x <= R.w / 2 - .6; x += .35) for (let z = -R.d / 2 + .6; z <= R.d / 2 - .6; z += .35) {
-      if (!R.clearAt(x, z, .32) || taken.some(p => Math.hypot(p.x - x, p.z - z) < .75)) continue;
+      if (!R.clearAt(x, z, .32) || taken.some(p => Math.hypot(p.x - x, p.z - z) < .9)) continue;
       c.push({ x: +x.toFixed(2), z: +z.toFixed(2), d: near ? Math.hypot(x - near.x, z - near.z) : Math.hypot(x - .9, z - 1.1) });
     }
     c.sort((a, b) => a.d - b.d);
@@ -152,6 +153,7 @@ export class LobbyScene extends MyHomeScene {
       if (!p) { H.friendBox = [...(H.friendBox || []), k]; full = true; continue; }
       came.push(k); this.seatOne(k, p, !quiet && came.length <= 2);
     }
+    if (came.length) setTimeout(() => !this.dead && this.mode === 'lobby' && this.frameLobby(1), 2600);
     if (came.length) setTimeout(() => !this.dead && G.ui.toast(came.length === 1 ? `${ga(nameOf(came[0]))} 놀러 왔어!` : `친구 ${came.length}명이 놀러 왔어!`, 'green'), 600);
     if (full && !H.fullTold) { H.fullTold = 1; setTimeout(() => !this.dead && G.ui.toast('자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', ''), 2200); }
     G.persist();
@@ -219,13 +221,34 @@ export class LobbyScene extends MyHomeScene {
     }
     return super.dragStart(x, y);
   }
-  setMode(mode) { this.fsel = null; return super.setMode(mode === 'view' ? 'lobby' : mode); }   // (꾸미기·숨기기 '완료' come back to the lobby)
+  setMode(mode) {   // (꾸미기·숨기기 '완료' come back to the lobby)
+    this.fsel = null; mode = mode === 'view' ? 'lobby' : mode;
+    const r = super.setMode(mode);
+    if (mode === 'lobby') this.frameLobby(); else this.frameRoom();
+    return r;
+  }
+  // the lobby looks at 몽글이 and whoever sits with it, close up while the room is still bare (user, 10/19: "처음에 너무
+  // 썰렁하니까 캐릭터 쪽 클로즈업으로 잡아주자"), opening out as furniture and friends fill it; 꾸미기·숨기기 see the whole room
+  frameLobby(dur = .7) {
+    if (this.dead || !this.room) return;
+    const W = this.G.world, pts = [this.mong.root.position, ...this.seated.map(s => s.rec), ...(this.guest ? [this.guest.root.position] : [])];
+    const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cz = pts.reduce((a, p) => a + p.z, 0) / pts.length;
+    const spread = Math.max(...pts.map(p => Math.hypot(p.x - cx, p.z - cz)));
+    const filled = (this.zone.furniture?.length || 0) + this.seated.length;
+    const zoom = clamp(Math.min(2.5 - filled * .08, 2.3 / Math.max(1, spread + .35)), 1.15, 2.5);
+    const target = new THREE.Vector3(cx, 1.05, cz);   // (a raised look-at point sits the group lower on the screen, nearer the buttons)
+    if (this._framed) W.flyTo(this.tw, { target, zoom, dur }); else { W.target.copy(target); W.zoom = zoom; this._framed = true; }
+  }
+  frameRoom(dur = .6) {
+    if (this.dead || !this.room || !this._framed) return;
+    this.G.world.flyTo(this.tw, { target: this.G.world.home.clone(), zoom: 1, dur });
+  }
 
   // ── the room opens (2판 behind you, first time here — 설계서 2-3): the gift (a card tap), one thing hidden (as before),
   // then 토순이 asks to stay. Two things to do with your hands; no explaining up front.
   async roomOpens() {
     const G = this.G, tut = G.save.tut || (G.save.tut = {});
-    tut.home = true; G.persist();
+    tut.home = true; this.H.giftDue = 1; G.persist();   // (giftDue: a page closed before the pick gets the cards again — 경제 세션 12장)
     if (G.bot || G.skipTalk) { this.giveGift(GIFTS[0]); const p = this.freeSpot(); if (p) await this.seatOne('bunny', p); this.arrivals(); return; }
     this.busyTut = true;
     await this.tw.wait(.5); if (this.dead) return;
@@ -239,15 +262,18 @@ export class LobbyScene extends MyHomeScene {
     await this.tw.wait(.9); if (this.dead) return;
     const t = await this.giftCards(GIFTS); if (this.dead) return;
     this.giveGift(t);
+    // (the gift bounces in mid-room: the view widens to take in it and 몽글이)
+    const gf = this.zone.furniture[this.zone.furniture.length - 1], mp = this.mong.root.position;
+    if (gf?.x != null) this.G.world.flyTo(this.tw, { target: new THREE.Vector3((gf.x + mp.x) / 2, .55, (gf.z + mp.z) / 2), zoom: 1.5, dur: .6 });
     await this.tw.wait(1.1); if (this.dead) return;
     // ② hide one thing — 토순이 looks for it (the lesson as it was: HOME_TUT)
     if (this.targetCount() < MAX_HIDE) {
       const n0 = this.targetCount();
       this.setMode('hide');
       const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .16}px` }, tr(HOME_TUT.both));
-      G.ui.tut.append(tip);
+      G.ui.tut.append(tip); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = 'hidden');   // (not two bands on top of each other — 검토 v108)
       while (!this.dead && this.targetCount() === n0) await this.tw.wait(.1);
-      tip.remove(); if (this.dead) return;
+      tip.remove(); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = ''); if (this.dead) return;
       await this.tw.wait(.6); if (this.dead) return;
       const rec = this.H.hide.items[this.H.hide.items.length - 1], inside = !!(rec?.free?.part || (rec?.spot && this.spotByKey?.[rec.spot]?.part));
       await playDialog(G, HOME_TUT.count); if (this.dead) return;
@@ -262,7 +288,7 @@ export class LobbyScene extends MyHomeScene {
     const p = this.freeSpot(bun.root.position) || meet;
     const z = this.zone, rec = { k: 'bunny', x: p.x, z: p.z, a: Math.atan2(2.2 - p.x, 2.2 - p.z) };
     z.friends = z.friends || []; z.friends.push(rec); this.addSeated(rec).ch.bump(.4);
-    G.audio.sfx('special'); G.ui.toast('토순이가 네 방 친구가 됐어!', 'green'); G.persist();
+    G.audio.sfx('special'); G.ui.toast('토순이가 네 방 친구가 됐어!', 'green'); G.persist(); this.frameLobby();
     this.busyTut = false;
     this.arrivals();
     this.playBtn?.classList.add('pulse');
@@ -282,6 +308,7 @@ export class LobbyScene extends MyHomeScene {
     });
   }
   giveGift(t) {
+    delete this.H.giftDue;
     this.H.inventory.push(t);
     this.placeFromInv(this.H.inventory.length - 1);   // (it bounces in where there is room, nearest the middle)
     this.select(null);

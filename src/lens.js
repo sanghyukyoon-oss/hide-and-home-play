@@ -45,7 +45,11 @@ export function lensHint(S) {
   return true;
 }
 // a stage lost to taps: the bag's ones come back (no losing the stage and the bag both). How many came back
-export function lensBack(S) { const n = S.bagUsed || 0; S.bagUsed = 0; return n ? addBag(S.G, n) : 0; }
+export function lensBack(S) {
+  const n = S.bagUsed || 0, G = S.G, k = S.custom ? null : S.idx; S.bagUsed = 0;
+  if (k != null) { const done = G._lensBack || (G._lensBack = new Set()); if (done.has(k)) return 0; if (n) done.add(k); }   // (the second loss on the same stage: kept — the layout is the same on a retry)
+  return n ? addBag(G, n) : 0;
+}
 // a clear without a free magnifier used: one into the bag. The result panel's line, or null (one was used, or the bag is full)
 export function lensClear(S) {
   const G = S.G;

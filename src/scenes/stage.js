@@ -1843,6 +1843,7 @@ export class StageScene {
     else if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
     // 경제 B5 (10/19): no free magnifier used → one into the bag (not a preview / model kit, not testing my own room)
     const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this) : null;
+    if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) { const H = G.save.home; H.boxQ = [...new Set([...(H.boxQ || []), this.idx])]; }   // (takePick takes it off again — 경제 세션 12장)
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
     await this.tw.wait(1.0);

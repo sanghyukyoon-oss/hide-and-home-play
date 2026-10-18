@@ -52,9 +52,9 @@ export class MyHomeScene {
       if (n0 < MAX_HIDE) {
         this.setMode('hide');
         const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .16}px` }, tr(HOME_TUT.both));
-        G.ui.tut.append(tip);
+        G.ui.tut.append(tip); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = 'hidden');   // (not two bands on top of each other — 검토 v108)
         while (!this.dead && this.targetCount() === n0) await this.tw.wait(.1);   // done when something is really hidden
-        tip.remove(); if (this.dead) return;
+        tip.remove(); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = ''); if (this.dead) return;
         await this.tw.wait(.6); if (this.dead) return;
         const rec = this.H.hide.items[this.H.hide.items.length - 1], inside = !!(rec?.free?.part || (rec?.spot && this.spotByKey?.[rec.spot]?.part));
         await playDialog(G, HOME_TUT.count); if (this.dead) return;
@@ -102,7 +102,9 @@ export class MyHomeScene {
       }
       for (const pk in hid.locks) { const p = this.partByKey[pk]; if (p) p.furn.setLock(p, hid.locks[pk], hid.code); else delete hid.locks[pk]; }
     }
-    this.mong = new Char(this.lobby ? G.save.hero || 'mong' : 'mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8; this.room.group.add(this.mong.root);
+    this.mong = new Char(this.lobby ? G.save.hero || 'mong' : 'mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8;
+    if (this.lobby) { const R = this.room, [mx, mz] = [[.7, 1.1], [.3, 1.5], [1.1, .5], [0, .6], [1.5, 1.5]].find(([x, z]) => R.clearAt(x, z, .34)) || [1.9, 1.9]; this.mong.root.position.set(mx, 0, mz); }   // (the lobby: in the middle of things, the camera on it)
+    this.room.group.add(this.mong.root);
     if (this.lobby) this.seatFriends();   // the friends sitting in this room (lobby.js)
     W.idsDirty = true;
     // friends drop by while you just look at your home
@@ -110,7 +112,7 @@ export class MyHomeScene {
     const door = this.room.doorDecor ? this.room.frontOf(this.room.doorDecor.f) : null;
     this.visitors = new Visitors(G, { parent: this.room.group, mong: this.mong, tw: this.tw, indoorRoom: !!ZONE_TYPES[this.zone.type].indoor,
       active: () => (this.mode === 'view' || this.mode === 'lobby') && !G.ui.panelOpen && !this.busyTut, skip: () => this.lobby ? seatedAll(this.H) : null,
-      entry: () => door ? [door.x, door.z] : [-1.9, 2.1], meet: () => [1.9 - .8, 1.9 - .3], say: (ch, t, ms) => this.say(ch, t, ms),
+      entry: () => door ? [door.x, door.z] : [-1.9, 2.1], meet: () => [this.mong.root.position.x - .8, this.mong.root.position.z - .3], say: (ch, t, ms) => this.say(ch, t, ms),
       clear: (x, z, r) => this.room.clearAt(x, z, r), seats: () => giftSeats(G, this.room) });   // 대본: a gift is its friend's seat
   }
   putItem(type, spot) {
