@@ -118,7 +118,7 @@ export function fixBlindSpots(S) {
 
 // ── the friend you meet next, peeking: the next hidden-object / friend stage's host who isn't this one and wasn't the
 // last peeker. 먹물이 peeks only at three turns of its story (13, 41, 63판).
-const INKY_AT = new Set([12, 40, 62]);
+const INKY_AT = new Set([12, 42, 62]);   // (43판, not 41: 41 is a friend hunt with no peeker — 스토리 세션 10/18)
 let PEEK = null;
 function peekers() {
   if (PEEK) return PEEK;
