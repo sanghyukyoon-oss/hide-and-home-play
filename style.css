@@ -1242,3 +1242,21 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .ys-grab { position: absolute; width: 64px; height: 12px; margin-left: -32px; border-radius: 8px; background: rgba(36, 26, 52, .75); border: 3px solid #fff; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); overflow: hidden; pointer-events: none; z-index: 6; }
 .ys-grab i { display: block; height: 100%; width: 0; background: #ffd23f; transition: width .06s linear; }
 .ys-grab.open i { background: #7ee08a; }
+
+/* ── 프라모델 조립판 (시제품 10/18, src/modelkit.js): the 설계도 in place of the list — the model drawn front-on on grid
+   paper, every piece a ghost until it's found, then that piece in colour in its own place ── */
+.kitbp { position: absolute; left: 50%; bottom: calc(10px + var(--safeB)); transform: translateX(-50%); width: 236px; height: 134px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; border: 2.5px solid var(--ink); border-bottom-width: 5px; border-radius: 18px;
+  background-color: #eaf3ff; background-image: linear-gradient(#cfe0fb 1.5px, transparent 1.5px), linear-gradient(90deg, #cfe0fb 1.5px, transparent 1.5px);
+  background-size: 14px 14px; background-position: 6px 6px; }
+.kitbp-frame { position: relative; width: 116px; height: 116px; flex: none; }
+.kitbp-frame img { position: absolute; pointer-events: none; }
+.kitbp-ghost { left: 0; top: 0; width: 100%; height: 100%; filter: brightness(0) opacity(.2); }
+.kitbp-p { position: absolute; width: 0; height: 0; }
+.kitbp-p img { opacity: 0; }
+.kitbp-p.found img { opacity: 1; animation: kitpop .5s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes kitpop { 0% { transform: scale(1.7); filter: brightness(2.2); } 60% { filter: brightness(1.25); } 100% { transform: scale(1); filter: none; } }
+.kitbp-tag { position: absolute; left: 12px; top: -15px; padding: 1px 10px 3px; border-radius: 10px; background: var(--b2); border: 2.5px solid var(--ink); font-size: 14px; }
+.kitbp-name { position: absolute; right: 11px; bottom: 6px; font-size: 12px; color: #5b78b8; }
+.kitbp.done { animation: kitdone .45s ease-in-out 4 alternate; }
+@keyframes kitdone { to { box-shadow: 0 0 0 5px #ffe14d, 0 0 26px 10px #fff3a0; } }

@@ -63,7 +63,7 @@ function friendCards(G) {
 }
 function itemCards(G) {
   const own = new Set(G.save.collection || []);
-  const keys = Object.keys(ITEMS).filter(k => !ITEMS[k].decoy && k !== 'key' && k !== 'note');
+  const keys = Object.keys(ITEMS).filter(k => !ITEMS[k].decoy && !ITEMS[k].kit && k !== 'key' && k !== 'note');   // (a model kit's pieces come back as the model)
   return keys.map((k, n) => {
     const it = ITEMS[k], starter = STARTER_ITEMS.includes(k);
     const size = it.h < .09 ? '납작' : it.h < .18 ? '작음' : it.h < .3 ? '보통' : '큼';

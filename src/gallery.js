@@ -9,6 +9,11 @@ const L = (...names) => names.map((label, lv) => ({ label, lv }));
 // type: bossgame = the new-game session's games (scenes/bossgame.js) · mini = my 쉬어가기 (scenes/mini.js; `after` picks
 // the campaign slot whose settings it uses) · boss = 보물 지키기 (scenes/boss.js; `after` picks its map)
 export const GALLERY = [
+  // 프라모델 조립판 (시제품 10/18, modelkit.js): an ordinary find-the-things stage whose things are a model kit's pieces;
+  // the finished model is kept (내 집 보관함), so it isn't a practice run
+  { sec: '새 판 (시제품)', items: [
+    { id: 'model', type: 'model', name: '프라모델 조립', desc: '방에 흩어진 로봇 부품을 다 찾으면 착착 조립! 완성한 로봇은 내 집에', slots: '시제품 · 캠페인 밖', lvs: [{ label: '꼬마 로봇', kit: 'robot' }] },
+  ] },
   { sec: '보스', items: [
     { id: 'yasik', type: 'bossgame', name: '엄마 몰래 야식', desc: '엄마가 안 볼 때 간식을 몰래 챙겨 와요. 들키면 끝!', slots: '5 · 40 · 70판 뒤', lvs: L('첫째 밤', '둘째 밤', '셋째 밤') },
     { id: 'wakeup', type: 'bossgame', name: '아침 깨우기 장치', desc: '장난감을 이어 붙인 연쇄 장치로 졸졸이를 깨워요', slots: '12 · 60판 뒤', lvs: L('첫째 아침', '둘째 아침', '셋째 아침') },
@@ -44,6 +49,7 @@ export const galleryItem = id => ALL.find(it => it.id === id);
 export function playGame(G, id, k = 0, mini = false) {
   const it = (mini && ALL.find(x => x.type === 'mini' && (x.kind || x.id) === id)) || galleryItem(id); if (!it) return false;
   const v = it.lvs[Math.max(0, Math.min(it.lvs.length - 1, k | 0))];
+  if (it.type === 'model') return G.go('stage', { model: v.kit });   // (not a practice run: the model you build is yours)
   G.startPlay();
   const kind = it.kind || it.id;
   if (it.type === 'bossgame') return G.go('bossgame', { kind, lv: v.lv, after: -1, interlude: !!it.interlude });
@@ -63,6 +69,6 @@ export function openGallery(G) {
   }
   list.addEventListener('pointerdown', e => e.stopPropagation());
   ui.panel({ title: '놀이 모음', color: 'green', cls: 'galp', close: () => {},
-    body: [h('div', { class: 'txt gal-note' }, '보스와 쉬어가기만 골라 해요. 여기서 한 판은 진행·코인에 안 들어가요'), list],
+    body: [h('div', { class: 'txt gal-note' }, '보스·쉬어가기·새 판을 골라 해요. 여기서 한 판은 진행·코인에 안 들어가요'), list],
     buttons: [ui.btn('닫기', { color: 'gray', onClick: () => ui.closePanel() })] });
 }

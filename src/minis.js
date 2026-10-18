@@ -517,18 +517,26 @@ export const GAMES = { sneak: Sneak, spot: Spot, redlight: RedLight, shell: Shel
 // 레벨 디자인 (user, 10/18: "미니게임… 숨은그림찾기 너무 계속 나오면 지겨워서 넣는거야"): a little game about every three
 // stages so the searching never runs on too long — each region ends on its own boss game, and in between come lighter
 // ones on that region's maps (the same game never twice within ~8 stages). 보물 지키기 (boss.js) adds a mid-boss now and then.
-// one game between stages per chapter, mid-chapter (레벨 세션 10/18, user "ㅇ" to "미니게임은 장마다 많아야 하나"): 1장 has none
-// (its end is 야식), 두더지 and 이불 moved on from 1장; the ones off the campaign (whack lv1·2, blanket lv1, redlight lv1, spot,
-// the oneroom lamp) are still in 놀이 모음. 6장's game is 보물 지키기 (scenes/boss.js BOSS_AFTER); chapter ends keep BOSS_GAMES.
+// 판 사이 놀이 (10/18 밤, user: "지금보다 메타 게임들 더 많이 등장하는 거 어떨까? 두더지는 초반에 나오는 게 좋겠어 지난번 빌드처럼"):
+// a break every 3–4 stages, the same games coming back a level harder (두더지 3·27·58판 뒤, 무궁화 24·63, 이불 8·46, 손전등
+// 15·43·66). They are breaks with their own screen, not rules inside a stage, so they stay even while each chapter teaches
+// one thing (레벨 세션: the earlier "one a chapter" cut was too broad). 보물 지키기 between them: scenes/boss.js BOSS_AFTER.
 export const MINI_AFTER = {
-  15: { kind: 'whack', lab: true, lv: 0 },   // 2장: 두더지 숨바꼭질 새 버전 (was after 3판; user: "새롭게 좀 더 재밌게")
-  23: { kind: 'redlight', lab: true, lv: 0 },   // 3장: 무궁화 새 판 운동장 (user, 10/18: "무궁화 꽃이 피었습니다 재밌어")
-  33: { kind: 'blanket', lab: true, lv: 0 },   // 4장: 이불 속 누구게? 파자마 파티 (was after 8판)
+  2: { kind: 'whack', lab: true, lv: 0 },   // 1장: 두더지 숨바꼭질 새 버전 (인계 4; user: "새롭게 좀 더 재밌게", "두더지 되게 재밌네")
+  7: { kind: 'blanket', lab: true, lv: 0 },   // 1장: 이불 속 누구게? 파자마 파티 — after the night in 토순이네 침실+욕실 (user, 10/18: "야바위 별로 재미없는데? … 제거하자. 다른 걸로 바꾸거나")
+  14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },   // 2장: 손전등 술래, in the one-room you just played
+  23: { kind: 'redlight', lab: true, lv: 0 },   // 3장: 무궁화 새 판 운동장 (user, 10/18: "무궁화 꽃이 피었습니다 재밌어. 개선판. 정본에 교체된 거지?", "글자가 하나씩 나오는 게 넘 재밌어서")
+  26: { kind: 'whack', lab: true, lv: 1 },  // 3장: 두더지 — 변장한 너굴이 첫 등장
+  33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },   // 4장: 먹물이의 바꿔치기 (after the first 흑백판)
   42: { kind: 'lamp', p: { map: 'park1', time: 45 } },   // 5장: 손전등 술래
-  // 6장: 보물 지키기 after 55판 (boss.js)
-  // 7장: 66판 뒤 보스: 손전등 술래를 키운 판 (user, 10/18: 보스 손전등은 "ㅈㄴ 재미없다", "손전등 술래 재밌는데" → "손전등 술래를 보스로 키우기")
+  45: { kind: 'blanket', lab: true, lv: 1 },   // 5장: 이불 속 누구게? 변장한 너굴이 (소풍은 보류 — user: "보물찾기는 애매함")
+  51: { kind: 'spot', p: { map: 'camp1', n: 3, time: 40 } },   // 6장: 바꿔치기
+  57: { kind: 'whack', lab: true, lv: 2 },   // 6장: 두더지 피버 수풀
+  62: { kind: 'redlight', lab: true, lv: 1 },   // 7장: 무궁화 새 판 킥킥 너굴이
+  // 66판 뒤 보스: 손전등 술래를 키운 판 (user, 10/18: 보스 손전등은 "ㅈㄴ 재미없다", "손전등 술래 재밌는데" → "손전등 술래를 보스로 키우기")
   65: { kind: 'lamp', boss: true, p: { map: 'officefloor', time: 80, n: 8, decoys: 2, boss: true } },
 };
+
 // 보스전 (10/18): the five games from the new-game session (scenes/bossgame.js) — each region ends on one, the good ones come
 // back (user: "보스판은 여러 종류로 갈 거고 재미있는 판은 다시 나올 거"), 엄마 몰래 야식 first and last ("이건 대박"). lv = which
 // of the game's three set-ups. 보물 지키기 (boss.js BOSS_AFTER) fills three more boss slots.

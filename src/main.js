@@ -33,6 +33,7 @@ import { TRAIL_BUILDERS, TRAIL_INFO, TRAIL_THEMES, TRAIL_ITEMS } from './gfx/tra
 import { ONEROOM_BUILDERS, ONEROOM_INFO, ONEROOM_THEMES, ONEROOM_ITEMS } from './gfx/oneroom-props.js';
 import { PLAYGROUND_BUILDERS, PLAYGROUND_INFO, PLAYGROUND_THEMES, PLAYGROUND_ITEMS } from './gfx/playground-props.js';
 import { addHomeStyle } from './catalog.js';
+import { KIT_ITEMS, KIT_BUILDERS, KIT_INFO } from './gfx/modelkit-props.js';
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { THEMES, LAYOUTS, STAGE_COUNT } from './stages.js';
 import { HOME_ZONES, STARTER, STARTER_ITEMS, registerOutdoorShop, registerStoryShop } from './catalog.js';
@@ -68,6 +69,8 @@ registerFurniture(MUSEUM_BUILDERS, MUSEUM_INFO);
 registerFurniture(SHOWCASE_BUILDERS, SHOWCASE_INFO);
 registerFurniture(DEVICE_BUILDERS, DEVICE_INFO); Object.assign(ITEMS, DEVICE_ITEMS);   // R6 장치판
 registerFurniture(TOWN_BUILDERS, TOWN_INFO);
+// 프라모델 조립판 (modelkit.js): the kit's pieces are things to find; the finished model is furniture you get, not one you buy
+registerFurniture(KIT_BUILDERS, KIT_INFO); Object.assign(ITEMS, KIT_ITEMS);
 Object.assign(ITEMS, APT_ITEMS);
 const WARM = { ambColor: '#ffeedd', amb: 1.5, sunColor: '#fff4e0', sun: 2.3 };
 for (const k in APT_THEMES) THEMES[k] = { ...THEMES.my, ...APT_THEMES[k], friend: 'bunny', light: WARM, pool: ['remote', 'slipper', 'mandarin', 'gamepad', 'tissue', 'cookie', 'milk', 'sock'] };
