@@ -199,7 +199,8 @@ export class World {
   // F, one finger: moves the view; after a second-finger tap it turns round the middle of the view exactly like the dial
   // (1:1, turn and tilt free), and the dial's ruler follows (one direction at a time)
   _fDrag(dr, dx, dy) {
-    if (this.eMode !== 'turn') { this.panBy(dx, dy); return; }
+    // (10/19 20:30, user: "이동은 아주 약간만 빠르게" — the room runs 8% ahead of the finger; pinch and keys stay as they were)
+    if (this.eMode !== 'turn') { this.panBy(dx * 1.08, dy * 1.08); return; }
     this._fTurn(dr, dx, dy);
   }
   _fTurn(dr, dx, dy) {
@@ -671,7 +672,7 @@ export class World {
         e.stopPropagation(); if (e.pointerId !== tid) return;
         if (e.pointerType === 'mouse' && e.buttons === 0) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; return; }
         const k = 3.6 / Math.max(this.W, 360), dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
-        if (!this.camLock) this.turnAround(o.piv, -dx * k * 1.25, dy * k * .65);   // (10/19 evening, user: "게이지 로테이션은 횡 로테는 약간만 더 빠르게, 수직 로테는 지금 속도 유지")
+        if (!this.camLock) this.turnAround(o.piv, -dx * k * 1.125, dy * k * .65);   // (10/19 evening, user: "게이지 로테이션은 횡 로테는 약간만 더 빠르게, 수직 로테는 지금 속도 유지"; 20:30 "늘린 값의 중간값으로" — 1.25 → 1.125)
         this._tdAx = this._domAxis(o, dx, dy); if (this._tdAx !== 'wait' && td.dataset.ax !== this._tdAx) td.dataset.ax = this._tdAx;
         if (this._tdTeach && this._tdAx === 'y' && (o.ty = (o.ty || 0) + Math.abs(dy)) > 24) {   // a real tilt with the dial: learned
           this._tdTeach = false; td.classList.remove('teach'); try { localStorage.setItem('sbk-dial-tilt', '1'); } catch {}
