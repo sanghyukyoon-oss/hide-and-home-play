@@ -67,7 +67,10 @@ export const LAYOUTS = {
   bear: { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 2.9,
     raised: [{ i: 0, j: 0, w: 3, d: 2, h: .3, kind: 'carpet', a: '#dfe6b4', b: '#c9d39a', stepX: .6 }], cut: [{ i: 0, j: 4, w: 2, d: 1 }],
     furniture: [F('floorlamp', 0, 0), F('recordcab', 1, 0), F('zabuton', 0, 1), F('kotatsu', 1, 1), F('zabuton', 2, 1),
-      F('sofa2', 3, 0), F('bookshelf', 5, 0, 0, { seed: 11 }), F('monstera', 5, 1), F('rug', 3, 1), F('table', 3, 2), F('tvlow', 3, 4, 2), F('chest', 0, 2, 1), F('plant', 5, 4)],
+      F('sofa2', 3, 0), F('bookshelf', 5, 0, 0, { seed: 11 }), F('monstera', 5, 1), F('rug', 3, 1), F('table', 3, 2), F('tvlow', 3, 4, 2), F('chest', 0, 2, 1),
+      // (the potted tree stood on the corner nearest the camera and hid whoever stood behind it — user, 5판 on a phone:
+      // "제일 앞 나무가 캐릭터 가리고 있어"; 10/19 to the back, between the record cabinet and the sofa)
+      F('plant', 2, 0)],
     decor: [D('window', 'N', -1.6), D('curtainwin', 'N', 1.0), D('catclock', 'W', -2.05), D('picture', 'W', 1.9), D('window', 'W', .3), D('door', 'W', -1.1)], friendAt: [1.8, 1.0] },
   cat: { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 2.9,
     raised: [{ i: 3, j: 3, w: 3, d: 2, h: .25, kind: 'planks', a: '#e9b57c', b: '#b9824a', stepX: -1 }], cut: [{ i: 0, j: 4, w: 1, d: 1 }],
@@ -332,10 +335,12 @@ export const MAPS = {
     return { theme: THEMES.house3, friendAt: [1.6, 1.8], nBonus: 3, fitAll: true, rooms: [
       { at: [0, 0], level: 0, layout: { w: 7, d: 7, theme: down, wallH: 2.9, timber: true,
         furniture: [F('stairsup', 6, 3), F('bookshelf', 0, 0, 0, { seed: 17 }), F('recordcab', 1, 0), F('floorlamp', 2, 0), F('fridge', 4, 0), F('counter', 5, 0, 0, { variant: 'stove' }), F('dishcab', 6, 0),
-          // 이어진 집 (10/19): a brass pole from the top loft down through the balcony's hatch to the living room
-          F('sofa2', 0, 2), F('loftpole', 2, 2), F('monstera', 3, 1), F('kitchentable', 4, 2), F('stool2', 4, 3), F('rug', 0, 3), F('zabuton', 0, 4), F('kotatsu', 1, 4), F('chest', 3, 5), F('tvlow', 0, 6, 2), F('plant', 2, 6), F('laundrybasket', 5, 6)],
+          // (10/19 the brass pole and the balcony hatch came out again: the hatch sat right under the loft's ladder, so the
+          // ladder's foot hung over a hole and the pole stood in the air past the loft — user on a phone, 8판: "기둥이랑
+          // 사다리, 심지어 사다리는 떨어져 있음. 기둥이랑 뭐여")
+          F('sofa2', 0, 2), F('monstera', 2, 2), F('kitchentable', 4, 2), F('stool2', 4, 3), F('rug', 0, 3), F('zabuton', 0, 4), F('kotatsu', 1, 4), F('chest', 3, 5), F('tvlow', 0, 6, 2), F('plant', 2, 6), F('laundrybasket', 5, 6)],
         decor: [D('window', 'W', 2.0), D('picture', 'W', -.4)] } },
-      { at: [0, -2], level: 1, layout: { w: 7, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [-3.0] }, gable: 'N', timber: true, slab: 'cut', cut: [{ i: 2, j: 2, w: 1, d: 1 }],
+      { at: [0, -2], level: 1, layout: { w: 7, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [-3.0] }, gable: 'N', timber: true,
         lofts: [{ i: 0, j: 0, w: 3, d: 2, y: 1.45, ladder: 'S', ladderAt: .9 }],
         furniture: [LF('futon', 0, 0, 0, null, 1.45), LF('yarnbasket', 1, 0, 0, null, 1.45), LF('catbed', 2, 0, 0, null, 1.45), F('chest', 0, 0), F('desk', 0, 1), F('wardrobe', 3, 0), F('bed', 4, 0), F('drawers', 5, 0), F('plant', 6, 0), F('beanbag', 3, 2), F('yarnbasket', 5, 2)],
         decor: [D('window', 'E', 0), D('picture', 'N', 1.6)] } },

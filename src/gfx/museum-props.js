@@ -208,19 +208,33 @@ B.easel = f => {
 
 // 작품 운반 상자: a crate with a lid (lockable) and a red "handle with care" stamp
 B.artcrate = f => {
-  const H = .52;
-  f.add(mc('artcrate', ({ add }) => {
-    add(G.box(.76, H, .62, .02), '#d9b07a', 0, H / 2, 0);
-    for (const y of [.1, H - .1]) add(G.box(.78, .05, .64, .01), '#b98a52', 0, y, 0);
-    add(G.box(.26, .12, .01, .004), '#d9564a', -.12, H * .55, .315); add(G.box(.08, .08, .01, .004), '#d9564a', .14, H * .55, .315);
+  // a real open crate: four plank walls round a well (it was a solid block with straw on its top, so the lid came up on a
+  // flat lid-sized face and a post-it lay on it like a sticker — user, 10판 on a phone: "상자 안쪽이 안 뚫려 있어")
+  const H = .52, W = .76, D = .62, T = .045, S = H - .22, wood = '#d9b07a', band = '#b98a52', inner = '#a8773f';
+  f.add(mc('artcrate2', ({ add }) => {
+    add(G.box(W, .06, D, .02), wood, 0, .03, 0);                                                        // the bottom
+    for (const sz of [-1, 1]) add(G.box(W, H - .06, T, .012), wood, 0, .06 + (H - .06) / 2, sz * (D / 2 - T / 2));   // front and back
+    for (const sx of [-1, 1]) add(G.box(T, H - .06, D - 2 * T, .012), wood, sx * (W / 2 - T / 2), .06 + (H - .06) / 2, 0);   // the sides
+    // the inner faces a shade darker, so the well reads as a well from above
+    for (const sz of [-1, 1]) add(G.pbox(W - 2 * T - .004, H - S - .02, .006), inner, 0, S + (H - S) / 2 - .01, sz * (D / 2 - T - .003));
+    for (const sx of [-1, 1]) add(G.pbox(.006, H - S - .02, D - 2 * T - .004), inner, sx * (W / 2 - T - .003), S + (H - S) / 2 - .01, 0);
+    // two plank bands round the outside (rings now, not slabs across the top)
+    for (const y of [.1, H - .1]) {
+      for (const sz of [-1, 1]) add(G.box(W + .02, .05, .02, .008), band, 0, y, sz * (D / 2 + .005));
+      for (const sx of [-1, 1]) add(G.box(.02, .05, D + .02, .008), band, sx * (W / 2 + .005), y, 0);
+    }
+    add(G.box(.26, .12, .01, .004), '#d9564a', -.12, H * .55, D / 2 + .016); add(G.box(.08, .08, .01, .004), '#d9564a', .14, H * .55, D / 2 + .016);
   }));
   const lid = grp(); put(lid, 0, H, -.31); f.add(lid);
   lid.add(mc('artcratelid', ({ add }) => { add(G.box(.8, .05, .66, .015), '#c99a62', 0, .025, .31); add(G.box(.7, .02, .08, .006), '#b98a52', 0, .055, .31); }));
   const p = f.part('lift', lid, t => { lid.rotation.x = -1.7 * t; }, { label: '작품 상자 뚜껑', sfx: 'open', dur: .35 });
   p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: -.05, z: .66, parent: lid };
-  // packing straw fills it nearly to the rim, so what's tucked in shows once the lid is up
-  f.add(mc('artcratestraw', ({ add }) => { add(G.box(.7, .06, .56, .02), '#f2d58a', 0, H - .09, 0); for (let k = 0; k < 9; k++) add(G.box(.22, .015, .02, .006), '#e8c46a', -.25 + (k % 3) * .25, H - .055, -.18 + Math.floor(k / 3) * .18, 0, k * .7, 0); }));
-  f.spot('inside', null, 0, H - .05, .04, { part: p, maxH: .26, label: '작품 상자 안', scale: .75 });
+  // packing straw down in the well (a hand's depth under the rim), what's tucked in lies on it
+  f.add(mc('artcratestraw2', ({ add }) => {
+    add(G.box(W - 2 * T - .01, .05, D - 2 * T - .01, .02), '#f2d58a', 0, S - .025, 0);
+    for (let k = 0; k < 9; k++) add(G.box(.2, .015, .02, .006), '#e8c46a', -.22 + (k % 3) * .22, S + .005, -.16 + Math.floor(k / 3) * .16, 0, k * .7, 0);
+  }));
+  f.spot('inside', null, 0, S, .02, { part: p, maxH: .2, label: '작품 상자 안', scale: .75 });
   f.spot('on', null, .2, H + .05, .05, { maxH: .3, label: '작품 상자 위', scale: .65 });
 };
 

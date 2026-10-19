@@ -651,6 +651,9 @@ export class Look {
           pool(v.x, fy, v.z, 2.0, '#ffb85a', 1);
           const sm = new THREE.SpriteMaterial({ map: tex, color: '#ffd98f', transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false });
           const sp = new THREE.Sprite(sm); sp.position.copy(v); sp.scale.setScalar(1.25); sp.renderOrder = 4; g.add(sp); this.own.push(sm);
+          // colour only: a sprite on layer 0 went into the outline pass as a solid square — an inked card standing beside
+          // the lamp (user, 9판 on a phone: "가장 왼쪽 스탠드 쪽에 이상한 플레인이 수직으로 있어")
+          sp.layers.set(2);
         });
         // windows: moonlight falls in front of them
         if (/window/.test(f.type)) {
