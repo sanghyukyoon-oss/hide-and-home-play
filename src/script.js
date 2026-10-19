@@ -196,6 +196,7 @@ const SCENES = [
     reveal: [L('frog', '거품이 배신했어!', 'The bubbles betrayed me!'), L('frog', '한 판 더! 이번엔 안 들킨다!', "One more! I won't get caught this time!"), L('mong', '…다음에도 그럴 거지?', "…You'll say that next time too, right?")] },
   { id: 'study', type: 'incident', room: 'study', card: 'chain', hide: K('흠. 책 냄새 나는 곳이 제일 편하지.', 'Hm. Anywhere that smells like books is the comfiest.'),
     intro: [L('nerd', '흠. 펭펭이한테 비결을 세 개나 들었다는 그 몽글이군.', "Hm. So you're the Mongle who got three pro tips out of Pengpeng."), L('nerd', '이 서재엔 내가 만든 비밀 방이 있지.', 'I built a secret room in this study.'), L('nerd', '아직 아무도 끝까지 못 풀었어. 난 거기 있을게.', "No one's ever solved it all the way. I'll be in there.")],
+    ifKit: { robot: { intro: [L('nerd', '흠. 내 로봇을 끝까지 맞췄다는 그 몽글이군.', "Hm. So you're the Mongle who finished my robot."), L('nerd', '이 서재엔 내가 만든 비밀 방이 있지.', 'I built a secret room in this study.'), L('nerd', '아직 아무도 끝까지 못 풀었어. 난 거기 있을게.', "No one's ever solved it all the way. I'll be in there.")] } },   // (스토리 룸 10/19: 8판 조립판이 있으면)
     stuck: [K('흠흠. 무지개가 끊긴 건 봤겠지?', 'Ahem. You noticed the rainbow is broken, yes?')],
     reveal: [L('nerd', '놀랍군. 계산보다 빨라.', 'Remarkable. Faster than I calculated.'), L('nerd', '…사실 누가 풀어 주길 기다렸어. 퍼즐은 혼자 하면 재미없거든.', '…Truth is, I hoped someone would solve it. Puzzles are no fun alone.'), L('mong', '다음 것도 풀어 보고 싶어.', "I'd like to solve the next one too."), L('nerd', '그럼 다음 건 너만을 위해 만들지.', "Then I'll make the next one just for you.")] },
   { id: 'peng', type: 'incident', room: 'peng',
@@ -332,6 +333,12 @@ SCENES.push(
     intro: [L('peng', '펭! 비결 2번 생각해 왔어. 높은 데 숨기기!', 'Peng! I came up with tip number two. Hide stuff up high!'), L('peng', '우리 집은 2층이야. 높을수록 1등이지!', 'My house has two floors. Higher means number one!')],
     say: { first: K('펭! 그건 일부러 낮은 데 둔 거야!', 'Peng! I put that one low. On purpose!'), half: K('반이나…? 비결 2번이 안 통해…', "Half…? Tip number two isn't working…"), last: K('마지막 건 제일 높은 데! …쿵. 아무 소리 안 났어.', "The last one's the highest of all! …Thud. That wasn't me.") },
     after: [LK('peng', '…비결 3번. 높은 데 올라갈 땐 쿵 하지 않기.', "…Tip number three. Don't go thud when you climb up high."), L('mong', '…적어 둘게. 비결 3번.', '…Writing that down. Tip three.'), L('peng', '너라면 너굴이 물건도 찾겠다.', "I bet you could even find Rocky's stuff.")] },
+  // 8판 프라모델 조립판 (스토리 룸 10/19, 정식판 세션 8a963f · 레벨 7dbff7 합의): 그 판 spec에 model/kit 'robot'이 있을 때만
+  // 이 장면이 붙어요. 곰돌이가 어릴 때 박사님한테 받고 끝까지 못 맞춘 꼬마 로봇 → 12판 박사 첫인사(ifKit)로 이어짐
+  { id: 'house3K', kit: 'robot', type: 'hidden', room: 'house3', goal: ['로봇 부품', 'robot parts'],
+    intro: [L('bear', '으헤헤, 어릴 때 끝까지 못 맞춘 로봇이야. 부품이 세 층에 흩어졌어.', 'Ehehe, a robot I never finished as a kid. Now its parts are on all three floors.')],
+    say: { first: K('으헤헤, 그게 다리야. …아마.', "Ehehe, that's a leg. …Probably."), half: K('반 모았다! 로봇이 반쯤 생각나.', "Half here! I'm starting to remember what it looks like."), last: K('하나 남았어. 그것만 있으면 완성이야.', "One left. That's all it needs.") },
+    after: [L('bear', '움직인다! 으헤헤, 박사님이 보면 놀라겠다.', "It moves! Ehehe, Doc's gonna flip."), L('mong', '…박사님?', '…Doc?')] },
   { id: 'house3H', type: 'hidden', room: 'house3',
     intro: [L('bear', '다락에 옛날 상자가 있어. 같이 볼래?', "There's an old box in the attic. Want to look?"), LK('bear', '근데 열쇠랑 이것저것이 세 층에 다 흩어졌어. 으헤헤.', 'But the key and a bunch of stuff got scattered over three floors. Ehehe.')],
     say: { first: K('으헤헤, 그건 아기 때 쓰던 거야.', 'Ehehe, I used that when I was little.'), half: K('반 찾았다! 다락 냄새 난다.', 'Half found! I can smell the attic.'), last: K('하나 남았어. 그게 제일 소중한 건데…', "One left. And it's the most precious one…") },
@@ -438,7 +445,7 @@ SCENES.push(
   { id: 'bunnybathH', type: 'hidden', room: 'bunnybath',
     intro: [L('bunny', '목욕 끝! …근데 내 물건 다 어디 갔지?', "Bath's done! …But where did all my stuff go?"), L('mong', '…거품 속에.', '…In the bubbles.')],
     say: { first: K('앗, 그거 거품 속에 있었어?', 'Huh, that was in the bubbles?'), half: K('반 찾았다! 몸도 다 말랐어.', "Half found! I'm all dry now."), last: K('하나 남았어. 킥… 아니, 안 웃었어.', "One left. Hee… no, I didn't giggle.") },
-    after: [L('bunny', '다 찾았다! 이제 파자마 파티 준비 끝!', 'All found! Pajama party: ready!')] },
+    after: [L('bunny', '다 찾았다! 이제 파자마 파티 준비 끝!', 'All found! Pajama party: ready!'), L('bunny', '냥냥이도 불렀는데… 별로 안 궁금하대.', "I invited Nyannyan too… \"Not curious,\" apparently.")] },
   // 11판: 냥냥이 first (the 일기장 boss is gone from 1장) — the diary page and the tail stay with it
   { id: 'catH', keep: true, type: 'hidden', room: 'cat',
     intro: [L('cat', '흥. 네가 몽글이냐냥. 별로 안 궁금했다냥.', "Hmph. So you're Mongle, meow. Not that I care."), L('mong', '…꼬리는 궁금해 보이는데.', '…Your tail looks curious.'), L('cat', '…! 내 물건이나 찾아보라냥.', '…! Just find my stuff, meow.')],
@@ -820,12 +827,14 @@ function bind() {
   if (B) return B;
   B = { scene: {}, host: {}, meet: {}, fmeet: {}, gray: {}, timed: {}, type: {} };
   const specs = []; for (let i = 0; i < STAGE_COUNT; i++) specs.push(stageSpec(i));
-  const used = new Set(), met = {}, fmet = {}, gown = {}; let g = 0, t = 0; B.grayOwn = {};
+  const used = new Set(), met = {}, fmet = {}, gown = {}, kits = new Set(); let g = 0, t = 0; B.grayOwn = {};
   for (let i = 0; i < specs.length; i++) {
     const s = specs[i], ty = typeOf(s); B.type[i] = ty;
-    const pick = t => SCENES.find(x => !used.has(x.id) && x.type === t && x.nth == null && x.room === s.room && (x.night == null || !!s.night === x.night));
+    const kit = s.kit || s.model || null;   // 프라모델 조립판: a scene with kit only lands on that kit's stage (and is picked first there)
+    const pick = t => SCENES.find(x => !used.has(x.id) && x.type === t && x.nth == null && x.room === s.room && (x.night == null || !!s.night === x.night) && (!x.kit || x.kit === kit));
     const sc = pick(ty) || (ty === 'gray' && SCENES.find(x => !used.has(x.id) && x.type === 'gray' && x.nth === g)) || null;   // (v2: the map's own 흑백 scene first)
-    if (sc) { used.add(sc.id); B.scene[i] = sc; }
+    if (sc) { used.add(sc.id); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; }
+    if (kit) kits.add(kit);
     // a visit told the other way (사건 ↔ 숨은그림) is used up with it, so it can't land on a later visit to the same map
     if (ty === 'hidden' || ty === 'incident') { const tw = pick(ty === 'hidden' ? 'incident' : 'hidden'); if (tw) used.add(tw.id); }
     const th = THEMES[s.room] || layoutFor(s.room)?.theme;
@@ -985,6 +994,10 @@ export const timedIntro = idx => ROCKY[Math.min(ROCKY.length - 1, bind().timed[i
 export const timedWin = idx => { const t = bind().timed[idx] || 0, l = L('raccoon', ROCKY_WIN[t % ROCKY_WIN.length]); return [t >= ROCKY_WIN.length - 1 ? { ...l, keep: true } : l]; };
 // boss games
 export const gameLines = (kind, lv) => GAME[`${kind}:${lv}`] || null;
+// 프라모델 조립판 (스토리 룸 10/19): go = 부품을 다 찾고 조립을 시작하기 직전 한 줄 (판 대사는 SCENES의 kit 장면)
+export const KIT_TALK = {
+  robot: { go: K('다 모았다! 이번엔 끝까지 맞추자.', "All here! Let's finish it this time.") },
+};
 
 // ── 1판: a fixed little scene instead of a random room (GPT 첫판 안): 토순이 hides in the toy box, drops her donut on the way;
 // the box stands with its front away from you, so turning the room is how you see her tail sticking out.
