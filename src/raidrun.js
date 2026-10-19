@@ -80,13 +80,14 @@ export async function raidSettle(S, why) {
     S.setMong('happy', 'hop');
   }
   G.ui.banner(all ? '몽땅 털었다!' : why === 'time' ? '시간 끝!' : '그만 털기!', all ? (tre ? '보물까지 싹!' : '하나도 안 남겼어!') : `${found.length}개 털었어 · 찾은 만큼 내 거!`, 1100);
-  await S.tw.wait(1.3);
-  if (S.dead) return;
-  // coins: the bag (paid per find) + the stars, sent as they are
+  // coins: the bag (paid per find) + the stars, sent as they are; my things come back only if found — both saved before
+  // the 1.3 s moment (GPT QA R2-02 10/19: quitting during it lost the coins)
   const starCoins = val(S, RAID.star) * starN;
   const res = G.onVisitResult(S.custom, all, found.length, n, R.bag + starCoins, true);
-  // my things come back only if found; one thing pocketed from what was found
   const back = retrieve(G, S.custom, found.map(t => t.type));
+  await S.tw.wait(1.3);
+  if (S.dead) return;
+  // one thing pocketed from what was found
   let got = null;
   if (found.some(t => !back.includes(t.type)) && canGrab(G, S.custom)) got = await S.pickLoot(back, found);
   if (S.dead) return;

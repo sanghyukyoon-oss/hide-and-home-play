@@ -13,6 +13,7 @@ import { openCardBook } from '../cardbook.js';
 import { runRaids } from '../raid.js';
 import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/19)
 import { playDialog } from '../story.js';
+import { clearFollowupFinish } from '../followup.js';
 import { HOME_TUT, ENDING, endCard, choose, giftSeats, newCard, BUDDY_LINE, UI as SUI } from '../script.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
@@ -409,7 +410,7 @@ export class LobbyScene extends MyHomeScene {
     } });
     if (this.dead) return;
     await endCard(G); if (this.dead) return;
-    G.save.ending = true; G.persist();
+    G.save.ending = true; G.persist(); clearFollowupFinish(G, after);   // (GPT QA L02 10/19: staying home after the ending left the last 야식 as 이어하기)
     const stay = await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0;
     if (this.dead) return;
     if (!stay) return G.go('stage', { idx: after + 1 });

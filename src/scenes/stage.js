@@ -2120,10 +2120,12 @@ export class StageScene {
     if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) { const H = G.save.home; H.boxQ = [...new Set([...(H.boxQ || []), this.idx])]; }   // (takePick takes it off again — 경제 세션 12장)
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
+    // the finished model goes home (once) — saved with the clear, before the pause (GPT QA R2-01 10/19: quitting in that
+    // second kept the clear but lost the robot / boxes / parfait)
+    const kitFurn = this.kit && KITS[this.kit.kit].furn, kitNew = this.kit ? kitReward(this) : null;
     await this.tw.wait(1.0);
     if (this.dead) return;
     let memento = null, newFriend = null, back = [], got = null;
-    const kitFurn = this.kit && KITS[this.kit.kit].furn, kitNew = this.kit ? kitReward(this) : null;   // the finished model goes home (once)
     // one new thing to hide at home per stage, the first time it is cleared (not every find — that gave away too much)
     // (the first-clear thing is given before the progress is saved, above — 10/18 GPT QA: leaving during the 1 s wait lost it)
     // 털기: take back what was mine, then pocket one thing from this room

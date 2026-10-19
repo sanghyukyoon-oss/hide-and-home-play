@@ -27,6 +27,7 @@ export function installAppBack(G) {
       return;   // (any other panel is a choice the player has to make: back leaves it open)
     }
     if (typeof S.pause === 'function' && !S.paused) return S.pause();   // stage, boss, mini: 홈 is in the pause panel
+    if (typeof S.menu === 'function' && !S.result) return S.menu();   // a boss game's 잠깐! menu (GPT QA R2-03 10/19: back left the game)
     if (scene !== 'home') {
       const b = ui.hud.querySelector('.ibtn[data-icon="home"]');   // 내 집, 놀러 가기…: their own back (it knows about modes)
       if (b) b.press(); else G.go('home');

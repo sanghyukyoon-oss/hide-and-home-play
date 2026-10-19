@@ -80,6 +80,7 @@ export class VisitScene {
     const mine = N.uid;
     const others = shared.filter(r => r.owner && r.owner !== mine && r.zone && r.hidden?.length);
     const nm = await names(others.map(r => r.owner));
+    if (this.dead) return;   // (GPT QA R2-04 10/19: a late answer from a list you'd left set the scout's 다음 집 list)
     const myResults = G.save.visits || {};
     const practice = practiceRooms((r, i) => makePractice(r, i, stolenBy(G.save, residentId(i))));
     // residents holding my things come first

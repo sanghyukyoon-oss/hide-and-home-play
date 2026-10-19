@@ -328,11 +328,15 @@ SCENES.push(
   { id: 'bear2H', type: 'hidden', room: 'bear2',
     intro: [L('bear', '으헤헤, 또 왔네! 이번엔 접시도 두 개야.', "Ehehe, you're back! Two plates this time."), LK('mong', '숟가락은?', 'And the spoons?'), LK('bear', '…깨끗한 걸로 두 개. 팬케이크 굽는 동안 내가 숨긴 거 찾아 봐.', '…Two clean ones. While I make pancakes, find what I hid.')],
     say: { first: K('으헤헤, 그건 부엌 거야.', 'Ehehe, that goes in the kitchen.'), half: K('반 찾았네! 팬케이크도 반 구웠어.', 'Half found! The pancakes are half done too.'), last: K('하나 남았어! 킁킁… 아, 이건 팬케이크 냄새.', "One left! Sniff… oh, that's just the pancakes.") },
-    after: [L('bear', '다 찾았네! 팬케이크도 다 됐어. 조금 탔지만.', 'All found! The pancakes are done too. A little burnt.'), L('mong', '그래도 맛있는 냄새 나.', 'Still smells good.'), L('bear', '탄 건 내가 먹을게. 으헤헤.', "I'll eat the burnt ones. Ehehe.")] },
-  { id: 'house2fH', type: 'hidden', room: 'house2f',
+    // (결과창 둘째 줄 = 다음 예고, 스토리 룸 10/19 '다시 하고 싶게': next is 너굴이's 무궁화 in the schoolyard)
+    after: [LP('bear', '다 찾았네! 팬케이크도 다 됐어. 조금 탔지만.', 'All found! The pancakes are done too. A little burnt.'), LP('bear', '아, 너굴이가 운동장에서 너 기다린대!', "Oh, and Rocky's waiting for you at the schoolyard!")] },
+  // trace: 먹물이 passed through here too — a short trail of its colour-smeared footprints on the floor, nothing to tap
+  // (1장 between the two 흑백판, so the thread doesn't drop from 4판 to 10판 — 스토리 룸 10/19 '다시 하고 싶게')
+  { id: 'house2fH', type: 'hidden', room: 'house2f', trace: true,
     intro: [L('peng', '펭! 비결 2번 생각해 왔어. 높은 데 숨기기!', 'Peng! I came up with tip number two. Hide stuff up high!'), L('peng', '우리 집은 2층이야. 높을수록 1등이지!', 'My house has two floors. Higher means number one!')],
     say: { first: K('펭! 그건 일부러 낮은 데 둔 거야!', 'Peng! I put that one low. On purpose!'), half: K('반이나…? 비결 2번이 안 통해…', "Half…? Tip number two isn't working…"), last: K('마지막 건 제일 높은 데! …쿵. 아무 소리 안 났어.', "The last one's the highest of all! …Thud. That wasn't me.") },
-    after: [LK('peng', '…비결 3번. 높은 데 올라갈 땐 쿵 하지 않기.', "…Tip number three. Don't go thud when you climb up high."), L('mong', '…적어 둘게. 비결 3번.', '…Writing that down. Tip three.'), L('peng', '너라면 너굴이 물건도 찾겠다.', "I bet you could even find Rocky's stuff.")] },
+    // (결과창 둘째 줄 = 다음 예고: 8판 곰돌이네 다락 상자)
+    after: [LP('peng', '…비결 3번. 높은 데 올라갈 땐 쿵 하지 않기.', "…Tip number three. Don't go thud when you climb up high."), LP('peng', '아, 곰돌이가 다락에서 엄청 큰 상자를 찾았대!', 'Oh! Bearie found a huge box in the attic!')] },
   // 8판 프라모델 조립판 (스토리 룸 10/19, 정식판 세션 8a963f · 레벨 7dbff7 합의): 그 판 spec에 model/kit 'robot'이 있을 때만
   // 이 장면이 붙어요. 곰돌이가 어릴 때 박사님한테 받고 끝까지 못 맞춘 꼬마 로봇 → 12판 박사 첫인사(ifKit)로 이어짐
   { id: 'house3K', kit: 'robot', type: 'hidden', room: 'house3', goal: ['로봇 부품', 'robot parts'],
@@ -844,6 +848,35 @@ const DIARY = {
   inky: K('색 묻은 발자국을 남김. 다음엔 같이 놀기.', 'Leaves colored footprints. Next time, we play together.'),
 };
 export const diaryLine = k => DIARY[k] || null;
+// ── 별 셋 = 비밀 한 줄 (스토리 룸 10/19, user "해줘봐"): three stars on any stage a friend hosts opens one more line of 몽글이's
+// diary about them — a reason to play a stage again. It shows on the result panel the moment it opens (얻는 맛, no
+// explaining), then stays under their 도감 card. Only after the first one opens does a short-of-three result say "별 셋이면".
+const DIARY_SECRET = {
+  bunny: K('숨을 때 귀 끝을 일부러 조금 내놓음. 내가 빨리 찾으라고.', 'Leaves an ear tip sticking out on purpose. So I can find Bunbun fast.'),
+  frog: K('사실 지는 것도 좋아함. "한 판 더"는 더 놀자는 뜻.', 'Secretly likes losing, too. "One more round" means "stay and play."'),
+  peng: K('비결 노트 맨 뒷장: "1등은 너굴이. 언젠가 꼭 이김."', 'Last page of the tip notebook: "Rocky is number one. Someday I win."'),
+  bear: K('숟가락 두 개 중 하나는 처음부터 내 거였음.', 'One of those two spoons was mine from the very start.'),
+  cat: K('내 일기장을 몰래 읽음. 자기 페이지에 발 도장 찍어 둠.', "Reads my diary in secret. Stamped a paw print on Nyannyan's own page."),
+  nerd: K('퍼즐은 사실 친구 부르려고 만듦. 다 풀면 같이 놀 수 있으니까.', 'Builds puzzles to get friends to come over. Solve one and you get to stay and play.'),
+  shiba: K('순찰 일지에 "오늘의 친구" 칸이 있음. 매일 내 이름.', 'The patrol log has a "Friend of the Day" box. My name, every day.'),
+  hamster: K('볼에 씨앗 말고 손전등 건전지도 넣고 다님. 깜깜한 게 무서워서.', 'Keeps flashlight batteries in those cheeks, too. Scared of the dark.'),
+  raccoon: K('지고 나면 운동장 뒤에서 혼자 연습함. 들키면 "산책 중".', 'After losing, practices alone behind the schoolyard. If caught: "Just out for a walk."'),
+  grumpy: K('혼자 하는 놀이는 진작 질렸음. 그래서 의자가 두 개.', "Got bored of playing alone a long time ago. That's why there are two chairs."),
+  skater: K('넘어진 날엔 반창고에 별을 그려 붙임. 그것도 기술이래.', 'On wipeout days, draws a star on the bandage. Says that counts as a trick.'),
+  sundae: K('몰래 토핑을 하나씩 숨겨 둠. 찾는 사람이 임자.', 'Hides a topping here and there. Finders keepers.'),
+  squirrel: K('숨긴 곳 지도를 그려 둠. 그리고 그 지도도 숨김.', 'Draws a map of every hiding spot. Then hides the map.'),
+  panda: K('대나무에 내 키 눈금을 새겨 둠. 올 때마다 잼.', 'Marks my height on the bamboo. Measures me every visit.'),
+  sleepy: K('꿈에서도 숨바꼭질함. 잠꼬대는 "찾았다!"', 'Plays hide-and-seek in dreams, too. Sleep-talks "Found you!"'),
+  robot: K('기록 폴더 이름은 "친구". 용량이 꽉 차도 안 지움.', 'Records folder name: FRIENDS. Memory full, still deletes nothing.'),
+  dj: K('새 곡 제목은 전부 친구 이름. 다음 곡은 "몽글".', 'Every new track is named after a friend. Next one: "Mongle."'),
+};
+export const diarySecret = k => DIARY_SECRET[k] || null;
+// whose stage it is (the friend who hides there, or 너굴이 on a timed one) — save.best is keyed by stage index
+export const stageHost = idx => (idx >= 0 ? bind().host[idx] || null : null);
+export const secretOpen = (best, k) => !!DIARY_SECRET[k] && Object.entries(best || {}).some(([i, n]) => n >= 3 && bind().host[+i] === k);
+export const anySecret = best => Object.entries(best || {}).some(([i, n]) => n >= 3 && !!DIARY_SECRET[bind().host[+i]]);
+export const SECRET_UI = { got: K('새 비밀! · 몽글이 일기장', "New secret! · Mongle's diary"), lockT: K('비밀 한 줄', 'A secret'), lock: K('별 셋이면 일기장에 적혀', 'Get 3 stars to write it in the diary'),
+  book: K('비밀', 'Secret'), bookLock: K('??? · 이 친구 판에서 별 셋', "??? · 3 stars on this friend's stage") };
 export const BOOK = { diary: K('몽글이 일기장', "Mongle's diary"), learned: K('배운 것', 'What I Learned'), notYet: K('판에서 처음 만나면 얻어', 'Find one in a stage to unlock') };
 export const UI = { homeHide: K('내 집에서 숨겨 보기', 'Hide something at home'), keepGoing: K('계속 찾기', 'Keep searching'), homeHideEnd: K('내 집에서 숨기기', 'Hide something at home'), keepPlaying: K('계속 놀기', 'Keep playing') };
 
