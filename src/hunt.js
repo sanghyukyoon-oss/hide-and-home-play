@@ -63,7 +63,8 @@ export function chainToView(S) {
     if (!CHAIN.has(it.role) || it.found || it.vacHidden || it.spot.part) continue;
     if (!W.occluded(it.g, S.worldCenter(it), [R.group])) continue;
     const o = S.worldCenter(it);
-    const spots = R.spots.filter(s => !s.item && !s.part && s.kind === 'on' && !s.wallFace && s.anchor && fitsSpot(it.type, s)).map(s => ({ s, d: s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(o) })).sort((a, b) => a.d - b.d).slice(0, 8);
+    // (never onto the piece it opens — 1~10판 레벨 세션 10/19)
+    const spots = R.spots.filter(s => !s.item && !s.part && s.kind === 'on' && !s.wallFace && s.anchor && fitsSpot(it.type, s) && s.furn !== it.forPart?.furn).map(s => ({ s, d: s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(o) })).sort((a, b) => a.d - b.d).slice(0, 8);
     for (const { s } of spots) {
       const old = it.spot; moveItem(it, s);
       if (!W.occluded(it.g, S.worldCenter(it), [R.group])) { moved = `${it.type}: ${old.label} → ${s.label}`; break; }

@@ -41,7 +41,8 @@ export function modelSpec(kind) {
     lock: [], inside: 2, behind: 0, time: 120, clutter: .4, ho: true, model: kind, avoid: blindFor(M.room) };
 }
 // the pieces as the things to find; the one a padlock should guard first (planStage: the first lock guards the first
-// target — 8판: the head, out of the locked chest)
+// target — 8판: the head, out of the locked wardrobe; 5·7판 already lock the toy chest, so 6판 the dish cabinet and 8판 the
+// wardrobe — 검토 세션 10/19 "자물쇠는 장난감 상자로 외우게 돼요")
 export const kitForce = kit => { const K = KITS[kit], o = K.order.slice(); if (K.locked) o.unshift(...o.splice(o.indexOf(K.locked), 1)); return o.map(k => kitItem(kit, k)); };
 const fits = (type, s) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat);
 export function planModel(room, spec, story = null) {

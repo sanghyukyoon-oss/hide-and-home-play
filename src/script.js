@@ -774,6 +774,7 @@ const CARDS = {
   treat: { t: K('버티는 친구', "Won't Budge"), s: [['😾', K('누가 길을 막고 있으면', 'Spot someone in the way')], ['🐟', K('좋아하는 간식을 찾아서', 'Find their favorite snack')], ['👆', K('그 친구를 톡', 'Tap them')]] },
   obs: { t: K('관찰 자물쇠', 'Look-Closely Lock'), s: [['🕰️', K('쪽지가 방 안 무언가를 가리키면', 'A note points at something in the room')], ['👀', K('그걸 찾아서 잘 봐', 'Find it and look closely')], ['👆', K('본 대로 자물쇠를 맞추기', 'Set the lock to what you saw')]] },
   buddy: { t: K('같이 다니는 친구', 'Tag-Along Friend'), s: [['📖', K('도감에서 친구 카드를 톡', "Tap a friend's card in the book")], ['🤝', K("'같이 다니기'를 누르면", "Press 'Come along'")], ['👣', K('판에서 그 친구가 같이 다녀요', 'They walk with you in stages')]] },   // (경제·로비 세션 10/19, 스토리 룸 확인)
+  mongletv: { t: K('몽글 TV', 'Mongle TV'), s: [['📺', K('판 속 TV·모니터를 톡', 'Tap a TV or monitor in a stage')], ['🎮', K('채널을 골라 한 판', 'Pick a channel and play')], ['✋', K('이기면 손가락 +3, 한 판에 한 번', 'Win for +3 taps, once a stage')]] },   // (몽글 TV, 10/19)
   chain: { t: K('연쇄 장치', 'Domino Gadgets'), s: [['🧩', K('하나를 풀면', 'Solve one thing')], ['⚙️', K('다음 장치가 움직여', 'The next one moves')], ['👀', K('방이 바뀌는 걸 잘 봐', 'Watch the room change')]] },
 };
 K('새로 얻었다!', 'New card!'); K('알겠어!', 'Got it!');
@@ -1026,6 +1027,52 @@ export const timedWin = idx => { const t = bind().timed[idx] || 0, l = L('raccoo
 // boss games
 export const gameLines = (kind, lv) => GAME[`${kind}:${lv}`] || null;
 // 프라모델 조립판 (스토리 룸 10/19): go = 부품을 다 찾고 조립을 시작하기 직전 한 줄 (판 대사는 SCENES의 kit 장면)
+// ── 몽글 TV (판 속 TV·모니터와 내 방 TV의 픽셀 미니게임 — src/mongletv.js, 몽글 TV 세션 초안을 스토리 룸이 다듬음 10/19)
+// {who} = 친구 이름(토순이·곰돌이·개굴이: 셋 다 '이'로 끝나 '가/는'), {n} {goal} {s} = 숫자. 진 줄 뒤엔 코드가 ' · ' + again을 붙여요
+export const MONITOR_TV = {
+  ch: [K('어디 숨었게?', 'Which Box?'), K('이삿짐 쌓기', 'Box Stack'), K('몽글 점프', 'Mongle Jump'), K('상자 깨기', 'Box Breaker')],
+  start: K('화면을 톡 해서 시작!', 'Tap the screen to start!'),
+  again: K('화면을 톡 해서 다시', 'Tap the screen to try again'),
+  gain: K('이기면 손가락 +3', 'Win for +3 taps'),
+  got: K('손가락 +{n}!', '+{n} taps!'),
+  already: K('이번 판엔 이미 받았어', 'You already got it this stage'),
+  full: K('손가락이 이미 꽉 찼어', 'Your taps are already full'),
+  rule: {
+    shellMid: K('세 번 중 두 번 맞히면 성공', 'Guess 2 of 3 right to win'),
+    shellHard: K('세 번 다 맞혀야 성공', 'Guess all 3 right to win'),
+    stack: K('{n}층 쌓으면 성공 · 삐져나온 만큼 잘려', 'Stack {n} high to win · overhangs get cut'),
+    run: K('{n}초 버티면 성공 · 톡 하면 점프', 'Last {n}s to win · tap to jump'),
+    brk: K('숨은 친구 셋을 찾으면 성공 · 공 {n}개', 'Find the 3 hidden friends to win · {n} balls'),
+  },
+  shell: {
+    hide: K('{who}가 상자에 숨는다!', '{who} is hiding in a box!'),
+    watch: K('잘 봐…', 'Watch closely…'),
+    pick: K('어디 숨었게? 톡!', 'Which box? Tap it!'),
+    right: K('찾았다! {who} 들켰어!', 'Found you, {who}!'),
+    wrong: K('거기 아니야~ {who}는 여기! 킥킥', 'Nope~ {who} was over here! Hee hee'),
+    win: K('성공! {n}/3 맞혔다', 'You did it! {n}/3 right'),
+    lose: K('아쉽다! {n}/3', 'So close! {n}/3'),
+  },
+  stack: {
+    go: K('톡 해서 상자를 내려놔!', 'Tap to drop the box!'),
+    count: K('{n} / {goal}층', '{n} / {goal} high'),
+    perfect: K('딱 맞았다!', 'Perfect fit!'),
+    lose: K('와르르! {n}층', 'Crash! {n} high'),
+    win: K('성공! {n}층', 'You did it! {n} high'),
+  },
+  run: {
+    go: K('톡 하면 점프!', 'Tap to jump!'),
+    lose: K('쿵! {s}초', 'Bonk! {s}s'),
+    win: K('성공! {s}초 버텼다', 'You did it! Lasted {s}s'),
+  },
+  brk: {
+    go: K('끌어서 베개를 움직이고, 톡 하면 공을 튕겨!', 'Drag to move the pillow, tap to launch!'),
+    found: K('찾았다! {who}!', 'Found {who}!'),
+    miss: K('앗, 놓쳤다! 남은 공 {n}', 'Oops! {n} balls left'),
+    lose: K('아쉽다! 친구 {n}명 찾았어', 'So close! Found {n}'),
+    win: K('성공! 숨은 친구 다 찾았다', 'You did it! Found them all'),
+  },
+};
 export const KIT_TALK = {
   robot: { who: 'bear', go: K('다 모았다! 이번엔 끝까지 맞추자.', "All here! Let's finish it this time."), wrong: K('으헤헤, 순서가 있나 봐.', "Ehehe, guess there's an order.") },
   moving: { who: 'bunny', go: K('다 찾았다! 이제 제자리에 놓자.', "All found! Now let's put everything where it goes."), wrong: K('거긴 그 자리가 아니야~', "Nope, that's not its spot~") },

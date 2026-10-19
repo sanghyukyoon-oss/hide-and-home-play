@@ -476,9 +476,9 @@ export const STAGES = [
   { room: 'fishing', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },
   { room: 'peng', n: 5, inside: 1, behind: 0, time: 85, clutter: .5 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 5 things + 2 grey furniture — the first 흑백
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4 },   // the key lesson (🆕 열쇠 card on the first padlock)
-  { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3 },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
+  { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3, lockOn: { pad: ['dishcab'] } },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
   { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, zoom: 1.4 },
-  { room: 'house3', n: 6, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .3, zoom: 1.4, kit: 'robot' },   // 프라모델 조립판 (10/19, 스토리 룸·레벨 세션 합의): 곰돌이가 어릴 때 못 맞춘 꼬마 로봇 — 부품 6개, 머리는 잠긴 상자 속(열쇠 세 번째), 함정 절반 (modelkit.js)
+  { room: 'house3', n: 6, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .3, zoom: 1.4, kit: 'robot', lockOn: { pad: ['wardrobe'] } },   // 프라모델 조립판 (10/19, 스토리 룸·레벨 세션 합의): 곰돌이가 어릴 때 못 맞춘 꼬마 로봇 — 부품 6개, 머리는 잠긴 상자 속(열쇠 세 번째), 함정 절반 (modelkit.js)
   { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6, zoom: 1.25 },   // (then 이불 속 누구게 — the pajama party)
   { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55 },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .65 },
@@ -944,9 +944,11 @@ export function planStage(room, spec, story = null) {
       continue;
     }
     // a stage can say where a clue waits (2층집: the key comes down in the pulley basket)
+    // (never on the very piece it opens: 8판's key sat on top of its own wardrobe — 1~10판 레벨 세션 10/19)
+    const away = x => (x.furn || x.part?.furn) !== L.part.furn;
     const cs = (spec.clueIn?.[L.kind] && take(x => x.furn.type === spec.clueIn[L.kind] && x.part && !inLocked(x), chainType))
-      || (spec.ho && take(x => !inLocked(x) && x.kind === 'on', chainType))   // 숨은그림 판: a key / note / card is where you can see it
-      || take(x => !inLocked(x) && x.kind !== 'on', chainType) || take(x => !inLocked(x), chainType);
+      || (spec.ho && take(x => !inLocked(x) && x.kind === 'on' && away(x), chainType))   // 숨은그림 판: a key / note / card is where you can see it
+      || take(x => !inLocked(x) && x.kind !== 'on' && away(x), chainType) || take(x => !inLocked(x) && away(x), chainType) || take(x => !inLocked(x), chainType);
     if (cs) placements.push({ type: chainType, spot: cs, role, code: L.code, forPart: L.part });
   }
   const lockedParts = new Set(locks.map(l => l.part));
@@ -1013,7 +1015,10 @@ export function planStage(room, spec, story = null) {
 export const decoyCap = n => Math.max(6, Math.round(n * 1.5));
 export function capDecoys(plan, spec) {
   if (!plan || spec.gray || spec.timed || spec.tut <= 2 || spec.custom) return 0;
-  const dec = plan.placements.filter(p => p.role === 'decoy' && p.type !== 'sockp'), cap = decoyCap(plan.targets.length);
+  // (1~10판은 찾을 것 수만큼, 6 밑으로는 안 내려감 — 6~9판에 확대·두 칸 맵·함정 두 배가 한꺼번에 와서 1장에서 제일 빡빡했어요;
+  // 검토 세션 실측 + 사용자 승인 10/19, 1~10판 레벨 세션)
+  const n = plan.targets.length, cap = (spec.idx ?? -1) >= 0 && spec.idx < 10 ? Math.max(6, n) : decoyCap(n);   // (1~10판; 11판부터는 그대로)
+  const dec = plan.placements.filter(p => p.role === 'decoy' && p.type !== 'sockp');
   if (dec.length <= cap) return 0;
   const drop = new Set(rng((spec.seed || 1) + 4241).shuffle(dec.slice()).slice(cap));
   plan.placements = plan.placements.filter(p => !drop.has(p));
