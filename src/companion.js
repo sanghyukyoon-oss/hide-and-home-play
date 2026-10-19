@@ -1,4 +1,4 @@
-// The player's own character (몽글이 by default, save.hero) walking around the stage with you: it trails the middle of
+// The player's own character (몽글이; the friend picked in the 도감 walks beside it — save.hero) walking around the stage with you: it trails the middle of
 // the view a step behind — when you move or turn, it hops after you along free floor tiles, never through furniture or
 // the other characters. It is never pickable, so it can't block a tap on a hidden thing behind it.
 import * as THREE from 'three';
@@ -71,12 +71,31 @@ export class Companion {
     this.G = G; this.others = others;
     // walkable points every half tile: on the floor (not a cut-out or a raised step), clear of furniture for a body
     const tiles = this.tiles = walkGrid(rooms);
-    const kind = CHAR_DEFS[G.save.hero] ? G.save.hero : 'mong';
-    this.ch = new Char(kind); this.on = true; this.busy = false; this.wait = .6;
+    // 같이 다니는 친구 (10/19, user OK; 스토리 룸): 몽글이 always walks — the script's 몽글이 lines stay on 몽글이 — and the friend
+    // picked in the 도감 (save.hero) walks beside it. A friend who is in this stage already (its host, a friend hiding here)
+    // stays home that day: never two of the same one in a room.
+    const want = CHAR_DEFS[G.save.hero] && G.save.hero !== 'mong' ? G.save.hero : null;
+    const cast = new Set((others?.() || []).map(c => c?.kind).filter(Boolean));
+    this.ch = new Char('mong'); this.on = true; this.busy = false; this.wait = .6;
     const W = G.world, start = this.nearest(W.target.x, W.target.z) || tiles[0];
     this.t = start; this.ch.root.position.set(start.x, start.y || 0, start.z);
     this.ch.root.rotation.y = Math.atan2(W.cam.position.x - start.x, W.cam.position.z - start.z);
     W.root.add(this.ch.root); W.idsDirty = true;
+    this.buddy = want && !cast.has(want) ? new Char(want) : null; this.resting = !!want && !this.buddy;
+    if (this.buddy) { W.root.add(this.buddy.root); this.besideHero(W); }
+  }
+  // the buddy on free floor next to 몽글이 (half a step to a step away, same level), facing you; none → it waits out of sight
+  besideHero(W) {
+    const b = this.buddy; if (!b) return null;
+    const h = this.t, taken = this.taken(); let best = null, bd = Infinity;
+    for (const t of this.tiles) {
+      if (t === h || t.stair || taken.has(t) || Math.abs((t.y || 0) - (h.y || 0)) > .05) continue;
+      const d = Math.hypot(t.x - h.x, t.z - h.z); if (d < .5 || d > 1.2) continue;
+      const s = Math.abs(d - .75); if (s < bd) { bd = s; best = t; }
+    }
+    b.root.visible = !!best;
+    if (best) { b.root.position.set(best.x, best.y || 0, best.z); b.root.rotation.y = Math.atan2(W.cam.position.x - best.x, W.cam.position.z - best.z); W.idsDirty = true; }
+    return best;
   }
   nearest(x, z, avoid = new Set()) {
     let b = null, bd = 1e9;
@@ -109,7 +128,7 @@ export class Companion {
   // it pops up at the nearest edge of the screen. It moves otherwise only to react (react()).
   update(dt, tw, paused) {
     if (!this.on) return;
-    this.ch.update(dt);
+    this.ch.update(dt); this.buddy?.update(dt);
     if (this.busy || paused) return;
     const W = this.G.world, key = [W.yaw, W.pitch, W.zoom, W.target.x, W.target.z].map(v => v.toFixed(3)).join();
     const still = !W.ptrs?.size && !W._tdHeld && !W.flying && key === this._key;
@@ -137,6 +156,7 @@ export class Companion {
     }
     if (!best) { this._still = 0; return; }   // no free floor on screen (zoomed into a wall): try again after the next move
     this.busy = true; this.t = best;
+    if (this.buddy) { this.besideHero(W); const br = this.buddy.root, b0 = br.scale.x; br.scale.setScalar(b0 * .01); tw.wait(.12).then(() => tw.run(.28, k => br.scale.setScalar(b0 * (k < .7 ? k / .7 * 1.12 : 1.12 - .12 * (k - .7) / .3)))).then(() => br.scale.setScalar(b0)); }
     const root = this.ch.root, s0 = root.scale.x;
     root.position.set(best.x, best.y || 0, best.z);
     root.rotation.y = Math.atan2(W.cam.position.x - best.x, W.cam.position.z - best.z);
@@ -155,6 +175,7 @@ export class Companion {
       if (at) { const r0 = root.rotation.y; let d = Math.atan2(at.x - p.x, at.z - p.z) - r0; d = Math.atan2(Math.sin(d), Math.cos(d)); await tw.run(.18, k => { root.rotation.y = r0 + d * k; }); }
       const face0 = ch.face;
       ch.setFace(kind === 'find' ? 'happy' : 'wow');
+      const B = this.buddy; if (B?.root.visible) { if (at) B.faceTo(at.x, at.z); B.bump(.35); }
       if (kind === 'find') await ch.hopTo(tw, p.x, p.z, { height: .2, dur: .3 }); else ch.bump(.45);
       await tw.wait(kind === 'find' ? .7 : .9);
       if (this.on) ch.setFace(face0 === 'wow' || face0 === 'happy' ? 'normal' : face0);
@@ -172,7 +193,8 @@ export class Companion {
       this.t = t; p.y = y1;
       await tw.wait(.06);
     }
+    this.besideHero(this.G.world);
     this.busy = false; this.wait = .6;
   }
-  dispose() { this.on = false; this.ch.root.parent?.remove(this.ch.root); }
+  dispose() { this.on = false; this.ch.root.parent?.remove(this.ch.root); this.buddy?.root.parent?.remove(this.buddy.root); }
 }

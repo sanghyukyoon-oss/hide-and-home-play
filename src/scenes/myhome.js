@@ -103,7 +103,7 @@ export class MyHomeScene {
       }
       for (const pk in hid.locks) { const p = this.partByKey[pk]; if (p) p.furn.setLock(p, hid.locks[pk], hid.code); else delete hid.locks[pk]; }
     }
-    this.mong = new Char(this.lobby ? G.save.hero || 'mong' : 'mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8;
+    this.mong = new Char('mong');   // (the room's owner is always 몽글이 — the 도감 pick is a friend who walks along, 10/19) this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8;
     if (this.lobby) { const R = this.room, [mx, mz] = [[.7, 1.1], [.3, 1.5], [1.1, .5], [0, .6], [1.5, 1.5]].find(([x, z]) => R.clearAt(x, z, .34)) || [1.9, 1.9]; this.mong.root.position.set(mx, 0, mz); }   // (the lobby: in the middle of things, the camera on it)
     this.room.group.add(this.mong.root);
     if (this.lobby) this.seatFriends();   // the friends sitting in this room (lobby.js)

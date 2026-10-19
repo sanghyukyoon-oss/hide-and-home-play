@@ -18,7 +18,7 @@ const PI = Math.PI;
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const NIGHT = { ambColor: '#a3adff', amb: 1.0, sunColor: '#cfd7ff', sun: .8 };
-const heroKind = S => { const k = S.G.save.hero; return k && k !== 'mong' && S.G.thumbs['face_' + k] ? k : 'mong'; };
+const heroKind = () => 'mong';   // (always 몽글이: the 도감 pick walks along in stages only — 10/19)
 // a flat coloured strip on the floor (no outline, never picked)
 function strip(S, x0, x1, z, w, color, op = .35) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(Math.abs(x1 - x0), w), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false }));

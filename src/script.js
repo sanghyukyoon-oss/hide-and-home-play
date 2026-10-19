@@ -773,9 +773,12 @@ const CARDS = {
   lever: { t: K('쇠사슬', 'Chains'), s: [['⛓️', K('쇠사슬이 감겨 있으면', 'Spot chains')], ['🔴', K('벽의 빨간 레버를 찾아서', 'Find the red lever on a wall')], ['👆', K('레버를 톡', 'Tap the lever')]] },
   treat: { t: K('버티는 친구', "Won't Budge"), s: [['😾', K('누가 길을 막고 있으면', 'Spot someone in the way')], ['🐟', K('좋아하는 간식을 찾아서', 'Find their favorite snack')], ['👆', K('그 친구를 톡', 'Tap them')]] },
   obs: { t: K('관찰 자물쇠', 'Look-Closely Lock'), s: [['🕰️', K('쪽지가 방 안 무언가를 가리키면', 'A note points at something in the room')], ['👀', K('그걸 찾아서 잘 봐', 'Find it and look closely')], ['👆', K('본 대로 자물쇠를 맞추기', 'Set the lock to what you saw')]] },
+  buddy: { t: K('같이 다니는 친구', 'Tag-Along Friend'), s: [['📖', K('도감에서 친구 카드를 톡', "Tap a friend's card in the book")], ['🤝', K("'같이 다니기'를 누르면", "Press 'Come along'")], ['👣', K('판에서 그 친구가 같이 다녀요', 'They walk with you in stages')]] },   // (경제·로비 세션 10/19, 스토리 룸 확인)
   chain: { t: K('연쇄 장치', 'Domino Gadgets'), s: [['🧩', K('하나를 풀면', 'Solve one thing')], ['⚙️', K('다음 장치가 움직여', 'The next one moves')], ['👀', K('방이 바뀌는 걸 잘 봐', 'Watch the room change')]] },
 };
 K('새로 얻었다!', 'New card!'); K('알겠어!', 'Got it!');
+// 12판 뒤 로비, 같이 다니는 친구 배지와 함께 (스토리 룸 10/19: 토순이 고정 — 1판부터 늘 있는 첫 친구; 방에 없으면 말풍선 없이 배지만)
+export const BUDDY_LINE = L('bunny', '몽글아, 다음 판엔 나도 따라가도 돼?', 'Mongle, can I tag along next stage?');
 // R4 관찰 자물쇠 (검토 세션 10/18): the note only says where to look — the code is the time on a clock in the room (시 : 분
 // dials), the colors are the vases read smallest first. obslock.js calls obsCards() when it loads, so the cards (and 7판
 // 펭펭이's slip about the stopped clock) change only once that lock is really in the game.

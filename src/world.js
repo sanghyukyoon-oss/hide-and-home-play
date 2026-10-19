@@ -111,6 +111,9 @@ export class World {
     this.vYaw = 0; this.vPitch = 0; this.minPitch = .36; this.maxPitch = 1.15; this.minZoom = 1; this.maxZoom = 2.8;
     this.bounds = 2.6; this.home = new THREE.Vector3(0, .6, 0); this.fit = { w: 7.6, h: 6.5, cy: .46 };
     this.autoSpin = 0; this.camLock = false; this.shadowDirty = true;
+    // the lobby (내 방, 10/19 user: "회전할 수 있게"): dragTurn — one finger turns the room side to side instead of moving the view;
+    // spinQuiet — the slow idle sway (autoSpin) doesn't count as the view moving, so a phone stays on its idle frame rate
+    this.dragTurn = false; this.spinQuiet = false; this._spinAcc = 0;
     this.raycaster = new THREE.Raycaster();
     this.raycaster.layers.set(0); this.raycaster.layers.enable(1);   // meshes + pick proxies, never blob shadows
     this.snap = true; this.yawGoal = null;
@@ -455,7 +458,7 @@ export class World {
     if (!this.drag && !this.flying) {
       this.yaw += this.vYaw * dt; this.vYaw *= Math.exp(-dt * 8);
       if (Math.abs(this.vYaw) < .01) this.vYaw = 0;
-      this.yaw += this.autoSpin * dt;
+      const sp = this.autoSpin * dt; this.yaw += sp; if (this.spinQuiet) this._spinAcc += sp;
     }
     this.updateCam();
     const s = this.sun;
@@ -506,7 +509,7 @@ export class World {
   }
   _render() {
     this._aoWatch(performance.now());
-    const ck = this.yaw.toFixed(4) + this.pitch.toFixed(4) + this.zoom.toFixed(4) + this.target.x.toFixed(3) + this.target.y.toFixed(3) + this.target.z.toFixed(3);
+    const ck = (this.yaw - this._spinAcc).toFixed(4) + this.pitch.toFixed(4) + this.zoom.toFixed(4) + this.target.x.toFixed(3) + this.target.y.toFixed(3) + this.target.z.toFixed(3);
     if (ck !== this._ck) { this._ck = ck; this.lastActive = performance.now(); }   // the view is moving: full frame rate
     if (SHADOW.moved) { SHADOW.moved = false; this.shadowDirty = true; }   // a part moved: its shadow follows (only while it moves)
     if (this.shadowDirty) { this.renderer.shadowMap.needsUpdate = true; this.shadowDirty = false; }
@@ -781,6 +784,7 @@ export class World {
         if (dr.custom) dr.custom.move(e.clientX, e.clientY);
         // one finger turns the room (side to side) or tilts it (up and down), whichever the drag starts as;
         // with a mouse, right-drag or shift-drag moves the view
+        else if (this.dragTurn && !this.camLock) { this.turnAround(null, -dx * 3.6 / Math.max(this.W, 360), 0); dr.turned = true; }   // (the lobby: side to side only)
         else if (dr.second && !this.camLock) {
           const S2 = dr.second;
           if (!S2.mode) { const tx = e.clientX - S2.x0, ty = e.clientY - S2.y0; S2.mode = Math.abs(ty) > Math.abs(tx) * 1.2 ? 'pitch' : 'yaw'; this.rawYaw = this.yaw; }

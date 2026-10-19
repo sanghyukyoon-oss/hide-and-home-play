@@ -239,6 +239,7 @@ export class StageScene {
     if (!this.custom && !this.G.save.settings?.noHero) {
       const h = new Companion(this.G, this.room.rooms || [this.room], () => [this.friend, ...(this.npcs || []).map(n => n.ch)]);
       if (h.tiles.length > 6) this.hero = h; else h.dispose();
+      if (this.model && h.buddy) { h.buddy.root.parent?.remove(h.buddy.root); h.buddy = null; }   // (a model kit: nobody extra in front of the pieces)
     }
     // camera
     this.frameCamera();
@@ -347,7 +348,7 @@ export class StageScene {
     G.world.root.remove(this.room.group); G.world.root.remove(this.friend.root); this.look?.dispose(); setSky(null);
     for (const n of this.npcs || []) { n.on = false; G.world.root.remove(n.ch.root); }
     for (const m of this.prints || []) { G.world.root.remove(m); m.material.dispose(); }
-    this.ambient?.dispose(); if (this.hero) { disposeTree(this.hero.ch.root); this.hero.dispose(); }
+    this.ambient?.dispose(); if (this.hero) { disposeTree(this.hero.ch.root); if (this.hero.buddy) disposeTree(this.hero.buddy.root); this.hero.dispose(); }
     // this stage's own meshes, materials and textures (not the shared caches) go with it
     if (this.cameo) { G.world.root.remove(this.cameo.ch.root); disposeTree(this.cameo.ch.root); }
     for (const r of [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root)]) disposeTree(r);

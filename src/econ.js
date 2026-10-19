@@ -47,7 +47,7 @@ export function metFriends(save) {
   const met = new Set(save.chars || []);
   for (let i = 0; i < Math.min(save.stage || 0, STAGE_COUNT); i++) { const sp = stageSpec(i), k = sp.timed ? 'raccoon' : THEMES[sp.room]?.friend; if (k) met.add(k); }
   for (const [i, k] of Object.entries(CHAR_UNLOCK)) if (+i < (save.stage || 0)) met.add(k);
-  return [...met].filter(k => CHAR_DEFS[k] && k !== 'mong' && k !== 'mom' && k !== save.hero);
+  return [...met].filter(k => CHAR_DEFS[k] && k !== 'mong' && k !== 'mom');   // (the friend who walks along sits in the room like the rest — 10/19)
 }
 // seats in a zone: 3, and one more for each of the first three room sizes (max 6) — 설계서 2-4 (사용자 결정 3, 추천값)
 export const seatsOf = zone => 3 + Math.min(zone?.size || 0, 3);

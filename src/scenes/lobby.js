@@ -13,7 +13,7 @@ import { openCardBook } from '../cardbook.js';
 import { runRaids } from '../raid.js';
 import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/19)
 import { playDialog } from '../story.js';
-import { HOME_TUT, ENDING, endCard, choose, giftSeats, UI as SUI } from '../script.js';
+import { HOME_TUT, ENDING, endCard, choose, giftSeats, newCard, BUDDY_LINE, UI as SUI } from '../script.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
@@ -42,6 +42,8 @@ export class LobbyScene extends MyHomeScene {
     if (G.homeOpen() && !tut.home) await this.roomOpens();
     else if (G.homeOpen() && this.H.giftDue) { const t = await this.giftCards(GIFTS); if (this.dead) return; this.giveGift(t); this.frameLobby(); this.arrivals(); }   // (left before picking)
     else if (G.homeOpen()) this.arrivals();
+    // 같이 다니는 친구 (10/19, user OK): after 12판, once — a 🆕 badge and a friend in the room asks to come along
+    if (G.homeOpen() && (G.save.stage || 0) >= 12 && !G.save.cards?.buddy && !G.bot) setTimeout(() => !this.dead && this.mode === 'lobby' && !this.busyTut && this.buddyHint(), 5200);
     // a new chapter's furniture is in the shop now (설계서 N3): one toast, once per chapter
     const ch = chapterNow(G.save);
     if (G.homeOpen() && ch > (this.H.shopCh || 1)) {
@@ -53,7 +55,7 @@ export class LobbyScene extends MyHomeScene {
   // ── the lobby's HUD: profile, ★ · coins · magnifiers, the side column, the play button and the three room buttons
   lobbyHud() {
     const G = this.G, ui = G.ui, S = G.save, col = this.col, open = G.homeOpen();
-    const lv = 1 + Math.floor((S.stars || 0) / 6), hero = S.hero || 'mong';
+    const lv = 1 + Math.floor((S.stars || 0) / 6), hero = 'mong';   // (the room's owner is always 몽글이; save.hero is the friend who walks along — 10/19)
     const prof = h('div', { class: 'profile' }, h('div', { class: 'av' }, h('img', { src: G.thumbs['face_' + hero] || G.thumbs.face_mong })), h('div', {}, h('div', { class: 'nm ol' }, nameOf(hero) || '몽글이'), h('div', { class: 'lv' }, `Lv.${lv}`, h('span', { class: 'lvt' }, ' 숨바꼭질 탐정'))));
     let taps = [];   // review shortcut, as on the old home: the profile 5 times quickly → every stage open on the map
     prof.addEventListener('pointerup', () => {
@@ -123,6 +125,7 @@ export class LobbyScene extends MyHomeScene {
   }
   // a clear bit of floor for a friend: away from 몽글이, the other friends and the furniture; the front of the room first
   freeSpot(near = null) {
+    this.room._solid = null;   // (room.clearAt keeps the furniture's boxes from the first call: a piece placed or moved since wasn't in them)
     const R = this.room, taken = [this.mong.root.position, ...this.seated.map(s => s.rec)], c = [];   // (a seat, not where its friend is walking from)
     for (let x = -R.w / 2 + .6; x <= R.w / 2 - .6; x += .35) for (let z = -R.d / 2 + .6; z <= R.d / 2 - .6; z += .35) {
       if (!R.clearAt(x, z, .32) || taken.some(p => Math.hypot(p.x - x, p.z - z) < .9)) continue;
@@ -209,6 +212,7 @@ export class LobbyScene extends MyHomeScene {
   }
   seatedHit(x, y) { const hit = this.pick(x, y); return hit.kind === 'char' ? this.seated.find(s => s.ch === hit.char) || null : null; }
   tap(x, y) {
+    if (this.mode === 'lobby') { const hit = this.pick(x, y); if (hit.kind === 'char' && hit.char === this.mong) { this.heroView(); this.reactChar(this.mong); return; } }
     if (this.mode === 'edit') { const s = this.seatedHit(x, y); if (s) { this.selectFriend(s); return; } this.selectFriend(null); }
     return super.tap(x, y);
   }
@@ -237,21 +241,80 @@ export class LobbyScene extends MyHomeScene {
   }
   setMode(mode) {   // (꾸미기·숨기기 '완료' come back to the lobby)
     this.fsel = null; mode = mode === 'view' ? 'lobby' : mode;
-    const r = super.setMode(mode);
-    this.G.world.joyHidden = mode === 'lobby';   // (the dial in 꾸미기·숨기기 — G.go hides it for a scene named home, QA3 10/19)
+    const prev = this.mode, r = super.setMode(mode), W = this.G.world;
+    W.joyHidden = mode === 'lobby';   // (the dial in 꾸미기·숨기기 — G.go hides it for a scene named home, QA3 10/19)
+    // the lobby turns with one finger side to side (no moving about, no dial) and sways slowly when left alone (10/19, user OK)
+    W.dragTurn = W.spinQuiet = mode === 'lobby'; W.autoSpin = 0; this._swayT = 0; this._heroView = null;
     if (mode === 'lobby') this.frameLobby(); else this.frameRoom();
+    // back from 꾸미기 with something new in the room: 몽글이 goes over to it, pleased (instead of the camera zooming about)
+    if (mode === 'lobby' && prev === 'edit' && this._placed) { const f = this._placed; this._placed = null; this.heroCheer(f); }
     return r;
+  }
+  exit() { const W = this.G.world; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0; return super.exit(); }
+  // a piece placed in 꾸미기: 몽글이 turns to it and hops (where it stands); the walk over comes on 완료
+  placeFromInv(i) {
+    const n0 = this.zone.furniture.length; super.placeFromInv(i);
+    if (this.zone.furniture.length <= n0 || this.mode !== 'edit' || this.busyTut) return;
+    const f = this.zone.furniture[this.zone.furniture.length - 1], m = this.mong; this._placed = { x: f.x, z: f.z };
+    m.faceTo(f.x, f.z); m.setFace?.('happy'); m.hopTo(this.tw, m.root.position.x, m.root.position.z, { height: .3, dur: .35 }); this.G.audio.sfx('giggle');
+  }
+  async heroCheer(f) {
+    const m = this.mong, G = this.G; if (!m || this.dead) return;
+    const p = this.freeSpot(f);
+    if (p && Math.hypot(p.x - f.x, p.z - f.z) < 2.2) { await m.walkTo(this.tw, p.x, p.z); if (this.dead || this.mode !== 'lobby') return; }
+    m.faceTo(f.x, f.z); m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); G.audio.sfx('special');
+    const s = G.world.toScreen(new THREE.Vector3(m.root.position.x, m.headTop() + .2, m.root.position.z));
+    G.world.fx.burst(s.x, s.y, { n: 10, shape: 'heart', colors: ['#ff7aa8', '#ffd1e0'], speed: 120, gravity: -60 });
+    await this.tw.wait(1.4); if (this.dead) return;
+    m.pose = 'idle'; m.setFace?.('happy'); m.faceTo(G.world.cam.position.x, G.world.cam.position.z);   // (then back to you)
+    if (this.mode === 'lobby') this.frameLobby(.8);
+  }
+  // tap 몽글이 in the lobby: close up on it; again: the whole room; again: close up
+  heroView() {
+    const W = this.G.world, m = this.mong;
+    const close = this._heroView === 'room' || (this._heroView == null && !this._isClose());
+    this._heroView = close ? 'close' : 'room';
+    if (close) m.faceTo(W.cam.position.x, W.cam.position.z);   // (its face, not its back, after the room was turned)
+    W.flyTo(this.tw, close ? { ...this.closeShot(), dur: .5 } : { target: W.home.clone(), zoom: 1, dur: .55 });
+  }
+  // the close-up: 몽글이 about a sixth of the screen tall, its middle a little under the screen's middle — measured on the
+  // screen (the lobby's fit depends on the room's size), the camera put back as it was before flying there
+  closeShot() {
+    const W = this.G.world, m = this.mong, p = m.root.position, t0 = W.target.clone(), z0 = W.zoom, V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const meas = (y, z) => { W.target.set(p.x, y, p.z); W.zoom = z; W.updateCam(); const f = W.toScreen(V(p.x, 0, p.z)), hd = W.toScreen(V(p.x, m.headTop(), p.z)); return { feet: f.y, size: f.y - hd.y }; };
+    const z = clamp(3 * W.H * .16 / Math.max(1, meas(1, 3).size), 2.2, W.maxZoom || 7);
+    const a = meas(1, z), b = meas(2, z), want = W.H * .45 + a.size / 2;
+    const y = 1 + (want - a.feet) / Math.max(1, b.feet - a.feet);
+    W.target.copy(t0); W.zoom = z0; W.updateCam();
+    return { target: V(p.x, y, p.z), zoom: z };
+  }
+  _isClose() { const W = this.G.world, m = this.mong, p = m.root.position, f = W.toScreen(new THREE.Vector3(p.x, 0, p.z)), hd = W.toScreen(new THREE.Vector3(p.x, m.headTop(), p.z)); return f.y - hd.y > W.H * .12; }
+  // 같이 다니는 친구 (12판 뒤 한 번): the 🆕 badge, and the friend who sat down last asks to come along
+  buddyHint() {
+    newCard(this.G, 'buddy');
+    const s = this.seated.find(x => x.k === BUDDY_LINE.who); if (s) { s.ch.faceTo(this.mong.root.position.x, this.mong.root.position.z); s.ch.bump(.35); this.say(s.ch, tr(BUDDY_LINE.text), 2800); }
   }
   // the lobby looks at 몽글이 and whoever sits with it, close up while the room is still bare (user, 10/19: "처음에 너무
   // 썰렁하니까 캐릭터 쪽 클로즈업으로 잡아주자"), opening out as furniture and friends fill it; 꾸미기·숨기기 see the whole room
   frameLobby(dur = .7) {
     if (this.dead || !this.room) return;
     const W = this.G.world, pts = [this.mong.root.position, ...this.seated.map(s => s.rec), ...(this.guest ? [this.guest.root.position] : [])];
-    const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cz = pts.reduce((a, p) => a + p.z, 0) / pts.length;
-    const spread = Math.max(...pts.map(p => Math.hypot(p.x - cx, p.z - cz)));
-    const filled = (this.zone.furniture?.length || 0) + this.seated.length;
-    const zoom = clamp(Math.min(2.5 - filled * .08, 2.3 / Math.max(1, spread + .35)), 1.15, 2.5);
-    const target = new THREE.Vector3(cx, 1.05, cz);   // (a raised look-at point sits the group lower on the screen, nearer the buttons)
+    // (10/19, user OK: 몽글이 never gets small as the room fills — the middle leans 6 : 4 toward 몽글이, and the group is
+    // measured on the screen and fills the space between the top bar, the side buttons and the play button; zoom 1.4–2.5,
+    // capped a little lower as furniture fills the room so a decorated room still shows)
+    const hp = this.mong.root.position, mx = pts.reduce((a, p) => a + p.x, 0) / pts.length, mz = pts.reduce((a, p) => a + p.z, 0) / pts.length;
+    const cx = hp.x * .6 + mx * .4, cz = hp.z * .6 + mz * .4;
+    const zCap = clamp(2.5 - (this.zone.furniture?.length || 0) * .06, 1.6, 2.5);   // (friends: measured below; furniture: open out a little so a decorated room shows)
+    const t0 = W.target.clone(), z0 = W.zoom, V = (x, y, z) => new THREE.Vector3(x, y, z);
+    const box = (y, z) => { W.target.set(cx, y, cz); W.zoom = z; W.updateCam(); let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      for (const p of pts) { const f = W.toScreen(V(p.x, 0, p.z)), hd = W.toScreen(V(p.x, .62, p.z)); x0 = Math.min(x0, f.x - 24); x1 = Math.max(x1, f.x + 24); y0 = Math.min(y0, hd.y); y1 = Math.max(y1, f.y); }
+      return { x0, x1, y0, y1 }; };
+    const top = 92, bot = W.H - 215, availW = W.W - 48 - 72, b2 = box(1.05, 2);
+    const zoom = clamp(2 * Math.min(availW / Math.max(1, b2.x1 - b2.x0), (bot - top) / Math.max(1, b2.y1 - b2.y0)), 1.4, zCap);
+    const a = box(1, zoom), b = box(2, zoom), want = (top + bot) / 2, mid = r => (r.y0 + r.y1) / 2;
+    const ty = clamp(1 + (want - mid(a)) / Math.max(1, mid(b) - mid(a)), .3, 3);
+    W.target.copy(t0); W.zoom = z0; W.updateCam();
+    const target = V(cx, ty, cz);
     if (this._framed) W.flyTo(this.tw, { target, zoom, dur }); else { W.target.copy(target); W.zoom = zoom; this._framed = true; }
   }
   frameRoom(dur = .6) {
@@ -371,6 +434,12 @@ export class LobbyScene extends MyHomeScene {
 
   update(dt) {
     super.update(dt);
+    // left alone for 5 s: a slow sway (about ±8°, a minute a swing); a finger stops it where it is
+    if (this.mode === 'lobby') {
+      const W = this.G.world, idle = performance.now() - W.lastActive > 5000 && !W.flying && !this.busyTut && !this.G.ui.panelOpen;
+      if (idle) { this._swayT = (this._swayT || 0) + dt; W.autoSpin = .014 * Math.cos(this._swayT * .1) * Math.min(1, this._swayT / 4); }
+      else if (this._swayT) { this._swayT = 0; W.autoSpin = 0; }
+    }
     for (const s of this.seated) s.ch.update(dt);
     this.guest?.update(dt);
     if (this.ftool && this.fsel) {
