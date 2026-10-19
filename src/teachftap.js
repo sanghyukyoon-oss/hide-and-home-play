@@ -3,7 +3,9 @@
 // From 6판 (the first wide room, started zoomed in) — once, in the 기본(F) controls — after you have moved the view about
 // a bit (300 px of dragging, 5 s in) a hand drags with a second fingertip tapping beside it, with one short line; the
 // first time you really turn that way, a small "새로 얻었다!" toast. Doing it yourself before the lesson counts as
-// learned. Not in timed, boss, custom or model-kit stages. ?ftapteach=0 → off.
+// learned. A lesson that ran out (22 s) or was cut short by the stage ending isn't: it comes back on a later stage, three
+// times at most (GPT QA R2-08 10/19). Not in timed, boss, custom or model-kit stages (the 프라모델 tab's S.model and the
+// stages' own kits, S.kit). ?ftapteach=0 → off.
 import { EN } from './i18n-en-dict.js';
 import { tr } from './i18n.js';
 
@@ -21,13 +23,15 @@ const fturning = W => W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 
 
 export function armFtap(S) {
   const G = S.G, W = G.world;
-  if (!FTAP_ON || G.save.tut?.ftap || W.scheme !== 'F' || S.idx < 5 || S.custom || S.model || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
+  if (!FTAP_ON || G.save.tut?.ftap || (G.save.tut?.ftapN || 0) >= 3 || W.scheme !== 'F' || S.idx < 5 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
   const learned = () => { (G.save.tut || (G.save.tut = {})).ftap = 1; G.persist?.(); };
   let pan = 0, on = false;
   const st = { turned: 0 };   // how far the room has turned by a drag-then-tap (counted as it happens, not by the frame)
   const prevPan = W.onPan, prevRot = W.onRotate;
   W.onPan = d => { prevPan?.(d); pan += Math.abs(d) || 0; if (!on && pan > 300 && S.t - (S.tStart ?? 0) > 5) { on = true; teachFtap(S, learned, st); } };
-  W.onRotate = d => { prevRot?.(d); if (!fturning(W)) return; st.turned += Math.abs(d) || 0; if (!on) { on = true; learned(); } };   // found it alone: no lesson
+  W.onRotate = d => { prevRot?.(d); if (!fturning(W)) return; st.turned += Math.abs(d) || 0;
+    if (!on) { on = true; learned(); }   // found it alone: no lesson
+    else if (!st.live && st.turned > .35 && !G.save.tut?.ftap) learned(); };   // (after a lesson that ran out: done alone later)
 }
 
 async function teachFtap(S, learned, st) {
@@ -38,7 +42,11 @@ async function teachFtap(S, learned, st) {
   const at = () => ({ sx: W.W * .42, sy: W.H * .54 });
   st.turned = 0;
   const done = () => st.turned > .35;   // ~20° turned that way
+  const T = G.save.tut || (G.save.tut = {}); T.ftapN = (T.ftapN || 0) + 1; G.persist?.();   // (shown: three times at most)
+  st.live = true;
   const ok = await S.teach(tr(FTAP_TXT.tip), 'ftap', at, done, FTAP_TXT.more, 22);
+  st.live = false;
+  if (!ok) return;   // ran out or the stage ended: not learned — again on a later stage
   learned();
-  if (ok) G.ui.toast(tr(FTAP_TXT.got), 'green');
+  G.ui.toast(tr(FTAP_TXT.got), 'green');
 }

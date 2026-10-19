@@ -5,6 +5,8 @@
 // just a short (0.65 s) smooth ease-out pan and zoom in (×1.5 of the stage's start view), and the same way back.
 //   - someone already big near the middle: no move at all
 //   - a finger on the glass: the camera is handed over on the spot (the move stops; no going back later either)
+//   - the view moved by hand after the close-up settled (a drag, the dial, the zoom gauge, a button): no going back either
+//     (GPT QA R2-07 10/19: the return used to undo a move that had already ended — only fingers still down were seen)
 // ?closeup=0 turns it off.
 import * as THREE from 'three';
 import { ease, clamp } from './util.js';
@@ -38,15 +40,17 @@ function framing(W, P, z) {
 // glide (the next speaker) takes over from wherever this one is.
 async function glide(S, to) {
   const W = S.G.world, z0 = W.zoom, t0 = W.target.clone(), id = S._glideId = (S._glideId || 0) + 1; let gave = false;
-  W.flying = true; W.zoomGoal = null; W.yawGoal = null;
+  W.flying = true; W.zoomGoal = null; W.yawGoal = null; S._closeAt = null;
   await S.tw.run(DUR, k => {
     if (gave || S.dead || S._glideId !== id) return;
     if (W.ptrs?.size) { gave = true; W.flying = false; return; }
     W.zoom = z0 + (to.zoom - z0) * k; W.target.lerpVectors(t0, to.target, k);
   }, ease.outCubic);
-  if (S._glideId === id && !gave) W.flying = false;
+  if (S._glideId === id && !gave) { W.flying = false; S._closeAt = view(W); }   // where it settled: a later change is the player's
   return !gave;
 }
+const view = W => ({ zoom: W.zoom, yaw: W.yaw, pitch: W.pitch, target: W.target.clone() });
+const moved = (W, v) => Math.abs(W.zoom - v.zoom) > 1e-3 || Math.abs(W.yaw - v.yaw) > 1e-3 || Math.abs(W.pitch - v.pitch) > 1e-3 || W.target.distanceTo(v.target) > 1e-3;
 
 // come in on one or more characters. Returns the view to go back to, or null when nothing moved.
 export async function closeUp(S, chs, { mul = 1.5 } = {}) {
@@ -65,10 +69,12 @@ export async function closeUp(S, chs, { mul = 1.5 } = {}) {
   return back;
 }
 
-// back to the view from before the close-up (if you haven't taken the camera since)
+// back to the view from before the close-up (if you haven't taken the camera since: a finger down now, or the view
+// changed since the close-up settled; a close-up still gliding is simply turned round)
 export async function closeBack(S) {
-  const back = S._closeBack; S._closeBack = null;
+  const back = S._closeBack, at = S._closeAt; S._closeBack = S._closeAt = null;
   const W = S.G.world;
   if (!back || S.dead || W.ptrs?.size) return;
+  if (!W.flying && (!at || moved(W, at))) return;
   await glide(S, back);
 }
