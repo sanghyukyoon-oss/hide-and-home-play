@@ -1410,3 +1410,14 @@ img { -webkit-user-drag: none; }
 .btnrow .btn { flex: 1 1 auto; min-width: 0; padding-left: .6em; padding-right: .6em; }
 html[lang="en"] .btnrow .btn { font-size: 16px; }
 #hud, #tut-ui { word-break: keep-all; overflow-wrap: break-word; }
+
+/* 타이머 털기 (내 집 지키기·털기 메타, 10/19): the loot bag, the 보물 slot, the end tally */
+.inv .pill.loot { background: rgba(255, 170, 30, .85); }
+.slot.treasure { border-color: var(--y2); background: #fff6cf; box-shadow: 0 0 0 3px rgba(255, 196, 0, .35); }
+.slot .tretag { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); padding: 0 6px; border-radius: 8px; background: var(--y2); color: var(--ink); font-size: 11px; line-height: 16px; border: 2px solid var(--ink); white-space: nowrap; }
+.loottab { display: flex; flex-direction: column; gap: 2px; margin: 4px auto 8px; width: min(300px, 100%); }
+.loottab .lrow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 4px 10px; border-radius: 10px; background: rgba(58, 36, 83, .06); font-size: 15px; color: var(--ink); }
+.loottab .lrow .k small { margin-left: 6px; font-size: 12px; opacity: .65; }
+.loottab .lrow b { color: var(--o3); font-variant-numeric: tabular-nums; }
+.stars .st.stamp { animation: stampin .42s cubic-bezier(.2, 1.9, .35, 1); }
+@keyframes stampin { 0% { transform: scale(2.4) rotate(-14deg); opacity: 0; } 60% { transform: scale(.88) rotate(4deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }

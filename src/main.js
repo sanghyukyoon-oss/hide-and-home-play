@@ -251,13 +251,13 @@ const G = {
     return out;
   },
   onStageFail(idx) { G.stats.fails++; G.stats.log.push({ stage: idx + 1, result: 'fail', secs: +(gameTime - G.stats.stageStart).toFixed(1) }); },
-  onVisitResult(room, ok, found, total, coins) {
+  onVisitResult(room, ok, found, total, coins, exact = false) {   // (exact: 타이머 털기 — the coins are already counted, partial and ⅓ included)
     if (room.selfTest) return { awarded: 0, selfTest: true };
     const key = room.practice ? room.id : room.owner;
     const prev = save.visits[key];
     const firstWin = ok && !prev?.ok;
     save.visits[key] = { ok: ok || !!prev?.ok, at: Date.now() };
-    const awarded = ok ? (firstWin ? coins : Math.round(coins / 3)) : 0;
+    const awarded = exact ? coins : ok ? (firstWin ? coins : Math.round(coins / 3)) : 0;
     save.coins += awarded;
     G.persist();
     if (!room.practice) recordPlay(room.owner, { found, total, ok });

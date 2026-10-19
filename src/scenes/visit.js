@@ -97,7 +97,7 @@ export class VisitScene {
           h('div', { class: 'vname' }, r.practice ? `${r.nick}의 ${r.title}` : `${r.ownerName}의 ${r.title || '방'}`),
           ...(mine ? [h('div', { class: 'vmine' }, `내 물건 ${mine}개를 갖고 있어! 되찾으러 가자`)] : r.brag ? [h('div', { class: 'vbrag' }, `“${r.brag}”`)] : []),
           h('div', { class: 'vmeta' }, `숨긴 물건 ${r.count || r.hidden.length}개` + (r.locks?.length ? ' · 잠금 있음' : '') + (r.resident ? ' · 동네 주민' : r.practice ? ' · 연습' : '') + (r.stats ? ` · ${r.stats.plays}명 도전, ${r.stats.wins}명 성공` : ''))),
-        mine ? h('div', { class: 'vbadge mine' }, '되찾기') : done?.ok ? h('div', { class: 'vbadge ok' }, '찾음') : h('div', { class: 'vbadge' }, '도전'));
+        mine ? h('div', { class: 'vbadge mine' }, '되찾기') : done?.ok ? h('div', { class: 'vbadge ok' }, '찾음') : h('div', { class: 'vbadge' }, '털기'));
       card.addEventListener('click', () => { G.audio.sfx('btn'); G.go('stage', { custom: r }); });
       this.listEl.append(card);
     }

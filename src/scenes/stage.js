@@ -48,6 +48,7 @@ import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
 import { openTune } from '../tune.js';
 import { retrieve, canGrab, grab } from '../raid.js';
+import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle } from '../raidrun.js';   // 타이머 털기 (10/19)
 // 프라모델 조립판 (정식판 10/19): the things to find are a model kit's pieces — the box opens first, a runner card holds them,
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
 import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitFinish, kitReward } from '../modelkit.js';
@@ -259,6 +260,7 @@ export class StageScene {
     if (G.econ) { this.hints = LENS_FREE; this.bagUsed = 0; }   // 경제 B5 (10/19): 2 free a stage, then the bag (lens.js)
     this.tail = null; this._dF = this._dE = false;   // (대본 bits that must not carry over from the last stage)
     this.buildHud();
+    raidSetup(this);   // 타이머 털기: someone else's room — the 보물, the loot bag, the owner's count
     if (this.plan.first) this.tnum.textContent = '';   // 1판: only 토순이 to find, no bonus count
     W.onTap = (x, y) => this.tap(x, y);
     W.onDoubleTap = () => this.undoLastMiss();
@@ -277,7 +279,7 @@ export class StageScene {
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
-    await G.ui.banner(th.name, custom ? `숨겨 둔 물건 ${this.targets.length}개를 찾아라!` : this.model ? this.model.goal : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
+    await G.ui.banner(th.name, custom ? (this.raidRun ? raidGoal(this) : `숨겨 둔 물건 ${this.targets.length}개를 찾아라!`) : this.model ? this.model.goal : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
     if (this.dead) return;
     if (this.kit) { await kitIntro(this); if (this.dead) return; }   // 프라모델: the box opens, the pieces scatter (~2.5 s, a tap skips)
     // 말 줄이기 (스토리 v2, 10/18 — user: "판 시작할 때마다 뭔가가 계속 말 거니까 되게 짜증"): a talk card only where it
@@ -312,6 +314,7 @@ export class StageScene {
       // a 사건 판 that fell back to finding things (no big furniture to hide in): the host says so, not a hiding line
       await this.talk(fallbackIntro(th.friend), { title: th.name }); if (this.dead) return;
     }
+    raidStart(this);   // (타이머 털기: the owner starts counting)
     this.running = true; this.tStart = this.t;
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
     if (this.spec.tut === 2) { this.tutorial2(); this.teachTilt(); }
@@ -360,7 +363,7 @@ export class StageScene {
       h('div', { style: 'display:flex;flex-direction:column;flex:1;min-width:0;gap:3px' }, this.tlEl = h('div', { class: 'tl' }, this.custom ? '숨긴 물건 찾기' : this.spec.timed ? `너굴이가 세는 중 · 0/${this.targets.length}` : this.th.name), h('div', { class: 'tbar' }, this.tbarI = h('i', { style: `width:${this.spec.timed ? 100 : 0}%` }))),
       this.tnum = h('div', { class: 'num ol' }, this.spec.timed ? String(this.spec.time) : this.incident ? (this.targets.length > 1 ? `0/${this.targets.length - 1}` : '') : `0/${this.targets.length}`));
     top.append(this.timerEl);
-    top.append(h('div', { class: 'stagetag ol', html: this.custom ? `놀러옴<b>${this.targets.length}개</b>` : this.model ? `프라모델<b>조립</b>` : this.preview ? `새 아트<b>미리</b>` : `STAGE<b>${this.idx + 1}</b>` }));
+    top.append(h('div', { class: 'stagetag ol', html: this.custom ? `${isRaid(this) ? '털기' : '놀러옴'}<b>${this.targets.length}개</b>` : this.model ? `프라모델<b>조립</b>` : this.preview ? `새 아트<b>미리</b>` : `STAGE<b>${this.idx + 1}</b>` }));
     if (this.spec.hard) top.lastChild.style.background = 'var(--r2)';
     col.append(top);
     this.inv = h('div', { class: 'inv' }); col.append(this.inv);
@@ -990,7 +993,8 @@ export class StageScene {
       const line = which && !said.has(which) && hiddenSay(this.idx, this.th.friend, which);
       if (line) { said.add(which); setTimeout(() => !this.dead && !this.result && this.say(this.friend, line, 1600), 350); }
     }
-    if (this.spec.timed) this.tlEl.textContent = `너굴이가 세는 중 · ${this.found}/${this.targets.length}`;
+    if (this.raidRun) raidFind(this, it, s);   // 타이머 털기: into the loot bag
+    else if (this.spec.timed) this.tlEl.textContent = `너굴이가 세는 중 · ${this.found}/${this.targets.length}`;
     else if (this.incident) { const b = this.targets.filter(t => !t.friend), bf = b.filter(t => t.found).length; this.tnum.textContent = b.length ? `${bf}/${b.length}` : ''; this.tbarI.style.width = (bf / Math.max(1, b.length) * 100) + '%'; }
     else { this.tnum.textContent = `${this.found}/${this.targets.length}`; this.tbarI.style.width = (this.found / this.targets.length * 100) + '%'; }
     this.setMong('happy', 'hop');
@@ -1986,6 +1990,7 @@ export class StageScene {
 
   // ── end states
   async win() {
+    if (this.raidRun) return raidSettle(this, 'all');   // 타이머 털기: everything found — the same end as the clock running out, full
     const G = this.G, W = G.world;
     this.clearTapTimers();
     this.result = 'clear'; this.running = false; this.tEnd = this.t;
@@ -2134,9 +2139,9 @@ export class StageScene {
     for (const z of first?.newZones || []) setTimeout(() => G.ui.toast(`내 집에 ${ga(z)} 생겼어!`, 'green'), 1700);
   }
   // 털기: one of the things found here goes home with 몽글이
-  pickLoot(back = []) {
+  pickLoot(back = [], only = null) {   // (only: 타이머 털기 — just what was found)
     const G = this.G;
-    const pool = [...new Set(this.targets.map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && !back.includes(t) && ITEMS[t] && !ITEMS[t].decoy);
+    const pool = [...new Set((only || this.targets).map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && !back.includes(t) && ITEMS[t] && !ITEMS[t].decoy);
     if (!pool.length) return Promise.resolve(null);
     const have = new Set(G.save.collection);
     return new Promise(res => {
@@ -2222,7 +2227,7 @@ export class StageScene {
       try { if (document.fullscreenElement || document.webkitFullscreenElement) await (document.exitFullscreen || document.webkitExitFullscreen).call(document); else await (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); } catch { ui.toast('이 브라우저는 전체화면이 안 돼요', 'red'); }
     }));
     const tools = [];
-    if (this.custom) tools.push(ui.btn('포기하기', { color: 'red', cls: 'sm', onClick: () => this.lose('giveup') }));
+    if (this.custom) tools.push(this.raidRun ? ui.btn('그만 털기', { color: 'orange', cls: 'sm', onClick: () => raidSettle(this, 'stop') }) : ui.btn('포기하기', { color: 'red', cls: 'sm', onClick: () => this.lose('giveup') }));
     if (G.owner) {
       if (!this.custom && !this.preview && this.idx >= 0 && this.idx < 70) tools.push(ui.btn('배치 고치기', { color: 'orange', cls: 'sm', onClick: () => G.go('layedit', { idx: this.idx }) }));
       tools.push(ui.btn('세팅', { color: 'blue', cls: 'sm', onClick: () => { ui.closePanel(); openTune(G, { onClose: () => { if (!this.dead && !this.result) this.pause(); } }); } }));   // stays paused while tuning
@@ -2292,7 +2297,7 @@ export class StageScene {
         this.bubble.classList.toggle('red', sec <= 10);
       }
       this.tbarI.style.width = clamp(this.time / this.timeMax * 100, 0, 100) + '%';
-      if (this.time <= 0 && !this.targets.every(t => t.found)) this.lose();   // (the last find still flying when the clock ran out: it wins — QA 10/18, 이어하기 then had nothing left to find)
+      if (this.time <= 0 && !this.targets.every(t => t.found)) { if (this.raidRun) raidSettle(this, 'time'); else this.lose(); }   // (타이머 털기: the count ran out — keep what you found)   // (the last find still flying when the clock ran out: it wins — QA 10/18, 이어하기 then had nothing left to find)
     }
     this.bubble.style.display = this.timerOn && !this.result ? '' : 'none';
     if (this.zoomTools) { if (!this.view0 && this.running) this.view0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom }; const v = this.view0, off = W.zoom > (v?.zoom || this.zoom0 || 1) + .12 || (v && (Math.abs(Math.atan2(Math.sin(W.yaw - v.yaw), Math.cos(W.yaw - v.yaw))) > .2 || Math.abs(W.pitch - v.pitch) > .12)) || W.target.distanceTo(W.home) > .6; this.zoomTools.classList.toggle('show', !!(off && this.running && !this.result)); /* (not before play starts: the title band, the kit's box — 10/19; a class, so nothing else showing the HUD can bring it back) */ }

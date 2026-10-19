@@ -79,12 +79,13 @@ export function newsLine(e) {
 export const stolenBy = (save, id) => raidOf(save).stolen[id] || [];
 
 // after clearing someone's room: take back what was mine (all of it — it was all found), then pocket one thing
-export function retrieve(G, room) {
+// (only: 타이머 털기 — just the ones found before the count ran out; the rest stay there)
+export function retrieve(G, room, only = null) {
   if (!room?.resident) return [];
-  const R = raidOf(G.save), back = (R.stolen[room.id] || []).slice();
+  const R = raidOf(G.save), held = R.stolen[room.id] || [], back = held.filter(t => !only || only.includes(t));
   if (!back.length) return [];
   for (const t of back) { if (!G.save.collection.includes(t)) G.save.collection.push(t); }
-  R.stolen[room.id] = [];
+  R.stolen[room.id] = held.filter(t => !back.includes(t));
   G.addCoins(back.length * 20);
   G.persist();
   return back;
