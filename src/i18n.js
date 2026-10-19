@@ -94,6 +94,7 @@ const PAT = [
   [/^다음: (.+?)네$/, n => `Next: ${n}'s`],
   [/^(.+?)네 집$/, n => `${n}'s house`],
   [/^저장했어요\. 그런데 숨길 자리가 (\d+)곳뿐이라 (\d+)곳은 있어야 안전해요 — 가구를 조금 더 놓아 주세요$/, (a, b) => `Saved. But there are only ${a} hiding spots — ${b} would be safe. Add a little more furniture`],
+  [/^저장했어요\. 그런데 숨길 자리가 (\d+)곳뿐이라 (\d+)곳은 있어야 안전해요 — 가구를 조금 더 놓아 주세요$/, (a, b) => `Saved. But there are only ${a} hiding spots and ${b} are needed to be safe — add a little more furniture`],
   [/^저장! 이 방을 쓰는 스테이지 (\d+)개\((.+)\)에 적용돼요$/, (a, b) => `Saved! Applies to the ${a} stages using this room (${b})`],
   [/^고친 방 (\d+)개\. 아래 글을 통째로 복사해서 보내 주세요\.$/, n => `${n} edited rooms. Copy all the text below and send it.`],
   [/^같은 방을 쓰는 스테이지: (.+)$/, s => `Stages using this room: ${s}`],

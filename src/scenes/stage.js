@@ -679,7 +679,8 @@ export class StageScene {
     if (penalty && this.timerOn) { this.misses.push(this.t); this.misses = this.misses.filter(t => this.t - t < 3); }
     if (penalty) {
       this.missCount++;
-      if (this.idx === DBL_AT && this.missCount === 2) { if (DBL_ON) teachDbl(this); else G.ui.toast(DO.zoom, 'green'); }   // 3판: small things far off → zoom, once it's needed
+      // (QA 10/20: on the first stage with taps the second miss also says "서랍·문은 공짜!" — the lesson waits until that has gone)
+      if (this.idx === DBL_AT && this.missCount === 2) { const go = () => { if (this.dead || this.result) return; if (DBL_ON) teachDbl(this); else G.ui.toast(DO.zoom, 'green'); }; if (this._tapTeach === 3) setTimeout(go, 2300); else go(); }   // 3판: small things far off → zoom, once it's needed
       this.taunt('miss');
       if (this.timerOn) { this.time = Math.max(0, this.time - 2); G.ui.floatText(x, y, '-2초', 'red'); }
       G.audio.sfx('miss', 0, false);   // (its tick went with the tap — addMiss)
@@ -2573,7 +2574,8 @@ export class StageScene {
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }
     const paid = first?.awarded ?? coins;
     if (!this.model) G.ui.countUp(cv, 0, paid, 700, v => { if (v % 10 === 0) G.audio.sfx('coin', 0); });   // (a model kit pays in the model, not coins)
-    if (first?.repeat) cv.after(h('div', { class: 'txt' }, '다시 찾은 방이라 보상이 1/3이에요'));
+    // (QA 10/20: under the coin row, not inside it — in English the line ran off the panel's right edge)
+    if (first?.repeat) (cv.parentElement || cv).after(h('div', { class: 'txt sm' }, '다시 찾은 방이라 보상이 1/3이에요'));
     if (first?.unlockedHome) setTimeout(() => G.ui.toast('내 집이 열렸어! 방을 꾸미고 물건을 숨겨 봐', 'green'), 900);
     if (first?.allClear) { W.fx.confetti(220); setTimeout(() => !this.dead && W.fx.confetti(160), 900); }
     for (const z of first?.newZones || []) setTimeout(() => G.ui.toast(`내 집에 ${ga(z)} 생겼어!`, 'green'), 1700);

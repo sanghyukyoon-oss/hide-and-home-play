@@ -79,7 +79,7 @@ export const EN_APP = {
   // (스토리 룸 10/20 새벽, 영어 화면 한 바퀴: 1~3판·몽글 TV·상점·배치 편집·내 집 — 털기 글자는 털기 세션 몫)
   // 배치 편집 (scenes/layedit.js)
   '가구를 톡 골라서 끌면 옮겨져요. 크기·돌리기·살짝 옮기기는 아래 버튼으로!': 'Tap a piece of furniture, then drag to move it. Size, turn and nudge are the buttons below!',
-  '되돌릴 게 없어요': 'Nothing to undo', '하나 되돌렸어요': 'Undid one step', '되돌리기': 'Undo', '다 했어요': 'Done', '저장됨': 'Saved',
+  '고침': 'edited', '처음 배치로 돌렸어요': 'Back to the original layout', '되돌릴 게 없어요': 'Nothing to undo', '하나 되돌렸어요': 'Undid one step', '되돌리기': 'Undo', '다 했어요': 'Done', '저장됨': 'Saved',
   '방에 비해 너무 커요': 'Too big for this room', '여기선 더 못 돌려요': "Can't turn it any further here", '벽에 닿아요': 'It hits the wall',
   '크기': 'Size', '방향': 'Turn', '살짝 옮기기': 'Nudge', '위아래': 'Up/down', '옆으로': 'Sideways', '제자리': 'In place',
   // 결과창·패널
