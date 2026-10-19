@@ -51,7 +51,12 @@ B.tubeslide = (f) => {
   // 겹침 QA. Now the trough rests on the balcony floor, clears the slab's edge, then dives; the legs follow the curve)
   const path = [new THREE.Vector3(0, H + .3, -1.32), new THREE.Vector3(0, H + .31, -1.0), new THREE.Vector3(0, H + .29, -.7),
     new THREE.Vector3(0, H * .52, .05), new THREE.Vector3(0, .8, .8), new THREE.Vector3(0, .7, 1.25)];
-  const curve = new THREE.CatmullRomCurve3(path), under = z => { let b = null; for (let i = 0; i <= 80; i++) { const p = curve.getPoint(i / 80); if (!b || Math.abs(p.z - z) < Math.abs(b.z - z)) b = p; } return b.y - .24; };
+  // where a leg may end: under the trough's outer skin, measured on the skin itself (10/19 user, 7판 on a phone, circled: the
+  // legs came up through the chute — on the steep part the skin under a point of the path lies much lower than path − .24)
+  const curve = new THREE.CatmullRomCurve3(path), skin = [], T = new THREE.Vector3(), U = new THREE.Vector3(), S = new THREE.Vector3(1, 0, 0);
+  for (let i = 0; i <= 240; i++) { const P = curve.getPointAt(i / 240); curve.getTangentAt(i / 240, T); U.crossVectors(T, S).normalize(); if (U.y < 0) U.negate();
+    for (let k = 0; k <= 24; k++) { const a = k / 24 * Math.PI, r = .27 + .045; skin.push(P.clone().addScaledVector(S, Math.cos(a) * r).addScaledVector(U, -Math.sin(a) * r + .27 * .25)); } }
+  const under = z => { let y = Infinity; for (const x of [-.25, -.2, 0, .2, .25]) for (const q of skin) if (Math.abs(q.x - x) < .07 && Math.abs(q.z - z) < .07) y = Math.min(y, q.y); return (isFinite(y) ? y : .5) - .02; };
   f.add(mc('tubeslide|' + H, ({ addM, add }) => {
     addM(troughGeo(path), new THREE.Matrix4(), SLIDE_Y);
     addM(troughGeo(path, .225, .012), new THREE.Matrix4().makeTranslation(0, .004, 0), SLIDE_IN);
