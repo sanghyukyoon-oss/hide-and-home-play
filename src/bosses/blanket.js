@@ -778,7 +778,7 @@ export class Game {
     const L = this.L, LV = this.lv, W = L.world; this.phase = 'end'; this.lock = true; this.cur = null;
     const stars = LV.stars.filter(s => this.score >= s).length, win = stars >= 1;
     this.result = win ? 'win' : 'fail';
-    L.log({ result: this.result, lv: this.lvIdx, score: this.score, stars, best: this.best, found: this.found });
+    L.log({ result: this.result, lv: this.lvIdx, score: this.score, stars, best: this.best, found: this.found, line: `${this.score}점 · 친구 ${this.found}명 찾음 · 최고 ${this.best}연속` });
     this.qEl.style.display = 'none'; this.cardsEl.classList.add('out'); this.hint.classList.add('gone'); this.feverEl.classList.remove('on'); this.fever = 0;
     if (this.snack) { const sn = this.snack; sn.got = true; this.snack = null; const g = sn.g, y0 = g.position.y; this.tw.run(.2, k => { g.position.y = y0 - .3 * k; }).then(() => this.drop(g)); }
     await this.tw.wait(.5); if (this.dead) return;
@@ -813,6 +813,7 @@ export class Game {
     this.sayC(mom, '어휴~ 못 말려!', 1200);
     if (win) { L.audio.sfx('win'); W.fx.confetti(90); } else L.audio.sfx('giggle');
     await this.tw.wait(1.5); if (this.dead) return;
+    if (win && L.campaign) return L.go({});   // the campaign: the reward card (bossgame → gift.js) is the result screen — 10/19, 결과창 한 번만
     const h = L.h, last = this.lvIdx >= LEVELS.length - 1;
     L.ui.panel({ title: win ? (stars >= 3 ? '이불 속 탐정!' : '다 찾았다!') : '아쉽다~', color: win ? 'green' : 'orange', body: [
       h('div', { class: 'bk-stars' }, ...[0, 1, 2].map(k => h('span', { class: k < stars ? 'on' : '' }, '★'))),

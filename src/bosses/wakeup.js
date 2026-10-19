@@ -910,9 +910,10 @@ export class Game {
     this.mong.setFace('happy'); this.mong.pose = 'cheer';
     for (const o of Object.values(this.objs)) if (o.char) { o.char.setFace('happy'); o.char.pose = 'cheer'; }
     this.panic = true;
-    L.log({ result: 'win', lv: this.lvIdx + 1, stars, tries: this.tries, how: r.how, placed: n, cookie: r.cookie });
+    L.log({ result: 'win', lv: this.lvIdx + 1, stars, tries: this.tries, how: r.how, placed: n, cookie: r.cookie, line: { clock: '따르릉 한 방에 벌떡!', cat: '추로 점프 대성공!', wind: '이불이 날아갔다!', sun: '햇살 공격 성공!' }[r.how] || '기상 성공!' });
     await tw.wait(1.5);
     if (this.dead) return;
+    if (L.campaign) return L.go({});   // the campaign: the reward card is the result screen — 10/19, 결과창 한 번만
     this.showResult(stars, r, n);
   }
   showResult(stars, r, n) {

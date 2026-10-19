@@ -8,7 +8,7 @@ import { THEMES, stageSpec, STAGE_COUNT, CHAR_UNLOCK, REGIONS } from './stages.j
 import { STARTER_ITEMS } from './catalog.js';
 import { STORY_ITEMS } from './gfx/story-props.js';
 import { renderThumbs } from './thumbs.js';
-import { diaryLine, learnedCards, BOOK, HABIT_LINE } from './script.js';
+import { diaryLine, learnedCards, BOOK, HABIT_LINE, diarySecret, secretOpen, SECRET_UI } from './script.js';
 import { tr } from './i18n.js';
 
 const ART = {};
@@ -110,7 +110,9 @@ function zoom(c, G) {
   // R2: how this friend hides — '???' until you've found them hiding three times, then their habit fills in
   const hn = kind ? (G.save.habitSeen?.[kind] || 0) : 0, habit = kind && HABIT_LINE[kind];
   const habitEl = habit ? h('div', { class: 'cb-habit' }, h('b', {}, tr('숨는 버릇')), h('span', {}, hn >= 3 ? tr(habit) : `??? (${hn}/3)`)) : null;
-  const diary = line || habitEl ? h('div', { class: 'cb-diary' }, ...(line ? [h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))] : []), ...(habitEl ? [habitEl] : [])) : null;
+  // 별 셋 = 비밀 한 줄 (스토리 룸 10/19): '???' until a stage this friend hosts gets three stars
+  const sec = kind && diarySecret(kind), secEl = sec ? h('div', { class: 'cb-habit' }, h('b', {}, tr(SECRET_UI.book)), h('span', {}, secretOpen(G.save.best, kind) ? tr(sec) : tr(SECRET_UI.bookLock))) : null;
+  const diary = line || habitEl || secEl ? h('div', { class: 'cb-diary' }, ...(line ? [h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))] : []), ...(habitEl ? [habitEl] : []), ...(secEl ? [secEl] : [])) : null;
   if (diary) style();
   const layer = h('div', { class: 'cb-zoom' }, card, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
   const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = (x - r.left) / r.width - .5, ny = (y - r.top) / r.height - .5;

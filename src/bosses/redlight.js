@@ -547,7 +547,7 @@ export class Game {
     const left = Math.max(0, Math.ceil(this.left));
     const score = win ? freed * 10 + left + H.hearts * 5 + this.close * 3 : freed * 10;
     this.score = score; this.stars = stars;
-    L.log({ result, lv: this.lvIdx, score, stars, freed, hearts: H.hearts, cause, t: +(LV.time - this.left).toFixed(1) });
+    L.log({ result, lv: this.lvIdx, score, stars, freed, hearts: H.hearts, cause, t: +(LV.time - this.left).toFixed(1), line: win ? `친구 ${freed}명 구출 · ${Math.round(this.tangAt)}초에 땡${this.close ? ` · 아슬아슬 ${this.close}번` : ''}` : undefined });
     if (win) {
       H.st = 'home'; this.runAnim(H.ch, 0, 0); H.ch.pose = 'cheer'; H.ch.setFace('happy'); H.ch.bump(.4);
       const p = L.world.toScreen(H.ch.root.position.clone().setY(1.6)); L.ui.floatText(p.x, p.y, '세이프~!', 'gold big');
@@ -568,6 +568,7 @@ export class Game {
       H.ch.setFace('sad'); L.say(this.friends.reduce((a, b) => b.x > a.x ? b : a).ch, '벌써~?', 900); L.audio.sfx('lose');
     }
     await this.tw.wait(1.6); if (this.dead) return;
+    if (win && L.campaign) return L.go({});   // the campaign: the reward card (bossgame → gift.js) is the result screen — 10/19, 결과창 한 번만
     const h = L.h, last = this.lvIdx >= LEVELS.length - 1;
     const tip = this.lastCatch === 'kik' ? '"킥" 소리가 나면 바로 손을 떼!' : this.lastCatch === 'dbl' ? '곁눈질 중엔 꾹 참고 "무"까지 기다려!' : '"습·니" 쯤에서 미리 손을 떼면 안전해!';
     const sub = win ? (stars >= 3 ? '무궁화 대장! 친구들도 다 구했어' : freed < 2 ? '친구가 둘 이상 잡혀 있을 때 땡 하면 별 하나 더!' : `${LV.par}초 안에 땡 하면 별 하나 더!`)

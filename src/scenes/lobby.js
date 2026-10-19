@@ -15,11 +15,14 @@ import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/
 import { playDialog } from '../story.js';
 import { clearFollowupFinish } from '../followup.js';
 import { HOME_TUT, ENDING, endCard, choose, giftSeats, newCard, BUDDY_LINE, UI as SUI } from '../script.js';
+import * as SCRIPT from '../script.js';   // (ROOM_ARRIVE: a friend's first line in your room — 스토리 룸, read if it is there)
+import { indexSpots } from '../room.js';
+import { buildItem, ITEMS } from '../gfx/items.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
 import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow } from '../econ.js';
-import { SHOP_FURN } from '../catalog.js';
+import { SHOP_FURN, STARTER_ITEMS } from '../catalog.js';
 import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
 import { TV_TYPES, tvScreens, openMongleTV, tvLevel } from '../mongletv.js';   // 몽글 TV (10/19)
@@ -31,14 +34,45 @@ const MAX_HIDE = 5;
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 const nameOf = k => CHAR_DEFS[k]?.name || '';
 
+// ── 판 끝 집으로 가져가기 (검토 세션 10/19, 사용자 OK): the 찾은 것 선반's cubbies (top row first, left to right) and the marks
+// for what is still to come — a '?' in an empty cubby, a ring with a '?' where the next friend will sit
+const SLOTS = [.835, .455, .075].flatMap(y => [-.6975, -.2325, .2325, .6975].map(x => [x, y]));
+let QTEX = null, QMAT = null, RING = null;
+const qMat = () => QMAT || (QMAT = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+  x.fillStyle = 'rgba(255,255,255,.9)'; x.beginPath(); x.arc(32, 32, 27, 0, Math.PI * 2); x.fill();
+  x.lineWidth = 4; x.setLineDash([7, 5]); x.strokeStyle = 'rgba(155,108,255,.85)'; x.stroke();
+  x.fillStyle = '#9b6cff'; x.font = 'bold 34px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('?', 32, 34);
+  QTEX = new THREE.CanvasTexture(c); QTEX.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.SpriteMaterial({ map: QTEX, transparent: true, depthWrite: false });
+})());
+const noPick = o => { o.traverse(c => { c.userData.noPick = true; c.raycast = () => {}; }); return o; };
+const qSprite = s => { const sp = new THREE.Sprite(qMat()); sp.scale.setScalar(s); return noPick(sp); };
+function seatGhost() {
+  RING ||= { g: new THREE.RingGeometry(.19, .25, 32), m: new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .8, depthWrite: false }) };
+  const g = new THREE.Group(), r = new THREE.Mesh(RING.g, RING.m); r.rotation.x = -Math.PI / 2; r.position.y = .015; g.add(r);
+  const q = qSprite(.26); q.position.y = .42; g.add(q);
+  return noPick(g);
+}
+function shelfThing(t) {
+  const g = buildItem(t, { code: '★★★' }), it = ITEMS[t] || {};
+  g.scale.multiplyScalar(Math.min(1.4, .26 / Math.max(.05, it.h || .15))); g.rotation.y = .25;
+  return noPick(g);
+}
+
 export class LobbyScene extends MyHomeScene {
   constructor(G) { super(G); this.name = 'home'; this.lobby = true; this.seated = []; }
   async enter(o = {}) {
     const G = this.G;
     if (!o.ending) runRaids(G);   // residents who sneaked in while you were away (coins land before the pills show them)
-    await super.enter({ ...o, mode: !o.mode || o.mode === 'view' ? 'lobby' : o.mode });
+    // 판 끝 집으로 가져가기 (10/19): on the way to the next stage, the room for under 3 s (the room's first opening plays instead)
+    const pass = o.passage && G.homeOpen() && G.save.tut?.home ? o.passage : null;
+    this._shelfHold = pass?.item || null;   // (the thing flies onto the shelf, so the shelf starts without it)
+    await super.enter({ ...o, mode: pass ? 'passage' : !o.mode || o.mode === 'view' ? 'lobby' : o.mode });
     if (this.dead) return;
     if (o.ending) return this.playEnding(o.ending);   // 엔딩 (스토리 룸 10/19)
+    if (pass) return this.runPassage(pass);
+    delete this.H.shelfNew;
     this.tw.wait(.8).then(() => !this.dead && HomeScene.prototype.raidNews.call(this));
     const tut = G.save.tut || (G.save.tut = {});
     if (G.homeOpen() && !tut.home) await this.roomOpens();
@@ -109,6 +143,57 @@ export class LobbyScene extends MyHomeScene {
   }
 
   // ── friends in the room
+  build() {
+    super.build();
+    if (!this.G.homeOpen()) return;   // (the bare room before 2판: just 몽글이)
+    this.ensureShelf(); this.dressShelf(); this.markSeats();
+  }
+  // 찾은 것 선반: one in the home (made the first time, along the back of the room); an old save starts it with the last few finds
+  ensureShelf() {
+    const G = this.G, H = this.H, R = this.room;
+    if (Object.values(H.zones).some(z => z.furniture.some(f => f.type === 'findshelf')) || H.inventory.includes('findshelf')) return;
+    // along the left-hand wall first, facing into the room: on a phone that is the free side of the screen (the side buttons are
+    // on the right, where the back wall would put it under them)
+    let c = null;
+    for (const x of [-R.w / 2 + .5, -R.w / 2 + 1]) { for (const z of [0, -.5, .5, -1, 1]) if (R.canPlaceAt('findshelf', x, z, Math.PI / 2)) { c = { x, z, a: Math.PI / 2 }; break; } if (c) break; }
+    for (const z of [-R.d / 2 + .5, -R.d / 2 + 1]) { if (c) break; for (const x of [0, .5, -.5, 1, -1, 1.5, -1.5]) if (R.canPlaceAt('findshelf', x, z, 0)) { c = { x, z, a: 0 }; break; } }
+    for (let z = -R.d / 2 + .5; !c && z <= R.d / 2 - .5; z += .5) for (let x = -R.w / 2 + 1; x <= R.w / 2 - 1; x += .5) if (R.canPlaceAt('findshelf', x, z, 0)) { c = { x, z, a: 0 }; break; }
+    if (!H.shelf) H.shelf = (G.save.seen || []).filter(t => ITEMS[t] && !STARTER_ITEMS.includes(t)).slice(-4);   // (a new home: an empty shelf)
+    if (!c) { H.inventory.push('findshelf'); G.persist(); return; }
+    const id = 'f' + Date.now().toString(36) + 'shelf';
+    this.zone.furniture.push({ type: 'findshelf', x: c.x, z: c.z, a: c.a, id });
+    R.addFurnitureAt('findshelf', c.x, c.z, c.a, id);
+    const idx = indexSpots(R); this.spotByKey = idx.spots; this.partByKey = idx.parts;
+    G.persist();
+  }
+  // the things on the shelf (the latest twelve) and a '?' in each empty cubby — "반쯤 빈 선반" = what's still to find
+  dressShelf() {
+    const rec = this.room.furns.find(r => r.type === 'findshelf'); if (!rec) return;
+    for (const o of rec._disp || []) o.parent?.remove(o);
+    rec._disp = [];
+    const list = (this.H.shelf || []).filter(t => ITEMS[t]).slice(-12);
+    SLOTS.forEach(([x, y], i) => {
+      const t = list[i], show = t && t !== this._shelfHold, o = show ? shelfThing(t) : qSprite(.17);
+      o.position.set(x, show ? y : y + .13, -.25); rec.f.group.add(o); rec._disp.push(o);
+    });
+    this.G.world.idsDirty = true; this.G.world.shadowDirty = true;
+  }
+  slotWorld(rec, t) {
+    const list = (this.H.shelf || []).filter(x => ITEMS[x]).slice(-12), i = list.lastIndexOf(t); if (i < 0) return null;
+    rec.f.group.updateMatrixWorld(true);
+    return rec.f.group.localToWorld(new THREE.Vector3(SLOTS[i][0], SLOTS[i][1] + .1, -.25));
+  }
+  // the seats still free in this room: a ring and a '?' on the floor ("다음 친구 자리"), in the lobby only
+  markSeats() {
+    for (const g of this._ghosts || []) g.parent?.remove(g);
+    this._ghosts = [];
+    const z = this.zone, n = Math.max(0, Math.min(3, seatsOf(z) - (z.friends?.length || 0))), used = [];
+    for (let i = 0; i < n; i++) { const p = this.freeSpot(null, used); if (!p) break; used.push(p); const g = seatGhost(); g.position.set(p.x, 0, p.z); g.userData.spot = p; this.room.group.add(g); this._ghosts.push(g); }
+    this.showGhosts();
+  }
+  showGhosts() { for (const g of this._ghosts || []) g.visible = this.mode === 'lobby' || this.mode === 'passage'; }
+  // where the next friend sits: the first marked seat, else any clear floor
+  seatSpot() { const g = (this._ghosts || []).shift(); if (g) { g.parent?.remove(g); return g.userData.spot; } return this.freeSpot(); }
   seatFriends() {
     const z = this.zone; z.friends = z.friends || [];
     this.seated = [];
@@ -126,9 +211,9 @@ export class LobbyScene extends MyHomeScene {
     return s;
   }
   // a clear bit of floor for a friend: away from 몽글이, the other friends and the furniture; the front of the room first
-  freeSpot(near = null) {
+  freeSpot(near = null, extra = []) {
     this.room._solid = null;   // (room.clearAt keeps the furniture's boxes from the first call: a piece placed or moved since wasn't in them)
-    const R = this.room, taken = [this.mong.root.position, ...this.seated.map(s => s.rec)], c = [];   // (a seat, not where its friend is walking from)
+    const R = this.room, taken = [this.mong.root.position, ...this.seated.map(s => s.rec), ...extra], c = [];   // (a seat, not where its friend is walking from)
     for (let x = -R.w / 2 + .6; x <= R.w / 2 - .6; x += .35) for (let z = -R.d / 2 + .6; z <= R.d / 2 - .6; z += .35) {
       if (!R.clearAt(x, z, .32) || taken.some(p => Math.hypot(p.x - x, p.z - z) < .9)) continue;
       c.push({ x: +x.toFixed(2), z: +z.toFixed(2), d: near ? Math.hypot(x - near.x, z - near.z) : Math.hypot(x - .9, z - 1.1) });
@@ -167,7 +252,7 @@ export class LobbyScene extends MyHomeScene {
     const quiet = known == null;   // an old save's first lobby: everyone met so far, at once
     const came = []; let full = false;
     for (const k of fresh) {
-      const p = z.friends.length < seatsOf(z) ? this.freeSpot() : null;
+      const p = z.friends.length < seatsOf(z) ? this.seatSpot() : null;
       if (!p) { H.friendBox = [...(H.friendBox || []), k]; full = true; continue; }
       came.push(k); this.seatOne(k, p, !quiet && came.length <= 2);
     }
@@ -197,7 +282,7 @@ export class LobbyScene extends MyHomeScene {
     const G = this.G, z = this.zone;
     if (!(this.H.friendBox || []).includes(k)) return;   // (already out of the box: a double tap seated it twice — QA3 10/19)
     if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(seatsOf(z) >= 6 ? '자리가 꽉 찼어 (최대 6)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
-    const p = this.freeSpot(); if (!p) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
+    const p = this.seatSpot(); if (!p) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
     this.seatOne(k, p, false).then(() => { if (!this.dead && this.mode === 'edit') this.setMode('edit'); });
   }
   selectFriend(s) {
@@ -214,6 +299,7 @@ export class LobbyScene extends MyHomeScene {
   }
   seatedHit(x, y) { const hit = this.pick(x, y); return hit.kind === 'char' ? this.seated.find(s => s.ch === hit.char) || null : null; }
   tap(x, y) {
+    if (this.mode === 'passage') return this.passageDone();
     if (this.mode === 'lobby') {
       const hit = this.pick(x, y); if (hit.kind === 'char' && hit.char === this.mong) { this.heroView(); this.reactChar(this.mong); return; }
       // 몽글 TV (10/19): the TV you bought plays too — just for fun here, no taps to win (its doors still open as before)
@@ -223,6 +309,7 @@ export class LobbyScene extends MyHomeScene {
     return super.tap(x, y);
   }
   dragStart(x, y) {
+    if (this.mode === 'passage') return { move() {}, end: () => this.passageDone(), cancel() {} };
     if (this.mode === 'edit' && this.fsel) {
       const s = this.seatedHit(x, y);
       if (s === this.fsel) {
@@ -247,11 +334,18 @@ export class LobbyScene extends MyHomeScene {
   }
   setMode(mode) {   // (꾸미기·숨기기 '완료' come back to the lobby)
     this.fsel = null; mode = mode === 'view' ? 'lobby' : mode;
+    if (mode === 'passage') {   // 판 끝 집으로 가져가기: no buttons, just "톡 하면 계속"
+      const G = this.G, W = G.world; this.mode = 'passage'; this.sel = null; G.ui.clear(); if (this.room) this.fitCam();
+      W.joyHidden = true; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0;
+      const col = this.col = G.ui.col(), hint = h('div', { class: 'ol', style: 'position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(42,26,61,.5);color:#fff;border-radius:999px;padding:8px 18px;font-size:16px;white-space:nowrap;pointer-events:auto' }, '톡 하면 계속');
+      hint.addEventListener('pointerup', e => { e.stopPropagation(); this.passageDone(); }); col.append(hint);
+      this.showGhosts(); return;
+    }
     const prev = this.mode, r = super.setMode(mode), W = this.G.world;
     W.joyHidden = mode === 'lobby';   // (the dial in 꾸미기·숨기기 — G.go hides it for a scene named home, QA3 10/19)
     // the lobby turns with one finger side to side (no moving about, no dial) and sways slowly when left alone (10/19, user OK)
     W.dragTurn = W.spinQuiet = mode === 'lobby'; W.autoSpin = 0; this._swayT = 0; this._heroView = null;
-    if (mode === 'lobby') this.frameLobby(); else this.frameRoom();
+    if (mode === 'lobby') { if (this.room && this.G.homeOpen()) this.markSeats(); this.frameLobby(); } else { this.showGhosts(); this.frameRoom(); }
     // back from 꾸미기 with something new in the room: 몽글이 goes over to it, pleased (instead of the camera zooming about)
     if (mode === 'lobby' && prev === 'edit' && this._placed) { const f = this._placed; this._placed = null; this.heroCheer(f); }
     return r;
@@ -302,9 +396,11 @@ export class LobbyScene extends MyHomeScene {
   }
   // the lobby looks at 몽글이 and whoever sits with it, close up while the room is still bare (user, 10/19: "처음에 너무
   // 썰렁하니까 캐릭터 쪽 클로즈업으로 잡아주자"), opening out as furniture and friends fill it; 꾸미기·숨기기 see the whole room
-  frameLobby(dur = .7) {
+  frameLobby(dur = .7, extra = [], cut = false) {
     if (this.dead || !this.room) return;
-    const W = this.G.world, pts = [this.mong.root.position, ...this.seated.map(s => s.rec), ...(this.guest ? [this.guest.root.position] : [])];
+    const W = this.G.world, pts = [this.mong.root.position, ...this.seated.map(s => s.rec), ...(this.guest ? [this.guest.root.position] : []), ...extra];
+    const shelf = this.room.furns.find(r => r.type === 'findshelf');   // (the 찾은 것 선반 in the picture, end to end: what's still to find)
+    if (shelf && !cut) { shelf.f.group.updateMatrixWorld(true); for (const sx of [-.95, .95]) { const q = shelf.f.group.localToWorld(new THREE.Vector3(sx, 0, -.25)); pts.push({ x: q.x, z: q.z }); } }
     // (10/19, user OK: 몽글이 never gets small as the room fills — the middle leans 6 : 4 toward 몽글이, and the group is
     // measured on the screen and fills the space between the top bar, the side buttons and the play button; zoom 1.4–2.5,
     // capped a little lower as furniture fills the room so a decorated room still shows)
@@ -315,13 +411,18 @@ export class LobbyScene extends MyHomeScene {
     const box = (y, z) => { W.target.set(cx, y, cz); W.zoom = z; W.updateCam(); let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
       for (const p of pts) { const f = W.toScreen(V(p.x, 0, p.z)), hd = W.toScreen(V(p.x, .62, p.z)); x0 = Math.min(x0, f.x - 24); x1 = Math.max(x1, f.x + 24); y0 = Math.min(y0, hd.y); y1 = Math.max(y1, f.y); }
       return { x0, x1, y0, y1 }; };
-    const top = 92, bot = W.H - 215, availW = W.W - 48 - 72, b2 = box(1.05, 2);
+    const top = 92, bot = W.H - (this.mode === 'passage' ? 110 : 215), availW = W.W - 48 - 72, b2 = box(1.05, 2);
     const zoom = clamp(2 * Math.min(availW / Math.max(1, b2.x1 - b2.x0), (bot - top) / Math.max(1, b2.y1 - b2.y0)), 1.4, zCap);
     const a = box(1, zoom), b = box(2, zoom), want = (top + bot) / 2, mid = r => (r.y0 + r.y1) / 2;
     const ty = clamp(1 + (want - mid(a)) / Math.max(1, mid(b) - mid(a)), .3, 3);
+    // and side to side: the group's middle in the middle of the free width (left margin to the side buttons)
+    let tx = cx, tz = cz;
+    { const f = box(ty, zoom), r = new THREE.Vector3(1, 0, 0).applyQuaternion(W.cam.quaternion); r.y = 0; r.normalize();
+      const p0 = W.toScreen(W.target.clone()), p1 = W.toScreen(W.target.clone().add(r)), ppu = p1.x - p0.x;
+      if (Math.abs(ppu) > 1) { const d = (24 + availW / 2 - (f.x0 + f.x1) / 2) / ppu; tx -= r.x * d; tz -= r.z * d; } }
     W.target.copy(t0); W.zoom = z0; W.updateCam();
-    const target = V(cx, ty, cz);
-    if (this._framed) W.flyTo(this.tw, { target, zoom, dur }); else { W.target.copy(target); W.zoom = zoom; this._framed = true; }
+    const target = V(tx, ty, tz);
+    if (this._framed && !cut) W.flyTo(this.tw, { target, zoom, dur }); else { W.target.copy(target); W.zoom = zoom; W.updateCam(); this._framed = true; }
   }
   frameRoom(dur = .6) {
     if (this.dead || !this.room || !this._framed) return;
@@ -438,6 +539,78 @@ export class LobbyScene extends MyHomeScene {
     this.select(null);
   }
 
+  // ── 판 끝 집으로 가져가기 (검토 세션 10/19 — 사용자 "막 다시 하고 싶진 않다", 진단 "찾은 게 아무 데도 안 남는다"): on the way to
+  // the next stage, the room for under 3 s. The friend met there walks in from the door to a marked seat, a piece won there is
+  // set down, the first new thing found flies from 몽글이 onto the shelf. One camera cut, no camera moves; a tap goes on at once.
+  async runPassage({ item = null, furn = null, friends = [], next = null }) {
+    const G = this.G, W = G.world, H = this.H, z = this.zone, tw = this.tw;
+    this._next = next; this.busyTut = true; W.onTap = () => this.passageDone();
+    // ① the data first, so a page closed now keeps all of it
+    let frec = null;
+    if (furn) { const i = H.inventory.lastIndexOf(furn); if (i >= 0) { const n0 = this.room.furns.length; this.placeFromInv(i); this.select(null); if (this.room.furns.length > n0) frec = this.room.furns[this.room.furns.length - 1]; } }
+    H.friendKnown = metFriends(G.save);
+    const seatedNow = seatedAll(H), boxNow = new Set(H.friendBox || []);
+    const k = friends.find(k => CHAR_DEFS[k] && !seatedNow.has(k) && !boxNow.has(k)) || null;
+    const seat = k && (z.friends?.length || 0) < seatsOf(z) ? this.seatSpot() : null;
+    let s = null;
+    if (k && seat) { const rec = { k, x: seat.x, z: seat.z, a: Math.atan2(2.2 - seat.x, 2.2 - seat.z) }; (z.friends ||= []).push(rec); s = this.addSeated(rec); }
+    else if (k) H.friendBox = [...new Set([...(H.friendBox || []), k])];
+    delete H.shelfNew; G.persist();
+    // ② one cut that holds 몽글이 and where things happen
+    const shelf = this.room.furns.find(r => r.type === 'findshelf'), slot = item && shelf ? this.slotWorld(shelf, item) : null, door = this.doorAt();
+    this.frameLobby(0, [...(slot ? [slot] : []), ...(seat ? [seat] : k ? [door] : []), ...(frec ? [{ x: frec.x, z: frec.z }] : [])], true);   // (the door only when a friend just looks in from it; one walking in may start off the picture — the room stays big)
+    // ③ the shows, together
+    const jobs = [], m = this.mong, look = slot || seat || (frec && { x: frec.x, z: frec.z });
+    if (slot) jobs.push(this.flyToShelf(item, shelf, slot)); else if (item) { this._shelfHold = null; this.dressShelf(); }
+    if (s) jobs.push(this.walkIn(s, seat)); else if (k) jobs.push(this.peekIn(k));
+    if (look) m.faceTo(look.x, look.z);
+    jobs.push(tw.wait(1.1).then(() => { if (this.dead) return; m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); }));
+    // at least 2 s to take it in, at most 2.8 s (검토: "판당 3초 이하") — a tap any time goes on
+    const t0 = performance.now();
+    await Promise.race([Promise.all(jobs), tw.wait(2.5)]);
+    if (this.dead) return;
+    await tw.wait(Math.max(.3, 2 - (performance.now() - t0) / 1000));
+    this.passageDone();
+  }
+  passageDone() {
+    if (this._pdone || this.dead || this.mode !== 'passage') return;
+    this._pdone = true;
+    const [n, d] = this._next || ['stage', { idx: this.G.save.stage || 0 }];
+    this.G.go(n, { ...(d || {}), quick: true });
+  }
+  async flyToShelf(item, shelf, to) {
+    const G = this.G, W = G.world, tw = this.tw, m = this.mong, R = this.room.group;
+    const g = shelfThing(item), s1 = g.scale.x, hp = m.root.position;
+    R.updateMatrixWorld(true);
+    const fL = R.worldToLocal(new THREE.Vector3(hp.x, m.headTop() + .35, hp.z)), tL = R.worldToLocal(to.clone().setY(to.y - .1));
+    g.position.copy(fL); g.scale.setScalar(s1 * .01); R.add(g); W.idsDirty = true; G.audio.sfx('pop', 5);
+    await tw.run(.25, k => g.scale.setScalar(s1 * Math.max(.01, k)), ease.outBack); if (this.dead) return;
+    await tw.wait(.15); if (this.dead) return;
+    await tw.run(.55, k => { g.position.lerpVectors(fL, tL, k); g.position.y += Math.sin(k * Math.PI) * .45; }, ease.inOutQuad); if (this.dead) return;
+    R.remove(g); this._shelfHold = null; this.dressShelf();
+    const sp = W.toScreen(to); W.fx.burst(sp.x, sp.y, { n: 12, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 140, gravity: -30 });
+    G.ui.floatText(sp.x, sp.y - 30, 'NEW', 'gold'); G.audio.sfx('special');
+  }
+  // the friend met in that stage: in from the door, quick hops to its seat, a cheer (and its line, when 스토리 룸 has one)
+  async walkIn(s, seat) {
+    const ch = s.ch, d = this.doorAt(), tw = this.tw, G = this.G;
+    ch.root.position.set(d.x, 0, d.z); ch.faceTo(seat.x, seat.z); G.audio.sfx('pop', 6);
+    const n = Math.max(2, Math.round(Math.hypot(seat.x - d.x, seat.z - d.z) / .6));
+    for (let i = 1; i <= n; i++) { await ch.hopTo(tw, d.x + (seat.x - d.x) * i / n, d.z + (seat.z - d.z) * i / n, { height: .22, dur: .17 }); if (this.dead) return; }
+    ch.root.rotation.y = s.rec.a; ch.bump(.4); ch.pose = 'cheer';
+    const L = SCRIPT.ROOM_ARRIVE?.[s.k]; if (L) this.say(ch, tr(L.text), 1500);
+    tw.wait(.8).then(() => { if (!this.dead) ch.pose = 'idle'; });
+  }
+  // no seat left: it looks in at the door, waves, and waits in the friend box (꾸미기 → 친구 to seat it)
+  async peekIn(k) {
+    const G = this.G, tw = this.tw, ch = new Char(k), d = this.doorAt();
+    ch.root.position.set(d.x, 0, d.z); ch.faceTo(this.mong.root.position.x, this.mong.root.position.z); ch.pose = 'wave';
+    ch.root.scale.setScalar(.01); this.room.group.add(ch.root); this.guest = ch; G.world.idsDirty = true; G.audio.sfx('pop', 6);
+    await tw.run(.25, q => ch.root.scale.setScalar(Math.max(.01, q)), ease.outBack); if (this.dead) return;
+    if (!this.H.fullTold) { this.H.fullTold = 1; G.persist(); G.ui.toast('자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', ''); }
+    await tw.wait(1.2); if (this.dead) return;
+    await tw.run(.2, q => ch.root.scale.setScalar(Math.max(.01, 1 - q))); this.room.group.remove(ch.root); if (this.guest === ch) this.guest = null;
+  }
   update(dt) {
     super.update(dt);
     // 몽글 TV: the screens in this room light up (again whenever the room is rebuilt or a TV is placed, moved or boxed)
@@ -460,8 +633,9 @@ export class LobbyScene extends MyHomeScene {
     }
   }
   botStep(dt) {
+    if (this.mode === 'passage') return this.passageDone();
     if (this.mode !== 'lobby') return super.botStep(dt);
     this._bt = (this._bt || 0) + dt; if (this._bt > 1.2) { this._bt = 0; this.playBtn?.press(); }
   }
-  state() { return this.mode === 'lobby' ? { scene: 'home', lobby: true, stage: (this.G.save.stage || 0) + 1, coins: this.G.save.coins, friends: this.seated.map(s => s.k) } : super.state(); }
+  state() { if (this.mode === 'passage') return { scene: 'home', passage: true }; return this.mode === 'lobby' ? { scene: 'home', lobby: true, stage: (this.G.save.stage || 0) + 1, coins: this.G.save.coins, friends: this.seated.map(s => s.k) } : super.state(); }
 }

@@ -995,9 +995,10 @@ export class Game {
     if (this.pr) { L.log({ practice: 2 }); this.endPractice(); }
     L.audio.sfx('win'); this.me.setFace('happy'); this.me.pose = 'cheer'; L.world.fx.confetti(90);
     L.say(this.me, '냠냠… 성공!', 1500);
-    L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n, stars: n, max: 3 });   // (stars: the snacks you brought back; the campaign's reward reads them)
+    L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n, stars: n, max: 3, line: n >= 3 ? '세 개 다! 완벽한 밤이야' : n === 2 ? '두 개! 하나만 더 욕심내 볼까?' : '하나 성공! 다음엔 두 개 노려 볼까?' });   // (stars: the snacks you brought back; the campaign's reward reads them)
     setTimeout(() => {
       if (this.dead) return;
+      if (L.campaign) return L.go({});   // the campaign: the reward card is the result screen — 10/19, 결과창 한 번만
       const h = L.h, last = this.lvIdx >= this.levelCount - 1;
       L.ui.panel({ title: '야식 성공!', color: 'green', body: [
         h('div', { class: 'ys-endslots' }, ...this.snackTypes.map((t, i) => h('div', { class: 'ys-slot big' + (i < n ? ' got' : '') }, h('img', { src: L.thumbs['item_' + t] })))),

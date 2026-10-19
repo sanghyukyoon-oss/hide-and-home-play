@@ -91,9 +91,10 @@ export class BossGameScene {
   }
   makeL() {
     const G = this.G, S = this;
+    // (campaign: a won game skips its own result panel — the reward card (gift.js) is the result — 실험실·경제 10/19)
     const L = {
       THREE, world: G.world, ui: G.ui, audio: G.audio, h, title: BOSS_GAME_INFO[this.kind].name, scene: null, pending: null,
-      thumbs: G._bossThumbs || (G._bossThumbs = {}), get bot() { return !!G.bot; }, get botMode() { return G.botMode || 'smart'; }, stats: { log: [], wins: 0, fails: 0 },
+      thumbs: G._bossThumbs || (G._bossThumbs = {}), get bot() { return !!G.bot; }, get campaign() { return !G.playMode; }, get botMode() { return G.botMode || 'smart'; }, stats: { log: [], wins: 0, fails: 0 },
       get fast() { return G.fast || 1; }, get gameTime() { return S.t || 0; },
       setBg: bg => G.setBg(bg),
       makeThumbs({ faces = [], items = [] } = {}) {
@@ -135,7 +136,7 @@ export class BossGameScene {
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
     // (10/19, user: "미니게임에서 뭐 리워드를 줘야지"): the reward is a card after the game's own end panel (finish), not a toast
     if (G.playMode || G.bot) G.ui.toast(G.playMode ? (this.interlude ? '쉬어가기 성공! (연습)' : '보스 클리어! (연습)') : this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
-    else this.reward = { coins, lens, st };   // (practice pays nothing — QA N5)
+    else this.reward = { coins, lens, st, line: e.line || null };   // (line: the game's own result line — 실험실 10/19)   // (practice pays nothing — QA N5)
     if (lens && (G.playMode || G.bot)) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
   }
   // an interlude lost: still on to the next stage, with a small reward
@@ -168,7 +169,13 @@ export class BossGameScene {
     }
     // the reward card: who gives it and why (the first win only), the stars, the coins, the magnifier — then the next stage
     // (never before the ending: the last 야식 goes to the ending room above and returns before this — 스토리 룸 10/19)
-    if (this.won && this.reward && !G.playMode && !G.bot) { const R = this.reward; this.reward = null; await giftCard(G, { key: giftKey(this.kind, this.lv), title: this.interlude ? '쉬어가기 성공!' : '보스 클리어!', ...R }); if (this.dead) return; }
+    if (this.won && this.reward && !G.playMode && !G.bot) {
+      const R = this.reward; this.reward = null;
+      const r = await giftCard(G, { key: giftKey(this.kind, this.lv), title: this.interlude ? '쉬어가기 성공!' : '보스 클리어!', ...R, retry: R.st < 3 });
+      if (this.dead) return;
+      // (a small '다시' on the card under three stars: the game's own result panel with its retry is skipped in the campaign)
+      if (r === 'retry') { clearFollowupFinish(G, this.after); return G.go('bossgame', { kind: this.kind, after: this.after, lv: this.lv, interlude: this.interlude }); }
+    }
     clearFollowupFinish(G, this.after);
     G.go('stage', { idx: this.after + 1 });
   }

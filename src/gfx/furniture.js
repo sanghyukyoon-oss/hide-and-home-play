@@ -1541,8 +1541,28 @@ export const FURN_INFO = {
   boxes: { w: 1, d: 1, name: '상자', price: 80 },
   lamp: { w: 1, d: 1, name: '스탠드', price: 60 },
   stool: { w: 1, d: 1, name: '의자', price: 70 },
+  findshelf: { w: 2, d: 1, name: '찾은 것 선반', price: 0 },   // (내 방에만: the things you found in the stages stand on it — lobby.js)
   window: { wall: true, name: '창문' }, picture: { wall: true, name: '액자' }, clock: { wall: true, name: '시계' },
   wallshelf: { wall: true, name: '벽 선반' }, door: { wall: true, name: '문' }, lever: { wall: true, name: '레버' },
+};
+
+// 찾은 것 선반 (경제·로비 10/19 — 사용자 "찾은 게 아무 데도 안 남는다"): an open wooden display shelf, three shelves of four
+// cubbies with a soft pastel back; the lobby stands one thing from each stage on it (lobby.js dressShelf) and marks the
+// empty cubbies. Not a hiding place: no spots.
+B.findshelf = (f, T) => {
+  const { wood, woodD } = woods(T), acc = T.accent || '#ff9fb8', tk = [wood, woodD, acc].join(',');
+  const W = 1.86, D = .36, H = 1.16, Z = -.27;
+  f.add(wd('findshelf', wood, ({ box }) => {
+    for (const y of [.06, .44, .82]) box(W, .03, D, 0, y, Z);
+    box(W + .05, .045, D + .05, 0, H, Z, { r: .016 });
+    for (const sx of [-1, 1]) box(.045, H, D, sx * (W / 2 + .0225), H / 2, Z);
+    for (const x of [-.465, 0, .465]) for (const y of [.075, .455, .835]) box(.022, .35, D - .05, x, y + .175, Z - .02);
+  }));
+  f.add(mc('findshelf-back|' + tk, ({ add }) => {
+    add(G.box(W, H - .02, .02, .006), shade(acc, .38), 0, H / 2, Z - D / 2 + .012);
+    add(G.box(W + .07, .05, .05, .012), woodD, 0, .025, Z + D / 2 - .02);
+    for (const sx of [-1, 1]) add(G.sph(.028, 10, 8), shade(acc, -.05), sx * (W / 2 - .06), H + .045, Z + D / 2 - .03);
+  }));
 };
 
 export function makeFurniture(type, theme, opts = {}) {

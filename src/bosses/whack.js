@@ -276,9 +276,10 @@ export class Game {
     }
     L.world.idsDirty = true;
     setTimeout(() => { if (!this.dead) { const o = this.holes[4]; if (o.who) L.say(o.who.chs[0], '여기 있지롱~', 1200); L.audio.sfx('giggle'); } }, 500);
-    L.log({ result: this.result, lv: this.lvIdx, score: this.score, stars, best: this.best });
+    L.log({ result: this.result, lv: this.lvIdx, score: this.score, stars, best: this.best, line: `${this.score}점 · 친구 ${this.found}명 찾음 · 최고 ${this.best}연속` });
     if (win) { L.audio.sfx('win'); L.world.fx.confetti(80); this.me.setFace('happy'); this.me.pose = 'cheer'; } else L.audio.sfx('lose');
     await this.tw.wait(1.4); if (this.dead) return;
+    if (win && L.campaign) return L.go({});   // the campaign: the reward card (bossgame → gift.js) is the result screen — 10/19, 결과창 한 번만
     const h = L.h, last = this.lvIdx >= LEVELS.length - 1;
     L.ui.panel({ title: win ? '숨바꼭질 끝!' : '아쉽다~', color: win ? 'green' : 'orange', body: [
       h('div', { class: 'wh-stars' }, ...[0, 1, 2].map(k => h('span', { class: k < stars ? 'on' : '' }, '★'))),

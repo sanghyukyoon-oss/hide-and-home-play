@@ -34,7 +34,8 @@ import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incid
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line, KIT_TALK } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
-  timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND } from '../script.js';
+  timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
+  stageHost, diarySecret, secretOpen, anySecret, SECRET_UI } from '../script.js';
 import { tr } from '../i18n.js';
 import { EN } from '../i18n-en-dict.js';
 // the star reasons the 흑백·너굴이·방탈출 stages had none of (QA 10/18: 2 stars on a boss with no word why)
@@ -42,7 +43,7 @@ const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
 import { blindFor } from '../hunt-blind.js';
-import { PICKS, pickPanel, takePick } from '../econ.js';   // 경제·로비 (10/19)
+import { PICKS, pickPanel, takePick, metFriends } from '../econ.js';   // 경제·로비 (10/19)
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
@@ -253,6 +254,7 @@ export class StageScene {
     this.frameCamera();
     if (this.kit) kitSetup(this);   // 이삿짐's boxes, the big parfait
     if (this.villain?.hide) this.hideInky(retry);
+    if (sceneAt(this.idx)?.trace && !this.custom && !this.preview && !this.villain) this.inkyTrace();   // 7판: 먹물이 was here too
     if (this.hunt) {   // things that can be seen, the key where the start view sees it, the next friend peeking (not on the list)
       this.blindFixed = fixBlindSpots(this); chainToView(this);
       const c = placeCameo(this); if (c) { this.cameo = c; this.items.push(c); }
@@ -360,7 +362,7 @@ export class StageScene {
     document.getElementById('app').style.removeProperty('--joyB');
     G.world.root.remove(this.room.group); G.world.root.remove(this.friend.root); this.look?.dispose(); setSky(null);
     for (const n of this.npcs || []) { n.on = false; G.world.root.remove(n.ch.root); }
-    for (const m of this.prints || []) { G.world.root.remove(m); m.material.dispose(); }
+    for (const m of this.prints || []) { G.world.root.remove(m); m.material.dispose(); m.geometry.dispose(); }
     this.ambient?.dispose(); if (this.hero) { disposeTree(this.hero.ch.root); if (this.hero.buddy) disposeTree(this.hero.buddy.root); this.hero.dispose(); }
     // this stage's own meshes, materials and textures (not the shared caches) go with it
     if (this.cameo) { G.world.root.remove(this.cameo.ch.root); disposeTree(this.cameo.ch.root); }
@@ -945,10 +947,47 @@ export class StageScene {
       for (const d = k * len; d - last > .28;) { last += .28; const q = p0.clone().addScaledVector(dir, last).addScaledVector(perp, (n % 2 ? -1 : 1) * .07); if (inside(q)) this.footprint(q, COLS[n % COLS.length], rot); n++; }
     }, ease.inQuad); }).then(() => { ch.root.visible = false; });
   }
-  footprint(at, color, rot) {
-    const W = this.G.world, m = new THREE.Mesh(new THREE.CircleGeometry(.055, 14), new THREE.MeshBasicMaterial({ color, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  // 1장, between the two 흑백판 (스토리 룸 10/19 '다시 하고 싶게'): 먹물이 passed through a colour stage too — a short trail of
+  // the same colour-smeared footprints across floor the start view shows. Nothing to tap, not on the list, no line; 10판's
+  // "…발자국이다" is where it lands. (A floor point is a real ray hit, so a balcony or an upper floor works the same.)
+  inkyTrace() {
+    const W = this.G.world, roots = this.pickRoots(), t0 = performance.now(), GS = .5;
+    // a grid point counts when the first thing the ray meets there is the bare floor right at that point (not a rug: a print
+    // there would get an outline against it)
+    const seen = q => { const sp = W.toScreen(q); if (sp.x < 30 || sp.x > W.W - 30 || sp.y < 170 || sp.y > W.H - 250) return null;
+      const hh = W.pick(sp.x, sp.y, roots)[0]; return hh && this.classify(hh.object).kind === 'floor' && Math.hypot(hh.point.x - q.x, hh.point.z - q.z) < .1 && Math.abs(hh.point.y - q.y) < .03 ? hh.point.clone() : null; };
+    const D8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+    let best = null;
+    for (const R of this.room.rooms || [this.room]) {
+      if (!R.w || !R.d || performance.now() - t0 > 450) continue;   // (it runs while the stage loads: ~200 rays, 0.4 ms each)
+      const o = R.group.position, nx = Math.floor((R.w - .5) / GS), nz = Math.floor((R.d - .5) / GS), cell = [];
+      for (let i = 0; i <= nx; i++) { cell[i] = []; for (let j = 0; j <= nz; j++) cell[i][j] = seen(new THREE.Vector3(o.x - nx * GS / 2 + i * GS, o.y, o.z - nz * GS / 2 + j * GS)); }
+      for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) if (cell[i][j]) for (const [di, dj] of D8) {
+        const pts = []; for (let k = 0; k < 6 && cell[i + di * k]?.[j + dj * k]; k++) pts.push(cell[i + di * k][j + dj * k]);
+        if (!best || pts.length > best.pts.length) best = { pts, dir: new THREE.Vector3(di, 0, dj).normalize() };
+      }
+    }
+    if (!best || best.pts.length < 3) return;
+    // footsteps every .28 m along the visible run (the grid is coarser than a stride)
+    const a0 = best.pts[0], a1 = best.pts.at(-1), len = a0.distanceTo(a1), steps = [];
+    for (let d = 0; d <= len + .01; d += .28) steps.push(a0.clone().lerp(a1, d / len));
+    best.steps = steps;
+    // a paw print, flat on the floor like a smear of paint (no ink outline — it reads as the floor's own ID), in the
+    // colours it carries off; a little stronger than the 흑백판's so it shows on wood
+    const COLS = ['#ff6fa8', '#5ab8ff', '#a77bff', '#4fcf86'], perp = new THREE.Vector3(-best.dir.z, 0, best.dir.x), rot = Math.atan2(best.dir.x, best.dir.z);
+    const fw = best.dir.clone();
+    best.steps.forEach((q, k) => {
+      const c = q.clone().addScaledVector(perp, (k % 2 ? -1 : 1) * .08), col = COLS[k % COLS.length];
+      this.footprint(c, col, rot, { flat: true, r: .07 });
+      for (const t of [-1, 0, 1]) this.footprint(c.clone().addScaledVector(fw, .1 - Math.abs(t) * .02).addScaledVector(perp, t * .05), col, rot, { flat: true, r: .026 });
+    });
+    this.traceAt = { n: best.steps.length, at: a0, ms: Math.round(performance.now() - t0) };   // (for the headless check)
+  }
+  footprint(at, color, rot, { flat = false, r = .055 } = {}) {   // (flat: 7판's trail — no outline, part of the floor)
+    const W = this.G.world, m = new THREE.Mesh(new THREE.CircleGeometry(r, 14), new THREE.MeshBasicMaterial({ color, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     m.rotation.set(-Math.PI / 2, 0, -rot); m.position.set(at.x, (at.y || 0) + .012, at.z); m.scale.set(.01, .01, 1);
-    m.userData.colored = true; W.root.add(m); (this.prints || (this.prints = [])).push(m); W.idsDirty = true;
+    if (flat) m.userData.floor = true; else m.userData.colored = true;
+    W.root.add(m); (this.prints || (this.prints = [])).push(m); W.idsDirty = true;
     this.tw.run(.18, k => m.scale.set(.75 * k, 1.15 * k, 1), ease.outBack);
   }
   // 흑백판: the list names a kind of furniture, so any piece of that kind counts (level report B4: two art crates on stage 3,
@@ -1482,7 +1521,7 @@ export class StageScene {
   }
   async robotSolve(part) {
     const G = this.G, W = G.world, L = part.lock; if (!L) return;
-    if (G.econ) { if (!takeLens(this)) return noLens(this); } else {   // 경제 B5 (10/19): one magnifier; none → the "no magnifier" sparkle, no robot
+    if (G.econ) { if (!takeLens(this)) return noLens(this); this.hintsUsed = (this.hintsUsed || 0) + 1; } else {   // 경제 B5 (10/19): one magnifier; none → the "no magnifier" sparkle, no robot (GPT QA L05: the robot's help is a hint — no ★ 힌트 없이)
     if (G.save.coins < ROBOT_COST) { G.ui.toast(`코인이 모자라! (${ROBOT_COST} 필요)`, 'red'); return; }
     G.addCoins(-ROBOT_COST);
     }
@@ -2113,11 +2152,18 @@ export class StageScene {
     let newItem = null, seenN = 0, seenNew = [];
     // 경제·로비 on: no thing given per stage any more — what you found goes into the card book (save.seen); things to hide
     // come from the shop's 물건 tab and 하나 슬쩍 (설계서 4-1)
-    if (G.econ && !this.preview && !this.custom) { const seen = G.save.seen || (G.save.seen = []), add = [...new Set(this.targets.map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !seen.includes(t)); seen.push(...add); seenN = add.length; seenNew = add; }
+    if (G.econ && !this.preview && !this.custom) { const seen = G.save.seen || (G.save.seen = []), add = [...new Set(this.targets.map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !seen.includes(t)); seen.push(...add); seenN = add.length; seenNew = add;
+      // 판 끝 집으로 가져가기 (10/19): the first new thing goes on the 찾은 것 선반 at home — saved with the progress, shown on the way
+      if (add.length && !this.kit) { const H = G.save.home, sh = H.shelf || (H.shelf = []); if (!sh.includes(add[0])) { sh.push(add[0]); H.shelfNew = add[0]; } } }
     else if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
     // 경제 B5 (10/19): no free magnifier used → one into the bag (not a preview / model kit, not testing my own room)
     const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this) : null;
     if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) { const H = G.save.home; H.boxQ = [...new Set([...(H.boxQ || []), this.idx])]; }   // (takePick takes it off again — 경제 세션 12장)
+    // 별 셋 = 비밀 한 줄 (스토리 룸 10/19): whose stage this is, and whether their diary secret was open before this clear
+    const sHost = !this.custom && !this.preview && !this.model && !G.bot ? stageHost(this.idx) : null, secret = sHost && diarySecret(sHost);
+    const secWas = !!secret && secretOpen(G.save.best, sHost), secKnown = anySecret(G.save.best);
+    const secretNew = !!secret && !secWas && stars >= 3, secretLock = !!secret && !secWas && stars < 3 && secKnown;
+    const metBefore = G.econ && !this.custom && !this.preview ? new Set(metFriends(G.save)) : null;   // (who is new after this clear — 판 끝 집으로 가져가기)
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
     // the finished model goes home (once) — saved with the clear, before the pause (GPT QA R2-01 10/19: quitting in that
@@ -2176,7 +2222,12 @@ export class StageScene {
       takePick(G, this.idx, picked);
     }
     // 2판 (home just opened): go and hide something at home now, or keep going — both on the result panel
+    // 판 끝 집으로 가져가기 (검토 세션 10/19, 사용자 OK — "찾은 게 아무 데도 안 남는다"): '다음' goes through 몽글이's room for under
+    // 3 s on the way — the friend met here walks in and sits, a piece won here is set down, the thing found goes on the shelf
+    // (a tap goes straight on). Only when something new came home; not on the 2판 '계속 찾기' (the room opens on its own there)
+    const passage = metBefore && G.homeOpen?.() && !G.playMode && !G.bot && !this.model ? { item: G.save.home.shelfNew || null, furn: memento || picked || (kitNew ? kitFurn : null), friends: metFriends(G.save).filter(k => !metBefore.has(k)) } : null;
     const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;
+    const passOn = !!passage && !homeNow && !!(passage.item || passage.furn || passage.friends.length);
     // the first run doesn't offer the home after 1판: the home first shows after 2판, when 내 집 opens (기획안 7장)
     const noHome = G.firstRun && this.idx === 0 && !this.custom && !this.preview && !this.model;
     const bossNext = BOSS_AFTER.includes(this.idx) && !G.save.bossDone?.[this.idx], gameNext = !bossNext && !!BOSS_GAMES[this.idx] && !G.save.bossDone?.['g' + this.idx], miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && !G.save.bossDone?.['m' + this.idx];
@@ -2195,20 +2246,23 @@ export class StageScene {
               : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star)]))]),
         // (each line with its speaker's face and, but for 몽글이's own, a small name — two friends can share the two lines)
         ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, L.who !== 'mong' && CHAR_DEFS[L.who] ? h('b', { class: 'who' }, CHAR_DEFS[L.who].name) : '', tr(L.text)))))] : []),
-        ...(this.kit ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · 꾸미기 보관함에 들어갔어` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))] : []),
+        // 별 셋 = 비밀 한 줄: the line itself the moment it opens; short of three (once you know secrets exist), a grey 'one secret'
+        ...(secretNew ? [h('div', { class: 'memento' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost] }) : '', h('div', {}, h('b', {}, tr(SECRET_UI.got)), h('div', {}, tr(secret))))] : []),
+        ...(secretLock ? [h('div', { class: 'memento', style: 'opacity:.75' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost], style: 'filter:grayscale(1) brightness(.55)' }) : '', h('div', {}, h('b', {}, '🔒 ' + tr(SECRET_UI.lockT)), h('div', {}, tr(SECRET_UI.lock))))] : []),
+        ...(this.kit ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))] : []),
         ...(this.model ? [] : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
         /* (no '걸린 시간 · 힌트 없이!' line: the star chips above already say hints, and the time isn't a goal — 2D UI 정리 10/19) */
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
-        ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · 꾸미기 보관함에 들어갔어`)))] : []),
+        ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : []),
         ...(seenN ? [seenRow(G, seenNew)] : []),   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
         ...(newFriend ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
         ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, got.isNew ? `${ITEMS[got.item]?.name || ''} · 내 수집품에 추가! 내 집에 숨길 수 있어` : `${ITEMS[got.item]?.name || ''} · 이미 있어서 코인 +${got.coins}`)))] : []),
         ...(got && this.custom?.resident ? [h('div', { class: 'txt' }, `${ga(this.custom.nick)} 눈치챘을지도… 복수하러 올 수 있어! 내 집 물건을 더 꼭꼭 숨겨 둬`)] : []),
-        ...(memento ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · 꾸미기 보관함에 들어갔어`)))] : [])],
+        ...(memento ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : [])],
       buttons: this.model ? [G.ui.btn('놀이 모음', { color: 'blue', cls: 'sm', onClick: () => G.go('home', { gallery: true }) }),
         this.nextBtn = G.ui.btn('다시 조립', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })]
         : [...(noHome ? [] : [homeNow ? G.ui.btn(SUI.homeHide, { color: 'orange', icon: 'home', cls: 'sm', onClick: () => G.go('myhome') }) : G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') })]),
@@ -2216,7 +2270,7 @@ export class StageScene {
           : this.custom ? G.ui.btn('다른 방', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })
           : this.preview ? G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })
           : G.ui.btn(bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: 'green', icon: 'play', cls: 'big',
-              onClick: () => bossNext ? G.go('boss', { after: this.idx }) : gameNext ? G.go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? (MINI_AFTER[this.idx].lab ? G.go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : G.go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx })) : G.go('stage', { idx: this.idx + 1 }) })],
+              onClick: () => { const go = (n, d) => passOn ? G.go('home', { passage: { ...passage, next: [n, d] }, quick: true }) : G.go(n, d); return bossNext ? go('boss', { after: this.idx }) : gameNext ? go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? (MINI_AFTER[this.idx].lab ? go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx })) : go('stage', { idx: this.idx + 1 }); } })],
     });
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }
     const paid = first?.awarded ?? coins;

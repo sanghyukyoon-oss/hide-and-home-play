@@ -457,10 +457,11 @@ export class Game {
     const L = this.L; this.phase = 'end';
     const stars = done ? (this.bonks === 0 ? 3 : this.bonks <= 2 ? 2 : 1) : 0, win = stars >= 1;
     this.result = win ? 'win' : 'fail';
-    L.log({ result: this.result, lv: this.lvIdx, stars, max: 3, home: this.home, bonks: this.bonks });
+    L.log({ result: this.result, lv: this.lvIdx, stars, max: 3, home: this.home, bonks: this.bonks, line: `${this.home}/${this.total}명 집에 감 · 꽝 ${this.bonks}번` });
     if (win) { L.audio.sfx('win'); L.world.fx.confetti(70); this.me.setFace('happy'); this.me.pose = 'cheer'; L.say(this.me, this.set.lines?.[1] || '다들 잘 가~ 내일 또 숨바꼭질!', 1500); }
     else { L.audio.sfx('lose'); this.me.setFace('sweat'); L.say(this.me, '해가 져 버렸다…', 1300); for (const q of this.live()) { if (q.awake) q.c.setFace('sad'); } }
     await this.tw.wait(1.3); if (this.dead) return;
+    if (win && L.campaign) return L.go({});   // the campaign: the reward card (bossgame → gift.js) is the result screen — 10/19, 결과창 한 번만
     const h = L.h, last = this.lvIdx >= LEVELS.length - 1;
     L.ui.panel({ title: win ? '모두 집에 갔다!' : '해가 졌다~', color: win ? 'green' : 'orange', body: [
       h('div', { class: 'gh-stars' }, ...[0, 1, 2].map(k => h('span', { class: k < stars ? 'on' : '' }, '★'))),

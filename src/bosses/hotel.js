@@ -813,7 +813,7 @@ export class Game {
     const L = this.L, h = L.h;
     this.result = good ? 'win' : 'fail';
     const rating = ratio >= 1 - 1e-9 ? 3 : ratio >= .93 ? 2 : good ? 1 : 0;
-    L.log({ result: this.result, lv: this.lvIdx + 1, stars: this.stars, max: this.maxStars, rating });
+    L.log({ result: this.result, lv: this.lvIdx + 1, stars: this.stars, max: this.maxStars, rating, line: good ? `별 ${this.stars} / ${this.maxStars} · ${rating === 3 ? '모두 꿀잠, 완벽한 여행!' : rating === 2 ? '거의 완벽한 여행!' : '그래도 즐거운 여행!'}` : undefined, photo: photo || undefined });   // (its own panel stays: the group photo — the reward card could take it over via e.photo)
     const last = this.lvIdx >= TRIPS.length - 1;
     const pic = h('div', { class: 'ht-photo' + (good ? '' : ' bad') }, photo ? h('img', { src: photo, alt: '로비 단체 사진' }) : null, h('span', {}, `몽글 호텔 · ${this.trip.name}`));
     const body = [pic];

@@ -52,6 +52,8 @@ const PAT = [
   [/^(.+?)에 (.+?) 쏙!$/, (a, b) => `${b} tucked ${a.charAt(0).toLowerCase() + a.slice(1)}!`],
   [/^너굴이가 (.+?) 쪽으로 가고 있어! 막아!$/, n => `Rocky is heading for ${obj(n)}! Block him!`],
   [/^찾았다! (.+?)!$/, n => `Found it! ${n}!`],
+  // 야식 셋째 간식 '아이스크림까지!' (GPT QA R2-06, 10/19): one word, then 까지
+  [/^([가-힣]+)까지!$/, n => `${n} too!`],
   [/^(.+?) 들켰다!$/, n => `${n} found!`],
   [/^(.+?) 확인~$/, n => `Checking ${n.charAt(0).toLowerCase() + n.slice(1)}~`],
   [/^보물 (\d+)개를 지켰어!$/, n => `You kept ${n} treasure${n === '1' ? '' : 's'} safe!`],

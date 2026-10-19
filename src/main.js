@@ -274,7 +274,7 @@ const G = {
     else { const next = routeFollowup(G, name, data); name = next.name; data = next.data; }
     G.pending = name;
     audio.sfx('whoosh');
-    await ui.irisOut();
+    await ui.irisOut(undefined, undefined, data.quick ? 200 : undefined);   // (quick: the room passed on the way from a stage — 경제·로비 10/19)
     try { G.scene?.exit(); } catch (e) { console.error('scene exit', e); }   // (a throw here kept G.pending set: a pink screen for good — QA3 10/19)
     G.scene = null;
     if (endPractice) {
@@ -294,7 +294,7 @@ const G = {
     purgeGeo();   // free cached shapes the last two scenes didn't use (memory on phones)
     world.update(0); world.shadowDirty = true; world.idsDirty = true;
     G.pending = null;
-    await ui.irisIn();
+    await ui.irisIn(undefined, undefined, data.quick ? 220 : undefined);
     await p;
     if (name === 'home' && data.gallery && G.scene === S) openGallery(G);
   },
