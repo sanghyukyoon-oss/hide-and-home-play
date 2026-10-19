@@ -3633,4 +3633,13 @@ export const EN = {
 "어? 텐트 앞에서 쿨쿨 소리가…": "Huh? Snoring by the tent…",
 "이제 진짜 다 갔다~": "Now everyone's really home~",
 "첫 놀이터 + 덤불": "First Playground + Bushes",
+// 엄마 몰래 야식: 이동 패드 + 냉장고 버튼 (10/19)
+"아래를 끌어서 살금살금": "Drag down here to tiptoe",
+"오른쪽 냉장고 버튼을 꾹!": "Hold the fridge button on the right!",
+"냉장고 버튼을 꾹 · 하나 더": "Hold the fridge button · one more",
+"띠링 울리기 전에 버튼에서 손 떼기!": "Let go before it beeps!",
+"후다닥! (끝까지 밀면 시끄러워)": "Scurry! (pushed all the way = noisy)",
+"냉장고 앞에서": "At the fridge",
+"꾹 꺼내기": "Hold to take",
+"꺼내는 중…": "Taking…",
 };

@@ -67,7 +67,8 @@ const LEVELS = [
 ];
 export const SNACKS = ['milk', 'cupcake', 'icecream'];
 export { LEVELS };
-const SNEAK = 1.05, SCURRY = 2.2, SCURRY_AT = 2.6;   // units / s; a finger this far ahead breaks into a scurry
+const SNEAK = 1.05, SCURRY = 2.2, SCURRY_AT = 2.6;
+const PAD_R = 58, PAD_RUN = .92;   // the thumb pad's reach (px), and how far out a slide turns into a scurry   // units / s; a finger this far ahead breaks into a scurry
 const MOM_WALK = 1.15, CHECK_T = 3.4;
 const EYE_H = 1.25, BODY_H = .58, CROUCH_H = .3, ME_R = .16;
 
@@ -121,7 +122,7 @@ export class Game {
     const L = this.L, W = L.world, ui = L.ui;
     const LV = this.lv = this.levelFor(lv);
     // 첫째 밤, the first time (scenes/bossgame.js says where to start: 'press' from the top, 'go' with the basics done)
-    this.prFrom = practice && this.lvIdx === 0 && !L.bot ? practice : null;
+    this.prFrom = null;   // (the ?yspr=1 practice teaches the old press-the-floor / tap-the-fridge controls: off with the pad, 10/19)
     document.getElementById('app').dataset.night = LV.day ? '' : '1';
     L.setBg(LV.bg || ['#3b3a6e', '#1d1c3a']); W.setLight(LV.light || NIGHT);
     const map = this.map = new MapRooms(W, this.mapDef(LV));
@@ -170,7 +171,7 @@ export class Game {
     if (LV.dog) {
       const dog = this.dog = new Char('shiba'); W.root.add(dog.root);
       dog.root.position.set(LV.dog.at[0], 0, LV.dog.at[1]); dog.root.rotation.y = LV.dog.yaw; dog.setFace('happy'); dog.awake = false;
-      this.zzz = L.say(dog, 'Zz…', 1e9, 'think');
+      this.zzT = 1;   // (its Zz puffs up now and then from update — a standing bubble covered the way to the fridge, 10/19)
       this.bodies.push({ x: LV.dog.at[0], z: LV.dog.at[1], r: .32 });
     }
     // light pools and markers: the fridge light, the vision field, the goal sparkle (fridge, then your door)
@@ -349,27 +350,34 @@ export class Game {
     const W = this.L.world, R = this.room, span = (R.w + R.d) / Math.SQRT2 + .5;
     W.home.set(0, .5, .2); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .8; W.zoom = 1;
     W.bounds = 99; W.slack = null; W.camLock = true;
-    W.setFit(span, span * .7, .52);
+    W.setFit(span, span * .7, .47);   // (a little higher than before: the strip under the room is the thumbs' — 10/19)
   }
 
-  // ── input: press and hold on the floor = walk toward the finger; tap a gadget = set it off; keys WASD / arrows
+  // ── input (10/19, user: "버튼 이전처럼 하나로 하던가 이동패드로", "냉장고 누를때 엄지땜에 말풍선 안보인다"): a thumb pad —
+  // press anywhere (best in the empty strip under the room) and slide: 몽글이 tiptoes that way, slid to the rim it
+  // scurries (noisy) — and ONE fridge button: held at the fridge, the door opens and snacks come out; let go, it shuts.
+  // The thumb stays off the room, so 몽글이, the fridge and the bubbles show. A gadget is still a tap on the gadget; a
+  // press on the fridge itself while you're at it works like the button. Keys WASD / arrows, Space = the button.
   bindInput() {
     const app = document.getElementById('app');
     this._down = e => {
       if (e.button > 0 || this.result || !this.started) return;
-      if (e.isPrimary && this.touch) this.touch = null;   // (a primary press: no other finger is down — the old touch lost its lift, QA3 10/19)
+      if (e.isPrimary && this.touch) { this.touch = null; this.padHide(); }   // (a primary press: no other finger is down — the old touch lost its lift, QA3 10/19)
       const d = this.lureAt(e.clientX, e.clientY);
       if (d) { this.fireLure(d); return; }   // (a gadget answers a second finger too)
+      if (this.btnId == null && this.atFridge() && this.onFridge(e.clientX, e.clientY)) { this.btnId = e.pointerId; this.fbtn.classList.add('down'); return; }
       if (this.touch) return;
-      this.touch = { id: e.pointerId, x: e.clientX, y: e.clientY, fridge: this.onFridge(e.clientX, e.clientY), t0: performance.now() };
+      this.touch = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
+      this.padShow(e.clientX, e.clientY);
     };
-    this._move = e => { const T = this.touch; if (T && e.pointerId === T.id) { T.x = e.clientX; T.y = e.clientY; } };
+    this._move = e => { const T = this.touch; if (T && e.pointerId === T.id) { T.x = e.clientX; T.y = e.clientY; this.padKnob(); } };
     this._up = e => {
+      if (this.btnId != null && (e?.pointerId == null || e.pointerId === this.btnId)) { this.btnId = null; this.fbtn.classList.remove('down'); }
       const T = this.touch; if (!T || (e?.pointerId != null && e.pointerId !== T.id)) return;
-      this.touch = null;
-      // a tap on the fridge while standing at it opens it (or shuts it again)
-      if (T.fridge && performance.now() - T.t0 < 320 && this.atFridge() && !this.result) this.setDoor(!this.doorOpen);
+      this.touch = null; this.padHide();
     };
+    // the button keeps its own finger (a second thumb can steer while the first holds the fridge)
+    this.fbtn.addEventListener('pointerdown', e => { e.stopPropagation(); if (this.result || !this.started) return; this.btnId = e.pointerId; this.fbtn.classList.add('down'); });
     this.keys = new Set();
     this._kd = e => { if (/^(Arrow|Key[WASD])/.test(e.code) || e.code === 'Space') { this.keys.add(e.code); e.preventDefault(); } };
     this._ku = e => this.keys.delete(e.code);
@@ -377,6 +385,15 @@ export class Game {
     this._blur = () => { this._up({}); this.keys.clear(); }; addEventListener('blur', this._blur);
     addEventListener('keydown', this._kd); addEventListener('keyup', this._ku);
   }
+  // the pad: a ring where the thumb landed, a knob that follows it (orange at the rim = a scurry)
+  padShow(x, y) { const P = this.pad; P.style.display = ''; P.style.left = x + 'px'; P.style.top = y + 'px'; P.classList.remove('rim'); this.padK.style.transform = 'translate(-50%, -50%)'; this.padGhost?.classList.add('gone'); }
+  padKnob() {
+    const T = this.touch; if (!T) return;
+    let dx = T.x - T.x0, dy = T.y - T.y0; const len = Math.hypot(dx, dy), k = len > PAD_R ? PAD_R / len : 1;
+    this.padK.style.transform = `translate(calc(-50% + ${dx * k}px), calc(-50% + ${dy * k}px))`;
+    this.pad.classList.toggle('rim', len > PAD_R * PAD_RUN);
+  }
+  padHide() { this.pad.style.display = 'none'; }
   onFridge(x, y) {
     if (!this.fridge) return false;
     const W = this.L.world; if (W.pick(x, y, [this.fridge.f.group])[0]) return true;
@@ -384,7 +401,7 @@ export class Game {
     return Math.hypot(s.x - x, s.y - y) < 46;   // a fat finger on the fridge counts too
   }
   atFridge() { return this.pos.distanceTo(this.fridgeAt) < .8; }
-  touchFridge() { return !!(this.touch?.fridge || this.botFridge); }
+  touchFridge() { return !!(this.btnId != null || this.keys?.has('Space') || this.botFridge); }
   setDoor(open) {
     if (this.doorOpen === open) return;
     this.doorOpen = open; this.L.audio.sfx(open ? 'open' : 'close');
@@ -403,9 +420,12 @@ export class Game {
     const K = this.keys, kx = (K.has('ArrowRight') || K.has('KeyD') ? 1 : 0) - (K.has('ArrowLeft') || K.has('KeyA') ? 1 : 0), ky = (K.has('ArrowDown') || K.has('KeyS') ? 1 : 0) - (K.has('ArrowUp') || K.has('KeyW') ? 1 : 0);
     if (kx || ky) { const y = this.L.world.yaw, rx = Math.cos(y), rz = -Math.sin(y), fx = -Math.sin(y), fz = -Math.cos(y), n = Math.hypot(kx, ky);
       return { down: true, dir: [(rx * kx - fx * ky) / n, (rz * kx - fz * ky) / n], run: K.has('ShiftLeft') }; }
-    if (K.has('Space')) return { down: true };
-    if (this.touch?.fridge) return { down: true, fridge: true, target: this.atFridge() ? null : this.fridgeAt.clone() };   // held on the fridge: go to its front, then reach in
-    if (this.touch) { const g = this.L.world.screenToGround(this.touch.x, this.touch.y, 0); return { down: true, target: g ? new THREE.Vector2(g.x, g.z) : null }; }
+    if (K.has('Space') || this.btnId != null) return { down: true, fridge: true };   // the fridge button (works only at the fridge)
+    if (this.touch) {   // the pad: the thumb's slide, turned to the floor's directions (screen up = away from you)
+      const T = this.touch, dx = T.x - T.x0, dy = T.y - T.y0, len = Math.hypot(dx, dy); if (len < 8) return { down: true };
+      const y = this.L.world.yaw, rx = Math.cos(y), rz = -Math.sin(y), fx = -Math.sin(y), fz = -Math.cos(y), kx = dx / len, ky = dy / len;
+      return { down: true, dir: [rx * kx - fx * ky, rz * kx - fz * ky], run: len > PAD_R * PAD_RUN, push: Math.min(1, .45 + len / PAD_R) };
+    }
     if (this.botDown) return { down: true, target: this.botTarget || null, fridge: !!this.botFridge };
     return { down: false };
   }
@@ -430,7 +450,32 @@ export class Game {
       this.ear = h('div', { class: 'ys-ear' }, h('span', { class: 'ol' }, '소리'), h('b', {}, this.earBar = h('i')));
       col.append(this.ear);
     }
-    this.hint = h('div', { class: 'ys-hint ol' }, h('span', { class: 'ys-hand' }), this.hintTx = h('span', {}, '가고 싶은 곳을 꾹 누르고 있기'));
+    this.hint = h('div', { class: 'ys-hint ol' }, h('span', { class: 'ys-hand' }), this.hintTx = h('span', {}, '아래를 끌어서 살금살금'));
+    // the thumb pad (shown where the thumb lands; a faint one waits bottom-left until the first move) and the fridge button
+    if (!document.getElementById('ys-css-pad')) document.head.append(h('style', { id: 'ys-css-pad' }, `
+.ys-pad { position: absolute; z-index: 6; width: 116px; height: 116px; margin: -58px 0 0 -58px; border-radius: 50%; background: rgba(255, 250, 242, .16); border: 3px solid rgba(255, 255, 255, .6); pointer-events: none; }
+.ys-pad i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; border-radius: 50%; background: #fffaf2; border: 3px solid #3a2453; box-shadow: 0 3px 0 #3a2453; transform: translate(-50%, -50%); }
+.ys-pad.rim i { background: #ffb36b; }
+.ys-pad.ghost { left: 88px; top: auto; bottom: calc(30px + var(--safeB, 0px)); margin: 0 0 0 -58px; opacity: .8; transition: opacity .3s; }
+.ys-pad.ghost.gone { opacity: 0; }
+.ys-pad.ghost b { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 14px; text-shadow: 0 2px 0 #3a2453; }
+.ys-fbtn { position: absolute; z-index: 7; right: 24px; bottom: calc(40px + var(--safeB, 0px)); width: 88px; height: 88px; border-radius: 50%; background: #fffaf2; border: 4px solid #3a2453; box-shadow: 0 5px 0 #3a2453;
+  display: grid; place-items: center; touch-action: none; -webkit-user-select: none; user-select: none; transition: transform .1s, opacity .2s, filter .2s; }
+.ys-fbtn svg { width: 44px; height: 44px; }
+.ys-fbtn b { position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 14px; text-shadow: 0 2px 0 #3a2453; }
+.ys-fbtn.far { opacity: .55; filter: grayscale(.7); }
+.ys-fbtn.near { background: #fff3b0; animation: ysBtn 1s ease-in-out infinite; }
+.ys-fbtn.down { transform: translateY(4px) scale(.94); box-shadow: 0 1px 0 #3a2453; animation: none; background: #ffe16b; }
+@keyframes ysBtn { 50% { box-shadow: 0 5px 0 #3a2453, 0 0 0 10px rgba(255, 225, 107, .35); } }
+#app .ys-hint { bottom: calc(150px + var(--safeB, 0px)); }
+#app .ys-get { top: calc(72px + var(--safeT, 0px)); left: calc(50% + 34px); max-width: calc(100vw - 110px); transform: translate(-50%, 0); animation: ysGetTop .45s cubic-bezier(.2, 1.7, .4, 1); }
+@keyframes ysGetTop { from { transform: translate(-50%, 0) scale(.6); } to { transform: translate(-50%, 0) scale(1); } }`));
+    const appEl = document.getElementById('app');
+    this.pad = h('div', { class: 'ys-pad', style: 'display:none' }, this.padK = h('i')); appEl.append(this.pad);
+    this.padGhost = h('div', { class: 'ys-pad ghost' }, h('i')); appEl.append(this.padGhost);   // (the line above says what it's for)
+    this.fbtn = h('div', { class: 'ys-fbtn far', role: 'button', 'aria-label': '냉장고' }, this.fbtnL = h('b', {}, '냉장고 앞에서'));
+    this.fbtn.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" fill="none" stroke="#3a2453" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="#cfe9ff"/><path d="M5 10h14"/><path d="M8.5 5.5v2.2M8.5 12.5v4"/></svg>');
+    appEl.append(this.fbtn);
     // the fridge gauge (10/18, user: "냉장고 앞에서 꾹 누르고 있으면 문 열리고 프로그레스 게이지 나오는 게 나을 거 같아"): over the
     // fridge while you hold it — fills while the door opens, then once per snack
     this.grabG = h('div', { class: 'ys-grab' }, this.grabI = h('i')); ui.wui.append(this.grabG);
@@ -615,7 +660,7 @@ export class Game {
     this.aim.material.opacity = I.target ? .55 : 0;
     this.holdT = I.down ? (this.holdT || 0) + dt : 0;
     if (dir) {
-      const carry = 1 - this.snacks.length * .1, v = (run ? SCURRY : SNEAK) * carry * Math.min(1, .35 + this.holdT * 3), st = v * dt;
+      const carry = 1 - this.snacks.length * .1, v = (run ? SCURRY : SNEAK * (I.push ?? 1)) * carry * Math.min(1, .35 + this.holdT * 3), st = v * dt;
       const ox = p.x, oz = p.y, [mx, mz] = dir;
       if (this.free(p.x + mx * st, p.y + mz * st)) { p.x += mx * st; p.y += mz * st; }
       else if (this.free(p.x + mx * st, p.y)) p.x += mx * st;
@@ -635,8 +680,8 @@ export class Game {
     this.placeMe(dt);
     // at the fridge: the door opens with a tap (or after a moment's hold), and holding the open fridge takes snacks
     const nearFridge = this.atFridge() && this.snacks.length < 3;
-    if (I.fridge && nearFridge && !this.moving) { this.fHold = (this.fHold || 0) + dt; if (!this.doorOpen && this.fHold > .35) this.setDoor(true); } else this.fHold = 0;
-    if (this.doorOpen && p.distanceTo(this.fridgeAt) > 1.1) this.setDoor(false);   // walked off: it swings shut
+    if (I.fridge && nearFridge && !this.moving) { this.fHold = (this.fHold || 0) + dt; if (!this.doorOpen && this.fHold > .2) this.setDoor(true); } else this.fHold = 0;
+    if (this.doorOpen && (p.distanceTo(this.fridgeAt) > 1.1 || (!I.fridge && !this.botFridge && !this.L.bot))) this.setDoor(false);   // let go of the button (or walked off): it swings shut
     this.grabbing = nearFridge && this.doorOpen && I.fridge && I.down && !this.moving;
     this.stepFridge(dt);
     if (this.mode === 'doze') this.stepHear(dt);
@@ -675,11 +720,13 @@ export class Game {
     // the hint says what a press does right now
     const n = this.snacks.length, live = this.lures.some(d => !d.used);
     if (AWAY.has(this.mState) && this.mState !== 'sit') this.setHint(this.mState === 'check' ? '지금이야! 엄마가 딴 데 봐' : '엄마가 일어났어…');
-    else if (nearFridge) this.setHint(this.mode === 'doze' && this.doorOpen && this.openT > 1.1 ? '오래 열어 두면 띠링! 톡 해서 닫기' : this.grabbing ? `꺼내는 중… ${n}/3` : !this.doorOpen ? '냉장고를 톡 하면 열려' : n ? '냉장고를 꾹 누르면 하나 더' : '열린 냉장고를 꾹 누르고 있으면 꺼내요');
-    else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '가고 싶은 곳을 꾹 누르고 있기' : '코 골 때 움직이면 안 들려');
-    else if (n) this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
-    else this.setHint(this.scurry ? '후다닥! (시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '가고 싶은 곳을 꾹 누르고 있기' : live ? `${this.lures.find(d => !d.used).name}를 톡 하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
+    else if (nearFridge) this.setHint(this.mode === 'doze' && this.doorOpen && this.openT > 1.1 ? '띠링 울리기 전에 버튼에서 손 떼기!' : this.grabbing ? `꺼내는 중… ${n}/3` : n ? '냉장고 버튼을 꾹 · 하나 더' : '오른쪽 냉장고 버튼을 꾹!');
+    else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '아래를 끌어서 살금살금' : '코 골 때 움직이면 안 들려');
+    else if (n) this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
+    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 끌어서 살금살금' : live ? `${this.lures.find(d => !d.used).name}를 톡 하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
+    { const at = nearFridge, lbl = !at ? '냉장고 앞에서' : this.grabbing ? '꺼내는 중…' : '꾹 꺼내기'; this.fbtn.classList.toggle('near', at && !this.grabbing); this.fbtn.classList.toggle('far', !at); if (this.fbtnL.textContent !== lbl) this.fbtnL.textContent = lbl; }
+    if (this.dog && !this.dog.awake && (this.zzT -= dt) <= 0) { this.zzT = 2.4; const d = this.dog.root.position, s = W.toScreen(new THREE.Vector3(d.x, this.dog.headTop() + .15, d.z)); L.ui.floatText(s.x + 10, s.y, 'Zz', ''); }
     this.stepPractice(dt);
   }
   // 셋째 밤: what mom hears. Every noise fills the gauge (closer to her = louder); her snores and the lullaby cover
@@ -730,7 +777,7 @@ export class Game {
     part?.setOpen(this.fridgeOpen);
     // the gauge over the fridge: the door's hold, then each snack's
     const holding = this.atFridge() && this.snacks.length < 3 && this.touchFridge();
-    const fill = this.grabbing ? this.grabT / .7 : !this.doorOpen && holding ? Math.min(1, (this.fHold || 0) / .35) : 0;
+    const fill = this.grabbing ? this.grabT / .7 : !this.doorOpen && holding ? Math.min(1, (this.fHold || 0) / .2) : 0;
     this.grabG.style.display = holding || this.grabbing ? '' : 'none';
     if (this.grabG.style.display === '') { const s = L.world.toScreen(this.fridgeTop || new THREE.Vector3(this.fridgeAt.x, 1.6, this.fridgeAt.y)); this.grabG.style.left = s.x + 'px'; this.grabG.style.top = (s.y - 18) + 'px'; this.grabI.style.width = Math.round(Math.min(1, fill) * 100) + '%'; this.grabG.classList.toggle('open', this.doorOpen); }
     if (this.grabbing) {
@@ -957,7 +1004,7 @@ export class Game {
     }, 1200);
   }
   exit() {
-    this.grabG?.remove();
+    this.grabG?.remove(); this.pad?.remove(); this.padGhost?.remove(); this.fbtn?.remove();
     this.dead = true; const W = this.L.world, app = document.getElementById('app');
     app.dataset.night = '';
     app.removeEventListener('pointerdown', this._down); removeEventListener('pointermove', this._move); removeEventListener('pointerup', this._up); removeEventListener('pointercancel', this._up);

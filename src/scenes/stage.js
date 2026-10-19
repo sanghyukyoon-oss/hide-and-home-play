@@ -22,6 +22,9 @@ const FURN_NAME = t => FURN_INFO[t]?.name || t;
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { storyFor, playDialog, playCinematic, slidePuzzle, setFrameSolved } from '../story.js';
 import { Trickster } from '../trickster.js';
+import { sweepSetup, sweepUpdate } from '../sweep.js';   // 빛 쓸기 (10/19)
+import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
+import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
 import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
@@ -211,6 +214,7 @@ export class StageScene {
     this.gadgets = new Set();
     if (this.spec.gray) this.setupGray();
     this.trick = new Trickster(this);
+    sweepSetup(this); reelSetup(this);
     // the friend counting in the corner
     let fa = layout.friendAt || [1.6, 1.6];
     // never stand inside a piece of furniture: take the nearest clear spot to where the layout asked
@@ -322,7 +326,7 @@ export class StageScene {
     raidStart(this);   // (타이머 털기: the owner starts counting)
     this.running = true; this.tStart = this.t;
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
-    if (this.spec.tut === 2) { this.tutorial2(); this.teachTilt(); }
+    if (this.spec.tut === 2) { this.tutorial2(); if (TILT_ON || !DBL_ON) this.teachTilt(); }
     if (this.scene?.card) newCard(G, this.scene.card);
     else if (this.obs) newCard(G, 'obs');   // 61판: the observation locks' card, once (스토리 v96 CARDS.obs)   // e.g. 비밀 서재: 🆕 연쇄 장치
     if (this.scene?.teachMove && !G.save.tut?.move) this.teachMove();
@@ -615,7 +619,7 @@ export class StageScene {
     if (penalty && this.timerOn) { this.misses.push(this.t); this.misses = this.misses.filter(t => this.t - t < 3); }
     if (penalty) {
       this.missCount++;
-      if (this.spec.tut === 2 && this.missCount === 2) G.ui.toast(DO.zoom, 'green');   // 2판: small things → zoom, once it's needed
+      if (this.spec.tut === 2 && this.missCount === 2) { if (DBL_ON) teachDbl(this); else G.ui.toast(DO.zoom, 'green'); }   // 2판: small things → zoom, once it's needed
       this.taunt('miss');
       if (this.timerOn) { this.time = Math.max(0, this.time - 2); G.ui.floatText(x, y, '-2초', 'red'); }
       G.audio.sfx('miss', 0, false);   // (its tick went with the tap — addMiss)
@@ -1567,10 +1571,12 @@ export class StageScene {
     part.busy = true;
     if (opening) {
       part.spots.forEach(s => { if (s.itemGroup && s.item) s.itemGroup.visible = true; });
+      const junk = part.reel ? reelCast(this, part) : false;   // 낚싯대 릴: this cast may bring up junk instead
       if (this.v2?.cands.includes(part)) v2OpenSound(this, part); else G.audio.sfx(part.sfx);
       this.partsOpened++;
       await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
-      for (const s of part.spots) if (s.item && !s.item.found) { const p = W.toScreen(this.worldCenter(s.item)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 }); }
+      if (junk) reelSay(this, part);
+      else for (const s of part.spots) if (s.item && !s.item.found) { const p = W.toScreen(this.worldCenter(s.item)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 }); }
       if (this.jailed?.in && part === this.jailed.door) this.freeJailed();
       const fi = part.spots.map(s => s.item).find(it => it?.friend && !it.found); if (fi) this.revealFriend(fi);
       else if (this.v2 && this.friendHidden && this.v2.cands.includes(part) && !this.r1.told.has(part)) v2Wrong(this, part);
@@ -1582,6 +1588,7 @@ export class StageScene {
       G.audio.sfx('close');
       await this.tw.run(part.dur * .8, k => { part.setOpen(1 - k); W.shadowDirty = true; }, ease.inOutQuad);
       part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; });
+      if (part.reel) reelClear(this, part);
     }
     part.busy = false;
   }
@@ -2297,6 +2304,8 @@ export class StageScene {
     }
     if (this.running && !this.result && !this.paused) {
       this.idle += dt;
+      sweepUpdate(this, dt);
+      if (this.spec.tut === 2 && this.idle > 15 && !this._dbl) teachDbl(this);
       if (this.idle > 11) this.taunt('idle');
       // a sparkle on something findable after a while of nothing: 9 s on a friend hunt; on a hidden-object stage you get
       // time to look yourself first — 12 s in chapters 1-2, 20 s from 3 (레벨 세션 B3, user: "진득하게")
