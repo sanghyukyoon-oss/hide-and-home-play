@@ -22,6 +22,12 @@ export const raidOf = save => save.raid || (save.raid = { next: 0, revenge: null
 export const hiddenTargets = save => (save.home?.hide?.items || []).filter(e => isTarget(e.item));
 export const residentId = i => 'practice-' + i;
 export const shieldLeft = (save, now = Date.now()) => Math.max(0, (raidOf(save).shield || 0) - now);
+// 자물쇠 사기 (10/19, user via 인수인계: "자물쇠랑 열쇠도 구매 가능하게?"): padlocks for my home are owned, one to start (or
+// as many as already hang there), more from the shop's 물건 tab. Keys are not sold — a bought key would skip the stages'
+// key-and-lock puzzle and the raid's 보물 star; the magnifier already points to a key you can't find.
+export const LOCK_PRICE = 150, LOCK_MAX = 4;
+export const locksUsed = save => Object.keys(save.home?.hide?.locks || {}).length;
+export function locksOwned(save) { const R = raidOf(save); if (R.locksOwned == null) R.locksOwned = Math.min(LOCK_MAX, Math.max(1, locksUsed(save))); return R.locksOwned; }
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 const eul = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '을' : '를'); };
 

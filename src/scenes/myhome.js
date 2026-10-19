@@ -18,6 +18,8 @@ import { tr } from '../i18n.js';
 import { openShop } from '../shop.js';
 import { net, initNet, publishRoom, roomStats } from '../net.js';
 import { seatedAll } from '../econ.js';
+import { messOpen, messShut, askBuyLock } from '../raidreplay.js';   // 털린 흔적 · 자물쇠 사기 (털기 메타 10/19)
+import { locksOwned, locksUsed } from '../raid.js';
 
 const V = new THREE.Vector3();
 const MAX_HIDE = 5;
@@ -103,6 +105,7 @@ export class MyHomeScene {
       }
       for (const pk in hid.locks) { const p = this.partByKey[pk]; if (p) p.furn.setLock(p, hid.locks[pk], hid.code); else delete hid.locks[pk]; }
     }
+    messOpen(this);   // 털린 흔적: what a resident opened stays open until you shut it
     this.mong = new Char('mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8;   // (the room's owner is always 몽글이 — the 도감 pick is a friend who walks along, 10/19; comment no longer swallows the placing)
     if (this.lobby) { const R = this.room, [mx, mz] = [[.7, 1.1], [.3, 1.5], [1.1, .5], [0, .6], [1.5, 1.5]].find(([x, z]) => R.clearAt(x, z, .34)) || [1.9, 1.9]; this.mong.root.position.set(mx, 0, mz); }   // (the lobby: in the middle of things, the camera on it)
     this.room.group.add(this.mong.root);
@@ -436,6 +439,7 @@ export class MyHomeScene {
     this.cardsEl.append(h('div', { class: 'card lockedc', style: 'display:flex;align-items:center;justify-content:center;font-size:12px;min-height:110px' }, `스테이지에서 찾은 물건이 여기 모여요 (${coll.length}종)`));
     this.lockRow.innerHTML = '';
     const lockables = this.room.parts.filter(p => p.lockable && p.spots.some(s => s.item && this.items[s.item.type] === s.item && s.item.type !== 'key' && s.item.type !== 'note'));
+    if (lockables.length) this.lockRow.append(h('span', { class: 'lockcount' }, `자물쇠 ${locksUsed(G.save)}/${locksOwned(G.save)}`));
     for (const p of lockables) {
       const on = !!hid.locks[p.key];
       this.lockRow.append(G.ui.btn(on ? `${p.label} 잠금 풀기` : `${p.label} 잠그기`, { color: on ? 'gray' : 'yellow', icon: 'lock', cls: 'sm', onClick: () => this.toggleLock(p) }));
@@ -479,6 +483,7 @@ export class MyHomeScene {
       if (!this.chainNeeded().includes(c)) this.removeItem(c);
     } else {
       if (p.spots.some(s => s.item && (s.item.type === 'key' || s.item.type === 'note'))) { G.ui.toast('열쇠나 쪽지가 든 곳은 못 잠가', 'red'); G.audio.sfx('miss'); return; }
+      if (locksUsed(G.save) >= locksOwned(G.save)) return askBuyLock(G, () => !this.dead && this.toggleLock(p));   // 자물쇠는 사서 써요 (털기 메타 10/19)
       const kind = p.furn.type === 'safe' ? 'code' : 'pad';
       hid.locks[p.key] = kind; hid.code = hid.code || String(100 + Math.floor(Math.random() * 900));
       p.furn.setLock(p, kind, hid.code);
@@ -583,6 +588,7 @@ export class MyHomeScene {
     await this.tw.run(part.dur, k => { part.setOpen(a + (b - a) * k); W.shadowDirty = true; }, open ? ease.outBack : ease.inOutQuad);
     if (!open) part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; });
     part.busy = false;
+    if (!open) messShut(this, part);   // (털린 흔적: 탁! — the last one pays)
   }
   hidePlaces() {
     const places = [], seen = new Set();

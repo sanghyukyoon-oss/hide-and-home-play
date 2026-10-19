@@ -10,7 +10,7 @@ import { attachItem } from './room.js';
 import { resolveHost, makeFreeSpot, dropFreeSpot } from './freehide.js';
 import { h, ICON } from './ui.js';
 import { practiceRooms } from './net.js';
-import { stolenBy, residentId, shieldLeft } from './raid.js';
+import { stolenBy, residentId, shieldLeft, locksOwned, locksUsed, LOCK_PRICE, LOCK_MAX } from './raid.js';
 import { setScoutList } from './raidrun.js';
 import { makePractice } from './scenes/visit.js';
 
@@ -60,6 +60,7 @@ export async function playRaidReplay(S, ev) {
   if (S.col) S.col.style.visibility = 'hidden';
   const away = [S.mong, ...(S.seated || []).map(s => s.ch)].filter(Boolean); for (const c of away) c.root.visible = false;
   S.busyTut = true; S.visitors?.drop();
+  const messed = new Set(messHere(S)); for (const p of messed) { p.setOpen(0); p.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; }); }   // (털린 흔적: shut until the resident opens them)
   const joy0 = W.joyHidden; W.joyHidden = true;
   const look = W.home.clone(); look.y += .7;   // (a raised look-at point sits the room lower on the screen, under the bar)
   W.flyTo(tw, { target: look, zoom: 1.1, dur: .6 });
@@ -148,11 +149,11 @@ export async function playRaidReplay(S, ev) {
       carry = buildItem(v.e.item, { code: S.H.hide.code || '000' }); carry.position.set(0, ch.headTop() * .5, .3); carry.scale.setScalar(1.3); ch.root.add(carry);   // (held out in front: a bubble over the head would hide it)
       ch.setFace('happy'); S.say(ch, '헤헤, 이건 내 거~', 1200);
       await tw.wait(1.1);
-      if (v.part && shut.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
+      if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
     } else {   // right there, and never noticed
       ch.setFace('sad'); S.say(ch, v.part ? '없네?' : '여긴 없네~', 1000); floatAt(v.it.g, '안 들킴!', 'green');
       await tw.wait(1.0);
-      if (v.part && shut.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
+      if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }   // (털린 흔적: left open)
     }
   }
   if (live()) {
@@ -163,7 +164,8 @@ export async function playRaidReplay(S, ev) {
   }
   if (S.dead) return;
   // everything back as it is now
-  for (const part of shut) { part.setOpen(0); part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; }); }
+  for (const part of shut) if (!messed.has(part)) { part.setOpen(0); part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; }); }
+  for (const part of messed) { part.setOpen(1); part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = true; }); }   // (as the resident left them)
   for (const it of temps) { it.g.parent?.remove(it.g); it.spot.item = null; it.spot.itemGroup = null; if (it.spot.free) dropFreeSpot(it.spot); }
   for (const g of hiddenReal) g.visible = true;
   ch.root.parent?.remove(ch.root);
@@ -172,7 +174,7 @@ export async function playRaidReplay(S, ev) {
   S.busyTut = false; W.joyHidden = joy0; W.shadowDirty = true; W.idsDirty = true;
   bar.remove();
   if (S.col) S.col.style.visibility = '';
-  if (S.lobby && S.mode === 'lobby') S.frameLobby?.();
+  if (S.lobby && S.mode === 'lobby' && !messHere(S).length) S.frameLobby?.();   // (털린 흔적 left: stay on the whole room, so the open drawers are there to shut)
   S.replaying = false;
   replayCard(S, ev);
 }
@@ -191,11 +193,63 @@ function replayCard(S, ev) {
       h('div', { class: 'loottab' }, ...rows),
       ...(ev.coins ? [h('div', { class: 'txt' }, `못 찾은 물건 덕에 코인 +${ev.coins} (이미 받았어)`)] : []),
       ...(stole && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : []),
-      h('div', { class: 'txt' }, stole ? `${ga(ev.nick)} 집에 가서 찾으면 되찾을 수 있어!` : '잘 숨겨 둔 덕분이야!')],
+      h('div', { class: 'txt' }, stole ? `${ga(ev.nick)} 집에 가서 찾으면 되찾을 수 있어!` : '잘 숨겨 둔 덕분이야!'),
+      ...(messHere(S).length ? [h('div', { class: 'txt sm' }, `열어 놓고 간 서랍 ${messHere(S).length}개 · 톡 하면 닫혀`)] : [])],
     buttons: stole
       ? [G.ui.btn('더 꽁꽁 숨기기', { color: 'orange', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),   // (UI ②: 주황 = 내 집, 초록 하나 = 제일 할 일)
         G.ui.btn('복수하러 가기', { color: 'green', cls: 'big', onClick: () => { G.ui.closePanel(); goRevenge(G, ev.who); } })]
       : [G.ui.btn('더 꽁꽁 숨기기', { color: 'orange', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),
         G.ui.btn('좋아!', { color: 'green', cls: 'big', onClick: () => G.ui.closePanel() })],
   });
+}
+
+// ── 털린 흔적 (10/19, user via 인수인계: "내 방 털고 가면 문·서랍 같은 걸 다 열고 가서, 닫는 거 정리해 줘야 되는 거 어때?").
+// The drawers, lids and doors a resident went through stay open when you come home — you see at once that someone was
+// here. A tap shuts each one (탁!); shutting the last pays a little. Leaving them open costs nothing: Clash gave up
+// making you re-arm traps by hand because it was a chore. A lock that held stays shut; the replay opens them in order.
+const MESS_PAY = 10;
+const partOfEntry = (S, e) => e.free ? (e.free.part ? S.partByKey[e.free.part] : (e.free.host?.startsWith?.('p:') ? S.partByKey[e.free.host.slice(2)] : null)) : S.spotByKey[e.spot]?.part;
+// after build: the raids on this zone not looked at yet leave their parts open (once per raid); then open them all
+export function messOpen(S) {
+  const G = S.G, H = S.H, R = G.save.raid;
+  if (!S.partByKey) return;
+  const mess = new Set(H.mess || []);
+  let changed = false;
+  for (const ev of R?.log || []) {
+    if (!ev.rp || ev.messed || ev.rp.zone !== S.zoneId) continue;
+    ev.messed = true; changed = true;
+    for (const e of ev.rp.items) { const p = partOfEntry(S, e); if (p && !ev.rp.locks[p.key] && !H.hide.locks?.[p.key]) mess.add(p.key); }
+  }
+  // (only this zone's parts that still exist and aren't locked now)
+  const here = [...mess].filter(k => S.partByKey[k] && !H.hide.locks?.[k]);
+  const other = (H.mess || []).filter(k => !S.partByKey[k]);
+  H.mess = [...new Set([...other, ...here])];
+  for (const k of here) { const p = S.partByKey[k]; p.setOpen(1); p.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = true; }); }
+  if (changed) G.persist();
+}
+export const messHere = S => (S.H.mess || []).map(k => S.partByKey?.[k]).filter(Boolean);
+// a part shut by hand (MyHomeScene.openPart): 탁! — the last one pays
+export function messShut(S, part) {
+  const G = S.G, H = S.H;
+  if (S.replaying || !H.mess?.includes(part.key)) return;
+  H.mess = H.mess.filter(k => k !== part.key);
+  const W = G.world, s = W.toScreen((part.pivots?.[0] || part.furn.group).getWorldPosition(new THREE.Vector3()));
+  G.ui.floatText(s.x, s.y - 30, '탁!', 'gold'); W.fx.burst(s.x, s.y, { n: 8, shape: 'star', colors: ['#ffffff', '#fff3a0'], speed: 140, gravity: 40 });
+  if (!messHere(S).length) { G.addCoins(MESS_PAY); G.audio.sfx('coin'); G.ui.toast(`정리 끝! 털린 흔적이 싹 사라졌어 +${MESS_PAY}`, 'green'); if (S.lobby && S.mode === 'lobby') setTimeout(() => !S.dead && S.frameLobby?.(), 900); }
+  G.persist();
+}
+
+// ── 자물쇠가 모자랄 때: one more, right here (or the shop's 물건 tab)
+export function askBuyLock(G, onBought) {
+  const owned = locksOwned(G.save);
+  if (owned >= LOCK_MAX) { G.ui.toast(`자물쇠는 ${LOCK_MAX}개까지야 · 다른 데 걸린 걸 풀어서 옮겨 봐`, 'red'); G.audio.sfx('miss'); return; }
+  const buy = () => {
+    if (G.save.coins < LOCK_PRICE) { G.ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
+    G.addCoins(-LOCK_PRICE); G.audio.sfx('buy'); G.save.raid.locksOwned = owned + 1; G.persist();
+    G.ui.closePanel(); G.ui.toast(`자물쇠 ${owned + 1}개째!`, 'green'); onBought?.();
+  };
+  G.ui.panel({ title: '자물쇠가 다 쓰였어', color: 'orange', cls: 'lockbuy',
+    body: [h('div', { class: 'lockicon', html: ICON.lock }), h('div', { class: 'txt' }, `지금 ${locksUsed(G.save)}개를 다 걸었어. 하나 더 살까?`), h('div', { class: 'txt sm' }, '잠근 서랍 속 물건은 동네 주민이 거의 못 털어 가')],
+    buttons: [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: () => G.ui.closePanel() }),
+      G.ui.btn(`사기 ${LOCK_PRICE}`, { color: 'green', icon: 'coin', cls: 'big', onClick: buy })] });
 }

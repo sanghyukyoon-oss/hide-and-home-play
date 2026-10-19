@@ -7,6 +7,7 @@ import { layoutFor, LAYOUTS } from './stages.js';
 import { renderThumbs } from './thumbs.js';
 import { PICK_ITEMS, chapterOfFurn, chapterNow } from './econ.js';
 import { ITEMS } from './gfx/items.js';
+import { locksOwned, LOCK_PRICE, LOCK_MAX } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
 
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 
@@ -44,6 +45,10 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       note.textContent = `돋보기 가방 ${L.bag || 0}/5 · 판에서 무료 2개를 다 쓰면 가방에서 꺼내 써요`;
       grid.append(card(G, { img: G.thumbs.item_magnifier || null, swatch: h('div', { class: 'swatch', style: 'display:grid;place-items:center;font-size:34px' }, '🔍'), name: '돋보기', sub: full ? '가방이 꽉 찼어' : '가방에 1개', price: full ? null : 60, action: full ? '가득' : '',
         onBuy: () => { L.bag = Math.min(5, (L.bag || 0) + 1); G.persist(); ui.toast(`돋보기 가방 ${L.bag}/5`, 'green'); render(); } }));
+      // 자물쇠 (털기 메타 10/19): a padlock for a drawer at home — keys aren't sold (they'd skip the lock puzzles)
+      const lk = locksOwned(G.save), lkFull = lk >= LOCK_MAX;
+      grid.append(card(G, { swatch: h('div', { class: 'swatch lockswatch', html: ICON.lock }), name: '자물쇠', sub: lkFull ? `${LOCK_MAX}개 다 있어` : `가진 것 ${lk}개 · 서랍을 잠가 지켜`, price: lkFull ? null : LOCK_PRICE, action: lkFull ? '가득' : '',
+        onBuy: () => { G.save.raid.locksOwned = lk + 1; G.persist(); ui.toast(`자물쇠 ${lk + 1}개째! 숨기기에서 서랍을 잠가 봐`, 'green'); render(); } }));
       const took = new Set(Object.values(G.save.raid?.stolen || {}).flat());   // (raid.js: room id → the things taken from you)
       for (const t of (G.save.seen || []).filter(t => ITEMS[t] && !G.save.collection.includes(t))) {
         grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: took.has(t) ? '털려 갔어 · 되찾으러 가기' : '도감에서 본 것', price: took.has(t) ? null : 40, action: took.has(t) ? '되찾기' : '',
