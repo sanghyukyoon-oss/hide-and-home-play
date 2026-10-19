@@ -441,7 +441,9 @@ export class StageScene {
     const hit = this.pickAt(x, y);
     if (!hit.node) return null;
     if (hit.kind === 'item') return hit.item.found ? null : { obj: hit.node, m: .16 };
-    return { obj: hit.node, m: hit.kind === 'furn' ? .035 : hit.kind === 'char' ? .07 : .06 };
+    // plain furniture doesn't answer a tap any more (10/19), so it doesn't dip either — a 흑백 target still does
+    if (hit.kind === 'furn') { const gt = this.grayTarget(hit.furn); return gt && !gt.found ? { obj: hit.node, m: .035 } : null; }
+    return { obj: hit.node, m: hit.kind === 'char' ? .07 : .06 };
   }
   pickExact(x, y) {
     const hits = this.G.world.pick(x, y, this.pickRoots());
@@ -493,7 +495,9 @@ export class StageScene {
     if (hit.kind === 'furn') { const lp = this.lockedPartNear(hit.furn, x, y); if (lp) return this.onPart(lp, x, y); }
     if (hit.kind === 'furn') { const lv = hit.furn.parts?.find(p => p.isLever); if (lv) return this.onPart(lv, x, y); }   // (톡: the lever's post or box pulls it too)
     if (hit.kind === 'furn' && ft?.found) return;   // 흑백판: a piece already coloured back is not a wrong tap (QA 10/18: each re-tap cost a 톡)
-    if (hit.kind === 'furn') { this.wobble(hit.furn.group); G.audio.sfx('wobble'); this.addMiss(x, y, false); return; }
+    // (10/19, user: "가구는 눌러도 반응 없지만 물건들 누르면 -1로") — the body of a plain piece of furniture: nothing at all
+    // (it used to wobble and spend a 톡; a finger meant for a drawer often landed on the body)
+    if (hit.kind === 'furn') return;
     this.addMiss(x, y, true);
   }
   // R7 (level report): every target left is behind something from this side. Try turning ±45°, ±90° and 180° (camera
@@ -517,6 +521,7 @@ export class StageScene {
   }
   // a double tap zooms (world.js): its first tap, already counted as a miss, is given back — zooming isn't a wrong tap
   undoLastMiss() {
+    if (this._missT) { clearTimeout(this._missT.timer); this._missT = null; return; }   // still waiting: it never happened
     const m = this._lastMiss; this._lastMiss = null;
     if (!m || this.dead || this.result || performance.now() - m.at > 450) return;
     if (m.penalty) this.missCount = Math.max(0, this.missCount - 1);
@@ -534,15 +539,25 @@ export class StageScene {
   addMiss(x, y, penalty) {
     const G = this.G;
     if (this.targets.every(t => t.found)) return;   // everything is found and the win is on its way (QA 10/18)
+    // (10/19, user: "더블클릭할 때 -1 뜰 때도 있음") — the counting waits 0.33 s, the double-tap window: a second tap that
+    // zooms cancels it (undoLastMiss) before the '-1' shows. Only the small puff under the finger is at once.
+    if (penalty) G.world.fx.burst(x, y, { n: 6, colors: ['#ffffff', '#d9c9e8'], shape: 'circle', speed: 120, size: 10, gravity: 0, life: .4 });
+    if (this._missT) { clearTimeout(this._missT.timer); this._missT.run(); }   // an earlier miss still waiting: it counts now
+    const m = this._missT = { run: () => { if (this._missT === m) this._missT = null; this.countMiss(x, y, penalty); } };
+    m.timer = setTimeout(() => { if (!this.dead) m.run(); }, 330);
+  }
+  countMiss(x, y, penalty) {
+    const G = this.G;
+    if (this.dead || this.result || this.targets.every(t => t.found)) return;
     this._lastMiss = { at: performance.now(), penalty, spent: this.tapsLeft != null, timed: !!(penalty && this.timerOn) };
-    spendTap(this, x, y);   // 톡: the floor, a decoy, a wobbling piece of furniture
+    spendTap(this, x, y);   // 톡: the floor, a decoy
     if (penalty && this.timerOn) { this.misses.push(this.t); this.misses = this.misses.filter(t => this.t - t < 3); }
     if (penalty) {
       this.missCount++;
       if (this.spec.tut === 2 && this.missCount === 2) G.ui.toast(DO.zoom, 'green');   // 2판: small things → zoom, once it's needed
       this.taunt('miss');
       if (this.timerOn) { this.time = Math.max(0, this.time - 2); G.ui.floatText(x, y, '-2초', 'red'); }
-      G.audio.sfx('miss'); G.world.fx.burst(x, y, { n: 6, colors: ['#ffffff', '#d9c9e8'], shape: 'circle', speed: 120, size: 10, gravity: 0, life: .4 });
+      G.audio.sfx('miss');
       this.setMong('sweat', 'shake');
     }
     if (this.misses.length >= 4) this.makeDizzy();

@@ -209,14 +209,13 @@ export class World {
   // in the picture after the view was moved off to one side (it used to be the view's centre). Screen points are put on
   // the floor plane and the ones inside the room's floor are averaged; nothing of the room on screen → null (view centre)
   _turnPivot() {
-    const b = this._floorBox(); if (!b) return null;
-    const y = this.target.y; let sx = 0, sz = 0, n = 0;
+    // (10/19, user: "카메라는 화면 중앙에 있는 물건 중심으로 돌아야 할 것 같아. 맵 끝으로 가서 돌릴수록 미쳐버려") — the thing in the
+    // middle of the screen (what a ray from the centre hits first), or the floor there; the R7 average of the visible floor
+    // drifted far off to one side at a map's edge
     this.updateCam();
-    for (let i = 0; i <= 6; i++) for (let j = 0; j <= 8; j++) {
-      const g = this.screenToGround(this.W * (.04 + .92 * i / 6), this.H * (.12 + .76 * j / 8), y);
-      if (g && g.x >= b.min.x && g.x <= b.max.x && g.z >= b.min.z && g.z <= b.max.z) { sx += g.x; sz += g.z; n++; }
-    }
-    return n ? new THREE.Vector3(sx / n, y, sz / n) : null;
+    const cx = this.W / 2, cy = this.H / 2, hit = this.pick(cx, cy, [this.root]).find(h => !h.object.userData.proxy);
+    if (hit) return hit.point.clone();
+    return this.screenToGround(cx, cy, this.target.y);
   }
   // the room's floor (meshes marked userData.floor), measured again for each turn — rooms change between scenes
   _floorBox() {
@@ -229,7 +228,12 @@ export class World {
     this.updateCam(); const s0 = P && this.toScreen(P);
     this.yaw += dyaw; this.rawYaw = this.yaw; this.yawGoal = null; this.vYaw = 0;
     const p0 = this.pitch; this.pitch = clamp(this.pitch + dpitch, this.minPitch, this.maxPitch); this._rat(Math.abs(dyaw) + Math.abs(this.pitch - p0));
-    if (P) { this.updateCam(); const after = this.screenToGround(s0.x, s0.y, P.y); if (after) { this.target.x += P.x - after.x; this.target.z += P.z - after.z; this.clampTarget(); } }
+    // keep P where it is on screen — unless that would take the view past its bounds: then this step turns round the view's
+    // centre and nothing is pushed back (it used to shift, get pushed back by clampTarget and swing the view about at a
+    // map's edge: "미쳐버려"; measured 10/19 on 4판 — stopping the shift at the edge instead moved the view more)
+    if (P) { this.updateCam(); const after = this.screenToGround(s0.x, s0.y, P.y);
+      if (after) { const nx = this.target.x + P.x - after.x, nz = this.target.z + P.z - after.z, [x0, x1, z0, z1] = this._box();
+        if (nx >= x0 && nx <= x1 && nz >= z0 && nz <= z1) { this.target.x = nx; this.target.z = nz; } } }
     if (dyaw) { this.onRotate?.(-dyaw); this._notch(); }
   }
   clearTap() { if (this._pendTap) { clearTimeout(this._pendTap.timer); this._pendTap = null; } this._ring(null); this.eMode = this.eBase; this._lastTap = null; }
@@ -713,11 +717,11 @@ export class World {
           const ang = Math.atan2(b.y - a.y, b.x - a.x); P.ang ??= ang;
           let da = ang - P.ang; da = Math.atan2(Math.sin(da), Math.cos(da)); P.ang = ang; P.tw = (P.tw || 0) + da;
           if (!P.zoomOn && Math.abs(d - P.d0) > 16) { P.zoomOn = true; P.d = P.d0; }   // catch up the first 16 px
-          if (!P.twOn && Math.abs(P.tw) > .21) P.twOn = true;
+          // (10/19, user: "두 손가락 벌리기 할 때 확대하면서 돌아가는데 이거 별로다. 2d 그림 확대하듯") — no twist turn any more:
+          // two fingers zoom like a photo; turning is the dial and drag-then-tap
           if (!this.camLock) {
             if (P.zoomOn) this.zoomAt(d / P.d, P.mx, P.my);
             this.panBy(mx - P.mx, my - P.my);
-            if (P.twOn && da) this.turnAround(this.screenToGround(mx, my, this.target.y), TWIST * da);
             this.zoomGoal = null;
           }
           if (!P.zoomOn) { Object.assign(P, { mx, my }); return; }
