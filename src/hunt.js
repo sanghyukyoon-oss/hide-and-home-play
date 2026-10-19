@@ -104,6 +104,17 @@ export function fixBlindSpots(S) {
     // (only a plain lock comes off: a puzzle lock — sock, dig, spine, gadget, marble, treat, lever — has its own way of
     // opening, and losing it lost the 33·36판 sock puzzle; 검토 세션 10/18)
     if (!ok && lockedIn && !['pad', 'code', 'color'].includes(lockedIn.lock.kind)) continue;
+    // (before the lock comes off, another thing on the list may show in there: the planner puts whichever fits, and the
+    // alley gate's milk box hid an umbrella but not a cookie — that stripped 26판's colour lock with the padlock first and
+    // 25판's before; 리포트 v3 P2, 11~70판 레벨 세션 10/19). Only things out on top of something swap in: their place is seen.
+    if (!ok && lockedIn) {
+      const a = it.spot;
+      for (const o of S.items.filter(o => o !== it && o.role === 'target' && !o.found && !o.friend && o.spot.kind === 'on' && !o.spot.part && fitsSpot(o.type, a) && fitsSpot(it.type, o.spot)).slice(0, 6)) {
+        const b = o.spot; moveItem(it, b); moveItem(o, a);
+        if (views(o) >= 2) { it.g.visible = true; moved.push(`${it.type} ↔ ${o.type}: ${a.label} (자물쇠 지킴)`); ok = true; break; }
+        moveItem(it, a); moveItem(o, b); o.g.visible = true;
+      }
+    }
     if (!ok && lockedIn) {
       const L = S.plan.locks.find(l => l.part === lockedIn); if (L) S.plan.locks.splice(S.plan.locks.indexOf(L), 1);
       lockedIn.lock = null; if (lockedIn.lockMesh) { lockedIn.lockMesh.parent?.remove(lockedIn.lockMesh); lockedIn.lockMesh = null; }
@@ -189,7 +200,7 @@ export function placeCameo(S) {
   S.cameoInfo = { kind, near: best.near, atStart: best.atStart, views: best.views, covered: +best.covered.toFixed(2) };
   return it;
 }
-function coveredFrac(S, ch) {
+export function coveredFrac(S, ch) {   // (stage.js: 먹물이 숨기도 씀 — 스토리 룸 10/19)
   const W = S.G.world, b = new THREE.Box3().setFromObject(ch.root), pts = [];
   for (const fx of [.2, .5, .8]) for (const fy of [.25, .55, .85]) pts.push(new THREE.Vector3(b.min.x + (b.max.x - b.min.x) * fx, b.min.y + (b.max.y - b.min.y) * fy, (b.min.z + b.max.z) / 2));
   let hidden = 0;

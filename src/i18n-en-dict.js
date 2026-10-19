@@ -3531,6 +3531,7 @@ export const EN = {
 "로봇 안테나": "Robot Antenna", "로봇 안테나!": "Robot Antenna!",
 "다리": "Legs", "몸통": "Body", "제트팩": "Jetpack", "집게팔": "Claw", "주먹팔": "Fist", "머리": "Head", "부품 6개": "6 parts", "로봇 부품 6개를 모아 조립하자!": "Collect all 6 robot parts and build it!",
 "흠, 거기가 아니군.": "Hm. Not there.",
+"이삿짐 풀기": "Unpacking", "파르페 쌓기": "Parfait Stack", "생크림": "Whipped Cream", "웨하스": "Wafer", "체리": "Cherry", "이삿짐 상자": "Moving Box", "큰 파르페": "Giant Parfait",
 "꼬마 로봇": "Tiny Bot",
 "조립 로봇": "Model Robot",
 "박사님의 프라모델": "Doc's Model Kit",
@@ -3603,4 +3604,15 @@ export const EN = {
 "다음 마당": "Next yard",
 "앞길이 열린 친구부터 톡! 해 지기 전에 모두 집으로": "Tap whoever has a clear way! Get everyone home before sunset",
 "눈 위 발자국을 따라가 숨은 친구 찾기": "Follow the prints in the snow to find the hidden friends",
+// 다 같이 집으로! 정식판 (6단계·돌려 보기, 10/19)
+"골목길": "Back Alley",
+"덤불 숨바꼭질": "Bush Hide-and-Seek",
+"빙글 너굴이": "Spinny Rocky",
+"졸린 친구들": "Sleepy Friends",
+"상자 뒤 친구!": "A friend behind the boxes!",
+"흔들리는 곳을 톡 하면 나와요": "Tap whatever is shaking to find them",
+"졸린 친구들!": "Sleepy friends!",
+"한 번 톡 하면 깨고, 한 번 더 톡 하면 가요": "One tap wakes them, one more sends them off",
+"하암~ 깼다!": "Yawn~ I'm up!",
+"화면을 끌면 돌려 볼 수 있어요": "Drag the screen to turn the view",
 };

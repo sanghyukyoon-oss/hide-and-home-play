@@ -152,9 +152,11 @@ export function timberFrame(len, WH, T = {}, o = {}) {
 
 // ── 도르래 바구니 (1×1): two posts up past the upper floor, a pulley, a crank on the side; tap and the basket comes down
 const B = {};
-B.liftbasket = (f, T) => {
+// o.up: the basket waits downstairs and the crank sends it UP through the floor's hatch (10/19: what it carries arrives
+// where it is needed upstairs — the pulley joins the two floors instead of standing beside them)
+B.liftbasket = (f, T, o = {}) => {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), tk = [wood, woodD].join(',');
-  const TOP = FLOOR_H + 1.35, yT = FLOOR_H + .12, yB = .5, z0 = -.28;
+  const TOP = FLOOR_H + 1.35, yT = FLOOR_H + .12, yB = .5, z0 = -.28, up = !!o.up;
   f.add(mc('liftframe|' + tk, ({ add, tube }) => {
     for (const sx of [-1, 1]) { add(G.box(.11, TOP, .11, .02), woodD, sx * .36, TOP / 2, z0); add(G.box(.22, .06, .22, .02), woodD, sx * .36, .03, z0); }
     add(G.box(.86, .12, .14, .03), woodD, 0, TOP - .04, z0);
@@ -167,7 +169,7 @@ B.liftbasket = (f, T) => {
   }));
   const crank = new THREE.Group(); put(crank, .53, 1.0, z0 + .02); f.add(crank);
   crank.add(mc('liftcrank', ({ add }) => { add(G.cyl(.025, .025, .14, 8), '#c9cfe0', .02, 0, 0, 0, 0, HP); add(G.box(.04, .2, .04, .01), '#c9cfe0', .08, -.08, 0); add(G.cyl(.035, .035, .1, 10), '#ffcf5c', .13, -.17, 0, 0, 0, HP); }));
-  const basket = new THREE.Group(); put(basket, 0, yT, z0 + .1); f.add(basket);
+  const basket = new THREE.Group(); put(basket, 0, up ? yB : yT, z0 + .1); f.add(basket);
   basket.add(mc('liftbasket|' + tk, ({ add, tube }) => {
     // an open wicker tray: floor and four low sides, so what rides in it can be seen
     add(G.box(.5, .04, .4, .015), '#b97a45', 0, .02, 0);
@@ -182,11 +184,11 @@ B.liftbasket = (f, T) => {
   const rope = new THREE.Group(); put(rope, 0, TOP - .2, z0 + .1); f.add(rope);
   rope.add(mc('liftrope', ({ add }) => add(G.cyl(.012, .012, 1, 5), '#e8d8b8', 0, -.5, 0)));
   const setRope = by => { rope.scale.y = Math.max(.05, TOP - .2 - (by + .66)); };
-  setRope(yT);
+  setRope(up ? yB : yT);
   const p = f.part('lift', [basket, crank, rope], (t, bB, bC, bR) => {
-    basket.position.y = bB.p.y + (yB - yT) * t; basket.rotation.z = Math.sin(t * PI * 3) * .04 * (1 - t);
-    crank.rotation.x = -t * PI * 6; setRope(basket.position.y);
-  }, { label: '도르래 바구니', sfx: 'swish', dur: .9 });
+    basket.position.y = bB.p.y + ((up ? yT : yB) - (up ? yB : yT)) * t; basket.rotation.z = Math.sin(t * PI * 3) * .04 * (1 - t);
+    crank.rotation.x = (up ? 1 : -1) * t * PI * 6; setRope(basket.position.y);
+  }, { label: '도르래 바구니', sfx: 'swish', dur: up ? 1.4 : .9 });
   f.spot('inside', basket, 0, .04, 0, { part: p, maxH: .26, label: '도르래 바구니 안', scale: .8 });
   f.spot('behind', null, 0, 0, z0 - .05, { maxH: .3, label: '바구니 기둥 뒤', scale: .7 });
 };

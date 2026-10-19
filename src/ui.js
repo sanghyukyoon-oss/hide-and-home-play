@@ -44,6 +44,8 @@ export class UI {
     this.audio = audio;
     this.hud = document.getElementById('hud');
     this.overlay = document.getElementById('overlay');
+    // (QA3 10/19) a press on an open panel, or its dim backdrop, ends here: the games behind it listen on #app
+    this.overlay.addEventListener('pointerdown', e => { if (this.overlay.classList.contains('on')) e.stopPropagation(); });
     this.toasts = document.getElementById('toasts');
     this.wui = document.getElementById('world-ui');
     // tutorial captions and the pointing hand sit above every HUD control (the zoom gauge and the turn/move switch were
@@ -79,6 +81,7 @@ export class UI {
   }
   ibtn(icon, color, onClick, badge = null) {
     const b = this.btn(null, { color, icon, cls: 'ibtn', onClick });
+    b.dataset.icon = icon;   // (the app's back button finds a scene's home button by it — src/appback.js)
     if (badge != null) { const bd = h('div', { class: 'badge' }, String(badge)); b.append(bd); b.badge = bd; }
     return b;
   }

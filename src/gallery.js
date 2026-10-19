@@ -26,7 +26,7 @@ export const GALLERY = [
     { id: 'inky', type: 'bossgame', interlude: true, name: '먹물이의 바꿔치기', desc: '물건으로 둔갑한 먹물이를 찾아 방 색을 되찾아요', slots: '새 버전 · 보류', lvs: L('곰돌이네 거실', '냥냥이네 부엌', '토순이네 침실') },
     { id: 'picnic', type: 'bossgame', interlude: true, name: '소풍 보물찾기', desc: '바위·덤불·새집을 들춰 보물 쪽지 찾기. 꽁꽁~뜨거워!', slots: '보류', lvs: L('공원', '바람 부는 날', '멍뭉이랑 소풍') },
     { id: 'blanket', type: 'bossgame', interlude: true, name: '이불 속 누구게?', desc: '이불 밖으로 삐져나온 귀·꼬리로 누군지 맞히기', slots: '9판 뒤', lvs: L('파자마 파티', '변장한 너굴이', '고양이 친구들') },
-    { id: 'gohome', type: 'bossgame', interlude: true, name: '다 같이 집으로!', desc: '앞길이 열린 친구부터 톡! 해 지기 전에 모두 집으로', slots: '43판 뒤', lvs: L('놀이터', '덤불 숲', '해 질 녘') },
+    { id: 'gohome', type: 'bossgame', interlude: true, name: '다 같이 집으로!', desc: '앞길이 열린 친구부터 톡! 해 지기 전에 모두 집으로', slots: '43판 뒤', lvs: L('놀이터', '골목길', '덤불 숨바꼭질', '빙글 너굴이', '졸린 친구들', '해 질 녘') },
     { id: 'tracks', type: 'bossgame', interlude: true, name: '발자국 따라 찾기', desc: '눈 위 발자국을 따라가 숨은 친구 찾기', slots: '캠페인 밖', lvs: L('첫눈 캠핑장', '엉킨 발자국', '눈이 펑펑') },
     { id: 'lamp', type: 'mini', name: '손전등 술래', desc: '어두운 방을 손전등으로 비춰 친구 찾기', slots: '15판 뒤 · 66판 뒤 보스', lvs: [{ label: '원룸', after: 14 }, { label: '공원', after: 42 }, { label: '보스: 불 꺼진 사무실', after: 65 }] },
     { id: 'spot', type: 'mini', name: '너굴이의 바꿔치기 (지금 판)', desc: '잠깐 사이 바뀐 곳 찾기', slots: '34 · 52판 뒤', lvs: [{ label: '편의점', after: 33 }, { label: '캠핑장', after: 51 }] },

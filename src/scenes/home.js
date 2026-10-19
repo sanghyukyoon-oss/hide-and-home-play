@@ -18,6 +18,7 @@ import { storyFor } from '../story.js';
 import { openRoadmap } from '../roadmap.js';
 import { THEMES, stageSpec, regionOf, STAGE_COUNT, REGIONS, CHAR_UNLOCK } from '../stages.js';
 import { h, ICON, fullscreenBtn } from '../ui.js';
+import { IN_APP, QA_TOOLS, VERSION_LABEL } from '../build.js';
 import { Tweens, ease, rng } from '../util.js';
 import { tr, LANG, setLang } from '../i18n.js';
 import { openGallery } from '../gallery.js';
@@ -909,19 +910,22 @@ export function openMore(G, extra = []) {
   const ui = G.ui;
   // art preview (2026-10-15): the everyday apartment living room in the new look, outside the campaign
   const preview = room => G.go('stage', { idx: 2, preview: true, spec: { room, n: 6, inside: 3, behind: 1, time: 90, clutter: .7, tut: 0 } });
-  const fs = fullscreenBtn(ui);
+  const fs = IN_APP ? null : fullscreenBtn(ui);   // (the app is full screen already)
   const layBtn = G.owner ? [ui.btn('배치 편집', { color: 'orange', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
   ui.panel({ title: '더보기', color: 'blue', close: () => {}, body: [h('div', { class: 'row wrap' },
-    ui.btn('놀이 모음', { color: 'green', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
+    // 놀이 모음 lists 'N판 뒤 · 안 쓰임' notes for the team: hidden in the submitted builds — the app's store build and the public
+    // web page; it shows for the owner (localhost, ?owner, the artifact's owner) and in the app's Debug APK (user, 10/19)
+    (IN_APP ? QA_TOOLS : G.owner) && ui.btn('놀이 모음', { color: 'green', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
     ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
-    ui.btn('새 아트', { color: 'yellow', onClick: () => { ui.closePanel(); preview('apt'); } }),
+    QA_TOOLS && ui.btn('새 아트', { color: 'yellow', onClick: () => { ui.closePanel(); preview('apt'); } }),
     ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),
     // compare the new incident stages with the old find-the-list stages (10/17 pivot)
-    ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
+    QA_TOOLS && ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
     ...layBtn, ...extra, ...(fs ? [fs] : []),
     // 경제·내 방 로비 (10/19, built in but off until the user picks): try it on this device, or go back
-    ui.btn(G.econ ? '새 경제 끄기' : '새 경제·내 방 로비 켜기', { color: G.econ ? 'gray' : 'pink', onClick: () => { try { localStorage.setItem('sbk-econ', G.econ ? '0' : '1'); } catch {} location.replace(location.pathname + location.search.replace(/[?&]econ=[01]/, '').replace(/^&/, '?') + location.hash); } })),
+    QA_TOOLS && ui.btn(G.econ ? '새 경제 끄기' : '새 경제·내 방 로비 켜기', { color: G.econ ? 'gray' : 'pink', onClick: () => { try { localStorage.setItem('sbk-econ', G.econ ? '0' : '1'); } catch {} location.replace(location.pathname + location.search.replace(/[?&]econ=[01]/, '').replace(/^&/, '?') + location.hash); } })),
     // font credits (한국기계연구원 서체 is 공공누리 제1유형: the credit has to be shown)
+    h('div', { class: 'credits' }, VERSION_LABEL),   // the version name in the game (Discovery 26-4 rule)
     h('div', { class: 'credits' }, '글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 \'한국기계연구원 서체\'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.')],
     buttons: [ui.btn('닫기', { color: 'gray', onClick: () => ui.closePanel() })] });
   if (!G.owner) G.ownerP.then(o => { if (o && ui.panelOpen) { ui.closePanel(); openMore(G, extra); } });
@@ -1061,7 +1065,7 @@ export class HomeScene {
     prof.style.pointerEvents = 'auto';
     prof.addEventListener('pointerup', () => {
       const now = performance.now(); taps = [...taps.filter(t => now - t < 2500), now];
-      if (taps.length < 5) return;
+      if (taps.length < 5 || !QA_TOOLS) return;   // (a QA shortcut: not in the store build — src/build.js)
       taps = [];
       const st = G.save.settings || (G.save.settings = {}); st.review = !st.review; G.persist();
       G.ui.toast(st.review ? '리뷰 모드: 지도에서 모든 판이 열려요' : '리뷰 모드 꺼짐', 'green');
@@ -1085,11 +1089,11 @@ export class HomeScene {
     const raidBtn = ui.btn('놀러 가기', { color: 'pink', icon: unlocked ? 'play' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '남이 숨긴 방 찾기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : G.go('visit') });
     // the side column stays short so it never reaches the play button on a short screen (Safari with its bars, a phone
     // turned sideways): 지도 and 도감 stay out, everything else lives behind 더보기
-    const side = h('div', { class: 'homeside' });
+    const side = h('div', { class: 'homeside' });   // (one colour for the side buttons: same role, same look — 2D UI 정리 ② 10/19)
     side.append(snd,
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
-      ui.btn('도감', { color: 'pink', cls: 'sm', onClick: () => openCardBook(G) }),
-      ui.btn('더보기', { color: 'blue', cls: 'sm', onClick: () => openMore(G) }));
+      ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) }),
+      ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G) }));
     col.append(side);
     bar.append(this.playBtn, h('div', { class: 'row2' }, roomBtn, raidBtn));
     col.append(bar);

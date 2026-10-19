@@ -12,13 +12,14 @@ import { openRoadmap } from '../roadmap.js';
 import { openCardBook } from '../cardbook.js';
 import { runRaids } from '../raid.js';
 import { playDialog } from '../story.js';
-import { HOME_TUT } from '../script.js';
+import { HOME_TUT, ENDING, endCard, choose, giftSeats, UI as SUI } from '../script.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
 import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow } from '../econ.js';
 import { SHOP_FURN } from '../catalog.js';
 import { regionOf } from '../stages.js';
+import { QA_TOOLS } from '../build.js';
 const REGION_NAME = i => regionOf(i)?.name || '';
 const REGIONS_AT = ch => [0, 12, 21, 31, 40, 49, 60][ch - 1] ?? 0;   // (the first stage of chapter ch)
 
@@ -31,9 +32,10 @@ export class LobbyScene extends MyHomeScene {
   constructor(G) { super(G); this.name = 'home'; this.lobby = true; this.seated = []; }
   async enter(o = {}) {
     const G = this.G;
-    runRaids(G);   // residents who sneaked in while you were away (coins land before the pills show them)
+    if (!o.ending) runRaids(G);   // residents who sneaked in while you were away (coins land before the pills show them)
     await super.enter({ ...o, mode: !o.mode || o.mode === 'view' ? 'lobby' : o.mode });
     if (this.dead) return;
+    if (o.ending) return this.playEnding(o.ending);   // 엔딩 (스토리 룸 10/19)
     this.tw.wait(.8).then(() => !this.dead && HomeScene.prototype.raidNews.call(this));
     const tut = G.save.tut || (G.save.tut = {});
     if (G.homeOpen() && !tut.home) await this.roomOpens();
@@ -55,7 +57,7 @@ export class LobbyScene extends MyHomeScene {
     let taps = [];   // review shortcut, as on the old home: the profile 5 times quickly → every stage open on the map
     prof.addEventListener('pointerup', () => {
       const now = performance.now(); taps = [...taps.filter(t => now - t < 2500), now];
-      if (taps.length < 5) return;
+      if (taps.length < 5 || !QA_TOOLS) return;   // (a QA shortcut: not in the store build — src/build.js)
       taps = [];
       const st = S.settings || (S.settings = {}); st.review = !st.review; G.persist();
       ui.toast(st.review ? '리뷰 모드: 지도에서 모든 판이 열려요' : '리뷰 모드 꺼짐', 'green');
@@ -76,9 +78,9 @@ export class LobbyScene extends MyHomeScene {
     const town = ui.btn('동네 구경', { color: 'orange', onClick: () => { ui.closePanel(); G.go('town'); } });
     const side = h('div', { class: 'homeside' }, snd,
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
-      ui.btn('도감', { color: 'pink', cls: 'sm', onClick: () => openCardBook(G) }),
-      ui.btn('상점', { color: 'yellow', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
-      ui.btn('더보기', { color: 'blue', cls: 'sm', onClick: () => openMore(G, [town]) }));
+      ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) }),
+      ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
+      ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G, [town]) }));
     col.append(side);
     this.playBtn = playButton(G);
     const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : go() });
@@ -185,6 +187,7 @@ export class LobbyScene extends MyHomeScene {
   }
   placeFriend(k) {
     const G = this.G, z = this.zone;
+    if (!(this.H.friendBox || []).includes(k)) return;   // (already out of the box: a double tap seated it twice — QA3 10/19)
     if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(seatsOf(z) >= 6 ? '자리가 꽉 찼어 (최대 6)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
     const p = this.freeSpot(); if (!p) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
     this.seatOne(k, p, false).then(() => { if (!this.dead && this.mode === 'edit') this.setMode('edit'); });
@@ -232,6 +235,7 @@ export class LobbyScene extends MyHomeScene {
   setMode(mode) {   // (꾸미기·숨기기 '완료' come back to the lobby)
     this.fsel = null; mode = mode === 'view' ? 'lobby' : mode;
     const r = super.setMode(mode);
+    this.G.world.joyHidden = mode === 'lobby';   // (the dial in 꾸미기·숨기기 — G.go hides it for a scene named home, QA3 10/19)
     if (mode === 'lobby') this.frameLobby(); else this.frameRoom();
     return r;
   }
@@ -300,6 +304,46 @@ export class LobbyScene extends MyHomeScene {
     this.busyTut = false;
     this.arrivals();
     this.playBtn?.classList.add('pulse');
+  }
+  // ── 엔딩 (스토리 룸 10/19, 사용자 "추천대로"): 마지막 야식 뒤, 다 같이 몽글이네 방. 그동안 만난 친구들이 와서 졸고 — 선물 가구가
+  // 방에 있으면 그 친구는 자기 자리에 — 토순이만 깨어 있어요. "똑, 똑." 하면 먹물이가 문으로 들어와 남겨 둔 자리에 앉아요.
+  // 오늘 밤만 온 친구들이라 자리 기록(z.friends)에는 안 남겨요. 대사는 script.js ENDING 그대로.
+  async playEnding({ after = 69 } = {}) {
+    const G = this.G, tw = this.tw, temp = [];
+    G.ui.clear(); this.visitors?.dispose(); this.visitors = null;   // (오늘 밤은 다 여기 있어서, 따로 놀러 오는 친구는 없음)
+    const here = new Set(this.seated.map(s => s.k));
+    const sit = (k, x, z, top = null) => {
+      const s = this.addSeated({ k, x, z, a: Math.atan2(2.2 - x, 2.2 - z) }); temp.push(s);
+      if (top) s.ch.root.position.set(top.x, top.y, top.z);
+      return s;
+    };
+    // 먹물이 자리 먼저 비워 둠 (방 가운데 쪽)
+    const spot = this.freeSpot(); const inky = spot ? sit('inky', spot.x, spot.z) : null; if (inky) inky.ch.root.visible = false;
+    for (const S of giftSeats(G, this.room)) { if (here.has(S.who)) continue; here.add(S.who); sit(S.who, S.stand[0], S.stand[1], S.top ? { x: S.top.x, y: S.top.y, z: S.top.z } : null); }
+    for (const k of metFriends(G.save)) {
+      if (here.has(k) || k === 'inky' || temp.length >= 12) continue;
+      const p = this.freeSpot(); if (!p) break;
+      here.add(k); sit(k, p.x, p.z);
+    }
+    if (!here.has('bunny')) { const p = this.freeSpot(this.mong.root.position); if (p) sit('bunny', p.x, p.z); }
+    for (const s of this.seated) if (s.k !== 'bunny' && s.k !== 'inky') s.ch.setFace('happy');   // 다들 자 (눈 감고 웃는 얼굴)
+    this.frameLobby(1);
+    await tw.wait(1.1); if (this.dead) return;
+    let came = false;
+    await playDialog(G, ENDING, { onLine: L => {
+      if (L.who !== 'inky' || came || !inky) return;
+      came = true;   // "똑, 똑." — 문에서 들어와 남겨 둔 자리로
+      const ch = inky.ch, d = this.doorAt(); ch.root.position.set(d.x, 0, d.z); ch.root.visible = true; G.audio.sfx('pop', 2);
+      ch.walkTo(tw, spot.x, spot.z).then(() => { if (this.dead) return; ch.root.rotation.y = Math.atan2(this.mong.root.position.x - spot.x, this.mong.root.position.z - spot.z); ch.setFace('happy'); ch.bump(.4); });
+    } });
+    if (this.dead) return;
+    await endCard(G); if (this.dead) return;
+    G.save.ending = true; G.persist();
+    const stay = await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0;
+    if (this.dead) return;
+    if (!stay) return G.go('stage', { idx: after + 1 });
+    for (const s of temp) { this.room.group.remove(s.ch.root); this.seated = this.seated.filter(x => x !== s); }
+    this.setMode('lobby');
   }
   giftCards(list) {
     const G = this.G;

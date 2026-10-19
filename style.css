@@ -705,6 +705,10 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 /* 사건 판 tray: the hidden friend's face first and bigger (the goal), then the bonus things, smaller */
 .tray .slot.friendslot { border-color: #ff7fb0; background: #fff0f6; transform: scale(1.12); margin-right: 8px; }
 .tray .slot.friendslot img { border-radius: 50%; }
+/* 먹물이 숨기 (스토리 룸 10/19): 흑백판 목록의 마지막 칸 — 찾기 전엔 까만 그림자에 '?' */
+.tray .slot.inkyslot img { border-radius: 50%; }
+.tray .slot.inkyslot:not(.found) img { filter: brightness(0) !important; opacity: .82; }
+.tray .slot.inkyslot:not(.found)::after { content: '?'; position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%; background: #4a3d5c; color: #fff; border: 2.5px solid var(--ink); font: 15px/18px var(--font); text-align: center; }
 .tray .slot.friendslot:not(.found)::after { content: '?'; position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%; background: #ff7fb0; color: #fff; border: 2.5px solid var(--ink); font: 15px/18px var(--font); text-align: center; }
 .tray .slot.bonus { transform: scale(.86); opacity: .92; }
 /* 비밀 서재 책등 퍼즐 */
@@ -1324,6 +1328,20 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kitrun-cell img { top: 7%; height: 86%; }
 .kitrun-no { min-width: 20px; height: 20px; border-radius: 10px; left: -6px; top: -7px; font-size: 13px; line-height: 16px; }
 .kitrun-gate { opacity: .5; }
+/* 이삿짐·파르페 (10/19): the same card, another skin — a row of moving boxes that fold flat as they're emptied, a row of
+   little topping dishes; no numbers (no order to follow) */
+.kitrun-box { display: none; }
+.kitrun.nonum .kitrun-no { display: none; }
+.kitrun.skin-boxes .kitrun-gate, .kitrun.skin-bowls .kitrun-gate { display: none; }
+.kitrun.skin-boxes .kitrun-cell { background: rgba(255, 248, 236, .55); }
+.kitrun.skin-boxes .kitrun-box { display: block; position: absolute; left: 10%; right: 10%; bottom: 8%; height: 62%; border-radius: 5px; transform-origin: 50% 100%;
+  background: linear-gradient(90deg, transparent 40%, #f6e3b8 40% 60%, transparent 60%), linear-gradient(#f0cf9a, #e2b77c); box-shadow: inset 0 0 0 2px rgba(58, 36, 83, .28);
+  transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), opacity .35s; }
+.kitrun.skin-boxes .kitrun-ghost { filter: brightness(0) opacity(.22); }
+.kitrun.skin-boxes .kitrun-cell img { z-index: 1; }
+.kitrun.skin-boxes .kitrun-cell.found .kitrun-box { transform: scaleY(.14); opacity: .7; }   /* folded flat */
+.kitrun.skin-bowls .kitrun-cell { background: radial-gradient(ellipse 60% 26% at 50% 84%, #ffe3ec 0 96%, transparent 100%), rgba(255, 255, 255, .7); border-radius: 14px 14px 22px 22px; }
+.kitrun.skin-bowls .kitrun-ghost { filter: brightness(0) opacity(.14); }
 .kitrun.gone { opacity: 0; transform: translateX(-50%) translateY(40px); pointer-events: none; }
 /* the box: its lid (the box art, a label band), the front face, the inside */
 .kitintro { position: absolute; inset: 0; z-index: 30; background: rgba(42, 26, 61, .22); pointer-events: auto; animation: kitfade .25s ease-out; }
@@ -1366,3 +1384,12 @@ html[lang="en"] .rl-fr.out::after { content: 'OUT'; }
    panel is up, notices drop to the bottom edge instead of sitting on its title ribbon ("내 집이 열렸어!" over "최고야!") */
 .panel, .panel * { word-break: keep-all; overflow-wrap: break-word; }
 #overlay.on ~ #toasts { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+/* '처음 시점': only once the view has really moved during play (stage.js update toggles .show — 10/19) */
+.zoomtools:not(.show) { display: none !important; }
+
+/* ── QA3 10/19 (조작감·버그 점검): a long press on a picture (the HUD faces, reward pictures, shop cards, the logo) opened
+   iOS's "save image" sheet and let it be dragged; pulling down at the top of a list reloaded the page in Android Chrome */
+html, body { -webkit-touch-callout: none; overscroll-behavior: none; }
+img { -webkit-user-drag: none; }
+/* Android only: the turn dial clear of the back-swipe strip at the right edge (32 px × the HUD's .82 ≈ 26 px) */
+.android .turndial { right: 32px; }

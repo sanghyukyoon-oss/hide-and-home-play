@@ -407,7 +407,8 @@ export class Game {
     return r >= 0 ? this.occ(r) : -1;
   }
   worldDown(e) {
-    if (e.button > 0 || !this.canAct() || this.drag) return;
+    if (e.button > 0 || !this.canAct()) return;
+    if (this.drag) { if (!e.isPrimary) return; const o = this.drag; this.drag = null; if (o.moved) { this.endHover(); this.dropGuest(o.gid, null); } }   // (a primary press: the old drag lost its lift — it goes back, QA3 10/19)
     if (e.target.closest?.('.btn, .ht-bottom, .panel, #overlay.on, .topbar')) return;
     const i = this.guestAt(e.clientX, e.clientY);
     this.drag = { id: e.pointerId, gid: i, room: this.roomAt(e.clientX, e.clientY), x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, moved: false, hover: undefined };
@@ -424,7 +425,7 @@ export class Game {
   ptrUp(e) {
     const d = this.drag; if (!d || e.pointerId !== d.id) return;
     this.drag = null;
-    if (d.moved) { const dest = this.dropAt(e.clientX, e.clientY); this.endHover(); this.dropGuest(d.gid, dest); return; }
+    if (d.moved) { const dest = e.type === 'pointercancel' ? null : this.dropAt(e.clientX, e.clientY); this.endHover(); this.dropGuest(d.gid, dest); return; }   // (cancelled: back where it was — QA3 10/19)
     if (e.type === 'pointercancel') return;
     if (d.gid >= 0 && this.pos[d.gid] === -1) { this.select(this.sel === d.gid ? null : d.gid); if (this.sel != null) this.touch(this.guests[d.gid]); return; }
     this.tapRoom(d.room);

@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { World, QUALITY, hasWebGL2, OPT } from './world.js';
 import { hapticLight } from './feel.js';
-import { UI } from './ui.js';
+import { UI, h } from './ui.js';
 import { purgeGeo } from './gfx/kit.js';
 import { createAudio } from './audio.js';
 import { store, qs } from './util.js';
@@ -16,6 +16,7 @@ import { ensureStoryItems } from './story.js';
 import { STORY_BUILDERS, STORY_INFO, STORY_ITEMS } from './gfx/story-props.js';
 import { MAP_BUILDERS, MAP_INFO, MAP_THEMES } from './gfx/map-props.js';
 import { HOUSE_BUILDERS, HOUSE_INFO } from './gfx/house-props.js';
+import { ORGANIC_BUILDERS, ORGANIC_INFO } from './gfx/organic-props.js';   // 이어진 집: slide, ball pit (10/19)
 import { FISH_BUILDERS, FISH_INFO } from './gfx/fishing-props.js';
 import { SKATE_BUILDERS, SKATE_INFO } from './gfx/skate-props.js';
 import { KPOP_BUILDERS, KPOP_INFO } from './gfx/kpop-props.js';
@@ -52,6 +53,8 @@ import { ECON, econMigrate, econSaveFields } from './econ.js';
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
 import { openGallery, playGame } from './gallery.js';
 import { queueFollowup, normalizeFollowup, routeFollowup } from './followup.js';
+import { VERSION_LABEL } from './build.js';
+import { installAppBack } from './appback.js';
 installI18n();   // English players see English everywhere (see i18n.js)
 
 // outdoor props (alley / park / camp) join the furniture registry, the room shell and the shop
@@ -63,7 +66,7 @@ registerStoryShop(Object.fromEntries(Object.entries(MAP_INFO).filter(([k]) => k 
 Object.assign(ITEMS, STORY_ITEMS);
 // the everyday apartment set (art direction 2026-10-15): props, items, rooms with a warm afternoon light
 registerFurniture(APT_BUILDERS, APT_INFO);
-registerFurniture(HOUSE_BUILDERS, HOUSE_INFO);
+registerFurniture(HOUSE_BUILDERS, HOUSE_INFO); registerFurniture(ORGANIC_BUILDERS, ORGANIC_INFO);
 registerFurniture(FISH_BUILDERS, FISH_INFO);
 registerFurniture(SKATE_BUILDERS, SKATE_INFO);
 registerFurniture(KPOP_BUILDERS, KPOP_INFO);
@@ -152,7 +155,17 @@ function migrate(s) {
   if (s.myroom?.inventory) n.home.inventory = s.myroom.inventory.slice();
   return n;
 }
-if (qs.has('reset')) store.del(KEY);
+if (qs.has('reset')) {
+  store.del(KEY);
+  // (QA3 10/19) once: it used to stay in the address, so every reload — iOS drops big tabs, the language switch reloads —
+  // wiped the save again
+  try { const u = new URLSearchParams(location.search); u.delete('reset'); history.replaceState(null, '', location.pathname + (u.toString() ? '?' + u : '')); } catch {}
+}
+// a long press on a picture opened Android's "download image" menu (iOS: style.css -webkit-touch-callout) — QA3 10/19
+addEventListener('contextmenu', e => { if (e.target?.tagName === 'IMG') e.preventDefault(); });
+// Android: the turn dial sat ~11 px from the right edge, inside the system's back-swipe strip (~24 dp) — a slide from its
+// right end closed the app (Android 16). style.css moves it in on Android only; the iPhone layout stays as it is
+if (/Android/i.test(navigator.userAgent)) document.documentElement.classList.add('android');
 // progress also rides in the page address (#s=…) on the web copy: a tab Safari reloads after a crash, a bookmark, or a
 // browser that keeps no storage (in-app browsers, private tabs, blocked cookies) still continue where you were
 // (user, 10/18: "웹 버전 내가 한 곳까지 기억해 주는 것도 가능? 계속 첫 판부터 하고 있음")
@@ -262,7 +275,7 @@ const G = {
     G.pending = name;
     audio.sfx('whoosh');
     await ui.irisOut();
-    G.scene?.exit();
+    try { G.scene?.exit(); } catch (e) { console.error('scene exit', e); }   // (a throw here kept G.pending set: a pink screen for good — QA3 10/19)
     G.scene = null;
     if (endPractice) {
       const snap = JSON.parse(G.playMode.snap); for (const k of Object.keys(save)) delete save[k]; Object.assign(save, snap);
@@ -291,6 +304,7 @@ const G = {
 // make sure every zone that is already open exists in the save
 for (const z of HOME_ZONES) if (G.zoneOpen(z.id)) G.ensureZone(z.id);
 window.G = G;
+installAppBack(G);   // Android app only (src/appback.js)
 // 배치 편집 is the author's tool: shown to the artifact's owner only (and always when running outside claude.ai)
 G.owner = false;
 G.ownerP = (async () => { try { if (!window.claude?.use) return (G.owner = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || qs.has('owner')); const u = await window.claude.use('user'); return (G.owner = !!(await u?.isOwner?.())); } catch { return false; } })();   // the public web copy (GitHub Pages) shows no author tools
@@ -487,6 +501,8 @@ function bootBar(p) {
 // full bar → "터치해서 시작"; the tap wakes the audio (audio.unlock listens on pointerdown) and lifts the cover
 async function bootTap() {
   const boot = document.getElementById('boot'); if (!boot) return;
+  // the version name in the game (Discovery 26-4 rule; QA reads it off the start screen)
+  boot.append(h('div', { class: 'boot-ver', style: 'position:absolute;right:12px;bottom:calc(10px + env(safe-area-inset-bottom, 0px));font-size:11px;opacity:.55;color:#6a4a5a;pointer-events:none' }, VERSION_LABEL));
   await new Promise(r => setTimeout(r, 380));   // let the bar visibly reach the end
   boot.classList.add('ready');
   await new Promise(res => boot.addEventListener('pointerup', res, { once: true }));

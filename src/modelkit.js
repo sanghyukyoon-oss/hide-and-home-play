@@ -12,7 +12,7 @@
 // Played from 놀이 모음 (gallery.js, ?play=model&lv=1: S.model, outside the campaign) and on a campaign stage whose spec
 // names a kit (stages.js STAGES: kit) — S.kit is set in both.
 import * as THREE from 'three';
-import { KITS, kitItem, buildKitPart, buildKitModel, buildKitGlow } from './gfx/modelkit-props.js';
+import { KITS, kitItem, buildKitPart, buildKitModel, buildKitGlow, buildMoveBox, buildParfait } from './gfx/modelkit-props.js';
 import { ITEMS } from './gfx/items.js';
 import { bakeItem } from './gfx/bake.js';
 import { blobShadow } from './gfx/kit.js';
@@ -49,7 +49,7 @@ export function planModel(room, spec, story = null) {
   const furnOf = s => s.furn || s.part?.furn;
   const taken = new Map(plan.placements.map(p => [p.spot, p]));
   const usedF = new Set();
-  const isPiece = p => p.role === 'target' && ITEMS[p.type]?.kit;
+  const forced = new Set(spec.force || []), isPiece = p => p.role === 'target' && forced.has(p.type);
   const chained = new Set(plan.placements.filter(p => p.role === 'target' && plan.locks.some(l => l.part === p.spot.part)).map(p => p.spot));
   for (const p of plan.placements.filter(isPiece)) {
     if (chained.has(p.spot)) { usedF.add(furnOf(p.spot)); continue; }   // (the piece behind the padlock stays in its box)
@@ -65,10 +65,13 @@ export function planModel(room, spec, story = null) {
   return plan;
 }
 
-// ── pictures: each piece on its own (the runner's cells, the pieces flying off it) and the finished model (the box lid,
-// until GPT's box art comes in). Drawn once, while the stage is set up.
+// ── pictures: a model kit's pieces each on its own (the runner's cells, the pieces flying off it) and the finished model
+// (the box lid, until GPT's box art comes in), drawn once while the stage is set up; any other kit's things are ITEMS
+// with their own icons
 function ensurePics(G, kit) {
-  const K = KITS[kit], key = p => `kitpc_${kit}_${p}`;
+  const K = KITS[kit];
+  if (K.type !== 'model') return p => p === 'box' ? null : 'item_' + p;
+  const key = p => `kitpc_${kit}_${p}`;
   if (G.thumbStore[key('box')]) return key;
   const jobs = [{ key: key('box'), build: () => buildKitModel(kit), dir: [.35, .2, 1] },
     ...K.order.map(p => ({ key: key(p), build: () => buildKitPart(kit, p), dir: [.32, .3, 1] }))];
@@ -76,32 +79,96 @@ function ensurePics(G, kit) {
   return key;
 }
 
-// ── the runner card (in place of the list): one numbered cell per piece on a plastic runner. A cell shows the piece's
-// shape, empty, until it's found (stage.js onFound flies the picture into it and marks it .found → it clicks in).
+// ── the card (in place of the list): one cell per thing, its shape empty until it's found (stage.js onFound flies the
+// picture into it and marks it .found → it clicks in). Skins: a plastic runner with numbered cells (a model kit), a row
+// of moving boxes that fold as they're emptied (이삿짐), little dishes of toppings (파르페).
 export function kitRunner(S) {
   const G = S.G, kit = S.kit.kit, K = KITS[kit], key = ensurePics(G, kit);
   const cells = {};
   const row = h('div', { class: 'kitrun-row', style: `--n:${K.order.length}` });
   K.order.forEach((p, i) => {
-    const src = G.thumbStore[key(p)];
+    const src = G.thumbs[key(p)];
     const c = h('div', { class: 'kitrun-cell' },
-      h('i', { class: 'kitrun-gate l' }), h('i', { class: 'kitrun-gate r' }),
+      h('i', { class: 'kitrun-gate l' }), h('i', { class: 'kitrun-gate r' }), h('i', { class: 'kitrun-box' }),
       h('img', { class: 'kitrun-ghost', src, alt: '' }), h('img', { class: 'kitrun-pc', src, alt: '' }),
-      h('span', { class: 'kitrun-no' }, String(i + 1)), h('span', { class: 'kitrun-nm' }, K.short[p]));
+      h('span', { class: 'kitrun-no' }, String(i + 1)), h('span', { class: 'kitrun-nm' }, K.short?.[p] || ''));
     c.dataset.p = p; row.append(c); cells[p] = c;
   });
   const byType = Object.fromEntries(K.order.map(p => [kitItem(kit, p), p]));
-  for (const it of S.targets) if (byType[it.type]) { it.kitPart = byType[it.type]; it.slot = cells[it.kitPart]; }
+  const tag = h('div', { class: 'kitrun-tag ol', style: `background:${K.color}` }, K.name);
+  for (const it of S.targets) if (byType[it.type]) { it.kitPart = byType[it.type]; it.slot = cells[it.kitPart]; } else it.slot = tag;   // (anything else flies to the tag)
   S.kitCells = cells; S.kitPic = key;
-  return h('div', { class: 'kitrun', style: `--run:${K.runner}` }, h('div', { class: 'kitrun-tag ol', style: `background:${K.box}` }, K.name), row);
+  return h('div', { class: `kitrun skin-${K.skin || 'runner'}${K.numbers === false ? ' nonum' : ''}`, style: `--run:${K.runner}` }, tag, row);
 }
-// a piece found: the click as it goes back into its cell (stage.js, once the picture has landed)
-export function kitFound(S) { S.G.audio.sfx('latch'); }
+
+// ── the stage set up for the kit (stage.js, once the room and the things are in): 이삿짐's boxes about the room, the
+// big parfait beside its owner
+export function kitSetup(S) {
+  const K = KITS[S.kit.kit], W = S.G.world, rnd = rng((S.spec.seed || 1) + 23);
+  const tiles = (S.freeTiles || []).filter(t => !t.R?.clearAt || t.R.clearAt(t.x, t.z, .3));
+  const at = (t, o) => { const P = new THREE.Vector3(t.x, t.y || 0, t.z); o.position.copy(S.room.group.worldToLocal(P)); S.room.group.add(o); };
+  if (K.type === 'place') {
+    // a box for every thing, on free floor (the ones nearest the walls first: the middle stays clear to walk)
+    const far = tiles.slice().sort((a, b) => Math.hypot(b.x - (S.room.center?.x || 0), b.z - (S.room.center?.z || 0)) - Math.hypot(a.x - (S.room.center?.x || 0), a.z - (S.room.center?.z || 0)));
+    S.kitBoxes = [];
+    for (let i = 0; i < K.order.length && far.length; i++) {
+      const t = far.splice(Math.floor(rnd() * Math.min(4, far.length)), 1)[0];
+      const b = buildMoveBox(i); b.scale.setScalar(1.3); b.rotation.y = (rnd() - .5) * .9; at(t, b);
+      const tw = Math.random() < .5 && i > 0 && S.kitBoxes.length ? S.kitBoxes[S.kitBoxes.length - 1] : null;   // (some stacked two high)
+      if (tw && rnd() < .4) { b.position.copy(tw.position); b.position.y += (.26 + (i % 2) * .05) * 1.3; b.rotation.y += .4; }
+      S.kitBoxes.push(b);
+    }
+    W.idsDirty = true; W.shadowDirty = true;
+  } else if (K.type === 'stack') {
+    // the big parfait: on a clear tile near its owner, facing the view
+    const f = S.friend.root.position, t = tiles.slice().sort((a, b) => Math.hypot(a.x - f.x, a.z - f.z) - Math.hypot(b.x - f.x, b.z - f.z)).find(q => Math.hypot(q.x - f.x, q.z - f.z) > .5) || tiles[0];
+    if (t) {
+      const p = buildParfait(); p.g.scale.setScalar(1.45); at(t, p.g);
+      p.g.rotation.y = Math.atan2(W.cam.position.x - t.x, W.cam.position.z - t.z);
+      S.kitParfait = p; W.idsDirty = true; W.shadowDirty = true;
+    }
+  }
+}
+
+// ── a thing found (stage.js, once its picture has landed in its cell): a model kit's click; 이삿짐: the box nearest the
+// find folds flat and goes; 파르페: that topping onto the big parfait, its layer popping in (the cherry waits for last)
+export function kitFound(S, it) {
+  const G = S.G, W = G.world, K = KITS[S.kit.kit];
+  G.audio.sfx('latch');
+  if (K.type === 'place' && S.kitBoxes?.length) {
+    const c = it?.g ? it.g.getWorldPosition(new THREE.Vector3()) : null;
+    const wp = b => b.getWorldPosition(new THREE.Vector3());
+    const b = c ? S.kitBoxes.slice().sort((u, v) => wp(u).distanceTo(c) - wp(v).distanceTo(c))[0] : S.kitBoxes[0];
+    S.kitBoxes.splice(S.kitBoxes.indexOf(b), 1);
+    foldBox(S, b);
+  }
+  if (K.type === 'stack' && S.kitParfait && it?.kitPart && it.kitPart !== K.last) popLayer(S, it.kitPart);
+}
+function foldBox(S, b) {
+  const G = S.G, W = G.world, s0 = b.scale.clone(), y0 = b.position.y;
+  const p = W.toScreen(b.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, .15, 0)));
+  G.audio.sfx('rustle'); W.fx.burst(p.x, p.y, { n: 8, shape: 'circle', colors: ['#f3dfb4', '#e2b77c', '#ffffff'], speed: 140, up: 50, size: 7, life: .4 });
+  S.tw.run(.42, k => {   // squashes flat (the flaps fold in), then slips away
+    const f = k < .6 ? ease.outBack(k / .6) : 1, out = k < .6 ? 1 : 1 - (k - .6) / .4;
+    b.scale.set(s0.x * (1 + .15 * f) * out, s0.y * Math.max(.06, 1 - .94 * f) * out, s0.z * (1 + .15 * f) * out);
+    b.position.y = y0;
+  }, ease.linear).then(() => { b.parent?.remove(b); W.idsDirty = true; W.shadowDirty = true; });
+}
+function popLayer(S, key) {
+  const G = S.G, W = G.world, l = S.kitParfait.layers[key];
+  if (!l || l.visible) return;
+  l.visible = true; W.idsDirty = true;
+  l.updateMatrixWorld(true); const s = W.toScreen(new THREE.Box3().setFromObject(l).getCenter(new THREE.Vector3()));
+  W.fx.burst(s.x, s.y, { n: 12, shape: 'star', colors: ['#ffffff', '#ffd0de', '#ffe14d'], speed: 200, life: .45, size: 9 });
+  G.audio.sfx('pop', 5);
+  S.tw.run(.3, k => l.scale.setScalar(.6 + .4 * ease.outBack(k)), ease.linear).then(() => l.scale.setScalar(1));
+}
 
 // ── the box (before the hunt). The runner card is the one in the HUD: it starts inside the box and ends in its place.
 export async function kitIntro(S) {
   const G = S.G, K = KITS[S.kit.kit], card = S.tray, col = S.col;
   if (!card || !col) return;
+  if (K.intro !== 'box') return kitPop(S);
   const seen = G.save.kitIntro || 0, quick = seen > 0 || S.kitRetry;   // the second kit on (레벨 세션): about a second
   if (!G.playMode) { G.save.kitIntro = seen + 1; G.persist?.(); }
   const anims = new Set(), outs = [];
@@ -110,8 +177,8 @@ export async function kitIntro(S) {
   let skipped = false;
   const box = h('div', { class: 'kitbox' },
     h('div', { class: 'kitbox-in' }),
-    h('div', { class: 'kitbox-front', style: `background:${K.box}` }),
-    h('div', { class: 'kitbox-lid', style: `--box:${K.box}` },
+    h('div', { class: 'kitbox-front', style: `background:${K.color}` }),
+    h('div', { class: 'kitbox-lid', style: `--box:${K.color}` },
       h('div', { class: 'kitbox-art' }, h('img', { src: K.boxArt || G.thumbStore[S.kitPic('box')], alt: '' })),
       h('div', { class: 'kitbox-label' }, h('b', {}, K.name), h('span', {}, `부품 ${K.order.length}개`))));
   const lay = h('div', { class: 'kitintro' }, box);
@@ -489,6 +556,84 @@ async function comeAlive(S, R, pcs, glow, P) {
   if (S.dead) return;
   R.position.y = y0; R.rotation.y = r0; G.audio.sfx('land');
   (async () => { let k = 0; while (!S.dead && R.parent) { await tw.run(1.1, e => { R.position.y = y0 + Math.abs(Math.sin(e * Math.PI)) * .03; if (head) head.rotation.z = Math.sin(e * Math.PI) * (k % 2 ? .1 : -.1); }, ease.linear); k++; } })();
+}
+
+// ── the quick start for a kit without a box (이삿짐, 파르페): the card pops up empty and the things jump out of the moving
+// boxes / off the parfait ("토핑을 몽땅 엎질렀어") into the room — about a second, a tap skips
+async function kitPop(S) {
+  const G = S.G, W = G.world, K = KITS[S.kit.kit], card = S.tray, col = S.col, cc = col.getBoundingClientRect();
+  const anims = [], outs = [], wait = ms => new Promise(r => setTimeout(r, ms));
+  let skipped = false; const skip = () => { skipped = true; };
+  document.addEventListener('pointerdown', skip, true);
+  const A = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.push(a); return a.finished.catch(() => {}); };
+  try {
+    G.audio.sfx('swish');
+    await A(card, [{ transform: 'translateX(-50%) translateY(150%)' }, { transform: 'translateX(-50%)' }], { duration: 300, easing: 'cubic-bezier(.2,1.3,.4,1)' });
+    if (skipped) throw 0;
+    const rnd = rng((S.spec.seed || 1) + 5), from = i => {
+      const o = K.type === 'place' ? S.kitBoxes?.[i % (S.kitBoxes.length || 1)] : S.kitParfait?.g;
+      if (!o) return { x: cc.width / 2, y: cc.height * .45 };
+      const p = W.toScreen(o.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, K.type === 'stack' ? 1 : .3, 0)));
+      return { x: p.x - cc.left, y: p.y - cc.top };
+    };
+    K.order.forEach((p, i) => {
+      const o = from(i), img = h('img', { class: 'kitfly', src: S.kitCells[p].querySelector('.kitrun-pc').src, style: `left:${o.x - 30}px;top:${o.y - 30}px` });
+      col.append(img); outs.push(img);
+      const tx = (rnd() * .7 + .15) * cc.width - o.x, ty = (rnd() * .3 + .22) * cc.height - o.y, up = 90 + rnd() * 70;
+      setTimeout(() => !skipped && G.audio.sfx('pop', 3 + i), i * 55);
+      A(img, [{ transform: 'translate(0,0) scale(.3)', opacity: 0 }, { transform: `translate(${tx * .4}px,${ty * .4 - up}px) scale(1.1) rotate(${(rnd() - .5) * 200}deg)`, opacity: 1, offset: .4 },
+        { transform: `translate(${tx}px,${ty}px) scale(.4) rotate(${(rnd() - .5) * 400}deg)`, opacity: 0 }], { duration: 520, delay: i * 55, easing: 'cubic-bezier(.3,.2,.5,1)' });
+    });
+    if (K.type === 'place') G.audio.sfx('rustle');
+    await wait(520 + K.order.length * 55);
+  } catch {}
+  for (const a of anims) { try { a.cancel(); } catch {} }
+  outs.forEach(o => o.remove());
+  document.removeEventListener('pointerdown', skip, true);
+}
+
+// ── the end of the hunt (stage.js win): a model kit is built; 이삿짐's room becomes home; the parfait gets its cherry
+export async function kitFinish(S) {
+  const K = KITS[S.kit.kit];
+  if (K.type === 'place') return kitHome(S);
+  if (K.type === 'stack') return kitTop(S);
+  return kitBuild(S);
+}
+// 이삿짐: the last boxes fold, the room warms up, hearts — "다 풀었다! 이제 진짜 우리 집이야." (the result panel says it)
+async function kitHome(S) {
+  const G = S.G, W = G.world, tw = S.tw;
+  S.tray?.classList.add('done');
+  for (const b of (S.kitBoxes || []).splice(0)) { foldBox(S, b); await tw.wait(.08); }
+  G.audio.sfx('unlock'); haptic('ok');
+  const a0 = W.hemi.intensity, s0 = W.sun.intensity;
+  tw.run(.9, k => { const w = Math.sin(Math.min(1, k * 1.4) * Math.PI / 2); W.hemi.intensity = a0 * (1 + .18 * w); W.sun.intensity = s0 * (1 + .12 * w); }, ease.outQuad);   // (stays a little warmer: it's home now)
+  for (let i = 0; i < 5; i++) { W.fx.burst(W.W * (.2 + .15 * i), W.H * (.32 + (i % 2) * .12), { n: 10, shape: 'heart', colors: ['#ff8fb8', '#ffb3cc', '#ffffff'], speed: 160, up: 120, size: 12, life: .9 }); await tw.wait(.07); }
+  S.friend.pose = 'cheer'; S.friend.setFace?.('happy'); S.friend.bump?.(.5);
+  await tw.wait(.6);
+}
+// 파르페: in close on the glass, the cherry flies off the card onto the top — 딸깍, sparkles, its owner cheers
+async function kitTop(S) {
+  const G = S.G, W = G.world, tw = S.tw, K = KITS[S.kit.kit], P = S.kitParfait;
+  S.tray?.classList.add('done');
+  if (!P) { await tw.wait(.3); return; }
+  W.camLock = true;
+  try {
+    const top = P.g.localToWorld(new THREE.Vector3(0, .62, 0));
+    const vh = W.viewH || 11, zoom = Math.max(1.5, Math.min(9, vh / 3)), cy = W.fit?.cy ?? .46, pitch = W.pitch;
+    const atT = .5 + (cy - .5) * zoom, tY = top.y - (atT - .42) * (vh / zoom) / Math.max(.3, Math.cos(pitch));
+    await W.flyTo(tw, { target: new THREE.Vector3(top.x, tY, top.z), zoom, dur: .6, e: ease.inOutCubic });
+    if (S.dead) return;
+    // every layer that waited (nothing should, but a stage reloaded mid-way) and then the cherry
+    for (const k of K.order) if (k !== K.last && !P.layers[k].visible) { popLayer(S, k); await tw.wait(.12); }
+    const cell = S.kitCells[K.last], r = cell?.getBoundingClientRect(), cherryAt = W.toScreen(P.g.localToWorld(new THREE.Vector3(0, .92, 0)));
+    if (r) { cell.classList.add('used'); await G.ui.flyImg(cell.querySelector('.kitrun-pc').src, r.left + r.width / 2, r.top + r.height / 2, { getBoundingClientRect: () => ({ left: cherryAt.x - 1, top: cherryAt.y - 1, width: 2, height: 2 }) }, { size: 56, dur: 520 }); }
+    if (S.dead) return;
+    popLayer(S, K.last); G.audio.sfx('latch'); haptic('ok'); G.hitstop(.06);
+    W.fx.ring(cherryAt.x, cherryAt.y, { r: 70, color: '#ffffff', width: 7, life: .35 });
+    W.fx.burst(cherryAt.x, cherryAt.y, { n: 26, shape: 'heart', colors: ['#ff8fb8', '#ffe14d', '#ffffff'], speed: 300, life: .7, size: 11 });
+    S.friend.pose = 'cheer'; S.friend.setFace?.('happy'); S.friend.bump?.(.5);
+    await tw.wait(.7);
+  } finally { W.camLock = false; }
 }
 
 // ── the reward: the first time a kit is finished, the model goes into my home's storage as a piece of furniture.

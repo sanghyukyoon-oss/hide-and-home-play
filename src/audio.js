@@ -15,8 +15,15 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     A.musicBus = A.ctx.createGain(); A.musicBus.gain.value = .3; A.musicBus.connect(A.master);
     return A.ctx;
   }
-  A.unlock = () => { const c = ensure(); if (c && c.state === 'suspended') c.resume(); if (A._wantMusic && !A._timer) A.music(A.mood); };
-  addEventListener('pointerdown', A.unlock, { capture: true });
+  // (QA3 10/19) a touch's pointerdown is not a "user activation" for audio in Safari / Chrome — the lift is — so the first
+  // tap's resume could be refused; after a call or Siri iOS leaves the context 'interrupted' (not 'suspended'), which this
+  // never resumed: no sound until a reload. Any state but running resumes, on presses and lifts; the music starts once the
+  // context really runs (it used to wait for the next touch). The page hidden (home button, another app): everything
+  // stops — Android kept the music box playing behind the home screen.
+  const goMusic = () => { if (A._wantMusic && !A._timer) A.music(A.mood); };
+  A.unlock = () => { const c = ensure(); if (c && c.state !== 'running' && c.state !== 'closed' && !document.hidden) { const pr = c.resume(); pr?.then?.(goMusic, () => {}); } goMusic(); };
+  for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, A.unlock, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => { const c = A.ctx; if (!c || c.state === 'closed') return; try { if (document.hidden) c.suspend()?.catch?.(() => {}); else c.resume()?.then?.(goMusic, () => {}); } catch {} });
   A.setMuted = m => { A.muted = m; store.set(storageKey, m); if (A.master) A.master.gain.setTargetAtTime(m ? 0 : .9, A.ctx.currentTime, .02); };
 
   function tone({ type = 'sine', f = 440, f2 = null, dur = .12, vol = .5, attack = .004, at = 0, bus = A._bus || A.sfxBus, q = 0, filter = null, detune = 0, vib = 0 }) {
@@ -44,8 +51,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28];
   const hz = semi => 440 * 2 ** ((semi - 9) / 12);
 
-  A.sfx = (name, p = 0) => {
-    hapticFor(name);   // 손맛 2: a tap's sound also buzzes (even with the sound off)
+  A.sfx = (name, p = 0, buzz = true) => {
+    if (buzz) hapticFor(name);   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
     switch (name) {
@@ -134,6 +141,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     A._timer = setInterval(() => {
       if (!A.ctx) return;
       if (A.muted) { next = A.ctx.currentTime + .05; return; }
+      if (next < A.ctx.currentTime) next = A.ctx.currentTime + .05;   // (a timer that slept doesn't replay the missed steps in one blast — QA3 10/19)
       while (next < A.ctx.currentTime + .25) {
         const s = A._step++, bar = Math.floor(s / 8) % M.prog.length, chord = M.prog[bar], at = next - A.ctx.currentTime;
         if (s % 8 === 0) chord.forEach(n => tone({ type: 'triangle', f: hz(M.root + n), dur: stepDur * 7.6, vol: .06, attack: .1, at, bus: A.musicBus, filter: 'lowpass', q: 1300 }));

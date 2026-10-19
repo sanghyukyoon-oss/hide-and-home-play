@@ -1,7 +1,8 @@
 // 룩 레벨업 실험 (2026-10-19, sumbak-look; canonical untouched): one map — 22판 우리 동네 골목 ('street') — brought toward
 // concept G (art/concepts/G-street-corner.png). Four layers, each its own switch:
-//   light — the chapter's own light and sky (late-afternoon sun, low and golden, longer shadows; a sky gradient
-//           instead of the white glow every map had)
+//   light — the chapter's own light colour and sky (a sky gradient instead of the white glow every map had). The sun
+//           stays where the game always had it (high, over the camera's shoulder): a low afternoon sun threw long
+//           shadows across the floors and the user found them messy (10/19, "그림자가 길어지니까 지저분함")
 //   ring  — the map no longer floats: the ground, the roads and the opposite sidewalks run on past the edges, and the
 //           home street's own houses and trees stand behind the walls. Tall pieces fold away on the camera's side,
 //           like the walls do, so they never stand between the camera and the room
@@ -29,10 +30,10 @@ const HP = Math.PI / 2;
 const RECIPES = {
   street: {
     // late afternoon: a low golden sun from the camera's left, a cool soft fill so the shaded sides go a little blue
-    light: { ambColor: '#ece6f2', amb: 1.12, sunColor: '#ffdcb0', sun: 2.6, sunH: 6.2, sunR: 9.5, sunA: 1.05, shadow: .72 },
+    light: { ambColor: '#ece6f2', amb: 1.12, sunColor: '#ffdcb0', sun: 2.6, shadow: .62 },
     sky: ['#a9d4ee', '#ffe3c4', '#e9c3a8'],
     // night (27판 street:night): moonlight as before, a deep sky, the lamps doing the rest
-    night: { light: { ambColor: '#9fa8f0', amb: .9, sunColor: '#c4ccff', sun: .7, sunH: 9, shadow: .5 }, sky: ['#141a46', '#2c2f6e', '#3d3a78'] },
+    night: { light: { ambColor: '#9fa8f0', amb: .9, sunColor: '#c4ccff', sun: .7, shadow: .5 }, sky: ['#141a46', '#2c2f6e', '#3d3a78'] },
     // the ground past the edges: sidewalk everywhere, the front road running on to the east, a cross street to the south
     ground: { size: 26, fade: [5.5, 9.5], walk: ['#e7e1d8', '#d6cdc1'],
       roads: [{ x0: 4, x1: 14, z0: 1.5, z1: 3.5 }, { x0: 2, x1: 4, z0: 3.5, z1: 14 }],
@@ -82,38 +83,38 @@ const TREE = (tree, x, z, s = 1) => ({ tree, x, z, s });
 Object.assign(RECIPES, {
   // 토순이네 침실 (1·2판, the first thing anyone sees): soft morning light from the window side, dusty-rose backdrop
   bunny: {
-    light: { ambColor: '#f4eef6', amb: 1.32, sunColor: '#fff0dc', sun: 2.5, sunH: 7.6, sunR: 9, sunA: .85, shadow: .7 },
+    light: { ambColor: '#f4eef6', amb: 1.32, sunColor: '#fff0dc', sun: 2.5, shadow: .62 },
     sky: ['#ecc9c4', '#f3d9cf', '#dfb7aa'],
   },
   // 펭펭이네 다락방 (4판, 흑백): a cool attic, slate-lilac backdrop (the grey stage keeps its own colour game)
   peng: {
-    light: { ambColor: '#eef0fa', amb: 1.3, sunColor: '#fff4e4', sun: 2.45, sunH: 8, sunR: 8.5, sunA: .7, shadow: .7 },
+    light: { ambColor: '#eef0fa', amb: 1.3, sunColor: '#fff4e4', sun: 2.45, shadow: .62 },
     sky: ['#cfd5ec', '#dde2f2', '#bfc6e0'],
   },
   // 곰돌이네 거실 (5판) and 곰돌이네 집 (6판): warm afternoon, sage backdrop against the orange floor
   bear: {
-    light: { ambColor: '#f0e8ee', amb: 1.24, sunColor: '#ffe2b8', sun: 2.6, sunH: 6.8, sunR: 9.5, sunA: 1.0, shadow: .72 },
+    light: { ambColor: '#f0e8ee', amb: 1.24, sunColor: '#ffe2b8', sun: 2.6, shadow: .62 },
     sky: ['#d5dfbf', '#e3e9d0', '#c4cfa9'],
   },
   // 2층집 (7판) · 3층집 (8판): a house standing outdoors — late-afternoon sky above, warm ground below
   house2f: {
-    light: { ambColor: '#ece6f2', amb: 1.18, sunColor: '#ffdcb0', sun: 2.6, sunH: 6.6, sunR: 9.5, sunA: 1.05, shadow: .72 },
+    light: { ambColor: '#ece6f2', amb: 1.18, sunColor: '#ffdcb0', sun: 2.6, shadow: .62 },
     sky: ['#a9d4ee', '#f6e4cf', '#dcc4ad'],
   },
   // 토순이네 욕실 밤 (9판): a deep night with no white glow behind it
   bunnybath: {
-    light: { ambColor: '#f4eef6', amb: 1.32, sunColor: '#fff0dc', sun: 2.5, sunH: 7.6, shadow: .7 },
+    light: { ambColor: '#f4eef6', amb: 1.32, sunColor: '#fff0dc', sun: 2.5, shadow: .62 },
     sky: ['#ecc9c4', '#f3d9cf', '#dfb7aa'],
-    night: { light: { ambColor: '#9ea6ec', amb: .86, sunColor: '#c9d1ff', sun: .62, sunH: 9, shadow: .5 }, sky: ['#151a45', '#25286a', '#33316f'] },
+    night: { light: { ambColor: '#9ea6ec', amb: .86, sunColor: '#c9d1ff', sun: .62, shadow: .5 }, sky: ['#151a45', '#25286a', '#33316f'] },
   },
   // 미술관 (10판, 흑백): a gallery's quiet lilac-grey
   museum: {
-    light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, sunH: 8.5, sunR: 8, sunA: .6, shadow: .68 },
+    light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 },
     sky: ['#ddd6e8', '#e8e2f0', '#cdc4dc'],
   },
   // 개굴이의 낚시터 (3판): a clear day; the meadow runs on past the hedge and the fence into a wood, nothing floats
   fishing: {
-    light: { ambColor: '#eef4f4', amb: 1.3, sunColor: '#fff4dc', sun: 2.55, sunH: 7.8, sunR: 9, sunA: .9, shadow: .7 },
+    light: { ambColor: '#eef4f4', amb: 1.3, sunColor: '#fff4dc', sun: 2.55, shadow: .62 },
     sky: ['#a8d8f0', '#e3f3e8', '#bfdca5'],
     ground: { size: 26, fade: [5, 9.5] },   // the map's own grass, running on and fading out
     ring: [
@@ -123,7 +124,9 @@ Object.assign(RECIPES, {
       TREE(19, -4.8, -1.4, 1.1), TREE(21, -4.9, 1.8, 1.05), TREE(23, -6.8, .4, 1.45),
       { furn: 'bush', x: -4.3, z: .2 }, { furn: 'bush', x: -1.2, z: -3.9 }, { furn: 'bush', x: 2.3, z: -3.95 },
       // the open sides (the camera's at the start): low meadow things stay, trees further out fold away
-      { furn: 'bush', x: -2.6, z: 3.8 }, { furn: 'rock', x: -.6, z: 3.7, ry: .5 }, { furn: 'mushrooms', x: 1.4, z: 3.75 },
+      { furn: 'bush', x: -2.6, z: 3.8 }, { furn: 'rock', x: .3, z: 3.8, ry: .5 }, { furn: 'mushrooms', x: 1.4, z: 3.75 },
+      // the pond's stream runs on out of the map: two more reaches and a little bridge over it
+      { furn: 'stream', x: -.85, z: 3.55 }, { furn: 'bridge', x: -.85, z: 4.55 }, { furn: 'stream', x: -.85, z: 5.55 }, { furn: 'stream', x: -.85, z: 6.55 },
       { furn: 'rock', x: 4.15, z: -1.4, ry: 1.2 }, { furn: 'bush', x: 4.2, z: 1.0 }, { furn: 'reeds', x: 4.3, z: 2.7 },
       TREE(27, -3.0, 5.8, 1.15), TREE(31, 5.4, 5.0, 1.15), TREE(33, 6.0, -.6, 1.25),
     ],
@@ -132,8 +135,6 @@ Object.assign(RECIPES, {
 // 6~9판 show a whole house at once: their things were 7–15 px on a phone at the start view (rooms 1–5: 15–30 px),
 // so things on these maps are drawn to ~38 cm instead of ~28 (still only as big as the spot has room for). ?look=…
 // without 'items' keeps the old size.
-// (22·27판 골목 'street': waits for the user's art sign-off — 10/19 "22판 골목 룩 … 빼고"; sumbak-look keeps it)
-delete RECIPES.street;
 RECIPES.bear2 = { ...RECIPES.bear, itemSize: .38 };
 RECIPES.bunnybath.itemSize = .38;
 // the houses (7·8판) stand in a yard: lawn running on, hedges and a stepping-stone path to the door, trees round
@@ -148,6 +149,8 @@ RECIPES.house2f.ring = [
 ];
 RECIPES.house2f.itemSize = .38;
 RECIPES.house3 = RECIPES.house2f;
+// (22·27판 골목 'street': waits for the user's art sign-off — 10/19 "22판 골목 룩 … 빼고"; sumbak-look keeps it)
+delete RECIPES.street;
 
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
@@ -481,17 +484,20 @@ function mergeLike(root) {
     if (Array.isArray(m) || !g?.attributes?.position || m.transparent || o.userData.proxy) return;
     const tex = m.map?.source?.uuid || m.map?.uuid || '';
     const vc = !tex && (!m.emissive || m.emissive.getHex() === 0 || !m.emissiveIntensity);
-    const key = vc ? 'vc' : [m.type, tex, m.color.getHexString(), m.emissive?.getHexString() || '', m.side].join('|');
+    const key = vc ? 'vc' : [m.type, tex, m.vertexColors ? 'v' : '', m.color.getHexString(), m.emissive?.getHexString() || '', m.side].join('|');
     let b = buckets.get(key); if (!b) buckets.set(key, b = { list: [], mat: null, vc });
     b.list.push(o); if (!b.mat || (vc && m.vertexColors)) b.mat = m;
   });
   for (const b of buckets.values()) {
     if (b.list.length < 2) continue;
+    const used = [];
     const geos = b.list.map(o => {
       let g = o.geometry.clone(); g.applyMatrix4(M.multiplyMatrices(inv, o.matrixWorld));   // (no mirrored pieces here)
       if (g.index) g = g.toNonIndexed();
       if (!g.attributes.normal) g.computeVertexNormals();
-      const keep = b.vc ? ['position', 'normal', 'color'] : ['position', 'normal', 'uv'];
+      // (a textured material that also reads vertex colours — the stream's pebbles — keeps them, or they draw black)
+      const keep = b.vc ? ['position', 'normal', 'color'] : ['position', 'normal', 'uv', ...(b.mat.vertexColors ? ['color'] : [])];
+      if (!b.vc && b.mat.vertexColors && !g.attributes.color) return null;
       if (b.vc && !g.attributes.color) {
         const c = o.material.color, n = g.attributes.position.count, col = new Float32Array(n * 3);
         for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
@@ -500,6 +506,7 @@ function mergeLike(root) {
       for (const k of Object.keys(g.attributes)) if (!keep.includes(k)) g.deleteAttribute(k);
       if (!b.vc && !g.attributes.uv) return null;
       g.morphAttributes = {}; g.clearGroups();
+      used.push(o);
       return g;
     }).filter(Boolean);
     let merged = geos.length > 1 ? mergeGeometries(geos, false) : null;
@@ -509,7 +516,7 @@ function mergeLike(root) {
     let mt = b.mat;
     if (b.vc && !mt.vertexColors) { mt = mt.clone(); mt.vertexColors = true; mt.color.set('#ffffff'); }
     const mesh = new THREE.Mesh(merged, mt); mesh.castShadow = false; mesh.receiveShadow = false; mesh.userData.merged = true;
-    for (const o of b.list) o.parent?.remove(o);
+    for (const o of used) o.parent?.remove(o);   // (a piece that could not join keeps its own mesh)
     root.add(mesh);
   }
   // empty groups left behind

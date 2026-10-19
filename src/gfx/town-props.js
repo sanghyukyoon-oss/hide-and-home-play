@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { put, grp, mat, mesh, canvasTex, texCache, roundRect } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
+import { tr } from '../i18n.js';   // (canvas signs don't pass through the page's translator — 10/19)
 
 const PI = Math.PI, HP = PI / 2;
 const INK = '#2a1d33', WHITE = '#ffffff', STEEL = '#c9cfe0', STEEL2 = '#a9b2c8', DARK = '#5b5672', RED = '#e8433d', RED2 = '#b8322e',
@@ -60,18 +61,18 @@ const WANTED = () => tex('wanted', 256, 320, (c, w, h) => {
   c.fillStyle = '#3a3048'; c.beginPath(); c.ellipse(w / 2, 168, 70, 64, 0, 0, 7); c.fill();   // 잉키: a round ink blob
   c.fillStyle = '#ffffff'; for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(w / 2 + sx * 24, 160, 13, 16, 0, 0, 7); c.fill(); }
   c.fillStyle = '#2a1d33'; for (const sx of [-1, 1]) { c.beginPath(); c.arc(w / 2 + sx * 24, 163, 6, 0, 7); c.fill(); }
-  c.fillStyle = '#2a1d33'; c.font = font(30); c.fillText('색깔 도둑 먹물이', w / 2, 270, w - 24);
-  c.font = font(20, false); c.fillText('보면 파출소로!', w / 2, 302);
+  c.fillStyle = '#2a1d33'; c.font = font(30); c.fillText(tr('색깔 도둑 먹물이'), w / 2, 270, w - 24);
+  c.font = font(20, false); c.fillText(tr('보면 파출소로!'), w / 2, 302, w - 24);
 });
 const NOTICE = () => tex('notice', 220, 260, (c, w, h) => {
   c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h);
-  c.fillStyle = BLUE; c.fillRect(0, 0, w, 50); c.fillStyle = '#fff'; c.font = font(28); c.textAlign = 'center'; c.fillText('분실물 안내', w / 2, 36);
+  c.fillStyle = BLUE; c.fillRect(0, 0, w, 50); c.fillStyle = '#fff'; c.font = font(28); c.textAlign = 'center'; c.fillText(tr('분실물 안내'), w / 2, 36, w - 16);
   c.fillStyle = '#3a3048'; c.font = font(20, false); c.textAlign = 'left';
-  ['· 노란 우산', '· 곰돌이 열쇠고리', '· 빨간 장갑 한 짝', '· 몽글이 양말(?)'].forEach((t, i) => c.fillText(t, 18, 92 + i * 40));
+  ['· 노란 우산', '· 곰돌이 열쇠고리', '· 빨간 장갑 한 짝', '· 몽글이 양말(?)'].forEach((t, i) => c.fillText(tr(t), 18, 92 + i * 40, w - 26));
 });
 const SIGN = () => tex('policesign', 512, 96, (c, w, h) => {
   c.fillStyle = NAVY; roundRect(c, 4, 4, w - 8, h - 8, 22); c.fill();
-  c.fillStyle = '#ffffff'; c.font = font(54); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('몽글 파출소', w / 2 + 24, h / 2 + 3);
+  c.fillStyle = '#ffffff'; c.font = font(54); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(tr('몽글 파출소'), w / 2 + 24, h / 2 + 3, w - 80);
   c.fillStyle = YEL; c.beginPath(); for (let k = 0; k < 10; k++) { const a = -HP + k * PI / 5, r = k % 2 ? 14 : 30; c.lineTo(70 + Math.cos(a) * r, h / 2 + Math.sin(a) * r); } c.fill();
 });
 B.wantedboard = f => {
@@ -118,10 +119,10 @@ const BOARD = () => tex('chalk', 512, 270, (c, w, h) => {
   c.fillStyle = '#2f6a50'; c.fillRect(0, 0, w, h);
   c.fillStyle = 'rgba(255,255,255,.06)'; for (let k = 0; k < 40; k++) c.fillRect(Math.random() * w, Math.random() * h, 60, 3);
   c.strokeStyle = '#f4f4ec'; c.fillStyle = '#f4f4ec'; c.lineWidth = 3; c.lineCap = 'round';
-  c.font = font(30); c.textAlign = 'left'; c.fillText('10월 18일 토요일', 20, 44);
-  c.font = font(24, false); c.fillText('오늘의 당번: 몽글이', 20, 86);
-  c.font = font(34); c.fillText('숨바꼭질 규칙', 280, 50);
-  c.font = font(22, false); ['1. 꼭꼭 숨어라', '2. 머리카락 보일라', '3. 찾으면 꼭 안아 주기'].forEach((t, i) => c.fillText(t, 280, 92 + i * 34));
+  c.font = font(30); c.textAlign = 'left'; c.fillText(tr('10월 18일 토요일'), 20, 44, 250);
+  c.font = font(24, false); c.fillText(tr('오늘의 당번: 몽글이'), 20, 86, 250);
+  c.font = font(34); c.fillText(tr('숨바꼭질 규칙'), 280, 50, w - 290);
+  c.font = font(22, false); ['1. 꼭꼭 숨어라', '2. 머리카락 보일라', '3. 찾으면 꼭 안아 주기'].forEach((t, i) => c.fillText(tr(t), 280, 92 + i * 34, w - 290));
   // a mochi doodle and a sun
   c.beginPath(); c.ellipse(110, 190, 52, 44, 0, 0, 7); c.stroke();
   for (const sx of [-1, 1]) { c.beginPath(); c.arc(110 + sx * 18, 184, 4, 0, 7); c.fill(); }
@@ -264,7 +265,7 @@ B.firebell = f => {
 // ── 소방서 차고 (wall, span 2): the bay door rolled two-thirds up over a dark garage, the '몽글 119 안전센터' sign, lamps
 const FIRESIGN = () => tex('firesign', 512, 96, (c, w, h) => {
   c.fillStyle = '#ffffff'; roundRect(c, 4, 4, w - 8, h - 8, 20); c.fill(); c.strokeStyle = RED; c.lineWidth = 8; roundRect(c, 8, 8, w - 16, h - 16, 16); c.stroke();
-  c.fillStyle = RED; c.font = font(50); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('몽글 119 안전센터', w / 2, h / 2 + 3);
+  c.fillStyle = RED; c.font = font(50); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(tr('몽글 119 안전센터'), w / 2, h / 2 + 3, w - 24);
 });
 B.firegarage = f => {
   const W = 1.8, H = 2.3;

@@ -148,8 +148,9 @@ export class Game {
   }
   // the one input: press = run (or "땡!" once you're at his back), release = freeze
   press() {
+    // (QA3 10/19) at his back a second finger's tap is the 땡 too — it used to wait for the first finger to lift
+    if (this.H?.st === 'reach' && this.phase === 'play' && !this.result) { this.hold = true; return this.tryTang(); }
     if (this.hold) return; this.hold = true;
-    if (this.H?.st === 'reach' && this.phase === 'play' && !this.result) this.tryTang();
   }
   release() {
     if (!this.hold) return; this.hold = false;

@@ -430,7 +430,7 @@ export class World {
       if (show !== this._joyShown) { this._joyShown = show; this.joy.classList.toggle('on', show); if (!show) this.releaseStick(); }
     }
     // double-tap zoom glides
-    if (this.zoomGoal && !this.drag) {
+    if (this.zoomGoal && !this.drag?.moved) {
       // an even zoom step (no ease-in/out): a fixed rate in log-zoom toward the goal
       const g = this.zoomGoal, lz = Math.log(g.z / this.zoom), st = Math.min(Math.abs(lz), dt * 4.5), f = Math.exp(Math.sign(lz) * st), fr = Math.abs(lz) > 1e-6 ? st / Math.abs(lz) : 1;
       if (g.x != null) this.zoomAt(f, g.x, g.y); else { this.zoom *= f; this.target.lerp(this.home, fr); this.clampTarget(); }
@@ -671,7 +671,9 @@ export class World {
       try { el.setPointerCapture?.(e.pointerId); } catch {}
       this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now(), type: e.pointerType, btn: e.button });
       if (this.ptrs.size === 1) {
-        this.yawGoal = null; this.vPan = null; this.zoomGoal = null;
+        // (a double-tap zoom keeps gliding under a still press — a quick third tap used to freeze it half way, QA3 10/19;
+        // it stops once this finger drags, or a second one lands)
+        this.yawGoal = null; this.vPan = null;
         this.drag = { moved: false, lastX: e.clientX, lastY: e.clientY, vx: 0, t: performance.now(), custom: null };
         const pt = this._pendTap;
         if (this.scheme === 'B' && pt && performance.now() - pt.upT < B_WINDOW && Math.hypot(e.clientX - pt.x, e.clientY - pt.y) < 60) {
@@ -685,7 +687,7 @@ export class World {
         }
         if (!this.drag.custom && !this.camLock) this._pressStart(e.clientX, e.clientY);
       } else if (this.ptrs.size === 2) {
-        this._pressEnd();
+        this._pressEnd(); this.zoomGoal = null;
         if (this.drag?.custom?.cancel) this.drag.custom.cancel();
         if (this.drag) { this.drag.moved = true; this.drag.custom = null; }
         const [a, b] = [...this.ptrs.values()];
@@ -715,6 +717,9 @@ export class World {
             // a real two-finger gesture from here: the first finger has already moved the view, so the spot between the
             // fingers starts where they are now; the spread and the twist still count from where the second finger landed
             const a1 = Math.atan2(b.y - a.y, b.x - a.x);
+            // the spread counts from the first finger as it is now and the second where it landed: the first finger's own
+            // travel during the wait is a move, not a pinch (it read as a sudden 1.5x zoom — QA3 10/19)
+            const f = this.ptrs.get(P.f1); if (f) P.d = P.d0 = Math.hypot(f.x - P.tap.x, f.y - P.tap.y);
             P.tap = null; P.mx = mx; P.my = my; P.ang = a1; P.tw = Math.atan2(Math.sin(a1 - P.ang0), Math.cos(a1 - P.ang0));
           }
           // F: spread = zoom, twist = turn (after ~12°, so a pinch never turns by accident), and the spot between the
@@ -752,7 +757,7 @@ export class World {
       }
       const dr = this.drag; if (!dr) return;
       if (!dr.moved && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 9) {
-        dr.moved = true; this._pressEnd();
+        dr.moved = true; this._pressEnd(); this.zoomGoal = null;
         // 손맛 3: the first 9 px (still a possible tap) used to be dropped, so the view trailed the finger by that much
         // for the whole drag; now the drag takes them too and the spot under the finger stays under it
         if (FEEL.catchup && !dr.custom && !dr.second) { dr.lastX = p.x0; dr.lastY = p.y0; }
@@ -795,7 +800,7 @@ export class World {
       const p = this.ptrs.get(e.pointerId); if (!p) return;
       const P = this.pinch;
       // E: the second finger tapped (down and up quickly, barely moving, no spread): switch the held drag to turning
-      if ((this.scheme === 'E' || this.scheme === 'F') && P?.tap && P.tap.id === e.pointerId && performance.now() - P.tap.t < 320 && this.ptrs.size === 2) {
+      if ((this.scheme === 'E' || this.scheme === 'F') && P?.tap && P.tap.id === e.pointerId && performance.now() - P.tap.t < 320 && this.ptrs.size === 2 && !this.camLock) {   // (not in a camera-locked game: it only clicked and buzzed — QA3 10/19)
         // a second-finger tap flips the mode only while the drag lasts; lifting goes back to the badge's mode
         // (user, 2026-10-17 evening: "톡 건들면 바뀌는데 떼면 다시 원래대로", the badge switch stays as it is)
         // a turn borrowed by the tap spins round the middle of the screen; a turn that is the badge's mode spins round
@@ -835,9 +840,11 @@ export class World {
           // (on in F too since 10/18 — user: "더블클릭하면 누른 데 줌인해서 보여주는 걸로" — the wall clock was hard to reach)
           // the second tap of a quick double tap on a thing just found lands on whatever was behind it: it does nothing
           // (QA 10/18: it hit the shelf or the floor and cost a 톡)
-          if (lt?.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36) this._lastTap = null;
-          else if (this.scheme !== 'E' && lt && !lt.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.tapInstant?.(e.clientX, e.clientY)) {
-            this._lastTap = null; this.onDoubleTap?.(e.clientX, e.clientY);   // (the first tap of the two already went out as a tap: the stage takes it back)
+          // (a third quick tap on the spot of a double-tap zoom is part of the same burst: it does nothing unless it finds
+          // something — "탁탁탁" used to cost a 톡 and stop the zoom half way, QA3 10/19)
+          if (lt?.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !(lt.dbl && this.tapInstant?.(e.clientX, e.clientY))) this._lastTap = null;
+          else if (this.scheme !== 'E' && lt && !lt.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.noDblZoom && !this.tapInstant?.(e.clientX, e.clientY)) {
+            this._lastTap = { t: now, x: e.clientX, y: e.clientY, instant: true, dbl: true }; this.onDoubleTap?.(e.clientX, e.clientY);   // (the first tap of the two already went out as a tap: the stage takes it back)
             if (this.zoom > 1.8) { this.zoomGoal = { z: 1, x: null }; }
             else this.zoomGoal = { z: Math.min(this.maxZoom, 3), x: e.clientX, y: e.clientY };
           } else { this._lastTap = { t: now, x: e.clientX, y: e.clientY, instant: !!this.tapInstant?.(e.clientX, e.clientY) }; this.onTap?.(e.clientX, e.clientY); }

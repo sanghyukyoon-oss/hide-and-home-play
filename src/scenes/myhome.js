@@ -69,6 +69,7 @@ export class MyHomeScene {
   fitCam() {
     const W = this.G.world, R = this.room, span = (R.w + R.d) / Math.SQRT2 + .5;
     document.getElementById('app').style.setProperty('--joyB', '330px');   // above the cards and buttons
+    W.slack = null;   // (a big map stage's wider box came along — QA3 10/19)
     W.bounds = Math.max(2.4, Math.max(R.w, R.d) * .48); W.minPitch = .06; W.maxPitch = 1.45; W.minZoom = .85; W.maxZoom = 7;
     // hiding and decorating have cards and buttons at the bottom: the room sits higher and a little smaller there
     const busy = this.mode === 'hide' || this.mode === 'edit' || this.mode === 'lobby';   // (the lobby: the play button and its row)
@@ -141,7 +142,7 @@ export class MyHomeScene {
   // ── HUD
   setMode(mode) {
     const G = this.G, ui = G.ui;
-    this.mode = mode; this.sel = null; this.markers = null; this.ftool = null;
+    this.mode = mode; this.sel = null; this.markers = null; this.ftool = null; this.dropFootprint();   // (it stayed on the floor after 완료 — QA3 10/19)
     ui.clear(); if (this.room) this.fitCam();
     const col = this.col = ui.col();
     if (mode === 'lobby') return this.lobbyHud();   // the lobby (경제·로비 on, lobby.js): its own top bar, no zone tabs
@@ -255,7 +256,7 @@ export class MyHomeScene {
     const G = this.G;
     this.sel = rec;
     this.ftool?.remove(); this.ftool = null;
-    this.footprint?.parent?.remove(this.footprint);
+    this.dropFootprint();
     if (!rec) return;
     const ui = G.ui;
     this.ftool = h('div', { class: 'ftool' },
@@ -269,14 +270,16 @@ export class MyHomeScene {
     this.updFootprint(rec.x, rec.z, rec.a, true);
     G.audio.sfx('click');
   }
+  dropFootprint() { const f = this.footprint; if (!f) return; f.parent?.remove(f); f.geometry.dispose(); f.material.dispose(); this.footprint = null; }
   updFootprint(x, z, a, ok) {
+    if (!this.sel || !this.footprint) return;   // (a mode change in the middle of a drag — QA3 10/19)
     const inf = FURN_INFO[this.sel.type];
     this.footprint.position.set(x, .02, z); this.footprint.rotation.set(-Math.PI / 2, a, 0); this.footprint.scale.set((inf.w || 1) - .06, (inf.d || 1) - .06, 1);
     this.footprint.material.color.set(ok ? '#7be04f' : '#ff4f66');
   }
   rotateSel() {
     const r = this.sel; if (!r) return;
-    for (let k = 1; k <= 8; k++) { const a = r.a + k * Math.PI / 4; if (this.room.canPlaceAt(r.type, r.x, r.z, a, r.id)) { this.room.moveFurnitureAt(r, r.x, r.z, ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)); this.syncRec(r); this.updFootprint(r.x, r.z, r.a, true); this.G.audio.sfx('swish'); return; } }
+    for (let k = 1; k <= 8; k++) { const a = r.a + k * Math.PI / 4; if (this.room.canPlaceAt(r.type, r.x, r.z, a, r.id)) { this.room.moveFurnitureAt(r, r.x, r.z, ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)); this.syncRec(r); this.updFootprint(r.x, r.z, r.a, true); this.G.audio.sfx('swish'); this.G.persist(); return; } }
     this.G.ui.toast('돌릴 자리가 없어!', 'red');
   }
   storeSel() {
@@ -314,7 +317,7 @@ export class MyHomeScene {
         else { R.moveFurnitureAt(r, start.x, start.z, r.a); if (!cur.ok) this.G.ui.toast('거긴 놓을 수 없어', 'red'); }
         this.updFootprint(r.x, r.z, r.a, true);
       },
-      cancel: () => {},
+      cancel: () => { R.moveFurnitureAt(r, start.x, start.z, r.a); this.updFootprint(r.x, r.z, r.a, true); },   // (back where it was — QA3 10/19)
     };
   }
   // hide mode: drag something you hid onto any other surface
@@ -537,6 +540,7 @@ export class MyHomeScene {
       H.publishedDoc = doc;
       G.persist();
     }
+    if (this.dead) return;   // (the answer came after you left — QA3 10/19)
     if (res.ok) {
       G.audio.sfx('win'); G.world.fx.confetti(70);
       G.ui.panel({ title: '방을 올렸어요!', color: 'green', body: [

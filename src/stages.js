@@ -196,7 +196,8 @@ export const LAYOUTS = {
   // tackle box and bait by the platform, reeds round the edge, a parasol seat and a cooler on the east bank
   fishing: { w: 7, d: 6, walls: { N: 'hedge', W: 'fence', S: 'none', E: 'none' },
     furniture: [F('pond', 2, 2), F('fishdock', 2, 1), F('tree', 0, 0), F('bench', 4, 0), F('fishsign', 6, 0), F('tacklebox', 1, 1), F('baitbucket', 4, 1),
-      F('reeds', 5, 3), F('reeds', 1, 4), F('parasol', 6, 2), F('cooler', 6, 4), F('campchair', 0, 2), F('bush', 0, 5), F('picnic', 3, 5), F('reeds', 5, 5)],
+      F('reeds', 5, 3), F('reeds', 1, 4), F('parasol', 6, 2), F('cooler', 6, 4), F('campchair', 0, 2), F('bush', 0, 5), F('picnic', 3, 5), F('reeds', 5, 5),
+      { type: 'stream', x: -.85, z: 1.55, a: 0 }, { type: 'stream', x: -.85, z: 2.55, a: 0 }],   // (10/19) the pond spills into a stream that runs out under a little bridge into the meadow
     friendAt: [1.6, 1.2] },
   // 원룸: a Korean one-room — loft bed over a desk, a mini kitchen, a washer by the door, a clothes rail
   oneroom: { w: 6, d: 5, bleed: {}, wallH: 2.9, walls: { N: 'wall', W: 'wall' },
@@ -302,9 +303,13 @@ export const MAPS = {
       // the stairs start a tile in from the front (a floor row at their foot) and land on the balcony's front edge
       { at: [0, 0], level: 0, layout: { w: 6, d: 7, theme: down, wallH: 2.9, timber: true,
         furniture: [F('stairsup', 0, 3), F('plant', 0, 0), F('bookshelf', 1, 0, 0, { seed: 13 }), F('lamp', 2, 0), F('fridge', 3, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0),
-          F('sofa', 1, 2), F('plant', 5, 2), F('liftbasket', 5, 3), F('rug', 1, 3), F('table', 2, 4), F('diningset', 3, 5), F('laundrybasket', 2, 6), F('stool', 5, 6), F('plant', 4, 6)],
+          // 이어진 집 (10/19): the kitchen pulley rides up through the balcony's hatch, a slide comes down from the balcony
+          // into a ball pit, the dining table moved to the window side
+          F('sofa', 1, 2), F('liftbasket', 5, 2, 0, { up: true }), F('rug', 1, 3), F('table', 2, 4), F('tubeslide', 3, 3), F('diningset', 4, 3),
+          F('ballpit', 3, 5), F('laundrybasket', 2, 6), F('plant', 5, 5), F('stool', 5, 6)],
         decor: [D('window', 'W', 2.0), D('picture', 'W', -1.8), D('window', 'E', 1.6)] } },   // nothing hung on the back wall under the balcony: it is in shadow and out of sight
-      { at: [0, -2], level: 1, layout: { w: 6, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [2.5] }, gable: 'N', timber: true,
+      // (the balcony's front-right tile is a hatch: the kitchen pulley comes up through it, 10/19)
+      { at: [0, -2], level: 1, layout: { w: 6, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [2.5, -.5] }, gable: 'N', timber: true, slab: 'cut', cut: [{ i: 5, j: 2, w: 1, d: 1 }],
         furniture: [F('plant', 0, 0), F('desk', 1, 0), F('stool', 1, 1), F('bookshelf', 3, 0, 0, { seed: 31 }), F('chest', 4, 0), F('bed', 5, 0), F('rug', 2, 1), F('beanbag', 4, 2)],
         decor: [D('window', 'W', 0), D('picture', 'N', -1.7), D('clock', 'E', 0)] } },
     ] };
@@ -327,9 +332,10 @@ export const MAPS = {
     return { theme: THEMES.house3, friendAt: [1.6, 1.8], nBonus: 3, fitAll: true, rooms: [
       { at: [0, 0], level: 0, layout: { w: 7, d: 7, theme: down, wallH: 2.9, timber: true,
         furniture: [F('stairsup', 6, 3), F('bookshelf', 0, 0, 0, { seed: 17 }), F('recordcab', 1, 0), F('floorlamp', 2, 0), F('fridge', 4, 0), F('counter', 5, 0, 0, { variant: 'stove' }), F('dishcab', 6, 0),
-          F('sofa2', 0, 2), F('monstera', 2, 2), F('kitchentable', 4, 2), F('stool2', 4, 3), F('rug', 0, 3), F('zabuton', 0, 4), F('kotatsu', 1, 4), F('chest', 3, 5), F('tvlow', 0, 6, 2), F('plant', 2, 6), F('laundrybasket', 5, 6)],
+          // 이어진 집 (10/19): a brass pole from the top loft down through the balcony's hatch to the living room
+          F('sofa2', 0, 2), F('loftpole', 2, 2), F('monstera', 3, 1), F('kitchentable', 4, 2), F('stool2', 4, 3), F('rug', 0, 3), F('zabuton', 0, 4), F('kotatsu', 1, 4), F('chest', 3, 5), F('tvlow', 0, 6, 2), F('plant', 2, 6), F('laundrybasket', 5, 6)],
         decor: [D('window', 'W', 2.0), D('picture', 'W', -.4)] } },
-      { at: [0, -2], level: 1, layout: { w: 7, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [-3.0] }, gable: 'N', timber: true,
+      { at: [0, -2], level: 1, layout: { w: 7, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [-3.0] }, gable: 'N', timber: true, slab: 'cut', cut: [{ i: 2, j: 2, w: 1, d: 1 }],
         lofts: [{ i: 0, j: 0, w: 3, d: 2, y: 1.45, ladder: 'S', ladderAt: .9 }],
         furniture: [LF('futon', 0, 0, 0, null, 1.45), LF('yarnbasket', 1, 0, 0, null, 1.45), LF('catbed', 2, 0, 0, null, 1.45), F('chest', 0, 0), F('desk', 0, 1), F('wardrobe', 3, 0), F('bed', 4, 0), F('drawers', 5, 0), F('plant', 6, 0), F('beanbag', 3, 2), F('yarnbasket', 5, 2)],
         decor: [D('window', 'E', 0), D('picture', 'N', 1.6)] } },
@@ -650,10 +656,14 @@ const HO_SHAPE = {
   61: [7, 1], 62: [11, 1], 63: [11, 2], 65: [7, 1], 67: [12, 2],
 };
 const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(location.search);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
+// 이삿짐 풀기·파르페 쌓기 (10/19, user picked the story room's ideas ① ②): the same hunt on the kit card (modelkit.js), on
+// these stages (0-based) — 13판 우리 아파트 (the last thing in the chapter's code safe), 34판 카페 (no lock)
+const KIT_AT = { 12: 'moving', 33: 'parfait' };
 export function stageSpec(idx) {
   idx = Math.max(0, idx);
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
   const s = baseSpec(idx);
+  if (KIT_AT[idx]) s.kit = KIT_AT[idx];
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }
   if (s.boss && s.sock) s.n = Math.max(5, (s.n || 8) - 1);   // (the 상가 boss's fourth lock, the sock: one thing fewer to find)
@@ -783,6 +793,9 @@ function mountLever(room, r) {
   return lv;
 }
 
+// a 장치판's chain piece that a thing on the list would look like (39판 빨래방: the dryer's 500원 동전 next to a 동전 지갑 on the list
+// read as one thing — 리포트 v3 P2, 11~70판 레벨 세션 10/19): kept off the list and the decoys on that stage
+const DEVICE_LOOKALIKE = { laundry: ['coin'] };
 // Decide what goes where. Works on the built Room's spots.
 export function planStage(room, spec, story = null) {
   const r = rng(spec.seed);
@@ -811,7 +824,8 @@ export function planStage(room, spec, story = null) {
   // the first stages only ask for things with a readable shape (a thin pencil under a loft was hard even with a hint)
   const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard'];
   // (짝 양말 판: no pair of socks on the list either — it would read as the puzzle's sock, and the odd ones lying about say "무늬가 달라")
-  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 6 && THIN.includes(t));   // a stage's tool is never a target or a decoy
+  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 6 && THIN.includes(t))
+    || (spec.showcase && DEVICE_LOOKALIKE[spec.room]?.includes(t));   // a stage's tool is never a target or a decoy
   // the common things rotate through the stages (a window that moves on 5 places a stage) so the same milk carton
   // doesn't turn up stage after stage (user, 10/17: "계속 찾는것만 찾게"); the place's own things come first
   const common = TARGET_POOL.filter(t => !own.includes(t) && !tool(t)), off = ((spec.idx ?? 0) * 5) % Math.max(1, common.length);
@@ -989,6 +1003,18 @@ export function planStage(room, spec, story = null) {
   if (spec.dark) { const sw = mountLever(room, r); if (sw) { light = sw.f.parts[0]; light.isLight = true; light.label = '전등 스위치'; } }
   if (tv && !tv.lock) { tv.on(''); tv = null; }   // no code lock to point at: just a TV that is on
   return { targets: placements.filter(p => p.role === 'target').map(p => p.type), placements, locks, light, tv, rotSeed: r };
+}
+// 함정 상한 (11~70판 레벨 세션 10/19, 리포트 v3 P2): the decoys grew with the map — 2 to 30 a stage, over 20 on 20·26·30·54·59판 —
+// while 톡 doesn't count them. At most 1.5× the things on the list, never under 6; not on 흑백판 (their own colour game) or
+// 너굴이's timed stages (no 톡 there); the laundromat's odd socks are the pair puzzle, not decoys. Runs on the finished plan.
+export const decoyCap = n => Math.max(6, Math.round(n * 1.5));
+export function capDecoys(plan, spec) {
+  if (!plan || spec.gray || spec.timed || spec.tut <= 2 || spec.custom) return 0;
+  const dec = plan.placements.filter(p => p.role === 'decoy' && p.type !== 'sockp'), cap = decoyCap(plan.targets.length);
+  if (dec.length <= cap) return 0;
+  const drop = new Set(rng((spec.seed || 1) + 4241).shuffle(dec.slice()).slice(cap));
+  plan.placements = plan.placements.filter(p => !drop.has(p));
+  return drop.size;
 }
 
 // 사건 판 (10/17 pivot, user: "물건 목록 대신 작은 사건… 행동이 이어지는 발견… 끝나면 남는 변화"): the room's owner hides

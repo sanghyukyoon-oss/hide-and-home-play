@@ -6,6 +6,8 @@
 // The DOM is watched (toasts, panels, buttons, bubbles…); dialog lines and canvas signs call tr() themselves.
 // Language: the phone's language unless the player picked one (settings); switching reloads the page.
 import { EN } from './i18n-en-dict.js';
+import { EN_APP } from './i18n-en-app.js';
+for (const k in EN_APP) if (EN[k] == null) EN[k] = EN_APP[k];   // what the app build still missed (10/19) — the dictionary wins
 
 const KEY = 'sumbakkokjip.lang';
 export const LANG = (() => {

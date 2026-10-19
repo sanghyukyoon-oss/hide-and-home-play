@@ -356,9 +356,11 @@ export class Game {
   bindInput() {
     const app = document.getElementById('app');
     this._down = e => {
-      if (e.button > 0 || this.result || this.touch || !this.started) return;
+      if (e.button > 0 || this.result || !this.started) return;
+      if (e.isPrimary && this.touch) this.touch = null;   // (a primary press: no other finger is down — the old touch lost its lift, QA3 10/19)
       const d = this.lureAt(e.clientX, e.clientY);
-      if (d) { this.fireLure(d); return; }
+      if (d) { this.fireLure(d); return; }   // (a gadget answers a second finger too)
+      if (this.touch) return;
       this.touch = { id: e.pointerId, x: e.clientX, y: e.clientY, fridge: this.onFridge(e.clientX, e.clientY), t0: performance.now() };
     };
     this._move = e => { const T = this.touch; if (T && e.pointerId === T.id) { T.x = e.clientX; T.y = e.clientY; } };

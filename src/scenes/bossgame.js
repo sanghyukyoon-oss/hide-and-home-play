@@ -105,7 +105,7 @@ export class BossGameScene {
         const b = h('div', { class: 'bubble pop ' + cls }, text); G.ui.wui.append(b);
         const V = new THREE.Vector3();
         const upd = () => { const p = G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .22)); b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px'; };
-        upd(); const iv = setInterval(upd, 30); setTimeout(() => { clearInterval(iv); b.remove(); }, ms);
+        upd(); const iv = setInterval(() => b.isConnected ? upd() : clearInterval(iv), 30); setTimeout(() => { clearInterval(iv); b.remove(); }, ms);   // (gone from the page → the timer stops too — QA3 10/19)
         return b;
       },
       // the lab restarts a game with a level: here a won boss goes on with the campaign, anything else replays the boss
@@ -155,6 +155,8 @@ export class BossGameScene {
       const GL = GLe, said = G.save.gameTalk || (G.save.gameTalk = {});
       if (this.won && GL?.out && !said['o' + this.kind + this.lv]) { await playDialog(G, GL.out); if (this.dead) return; said['o' + this.kind + this.lv] = true; G.persist(); }
       if (GL?.ending && !G.save.ending && !G.playMode) {   // (놀이 모음's 셋째 밤 is practice: no ending there — QA 10/18)
+        // 엔딩은 몽글이네 방에서 (스토리 룸 10/19): 내 방 로비가 켜져 있으면 그 방으로 가서, 친구들 자리와 먹물이의 노크로 끝냄
+        if (G.econ) return G.go('home', { ending: { after: this.after } });
         await playDialog(G, ENDING); await endCard(G);
         G.save.ending = true; G.persist();   // (saved once seen: a reload mid-ending shows it again — QA 10/18)
         clearFollowupFinish(G, this.after);

@@ -215,7 +215,10 @@ export class Room {
     // both tiers outline as one shape so the rim reads as a single ink line
     // slab: 'cake' (a lone room), 'thin' (an upper floor), 'none' (a room standing on a map's shared slab)
     const slab = {}, sk = this.L.slab || (this.L.bleed ? 'none' : 'cake');
-    if (sk !== 'none') { g.add(put(rbox(w + .5, .36, d + .5, T.base, .16), 0, -.2, 0)); g.children.at(-1).userData.og = slab; }
+    // 'cut': an upper floor whose slab keeps its floor's cut-outs open — a hatch for a pulley, a ladder or a slide to
+    // pass through (10/19 user: "도르레도 있는데 잘 써먹지도 못하는거같아 유기적으로"); each hole gets a wooden rim
+    if (sk === 'cut') { g.add(put(holedSlab(w, d, this.L.cut || [], T.base), 0, -.38, 0)); g.children.at(-1).userData.og = slab; this.buildHatchRims(); }
+    else if (sk !== 'none') { g.add(put(rbox(w + .5, .36, d + .5, T.base, .16), 0, -.2, 0)); g.children.at(-1).userData.og = slab; }
     if (sk === 'cake') { g.add(put(rbox(w + .62, .2, d + .62, shade(T.base, -.08), .1), 0, -.4, 0)); g.children.at(-1).userData.og = slab; }
     const ft = floorTex(T.floorKind || 'planks', T.floor, T.floor2, T);
     const span = ft.userData?.span || 2;
@@ -372,6 +375,16 @@ export class Room {
   }
   // tiles whose centre lies under some furniture (rugs don't count)
   // tiles with no floor (layout.cut: [{ i, j, w, d }]) and the height of the floor at a tile (raised sections)
+  // a wooden frame round each hole in a 'cut' floor, so an opening reads as made, not missing
+  buildHatchRims() {
+    const { w, d, T } = this, col = T.woodD || '#c98d55';
+    for (const c of this.L.cut || []) {
+      const x0 = -w / 2 + c.i, z0 = -d / 2 + c.j, x1 = x0 + c.w, z1 = z0 + c.d, t = .07, h = .05;
+      for (const [cx, cz, sx, sz] of [[(x0 + x1) / 2, z0 + t / 2, c.w, t], [(x0 + x1) / 2, z1 - t / 2, c.w, t], [x0 + t / 2, (z0 + z1) / 2, t, c.d - 2 * t], [x1 - t / 2, (z0 + z1) / 2, t, c.d - 2 * t]]) {
+        this.group.add(put(rbox(sx, h, sz, col, .015), cx, h / 2, cz));
+      }
+    }
+  }
   isCut(i, j) { return (this.L.cut || []).some(c => i >= c.i && i < c.i + c.w && j >= c.j && j < c.j + c.d); }
   heightAt(i, j) { const z = (this.L.raised || []).find(c => i >= c.i && i < c.i + c.w && j >= c.j && j < c.j + c.d); return z ? z.h ?? .3 : 0; }
   buildRaised(z) {
@@ -531,6 +544,23 @@ export function attachItem(spot, g, { rotY = null, scale = 1 } = {}) {
   return g;
 }
 const PROXY_MAT = new THREE.MeshBasicMaterial({ visible: false });
+
+// an upper floor's slab (.36 thick, overhanging .25 like the solid one) with its floor's cut-outs left open
+function holedSlab(w, d, cuts, color) {
+  const W = w + .5, D = d + .5, r = .16, sh = new THREE.Shape();
+  sh.moveTo(-W / 2 + r, -D / 2); sh.lineTo(W / 2 - r, -D / 2); sh.quadraticCurveTo(W / 2, -D / 2, W / 2, -D / 2 + r);
+  sh.lineTo(W / 2, D / 2 - r); sh.quadraticCurveTo(W / 2, D / 2, W / 2 - r, D / 2); sh.lineTo(-W / 2 + r, D / 2);
+  sh.quadraticCurveTo(-W / 2, D / 2, -W / 2, D / 2 - r); sh.lineTo(-W / 2, -D / 2 + r); sh.quadraticCurveTo(-W / 2, -D / 2, -W / 2 + r, -D / 2);
+  for (const c of cuts) {
+    const x0 = -w / 2 + c.i, y0 = -d / 2 + c.j, hole = new THREE.Path();
+    hole.moveTo(x0, y0); hole.lineTo(x0, y0 + c.d); hole.lineTo(x0 + c.w, y0 + c.d); hole.lineTo(x0 + c.w, y0); hole.lineTo(x0, y0);
+    sh.holes.push(hole);
+  }
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: .36, bevelEnabled: false, curveSegments: 4 });
+  geo.rotateX(Math.PI / 2);   // shape x/y → world x/z, extruded downward from y 0 to -.36… then lifted by the caller
+  geo.translate(0, .36, 0);
+  return mesh(geo, mat(color, { rough: .8 }));
+}
 
 // a floor made of the room's tiles minus cut-outs, UVs in world units so the texture runs on seamlessly
 function tileFloorGeo(w, d, cut, span) {

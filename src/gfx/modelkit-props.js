@@ -97,10 +97,20 @@ export const KITS = {
   robot: { id: 'robot', name: '꼬마 로봇', furn: 'kitrobot', parts: ROBOT, order: ['body', 'legs', 'claw', 'fist', 'jet', 'head'],
     build: { ordered: true, glow: true, ghost: true },
     // the runner card: each piece's short name, and the plastic the runner is moulded in
-    short: { legs: '다리', body: '몸통', jet: '제트팩', claw: '집게팔', fist: '주먹팔', head: '머리' }, runner: '#a9d8ff', box: '#3d7bff',
+    short: { legs: '다리', body: '몸통', jet: '제트팩', claw: '집게팔', fist: '주먹팔', head: '머리' }, runner: '#a9d8ff', color: '#3d7bff',
+    type: 'model', skin: 'runner', intro: 'box',
     locked: 'head' },   // the piece a padlock guards on a campaign stage (8판: the face comes last, out of the locked chest)
 };
-export const kitItem = (kit, key) => 'kit_' + kit + '_' + key;
+// ── 13판 이삿짐 풀기 and 34판 파르페 쌓기 (10/19, user: "새아이디어는 1,2" — the story room's ideas on the same card): the
+// same hunt and card, a different end (modelkit.js):
+//   place  things out of the moving boxes: each find folds a box in the room; all found → the room is home (13판)
+//   stack  parfait toppings: each find goes onto the big parfait, on its own layer; the cherry waits and goes on top last
+// order: the card's cells (things to find: ITEMS types); locked: the one the stage's first lock guards (13판: the code safe)
+KITS.moving = { id: 'moving', type: 'place', skin: 'boxes', intro: 'pop', numbers: false, name: '이삿짐 풀기', furn: 'kitmovebox',
+  order: ['teddy', 'slipper', 'remote', 'toothbrush', 'glasses', 'console', 'duck', 'umbrella'], locked: 'teddy', runner: '#e8c28a', color: '#c98a4b' };
+KITS.parfait = { id: 'parfait', type: 'stack', skin: 'bowls', intro: 'pop', numbers: false, name: '파르페 쌓기', furn: 'kitparfait',
+  order: ['pf_cereal', 'pf_icecream', 'pf_banana', 'pf_strawberry', 'pf_cream', 'pf_wafer', 'pf_cherry'], last: 'pf_cherry', runner: '#ffc9dc', color: '#ff6fa6' };
+export const kitItem = (kit, key) => KITS[kit].type === 'model' ? 'kit_' + kit + '_' + key : key;
 
 // a piece in its place on the model (model frame)
 export function buildKitPart(kit, key) {
@@ -138,7 +148,7 @@ function loosePiece(kit, key) {
 // the pieces join the things you can find (main.js: Object.assign(ITEMS, KIT_ITEMS)); h is measured from the build.
 // noCollect: never in 내 집 숨기기; kit: kept out of the 도감's item cards (they come back as the finished model)
 export const KIT_ITEMS = {};
-for (const kit in KITS) for (const key of KITS[kit].order) {
+for (const kit in KITS) if (KITS[kit].type === 'model') for (const key of KITS[kit].order) {
   let h = null;   // measured the first time it's asked for (by then the cartoon style is on, so no stray materials)
   KIT_ITEMS[kitItem(kit, key)] = { name: KITS[kit].parts[key].name, noCollect: true, kit, build: () => loosePiece(kit, key),
     get h() { return h ??= +new THREE.Box3().setFromObject(loosePiece(kit, key)).getSize(new THREE.Vector3()).y.toFixed(3); } };
@@ -154,3 +164,63 @@ B.kitrobot = f => {
 };
 export const KIT_BUILDERS = B;
 export const KIT_INFO = { kitrobot: { w: 1, d: 1, name: '조립 로봇', price: 0 } };
+Object.assign(KIT_INFO, { kitmovebox: { w: 1, d: 1, name: '이삿짐 상자', price: 0 }, kitparfait: { w: 1, d: 1, name: '큰 파르페', price: 0 } });
+
+// ── 13판: a moving box (kraft card, a strip of tape, the flaps' seams) — a dozen sit about the room, one folds flat for
+// every thing found; and the one 몽글이 keeps ("…상자 하나는 남겨 둬. 숨기 좋겠다.") is the reward
+const KRAFT = '#e2b77c', KRAFT2 = '#c9955a', TAPE = '#f6e3b8';
+export function buildMoveBox(seed = 0) {
+  const g = grp(), w = .34 + (seed % 3) * .03, hh = .24 + (seed % 2) * .05, d = .3;
+  g.add(put(rbox(w, hh, d, KRAFT, .018), 0, hh / 2, 0));
+  g.add(put(rbox(w + .004, .006, .004, KRAFT2, .002), 0, hh - .002, 0));            // the seam of the flaps
+  g.add(put(rbox(.07, .008, d + .006, TAPE, .003), 0, hh + .001, 0));               // tape over it
+  g.add(put(rbox(.07, .09, .006, TAPE, .003), 0, hh - .045, d / 2 + .002));          // …down the front
+  if (seed % 2) g.add(put(extrude('kitheart', heartShape(.032), .006, '#ff8fa8'), w * .28, hh * .45, d / 2 + .004));   // a sticker
+  return g;
+}
+function heartShape(r) {
+  const sh = new THREE.Shape();
+  sh.moveTo(0, -r); sh.bezierCurveTo(r * 1.4, -r * .1, r * .9, r * 1.1, 0, r * .45); sh.bezierCurveTo(-r * .9, r * 1.1, -r * 1.4, -r * .1, 0, -r);
+  return sh;
+}
+B.kitmovebox = f => { const b = buildMoveBox(1); b.scale.setScalar(1.6); f.add(b); };
+
+// ── 34판: the toppings (things to find) and the big parfait they go on. Bottom to top: cereal, ice cream, banana,
+// strawberry, cream, wafer, cherry. Each topping is a little dish of it as a thing to find; on the parfait it is a layer.
+const CREAM = '#fffaf3', PINK = '#ffb3cc', CHOCO = '#8a5a3c', CEREAL = '#d9964f', BAN = '#ffe27a', STRAW = '#ff5a72', LEAF = '#5cc93a', WAF = '#f0c27a', CHERRY = '#e8233a';
+const dish = (g, c = '#ffffff') => { g.add(put(cyl(.06, .045, .03, c, null, 18), 0, .015, 0)); g.add(put(tor(.058, .006, '#ffd0de', null, Math.PI * 2, 8, 22), 0, .03, 0, Math.PI / 2, 0, 0)); };
+const TOP = {
+  pf_cereal: { name: '시리얼', build(g) { dish(g); for (let i = 0; i < 9; i++) { const a = i * 2.4, r = i ? .028 : 0; g.add(put(rbox(.026, .016, .022, i % 3 ? CEREAL : '#b8743a', .006), Math.cos(a) * r, .04 + (i % 3) * .01, Math.sin(a) * r, i, i * .7, 0)); } } },
+  pf_icecream: { name: '아이스크림', build(g) { dish(g); g.add(put(sph(.05, PINK, GLOSS, 18, 14), 0, .07, 0)); g.add(put(tor(.045, .012, PINK, null, Math.PI * 2, 8, 20), 0, .04, 0, Math.PI / 2, 0, 0)); } },
+  pf_banana: { name: '바나나', build(g) { g.add(put(tor(.06, .02, BAN, null, Math.PI * .9, 10, 20), 0, .02, 0, Math.PI / 2, 0, .2)); g.add(put(sph(.012, '#8a6a3a', null, 8, 6), .06, .02, .01)); } },
+  pf_strawberry: { name: '딸기', build(g) { g.add(put(cone(.04, .075, STRAW, GLOSS, 16), 0, .04, 0, Math.PI, 0, 0)); for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; g.add(put(cone(.016, .03, LEAF, null, 6), Math.cos(a) * .022, .08, Math.sin(a) * .022, Math.sin(a) * 1.3, 0, -Math.cos(a) * 1.3)); } } },
+  pf_cream: { name: '생크림', build(g) { dish(g); g.add(put(tor(.04, .02, CREAM, null, Math.PI * 2, 10, 22), 0, .045, 0, Math.PI / 2, 0, 0)); g.add(put(tor(.026, .017, CREAM, null, Math.PI * 2, 10, 20), 0, .07, 0, Math.PI / 2, 0, 0)); g.add(put(cone(.02, .04, CREAM, null, 12), 0, .095, 0)); } },
+  pf_wafer: { name: '웨하스', build(g) { for (const [x, rz] of [[-.015, .25], [.015, -.2]]) { const w = put(rbox(.032, .13, .018, WAF, .006), x, .065, 0, 0, 0, rz); g.add(w); } g.add(put(rbox(.034, .006, .02, '#d9a65c', .002), -.015, .09, .006, 0, 0, .25)); } },
+  pf_cherry: { name: '체리', build(g) { g.add(put(sph(.032, CHERRY, GLOSS, 16, 12), 0, .032, 0)); g.add(put(tor(.04, .004, '#5a8a2a', null, Math.PI * .45, 6, 12), -.034, .062, 0, 0, 0, .1)); g.add(put(cone(.012, .03, LEAF, null, 6), .005, .1, 0, 0, 0, -1.2)); } },
+};
+for (const [k, T] of Object.entries(TOP)) {
+  let h = null;
+  const build = () => { const g = grp(); T.build(g); return g; };
+  KIT_ITEMS[k] = { name: T.name, noCollect: true, kit: 'parfait', build, get h() { return h ??= +new THREE.Box3().setFromObject(build()).getSize(new THREE.Vector3()).y.toFixed(3); } };
+}
+// the big parfait: a tall glass on a stem; every layer its own group (hidden until its topping is found)
+export function buildParfait() {
+  const g = grp(), layers = {}, glass = { opacity: .28 };
+  g.add(put(cyl(.15, .17, .035, '#eaf6ff', null, 26), 0, .018, 0));                      // foot
+  g.add(put(cyl(.032, .04, .16, '#eaf6ff', null, 14), 0, .11, 0));                        // stem
+  g.add(put(cyl(.13, .05, .05, '#eaf6ff', null, 22), 0, .205, 0));                        // the bowl's bottom
+  g.add(put(cyl(.21, .13, .44, '#d8f0ff', glass, 28, true), 0, .45, 0));                  // the glass (see-through)
+  g.add(put(tor(.21, .012, '#ffffff', null, Math.PI * 2, 8, 36), 0, .67, 0, Math.PI / 2, 0, 0));   // rim
+  const L = (key, f) => { const l = grp(); f(l); l.visible = false; g.add(l); layers[key] = l; };
+  const band = (y0, h, r0, r1, c) => put(cyl(r1, r0, h, c, null, 26), 0, y0 + h / 2, 0);   // a layer filling the glass from y0
+  const rAt = y => .13 + (.21 - .13) * (y - .23) / .44;
+  L('pf_cereal', l => { l.add(band(.23, .09, rAt(.23) - .006, rAt(.32) - .006, CEREAL)); for (let i = 0; i < 10; i++) { const a = i * .63; l.add(put(rbox(.03, .018, .026, i % 2 ? CEREAL : '#b8743a', .006), Math.cos(a) * .13, .29, Math.sin(a) * .13, i, a, 0)); } });
+  L('pf_icecream', l => { l.add(band(.32, .1, rAt(.32) - .006, rAt(.42) - .006, PINK)); l.add(put(sph(.07, PINK, GLOSS, 18, 12), .04, .43, .03, 0, 0, 0, [1, .55, 1])); });
+  L('pf_banana', l => { l.add(band(.42, .07, rAt(.42) - .006, rAt(.49) - .006, '#fff3b8')); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + .3; l.add(put(cyl(.04, .04, .014, BAN, null, 14), Math.cos(a) * (rAt(.47) - .012), .46, Math.sin(a) * (rAt(.47) - .012), 0, -a, Math.PI / 2)); } });
+  L('pf_strawberry', l => { l.add(band(.49, .1, rAt(.49) - .006, rAt(.59) - .006, '#ff9fb2')); for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; l.add(put(cone(.045, .08, STRAW, GLOSS, 14), Math.cos(a) * .12, .64, Math.sin(a) * .12, Math.PI + Math.sin(a) * .5, 0, Math.cos(a) * .5)); } });
+  L('pf_cream', l => { l.add(band(.59, .08, rAt(.59) - .006, .2, CREAM)); l.add(put(tor(.13, .055, CREAM, null, Math.PI * 2, 12, 30), 0, .7, 0, Math.PI / 2, 0, 0)); l.add(put(tor(.08, .045, CREAM, null, Math.PI * 2, 12, 26), 0, .77, 0, Math.PI / 2, 0, 0)); l.add(put(cone(.05, .09, CREAM, null, 16), 0, .84, 0)); });
+  L('pf_wafer', l => { for (const [x, rz] of [[-.07, .3], [.09, -.25]]) l.add(put(rbox(.05, .24, .026, WAF, .008), x, .8, -.04, 0, 0, rz)); l.add(put(sph(.02, CHOCO, null, 10, 8), .02, .79, .1)); l.add(put(sph(.016, CHOCO, null, 10, 8), -.05, .76, .11)); });
+  L('pf_cherry', l => { l.add(put(sph(.05, CHERRY, GLOSS, 18, 14), 0, .92, .01)); l.add(put(tor(.05, .006, '#5a8a2a', null, Math.PI * .45, 6, 12), -.045, .965, 0, 0, 0, .15)); });
+  return { g, layers };
+}
+B.kitparfait = f => { const p = buildParfait(); for (const k in p.layers) p.layers[k].visible = true; p.g.scale.setScalar(1.3); f.add(p.g); };

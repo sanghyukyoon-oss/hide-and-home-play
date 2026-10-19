@@ -74,7 +74,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         const owned = H.owned.wall.includes(wp.id), on = zone?.paint?.wallId === wp.id || (!zone?.paint?.wallId && wp.price === 0 && tab === 'wall');
         grid.append(card(G, { swatch: swatch(wp.wall, wp.wall2, wp.wallKind), name: wp.name, price: owned ? null : wp.price, tag: on ? '사용 중' : owned ? '보유' : null,
           action: owned ? '바르기' : null,
-          onBuy: owned ? null : () => { H.owned.wall.push(wp.id); apply(); },
+          onBuy: owned ? null : () => { H.owned.wall.push(wp.id); apply(); }, blocked: !zone || !ztype.indoor ? '실내에서만 바를 수 있어' : null,
           onUse: () => apply() }));
         function apply() {
           if (!zone || !ztype.indoor) { ui.toast('실내에서만 바를 수 있어', 'red'); G.persist(); render(); return; }
@@ -136,7 +136,8 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   ui.panel({ title: '상점', color: 'orange', cls: 'shop', body: [h('div', { class: 'shophead' }, coinPill), tabsEl, note, grid], close: () => ctx.onClose?.() });
 }
 
-function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse }) {
+let buyAt = 0;   // (QA3 10/19) one purchase per 0.45 s: a double tap bought twice
+function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse, blocked = null }) {
   const c = h('div', { class: 'card' },
     tag ? h('div', { class: 'tag' }, tag) : null,
     img ? h('img', { src: img }) : sw,
@@ -145,6 +146,8 @@ function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse 
     price != null ? h('div', { class: 'pr', html: ICON.coin + price }) : h('div', { class: 'pr', style: 'color:#2f8f1b' }, action || ''));
   c.addEventListener('click', () => {
     if (price != null && onBuy) {
+      if (blocked) { G.ui.toast(blocked, 'red'); G.audio.sfx('miss'); return; }   // (QA3 10/19: the coins went first)
+      if (performance.now() - buyAt < 450) return; buyAt = performance.now();
       if (G.save.coins < price) { G.ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
       G.addCoins(-price); G.audio.sfx('buy'); onBuy();
     } else if (onUse) onUse();

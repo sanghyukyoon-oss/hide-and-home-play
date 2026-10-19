@@ -144,12 +144,12 @@ export class BossScene {
     W.home.set(c.x, .6, c.z); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .7; W.zoom = 1.25;
     // the view is yours like in a stage (user, 10/18: "카메라가 고정이냐? 찾을 때만 캐릭터 따라가게 하고 숨은그림찾기 할 때처럼 자유롭게"):
     // drag / turn / pinch freely while you hide; while 너굴이 searches it follows 몽글이 unless you are looking round
-    W.bounds = Math.max(2.6, Math.max(R.w, R.d) * .5); W.slack = null; W.minZoom = .85; W.maxZoom = 5; W.minPitch = .2; W.maxPitch = 1.35; W.camLock = false; W.inputEnabled = true;
+    W.bounds = Math.max(2.6, Math.max(R.w, R.d) * .5); W.slack = null; W.minZoom = .85; W.maxZoom = 5; W.minPitch = .2; W.maxPitch = 1.35; W.camLock = false; W.inputEnabled = true; W.noDblZoom = true;   // (two drawers tapped quickly: the second was a zoom — QA3 10/19)
     W.setFit(Math.min(span, 8.6), Math.max(6.6, Math.min(span, 8.6) * .62), .47);
   }
   exit() {
     this.dead = true; const W = this.G.world; delete CHAR_DEFS.raccoon_seek;
-    W.onPad = null; if (this._was) { W.joyOn = this._was.joy; W.scheme = this._was.scheme; } this.ambient?.dispose();
+    W.onPad = null; W.noDblZoom = false; if (this._was) { W.joyOn = this._was.joy; W.scheme = this._was.scheme; } this.ambient?.dispose();
     for (const o of [this.room.group, this.hero.root, this.seek.root, ...this.treasures.map(t => t.g).filter(Boolean)]) { W.root.remove(o); disposeTree(o); }
     this.G.ui.clear(); this.tw.clear(); this.vig?.remove();
   }
@@ -343,7 +343,7 @@ export class BossScene {
     this.tw.run(.45, k => { g.position.lerpVectors(p0, S.root.position, k); g.position.y = p0.y + Math.sin(k * Math.PI) * .8 + k * .6; g.scale.setScalar(.85 * (1 - k * .7)); }).then(() => { g.visible = false; });
     G.ui.floatText(innerWidth / 2, innerHeight * .3, `${t.name} 들켰다!`, 'red big');
     this.drawSlots();
-    if (this.treasures.every(x => x.lost)) setTimeout(() => this.lose(), 700);
+    if (this.treasures.every(x => x.lost)) setTimeout(() => !this.dead && this.lose(), 700);
   }
 
   // ── per frame
