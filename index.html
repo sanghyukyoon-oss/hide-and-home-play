@@ -1,9 +1,16 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>숨바꼭집</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
 <div id="app">
   <div id="bg"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <canvas id="gl"></canvas>
@@ -13,19 +20,22 @@
   <div id="overlay"></div>
   <div id="toasts"></div>
   <div id="iris"></div>
-  <!-- start screen (10/18, same as the web index.html): logo over the flowing house pattern, a loading bar, then "터치해서 시작" -->
-<div id="boot">
-<div class="boot-pat"></div>
-<img class="boot-logo-img" alt="">
+  <!-- start screen (10/18): the logo over a slowly flowing pattern, a loading bar that follows the real boot steps, then
+       "터치해서 시작" (the tap also wakes the audio). -->
+  <div id="boot">
+    <div class="boot-pat"></div>
+    <img class="boot-logo-img" alt="">
 <script>/* the Korean logo, or its English twin "Hide & Home" (GPT, 10/18) — picked before it loads, same rule as src/i18n.js LANG */
 (() => { const i = document.currentScript.previousElementSibling; let l = null; try { l = localStorage.getItem('sumbakkokjip.lang'); } catch (e) {}
   if (l !== 'ko' && l !== 'en') l = (navigator.language || 'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en';
   const n = l === 'en' ? 'logo-en' : 'logo'; i.alt = l === 'en' ? 'Hide & Home' : '숨바꼭집';
   i.onerror = function () { this.onerror = null; this.src = 'art/keyart/' + n + '.png'; }; i.src = 'art/keyart/' + n + '.webp'; })();</script>
-<div class="boot-load">
-<div class="boot-wait"><div class="boot-bar"><i></i></div><div class="boot-sub">몽글몽글 집 짓는 중...</div></div>
-<div class="boot-go ol">터치해서 시작</div>
-</div>
-</div>
+    <div class="boot-load">
+      <div class="boot-wait"><div class="boot-bar"><i></i></div><div class="boot-sub">몽글몽글 집 짓는 중...</div></div>
+      <div class="boot-go ol">터치해서 시작</div>
+    </div>
+  </div>
 </div>
 <script type="module" src="src/main.js"></script>
+</body>
+</html>
