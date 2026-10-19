@@ -98,9 +98,10 @@ export class Game {
     // whole game (the old line went at the first point, just as 너굴이 starts coming); pictures first — the friends you tap,
     // 너굴이 you don't (and in the disguise rounds, his mask under bunny ears); his side bounces while he is up, shakes on a miss
     const face = k => h('img', { src: L.thumbs['face_' + k] || '', alt: '' });
+    const ban = k => h('span', { class: 'wh-ban' }, face(k));   // (user 10/19: a round 'no' sign over 너굴이's face, not a corner ✕)
     this.rule = h('div', { class: 'wh-rule' },
       h('div', { class: 'wh-rs ok' }, h('div', { class: 'wh-rf' }, face('bunny_happy'), face('frog_happy'), face('hamster_happy')), h('b', { class: 'ol' }, tr(WHACK_CARD.tap)), h('i', {}, '+1')),
-      this.ruleBad = h('div', { class: 'wh-rs no' }, h('div', { class: 'wh-rf' }, face('raccoon_happy'), ...(LV.disguise ? [face('raccoon_bunny_normal')] : []), h('span', { class: 'wh-x' }, '✕')), h('b', { class: 'ol' }, tr(WHACK_CARD.skip)), h('i', {}, '−1')));
+      this.ruleBad = h('div', { class: 'wh-rs no' }, h('div', { class: 'wh-rf' }, ban('raccoon_happy'), ...(LV.disguise ? [ban('raccoon_bunny_normal')] : [])), h('b', { class: 'ol' }, tr(WHACK_CARD.skip)), h('i', {}, '−1')));
     col.append(this.rule);
     this.feverEl = h('div', { class: 'wh-fever' }); document.getElementById('app').append(this.feverEl);
   }

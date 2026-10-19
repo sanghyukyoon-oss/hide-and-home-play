@@ -21,7 +21,10 @@
 .wh-rs.no { border-color: #e2475a; }
 .wh-rf { position: relative; display: flex; justify-content: center; }
 .wh-rf img { width: 46px; height: 46px; margin: 0 -7px; }
-.wh-x { position: absolute; right: -14px; top: -10px; width: 24px; height: 24px; border-radius: 50%; background: #e2475a; color: #fff; font-size: 14px; line-height: 24px; text-align: center; border: 2px solid #fff; font-weight: 900; }
+.wh-ban { position: relative; display: inline-block; margin: 0 1px; }
+.wh-ban img { margin: 0; display: block; }
+.wh-ban::before { content: ''; position: absolute; inset: -3px; border: 4px solid #e2475a; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
+.wh-ban::after { content: ''; position: absolute; left: 50%; top: 50%; width: 5px; height: calc(100% + 4px); border-radius: 3px; background: #e2475a; box-shadow: 0 0 0 1.5px #fff; transform: translate(-50%, -50%) rotate(-45deg); }
 .wh-rs b { font-family: var(--font-display); font-size: 20px; line-height: 1.1; color: #fff; }
 .wh-rs.ok b { color: #8be07f; }
 .wh-rs.no b { color: #ff8a96; }
