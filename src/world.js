@@ -703,10 +703,11 @@ export class World {
       } else if (this.ptrs.size === 2) {
         this._pressEnd(); this.zoomGoal = null;
         if (this.drag?.custom?.cancel) this.drag.custom.cancel();
+        const drag0 = !!this.drag?.moved;   // (QA3-pinch7) was the first finger already dragging when this one landed?
         if (this.drag) { this.drag.moved = true; this.drag.custom = null; }
         const [a, b] = [...this.ptrs.values()];
         const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        this.pinch = { d, mx, my, d0: d, mx0: mx, my0: my, tap: this.scheme === 'E' || this.scheme === 'F' ? { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY } : null, zoomOn: this.scheme !== 'E', s2: { id: e.pointerId, x: e.clientX, y: e.clientY } };
+        this.pinch = { drag0, d, mx, my, d0: d, mx0: mx, my0: my, tap: this.scheme === 'E' || this.scheme === 'F' ? { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY } : null, zoomOn: this.scheme !== 'E', s2: { id: e.pointerId, x: e.clientX, y: e.clientY } };
         if (this.scheme === 'F') { this.pinch.ang0 = Math.atan2(b.y - a.y, b.x - a.x); const f1 = [...this.ptrs.entries()].find(([id]) => id !== e.pointerId); if (f1) { this.pinch.f1 = f1[0]; this.pinch.f1x = f1[1].x; this.pinch.f1y = f1[1].y; } }
       }
     });
@@ -735,9 +736,13 @@ export class World {
             // the spread counts from the first finger as it is now and the second where it landed: the first finger's own
             // travel during the wait is a move, not a pinch (it read as a sudden 1.5x zoom — QA3 10/19)
             const f = this.ptrs.get(P.f1);
-            if (f && this.drag && !this.camLock && (f.x !== P.f1x || f.y !== P.f1y)) this._fDrag(this.drag, f.x - P.f1x, f.y - P.f1y);   // (QA3-fb5: the travel held during the wait, now)
-            if (f) P.d = P.d0 = Math.hypot(f.x - P.tap.x, f.y - P.tap.y);
-            P.tap = null; P.mx = mx; P.my = my; P.ang = a1; P.tw = Math.atan2(Math.sin(a1 - P.ang0), Math.cos(a1 - P.ang0));
+            if (P.drag0) {
+              // (QA3-pinch7) the first finger was dragging: its travel while the view held is a move (now), the spread counts from here
+              if (f && this.drag && !this.camLock && (f.x !== P.f1x || f.y !== P.f1y)) this._fDrag(this.drag, f.x - P.f1x, f.y - P.f1y);   // (QA3-fb5: the travel held during the wait, now)
+              if (f) P.d = P.d0 = Math.hypot(f.x - P.tap.x, f.y - P.tap.y);
+              P.mx = mx; P.my = my;
+            } else { P.mx = P.mx0; P.my = P.my0; }   // (QA3-pinch7) two fingers put down together: both keep the spots they landed on, like a photo (P.d is still the landing spread)
+            P.tap = null; P.ang = a1; P.tw = Math.atan2(Math.sin(a1 - P.ang0), Math.cos(a1 - P.ang0));
           }
           // F: spread = zoom, twist = turn (after ~12°, so a pinch never turns by accident), and the spot between the
           // fingers travels with them — all at the same time, like a photo or a map
