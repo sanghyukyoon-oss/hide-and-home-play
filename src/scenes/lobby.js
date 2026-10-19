@@ -14,6 +14,7 @@ import { runRaids } from '../raid.js';
 import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/19)
 import { playDialog } from '../story.js';
 import { clearFollowupFinish } from '../followup.js';
+const SHELF_ON = false;   // 찾은 것 선반 (경제 10/19) — off: the user found it ugly (10/19 evening)
 import { HOME_TUT, ENDING, endCard, choose, giftSeats, newCard, BUDDY_LINE, UI as SUI } from '../script.js';
 import * as SCRIPT from '../script.js';   // (ROOM_ARRIVE: a friend's first line in your room — 스토리 룸, read if it is there)
 import { indexSpots } from '../room.js';
@@ -160,6 +161,14 @@ export class LobbyScene extends MyHomeScene {
   // 찾은 것 선반: one in the home (made the first time, along the back of the room); an old save starts it with the last few finds
   ensureShelf() {
     const G = this.G, H = this.H, R = this.room;
+    // (10/19 evening, user: "방에 그 전시품 그거 ㅈㄴ 개별로야. 없애자") the 찾은 것 선반 is gone: none made, one already standing
+    // is taken out of the room (an old save), and it doesn't come back from the box
+    if (!SHELF_ON) {
+      for (const z of Object.values(H.zones)) { const n = z.furniture.length; z.furniture = z.furniture.filter(f => f.type !== 'findshelf'); if (z.furniture.length !== n) G.persist(); }
+      H.inventory = H.inventory.filter(t => t !== 'findshelf');
+      for (const rec of R.furns.filter(r => r.type === 'findshelf')) R.removeFurniture(rec);
+      return;
+    }
     if (Object.values(H.zones).some(z => z.furniture.some(f => f.type === 'findshelf')) || H.inventory.includes('findshelf')) return;
     // along the left-hand wall first, facing into the room: on a phone that is the free side of the screen (the side buttons are
     // on the right, where the back wall would put it under them)

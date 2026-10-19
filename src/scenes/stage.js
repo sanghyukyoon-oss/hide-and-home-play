@@ -1892,20 +1892,23 @@ export class StageScene {
     const goal = this.nextGoal(true);
     if (!goal) return;
     const pos = goal.pos;
-    // find a yaw where it is visible
-    const yaw0 = W.yaw, pitch0 = W.pitch;
+    // (10/19 evening, user: "힌트 써도 카메라가 잘 안 따라가서 잘 안 보이는 경우가 많아서, 힌트 쓰면 처음 카메라 뷰로 넘어가서 알려
+    // 주는 게 나을 듯") back to the stage's first view (the 처음 시점 button's view); if the thing is hidden from there, the
+    // nearest turn of that view (30° steps, a little higher) that shows it
+    const v = this.view0 || { yaw: Math.PI / 4, pitch: .62, zoom: this.zoom0 || 1 };
+    const y00 = W.yaw, p00 = W.pitch, z00 = W.zoom, t00 = W.target.clone();
+    W.target.copy(W.home); W.zoom = v.zoom || 1;
     let best = null;
-    for (const p of [pitch0, .62, 1.0, 1.15, .4]) {
+    for (const p of [v.pitch, .62, 1.0, 1.15]) {
       for (let k = 0; k < 12 && !best; k++) {
-        const y = yaw0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 6;
+        const y = v.yaw + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 6;
         W.yaw = y; W.pitch = p; W.updateCam(); this.room.update(1);
         if (!W.occluded(goal.obj, pos, [this.room.group])) best = { y, p };
       }
       if (best) break;
     }
-    W.yaw = yaw0; W.pitch = pitch0; W.updateCam();
-    // (QA3-hintzoom 10/19) never further out than now: a stage that starts closer (6~9판 1.25~1.4) went back out on a hint
-    if (best) await W.flyTo(this.tw, { yaw: best.y, pitch: best.p, zoom: Math.max(W.zoom, 1.35), target: new THREE.Vector3(pos.x * .6, .75, pos.z * .6), dur: .6 });
+    W.yaw = y00; W.pitch = p00; W.zoom = z00; W.target.copy(t00); W.updateCam();
+    await W.flyTo(this.tw, { yaw: best ? best.y : v.yaw, pitch: best ? best.p : v.pitch, zoom: v.zoom || 1, target: W.home.clone(), dur: .6 });
     // 흑백판: a grey thing on grey stays invisible even with the rings round it — lend it its colour for a moment
     // (user, 10/17: "힌트썼는데도 안보여서")
     if (this.spec.gray && goal.kind === 'item' && !goal.item.g.userData.colored) {
@@ -2245,7 +2248,7 @@ export class StageScene {
       ch.root.position.set(t.x, t.y || 0, t.z);
       ch.root.rotation.y = Math.atan2(W.cam.position.x - t.x, W.cam.position.z - t.z);
       W.root.add(ch.root);
-      const n = { ch, t, next: null, on: true, rest: 1.5 + k * 1.3 };
+      const n = { ch, t, next: null, on: true, rest: 3 + k * 1.5 };   // (QA3-npc12: a few seconds still once the stage starts)
       this.npcs.push(n);
       this.npcLoop(n, free);
     }
@@ -2255,7 +2258,8 @@ export class StageScene {
     while (n.on && !this.dead) {
       await tw.wait(.25);
       if (!n.on || this.dead) return;
-      if (ch.reacting || this.paused || this.result || this.talking) continue;   // everyone holds still while a talk is filmed
+      // (QA3-npc12 10/19, user: "처음 맵 나올 때 캐릭터들 막 샤샤샤 나오는데") nobody wanders before the stage has started
+      if (ch.reacting || this.paused || this.result || this.talking || !this.running) continue;   // everyone holds still while a talk is filmed
       n.rest -= .25; if (n.rest > 0) continue;
       // (10/19 user: "어이없이 겹친 거" — a walker stepped onto 몽글이, who stays put since v144) not within .75 m of 몽글이, the friend
       // you brought or the host
@@ -2436,7 +2440,7 @@ export class StageScene {
       const fr = metFriends(G.save).filter(k => !metBefore.has(k)), fu = memento || picked || (kitNew ? kitFurn : null);
       for (const k of fr) if (!Q.friends.includes(k)) Q.friends.push(k);
       if (fu) Q.furns.push(fu);
-      gotNow = [...fr.map(k => ({ face: k })), ...(fu ? [{ furn: fu }] : []), ...(seenNew[0] && H.shelfNew === seenNew[0] ? [{ item: seenNew[0] }] : [])];
+      gotNow = [...fr.map(k => ({ face: k })), ...(fu ? [{ furn: fu }] : [])];   // (no find for the shelf: the 찾은 것 선반 is gone, 10/19 evening)
       G.persist();
       boxOn = starBoxState(G.save).pending > 0;
       passage = { items: Q.items.slice(), furns: Q.furns.slice(), friends: Q.friends.slice(), box: boxOn };

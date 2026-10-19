@@ -11,7 +11,7 @@ export const STAR_BOX = 15;
 // '판 끝 집으로 가져가기' — true: every stage that brought something home passes through the room (검토 세션 10/19);
 // false: the room only when a star box is waiting, the things gathered since then shown together, and the stage result
 // shows them going home (인수인계 10/19). Which one is the user's call — one switch.
-export const PASSAGE_EVERY = true;
+export const PASSAGE_EVERY = false;   // (10/19 evening, user: "방에 그 전시품 그거 개별로야 … 스테이지 끝날 때마다 나오는데 진심 개별로야" — no room pass after every stage; the box visit still shows what came home)
 
 export const starTotal = save => Object.values(save.best || {}).reduce((a, b) => a + (b || 0), 0) + Object.values(save.gameStars || {}).reduce((a, b) => a + (b || 0), 0);
 export function starBoxState(save) {
