@@ -205,7 +205,8 @@ export class Look {
     const ring = LOOK.has('ring') && R.ground;
     if (ring) this.buildGround();
     else if (LOOK.has('light') && R.sky) this.tintAprons();
-    if (LOOK.has('light') && R.sky && R.shadow !== false) this.contactShadow(ring);
+    // (not on a seamless meadow: the map is no island there, and the dark rim drew its square back — user 10/19 "저 경계 남는것도 짜증나는데")
+    if (LOOK.has('light') && R.sky && R.shadow !== false && !(ring && R.ground?.seamless)) this.contactShadow(ring);
     if (LOOK.has('light')) this.clipSunPatches();
     if (LOOK.has('light') && R.sky) this.toneWalls();
     if (LOOK.has('ring') && R.ring) this.buildRing();

@@ -3616,4 +3616,15 @@ export const EN = {
 "한 번 톡 하면 깨고, 한 번 더 톡 하면 가요": "One tap wakes them, one more sends them off",
 "하암~ 깼다!": "Yawn~ I'm up!",
 "화면을 끌면 돌려 볼 수 있어요": "Drag the screen to turn the view",
+// 다 같이 집으로! 두 판 묶음 (43·52판 뒤, 10/19)
+"놀이터 + 덤불": "Playground + Bushes",
+"덤불 속 친구": "Friends in the Bushes",
+"흔들리는 덤불을 톡!": "Tap the shaking bushes!",
+"캠핑장 + 졸린 친구": "Campsite + Sleepyheads",
+"텐트 앞 졸린 친구": "Sleepyheads by the Tent",
+"자는 친구는 톡 해서 깨워요": "Tap a sleeping friend to wake them",
+"어? 덤불이 흔들려… 아직 숨은 친구가 있다!": "Huh? The bushes are shaking… someone is still hiding!",
+"이제 진짜 다 찾았다~": "Now I really found everyone~",
+"어? 텐트 앞에서 쿨쿨 소리가…": "Huh? Snoring by the tent…",
+"이제 진짜 다 갔다~": "Now everyone's really home~",
 };

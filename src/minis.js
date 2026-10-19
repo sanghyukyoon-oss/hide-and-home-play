@@ -529,8 +529,8 @@ export const MINI_AFTER = {
   14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },   // 2장: 손전등 술래, in the one-room you just played
   23: { kind: 'whack', lab: true, lv: 1 },  // 3장: 두더지 — 변장한 너굴이 첫 등장
   33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },   // 4장: 먹물이의 바꿔치기
-  42: { kind: 'gohome', lab: true, lv: 0 },   // 5장: 다 같이 집으로! (새 쉬어가기 10/19 — 손전등 2번째 자리; user: "화살표 빼내기 … 우리 소스들로")
-  51: { kind: 'spot', p: { map: 'camp1', n: 3, time: 40 } },   // 6장: 바꿔치기
+  42: { kind: 'gohome', lab: true, lv: 6 },   // 5장: 다 같이 집으로! 두 판 — 놀이터 → 덤불 (10/19, user: "한 번 나올 때 2판, 총 2번")
+  51: { kind: 'gohome', lab: true, lv: 7 },   // 6장: 다 같이 집으로! 두 판 — 캠핑장 → 졸린 친구 (10/19 — 바꿔치기 두 번째 자리)
   57: { kind: 'whack', lab: true, lv: 2 },   // 6장: 두더지 피버 수풀 (10/19: 발자국 따라 찾기는 놀이 모음에만 — user "화살표만 재밌는거같다", "두더지잡기가 재밌어")
   62: { kind: 'redlight', lab: true, lv: 1 },   // 7장: 무궁화 새 판 킥킥 너굴이
   // 66판 뒤 보스: 손전등 술래를 키운 판 (user, 10/18: 보스 손전등은 "ㅈㄴ 재미없다", "손전등 술래 재밌는데" → "손전등 술래를 보스로 키우기")

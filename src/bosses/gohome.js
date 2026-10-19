@@ -11,6 +11,7 @@
 //   3 빙글 너굴이      6×6 + 너굴이, whose arrow turns a quarter each time a friend goes home
 //   4 졸린 친구들      + friends who fell asleep (one tap wakes them, the next sends them)
 //   5 해 질 녘         all of it, at sunset
+//   6 / 7 (the campaign, 43판 뒤 / 52판 뒤): two in a row — 놀이터 then a short 덤불 one; a campsite then a short sleepy one
 // Sending a friend never makes the square unsolvable (it only opens ways), so there's no undo; stars count the bonks.
 import * as THREE from 'three';
 import { Room } from '../room.js';
@@ -33,6 +34,8 @@ const PLACES = {
   alley: { theme: 'alley1', walls: { N: 'alleywall', W: 'alleywall', S: 'none', E: 'none' }, rocks: ['cones', 'daeya', 'trashbags', 'hydrant', 'postbox2', 'aircon'], hide: 'boxstack',
     around: ['streetlamp', 'pole', 'vending', 'aircon', 'postbox2', 'trashbags', 'daeya'], low: ['cones', 'trashbags', 'daeya'], floor: 'asphalt',
     decor: [['gate', 'N', 0], ['mailbox', 'N', 1.8], ['gate', 'W', -.4], ['catsign', 'W', 1.9]] },
+  camp: { theme: 'camp1', walls: { N: 'none', W: 'none', S: 'none', E: 'none' }, rocks: ['rock', 'cooler', 'rockpile', 'mushrooms', 'lantern'], hide: 'tentsmall',
+    around: ['pine', 'pine2', 'tentsmall', 'pine', 'campchair', 'rock'], low: ['mushrooms', 'rock', 'campchair'], floor: 'dirt' },
 };
 const LEVELS = [
   { name: '놀이터', place: 'park', n: 5, count: 6, rocks: 0, hidden: 0, spin: 0, sleepy: 0, time: 60 },
@@ -41,6 +44,13 @@ const LEVELS = [
   { name: '빙글 너굴이', place: 'alley', n: 6, count: 10, rocks: 2, hidden: 0, spin: 1, sleepy: 0, time: 80, card: 'spin' },
   { name: '졸린 친구들', place: 'park', n: 6, count: 10, rocks: 2, hidden: 1, spin: 0, sleepy: 2, time: 85, card: 'sleepy' },
   { name: '해 질 녘', place: 'alley', n: 6, count: 12, rocks: 3, hidden: 2, spin: 1, sleepy: 1, time: 95, dusk: true },
+  // the campaign plays two in a row (user, 10/19: "한판은 좀 아쉬운데 한번 나올때 2판정도 총2번"; the 11~70판 level session:
+  // 1:30 at most, the second one short (4×4, four friends, 30 s), one speech line between, no card): 43판 뒤 and 52판 뒤
+  { name: '놀이터 + 덤불', set: [0, { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 2, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 톡!' }],
+    lines: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '이제 진짜 다 찾았다~'] },
+  { name: '캠핑장 + 졸린 친구', set: [{ name: '캠핑장', place: 'camp', n: 5, count: 7, rocks: 3, hidden: 0, spin: 0, sleepy: 0, time: 60 },
+    { name: '텐트 앞 졸린 친구', place: 'camp', n: 4, count: 4, rocks: 1, hidden: 0, spin: 0, sleepy: 2, time: 30, hint: '자는 친구는 톡 해서 깨워요', sleeper: 'sleepy' }],
+    lines: ['어? 텐트 앞에서 쿨쿨 소리가…', '이제 진짜 다 갔다~'] },
 ];
 export { LEVELS };
 
@@ -172,16 +182,35 @@ export class Game {
   constructor(L) { this.L = L; this.tw = new Tweens(); this.t = 0; this.objs = []; }
   add(o) { this.L.world.root.add(o); this.objs.push(o); return o; }
   async enter({ lv = 0, look } = {}) {
-    const L = this.L, W = L.world;
-    this.lvIdx = clamp(lv | 0, 0, LEVELS.length - 1); const LV = this.lv = LEVELS[this.lvIdx], n = LV.n, PL = this.place = PLACES[LV.place];
+    const L = this.L;
+    this.lvIdx = clamp(lv | 0, 0, LEVELS.length - 1); const SET = this.set = LEVELS[this.lvIdx];
+    this.rounds = (SET.set || [this.lvIdx]).map(r => typeof r === 'number' ? LEVELS[r] : r); this.ri = 0;
     this.look = look || (typeof location !== 'undefined' && new URLSearchParams(location.search).get('ghlook')) || 'a';
     if (!document.getElementById('gh-css')) { const s = document.createElement('style'); s.id = 'gh-css'; s.textContent = CSS; document.head.append(s); }
-    const app = document.getElementById('app'); app.dataset.night = ''; app.classList.add('gh'); app.classList.toggle('dusk', !!LV.dusk);
+    document.getElementById('app').dataset.night = '';
+    this.home = 0; this.bonks = 0; this.result = null; this.phase = 'intro'; this.lock = new Set();
+    L.makeThumbs({ faces: [['mong', 'happy'], ['raccoon', 'happy'], ['bunny', 'happy'], ['sleepy', 'normal'], ...FRIENDS.map(k => [k, 'normal'])] });
+    this.buildHud();
+    this.bindInput();
+    this.buildRound(this.rounds[0]);
+    const me = this.me;
+    L.say(me, '다 찾았다! 이제 집에 가자~', 1500); me.pose = 'cheer'; me.setFace('happy');
+    await this.tw.wait(1.1); if (this.dead) return;
+    me.pose = 'idle';
+    this.phase = 'play';
+    if (this.lv.card) this.gotCard(this.lv.card);
+    this.glowT = 2.4;
+  }
+  // one round's square: the ground and things round it, the slabs, the friends and 몽글이 (a second round rebuilds it all)
+  buildRound(LV) {
+    const L = this.L, W = L.world, n = LV.n, PL = this.place = PLACES[LV.place];
+    this.lv = LV;
+    const app = document.getElementById('app'); app.classList.add('gh'); app.classList.toggle('dusk', !!LV.dusk);
     L.setBg(LV.dusk ? ['#ffe2c6', '#f2b9a6'] : ['#fff6ea', '#ffe3cf']);
     W.setLight(LV.dusk ? { ...DAY, sunColor: '#ffbf8a', amb: 1.3 } : DAY);
     const lawn = makeLawn(LV) || makeLawn(LV, false) || makeLawn({ ...LV, spin: 0, hidden: 0, sleepy: 0 }, false);
     this.rocks = lawn.rocks; this.n = n;
-    // the square in the middle of the street / park: a free strip round it to run out on, then the things around
+    // the square in the middle of the street / park / campsite: a free strip round it to run out on, then the things around
     const R = n + 2 * RING, furniture = [];
     let ri = 0; for (const k of this.rocks) { const [x, y] = k.split(',').map(Number); furniture.push(F(PL.rocks[ri++ % PL.rocks.length], x + RING, y + RING, Math.floor(Math.random() * 4))); }
     for (const p of lawn.list.filter(p => p.hid)) furniture.push(F(PL.hide, p.x + RING, p.y + RING));
@@ -199,10 +228,11 @@ export class Game {
     slab.rotation.x = -Math.PI / 2; const c0 = this.cellW((n - 1) / 2, (n - 1) / 2); slab.position.set(c0.x, .012, c0.z); slab.receiveShadow = true; this.add(slab);
     const hides = room.furns.filter(r => r.type === PL.hide && r.i >= RING && r.i < RING + n && r.j >= RING && r.j < RING + n);
     for (const r of hides) r.f.group.scale.setScalar(PL.hide === 'bush' ? 1.25 : 1.05);
-    // the friends
+    // the friends (a round that has sleepers can name who: 졸졸이 at its own tent)
     const kinds = FRIENDS.slice().sort(() => Math.random() - .5);
+    let named = LV.sleeper || null;
     this.pieces = lawn.list.map((p, k) => {
-      const kind = p.spin ? 'raccoon' : kinds[k % kinds.length], c = new Char(kind);
+      const kind = p.spin ? 'raccoon' : p.sleep && named ? (named = null, LV.sleeper) : kinds[k % kinds.length], c = new Char(kind);
       c.root.scale.setScalar(SIZE); const w = this.cellW(p.x, p.y); c.root.position.set(w.x, 0, w.z); this.add(c.root);
       const arrow = new THREE.Mesh(new THREE.PlaneGeometry(.72, 1.08), new THREE.MeshBasicMaterial({ map: arrowTex(p.spin ? 'spin' : p.sleep ? 'sleep' : 'chalk'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
       arrow.rotation.x = -Math.PI / 2; arrow.renderOrder = 2; this.add(arrow);
@@ -215,21 +245,28 @@ export class Game {
       this.aim(q, true);
       return q;
     });
-    // 몽글이 (it found everyone) on the grass in front, past where the runners vanish
+    // 몽글이 (it found everyone) on the ground in front, past where the runners vanish
     const me = this.me = new Char('mong'); const cw = this.cellW(n + 1.2, n + 1.2); me.root.position.set(cw.x, 0, cw.z); me.root.scale.setScalar(1.3); this.add(me.root);
     this.frame();
     me.faceTo(W.cam.position.x, W.cam.position.z);
-    this.home = 0; this.bonks = 0; this.left = LV.time; this.result = null; this.phase = 'intro'; this.lock = new Set();
-    L.makeThumbs({ faces: [['mong', 'happy'], ['raccoon', 'happy'], ['bunny', 'happy'], ['sleepy', 'normal'], ...this.pieces.map(q => [q.kind, 'normal'])] });
-    this.buildHud();
-    this.bindInput();
+    this.homeR = 0; this.total = (this.total || 0) + this.pieces.length; this.left = LV.time; this.lock = new Set(); this.glowT = 0;
+    this.title.lastChild.textContent = this.set.set ? `${LV.name}${this.rounds.length > 1 ? ` (${this.ri + 1}/${this.rounds.length})` : ''}` : LV.name;
+    this.chipsEl.replaceChildren(...this.pieces.map(q => { const s = L.h('span', {}, L.h('img', { src: L.thumbs[`face_${q.kind}_normal`], alt: '' })); q.chip = s; return s; }));
+    if (LV.hint) { this.hint.textContent = LV.hint; this.hint.classList.remove('gone'); }
     W.idsDirty = true; W.shadowDirty = true;
-    L.say(me, '다 찾았다! 이제 집에 가자~', 1500); me.pose = 'cheer'; me.setFace('happy');
-    await this.tw.wait(1.1); if (this.dead) return;
-    me.pose = 'idle';
-    this.phase = 'play';
-    if (LV.card) this.gotCard(LV.card);
-    this.glowT = 2.4;
+  }
+  // the first round done: 몽글이 says the one line, the square swaps for the short second one
+  async nextRound() {
+    const L = this.L, W = L.world; this.phase = 'between';
+    const line = this.set.lines?.[0]; if (line) L.say(this.me, line, 1500);
+    this.me.pose = 'point'; L.audio.sfx('gasp');
+    await this.tw.wait(1.3); if (this.dead) return;
+    await L.ui.irisOut?.(); if (this.dead) return;
+    for (const q of this.pieces) q.zz?.remove();
+    for (const o of this.objs) { W.root.remove(o); disposeTree(o); } this.objs = [];
+    this.ri++; this.buildRound(this.rounds[this.ri]);
+    await L.ui.irisIn?.(); if (this.dead) return;
+    this.phase = 'play'; this.glowT = 2;
   }
   cellW(x, y) { return { x: -this.half + x + RING + .5, z: -this.half + y + RING + .5 }; }
   // the chalk arrow from a friend's feet to the edge of its slab (the tip shows past the friend from any side)
@@ -255,15 +292,14 @@ export class Game {
     this.yawGoal = W.yaw;
   }
   buildHud() {
-    const L = this.L, ui = L.ui, h = L.h, col = ui.col(), LV = this.lv;
+    const L = this.L, ui = L.ui, h = L.h, col = ui.col();
     const top = h('div', { class: 'topbar' });
-    top.append(L.homeBtn(), h('div', { class: 'lab-title ol' }, '다 같이 집으로!', h('small', {}, LV.name)));
+    top.append(L.homeBtn(), this.title = h('div', { class: 'lab-title ol' }, '다 같이 집으로!', h('small', {}, '')));
     this.sun = h('div', { class: 'gh-sun' }, this.sunI = h('i'), this.sunB = h('b'));
     top.append(this.sun);
     col.append(top);
     // everyone on the square as a little face; a tick when they're home
-    this.chips = this.pieces.map(q => { const s = h('span', {}, h('img', { src: L.thumbs[`face_${q.kind}_normal`], alt: '' })); q.chip = s; return s; });
-    col.append(h('div', { class: 'gh-friends' }, ...this.chips));
+    col.append(this.chipsEl = h('div', { class: 'gh-friends' }));   // (filled by each round)
     this.hint = h('div', { class: 'gh-hint' }, '앞길이 열린 친구부터 톡!'); col.append(this.hint);
   }
   gotCard(kind) {
@@ -345,7 +381,7 @@ export class Game {
   // way clear: it turns, runs off over the edge of the square and away
   send(q) {
     const L = this.L, W = L.world, [dx, dy] = DIRS[q.dir], n = this.n;
-    q.state = 'run'; this.home++; this._bonkRun = 0; L.log({ send: q.kind, t: +this.t.toFixed(1) });
+    q.state = 'run'; this.home++; this.homeR++; this._bonkRun = 0; L.log({ send: q.kind, t: +this.t.toFixed(1) });
     let steps = 0; { let x = q.x, y = q.y; while (x >= 0 && x < n && y >= 0 && y < n) { x += dx; y += dy; steps++; } }
     const w0 = this.cellW(q.x, q.y), dist = steps + 1.6, dur = .22 + dist * .11;
     L.audio.sfx('hop'); q.c.setFace('happy'); q.c.pose = 'cheer'; q.c.root.rotation.y = q.dirYaw;
@@ -358,7 +394,7 @@ export class Game {
     q.chip?.classList.add('home', 'pop'); setTimeout(() => q.chip?.classList.remove('pop'), 260);
     for (const p of this.live()) if (p.spin && p !== q) { this.turn(p); const w = this.cellW(p.x, p.y), s = W.toScreen(new THREE.Vector3(w.x, 1.1, w.z)); L.ui.floatText(s.x, s.y, '빙글~', ''); }
     if (this.home >= 2 && !this._hint2) { this._hint2 = true; if (!this.turned) this.hint.textContent = '화면을 끌면 돌려 볼 수 있어요'; else this.hint.classList.add('gone'); setTimeout(() => !this.dead && this.hint.classList.add('gone'), 2600); }
-    if (this.home >= this.pieces.length) setTimeout(() => !this.dead && this.finish(true), 650);
+    if (this.homeR >= this.pieces.length) setTimeout(() => { if (this.dead || this.result) return; if (this.ri < this.rounds.length - 1) this.nextRound(); else this.finish(true); }, 650);
   }
   // way blocked: it runs up to whoever (or whatever) is in front, bonks, and walks back; the sun sinks a little
   bonk(q) {
@@ -416,13 +452,13 @@ export class Game {
     const stars = done ? (this.bonks === 0 ? 3 : this.bonks <= 2 ? 2 : 1) : 0, win = stars >= 1;
     this.result = win ? 'win' : 'fail';
     L.log({ result: this.result, lv: this.lvIdx, stars, max: 3, home: this.home, bonks: this.bonks });
-    if (win) { L.audio.sfx('win'); L.world.fx.confetti(70); this.me.setFace('happy'); this.me.pose = 'cheer'; L.say(this.me, '다들 잘 가~ 내일 또 숨바꼭질!', 1500); }
+    if (win) { L.audio.sfx('win'); L.world.fx.confetti(70); this.me.setFace('happy'); this.me.pose = 'cheer'; L.say(this.me, this.set.lines?.[1] || '다들 잘 가~ 내일 또 숨바꼭질!', 1500); }
     else { L.audio.sfx('lose'); this.me.setFace('sweat'); L.say(this.me, '해가 져 버렸다…', 1300); for (const q of this.live()) { if (q.awake) q.c.setFace('sad'); } }
     await this.tw.wait(1.3); if (this.dead) return;
     const h = L.h, last = this.lvIdx >= LEVELS.length - 1;
     L.ui.panel({ title: win ? '모두 집에 갔다!' : '해가 졌다~', color: win ? 'green' : 'orange', body: [
       h('div', { class: 'gh-stars' }, ...[0, 1, 2].map(k => h('span', { class: k < stars ? 'on' : '' }, '★'))),
-      h('div', { class: 'txt' }, `${this.home}/${this.pieces.length}명 집에 감 · 꽝 ${this.bonks}번`),
+      h('div', { class: 'txt' }, `${this.home}/${this.total}명 집에 감 · 꽝 ${this.bonks}번`),
       h('div', { class: 'txt' }, win ? (stars >= 3 ? '한 번도 안 부딪혔어! 길 찾기 달인' : '꽝 없이 보내면 별 셋!') : '앞길이 열린 친구부터 보내 봐')],
       buttons: [L.ui.btn('다시', { color: 'gray', cls: 'sm', onClick: () => L.go({ lv: this.lvIdx }) }),
         this.nextBtn = L.ui.btn(win ? (last ? '처음부터' : '다음 동네') : '다시 하기', { color: win ? 'green' : 'orange', cls: 'big', onClick: () => L.go({ lv: win ? (last ? 0 : this.lvIdx + 1) : this.lvIdx }) })] });
@@ -449,6 +485,6 @@ export class Game {
     if (next && next.state === 'idle' && !this.lock.has(next)) return this.tapPiece(next);
     const hid = live.find(q => q.state === 'hid'); if (hid) return this.tapPiece(hid);
   }
-  state() { return { scene: 'gohome', lv: this.lvIdx + 1, phase: this.phase, result: this.result || null, home: this.home, total: this.pieces?.length, bonks: this.bonks, left: +(this.left || 0).toFixed(1), hidden: this.pieces?.filter(q => q.state === 'hid').length, asleep: this.pieces?.filter(q => !q.awake).length, yaw: +this.L.world.yaw.toFixed(2) }; }
+  state() { return { scene: 'gohome', lv: this.lvIdx + 1, phase: this.phase, result: this.result || null, home: this.home, total: this.total, round: (this.ri || 0) + 1, bonks: this.bonks, left: +(this.left || 0).toFixed(1), hidden: this.pieces?.filter(q => q.state === 'hid').length, asleep: this.pieces?.filter(q => !q.awake).length, yaw: +this.L.world.yaw.toFixed(2) }; }
   get api() { return { finish: () => { this.left = 0; }, turn: a => { this.L.world.yaw = this.yaw0 + a; this.yawGoal = null; }, settle: () => { const W = this.L.world, s = Math.PI / 2; this.yawGoal = this.yaw0 + Math.round((W.yaw - this.yaw0) / s) * s; } }; }
 }
