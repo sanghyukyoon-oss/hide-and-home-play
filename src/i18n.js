@@ -283,6 +283,9 @@ Object.assign(EN, {
   '줄무늬 꼬리': 'a striped tail', '반짝반짝': 'sparkles',
 });
 
+// a feature's own words (털기 메타 10/20, i18n-raid.js): its dictionary entries (the main dictionary wins) and its sentence
+// patterns, tried before the others
+export function addI18n(dict = {}, pats = []) { for (const k in dict) if (EN[k] == null) EN[k] = dict[k]; PAT.unshift(...pats); }
 export function tr(s) {
   if (LANG !== 'en' || s == null) return s;
   s = String(s);

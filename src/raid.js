@@ -7,6 +7,7 @@
 // Residents are the characters of the visit list (net.js RESIDENTS) and are always shown as residents, never as players.
 import { RESIDENTS } from './net.js';
 import { ITEMS } from './gfx/items.js';
+import './i18n-raid.js';   // the raid's English (10/20)
 
 const FIRST_DELAY = 3 * 60e3;        // the first raid comes soon after you first hide something
 const EVERY = 4 * 3600e3;            // then about every four hours you are away
