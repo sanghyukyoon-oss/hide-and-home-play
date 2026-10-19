@@ -13,6 +13,7 @@ import { groundTex } from '../gfx/outdoor.js';
 import { openTune } from '../tune.js';
 import { openCardBook } from '../cardbook.js';
 import { runRaids, unseen, markSeen, newsLine } from '../raid.js';
+import { canReplay, playRaidReplay } from '../raidreplay.js';   // ① 털림 다시 보기 (10/19)
 import { Visitors } from '../visitors.js';
 import { storyFor } from '../story.js';
 import { openRoadmap } from '../roadmap.js';
@@ -1014,10 +1015,15 @@ export class HomeScene {
     const rows = list.slice(-4).map(e => h('div', { class: 'raidrow' + (e.kind === 'steal' ? ' bad' : ' good') }, h('img', { src: G.thumbs['face_' + e.face] || G.thumbs.face_mong }),
       h('div', {}, newsLine(e)), ...(e.item ? [h('img', { class: 'ri', src: G.thumbs['item_' + e.item] })] : [])));
     const close = () => { markSeen(G); G.ui.closePanel(); };
+    // ① 털림 다시 보기: in my room (the 내 방 lobby, 내 집), the newest raid with a record plays back; a row plays its own
+    const last = [...list].reverse().find(e => canReplay(this, e));
+    const replay = e => { markSeen(G); G.ui.closePanel(); playRaidReplay(this, e); };
+    if (last) rows.forEach((r, i) => { const e = list.slice(-4)[i]; if (canReplay(this, e)) { r.classList.add('tap'); r.addEventListener('click', () => replay(e)); } });
     G.audio.sfx(took.length ? 'miss' : 'coin');
     G.ui.panel({ title: '내가 없는 동안…', color: took.length ? 'red' : 'green',
       body: [...rows, h('div', { class: 'txt' }, took.length ? '털어 간 친구 방에 가서 다 찾으면 되찾을 수 있어!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자')],
-      buttons: took.length ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('되찾으러 가기', { color: 'orange', cls: 'big', onClick: () => { markSeen(G); G.go('visit'); } })]
+      buttons: last ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('다시 보기', { color: took.length ? 'orange' : 'green', icon: 'play', cls: 'big', onClick: () => replay(last) })]
+        : took.length ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('되찾으러 가기', { color: 'orange', cls: 'big', onClick: () => { markSeen(G); G.go('visit'); } })]
         : [G.ui.btn('좋아!', { color: 'green', onClick: close })] });
   }
   // Portrait: 몽글이 big and centred just above the play button, its house filling the screen behind it, the roof

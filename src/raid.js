@@ -53,6 +53,8 @@ function raidOnce(G, now) {
     if (Math.random() < Math.max(.08, Math.min(.85, p))) found.push(e.item);
   }
   const ev = { at: now, who: id, nick: who.nick, face: who.face, revenge, seen: false };
+  // ① 털림 다시 보기 (10/19): what was hidden where and what this resident found — raidreplay.js plays it back in my room
+  ev.rp = { zone: H.hide.zoneId, locks: { ...locks }, items: hid.map(e => ({ item: e.item, ...(e.free ? { free: e.free } : { spot: e.spot }), found: found.includes(e.item) })) };
   if (found.length) {
     const item = found[Math.floor(Math.random() * found.length)];
     ev.kind = 'steal'; ev.item = item; ev.coins = (hid.length - found.length) * 10;

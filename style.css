@@ -1444,3 +1444,16 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .scout .stile.mine .ssub { color: var(--r3); }
 .scout .smax { margin-top: 10px; font-size: 22px; padding: 4px 14px; }
 .scout .row { margin-top: 10px; flex-wrap: nowrap; gap: 8px; }
+
+/* ① 털림 다시 보기 (10/19): the bar over the replay, the tally card */
+.rpbar { position: absolute; left: 12px; right: 12px; top: calc(12px + var(--safeT)); display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 20px; background: rgba(255, 250, 242, .94); border: 3px solid var(--ink); pointer-events: auto; }
+.rpbar img { width: 40px; height: 40px; flex: none; }
+.rpbar .rpt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; color: var(--ink); }
+.rpbar .rpt b { font-size: 17px; color: var(--r2); }
+.rpbar .rpt span { font-size: 13px; color: #8a7a9c; }
+.raidrow.tap { cursor: pointer; }
+.rpend .rpface { display: flex; justify-content: center; align-items: flex-end; gap: 6px; margin-bottom: 6px; }
+.rpend .rpface img { width: 64px; height: 64px; }
+.rpend .rpface img.ri { width: 44px; height: 44px; }
+.loottab .lrow.good b { color: var(--g3, #2f8f3a); }
+.loottab .lrow.bad b { color: var(--r3); }
