@@ -565,6 +565,7 @@ export const EN = {
 "내 집에 숨길 수 있어요": "you can hide it at home",
 "지금은 더 알려 줄 게 없어!": "Nothing left to point out right now!",
 "돋보기를 다 썼어": "Out of magnifiers",
+"마지막 보스": "final boss",
 "연습이라 코인은 없어": "Practice: no coins",
 "쉬어가기 성공! (연습)": "Break game cleared! (practice)",
 "보스 클리어! (연습)": "Boss cleared! (practice)",

@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeStatic } from './bake.js';
-import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, roundRect, shade, STYLE } from './kit.js';
+import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, roundRect, shade, STYLE, SHADOW } from './kit.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
 
@@ -27,7 +27,7 @@ export class Furn {
     // reach: how far it may open (0..1), set by the room so a door never swings into the bed next to it
     const p = { kind, pivots, apply, t: 0, reach: 1, furn: this, spots: [], lock: null, label: o.label || '', sfx: o.sfx || 'open', dur: o.dur || .3, busy: false };
     pivots.forEach(pv => pv.userData.base = { p: pv.position.clone(), r: pv.rotation.clone(), s: pv.scale.clone() });
-    p.setOpen = t => { p.t = t; p.apply(t * p.reach, ...pivots.map(pv => pv.userData.base)); };
+    p.setOpen = t => { if (Math.abs(t - p.t) > .002) SHADOW.moved = true; p.t = t; p.apply(t * p.reach, ...pivots.map(pv => pv.userData.base)); };   // (a real move: its shadow follows; an easing that has settled — the whack moles — doesn't keep redrawing)
     this.parts.push(p);
     return p;
   }

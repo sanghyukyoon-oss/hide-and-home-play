@@ -1356,6 +1356,14 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
   background: repeating-conic-gradient(from 0deg at 50% 46%, var(--box) 0deg 10deg, color-mix(in srgb, var(--box) 78%, #fff) 10deg 20deg); box-shadow: 0 6px 0 rgba(42, 26, 61, .3); }
 .kitbox-art { position: absolute; inset: 0 0 34px 0; display: flex; align-items: center; justify-content: center; }
 .kitbox-art img { height: 128%; margin-top: 18px; filter: drop-shadow(0 4px 0 rgba(42, 26, 61, .35)); }
+/* GPT's box art (KITS.boxArt): a square lid showing the whole picture; the name goes on the picture's own cream band */
+.kitbox.art { height: 280px; margin-top: -140px; }
+.kitbox.art .kitbox-in { height: 236px; }
+.kitbox.art .kitbox-front { top: 216px; }
+.kitbox.art .kitbox-lid { height: 244px; background: #8fd3ff; }
+.kitbox-lid.art .kitbox-art { inset: 0; }
+.kitbox-lid.art .kitbox-art img { width: 100%; height: 100%; object-fit: cover; margin: 0; filter: none; }
+.kitbox-lid.art .kitbox-label { height: 17%; background: none; border-top: 0; }
 .kitbox-label { position: absolute; left: 0; right: 0; bottom: 0; height: 36px; display: flex; align-items: center; justify-content: center; gap: 8px;
   background: #fffaf2; border-top: 3px solid var(--ink); color: var(--ink); }
 .kitbox-label b { font-size: 17px; }
@@ -1393,3 +1401,12 @@ html, body { -webkit-touch-callout: none; overscroll-behavior: none; }
 img { -webkit-user-drag: none; }
 /* Android only: the turn dial clear of the back-swipe strip at the right edge (32 px × the HUD's .82 ≈ 26 px) */
 .android .turndial { right: 32px; }
+
+/* ── 2D UI 정리 ③ 내 집 (UI 세션 10/19) ── while a dialogue card is up, the HUD steps aside everywhere, as it does in a stage
+   (#app.cine): in the lobby / my home its '건너뛰기' sat on the bottom buttons' labels */
+#app:has(#overlay > .dlg) :is(#hud, .zgauge, .modebadge, .joy, .turndial) { opacity: 0; transition: opacity .3s var(--eo); pointer-events: none; }
+/* the bottom button row (꾸미기·숨기기) fits a 375 px phone in both languages — English 'Shop · Walls & floor · Done' ran
+   18 px off both edges: tighter sides, the English label one step smaller; HUD Korean breaks between words ("사 보세/요!") */
+.btnrow .btn { flex: 1 1 auto; min-width: 0; padding-left: .6em; padding-right: .6em; }
+html[lang="en"] .btnrow .btn { font-size: 16px; }
+#hud, #tut-ui { word-break: keep-all; overflow-wrap: break-word; }

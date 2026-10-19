@@ -98,7 +98,7 @@ export const KITS = {
     build: { ordered: true, glow: true, ghost: true },
     // the runner card: each piece's short name, and the plastic the runner is moulded in
     short: { legs: '다리', body: '몸통', jet: '제트팩', claw: '집게팔', fist: '주먹팔', head: '머리' }, runner: '#a9d8ff', color: '#3d7bff',
-    type: 'model', skin: 'runner', intro: 'box',
+    type: 'model', skin: 'runner', intro: 'box', boxArt: 'art/kits/robot-box.jpg',   // (the lid: GPT's box art, 10/19 — 640 px JPEG, 86 KB)
     locked: 'head' },   // the piece a padlock guards on a campaign stage (8판: the face comes last, out of the locked chest)
 };
 // ── 13판 이삿짐 풀기 and 34판 파르페 쌓기 (10/19, user: "새아이디어는 1,2" — the story room's ideas on the same card): the

@@ -57,6 +57,10 @@ function rimify(m, strength) {
 
 // Render style switch. 'std' = the original soft PBR look; 'toon' = matte cel shading for the cartoon-outline art test.
 export const STYLE = { mode: 'std', remap: null, grad: null };
+// a door, drawer, lid or lift moved this frame: its shadow must follow (World redraws the shadow map, which otherwise only
+// happens when the view turns — so an opened door's shadow stayed shut, then jumped long at the next turn; user 10/19:
+// "가끔 그림자가 튀는데 길어지는거같디도하고")
+export const SHADOW = { moved: false };
 export function setStyle(mode, { remap = null, steps = [.58, .8, 1] } = {}) {
   STYLE.mode = mode; STYLE.remap = remap;
   if (mode !== 'std') {

@@ -1,7 +1,7 @@
 // Renderer, isometric orthographic camera with 360° orbit, picking, 2D FX overlay.
 import * as THREE from 'three';
 import { clamp, lerp, ease } from './util.js';
-import { STYLE } from './gfx/kit.js';
+import { STYLE, SHADOW } from './gfx/kit.js';
 import { ToonPost } from './gfx/toonpost.js';
 import { DirtyTracker } from './gfx/dirty.js';
 import { ART, TUNE, applyArt, sortLayers } from './gfx/style.js';
@@ -332,7 +332,16 @@ export class World {
   _applyAO() {
     const p = this.post; if (!p) return;
     p.aoOff = (this.level || 0) >= 1 || !!this.aoAuto;
-    p.u.aoStr.value = p.aoOff ? 0 : ART.ao;
+    // AO goes (or comes back) over ~1.2 s instead of in one frame: switched off mid-turn on a slow phone, the soft shading
+    // under every piece vanished at once and read as the shadows jumping (user 10/19: "가끔 그림자가 튀는데")
+    this._aoGoal = p.aoOff ? 0 : ART.ao;
+  }
+  _aoFade(dt) {
+    const p = this.post, g = this._aoGoal; if (!p || g == null) return;
+    const v = p.u.aoStr.value; if (v === g) { this._aoGoal = null; return; }
+    const step = Math.max(.001, ART.ao) / 1.2 * Math.min(dt, .1);
+    p.u.aoStr.value = Math.abs(g - v) <= step ? g : v + Math.sign(g - v) * step;
+    this.dirty?.invalidate?.();
   }
   // while the view moves, frames should come at ≥ 36 fps; if over 3 s of moving time (added up across drags) they
   // don't, AO goes off for the rest of this run — the first and cheapest thing to give up (세팅's AO turns it back on)
@@ -361,6 +370,7 @@ export class World {
     this.flying = false;
   }
   update(dt) {
+    this._aoFade(dt);
     // 손맛 6: a finger resting on the glass keeps the full frame rate, so the first frame of the next drag is not late
     if (FEEL.hold && this.ptrs.size) this.lastActive = performance.now();
     // 손맛 4: let go past the edge → back inside in ~0.2 s
@@ -498,6 +508,7 @@ export class World {
     this._aoWatch(performance.now());
     const ck = this.yaw.toFixed(4) + this.pitch.toFixed(4) + this.zoom.toFixed(4) + this.target.x.toFixed(3) + this.target.y.toFixed(3) + this.target.z.toFixed(3);
     if (ck !== this._ck) { this._ck = ck; this.lastActive = performance.now(); }   // the view is moving: full frame rate
+    if (SHADOW.moved) { SHADOW.moved = false; this.shadowDirty = true; }   // a part moved: its shadow follows (only while it moves)
     if (this.shadowDirty) { this.renderer.shadowMap.needsUpdate = true; this.shadowDirty = false; }
     if (this.post) {
       // outline groups + layers are refreshed every few frames (cheap: a few hundred nodes), or at once when asked

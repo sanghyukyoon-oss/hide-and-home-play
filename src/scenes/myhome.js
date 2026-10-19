@@ -158,8 +158,10 @@ export class MyHomeScene {
   zoneTabs() {
     const G = this.G;
     const bar = h('div', { class: 'zonetabs' });
+    let teaser = false;   // (open rooms, then only the next one to open, locked — the rest appear as they open, not four 🔒 tabs at once: 2D UI 정리 ③ 10/19)
     for (const z of HOME_ZONES) {
       const open = G.zoneOpen(z.id);
+      if (!open && z.id !== this.zoneId) { if (teaser) continue; teaser = true; }
       bar.append(h('button', { class: 'zonetab' + (z.id === this.zoneId ? ' on' : '') + (open ? '' : ' locked'), onclick: () => this.switchZone(z.id) }, open ? z.name : `🔒 ${z.name}`));
     }
     return bar;
@@ -394,7 +396,7 @@ export class MyHomeScene {
     }
     this.col.append(h('div', { class: 'hint' }, h('span', {}, `물건 고르고 숨길 곳 탭 · 최대 ${MAX_HIDE}개`)));
     const tut = G.save.tut || (G.save.tut = {});
-    if (!tut.raidTip) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', ''), 900); }
+    if (!tut.raidTip && !this.busyTut) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', ''), 900); }   // (not during the lobby's first hide: it sat on the hide tip — 2D UI 정리 ③)
     const bar = h('div', { class: 'modebar' });
     this.cardsEl = h('div', { class: 'cards' });
     bar.append(this.cardsEl);

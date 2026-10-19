@@ -98,6 +98,7 @@ export function kitRunner(S) {
   const tag = h('div', { class: 'kitrun-tag ol', style: `background:${K.color}` }, K.name);
   for (const it of S.targets) if (byType[it.type]) { it.kitPart = byType[it.type]; it.slot = cells[it.kitPart]; } else it.slot = tag;   // (anything else flies to the tag)
   S.kitCells = cells; S.kitPic = key;
+  if (K.boxArt) { const im = new Image(); im.decoding = 'async'; im.src = K.boxArt; S.kitArt = im; }   // (the box's lid picture, ready before the box drops)
   return h('div', { class: `kitrun skin-${K.skin || 'runner'}${K.numbers === false ? ' nonum' : ''}`, style: `--run:${K.runner}` }, tag, row);
 }
 
@@ -175,10 +176,10 @@ export async function kitIntro(S) {
   const A = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); return a.finished.catch(() => {}); };
   const wait = ms => new Promise(r => setTimeout(r, ms));
   let skipped = false;
-  const box = h('div', { class: 'kitbox' },
+  const box = h('div', { class: 'kitbox' + (K.boxArt ? ' art' : '') },
     h('div', { class: 'kitbox-in' }),
     h('div', { class: 'kitbox-front', style: `background:${K.color}` }),
-    h('div', { class: 'kitbox-lid', style: `--box:${K.color}` },
+    h('div', { class: 'kitbox-lid' + (K.boxArt ? ' art' : ''), style: `--box:${K.color}` },   // (GPT's box art: the whole lid; else the model's own picture on a sunburst)
       h('div', { class: 'kitbox-art' }, h('img', { src: K.boxArt || G.thumbStore[S.kitPic('box')], alt: '' })),
       h('div', { class: 'kitbox-label' }, h('b', {}, K.name), h('span', {}, `부품 ${K.order.length}개`))));
   const lay = h('div', { class: 'kitintro' }, box);
@@ -216,7 +217,8 @@ export async function kitIntro(S) {
     card.style.visibility = '';
     G.audio.sfx('swish');
     A(box, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(40px) scale(.9)', opacity: 0 }], { duration: 380, easing: 'ease-in' });
-    await A(card, [{ transform: `translateX(-50%) translateY(${dy + 20}px) scale(.55)`, opacity: 0 }, { transform: `translateX(-50%) translateY(${dy - 30}px) scale(1.1)`, opacity: 1, offset: .7 }, { transform: `translateX(-50%) translateY(${dy - 20}px) scale(1.06)`, opacity: 1 }], { duration: quick ? 280 : 420, easing: 'cubic-bezier(.2,.9,.3,1)' });
+    // (the card is full width: it rises no bigger than its own size, or it runs off the screen)
+    await A(card, [{ transform: `translateX(-50%) translateY(${dy + 20}px) scale(.55)`, opacity: 0 }, { transform: `translateX(-50%) translateY(${dy - 30}px) scale(1.03)`, opacity: 1, offset: .7 }, { transform: `translateX(-50%) translateY(${dy - 20}px) scale(1)`, opacity: 1 }], { duration: quick ? 280 : 420, easing: 'cubic-bezier(.2,.9,.3,1)' });
     if (skipped) throw 0;
     // the pieces snap off the runner one by one and scatter into the room (not to where they hide: anywhere over it)
     const W = G.world, rnd = rng(S.spec.seed + 5);
@@ -237,7 +239,7 @@ export async function kitIntro(S) {
     await wait(quick ? 260 : 480);
     if (skipped) throw 0;
     // the runner, empty now, down into its place
-    await A(card, [{ transform: `translateX(-50%) translateY(${dy - 20}px) scale(1.06)` }, { transform: 'translateX(-50%)' }], { duration: quick ? 260 : 380, easing: 'cubic-bezier(.16,1,.3,1)' });
+    await A(card, [{ transform: `translateX(-50%) translateY(${dy - 20}px) scale(1)` }, { transform: 'translateX(-50%)' }], { duration: quick ? 260 : 380, easing: 'cubic-bezier(.16,1,.3,1)' });
   } catch {}
   for (const a of anims) { try { a.cancel(); } catch {} }
   outs.forEach(o => o.remove());

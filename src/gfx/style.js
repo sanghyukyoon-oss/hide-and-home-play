@@ -40,6 +40,6 @@ export function sortLayers(root) {
   root.traverse(o => {
     if (!o.isMesh) return;
     if (o.userData.proxy) o.layers.set(1);
-    else if (o.material?.transparent) o.layers.set(2);
+    else if (o.material?.transparent && !o.userData.inkLayer) o.layers.set(2);   // (inkLayer: see-through but outlined as what it is — look.js's meadow running on from a map's floor)
   });
 }

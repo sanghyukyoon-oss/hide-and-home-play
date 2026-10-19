@@ -116,7 +116,7 @@ Object.assign(RECIPES, {
   fishing: {
     light: { ambColor: '#eef4f4', amb: 1.3, sunColor: '#fff4dc', sun: 2.55, shadow: .62 },
     sky: ['#a8d8f0', '#e3f3e8', '#bfdca5'],
-    ground: { size: 26, fade: [5, 9.5] },   // the map's own grass, running on and fading out
+    ground: { size: 26, fade: [5, 9.5], seamless: true },   // the map's own grass, running on and fading out, no line at the map's edge
     ring: [
       // behind the hedge (N) and the fence (W): one wood edge, a few big trees further back
       TREE(3, -2.4, -4.4, 1.1), TREE(5, 1.0, -4.6, 1.2), TREE(9, -4.7, -4.5, 1.15), TREE(13, 3.6, -4.4, 1.05),
@@ -288,7 +288,12 @@ export class Look {
     const walk = G.walk ? slabTex(G.walk[0], G.walk[1]) : G.kind ? groundTex(G.kind, G.T || this.T) : room.floorTexture, zone = room.group.children.find(o => o.userData.floor && o !== room.floorMesh && o.material?.map)?.material.map;
     const S = G.size, [f0, f1] = G.fade;
     // the sidewalk all round, fading out between f0 and f1 from the map's edge
-    const base = this.fadePlane(walk, -S / 2, S / 2, -S / 2, S / 2, f0, f1, -.012, G.walk || G.kind ? [0, 0] : [-w / 2, d / 2]);
+    // seamless: the ground is the map's own floor running on (the fishing meadow) — it joins the outline pass as 'floor',
+    // so no ink line is drawn round the map's square edge (user 10/19: "바닥에 네모 플래인이 좀 거슬리네… 쓸모없는 네모 선");
+    // made large so its own edge never comes on screen
+    const SS = G.seamless ? Math.max(S, 64) : S;
+    const base = this.fadePlane(walk, -SS / 2, SS / 2, -SS / 2, SS / 2, f0, f1, -.012, G.walk || G.kind ? [0, 0] : [-w / 2, d / 2], G.seamless ? 256 : 128);
+    if (G.seamless) { base.userData.floor = true; base.userData.inkLayer = true; }
     if (this.stage.spec.night) base.material.color.set('#8d8aa6');   // at night the town round the corner sits in the dark
     this.group.add(base);
     const z0 = !this.isMap && room.L.floorZones?.[0], zo = z0 ? [-w / 2 + z0.i, -d / 2 + z0.j + z0.d] : [-w / 2, d / 2];
@@ -321,11 +326,11 @@ export class Look {
   }
   // a textured ground plane over [x0,x1]×[z0,z1] whose alpha fades from f0 to f1 units outside the map
   // (o = the world point where the texture's own (0, 0) lies, so the pattern runs on from the map's floor seamlessly)
-  fadePlane(tex, x0, x1, z0, z1, f0, f1, y, o) {
+  fadePlane(tex, x0, x1, z0, z1, f0, f1, y, o, N = 128) {
     const w = this.w, d = this.d, W = x1 - x0, D = z1 - z0;
     const t = tex.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping;
     const span = tex.userData?.span || 2; t.repeat.set(W / span, D / span); t.offset.set(((x0 - o[0]) / span) % 1, ((o[1] - z1) / span) % 1);
-    const N = 128, c = document.createElement('canvas'); c.width = c.height = N;
+    const c = document.createElement('canvas'); c.width = c.height = N;
     const x = c.getContext('2d'), img = x.createImageData(N, N);
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
       const wx = x0 + (i + .5) / N * W, wz = z0 + (j + .5) / N * D;
@@ -455,7 +460,9 @@ export class Look {
     const W = this.W, c = new THREE.Vector3(Math.sin(W.yaw), 0, Math.cos(W.yaw));
     // a phone that has started giving things up (a quality step down, or AO switched off for slow turning) gives up the
     // houses behind the walls too — the ground and the low things round the map stay
-    const lite = (W.level || 0) >= 1 || !!W.aoAuto;
+    // (decided once, when the stage starts: giving them up mid-stage squashed the trees and houses away in front of the
+    // player — one more thing that 'jumped', 10/19)
+    const lite = this.lite ??= (W.level || 0) >= 1 || !!W.aoAuto;
     for (const t of this.tall) {
       const want = lite || t.dir.dot(c) > .2 ? 0 : 1, prev = t.k;
       t.k += (want - t.k) * (1 - Math.exp(-dt * 12)); if (Math.abs(t.k - want) < .002) t.k = want;
