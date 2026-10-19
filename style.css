@@ -1432,7 +1432,7 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .scout .sfacts { font-size: 13px; color: #8a7a9c; margin-top: 2px; }
 .scout .slabel { margin: 8px 0 10px; font-size: 13px; color: #8a7a9c; letter-spacing: .04em; }
 .scout .stiles { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.scout .stile { position: relative; width: 64px; padding: 8px 2px 5px; border-radius: 16px; background: #fff; border: 3px solid var(--ink); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.scout .stile { position: relative; width: 64px; padding: 8px 2px 8px; border-radius: 16px; background: #fff; border: 3px solid var(--ink); display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .scout .stile img { width: 38px; height: 38px; }
 .scout .stile b { font-size: 28px; line-height: 38px; color: var(--o2); }
 .scout .stile .stag { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); padding: 0 6px; border-radius: 8px; border: 2px solid var(--ink); font-size: 11px; line-height: 16px; white-space: nowrap; background: #fff; color: var(--ink); }
@@ -1440,8 +1440,6 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .scout .stile.mine { background: #fff0f2; } .scout .stile.mine .stag { background: var(--r2); color: #fff; }
 .scout .stile.new .stag { background: var(--o2); color: #fff; }
 .scout .stile.off { opacity: .5; }
-.scout .stile .ssub { font-size: 11px; color: var(--o3); white-space: nowrap; }
-.scout .stile.mine .ssub { color: var(--r3); }
 .scout .smax { margin-top: 10px; font-size: 22px; padding: 4px 14px; }
 .scout .row { margin-top: 10px; flex-wrap: nowrap; gap: 8px; }
 

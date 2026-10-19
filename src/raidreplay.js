@@ -193,9 +193,9 @@ function replayCard(S, ev) {
       ...(stole && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : []),
       h('div', { class: 'txt' }, stole ? `${ga(ev.nick)} 집에 가서 찾으면 되찾을 수 있어!` : '잘 숨겨 둔 덕분이야!')],
     buttons: stole
-      ? [G.ui.btn('더 꽁꽁 숨기기', { color: 'purple', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),
-        G.ui.btn('복수하러 가기', { color: 'orange', cls: 'big', onClick: () => { G.ui.closePanel(); goRevenge(G, ev.who); } })]
-      : [G.ui.btn('더 꽁꽁 숨기기', { color: 'purple', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),
+      ? [G.ui.btn('더 꽁꽁 숨기기', { color: 'orange', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),   // (UI ②: 주황 = 내 집, 초록 하나 = 제일 할 일)
+        G.ui.btn('복수하러 가기', { color: 'green', cls: 'big', onClick: () => { G.ui.closePanel(); goRevenge(G, ev.who); } })]
+      : [G.ui.btn('더 꽁꽁 숨기기', { color: 'orange', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),
         G.ui.btn('좋아!', { color: 'green', cls: 'big', onClick: () => G.ui.closePanel() })],
   });
 }

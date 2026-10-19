@@ -30,7 +30,7 @@ export function raidSetup(S) {
   if (tre) { tre.treasure = true; tre.slot?.classList.add('treasure'); tre.slot?.append(h('div', { class: 'tretag' }, '보물')); }
   S.lootPill = G.ui.pill('coin', '0', 'loot');
   S.inv.prepend(S.lootPill);
-  S.tlEl.textContent = `털기 · 0/${S.targets.length}`;
+  S.tlEl.textContent = S.th.name;   // (the tag says 털기 N개; the title says whose house — UI 세션 10/19)
   S.tnum.textContent = String(Math.ceil(S.spec.time));
   S.tbarI.style.width = '100%';
 }
@@ -47,7 +47,6 @@ export function raidFind(S, it, s) {
   const G = S.G, R = S.raidRun;
   const v = val(S, it.treasure ? RAID.treasure : RAID.find);
   R.bag += v;
-  S.tlEl.textContent = `털기 · ${S.found}/${S.targets.length}`;
   if (it.treasure) { G.ui.floatText(s.x, s.y - 92, '보물 털었다!', 'gold big'); G.world.fx.ring(s.x, s.y, { r: 130, color: '#ffb300', width: 10 }); G.hitstop?.(.08); }
   else if (S.custom.stolen?.includes(it.type)) G.ui.floatText(s.x, s.y - 92, '내 거 찾았다!', 'gold');
   const pill = S.lootPill;
@@ -110,10 +109,9 @@ export async function raidSettle(S, why) {
       h('div', { class: 'reward', html: ICON.coin }, cv),
       ...(R.repeat ? [h('div', { class: 'txt' }, '전에 몽땅 턴 집이라 ⅓만 나와요')] : []),
       ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),
-      ...(back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `내 물건 ${back.length}개 되찾았다!`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] })))))] : []),
       ...(left.length ? [h('div', { class: 'txt' }, `아직 ${ga(ownerOf(S))} 내 물건 ${left.length}개를 갖고 있어. 다시 털러 오자!`)] : []),
-      ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, got.isNew ? `${ITEMS[got.item]?.name || ''} · 내 수집품에 추가! 내 집에 숨길 수 있어` : `${ITEMS[got.item]?.name || ''} · 이미 있어서 코인 +${got.coins}`)))] : []),
-      ...(got && S.custom.resident ? [h('div', { class: 'txt' }, `${ga(S.custom.nick)} 눈치챘을지도… 복수하러 올 수 있어! 내 집 물건을 더 꼭꼭 숨겨 둬`)] : [])],
+      ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, ITEMS[got.item]?.name || '')))] : []),
+      ...(got && S.custom.resident ? [h('div', { class: 'txt' }, `${ga(S.custom.nick)} 복수하러 올지도!`)] : [])],
     buttons: [G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }),
       S.nextBtn = G.ui.btn('다른 집', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })],
   });
@@ -155,11 +153,11 @@ export function raidScout(S) {
   const have = new Set(G.save.collection);
   const news = [...new Set(S.targets.map(t => t.type))].filter(t => !mine.includes(t) && !have.has(t) && ITEMS[t] && !ITEMS[t].decoy);
   const grabOk = canGrab(G, C);
-  const tile = (src, tag, cls, sub) => h('div', { class: 'stile ' + cls }, h('img', { src }), h('div', { class: 'stag' }, tag), h('div', { class: 'ssub' }, sub));
+  const tile = (src, tag, cls) => h('div', { class: 'stile ' + cls }, h('img', { src }), h('div', { class: 'stag' }, tag));   // (no line under: the tag says it — UI 세션 10/19)
   const tiles = [];
-  if (tre) tiles.push(tile(tre.thumb || G.thumbs['item_' + tre.type], '보물', 'tre', `+${val(S, RAID.treasure)}`));
-  for (const t of mine.slice(0, 3)) tiles.push(tile(G.thumbs['item_' + t], '내 거', 'mine', '되찾기'));
-  if (news.length) tiles.push(h('div', { class: 'stile new' + (grabOk ? '' : ' off') }, h('b', { class: 'ol' }, String(news.length)), h('div', { class: 'stag' }, 'NEW'), h('div', { class: 'ssub' }, grabOk ? '하나 슬쩍' : '슬쩍은 쉬는 중')));
+  if (tre) tiles.push(tile(tre.thumb || G.thumbs['item_' + tre.type], '보물', 'tre'));
+  for (const t of mine.slice(0, 3)) tiles.push(tile(G.thumbs['item_' + t], '내 거', 'mine'));
+  if (news.length) tiles.push(h('div', { class: 'stile new' + (grabOk ? '' : ' off') }, h('b', { class: 'ol' }, String(news.length)), h('div', { class: 'stag' }, 'NEW')));
   const facts = [`시간 ${Math.ceil(S.spec.time)}초`, `물건 ${n}개`, ...(S.plan.locks.length ? [`자물쇠 ${S.plan.locks.length}`] : []), ...(R.repeat ? ['전에 몽땅 턴 집 · ⅓'] : [])];
   const i = LIST.findIndex(r => sameRoom(r, C)), next = LIST.length > 1 ? LIST[(i + 1) % LIST.length] : null;
   return new Promise(res => {
