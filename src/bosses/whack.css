@@ -15,6 +15,23 @@
 .wh-mark { position: absolute; top: 12px; transform: translateX(-50%); font-size: 11px; color: #d99a0b; text-shadow: 0 1px 0 #fff; white-space: nowrap; }
 .wh-hint { position: absolute; left: 50%; bottom: calc(26px + var(--safeB)); transform: translateX(-50%); color: #fff; font-size: 18px; white-space: nowrap; background: rgba(42, 26, 61, .55); padding: 8px 16px 10px; border-radius: 999px; pointer-events: none; transition: opacity .4s; }
 .wh-hint.gone { opacity: 0; }
+/* 아래 규칙 카드 (스토리 룸 10/19): tap these · not him — on the empty grass under the bushes, the whole game */
+.wh-rule { position: absolute; left: 50%; bottom: calc(22px + var(--safeB)); transform: translateX(-50%); display: flex; gap: 12px; pointer-events: none; z-index: 4; }
+.wh-rs { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 124px; padding: 8px 12px 8px; border-radius: 20px; background: rgba(255, 250, 242, .94); border: 4px solid #3a2453; box-shadow: 0 4px 0 rgba(42, 26, 61, .3); }
+.wh-rs.no { border-color: #e2475a; }
+.wh-rf { position: relative; display: flex; justify-content: center; }
+.wh-rf img { width: 46px; height: 46px; margin: 0 -7px; }
+.wh-x { position: absolute; right: -14px; top: -10px; width: 24px; height: 24px; border-radius: 50%; background: #e2475a; color: #fff; font-size: 14px; line-height: 24px; text-align: center; border: 2px solid #fff; font-weight: 900; }
+.wh-rs b { font-family: var(--font-display); font-size: 20px; line-height: 1.1; color: #fff; }
+.wh-rs.ok b { color: #8be07f; }
+.wh-rs.no b { color: #ff8a96; }
+.wh-rs i { font-style: normal; font-weight: 900; font-size: 15px; line-height: 1; }
+.wh-rs.ok i { color: #2f9a4a; }
+.wh-rs.no i { color: #e2475a; }
+.wh-rs.no.warn { animation: whWarn .42s ease-in-out infinite alternate; }
+.wh-rs.no.hit { animation: whHit .45s; }
+@keyframes whWarn { from { transform: scale(1); } to { transform: scale(1.09) rotate(-2deg); background: #ffe6e9; } }
+@keyframes whHit { 0%, 100% { transform: none; } 20% { transform: translateX(-7px) rotate(-3deg); } 60% { transform: translateX(7px) rotate(3deg); } }
 .wh-fever { position: absolute; inset: 0; z-index: 5; pointer-events: none; opacity: 0; transition: opacity .3s;
   background: radial-gradient(ellipse at center, transparent 50%, rgba(255, 210, 60, .45) 85%, rgba(255, 120, 180, .5) 100%); }
 .wh-fever.on { opacity: 1; animation: whFever .6s ease-in-out infinite alternate; }

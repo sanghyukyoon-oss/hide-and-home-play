@@ -11,6 +11,7 @@ import { Char, CHAR_DEFS, defineChar } from '../gfx/chars.js';
 import { Tweens, clamp, ease } from '../util.js';
 import { disposeTree } from '../gfx/kit.js';
 import { tr } from '../i18n.js';
+import { WHACK_CARD } from '../script.js';
 
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const SUNNY = { ambColor: '#fff2e4', amb: 1.55, sunColor: '#fff6e8', sun: 2.4 };
@@ -59,7 +60,7 @@ export class Game {
     this.score = 0; this.combo = 0; this.best = 0; this.fever = 0; this.found = 0; this.dizzy = 0; this.misses = [];
     this.goldenAt = 8 + Math.random() * 16; this.goldenDone = false; this.spawnT = .6; this.left = LV.time; this.result = null; this.phase = 'count';
     this.frame();
-    L.makeThumbs({ faces: [['mong', 'happy'], ['mong', 'dizzy'], ['raccoon', 'happy'], ['raccoon_bunny', 'normal']] });
+    L.makeThumbs({ faces: [['mong', 'happy'], ['mong', 'dizzy'], ['raccoon', 'happy'], ['raccoon_bunny', 'normal'], ['bunny', 'happy'], ['frog', 'happy'], ['hamster', 'happy']] });
     this.buildHud();
     this.bindInput();
     W.idsDirty = true; W.shadowDirty = true;
@@ -93,7 +94,14 @@ export class Game {
     this.bar = h('div', { class: 'wh-bar' }, this.barI = h('i'), ...LV.stars.map((s, k) => h('span', { class: 'wh-mark', style: `left:${s / max * 100}%` }, '★'.repeat(k + 1))));
     this.barMax = max;
     col.append(h('div', { class: 'wh-head' }, this.scoreEl, this.bar));
-    this.hint = h('div', { class: 'wh-hint ol' }, '쏙 나온 친구를 톡! 너굴이는 꾹 참기'); col.append(this.hint);
+    // 아래 빈 자리 = 규칙 카드 (스토리 룸 10/19 — user, on the empty grass under the bushes: "너구리 안 되는 경고"): it stays the
+    // whole game (the old line went at the first point, just as 너굴이 starts coming); pictures first — the friends you tap,
+    // 너굴이 you don't (and in the disguise rounds, his mask under bunny ears); his side bounces while he is up, shakes on a miss
+    const face = k => h('img', { src: L.thumbs['face_' + k] || '', alt: '' });
+    this.rule = h('div', { class: 'wh-rule' },
+      h('div', { class: 'wh-rs ok' }, h('div', { class: 'wh-rf' }, face('bunny_happy'), face('frog_happy'), face('hamster_happy')), h('b', { class: 'ol' }, tr(WHACK_CARD.tap)), h('i', {}, '+1')),
+      this.ruleBad = h('div', { class: 'wh-rs no' }, h('div', { class: 'wh-rf' }, face('raccoon_happy'), ...(LV.disguise ? [face('raccoon_bunny_normal')] : []), h('span', { class: 'wh-x' }, '✕')), h('b', { class: 'ol' }, tr(WHACK_CARD.skip)), h('i', {}, '−1')));
+    col.append(this.rule);
     this.feverEl = h('div', { class: 'wh-fever' }); document.getElementById('app').append(this.feverEl);
   }
   gotCard() {
@@ -194,6 +202,7 @@ export class Game {
       const c = w.chs[0]; c.setFace('happy'); c.pose = 'point';
       L.say(c, w.disguised ? '토끼인 줄 알았지? 헤헤' : TAUNTS[Math.floor(Math.random() * TAUNTS.length)], 1100, 'red');
       L.ui.floatText(s.x, s.y - 20, '-1', 'red big');
+      this.ruleBad.classList.remove('hit'); void this.ruleBad.offsetWidth; this.ruleBad.classList.add('hit');   // (규칙 카드: that was him)
       W.fx.ring(s.x, s.y + 30, { r: 70, color: '#ff5d6c', width: 8, life: .45 });
       document.getElementById('app').animate([{ transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(-4px)' }, { transform: 'none' }], { duration: 280 });
       this.me.setFace('sad'); setTimeout(() => !this.dead && this.me.setFace('happy'), 700);
@@ -256,7 +265,7 @@ export class Game {
       this.spawnT = (LV.gap[0] + Math.random() * (LV.gap[1] - LV.gap[0])) * (this.fever > 0 ? .45 : this.left < 10 ? .8 : 1);
       this.spawn(); if (this.fever > 0 && Math.random() < .5) this.spawn();
     }
-    if (this.score > 0 && !this._hintGone) { this._hintGone = true; this.hint.classList.add('gone'); }
+    this.ruleBad.classList.toggle('warn', this.holes.some(o => o.who?.bad && !o.who.hit && (o.who.state === 'up' || o.who.state === 'rustle')));   // (규칙 카드: 너굴이 is out)
   }
   // time's up: "못 찾겠다 꾀꼬리~!" and everybody still hiding pops out laughing
   async finish() {
