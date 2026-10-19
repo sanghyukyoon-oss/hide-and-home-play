@@ -1045,6 +1045,25 @@ export class StageScene {
     for (const k in rx) rx[k] = 0;
     if (!this.dead) { ch.pose = 'cheer'; ch.setFace('happy'); }
   }
+  // 6판 (검토 10/19 '이 판만의 아하'): with one thing left, the pancake smoke drifts from the stove toward it — a look, not
+  // a rule, and the camera stays where you put it. A short drift (~3 s), a pause, again, until it is found.
+  smokeTo(at) {
+    const W = this.G.world, R = this.room, last = this.targets.find(t => !t.found);
+    const rec = (R.rooms || [R]).flatMap(r => r.furns).find(e => e.type === at || e.opts?.variant === at);
+    if (!rec || !last?.g) return;
+    const top = () => { const b = new THREE.Box3().setFromObject(rec.f.group), c = b.getCenter(new THREE.Vector3()); c.y = b.max.y + .05; return W.toScreen(c); };
+    const COL = ['rgba(150,150,165,.5)', 'rgba(185,185,196,.45)', 'rgba(125,125,140,.4)'], life = 2.4;   // (see-through: smoke, not grey balls)
+    let n = 0;
+    const puff = () => {
+      if (this.dead || this.result || last.found) return;
+      const a = top(), b = W.toScreen(this.worldCenter(last)), dx = b.x - a.x, dy = b.y - a.y;
+      // (the fx layer damps a dot's sideways speed by e^-2.2t and leaves the vertical alone: aim so both land on the thing)
+      const vx = dx * 2.2 / (1 - Math.exp(-2.2 * life)), vy = dy / life;
+      for (let i = 0; i < 2; i++) W.fx.ps.push({ x: a.x + (Math.random() - .5) * 14, y: a.y - 4, vx: vx * (.9 + Math.random() * .2), vy: vy * (.9 + Math.random() * .2), g: 0, life, t: 0, size: 24 + Math.random() * 12, c: COL[(n + i) % 3], shape: 'dot', rot: 0, vr: 0, sway: Math.random() * 6 });
+      this.tw.wait(++n % 10 ? .28 : 5).then(puff);
+    };
+    puff();
+  }
   // 1장, between the two 흑백판 (스토리 룸 10/19 '다시 하고 싶게'): 먹물이 passed through a colour stage too — a short trail of
   // the same colour-smeared footprints across floor the start view shows. Nothing to tap, not on the list, no line; 10판's
   // "…발자국이다" is where it lands. (A floor point is a real ray hit, so a balcony or an upper floor works the same.)
@@ -1056,21 +1075,47 @@ export class StageScene {
     const rooms = this.room.rooms || [this.room];
     // (not on floor under a balcony or an upper floor: it is in shadow there — 7판)
     const under = q => rooms.some(R => R.group.position.y > q.y + .5 && Math.abs(q.x - R.group.position.x) < R.w / 2 && Math.abs(q.z - R.group.position.z) < R.d / 2);
-    const seen = q => { const sp = W.toScreen(q); if (sp.x < 30 || sp.x > W.W - 30 || sp.y < 170 || sp.y > W.H - 250 || under(q)) return null;
+    const bare = q => { const sp = W.toScreen(q); if (sp.x < 30 || sp.x > W.W - 30 || sp.y < 170 || sp.y > W.H - 250) return null;
       const hh = W.pick(sp.x, sp.y, roots)[0]; return hh && this.classify(hh.object).kind === 'floor' && Math.hypot(hh.point.x - q.x, hh.point.z - q.z) < .1 && Math.abs(hh.point.y - q.y) < .03 ? hh.point.clone() : null; };
+    // (and a little around it too — a gap between railing posts isn't a floor you can see a trail on: 7판 balcony)
+    const seen = q => { const c = bare(q); return c && bare({ x: q.x + .15, y: q.y, z: q.z + .15 }) && bare({ x: q.x - .15, y: q.y, z: q.z - .15 }) ? c : null; };
     const D8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
-    let best = null;
+    // (레벨 1~10 기준 10/19) the trail must not read as a hint: where it ends — and the next .8 m on — keeps .8 m from anything
+    // to find, a key, a locked piece; and it would rather end at a door or the stairs, the way out (where 먹물이 went)
+    const mid = o => { const bx = new THREE.Box3().setFromObject(o); return bx.isEmpty() ? null : bx.getCenter(new THREE.Vector3()); };
+    const avoid = [...this.items.map(it => it.g && mid(it.g)), ...this.plan.locks.map(l => { const g = l.part?.furn?.group || l.part?.pivots?.[0]; return g && mid(g); })].filter(Boolean);
+    const exits = rooms.flatMap(R => [...(R.decors || []).filter(d => d.type === 'door' && !d.hidden), ...R.furns.filter(f => /stair/.test(f.type))]).map(r => mid(r.f.group)).filter(Boolean);
+    const near = (q, list, r, dy) => list.some(c => Math.hypot(c.x - q.x, c.z - q.z) < r && Math.abs(c.y - q.y) < dy);
+    const safeEnd = (e, di, dj) => [0, .4, .8].every(k => !near({ x: e.x + di * k, y: e.y, z: e.z + dj * k }, avoid, .8, 1.2));
+    // one scan (a grid point: seen or not, how far in from the room's edge, under an upper floor or not), then the pick in
+    // passes: in the open and half a metre in first; closer to the edge next; under a balcony last
+    const grids = [];
     for (const R of rooms) {
-      if (!R.w || !R.d) continue;   // (~200 rays in all, 0.4 ms each)
-      const o = R.group.position, nx = Math.floor((R.w - .5) / GS), nz = Math.floor((R.d - .5) / GS), cell = [];
+      if (!R.w || !R.d) continue;   // (~3 rays a point, a row a frame)
+      const o = R.group.position, nx = Math.floor((R.w - .6) / GS), nz = Math.floor((R.d - .6) / GS), cell = [];
       for (let i = 0; i <= nx; i++) {
-        cell[i] = []; for (let j = 0; j <= nz; j++) cell[i][j] = seen(new THREE.Vector3(o.x - nx * GS / 2 + i * GS, o.y, o.z - nz * GS / 2 + j * GS));
+        cell[i] = [];
+        for (let j = 0; j <= nz; j++) {
+          const q = new THREE.Vector3(o.x - nx * GS / 2 + i * GS, o.y, o.z - nz * GS / 2 + j * GS), p = seen(q);
+          cell[i][j] = p && { p, edge: Math.min(R.w / 2 - Math.abs(q.x - o.x), R.d / 2 - Math.abs(q.z - o.z)), under: under(q) };
+        }
         await frame(); if (this.dead || this.result) return;
       }
-      for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) if (cell[i][j]) for (const [di, dj] of D8) {
-        const pts = []; for (let k = 0; k < 6 && cell[i + di * k]?.[j + dj * k]; k++) pts.push(cell[i + di * k][j + dj * k]);
-        if (!best || pts.length > best.pts.length) best = { pts, dir: new THREE.Vector3(di, 0, dj).normalize() };
+      grids.push({ cell, nx, nz });
+    }
+    let best = null;
+    for (const [minEdge, okUnder] of [[.55, false], [.3, false], [.3, true]]) {
+      for (const { cell, nx, nz } of grids) for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) for (const [di, dj] of D8) {
+        const ok = c => c && c.edge >= minEdge && (okUnder || !c.under);
+        const pts = []; for (let k = 0; k < 6 && ok(cell[i + di * k]?.[j + dj * k]); k++) pts.push(cell[i + di * k][j + dj * k].p);
+        const n2 = Math.hypot(di, dj);
+        for (let n = 3; n <= pts.length; n++) {   // (any length that ends safe — the longest isn't always the one)
+          const e = pts[n - 1]; if (!safeEnd(e, di / n2, dj / n2)) continue;
+          const exit = near(e, exits, 1.3, 1.6), score = n + (exit ? 3 : 0);
+          if (!best || score > best.score) best = { pts: pts.slice(0, n), dir: new THREE.Vector3(di, 0, dj).normalize(), score, exit, pass: minEdge + (okUnder ? 'u' : '') };
+        }
       }
+      if (best) break;
     }
     if (!best || best.pts.length < 3 || this.dead) return;
     // footsteps every .28 m along the visible run (the grid is coarser than a stride)
@@ -1086,7 +1131,7 @@ export class StageScene {
       this.footprint(c, col, rot, { flat: true, r: .07 });
       for (const t of [-1, 0, 1]) this.footprint(c.clone().addScaledVector(fw, .1 - Math.abs(t) * .02).addScaledVector(perp, t * .05), col, rot, { flat: true, r: .026 });
     });
-    this.traceAt = { n: best.steps.length, at: a0, ms: Math.round(performance.now() - t0) };   // (for the headless check)
+    this.traceAt = { n: best.steps.length, at: a0, end: a1, exit: best.exit, pass: best.pass, ms: Math.round(performance.now() - t0) };   // (for the headless check)
   }
   footprint(at, color, rot, { flat = false, r = .055 } = {}) {   // (flat: 7판's trail — no outline, part of the floor)
     const W = this.G.world, m = new THREE.Mesh(new THREE.CircleGeometry(r, 14), new THREE.MeshBasicMaterial({ color, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
@@ -1167,6 +1212,8 @@ export class StageScene {
       const which = left === 1 ? 'last' : sceneAt(this.idx)?.sayAll ? (this.found === 1 ? 'first' : this.found === Math.ceil(n / 2) ? 'half' : null) : null;   // (말 줄이기: only "one left"; a scene with sayAll — 54판 판다's memory — keeps all three)
       const line = which && !said.has(which) && hiddenSay(this.idx, this.th.friend, which);
       if (line) { said.add(which); setTimeout(() => !this.dead && !this.result && this.say(this.friend, line, 1600), 350); }
+      // 6판 — only after 20 s still looking for the last one (user 10/19: "1" — hints felt too many, same wait as the sparkle)
+      if (left === 1 && sceneAt(this.idx)?.lastSmoke && !this._smoke) { this._smoke = true; const at = sceneAt(this.idx).lastSmoke; this.tw.wait(20).then(() => { if (!this.dead && !this.result && this.targets.some(t => !t.found)) this.smokeTo(at); }); }
     }
     if (this.raidRun) raidFind(this, it, s);   // 타이머 털기: into the loot bag
     else if (this.spec.timed) this.tlEl.textContent = `너굴이가 세는 중 · ${this.found}/${this.targets.length}`;

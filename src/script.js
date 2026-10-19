@@ -186,7 +186,7 @@ const SCENES = [
     finds: [K('앗, 그거 내 거!', "Hey, that's mine!"), K('거기 있었어?!', 'It was in there?!'), K('그건 아끼는 건데!', 'I love that one!'), K('마지막 건 절대 못 찾아!', "You'll never find the last one!")],
     drawerFull: K('앗, 거긴…!', 'Hey, not in th—!'), drawerEmpty: K('거긴 양말 서랍인데…', "That's my sock drawer…"),
     after: [L('bunny', '다 찾았어?! 커튼까지 쳤는데!', 'All of them?! I drew the curtains and everything!'), L('bunny', '이번엔 네가 숨겨 봐. 내가 찾을게!', "Your turn to hide something. I'll find it!")], homeChoice: true },
-  { id: 'museum', keep: true, type: 'gray', room: 'museum', teachMove: true,
+  { id: 'museum', keep: true, type: 'gray', room: 'museum',
     intro: [L('bear', '으헤헤, 새 그림 걸었는데… 내가 좋아하는 색이 없어졌어.', 'Ehehe, I hung a new painting… and my favorite color is gone.'), LK('bunny', '또 그 까만 애야! 펭펭이네 다락에서도 그랬대!', "That inky kid again! Same thing happened in Pengpeng's attic!")],   // (10/19: 둘째 흑백 — 첫 흑백은 4판 펭펭이네)
     inky: K('또 너야? 이번엔 안 들킬 거야.', 'You again? Not getting caught this time.'),
     firstColor: K('응, 이 색이야.', 'Yes. That one.'),
@@ -336,7 +336,10 @@ SCENES.push(
     say: { first: K('펭! 그건 연습용이야!', 'Peng! That one was for practice!'), half: K('반이나…? 1등 계획에 차질이…', 'Half…? My number-one plan is slipping…'), last: K('마지막 건 비결 1번으로 숨겼어. 못 찾을걸!', 'I hid the last one with tip number one. Good luck!') },
     after: [LK('peng', '1등 비결 1번. 숨길 땐 숨도 참아.', 'Pro tip number one. Hold your breath while you hide stuff.'), L('mong', '…물건은 숨 안 쉬어.', "…Stuff doesn't breathe."), L('peng', '…비결 2번 생각해 올게.', "…I'll come up with tip number two.")] },
   // (say.first · say.last name no place: things move on a replay, so a line that says where would point the wrong way — 레벨 1~10 10/19)
-  { id: 'bear2H', type: 'hidden', room: 'bear2',
+  // teachMove: the first big map (start zoom 1.3) — "drag to move" here, not 10판; the drag-then-tap turn lesson only comes
+  // once you've dragged 300 px, so moving is taught first (검토 10/19). lastSmoke: with one thing left the pancake smoke
+  // drifts from the stove toward it — the stage's own little 'aha', a look not a rule (stage.js smokeTo)
+  { id: 'bear2H', type: 'hidden', room: 'bear2', teachMove: true, lastSmoke: 'stove',
     pop: { say: K('킁킁… 앗, 팬케이크!', 'Sniff sniff… Oh no, the pancakes!'), move: 'smoke', at: 'stove' },   // (가스레인지에서 연기 → 결과창 "조금 탔지만")
     intro: [L('bear', '으헤헤, 또 왔네! 이번엔 접시도 두 개야.', "Ehehe, you're back! Two plates this time."), LK('mong', '숟가락은?', 'And the spoons?'), LK('bear', '…깨끗한 걸로 두 개. 팬케이크 굽는 동안 내가 숨긴 거 찾아 봐.', '…Two clean ones. While I make pancakes, find what I hid.')],
     say: { first: K('으헤헤, 벌써 하나! 팬케이크는 아직이야.', "Ehehe, one already! The pancakes aren't ready yet."), half: K('반 찾았네! 팬케이크도 반 구웠어.', 'Half found! The pancakes are half done too.'), last: K('하나 남았어! 킁킁… 아, 이건 팬케이크 냄새.', "One left! Sniff… oh, that's just the pancakes.") },
@@ -1102,17 +1105,18 @@ export const timedWin = idx => { const t = bind().timed[idx] || 0, l = L('raccoo
 export const gameLines = (kind, lv) => GAME[`${kind}:${lv}`] || null;
 // 놀이 보상 이유 (경제·로비 세션 결과 카드, 10/19 사용자 "게임이라고 리워드가 없으니 이상"): 누가, 왜 주는지 한 줄 — 처음 이긴 때만 보임
 // (몽글 TV는 오락기 경품이라 따로 없음. yasik2는 70판 엔딩 바로 앞이라, 엔딩을 끊지 않게 엔딩 뒤에 보이거나 빼는 것을 권함)
+// (what each says matches what the card gives — stars, coins, a magnifier — never a snack or a 'prize' object: 검토 10/19)
 export const GAME_GIFT = {
-  whack: L('frog', '개굴! 수풀 놀이 1등 상품이야.', 'Ribbit! First prize for the bush game!'),
+  whack: L('frog', '개굴! 1등 상금이야!', 'Ribbit! Prize money for first place!'),
   redlight: L('raccoon', '…봐준 거야. 이건 그냥 주는 거고.', '…I went easy on you. This is just a gift.'),
-  blanket: L('bunny', '다 맞혔네! 내 간식 반 줄게.', 'You got everyone! Half my snacks are yours.'),
-  gohome: L('hamster', '웁웁, 데려다줘서 고마워! 비상식량 나눠 줄게.', 'Mmf, thanks for walking us home! Have some of my emergency snacks.'),
+  blanket: L('bunny', '다 맞혔네! 파자마 파티 1등은 너야!', 'You got everyone! Pajama party champ: you!'),
+  gohome: L('hamster', '웁웁, 데려다줘서 고마워! 이건 내 저금통에서 꺼낸 거야.', 'Mmf, thanks for walking us home! This is from my piggy bank.'),
   spot: L('raccoon', '쳇, 들켰으니 이건 네 거.', 'Tch. You caught me, so this is yours.'),
   lamp: L('hamster', '무서웠는데 같이 해 줘서 고마워!', 'That was scary, but thanks for playing with me!'),
   lampboss: L('nerd', '흠. 실험 협조 사례지.', 'Hm. Consider it payment for helping with the experiment.'),
-  yasik0: L('bunny', '남은 간식은 네 거! 쉿.', 'The rest of the snacks are yours! Shh.'),
-  yasik1: L('sundae', '같이 먹으려던 간식, 네 몫이야!', 'Here, your share of the snacks!'),
-  yasik2: L('bunny', '마지막 간식은 다 같이 나눠 먹자!', "Last snacks, let's all share!"),
+  yasik0: L('bunny', '작전 성공 기념! 쉿, 엄마한텐 비밀.', "Mission success! Shh, don't tell Mom."),
+  yasik1: L('sundae', '야식 작전 2호 성공! 이건 네 몫이야.', "Snack mission two: success! Here's your share."),
+  yasik2: L('bunny', '마지막 작전 성공! 다 같이 축하하자!', "Final mission: success! Let's all celebrate!"),
   hotel: L('bunny', '지배인님, 팁이에요! 다음에 또 묵을게요.', "A tip for the manager! We'll stay again."),
   wakeup: L('sleepy', '음냐… 꿈에서 주운 거야… 너 가져…', 'Mmh… found this in a dream… you keep it…'),
   treasure: L('raccoon', '…다 못 찾았어. 이건 지킨 상이야.', "…Couldn't find them all. Here's a prize for guarding them."),   // (하나 이상 지키면 이김: '다 못 찾았어'가 모든 경우에 맞음)
