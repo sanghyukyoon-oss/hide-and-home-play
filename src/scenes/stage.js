@@ -2081,12 +2081,26 @@ export class StageScene {
     const at = el => { const b = el?.getBoundingClientRect(); return b?.width ? { sx: b.left + b.width / 2, sy: b.top + b.height / 2 } : null; };
     const mid = () => ({ sx: innerWidth / 2, sy: innerHeight * .58 }), pitch0 = W.pitch;
     // (the donut lesson is gone — 검토 H3 / user: "너무 친절함 튜토가"; the donut still lies there and still answers a tap)
+    // ① 이동 먼저 (user 10/19: "이동하는 방법 알려 줘야 함, 회전 방법 전에"): a hand drags across the room, done once the view has
+    // moved a little. It is the move lesson (tut.move — 6판's teachMove reminder then stays away); the first time only
+    if (W.scheme === 'F' && !G.save.tut?.move) {
+      let pan = 0, live = true; const prev = W.onPan;
+      W.onPan = d => { prev?.(d); if (live) pan += Math.abs(d) || 0; };
+      const ok = await this.teach(DO.move, 'swipe', mid, () => pan > 140);
+      live = false;
+      if (!ok) return;
+      (G.save.tut || (G.save.tut = {})).move = 1; G.persist?.();
+    }
     // ② the box shook, but that's its back: turn the room until its front shows
     if (!front() && !this.friendItem?.found) {
       // 기본 조작 F (조작감 세션 10/18): one finger always moves; the turn dial bottom right turns the room (or a two-finger twist)
       const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
       if (W.scheme === 'F' && dial) {
-        if (!await this.teach(DO.turnDial, 'swipe', () => at(dial), front, DO.turnDial2)) return;
+        // (user 10/19: "오른쪽으로 돌리라고 손가락 나와야 할 듯") the hand presses on the dial and pushes it the way that shows the
+        // box's front soonest (measured 10/19: today's box needs 60° one way, 155° the other) — pushing right turns the view
+        // to a smaller yaw (dialr), pushing left to a larger one (diall)
+        const way = s => { const c = this.tail.front; for (let d = 5; d <= 180; d += 5) { const y = W.yaw + s * d / 57.3; if (Math.sin(y) * c.x + Math.cos(y) * c.z > .35) return d; } return 999; };
+        if (!await this.teach(DO.turnDial, way(-1) <= way(1) ? 'dialr' : 'diall', () => at(dial), front, DO.turnDial2)) return;
         // (tilting is taught in 2판 now, at the thing on the loft — 검토 H3; the dial's ‹ › ˄ ˅ arrows still hint it)
       }
       else if (W.scheme === 'E' && !W.joyOn) {

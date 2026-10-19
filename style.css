@@ -1659,3 +1659,14 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .panel.more .row.wrap::after { content: ''; order: 3; flex-basis: 100%; height: 0; }   /* (a line break: the reset gets a line of its own) */
 .panel.more .row.wrap > .btn.reset { order: 4; margin-top: 6px; }
 .panel.more .row.wrap > .credits { order: 5; }
+
+/* 1판 돌림판 수업 (10/19, user: "오른쪽으로 돌리라고 손가락 나와야 할 듯"): the hand presses on the dial and pushes it along — to the
+   right (dialr) or the left (diall), whichever shows the box's front sooner — lifts, and does it again */
+.hand.dialr { animation: handdialr 1.5s ease-in-out infinite; }
+.hand.diall { animation: handdiall 1.5s ease-in-out infinite; }
+@keyframes handdiall { 0% { transform: translate(15%, -20%) scale(1); opacity: 0; } 12% { transform: translate(15%, -20%) scale(1); opacity: 1; }
+  24% { transform: translate(15%, -10%) scale(.88); } 74% { transform: translate(-75%, -10%) scale(.88); opacity: 1; }
+  88% { transform: translate(-80%, -20%) scale(1); opacity: 0; } 100% { transform: translate(15%, -20%) scale(1); opacity: 0; } }
+@keyframes handdialr { 0% { transform: translate(-75%, -20%) scale(1); opacity: 0; } 12% { transform: translate(-75%, -20%) scale(1); opacity: 1; }
+  24% { transform: translate(-75%, -10%) scale(.88); } 74% { transform: translate(15%, -10%) scale(.88); opacity: 1; }
+  88% { transform: translate(20%, -20%) scale(1); opacity: 0; } 100% { transform: translate(-75%, -20%) scale(1); opacity: 0; } }
