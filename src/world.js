@@ -238,8 +238,12 @@ export class World {
       // (QA3-cam8, user: "회전중에 앵커가 변할 때가 있는데 이게 제일 ㅈ같아") the anchor never changes mid-turn: a step that would take
       // the view past the box slides along its edge (it used to turn that step round the view's centre — the anchor flipped
       // step by step, up to 581 px of drift on 7·8판); a view already past it is never pulled in
-      if (after) { const [x0, x1, z0, z1] = this._box(), t = this.target;
-        t.x = clamp(t.x + P.x - after.x, Math.min(x0, t.x), Math.max(x1, t.x)); t.z = clamp(t.z + P.z - after.z, Math.min(z0, t.z), Math.max(z1, t.z)); } }
+      // (10/19 evening, measured: at a map's edge the slide still threw the anchor up to 1642 px) the anchor wins: the view's centre
+      // may go as far from the anchor as it already is (a turn round P keeps it on a circle round P), and once past the box it is
+      // never pulled back in with a jump — a later drag eases it back (clampTarget)
+      if (after) { const [x0, x1, z0, z1] = this._box(), t = this.target, nx = t.x + P.x - after.x, nz = t.z + P.z - after.z, R = Math.hypot(nx - P.x, nz - P.z) + .3;
+        t.x = clamp(nx, Math.min(x0, P.x - R, t.x), Math.max(x1, P.x + R, t.x)); t.z = clamp(nz, Math.min(z0, P.z - R, t.z), Math.max(z1, P.z + R, t.z));
+        if (t.x < x0 || t.x > x1 || t.z < z0 || t.z > z1) this._turnOut = true; } }
     if (dyaw) { this.onRotate?.(-dyaw); this._notch(); }
   }
   clearTap() { if (this._pendTap) { clearTimeout(this._pendTap.timer); this._pendTap = null; } this._ring(null); this.eMode = this.eBase; this._lastTap = null; }
@@ -302,8 +306,11 @@ export class World {
       // the view's plane that much further from the camera)
       const c = 1 / Math.tan(Math.max(this.pitch, .165)), ux = Math.sin(this.yaw), uz = Math.cos(this.yaw), m = .45 + zin * 1.2;
       const kk = ((this.fit?.cy ?? .5) - .5) * (this.viewH || 0) / this.zoom / Math.max(.15, Math.sin(this.pitch)), a = (this.target.y - M.y1) * c + kk, d = (this.target.y - M.y0) * c + kk;
-      x0 = Math.min(x0, M.x0 + Math.min(ux * a, ux * d) - m); x1 = Math.max(x1, M.x1 + Math.max(ux * a, ux * d) + m);
-      z0 = Math.min(z0, M.z0 + Math.min(uz * a, uz * d) - m); z1 = Math.max(z1, M.z1 + Math.max(uz * a, uz * d) + m);
+      // (10/19 evening, user: "제일 끝부분 잡고 돌리는데 중심점 날아가는 거 또 경험함") the sweep is the same toward every side, so the
+      // box doesn't move while the view turns (it was ±a along the view's own direction: turning at an edge moved the edge)
+      const r = Math.max(Math.abs(a), Math.abs(d)); void ux; void uz;
+      x0 = Math.min(x0, M.x0 - r - m); x1 = Math.max(x1, M.x1 + r + m);
+      z0 = Math.min(z0, M.z0 - r - m); z1 = Math.max(z1, M.z1 + r + m);
     }
     return [x0, x1, z0, z1];
   }
@@ -320,6 +327,13 @@ export class World {
   _rbL() { return 90 * this.viewH / this.zoom / Math.max(this.H, 1); }
   clampTarget(hard = false) {
     const [x0, x1, z0, z1] = this._box(), t = this.target;
+    if (this._turnOut && !hard) {   // (past the box after a turn round a point: no snap — it may only come closer)
+      const o = this._turnOutAt || (this._turnOutAt = { x: t.x, z: t.z });
+      t.x = clamp(t.x, Math.min(x0, o.x), Math.max(x1, o.x)); t.z = clamp(t.z, Math.min(z0, o.z), Math.max(z1, o.z));
+      o.x = t.x; o.z = t.z;
+      if (t.x >= x0 && t.x <= x1 && t.z >= z0 && t.z <= z1) { this._turnOut = false; this._turnOutAt = null; }
+      return;
+    }
     if (FEEL.rubber && !hard && (this.ptrs.size || this._rbOver)) {
       const o = this._rbL() * 4;
       t.x = clamp(t.x, x0 - o, x1 + o); t.z = clamp(t.z, z0 - o, z1 + o);

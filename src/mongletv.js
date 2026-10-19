@@ -1,18 +1,20 @@
 // 몽글 TV (10/19): the arcade inside the world (user: "레데리나 지티에이처럼 게임기 누르면 미니게임 나오는 거", "2d게임으로,
 // 약간 픽셀 느낌", "꽤 중간이나 어려운 레벨로 만들고 성공하면 손가락 몇 개 주는 느낌"). A TV or a monitor in a stage (pcdesk ·
-// officedesk · tvlow · tvstand) and the TV in 내 방 open an old CRT with four channels of 160×120 pixel games, ported from the
-// story room's prototype (sumbak-story/proto/monitor-tv.html — look and tone approved: "그래픽이나 톤은 저거 맞는 것 같음";
-// "4는 바운스볼로 깨는 걸로"):
-//   1 어디 숨었게?  a friend hides in one of three boxes, the boxes shuffle, tap the right one (3 rounds)
-//   2 이삿짐 쌓기   a box slides side to side; tap to drop it on the stack, what hangs over falls off
-//   3 몽글 점프     몽글이 runs along the alley; tap to jump the boxes and pots, last till the bar fills
-//   4 상자 깨기     a pillow bounces a ball into the boxes; three of them hide a friend, find all three
-// How hard follows the chapter (1~3장 중간, 4~7장 어려움): no picker on screen — the channel is the only choice. The stage
-// passes `pay` and gives the taps (+3 once a stage); in 내 방 and on stages without a tap count it's just for fun.
+// officedesk · tvlow · tvstand) and the TV in 내 방 open an old CRT with a 160×120 pixel game, ported from the story room's
+// prototype (sumbak-story/proto/monitor-tv.html — look and tone approved: "그래픽이나 톤은 저거 맞는 것 같음"):
+//   이삿짐 쌓기   a box slides side to side; tap to drop it on the stack, what hangs over falls off
+//   몽글 점프     몽글이 runs along the alley; tap to jump the boxes and pots, last till the bar fills
+//   상자 깨기     a pillow bounces a ball into the boxes; three of them hide a friend, find all three
+// After the user played it on the phone (10/19 저녁, via 인수인계): no channels to pick — "4개 게임을 각 스테이지마다 랜덤
+// 분배… 너무 자주 나오지 않아도 괜찮아. 틀면 옵션 선택하는 거 없이 게임만 플레이하게? 그리고 나가기 버튼만", "다 레벨 좀
+// 어렵게… 2, 3, 4만 쓸 거야" (어디 숨었게? is out). So about half the stages with a TV have it on, each with one game of its
+// own (tvGameFor: the same stage always the same game); the screen and ✕ only. Harder than the prototype, and harder again
+// from 4장 (tvLevel). A win pays once a stage: +3 taps (never past the stage's own count), or 30 coins when the taps are full
+// ("이거 이기면 손가락 주는 거 아니었나?" — a full hand showed no reward at all). 내 방's TV plays a random one, no reward.
 // One 2D canvas while it's open, wiped on close (iPhone memory: sumbakkokjip-phone-memory). Words: script.js MONITOR_TV.
 // The pixel letters on the canvas (TAP TO START, CLEAR!, TRY AGAIN, +3) are a picture: a 3×5 bitmap font below, no web font.
 import * as THREE from 'three';
-import { h } from './ui.js';
+import { h, ICON } from './ui.js';
 import { tr } from './i18n.js';
 import { MONITOR_TV as T, newCard } from './script.js';
 import { CHAR_DEFS } from './gfx/chars.js';
@@ -20,6 +22,13 @@ import { REGIONS, regionOf } from './stages.js';
 
 export const TV_TYPES = new Set(['pcdesk', 'officedesk', 'tvlow', 'tvstand']);
 export const tvLevel = idx => (Math.max(0, REGIONS.indexOf(regionOf(Math.min(69, Math.max(0, idx || 0))))) >= 3 ? 'hard' : 'mid');
+export const TV_GAMES = ['stack', 'run', 'brk'];
+const TV_CH = { stack: 2, run: 3, brk: 4 };   // (the prototype's channel numbers, on the set's label)
+export const TV_COINS = 30;   // a win with a full hand: about a quarter of a stage clear, under a secret find (+50)
+// which stages have it on, and which game: from the stage number alone, so a retry or a replay is the same (null = off).
+// About half the stages; with the v150 maps the TV is on at 6판 몽글 점프, 14판 이삿짐, 20·30판 상자 깨기, 64판 이삿짐.
+const mix = n => { let x = Math.imul((n + 12) ^ 0x5bd1e995, 0x9E3779B1) >>> 0; x ^= x >>> 15; x = Math.imul(x, 0x85EBCA77) >>> 0; x ^= x >>> 13; return x >>> 0; };
+export const tvGameFor = idx => { const m = mix(idx); return m % 2 ? TV_GAMES[(m >>> 9) % 3] : null; };
 const fill = (s, o = {}) => tr(s).replace(/\{(\w+)\}/g, (_, k) => o[k] ?? '');
 const NAMES = new Proxy({}, { get: (_, k) => tr(CHAR_DEFS[k]?.name || '') });
 
@@ -77,9 +86,12 @@ function night(t, floorY = 92) {
 }
 const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
 
-// ── the TV in the room: a little pixel picture on its screen (one 64×36 texture for every screen in the room), off at the
-// start, then on with a flicker, and a flicker again every few seconds — it's on, you can tap it. off(f): keep it dark (a
-// 흑백 target not found yet). screenAt: is (x, y) on that screen (the screen is always the TV, even right by a drawer)?
+// ── the TV in the room: a little pixel picture on its screen (one 64×36 texture for every screen in the room), dark at
+// the start, then on with a flicker, and a flicker again every few seconds — it's on, you can tap it. off(f): the TV's own
+// screen instead (a 흑백 target not found yet). screenAt: is (x, y) on that screen (always the TV, even right by a drawer)?
+// One sheet (10/19, user: "뭔가 텍스처도 겹쳐 있어"): the picture is opaque and covers the whole screen, the set's own
+// screen is hidden while it shows, and the flicker dims it instead of fading it — a see-through plane sat on layer 2 (no
+// ink, not in the ID pass), so the old screen's face and lines showed through it.
 export function tvScreens(furns, { off = null } = {}) {
   const c = document.createElement('canvas'); c.width = 64; c.height = 36;
   const g0 = g; g = c.getContext('2d');
@@ -94,18 +106,18 @@ export function tvScreens(furns, { off = null } = {}) {
   for (const f of furns) {
     if (!f || !TV_TYPES.has(f.type) || list.has(f)) continue;
     let scr = null; f.group.traverse(o => { if (!scr && o.isMesh && /-screen$/.test(o.geometry?.name || '')) scr = o; });
-    const e = { f, plane: null, wait: 1 + Math.random() * 1.6, k: -1, on: false };
+    const e = { f, scr, plane: null, wait: 1 + Math.random() * 1.6, k: -1, on: false, lvl: -1 };
     if (scr) {
       const geo = scr.geometry; if (!geo.boundingBox) geo.computeBoundingBox();
       const b = geo.boundingBox; b.getSize(sz); b.getCenter(ct);
-      const pg = new THREE.PlaneGeometry(sz.x * .96, sz.y * .94); pg.translate(ct.x, ct.y, b.max.z + .004);
-      const p = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false }));
+      const pg = new THREE.PlaneGeometry(sz.x, sz.y); pg.translate(ct.x, ct.y, b.max.z + .002);
+      const p = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: tex }));
       p.position.copy(scr.position); p.quaternion.copy(scr.quaternion); p.scale.copy(scr.scale); p.visible = false; p.userData.tvGlow = true;
       scr.parent.add(p); e.plane = p;
     }
     list.set(f, e);
   }
-  const FLICK = [.2, .9, .35, .95];
+  const FLICK = [.3, 1, .55, 1], DARK = .06;   // (brightness: off, then the flicker steps)
   return {
     has: f => list.has(f),
     update(dt) {
@@ -114,11 +126,10 @@ export function tvScreens(furns, { off = null } = {}) {
         const dark = !!off?.(e.f);
         e.wait -= dt;
         if (e.k < 0 && e.wait <= 0) { e.k = 0; e.on = true; e.wait = 5 + Math.random() * 5; }
-        let o = e.on ? .95 : 0;
-        if (e.k >= 0) { e.k += dt; const i = Math.floor(e.k / .1); if (i >= FLICK.length) e.k = -1; else o = FLICK[i]; }
-        const vis = o > 0 && !dark;
-        if (p.visible !== vis) p.visible = vis;
-        if (vis && p.material.opacity !== o) p.material.opacity = o;
+        let lv = e.on ? 1 : DARK;
+        if (e.k >= 0) { e.k += dt; const i = Math.floor(e.k / .1); if (i >= FLICK.length) e.k = -1; else lv = FLICK[i]; }
+        if (p.visible === dark) { p.visible = !dark; if (e.scr) e.scr.visible = dark; }
+        if (!dark && e.lvl !== lv) { e.lvl = lv; p.material.color.setScalar(lv); }
       }
     },
     screenAt(world, f, x, y, pad = 6) {
@@ -129,7 +140,7 @@ export function tvScreens(furns, { off = null } = {}) {
       return x >= x0 - pad && x <= x1 + pad && y >= y0 - pad && y <= y1 + pad;
     },
     dispose() {
-      for (const e of list.values()) if (e.plane) { e.plane.parent?.remove(e.plane); e.plane.geometry.dispose(); e.plane.material.dispose(); }
+      for (const e of list.values()) if (e.plane) { e.plane.parent?.remove(e.plane); e.plane.geometry.dispose(); e.plane.material.dispose(); if (e.scr) e.scr.visible = true; }
       list.clear(); tex.dispose(); c.width = c.height = 0;
     },
   };
@@ -152,23 +163,16 @@ function style() {
 .mtv-brand{color:#8a7e66}.mtv-chn{color:#6a4fd6}
 .mtv-led{width:10px;height:10px;border-radius:50%;background:#7bff9a;box-shadow:0 0 8px #7bff9a;border:2px solid #2b2030}
 .mtv-say{min-height:2.5em;background:#fffaf2;border:3px solid #2b2030;border-radius:14px;padding:5px 12px;font-size:17px;line-height:1.25;text-align:center;display:flex;align-items:center;justify-content:center;word-break:keep-all}
-.mtv-chans{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mtv-cb{background:#fff;border:3px solid #2b2030;border-radius:14px;padding:6px 6px;text-align:center;font-size:15px;box-shadow:0 4px 0 #2b2030;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .08s}
-.mtv-cb.on{background:#6a4fd6;color:#fff}
-.mtv-cb.down{transform:translateY(3px);box-shadow:0 1px 0 #2b2030}
-.mtv-rule{font-size:14px;color:#fff;text-align:center;text-shadow:0 2px 0 rgba(42,20,60,.6);word-break:keep-all;line-height:1.3}
-.mtv-pay{align-self:center;background:#ffd23f;border:3px solid #2b2030;border-radius:999px;padding:2px 14px;font-size:15px;color:#2b2030}
-.mtv-pay:empty{display:none}
-.mtv-pay.dim{background:#ece4d2}
-.mtv-pay.got{animation:pop .35s cubic-bezier(.2,1.5,.4,1)}
+.mtv-say .mtv-coin svg{width:1.15em;height:1.15em;vertical-align:-.22em;margin:0 1px 0 3px}
 .mtv-x{position:absolute!important;right:-12px;top:-14px;z-index:2}
-@media (prefers-reduced-motion: reduce){.mtv-scr canvas{animation:none}.mtv-cb{transition:none}}`;
+@media (prefers-reduced-motion: reduce){.mtv-scr canvas{animation:none}}`;
   document.head.append(s);
 }
 
-// Open it. level 'mid' | 'hard'. pay (a stage with a tap count): { state() → 'gain' | 'already' | 'full', win() → taps
-// given (0 = none) } — win() is asked on every win and gives only once. Resolves when it's closed: { won } (any win).
-export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
+// Open it. level 'mid' | 'hard'; game 'stack' | 'run' | 'brk' (none: a random one). pay (a campaign stage): { state() →
+// 'gain' | 'coin' | 'already', win() → { taps } | { coins } | null } — win() is asked on every win and pays only once.
+// Resolves when it's closed: { won } (any win).
+export function openMongleTV(G, { level = 'mid', game = null, pay = null } = {}) {
   if (G.tv) return G.tv.done;
   style();
   let resolve; const done = new Promise(r => { resolve = r; });
@@ -181,119 +185,59 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
       o.connect(a); a.connect(A.sfxBus || A.master || c.destination); o.start(); a.gain.exponentialRampToValueAtTime(.0001, c.currentTime + d); o.stop(c.currentTime + d + .02);
     } catch {}
   };
-  let alive = true, wonAny = false, gain = 0;
+  let alive = true, wonAny = false, gain = null;   // gain: what the last win paid ({ taps } | { coins } | null)
   const fanfare = () => [523, 659, 784, 1046].forEach((f, k) => setTimeout(() => alive && beep(f, .1), k * 110));
 
   // the page
   const cv = h('canvas', { width: W, height: H, 'aria-label': 'MONGLE TV' });
   const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
-  const chLbl = h('span', { class: 'mtv-chn' }, 'CH 1');
+  const key = TV_GAMES.includes(game) ? game : TV_GAMES[Math.random() * TV_GAMES.length | 0];
+  const chLbl = h('span', { class: 'mtv-chn' }, 'CH ' + TV_CH[key]);
   const sayEl = h('div', { class: 'mtv-say', role: 'status', 'aria-live': 'polite' });
   const say = t => { sayEl.textContent = t; };
-  const rule = h('div', { class: 'mtv-rule' }), payEl = h('div', { class: 'mtv-pay' });
-  const cbs = T.ch.map((t, i) => h('div', { class: 'mtv-cb', role: 'button', tabindex: '0' }, `${i + 1} ${tr(t)}`));
   const xb = G.ui.ibtn('close', 'red', () => close()); xb.classList.add('mtv-x');
   const box = h('div', { class: 'mtv-box' },
     h('div', { class: 'mtv-mon' }, h('div', { class: 'mtv-scr' }, cv), h('div', { class: 'mtv-lbl' }, h('span', { class: 'mtv-brand' }, 'MONGLE·TV'), chLbl, h('span', { class: 'mtv-led' }))),
-    sayEl, h('div', { class: 'mtv-chans' }, ...cbs), rule, payEl, xb);
+    sayEl, xb);
   const root = h('div', { class: 'mtv' }, box);
   for (const ev of ['pointerdown', 'pointerup', 'pointermove', 'pointercancel', 'wheel', 'click', 'dblclick', 'contextmenu']) root.addEventListener(ev, e => e.stopPropagation());
-  const showPay = n => {
-    payEl.classList.remove('got', 'dim');
-    if (!pay) { payEl.textContent = ''; return; }
-    if (n) { payEl.textContent = fill(T.got, { n }); void payEl.offsetWidth; payEl.classList.add('got'); return; }
-    const s = pay.state(); payEl.textContent = tr(T[s] || ''); payEl.classList.toggle('dim', s !== 'gain');
+  // the first line: start, and the taps a win would bring while there are any to bring
+  const startLine = () => tr(T.start) + (pay?.state() === 'gain' ? ' · ' + tr(T.gain) : '');
+  // a game won: the fanfare, and what this stage still has to give
+  const won = () => { fanfare(); wonAny = true; gain = pay?.win?.() || null; return gain; };
+  const sayEnd = (ok, line) => {
+    if (!ok) return say(line + ' · ' + tr(T.again));
+    if (gain?.taps) return say(line + ' · ' + fill(T.got, { n: gain.taps }));
+    if (gain?.coins) return sayEl.replaceChildren(line + ' · ', h('span', { class: 'mtv-coin', html: ICON.coin }), '+' + gain.coins);
+    say(pay && pay.state() === 'already' ? line + ' · ' + tr(T.already) : line);
   };
-  // a game won: the fanfare, and the taps if this stage still has them to give
-  const won = () => { fanfare(); wonAny = true; gain = pay?.win?.() || 0; showPay(gain); return gain; };
-  const endLine = (ok, line) => ok ? line + (gain ? ' · ' + fill(T.got, { n: gain }) : '') : line + ' · ' + tr(T.again);
+  const COIN = ['..kkkk..', '.kyyyyk.', 'kyWyyyok', 'kyWyyyok', 'kyyyyyok', 'kyyyyook', '.kooook.', '..kkkk..'], CC = { k: '#2b2030', y: '#ffd23f', W: '#fff6c4', o: '#d99a0b' };
   function overlay(ok, extra) {
     rect(18, 30, 124, 52, 'rgba(20,16,38,.8)');
     px(ok ? 'CLEAR!' : 'TRY AGAIN', 80, 50, ok ? '#7bff9a' : '#ff8fb8', 16);
-    if (ok && gain) { hand(58, 58); px('+' + gain, 92, 72, '#ffe14d', 16); } else if (extra) px(extra, 80, 72, '#ffffff', 8);
+    if (ok && gain?.taps) { hand(58, 58); px('+' + gain.taps, 92, 72, '#ffe14d', 16); }
+    else if (ok && gain?.coins) { COIN.forEach((r, j) => [...r].forEach((c, i) => { if (c !== '.') rect(52 + i * 2, 58 + j * 2, 2, 2, CC[c]); })); px('+' + gain.coins, 94, 72, '#ffe14d', 16); }
+    else if (extra) px(extra, 80, 72, '#ffffff', 8);
   }
 
-  // ═══ CH1 어디 숨었게? — the friend hides in one of three boxes, the boxes shuffle, tap the right one (3 rounds)
-  const SHELL = (() => {
-    const LV = { mid: { swaps: [5, 6, 7], dur: [420, 360, 320], need: 2 }, hard: { swaps: [8, 10, 12], dur: [260, 220, 190], need: 3 } };
-    const slots = [40, 80, 120], BY = 72; let st, round, wins, res, who, boxes, friend;
-    const tw = [];   // tweens: { t0, ms, f, r }
-    const run = (ms, f) => new Promise(r => tw.push({ t0: performance.now(), ms, f, r }));
-    const wait = ms => run(ms, () => {});
-    let gen = 0;
-    function newRound(my) {
-      who = ['bunny', 'bear', 'frog'][round % 3];
-      boxes = slots.map((x, i) => ({ x, has: i === 1, lid: 0, dy: 0 })); friend = { x: 80, y: 40, vis: true };
-      st = 'show'; say(fill(T.shell.hide, { who: NAMES[who] }));
-      const b = boxes[1];
-      run(450, k => { b.lid = k; }).then(() => my === gen && run(380, k => { friend.y = 40 + (BY + 2 - 40) * ease(k); }))
-        .then(() => { if (my !== gen) return; friend.vis = false; beep(330, .06); return run(220, k => { b.lid = 1 - k; }); })
-        .then(() => my === gen && wait(380)).then(() => {
-          if (my !== gen) return; st = 'shuffle'; say(tr(T.shell.watch));
-          let p = Promise.resolve(); for (let i = 0; i < LV[lv].swaps[round]; i++) p = p.then(() => my === gen && swap(LV[lv].dur[round]));
-          p.then(() => { if (my === gen) { st = 'pick'; say(tr(T.shell.pick)); } });
-        });
-    }
-    function swap(d) {
-      const i = Math.random() * 3 | 0; let j = Math.random() * 2 | 0; if (j >= i) j++;
-      const A_ = boxes.find(b => b.x === slots[i]), B_ = boxes.find(b => b.x === slots[j]), ax = A_.x, bx = B_.x; beep(220 + Math.random() * 60, .04);
-      return run(d, k => { const e = ease(k); A_.x = ax + (bx - ax) * e; B_.x = bx + (ax - bx) * e; A_.dy = -Math.sin(k * Math.PI) * 10; B_.dy = Math.sin(k * Math.PI) * 4; }).then(() => { A_.x = bx; B_.x = ax; A_.dy = B_.dy = 0; });
-    }
-    function pick(i, my) {
-      st = 'reveal'; const b = boxes.find(q => q.x === slots[i]), right = b.has, real = boxes.find(q => q.has);
-      beep(right ? 660 : 180, right ? .12 : .18, right ? 'square' : 'sawtooth'); res.push(right); if (right) wins++;
-      run(260, k => { b.lid = k; }).then(() => {
-        if (right) { friend = { x: b.x, y: BY - 8, vis: true }; say(fill(T.shell.right, { who: NAMES[who] })); }
-        else { say(fill(T.shell.wrong, { who: NAMES[who] })); return run(260, k => { real.lid = k; }).then(() => { friend = { x: real.x, y: BY - 8, vis: true }; }); }
-      }).then(() => wait(1100)).then(() => {
-        if (my !== gen) return; round++;
-        if (round < 3) { friend = null; newRound(my); return; }
-        st = 'end'; const ok = wins >= LV[lv].need;
-        if (ok) won();
-        say(endLine(ok, fill(ok ? T.shell.win : T.shell.lose, { n: wins })));
-      });
-    }
-    return {
-      rule: () => tr(lv === 'hard' ? T.rule.shellHard : T.rule.shellMid),
-      qa: () => ({ st, ans: boxes.length ? slots.indexOf(boxes.find(b => b.has).x) : -1, x: slots }),
-      reset() { gen++; tw.length = 0; st = 'title'; boxes = []; friend = null; res = []; say(tr(T.start)); },
-      start() { gen++; tw.length = 0; round = 0; wins = 0; res = []; friend = null; gain = 0; newRound(gen); },
-      down(x, y) {
-        if (st === 'title' || st === 'end') return this.start(); if (st !== 'pick') return;
-        let best = -1, bd = 1e9; slots.forEach((sx, i) => { const d = Math.abs(sx - x); if (d < bd && y > 40) { bd = d; best = i; } }); if (bd < 20) pick(best, gen);
-      },
-      frame(t, now) {
-        for (const w of [...tw]) { const k = Math.min(1, (now - w.t0) / w.ms); w.f(k); if (k >= 1) { tw.splice(tw.indexOf(w), 1); w.r(); } }
-        night(t);
-        if (st === 'title') { spr('bunny', 74, 40); cbox(80, BY); if (Math.sin(t * 5) > 0) px('TAP TO START', 80, 110); return; }
-        for (const b of boxes) { rect(b.x - 12, 93, 24, 2, 'rgba(0,0,0,.28)'); cbox(b.x, BY + b.dy, 26, 20, b.lid); }
-        if (friend?.vis) spr(who, friend.x - sw(who) / 2, friend.y - sh(who) + 6);
-        for (let i = 0; i < 3; i++) { const r = res[i]; rect(64 + i * 12, 6, 8, 8, r == null ? '#5a4f7c' : r ? '#5fd38a' : '#ff6b81'); }
-        if (st === 'pick' && Math.sin(t * 6) > -.3) px('?', 80, 56, '#ffe14d', 16);
-        if (st === 'end') overlay(wins >= LV[lv].need, `${wins}/3`);
-      },
-    };
-  })();
-
-  // ═══ CH2 이삿짐 쌓기 — a box slides side to side; tap to drop it on the stack, what hangs over falls off
+  // ═══ 이삿짐 쌓기 (CH 2) — a box slides side to side; tap to drop it on the stack, what hangs over falls off
   const STACK = (() => {
-    const LV = { mid: { goal: 10, v0: 55, dv: 6 }, hard: { goal: 14, v0: 80, dv: 8 } };
+    const LV = { mid: { goal: 14, v0: 80, dv: 8 }, hard: { goal: 16, v0: 92, dv: 9 } };   // (10/19 "좀 어렵게": the prototype's 'hard' is the start now)
     const BH = 8, BASE = 104; let st, layers, cur, dir, cam, chips, perfect, winT = 0;
     const topY = () => BASE - layers.length * BH;
     function next() { const L = layers[layers.length - 1]; cur = { x: dir > 0 ? 6 : W - 6 - L.w, w: L.w }; }
     return {
-      rule: () => fill(T.rule.stack, { n: LV[lv].goal }),
       qa: () => ({ st, cx: cur?.x, lx: layers[layers.length - 1].x, n: layers.length - 1 }),
-      reset() { st = 'title'; layers = [{ x: 60, w: 40 }]; cur = null; cam = 0; chips = []; say(tr(T.start)); },
-      start() { st = 'play'; layers = [{ x: 60, w: 40 }]; dir = 1; cam = 0; chips = []; perfect = 0; gain = 0; next(); say(tr(T.stack.go) + ' ' + fill(T.stack.count, { n: 0, goal: LV[lv].goal })); },
+      reset() { st = 'title'; layers = [{ x: 60, w: 40 }]; cur = null; cam = 0; chips = []; say(startLine()); },
+      start() { st = 'play'; layers = [{ x: 60, w: 40 }]; dir = 1; cam = 0; chips = []; perfect = 0; gain = null; next(); say(tr(T.stack.go) + ' ' + fill(T.stack.count, { n: 0, goal: LV[lv].goal })); },
       down() {
         if (st === 'title' || st === 'end') return this.start(); if (st !== 'play') return;
         const L = layers[layers.length - 1], a = Math.max(cur.x, L.x), b = Math.min(cur.x + cur.w, L.x + L.w), over = b - a;
-        if (over <= 0) { st = 'end'; chips.push({ x: cur.x, w: cur.w, y: topY() - BH, vy: 0 }); beep(150, .25, 'sawtooth'); say(endLine(false, fill(T.stack.lose, { n: layers.length - 1 }))); return; }
+        if (over <= 0) { st = 'end'; chips.push({ x: cur.x, w: cur.w, y: topY() - BH, vy: 0 }); beep(150, .25, 'sawtooth'); sayEnd(false, fill(T.stack.lose, { n: layers.length - 1 })); return; }
         if (Math.abs(cur.x - L.x) < 1.6) { layers.push({ x: L.x, w: L.w }); perfect = 1; beep(988, .08); }
         else { if (cur.x < L.x) chips.push({ x: cur.x, w: L.x - cur.x, y: topY() - BH, vy: 0 }); if (cur.x + cur.w > L.x + L.w) chips.push({ x: L.x + L.w, w: cur.x + cur.w - (L.x + L.w), y: topY() - BH, vy: 0 }); layers.push({ x: a, w: over }); beep(440 + layers.length * 25, .06); }
         const n = layers.length - 1;
-        if (n >= LV[lv].goal) { st = 'win'; winT = .9; won(); say(endLine(true, fill(T.stack.win, { n }))); return; }
+        if (n >= LV[lv].goal) { st = 'win'; winT = .9; won(); sayEnd(true, fill(T.stack.win, { n })); return; }
         dir = -dir; next(); say(fill(T.stack.count, { n, goal: LV[lv].goal }) + (perfect ? ' · ' + tr(T.stack.perfect) : '')); perfect = 0;
       },
       frame(t, now, dt) {
@@ -314,15 +258,14 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
     };
   })();
 
-  // ═══ CH3 몽글 점프 — 몽글이 runs along the alley; tap to jump over boxes and pots, last till the bar fills
+  // ═══ 몽글 점프 (CH 3) — 몽글이 runs along the alley; tap to jump over boxes and pots, last till the bar fills
   const RUN = (() => {
-    const LV = { mid: { secs: 20, v0: 62, dv: 2.2, gap: [70, 120] }, hard: { secs: 25, v0: 82, dv: 3, gap: [55, 100] } };
+    const LV = { mid: { secs: 25, v0: 82, dv: 3, gap: [55, 100] }, hard: { secs: 30, v0: 90, dv: 3.4, gap: [50, 92] } };
     const GY = 100; let st, me, obs, tm, dist, nextAt, hills;
     return {
-      rule: () => fill(T.rule.run, { n: LV[lv].secs }),
       qa: () => ({ st, tm, y: me.y, near: obs.filter(o => o.x > 20 && o.x < 70).map(o => o.x) }),
-      reset() { st = 'title'; me = { y: GY, vy: 0 }; obs = []; tm = 0; hills = Array.from({ length: 6 }, (_, i) => ({ x: i * 34, h: 10 + (i * 7) % 14 })); say(tr(T.start)); },
-      start() { st = 'play'; me = { y: GY, vy: 0 }; obs = []; tm = 0; dist = 0; nextAt = 60; gain = 0; say(tr(T.run.go)); },
+      reset() { st = 'title'; me = { y: GY, vy: 0 }; obs = []; tm = 0; hills = Array.from({ length: 6 }, (_, i) => ({ x: i * 34, h: 10 + (i * 7) % 14 })); say(startLine()); },
+      start() { st = 'play'; me = { y: GY, vy: 0 }; obs = []; tm = 0; dist = 0; nextAt = 60; gain = null; say(tr(T.run.go)); },
       down() { if (st === 'title' || st === 'end') return this.start(); if (st !== 'play') return; if (me.y >= GY - .5) { me.vy = -150; beep(520, .05); } },
       frame(t, now, dt) {
         night(t, GY + 2);
@@ -330,12 +273,13 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
         for (const hl of hills) { hl.x -= sp * .25 * dt; if (hl.x < -34) hl.x += 204; rect(hl.x, GY + 2 - hl.h - 12, 30, hl.h + 12, '#2c2450'); rect(hl.x + 4, GY + 2 - hl.h - 8, 4, 4, '#ffd36b'); rect(hl.x + 18, GY + 2 - hl.h - 8, 4, 4, '#ffd36b'); }
         if (st === 'play') {
           tm += dt; dist += sp * dt;
-          if (dist > nextAt) { const big = lv === 'hard' && Math.random() < .3; obs.push({ x: W + 4, w: big ? 18 : (Math.random() < .5 ? 10 : 8), h: big ? 10 : (Math.random() < .5 ? 10 : 13), pot: Math.random() < .4 }); const [a, b] = LV[lv].gap; nextAt = dist + a + Math.random() * (b - a) + sp * .25; }
+          // (never closer than one jump can clear: 0.71 s in the air — at full speed two close pots were a sure crash)
+          if (dist > nextAt) { const big = lv === 'hard' && Math.random() < .3; obs.push({ x: W + 4, w: big ? 18 : (Math.random() < .5 ? 10 : 8), h: big ? 10 : (Math.random() < .5 ? 10 : 13), pot: Math.random() < .4 }); const [a, b] = LV[lv].gap; nextAt = dist + Math.max(a + Math.random() * (b - a) + sp * .25, sp * .78 + 16); }
           me.vy += 420 * dt; me.y = Math.min(GY, me.y + me.vy * dt); if (me.y >= GY) me.vy = 0;
           for (const o of obs) o.x -= sp * dt; obs = obs.filter(o => o.x > -24);
           const hit = obs.some(o => o.x < 30 + 10 && o.x + o.w > 30 + 2 && me.y - 2 > GY - o.h);
-          if (hit) { st = 'end'; beep(150, .25, 'sawtooth'); say(endLine(false, fill(T.run.lose, { s: tm.toFixed(1) }))); }
-          else if (tm >= LV[lv].secs) { st = 'end'; won(); say(endLine(true, fill(T.run.win, { s: LV[lv].secs }))); }
+          if (hit) { st = 'end'; beep(150, .25, 'sawtooth'); sayEnd(false, fill(T.run.lose, { s: tm.toFixed(1) })); }
+          else if (tm >= LV[lv].secs) { st = 'end'; won(); sayEnd(true, fill(T.run.win, { s: LV[lv].secs })); }
         }
         for (const o of obs) { if (o.pot) { rect(o.x, GY + 2 - o.h, o.w, o.h, '#2b2030'); rect(o.x + 1, GY + 2 - o.h + 5, o.w - 2, o.h - 6, '#c9603c'); rect(o.x + 1, GY + 2 - o.h + 1, o.w - 2, 4, '#5fbf54'); } else cbox(o.x + o.w / 2, GY + 2 - o.h, o.w, o.h - 1); }
         spr('mong', 28, me.y - 8 + (st === 'play' && me.y >= GY && Math.sin(t * 20) > 0 ? -1 : 0));
@@ -346,10 +290,10 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
     };
   })();
 
-  // ═══ CH4 상자 깨기 — 몽글이 bounces a ball off a pillow into the boxes; three boxes hide a friend, find all three
+  // ═══ 상자 깨기 (CH 4) — 몽글이 bounces a ball off a pillow into the boxes; three boxes hide a friend, find all three
   const BREAK = (() => {
-    const LV = { mid: { v: 74, lives: 3, peek: true }, hard: { v: 98, lives: 2, peek: false } };
-    const COLS = 7, ROWS = 3, BW = 20, BHt = 9, X0 = 10, Y0 = 18, PY = 92, PW = 26;
+    const LV = { mid: { v: 98, lives: 2, pw: 24, peek: false }, hard: { v: 106, lives: 2, pw: 22, peek: false } };
+    const COLS = 7, ROWS = 3, BW = 20, BHt = 9, X0 = 10, Y0 = 18, PY = 92, PW = LV[lv].pw;
     let st, bricks, pad, ball, lives, found, pops, launched, gotWho, drag = false;
     const WHO = ['bunny', 'bear', 'frog'];
     function build() {
@@ -360,10 +304,9 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
     function launch() { const a = (Math.random() - .5) * .9, v = LV[lv].v; ball.vx = v * Math.sin(a); ball.vy = -v * Math.cos(a); launched = true; beep(520, .05); }
     const padTo = x => { pad.x = Math.max(PW / 2 + 1, Math.min(W - PW / 2 - 1, x)); };
     return {
-      rule: () => fill(T.rule.brk, { n: LV[lv].lives }),
       qa: () => ({ st, bx: ball?.x, by: ball?.y, vy: ball?.vy, found, lives }),
-      reset() { st = 'title'; build(); pad = { x: 80 }; ball = null; pops = []; found = 0; gotWho = []; say(tr(T.start)); },
-      start() { st = 'play'; build(); pad = { x: 80 }; lives = LV[lv].lives; found = 0; gotWho = []; pops = []; gain = 0; serve(); say(tr(T.brk.go)); },
+      reset() { st = 'title'; build(); pad = { x: 80 }; ball = null; pops = []; found = 0; gotWho = []; say(startLine()); },
+      start() { st = 'play'; build(); pad = { x: 80 }; lives = LV[lv].lives; found = 0; gotWho = []; pops = []; gain = null; serve(); say(tr(T.brk.go)); },
       down(x) { if (st === 'title' || st === 'end') return this.start(); drag = true; padTo(x); if (st === 'play' && !launched) launch(); },
       move(x) { if (drag && st === 'play') padTo(x); },
       up() { drag = false; },
@@ -385,9 +328,9 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
               if (b.who) { found++; gotWho.push(b.who); pops.push({ who: b.who, x: b.x + BW / 2, y: b.y + 2, t: 0 }); say(fill(T.brk.found, { who: NAMES[b.who] })); beep(988, .1); }
               break;
             }
-            if (ball.y > H + 2) { lives--; beep(150, .25, 'sawtooth'); if (lives <= 0) { st = 'end'; say(endLine(false, fill(T.brk.lose, { n: found }))); } else { serve(); say(fill(T.brk.miss, { n: lives })); } break; }
+            if (ball.y > H + 2) { lives--; beep(150, .25, 'sawtooth'); if (lives <= 0) { st = 'end'; sayEnd(false, fill(T.brk.lose, { n: found })); } else { serve(); say(fill(T.brk.miss, { n: lives })); } break; }
           }
-          if (st === 'play' && found >= 3) { st = 'end'; won(); say(endLine(true, tr(T.brk.win))); }
+          if (st === 'play' && found >= 3) { st = 'end'; won(); sayEnd(true, tr(T.brk.win)); }
         }
         for (const b of bricks) if (b.alive) {
           cbox(b.x + BW / 2, b.y, BW - 2, BHt - 1);
@@ -409,32 +352,19 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
     };
   })();
 
-  // ── channels, input, the frame loop
-  const GAMES = [SHELL, STACK, RUN, BREAK];
-  let cur = 0;
-  function choose(i) {
-    cur = i; gain = 0;
-    cbs.forEach((b, k) => b.classList.toggle('on', k === i));
-    chLbl.textContent = 'CH ' + (i + 1);
-    GAMES[i].reset(); rule.textContent = GAMES[i].rule(); showPay(0);
-  }
-  cbs.forEach((b, i) => {
-    b.addEventListener('pointerdown', () => b.classList.add('down'));
-    for (const ev of ['pointerleave', 'pointercancel']) b.addEventListener(ev, () => b.classList.remove('down'));
-    b.addEventListener('pointerup', () => { if (!b.classList.contains('down')) return; b.classList.remove('down'); if (i !== cur) { beep(300, .04); choose(i); } });
-    b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (i !== cur) choose(i); } });
-  });
+  // ── input, the frame loop
+  const GAME = { stack: STACK, run: RUN, brk: BREAK }[key];
   const at = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
-  cv.addEventListener('pointerdown', e => { e.preventDefault(); try { cv.setPointerCapture?.(e.pointerId); } catch {} const [x, y] = at(e); GAMES[cur].down(x, y); });
-  cv.addEventListener('pointermove', e => { const [x, y] = at(e); GAMES[cur].move?.(x, y); });
-  cv.addEventListener('pointerup', () => GAMES[cur].up?.());
-  cv.addEventListener('pointercancel', () => GAMES[cur].up?.());
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); try { cv.setPointerCapture?.(e.pointerId); } catch {} const [x, y] = at(e); GAME.down(x, y); });
+  cv.addEventListener('pointermove', e => { const [x, y] = at(e); GAME.move?.(x, y); });
+  cv.addEventListener('pointerup', () => GAME.up?.());
+  cv.addEventListener('pointercancel', () => GAME.up?.());
   // a keyboard: space plays (the middle of the screen), Esc closes
-  const key = e => {
+  const onKey = e => {
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); }
-    else if (e.key === ' ' && e.target?.classList?.contains('mtv-cb') !== true) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) { GAMES[cur].down(80, 80); setTimeout(() => GAMES[cur].up?.(), 60); } }
+    else if (e.key === ' ') { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) { GAME.down(80, 80); setTimeout(() => GAME.up?.(), 60); } }
   };
-  addEventListener('keydown', key, true);
+  addEventListener('keydown', onKey, true);
   // the room's music steps back while the TV plays
   const mb = A?.musicBus, mv = mb?.gain.value;
   try { if (mb && A.ctx) mb.gain.setTargetAtTime(Math.min(mv, .08), A.ctx.currentTime, .15); } catch {}
@@ -442,12 +372,12 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
   const loop = now => {
     if (!alive) return;
     const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
-    g = ctx; GAMES[cur].frame(now / 1000, now, dt);
+    g = ctx; GAME.frame(now / 1000, now, dt);
     raf = requestAnimationFrame(loop);
   };
   function close() {
     if (!alive) return; alive = false;
-    cancelAnimationFrame(raf); removeEventListener('keydown', key, true);
+    cancelAnimationFrame(raf); removeEventListener('keydown', onKey, true);
     try { if (mb && A.ctx) mb.gain.setTargetAtTime(mv, A.ctx.currentTime, .2); } catch {}
     cv.width = cv.height = 0;   // (the pixels go now, not when the page lets go of the element — iPhone memory)
     if (g === ctx) g = null;
@@ -456,9 +386,9 @@ export function openMongleTV(G, { level = 'mid', pay = null } = {}) {
     resolve({ won: wonAny });
   }
   // (QA: headless checks drive it through G.tv.qa — the game's state, a tap, a drag)
-  G.tv = { close, done, qa: { ch: () => cur, choose, s: () => GAMES[cur].qa(), down: (x, y) => GAMES[cur].down(x, y), move: x => GAMES[cur].move?.(x), up: () => GAMES[cur].up?.(), say: () => sayEl.textContent, pay: () => payEl.textContent } };
+  G.tv = { close, done, qa: { game: key, s: () => GAME.qa(), down: (x, y) => GAME.down(x, y), move: x => GAME.move?.(x), up: () => GAME.up?.(), say: () => sayEl.textContent } };
   document.getElementById('overlay').append(root);
-  GAMES.forEach(q => { g = ctx; q.reset(); }); choose(0);
+  g = ctx; GAME.reset();
   raf = requestAnimationFrame(loop);
   newCard(G, 'mongletv');   // the first time: "새로 얻었다! 몽글 TV" for 3 s (no card to read)
   return done;

@@ -64,7 +64,7 @@ import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitF
 import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
-import { tvScreens, openMongleTV, tvLevel } from '../mongletv.js';   // 몽글 TV (10/19)
+import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS } from '../mongletv.js';   // 몽글 TV (10/19)
 
 // 레벨 보고서 R1 '몰래 숨기' 시제품 (10/18) — only with ?hide=1 (the user compares it on the phone before anything changes):
 // you don't watch the friend hide ("눈 감아! 하나, 둘, 셋" and only the sounds), 2–3 big hideouts are candidates, a trail of
@@ -219,6 +219,7 @@ export class StageScene {
         sc = Math.max(sc, Math.min(lim, Math.max(1.25, Math.min(2.4, want / big))));   // (룩: a whole house on screen draws its things bigger)
       }
       attachItem(p.spot, g, { rotY: (r() - .5) * 1.4, scale: sc });
+      if (p.spot.kind === 'on' || p.spot.kind === 'inside') this.fitClear(p.spot, g);   // (10/19 user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ")
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
       if (p.vacHidden) { it.vacHidden = true; g.visible = false; }   // rides out on the robot vacuum (아파트 장치판)
       if (p.type === 'friendtoken') { it.friend = true; it.thumb = G.thumbs['face_' + this.th.friend]; this.friendItem = it; }
@@ -277,9 +278,11 @@ export class StageScene {
     // (D4 10/19, user "추천대로": every hidden-object stage after 1장 too — they showed 2~7 of the list at once)
     if (!this.custom && !this.preview && !this.incident && this.idx >= 1 && (this.idx <= 10 || this.hunt)) this.tiers = tierPass(this);
     this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
-    // 몽글 TV (10/19): the room's TVs and monitors are on — a little pixel picture, a flicker now and then — and a tap on one
-    // plays (not the TV puzzle's TV; a 흑백 target stays dark until it's found; never for the bots)
-    if (!this.G.bot) this.tvs = tvScreens((this.room.rooms || [this.room]).flatMap(R => R.furns).map(e => e.f).filter(f => f !== this.plan.tv?.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); } });
+    // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
+    // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
+    // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
+    this.tvGame = !this.custom && !this.preview && !this.model && !this.spec.timed && !(this.spec.tut <= 2) ? tvGameFor(this.idx) : null;
+    if (!this.G.bot && this.tvGame) this.tvs = tvScreens((this.room.rooms || [this.room]).flatMap(R => R.furns).map(e => e.f).filter(f => f !== this.plan.tv?.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); } });
     if (this.v2) v2Prep(this);
     W.shadowDirty = true;
     // state
@@ -821,6 +824,35 @@ export class StageScene {
     // (the words at most every 13 s, or when you've been still a while — 1판 had "킥…"/"삐죽… 쏙!" every 4-5 s; 검토 재검토 5)
     if (line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10) { this._gigSayT = this.t; this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300); }
   }
+  // (10/19 evening, user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ" — a key in the 레코드장 칸 poked through its wall and the
+  // records) a thing put in a cubby or on a shelf is measured against its own furniture: rays from its middle to the four
+  // sides; anything of the furniture closer than the thing reaches (a wall, a divider, books) shrinks it to fit with a
+  // little air, at most to 45%. Open tops find nothing to hit and stay as they are.
+  fitClear(spot, g) {
+    const rooms = (this.room.rooms || [this.room]).map(R => R.group);
+    let fr = spot.anchor; while (fr.parent && !rooms.includes(fr.parent)) fr = fr.parent;
+    if (!fr.parent) return;
+    const mine = new Set(); g.traverse(o => mine.add(o));
+    const rc = this._fitRc || (this._fitRc = new THREE.Raycaster());
+    const need = () => {   // how much it must shrink to clear the furniture on all four sides (1 = it fits)
+      g.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()); if (box.isEmpty()) return 1;
+      let k = 1;
+      for (const [dx, dz, half] of [[1, 0, box.max.x - c.x], [-1, 0, c.x - box.min.x], [0, 1, box.max.z - c.z], [0, -1, c.z - box.min.z]]) {
+        if (half <= .01) continue;
+        rc.set(c, new THREE.Vector3(dx, 0, dz)); rc.far = half + .05;
+        const hit = rc.intersectObject(fr, true).find(h => !mine.has(h.object) && h.object.visible !== false);
+        if (hit) k = Math.min(k, (hit.distance - .015) / half);
+      }
+      return k;
+    };
+    let k = need(); if (k >= .999) return;
+    // first turn it square to the furniture (a long key slanting across a cubby), keep whichever way fits better
+    const ry = g.rotation.y, tries = [0, Math.PI / 2].map(a => { g.rotation.y = a; return [a, need()]; }).sort((x, y) => y[1] - x[1]);
+    if (tries[0][1] > k) { g.rotation.y = tries[0][0]; k = tries[0][1]; } else g.rotation.y = ry;
+    // then shrink, but never below 70% (things to find getting small was the earlier complaint; a hair of overlap beats a speck)
+    if (k < .999) { g.scale.multiplyScalar(Math.max(.7, k)); g.updateMatrixWorld(true); }
+  }
   async revealFriend(it) {
     if (it.found || this.result) return;
     const G = this.G, W = G.world, f = this.friend, tw = this.tw;
@@ -1218,7 +1250,7 @@ export class StageScene {
       const line = which && !said.has(which) && hiddenSay(this.idx, this.th.friend, which);
       if (line) { said.add(which); setTimeout(() => !this.dead && !this.result && this.say(this.friend, line, 1600), 350); }
       // 6판 — only after 20 s still looking for the last one (user 10/19: "1" — hints felt too many, same wait as the sparkle)
-      if (left === 1 && sceneAt(this.idx)?.lastSmoke && !this._smoke) { this._smoke = true; const at = sceneAt(this.idx).lastSmoke; this.tw.wait(20).then(() => { if (!this.dead && !this.result && this.targets.some(t => !t.found)) this.smokeTo(at); }); }
+      if (left === 1 && sceneAt(this.idx)?.lastSmoke && !this._smoke) { this._smoke = true; const at = sceneAt(this.idx).lastSmoke; this.tw.wait(35).then(() => { if (!this.dead && !this.result && this.targets.some(t => !t.found)) this.smokeTo(at); }); }   // (20 → 35 s with the other helps)
     }
     if (this.raidRun) raidFind(this, it, s);   // 타이머 털기: into the loot bag
     else if (this.spec.timed) this.tlEl.textContent = `너굴이가 세는 중 · ${this.found}/${this.targets.length}`;
@@ -1509,28 +1541,30 @@ export class StageScene {
   }
   // ── 몽글 TV (10/19, src/mongletv.js): a TV or monitor in this room that plays (tvScreens; no bot, no TV puzzle)
   tvAt(furn) { return !!this.tvs?.has(furn); }
-  // the stage stops while it's open (clock, hint sparkle, the 톡 timers: update() is paused); a win gives +3 taps once a
-  // stage, never past the stage's own count (user: "성공하면 한 판에 한 번 손가락 +3"); no tap count = just for fun
+  // the stage stops while it's open (clock, hint sparkle, the 톡 timers: update() is paused); a win pays once a stage: +3
+  // taps, never past the stage's own count (user: "성공하면 한 판에 한 번 손가락 +3"), or coins when the hand is full
   async openTv() {
     const G = this.G;
     if (G.tv || this.paused || this.result || !this.running || G.ui.panelOpen || G.bot) return;
     this.paused = true; G.audio.sfx('click');
     const pay = this.tapsLeft == null ? null : {
-      state: () => this._tvPaid ? 'already' : this.tapsLeft >= this.tapBudget ? 'full' : 'gain',
+      state: () => this._tvPaid ? 'already' : this.tapsLeft >= this.tapBudget ? 'coin' : 'gain',
       win: () => this.tvReward(),
     };
-    await openMongleTV(G, { level: tvLevel(this.idx), pay });
+    await openMongleTV(G, { level: tvLevel(this.idx), game: this.tvGame, pay });
     if (this.dead) return;
     this.paused = false; this.idle = 0;
   }
   tvReward() {
-    if (this.tapsLeft == null || this._tvPaid || this.result) return 0;
+    if (this.tapsLeft == null || this._tvPaid || this.result) return null;
+    this._tvPaid = true;
     const n = Math.min(this.tapBudget, this.tapsLeft + 3) - this.tapsLeft;
-    if (n <= 0) return 0;   // (full: nothing given, so it's still there for later)
-    this._tvPaid = true; this.tapsLeft += n;
+    // (a full hand used to get nothing — user on the phone: "이거 이기면 손가락 주는 거 아니었나?" — so it's coins then)
+    if (n <= 0) { this.G.addCoins(TV_COINS); this.G.audio.sfx('coin'); return { coins: TV_COINS }; }
+    this.tapsLeft += n;
     const p = this.tapPill;
     if (p) { p.querySelector('.v').textContent = this.tapsLeft; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); p.classList.toggle('need', this.tapsLeft <= 3); }
-    return n;
+    return { taps: n };
   }
   lockedPartNear(furn, x, y) {
     const W = this.G.world; let best = null, bd = Infinity;
@@ -2592,18 +2626,18 @@ export class StageScene {
       if (this.idle > 11) this.taunt('idle');
       // a sparkle on something findable after a while of nothing: 9 s on a friend hunt; on a hidden-object stage you get
       // time to look yourself first — 12 s in chapters 1-2, 20 s from 3 (레벨 세션 B3, user: "진득하게")
-      if (this.sparkAfter == null) { const ch = REGIONS.indexOf(regionOf(this.idx)); this.sparkAfter = this.incident || this.custom || this.spec.timed ? 9 : this.spec.tut <= 2 ? 12 : 20; }   // (12 → 20 s on hidden-object stages from 3판: user 10/19 "힌트도 너무 많은 듯")
+      if (this.sparkAfter == null) { const ch = REGIONS.indexOf(regionOf(this.idx)); this.sparkAfter = this.incident || this.custom || this.spec.timed ? 20 : this.spec.tut <= 2 ? 20 : 35; }   // (10/19 evening "힌트가 너무 많다": 9/12/20 → 20/20/35 s)   // (12 → 20 s on hidden-object stages from 3판: user 10/19 "힌트도 너무 많은 듯")
       // F1: one thing left for 20 s → the owner looks at it; with one left the sparkle waits until 10 s after that look
       if (this.feelHelp) {
         const left = this.targets.filter(t => !t.found);
-        if (left.length === 1) { this._oneAt ??= this.t; if (this._gazeAt == null && this.t - this._oneAt >= 20) { this._gazeAt = this.t; this.gazeHint(left[0]); } }
+        if (left.length === 1) { this._oneAt ??= this.t; if (this._gazeAt == null && this.t - this._oneAt >= 35) { this._gazeAt = this.t; this.gazeHint(left[0]); } }
         else this._oneAt = this._gazeAt = null;
       }
       const waitGaze = this.feelHelp && this._oneAt != null && (this._gazeAt == null || this.t - this._gazeAt < 10);
       if (this.idle > this.sparkAfter && !waitGaze) {
         this.twinkleT -= dt;
         if (this.twinkleT <= 0) {
-          this.twinkleT = 6;   // (4 → 6 s, the same note)
+          this.twinkleT = 10;   // (4 → 6 → 10 s: "힌트가 너무 많다", 10/19 evening)
           const vis = this.targets.filter(t => !t.found && !(t.spot.part && t.spot.part.t < .5) && !W.occluded(t.g, this.worldCenter(t), [this.room.group]));
           const pick = vis[Math.floor(Math.random() * vis.length)];
           if (pick) { const s = W.toScreen(this.worldCenter(pick)); W.fx.burst(s.x, s.y, { n: 5, shape: 'star', speed: 60, gravity: -30, life: .9, size: 9, colors: ['#ffffff', '#fff3a0'] }); }
