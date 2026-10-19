@@ -226,7 +226,7 @@ export async function kitIntro(S) {
   // (speed lines from the box, halftone dots at the edges: "오프닝도 뒤에 배경이나 좀 만화같이")
   const art = K.boxArt || G.thumbStore[S.kitPic('box')];
   const F = (c, ...k) => h('div', { class: 'kb3-face kb3-' + c }, ...k);
-  const box = h('div', { class: 'kb3' + (quick ? '' : ' big'), style: `--box:${K.color}` },
+  const box = h('div', { class: 'kb3 big', style: `--box:${K.color}` },
     h('div', { class: 'kb3-glow' }),
     h('div', { class: 'kb3-cube' },
       h('div', { class: 'kb3-floor' }),
@@ -237,7 +237,9 @@ export async function kitIntro(S) {
   // 새롭게") — so the friend comes in as a comic cut-in: their face in a round frame, the line in a bubble beside it
   const who = S.kit.who || S.th?.friend || 'bear', face = G.thumbs['face_' + who];
   const cut = !quick && S.kit.open ? h('div', { class: 'kitcut', style: 'transform:translateX(-115%)' }, h('div', { class: 'kitcut-face' }, h('img', { src: face || '', alt: '' })), h('div', { class: 'kitcut-say' }, S.kit.open)) : null;
-  const lay = h('div', { class: 'kitintro' + (quick ? '' : ' comic') },
+  // (the panel every time, the short one too — user 10/19 on the phone, after a short one: "뒤에 배경 완전히 가려야 하는데 지금
+  // 노란색만 살짝 보임")
+  const lay = h('div', { class: 'kitintro comic' },
     h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box, ...(cut ? [cut] : []));
   col.append(lay);
   const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
@@ -255,20 +257,18 @@ export async function kitIntro(S) {
   W.camLock = true;
   let bub = null;
   try {
-    if (!quick) {
-      // the comic panel slams in over the room
-      G.audio.sfx('swish');
-      await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.9,.3,1)' });
-      if (skipped) throw 0;
-    }
+    // the comic panel slams in over the room
+    G.audio.sfx('swish');
+    await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: quick ? 200 : 300, easing: 'cubic-bezier(.2,.9,.3,1)' });
+    if (skipped) throw 0;
     const br = () => box.getBoundingClientRect();
     G.audio.sfx('whoosh');
+    // it drops in — 쿵 — and settles (a puff of dust)
+    await A(box, [{ transform: 'translateY(-80vh) rotate(-6deg)' }, { transform: 'translateY(0) rotate(0)', offset: .7 }, { transform: 'translateY(0) scale(1.1, .84)', offset: .82 }, { transform: 'translateY(-6px) scale(.97, 1.04)', offset: .92 }, { transform: 'none' }], { duration: quick ? 420 : 560, easing: 'cubic-bezier(.45,.05,.7,1)' });
+    if (skipped) throw 0;
+    G.audio.sfx('land'); G.audio.sfx('thunk'); haptic('tick');
+    { const r = front.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.bottom - 6, { n: 16, shape: 'circle', colors: ['#ffffff', '#f3e6d6', '#e9d6c0'], speed: 220, up: 20, gravity: 300, size: 10, life: .5 }); }
     if (!quick) {
-      // it drops in — 쿵 — and settles (a puff of dust)
-      await A(box, [{ transform: 'translateY(-80vh) rotate(-6deg)' }, { transform: 'translateY(0) rotate(0)', offset: .7 }, { transform: 'translateY(0) scale(1.1, .84)', offset: .82 }, { transform: 'translateY(-6px) scale(.97, 1.04)', offset: .92 }, { transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.45,.05,.7,1)' });
-      if (skipped) throw 0;
-      G.audio.sfx('land'); G.audio.sfx('thunk'); haptic('tick');
-      { const r = front.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.bottom - 6, { n: 16, shape: 'circle', colors: ['#ffffff', '#f3e6d6', '#e9d6c0'], speed: 220, up: 20, gravity: 300, size: 10, life: .5 }); }
       // the friend's line now, while the box sits still (스토리 룸: a bubble during the shaking goes unread) — in from the side
       if (cut) {
         await A(cut, [{ transform: 'translateX(-115%) rotate(-6deg)' }, { transform: 'translateX(4%) rotate(1deg)', offset: .75 }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.9,.3,1)' });
@@ -304,13 +304,16 @@ export async function kitIntro(S) {
         await wait(70);
       }
     } else {
-      await A(box, [{ transform: 'scale(.4)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 200, easing: 'cubic-bezier(.2,1.6,.4,1)' });
+      // (the short one: light round the lid, one heartbeat, and it pops)
+      A(glowEl, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: .95, transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
+      G.audio.sfx('heart'); haptic('tick');
+      await A(cube, [{ transform: KB3_VIEW }, { transform: KB3_VIEW + ' scale3d(1.08,1.08,1.08)', offset: .35 }, { transform: KB3_VIEW }], { duration: 260, easing: 'ease-out' });
       if (skipped) throw 0;
     }
     // 펑! the lid bursts off (a white flash, a comic burst), light pours out
     G.audio.sfx('special'); G.audio.sfx('pop', 6); haptic('ok');
     const b0 = br(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2, y: lt.top + lt.height / 2 };
-    if (!quick) {
+    {
       const fl = h('div', { class: 'kitflash' }); col.append(fl); outs.push(fl); A(fl, [{ opacity: .85 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' });
       const bang = h('div', { class: 'kitbang', style: `left:${mouth.x - col.getBoundingClientRect().left}px;top:${mouth.y - col.getBoundingClientRect().top}px` }); col.append(bang); outs.push(bang);
       A(bang, [{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(12deg)', opacity: 1, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(16deg)', opacity: 0 }], { duration: 520, easing: 'ease-out' });
@@ -330,7 +333,7 @@ export async function kitIntro(S) {
     // (the card is full width: it rises no bigger than its own size, or it runs off the screen)
     await A(card, [{ transform: `translateX(-50%) translateY(${dyB + 20}px) scale(.55)`, opacity: 0 }, { transform: `translateX(-50%) translateY(${dy - 10}px) scale(1.03)`, opacity: 1, offset: .7 }, { transform: `translateX(-50%) translateY(${dy}px) scale(1)`, opacity: 1 }], { duration: quick ? 280 : 480, easing: 'cubic-bezier(.2,.9,.3,1)' });
     if (skipped) throw 0;
-    if (!quick) { lay.classList.add('calm'); await wait(450); if (skipped) throw 0; }   // (the comic panel fades: the room shows again for the hiding)
+    lay.classList.add('calm'); await wait(quick ? 300 : 450); if (skipped) throw 0;   // (the comic panel fades: the room shows again for the hiding)
     // the pieces snap off the runner one by one and fly to where they hide — the piece shows there as it lands (쏙)
     const order = cells.slice(), byKey = new Map(its.map(t => [t.kitPart, t]));
     const lands = [];

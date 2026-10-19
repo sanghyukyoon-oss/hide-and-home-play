@@ -1339,11 +1339,11 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kitrun.skin-boxes .kitrun-box { display: block; position: absolute; left: 10%; right: 10%; bottom: 8%; height: 62%; border-radius: 5px; transform-origin: 50% 100%;
   background: linear-gradient(90deg, transparent 40%, #f6e3b8 40% 60%, transparent 60%), linear-gradient(#f0cf9a, #e2b77c); box-shadow: inset 0 0 0 2px rgba(58, 36, 83, .28);
   transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), opacity .35s; }
-.kitrun.skin-boxes .kitrun-ghost { filter: brightness(0) opacity(.22); }
+.kitrun.skin-boxes .kitrun-ghost { filter: brightness(0) opacity(.5); }   /* (13판·34판 too: as dark as the stage list's) */
 .kitrun.skin-boxes .kitrun-cell img { z-index: 1; }
 .kitrun.skin-boxes .kitrun-cell.found .kitrun-box { transform: scaleY(.14); opacity: .7; }   /* folded flat */
 .kitrun.skin-bowls .kitrun-cell { background: radial-gradient(ellipse 60% 26% at 50% 84%, #ffe3ec 0 96%, transparent 100%), rgba(255, 255, 255, .7); border-radius: 14px 14px 22px 22px; }
-.kitrun.skin-bowls .kitrun-ghost { filter: brightness(0) opacity(.14); }
+.kitrun.skin-bowls .kitrun-ghost { filter: brightness(0) opacity(.45); }
 /* the build (10/19, 프라모델 느낌): the nippers snipping a part off the runner on the mat, the little manual card */
 .kitnip { position: absolute; z-index: 32; width: 64px; height: 64px; margin: -52px 0 0 -14px; pointer-events: none; filter: drop-shadow(0 3px 0 rgba(58, 36, 83, .35)); animation: kitnipin .42s ease-out forwards; }
 .kitnip svg { width: 100%; height: 100%; overflow: visible; }
@@ -1397,11 +1397,13 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kitrun.skin-runner .kitrun-row.framed { grid-template-columns: var(--cols); grid-template-rows: repeat(2, 50px); width: 300px; gap: 5px; padding: 5px; border-radius: 12px;
   position: relative; background: var(--run); box-shadow: 0 0 0 2.5px var(--ink), 5px 5px 0 2.5px var(--runsh); }
 .kitrun.skin-runner .kitrun-row.framed .kitrun-cell { aspect-ratio: auto; border-radius: 3px; box-shadow: inset 0 0 0 2.5px var(--ink);
-  background-color: #3fae6a; background-image: linear-gradient(rgba(255, 255, 255, .2) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255, 255, 255, .2) 1.5px, transparent 1.5px);
+  background-color: #4cb874; background-image: linear-gradient(rgba(255, 255, 255, .12) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255, 255, 255, .12) 1.5px, transparent 1.5px);
   background-size: 13px 13px; background-position: 1px 1px; }
 .kitrun.skin-runner .kitrun-row.framed .kitrun-cell img { left: 16%; top: 12%; width: 68%; height: 76%; }
 .kitrun.skin-runner .kitrun-row.framed .kitrun-pc { filter: drop-shadow(3px 3px 0 rgba(36, 30, 90, .45)); }
-.kitrun.skin-runner .kitrun-row.framed .kitrun-ghost { filter: brightness(0) invert(1) opacity(.2); }
+/* the pieces still to find: dark, sharp silhouettes like the stage list's (.slot.sil) — user 10/19 on the phone: "실루엣이 너무
+   흐릿해서 어떤 실루엣인지 잘 안 보임" (they were faint white on the mat's grid) */
+.kitrun.skin-runner .kitrun-row.framed .kitrun-ghost { filter: brightness(0) opacity(.66); }
 .kitrun.skin-runner .kitrun-row.framed .kitrun-cell.used .kitrun-ghost { filter: brightness(0) invert(1) opacity(.07); }
 .kitrun.skin-runner .kitrun-row.framed .kitrun-gate { width: 12px; height: 5px; top: calc(50% - 2.5px); box-shadow: 0 0 0 1.5px var(--ink); }
 .kitrun.skin-runner .kitrun-row.framed .kitrun-cell.used .kitrun-gate { width: 4px; }
@@ -1422,7 +1424,8 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 /* the box's comic panel (10/19 — user: "오프닝도 뒤에 배경이나 좀 만화같이", then a green zoom-burst reference: "배경은 이런느낌으로
    아예 뒤를 가려도 상관없으니 새롭게"): it covers the room — a lime-to-green burst, speed lines turning slowly round the box,
    halftone dots growing to the edges, zigzag bolts pointing in. It fades ('calm') before the pieces fly off to hide. */
-.kitintro.comic { background: none; overflow: hidden; }
+.kitintro.comic { background: #3cb22c; overflow: hidden; transition: background-color .45s; }   /* (a solid green under it all: the room never shows through) */
+.kitintro.comic.calm { background-color: transparent; }
 .kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts { position: absolute; pointer-events: none; transition: opacity .45s; }
 .kitintro:not(.comic) :is(.kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts) { display: none; }
 .kitintro.calm :is(.kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts) { opacity: 0; }
