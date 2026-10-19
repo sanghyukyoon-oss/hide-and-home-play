@@ -14,6 +14,7 @@ import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
 import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, lensClear } from '../lens.js';   // 돋보기 가방 (경제 B5, G.econ only, 10/19)
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
+import { starTotal, starBar, starBoxState, homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
@@ -2159,7 +2160,7 @@ export class StageScene {
     // come from the shop's 물건 tab and 하나 슬쩍 (설계서 4-1)
     if (G.econ && !this.preview && !this.custom) { const seen = G.save.seen || (G.save.seen = []), add = [...new Set(this.targets.map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !seen.includes(t)); seen.push(...add); seenN = add.length; seenNew = add;
       // 판 끝 집으로 가져가기 (10/19): the first new thing goes on the 찾은 것 선반 at home — saved with the progress, shown on the way
-      if (add.length && !this.kit) { const H = G.save.home, sh = H.shelf || (H.shelf = []); if (!sh.includes(add[0])) { sh.push(add[0]); H.shelfNew = add[0]; } } }
+      if (add.length && !this.kit) { const H = G.save.home, sh = H.shelf || (H.shelf = []); if (!sh.includes(add[0])) { sh.push(add[0]); H.shelfNew = add[0]; (H.homeQ ||= { friends: [], furns: [], items: [] }).items.push(add[0]); } } }
     else if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
     // 경제 B5 (10/19): no free magnifier used → one into the bag (not a preview / model kit, not testing my own room)
     const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this) : null;
@@ -2169,6 +2170,7 @@ export class StageScene {
     const secWas = !!secret && secretOpen(G.save.best, sHost), secKnown = anySecret(G.save.best);
     const secretNew = !!secret && !secWas && stars >= 3, secretLock = !!secret && !secWas && stars < 3 && secKnown;
     const metBefore = G.econ && !this.custom && !this.preview ? new Set(metFriends(G.save)) : null;   // (who is new after this clear — 판 끝 집으로 가져가기)
+    const starBefore = metBefore && !this.model ? starTotal(G.save) : null;   // (별 상자: the bar fills from here)
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
     // the finished model goes home (once) — saved with the clear, before the pause (GPT QA R2-01 10/19: quitting in that
@@ -2230,9 +2232,21 @@ export class StageScene {
     // 판 끝 집으로 가져가기 (검토 세션 10/19, 사용자 OK — "찾은 게 아무 데도 안 남는다"): '다음' goes through 몽글이's room for under
     // 3 s on the way — the friend met here walks in and sits, a piece won here is set down, the thing found goes on the shelf
     // (a tap goes straight on). Only when something new came home; not on the 2판 '계속 찾기' (the room opens on its own there)
-    const passage = metBefore && G.homeOpen?.() && !G.playMode && !G.bot && !this.model ? { item: G.save.home.shelfNew || null, furn: memento || picked || (kitNew ? kitFurn : null), friends: metFriends(G.save).filter(k => !metBefore.has(k)) } : null;
+    // what came home this time joins the queue for the room (homeQ — the room shows it all next time it is passed through);
+    // a star box waiting turns '다음' into '🎁 방에서 열기' (별 상자, 경제 A1+A2)
+    let passage = null, boxOn = false, gotNow = [];
+    if (metBefore && G.homeOpen?.() && !G.playMode && !G.bot && !this.model) {
+      const H = G.save.home, Q = H.homeQ || (H.homeQ = { friends: [], furns: [], items: [] });
+      const fr = metFriends(G.save).filter(k => !metBefore.has(k)), fu = memento || picked || (kitNew ? kitFurn : null);
+      for (const k of fr) if (!Q.friends.includes(k)) Q.friends.push(k);
+      if (fu) Q.furns.push(fu);
+      gotNow = [...fr.map(k => ({ face: k })), ...(fu ? [{ furn: fu }] : []), ...(seenNew[0] && H.shelfNew === seenNew[0] ? [{ item: seenNew[0] }] : [])];
+      G.persist();
+      boxOn = starBoxState(G.save).pending > 0;
+      passage = { items: Q.items.slice(), furns: Q.furns.slice(), friends: Q.friends.slice(), box: boxOn };
+    }
     const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;
-    const passOn = !!passage && !homeNow && !!(passage.item || passage.furn || passage.friends.length);
+    const passOn = !!passage && !homeNow && (boxOn || (PASSAGE_EVERY && !!(passage.items.length || passage.furns.length || passage.friends.length)));
     // the first run doesn't offer the home after 1판: the home first shows after 2판, when 내 집 opens (기획안 7장)
     const noHome = G.firstRun && this.idx === 0 && !this.custom && !this.preview && !this.model;
     const bossNext = BOSS_AFTER.includes(this.idx) && !G.save.bossDone?.[this.idx], gameNext = !bossNext && !!BOSS_GAMES[this.idx] && !G.save.bossDone?.['g' + this.idx], miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && !G.save.bossDone?.['m' + this.idx];
@@ -2240,7 +2254,7 @@ export class StageScene {
     const cv = h('span', {}, '0');
     const p = G.ui.panel({
       title: this.model ? '완성!' : first?.allClear ? `${STAGE_COUNT}판 올클리어!` : this.v2 ? v2Title(this) : this.spec.hard ? '하드 클리어!' : (!this.custom && this.idx < 6) ? ['대단해!', '최고야!', '숨바꼭질 천재!', '멋져!', '완벽해!', '진짜 잘한다!'][this.idx] : '다 찾았다!', color: 'green',
-      body: [h('div', { class: 'stars' }, ...starEls),
+      body: [h('div', { class: 'stars' }, ...starEls), ...(starBefore != null ? [starBar(G, starBefore)] : []),
         // 사건 판: what each star is for, so a missing one says how to get it (GPT QA 10/18: 보너스 0/2 → '다 찾았네', 별 2개)
         ...(this.v2 ? [h('div', { class: 'starwhy' }, ...v2StarWhy(this).map(([t, on]) => h('span', { class: on ? 'on' : '' }, t)))].concat(v2Stamp(this) || [])
           : this.hiddenStage || this.model ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star))]   // 숨은그림 판: what each star is for
@@ -2261,7 +2275,8 @@ export class StageScene {
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
         ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : []),
-        ...(seenN ? [seenRow(G, seenNew)] : []),   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
+        ...(seenN ? [seenRow(G, seenNew)] : []),
+        ...(!PASSAGE_EVERY && gotNow.length ? [homeRow(G, gotNow)] : []),   // (rooms only on a box: what went home this time, on its way)   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
         ...(newFriend ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
@@ -2274,7 +2289,7 @@ export class StageScene {
         this.nextBtn = this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'green', icon: 'home', cls: 'big', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })
           : this.preview ? G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })
-          : G.ui.btn(bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: 'green', icon: 'play', cls: 'big',
+          : G.ui.btn(passOn && boxOn ? '🎁 방에서 열기' : bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: passOn && boxOn ? 'orange' : 'green', icon: 'play', cls: 'big',
               onClick: () => { const go = (n, d) => passOn ? G.go('home', { passage: { ...passage, next: [n, d] }, quick: true }) : G.go(n, d); return bossNext ? go('boss', { after: this.idx }) : gameNext ? go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? (MINI_AFTER[this.idx].lab ? go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx })) : go('stage', { idx: this.idx + 1 }); } })],
     });
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }

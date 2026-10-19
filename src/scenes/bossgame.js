@@ -8,7 +8,8 @@ import { followupAt, settleFollowup, clearFollowupFinish } from '../followup.js'
 import * as THREE from 'three';
 import { h } from '../ui.js';
 import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
-import { giftCard, giftKey } from '../gift.js';   // 놀이 보상 카드 (경제·로비 10/19)
+import { giftCard, giftKey } from '../gift.js';
+import { starTotal, gameStar } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)   // 놀이 보상 카드 (경제·로비 10/19)
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { ITEMS, buildItem } from '../gfx/items.js';
 import { renderThumbs } from '../thumbs.js';
@@ -136,7 +137,7 @@ export class BossGameScene {
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
     // (10/19, user: "미니게임에서 뭐 리워드를 줘야지"): the reward is a card after the game's own end panel (finish), not a toast
     if (G.playMode || G.bot) G.ui.toast(G.playMode ? (this.interlude ? '쉬어가기 성공! (연습)' : '보스 클리어! (연습)') : this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
-    else this.reward = { coins, lens, st, line: e.line || null };   // (line: the game's own result line — 실험실 10/19)   // (practice pays nothing — QA N5)
+    else { const sb0 = starTotal(G.save); gameStar(G, (this.interlude ? 'm' : 'g') + this.after, st); this.reward = { coins, lens, st, line: e.line || null, starBefore: sb0 }; }   // (line: the game's own result line — 실험실 10/19)   // (practice pays nothing — QA N5)
     if (lens && (G.playMode || G.bot)) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
   }
   // an interlude lost: still on to the next stage, with a small reward

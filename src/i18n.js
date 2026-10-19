@@ -64,6 +64,7 @@ const PAT = [
   [/^(.+?) 카드$/, n => `${n} card`],
   [/^이제 내 캐릭터는 (.+)!$/, n => `You're playing as ${n} now!`],
   [/^이제 (.+?)[이가] 같이 다녀요!$/, n => `${n} walks with you now!`],
+  [/^🎁 별 상자 (\d+)$/, n => `🎁 Star boxes ${n}`],
   [/^도감 (\d+)\/(\d+)$/, (a, b) => `Collection ${a}/${b}`],
   [/^김치냉장고 (\d+)칸$/, n => `Kimchi fridge drawer ${n}`],
   [/^(\d+)호 우편함$/, n => `Mailbox ${n}`],

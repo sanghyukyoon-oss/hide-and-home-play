@@ -17,6 +17,7 @@ import { clearFollowupFinish } from '../followup.js';
 import { HOME_TUT, ENDING, endCard, choose, giftSeats, newCard, BUDDY_LINE, UI as SUI } from '../script.js';
 import * as SCRIPT from '../script.js';   // (ROOM_ARRIVE: a friend's first line in your room — 스토리 룸, read if it is there)
 import { indexSpots } from '../room.js';
+import { starBoxState, starBoxThree } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { buildItem, ITEMS } from '../gfx/items.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
@@ -67,12 +68,15 @@ export class LobbyScene extends MyHomeScene {
     if (!o.ending) runRaids(G);   // residents who sneaked in while you were away (coins land before the pills show them)
     // 판 끝 집으로 가져가기 (10/19): on the way to the next stage, the room for under 3 s (the room's first opening plays instead)
     const pass = o.passage && G.homeOpen() && G.save.tut?.home ? o.passage : null;
-    this._shelfHold = pass?.item || null;   // (the thing flies onto the shelf, so the shelf starts without it)
+    this._shelfHold = new Set([...(pass?.items || []), ...(pass?.item ? [pass.item] : [])]);   // (the things fly onto the shelf, so the shelf starts without them)
     await super.enter({ ...o, mode: pass ? 'passage' : !o.mode || o.mode === 'view' ? 'lobby' : o.mode });
     if (this.dead) return;
     if (o.ending) return this.playEnding(o.ending);   // 엔딩 (스토리 룸 10/19)
     if (pass) return this.runPassage(pass);
     delete this.H.shelfNew;
+    // things gathered for the room that never passed through it (the 홈 button instead of '다음'): set down now, quietly
+    const Q = this.H.homeQ; if (Q?.furns?.length && G.homeOpen()) { for (const f of Q.furns) { const i = this.H.inventory.lastIndexOf(f); if (i >= 0) { this.placeFromInv(i); this.select(null); } } }
+    this.H.homeQ = { friends: [], furns: [], items: [] };
     this.tw.wait(.8).then(() => !this.dead && HomeScene.prototype.raidNews.call(this));
     const tut = G.save.tut || (G.save.tut = {});
     if (G.homeOpen() && !tut.home) await this.roomOpens();
@@ -130,8 +134,10 @@ export class LobbyScene extends MyHomeScene {
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
     // the boxes of chapters you'd already finished before this update (설계서 8장): one 🎁 each, opened here
     const q = (this.H.boxQ || []).filter(i => PICKS[i] && !(i in (this.H.picks || {})));
-    if (q.length && open) {
-      const gift = ui.btn(`🎁 지난 장 선물 ${q.length}`, { color: 'yellow', cls: 'sm pulse', onClick: async () => {
+    const sb = open ? starBoxState(S).pending : 0;   // 별 상자 waiting (the room wasn't passed since it came)
+    if ((q.length || sb) && open) {
+      const gift = ui.btn(q.length ? `🎁 지난 장 선물 ${q.length}` : `🎁 별 상자${sb > 1 ? ' ' + sb : ''}`, { color: 'yellow', cls: 'sm pulse', onClick: async () => {
+        if (!q.length) { gift.remove(); await this.openStarBoxLobby(); return; }
         const i = q[0], t = await pickPanel(G, PICKS[i], { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 나머지 둘은 상점 기념품 칸에서 살 수 있어' });
         takePick(G, i, t); ui.toast(`${FURN_INFO[t].name} · 꾸미기 보관함에 들어갔어`, 'green'); this.setMode('lobby');
       } });
@@ -173,7 +179,7 @@ export class LobbyScene extends MyHomeScene {
     rec._disp = [];
     const list = (this.H.shelf || []).filter(t => ITEMS[t]).slice(-12);
     SLOTS.forEach(([x, y], i) => {
-      const t = list[i], show = t && t !== this._shelfHold, o = show ? shelfThing(t) : qSprite(.17);
+      const t = list[i], show = t && !this._shelfHold?.has(t), o = show ? shelfThing(t) : qSprite(.17);
       o.position.set(x, show ? y : y + .13, -.25); rec.f.group.add(o); rec._disp.push(o);
     });
     this.G.world.idsDirty = true; this.G.world.shadowDirty = true;
@@ -337,7 +343,7 @@ export class LobbyScene extends MyHomeScene {
     if (mode === 'passage') {   // 판 끝 집으로 가져가기: no buttons, just "톡 하면 계속"
       const G = this.G, W = G.world; this.mode = 'passage'; this.sel = null; G.ui.clear(); if (this.room) this.fitCam();
       W.joyHidden = true; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0;
-      const col = this.col = G.ui.col(), hint = h('div', { class: 'ol', style: 'position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(42,26,61,.5);color:#fff;border-radius:999px;padding:8px 18px;font-size:16px;white-space:nowrap;pointer-events:auto' }, '톡 하면 계속');
+      const col = this.col = G.ui.col(), hint = h('div', { class: 'ol passhint', style: 'position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(42,26,61,.5);color:#fff;border-radius:999px;padding:8px 18px;font-size:16px;white-space:nowrap;pointer-events:auto' }, '톡 하면 계속');
       hint.addEventListener('pointerup', e => { e.stopPropagation(); this.passageDone(); }); col.append(hint);
       this.showGhosts(); return;
     }
@@ -542,37 +548,89 @@ export class LobbyScene extends MyHomeScene {
   // ── 판 끝 집으로 가져가기 (검토 세션 10/19 — 사용자 "막 다시 하고 싶진 않다", 진단 "찾은 게 아무 데도 안 남는다"): on the way to
   // the next stage, the room for under 3 s. The friend met there walks in from the door to a marked seat, a piece won there is
   // set down, the first new thing found flies from 몽글이 onto the shelf. One camera cut, no camera moves; a tap goes on at once.
-  async runPassage({ item = null, furn = null, friends = [], next = null }) {
+  async runPassage({ item = null, furn = null, items = [], furns = [], friends = [], box = false, next = null }) {
     const G = this.G, W = G.world, H = this.H, z = this.zone, tw = this.tw;
+    items = [...new Set([...items, ...(item ? [item] : [])])]; furns = [...furns, ...(furn ? [furn] : [])];
     this._next = next; this.busyTut = true; W.onTap = () => this.passageDone();
-    // ① the data first, so a page closed now keeps all of it
-    let frec = null;
-    if (furn) { const i = H.inventory.lastIndexOf(furn); if (i >= 0) { const n0 = this.room.furns.length; this.placeFromInv(i); this.select(null); if (this.room.furns.length > n0) frec = this.room.furns[this.room.furns.length - 1]; } }
+    this._boxWant = box && starBoxState(G.save).pending > 0;   // (a box to open: a tap cuts the shows short, never the box)
+    // ① the data first, so a page closed now keeps all of it: the pieces into the room, the friends to seats (or the box)
+    const frecs = [];
+    for (const f of furns) { const i = H.inventory.lastIndexOf(f); if (i < 0) continue; const n0 = this.room.furns.length; this.placeFromInv(i); this.select(null); if (this.room.furns.length > n0) frecs.push(this.room.furns[this.room.furns.length - 1]); }
     H.friendKnown = metFriends(G.save);
-    const seatedNow = seatedAll(H), boxNow = new Set(H.friendBox || []);
-    const k = friends.find(k => CHAR_DEFS[k] && !seatedNow.has(k) && !boxNow.has(k)) || null;
-    const seat = k && (z.friends?.length || 0) < seatsOf(z) ? this.seatSpot() : null;
-    let s = null;
-    if (k && seat) { const rec = { k, x: seat.x, z: seat.z, a: Math.atan2(2.2 - seat.x, 2.2 - seat.z) }; (z.friends ||= []).push(rec); s = this.addSeated(rec); }
-    else if (k) H.friendBox = [...new Set([...(H.friendBox || []), k])];
-    delete H.shelfNew; G.persist();
+    const seatedNow = seatedAll(H), boxNow = new Set(H.friendBox || []), comers = [], lookers = [];
+    for (const k of [...new Set(friends)]) {
+      if (!CHAR_DEFS[k] || seatedNow.has(k) || boxNow.has(k)) continue;
+      const seat = (z.friends?.length || 0) < seatsOf(z) ? this.seatSpot() : null;
+      if (seat) { const rec = { k, x: seat.x, z: seat.z, a: Math.atan2(2.2 - seat.x, 2.2 - seat.z) }; (z.friends ||= []).push(rec); comers.push({ s: this.addSeated(rec), seat }); }
+      else { H.friendBox = [...new Set([...(H.friendBox || []), k])]; lookers.push(k); }
+    }
+    delete H.shelfNew; H.homeQ = { friends: [], furns: [], items: [] }; G.persist();
     // ② one cut that holds 몽글이 and where things happen
-    const shelf = this.room.furns.find(r => r.type === 'findshelf'), slot = item && shelf ? this.slotWorld(shelf, item) : null, door = this.doorAt();
-    this.frameLobby(0, [...(slot ? [slot] : []), ...(seat ? [seat] : k ? [door] : []), ...(frec ? [{ x: frec.x, z: frec.z }] : [])], true);   // (the door only when a friend just looks in from it; one walking in may start off the picture — the room stays big)
-    // ③ the shows, together
-    const jobs = [], m = this.mong, look = slot || seat || (frec && { x: frec.x, z: frec.z });
-    if (slot) jobs.push(this.flyToShelf(item, shelf, slot)); else if (item) { this._shelfHold = null; this.dressShelf(); }
-    if (s) jobs.push(this.walkIn(s, seat)); else if (k) jobs.push(this.peekIn(k));
-    if (look) m.faceTo(look.x, look.z);
-    jobs.push(tw.wait(1.1).then(() => { if (this.dead) return; m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); }));
+    const shelf = this.room.furns.find(r => r.type === 'findshelf'), slots = shelf ? items.map(t => [t, this.slotWorld(shelf, t)]).filter(([, s]) => s) : [], door = this.doorAt();
+    const bx = this._boxAt = this._boxWant ? this.boxSpot() : null;   // (where the star box will come down — in the picture from the start)
+    this.frameLobby(0, [...slots.map(([, s]) => s), ...comers.map(c => c.seat), ...(lookers.length && !comers.length ? [door] : []), ...frecs.map(f => ({ x: f.x, z: f.z })), ...(bx ? [bx, { x: bx.x + bx.rv.x * .5, z: bx.z + bx.rv.z * .5 }] : [])], true);   // (the door only when a friend just looks in from it; one walking in may start off the picture — the room stays big)
+    // ③ the shows, together (a few at a time when much came home at once)
+    const jobs = [], m = this.mong, first = slots[0]?.[1] || comers[0]?.seat || (frecs[0] && { x: frecs[0].x, z: frecs[0].z });
+    slots.slice(0, 4).forEach(([t, s], i) => jobs.push(tw.wait(i * .22).then(() => !this.dead && this.flyToShelf(t, shelf, s))));
+    if (slots.length > 4 || items.length > slots.length) { for (const [t] of slots.slice(4)) this._shelfHold?.delete(t); this.dressShelf(); }
+    comers.slice(0, 3).forEach((c, i) => jobs.push(tw.wait(i * .35).then(() => !this.dead && this.walkIn(c.s, c.seat))));
+    for (const c of comers.slice(3)) c.s.ch.bump(.3);
+    if (lookers.length) jobs.push(this.peekIn(lookers[0]));
+    if (first) m.faceTo(first.x, first.z);
+    jobs.push(tw.wait(1.1).then(() => { if (this.dead || this._boxing) return; m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); }));
     // at least 2 s to take it in, at most 2.8 s (검토: "판당 3초 이하") — a tap any time goes on
     const t0 = performance.now();
-    await Promise.race([Promise.all(jobs), tw.wait(2.5)]);
+    await Promise.race([Promise.all(jobs), tw.wait(2.5), new Promise(r => { this._skipShows = r; })]);
     if (this.dead) return;
-    await tw.wait(Math.max(.3, 2 - (performance.now() - t0) / 1000));
+    if (this._boxWant) { this._boxWant = false; this._boxing = true; m.pose = 'idle'; await this.openStarBoxes(); if (this.dead) return; await tw.wait(.6); }
+    else await tw.wait(Math.max(.3, 2 - (performance.now() - t0) / 1000));
     this.passageDone();
   }
+  // the lobby's 🎁 별 상자: one of three, set down in the room, 몽글이 goes over to it
+  async openStarBoxLobby() {
+    const G = this.G, H = this.H; if (starBoxState(G.save).pending <= 0) return;
+    const n = H.starBoxOpened || 0, three = starBoxThree(G.save, n);
+    const t = three.length ? await pickPanel(G, three, { title: '별 상자!', line: '별 15개를 모았어! 마음에 드는 걸 하나 골라', tag: '별 상자' }) : null;
+    if (this.dead) return;
+    H.starBoxOpened = n + 1;
+    if (t) { H.inventory.push(t); this.placeFromInv(H.inventory.length - 1); this.select(null); }
+    G.persist(); this.setMode('lobby');
+    const f = t && this.zone.furniture[this.zone.furniture.length - 1]; if (f) this.heroCheer({ x: f.x, z: f.z });
+  }
+  // 별 상자 (경제 A1+A2): a gift box drops in front of 몽글이; a tap opens it — one of three pieces, set straight down in the room
+  async openStarBoxes() {
+    const G = this.G, W = G.world, H = this.H, tw = this.tw, m = this.mong, R = this.room.group;
+    for (let guard = 0; guard < 3 && starBoxState(G.save).pending > 0 && !this.dead; guard++) {
+      const n = H.starBoxOpened || 0, three = starBoxThree(G.save, n);
+      const b = noPick(buildItem('gift', { code: '★★★' })), s1 = 3.2, at = (guard === 0 && this._boxAt) || this.boxSpot();
+      b.scale.setScalar(.01); b.position.set(at.x, 1.4, at.z); R.add(b); W.idsDirty = true; G.audio.sfx('pop', 3);
+      await tw.run(.45, k => { b.scale.setScalar(s1 * Math.max(.01, Math.min(1, k * 1.6))); b.position.y = 1.4 * (1 - k) + Math.abs(Math.sin(k * Math.PI)) * .2; }, ease.outBounce); if (this.dead) return;
+      m.faceTo(at.x, at.z);
+      const hint = this.col?.querySelector('.passhint'); if (hint) hint.textContent = tr('🎁 상자를 톡!');
+      const wiggle = setInterval(() => { b.rotation.z = Math.sin(performance.now() / 90) * .08; }, 30);
+      await new Promise(res => { this._boxTap = res; W.onTap = () => res(); });
+      clearInterval(wiggle); this._boxTap = null; W.onTap = () => this.passageDone();
+      if (this.dead) return;
+      G.audio.sfx('special'); W.fx.confetti?.(40);
+      const t = three.length ? await pickPanel(G, three, { title: '별 상자!', line: '별 15개를 모았어! 마음에 드는 걸 하나 골라', tag: '별 상자' }) : null;
+      if (this.dead) return;
+      R.remove(b);
+      H.starBoxOpened = n + 1;
+      if (t) { H.inventory.push(t); this.placeFromInv(H.inventory.length - 1); this.select(null); const f = this.zone.furniture[this.zone.furniture.length - 1]; if (f) { m.faceTo(f.x, f.z); m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); } }
+      G.persist();
+      if (hint) hint.textContent = tr('톡 하면 계속');
+      await tw.wait(.9);
+    }
+  }
+  // where a star box comes down: beside 몽글이 as you see it — to the screen's right — not in front of it
+  boxSpot() {
+    const rv = new THREE.Vector3(1, 0, 0).applyQuaternion(this.G.world.cam.quaternion); rv.y = 0; rv.normalize();
+    const hp = this.mong.root.position, want = { x: hp.x + rv.x * .95, z: hp.z + rv.z * .95 };
+    return { ...(this.freeSpot(want) || want), rv };
+  }
   passageDone() {
+    if (this._boxTap) { const r = this._boxTap; this._boxTap = null; return r(); }   // (a star box waiting: the tap opens it)
+    if (this._boxWant) return this._skipShows?.();   // (the box not down yet: a tap skips to it — '🎁 방에서 열기' keeps its word)
     if (this._pdone || this.dead || this.mode !== 'passage') return;
     this._pdone = true;
     const [n, d] = this._next || ['stage', { idx: this.G.save.stage || 0 }];
@@ -587,7 +645,7 @@ export class LobbyScene extends MyHomeScene {
     await tw.run(.25, k => g.scale.setScalar(s1 * Math.max(.01, k)), ease.outBack); if (this.dead) return;
     await tw.wait(.15); if (this.dead) return;
     await tw.run(.55, k => { g.position.lerpVectors(fL, tL, k); g.position.y += Math.sin(k * Math.PI) * .45; }, ease.inOutQuad); if (this.dead) return;
-    R.remove(g); this._shelfHold = null; this.dressShelf();
+    R.remove(g); this._shelfHold?.delete(item); this.dressShelf();
     const sp = W.toScreen(to); W.fx.burst(sp.x, sp.y, { n: 12, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 140, gravity: -30 });
     G.ui.floatText(sp.x, sp.y - 30, 'NEW', 'gold'); G.audio.sfx('special');
   }

@@ -22,6 +22,9 @@ export function disposeTree(root) {
   for (const [k, m] of MAT) if (m.map && texs.has(m.map)) MAT.delete(k);
   for (const t of texs) t.dispose();
 }
+// (QA3-tex11, GPT QA TECH-12) the same for a caller that frees textures itself (my home's freeRoom): a cached material keyed by a
+// freed texture is never asked for again (its key holds the texture's uuid), but it kept the texture — and its canvas — alive
+export function forgetMats(texs) { for (const [k, m] of MAT) if (m.map && texs.has(m.map)) MAT.delete(k); }
 // Shared shapes are cached by key, and the key carries theme colours, so every new room adds a few. They used to stay on
 // the GPU for good (disposeTree spares cached shapes), and after a dozen stages phones ran out of memory and the page
 // was reloaded (user, 10/17: "스테이지 몇판 하다보면 튕김"). Each scene build is a generation: purgeGeo() frees whatever

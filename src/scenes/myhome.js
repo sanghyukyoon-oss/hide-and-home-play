@@ -2,7 +2,7 @@
 // and strangers who open the shared game come to find what you hid.
 import * as THREE from 'three';
 import { Room, attachItem, indexSpots } from '../room.js';
-import { cachedGeos, STYLE } from '../gfx/kit.js';
+import { cachedGeos, STYLE, forgetMats } from '../gfx/kit.js';   // (QA3-tex11)
 import { validateRoom } from '../roomdoc.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
 import { FURN_INFO } from '../gfx/furniture.js';
@@ -691,4 +691,5 @@ function freeRoom(root, keepRoot = null) {
     for (const m of [].concat(o.material || [])) for (const k in m) if (m[k]?.isTexture && !keepT.has(m[k])) texs.add(m[k]);
   });
   for (const t of texs) t.dispose();
+  forgetMats(texs);   // (QA3-tex11: the material cache let go of them too — they kept their canvases alive)
 }
