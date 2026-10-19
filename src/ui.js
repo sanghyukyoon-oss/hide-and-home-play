@@ -126,7 +126,7 @@ export class UI {
       const TOP = 34, BOTTOM = 58, z = Math.min(1, (this.overlay.clientHeight - TOP - BOTTOM) / p.offsetHeight);
       if (z < 1) { const k = Math.max(.7, z); p.style.zoom = k.toFixed(3); p.style.margin = `${(TOP / k).toFixed(1)}px auto ${(BOTTOM / k).toFixed(1)}px`; }
     };
-    requestAnimationFrame(fit); setTimeout(fit, 900);
+    requestAnimationFrame(fit); setTimeout(fit, 900); setTimeout(fit, 1800);   // (and once more after a result's coins have counted up)
     return p;
   }
   closePanel(instant = false) {
