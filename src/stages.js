@@ -317,7 +317,7 @@ export const MAPS = {
         furniture: [F('stairsup', 0, 3), F('plant', 0, 0), F('bookshelf', 1, 0, 0, { seed: 13 }), F('lamp', 2, 0), F('fridge', 3, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0),
           // 이어진 집 (10/19): the kitchen pulley rides up through the balcony's hatch, a slide comes down from the balcony
           // into a ball pit, the dining table moved to the window side
-          F('sofa', 1, 2), F('liftbasket', 5, 2, 0, { up: true }), F('rug', 1, 3), F('table', 2, 4), F('tubeslide', 3, 3), F('diningset', 4, 3),
+          F('sofa', 1, 2), F('liftbasket', 5, 2, 0, { up: true, crank: 'left' }), F('rug', 1, 3), F('table', 2, 4), F('tubeslide', 3, 3), F('diningset', 4, 3),
           F('ballpit', 3, 5), F('laundrybasket', 2, 6), F('plant', 5, 5), F('stool', 5, 6)],
         decor: [D('window', 'W', 2.0), D('picture', 'W', -1.8), D('window', 'E', 1.6)] } },   // nothing hung on the back wall under the balcony: it is in shadow and out of sight
       // (the balcony's front-right tile is a hatch: the kitchen pulley comes up through it, 10/19)

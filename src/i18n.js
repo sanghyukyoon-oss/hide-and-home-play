@@ -268,7 +268,7 @@ const PAT = [
   [/^안 쓰임 \(([\d/]+) 뺌\)$/, a => `not in the story (cut ${a})`],
   [/^(.+?) 쏙!$/, n => `${n} — slipped in!`],
   [/^((?:(?! · ).)+?) \+(\d+)$/, (a, n) => `${a} +${n}`],   // (not across ' · ': pieces are translated one by one below)
-  [/^(.+?)의 (.+)$/, (a, b) => `${a}'s ${b}`],   // broad ones last
+  [/^(.+?)의 (.+)$/, (a, b) => `${a}'s ${b.replace(/^(the|a|an) /i, '')}`],   // broad ones last (no article after a possessive: "Grumpy's Room You'll Never Solve", not "Grumpy's The Room…" — 이웃 방 이름 10/20)
 ];
 
 // QA 10/18: words that showed in Korean on English screens

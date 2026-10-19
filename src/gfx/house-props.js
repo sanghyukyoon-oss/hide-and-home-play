@@ -159,18 +159,22 @@ const B = {};
 B.liftbasket = (f, T, o = {}) => {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), tk = [wood, woodD].join(',');
   const TOP = FLOOR_H + 1.35, yT = FLOOR_H + .12, yB = .5, z0 = -.28, up = !!o.up;
-  f.add(mc('liftframe|' + tk, ({ add, tube }) => {
+  // o.crank 'left': the crank on the left post — against an east wall the right one's handle stood 21 cm in the wall, and the
+  // room's part fitting then held the whole lift at .35 (7판: the basket never reached the upper floor — 10/20)
+  const cs = o.crank === 'left' ? -1 : 1;
+  f.add(mc('liftframe|' + tk + (cs < 0 ? '|L' : ''), ({ add, tube }) => {
     for (const sx of [-1, 1]) { add(G.box(.11, TOP, .11, .02), woodD, sx * .36, TOP / 2, z0); add(G.box(.22, .06, .22, .02), woodD, sx * .36, .03, z0); }
     add(G.box(.86, .12, .14, .03), woodD, 0, TOP - .04, z0);
     add(G.cyl(.15, .15, .07, 22), wood, 0, TOP - .2, z0 + .1, HP, 0, 0);
     add(G.tor(.15, .02, PI * 2, 6, 22), woodD, 0, TOP - .2, z0 + .1);
     add(G.cyl(.03, .03, .2, 8), '#c9cfe0', 0, TOP - .2, z0 + .06, HP, 0, 0);
     // the crank box on the right post
-    add(G.box(.16, .2, .16, .03), '#c9cfe0', .44, 1.0, z0 + .02);
-    tube([.36, TOP - .2, z0 + .1], [.44, 1.1, z0 + .1], .01, '#e8d8b8', 5);   // drive rope down to the crank
+    add(G.box(.16, .2, .16, .03), '#c9cfe0', cs * .44, 1.0, z0 + .02);
+    tube([cs * .36, TOP - .2, z0 + .1], [cs * .44, 1.1, z0 + .1], .01, '#e8d8b8', 5);   // drive rope down to the crank
   }));
-  const crank = new THREE.Group(); put(crank, .53, 1.0, z0 + .02); f.add(crank);
-  crank.add(mc('liftcrank', ({ add }) => { add(G.cyl(.025, .025, .14, 8), '#c9cfe0', .02, 0, 0, 0, 0, HP); add(G.box(.04, .2, .04, .01), '#c9cfe0', .08, -.08, 0); add(G.cyl(.035, .035, .1, 10), '#ffcf5c', .13, -.17, 0, 0, 0, HP); }));
+  const crank = new THREE.Group(); put(crank, cs * .53, 1.0, z0 + .02); f.add(crank);
+  const ch = new THREE.Group(); ch.rotation.y = cs < 0 ? PI : 0; crank.add(ch);   // (the handle faces out on either side)
+  ch.add(mc('liftcrank', ({ add }) => { add(G.cyl(.025, .025, .14, 8), '#c9cfe0', .02, 0, 0, 0, 0, HP); add(G.box(.04, .2, .04, .01), '#c9cfe0', .08, -.08, 0); add(G.cyl(.035, .035, .1, 10), '#ffcf5c', .13, -.17, 0, 0, 0, HP); }));
   const basket = new THREE.Group(); put(basket, 0, up ? yB : yT, z0 + .1); f.add(basket);
   basket.add(mc('liftbasket|' + tk, ({ add, tube }) => {
     // an open wicker tray: floor and four low sides, so what rides in it can be seen
