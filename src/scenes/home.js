@@ -13,7 +13,8 @@ import { groundTex } from '../gfx/outdoor.js';
 import { openTune } from '../tune.js';
 import { openCardBook } from '../cardbook.js';
 import { runRaids, unseen, markSeen, newsLine } from '../raid.js';
-import { canReplay, playRaidReplay } from '../raidreplay.js';   // ① 털림 다시 보기 (10/19)
+import { canReplay, playRaidReplay, shieldTxt } from '../raidreplay.js';   // ① 털림 다시 보기 · 문단속 (10/19)
+import { shieldLeft } from '../raid.js';
 import { Visitors } from '../visitors.js';
 import { storyFor } from '../story.js';
 import { openRoadmap } from '../roadmap.js';
@@ -1021,7 +1022,8 @@ export class HomeScene {
     if (last) rows.forEach((r, i) => { const e = list.slice(-4)[i]; if (canReplay(this, e)) { r.classList.add('tap'); r.addEventListener('click', () => replay(e)); } });
     G.audio.sfx(took.length ? 'miss' : 'coin');
     G.ui.panel({ title: '내가 없는 동안…', color: took.length ? 'red' : 'green',
-      body: [...rows, h('div', { class: 'txt' }, took.length ? '털어 간 친구 방에 가서 다 찾으면 되찾을 수 있어!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자')],
+      body: [...rows, h('div', { class: 'txt' }, took.length ? '털어 간 친구 방에 가서 다 찾으면 되찾을 수 있어!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자'),
+        ...(took.length && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : [])],
       buttons: last ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('다시 보기', { color: took.length ? 'orange' : 'green', icon: 'play', cls: 'big', onClick: () => replay(last) })]
         : took.length ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('되찾으러 가기', { color: 'orange', cls: 'big', onClick: () => { markSeen(G); G.go('visit'); } })]
         : [G.ui.btn('좋아!', { color: 'green', onClick: close })] });

@@ -8,9 +8,9 @@ import { Char } from './gfx/chars.js';
 import { buildItem, ITEMS } from './gfx/items.js';
 import { attachItem } from './room.js';
 import { resolveHost, makeFreeSpot, dropFreeSpot } from './freehide.js';
-import { h } from './ui.js';
+import { h, ICON } from './ui.js';
 import { practiceRooms } from './net.js';
-import { stolenBy, residentId } from './raid.js';
+import { stolenBy, residentId, shieldLeft } from './raid.js';
 import { setScoutList } from './raidrun.js';
 import { makePractice } from './scenes/visit.js';
 
@@ -18,6 +18,18 @@ const V = new THREE.Vector3();
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const ago = t => { const m = Math.round((Date.now() - t) / 60e3); return m < 2 ? '방금' : m < 60 ? `${m}분 전` : `${Math.round(m / 60)}시간 전`; };
+
+// 문단속 (Clash's shield): robbed once, the door stays locked for eight hours — a chip on the 내 방 lobby counts it down
+export const shieldTxt = ms => { const m = Math.ceil(ms / 60e3); return m >= 60 ? `${Math.floor(m / 60)}시간` + (m % 60 ? ` ${m % 60}분` : '') : `${m}분`; };
+export function shieldChip(G, top) {
+  if (!shieldLeft(G.save)) return null;
+  const v = h('span', { class: 'v' }), el = h('div', { class: 'shieldchip', role: 'button', tabindex: '0', style: `top:calc(${top}px + var(--safeT))`, html: ICON.lock });
+  el.append(v);
+  const tick = () => { const ms = shieldLeft(G.save); if (!el.isConnected && el._on) return clearInterval(el._t); el._on = true; if (!ms) { el.remove(); clearInterval(el._t); return; } const m = Math.ceil(ms / 60e3); v.textContent = `문단속 ${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+  tick(); el._t = setInterval(tick, 20e3);
+  el.addEventListener('click', () => G.ui.toast(`털린 뒤라 문을 꽁꽁 잠갔어 · ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`, 'green'));
+  return el;
+}
 
 // can this scene play it: my room (내 집 or the 내 방 lobby) with the record
 export const canReplay = (S, ev) => !!(ev?.rp?.items?.length && S?.room && S.spotByKey && S.partByKey && S.openPart);
@@ -178,6 +190,7 @@ function replayCard(S, ev) {
     body: [h('div', { class: 'rpface' }, h('img', { src: G.thumbs['face_' + ev.face] || G.thumbs.face_mong }), ...(stole ? [h('img', { class: 'ri', src: G.thumbs['item_' + ev.item] })] : [])),
       h('div', { class: 'loottab' }, ...rows),
       ...(ev.coins ? [h('div', { class: 'txt' }, `못 찾은 물건 덕에 코인 +${ev.coins} (이미 받았어)`)] : []),
+      ...(stole && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : []),
       h('div', { class: 'txt' }, stole ? `${ga(ev.nick)} 집에 가서 찾으면 되찾을 수 있어!` : '잘 숨겨 둔 덕분이야!')],
     buttons: stole
       ? [G.ui.btn('더 꽁꽁 숨기기', { color: 'purple', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),

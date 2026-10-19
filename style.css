@@ -1457,3 +1457,9 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .rpend .rpface img.ri { width: 44px; height: 44px; }
 .loottab .lrow.good b { color: var(--g3, #2f8f3a); }
 .loottab .lrow.bad b { color: var(--r3); }
+
+/* 문단속 (10/19): the chip on the 내 방 lobby, the line on the raid news and the replay card */
+.shieldchip { position: absolute; left: 12px; display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px 0 6px; border-radius: 999px; background: rgba(76, 198, 46, .9); border: 2.5px solid var(--ink); color: #fff; font-size: 14px; pointer-events: auto; font-variant-numeric: tabular-nums; }
+.shieldchip svg { width: 20px; height: 20px; }
+.shieldline { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 12px; border-radius: 12px; background: #e9f9df; color: var(--g3); font-size: 14px; }
+.shieldline svg { width: 18px; height: 18px; }

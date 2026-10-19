@@ -11,6 +11,7 @@ import { FURN_INFO } from '../gfx/furniture.js';
 import { openRoadmap } from '../roadmap.js';
 import { openCardBook } from '../cardbook.js';
 import { runRaids } from '../raid.js';
+import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/19)
 import { playDialog } from '../story.js';
 import { HOME_TUT, ENDING, endCard, choose, giftSeats, UI as SUI } from '../script.js';
 import { h, ICON } from '../ui.js';
@@ -99,6 +100,8 @@ export class LobbyScene extends MyHomeScene {
       gift.style.cssText += 'position:absolute;left:12px;top:calc(76px + var(--safeT));pointer-events:auto';
       col.append(gift);
     }
+    // 문단속 (털기 메타 10/19): robbed, the door stays locked a while — a chip under the profile counts it down
+    const sh = shieldChip(G, q.length && open ? 124 : 76); if (sh) col.append(sh);
   }
 
   // ── friends in the room

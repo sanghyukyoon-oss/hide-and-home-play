@@ -2,7 +2,8 @@
 // Whatever they find, they take one thing home with them (it really leaves your collection), whatever they miss pays
 // you coins. You get it back by finding it in their room — and every room you clear lets you pocket one thing.
 //   save.raid = { next, revenge, log: [{ at, who, nick, face, kind: 'steal'|'fail', item?, coins, seen }],
-//                 stolen: { 'practice-<i>': [item…] }, robbed: { roomKey: time }, loot: [{ item, from, at }] }
+//                 stolen: { 'practice-<i>': [item…] }, robbed: { roomKey: time }, loot: [{ item, from, at }],
+//                 shield: time (문단속 until), armStage: the stage count when the first raid was set up }
 // Residents are the characters of the visit list (net.js RESIDENTS) and are always shown as residents, never as players.
 import { RESIDENTS } from './net.js';
 import { ITEMS } from './gfx/items.js';
@@ -12,6 +13,7 @@ const EVERY = 4 * 3600e3;            // then about every four hours you are away
 const REVENGE = 5 * 60e3;            // rob a resident and they come round for revenge soon after
 const MAX_CATCHUP = 2;               // at most this many raids are counted for one absence
 const ROB_COOLDOWN = 6 * 3600e3;     // one grab per room per six hours
+const SHIELD = 8 * 3600e3;           // 문단속 (Clash's shield, 10/19): robbed once, nobody comes for eight hours
 // some noses are better than others
 const NOSE = { shiba: .15, nerd: .1, grumpy: .05, hamster: .05, skater: 0, panda: 0, frog: -.05, sleepy: -.15 };
 
@@ -19,6 +21,7 @@ const isTarget = t => t !== 'key' && t !== 'note';
 export const raidOf = save => save.raid || (save.raid = { next: 0, revenge: null, log: [], stolen: {}, robbed: {}, loot: [] });
 export const hiddenTargets = save => (save.home?.hide?.items || []).filter(e => isTarget(e.item));
 export const residentId = i => 'practice-' + i;
+export const shieldLeft = (save, now = Date.now()) => Math.max(0, (raidOf(save).shield || 0) - now);
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 const eul = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '을' : '를'); };
 
@@ -26,14 +29,18 @@ const eul = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00
 export function runRaids(G, { now = Date.now(), force = 0 } = {}) {
   const save = G.save, R = raidOf(save);
   if (!hiddenTargets(save).length && !force) { R.next = 0; return []; }
-  if (!R.next && !force) { R.next = now + FIRST_DELAY; G.persist(); return []; }
+  if (!R.next && !force) { R.next = now + FIRST_DELAY; R.armStage = save.stage || 0; G.persist(); return []; }
+  // the very first raid comes once you've cleared a stage since hiding, whatever the clock says — so it is seen (10/19)
+  if (!force && !R.log.length && R.armStage != null && (save.stage || 0) > R.armStage) R.next = Math.min(R.next, now);
+  // 문단속: while the door is locked nobody comes (a revenge waits too); the clock goes on from when it opens
+  if (!force && shieldLeft(save, now)) { R.next = Math.max(R.next, R.shield); return []; }
   let n = force;
   if (!force) {
     while (R.next <= now && n < MAX_CATCHUP) { n++; R.next += EVERY; }
     if (R.next <= now) R.next = now + EVERY;
   }
   const out = [];
-  for (let k = 0; k < n; k++) { const ev = raidOnce(G, now); if (ev) out.push(ev); }
+  for (let k = 0; k < n; k++) { const ev = raidOnce(G, now); if (ev) out.push(ev); if (ev?.shield && !force) break; }   // (robbed: the door locks, the rest of the absence is safe)
   if (out.length || force) G.persist();
   return out;
 }
@@ -64,6 +71,8 @@ function raidOnce(G, now) {
     save.collection = save.collection.filter(x => x !== item);
     const st = R.stolen[id] || (R.stolen[id] = []);
     if (!st.includes(item)) st.push(item);
+    R.shield = ev.shield = now + SHIELD;   // 문단속
+    R.next = Math.max(R.next || 0, R.shield);
   } else { ev.kind = 'fail'; ev.coins = 15 * hid.length; }
   if (ev.coins) save.coins += ev.coins;
   R.log.push(ev); R.log = R.log.slice(-20);
