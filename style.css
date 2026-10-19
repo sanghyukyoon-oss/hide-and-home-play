@@ -1160,6 +1160,10 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 /* panel buttons: a thumb-sized target on a phone (they measured 36 px) */
 .panel .row .btn { min-height: 42px; }
 .panel .row.tools .btn { min-height: 36px; }
+/* ── 2D UI 정리 ⑫ 일시정지·더보기 (10/19 밤) ── the pause panel's three actions stayed on one line however long the words were:
+   in English 'Home · Try again · Continue' ran 30 px past both sides of the panel. They wrap when they don't fit — 계속 (the
+   one to press) goes under the other two, as in the time-out panel; Korean on a 390 phone stays one line */
+.panel.pausep > .row:last-of-type { flex-wrap: wrap; }
 .homeside .btn.sm { min-height: 36px; }
 .btn .sub { font-size: max(11px, .55em); }
 .vl-card .new { font-size: 11px; }
@@ -1627,6 +1631,12 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .stagetag { font-size: 14px; }
 /* two rows split evenly — 8 things are 4 + 4, not 6 + 2 (the 62 px cap let six into the first row) */
 .tray.two { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 62px)); justify-content: center; }
+/* ── 2D UI 정리 ⑪ 판 윗줄 한 줄 (10/19 밤) ── the stage tag stood 9 px taller and 4 px higher than the timer, so the top row
+   had no common line: pause, timer and tag now share the timer's height. The pause and magnifier buttons keep their look
+   but take a finger from 6 px around them (36 → 48 px on a phone — the 82 % HUD had made them smaller than a fingertip) */
+.topbar > .ibtn { width: 46px; height: 46px; }
+.topbar .stagetag { height: 46px; display: flex; flex-direction: column; justify-content: center; padding-top: 0; padding-bottom: 0; }
+.topbar > .ibtn::before, #hud .side > .ibtn::before { content: ''; position: absolute; inset: -6px; }
 
 /* ── 2D UI 정리 ⑥ 결과창 대화 (UI 세션 10/19) ── user on a phone: "이겼을 때 캐릭터 말하는 거 말풍선 모양으로 잘 이쁘게 만들어
    주고 삼각형 화살표는 지워": the in-game speech bubble's look (white, ink rim, the dark drop under it), sized to its words like a
@@ -1659,6 +1669,15 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .panel.more .row.wrap::after { content: ''; order: 3; flex-basis: 100%; height: 0; }   /* (a line break: the reset gets a line of its own) */
 .panel.more .row.wrap > .btn.reset { order: 4; margin-top: 6px; }
 .panel.more .row.wrap > .credits { order: 5; }
+/* ── 2D UI 정리 ⑩ 홈·로비·지도 (10/19 밤, "UI를 잘 해 줘 봐 좀") ── the side menu is one column of the same width (지도 51 · 더보기
+   65 px, English 'Map' 52 · 'Collection' 104 px read as four loose buttons); the sound button keeps its square on the right */
+.homeside { align-items: stretch; }
+.homeside > .ibtn { align-self: flex-end; }
+/* the map: a region's card stays in front of the next region's colour band — the English names run to two lines ('Mongle
+   Town Homes') and the band above painted over the first one; the stage circles stay in front of the cards */
+.rm-head { z-index: 1; }
+.rm-node { z-index: 2; }
+.rm-rname { text-wrap: balance; }
 
 /* 1판 돌림판 수업 (10/19, user: "오른쪽으로 돌리라고 손가락 나와야 할 듯"): the hand presses on the dial and pushes it along — to the
    right (dialr) or the left (diall), whichever shows the box's front sooner — lifts, and does it again */
@@ -1701,3 +1720,15 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .panel.result .seenicons .seen img { width: 26px; height: 26px; margin: 1px; }
 .panel.result .seenicons .seen i { display: none; }
 .panel.result > .row { order: 10; }
+
+/* ── 2D UI 정리 ⑬ 상점·도감 (10/19 밤) ── 상점: the coin count sat on the title ribbon's corner (16 px from the top, the ribbon
+   reaches 30) — it goes in line, at the right above the tabs, under the ✕ like a wallet */
+.shophead { position: static; display: flex; justify-content: flex-end; margin: -6px 2px 8px; }
+/* 도감: the small cards' words were 8.5–9.5 px (number, place, the hint on a card back), and English places were cut
+   ('Mongle Tov'). A small card keeps the number only — the place is on the big card — and every word is 11 px or more;
+   the ✕ replaced the 닫기 row, so the cards get that height */
+.tcard:not(.big) .cb-foot { justify-content: center; font-size: 11px; }
+.tcard:not(.big) .cb-foot span + span { display: none; }
+.cb-hint { font-size: 11.5px; line-height: 1.25; text-wrap: balance; }
+.tcard.back .cb-no { font-size: 11px; }
+.panel.cardbook .cb-grid, .panel.cardbook .cb-learned { max-height: min(64vh, 600px); }
