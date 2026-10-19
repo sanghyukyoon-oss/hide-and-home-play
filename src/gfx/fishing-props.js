@@ -7,7 +7,8 @@ import { put, grp, shade } from './kit.js';
 import { HG as G, hmc as mc, hleaves as leaves } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
-const WATER = '#7fd2ef', WATER2 = '#a9e4f6', DEEP = '#5ab9df', STONE = '#c9c2d8', STONE2 = '#b1a9c4', WOOD = '#d9a466', WOODD = '#a8733f', LEAF = '#7fcf6a', LEAF2 = '#5cb45a';
+// (water 10/19: a touch clearer and deeper — 3판 back to the first, "아주 약간만 다듬어")
+const WATER = '#68cdea', WATER2 = '#a9e4f6', DEEP = '#45b3dc', STONE = '#c9c2d8', STONE2 = '#b1a9c4', WOOD = '#d9a466', WOODD = '#a8733f', LEAF = '#7fcf6a', LEAF2 = '#5cb45a';
 const B = {};
 
 // 연못 (3×3): a round pond ringed with stones; three lily pads (something small can sit on one), a lotus, ripples

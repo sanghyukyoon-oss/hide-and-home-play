@@ -1091,6 +1091,8 @@ export const isHidden = idx => bind().type[idx] === 'hidden';
 // before that the 도감 card reads ??? like the dialog label
 // (the 바꿔치기 놀이 is 너굴이's — its title says so — so its goal names him, not 먹물이; minis.js Spot.goal)
 export const SPOT_GOAL = K('너굴이가 바꿔 놓은 곳을 톡! (틀리면 3초, 다시 보기는 4초가 줄어)', 'Tap what Rocky changed! (A wrong tap costs 3s, a peek costs 4s)');
+// 두더지 숨바꼭질 아래 규칙 카드 (스토리 룸 10/19, 사용자 "아래쪽 공간에 너구리 안 되는 경고"): two words under pictures
+export const WHACK_CARD = { tap: K('톡!', 'Tap!'), skip: K('꾹 참기!', "Don't tap!") };
 export const inkyNamed = save => { const e = Object.entries(bind().scene).find(([, x]) => x?.id === 'office'); return !e || (save?.stage || 0) > +e[0] || !!save?.ending; };
 export const hiddenIntro = (idx, host) => sceneAt(idx)?.intro || [L(host || bind().host[idx] || 'bunny', HID_ANY.intro)];
 // which: 'first' (the first find) · 'half' (found reaches half) · 'last' (exactly one left) — say it as the host's bubble

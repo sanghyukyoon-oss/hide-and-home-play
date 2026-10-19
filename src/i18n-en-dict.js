@@ -615,6 +615,7 @@ export const EN = {
 "자리가 꽉 찼어": "No seats left",
 "방을 넓히면 자리가 늘어": "a bigger room has more seats",
 "자리가 꽉 찼어 (최대 6)": "No seats left (6 at most)",
+"자리가 꽉 찼어 (최대 7)": "No seats left (7 at most)",
 "친구 상자가 비었어요. 방에 앉은 친구를 톡 하면 상자에 넣을 수 있어요": "The friend box is empty. Tap a friend in the room to put them in the box",
 "앉을 자리가 없어요! 가구를 조금 치워 봐": "No room to sit! Move some furniture",
 "거긴 앉을 수 없어요": "Can't sit there",

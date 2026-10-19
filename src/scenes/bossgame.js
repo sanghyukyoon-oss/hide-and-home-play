@@ -85,7 +85,11 @@ export class BossGameScene {
     if (!mod) { G.ui.toast('놀이를 불러오지 못했어요 · 홈에서 다시 이어할 수 있어요', 'red'); setTimeout(() => !this.dead && G.go('home'), 1200); return; }
     // 대본: the lead-in, the first time this game and set-up comes up (the game's own rules come after, in the game)
     const GL = gameLines(this.kind, this.lv), said = G.save.gameTalk || (G.save.gameTalk = {});
-    if (GL?.lead && !said[this.kind + this.lv] && !G.bot && !G.skipTalk) { await playDialog(G, GL.lead); if (this.dead) return; said[this.kind + this.lv] = true; G.persist(); }
+    if (GL?.lead && !said[this.kind + this.lv] && !G.bot && !G.skipTalk) {
+      const LS = this.leadStage(GL.lead);
+      await playDialog(G, GL.lead, { onLine: L => LS?.speak(L.who) });
+      LS?.dispose(); if (this.dead) return; said[this.kind + this.lv] = true; G.persist();
+    }
     this.L = this.makeL();
     this.game = new mod.Game(this.L);
     await this.game.enter({ lv: this.lv, ...more });   // (more: a game's own extras, e.g. the hotel's night)
@@ -188,7 +192,33 @@ export class BossGameScene {
         G.ui.btn('건너뛰기', { color: 'gray', cls: 'sm', onClick: () => { G.ui.closePanel(); this.finish(); } }),
         G.ui.btn('계속', { color: 'green', icon: 'play', onClick: () => G.ui.closePanel() })] });
   }
+  // (10/19 user, with a screenshot of the empty lead-in: "이거 나올 때 캐릭터라도 띄워 주면 좋을 거 같은데? 아까 로비 정도 뷰로")
+  // whoever speaks the lead-in stands in the middle, about as tall as 몽글이 in the lobby, the one talking hopping; gone
+  // before the game builds its own scene
+  leadStage(lines) {
+    const W = this.G.world, who = [...new Set(lines.map(L => L.who))].filter(k => CHAR_DEFS[k]).slice(0, 3);
+    if (!who.length) return null;
+    W.yaw = Math.PI / 4; W.pitch = .45; W.updateCam();
+    const r = new THREE.Vector3(1, 0, 0).applyQuaternion(W.cam.quaternion); r.y = 0; r.normalize();   // (side by side across the screen)
+    const gap = .8, g = new THREE.Group(), chars = who.map((k, i) => { const c = new Char(k); c.root.position.copy(r).multiplyScalar((i - (who.length - 1) / 2) * gap); g.add(c.root); return c; });
+    W.root.add(g); this._leadChars = chars;
+    // measured on the screen like the lobby's close-up (lobby.js closeShot): the tallest about a fifth of the screen, the row
+    // inside 80% of its width, feet a little under the middle
+    const top = Math.max(...chars.map(c => c.headTop())), V = THREE.Vector3, ends = [chars[0], chars[chars.length - 1]].map(c => c.root.position);
+    const meas = (y, z) => { W.target.set(0, y, 0); W.zoom = z; W.updateCam(); const f = W.toScreen(new V(0, 0, 0)), hd = W.toScreen(new V(0, top, 0)), l = W.toScreen(ends[0].clone()), r = W.toScreen(ends[1].clone()); return { feet: f.y, size: f.y - hd.y, wide: Math.abs(r.x - l.x) + (f.y - hd.y) }; };
+    const m3 = meas(.3, 3), z = Math.min(9, Math.max(1.5, Math.min(3 * W.H * .2 / Math.max(1, m3.size), 3 * W.W * .8 / Math.max(1, m3.wide))));
+    const a = meas(.2, z), b = meas(1.2, z), want = W.H * .56;
+    const y = .2 + (want - a.feet) / Math.max(1e-3, b.feet - a.feet);
+    W.target.set(0, y, 0); W.zoom = z; W.updateCam();
+    for (const c of chars) c.faceTo(W.cam.position.x, W.cam.position.z);
+    W.idsDirty = true; W.dirty?.invalidate?.();
+    return {
+      speak: k => { for (const c of chars) { const me = c.kind === k; c.pose = me ? 'cheer' : 'idle'; c.setFace?.(me ? 'happy' : 'normal'); if (me) c.bump(.3); } W.dirty?.invalidate?.(); },
+      dispose: () => { this._leadChars = null; g.parent?.remove(g); try { disposeTree(g); } catch {} W.dirty?.invalidate?.(); },
+    };
+  }
   update(dt) {
+    for (const c of this._leadChars || []) c.update(dt);
     if (this.menuOpen && this.G.ui.panelOpen) return;   // 잠깐! menu open: the game waits (GPT QA 10/18 P2)
     if (this.talking) return;   // the after-words / the ending (finish)
     this.menuOpen = false;

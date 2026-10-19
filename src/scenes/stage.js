@@ -2392,7 +2392,8 @@ export class StageScene {
     // 2판 (home just opened): go and hide something at home now, or keep going — both on the result panel
     // 판 끝 집으로 가져가기 (검토 세션 10/19, 사용자 OK — "찾은 게 아무 데도 안 남는다"): '다음' goes through 몽글이's room for under
     // 3 s on the way — the friend met here walks in and sits, a piece won here is set down, the thing found goes on the shelf
-    // (a tap goes straight on). Only when something new came home; not on the 2판 '계속 찾기' (the room opens on its own there)
+    // (a tap goes straight on). Only when something new came home; not on 2판 itself (its result offers the room) — after its
+    // '계속 찾기' the next stage's passage is the room's first opening (검토 P1)
     // what came home this time joins the queue for the room (homeQ — the room shows it all next time it is passed through);
     // a star box waiting turns '다음' into '🎁 방에서 열기' (별 상자, 경제 A1+A2)
     let passage = null, boxOn = false, gotNow = [];

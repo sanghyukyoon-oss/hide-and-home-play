@@ -67,7 +67,10 @@ export class LobbyScene extends MyHomeScene {
     const G = this.G;
     if (!o.ending) runRaids(G);   // residents who sneaked in while you were away (coins land before the pills show them)
     // 판 끝 집으로 가져가기 (10/19): on the way to the next stage, the room for under 3 s (the room's first opening plays instead)
-    const pass = o.passage && G.homeOpen() && G.save.tut?.home ? o.passage : null;
+    // (검토 P1 10/19: after 2판's '계속 찾기' the room's first opening is on the way too — 3 s, the gift set down, no pick; the
+    // hide lesson waits for the first 숨기기)
+    const opens = !!o.passage && G.homeOpen() && !G.save.tut?.home;
+    const pass = o.passage && G.homeOpen() ? { ...o.passage, opens } : null;
     this._shelfHold = new Set([...(pass?.items || []), ...(pass?.item ? [pass.item] : [])]);   // (the things fly onto the shelf, so the shelf starts without them)
     await super.enter({ ...o, mode: pass ? 'passage' : !o.mode || o.mode === 'view' ? 'lobby' : o.mode });
     if (this.dead) return;
@@ -129,7 +132,7 @@ export class LobbyScene extends MyHomeScene {
     const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : go() });
     const row = h('div', { class: 'row2 three' },
       lock('꾸미기', 'orange', 'paint', () => this.setMode('edit')),
-      lock('숨기기', 'purple', 'hide', () => this.setMode('hide')),
+      lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater ? this.hideLesson() : this.setMode('hide')),
       lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
     // the boxes of chapters you'd already finished before this update (설계서 8장): one 🎁 each, opened here
@@ -197,7 +200,8 @@ export class LobbyScene extends MyHomeScene {
     for (let i = 0; i < n; i++) { const p = this.freeSpot(null, used); if (!p) break; used.push(p); const g = seatGhost(); g.position.set(p.x, 0, p.z); g.userData.spot = p; this.room.group.add(g); this._ghosts.push(g); }
     this.showGhosts();
   }
-  showGhosts() { for (const g of this._ghosts || []) g.visible = this.mode === 'lobby' || this.mode === 'passage'; }
+  // (10/19 user: "로비에 저 동그라미랑 물음표는 뭘까?" — the next friend's seat marks read as a puzzle: kept for placing, never shown)
+  showGhosts() { for (const g of this._ghosts || []) g.visible = false; }
   // where the next friend sits: the first marked seat, else any clear floor
   seatSpot() { const g = (this._ghosts || []).shift(); if (g) { g.parent?.remove(g); return g.userData.spot; } return this.freeSpot(); }
   seatFriends() {
@@ -288,7 +292,7 @@ export class LobbyScene extends MyHomeScene {
   placeFriend(k) {
     const G = this.G, z = this.zone;
     if (!(this.H.friendBox || []).includes(k)) return;   // (already out of the box: a double tap seated it twice — QA3 10/19)
-    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(seatsOf(z) >= 6 ? '자리가 꽉 찼어 (최대 6)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
+    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(seatsOf(z) >= seatsOf({ size: 3 }) ? '자리가 꽉 찼어 (최대 7)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
     const p = this.seatSpot(); if (!p) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
     this.seatOne(k, p, false).then(() => { if (!this.dead && this.mode === 'edit') this.setMode('edit'); });
   }
@@ -409,7 +413,7 @@ export class LobbyScene extends MyHomeScene {
     // 있는 구도") the lobby's own view is 몽글이 big and dead centre; tapping 몽글이 opens out to the room (heroView). Friends
     // arriving, the room pass and the star box (extra points, or the passage mode) still frame the whole group.
     if (!extra.length && this.mode === 'lobby' && this._heroView !== 'room') {
-      const W = this.G.world, shot = this.closeShot(.3, .47); this._heroView = 'close';
+      const W = this.G.world, shot = this.closeShot(.2, .47); this._heroView = 'close';   // ("로비 캐릭터 너무 크게 잡히는 듯" — .3 → .2 of the screen)
       if (this._framed && dur > 0) W.flyTo(this.tw, { ...shot, dur }); else { W.target.copy(shot.target); W.zoom = shot.zoom; this._framed = true; }
       return;
     }
@@ -467,19 +471,7 @@ export class LobbyScene extends MyHomeScene {
     if (gf?.x != null) this.G.world.flyTo(this.tw, { target: new THREE.Vector3((gf.x + mp.x) / 2, .55, (gf.z + mp.z) / 2), zoom: 1.5, dur: .6 });
     await this.tw.wait(1.1); if (this.dead) return;
     // ② hide one thing — 토순이 looks for it (the lesson as it was: HOME_TUT)
-    if (this.targetCount() < MAX_HIDE) {
-      const n0 = this.targetCount();
-      this.setMode('hide');
-      const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .16}px` }, tr(HOME_TUT.both));
-      G.ui.tut.append(tip); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = 'hidden');   // (not two bands on top of each other — 검토 v108)
-      while (!this.dead && this.targetCount() === n0) await this.tw.wait(.1);
-      tip.remove(); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = ''); if (this.dead) return;
-      await this.tw.wait(.6); if (this.dead) return;
-      const rec = this.H.hide.items[this.H.hide.items.length - 1], inside = !!(rec?.free?.part || (rec?.spot && this.spotByKey?.[rec.spot]?.part));
-      await playDialog(G, HOME_TUT.count); if (this.dead) return;
-      await this.tw.wait(.7); if (this.dead) return;
-      await playDialog(G, inside ? HOME_TUT.missed : HOME_TUT.found); if (this.dead) return;
-    }
+    await this.hideLesson(); if (this.dead) return;
     // ③ she'd like to stay: she sits down where she is, and the play button is next
     this.setMode('lobby');
     this.say(bun, '나 여기 앉아도 돼?', 2000);
@@ -492,6 +484,25 @@ export class LobbyScene extends MyHomeScene {
     this.busyTut = false;
     this.arrivals();
     this.playBtn?.classList.add('pulse');
+  }
+  // the hide lesson (HOME_TUT): hide one thing, 토순이 counts and looks for it. In the room's opening, or — when the room opened
+  // on the way between stages (검토 P1) — the first time 숨기기 is pressed. Left without hiding anything: it waits for next time.
+  async hideLesson() {
+    const G = this.G, tut = G.save.tut || (G.save.tut = {});
+    if (this.targetCount() >= MAX_HIDE) { delete tut.hideLater; G.persist(); if (this.mode !== 'hide') this.setMode('hide'); return; }
+    const n0 = this.targetCount();
+    this.setMode('hide');
+    const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .16}px` }, tr(HOME_TUT.both));
+    G.ui.tut.append(tip); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = 'hidden');   // (not two bands on top of each other — 검토 v108)
+    while (!this.dead && this.mode === 'hide' && this.targetCount() === n0) await this.tw.wait(.1);
+    tip.remove(); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = ''); if (this.dead) return;
+    if (this.targetCount() === n0) { tut.hideLater = 1; G.persist(); return; }   // (left before hiding: the lesson waits for the next 숨기기)
+    delete tut.hideLater; G.persist();
+    await this.tw.wait(.6); if (this.dead) return;
+    const rec = this.H.hide.items[this.H.hide.items.length - 1], inside = !!(rec?.free?.part || (rec?.spot && this.spotByKey?.[rec.spot]?.part));
+    await playDialog(G, HOME_TUT.count); if (this.dead) return;
+    await this.tw.wait(.7); if (this.dead) return;
+    await playDialog(G, inside ? HOME_TUT.missed : HOME_TUT.found);
   }
   // ── 엔딩 (스토리 룸 10/19, 사용자 "추천대로"): 마지막 야식 뒤, 다 같이 몽글이네 방. 그동안 만난 친구들이 와서 졸고 — 선물 가구가
   // 방에 있으면 그 친구는 자기 자리에 — 토순이만 깨어 있어요. "똑, 똑." 하면 먹물이가 문으로 들어와 남겨 둔 자리에 앉아요.
@@ -560,10 +571,13 @@ export class LobbyScene extends MyHomeScene {
   // ── 판 끝 집으로 가져가기 (검토 세션 10/19 — 사용자 "막 다시 하고 싶진 않다", 진단 "찾은 게 아무 데도 안 남는다"): on the way to
   // the next stage, the room for under 3 s. The friend met there walks in from the door to a marked seat, a piece won there is
   // set down, the first new thing found flies from 몽글이 onto the shelf. One camera cut, no camera moves; a tap goes on at once.
-  async runPassage({ item = null, furn = null, items = [], furns = [], friends = [], box = false, next = null }) {
+  async runPassage({ item = null, furn = null, items = [], furns = [], friends = [], box = false, next = null, opens = false }) {
     const G = this.G, W = G.world, H = this.H, z = this.zone, tw = this.tw;
     items = [...new Set([...items, ...(item ? [item] : [])])]; furns = [...furns, ...(furn ? [furn] : [])];
     this._next = next; this.busyTut = true; W.onTap = () => this.passageDone();
+    // the room's first opening, on the way (검토 P1): 토순이 brings the housewarming gift — set down, no pick (the first pick is
+    // the first 별 상자) — and the hide lesson waits for the first 숨기기
+    if (opens) { const tut = G.save.tut || (G.save.tut = {}); tut.home = true; tut.hideLater = 1; delete H.giftDue; H.inventory.push(GIFTS[0]); furns = [GIFTS[0], ...furns]; friends = ['bunny', ...friends]; }
     this._boxWant = box && starBoxState(G.save).pending > 0;   // (a box to open: a tap cuts the shows short, never the box)
     // ① the data first, so a page closed now keeps all of it: the pieces into the room, the friends to seats (or the box)
     const frecs = [];
@@ -593,10 +607,11 @@ export class LobbyScene extends MyHomeScene {
     jobs.push(tw.wait(1.1).then(() => { if (this.dead || this._boxing) return; m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); }));
     // at least 2 s to take it in, at most 2.8 s (검토: "판당 3초 이하") — a tap any time goes on
     const t0 = performance.now();
-    await Promise.race([Promise.all(jobs), tw.wait(2.5), new Promise(r => { this._skipShows = r; })]);
+    if (opens) G.ui.banner('몽글이 방이 열렸어!', '집들이 선물이 왔어', 1500);
+    await Promise.race([Promise.all(jobs), tw.wait(opens ? 3 : 2.5), new Promise(r => { this._skipShows = r; })]);
     if (this.dead) return;
     if (this._boxWant) { this._boxWant = false; this._boxing = true; m.pose = 'idle'; await this.openStarBoxes(); if (this.dead) return; await tw.wait(.6); }
-    else await tw.wait(Math.max(.3, 2 - (performance.now() - t0) / 1000));
+    else await tw.wait(Math.max(.3, (opens ? 2.8 : 2) - (performance.now() - t0) / 1000));
     this.passageDone();
   }
   // the lobby's 🎁 별 상자: one of three, set down in the room, 몽글이 goes over to it

@@ -112,25 +112,8 @@ Object.assign(RECIPES, {
     light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 },
     sky: ['#ddd6e8', '#e8e2f0', '#cdc4dc'],
   },
-  // 개굴이의 낚시터 (3판): a clear day; the meadow runs on past the hedge and the fence into a wood, nothing floats
-  fishing: {
-    light: { ambColor: '#eef4f4', amb: 1.3, sunColor: '#fff4dc', sun: 2.55, shadow: .62 },
-    sky: ['#a8d8f0', '#e3f3e8', '#bfdca5'],
-    ground: { size: 26, fade: [5, 9.5], seamless: true },   // the map's own grass, running on and fading out, no line at the map's edge
-    ring: [
-      // behind the hedge (N) and the fence (W): one wood edge, a few big trees further back
-      TREE(3, -2.4, -4.4, 1.1), TREE(5, 1.0, -4.6, 1.2), TREE(9, -4.7, -4.5, 1.15), TREE(13, 3.6, -4.4, 1.05),
-      TREE(11, -.6, -6.6, 1.5), TREE(17, 3.4, -6.4, 1.4),
-      TREE(19, -4.8, -1.4, 1.1), TREE(21, -4.9, 1.8, 1.05), TREE(23, -6.8, .4, 1.45),
-      { furn: 'bush', x: -4.3, z: .2 }, { furn: 'bush', x: -1.2, z: -3.9 }, { furn: 'bush', x: 2.3, z: -3.95 },
-      // the open sides (the camera's at the start): low meadow things stay, trees further out fold away
-      { furn: 'bush', x: -2.6, z: 3.8 }, { furn: 'rock', x: .3, z: 3.8, ry: .5 }, { furn: 'mushrooms', x: 1.4, z: 3.75 },
-      // the pond's stream runs on out of the map: two more reaches and a little bridge over it
-      { furn: 'stream', x: -.85, z: 3.55 }, { furn: 'bridge', x: -.85, z: 4.55 }, { furn: 'stream', x: -.85, z: 5.55 }, { furn: 'stream', x: -.85, z: 6.55 },
-      { furn: 'rock', x: 4.15, z: -1.4, ry: 1.2 }, { furn: 'bush', x: 4.2, z: 1.0 }, { furn: 'reeds', x: 4.3, z: 2.7 },
-      TREE(27, -3.0, 5.8, 1.15), TREE(31, 5.4, 5.0, 1.15), TREE(33, 6.0, -.6, 1.25),
-    ],
-  },
+  // (개굴이의 낚시터, 3판: no recipe any more — 10/19 back to the first 3판's own bright island, user: "처음걸로 되돌리고")
+
 });
 // ── 편의점·카페 (31~40판, 10/19 user refs: an isometric cosy café and the TUTU shop — "이런 판이나 이런느낌의 판도 몇개
 // 있었으면"): each shop its own colours, a printed wallpaper of its own little icon behind it, a band round the top of

@@ -51,7 +51,8 @@ export function metFriends(save) {
   return [...met].filter(k => CHAR_DEFS[k] && k !== 'mong' && k !== 'mom');   // (the friend who walks along sits in the room like the rest — 10/19)
 }
 // seats in a zone: 3, and one more for each of the first three room sizes (max 6) — 설계서 2-4 (사용자 결정 3, 추천값)
-export const seatsOf = zone => 3 + Math.min(zone?.size || 0, 3);
+// (검토 P0 10/19: 4 first seats — 1장's four hosts 토순·개굴·펭·곰 all sit down in 1~10판; 방 넓히기 is for 2장's friends on)
+export const seatsOf = zone => 4 + Math.min(zone?.size || 0, 3);
 export const seatedAll = H => new Set(Object.values(H.zones).flatMap(z => (z.friends || []).map(f => f.k)));
 
 // ── 장 끝 상자 (설계서 4-2, 사용자 결정 2 추천값): after a chapter's last stage, the first time, pick one of three pieces from

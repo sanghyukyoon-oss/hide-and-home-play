@@ -200,8 +200,8 @@ export const LAYOUTS = {
   // tackle box and bait by the platform, reeds round the edge, a parasol seat and a cooler on the east bank
   fishing: { w: 7, d: 6, walls: { N: 'hedge', W: 'fence', S: 'none', E: 'none' },
     furniture: [F('pond', 2, 2), F('fishdock', 2, 1), F('tree', 0, 0), F('bench', 4, 0), F('fishsign', 6, 0), F('tacklebox', 1, 1), F('baitbucket', 4, 1),
-      F('reeds', 5, 3), F('reeds', 1, 4), F('parasol', 6, 2), F('cooler', 6, 4), F('campchair', 0, 2), F('bush', 0, 5), F('picnic', 3, 5), F('reeds', 5, 5),
-      { type: 'stream', x: -.85, z: 1.55, a: 0 }, { type: 'stream', x: -.85, z: 2.55, a: 0 }],   // (10/19) the pond spills into a stream that runs out under a little bridge into the meadow
+      F('reeds', 5, 3), F('reeds', 1, 4), F('parasol', 6, 2), F('cooler', 6, 4), F('campchair', 0, 2), F('bush', 0, 5), F('picnic', 3, 5), F('reeds', 5, 5)],
+    // (10/19 back to the first 3판: the stream came out again — user, after the redrafts: "처음걸로 되돌리고 아주 약간만 다듬어줘")
     friendAt: [1.6, 1.2] },
   // 원룸: a Korean one-room — loft bed over a desk, a mini kitchen, a washer by the door, a clothes rail
   oneroom: { w: 6, d: 5, bleed: {}, wallH: 2.9, walls: { N: 'wall', W: 'wall' },
