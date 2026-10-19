@@ -465,17 +465,21 @@ export class MyHomeScene {
   // ── hide & publish
   hideHud() {
     const G = this.G, ui = G.ui, hid = this.H.hide;
+    // (10/19 night, 털기 회귀: the zone-switch toast sat on the hint bar and both were unreadable — the bar says it for a moment instead)
+    let zoneMsg = null;
     if (hid.zoneId !== this.zoneId) {
       // one room is the hide-and-seek room at a time; the other rooms keep their own draft until you come back
       const drafts = this.H.drafts || (this.H.drafts = {});
       if (hid.zoneId && (hid.items.length || Object.keys(hid.locks).length)) drafts[hid.zoneId] = { items: hid.items, locks: hid.locks, code: hid.code };
       const d = drafts[this.zoneId]; delete drafts[this.zoneId];
-      if (hid.items.length && hid.zoneId) G.ui.toast(`이제 ${this.zone.name}에 숨겨! 전에 숨긴 방은 저장해 뒀어`, '');
+      if (hid.items.length && hid.zoneId) zoneMsg = `이제 ${this.zone.name}에 숨겨! 전에 숨긴 방은 저장해 뒀어`;
       hid.zoneId = this.zoneId; hid.items = d?.items || []; hid.locks = d?.locks || {}; if (d?.code) hid.code = d.code;
       G.persist();
       this.build();
     }
-    this.col.append(h('div', { class: 'hint' }, h('span', {}, `물건 고르고 숨길 곳 탭 · 최대 ${MAX_HIDE}개`)));
+    const hintTxt = `물건 고르고 숨길 곳 탭 · 최대 ${MAX_HIDE}개`, hintSpan = h('span', {}, zoneMsg || hintTxt);
+    this.col.append(h('div', { class: 'hint' }, hintSpan));
+    if (zoneMsg) setTimeout(() => { if (!this.dead) hintSpan.textContent = tr(hintTxt); }, 2600);
     const tut = G.save.tut || (G.save.tut = {});
     if (!tut.raidTip && !this.busyTut) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', ''), 900); }   // (not during the lobby's first hide: it sat on the hide tip — 2D UI 정리 ③)
     const bar = h('div', { class: 'modebar' });
