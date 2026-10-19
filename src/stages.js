@@ -472,7 +472,7 @@ export const STAGES = [
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4 },   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3 },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
   { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, zoom: 1.4 },
-  { room: 'house3', n: 8, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .6, zoom: 1.4 },
+  { room: 'house3', n: 6, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .3, zoom: 1.4, kit: 'robot' },   // 프라모델 조립판 (10/19, 스토리 룸·레벨 세션 합의): 곰돌이가 어릴 때 못 맞춘 꼬마 로봇 — 부품 6개, 머리는 잠긴 상자 속(열쇠 세 번째), 함정 절반 (modelkit.js)
   { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6, zoom: 1.25 },   // (then 이불 속 누구게 — the pajama party)
   { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55 },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .65 },
@@ -640,7 +640,8 @@ export const FRIEND_HIDE = new Set([11, 15, 19, 21, 29, 38, 40, 47, 50, 58, 67])
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
 // really see on that map, chains ≤ the map's lockable pieces; 32·33·35·61·65 count the spots added 10/18)
 const HO_SHAPE = {
-  2: [4, 0], 3: [6, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [8, 1], 9: [7, 1], 11: [8, 1],
+  2: [4, 0], 3: [6, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [6, 1],   // (8판 프라모델: 부품 6개, 하나는 자물쇠 뒤)
+  9: [7, 1], 11: [8, 1],
   13: [8, 1], 15: [7, 1], 19: [8, 2],
   23: [8, 1], 25: [9, 1], 26: [11, 2], 27: [10, 1],
   33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 2],

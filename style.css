@@ -1277,23 +1277,73 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .ys-grab i { display: block; height: 100%; width: 0; background: #ffd23f; transition: width .06s linear; }
 .ys-grab.open i { background: #7ee08a; }
 
-/* ── 프라모델 조립판 (시제품 10/18, src/modelkit.js): the 설계도 in place of the list — the model drawn front-on on grid
-   paper, every piece a ghost until it's found, then that piece in colour in its own place ── */
-.kitbp { position: absolute; left: 50%; bottom: calc(10px + var(--safeB)); transform: translateX(-50%); width: 236px; height: 134px; box-sizing: border-box;
-  display: flex; align-items: center; justify-content: center; border: 2.5px solid var(--ink); border-bottom-width: 5px; border-radius: 18px;
-  background-color: #eaf3ff; background-image: linear-gradient(#cfe0fb 1.5px, transparent 1.5px), linear-gradient(90deg, #cfe0fb 1.5px, transparent 1.5px);
-  background-size: 14px 14px; background-position: 6px 6px; }
-.kitbp-frame { position: relative; width: 116px; height: 116px; flex: none; }
-.kitbp-frame img { position: absolute; pointer-events: none; }
-.kitbp-ghost { left: 0; top: 0; width: 100%; height: 100%; filter: brightness(0) opacity(.2); }
-.kitbp-p { position: absolute; width: 0; height: 0; }
-.kitbp-p img { opacity: 0; }
-.kitbp-p.found img { opacity: 1; animation: kitpop .5s cubic-bezier(.2, 1.8, .4, 1); }
-@keyframes kitpop { 0% { transform: scale(1.7); filter: brightness(2.2); } 60% { filter: brightness(1.25); } 100% { transform: scale(1); filter: none; } }
-.kitbp-tag { position: absolute; left: 12px; top: -15px; padding: 1px 10px 3px; border-radius: 10px; background: var(--b2); border: 2.5px solid var(--ink); font-size: 14px; }
-.kitbp-name { position: absolute; right: 11px; bottom: 6px; font-size: 12px; color: #5b78b8; }
-.kitbp.done { animation: kitdone .45s ease-in-out 4 alternate; }
+/* ── 프라모델 조립판 (정식판 10/19, src/modelkit.js) ──
+   the runner card (in place of the list): a plastic runner, one numbered cell per piece — the piece's shape empty until
+   it's found, then it clicks in. The UI's own language: dark ink outline, thick bottom edge, chunky tag. */
+.kitrun { position: absolute; left: 50%; bottom: calc(10px + var(--safeB)); transform: translateX(-50%); width: min(calc(100% - 20px), 380px);
+  padding: 9px 9px 8px; border: 3px solid var(--ink); border-bottom-width: 6px; border-radius: 18px; pointer-events: auto;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--run) 70%, #fff) 0%, var(--run) 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .7); transition: transform .35s var(--eo), opacity .3s; }
+.kitrun-tag { position: absolute; left: 12px; top: -16px; padding: 1px 11px 3px; border-radius: 11px; border: 2.5px solid var(--ink); font-size: 13.5px; color: #fff; white-space: nowrap; }
+.kitrun-row { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 7px; }
+.kitrun-cell { position: relative; aspect-ratio: .84; border-radius: 12px; background: rgba(255, 255, 255, .62);
+  box-shadow: inset 0 0 0 2px rgba(58, 36, 83, .16), inset 0 3px 0 rgba(58, 36, 83, .08); touch-action: none; }
+.kitrun-cell img { position: absolute; left: 7%; top: 3%; width: 86%; height: 78%; object-fit: contain; pointer-events: none; }
+.kitrun-ghost { filter: brightness(0) opacity(.16); }
+.kitrun-pc { opacity: 0; }
+.kitrun-cell.found .kitrun-pc, .kitrun-cell.full .kitrun-pc { opacity: 1; }
+.kitrun-cell.found .kitrun-pc { animation: kitsnap .45s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes kitsnap { 0% { transform: scale(1.6); filter: brightness(2.2); } 55% { filter: brightness(1.25); } 100% { transform: scale(1); filter: none; } }
+/* the little plastic gates that hold a piece to the runner (cut when it's taken off) */
+.kitrun-gate { position: absolute; top: 40%; width: 7px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--run) 75%, #3a2453); opacity: 0; }
+.kitrun-gate.l { left: -4px; } .kitrun-gate.r { right: -4px; }
+.kitrun-cell.found .kitrun-gate, .kitrun-cell.full .kitrun-gate { opacity: .9; }
+.kitrun-no { position: absolute; left: -5px; top: -6px; min-width: 17px; height: 17px; padding: 0 3px; box-sizing: border-box; border-radius: 9px; background: #fff;
+  border: 2px solid var(--ink); font-size: 10.5px; line-height: 13px; text-align: center; color: var(--ink); }
+.kitrun-nm { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 10px; color: rgba(58, 36, 83, .72); white-space: nowrap; overflow: hidden; }
+.kitrun-cell.found .kitrun-nm { color: var(--ink); }
+.kitrun.done { animation: kitdone .45s ease-in-out 4 alternate; }
 @keyframes kitdone { to { box-shadow: 0 0 0 5px #ffe14d, 0 0 26px 10px #fff3a0; } }
+/* the build: the runner a little up and bigger, every piece ready to pick (a small bob), taken ones gone, used ones cut */
+.kitrun.build { transform: translateX(-50%) translateY(-8px); }   /* (full width now: lifted, not scaled) */
+.kitrun-cell.ready .kitrun-pc { animation: kitbob 1.4s ease-in-out infinite; }
+.kitrun-cell.ready:nth-child(2n) .kitrun-pc { animation-delay: -.7s; }
+@keyframes kitbob { 50% { transform: translateY(-3px) rotate(-3deg); } }
+.kitrun-cell.taken .kitrun-pc, .kitrun-cell.used .kitrun-pc { opacity: 0; animation: none; }
+.kitrun-cell.used .kitrun-ghost { filter: brightness(0) opacity(.07); }
+.kitrun-cell.used .kitrun-gate { opacity: .45; width: 4px; }
+.kitrun-cell.used .kitrun-no { background: var(--g1); }
+.kitrun-cell.next .kitrun-no { background: var(--y2); animation: kitnext .9s ease-in-out infinite; }
+@keyframes kitnext { 50% { transform: scale(1.25); } }
+.kitrun-cell.nope { animation: kitnope .32s ease-in-out; }
+@keyframes kitnope { 20% { transform: translateY(-7px) rotate(-6deg); } 45% { transform: translateY(0) rotate(5deg); } 70% { transform: rotate(-3deg); } }
+/* UI 세션 검토 10/19: 물건 줄과 같은 폭·아랫단, 이름 대신 그림·번호, 태그는 캡슐 아래로, 실제 11px 이상 */
+.kitrun { width: calc(100% - 20px); border-bottom-width: 7px; padding-top: 14px; }
+.kitrun-nm { display: none; }
+.kitrun-cell { aspect-ratio: 1; }
+.kitrun-cell img { top: 7%; height: 86%; }
+.kitrun-no { min-width: 20px; height: 20px; border-radius: 10px; left: -6px; top: -7px; font-size: 13px; line-height: 16px; }
+.kitrun-gate { opacity: .5; }
+.kitrun.gone { opacity: 0; transform: translateX(-50%) translateY(40px); pointer-events: none; }
+/* the box: its lid (the box art, a label band), the front face, the inside */
+.kitintro { position: absolute; inset: 0; z-index: 30; background: rgba(42, 26, 61, .22); pointer-events: auto; animation: kitfade .25s ease-out; }
+.kitintro.out { opacity: 0; transition: opacity .25s; }
+@keyframes kitfade { from { opacity: 0; } }
+.kitbox { position: absolute; left: 50%; top: 38%; width: 236px; height: 214px; margin-left: -118px; margin-top: -107px; }
+.kitbox-in { position: absolute; left: 0; top: 0; width: 236px; height: 170px; border-radius: 16px; background: #c99a63; border: 3.5px solid var(--ink);
+  box-shadow: inset 0 14px 0 rgba(58, 36, 83, .25), inset 0 0 0 10px #e0b27a; box-sizing: border-box; }
+.kitbox-front { position: absolute; left: 0; top: 150px; width: 236px; height: 60px; border-radius: 0 0 16px 16px; border: 3.5px solid var(--ink); border-top-width: 2px; box-sizing: border-box;
+  background-image: linear-gradient(rgba(0, 0, 0, .18), rgba(0, 0, 0, .18)); }
+.kitbox-lid { position: absolute; left: -4px; top: -6px; width: 244px; height: 176px; border-radius: 17px; border: 3.5px solid var(--ink); box-sizing: border-box; overflow: hidden;
+  background: repeating-conic-gradient(from 0deg at 50% 46%, var(--box) 0deg 10deg, color-mix(in srgb, var(--box) 78%, #fff) 10deg 20deg); box-shadow: 0 6px 0 rgba(42, 26, 61, .3); }
+.kitbox-art { position: absolute; inset: 0 0 34px 0; display: flex; align-items: center; justify-content: center; }
+.kitbox-art img { height: 128%; margin-top: 18px; filter: drop-shadow(0 4px 0 rgba(42, 26, 61, .35)); }
+.kitbox-label { position: absolute; left: 0; right: 0; bottom: 0; height: 36px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #fffaf2; border-top: 3px solid var(--ink); color: var(--ink); }
+.kitbox-label b { font-size: 17px; }
+.kitbox-label span { font-size: 11.5px; padding: 1px 7px; border-radius: 8px; background: var(--y2); border: 2px solid var(--ink); }
+.kitfly { position: absolute; z-index: 32; width: 60px; height: 60px; pointer-events: none; filter: drop-shadow(0 4px 0 rgba(58, 36, 83, .45)); }
+
 
 /* 갓겜 F2: the last thing found — the screen's edges glow warm for a moment (stage.js lastOneFx) */
 .lastglow { position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: 0;

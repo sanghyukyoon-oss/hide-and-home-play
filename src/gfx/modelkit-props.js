@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { rbox, sph, cyl, tor, cone, cap, put, grp, extrude, starShape } from './kit.js';
 
-const WHITE = '#f6f7ff', BLUE = '#3d7bff', NAVY = '#2f55c8', RED = '#ff4f5e', YELLOW = '#ffc93c', ORANGE = '#ff9a3c',
+const WHITE = '#f6f7ff', BLUE = '#3d7bff', GREEN = '#4cc62e', RED = '#ff4f5e', YELLOW = '#ffc93c', ORANGE = '#ff9a3c',
   CYAN = '#63dcff', PEG = '#d5d9ea', DARK = '#2a2440';
 const GLOSS = { rough: .35 };
 
@@ -25,12 +25,12 @@ function sprue(g, color, x, y, z, dir = [1, 0, 0]) {
 // ── 꼬마 로봇 (the first kit): 7 pieces, built bottom-up. joint = where the piece pivots once it is on (an arm waves round
 // its shoulder); lay = how the loose piece lies; nub = where its runner stub sticks out
 const ROBOT = {
-  legs: { name: '로봇 다리', color: NAVY, joint: [0, .2, 0], nub: [[.085, .2, 0], [1, 0, 0]], build(g) {
-    g.add(put(rbox(.17, .06, .1, NAVY, .025), 0, .2, 0));                                    // hips
+  legs: { name: '로봇 다리', color: GREEN, joint: [0, .2, 0], nub: [[.085, .2, 0], [1, 0, 0]], build(g) {
+    g.add(put(rbox(.17, .06, .1, GREEN, .025), 0, .2, 0));                                   // hips
     g.add(put(cyl(.024, .024, .02, PEG, null, 14), 0, .24, 0));                               // the peg the body goes on
     for (const sx of [-1, 1]) {
       g.add(put(cap(.034, .08, WHITE), sx * .052, .115, 0));                                  // legs
-      g.add(put(rbox(.078, .062, .112, NAVY, .022), sx * .052, .031, .012));                 // boots
+      g.add(put(rbox(.078, .062, .112, GREEN, .022), sx * .052, .031, .012));                // boots
       g.add(put(rbox(.05, .012, .02, YELLOW, .004), sx * .052, .05, .069));                   // a stripe on each toe
     }
   } },
@@ -79,20 +79,26 @@ const ROBOT = {
       g.add(put(cyl(.032, .032, .022, RED, null, 16), sx * .093, .49, 0, 0, 0, Math.PI / 2));   // ear bolts
     }
     g.add(put(rbox(.05, .009, .006, DARK, .003), 0, .452, .072));                             // mouth
-    g.add(put(cyl(.02, .02, .012, PEG, null, 12), 0, .561, 0));                               // antenna socket
-  } },
-  antenna: { name: '로봇 안테나', color: YELLOW, joint: [0, .566, 0], nub: [[.036, .575, 0], [1, 0, 0]], build(g) {
-    g.add(put(cyl(.032, .038, .022, YELLOW, null, 16), 0, .577, 0));
-    g.add(put(cyl(.014, .014, .07, YELLOW, null, 10), 0, .62, 0));
-    g.add(put(tor(.028, .008, YELLOW, null, Math.PI * 2, 8, 18), 0, .612, 0, Math.PI / 2, 0, 0));
-    g.add(put(sph(.036, RED, GLOSS, 16, 12), 0, .668, 0));
+    // the antenna, moulded on (one piece fewer to find: 6, 레벨 세션 10/19)
+    g.add(put(cyl(.032, .038, .022, YELLOW, null, 16), 0, .567, 0));
+    g.add(put(cyl(.014, .014, .07, YELLOW, null, 10), 0, .61, 0));
+    g.add(put(tor(.028, .008, YELLOW, null, Math.PI * 2, 8, 18), 0, .602, 0, Math.PI / 2, 0, 0));
+    g.add(put(sph(.036, RED, GLOSS, 16, 12), 0, .658, 0));
   } },
 };
 
-// the kits (one for now). order = the order the pieces snap on; bp = the 설계도's drawing order (back to front)
+// the kits (one for now). order = the runner's order (1, 2, 3…)
 export const KITS = {
-  robot: { id: 'robot', name: '꼬마 로봇', furn: 'kitrobot', parts: ROBOT, order: ['legs', 'body', 'jet', 'claw', 'fist', 'head', 'antenna'],
-    bp: ['jet', 'legs', 'body', 'claw', 'fist', 'head', 'antenna'] },
+  // order = the runner's numbers = the build order (user 10/19 picked 순서 맞추기, e.g. 몸통 → 다리 → 팔 → 머리)
+  // build: how the build plays (modelkit.js kitBuild) — the knobs for later, harder kits:
+  //   ordered  pieces go on in the runner's order (off: any order)
+  //   glow     the next number glows on the runner (off: read the numbers yourself)
+  //   ghost    the see-through model shows where each piece goes (off: only the box art to go by)
+  robot: { id: 'robot', name: '꼬마 로봇', furn: 'kitrobot', parts: ROBOT, order: ['body', 'legs', 'claw', 'fist', 'jet', 'head'],
+    build: { ordered: true, glow: true, ghost: true },
+    // the runner card: each piece's short name, and the plastic the runner is moulded in
+    short: { legs: '다리', body: '몸통', jet: '제트팩', claw: '집게팔', fist: '주먹팔', head: '머리' }, runner: '#a9d8ff', box: '#3d7bff',
+    locked: 'head' },   // the piece a padlock guards on a campaign stage (8판: the face comes last, out of the locked chest)
 };
 export const kitItem = (kit, key) => 'kit_' + kit + '_' + key;
 
