@@ -132,6 +132,74 @@ Object.assign(RECIPES, {
     ],
   },
 });
+// ── 편의점·카페 (31~40판, 10/19 user refs: an isometric cosy café and the TUTU shop — "이런 판이나 이런느낌의 판도 몇개
+// 있었으면"): each shop its own colours, a printed wallpaper of its own little icon behind it, a band round the top of
+// its walls, and the bare walls and floor filled with shop things that are not to be found (no new hiding places).
+//   theme — colours the room is built in (this look only; the shop's own theme stays for 내 집 and the maps)
+//   slab — the room on a thick base instead of its floor fading out (the camera keeps the bleed room's close fit)
+//   pattern — the backdrop's icon, printed small and faint over the sky
+//   band — the strip round the top of the walls: stripes (konbini) or a plain moulding (café)
+//   wall — [type, wall, u]: hidden-free wall pieces (shop-props.js, 룩 section)
+Object.assign(RECIPES, {
+  konbini: {
+    light: { ambColor: '#f2f5f8', amb: 1.3, sunColor: '#fff9ee', sun: 2.45, shadow: .62 },
+    sky: ['#3a3f4f', '#2e3240', '#252833'],
+    pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.07)' },
+    theme: { floorKind: 'planks', floor: '#f1c890', floor2: '#dba56a', base: '#e0a564' },
+    slab: true,   // a shop stands on its own slab, like a toy shop on a shelf (both refs), not on a floor fading out
+    band: { stripes: ['#4fc28a', '#fff8e8', '#ffb14a', '#fff8e8', '#ff7a6b', '#fff8e8', '#ffd84a', '#fff8e8'], h: .3, trim: '#4fc28a' },
+    wall: [['welcome', 'N', -1.0], ['saleposters', 'N', 2.5], ['yummyposter', 'W', -.35]],
+    fill: [
+      { furn: 'basketstack', x: -2.5, z: -1.1, ry: .3 },
+      { furn: 'boxstack', x: 2.55, z: 2.05, ry: -.4, s: .8 },
+      { furn: 'plant', x: 1.5, z: -1.15, s: .8 },
+      { furn: 'doormat', door: 'W', opts: { color: '#4fc28a' } },   // inside the door (wherever the layout put it)
+    ],
+  },
+  cafe: {
+    light: { ambColor: '#f6ece0', amb: 1.24, sunColor: '#ffe2bc', sun: 2.55, shadow: .62 },
+    sky: ['#d3dca9', '#c6d199', '#b4c186'],
+    pattern: { icon: 'cup', ink: 'rgba(96,112,44,.2)' },
+    theme: { wall: '#f1e4bb', wall2: '#e8d7a6', wainscot: '#a8693f', wallEdge: '#fbf3dc', floor: '#cf9256', floor2: '#a46a3a', base: '#8a5634', stool: '#ff9f6b' },
+    slab: true,
+    band: { color: '#8a5634', h: .16, trim: '#c98a52', bulbs: true },   // and a string of little bulbs in loops under it
+    wall: [['menutrio', 'N', -2.0], ['cupshelf', 'N', -.5], ['cafesign', 'W', 1.95]],
+    fill: [
+      { furn: 'stool2', theme: 'cafe', x: -2.4, z: -1.05, ry: .2 },
+      { furn: 'stool2', theme: 'cafe', x: -1.6, z: -1.05, ry: -.2 },
+      { furn: 'plantbig', x: -2.55, z: -.05, s: .85 },
+      { furn: 'aframe', theme: 'cafe', x: 2.55, z: 2.0, ry: -.7 },
+      { furn: 'monstera', x: 2.6, z: 1.0, s: .8 },
+      { furn: 'doormat', door: 'W', opts: { color: '#a8693f' } },
+    ],
+  },
+  // 빨래방 (33·39판): sky-blue and white, an awning stripe in the same, a periwinkle backdrop of little tees, socks on a
+  // line across the window wall
+  laundry: {
+    light: { ambColor: '#eef3fa', amb: 1.3, sunColor: '#fff8ee', sun: 2.45, shadow: .62 },
+    sky: ['#aebcf0', '#9eaee6', '#8d9ed9'],
+    pattern: { icon: 'shirt', ink: 'rgba(255,255,255,.2)' },
+    theme: { base: '#8cc3ea' },
+    slab: true,
+    band: { stripes: ['#5aa9ec', '#ffffff'], h: .26, trim: '#5aa9ec' },
+    wall: [['welcome', 'N', -1.0, { word: 'LAUNDRY', cols: ['#5aa9ec', '#ffffff', '#ffc23d', '#7fd6c0'] }], ['sockline', 'W', -1.2, { len: 2.4 }], ['washguide', 'W', -1.4]],
+    fill: [
+      { furn: 'dryrack', x: 2.05, z: -.95, ry: -.3 },
+      { furn: 'boxes', x: 2.05, z: .05, ry: .2, s: .7 },
+      { furn: 'doormat', door: 'W', opts: { color: '#5aa9ec' } },
+    ],
+  },
+  // 상가 맵 (36판 밤·40판 보스): the konbini and the laundry side by side, each half in its own recipe's colours and things
+  shopmap: {
+    light: { ambColor: '#f2f5f8', amb: 1.3, sunColor: '#fff9ee', sun: 2.45, shadow: .62 },
+    sky: ['#3a3f4f', '#2e3240', '#252833'],
+    pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.07)' },
+    night: { light: { ambColor: '#9fa8f0', amb: .9, sunColor: '#c4ccff', sun: .7, shadow: .5 },
+      sky: Object.assign(['#141a3e', '#1b2150', '#22285c'], { pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.05)' } }) },
+    slab: true,
+    rooms: ['konbini', 'laundry'],
+  },
+});
 // 6~9판 show a whole house at once: their things were 7–15 px on a phone at the start view (rooms 1–5: 15–30 px),
 // so things on these maps are drawn to ~38 cm instead of ~28 (still only as big as the spot has room for). ?look=…
 // without 'items' keeps the old size.
@@ -162,12 +230,46 @@ export function lookRecipe(room, spec) {
 // end) goes back to the look's day, not the house light
 export function lookTheme(R, th) {
   if (!R || !LOOK.has('light')) return th;
-  return { ...th, light: R.light, bg: [R.sky[1], R.sky[2]], sky: R.sky };
+  return { ...th, light: R.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern ? Object.assign([...R.sky], { pattern: R.pattern }) : R.sky };
+}
+// the colours a shop's room is built in (this stage only): a lone room takes the recipe's theme; a map whose recipe lists
+// rooms gives each of those rooms its own recipe's theme and remembers which (lookKey: the look's pieces go in by it)
+export function lookLayout(R, layout) {
+  if (!R || !LOOK.has('light')) return layout;
+  if (!layout.rooms) return R.theme ? { ...layout, theme: { ...layout.theme, ...R.theme } } : layout;
+  if (!R.rooms) return layout;
+  return { ...layout, rooms: layout.rooms.map(r => {
+    const k = R.rooms.find(q => THEMES[q] === r.layout.theme), S = k && RECIPES[k];
+    return S ? { ...r, layout: { ...r.layout, lookKey: k, theme: S.theme ? { ...r.layout.theme, ...S.theme } : r.layout.theme } } : r;
+  }) };
 }
 // The backdrop is drawn twice: as the page's CSS (what shows while the scene changes) and inside the 3D canvas as the
 // scene's background, so the canvas is opaque. A see-through canvas let the browser lay the page under the faded edges
 // (the floor running off past the walls), and those half-clear pixels came out over-bright: the pale halo under every
 // room, in the old look too. The post pass already leaves the background out of the outline IDs.
+// the shop's own little icon, printed faint in a staggered grid over the backdrop (like a shop's wallpaper or bag)
+function skyPattern(x, { icon, ink }) {
+  x.save(); x.fillStyle = ink; x.strokeStyle = ink; x.lineWidth = 2.2; x.lineCap = 'round';
+  const draw = (cx0, cy0) => {
+    x.save(); x.translate(cx0, cy0); x.scale(.78, .78); const cx = 0, cy = 0;
+    if (icon === 'cup') {
+      x.beginPath(); x.moveTo(cx - 8, cy - 5); x.lineTo(cx + 7, cy - 5); x.lineTo(cx + 6, cy + 7); x.quadraticCurveTo(cx - .5, cy + 10, cx - 7, cy + 7); x.closePath(); x.fill();
+      x.beginPath(); x.arc(cx + 8.5, cy, 3.6, -1.3, 1.3); x.stroke();
+      for (const dx of [-3, 2.5]) { x.beginPath(); x.moveTo(cx + dx, cy - 8); x.quadraticCurveTo(cx + dx + 3, cy - 11, cx + dx, cy - 14); x.stroke(); }
+      x.fillRect(cx - 10, cy + 10, 19, 2);
+    } else if (icon === 'shirt') {
+      x.beginPath(); x.moveTo(cx - 4, cy - 10); x.quadraticCurveTo(cx, cy - 6, cx + 4, cy - 10); x.lineTo(cx + 12, cy - 6); x.lineTo(cx + 9, cy);
+      x.lineTo(cx + 6, cy - 2); x.lineTo(cx + 6, cy + 10); x.lineTo(cx - 6, cy + 10); x.lineTo(cx - 6, cy - 2); x.lineTo(cx - 9, cy); x.lineTo(cx - 12, cy - 6); x.closePath(); x.fill();
+    } else {   // 삼각김밥
+      x.beginPath(); x.moveTo(cx, cy - 10); x.quadraticCurveTo(cx + 2, cy - 11, cx + 11, cy + 6); x.quadraticCurveTo(cx + 11, cy + 9, cx + 8, cy + 9);
+      x.lineTo(cx - 8, cy + 9); x.quadraticCurveTo(cx - 11, cy + 9, cx - 11, cy + 6); x.quadraticCurveTo(cx - 2, cy - 11, cx, cy - 10); x.closePath(); x.fill();
+      x.fillRect(cx - 5, cy + 1, 10, 8);
+    }
+    x.restore();
+  };
+  for (let row = 0, y = 14; y < 530; row++, y += 38) for (let xx = row % 2 ? 0 : 22; xx < 280; xx += 44) draw(xx, y);
+  x.restore();
+}
 let SKY_TEX = null;
 export function setSky(sky) {
   const app = document.getElementById('app'), W = typeof G !== 'undefined' ? G.world : null;
@@ -175,10 +277,13 @@ export function setSky(sky) {
   if (!sky) { app?.classList.remove('look-sky'); W?.dirty?.invalidate(); return; }
   if (app) { app.style.setProperty('--skyA', sky[0]); app.style.setProperty('--skyB', sky[1]); app.style.setProperty('--skyC', sky[2]); app.classList.add('look-sky'); }
   if (W) {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 512;
-    const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 512);
+    // (a printed wallpaper needs the pixels: a pattern sky is drawn at twice the size, in the same 256×512 units)
+    const k2 = sky.pattern ? 2 : 1, c = document.createElement('canvas'); c.width = 256 * k2; c.height = 512 * k2;
+    const x = c.getContext('2d'); x.scale(k2, k2);
+    const g = x.createLinearGradient(0, 0, 0, 512);
     g.addColorStop(0, sky[0]); g.addColorStop(.42, sky[1]); g.addColorStop(1, sky[2]);
     x.fillStyle = g; x.fillRect(0, 0, 256, 512);
+    if (sky.pattern) skyPattern(x, sky.pattern);
     // a soft vignette (the corners settle, the middle where the room stands stays open) and a faint paper grain
     const v = x.createRadialGradient(128, 230, 60, 128, 260, 330);
     v.addColorStop(0, 'rgba(40,20,50,0)'); v.addColorStop(1, 'rgba(40,20,50,.13)');
@@ -206,11 +311,17 @@ export class Look {
     if (ring) this.buildGround();
     else if (LOOK.has('light') && R.sky) this.tintAprons();
     // (not on a seamless meadow: the map is no island there, and the dark rim drew its square back — user 10/19 "저 경계 남는것도 짜증나는데")
-    if (LOOK.has('light') && R.sky && R.shadow !== false && !(ring && R.ground?.seamless)) this.contactShadow(ring);
+    // the rooms the shop pieces go into: the room itself, or each room of a map that names its own recipe (상가 맵:
+    // the konbini half and the laundry half, each in its own colours)
+    this.subs = this.isMap ? (stage.room.rooms || []).filter(r => r.L.lookKey && RECIPES[r.L.lookKey]).map(r => [r, RECIPES[r.L.lookKey]]) : [[this.room, R]];
+    if (LOOK.has('light') && R.slab && !ring) this.buildSlab();
+    else if (LOOK.has('light') && R.sky && R.shadow !== false && !(ring && R.ground?.seamless)) this.contactShadow(ring);
     if (LOOK.has('light')) this.clipSunPatches();
     if (LOOK.has('light') && R.sky) this.toneWalls();
     if (LOOK.has('ring') && R.ring) this.buildRing();
-    if (LOOK.has('fill') && !this.isMap) this.buildFill();
+    this.filled = [];
+    if (LOOK.has('fill')) for (const [rm, S] of this.subs) { if (S.band) this.buildBand(rm, S.band); if (S.wall) this.buildWallDecor(rm, S.wall); if (S.fill) this.buildFill(rm, S.fill); }
+    if (this.filled.length || this.wallPieces?.length) this.clearSightlines();
     if (LOOK.has('glow') && stage.spec.night) { if (R.glows && !this.isMap) this.buildGlows(); else this.nightLights(); }
     this.W.root.add(this.group);
     this.update(1);
@@ -388,20 +499,115 @@ export class Look {
     for (const [k, g] of Object.entries(side)) { bake(g); this.tall.push({ o: g, dir: new THREE.Vector3(NORM[k][0], 0, NORM[k][1]), k: 1, sy: 1 }); }
   }
 
-  buildFill() {
-    const room = this.room, st = this.stage;
+  // the cake slab room.js builds for a room that does not bleed, under a bleed room (whose camera fit stays as it was):
+  // its fading floor goes, the room stands on a base in its own colour
+  buildSlab() {
+    for (const ap of this.aprons()) ap.visible = false;
+    const RS = this.isMap ? this.room.rooms.filter(r => !r.level) : [this.room], b = new THREE.Box3(), v = new THREE.Vector3();
+    for (const r of RS) { const p = r.group.position; b.expandByPoint(v.set(p.x - r.w / 2, 0, p.z - r.d / 2)); b.expandByPoint(v.set(p.x + r.w / 2, 0, p.z + r.d / 2)); }
+    const T = RS[0].T, sx = b.max.x - b.min.x, sz = b.max.z - b.min.z, cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2, og = {};
+    const a = put(rbox(sx + .5, .36, sz + .5, T.base, .16), cx, -.2, cz), c = put(rbox(sx + .62, .2, sz + .62, shade(T.base, -.08), .1), cx, -.4, cz);
+    // (a map's group stands at the world origin, a lone room's too: both pieces go in world coordinates)
+    for (const o of [a, c]) { o.userData.og = og; o.receiveShadow = true; o.castShadow = false; this.room.group.add(o); }
+  }
+  // the strip round the top of the solid walls (TUTU's awning stripes; a café's moulding), part of each wall's decor so it
+  // goes when the wall folds down
+  buildBand(room, B) {
+    const WH = room.L.wallH || 2.9;
+    let map = null;
+    if (B.stripes) {
+      const c = document.createElement('canvas'); c.width = 32 * B.stripes.length; c.height = 8;
+      const x = c.getContext('2d'); B.stripes.forEach((col, k) => { x.fillStyle = col; x.fillRect(k * 32, 0, 32, 8); });
+      map = new THREE.CanvasTexture(c); map.colorSpace = THREE.SRGBColorSpace; map.wrapS = THREE.RepeatWrapping; map.magFilter = THREE.NearestFilter; this.own.push(map);
+    }
+    for (const k of ['N', 'W', 'E', 'S']) {
+      const wl = room.walls[k]; if (!wl || !['wall', 'door'].includes(room.L.walls?.[k] || 'wall')) continue;
+      const og = {}, len = wl.len, y = WH - .05 - B.h / 2;
+      let m;
+      if (map) { const t = map.clone(); t.needsUpdate = true; t.repeat.set(len / (.16 * B.stripes.length), 1); this.own.push(t); m = mat('#ffffff', { map: t, rough: .9, rim: .1 }); }
+      else m = mat(B.color, { rough: .85, rim: .1 });
+      const band = new THREE.Mesh(new THREE.BoxGeometry(len, B.h, .03), m); band.position.set(0, y, .017); band.userData.og = og;
+      const trim = rbox(len, .045, .06, B.trim, .015); put(trim, 0, y - B.h / 2 - .02, .03); trim.userData.og = og;
+      for (const o of [band, trim]) { o.castShadow = false; o.receiveShadow = true; wl.decor.add(o); }
+      if (B.bulbs) {   // a string of little bulbs in shallow loops just under the moulding (a café's 꼬마전구)
+        const spans = Math.max(2, Math.round(len / 1.1)), y0 = y - B.h / 2 - .07, P = (a, b, t) => new THREE.Vector3(a + (b - a) * t, y0 - .13 * 4 * t * (1 - t), .06);
+        const pts = [], bulbs = [];
+        for (let k = 0; k < spans; k++) {
+          const a = -len / 2 + .15 + k * (len - .3) / spans, b = a + (len - .3) / spans;
+          for (let i = k ? 1 : 0; i <= 8; i++) pts.push(P(a, b, i / 8));
+          for (const t of [.22, .5, .78]) { const q = P(a, b, t), g = new THREE.SphereGeometry(.045, 10, 8); g.scale(1, 1.2, 1); g.translate(q.x, q.y - .055, q.z); bulbs.push(g); }
+        }
+        const wire = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, .006, 4), mat('#5b3a26', { rough: .9, rim: 0 }));
+        const lit = new THREE.Mesh(mergeGeometries(bulbs), mat('#fff6d0', { emissive: '#ffd27a', ei: 1.4, rim: 0 })); bulbs.forEach(g => g.dispose());
+        wire.castShadow = false; wire.userData.og = og;
+        lit.castShadow = false; lit.layers.set(2);   // no ink round a bulb (it read as a black dot): drawn in colour only
+        wl.decor.add(wire, lit);
+      }
+    }
+  }
+  // shop things on the bare walls (no spots: nothing hides in them); a piece is skipped where the room already hung
+  // something within its reach (a lever the planner mounted, the layout's own posters and doors)
+  buildWallDecor(room, list) {
+    for (const [type, k, u, opts] of list) {
+      const wl = room.walls[k]; if (!wl || !FURN_INFO[type] || !['wall', 'door'].includes(room.L.walls?.[k] || 'wall')) continue;   // (a map's open side has no wall)
+      const half = (FURN_INFO[type].span || 1) / 2 + (FURN_INFO[type].pad ?? .35);
+      // (high: a piece up by the wall top, over whatever hangs lower — the washing line)
+      if (!FURN_INFO[type].high && room.decors.some(d => d.wall === k && Math.abs(d.u - u) < half)) continue;
+      const f = makeFurniture(type, room.T || this.T, opts);
+      f.group.position.set(u, 0, 0); f.group.userData.lookFill = true;
+      f.group.traverse(o => { if (o.isMesh) o.castShadow = false; });
+      wl.decor.add(f.group); (this.wallPieces ||= []).push({ g: f.group, wl });
+    }
+  }
+  // Nothing the look adds may hide a hidden thing: from 12 headings at two pitches round the start view, a sight line to
+  // each hidden thing that a fill or wall piece cuts first (before the room's own furniture would) takes that piece away.
+  // The things are placed by a seed, so this runs on every stage start (review 10/19: the 12-ray check, 0 of 12).
+  clearSightlines() {
+    const items = (this.stage.items || []).filter(it => it.g && !it.vacHidden); if (!items.length) return;
+    const rooms = this.room.rooms || [this.room], pieces = [...this.filled.map(g => ({ g })), ...(this.wallPieces || [])];
+    const ofPiece = new Map(), skip = new Set(), others = [], lay = new THREE.Layers(); lay.set(0); lay.enable(2);
+    for (const pc of pieces) { pc.ms = []; pc.g.traverse(m => { if (m.isMesh) { pc.ms.push(m); ofPiece.set(m, pc); } }); }
+    for (const r of rooms) for (const k in r.walls) r.walls[k].g.traverse(m => skip.add(m));
+    for (const it of items) it.g.traverse(m => skip.add(m));
+    this.room.group.updateMatrixWorld(true);
+    this.room.group.traverse(m => { if (m.isMesh && m.visible && !ofPiece.has(m) && !skip.has(m) && !m.userData.floor && m.layers.test(lay)) others.push(m); });
+    const rc = new THREE.Raycaster(), p = new THREE.Vector3(), d = new THREE.Vector3(), o = new THREE.Vector3(), c = new THREE.Vector3(), bad = new Set();
+    for (const it of items) {
+      it.g.getWorldPosition(p); p.y += .08;
+      for (const pitch of [.5, .75]) for (let k = 0; k < 12; k++) {
+        const yaw = k * Math.PI / 6; c.set(Math.sin(yaw), 0, Math.cos(yaw)); d.set(c.x * Math.cos(pitch), Math.sin(pitch), c.z * Math.cos(pitch));
+        // a wall piece only counts while its wall stands (a wall on the camera's side folds down and its pieces go)
+        const ms = []; for (const pc of pieces) if (!bad.has(pc) && !(pc.wl && pc.wl.tall && pc.wl.n.dot(c) < -.18)) ms.push(...pc.ms);
+        if (!ms.length) continue;
+        rc.set(o.copy(p).addScaledVector(d, 12), d.clone().negate()); rc.far = 11.95;
+        const hl = rc.intersectObjects(ms, false)[0]; if (!hl) continue;
+        const ho = rc.intersectObjects(others, false)[0];
+        if (!ho || hl.distance < ho.distance) bad.add(ofPiece.get(hl.object));
+      }
+    }
+    for (const pc of bad) { pc.g.parent?.remove(pc.g); this.filled = this.filled.filter(g => g !== pc.g); }
+    this.cleared = bad.size;
+  }
+  buildFill(room, list) {
+    const st = this.stage, ox = room.group.position.x, oz = room.group.position.z;   // (a map's room: its fill is laid out round its own middle)
     // never next to something hidden, the friend, or where the layout says the friend stands
     const keep = [];
     const v = new THREE.Vector3();
     for (const it of st.items || []) { it.g.getWorldPosition(v); keep.push([v.x, v.z]); }
     const fa = st.layout?.friendAt; if (fa) keep.push([fa[0], fa[1]]);
-    this.filled = [];
-    for (const e of this.R.fill || []) {
+    room.group.updateMatrixWorld(true);
+    for (const e of list) {
       if (!FURN_INFO[e.furn]) continue;
-      if (keep.some(([x, z]) => Math.hypot(x - e.x, z - e.z) < .75)) continue;
-      if (room.clearAt && !room.clearAt(e.x, e.z, .3)) continue;
-      const f = makeFurniture(e.furn, (e.theme && THEMES[e.theme]) || this.T);
-      put(f.group, e.x, 0, e.z, 0, e.ry || 0, 0, e.s || null);
+      // door: a mat just inside the layout's door on that wall (layout edits move doors about)
+      let ex = e.x, ez = e.z, ery = e.ry || 0;
+      if (e.door) {
+        const dr = room.decors.find(q => q.type === 'door' && q.wall === e.door), wl = room.walls[e.door]; if (!dr || !wl) continue;
+        const p = wl.g.localToWorld(new THREE.Vector3(dr.u, 0, .42)); ex = p.x - ox; ez = p.z - oz; ery = wl.g.rotation.y;
+      }
+      if (keep.some(([x, z]) => Math.hypot(x - ox - ex, z - oz - ez) < .75)) continue;
+      if (room.clearAt && !room.clearAt(ox + ex, oz + ez, .3)) continue;
+      const f = makeFurniture(e.furn, (e.theme && THEMES[e.theme]) || room.T || this.T, e.opts);
+      put(f.group, ex, 0, ez, 0, ery, 0, e.s || null);
       f.group.userData.lookFill = true;
       room.group.add(f.group); this.filled.push(f.group);
     }

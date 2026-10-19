@@ -52,7 +52,7 @@ import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout
 // 프라모델 조립판 (정식판 10/19): the things to find are a model kit's pieces — the box opens first, a runner card holds them,
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
 import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitFinish, kitReward } from '../modelkit.js';
-import { lookRecipe, lookTheme, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
+import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
 
@@ -147,6 +147,7 @@ export class StageScene {
     if (this.kit && !this.model) this.spec = { ...this.spec, n: KITS[this.spec.kit].order.length, force: kitForce(this.spec.kit) };
     this.kitRetry = !!retry;
     this.lookR = lookRecipe(this.spec.room, this.spec); if (this.lookR) this.th = lookTheme(this.lookR, this.th);
+    layout = lookLayout(this.lookR, layout);   // a shop's look builds its room(s) in the look's own colours, this stage only
     const th = this.th;
     G.setBg(th.bg); W.setLight(th.light); setSky(th.sky || null);
     // 밤 판: moonlight — dimmer and bluer, but every corner still reads (no torch, no silhouettes)

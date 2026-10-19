@@ -3627,4 +3627,5 @@ export const EN = {
 "이제 진짜 다 찾았다~": "Now I really found everyone~",
 "어? 텐트 앞에서 쿨쿨 소리가…": "Huh? Snoring by the tent…",
 "이제 진짜 다 갔다~": "Now everyone's really home~",
+"첫 놀이터 + 덤불": "First Playground + Bushes",
 };

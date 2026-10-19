@@ -643,6 +643,10 @@ const REGION = {
 
 // ── the boss games: a few lines before (lead) and after the first win (out), by game and set-up
 const GAME = {
+  // 15판 뒤 다 같이 집으로! (스토리 룸 10/19, 사용자 "일단 15판"): 13판 이사 뒤라 "이웃", 몽글이 "한 명도 안 빼고"는 60·64판
+  // 먹물이 이야기("해가 져서 먼저 내려왔어", "다들 찾다가 집에 가. 해 지면")의 반대말, "내일 또 놀자"는 먹물이가 못 들어 본 말
+  'gohome:8': { lead: [L('hamster', '웁웁! 벌써 해 졌어. 다 같이 집으로 가자!', "Mmf! The sun's already down. Everyone, home!"), L('mong', '…한 명도 안 빼고.', '…Nobody gets left behind.')],
+    out: [L('bunny', '다 왔다! 이제 이웃이니까 내일 또 놀자!', "We made it! We're neighbors now, so let's play again tomorrow!")] },
   'whack:0': { lead: [L('frog', '개굴! 수풀 놀이 할 사람?', 'Ribbit! Who wants to play in the bushes?'), L('frog', '고개 내밀 때 톡 하면 찾은 거야.', "Tap us when we pop up. That's a catch!"), L('raccoon', '나도 낄래~ 근데 나 누르면 하나 빼기다?', 'Count me in! Tap me, though, and you lose one.'), L('mong', '…누구야.', "…Who's that?")],
     out: [L('frog', '손 빠르다! 낚시터에서보다 더 빠르네, 개굴!', 'Fast hands! Even faster than at my fishing spot, ribbit!')] },
   'yasik:0': { lead: [L('bunny', '몽글아! 오늘 너네 집에서 자도 돼?', 'Mongle! Can I sleep over at your place tonight?'), L('bunny', '꼬르륵… 들었어?', 'Grumble… Did you hear that?'), L('mong', '네 배.', 'Your stomach.'), L('bunny', '냉장고에 푸딩 있잖아…', "There's pudding in the fridge…"), L('mom', '얘들아~ 이제 자야지~', 'Kids! Bedtime!'), L('mong', '…이번엔 우리가 안 들킬 차례.', '…Our turn to stay out of sight.')],
@@ -670,7 +674,8 @@ const GAME = {
 // "캠핑의 꽃은…", which came up first in an apartment and again as the building's boss. The rule stays in the host's mouth
 // as a game rule (the way kids explain a game); how to touch the screen is on screen.
 const MINI = {
-  lamp: [L('hamster', '웁웁! 불 끄고 손전등 술래 하자! 무섭지만… 재밌어!', 'Mmf! Lights off, flashlight tag! Scary… but fun!'), L('hamster', '불빛에 비친 친구를 톡 하면 찾은 거야!', "Tap whoever's in the light. That's a catch!")],
+  // (10/19: 손전등은 15판 뒤 → 43판 뒤 공원으로 — 밖이라 '불 끄고' 대신 해가 진 걸로)
+  lamp: [L('hamster', '웁웁! 해 졌다! 손전등 술래 하자! 무섭지만… 재밌어!', "Mmf! The sun's down! Flashlight tag! Scary… but fun!"), L('hamster', '불빛에 비친 친구를 톡 하면 찾은 거야!', "Tap whoever's in the light. That's a catch!")],
   'lamp:boss': [L('nerd', '불 끄고 손전등 술래. 이번엔 여덟 명이야.', 'Lights off, flashlight tag. Eight of us this time.'), L('raccoon', '나도 숨는다~ 가짜도 섞어 놨지롱.', "I'm hiding too~ And I mixed in some fakes."), L('mong', '…다 찾을게.', "…I'll find all of you.")],
 };
 export const miniLead = (kind, boss) => MINI[kind + (boss ? ':boss' : '')] || null;

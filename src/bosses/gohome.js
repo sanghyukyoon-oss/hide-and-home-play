@@ -12,6 +12,7 @@
 //   4 졸린 친구들      + friends who fell asleep (one tap wakes them, the next sends them)
 //   5 해 질 녘         all of it, at sunset
 //   6 / 7 (the campaign, 43판 뒤 / 52판 뒤): two in a row — 놀이터 then a short 덤불 one; a campsite then a short sleepy one
+//   8 (the campaign, early): two small ones for a first-timer — 놀이터 4×4 then 덤불 4×4, under a minute
 // Sending a friend never makes the square unsolvable (it only opens ways), so there's no undo; stars count the bonks.
 import * as THREE from 'three';
 import { Room } from '../room.js';
@@ -51,6 +52,11 @@ const LEVELS = [
   { name: '캠핑장 + 졸린 친구', set: [{ name: '캠핑장', place: 'camp', n: 5, count: 7, rocks: 3, hidden: 0, spin: 0, sleepy: 0, time: 60 },
     { name: '텐트 앞 졸린 친구', place: 'camp', n: 4, count: 4, rocks: 1, hidden: 0, spin: 0, sleepy: 2, time: 30, hint: '자는 친구는 톡 해서 깨워요', sleeper: 'sleepy' }],
     lines: ['어? 텐트 앞에서 쿨쿨 소리가…', '이제 진짜 다 갔다~'] },
+  // the first time it comes up, early in the campaign (user, 10/19: "무궁화보다 이게 더 재밌어", "9판째 이후면 좋겠다"):
+  // two small ones a first-timer finishes inside a minute; the arrows that can go glow until the first friend is sent
+  { name: '첫 놀이터 + 덤불', teach: true, set: [{ name: '놀이터', place: 'park', n: 4, count: 4, rocks: 0, hidden: 0, spin: 0, sleepy: 0, time: 40 },
+    { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 1, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 톡!' }],
+    lines: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '이제 진짜 다 찾았다~'] },
 ];
 export { LEVELS };
 
@@ -199,7 +205,7 @@ export class Game {
     me.pose = 'idle';
     this.phase = 'play';
     if (this.lv.card) this.gotCard(this.lv.card);
-    this.glowT = 2.4;
+    this.glowT = this.set.teach ? 99 : 2.4;   // a first-timer's set: the friends who can go glow until one is sent
   }
   // one round's square: the ground and things round it, the slabs, the friends and 몽글이 (a second round rebuilds it all)
   buildRound(LV) {
@@ -381,7 +387,7 @@ export class Game {
   // way clear: it turns, runs off over the edge of the square and away
   send(q) {
     const L = this.L, W = L.world, [dx, dy] = DIRS[q.dir], n = this.n;
-    q.state = 'run'; this.home++; this.homeR++; this._bonkRun = 0; L.log({ send: q.kind, t: +this.t.toFixed(1) });
+    q.state = 'run'; this.home++; this.homeR++; this._bonkRun = 0; if (this.glowT > 3) this.glowT = 0; L.log({ send: q.kind, t: +this.t.toFixed(1) });
     let steps = 0; { let x = q.x, y = q.y; while (x >= 0 && x < n && y >= 0 && y < n) { x += dx; y += dy; steps++; } }
     const w0 = this.cellW(q.x, q.y), dist = steps + 1.6, dur = .22 + dist * .11;
     L.audio.sfx('hop'); q.c.setFace('happy'); q.c.pose = 'cheer'; q.c.root.rotation.y = q.dirYaw;

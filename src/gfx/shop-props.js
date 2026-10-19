@@ -1440,6 +1440,206 @@ B.clockposter = (f, T) => {
   f.spot('inside', null, 0, PY + cy, .012, { part: p, maxH: .09, label: '시계 뒤', wallFace: true });
 };
 
+// ═════════════════════════════════════════════ 룩: 가게를 가게답게 ═════════════════════════════════════════════
+// (10/19 아트 세션, user refs — an isometric cosy café and the TUTU shop: "이런 판이나 이런느낌의 판도 몇개 있었으면")
+// Pieces the look layer (look.js RECIPES.konbini / cafe) hangs on the shop walls and stands on the free floor so the
+// shops read as busy, lived-in places. No parts and no spots: the stage's hiding places stay exactly as they were.
+// hidden: never sold, never in the layout editor, no thumbnail.
+
+// WELCOME (wall, span 2): seven chunky letter tiles in the shop colours, set a little up and down like stuck-on blocks
+const letterTex = (word, cols) => tex('shop-letters|' + word + '|' + cols.join(','), 128 * word.length, 128, (c, w, h) => {
+  [...word].forEach((ch, k) => {
+    c.fillStyle = cols[k % cols.length]; c.fillRect(k * 64, 0, 64, 64);
+    txt(c, ch, k * 64 + 32, 34, 44, cols[k % cols.length] === '#ffffff' ? '#3f86d8' : '#ffffff');
+  });
+}, { text: true });
+B.welcome = (f, T, o = {}) => {   // o.word / o.cols: another shop's sign (LAUNDRY)
+  const word = o.word || 'WELCOME', cols = o.cols || [col(T, 'accent2'), col(T, 'accent'), '#ffffff', col(T, 'accent3')], n = word.length, S = .27, gap = .035;
+  const x0 = -(n * S + (n - 1) * gap) / 2 + S / 2, y0 = 2.3, pos = k => [x0 + k * (S + gap), y0 + (k % 2 ? .05 : -.02), (k % 3 - 1) * .07];
+  f.add(mc('welcome|' + word + '|' + cols.join(','), ({ add }) => { for (let k = 0; k < n; k++) { const [x, y, r] = pos(k); add(G.box(S, S, .05, .02), shade(cols[k % cols.length], -.12), x, y, .025, 0, 0, r); } }));
+  f.add(mg('welcome-print|' + word + '|' + cols.join(','), mat('#ffffff', { map: letterTex(word, cols) }), ({ addM }) => {
+    for (let k = 0; k < n; k++) { const [x, y, r] = pos(k); addM(cellUV(new THREE.PlaneGeometry(S - .03, S - .03), [k / n, 0, (k + 1) / n, 1]), xf(x, y, .056, 0, 0, r)); }
+  }));
+};
+// a big "맛있다!" poster (wall, span 2): the mochi licking its lips in a burst of rays, hearts, a pink frame
+const yummyTex = () => tex('shop-yummy', 512, 320, (c, w, h) => {
+  c.fillStyle = '#bfe8fb'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#e6f6fd'; for (let k = 0; k < 14; k++) { const a = k / 14 * PI * 2; c.beginPath(); c.moveTo(w * .62, h * .62); c.arc(w * .62, h * .62, w, a, a + PI / 14); c.closePath(); c.fill(); }
+  mochi(c, w * .62, h * .66, 42);
+  c.fillStyle = '#ff9fb5'; ell(c, w * .62 + 4, h * .66 + 14, 6, 4);
+  c.fillStyle = '#ffffff'; c.strokeStyle = '#2a1d33'; c.lineWidth = 2; roundRect(c, 14, 16, 108, 50, 18); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(96, 64); c.lineTo(118, 84); c.lineTo(112, 62); c.closePath(); c.fill();
+  txt(c, '맛있다!', 68, 42, 22, '#ff5a73');
+  c.fillStyle = '#ff7a95'; heartPath(c, 214, 40, 9); c.fill(); heartPath(c, 236, 66, 6); c.fill(); heartPath(c, 34, 116, 7); c.fill();
+  c.fillStyle = '#ffd23f'; starPath(c, 196, 120, 8); c.fill();
+}, { text: true });
+B.yummyposter = (f, T) => {
+  const PW = 1.22, PH = .76, cy = 2.12;
+  f.add(mc('yummyposter', ({ add }) => {
+    add(G.box(PW + .08, PH + .08, .03, .015), '#ff8fb0', 0, cy, .015);
+    for (const [sx, sy] of [[-1, 1], [1, 1]]) add(G.pbox(.1, .03, .004), TAPE, sx * (PW / 2 - .02), cy + sy * (PH / 2 + .02), .034, 0, 0, sx * .5);
+  }));
+  f.add(mg('yummyposter-print', mat('#ffffff', { map: yummyTex() }), ({ add }) => add(new THREE.PlaneGeometry(PW, PH), 0, cy, .036)));
+};
+// two small sale posters, one above the other (wall, span 1): 1+1 삼각김밥 and a new drink
+const saleTex = () => tex('shop-sale2', 256, 320, (c, w, h) => {
+  c.fillStyle = '#ff5a4a'; c.fillRect(0, 0, w, h / 2); c.fillStyle = '#fff4e2'; c.fillRect(0, h / 2, w, h / 2);
+  txt(c, 'SALE', 40, 22, 18, '#ffe27a'); txt(c, '1+1', 40, 46, 22, '#ffffff');
+  c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(96, 18); c.lineTo(122, 64); c.lineTo(70, 64); c.closePath(); c.fill();
+  c.fillStyle = '#2a1d33'; c.fillRect(84, 46, 24, 18); c.fillStyle = '#ffffff'; blob(c, 90, 36, 2); blob(c, 102, 36, 2);
+  txt(c, 'NEW', 34, h / 2 + 22, 16, '#3f86d8'); txt(c, '음료', 34, h / 2 + 44, 15, '#2a1d33');
+  c.fillStyle = '#7fd6c0'; roundRect(c, 84, h / 2 + 14, 22, 48, 6); c.fill(); c.fillStyle = '#3f86d8'; c.fillRect(88, h / 2 + 6, 14, 10);
+  c.fillStyle = '#ffffff'; c.fillRect(86, h / 2 + 30, 18, 12);
+}, { text: true });
+B.saleposters = (f, T) => {
+  const PW = .44, PH = .55;
+  f.add(mc('saleposters', ({ add }) => { for (const y of [2.05, 1.42]) { add(G.box(PW + .04, PH + .04, .006, .003), WHITE, 0, y, .004); add(G.pbox(.09, .03, .004), TAPE, 0, y + PH / 2 + .01, .012); } }));
+  f.add(mg('saleposters-print', mat('#ffffff', { map: saleTex() }), ({ addM }) => {
+    addM(cellUV(new THREE.PlaneGeometry(PW, PH), [0, .5, 1, 1]), xf(0, 2.05, .012)); addM(cellUV(new THREE.PlaneGeometry(PW, PH), [0, 0, 1, .5]), xf(0, 1.42, .012));
+  }));
+};
+// three chalk menus hanging high over the coffee bar (wall, span 2), each tipped a little toward the room
+const menuTex = (k, chalk) => tex('shop-menu3|' + k + '|' + chalk, 256, 320, (c, w, h) => {
+  c.fillStyle = tint(chalk); c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(255,255,255,.05)'; for (let i = 0; i < 9; i++) ell(c, (i * 53 + k * 17) % w, (i * 41) % h, 14 + (i % 3) * 5, 7, i);
+  const T3 = [['COFFEE', [['아메리카노', '3.0'], ['카페라떼', '3.5'], ['카푸치노', '3.5'], ['모카', '4.0']]],
+    ['DESSERT', [['딸기케이크', '5.0'], ['크루아상', '2.8'], ['쿠키', '1.5']]], ['TEA', [['녹차라떼', '4.0'], ['얼그레이', '3.5'], ['레몬티', '3.5'], ['코코아', '3.8']]]][k];
+  txt(c, T3[0], w / 2, 22, 17, '#ffe27a');
+  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1; c.beginPath(); c.moveTo(20, 36); c.lineTo(w - 20, 36); c.stroke();
+  T3[1].forEach(([a, b], i) => { txt(c, a, 14, 54 + i * 19, 11, '#ffffff', { align: 'left' }); txt(c, b, w - 14, 54 + i * 19, 11, ['#ffb3c6', '#bff0d8', '#ffe27a'][k], { align: 'right' }); });
+  c.fillStyle = ['#ffb3c6', '#ffe27a', '#bff0d8'][k]; if (k === 1) { rr(c, w / 2 - 19, 132, 38, 16, 3); c.fillStyle = '#ffffff'; rr(c, w / 2 - 19, 126, 38, 8, 3); c.fillStyle = '#ff5a73'; blob(c, w / 2, 122, 4); }
+  else { heartPath(c, w / 2, 140, 7); c.fill(); }
+}, { text: true });
+B.menutrio = (f, T) => {
+  const wood = col(T, 'woodD'), chalk = col(T, 'chalk'), BW = .58, BH = .7, cy = 2.08, xs = [-.66, 0, .66];
+  f.add(mc('menutrio|' + wood, ({ add, tube }) => {
+    xs.forEach(x => {
+      add(G.box(BW + .08, BH + .08, .04, .015), wood, x, cy, .03, -.1, 0, 0);
+      tube([x - .18, cy + BH / 2 + .03, .04], [x, cy + BH / 2 + .2, .005], .006, STEEL2); tube([x + .18, cy + BH / 2 + .03, .04], [x, cy + BH / 2 + .2, .005], .006, STEEL2);
+      add(G.sph(.016, 8, 6), STEEL2, x, cy + BH / 2 + .2, .008);
+    });
+  }));
+  xs.forEach((x, k) => f.add(mg('menutrio-chalk|' + k + '|' + chalk, mat('#ffffff', { map: menuTex(k, chalk) }), ({ add }) => add(new THREE.PlaneGeometry(BW, BH), x, cy, .052, -.1, 0, 0))));
+};
+// two wooden shelves of jars, cups and a little plant (wall, span 1) — the back bar over the pastry case
+B.cupshelf = (f, T) => {
+  const wood = col(T, 'wood'), woodD = col(T, 'woodD'), pc = col(T, 'pot'), SW = .94, L1 = 1.62, L2 = 2.02;
+  f.add(mc('cupshelf|' + [wood, woodD, pc].join(','), ({ add }) => {
+    for (const y of [L1, L2]) {
+      add(G.box(SW, .04, .24, .012), wood, 0, y, .12);
+      for (const x of [-SW / 2 + .1, SW / 2 - .1]) add(G.box(.04, .12, .18, .01), woodD, x, y - .08, .09);
+    }
+    // lower shelf: two jars of beans with coloured lids, three mugs
+    [[-.34, '#8a5634', '#ff8f86'], [-.18, '#5b3a26', '#ffd25c']].forEach(([x, bean, lid]) => {
+      add(G.cyl(.06, .06, .17, 14), '#e8f4f6', x, L1 + .02 + .085, .12); add(G.cyl(.053, .053, .12, 14), bean, x, L1 + .02 + .065, .12); add(G.cyl(.065, .065, .035, 14), lid, x, L1 + .02 + .18, .12);
+    });
+    [[.0, '#ffffff'], [.15, '#ffb3c6'], [.3, '#8fd3f4']].forEach(([x, c]) => {
+      add(G.cyl(.05, .045, .1, 12), c, x, L1 + .02 + .05, .13); add(G.tor(.03, .01, PI, 4, 8), c, x + .055, L1 + .02 + .055, .13, 0, 0, -HP);
+    });
+    // upper shelf: two syrup bottles, a bear cookie jar, a plant
+    [[-.36, '#ff8f86'], [-.26, '#ffd25c']].forEach(([x, c]) => { add(G.cyl(.035, .04, .2, 10), c, x, L2 + .02 + .1, .12); add(G.cyl(.014, .014, .07, 8), c, x, L2 + .02 + .23, .12); add(G.cyl(.018, .018, .02, 8), CHAR, x, L2 + .02 + .27, .12); });
+    add(G.sph(.1, 14, 10), '#f6d6ae', -.04, L2 + .02 + .1, .12, 0, 0, 0, [1, .95, .9]); for (const sx of [-1, 1]) add(G.sph(.035, 8, 6), '#d9944f', -.04 + sx * .07, L2 + .02 + .19, .12);
+    add(G.cyl(.08, .08, .05, 14), '#e8f4f6', -.04, L2 + .02 + .2, .12);
+    potPlant(add, .26, L2 + .02, .12, pc, 1.3);
+  }));
+};
+// the café's own sign (wall, span 1): an arched board with a cup and a loaf painted on, hung on two chains
+const cafeSignTex = () => tex('shop-cafesign', 256, 256, (c, w, h) => {
+  c.fillStyle = '#fff4e2'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#ffffff'; c.strokeStyle = '#6b3f2a'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(34, 60); c.lineTo(40, 98); c.lineTo(68, 98); c.lineTo(74, 60); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.arc(78, 74, 7, -HP, HP); c.stroke(); steamDraw(c, 54, 52, .8, 'rgba(107,63,42,.8)');
+  c.fillStyle = '#e8a456'; ell(c, 92, 84, 22, 14); c.strokeStyle = '#b06a2a'; c.lineWidth = 2; for (const dx of [-8, 0, 8]) { c.beginPath(); c.moveTo(92 + dx - 3, 76); c.lineTo(92 + dx + 3, 90); c.stroke(); }
+  txt(c, 'CAFE', 64, 22, 18, '#6b3f2a'); txt(c, '빵과 커피', 64, 114, 12, '#a8693f');
+}, { text: true });
+B.cafesign = (f, T) => {
+  const wood = col(T, 'woodD'), cy = 1.95, SW = .62, SH = .62;
+  f.add(mc('cafesign|' + wood, ({ add, tube }) => {
+    add(G.box(SW + .08, SH + .08, .04, .03), wood, 0, cy, .04);
+    add(G.cyl(SW / 2 + .04, SW / 2 + .04, .04, 24, false), wood, 0, cy + SH / 2, .04, HP, 0, 0, [1, 1, .55]);
+    tube([-.2, cy + SH / 2 + .1, .04], [0, cy + SH / 2 + .32, .01], .006, STEEL2); tube([.2, cy + SH / 2 + .1, .04], [0, cy + SH / 2 + .32, .01], .006, STEEL2);
+    add(G.sph(.016, 8, 6), STEEL2, 0, cy + SH / 2 + .32, .01);
+  }));
+  f.add(mg('cafesign-print', mat('#ffffff', { map: cafeSignTex() }), ({ add }) => add(new THREE.PlaneGeometry(SW, SH), 0, cy, .062)));
+};
+// a stack of red shopping baskets by the door (floor, 1×1)
+B.basketstack = (f, T) => {
+  f.add(mc('basketstack', ({ add }) => {
+    for (let k = 0; k < 4; k++) {
+      const y = .02 + k * .075, r = k % 2 ? .05 : -.04;
+      add(G.box(.5, .2, .36, .03), RED, r * .4, y + .1, r * .2, 0, r, 0);
+      add(G.box(.42, .02, .28, .01), shade(RED, -.25), r * .4, y + .2 + .002, r * .2, 0, r, 0);   // the open top
+      for (const sx of [-1, 1]) add(G.box(.008, .08, .2, .003), shade(RED, -.25), r * .4 + sx * .252, y + .11, r * .2, 0, r, 0);   // the side grips
+      for (const dx of [-.15, 0, .15]) add(G.box(.09, .022, .006, .003), shade(RED, -.3), r * .4 + dx, y + .1, r * .2 + .182, 0, r, 0);   // the mesh slits
+    }
+    // the top basket's two black handles, folded over
+    for (const sz of [-1, 1]) add(G.tor(.15, .014, PI, 4, 12), '#2a1d33', .0, .445, sz * .12, sz * 1.15, .05, 0);
+  }));
+};
+// 빨래방: a washing line high across a wall (o.len long), socks and little tees pegged on it
+B.sockline = (f, T, o = {}) => {
+  const L = o.len || 2.4, Y = 2.5, sag = .08, n = 24, at = t => [(-.5 + t) * L, Y - sag * 4 * t * (1 - t), .09];
+  const cols = ['#ff8f86', '#ffd25c', '#7fd6c0', '#8fd3f4', '#ffffff', '#b9a6ff', '#ff9fb5'];
+  f.add(mc('sockline|' + L, ({ add, tube }) => {
+    for (let i = 0; i < n; i++) tube(at(i / n), at((i + 1) / n), .007, '#f6efe4');
+    for (const t of [0, 1]) { const [x] = at(t); add(G.box(.05, .05, .1, .01), STEEL2, x, Y, .05); }
+    const things = Math.max(4, Math.round(L / .42));
+    for (let k = 0; k < things; k++) {
+      const t = (k + .7) / (things + .4), [x, y, z] = at(t), c = cols[k % cols.length], tilt = ((k * 37) % 9 - 4) * .02;
+      add(G.box(.025, .06, .025, .006), WOOD_PEG, x, y - .01, z);
+      if (k % 3 === 2) {   // a little tee
+        add(G.box(.2, .24, .02, .02), c, x, y - .15, z, 0, 0, tilt); for (const sx of [-1, 1]) add(G.box(.09, .08, .02, .015), c, x + sx * .13, y - .08, z, 0, 0, tilt + sx * .5);
+      } else {             // a sock
+        add(G.box(.08, .22, .025, .02), c, x, y - .13, z, 0, 0, tilt); add(G.box(.12, .07, .025, .02), c, x + .03, y - .26, z, 0, 0, tilt);
+        add(G.box(.085, .04, .028, .01), WHITE, x, y - .045, z, 0, 0, tilt);
+      }
+    }
+  }));
+};
+const WOOD_PEG = '#e8bb82';
+// the laundry's how-to poster (wall, span 1): 세탁 안내 — coin, soap, start
+const washTex = () => tex('shop-washguide', 256, 320, (c, w, h) => {
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = '#5aa9ec'; c.fillRect(0, 0, w, 30);
+  txt(c, '세탁 안내', w / 2, 16, 15, '#ffffff');
+  [['동전 넣기', '#ffd23f'], ['세제 넣기', '#7fd6c0'], ['시작!', '#ff8f86']].forEach(([t, cc], k) => {
+    const y = 52 + k * 36; c.fillStyle = cc; blob(c, 22, y, 11); txt(c, String(k + 1), 22, y + 1, 12, '#ffffff'); txt(c, t, 44, y, 12, '#33406a', { align: 'left' });
+  });
+  c.fillStyle = '#cdeefc'; for (let k = 0; k < 6; k++) blob(c, 96 + (k % 3) * 10, 136 + Math.floor(k / 3) * 9, 4 + (k % 2));
+}, { text: true });
+B.washguide = (f, T) => {
+  const PW = .46, PH = .58, cy = 1.62;
+  f.add(mc('washguide', ({ add }) => { add(G.box(PW + .04, PH + .04, .006, .003), '#5aa9ec', 0, cy, .004); add(G.pbox(.09, .03, .004), TAPE, 0, cy + PH / 2 + .01, .012); }));
+  f.add(mg('washguide-print', mat('#ffffff', { map: washTex() }), ({ add }) => add(new THREE.PlaneGeometry(PW, PH), 0, cy, .012)));
+};
+// a door mat, '어서 오세요' (floor, 1×1, flat)
+const matTex = c1 => tex('shop-doormat|' + c1, 256, 160, (c, w, h) => {
+  c.fillStyle = tint(c1); c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2; c.setLineDash([4, 3]); c.strokeRect(6, 6, w - 12, h - 12); c.setLineDash([]);
+  txt(c, '어서 오세요', w / 2, h / 2, 14, '#ffffff');
+}, { text: true });
+B.doormat = (f, T, o = {}) => {
+  const c1 = o.color || col(T, 'accent');
+  f.add(mc('doormat|' + c1, ({ add }) => add(G.box(.86, .02, .56, .008), shade(c1, -.12), 0, .01, 0)));
+  f.add(mg('doormat-print|' + c1, mat('#ffffff', { map: matTex(c1) }), ({ add }) => add(new THREE.PlaneGeometry(.8, .5), 0, .022, 0, -HP, 0, 0)));
+};
+// an A-frame chalk sign, '오늘의 케이크' (floor, 1×1)
+const todayTex = chalk => tex('shop-today|' + chalk, 256, 320, (c, w, h) => {
+  c.fillStyle = tint(chalk); c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1; c.setLineDash([4, 3]); c.strokeRect(6, 6, w - 12, h - 12); c.setLineDash([]);
+  txt(c, 'TODAY', w / 2, 24, 17, '#ffe27a'); txt(c, '오늘의 케이크', w / 2, 46, 12, '#ffffff');
+  c.fillStyle = '#ffffff'; rr(c, 34, 80, 60, 28, 4); c.fillStyle = '#ffb3c6'; rr(c, 34, 72, 60, 12, 4); c.fillStyle = '#ff5a73'; blob(c, 64, 66, 6);
+  txt(c, '딸기 생크림', w / 2, 128, 11, '#ffffff'); txt(c, '5.0', w / 2, 146, 12, '#ffb3c6');
+}, { text: true });
+B.aframe = (f, T) => {
+  const wood = col(T, 'woodD'), chalk = col(T, 'chalk'), H = .82, A = .2;
+  f.add(mc('aframe|' + wood, ({ add }) => {
+    for (const s of [-1, 1]) { add(G.box(.5, H, .04, .012), wood, 0, H / 2 * Math.cos(A), s * (H / 2 * Math.sin(A) + .02), -s * A, 0, 0); }
+    add(G.box(.48, .03, .03, .01), wood, 0, H * Math.cos(A) - .01, 0);
+  }));
+  f.add(mg('aframe-chalk|' + chalk, mat('#ffffff', { map: todayTex(chalk) }), ({ add }) => {
+    add(new THREE.PlaneGeometry(.42, .62), 0, H / 2 * Math.cos(A) + .03, H / 2 * Math.sin(A) + .045, -A, 0, 0);
+  }));
+};
+
 // put() without the scale argument (kit.put also resets rotation)
 function put3(o, x, y, z) { o.position.set(x, y, z); return o; }
 
@@ -1464,6 +1664,18 @@ export const SHOP_INFO = {
   // 벽
   menuboard: { wall: true, span: 2, name: '메뉴판', price: 260, region: 'shop' },
   clockposter: { wall: true, span: 1, name: '가게 벽시계', price: 150, region: 'shop' },
+  // 룩 (look.js shop recipes): decoration only, never sold or offered
+  welcome: { wall: true, span: 2, name: '웰컴 글자판', hidden: true },
+  yummyposter: { wall: true, span: 2, name: '맛있다 포스터', hidden: true },
+  saleposters: { wall: true, span: 1, name: '세일 포스터', hidden: true },
+  menutrio: { wall: true, span: 2, name: '메뉴판 셋', hidden: true },
+  cupshelf: { wall: true, span: 1, name: '컵 선반', hidden: true },
+  cafesign: { wall: true, span: 1, name: '카페 간판', hidden: true },
+  basketstack: { w: 1, d: 1, name: '장바구니', hidden: true },
+  aframe: { w: 1, d: 1, name: '입간판', hidden: true },
+  sockline: { wall: true, span: 1, high: true, name: '양말 빨랫줄', hidden: true },
+  washguide: { wall: true, span: 1, pad: .05, name: '세탁 안내', hidden: true },   // (pad: only half a tile wide)
+  doormat: { w: 1, d: 1, name: '현관 매트', hidden: true },
 };
 
 // Suggested room themes (stages.js THEMES shape; every APT_THEMES.apt key). Extra keys these props read: cooler, vend,

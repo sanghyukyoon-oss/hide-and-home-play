@@ -526,10 +526,10 @@ export const MINI_AFTER = {
   2: { kind: 'whack', lab: true, lv: 0 },   // 1장: 두더지 숨바꼭질 새 버전 (user: "두더지 되게 재밌네", "두더지는 초반에")
   5: { kind: 'redlight', lab: true, lv: 0 },   // 1장: 무궁화 새 판 운동장 (user, 10/18: "무궁화 꽃이 피었습니다 재밌어")
   8: { kind: 'blanket', lab: true, lv: 0 },   // 1장: 이불 속 누구게? 파자마 파티 — after the night in 토순이네 침실+욕실
-  14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },   // 2장: 손전등 술래, in the one-room you just played
+  14: { kind: 'gohome', lab: true, lv: 8 },   // 2장: 다 같이 집으로! 첫 두 판 — 4×4 놀이터 → 덤불 (10/19, user: "무궁화보다 이게 더 재밌어", "9판째 이후면 좋겠다")
   23: { kind: 'whack', lab: true, lv: 1 },  // 3장: 두더지 — 변장한 너굴이 첫 등장
   33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },   // 4장: 먹물이의 바꿔치기
-  42: { kind: 'gohome', lab: true, lv: 6 },   // 5장: 다 같이 집으로! 두 판 — 놀이터 → 덤불 (10/19, user: "한 번 나올 때 2판, 총 2번")
+  42: { kind: 'lamp', p: { map: 'park1', time: 45 } },   // 5장: 손전등 술래 (15판 뒤 자리를 다 같이 집으로!에 주고 여기로)
   51: { kind: 'gohome', lab: true, lv: 7 },   // 6장: 다 같이 집으로! 두 판 — 캠핑장 → 졸린 친구 (10/19 — 바꿔치기 두 번째 자리)
   57: { kind: 'whack', lab: true, lv: 2 },   // 6장: 두더지 피버 수풀 (10/19: 발자국 따라 찾기는 놀이 모음에만 — user "화살표만 재밌는거같다", "두더지잡기가 재밌어")
   62: { kind: 'redlight', lab: true, lv: 1 },   // 7장: 무궁화 새 판 킥킥 너굴이

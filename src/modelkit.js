@@ -254,26 +254,45 @@ export async function kitIntro(S) {
 // one (an orthographic view: whether something is in the way depends on the angle only, not on where the camera looks).
 const SIDE = .66;
 function buildSpot(S) {
-  const W = S.G.world, f = S.friend.root.position, rc = S.room.center || new THREE.Vector3();
+  const t0 = performance.now(), W = S.G.world, f = S.friend.root.position, rc = S.room.center || new THREE.Vector3();
   const tiles = (S.freeTiles || []).filter(t => (t.R?.clearAt ? t.R.clearAt(t.x, t.z, .45) : true));
   const y0 = W.yaw, p0 = W.pitch, roots = [S.room.group];
   const seen = q => { const s = W.toScreen(q); const hit = W.pick(s.x, s.y, roots).find(x => !x.object.userData.proxy); return !hit || hit.distance > W.raycaster.ray.origin.distanceTo(q) - .12; };
+  // what else would be in the picture (레벨 세션 10/19: a big pot behind the model, a tree over the lower half, a chair
+  // through the ghost): every piece of furniture's box (rugs and other flat things don't count), and rays through a grid
+  // over the model's frame — from a little below its feet to above its head, either side — counting the ones that meet
+  // furniture within 1.6 m in front of or behind the model
+  const boxes = [];
+  S.room.group.traverse(o => { if (o.userData.furn && o.userData.furn.group === o) { const b = new THREE.Box3().setFromObject(o); if (!b.isEmpty() && b.max.y - b.min.y > .1) boxes.push(b); } });
+  const ray = new THREE.Ray(), hitP = new THREE.Vector3();
+  const clutter = (P, side, up, toCam) => {
+    let n = 0;
+    for (const k of [-.55, -.28, 0, .28, .55]) for (const h of [-.35, -.1, .2, .5, .8, 1.1]) {
+      ray.origin.copy(P).addScaledVector(side, k).addScaledVector(up, h).addScaledVector(toCam, 20); ray.direction.copy(toCam).negate();
+      for (const b of boxes) if (ray.intersectBox(b, hitP) && Math.abs(hitP.distanceTo(ray.origin) - 20) < 1.6) { n++; break; }
+    }
+    return n;
+  };
   let best = null;
   W.pitch = p0 > .38 && p0 < .9 ? p0 : .55;
+  const cp = Math.cos(W.pitch), sp = Math.sin(W.pitch);
   [0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2].forEach((d, di) => {
     const yaw = y0 + d; W.yaw = yaw; W.updateCam();
     const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), toCam = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+    const view = new THREE.Vector3(cp * Math.sin(yaw), sp, cp * Math.cos(yaw)), up = new THREE.Vector3(-sp * Math.sin(yaw), cp, -sp * Math.cos(yaw));   // towards the camera, the screen's up
     for (const t of tiles) {
       const y = t.y || 0, at = (k, h) => new THREE.Vector3(t.x + side.x * k, y + h, t.z + side.z * k);
-      if (![[0, .08], [0, .4], [0, .78], [.2, .4], [-.2, .4]].every(([k, h]) => seen(at(k, h)))) continue;
+      if (![[0, .08], [0, .45], [0, .88], [.2, .4], [-.2, .4]].every(([k, h]) => seen(at(k, h)))) continue;
       const room = k => { const q = at(k * SIDE, 0); return (!t.R?.clearAt || t.R.clearAt(q.x, q.z, .28)) && seen(at(k * SIDE, .35)); };
-      const score = (room(1) ? 2 : 0) + (room(-1) ? 2 : 0) + (t.R?.clearAt?.(t.x, t.z, .7) ? 1 : 0)
+      const c = clutter(new THREE.Vector3(t.x, y + .4, t.z), side, up, view);
+      const score = (room(1) ? 2 : 0) + (room(-1) ? 2 : 0) + (t.R?.clearAt?.(t.x, t.z, .7) ? 1 : 0) - c * 1.1
         + .25 * ((t.x - rc.x) * toCam.x + (t.z - rc.z) * toCam.z) - .15 * Math.hypot(t.x - f.x, t.z - f.z) - di * .6;
-      if (!best || score > best.score) best = { t, yaw, score };
+      if (!best || score > best.score) best = { t, yaw, score, clutter: c };
     }
   });
   const pitch = W.pitch; W.yaw = y0; W.pitch = p0; W.updateCam();
-  if (!best) best = { t: tiles[0] || { x: f.x + 1, z: f.z + 1, y: 0 }, yaw: y0 };
+  if (!best) best = { t: tiles[0] || { x: f.x + 1, z: f.z + 1, y: 0 }, yaw: y0, clutter: -1 };
+  S.kitSpot = { x: +best.t.x.toFixed(2), z: +best.t.z.toFixed(2), clutter: best.clutter, yaw: +best.yaw.toFixed(2), ms: Math.round(performance.now() - t0) };   // (QA)
   return { p: new THREE.Vector3(best.t.x, best.t.y || 0, best.t.z), yaw: best.yaw, pitch, tile: best.t };
 }
 // the friend (to the right) and 몽글이 (to the left) come over to watch: a poof where they are, a poof beside the spot —
@@ -339,9 +358,9 @@ export async function kitBuild(S) {
     // zooms about its frustum's middle, not about its target (world.js applyFrustum: cy), so the further in, the
     // further the target slides off the middle — the target is set where the model's middle lands at 40 %.
     // (The two either side may be cut by the screen's edges: the model wins.)
-    const vh = W.viewH || 11, zoom = Math.max(1.5, Math.min(9, vh / 2.3)), cy = W.fit?.cy ?? .46;
+    const vh = W.viewH || 11, zoom = Math.max(1.5, Math.min(8, vh / 2.7)), cy = W.fit?.cy ?? .46;   // (a step back: 레벨 세션 10/19 — so close it was mostly floor)
     const atT = .5 + (cy - .5) * zoom, mid = P.y + .35 * RS * S.room.group.getWorldScale(new THREE.Vector3()).y;
-    const tY = mid - (atT - .4) * (vh / zoom) / Math.max(.3, Math.cos(pitch));
+    const tY = mid - (atT - .5) * (vh / zoom) / Math.max(.3, Math.cos(pitch));   // (the middle: less floor in front of it — 레벨 세션 10/19)
     await Promise.all([W.flyTo(tw, { target: new THREE.Vector3(P.x, tY, P.z), yaw, pitch, zoom, dur: .7, e: ease.inOutCubic }), gather(S, P, tile?.R, yaw)]);
     if (S.dead) return;
     card?.classList.remove('done');
