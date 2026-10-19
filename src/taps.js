@@ -20,8 +20,11 @@ export const TAP_TXT = {
 };
 
 // how many: 6 to start with, one per thing to find, two per lock or device step, four more on a big map; roomier in the
-// first chapters, a little more on an escape-room boss, never under 10. Tune here.
-const PER_CHAPTER = [1.5, 1.3, 1.15, 1, 1, 1, 1];
+// first chapters, a little more on an escape-room boss, never under 8. Tune here.
+// (10/19 night, user: "너무 여유가 있다, 지금보다 약간 야박하게" — every chapter ×0.8 (1장 1.5 → 1.2, as the 레벨 1~10 session
+// measured: a person-speed bot wastes 0–5, a masher runs out in 18–27 s), the floor 10 → 8; 3판, the first stage with taps,
+// cut less: 1.35)
+const PER_CHAPTER = [1.2, 1.05, .92, .8, .8, .8, .8], FIRST_TAP_STAGE = 2, FIRST_MUL = 1.35;
 export function tapBudget(S) {
   const sp = S.spec;
   if (S.custom || S.preview || sp.tut === 1 || sp.tut === 2 || sp.timed) return null;
@@ -29,7 +32,8 @@ export function tapBudget(S) {
   const n = S.targets.length, L = S.plan.locks.length;
   const area = (S.room.rooms || [S.room]).reduce((a, R) => a + (R.w || 5) * (R.d || 5), 0);
   const big = area > 40 ? 4 : 0;
-  return Math.max(10, Math.round((6 + n + 2 * L + big) * PER_CHAPTER[ch] * (sp.boss ? 1.2 : 1)));
+  const mul = (sp.idx ?? S.idx) === FIRST_TAP_STAGE ? FIRST_MUL : PER_CHAPTER[ch];
+  return Math.max(8, Math.round((6 + n + 2 * L + big) * mul * (sp.boss ? 1.2 : 1)));
 }
 
 // the hand in the corner (first in the row of key / code pills)
@@ -61,12 +65,26 @@ export function spendTap(S, x, y) {
   const r = p?.getBoundingClientRect();
   if (r?.width) G.ui.floatText(r.right + 14, r.top + r.height / 2, '-1', 'red'); else if (x != null) G.ui.floatText(x, y - 34, '-1', 'red');
   if (x != null) { G.world.fx.burst(x, y, { n: 7, shape: 'dot', colors: ['#efe4d2', '#d6c8b2', '#fffaf0'], speed: 90, size: 8, life: .45, gravity: -40 }); G.world.fx.ring(x, y, { r: 20, color: 'rgba(255, 250, 240, .85)', width: 3, life: .3 }); }
+  missJolt(S);
   if (teach === 2) G.ui.toast(TAP_TXT.free, '');
   if (S.tapsLeft === 3 && !S._tapLow) { S._tapLow = true; G.ui.toast(TAP_TXT.low, 'red'); }
+  if (S.tapsLeft === 3 || S.tapsLeft === 1) setTimeout(() => !S.result && G.audio.sfx('tapLow', 0, false), 260);   // (after the miss's own sound — 사운드 세션 10/19)
   if (G.econ && S.tapsLeft === 3) lensNudge(S);   // 경제 B5 (10/19): a magnifier in hand → the hint button bounces once (설계서 5-4)
   // (QA 10/18: a moment's wait — this may be the first tap of a double-tap zoom, which gives the tap back; at 1 left the
   // zoom used to end the stage before the second tap came)
   if (S.tapsLeft <= 0 && S._tapLoseAt == null) S._tapLoseAt = (S._tapClock || 0) + .36;
+}
+// -1 felt (user 10/19 night: "-1 될 때 충격 키우기"): the whole screen jolts a little and a faint red veil with a red edge
+// comes and goes (0.32 s) — only on a tap that found nothing (this is only ever called for one). One veil, restarted each
+// time, so quick misses don't pile up; with 3 or fewer left it is a little deeper.
+function missJolt(S) {
+  const app = document.getElementById('app'); if (!app) return;
+  let v = document.getElementById('missveil');
+  if (!v) { v = h('div', { id: 'missveil' }); app.append(v); }
+  v.classList.remove('on', 'hot'); app.classList.remove('missjolt'); void v.offsetWidth;
+  v.classList.add('on'); if (S.tapsLeft <= 3) v.classList.add('hot');
+  app.classList.add('missjolt');
+  clearTimeout(S._joltT); S._joltT = setTimeout(() => { v.classList.remove('on', 'hot'); app.classList.remove('missjolt'); }, 400);
 }
 // the hidden-object stage's third star: at least half the taps left (it was "no more wrong taps than things to find")
 export const tapsStarOk = S => (S.tapsLeft == null ? S.missCount <= S.targets.length : S.tapsLeft * 2 >= S.tapBudget);

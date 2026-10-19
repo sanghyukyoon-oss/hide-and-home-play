@@ -35,7 +35,7 @@ export class MiniScene {
     this.seq = this.info.seq || [kind]; this.si = 0;
     this.buildHud();
     if (!this.boss) { this.tagEl.innerHTML = '놀이<b>♪</b>'; this.tagEl.style.background = 'var(--g2)'; }
-    G.audio.music?.('play');
+    G.audio.music?.(this.seq.length > 1 ? 'king' : this.boss ? 'boss' : 'play');   // 왕 결정전 · a region's boss game · 쉬어가기 (사운드 세션 10/19)
     await this.startGame(true);
   }
   // ── one game of the sequence (the final has three)

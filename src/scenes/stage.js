@@ -67,7 +67,7 @@ import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitF
 import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
-import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS } from '../mongletv.js';   // 몽글 TV (10/19)
+import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS } from '../mongletv.js';   // 몽글 TV (10/19)
 
 // 레벨 보고서 R1 '몰래 숨기' 시제품 (10/18) — only with ?hide=1 (the user compares it on the phone before anything changes):
 // you don't watch the friend hide ("눈 감아! 하나, 둘, 셋" and only the sounds), 2–3 big hideouts are candidates, a trail of
@@ -316,7 +316,7 @@ export class StageScene {
     W.onRotate = d => { this.rotAccum += Math.abs(d); };
     W.onDragStart = null;
     W.onPress = (x, y) => this.pressAt(x, y);   // 손맛 7
-    G.audio.music('play');
+    G.audio.music(this.spec.boss ? 'boss' : 'play');   // (방탈출 보스판: the boss music — 사운드 세션 10/19)
     this.bubble = h('div', { class: 'bubble count' }, ''); G.ui.wui.append(this.bubble);
     if (this.plan.light) this.goDark();
     // the first run builds 1판 behind the start screen: the banner, the talk and the hide wait for the tap
@@ -1387,6 +1387,7 @@ export class StageScene {
       this.keys++;
       this.keyPill.style.display = ''; this.keyPill.classList.remove('need'); this.keyPill.set(String(this.keys));
       await G.ui.flyImg(G.thumbs.item_key, s.x, s.y, this.keyPill, { size: 64 });
+      G.audio.sfx('key');   // (a jingle as it lands in the pill — 사운드 세션 10/19)
       this.keyPill.classList.add('pop'); setTimeout(() => this.keyPill.classList.remove('pop'), 300);
       G.ui.toast(this.v2 ? v2KeyToast() : '열쇠 획득! 잠긴 상자를 열어봐', 'green');
       const ks = !this._keySaid && sceneAt(this.idx)?.keySay;   // (7판: why the key was in the pulley basket — 펭펭이's tip 2)
@@ -1598,29 +1599,30 @@ export class StageScene {
   // ── 몽글 TV (10/19, src/mongletv.js): a TV or monitor in this room that plays (tvScreens; no bot, no TV puzzle)
   tvAt(furn) { return !!this.tvs?.has(furn); }
   // the stage stops while it's open (clock, hint sparkle, the 톡 timers: update() is paused); a win pays once a stage: +3
-  // taps, never past the stage's own count (user: "성공하면 한 판에 한 번 손가락 +3"), or coins when the hand is full
+  // taps and the coins together (tvReward)
   async openTv() {
     const G = this.G;
     if (G.tv || this.paused || this.result || !this.running || G.ui.panelOpen || G.bot) return;
     this.paused = true; G.audio.sfx('click');
     const pay = this.tapsLeft == null ? null : {
-      state: () => this._tvPaid ? 'already' : this.tapsLeft >= this.tapBudget ? 'coin' : 'gain',
+      state: () => this._tvPaid ? 'already' : 'gain',
       win: () => this.tvReward(),
     };
     await openMongleTV(G, { level: tvLevel(this.idx), game: this.tvGame, pay });
     if (this.dead) return;
     this.paused = false; this.idle = 0;
   }
+  // (10/19 night, user: "그 판 이기면 돈이랑 클릭 몇 개 주기") a win pays both now: +3 taps, even past the stage's own count (a
+  // full hand used to get coins instead, so one of the two was always missing), and the coins
   tvReward() {
     if (this.tapsLeft == null || this._tvPaid || this.result) return null;
     this._tvPaid = true;
-    const n = Math.min(this.tapBudget, this.tapsLeft + 3) - this.tapsLeft;
-    // (a full hand used to get nothing — user on the phone: "이거 이기면 손가락 주는 거 아니었나?" — so it's coins then)
-    if (n <= 0) { this.G.addCoins(TV_COINS); this.G.audio.sfx('coin'); return { coins: TV_COINS }; }
+    const n = TV_TAPS;
     this.tapsLeft += n;
+    this.G.addCoins(TV_COINS); this.G.audio.sfx('coin');
     const p = this.tapPill;
     if (p) { p.querySelector('.v').textContent = this.tapsLeft; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); p.classList.toggle('need', this.tapsLeft <= 3); }
-    return { taps: n };
+    return { taps: n, coins: TV_COINS };
   }
   lockedPartNear(furn, x, y) {
     const W = this.G.world; let best = null, bd = Infinity;
@@ -2736,7 +2738,7 @@ export class StageScene {
         this.lastSec = sec;
         this.tnum.textContent = Math.max(0, sec);
         this.bubble.textContent = Math.max(0, sec); this.bubble.classList.remove('pop'); void this.bubble.offsetWidth; this.bubble.classList.add('pop');
-        if (sec <= 10 && sec > 0) { G.audio.sfx(sec % 2 ? 'tick' : 'tock'); }
+        if (sec <= 10 && sec > 0) { G.audio.sfx(sec % 2 ? 'tick' : 'tock'); if (sec === 10) G.audio.hurry?.(true); }   // (the last 10 s: the music hurries a little)
         this.timerEl.classList.toggle('danger', sec <= 10);
         this.bubble.classList.toggle('red', sec <= 10);
       }

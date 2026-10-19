@@ -125,8 +125,10 @@ export const LAYOUTS = {
   // filling the screen — the floor runs on past the walls (bleed) and the walls stand taller
   apt: { w: 7, d: 6, bleed: {}, wallH: 3.0, walls: { N: 'wall', W: 'wall' },
     floorZones: [{ i: 4, j: 0, w: 3, d: 2, kind: 'checker', a: '#fffaf0', b: '#cfe8d6' }],   // the kitchen corner
-    furniture: [F('monstera', 0, 0), F('tvlow', 1, 0), F('floorlamp', 3, 0), F('bigfridge', 4, 0), F('kimchifridge', 5, 0), F('snackcart', 6, 0),
-      F('dryrack', 0, 1, 1), F('sofa2', 0, 2, 1), F('laundrybasket', 0, 4), F('recordcab', 0, 5, 1),
+    // (the 베란다 창 on the W wall reaches .3 into the room — sill, curtain — and the monstera's leaves and the drying rack's
+    // feet stood in it, 81 cm of leaf through the curtain: they stand a little off the wall, the TV stand with them; 겹침 QA 10/19)
+    furniture: [{ ...F('monstera', 0, 0), dx: .24 }, { ...F('tvlow', 1, 0), dx: .2 }, F('floorlamp', 3, 0), F('bigfridge', 4, 0), F('kimchifridge', 5, 0), F('snackcart', 6, 0),
+      { ...F('dryrack', 0, 1, 1), dx: .1 }, F('sofa2', 0, 2, 1), F('laundrybasket', 0, 4), F('recordcab', 0, 5, 1),
       F('rug', 1, 2), F('kotatsu', 2, 2), F('zabuton', 2, 3), F('zabuton', 3, 2), F('robovac', 2, 5), F('parcel', 3, 4),
       F('diningset', 4, 4), F('plant', 6, 2), F('stool', 6, 5)],
     decor: [D('balconywin', 'W', 2.0), D('picture', 'W', .5), D('wallshelf2', 'W', -1.0), D('catclock', 'N', -1.5), D('wallshelf2', 'N', .2), D('picture', 'N', 3.0)], friendAt: [1.6, .6],
@@ -340,7 +342,9 @@ export const MAPS = {
     const up = { ...THEMES.bear, wallKind: 'wood', wall: '#f6dcb4', wall2: '#ecc48f', wainscot: '#d9a066', trim: '#fff8ee', floorKind: 'planks', floor: '#f1cd9c', floor2: '#ddb07a', clad: '#fff3e2', roof: '#5f9e86', roof2: '#7fbfa4' };
     return { theme: THEMES.house3, friendAt: [1.6, 1.8], nBonus: 3, fitAll: true, rooms: [
       { at: [0, 0], level: 0, layout: { w: 7, d: 7, theme: down, wallH: 2.9, timber: true,
-        furniture: [F('stairsup', 6, 3), F('bookshelf', 0, 0, 0, { seed: 17 }), F('recordcab', 1, 0), F('floorlamp', 2, 0), F('fridge', 4, 0), F('counter', 5, 0, 0, { variant: 'stove' }), F('dishcab', 6, 0),
+        // (the stairs stand .27 forward: the upper floor's slab runs .25 past its rooms, and the top tread and the stringers went into
+        // its edge — "계단이 바닥판 모서리에 묻혀 보임"; now the top step meets the slab's front face; 겹침 QA 10/19)
+        furniture: [{ ...F('stairsup', 6, 3), dz: .27 }, F('bookshelf', 0, 0, 0, { seed: 17 }), F('recordcab', 1, 0), F('floorlamp', 2, 0), F('fridge', 4, 0), F('counter', 5, 0, 0, { variant: 'stove' }), F('dishcab', 6, 0),
           // (10/19 the brass pole and the balcony hatch came out again: the hatch sat right under the loft's ladder, so the
           // ladder's foot hung over a hole and the pole stood in the air past the loft — user on a phone, 8판: "기둥이랑
           // 사다리, 심지어 사다리는 떨어져 있음. 기둥이랑 뭐여")
@@ -359,7 +363,9 @@ export const MAPS = {
       // (장치판 '로봇청소기 대소동': the robot vacuum that drives, and a 천장 빨래건조대 in place of the floor rack)
       furniture: [...LAYOUTS.apt.furniture.filter(f => !['bigfridge', 'kimchifridge', 'snackcart', 'diningset'].includes(f.type)).map(f => f.type === 'robovac' ? { ...f, type: 'robovacgo' } : f.type === 'dryrack' ? { ...f, type: 'ceilrack' } : f), F('bookshelf', 5, 0, 0, { seed: 7 })] } },
     { at: [3.0, 0], layout: { w: 5, d: 6, theme: THEMES.aptkitchen, bleed: null, wallH: 3.0, walls: { N: 'wall', W: 'none', E: 'wall' },
-      furniture: [F('bigfridge', 0, 0), F('kimchifridge', 1, 0), F('counter', 2, 0, 0, { variant: 'stove' }), F('counter', 3, 0), F('snackcart', 4, 0),
+      // (the 양문 냉장고 stood 14 cm into the living room's wall — that wall is .24 thick on this side — and its doors could
+      // only open a crack: it stands clear of it; 겹침 QA 10/19)
+      furniture: [{ ...F('bigfridge', 0, 0), dx: .16 }, F('kimchifridge', 1, 0), F('counter', 2, 0, 0, { variant: 'stove' }), F('counter', 3, 0), F('snackcart', 4, 0),
         F('diningset', 1, 3), F('plant', 4, 2), F('trash', 4, 5), F('laundrybasket', 0, 5)],
       decor: [D('wallrack', 'N', .5), D('catclock', 'E', 0)] } },
   ] }),
@@ -451,11 +457,13 @@ export const MAPS = {
     const down = { ...T, wallKind: T.wallKind || 'dots' }, up = { ...T, floor: '#e9d2b0', floor2: '#d4b88e' };
     return { theme: THEMES.duplex, friendAt: [-1.2, 1.6], nBonus: 3, fitAll: true, rooms: [
       { at: [0, 0], level: 0, layout: { w: 6, d: 7, theme: down, wallH: 2.9,
-        furniture: [F('stairsup', 5, 3), F('minikitchen', 0, 0), F('minifridge', 2, 0), F('ricecooker', 3, 0), F('washer2', 4, 0), F('shoerack', 5, 0),
+        // (the stairs stand .27 forward: the upper floor's slab runs .25 past its rooms, and the top tread and the stringers went into
+        // its edge — "계단이 바닥판 모서리에 묻혀 보임"; now the top step meets the slab's front face; 겹침 QA 10/19)
+        furniture: [{ ...F('stairsup', 5, 3), dz: .27 }, F('minikitchen', 0, 0), F('minifridge', 2, 0), F('ricecooker', 3, 0), F('washer2', 4, 0), F('shoerack', 5, 0),
           F('hanger', 0, 2), F('rug', 1, 3), F('foldtable', 2, 4), F('beanbag', 1, 4), F('sofa2', 1, 2), F('mirror2', 0, 5, 1), F('plantshelf', 0, 6), F('laundrybasket', 3, 6), F('pcdesk', 4, 6, 3)],
         decor: [D('curtainwin', 'W', 1.6), D('posterwall', 'W', -1.0)] } },
       { at: [0, -2], level: 1, layout: { w: 6, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [-2.5] },
-        furniture: [F('bed', 0, 0), F('wardrobe', 1, 0), F('drawers', 2, 0), F('bookshelf', 3, 0, 0, { seed: 81 }), F('plant', 5, 0), F('beanbag', 2, 2), F('chest', 0, 2, 1)],
+        furniture: [F('bed', 0, 0), F('wardrobe', 1, 0), F('drawers', 2, 0), F('bookshelf', 3, 0, 0, { seed: 81 }), F('plant', 5, 0), F('beanbag', 2, 2), { ...F('chest', 0, 2, 1), dz: -.06 }],   // (the toy chest's front stood in the balcony rail; 겹침 QA 10/19)
         decor: [D('window', 'N', -.5), D('clock', 'W', 0)] } },
     ] };
   },

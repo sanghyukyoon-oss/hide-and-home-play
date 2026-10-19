@@ -11,7 +11,7 @@ import { pickSurface, resolveHost, makeFreeSpot, dropFreeSpot, toLocal, viewsOf 
 import { Visitors } from '../visitors.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
-import { HOME_ZONES, ZONE_TYPES, zoneLayout, SHOP_FURN } from '../catalog.js';
+import { HOME_ZONES, ZONE_TYPES, zoneLayout, zoneSize, SHOP_FURN } from '../catalog.js';
 import { playDialog } from '../story.js';
 import { HOME_TUT, giftSeats } from '../script.js';
 import { tr } from '../i18n.js';
@@ -24,6 +24,22 @@ import { locksOwned, locksUsed } from '../raid.js';
 const V = new THREE.Vector3();
 const MAX_HIDE = 5;
 
+// ── one map for the whole home (10/19 night, user: "큰방 작은방 따로 분리되어 있는 거야? 하나의 맵에서 같이 봐야지"): every open
+// zone stands in the same scene under one camera, as a stage's rooms do — the rooms side by side in zone order (back edges
+// in line), the yard and the park in front of them. The zone you work in (tabs, or a tap on another room) is this.room and
+// stands at the origin, so everything that works in room coordinates is as before; the others are neighbours you see and
+// tap to move over to. The save is untouched: each zone keeps its own furniture, paint and size.
+const GAP = 1.1;
+function homePlan(G, H) {
+  const ids = HOME_ZONES.map(z => z.id).filter(id => G.zoneOpen(id) && H.zones[id]);
+  const inside = ids.filter(id => ZONE_TYPES[H.zones[id].type]?.indoor !== false), outside = ids.filter(id => !inside.includes(id));
+  const dIn = Math.max(0, ...inside.map(id => zoneSize(H.zones[id]).d)), at = {};
+  const row = (list, zOf) => { let x = null, pw = 0; for (const id of list) { const S = zoneSize(H.zones[id]); x = x == null ? 0 : x + pw / 2 + GAP + S.w / 2; pw = S.w; at[id] = [x, zOf(S)]; } };
+  row(inside, S => (S.d - dIn) / 2);
+  row(outside, S => dIn / 2 + GAP + S.d / 2);
+  return at;
+}
+
 export class MyHomeScene {
   constructor(G) { this.G = G; this.name = 'myhome'; }
   get H() { return this.G.save.home; }
@@ -34,7 +50,7 @@ export class MyHomeScene {
     this.zoneId = zone && G.zoneOpen(zone) ? zone : (this.H.current && G.zoneOpen(this.H.current) ? this.H.current : 'room1');
     this.H.current = this.zoneId;
     this.build();
-    W.home.set(0, .75, 0); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .62; W.zoom = 1; W.vYaw = 0; W.autoSpin = 0; W.snap = !!G.save.settings?.snap;
+    this.homeMid(); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .62; W.zoom = 1; W.vYaw = 0; W.autoSpin = 0; W.snap = !!G.save.settings?.snap;
     this.fitCam();
     W.onTap = (x, y) => this.tap(x, y);
     W.onRotate = null;
@@ -69,25 +85,72 @@ export class MyHomeScene {
   }
   // frame the zone whatever its size (rooms can be widened in the shop)
   fitCam() {
-    const W = this.G.world, R = this.room, span = (R.w + R.d) / Math.SQRT2 + .5;
+    const W = this.G.world, M = this.mapBox(), { span } = this.frameSpan();
+    this.homeMid();
     document.getElementById('app').style.setProperty('--joyB', '330px');   // above the cards and buttons
     W.slack = null;   // (a big map stage's wider box came along — QA3 10/19)
-    W.bounds = Math.max(2.4, Math.max(R.w, R.d) * .48); W.minPitch = .06; W.maxPitch = 1.45; W.minZoom = .85; W.maxZoom = 7;
+    // (the whole map can be panned to: from the view's middle to its farthest edge)
+    const hx = W.home.x, hz = W.home.z, far = Math.max(M.x1 - hx, hx - M.x0, M.z1 - hz, hz - M.z0);
+    W.bounds = Math.max(2.4, far * .96); W.minPitch = .06; W.maxPitch = 1.45; W.minZoom = .85; W.maxZoom = 7;
     // hiding and decorating have cards and buttons at the bottom: the room sits higher and a little smaller there
     const busy = this.mode === 'hide' || this.mode === 'edit' || this.mode === 'lobby';   // (the lobby: the play button and its row)
-    W.setFit(Math.max(7.5, span), Math.max(6.6, span * .62) * (busy ? 1.05 : 1), busy ? .405 : .45);
+    W.setFit(Math.max(7.5, span), Math.max(6.6, span * .62) * (busy ? 1.05 : 1), busy ? (this.nbs?.length ? .43 : .405) : .45);   // (a wide map is shallow: a little lower)
   }
-  exit() { document.getElementById('app').style.removeProperty('--joyB'); this.dead = true; this.visitors?.dispose(); const W = this.G.world; W.root.remove(this.room.group); freeRoom(this.room.group); W.onTap = null; W.onDragStart = null; this.G.ui.clear(); this.tw.clear(); }
+  exit() { document.getElementById('app').style.removeProperty('--joyB'); this.dead = true; this.visitors?.dispose(); const W = this.G.world; W.root.remove(this.room.group); freeRoom(this.room.group); if (this.nbGroup) { W.root.remove(this.nbGroup); freeRoom(this.nbGroup); } W.onTap = null; W.onDragStart = null; this.G.ui.clear(); this.tw.clear(); }
+  // the whole home's floor (the zone you're in at the origin): { x0, x1, z0, z1, w, d, cx, cz }
+  mapBox() {
+    const R = this.room, b = { x0: -R.w / 2, x1: R.w / 2, z0: -R.d / 2, z1: R.d / 2 };
+    for (const n of this.nbs || []) { const p = n.room.group.position; b.x0 = Math.min(b.x0, p.x - n.room.w / 2); b.x1 = Math.max(b.x1, p.x + n.room.w / 2); b.z0 = Math.min(b.z0, p.z - n.room.d / 2); b.z1 = Math.max(b.z1, p.z + n.room.d / 2); }
+    return { ...b, w: b.x1 - b.x0, d: b.z1 - b.z0, cx: (b.x0 + b.x1) / 2, cz: (b.z0 + b.z1) / 2 };
+  }
+  // how wide the view opens: the whole map, but the zone you're in never under ~2/3 of its own full-screen size (two rooms
+  // fit; with three or more the rest peek in at the side and the view pans to them); t: how far the view's middle leans
+  // from this zone to the middle of the map
+  frameSpan() {
+    const A = this.room, M = this.mapBox(), sp = (w, d) => (w + d) / Math.SQRT2 + .5;
+    const one = sp(A.w, A.d), all = sp(M.w, M.d), span = Math.min(all, one * 1.6);
+    return { span, t: all > one + .01 ? clamp((span - one) / (all - one), 0, 1) : 1 };
+  }
+  homeMid() { const b = this.mapBox(), { t } = this.frameSpan(); this.G.world.home.set(b.cx * t, .75, b.cz * t); }
+  // the other open zones around the one you're in, where homePlan puts them
+  buildNeighbours() {
+    const W = this.G.world, plan = this.plan = homePlan(this.G, this.H), me = plan[this.zoneId] || [0, 0], g = new THREE.Group();
+    this.nbs = [];
+    for (const id in plan) {
+      if (id === this.zoneId) continue;
+      const R = new Room(W, zoneLayout(this.H.zones[id]));
+      R.group.position.set(plan[id][0] - me[0], 0, plan[id][1] - me[1]);
+      // (털린 흔적 already known there stays open in the picture too; it's shut by hand once you're in that room)
+      const ix = indexSpots(R); for (const k of this.H.mess || []) if (!/^d\d+:/.test(k)) ix.parts[k]?.setOpen?.(1);   // (furniture ids are one per home; a wall decor's 'd0:p0' is in every room)
+      g.add(R.group); this.nbs.push({ id, room: R });
+    }
+    return g;
+  }
+  // which neighbour (zone id) is under this point of the screen, if any
+  nbAt(x, y) {
+    if (!this.nbs?.length) return null;
+    for (const hh of this.G.world.pick(x, y, this.nbs.map(n => n.room.group))) {
+      let tagged = false;
+      for (let o = hh.object; o; o = o.parent) {
+        const u = o.userData; if (u.furn || u.part || u.floor || u.wall) tagged = true;
+        const n = tagged && this.nbs.find(q => q.room.group === o); if (n) return n.id;
+      }
+    }
+    return null;
+  }
 
   build() {
     const G = this.G, W = G.world;
-    const old = this.room;   // (freed below, once the new room exists — GPT QA 10/18: every rebuild left ~3 textures behind)
+    const old = this.room, oldNb = this.nbGroup;   // (freed below, once the new room exists — GPT QA 10/18: every rebuild left ~3 textures behind)
     if (old) W.root.remove(old.group);
+    if (oldNb) W.root.remove(oldNb);
     const z = this.zone, lay = zoneLayout(z);
     G.setBg(lay.theme.bg || (ZONE_TYPES[z.type].indoor ? ['#fff3e3', '#ffe2c4'] : ['#e4f6ff', '#d6f3d8'])); G.world.setLight(lay.theme.light || null);
     this.room = new Room(W, zoneLayout(z));
     W.root.add(this.room.group);
-    if (old) freeRoom(old.group, this.room.group);
+    this.nbGroup = this.buildNeighbours(); W.root.add(this.nbGroup);
+    if (old) freeRoom(old.group, [this.room.group, this.nbGroup]);
+    if (oldNb) freeRoom(oldNb, [this.room.group, this.nbGroup]);
     const idx = indexSpots(this.room); this.spotByKey = idx.spots; this.partByKey = idx.parts;
     this.items = {};
     const hid = this.H.hide;
@@ -140,9 +203,14 @@ export class MyHomeScene {
     if (id === this.zoneId) return;
     const G = this.G;
     if (!G.zoneOpen(id)) { const z = HOME_ZONES.find(x => x.id === id); G.ui.toast(`스테이지 ${z.unlock.stage}에서 열려 · 상점에서 미리 열 수도 있어`, 'red'); return; }
+    const a = this.plan?.[this.zoneId], b = this.plan?.[id], W = G.world;
     this.zoneId = id; this.H.current = id; G.persist();
     G.audio.sfx('whoosh');
-    this.build(); this.setMode(this.mode === 'hide' ? 'hide' : this.mode);
+    this.build();
+    // the map moved under the camera (the new zone is the origin now): the view moves with it, so nothing jumps
+    if (a && b) { W.target.x += a[0] - b[0]; W.target.z += a[1] - b[1]; }
+    this.setMode(this.mode === 'hide' ? 'hide' : this.mode);
+    W.updateCam?.();
   }
 
   // ── HUD
@@ -209,7 +277,7 @@ export class MyHomeScene {
   shop(tab = 'furn') {
     openShop(this.G, { zone: this.zone, onChange: kind => {
       if (kind === 'paint') { this.build(); this.fitCam(); this.setMode(this.mode); }
-      if (kind === 'zone') this.setMode(this.mode);
+      if (kind === 'zone') { this.build(); this.setMode(this.mode); }   // (the new zone joins the map)
       if (kind === 'furn' && this.mode === 'edit') this.renderInv();
     }, onClose: () => { if (this.mode !== 'edit') this.setMode(this.mode); } }, tab);
   }
@@ -639,6 +707,11 @@ export class MyHomeScene {
   tap(x, y) {
     const G = this.G, hit = this.pick(x, y);
     if (hit.kind === 'char') { this.reactChar(hit.char); return; }
+    // a tap on another room of the map: work there now (꾸미기: and the piece under the finger is picked up as well)
+    if (hit.kind === 'none' && ['view', 'edit', 'hide'].includes(this.mode) && !this.busyTut && !G.ui.panelOpen) {
+      const nb = this.nbAt(x, y);
+      if (nb && G.zoneOpen(nb)) { this.switchZone(nb); G.ui.toast(HOME_ZONES.find(z => z.id === nb)?.name || '', ''); if (this.mode === 'edit' && this.zoneId === nb) this.tap(x, y); return; }
+    }
     if (this.mode === 'edit') { if (hit.kind === 'furn' && !hit.furn.wall) this.select(hit.furn.rec); else this.select(null); return; }
     if (this.mode === 'hide') {
       if (this.selItem) {
@@ -673,6 +746,7 @@ export class MyHomeScene {
   update(dt) {
     this.tw.update(dt);
     this.room.update(dt);
+    for (const n of this.nbs || []) n.room.update(dt);
     this.mong.update(dt);
     this.visitors?.update(dt);
     if (this.mode === 'hide' && this.markers) this.updMarkers();
@@ -700,7 +774,7 @@ export class MyHomeScene {
 // uses stays too, so a rebuild after placing a piece re-uploads nothing). Materials stay, as in kit.js disposeTree.
 function freeRoom(root, keepRoot = null) {
   const keepG = cachedGeos(), keepT = new Set([STYLE.grad]);
-  keepRoot?.traverse(o => { if (o.geometry) keepG.add(o.geometry); for (const m of [].concat(o.material || [])) for (const k in m) if (m[k]?.isTexture) keepT.add(m[k]); });
+  for (const kr of [].concat(keepRoot || [])) kr.traverse(o => { if (o.geometry) keepG.add(o.geometry); for (const m of [].concat(o.material || [])) for (const k in m) if (m[k]?.isTexture) keepT.add(m[k]); });
   const doneG = new Set(), texs = new Set();
   root.traverse(o => {
     if (o.geometry && !keepG.has(o.geometry) && !doneG.has(o.geometry)) { doneG.add(o.geometry); o.geometry.dispose(); }

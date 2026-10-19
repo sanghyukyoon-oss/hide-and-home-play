@@ -90,6 +90,7 @@ export class BossGameScene {
       await playDialog(G, GL.lead, { onLine: L => LS?.speak(L.who) });
       LS?.dispose(); if (this.dead) return; said[this.kind + this.lv] = true; G.persist();
     }
+    G.audio.music?.('play');   // the boss music (사운드 세션 10/19); a game that starts its own keeps it, one that stops it on exit still can
     this.L = this.makeL();
     this.game = new mod.Game(this.L);
     await this.game.enter({ lv: this.lv, ...more });   // (more: a game's own extras, e.g. the hotel's night)

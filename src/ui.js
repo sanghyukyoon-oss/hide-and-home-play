@@ -39,6 +39,12 @@ export function h(tag, attrs = {}, ...kids) {
   return e;
 }
 
+// 몽글이 from the front (gfx/chars.js: the mochi body squashed below its middle, the round ears tipped out, the tuft on
+// top), in a 132 × 90 box; (cx, cy) the middle of the body, r the biggest circle inside it (the cut covers the screen
+// once that circle does)
+const SIL = { w: 132, h: 90, cx: 66, cy: 48, r: 40,
+  shapes: '<path d="M16 58A50 50 0 0 1 116 58A50 30 0 0 1 16 58Z"/><ellipse cx="18.5" cy="25.2" rx="15.2" ry="18.7" transform="rotate(-36.7 18.5 25.2)"/><ellipse cx="113.5" cy="25.2" rx="15.2" ry="18.7" transform="rotate(36.7 113.5 25.2)"/><ellipse cx="66" cy="9.5" rx="9.2" ry="6.4"/>' };
+
 export class UI {
   constructor(audio) {
     this.audio = audio;
@@ -180,19 +186,62 @@ export class UI {
   }
   async irisOut(x = innerWidth / 2, y = innerHeight / 2, dur = 380) { await this._iris(x, y, 1, 0, dur); }
   async irisIn(x = innerWidth / 2, y = innerHeight / 2, dur = 420) { await this._iris(x, y, 0, 1, dur); this.iris.classList.remove('on'); }
+  // the scene change closes on 몽글이's silhouette and opens from it (10/19, user: "트랜지션 동그라미 말고 몽글이 실루엣으로도 가능?").
+  // Same timing and easing as the circle it replaced; the circle stays where a browser can't cut a shape out (_sil null)
   _iris(x, y, a, b, dur) {
     const el = this.iris; el.classList.add('on');
     const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 20;
+    const sil = this._sil();
     const t0 = performance.now();
     return new Promise(res => {
       const step = () => {
         const k = Math.min(1, (performance.now() - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-        const r = R * (a + (b - a) * e);
-        const m = `radial-gradient(circle at ${x}px ${y}px, transparent ${r}px, #000 ${r + 1}px)`;
-        el.style.webkitMaskImage = m; el.style.maskImage = m;
+        const v = a + (b - a) * e;
+        if (sil) sil.set(x, y, (R + 6) / SIL.r * v);
+        else {
+          const r = R * v, m = `radial-gradient(circle at ${x}px ${y}px, transparent ${r}px, #000 ${r + 1}px)`;
+          el.style.webkitMaskImage = m; el.style.maskImage = m;
+        }
         if (k < 1) requestAnimationFrame(step); else res();
       };
       step();
+    });
+  }
+  // the silhouette cut: two mask layers, the whole screen minus the shape (an SVG, sharp at any size); only its size and
+  // place change from frame to frame. An ink line rides on the cut's edge (the half outside the hole shows), like the
+  // game's other outlines. null where mask-composite isn't supported.
+  _sil() {
+    if (this._silK !== undefined) return this._silK;
+    const S = typeof CSS !== 'undefined' && CSS.supports ? CSS.supports('mask-composite', 'exclude') || CSS.supports('-webkit-mask-composite', 'xor') : false;
+    if (!S) return (this._silK = null);
+    const el = this.iris, NS = 'http://www.w3.org/2000/svg';
+    const url = `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="${NS}" viewBox="0 0 ${SIL.w} ${SIL.h}" preserveAspectRatio="none">${SIL.shapes}</svg>`)}")`;
+    const line = document.createElementNS(NS, 'svg');
+    line.setAttribute('viewBox', `0 0 ${SIL.w} ${SIL.h}`); line.setAttribute('preserveAspectRatio', 'none');
+    line.style.cssText = 'position:absolute;left:0;top:0;overflow:visible;pointer-events:none;display:none';
+    line.innerHTML = `<g fill="none" stroke="#2b2030" stroke-width="7" stroke-linejoin="round">${SIL.shapes.replace(/\/>/g, ' vector-effect="non-scaling-stroke"/>')}</g>`;
+    el.append(line);
+    let cut = null;   // (null: the cut isn't on; a fully closed screen is plain pink)
+    const on = v => {
+      if (cut === v) return; cut = v;
+      const img = v ? `linear-gradient(#000, #000), ${url}` : 'none';
+      el.style.webkitMaskImage = img; el.style.maskImage = img;
+      if (v) {
+        el.style.webkitMaskRepeat = el.style.maskRepeat = 'no-repeat';
+        el.style.webkitMaskComposite = 'xor'; el.style.maskComposite = 'exclude';
+      }
+      line.style.display = v ? '' : 'none';
+    };
+    return (this._silK = {
+      set(x, y, s) {
+        const w = SIL.w * s, hh = SIL.h * s;
+        if (w < 3) { on(false); return; }
+        on(true);
+        const px = x - SIL.cx * s, py = y - SIL.cy * s;
+        el.style.webkitMaskSize = el.style.maskSize = `100% 100%, ${w}px ${hh}px`;
+        el.style.webkitMaskPosition = el.style.maskPosition = `0 0, ${px}px ${py}px`;
+        line.style.left = px + 'px'; line.style.top = py + 'px'; line.style.width = w + 'px'; line.style.height = hh + 'px';
+      },
     });
   }
 }

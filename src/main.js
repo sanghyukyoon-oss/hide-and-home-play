@@ -285,6 +285,7 @@ const G = {
       if (WEB && /[?&]play=/.test(location.search)) { const u = new URLSearchParams(location.search); u.delete('play'); u.delete('lv'); try { history.replaceState(null, '', location.pathname + (u.toString() ? '?' + u : '') + location.hash); } catch {} }
     }
     world.vYaw = 0; world.yawGoal = null; world._turnOut = false; world._turnOutAt = null; world.mapBox = null; world.snap = !!save.settings?.snap; world.clearTap(); settleUntil = performance.now() + 5000;   // (QA3-cam8: a stage sets its own mapBox; the comment had swallowed snap/clearTap/settle — review session 10/19)
+    audio.scene(name, { ...data, final: name === 'bossgame' && data.after === STAGE_COUNT - 1 });   // 배경음 칸: 맵·놀이·보스·왕 (사운드 세션 10/19)
     const S = new SCENES[name](G);
     G.scene = S;
     G.stats.stageStart = gameTime;

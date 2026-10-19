@@ -8,6 +8,18 @@ import { renderThumbs } from './thumbs.js';
 import { PICK_ITEMS, chapterOfFurn, chapterNow } from './econ.js';
 import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_PRICE, LOCK_MAX } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
+import { EN } from './i18n-en-dict.js';
+
+// furniture not open yet (10/19 night, user: "아직 오픈하지 못한 가구들은 실루엣만 보여주고"): a later chapter's piece, or a chapter
+// box's piece nobody has shown you, stays in the grid as its own picture gone dark (no name, no price) under the rest
+const K = (ko, en) => { EN[ko] = en; return ko; };
+const SIL_TXT = {
+  head: K('아직 안 열린 가구', 'Furniture not open yet'),
+  box: K('장 끝 선물 상자', 'Chapter gift box'),
+  boxToast: K('장 끝 선물 상자에서 고를 수 있어!', 'You can pick it from a chapter gift box!'),
+  chToast: K('아직 안 열렸어! 그 장에 가면 상점에 들어와', 'Not open yet! It comes to the shop in its chapter'),
+};
+const chOpens = c => K(`${c}장에서 열려`, `Opens in chapter ${c}`);
 
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 
@@ -64,14 +76,22 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       const offered = G.econ ? (H.offered || []).filter(t => FURN_INFO[t]) : [];
       for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: '장 끝 상자에서 본 것', price: furnPrice(t), tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
         onBuy: () => { H.inventory.push(t); G.persist(); ui.toast(`${FURN_INFO[t].name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } })); }
+      const later = [];
       for (const it of SHOP_FURN) {
-        if (G.econ && PICK_ITEMS.has(it.type) && (offered.includes(it.type) || !countOwned(H, it.type))) continue;
-        if (G.econ && chapterOfFurn(it.type) > chapterNow(G.save) && !countOwned(H, it.type)) continue;   // (a later chapter's piece: not in yet)
+        if (G.econ && PICK_ITEMS.has(it.type) && offered.includes(it.type)) continue;   // (on top, as 기념품)
         if (ztype && !(ztype.indoor ? it.indoor : it.outdoor)) continue;
         const inf = FURN_INFO[it.type]; if (!inf) continue;
+        // not open yet: a chapter box's piece you haven't been shown, or a later chapter's piece — a silhouette below
+        const boxed = G.econ && PICK_ITEMS.has(it.type) && !countOwned(H, it.type), ch = chapterOfFurn(it.type);
+        if (boxed || (G.econ && ch > chapterNow(G.save) && !countOwned(H, it.type))) { later.push({ t: it.type, ch, boxed }); continue; }
         const owned = countOwned(H, it.type);
         grid.append(card(G, { img: G.thumbs['furn_' + it.type], name: inf.name, sub: `숨을 곳 ${spotCount(G, it.type)}`, price: furnPrice(it.type), tag: owned ? `보유 ${owned}` : null,
           onBuy: () => { H.inventory.push(it.type); G.persist(); ui.toast(`${inf.name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } }));
+      }
+      if (later.length) {
+        grid.append(h('div', { class: 'shopsep' }, SIL_TXT.head));
+        later.sort((a, b) => (a.boxed - b.boxed) || (a.ch - b.ch) || a.t.localeCompare(b.t));
+        for (const L of later) grid.append(silCard(G, L));
       }
     } else if (tab === 'wall' || tab === 'paint') {
       if (!zone || !ztype.indoor) { note.textContent = '벽지와 페인트는 실내 구역(방·창고)에 쓸 수 있어요.'; }
@@ -158,6 +178,13 @@ function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse,
     } else if (onUse) onUse();
   });
   return c;
+}
+// a piece not open yet: its icon as a dark silhouette, '???', and when it opens
+function silCard(G, { t, ch, boxed }) {
+  return h('div', { class: 'card silc', 'aria-label': '???', onclick: () => { G.ui.toast(boxed ? SIL_TXT.boxToast : SIL_TXT.chToast, ''); G.audio.sfx('locked'); } },
+    G.thumbs['furn_' + t] ? h('img', { src: G.thumbs['furn_' + t], alt: '', draggable: 'false' }) : h('div', { class: 'swatch' }),
+    h('div', {}, '???'),
+    h('div', { style: 'font-size:11px;color:#9b6cff' }, boxed ? SIL_TXT.box : chOpens(ch)));
 }
 function swatch(a, b, kind) {
   const bg = kind === 'plain' ? a : kind === 'stripe' ? `repeating-linear-gradient(90deg, ${a} 0 10px, ${b} 10px 18px)`

@@ -1,9 +1,32 @@
-// WebAudio-synthesized SFX + generative music box BGM; a mood with a recorded track (TRACKS) plays that instead.
+// WebAudio-synthesized SFX + streamed background music per scene slot; a slot without a file plays the music box.
 import { store } from './util.js';
 import { hapticFor } from './feel.js';
 
+// ── 소리 파일 자리 (사운드 세션 10/19, user: "지피티가 효과음 만든 것도 있거든? 비지엠이랑. 이거 받아다가 적용도 해 줘")
+// GPT가 만든 파일은 audio/gpt/ 에 넣고, 아래 그 칸의 gpt: null 을 그 파일 경로로 바꾼다 (웹은 폴더를 못 읽어서 이 표가 목록).
+// gpt 가 있으면 그것, 없거나 못 읽으면 tmp 를 튼다. gain: 곡끼리 크기 맞춤 (1 = 그대로). 주소에 ?bgm=tmp → 임시 곡으로 비교.
+// 음악은 <audio> 하나로 흘려 듣기(스트리밍)만 한다 — 통째로 풀면 아이폰에서 곡당 ~50 MB. 표 전체와 바꾸는 법: audio/README-sound.md
+export const BGM = {
+  lobby: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 홈·로비·내 집·놀러 가기·배치 편집 (「햇살 사이 숨은 친구」, GPT·Suno)
+  map: { tmp: 'audio/bgm-map-tmp01.mp4', gpt: null, gain: 1 },   // 스테이지(맵)
+  mini: { tmp: 'audio/bgm-mini-tmp01.mp4', gpt: null, gain: 1 },   // 쉬어가기 놀이 (미니게임)
+  tv: { tmp: 'audio/bgm-tv-tmp01.mp4', gpt: null, gain: 1 },   // 몽글 TV가 켜져 있는 동안
+  boss: { tmp: 'audio/bgm-boss-tmp01.mp4', gpt: null, gain: 1 },   // 방탈출 보스판·보스 놀이·지역 보스 놀이·엄마 습격(내 방)
+  king: { tmp: 'audio/bgm-king-tmp01.mp4', gpt: null, gain: 1 },   // 마지막 보스(70판 뒤)·숨바꼭질 왕 결정전
+  tense: { tmp: null, gpt: null, gain: 1 },   // 막판 10초 같은 다급함: 파일이 없으면 지금 곡을 조금 빠르게(+피치)
+};
+// 효과음: 이름 → 'audio/gpt/sfx-<이름>.mp4' (null = 코드로 만든 소리). { src, gain, pitch } 로 쓰면 크기 조절, pitch: true 는
+// 연달아 찾을수록 음이 올라가는 소리(found·pop·star)에 — 파일 하나를 높이만 바꿔 튼다. 짧게(1초 안), 모노 권장.
+export const SFX_FILES = {
+  found: null, pop: null, special: null, miss: null, tapLow: null, wobble: null, dizzy: null,
+  open: null, close: null, drawer: null, door: null, lift: null, swish: null, creak: null,
+  key: null, locked: null, unlock: null, coin: null, star: null, win: null, lose: null,
+  whoosh: null, btn: null, tap: null, click: null, tick: null, tock: null,
+};
+
 export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   const A = { ctx: null, master: null, sfxBus: null, musicBus: null, muted: store.get(storageKey, false), _timer: null, _step: 0, mood: 'home' };
+  const MUSIC_VOL = .3;
   function ensure() {
     if (A.ctx) return A.ctx;
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
@@ -12,7 +35,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     const comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
     A.master.connect(comp).connect(A.ctx.destination);
     A.sfxBus = A.ctx.createGain(); A.sfxBus.gain.value = .8; A.sfxBus.connect(A.master);
-    A.musicBus = A.ctx.createGain(); A.musicBus.gain.value = .3; A.musicBus.connect(A.master);
+    A.musicBus = A.ctx.createGain(); A.musicBus.gain.value = MUSIC_VOL; A.musicBus.connect(A.master);
+    loadSfxFiles();
     return A.ctx;
   }
   // (QA3 10/19) a touch's pointerdown is not a "user activation" for audio in Safari / Chrome — the lift is — so the first
@@ -20,11 +44,11 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // never resumed: no sound until a reload. Any state but running resumes, on presses and lifts; the music starts once the
   // context really runs (it used to wait for the next touch). The page hidden (home button, another app): everything
   // stops — Android kept the music box playing behind the home screen.
-  const goMusic = () => { if (A._wantMusic && !A._timer) A.music(A.mood); if (A._wantMusic && A._trk?.el?.paused && A._trk.mood === A.mood && !document.hidden) A._trk.el.play()?.catch?.(() => {}); };
+  const goMusic = () => { if (A._wantMusic && !A._timer) A.music(A.mood); };
   A.unlock = () => { const c = ensure(); if (c && c.state !== 'running' && c.state !== 'closed' && !document.hidden) { const pr = c.resume(); pr?.then?.(goMusic, () => {}); } goMusic(); };
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, A.unlock, { capture: true, passive: true });
-  document.addEventListener('visibilitychange', () => { const c = A.ctx; if (!c || c.state === 'closed') return; try { if (document.hidden) { c.suspend()?.catch?.(() => {}); A._trk?.el?.pause(); } else c.resume()?.then?.(goMusic, () => {}); } catch {} });
-  A.setMuted = m => { A.muted = m; store.set(storageKey, m); if (A.master) A.master.gain.setTargetAtTime(m ? 0 : .9, A.ctx.currentTime, .02); };
+  document.addEventListener('visibilitychange', () => { const c = A.ctx; if (!c || c.state === 'closed') return; try { if (document.hidden) { c.suspend()?.catch?.(() => {}); pauseDecks(); } else c.resume()?.then?.(goMusic, () => {}); } catch {} });
+  A.setMuted = m => { A.muted = m; store.set(storageKey, m); if (A.master) A.master.gain.setTargetAtTime(m ? 0 : .9, A.ctx.currentTime, .02); if (T.el && !T.gain) T.el.volume = m || !T.goal ? 0 : MUSIC_VOL; };
 
   function tone({ type = 'sine', f = 440, f2 = null, dur = .12, vol = .5, attack = .004, at = 0, bus = A._bus || A.sfxBus, q = 0, filter = null, detune = 0, vib = 0 }) {
     const c = A.ctx; if (!c) return;
@@ -37,24 +61,52 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     if (filter) { const fl = c.createBiquadFilter(); fl.type = filter; fl.frequency.value = q || 2000; node.connect(fl); node = fl; }
     node.connect(g).connect(bus); o.start(t0); o.stop(t0 + dur + .03);
   }
-  function noise({ dur = .15, vol = .3, at = 0, type = 'bandpass', f = 1800, f2 = null, q = 1 }) {
+  // attack: a soft swell instead of an instant start; grain: a rolling rattle (drawer runners)
+  function noise({ dur = .15, vol = .3, at = 0, type = 'bandpass', f = 1800, f2 = null, q = 1, attack = 0, grain = 0 }) {
     const c = A.ctx; if (!c) return;
     const t0 = c.currentTime + at, len = Math.ceil(c.sampleRate * dur);
     const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    if (grain) for (let i = 0, ph = Math.random() * 6; i < len; i++) d[i] *= .45 + .55 * Math.abs(Math.sin(ph + i / c.sampleRate * Math.PI * grain));
     const s = c.createBufferSource(); s.buffer = buf;
     const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t0); fl.Q.value = q;
     if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
-    const g = c.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    const g = c.createGain();
+    if (attack) { g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + attack); } else g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
     s.connect(fl).connect(g).connect(A._bus || A.sfxBus); s.start(t0);
   }
+  // a small bell: the note, its octave and a faint third partial dying faster
+  const bell = (f, at = 0, vol = .2, dur = .5) => { tone({ f, dur, vol, at }); tone({ f: f * 2, dur: dur * .45, vol: vol * .3, at }); tone({ f: f * 3.01, dur: dur * .2, vol: vol * .1, at }); };
   const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28];
   const hz = semi => 440 * 2 ** ((semi - 9) / 12);
+
+  // ── sound files (SFX_FILES): fetched and decoded once when the audio wakes; until one has arrived, the made sound plays
+  const sfxBuf = {};
+  let sfxAsked = false;
+  function loadSfxFiles() {
+    if (sfxAsked || !A.ctx) return; sfxAsked = true;
+    for (const [name, e] of Object.entries(SFX_FILES)) {
+      const src = typeof e === 'string' ? e : e?.src; if (!src) continue;
+      fetch(src).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status)))
+        .then(ab => new Promise((res, rej) => A.ctx.decodeAudioData(ab, res, rej)))
+        .then(b => { sfxBuf[name] = b; }, err => console.warn('sfx file', name, src, err?.message || err));
+    }
+  }
+  function playFile(name, p) {
+    const b = sfxBuf[name]; if (!b) return false;
+    const e = SFX_FILES[name], c = A.ctx, s = c.createBufferSource(), g = c.createGain();
+    s.buffer = b; if (e?.pitch) s.playbackRate.value = 2 ** (PENTA[Math.max(0, p | 0) % 6] / 12);
+    g.gain.value = e?.gain ?? 1; s.connect(g).connect(A._bus || A.sfxBus); s.start();
+    return true;
+  }
 
   A.sfx = (name, p = 0, buzz = true) => {
     if (buzz) hapticFor(name);   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
+    if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); }   // the jingle over the music, not under it; the hurry is over
+    if (playFile(name, p)) return;
     switch (name) {
       case 'tap': tone({ type: 'triangle', f: 700, f2: 980, dur: .06, vol: .25 }); break;
       case 'click': tone({ type: 'square', f: 1300, dur: .03, vol: .1, filter: 'lowpass', q: 3000 }); break;
@@ -64,24 +116,32 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       // the turn ratchet (10/18): a tiny woody tick, a little different every time so a fast spin rolls "드르르륵"
       case 'ratchet': { const r = Math.random(); noise({ dur: .014, vol: .049, type: 'bandpass', f: 2300 + r * 900, q: 5 }); tone({ type: 'triangle', f: 700 + r * 160, dur: .012, vol: .0175 }); break; }   // (QA3-cam8, user: "약간 작게" — 70%)
       case 'btn': tone({ type: 'triangle', f: 520, f2: 820, dur: .08, vol: .3 }); tone({ type: 'sine', f: 1040, dur: .06, vol: .12, at: .03 }); break;
-      case 'open': noise({ dur: .16, vol: .18, f: 700, f2: 1400, q: 1.5 }); tone({ type: 'triangle', f: 210, f2: 320, dur: .12, vol: .22 }); break;
-      case 'drawer': noise({ dur: .22, vol: .2, f: 900, f2: 1800, q: 2 }); tone({ type: 'triangle', f: 150, dur: .06, vol: .2, at: .18 }); break;
-      case 'close': tone({ type: 'sine', f: 190, f2: 90, dur: .1, vol: .3 }); noise({ dur: .05, vol: .12, type: 'lowpass', f: 700 }); break;
+      // 사운드 세션 10/19: a lid / a cupboard door — a little hinge, the air, a soft wooden pop (it was one noise sweep)
+      case 'open': tone({ type: 'triangle', f: 640, f2: 900, dur: .07, vol: .05, vib: 25 }); noise({ dur: .18, vol: .13, f: 600, f2: 1500, q: 1.4, attack: .03 }); tone({ type: 'sine', f: 230, f2: 380, dur: .13, vol: .2, at: .02 }); break;
+      // a drawer: the runners roll (grain), then it knocks against its stop
+      case 'drawer': noise({ dur: .24, vol: .19, f: 800, f2: 1700, q: 1.8, attack: .03, grain: 34 }); tone({ type: 'sine', f: 190, f2: 120, dur: .08, vol: .22, at: .2 }); noise({ dur: .04, vol: .1, type: 'lowpass', f: 900, at: .2 }); break;
+      case 'close': tone({ type: 'sine', f: 200, f2: 92, dur: .11, vol: .3 }); noise({ dur: .06, vol: .12, type: 'lowpass', f: 700 }); tone({ type: 'triangle', f: 1400, dur: .025, vol: .035, at: .01 }); break;
       case 'lift': tone({ type: 'sine', f: 380, f2: 760, dur: .14, vol: .22 }); noise({ dur: .12, vol: .08, f: 2500 }); break;
+      // a find: two little bells a fifth apart, rising with the count (p), and a breath of sparkle (사운드 세션 10/19)
       case 'found': {
-        const n = PENTA[p % PENTA.length];
-        tone({ type: 'triangle', f: hz(n + 3), f2: hz(n + 15), dur: .1, vol: .32 });
-        tone({ type: 'sine', f: hz(n + 15), dur: .28, vol: .22, at: .07 });
-        tone({ type: 'sine', f: hz(n + 22), dur: .22, vol: .1, at: .13 });
-        noise({ dur: .05, vol: .1, f: 4000 });
+        const f = hz(PENTA[p % PENTA.length] + 15);
+        tone({ type: 'triangle', f: f / 2, f2: f, dur: .07, vol: .14 });
+        bell(f, .02, .2, .4); bell(f * 1.5, .1, .19, .6);
+        noise({ dur: .3, vol: .035, type: 'highpass', f: 6500, at: .08, attack: .04 });
         break;
       }
       case 'special': [0, 7, 12, 19].forEach((s, i) => tone({ type: 'triangle', f: hz(s + 5), dur: .18, vol: .2, at: i * .05 })); break;
-      case 'miss': tone({ type: 'sine', f: 300, f2: 170, dur: .14, vol: .3 }); break;
+      // a wrong tap: a soft "uh-oh", two steps down, round and short — it says no without scolding (사운드 세션 10/19)
+      case 'miss': tone({ type: 'triangle', f: 349, f2: 330, dur: .1, vol: .27, filter: 'lowpass', q: 1600 }); tone({ type: 'triangle', f: 262, f2: 233, dur: .17, vol: .27, at: .1, filter: 'lowpass', q: 1300 }); noise({ dur: .04, vol: .05, type: 'lowpass', f: 900 }); break;
+      // a few taps left (3, then 1): two quick pips over a low knock — "look before you tap"
+      case 'tapLow': tone({ type: 'sine', f: 120, f2: 80, dur: .1, vol: .22 }); for (let i = 0; i < 2; i++) { tone({ type: 'sine', f: 1175, dur: .07, vol: .13, at: .03 + i * .13 }); tone({ type: 'triangle', f: 587, dur: .06, vol: .08, at: .03 + i * .13 }); } break;
       case 'wobble': tone({ type: 'sine', f: 420, f2: 360, dur: .14, vol: .18, vib: 30 }); break;
       case 'dizzy': for (let i = 0; i < 6; i++) tone({ type: 'sine', f: i % 2 ? 520 : 740, dur: .1, vol: .16, at: i * .08 }); break;
       case 'locked': for (let i = 0; i < 3; i++) tone({ type: 'square', f: 900 + i * 40, dur: .03, vol: .08, at: i * .06, filter: 'lowpass', q: 2500 }); tone({ type: 'sine', f: 200, dur: .1, vol: .2 }); break;
-      case 'unlock': tone({ type: 'square', f: 1500, dur: .03, vol: .1, filter: 'lowpass', q: 3000 }); [0, 4, 7, 12].forEach((s, i) => tone({ type: 'triangle', f: hz(s + 12), dur: .2, vol: .18, at: .08 + i * .06 })); break;
+      // a key picked up: a little jingle of keys and one bell
+      case 'key': [3150, 3720, 2890, 3400].forEach((f, i) => { tone({ f, dur: .14 - i * .02, vol: .09, at: i * .045 }); tone({ f: f * 2.7, dur: .05, vol: .02, at: i * .045 }); }); noise({ dur: .12, vol: .04, type: 'highpass', f: 7000, attack: .01 }); bell(hz(31), .2, .13, .5); break;
+      // a lock opens: clack-clunk, then a bright bell arpeggio up (it was one click and triangles)
+      case 'unlock': noise({ dur: .03, vol: .14, type: 'bandpass', f: 2600, q: 3 }); tone({ type: 'square', f: 1800, dur: .02, vol: .05, filter: 'lowpass', q: 4000 }); tone({ type: 'sine', f: 180, f2: 115, dur: .09, vol: .22, at: .07 }); noise({ dur: .035, vol: .1, type: 'bandpass', f: 1400, q: 3, at: .07 }); [0, 4, 7, 12].forEach((s, i) => bell(hz(s + 24), .17 + i * .065, .13, .45)); break;
       case 'tick': tone({ type: 'square', f: 1600, dur: .025, vol: .06, filter: 'lowpass', q: 3500 }); break;
       case 'tock': tone({ type: 'square', f: 1100, dur: .03, vol: .07, filter: 'lowpass', q: 2500 }); break;
       case 'heart': tone({ type: 'sine', f: 70, f2: 45, dur: .14, vol: .55 }); tone({ type: 'sine', f: 66, f2: 42, dur: .16, vol: .45, at: .17 }); break;
@@ -91,12 +151,21 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'gasp': tone({ type: 'triangle', f: 300, f2: 900, dur: .25, vol: .25 }); break;
       case 'angry': tone({ type: 'sawtooth', f: 180, f2: 140, dur: .35, vol: .12, filter: 'lowpass', q: 1200, vib: 20 }); break;
       case 'phew': tone({ type: 'sine', f: 700, f2: 300, dur: .5, vol: .2 }); noise({ dur: .4, vol: .08, f: 1200, f2: 400 }); break;
-      case 'coin': tone({ type: 'square', f: 988 + p * 30, dur: .06, vol: .1, filter: 'lowpass', q: 4000 }); tone({ type: 'square', f: 1319 + p * 40, dur: .14, vol: .1, at: .06, filter: 'lowpass', q: 4000 }); break;
-      case 'whoosh': noise({ dur: .28, vol: .22, f: 400, f2: 2600, q: .8 }); break;
+      // a coin: the two-note chirp kept, now as bells with only a hint of the old square's shine
+      case 'coin': bell(988 + p * 30, 0, .11, .12); bell(1319 + p * 40, .06, .13, .32); tone({ type: 'square', f: 1319 + p * 40, dur: .04, vol: .025, at: .06, filter: 'lowpass', q: 5000 }); break;
+      // the change of scene: a softer, rounder air (it started at full volume — a click on every iris)
+      case 'whoosh': noise({ dur: .32, vol: .17, f: 350, f2: 2400, q: .7, attack: .09 }); noise({ dur: .24, vol: .04, type: 'highpass', f: 5000, at: .03, attack: .1 }); break;
       case 'swish': noise({ dur: .16, vol: .18, f: 2400, f2: 900, q: 1.2 }); break;
       case 'pop': tone({ type: 'sine', f: hz(PENTA[p % PENTA.length]), f2: hz(PENTA[p % PENTA.length]) * 1.6, dur: .09, vol: .35 }); noise({ dur: .04, vol: .1, f: 3000 }); break;
       case 'star': tone({ type: 'triangle', f: hz(12 + p * 4), dur: .4, vol: .3 }); tone({ type: 'sine', f: hz(24 + p * 4), dur: .3, vol: .14, at: .02 }); break;
-      case 'win': [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => tone({ type: 'triangle', f: hz(s), dur: .32, vol: .24, at: i * .07 })); break;
+      // a win: the quick arpeggio, then the chord held under a bell and a sparkle run (the music steps back for it — duck)
+      case 'win':
+        [0, 4, 7, 12].forEach((s, i) => tone({ type: 'triangle', f: hz(s + 12), dur: .24, vol: .2, at: i * .075 }));
+        [12, 16, 19, 24].forEach(s => tone({ type: 'triangle', f: hz(s + 12), dur: 1, vol: .085, at: .32, attack: .012 }));
+        bell(hz(36), .32, .11, 1.1);
+        for (let i = 0; i < 5; i++) tone({ f: hz(31 + PENTA[i]), dur: .16, vol: .05, at: .5 + i * .06 });
+        noise({ dur: .5, vol: .035, type: 'highpass', f: 7000, at: .32, attack: .06 });
+        break;
       case 'lose': [7, 4, 0, -5].forEach((s, i) => tone({ type: 'triangle', f: hz(s - 5), dur: .34, vol: .2, at: i * .14 })); break;
       case 'giggle': for (let i = 0; i < 4; i++) tone({ type: 'sine', f: 900 + (i % 2) * 220, f2: 1200 + (i % 2) * 200, dur: .07, vol: .14, at: i * .075 }); break;
       case 'place': tone({ type: 'sine', f: 260, f2: 520, dur: .1, vol: .26 }); tone({ type: 'triangle', f: 780, dur: .08, vol: .1, at: .06 }); break;
@@ -111,7 +180,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'thunk': noise({ dur: .12, vol: .16, type: 'lowpass', f: 900 }); tone({ type: 'sine', f: 120, f2: 70, dur: .16, vol: .35, at: .02 }); break;
       case 'snore': noise({ dur: .55, vol: .16, type: 'lowpass', f: 260, f2: 520, q: 2 }); tone({ type: 'sawtooth', f: 85, f2: 110, dur: .5, vol: .05, filter: 'lowpass', q: 400 }); noise({ dur: .4, vol: .07, f: 1600, f2: 900, q: 1, at: .65 }); break;
       case 'blub': for (let i = 0; i < 3; i++) tone({ type: 'sine', f: 380 + i * 140, f2: 900 + i * 220, dur: .06, vol: .2, at: i * .09 }); break;
-      case 'door': noise({ dur: .3, vol: .14, f: 500, f2: 900, q: 3 }); tone({ type: 'triangle', f: 160, f2: 120, dur: .3, vol: .12, vib: 8 }); break;
+      // a door (room door, elevator, rooftop): it swings through the air, then settles with a soft wooden knock
+      case 'door': noise({ dur: .32, vol: .13, f: 420, f2: 950, q: 2.5, attack: .05 }); tone({ type: 'triangle', f: 150, f2: 112, dur: .24, vol: .1, vib: 5 }); tone({ type: 'sine', f: 125, f2: 72, dur: .13, vol: .22, at: .3 }); noise({ dur: .05, vol: .08, type: 'lowpass', f: 650, at: .3 }); break;
       default: tone({ f: 600, dur: .05, vol: .2 });
     }
   };
@@ -125,36 +195,115 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     A._bus = g; try { A.sfx(name); } finally { A._bus = null; }
     setTimeout(() => { try { g.disconnect(); p?.disconnect(); } catch {} }, 3000);
   };
+  // the music steps back for a moment (a win's jingle) and comes back on its own
+  A.duck = (sec = 2, to = .3) => {
+    if (!A.musicBus) return;
+    const g = A.musicBus.gain, t = A.ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(MUSIC_VOL * to, t + .08); g.setValueAtTime(MUSIC_VOL * to, t + sec); g.linearRampToValueAtTime(MUSIC_VOL, t + sec + .8);
+  };
 
-  // Music box loop. mood: 'home' | 'play' | 'tense'
+  // ── background music: a slot per scene (BGM above), streamed, faded across (사운드 세션 10/19)
+  // One <audio> element for every track (memory, and iPhone lets an element play on its own only after a tap has started it
+  // once — a second element would stay silent until the next tap): the track going out fades down, the next one comes in
+  // as soon as it really plays (~0.8 s in all, under the iris). A gpt file that can't be read falls back to its tmp.
+  const XF = .8, TRACK_GAIN = .55, HURRY = 1.07;
+  const forceTmp = /[?&]bgm=tmp\b/.test(location.search), failed = new Set();
+  const urlOf = slot => { const b = BGM[slot]; if (!b) return null; return b.gpt && !forceTmp && !failed.has(b.gpt) ? b.gpt : b.tmp; };
+  const T = A._trk = { el: null, gain: null, url: null, slot: null, want: null, goal: 0, pending: null, swapT: 0, stopT: 0 };
+  function mkTrack() {
+    const el = T.el = new Audio(); el.loop = true; el.preload = 'auto'; el.crossOrigin = 'anonymous'; el.setAttribute('playsinline', '');
+    try { const node = A.ctx.createMediaElementSource(el); T.gain = A.ctx.createGain(); T.gain.gain.value = 0; node.connect(T.gain).connect(A.musicBus); } catch { T.gain = null; }
+    el.addEventListener('playing', () => { if (T.pending != null) { fade(T.pending, XF * .6); T.pending = null; } });
+    el.addEventListener('error', () => {
+      const b = BGM[T.slot];
+      if (!b || !T.url || T.url !== b.gpt) return;
+      console.warn('bgm file', T.url, 'could not be read — playing', b.tmp);
+      failed.add(T.url); T.url = null; A._req = null; goMusic();
+    });
+  }
+  function setRate(rate) {
+    const el = T.el;
+    el.preservesPitch = el.webkitPreservesPitch = el.mozPreservesPitch = rate === 1;   // (hurried: a touch higher too, like a wind-up toy)
+    if (el.playbackRate !== rate) el.playbackRate = rate;
+  }
+  function fade(to, sec) {
+    T.goal = to;
+    if (!T.gain) { T.el.volume = A.muted || !to ? 0 : MUSIC_VOL; return; }   // (no WebAudio route: plain volume)
+    const g = T.gain.gain, t = A.ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + sec);
+  }
+  function swap() {
+    T.swapT = 0; const w = T.want;
+    T.url = w.url; T.el.src = w.url; setRate(w.rate);
+    fade(0, .02); T.pending = w.level;   // (comes up on 'playing' — a slow network doesn't eat the fade-in)
+    if (!document.hidden) T.el.play()?.catch?.(() => {});   // (refused before a tap: goMusic tries again on the next one)
+  }
+  function playSlot(slot, rate) {
+    if (!T.el) mkTrack();
+    const url = urlOf(slot), level = TRACK_GAIN * (BGM[slot]?.gain ?? 1);
+    clearTimeout(T.stopT); T.stopT = 0;
+    T.slot = slot; T.want = { url, rate, level };
+    if (T.url === url) {   // this track already: a swap under way is called off, and it plays at its own level
+      if (T.swapT) { clearTimeout(T.swapT); T.swapT = 0; }
+      setRate(rate);
+      if (T.pending != null) T.pending = level; else if (T.goal !== level) fade(level, .35);
+      if (T.el.paused && !document.hidden) T.el.play()?.catch?.(() => {});
+      return;
+    }
+    if (T.swapT) return;   // (the swap under way takes the newest want)
+    if (T.url && !T.el.paused) { fade(0, XF * .45); T.swapT = setTimeout(swap, XF * 450); } else swap();
+  }
+  function release() { T.el.pause(); T.el.removeAttribute('src'); try { T.el.load(); } catch {} T.url = null; T.pending = null; }
+  function stopTrack(sec = .5) {
+    if (!T.el || !T.url) return;
+    clearTimeout(T.swapT); T.swapT = 0; T.pending = null;
+    if (T.stopT) return;
+    fade(0, sec); T.stopT = setTimeout(() => { T.stopT = 0; release(); }, sec * 1000 + 80);
+  }
+  function pauseDecks() { T.el?.pause(); }
+
+  // mood → slot: 'home' the lobby, 'play' this scene's own (A.scene), 'tense' the tense file or a hurried boss track; a
+  // slot's name works as a mood too ('boss', 'king', 'tv' …)
+  const SCENE_SLOT = { stage: 'map', mini: 'mini', boss: 'boss', bossgame: 'boss' };
+  A.playSlot = 'map'; A._hurry = false; A._req = null;
+  A.scene = (name, data = {}) => {
+    A.playSlot = data.final || data.kind === 'finale' ? 'king' : SCENE_SLOT[name] || 'map';
+    A._hurry = false; A._req = null; if (T.el && T.url) setRate(1);
+  };
+  // 막판 (the stage's last 10 seconds): the track playing hurries a little; off again on the next scene
+  A.hurry = (on = true) => { A._hurry = !!on; if (A._req) A._req.rate = on ? HURRY : 1; if (T.el && T.url) setRate(on ? HURRY : 1); };
+  function request(mood) {
+    if (mood === 'tense') {
+      if (urlOf('tense')) return { slot: 'tense', rate: 1 };
+      const now = T.url && !T.stopT ? T.slot : null, s = now === 'boss' || now === 'king' ? now : 'boss';
+      return { slot: s, rate: s === now ? HURRY : 1 };
+    }
+    const slot = mood === 'home' ? 'lobby' : mood === 'play' ? A.playSlot : BGM[mood] ? mood : null;
+    return { slot: slot && urlOf(slot) ? slot : null, rate: A._hurry ? HURRY : 1 };
+  }
+  // (a pushed slot — 몽글 TV — gives the music back to what was playing when it closes)
+  A.pushMusic = slot => {
+    const prev = { mood: A.mood, want: A._wantMusic };
+    A.music(slot);
+    return () => { if (A.mood !== slot) return; if (prev.want) A.music(prev.mood); else A.stopMusic(); };
+  };
+
+  // Music box loop (a slot with no file). mood: 'home' | 'play' | 'tense'
   const MOODS = {
     home: { bpm: 96, root: -7, prog: [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]], mel: [12, 16, 19, 16, 14, 12, 9, 12] },
     play: { bpm: 118, root: -5, prog: [[0, 4, 7], [-5, -1, 2], [-3, 0, 4], [-7, -3, 0]], mel: [12, 14, 16, 19, 21, 19, 16, 14] },
     tense: { bpm: 84, root: -10, prog: [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -1, 2]], mel: [12, 15, 12, 10, 12, 15, 17, 15] },
   };
-  // 배경음 (10/19 user: "배경음은 GPT가 Suno로 만든 두 가지 넣어줘" — one has come: 「햇살 사이 숨은 친구」, Opus → AAC for iPhone).
-  // A track streams from an <audio> element routed through the music bus (mute and volume as before; a decoded buffer would
-  // hold ~50 MB on a phone). Moods without a track keep the music box.
-  const TRACKS = { home: 'audio/bgm-home-v01.mp4' }, TRACK_GAIN = .55;
-  A._trk = { el: null, node: null, gain: null, mood: null, url: null };
-  function stopTrack() { const t = A._trk; if (t.el && !t.el.paused) t.el.pause(); t.mood = null; }
-  function playTrack(mood) {
-    const t = A._trk, url = TRACKS[mood];
-    if (!t.el) {
-      t.el = new Audio(); t.el.loop = true; t.el.preload = 'auto'; t.el.crossOrigin = 'anonymous'; t.el.setAttribute('playsinline', '');
-      try { t.node = A.ctx.createMediaElementSource(t.el); t.gain = A.ctx.createGain(); t.gain.gain.value = TRACK_GAIN; t.node.connect(t.gain).connect(A.musicBus); } catch { t.node = null; }
-    }
-    if (t.url !== url) { t.url = url; t.el.src = url; }
-    t.mood = mood;
-    if (!t.node) t.el.volume = A.muted ? 0 : .3;   // (no WebAudio route: plain volume)
-    if (t.el.paused && !document.hidden) t.el.play()?.catch?.(() => {});   // (refused before a tap: goMusic tries again on the next one)
-  }
   A.music = (mood = 'home') => {
+    const again = mood === A.mood && A._wantMusic && A._req;
     A.mood = mood; A._wantMusic = true;
-    if (A._timer) { clearInterval(A._timer); A._timer = null; }
-    if (!ensure() || A.ctx.state !== 'running') return;
-    if (TRACKS[mood]) { if (A._trk.mood !== mood || A._trk.el?.paused) playTrack(mood); return; }
+    if (!again && A._timer) { clearInterval(A._timer); A._timer = null; }
+    if (!ensure() || A.ctx.state !== 'running') { if (!again) A._req = null; return; }
+    if (!again) A._req = request(mood);
+    if (A._req.slot) return playSlot(A._req.slot, A._req.rate);
     stopTrack();
+    if (A._timer) return;
     const M = MOODS[mood] || MOODS.home;
     const stepDur = 60 / M.bpm / 2; let next = A.ctx.currentTime + .06;
     A._timer = setInterval(() => {
@@ -177,6 +326,6 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       }
     }, 60);
   };
-  A.stopMusic = () => { A._wantMusic = false; if (A._timer) { clearInterval(A._timer); A._timer = null; } stopTrack(); };
+  A.stopMusic = () => { A._wantMusic = false; A._req = null; if (A._timer) { clearInterval(A._timer); A._timer = null; } stopTrack(); };
   return A;
 }
