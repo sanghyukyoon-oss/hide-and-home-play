@@ -1,3 +1,4 @@
+import { followupAt, settleFollowup, clearFollowupFinish } from '../followup.js';
 // 보스전 5종 (2026-10-18): the new-game session's prototypes, played as 숨바꼭집 bosses (user, via that session: "여기서
 // 괜찮은 거는 숨바꼭집의 새로운 보스전으로… 특히 엄마 몰래 야식? 이건 대박이다", "보스전 한 4~5개 타입으로 돌려써도", "그냥 난 다
 // 썼으면 좋겠어"). Each game (src/bosses/<id>.js, copied from 2026-10-18_asset-lab/games) was written for the lab's `L`
@@ -6,7 +7,7 @@
 // button in the game's top bar opens 계속 / 건너뛰기 / 홈.
 import * as THREE from 'three';
 import { h } from '../ui.js';
-import { lensGameWin, lensPlus } from '../lens.js';   // 경제 B5 (10/19)
+import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { ITEMS, buildItem } from '../gfx/items.js';
 import { renderThumbs } from '../thumbs.js';
@@ -26,6 +27,8 @@ const LOAD = {
   whack: () => import('../bosses/whack.js'),
   // 인계 5: 쉬어가기 4종 — 무궁화·바꿔치기를 새로 (옛 minis.js 것 대신), 소풍 보물찾기·이불 속 누구게? 새로
   redlight: () => import('../bosses/redlight.js'), inky: () => import('../bosses/inky.js'), picnic: () => import('../bosses/picnic.js'), blanket: () => import('../bosses/blanket.js'),
+  // 인계 6 (10/19, user: "새로운 미니게임 2개… 화살표 빼내기 디벨롭", "추천대로 다 넣어줘"): 다 같이 집으로! · 발자국 따라 찾기 (쉬어가기)
+  gohome: () => import('../bosses/gohome.js'), tracks: () => import('../bosses/tracks.js'),
 };
 // a game whose stylesheet does not come with it: linked here for the game's time on screen
 const SHEETS = { flashlight: new URL('../bosses/flashlight.css', import.meta.url).href };
@@ -34,6 +37,7 @@ export const BOSS_GAME_INFO = {
   wakeup: { name: '아침 깨우기 장치' }, photo: { name: '찰칵! 동네 사진관' },
   hotel: { name: '몽글 호텔 X박 X일' }, churro: { name: '추로야!!!' }, report: { name: '엄마 몰래 성적표' }, flashlight: { name: '손전등 숨바꼭질' }, whack: { name: '두더지 숨바꼭질' },
   redlight: { name: '무궁화 꽃이 피었습니다' }, inky: { name: '먹물이의 바꿔치기' }, picnic: { name: '소풍 보물찾기' }, blanket: { name: '이불 속 누구게?' },
+  gohome: { name: '다 같이 집으로!' }, tracks: { name: '발자국 따라 찾기' },
 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
 const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };
@@ -49,12 +53,13 @@ function faceJob(k, f, key) {
 
 export class BossGameScene {
   constructor(G) { this.G = G; this.name = 'bossgame'; }
-  async enter({ kind = 'yasik', after = 4, lv = 0, interlude = false, ...more } = {}) {
+  async enter({ kind = 'yasik', after = 4, lv = 0, interlude = false, resumeFinish = false, resumeWon = false, ...more } = {}) {
     const G = this.G, W = G.world;
     // interlude: a 쉬어가기 between stages, not a boss — a loss still goes on (smaller reward), marked done as 'm'+after
     this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this._out = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
     W.scheme = 'E'; W.joyOn = false; W.joyHidden = true; W.gaugeOn = false; W.camLock = false;
+    if (resumeFinish && !G.playMode) { this.won = resumeWon; this.talking = true; await Promise.resolve(); if (!this.dead) await this.finish(); return; }
     const app = document.getElementById('app'); for (const [k, v] of Object.entries(APP_FLAGS[this.kind] || {})) app.dataset[k] = v;
     // 아침 깨우기 opens with a little story and a find-the-ball-and-clock phase the first time only — remembered in the save
     // (the lab kept it per page)
@@ -75,10 +80,10 @@ export class BossGameScene {
       catch (e) { console.warn('boss game load failed', this.kind, i, e?.message); await new Promise(r => setTimeout(r, 700 * (i + 1))); }
     }
     if (this.dead) return;
-    if (!mod) { G.ui.toast('놀이를 불러오지 못했어요 · 다음 판으로 갈게요', 'red'); setTimeout(() => !this.dead && this.finish(), 1200); return; }
+    if (!mod) { G.ui.toast('놀이를 불러오지 못했어요 · 홈에서 다시 이어할 수 있어요', 'red'); setTimeout(() => !this.dead && G.go('home'), 1200); return; }
     // 대본: the lead-in, the first time this game and set-up comes up (the game's own rules come after, in the game)
     const GL = gameLines(this.kind, this.lv), said = G.save.gameTalk || (G.save.gameTalk = {});
-    if (GL?.lead && !said[this.kind + this.lv] && !G.bot && !G.skipTalk) { said[this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.lead); if (this.dead) return; }
+    if (GL?.lead && !said[this.kind + this.lv] && !G.bot && !G.skipTalk) { await playDialog(G, GL.lead); if (this.dead) return; said[this.kind + this.lv] = true; G.persist(); }
     this.L = this.makeL();
     this.game = new mod.Game(this.L);
     await this.game.enter({ lv: this.lv, ...more });   // (more: a game's own extras, e.g. the hotel's night)
@@ -121,38 +126,42 @@ export class BossGameScene {
     return L;
   }
   win(e) {
+    if (this.dead || this.won || this.passed) return;
     const G = this.G; this.won = true;
     const st = e.max ? Math.round(3 * (e.stars || 0) / e.max) : Math.max(0, Math.min(3, e.stars || 0));   // (GPT QA 10/18 P2: hotel reported 45 of 48)
-    const coins = this.interlude ? 40 + st * 15 : 150 + st * 30; G.addCoins(coins);
-    const done = G.save.bossDone || (G.save.bossDone = {}); done[(this.interlude ? 'm' : 'g') + this.after] = true; G.persist();
-    const lens = lensGameWin(G);   // 경제 B5 (10/19): a won 놀이 / boss → a magnifier into the bag (not in practice)
+    const reward = settleFollowup(G, followupAt(this.after), { coins: this.interlude ? 40 + st * 15 : 150 + st * 30, won: true, replayWin: true });
+    const coins = reward.coins, lens = reward.lens;   // 경제 B5 (10/19): a won 놀이 / boss → a magnifier into the bag (not in practice)
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
-    G.ui.toast(this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
+    G.ui.toast(G.playMode ? (this.interlude ? '쉬어가기 성공! (연습)' : '보스 클리어! (연습)') : this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');   // (practice pays nothing — QA N5)
     if (lens) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
   }
   // an interlude lost: still on to the next stage, with a small reward
   pass() {
+    if (this.dead || this.passed || this.won) return;
     const G = this.G; this.passed = true;
-    G.addCoins(15);
-    const done = G.save.bossDone || (G.save.bossDone = {}); done['m' + this.after] = true; G.persist();
+    settleFollowup(G, followupAt(this.after), { coins: 15 });
     G.stats.log.push({ mini: this.kind, result: 'pass' });
   }
   async finish() {
     const G = this.G;
-    G.ui.closePanel(true);   // (the game's result panel went on taking taps under the ending — QA 10/18)
+    if (this.finishing) return; this.finishing = true;
+    G.ui.closePanel(true);
+    if (!this.won && !this.passed && !G.playMode) settleFollowup(G, followupAt(this.after));   // (the game's result panel went on taking taps under the ending — QA 10/18)
     // 대본: a word after the first win; after the last 야식, the ending (once) and "hide something at home / keep playing"
     // (the ending comes after the last 야식 even when it was skipped from the pause menu — 검토 H6)
     const GLe = gameLines(this.kind, this.lv);
     if ((this.won || GLe?.ending) && !this._out && !G.bot && !G.skipTalk) {
       this._out = true; this.talking = true;   // (the game waits under these words — QA 10/18: a caught-panel wiped the ending)
       const GL = GLe, said = G.save.gameTalk || (G.save.gameTalk = {});
-      if (this.won && GL?.out && !said['o' + this.kind + this.lv]) { said['o' + this.kind + this.lv] = true; G.persist(); await playDialog(G, GL.out); }
+      if (this.won && GL?.out && !said['o' + this.kind + this.lv]) { await playDialog(G, GL.out); if (this.dead) return; said['o' + this.kind + this.lv] = true; G.persist(); }
       if (GL?.ending && !G.save.ending && !G.playMode) {   // (놀이 모음's 셋째 밤 is practice: no ending there — QA 10/18)
         await playDialog(G, ENDING); await endCard(G);
         G.save.ending = true; G.persist();   // (saved once seen: a reload mid-ending shows it again — QA 10/18)
+        clearFollowupFinish(G, this.after);
         if (await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0) return G.go('myhome');
       }
     }
+    clearFollowupFinish(G, this.after);
     G.go('stage', { idx: this.after + 1 });
   }
   menu() {
@@ -187,7 +196,7 @@ export class BossGameScene {
     this.dead = true; const W = this.G.world;
     this.game?.exit?.();
     this.sheet?.remove(); this.sheet = null;
-    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night', 'wh', 'rl', 'ik', 'tr', 'bk');
+    const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night', 'wh', 'rl', 'ik', 'tr', 'bk', 'gh', 'fp');
     Object.assign(W, { scheme: this._was.scheme, joyOn: this._was.joyOn, joyHidden: this._was.joyHidden, gaugeOn: this._was.gauge, camLock: this._was.camLock });
     W.onTap = null; W.onDragStart = null; W.onPad = null; W.onRotate = null;
     this.G.ui.clear();

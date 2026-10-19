@@ -51,6 +51,7 @@ import { LobbyScene } from './scenes/lobby.js';
 import { ECON, econMigrate, econSaveFields } from './econ.js';
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
 import { openGallery, playGame } from './gallery.js';
+import { queueFollowup, normalizeFollowup, routeFollowup } from './followup.js';
 installI18n();   // English players see English everywhere (see i18n.js)
 
 // outdoor props (alley / park / camp) join the furniture registry, the room shell and the shop
@@ -168,9 +169,15 @@ if (hashSave && (!stored || (hashSave.rev || 0) > (stored.rev || 0))) stored = h
 let save = econMigrate(migrate(stored));   // (경제·로비: new fields only, and only with it on — coins, stages, stars, furniture untouched)
 // 처음 하는 사람 (기획안 7장 '처음 20분', 사용자 10/18 밤 승인): 저장이 하나도 없으면 타이틀 다음 바로 1판으로 간다. 홈은
 // 2판 뒤 '내 집 열림'과 함께 처음 본다. (주소의 #s= 저장도 stored에 들어 있으니, 그걸로 이어 하는 사람은 처음이 아니다)
+normalizeFollowup(save);
 const firstRun = !stored;
-let hashT = 0;
-const saveToHash = () => { if (!WEB) return; clearTimeout(hashT); hashT = setTimeout(() => { try { history.replaceState(null, '', location.pathname + location.search + '#s=' + b64e(JSON.stringify(save))); } catch {} }, 400); };
+let hashT = 0, hashPayload = JSON.stringify(save);
+// The hash is a committed save too: practice mutates a temporary copy and must never leak through a queued flush.
+const flushHashSave = () => { if (!WEB) return; clearTimeout(hashT); try { history.replaceState(null, '', location.pathname + location.search + '#s=' + b64e(hashPayload)); } catch {} };
+const saveToHash = () => { if (!WEB) return; hashPayload = JSON.stringify(save); clearTimeout(hashT); hashT = setTimeout(flushHashSave, 400); };
+// Storage-blocked browsers also retain the newest pending activity when a tab reloads or backgrounds immediately.
+addEventListener('pagehide', flushHashSave);
+addEventListener('beforeunload', flushHashSave);
 
 // locked cartoon art direction (?style=std shows the original soft render for comparison)
 if (qs.get('style') !== 'std') useCartoonStyle();
@@ -225,6 +232,7 @@ const G = {
     if (before < 2 && save.stage >= 2) out.unlockedHome = true;
     if (before < STAGE_COUNT && save.stage >= STAGE_COUNT) out.allClear = true;
     out.newZones = HOME_ZONES.filter(z => z.unlock.stage > before && z.unlock.stage <= save.stage && z.unlock.stage > 0 && !save.home.bought.includes(z.id)).map(z => { G.ensureZone(z.id); return z.name; });
+    if (!G.playMode && idx + 1 === save.stage) queueFollowup(save, idx);
     G.persist();
     G.stats.cleared++; const secs = (gameTime - G.stats.stageStart); G.stats.levelSecs.push(secs); G.stats.log.push({ stage: idx + 1, result: 'clear', stars, secs: +secs.toFixed(1) });
     return out;
@@ -250,6 +258,7 @@ const G = {
     // only after the practice scene has gone, so a game that ends during the iris can't pay into it)
     const endPractice = G.playMode && !['bossgame', 'mini', 'boss'].includes(name);
     if (endPractice) { name = 'home'; data = { gallery: true }; }
+    else { const next = routeFollowup(G, name, data); name = next.name; data = next.data; }
     G.pending = name;
     audio.sfx('whoosh');
     await ui.irisOut();
@@ -445,7 +454,7 @@ async function boot() {
   // address's # part to the page; n is 1-based; 'mini-' before the id is allowed) — links from the docs and the lab hub
   const playLv = qs.get('play') ? +(qs.get('lv') || 1) : +(PLAY_HASH?.[2] || 1);
   const going = play ? (galleryPlay(play, playLv - 1) || G.go('home'))
-    : lv ? G.go('stage', { idx: Math.max(0, +lv - 1) })
+    : lv ? G.go('stage', { idx: Math.max(0, +lv - 1), direct: true })
     : sc === 'myhome' ? G.go('myhome', { mode: qs.get('mode') || 'view' })
     : sc === 'visit' ? G.go('visit')
     : tapToStart && firstRun ? G.go('stage', { idx: 0 })   // the very first time: straight into 1판 (bots and QA links keep the home)
@@ -497,7 +506,7 @@ function installJam() {
     start: () => G.go('stage', { idx: save.stage || 0 }),
     startRect: () => { const b = G.scene?.playBtn; if (!b) return null; const r = b.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
     bot: on => { G.bot = !!on; },
-    level: n => G.go('stage', { idx: n - 1 }),
+    level: n => G.go('stage', { idx: n - 1, direct: true }),
     call: (name, ...a) => API[name]?.(...a),
     metrics: () => {
       const info = world.renderer.info.render;

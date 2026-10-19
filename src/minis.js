@@ -519,8 +519,8 @@ export const GAMES = { sneak: Sneak, spot: Spot, redlight: RedLight, shell: Shel
 // ones on that region's maps (the same game never twice within ~8 stages). 보물 지키기 (boss.js) adds a mid-boss now and then.
 // 판 사이 놀이 (10/18 밤, user: "미니게임과 보스판을 약간 더 늘리는식으로… 막 게임 코어 바뀔정도로 늘리지말고 … 잘 배치해줘"):
 // a break after every third stage or so, never two in a row — at least two stages to play between them, the line that
-// keeps hidden objects the game — the same games coming back a level up (두더지 3·24·58, 무궁화 6·63, 바꿔치기 34·52,
-// 손전등 15·43), the boss games climbing through the campaign (야식 12·40·70, 깨우기 31·46·60, 호텔 21, 보물 지키기
+// keeps hidden objects the game — the same games coming back a level up (두더지 3·24, 무궁화 6·63, 바꿔치기 34·52,
+// 손전등 15; 10/19: 43 다 같이 집으로 took the second 손전등), the boss games climbing through the campaign (야식 12·40·70, 깨우기 31·46·60, 호텔 21, 보물 지키기
 // 18·27·37·49·55 in scenes/boss.js, 손전등 보스 66). Off the campaign but in 놀이 모음: 이불 lv1·2, 무궁화 lv2, 호텔 lv0·1.
 export const MINI_AFTER = {
   2: { kind: 'whack', lab: true, lv: 0 },   // 1장: 두더지 숨바꼭질 새 버전 (user: "두더지 되게 재밌네", "두더지는 초반에")
@@ -529,9 +529,9 @@ export const MINI_AFTER = {
   14: { kind: 'lamp', p: { map: 'oneroom', time: 45 } },   // 2장: 손전등 술래, in the one-room you just played
   23: { kind: 'whack', lab: true, lv: 1 },  // 3장: 두더지 — 변장한 너굴이 첫 등장
   33: { kind: 'spot', p: { map: 'konbini', n: 3, time: 40 } },   // 4장: 먹물이의 바꿔치기
-  42: { kind: 'lamp', p: { map: 'park1', time: 45 } },   // 5장: 손전등 술래
+  42: { kind: 'gohome', lab: true, lv: 0 },   // 5장: 다 같이 집으로! (새 쉬어가기 10/19 — 손전등 2번째 자리; user: "화살표 빼내기 … 우리 소스들로")
   51: { kind: 'spot', p: { map: 'camp1', n: 3, time: 40 } },   // 6장: 바꿔치기
-  57: { kind: 'whack', lab: true, lv: 2 },   // 6장: 두더지 피버 수풀
+  57: { kind: 'whack', lab: true, lv: 2 },   // 6장: 두더지 피버 수풀 (10/19: 발자국 따라 찾기는 놀이 모음에만 — user "화살표만 재밌는거같다", "두더지잡기가 재밌어")
   62: { kind: 'redlight', lab: true, lv: 1 },   // 7장: 무궁화 새 판 킥킥 너굴이
   // 66판 뒤 보스: 손전등 술래를 키운 판 (user, 10/18: 보스 손전등은 "ㅈㄴ 재미없다", "손전등 술래 재밌는데" → "손전등 술래를 보스로 키우기")
   65: { kind: 'lamp', boss: true, p: { map: 'officefloor', time: 80, n: 8, decoys: 2, boss: true } },

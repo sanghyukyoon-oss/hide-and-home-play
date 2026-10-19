@@ -1,3 +1,4 @@
+import { followupAt, settleFollowup } from '../followup.js';
 // 보스 미니게임 (2026-10-18, user: "보스전마다 미니게임 새로운 미니게임… 지금 새로 구상토론하고있는것중 차용할수있는거 차용",
 // "물건숨기는건 중간보스처럼 간간히"). After each region's last stage comes a different little game against that region's
 // boss character (src/minis.js): sneak past 냥냥이 to the fridge, spot what 잉키 changed, 무궁화 꽃이 피었습니다 with 너굴이,
@@ -11,7 +12,7 @@ import { MapRooms } from '../map.js';
 import { layoutFor, THEMES } from '../stages.js';
 import { Char } from '../gfx/chars.js';
 import { h } from '../ui.js';
-import { lensGameWin, lensPlus } from '../lens.js';   // 경제 B5 (10/19)
+import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { Tweens } from '../util.js';
 import { disposeTree } from '../gfx/kit.js';
 import { playDialog } from '../story.js';
@@ -127,13 +128,12 @@ export class MiniScene {
     }
     this.result = win ? 'win' : 'lose';
     if (win) {
-      const coins = this.boss ? 120 + this.si * 30 : 50; G.addCoins(coins);
-      const done = G.save.bossDone || (G.save.bossDone = {}); done['m' + this.after] = true; G.persist();
-      const lens = lensGameWin(G);   // 경제 B5 (10/19): a won 놀이 → a magnifier into the bag (not in practice)
+      const reward = settleFollowup(G, followupAt(this.after), { coins: this.boss ? 120 + this.si * 30 : 50, won: true, replayWin: true });
+      const coins = reward.coins, lens = reward.lens;   // 경제 B5 (10/19): a won 놀이 → a magnifier into the bag (not in practice)
       G.audio.sfx('win'); G.world.fx.confetti(140);
       G.stats.log.push({ mini: this.kind, result: 'win' });
       setTimeout(() => !this.dead && G.ui.panel({ title: this.boss ? `${this.info.name} 승리!` : `${this.info.name} 성공!`, color: 'green',
-        body: [h('div', { class: 'txt' }, detail || this.info.winLine || '해냈다!'), h('div', { class: 'reward' }, `코인 +${coins}`)],
+        body: [h('div', { class: 'txt' }, detail || this.info.winLine || '해냈다!'), h('div', { class: 'reward' }, G.playMode ? '연습이라 코인은 없어' : `코인 +${coins}`)],
         buttons: [this.nextBtn = G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', { idx: this.after + 1 }) })] }), 900);
       if (lens) setTimeout(() => !this.dead && G.ui.panelOpen?.querySelector('.reward')?.after(lensPlus()), 900);   // ("+ 돋보기 1" under the coins; same delay, so right after that panel)
     } else {
@@ -148,7 +148,7 @@ export class MiniScene {
     if (this.result || !this.running) return;
     const G = this.G; this.paused = true;
     G.ui.panel({ title: '잠깐!', color: 'purple', close: () => { G.ui.closePanel(); this.paused = false; }, body: [h('div', { class: 'txt' }, this.game?.goal || '')],
-      buttons: [G.ui.btn('계속하기', { color: 'green', cls: 'big', onClick: () => { G.ui.closePanel(); this.paused = false; } }),
+      buttons: [G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => { G.ui.closePanel(); G.go('home'); } }), G.ui.btn('계속하기', { color: 'green', cls: 'big', onClick: () => { G.ui.closePanel(); this.paused = false; } }),
         G.ui.btn('건너뛰기', { color: 'gray', cls: 'sm', onClick: () => { G.ui.closePanel(); G.go('stage', { idx: this.after + 1 }); } })] });
   }
   update(dt) {

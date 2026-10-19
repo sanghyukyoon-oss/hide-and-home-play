@@ -1,3 +1,4 @@
+import { followupAt, settleFollowup } from '../followup.js';
 // 보스판 · 보물 지키기 (10/18 rework, user: "자유롭게 숨길 수 있어야 됨. 가이드 하지 말고… 원하는 곳 클릭하고 이동… 휘슬 불기로
 // 다른 곳으로 유인… 세 번은 안 속게(알려 주지 말고)… 너구리 스폰 위치 랜덤… 몸으로 막는 건 취소"): tap the floor to walk there,
 // tap any piece of furniture to tuck a treasure in or behind it — no glowing guide; then blow the whistle to lure 너굴이
@@ -13,7 +14,7 @@ import { layoutFor, stageSpec, THEMES, REGIONS, BOSS_MAZE } from '../stages.js';
 import { Char, CHAR_DEFS, defineChar } from '../gfx/chars.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
 import { h } from '../ui.js';
-import { lensGameWin, lensPlus } from '../lens.js';   // 경제 B5 (10/19)
+import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { Tweens, clamp } from '../util.js';
 import { walkGrid, gridPath, nearestTile, crossOK } from '../companion.js';
 import { Ambient } from '../ambient.js';
@@ -385,14 +386,13 @@ export class BossScene {
     const G = this.G; this.result = 'win';
     const left = this.treasures.filter(t => !t.lost).length;
     if (!left) { this.result = null; return this.lose(); }   // the clock ran out in the moment after the last one was found (GPT QA 10/18)
-    const coins = 80 + left * 40 + this.tier * 30; G.addCoins(coins);
-    const done = G.save.bossDone || (G.save.bossDone = {}); const first = !done[this.after]; done[this.after] = true; G.persist();
-    const lens = lensGameWin(G);   // 경제 B5 (10/19): treasures kept → a magnifier into the bag (not in practice)
+    const reward = settleFollowup(G, followupAt(this.after), { coins: 80 + left * 40 + this.tier * 30, won: true, replayWin: true });
+    const coins = reward.coins, first = reward.first, lens = reward.lens;   // 경제 B5 (10/19): treasures kept → a magnifier into the bag (not in practice)
     G.audio.sfx('win'); G.world.fx.confetti(140); this.seek.setFace?.('sad'); this.say(this.seek, '으아~ 다 못 찾았어!', 1800); this.hero.pose = 'cheer';
     G.stats.log.push({ boss: this.tier + 1, result: 'win', left });
     setTimeout(() => !this.dead && G.ui.panel({ title: '보물 지키기 성공!', color: 'green',
       body: [h('div', { class: 'tslots end' }, ...this.treasures.map(t => h('div', { class: 'tslot ' + (t.lost ? 'lost' : 'hidden') }, h('img', { src: G.thumbs['item_' + t.type] })))),
-        h('div', { class: 'txt' }, `보물 ${left}개를 지켰어!`), h('div', { class: 'reward' }, `코인 +${coins}`), ...(first ? [h('div', { class: 'txt' }, '다음 너굴이는 코가 더 좋아질 거야…!')] : [])],
+        h('div', { class: 'txt' }, `보물 ${left}개를 지켰어!`), h('div', { class: 'reward' }, G.playMode ? '연습이라 코인은 없어' : `코인 +${coins}`), ...(first ? [h('div', { class: 'txt' }, '다음 너굴이는 코가 더 좋아질 거야…!')] : [])],
       buttons: [this.nextBtn = G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', { idx: this.after + 1 }) })] }), 1200);
     if (lens) setTimeout(() => !this.dead && G.ui.panelOpen?.querySelector('.reward')?.after(lensPlus()), 1200);   // ("+ 돋보기 1" under the coins; same delay, so right after that panel)
   }

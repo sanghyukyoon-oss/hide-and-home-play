@@ -29,6 +29,9 @@
 button, input, select, textarea { font-weight: inherit; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #ffe6ef; font-family: var(--font); font-weight: 600; -webkit-user-select: none; user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; color: var(--ink); }
 #app { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(120% 80% at 50% 30%, #ffffff 0%, var(--bgA) 45%, var(--bgB) 100%); transition: background .6s var(--eo); }
+/* 룩 실험 (src/look.js): a map with its own sky — top of the screen = far away, so sky at the top, the ground's own
+   colour at the bottom where the street fades out (no white glow in the middle) */
+#app.look-sky { background: linear-gradient(180deg, var(--skyA) 0%, var(--skyB) 42%, var(--skyC) 100%); }
 #bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 #bg i { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .55); filter: blur(2px); animation: drift 18s ease-in-out infinite alternate; }
 #bg i:nth-child(1) { width: 120px; height: 120px; left: 6%; top: 12%; }
@@ -1308,3 +1311,8 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 html[lang="en"] .ys-ear.quiet span::after { content: ' · snoring'; }
 html[lang="en"] .ys-ear.lull span::after { content: ' · lullaby'; }
 html[lang="en"] .rl-fr.out::after { content: 'OUT'; }
+
+/* ── 2D UI 정리 ① 결과창 (UI 세션 10/19) ── Korean breaks between words, never inside one ("있어/요", "내/가"); while a
+   panel is up, notices drop to the bottom edge instead of sitting on its title ribbon ("내 집이 열렸어!" over "최고야!") */
+.panel, .panel * { word-break: keep-all; overflow-wrap: break-word; }
+#overlay.on ~ #toasts { top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }

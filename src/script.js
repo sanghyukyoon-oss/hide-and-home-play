@@ -175,7 +175,7 @@ const SCENES = [
     intro: [L('bunny', '숨바꼭질 하자! 이번엔 안 웃을 거야.', "Let's play hide-and-seek! I won't giggle this time.")],
     clue: K('앗, 내 간식!', 'Hey, my snack!'), peek: K('킥… 아, 아니야. 안 웃었어.', "Hee— n-no. I didn't giggle."), mongClue: K('…저쪽.', '…Over there.'),
     reveal: [L('bunny', '푸핫! 웃어 버렸다. 다음엔 진짜 안 웃을 거야!', "Pfft! I giggled. Next time I really won't!")] },
-  { id: 'drawers', type: 'tut2', room: 'bunny',
+  { id: 'drawers', type: 'tut2', room: 'bunny', bubble: true,   // (스토리 룸 10/19: 1~5판이 다섯 번 연속 카드로 멈추던 것 → 말풍선)
     intro: [L('bunny', '이번엔 내 물건! 서랍까지 꼭 닫았지.', 'My things this time! I even shut the drawers.')],
     // (no item names here: what you find comes from the shared pool, so "내 머리핀!" fired on a star — 작가 검토 10/18)
     finds: [K('앗, 그거 내 거!', "Hey, that's mine!"), K('거기 있었어?!', 'It was in there?!'), K('그건 아끼는 건데!', 'I love that one!'), K('마지막 건 절대 못 찾아!', "You'll never find the last one!")],
@@ -313,12 +313,12 @@ const SCENES = [
 // The host stays out and talks four times: intro, first find, half, one left (hiddenSay), then after. goal: the banner's
 // noun when the things weren't simply hidden by the host. Same map + same kind + order as the 사건 scenes.
 SCENES.push(
-  { id: 'bearH', type: 'hidden', room: 'bear',
-    intro: [L('bear', '으헤헤, 왔구나. 토순이한테 얘기 많이 들었어.', "Ehehe, you came. Bunbun's told me all about you."), L('bear', '손님 오면 주려고 좋은 걸 숨겨 놨는데… 어디 뒀더라. 으헤헤.', "I hid some nice things for guests… but where'd I put them? Ehehe."), L('mong', '…같이 찾자.', "…Let's look together.")],
+  { id: 'bearH', type: 'hidden', room: 'bear', bubble: true,   // (첫 만남이어도 말풍선 한 줄 + 곰돌이 등장 동작 — 스토리 룸 10/19)
+    intro: [L('bear', '으헤헤, 왔구나. 손님 주려고 숨겨 놨는데… 어디 뒀더라?', "Ehehe, you came. I hid some treats for guests… now where'd I put them?")],
     say: { first: K('으헤헤, 그거 거기 있었구나!', "Ehehe, so that's where it was!"), half: K('벌써 반이야? 난 반도 기억 안 나는데.', "Halfway already? I don't even remember half of them."), last: K('하나 남았어. …꿀단지는 아니겠지?', "One left. …It's not the honey pot, is it?") },
     after: [LK('bear', '다 찾았다! 꿀 먹을래? 숟가락 두 개 챙겼어.', 'All found! Want some honey? I brought two spoons.'), L('mong', '…하나는 쓴 거 같은데.', '…One of them looks used.'), L('bear', '으헤헤.', 'Ehehe.')] },
-  { id: 'fishingH', type: 'hidden', room: 'fishing',
-    intro: [L('frog', '개굴! 낚시터에선 내가 챔피언이야.', "Ribbit! At the fishing spot, I'm the champ."), L('frog', '내 보물을 물가에 숨겨 놨어. 다 찾으면 인정!', "I hid my treasures by the water. Find them all and I'll call you champ!")],
+  { id: 'fishingH', type: 'hidden', room: 'fishing', bubble: true,   // (첫 만남이어도 말풍선 한 줄 + 개굴이 등장 동작 — 스토리 룸 10/19)
+    intro: [L('frog', '개굴! 여긴 내 낚시터. 보물 다 찾으면 챔피언 자리 줄게!', "Ribbit! My fishing spot. Find all my treasure and the champ title's yours!")],
     say: { first: K('개굴?! 그걸 벌써?', 'Ribbit?! Already?'), half: K('반이나…! 물소리가 도와줄 줄 알았는데.', 'Half…! I thought the water would cover for me.'), last: K('마지막 건 진짜 못 찾을걸! …아마.', "You'll never find the last one! …Probably.") },
     after: [L('frog', '다 찾았다고?! 한 판 더! 다음엔 내가 숨는다!', 'All of them?! One more round! Next time, I hide!'), L('mong', '좋아. 그땐 내가 찾을게.', "Okay. Then I'll find you.")] },
   { id: 'pengH', type: 'hidden', room: 'peng',
@@ -585,21 +585,21 @@ const BOSS = [
       L('cat', '그 까만 애? 졸졸이가 알 거다냥. 밤새 창밖만 보거든.', 'The inky kid? Ask Dozy. Dozy watches the window all night.')],
     reward: { furn: 'cattower', coins: 200 } },
   { id: 'apt-boss', room: 'policefront', title: K('분실물 보관함', 'The Lost-and-Found'), cast: 'shiba',
-    intro: [L('shiba', '분실물 보관함을 너무 꼼꼼히 잠갔어.', 'I locked the lost-and-found a little too well.'), L('shiba', '열쇠, 번호, 색깔, 레버까지… 킁.', 'Key, code, colors, a lever… sniff.'), L('shiba', '주인들한테 돌려줘야 해. 같이 열자!', "We have to get these back to their owners. Let's open them together!")],
+    intro: [L('shiba', '분실물 보관함을 너무 꼼꼼히 잠갔어.', 'I locked the lost-and-found a little too well.'), L('shiba', '열쇠랑 번호가 필요해… 킁.', 'We need a key and the code… sniff.'), L('shiba', '주인들한테 돌려줘야 해. 같이 열자!', "We have to get these back to their owners. Let's open them together!")],
     secret: 'goldbone',
     lines: { tap: [K('킁킁, 거의 다 왔어!', "Sniff sniff, we're close!"), K('그건 우산 주인 거야.', "That one's the umbrella owner's."), K('붕붕붕!', 'Wag wag wag!')] },
     outro: [L('shiba', '다 돌려줬다! …하나 남았네. 이름 없는 크레파스 상자.', 'All returned! …Except one. A crayon box with no name.'), L('mong', '…바닥에 까만 손자국. 누군지 알 것 같아.', '…A little inky handprint on the bottom. I think I know whose.'), L('shiba', '그럼 네가 갖고 있어. 주인 만나면 전해 줘.', 'Then you hold onto it. Give it back when you find the owner.'), L('mong', '응. 만나면 꼭 돌려줄게.', "Okay. I'll give it back when I meet them."), L('bunny', '이 코타츠, 너네 집에 둘래. 겨울엔 내 자리야!', "This kotatsu's going to your place. In winter, that's my spot!")],
     reward: { furn: 'kotatsu', coins: 250 } },
   { id: 'alley-boss', room: 'alleywide', title: K('삐딱이의 비밀 아지트', "Grumpy's Secret Hideout"), cast: 'grumpy',
-    intro: [L('grumpy', '…또 왔네. 한 판만이야. …시간은 많지만.', "…You're back. One game. …I've got time, though."), L('grumpy', '자물쇠 네 개 걸어 놨어. 열 수 있으면 열어 봐.', 'I put four locks on it. Open them if you can.')],
+    intro: [L('grumpy', '…또 왔네. 한 판만이야. …시간은 많지만.', "…You're back. One game. …I've got time, though."), L('grumpy', '자물쇠 세 개 걸어 놨어. 열 수 있으면 열어 봐.', 'I put three locks on it. Open them if you can.')],
     secret: 'pawprint',
     lines: { tap: [K('흥.', 'Hmph.'), K('…거기 말고.', '…Not there.'), K('찾든 말든 상관없거든!', "I don't care if you find it!")] },
     outro: [L('grumpy', '…진짜 다 열었네.', '…You actually opened all of it.'), L('mong', '삐딱이, 까만 애 알아? 크레파스 들고 다니는.', 'Grumpy, know the inky kid? Carries crayons around.'), L('grumpy', '…어릴 때 같이 놀았던 것도 같고. 기억 안 나.', "…Maybe we played as kids. Don't remember."), L('grumpy', '내일도… 이 시간엔 있어.', "I'll be here tomorrow. Same time."), L('mong', '그럼 내일 또 올게. 다음엔 우리 집에서도 놀자.', "Then I'll come back tomorrow. And let's hang out at my place too."), L('grumpy', '…이거, 떡볶이 포장마차. 의자는 두 개면 돼.', "…Here. My tteokbokki stall. Two stools. That's plenty.")],
     reward: { furn: 'tteokstall', coins: 300 } },
   { id: 'shop-boss', room: 'shopmap', title: K('마감 시간의 금고', 'The Closing-Time Safe'), cast: 'sundae',
-    intro: [L('sundae', '마감인데 금고가 안 열려! 번호를 찢어서 숨겼거든… 내가.', "The safe won't open! I tore up the code and hid it… myself."), L('shiba', '사장님, 그걸 왜…', 'Boss, why would you…'), L('sundae', '…누가 훔쳐볼까 봐!', '…So nobody could peek!')],
+    intro: [L('sundae', '마감인데 잠금이 안 풀려! 번호 쪽지를 숨겼거든… 내가.', "It's closing time, but I can't unlock it! I hid the code note… myself."), L('shiba', '사장님, 그걸 왜…', 'Boss, why would you…'), L('sundae', '…누가 훔쳐볼까 봐!', '…So nobody could peek!')],
     secret: 'goldbone',
-    lines: { tap: [K('코코아 한 잔 줄까?', 'Want some cocoa?'), K('번호를 왜 찢었을까, 나…', 'Why did I tear up the code…'), K('빨리빨리! 문 닫을 시간이야!', "Hurry, hurry! It's closing time!")] },
+    lines: { tap: [K('코코아 한 잔 줄까?', 'Want some cocoa?'), K('쪽지를 어디 숨겼을까, 나…', 'Where did I hide that note…'), K('빨리빨리! 문 닫을 시간이야!', "Hurry, hurry! It's closing time!")] },
     outro: [L('sundae', '금고 안엔 돈 대신… 다 같이 먹을 간식.', 'Inside the safe… not money. Snacks for everyone.'), L('sundae', '마감하고 먹으려고.', 'For after closing.'), L('sundae', '이 간식 카트 줄게. 같이 먹을 건 이미 준비했어.', "Take this snack cart. It's already packed for sharing.")],
     reward: { furn: 'snackcart', coins: 300 } },
   { id: 'park-boss', room: 'playgroundwide', title: K('소풍 바구니를 지켜라', 'Save the Picnic Basket'), cast: 'frog',
@@ -617,7 +617,7 @@ const BOSS = [
       L('mong', '…그 애, 아직 숨어 있는 거 아닐까.', "…Maybe that kid's still hiding."), L('panda', '이 랜턴 가져가. 오늘 밤엔 불 켜 두자.', "Take this lantern. Let's leave a light on tonight.")],
     reward: { furn: 'lantern', coins: 350 } },
   { id: 'bld-boss', room: 'lobbymap', title: K('로비의 마지막 수수께끼', 'The Last Riddle in the Lobby'), cast: 'nerd',
-    intro: [L('nerd', '마지막 단계야. 자물쇠 넷, 찢어진 번호 셋, 레버 하나.', 'Final stage. Four locks, three torn codes, one lever.'), L('robot', '삐빅. 성공 확률 계산 중… 생략. 몽글이니까.', "BEEP. Calculating odds… skipped. It's Mongle."), L('mong', '끝까지 찾자. 가 보자.', "We look till the end. Let's go.")],
+    intro: [L('nerd', '마지막 단계야. 잠금 네 개. 열쇠, 번호 쪽지, 색깔 카드, 레버를 찾아봐.', 'Final stage. Four locks. Find the key, code note, color card, and lever.'), L('robot', '삐빅. 성공 확률 계산 중… 생략. 몽글이니까.', "BEEP. Calculating odds… skipped. It's Mongle."), L('mong', '끝까지 찾자. 가 보자.', "We look till the end. Let's go.")],
     secret: 'diary',
     lines: { tap: [K('논리적으로 생각해 봐!', 'Think logically!'), K('삐빅. 힌트: 박사가 금지함.', 'BEEP. Hints: banned by Doc.'), K('거의 다 왔어!', 'Almost there!')] },
     outro: [L('nerd', '상자 안엔… 동네 친구들이 쓴 쪽지야.', 'Inside the box… notes from everyone in town.'), L('mong', '쪽지마다 똑같이 써 있어. "다음엔 몽글이네서!"', 'Every note says the same thing: "Next time, at Mongle\'s!"'), L('robot', '삐빅. 동행 기록 저장. 삭제하지 않음.', 'BEEP. Memory saved. Will not delete.'), L('nerd', '이 레코드장 가져가. 둠칫이 「다 찾았다」도 넣어 놨어.', 'Take this record cabinet. DJ Bop\'s "Found It All" is in there too.')],
@@ -930,6 +930,11 @@ export const hideLine = (idx, host) => { const H = HABIT_HIDE[host]; return scen
 export const hidePool = (idx, host, kind) => sceneAt(idx)?.[kind] || fr(host)[kind] || ANY[kind];
 // 흑백판
 export const grayPhase = idx => bind().inky(idx);
+// 먹물이 숨기 (스토리 룸 10/19, 사용자 "추천대로"): 흑백판에서 먹물이가 방에 서 있지 않고 숨어서 목록 마지막 칸이 돼요.
+// 0 = 예전처럼 서서 돌아다님 · 1 = 숨지만 처음 화면에서 머리가 살짝 보임(첫 흑백판) · 2 = 더 잘 숨음(둘째 흑백판).
+// 먼저 4·10판(흑백 첫째·둘째)만 — 재밌으면 여기 숫자만 늘려 나머지 흑백판에도 (64판부터는 숨지 않음: "이번엔 도망 안 가네")
+export const inkyHide = idx => { if (idx < 0) return 0; const g = bind().gray[idx]; return g === 0 ? 1 : g === 1 ? 2 : 0; };
+export const INKY_FOUND = K('찾았다!', 'Found you!');
 const inkyV = (idx, what) => { const p = grayPhase(idx), g = bind().gray[idx] || 0, all = [INKY[p][what], ...INKY_V[p][what]]; return all[g % all.length]; };
 // 먹물이's lines stay ??? up to the name: through the office stage's start (intro), before it for the talk after a stage
 // (the office talk names it itself, mid-scene). No office stage in the plan: nameless until it starts helping (phase 3).

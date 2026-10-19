@@ -248,6 +248,13 @@ const PAT = [
   // 이불 속 누구게? (blanket.js)
   [/^냠! \+(\d+)$/, a => `Nom! +${a}`],
   [/^(\d+)점부터 성공! 삐죽 나온 귀·꼬리를 잘 봐$/, a => `Clear at ${a} pts! Watch the ears and tails poking out`],
+  // 다 같이 집으로! (gohome.js) · 발자국 따라 찾기 (tracks.js)
+  [/^\/ (\d+) 집에 감$/, a => `/ ${a} home`],
+  [/^꽝! -(\d+)초$/, a => `Bonk! -${a}s`],
+  [/^(\d+)\/(\d+)명 집에 감 · 꽝 (\d+)번$/, (a, b, c) => `${a}/${b} home · ${c} bonk${c === '1' ? '' : 's'}`],
+  [/^(.+?) 어디 숨었지\?$/, a => `Where's ${tr(a)} hiding?`],
+  [/^\+(\d+) 연속!$/, a => `+${a} streak!`],
+  [/^(\d+)점부터 성공! 카드의 발자국 모양을 봐$/, a => `Clear at ${a} pts! Match the print on the card`],
   // 놀이 모음 (gallery.js): slot note for a game taken out of the campaign (the '…판 뒤' notes already have a pattern in i18n.js)
   [/^안 쓰임 \(([\d/]+) 뺌\)$/, a => `not in the story (cut ${a})`],
   [/^(.+?) 쏙!$/, n => `${n} — slipped in!`],

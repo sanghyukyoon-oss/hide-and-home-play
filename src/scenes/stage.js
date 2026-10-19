@@ -50,6 +50,7 @@ import { openTune } from '../tune.js';
 import { retrieve, canGrab, grab } from '../raid.js';
 // 프라모델 조립판 (시제품 10/18): the things to find are a model kit's pieces; the last one sets off the assembly (modelkit.js)
 import { MODEL_STAGES, modelSpec, planModel, kitHud, kitAssemble, kitReward } from '../modelkit.js';
+import { lookRecipe, lookTheme, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 
 // 레벨 보고서 R1 '몰래 숨기' 시제품 (10/18) — only with ?hide=1 (the user compares it on the phone before anything changes):
@@ -103,6 +104,7 @@ export class StageScene {
   async enter({ idx = 0, custom = null, spec = null, preview = false, model = null, retry = false }) {
     const G = this.G, W = G.world;
     this.tw = new Tweens();
+    this._tapClock = 0; this.clearTapTimers();
     // a model-kit stage (modelkit.js) plays like a preview too: outside the campaign, no progress, coins or logs
     this.model = model && MODEL_STAGES[model] ? { kind: model, ...MODEL_STAGES[model] } : null;
     this.preview = preview || !!this.model;   // an art preview room: plays like a stage, touches no progress, coins or logs
@@ -136,10 +138,15 @@ export class StageScene {
       if (this.spec.showcase) layout = deviceLayout(this.spec.room, layout);   // R6 장치판: the map's device piece, this stage only
     }
     if (custom) this.scene = null;
+    this.lookR = lookRecipe(this.spec.room, this.spec); if (this.lookR) this.th = lookTheme(this.lookR, this.th);
     const th = this.th;
-    G.setBg(th.bg); W.setLight(th.light);
+    G.setBg(th.bg); W.setLight(th.light); setSky(th.sky || null);
     // 밤 판: moonlight — dimmer and bluer, but every corner still reads (no torch, no silhouettes)
-    if (this.spec.night && !this.plan?.light) { G.setBg(['#2b3270', '#4a3f86']); W.setLight({ ambColor: '#a3adff', amb: 1.0, sunColor: '#cfd7ff', sun: .8 }); }
+    const nightL = this.lookR && LOOK.has('light') && this.lookR.night;
+    if (this.spec.night && !this.plan?.light) {
+      if (nightL) { G.setBg([nightL.sky[1], nightL.sky[2]]); setSky(nightL.sky); W.setLight(nightL.light); }
+      else { G.setBg(['#2b3270', '#4a3f86']); W.setLight({ ambColor: '#a3adff', amb: 1.0, sunColor: '#cfd7ff', sun: .8 }); }
+    }
     this.layout = layout;
     this.room = layout.rooms ? new MapRooms(W, layout) : new Room(W, layout);
     W.root.add(this.room.group);
@@ -177,7 +184,7 @@ export class StageScene {
       if (p.role !== 'decoy') {
         const nat = new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3()), big = Math.max(nat.x, nat.y, nat.z) || .2;
         const room = (p.spot.maxH + .02) / Math.max(.01, (ITEMS[p.type]?.h || .2) * (p.spot.scale || 1));
-        sc = Math.max(sc, Math.min(2, .28 / big, ITEMS[p.type]?.flat ? 2 : room));
+        sc = Math.max(sc, Math.min(2, (LOOK.has('items') && this.lookR?.itemSize || .28) / big, ITEMS[p.type]?.flat ? 2 : room));   // (룩: a whole house on screen draws its things bigger)
       }
       attachItem(p.spot, g, { rotY: (r() - .5) * 1.4, scale: sc });
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
@@ -187,6 +194,7 @@ export class StageScene {
       this.items.push(it);
     }
     this.targets = this.items.filter(i => i.role === 'target');
+    this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
     this.hasBook = false; this.cine = false;
     if (this.plan.showcase?.shelf) { const S = this.plan.showcase; S.shelf.furn.spines.draw(S.order, S.missing); }
     else for (const e of (this.room.rooms || [this.room]).flatMap(R => R.furns)) e.f.spines?.draw([0, 1, 2, 3, 4], -1);   // 비밀 책장 outside its own stage: the rainbow, done
@@ -312,11 +320,12 @@ export class StageScene {
 
   exit() {
     this.dead = true;
+    this.clearTapTimers();
     const G = this.G;
     G.world.onPan = null; G.world.onDoubleTap = null; this.tutEls?.forEach(e => e.remove()); this.trick?.dispose();
     if (G.world.post) G.world.post.u.gray.value = 0;
     document.getElementById('app').style.removeProperty('--joyB');
-    G.world.root.remove(this.room.group); G.world.root.remove(this.friend.root);
+    G.world.root.remove(this.room.group); G.world.root.remove(this.friend.root); this.look?.dispose(); setSky(null);
     for (const n of this.npcs || []) { n.on = false; G.world.root.remove(n.ch.root); }
     this.ambient?.dispose(); if (this.hero) { disposeTree(this.hero.ch.root); this.hero.dispose(); }
     // this stage's own meshes, materials and textures (not the shared caches) go with it
@@ -373,7 +382,7 @@ export class StageScene {
     if (G.econ) lensBadge(this);   // (경제 B5: free + bag)
     // zoomed in, one finger moves you around: these turn the room (or go back to the whole view) one-handed
     // back to the starting view (angle, tilt, zoom and position) whenever the view has wandered off
-    const all = ui.btn('처음 시점', { color: 'gray', cls: 'sm', onClick: () => { const v = this.view0 || { yaw: Math.PI / 4, pitch: .62 }; G.world.flyTo(this.tw, { zoom: 1, target: G.world.home, yaw: v.yaw, pitch: v.pitch, dur: .45 }); } });
+    const all = ui.btn('처음 시점', { color: 'gray', cls: 'sm', onClick: () => { const v = this.view0 || { yaw: Math.PI / 4, pitch: .62 }; G.world.flyTo(this.tw, { zoom: v.zoom || 1, target: G.world.home, yaw: v.yaw, pitch: v.pitch, dur: .45 }); } });
     this.zoomTools = h('div', { class: 'zoomtools' }, all);
     side.prepend(this.zoomTools);
     side.append(this.hintBtn); col.append(side);
@@ -521,7 +530,7 @@ export class StageScene {
   }
   // a double tap zooms (world.js): its first tap, already counted as a miss, is given back — zooming isn't a wrong tap
   undoLastMiss() {
-    if (this._missT) { clearTimeout(this._missT.timer); this._missT = null; return; }   // still waiting: it never happened
+    if (this._missT) { this._missT = null; return; }   // still waiting: it never happened
     const m = this._lastMiss; this._lastMiss = null;
     if (!m || this.dead || this.result || performance.now() - m.at > 450) return;
     if (m.penalty) this.missCount = Math.max(0, this.missCount - 1);
@@ -529,6 +538,7 @@ export class StageScene {
     if (m.penalty && m.timed) { this.time = Math.min(this.timeMax, this.time + 2); this.misses.pop(); }
     if (m.spent && this.tapsLeft != null) {
       this.tapsLeft = Math.min(this.tapBudget, this.tapsLeft + 1);
+      if (this.tapsLeft > 0) this._tapLoseAt = null;
       const p = this.tapPill; if (p) { p.querySelector('.v').textContent = this.tapsLeft; p.classList.toggle('need', this.tapsLeft <= 3); }
     }
   }
@@ -538,13 +548,34 @@ export class StageScene {
   }
   addMiss(x, y, penalty) {
     const G = this.G;
+    if (this.dead || this.result || !this.running || this.paused) return;
     if (this.targets.every(t => t.found)) return;   // everything is found and the win is on its way (QA 10/18)
     // (10/19, user: "더블클릭할 때 -1 뜰 때도 있음") — the counting waits 0.33 s, the double-tap window: a second tap that
     // zooms cancels it (undoLastMiss) before the '-1' shows. Only the small puff under the finger is at once.
     if (penalty) G.world.fx.burst(x, y, { n: 6, colors: ['#ffffff', '#d9c9e8'], shape: 'circle', speed: 120, size: 10, gravity: 0, life: .4 });
-    if (this._missT) { clearTimeout(this._missT.timer); this._missT.run(); }   // an earlier miss still waiting: it counts now
-    const m = this._missT = { run: () => { if (this._missT === m) this._missT = null; this.countMiss(x, y, penalty); } };
-    m.timer = setTimeout(() => { if (!this.dead) m.run(); }, 330);
+    if (this._missT) { const m = this._missT; this._missT = null; this.countMiss(m.x, m.y, m.penalty); }   // a separate earlier miss counts now
+    this._missT = { x, y, penalty, at: (this._tapClock || 0) + .33 };
+  }
+  clearTapTimers() { this._missT = this._lastMiss = this._tapLoseAt = null; }
+  updateTapTimers(dt) {
+    if (this.dead || this.paused || this.result || !this.running) return;
+    // Both grace periods use the stage clock. A menu (including settings) freezes them; returning never catches up
+    // wall time. Process the due instants in order so a long frame doesn't spend the same delta twice.
+    const end = (this._tapClock || 0) + dt;
+    for (;;) {
+      const next = Math.min(this._missT?.at ?? Infinity, this._tapLoseAt ?? Infinity);
+      if (next > end + 1e-9) break;
+      this._tapClock = next;
+      if (this._missT && this._missT.at <= next) {
+        const m = this._missT; this._missT = null; this.countMiss(m.x, m.y, m.penalty);
+      }
+      if (this._tapLoseAt != null && this._tapLoseAt <= next) {
+        this._tapLoseAt = null;
+        if (this.tapsLeft <= 0 && !this.targets.every(t => t.found)) this.lose('taps');
+      }
+      if (this.dead || this.result || !this.running) break;
+    }
+    this._tapClock = end;
   }
   countMiss(x, y, penalty) {
     const G = this.G;
@@ -728,7 +759,7 @@ export class StageScene {
     this.tail?.mesh.parent?.remove(this.tail.mesh); this.tail = null;   // 1판: the tail goes back in with her
     // the room lights up: out of the dark, or a warm glow over the day
     const to2 = this.th.light || null, a0 = W.hemi.intensity, s0 = W.sun.intensity;
-    if (this.dark || this.spec.night) { this.dark = false; W.setLight(to2); G.setBg(this.th.bg); const a1 = W.hemi.intensity, s1 = W.sun.intensity; await tw.run(.6, k => { W.hemi.intensity = a0 + (a1 - a0) * k; W.sun.intensity = s0 + (s1 - s0) * k; }); }
+    if (this.dark || this.spec.night) { this.dark = false; W.setLight(to2); G.setBg(this.th.bg); setSky(this.th.sky || null); const a1 = W.hemi.intensity, s1 = W.sun.intensity; await tw.run(.6, k => { W.hemi.intensity = a0 + (a1 - a0) * k; W.sun.intensity = s0 + (s1 - s0) * k; }); }
     else await tw.run(.5, k => { const g = 1 + Math.sin(k * Math.PI) * .35; W.hemi.intensity = a0 * g; W.sun.intensity = s0 * g; });
     W.fx.confetti(70);
     await tw.wait(.9);
@@ -1697,6 +1728,8 @@ export class StageScene {
     const bleed = !big && R.L?.bleed, fitW = bleed ? span * .6 : (R.L?.fitAll ? Math.min(span * .98, 11) : Math.min(span, 8.6)), tall = (floors - 1) * FLOOR_H;   // fitAll: a whole house in one look
     W.home.set(c.x, big ? (big.levels[0] * FLOOR_H + tall / 2 + .75) : .75, c.z); W.target.copy(W.home);
     W.yaw = Math.PI / 4; W.pitch = floors > 1 ? .5 : .62; W.zoom = 1; W.vYaw = 0; W.autoSpin = 0;
+    // (레벨 세션 10/19) 폰 세로에서 넓은 맵(두 방·두세 층)은 물건이 앞 판의 절반 크기(21~34px)로 보였어요 — 그 판은 조금 당겨서 시작
+    if (this.spec.zoom && W.H > W.W) W.zoom = this.spec.zoom;
     W.bounds = Math.max(2.4, Math.max(rw, rd) * .48); W.minZoom = .85; W.maxZoom = 8 + (span > 9 ? 2 : 0); W.minPitch = .06; W.maxPitch = 1.45;   // a little room past the edges
     const extra = Math.max(0, span - fitW) / 2;
     W.slack = extra > 0 ? { x: extra * .9, z: extra * .9 } : null;
@@ -1820,12 +1853,13 @@ export class StageScene {
   // ── end states
   async win() {
     const G = this.G, W = G.world;
+    this.clearTapTimers();
     this.result = 'clear'; this.running = false; this.tEnd = this.t;
     (this.tutEls || []).forEach(e => e.remove()); this.tutEls = [];
     if (this.model) { await kitAssemble(this); if (this.dead) return; }   // every piece flies together first
     // ★ found everything · ★ no hint · ★ careful (no more wrong taps than there were things to find)
     const wrong = this.r1?.miss || 0;
-    const stars = this.v2 ? v2Stars(this) : this.incident ? 1 + (this.hintsUsed === 0 ? 1 : 0) + (wrong <= 2 ? 1 : 0)   // ★ found them all · ★ no hint · ★ 헛짚기 2번 이하 (R3)
+    const stars = this.v2 ? v2Stars(this) : this.incident ? 1 + (this.hintsUsed === 0 ? 1 : 0) + (wrong <= 1 ? 1 : 0)   // ★ found them all · ★ no hint · ★ 헛짚기 1번 이하 (QA B25, user 10/19: two wrong hideouts at most, so '2번 이하' never missed)
       : this.spec.timed ? 1 + (this.time / this.timeMax >= .3 ? 1 : 0) + (this.hintsUsed === 0 ? 1 : 0)
       : 1 + (this.hintsUsed === 0 ? 1 : 0) + ((this.story?.secret ? this.secretFound : tapsStarOk(this)) ? 1 : 0);   // (톡: half of them left)
     const coins = this.custom ? 40 + this.targets.length * 15 + (this.plan.locks.length ? 20 : 0) + stars * 5 : 30 + this.targets.length * 10 + stars * 10 + (this.spec.showcase ? this.plan.locks.length * 20 : 0) + (this.missCount === 0 ? 20 : 0);   // (검토 H5: a careful clear pays, not a combo; a gadget stage's steps pay)
@@ -1893,7 +1927,7 @@ export class StageScene {
     // your place (script.js giftSeats) still comes (user picked this, 10/18). Marked as that story's gift, once.
     if (this.idx === 10 && !this.custom && !this.preview) {
       const done = G.save.storyDone || (G.save.storyDone = {});
-      if (!done.grumpycat) { done.grumpycat = true; G.save.home.inventory.push('cattower'); memento = 'cattower'; G.persist(); }
+      if (!done.grumpycat) { done.grumpycat = true; G.save.home.inventory.push('cattower'); memento = 'cattower'; G.persist(); setTimeout(() => !this.dead && G.ui.toast('도감 · 몽글이 일기장에 냥냥이가 적혔어!', 'green'), 2600); }   // (the diary page she mentions — 검토 10/19)
     }
     // 대본: a few words after the clear — 2판's "이번엔 네가 숨겨 봐", a 흑백판's footprints, 너굴이's excuse
     let aft = this.custom || this.preview ? null : this.spec.timed ? timedWin(this.idx) : sceneAfter(this.idx), endLines = null;
@@ -1927,7 +1961,7 @@ export class StageScene {
         // 사건 판: what each star is for, so a missing one says how to get it (GPT QA 10/18: 보너스 0/2 → '다 찾았네', 별 2개)
         ...(this.v2 ? [h('div', { class: 'starwhy' }, ...v2StarWhy(this).map(([t, on]) => h('span', { class: on ? 'on' : '' }, t)))].concat(v2Stamp(this) || [])
           : this.hiddenStage || this.model ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star))]   // 숨은그림 판: what each star is for
-          : this.incident ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 친구 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: (this.r1?.miss || 0) <= 2 ? 'on' : '' }, (this.r1?.miss || 0) === 0 ? '★ 명탐정 (헛짚기 0)' : `★ 헛짚기 ${this.r1?.miss || 0}번`))]
+          : this.incident ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 친구 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: (this.r1?.miss || 0) <= 1 ? 'on' : '' }, (this.r1?.miss || 0) === 0 ? '★ 명탐정 (헛짚기 0)' : `★ 헛짚기 ${this.r1?.miss || 0}번`))]
           : [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), ...(this.spec.timed
             ? [h('span', { class: this.time / this.timeMax >= .3 ? 'on' : '' }, STAR_TXT.time), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이')]
             : [h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), this.story?.secret ? h('span', { class: this.secretFound ? 'on' : '' }, STAR_TXT.secret)
@@ -1936,10 +1970,10 @@ export class StageScene {
         ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, L.who !== 'mong' && CHAR_DEFS[L.who] ? h('b', { class: 'who' }, CHAR_DEFS[L.who].name) : '', tr(L.text)))))] : []),
         ...(this.model ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · 꾸미기 보관함에 들어갔어` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))]
           : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
-        h('div', { class: 'txt' }, `걸린 시간 ${fmtTime((this.tEnd ?? this.t) - (this.tStart ?? 0))}` + (this.hintsUsed ? ` · 힌트 ${this.hintsUsed}번` : ' · 힌트 없이!') + (this.bestCombo >= 2 ? ` · 최고 콤보 x${this.bestCombo}` : '')),
+        /* (no '걸린 시간 · 힌트 없이!' line: the star chips above already say hints, and the time isn't a goal — 2D UI 정리 10/19) */
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
-        ...(newItem ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, `${ITEMS[newItem].name} · 내 집에 숨길 수 있어요`)))] : []),
+        ...(newItem ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
         ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · 꾸미기 보관함에 들어갔어`)))] : []),
         ...(seenN ? [h('div', { class: 'txt' }, `도감 +${seenN}`)] : []),
         ...(newFriend ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
@@ -1985,6 +2019,7 @@ export class StageScene {
   }
   async lose(reason = 'time') {
     const G = this.G, W = G.world;
+    this.clearTapTimers();
     G.ui.closePanel?.();
     this.result = 'fail'; this.running = false; this.tEnd = this.t;
     const lensBk = G.econ && reason === 'taps' ? lensBack(this) : 0;   // 경제 B5 (10/19): lost to taps → the bag's magnifiers go back
@@ -2069,10 +2104,11 @@ export class StageScene {
   // ── per-frame
   update(dt) {
     const G = this.G, W = G.world;
+    if (this.dead || this.paused) return;
     this.tw.update(dt);
-    if (this.paused) return;
     this.t += dt;
-    this.room.update(dt); this.ambient?.update(dt);
+    this.updateTapTimers(dt);
+    this.room.update(dt); this.ambient?.update(dt); this.look?.update(dt);
     this.friend.update(dt); this.trick?.update(dt); this.cameo?.ch.update(dt);
     if (this.v2) v2Update(this, dt);
     for (const n of this.npcs || []) n.ch.update(dt);
@@ -2123,7 +2159,7 @@ export class StageScene {
       if (this.time <= 0 && !this.targets.every(t => t.found)) this.lose();   // (the last find still flying when the clock ran out: it wins — QA 10/18, 이어하기 then had nothing left to find)
     }
     this.bubble.style.display = this.timerOn && !this.result ? '' : 'none';
-    if (this.zoomTools) { if (!this.view0 && this.running) this.view0 = { yaw: W.yaw, pitch: W.pitch }; const v = this.view0, off = W.zoom > 1.12 || (v && (Math.abs(Math.atan2(Math.sin(W.yaw - v.yaw), Math.cos(W.yaw - v.yaw))) > .2 || Math.abs(W.pitch - v.pitch) > .12)) || W.target.distanceTo(W.home) > .6; this.zoomTools.style.display = off && !this.result ? '' : 'none'; }
+    if (this.zoomTools) { if (!this.view0 && this.running) this.view0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom }; const v = this.view0, off = W.zoom > (v?.zoom || 1) + .12 || (v && (Math.abs(Math.atan2(Math.sin(W.yaw - v.yaw), Math.cos(W.yaw - v.yaw))) > .2 || Math.abs(W.pitch - v.pitch) > .12)) || W.target.distanceTo(W.home) > .6; this.zoomTools.style.display = off && !this.result ? '' : 'none'; }
     // friend count bubble
     const fp = W.toScreen(V.copy(this.friend.root.position).setY(this.friend.S * 1.05 + .25));
     this.bubble.style.left = fp.x + 'px'; this.bubble.style.top = fp.y + 'px';

@@ -1,6 +1,6 @@
 // 경제·내 방 로비 (경제·메타 설계서 /Users/sh/sumbak-econ/econ-design-20261019.md, 10/19 — user: "로비는 내 방으로 변경하는게
-// 좋겠어 … 처음엔 빈 공간에 캐릭터 혼자 … 내가 좋아하는 캐릭터 배치할 수 있게"). Built in but off until the user picks:
-// ?econ=1 turns it on on this device (remembered), ?econ=0 turns it off again.
+// 좋겠어 … 처음엔 빈 공간에 캐릭터 혼자 … 내가 좋아하는 캐릭터 배치할 수 있게"). On by default since 10/19
+// (the three decisions at the design's values); ?econ=0 or 더보기 → 새 경제 끄기 turns it off on this device, ?econ=1 back on.
 import { stageSpec, THEMES, STAGE_COUNT, CHAR_UNLOCK, REGIONS, regionOf } from './stages.js';
 import { CHAR_DEFS } from './gfx/chars.js';
 import { FURN_INFO } from './gfx/furniture.js';
@@ -9,9 +9,10 @@ import { h } from './ui.js';
 export const ECON = (() => {
   const q = new URLSearchParams(location.search).get('econ');
   try {
+    // on by default since 10/19 (user: "추천대로 다 넣어줘"); 'sbk-econ' = '0' keeps it off on this device
     if (q === '1') localStorage.setItem('sbk-econ', '1');
-    if (q === '0') localStorage.removeItem('sbk-econ');
-    return q === '1' || (q !== '0' && localStorage.getItem('sbk-econ') === '1');
+    if (q === '0') localStorage.setItem('sbk-econ', '0');
+    return q === '1' || (q !== '0' && localStorage.getItem('sbk-econ') !== '0');
   } catch { return q === '1'; }
 })();
 

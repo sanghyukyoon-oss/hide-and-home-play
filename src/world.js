@@ -451,7 +451,7 @@ export class World {
     const s = this.sun;
     // studio light travels with the camera — but the shadow map is only redrawn when the light really moved
     // (it used to be redrawn every frame, a full extra scene pass even while nothing changed)
-    if (this.toon) { const a = this.yaw + .55; s.position.set(this.home.x + Math.sin(a) * 7, 10, this.home.z + Math.cos(a) * 7); if (Math.abs(a - (this._shA ?? 1e9)) > .006 || this._shH !== this.home.x + ',' + this.home.z) { this._shA = a; this._shH = this.home.x + ',' + this.home.z; this.shadowDirty = true; } }
+    if (this.toon) { const a = this.yaw + (this.sunA ?? .55), sr = this.sunR ?? 7; s.position.set(this.home.x + Math.sin(a) * sr, this.sunH ?? 10, this.home.z + Math.cos(a) * sr); if (Math.abs(a - (this._shA ?? 1e9)) > .006 || this._shH !== this.home.x + ',' + this.home.z) { this._shA = a; this._shH = this.home.x + ',' + this.home.z; this.shadowDirty = true; } }
     else s.position.set(this.home.x + 4, 10, this.home.z + 6);
     s.target.position.copy(this.home); s.target.updateMatrixWorld();
   }
@@ -524,6 +524,11 @@ export class World {
     // shadows instead of grey ones (ART.shadeTint 0 = off; 세팅 slider)
     this.hemi.color.set(l?.ambColor || ART.ambColor).lerp(SHADE_TINT, (ART.shadeTint || 0) * .55); this.hemi.intensity = (l?.amb ?? ART.amb) * TUNE.bright * TUNE.ambMul;
     this.sun.color.set(l?.sunColor || ART.sunColor); this.sun.intensity = (l?.sun ?? ART.sun) * TUNE.bright * TUNE.sunMul;
+    // 룩 실험 (look.js): a theme can also set the sun's height / reach / turn from the camera and the shadow strength —
+    // a low late-afternoon sun throws long shadows; left out = the house studio light (10 high, 7 out, .55 turned)
+    this.sunH = l?.sunH ?? 10; this.sunR = l?.sunR ?? 7; this.sunA = l?.sunA ?? .55;
+    if (this.toon) this.sun.shadow.intensity = l?.shadow ?? ART.shadowStr;
+    this._shA = null;   // the shadow map is redrawn for the new sun
   }
   // ── projection / picking
   toScreen(v) {

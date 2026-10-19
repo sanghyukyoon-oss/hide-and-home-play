@@ -64,7 +64,7 @@ export function spendTap(S, x, y) {
   if (G.econ && S.tapsLeft === 3) lensNudge(S);   // 경제 B5 (10/19): a magnifier in hand → the hint button bounces once (설계서 5-4)
   // (QA 10/18: a moment's wait — this may be the first tap of a double-tap zoom, which gives the tap back; at 1 left the
   // zoom used to end the stage before the second tap came)
-  if (S.tapsLeft <= 0) { clearTimeout(S._loseT); S._loseT = setTimeout(() => { if (!S.dead && !S.result && S.tapsLeft <= 0) S.lose('taps'); }, 360); }
+  if (S.tapsLeft <= 0 && S._tapLoseAt == null) S._tapLoseAt = (S._tapClock || 0) + .36;
 }
 // the hidden-object stage's third star: at least half the taps left (it was "no more wrong taps than things to find")
 export const tapsStarOk = S => (S.tapsLeft == null ? S.missCount <= S.targets.length : S.tapsLeft * 2 >= S.tapBudget);

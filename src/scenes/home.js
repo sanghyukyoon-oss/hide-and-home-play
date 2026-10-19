@@ -1,3 +1,4 @@
+import { resumeFollowup, followupLabel } from '../followup.js';
 // Home: 몽글이's neighbourhood on the ground — a warm everyday lane where Korean, Japanese and American houses stand side
 // by side (art/concepts G, H, I). 몽글이's two-floor house in the middle, the friends' houses around it, a paved front
 // yard, the sidewalk with its street furniture and the street running off past the screen.
@@ -380,6 +381,7 @@ function TX(key) {
   const [kind, ...a] = key.split('|'), d = TD[kind], [w, hh] = d.size || [512, 512];
   t = canvasTex(w, hh, (c, W, H) => d.draw(c, W, H, ...a));
   if (d.rep !== false) t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.name = key;   // (look.js lights the 'glass|…' ones at night)
   TXC.set(key, t);
   return t;
 }
@@ -895,6 +897,8 @@ function buildVillage(root) {
 // ending hasn't played, the last 야식 boss (the only way to the ending — QA 10/18)
 export function playButton(G) {
   const ui = G.ui, S = G.save, idx = S.stage || 0, sp = stageSpec(idx), reg = regionOf(idx), endless = idx >= STAGE_COUNT;
+  const pending = resumeFollowup(S);
+  if (pending) return ui.btn('놀이 이어하기', { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: followupLabel(pending.data), onClick: () => G.go(pending.name, pending.data) });
   const fin = BOSS_GAMES[STAGE_COUNT - 1], finPending = endless && fin && !S.ending && !G.bot;
   return finPending
     ? ui.btn('보스 등장!', { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: `${STAGE_COUNT}판 · 셋째 밤`, onClick: () => G.go('bossgame', { kind: fin.kind, lv: fin.lv, after: STAGE_COUNT - 1 }) })
@@ -916,7 +920,7 @@ export function openMore(G, extra = []) {
     ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
     ...layBtn, ...extra, ...(fs ? [fs] : []),
     // 경제·내 방 로비 (10/19, built in but off until the user picks): try it on this device, or go back
-    ui.btn(G.econ ? '새 경제 끄기' : '새 경제·내 방 로비 켜기', { color: G.econ ? 'gray' : 'pink', onClick: () => { try { if (G.econ) localStorage.removeItem('sbk-econ'); else localStorage.setItem('sbk-econ', '1'); } catch {} location.replace(location.pathname + location.search.replace(/[?&]econ=[01]/, '').replace(/^&/, '?') + location.hash); } })),
+    ui.btn(G.econ ? '새 경제 끄기' : '새 경제·내 방 로비 켜기', { color: G.econ ? 'gray' : 'pink', onClick: () => { try { localStorage.setItem('sbk-econ', G.econ ? '0' : '1'); } catch {} location.replace(location.pathname + location.search.replace(/[?&]econ=[01]/, '').replace(/^&/, '?') + location.hash); } })),
     // font credits (한국기계연구원 서체 is 공공누리 제1유형: the credit has to be shown)
     h('div', { class: 'credits' }, '글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 \'한국기계연구원 서체\'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.')],
     buttons: [ui.btn('닫기', { color: 'gray', onClick: () => ui.closePanel() })] });
@@ -1131,3 +1135,7 @@ export class HomeScene {
   botStep(dt) { this._bt = (this._bt || 0) + dt; if (this._bt > 1.2) { this._bt = 0; this.playBtn.press(); } }
   state() { return { scene: 'home', stage: (this.G.save.stage || 0) + 1, coins: this.G.save.coins }; }
 }
+
+// 룩 실험 (look.js, 10/19): the home street's own houses, trees and hedges stand behind a stage map's walls so the map
+// reads as one corner of a bigger town (the same pieces, so nothing new to match)
+export const HOUSE_KIT = { mong: houseMong, bunny: houseBunny, bear: houseBear, cat: houseCat, peng: housePeng, tree, hedge };

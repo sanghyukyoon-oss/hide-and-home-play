@@ -362,7 +362,10 @@ export const MAPS = {
   ] }),
   // 빌딩 로비 + 사무실
   lobbymap: () => {
-    const office = MAPS.officefloor().rooms[0].layout;
+    const office0 = MAPS.officefloor().rooms[0].layout;
+    // Four separate lockable pieces for the final riddle: replace the loose boxes with the office safe.
+    // Same 1×1 footprint; its door faces the room, so the lever's fourth lock has a reachable target.
+    const office = { ...office0, furniture: office0.furniture.map(f => f.type === 'boxes' && f.i === 0 && f.j === 4 ? F('safe', 0, 4, 1) : f) };
     return { theme: THEMES.lobby, friendAt: [2.5, 1.2], nBonus: 3, rooms: [
       { at: [-3.0, 0], layout: { ...LAYOUTS.lobby, theme: THEMES.lobby, walls: { N: 'wall', W: 'wall', E: 'door' }, doorAt: { E: 1.0 } } },
       { at: [2.5, 0], layout: { ...office, door: null, walls: { N: 'wall', W: 'none', E: 'wall' } } },
@@ -467,10 +470,10 @@ export const STAGES = [
   { room: 'fishing', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },
   { room: 'peng', n: 5, inside: 1, behind: 0, time: 85, clutter: .5 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 5 things + 2 grey furniture — the first 흑백
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4 },   // the key lesson (🆕 열쇠 card on the first padlock)
-  { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55 },
-  { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' } },
-  { room: 'house3', n: 8, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .6 },
-  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6 },   // (then 이불 속 누구게 — the pajama party)
+  { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3 },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
+  { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, zoom: 1.4 },
+  { room: 'house3', n: 8, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .6, zoom: 1.4 },
+  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6, zoom: 1.25 },   // (then 이불 속 누구게 — the pajama party)
   { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55 },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .65 },
   { room: 'study', n: 4, inside: 1, behind: 0, time: 110, clutter: .5, showcase: true },   // 비밀 서재 ★ — the chapter's finale (friend game)
@@ -726,7 +729,7 @@ function baseSpec(idx) {
     tv: EXTRA.tv && R.id === 'apt' && lock.includes('code'),
     // 4장's new thing: the laundromat's pair puzzle (흑백 comes from 1장 now) — and once more on the 상가 boss, whose laundry
     // corner has the same washers (리포트 v3 개선 2: a chapter's rule comes back at its boss)
-    sock: (EXTRA.sock || R.id === 'shop') && (room === 'laundry' || (room === 'shopmap' && boss)),
+    sock: (EXTRA.sock || R.id === 'shop') && ((room === 'laundry' && kind !== 'show') || (room === 'shopmap' && boss)),   // (not on 39판's gadget stage — QA N7, user 10/19)
     dark: P ? kind === 'dark' : false,
     // 6장 간식: 50판 teaches it, the night trail (55판) uses it again — 졸졸이 dozes on the box (리포트 v3 개선 3)
     treat: kind === 'treat' || (kind === 'night' && R.id === 'camp') ? TREAT[room] || null : null,
