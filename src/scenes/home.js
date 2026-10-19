@@ -913,24 +913,24 @@ export function openMore(G, extra = []) {
   // art preview (2026-10-15): the everyday apartment living room in the new look, outside the campaign
   const preview = room => G.go('stage', { idx: 2, preview: true, spec: { room, n: 6, inside: 3, behind: 1, time: 90, clutter: .7, tut: 0 } });
   const fs = IN_APP ? null : fullscreenBtn(ui);   // (the app is full screen already)
-  const layBtn = G.owner ? [ui.btn('배치 편집', { color: 'orange', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
-  ui.panel({ title: '더보기', color: 'blue', close: () => {}, body: [h('div', { class: 'row wrap' },
+  const layBtn = G.owner ? [ui.btn('배치 편집', { color: 'orange', cls: 'sm qa', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
+  ui.panel({ title: '더보기', color: 'blue', cls: 'more', close: () => {}, body: [h('div', { class: 'row wrap' },
     // 놀이 모음 lists 'N판 뒤 · 안 쓰임' notes for the team: hidden in the submitted builds — the app's store build and the public
     // web page; it shows for the owner (localhost, ?owner, the artifact's owner) and in the app's Debug APK (user, 10/19)
-    (IN_APP ? QA_TOOLS : G.owner) && ui.btn('놀이 모음', { color: 'green', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
+    (IN_APP ? QA_TOOLS : G.owner) && ui.btn('놀이 모음', { color: 'green', cls: 'sm qa', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
     ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
     // (10/19 user: "옵션에 리셋(아예 처음 시작하는 것처럼) 기존 진행사항 지우고 새로 하는 버튼") — asks once, then reloads with ?reset
-    ui.btn('처음부터 새로', { color: 'red', onClick: () => { ui.closePanel(); setTimeout(() => ui.panel({ title: '처음부터 새로', color: 'red', close: () => {},
+    ui.btn('처음부터 새로', { color: 'red', cls: 'sm reset', onClick: () => { ui.closePanel(); setTimeout(() => ui.panel({ title: '처음부터 새로', color: 'red', close: () => {},
       body: [h('div', { class: 'txt' }, '지금까지 한 게 모두 지워지고 1판부터 다시 시작해요.')],
       buttons: [ui.btn('취소', { color: 'gray', cls: 'sm', onClick: () => ui.closePanel() }),
         ui.btn('지우고 새로 시작', { color: 'red', onClick: () => { const u = new URLSearchParams(location.search); u.set('reset', ''); location.replace(location.pathname + '?' + u.toString().replace(/=(&|$)/g, '$1')); } })] }), 200); } }),
-    QA_TOOLS && ui.btn('새 아트', { color: 'yellow', onClick: () => { ui.closePanel(); preview('apt'); } }),
+    QA_TOOLS && ui.btn('새 아트', { color: 'yellow', cls: 'sm qa', onClick: () => { ui.closePanel(); preview('apt'); } }),
     ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),
     // compare the new incident stages with the old find-the-list stages (10/17 pivot)
-    QA_TOOLS && ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
+    QA_TOOLS && ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', cls: 'sm qa', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
     ...layBtn, ...extra, ...(fs ? [fs] : []),
     // 경제·내 방 로비 (10/19, built in but off until the user picks): try it on this device, or go back
-    QA_TOOLS && ui.btn(G.econ ? '새 경제 끄기' : '새 경제·내 방 로비 켜기', { color: G.econ ? 'gray' : 'pink', onClick: () => { try { localStorage.setItem('sbk-econ', G.econ ? '0' : '1'); } catch {} location.replace(location.pathname + location.search.replace(/[?&]econ=[01]/, '').replace(/^&/, '?') + location.hash); } })),
+    QA_TOOLS && ui.btn(G.econ ? '새 경제 끄기' : '새 경제·내 방 로비 켜기', { color: G.econ ? 'gray' : 'pink', cls: 'sm qa', onClick: () => { try { localStorage.setItem('sbk-econ', G.econ ? '0' : '1'); } catch {} location.replace(location.pathname + location.search.replace(/[?&]econ=[01]/, '').replace(/^&/, '?') + location.hash); } })),
     // font credits (한국기계연구원 서체 is 공공누리 제1유형: the credit has to be shown)
     h('div', { class: 'credits' }, VERSION_LABEL),   // the version name in the game (Discovery 26-4 rule)
     h('div', { class: 'credits' }, '글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 \'한국기계연구원 서체\'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.')],

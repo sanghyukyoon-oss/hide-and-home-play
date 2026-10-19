@@ -63,6 +63,13 @@ export class UI {
         const L = r.left - dx, R = r.right - dx, W = innerWidth, n = R - L > W - 2 * M ? (W - R - L) / 2 : L < M ? M - L : R > W - M ? W - M - R : 0;
         if (Math.abs(n - dx) > .5) el.style.setProperty('--dx', n.toFixed(1) + 'px');
       }
+      // a break game's title fits beside its clock — one step smaller at a time — instead of being cut mid-word (English
+      // 'Who's Under the Blanke…' — 2D UI 정리 ⑧)
+      for (const t of document.querySelectorAll('#hud .lab-title:not([data-fit])')) {
+        if (!t.clientWidth) continue;
+        t.dataset.fit = 1; let fs = parseFloat(getComputedStyle(t).fontSize);
+        while (t.scrollWidth > t.clientWidth + 1 && fs > 12) { fs -= 1; t.style.fontSize = fs + 'px'; }
+      }
       requestAnimationFrame(keepIn);
     };
     requestAnimationFrame(keepIn);
