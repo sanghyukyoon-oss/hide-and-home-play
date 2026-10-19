@@ -629,7 +629,7 @@ export class LayEditScene {
         this.arrows = ax; this.arrowAng = null;
         this.selBar.append(head,
           row('크기', this.stepBtn(IC.minus, 'blue', () => this.fineSel('s', -1)), val('s', () => this.fineSel('s', null)), this.stepBtn(IC.plus, 'blue', () => this.fineSel('s', 1))),
-          row('돌리기', this.stepBtn(IC.rotL, 'blue', () => this.fineSel('ry', 1)), val('ry', () => this.fineSel('ry', null)), this.stepBtn(IC.rotR, 'blue', () => this.fineSel('ry', -1))),
+          row('방향', this.stepBtn(IC.rotL, 'blue', () => this.fineSel('ry', 1)), val('ry', () => this.fineSel('ry', null)), this.stepBtn(IC.rotR, 'blue', () => this.fineSel('ry', -1))),
           row('살짝 옮기기', ...ax.slice(0, 2), val('m', () => this.centerSel()), ...ax.slice(2)));
         this.aimArrows();
       } else {

@@ -76,4 +76,17 @@ export const EN_APP = {
   '조작: 기본 (끌면 이동 · 돌림판이나 두 손가락 비틀기 = 회전)': 'Controls: Standard (drag to move · wheel or two-finger twist = turn)',
   '한 번 더 누르면 게임을 닫아요': 'Press back again to close the game',
   "글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 '한국기계연구원 서체'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.": "Fonts: Cafe24 Ssurround · Ssurround Air (Cafe24) / Fredoka · Bagel Fat One · Jua (OFL) / This work uses the 'KIMM font' released in 2022 by the Korea Institute of Machinery & Materials under KOGL Type 1; it is free at www.kimm.re.kr/webfont.",
+  // (스토리 룸 10/20 새벽, 영어 화면 한 바퀴: 1~3판·몽글 TV·상점·배치 편집·내 집 — 털기 글자는 털기 세션 몫)
+  // 배치 편집 (scenes/layedit.js)
+  '가구를 톡 골라서 끌면 옮겨져요. 크기·돌리기·살짝 옮기기는 아래 버튼으로!': 'Tap a piece of furniture, then drag to move it. Size, turn and nudge are the buttons below!',
+  '되돌릴 게 없어요': 'Nothing to undo', '하나 되돌렸어요': 'Undid one step', '되돌리기': 'Undo', '다 했어요': 'Done', '저장됨': 'Saved',
+  '방에 비해 너무 커요': 'Too big for this room', '여기선 더 못 돌려요': "Can't turn it any further here", '벽에 닿아요': 'It hits the wall',
+  '크기': 'Size', '방향': 'Turn', '살짝 옮기기': 'Nudge', '위아래': 'Up/down', '옆으로': 'Sideways', '제자리': 'In place',
+  // 결과창·패널
+  '이미 내 집에 있어요': 'Already in your home', '취소': 'Cancel',
+  // 상점 가구 이름 (gfx/shop-props.js)
+  '웰컴 글자판': 'Welcome Letters', '맛있다 포스터': 'Yummy Poster', '세일 포스터': 'Sale Poster', '메뉴판 셋': 'Menu Boards', '컵 선반': 'Cup Shelf',
+  '카페 간판': 'Café Sign', '입간판': 'Sidewalk Sign', '현관 매트': 'Door Mat',
+  // 그 가구들 위에 그린 글자 (canvas)
+  '맛있다!': 'Yummy!', '음료': 'Drinks', '빵과 커피': 'Bread & Coffee', '어서 오세요': 'Welcome', '오늘의 케이크': "Today's Cake",
 };

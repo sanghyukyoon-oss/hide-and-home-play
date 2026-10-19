@@ -22,6 +22,8 @@ const P = s => tr(s);                       // translate a captured piece
 const obj = n => /^(the|a|an) /i.test(n) || /^[A-Z]/.test(n) ? n : 'the ' + n;   // "the remote", but "Bunbun"
 // [pattern, english(...captures)] — captures arrive already translated
 const PAT = [
+  [/^(\d+)장에서 열려$/, n => `Opens in chapter ${n}`],   // (상점: 아직 안 열린 가구 — 스토리 룸 10/20)
+  [/^([\d.]+)배$/, n => `×${n}`],                          // (배치 편집: 크기 1.2배)
   [/^불 꺼진 층에서 친구 (\d+)명 찾기! 너굴이를 톡 하면 시간이 줄어$/, n => `Find ${n} friends on the dark floor! Tapping Rocky costs time`],
   [/^([\d · ]+)판 뒤( \(.+\))?$/, (a, b) => `after stage ${a.trim()}${b ? ' ' + tr(b.trim().slice(1, -1)).replace(/^/, '(') + ')' : ''}`],
   [/^(\d+)명 찾았어… 남은 친구들이 킥킥 웃고 있어$/, n => `Found ${n}… the rest are still giggling`],
