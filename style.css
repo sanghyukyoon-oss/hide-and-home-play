@@ -1344,33 +1344,170 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kitrun.skin-boxes .kitrun-cell.found .kitrun-box { transform: scaleY(.14); opacity: .7; }   /* folded flat */
 .kitrun.skin-bowls .kitrun-cell { background: radial-gradient(ellipse 60% 26% at 50% 84%, #ffe3ec 0 96%, transparent 100%), rgba(255, 255, 255, .7); border-radius: 14px 14px 22px 22px; }
 .kitrun.skin-bowls .kitrun-ghost { filter: brightness(0) opacity(.14); }
+/* the build (10/19, 프라모델 느낌): the nippers snipping a part off the runner on the mat, the little manual card */
+.kitnip { position: absolute; z-index: 32; width: 64px; height: 64px; margin: -52px 0 0 -14px; pointer-events: none; filter: drop-shadow(0 3px 0 rgba(58, 36, 83, .35)); animation: kitnipin .42s ease-out forwards; }
+.kitnip svg { width: 100%; height: 100%; overflow: visible; }
+.kitnip .jaw, .kitnip .jaw2 { transform-origin: 32px 36px; animation: kitsnip .2s .08s ease-in forwards; }
+.kitnip .jaw2 { animation-name: kitsnip2; }
+@keyframes kitsnip { to { transform: rotate(9deg); } }
+@keyframes kitsnip2 { to { transform: rotate(-9deg); } }
+@keyframes kitnipin { 0% { opacity: 0; transform: translateY(-14px) scale(.8); } 25% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+.kitmanual { position: absolute; left: 12px; top: calc(112px + var(--safeT)); width: 96px; padding: 8px 8px 10px; box-sizing: border-box; border-radius: 14px; z-index: 12;
+  background: #fffaf2; border: 3px solid var(--ink); border-bottom-width: 5px; display: flex; align-items: center; gap: 4px; pointer-events: none; }
+.kitmanual img { width: 44px; height: 44px; object-fit: contain; }
+.kitmanual-n { width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--y2); border: 2.5px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 17px; color: #fff; }
+.kitmanual-arrow { width: 0; height: 0; border-left: 9px solid var(--ink); border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 2px; }
+.kitmanual.flip { animation: kitflip .35s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes kitflip { 0% { transform: scale(.8) rotate(-4deg); } 100% { transform: none; } }
+/* 런너 카드 v2 (10/19, user: "ui 디자인을 저렇게 연결된 프라모델 모양으로... ui에서 클릭하면 맞춰지게"): a real runner — a plastic
+   frame with its bars, every part held in its window by two gates, a round number tab on the frame — lying on a green
+   cutting mat (the reference photo; GPT's concept _kit/concept-build-gpt.png) */
+.kitrun.skin-runner { padding: 14px 9px 9px; background-color: #3fae6a;
+  background-image: linear-gradient(rgba(255, 255, 255, .2) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255, 255, 255, .2) 1.5px, transparent 1.5px);
+  background-size: 13px 13px; background-position: 4px 4px; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .3); }
+.kitrun.skin-runner .kitrun-row { gap: 6px; padding: 6px; border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--run) 50%, #fff) 0%, var(--run) 40%, color-mix(in srgb, var(--run) 82%, #3a2453) 100%);
+  box-shadow: 0 0 0 2.5px var(--ink), 0 4px 0 2.5px rgba(42, 26, 61, .3); }
+/* the runner as a 2 × 3 board all along (user 10/19: "1x5 말고 2x3으로 와꾸 이쁘게"): a compact frame at the bottom while you hunt,
+   unfolding wide for the build */
+.kitrun.skin-runner { width: auto; }
+.kitrun.skin-runner:not(.build) .kitrun-row { grid-template-columns: repeat(3, 58px); }
+.kitrun.skin-runner.build { width: calc(100% - 20px); }
+.kitrun.skin-runner .kitrun-cell { aspect-ratio: 1; border-radius: 5px; background: rgba(26, 96, 58, .6);
+  box-shadow: inset 0 0 0 2px rgba(58, 36, 83, .6), inset 0 4px 0 rgba(0, 0, 0, .16); cursor: pointer; }
+.kitrun.skin-runner .kitrun-cell img { left: 15%; top: 13%; width: 70%; height: 74%; z-index: 1; }
+.kitrun.skin-runner .kitrun-ghost { filter: brightness(0) invert(1) opacity(.18); }   /* (an empty window: the part's outline, faint) */
+/* the gates: a short plastic stick each side, from the frame to the part; cut, two little stubs stay */
+.kitrun.skin-runner .kitrun-gate { top: calc(50% - 3px); width: 17%; height: 6px; border-radius: 2px; background: var(--run); box-shadow: 0 0 0 1.5px rgba(58, 36, 83, .75); opacity: 0; }
+.kitrun.skin-runner .kitrun-gate.l { left: 0; } .kitrun.skin-runner .kitrun-gate.r { right: 0; }
+.kitrun.skin-runner .kitrun-cell.found .kitrun-gate, .kitrun.skin-runner .kitrun-cell.full .kitrun-gate { opacity: 1; }
+.kitrun.skin-runner .kitrun-cell.used .kitrun-gate { opacity: 1; width: 5%; }
+.kitrun.skin-runner .kitrun-cell.used .kitrun-ghost { filter: brightness(0) invert(1) opacity(.06); }
+.kitrun.skin-runner .kitrun-no { left: -9px; top: -9px; z-index: 2; }
+/* the build: the runner unfolds into a big 3 × 2 board at the bottom; the next one's tab glows, the piece bobs */
+.kitrun.skin-runner.build { transform: translateX(-50%); padding: 16px 12px 12px; }
+.kitrun.skin-runner.build .kitrun-row { grid-template-columns: repeat(3, 1fr); gap: 9px; padding: 9px; }
+.kitrun.skin-runner.build .kitrun-no { min-width: 28px; height: 28px; border-radius: 14px; font-size: 17px; line-height: 23px; left: -11px; top: -11px; }
+.kitrun.skin-runner.build .kitrun-cell.next { box-shadow: inset 0 0 0 2px rgba(58, 36, 83, .6), 0 0 0 4px #ffe14d, 0 0 18px 6px rgba(255, 225, 77, .7); }
+.kitrun.skin-runner.build .kitrun-cell.used { cursor: default; }
+/* the runner's frame v3 (user 10/19: "너무 다 균등해서 칸이… 이런느낌으로 좀 이뻐보이게", sprue-frame references): windows of
+   different sizes (KITS frame: the grid's areas), thin plastic bars inked both sides, open windows showing the cutting mat,
+   the whole frame and its parts throwing one flat offset shadow; little stubs where the plastic was poured in; the name on a
+   square tab and the numbers on small square tags at the windows' corners */
+.kitrun.skin-runner .kitrun-row.framed { grid-template-columns: var(--cols); grid-template-rows: repeat(2, 50px); width: 300px; gap: 5px; padding: 5px; border-radius: 12px;
+  position: relative; background: var(--run); box-shadow: 0 0 0 2.5px var(--ink), 5px 5px 0 2.5px var(--runsh); }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-cell { aspect-ratio: auto; border-radius: 3px; box-shadow: inset 0 0 0 2.5px var(--ink);
+  background-color: #3fae6a; background-image: linear-gradient(rgba(255, 255, 255, .2) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255, 255, 255, .2) 1.5px, transparent 1.5px);
+  background-size: 13px 13px; background-position: 1px 1px; }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-cell img { left: 16%; top: 12%; width: 68%; height: 76%; }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-pc { filter: drop-shadow(3px 3px 0 rgba(36, 30, 90, .45)); }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-ghost { filter: brightness(0) invert(1) opacity(.2); }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-cell.used .kitrun-ghost { filter: brightness(0) invert(1) opacity(.07); }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-gate { width: 12px; height: 5px; top: calc(50% - 2.5px); box-shadow: 0 0 0 1.5px var(--ink); }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-cell.used .kitrun-gate { width: 4px; }
+.kitrun.skin-runner .kitrun-row.framed .kitrun-no { left: -4px; top: -4px; min-width: 17px; height: 17px; border-radius: 4px; font-size: 12px; line-height: 13px; }
+.kitrun.skin-runner .kitrun-row.framed::before, .kitrun.skin-runner .kitrun-row.framed::after { content: ''; position: absolute; background: var(--run); box-shadow: 0 0 0 2.5px var(--ink); border-radius: 2px; }
+.kitrun.skin-runner .kitrun-row.framed::before { left: 44%; top: -11px; width: 7px; height: 9px; }   /* (the stubs: one on top, one on the right) */
+.kitrun.skin-runner .kitrun-row.framed::after { right: -11px; top: 40%; width: 9px; height: 7px; }
+.kitrun.skin-runner:has(.framed) .kitrun-tag { border-radius: 4px; top: -15px; left: 16px; }
+.kitrun.skin-runner:has(.framed) { padding: 16px 12px 13px 10px; }
+.kitrun.skin-runner.build .kitrun-row.framed { width: auto; grid-template-columns: var(--cols); grid-template-rows: repeat(2, 76px); gap: 7px; padding: 7px; }
+.kitrun.skin-runner.build .kitrun-row.framed .kitrun-gate { width: 15px; height: 6px; top: calc(50% - 3px); }
+.kitrun.skin-runner.build .kitrun-row.framed .kitrun-no { min-width: 26px; height: 26px; border-radius: 6px; font-size: 16px; line-height: 21px; left: -7px; top: -7px; }
+.kitrun.skin-runner.build .kitrun-row.framed .kitrun-cell.next { box-shadow: inset 0 0 0 2.5px var(--ink), 0 0 0 4px #ffe14d, 0 0 18px 6px rgba(255, 225, 77, .7); }
 .kitrun.gone { opacity: 0; transform: translateX(-50%) translateY(40px); pointer-events: none; }
-/* the box: its lid (the box art, a label band), the front face, the inside */
 .kitintro { position: absolute; inset: 0; z-index: 30; background: rgba(42, 26, 61, .22); pointer-events: auto; animation: kitfade .25s ease-out; }
 .kitintro.out { opacity: 0; transition: opacity .25s; }
 @keyframes kitfade { from { opacity: 0; } }
-.kitbox { position: absolute; left: 50%; top: 38%; width: 236px; height: 214px; margin-left: -118px; margin-top: -107px; }
-.kitbox-in { position: absolute; left: 0; top: 0; width: 236px; height: 170px; border-radius: 16px; background: #c99a63; border: 3.5px solid var(--ink);
-  box-shadow: inset 0 14px 0 rgba(58, 36, 83, .25), inset 0 0 0 10px #e0b27a; box-sizing: border-box; }
-.kitbox-front { position: absolute; left: 0; top: 150px; width: 236px; height: 60px; border-radius: 0 0 16px 16px; border: 3.5px solid var(--ink); border-top-width: 2px; box-sizing: border-box;
-  background-image: linear-gradient(rgba(0, 0, 0, .18), rgba(0, 0, 0, .18)); }
-.kitbox-lid { position: absolute; left: -4px; top: -6px; width: 244px; height: 176px; border-radius: 17px; border: 3.5px solid var(--ink); box-sizing: border-box; overflow: hidden;
-  background: repeating-conic-gradient(from 0deg at 50% 46%, var(--box) 0deg 10deg, color-mix(in srgb, var(--box) 78%, #fff) 10deg 20deg); box-shadow: 0 6px 0 rgba(42, 26, 61, .3); }
-.kitbox-art { position: absolute; inset: 0 0 34px 0; display: flex; align-items: center; justify-content: center; }
-.kitbox-art img { height: 128%; margin-top: 18px; filter: drop-shadow(0 4px 0 rgba(42, 26, 61, .35)); }
-/* GPT's box art (KITS.boxArt): a square lid showing the whole picture; the name goes on the picture's own cream band */
-.kitbox.art { height: 280px; margin-top: -140px; }
-.kitbox.art .kitbox-in { height: 236px; }
-.kitbox.art .kitbox-front { top: 216px; }
-.kitbox.art .kitbox-lid { height: 244px; background: #8fd3ff; }
-.kitbox-lid.art .kitbox-art { inset: 0; }
-.kitbox-lid.art .kitbox-art img { width: 100%; height: 100%; object-fit: cover; margin: 0; filter: none; }
-.kitbox-lid.art .kitbox-label { height: 17%; background: none; border-top: 0; }
-.kitbox-label { position: absolute; left: 0; right: 0; bottom: 0; height: 36px; display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: #fffaf2; border-top: 3px solid var(--ink); color: var(--ink); }
-.kitbox-label b { font-size: 17px; }
-.kitbox-label span { font-size: 11.5px; padding: 1px 7px; border-radius: 8px; background: var(--y2); border: 2px solid var(--ink); }
-.kitfly { position: absolute; z-index: 32; width: 60px; height: 60px; pointer-events: none; filter: drop-shadow(0 4px 0 rgba(58, 36, 83, .45)); }
+/* the box's comic panel (10/19 — user: "오프닝도 뒤에 배경이나 좀 만화같이", then a green zoom-burst reference: "배경은 이런느낌으로
+   아예 뒤를 가려도 상관없으니 새롭게"): it covers the room — a lime-to-green burst, speed lines turning slowly round the box,
+   halftone dots growing to the edges, zigzag bolts pointing in. It fades ('calm') before the pieces fly off to hide. */
+.kitintro.comic { background: none; overflow: hidden; }
+.kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts { position: absolute; pointer-events: none; transition: opacity .45s; }
+.kitintro:not(.comic) :is(.kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts) { display: none; }
+.kitintro.calm :is(.kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts) { opacity: 0; }
+.kitintro-bg { inset: 0; background: radial-gradient(circle at 50% 50%, #f6ff8a 0 5%, #c4f43c 20%, #74d832 50%, #3cb22c 80%, #2c9a26 100%); }
+/* (the speed lines: a square half again as wide as the screen's longer side, round the screen's middle — the circle inside it
+   covers every corner however it turns, so no edge ever shows: user 10/19 "확대해서 경계선 안보이게… 화면 중심에서") */
+.kitintro-rays { left: 50%; top: 50%; width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; animation: kitrays 24s linear infinite;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 150, .5) 0 2.6deg, transparent 2.6deg 7deg, rgba(20, 110, 30, .22) 7deg 9.5deg, transparent 9.5deg 13deg),
+    repeating-conic-gradient(from 4deg at 50% 50%, rgba(255, 255, 255, .22) 0 1.2deg, transparent 1.2deg 17deg); }
+@keyframes kitrays { to { transform: rotate(360deg); } }
+.kitintro-dots { inset: 0;
+  background-image: radial-gradient(circle, rgba(22, 104, 30, .3) 0 3.2px, transparent 3.7px), radial-gradient(circle, rgba(22, 104, 30, .22) 0 2px, transparent 2.5px);
+  background-size: 18px 18px, 18px 18px; background-position: 0 0, 9px 9px;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 0 22%, #000 62%); mask-image: radial-gradient(circle at 50% 50%, transparent 0 22%, #000 62%); }
+.kitintro-bolts { inset: 0; }
+.kitintro-bolts svg { width: 100%; height: 100%; }
+/* the friend's comic cut-in: a round framed face and their line beside it */
+.kitcut { position: absolute; left: 14px; top: calc(96px + var(--safeT)); right: 14px; display: flex; align-items: center; gap: 8px; z-index: 3; pointer-events: none; }
+.kitcut-face { flex: none; width: 92px; height: 92px; border-radius: 50%; background: #fffaf2; border: 4px solid var(--ink); box-shadow: 0 5px 0 rgba(42, 26, 61, .35); overflow: hidden; transform: rotate(-6deg); }
+.kitcut-face img { width: 100%; height: 100%; object-fit: cover; }
+.kitcut-say { position: relative; flex: 1; padding: 11px 14px; border-radius: 18px; background: #fff; border: 3.5px solid var(--ink); box-shadow: 0 5px 0 rgba(42, 26, 61, .3);
+  font-family: var(--font-talk); font-size: 16.5px; line-height: 1.35; color: var(--ink); }
+.kitcut-say::before { content: ''; position: absolute; left: -14px; top: 50%; margin-top: -9px; border-right: 14px solid var(--ink); border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
+.kitcut-say::after { content: ''; position: absolute; left: -8px; top: 50%; margin-top: -6px; border-right: 10px solid #fff; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+/* the 3D box (10/19, user: "상자가 상자같아야되지않을까"): a body with every side and a lid that is a shallow box itself — its rim
+   over the body's top with the kit's name on it, GPT's box art on its top. The cube is a point at the box's middle and every
+   face is placed round it, seen from above the front-right corner (modelkit.js kitIntro: KB3_VIEW, KB3_LID). Only the faces
+   turned to us draw; the inside (dark) shows once the lid is off, and lights up. */
+.kb3 { --w: 190px; --h: 86px; --d: 158px; --lh: 32px; --lw: calc(var(--w) + 10px); --ld: calc(var(--d) + 10px);
+  position: absolute; left: 50%; top: 46%; width: 300px; height: 280px; margin: -140px 0 0 -150px; perspective: 1100px; transform-origin: 50% 74%; }
+.kb3.big { --w: 236px; --h: 104px; --d: 196px; --lh: 38px; top: 50%; width: 360px; height: 340px; margin: -170px 0 0 -180px; }
+.kb3-cube, .kb3-lid { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.kb3-lid { left: 0; top: calc(var(--h) / -2); }
+.kb3-face { position: absolute; box-sizing: border-box; border: 3px solid var(--ink); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+/* the body: white card, the kit's colour in a band along the bottom */
+.kb3-front, .kb3-back { width: var(--w); height: var(--h); left: calc(var(--w) / -2); top: calc(var(--h) / -2); }
+.kb3-right, .kb3-left, .kb3-ileft { width: var(--d); height: var(--h); left: calc(var(--d) / -2); top: calc(var(--h) / -2); }
+.kb3-bottom, .kb3-ifloor { width: var(--w); height: var(--d); left: calc(var(--w) / -2); top: calc(var(--d) / -2); }
+.kb3-iback { width: var(--w); height: var(--h); left: calc(var(--w) / -2); top: calc(var(--h) / -2); }
+.kb3-front { transform: translateZ(calc(var(--d) / 2)); background: linear-gradient(180deg, #fffaf0 0 74%, var(--box) 74% 100%);
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: calc(var(--h) * .3); }
+.kb3-back { transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); background: #efe6d6; }
+.kb3-right { transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); background: linear-gradient(180deg, #e2d7c4 0 74%, color-mix(in srgb, var(--box) 70%, #241634) 74% 100%); }
+.kb3-left { transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); background: #e2d7c4; }
+.kb3-bottom { transform: rotateX(-90deg) translateZ(calc(var(--h) / 2)); background: #cfc3ae; }
+/* the inside, seen only with the lid off: the floor, the far wall, the left wall — dark, then lit from within */
+.kb3-ifloor, .kb3-iback, .kb3-ileft { border: none; transition: background .3s, filter .3s; }
+.kb3-ifloor { transform: rotateX(90deg) translateZ(calc(var(--h) / -2 + 2px)); background: radial-gradient(ellipse at 50% 50%, #3b4566, #191d2e 80%); }
+.kb3-iback { transform: translateZ(calc(var(--d) / -2 + 2px)); background: linear-gradient(180deg, #2a3150, #3b4566); }
+.kb3-ileft { transform: rotateY(90deg) translateZ(calc(var(--w) / -2 + 2px)); background: linear-gradient(180deg, #232842, #333b5a); }
+.kb3.open .kb3-ifloor { background: radial-gradient(ellipse at 50% 50%, #fffbe0 0 22%, #ffe063 52%, #f0a830 100%); }
+.kb3.open :is(.kb3-iback, .kb3-ileft) { filter: brightness(2.6) sepia(.6) saturate(2.4) hue-rotate(-12deg); }
+/* the lid: its top a little above the body, its rim hanging down over the body's top */
+.kb3-ltop { width: var(--lw); height: var(--ld); left: calc(var(--lw) / -2); top: calc(var(--ld) / -2); transform: translateY(-6px) rotateX(90deg);
+  overflow: hidden; background: #8fd3ff; }
+.kb3-ltop img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; display: block; }   /* (the art's cream name band falls off the bottom) */
+.kb3-lfront, .kb3-lback { width: var(--lw); height: var(--lh); left: calc(var(--lw) / -2); top: -6px; }
+.kb3-lright, .kb3-lleft { width: var(--ld); height: var(--lh); left: calc(var(--ld) / -2); top: -6px; }
+.kb3-lfront { transform: translateZ(calc(var(--ld) / 2)); background: linear-gradient(180deg, color-mix(in srgb, var(--box) 70%, #fff) 0 14%, var(--box) 14% 100%);
+  display: flex; align-items: center; justify-content: center; }
+.kb3-lback { transform: rotateY(180deg) translateZ(calc(var(--ld) / 2)); background: var(--box); }
+.kb3-lright { transform: rotateY(90deg) translateZ(calc(var(--lw) / 2)); background: linear-gradient(180deg, color-mix(in srgb, var(--box) 75%, #241634) 0 14%, color-mix(in srgb, var(--box) 68%, #241634) 14% 100%); }
+.kb3-lleft { transform: rotateY(-90deg) translateZ(calc(var(--lw) / 2)); background: color-mix(in srgb, var(--box) 68%, #241634); }
+.kb3-name { font-size: 19px; line-height: 1; color: #fff; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; white-space: nowrap; }
+.kb3.big .kb3-name { font-size: 22px; }
+.kb3-count { font-size: 12px; padding: 1px 9px; border-radius: 8px; background: var(--y2); border: 2px solid var(--ink); color: var(--ink); white-space: nowrap; }
+.kb3.big .kb3-count { font-size: 14px; }
+/* its shadow on the floor (a plane under the box, so it turns with it) and the light leaking round the lid */
+.kb3-floor { position: absolute; width: calc(var(--w) * 1.5); height: calc(var(--d) * 1.5); left: calc(var(--w) * -.75); top: calc(var(--d) * -.75);
+  transform: rotateX(90deg) translateZ(calc(var(--h) / -2 - 1px)); backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: radial-gradient(closest-side, rgba(12, 64, 10, .5) 66%, rgba(12, 64, 10, 0)); }
+.kb3-glow { position: absolute; left: 50%; top: 50%; width: 380px; height: 330px; margin: -250px 0 0 -190px; opacity: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 62%, rgba(255, 252, 214, 1) 0 16%, rgba(255, 232, 130, .7) 36%, rgba(255, 214, 90, 0) 68%); }
+.kitflash { position: absolute; inset: -10%; background: #fff; pointer-events: none; z-index: 33; opacity: 0; }
+/* the comic burst at the pop: a spiky star, ink round a pale yellow one */
+.kitbang { position: absolute; width: 300px; height: 300px; z-index: 32; pointer-events: none;
+  background: var(--ink); clip-path: polygon(50% 0%, 58% 30%, 82% 8%, 70% 36%, 100% 30%, 74% 50%, 100% 70%, 70% 64%, 82% 92%, 58% 70%, 50% 100%, 42% 70%, 18% 92%, 30% 64%, 0% 70%, 26% 50%, 0% 30%, 30% 36%, 18% 8%, 42% 30%); }
+.kitbang::after { content: ''; position: absolute; inset: 9px; background: #fff3a0;
+  clip-path: polygon(50% 0%, 58% 30%, 82% 8%, 70% 36%, 100% 30%, 74% 50%, 100% 70%, 70% 64%, 82% 92%, 58% 70%, 50% 100%, 42% 70%, 18% 92%, 30% 64%, 0% 70%, 26% 50%, 0% 30%, 30% 36%, 18% 8%, 42% 30%); }
+/* two little robot eyes blinking in the gap under the lid (스토리 룸's idea) */
+.kiteyes { position: absolute; z-index: 32; display: flex; gap: 12px; padding: 5px 9px; border-radius: 10px; background: #1d1424; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; }
+.kb3-eyes { position: absolute; left: 0; top: calc(var(--h) / -2 - 16px); width: 0; height: 0; transform: translateZ(calc(var(--d) / 2 - 14px)); }
+.kb3-eyes .kiteyes { left: 0; top: 0; }
+.kiteyes i { width: 13px; height: 10px; border-radius: 50%; background: #dffaff; box-shadow: 0 0 8px 3px rgba(140, 236, 255, .95); }
+.kitfly { position: absolute; z-index: 32; width: 60px; height: 60px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 4px 0 rgba(58, 36, 83, .45)); }
 
 
 /* 갓겜 F2: the last thing found — the screen's edges glow warm for a moment (stage.js lastOneFx) */
@@ -1480,3 +1617,28 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .turnpiv { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; z-index: 11; pointer-events: none; opacity: 0; transition: opacity .14s ease-out; will-change: transform; }
 .turnpiv.on { opacity: .8; }
 .turnpiv svg { display: block; }
+
+/* ── 2D UI 정리 ⑤ 판 윗줄 (UI 세션 10/19) ── the room's name in the top bar reads at ~13 px on a phone (11.5 after the 82 %
+   HUD, the smallest words on screen), in the panel text's ink; the stage tag's word one step up with it */
+.timer .tl { font-size: 16px; color: #6b4a7d; }
+.stagetag { font-size: 14px; }
+/* two rows split evenly — 8 things are 4 + 4, not 6 + 2 (the 62 px cap let six into the first row) */
+.tray.two { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 62px)); justify-content: center; }
+
+/* ── 2D UI 정리 ⑥ 결과창 대화 (UI 세션 10/19) ── user on a phone: "이겼을 때 캐릭터 말하는 거 말풍선 모양으로 잘 이쁘게 만들어
+   주고 삼각형 화살표는 지워": the in-game speech bubble's look (white, ink rim, the dark drop under it), sized to its words like a
+   chat — the friend's on the left, 몽글이's on the right — and no pointer */
+.endtalk { gap: 8px; }
+.endtalk .et span { flex: 0 1 auto; border-radius: 18px; padding: 7px 13px 9px; box-shadow: 0 3px 0 var(--ink); line-height: 1.35; }
+.endtalk .et span::before { content: none; }
+.endtalk .et span { border-bottom-left-radius: 6px; }   /* (the corner by the face is the 'who said it', in place of a pointer) */
+.endtalk .et.me span { border-bottom-left-radius: 18px; border-bottom-right-radius: 6px; }
+/* ⑥ words in the world stay on screen (ui.js keepIn sets --dx); a bubble's tail stays over its speaker; the stage banner and
+   the dialogue title wrap between words inside the screen instead of running off it */
+#world-ui .bubble, #world-ui .ftxt, #tut-ui .tip { translate: var(--dx, 0px) 0; }
+#world-ui .bubble::after { margin-left: clamp(-38%, calc(-1 * var(--dx, 0px)), 38%); }
+.banner, .dlg-title { padding-left: 16px; padding-right: 16px; word-break: keep-all; overflow-wrap: break-word; }
+.banner .t1 { font-size: min(44px, 11vw); }
+/* ⑥ the break games' and bosses' instruction lines were one line at any length (English 'Start with the ? blankets! Check
+   the ears and tail' ran 81 px off both sides of a 375 phone): inside the screen, wrapping between words when they must */
+#app :is(.bk-hint, .ik-hint, .fl-hint, .tr-hint, .rl-hint, .rp-hint, .cr-hint, .wh-hint, .ys-hint, .tg-hint) { white-space: normal; width: max-content; max-width: calc(100vw - 12px); box-sizing: border-box; text-align: center; word-break: keep-all; overflow-wrap: break-word; }

@@ -95,9 +95,12 @@ export const KITS = {
   //   glow     the next number glows on the runner (off: read the numbers yourself)
   //   ghost    the see-through model shows where each piece goes (off: only the box art to go by)
   robot: { id: 'robot', name: '꼬마 로봇', furn: 'kitrobot', parts: ROBOT, order: ['body', 'legs', 'claw', 'fist', 'jet', 'head'],
-    build: { ordered: true, glow: true, ghost: true },
+    build: { ordered: true, glow: true, ghost: false },   // (no see-through model: user 10/19 「그림자로 하지 말고」 — the runner on the mat shows the parts)
     // the runner card: each piece's short name, and the plastic the runner is moulded in
     short: { legs: '다리', body: '몸통', jet: '제트팩', claw: '집게팔', fist: '주먹팔', head: '머리' }, runner: '#a9d8ff', color: '#3d7bff',
+    // the runner's windows (modelkit.js kitRunner): the body big on the left, legs over the jetpack, the two arms tall and thin,
+    // the head tall (its antenna) at the end — read left to right, about the build's order
+    frame: { areas: ['body legs claw fist head', 'body jet claw fist head'], cols: [1.7, 1, .72, .72, 1] },
     type: 'model', skin: 'runner', intro: 'box', boxArt: 'art/kits/robot-box.jpg',   // (the lid: GPT's box art, 10/19 — 640 px JPEG, 86 KB)
     locked: 'head' },   // the piece a padlock guards on a campaign stage (8판: the face comes last, out of the locked chest)
 };
@@ -122,6 +125,14 @@ export function buildKitPart(kit, key) {
 export function buildKitModel(kit) {
   const g = grp();
   for (const k of KITS[kit].order) { const p = buildKitPart(kit, k); p.userData.kitPart = k; g.add(p); }
+  return g;
+}
+// the little work mat the robot is built on (a green cutting mat with its grid)
+export function buildMat(w = 1.5, d = 1.25) {
+  const g = grp();
+  g.add(put(rbox(w, .012, d, '#3fae6a', .006), 0, .006, 0));
+  for (let x = -w / 2 + .1; x < w / 2 - .01; x += .1) g.add(put(rbox(.006, .002, d - .06, '#bfe8cc', .001), x, .013, 0));
+  for (let z = -d / 2 + .1; z < d / 2 - .01; z += .1) g.add(put(rbox(w - .06, .002, .006, '#bfe8cc', .001), 0, .013, z));
   return g;
 }
 // the robot's eyes lighting up when it comes alive: two glowing dots over the visor, on the head (model frame)

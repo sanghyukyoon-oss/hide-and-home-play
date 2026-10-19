@@ -13,7 +13,7 @@ const K = (ko, en) => { EN[ko] = en; return ko; };
 export const TAP_TXT = {
   title: K('톡을 다 썼어!', 'Out of taps!'),
   body: K('아무 데나 누르면 톡이 줄어. 잘 보고 눌러 보자!', 'Every tap on nothing uses one up. Look first, then tap!'),
-  intro: K('빈 바닥이나 엉뚱한 걸 누르면 왼쪽 위 손가락 수가 줄어. 서랍·문 열기는 괜찮아. 다 쓰면 처음부터!', 'Tapping the floor or the wrong thing uses up the hand count at the top left. Opening drawers and doors is free. Run out and you start over!'),
+  intro: K('엉뚱한 데 누르면 왼쪽 위 손가락 수가 줄어! 서랍·문은 괜찮아', 'Wrong taps use up the hand at the top left! Drawers and doors are free'),   // (one line — 2D UI 정리 ⑤ 10/19; running out says itself on the fail panel)
   low: K('톡이 얼마 안 남았어! 잘 보고 눌러', 'Only a few taps left! Look before you tap'),
   star: K('★ 톡 절반 남기기', '★ Half the taps left'),
   friend: K('헤헤, 못 찾았지?', "Hehe, couldn't find me?"),

@@ -53,6 +53,19 @@ export class UI {
     this.tut = document.getElementById('tut-ui') || document.getElementById('app').appendChild(h('div', { id: 'tut-ui' }));
     this.iris = document.getElementById('iris');
     this.panelOpen = null;
+    // words in the world stay on screen, whoever placed them (user 10/19 on a phone: "아웃오브프레임되는 자막들 많음"): each
+    // frame a speech bubble, a floating word or a tip that runs past an edge is nudged in with `translate` (style.css keeps a
+    // bubble's tail on its speaker) — 2D UI 정리 ⑥
+    const M = 8, keepIn = () => {
+      for (const el of document.querySelectorAll('#world-ui .bubble, #world-ui .ftxt, #tut-ui .tip')) {
+        const dx = parseFloat(el.style.getPropertyValue('--dx')) || 0, r = el.getBoundingClientRect();
+        if (!r.width) continue;
+        const L = r.left - dx, R = r.right - dx, W = innerWidth, n = R - L > W - 2 * M ? (W - R - L) / 2 : L < M ? M - L : R > W - M ? W - M - R : 0;
+        if (Math.abs(n - dx) > .5) el.style.setProperty('--dx', n.toFixed(1) + 'px');
+      }
+      requestAnimationFrame(keepIn);
+    };
+    requestAnimationFrame(keepIn);
   }
   clear() { this.hud.innerHTML = ''; this.wui.innerHTML = ''; this.tut.innerHTML = ''; this.closePanel(); this.overlay.querySelectorAll('.chooser, .endcard').forEach(e => e.remove()); }   // (a choice left from the last scene — QA 10/18)
   col() { const c = h('div', { class: 'col' }); this.hud.append(c); return c; }

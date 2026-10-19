@@ -158,7 +158,7 @@ export class StageScene {
     if (custom) this.scene = null;
     // 프라모델 조립판: 놀이 모음's kit stage, or a campaign stage whose spec names a kit (8판 꼬마 로봇) — the hunt as always,
     // its things the kit's pieces (the one a padlock guards first), then the build (modelkit.js)
-    this.kit = this.model ? { kit: this.model.kit, go: this.model.go, wrong: this.model.wrong } : !custom && this.spec.kit && KITS[this.spec.kit] ? { kit: this.spec.kit, go: KIT_TALK[this.spec.kit]?.go, wrong: KIT_TALK[this.spec.kit]?.wrong } : null;
+    this.kit = this.model ? { kit: this.model.kit, go: this.model.go, wrong: this.model.wrong, hid: this.model.hello } : !custom && this.spec.kit && KITS[this.spec.kit] ? { kit: this.spec.kit, ...KIT_TALK[this.spec.kit] } : null;   // (go · wrong · open · hid — 스토리 룸)
     if (this.kit && !this.model) this.spec = { ...this.spec, n: KITS[this.spec.kit].order.length, force: kitForce(this.spec.kit) };
     this.kitRetry = !!retry;
     this.lookR = lookRecipe(this.spec.room, this.spec); if (this.lookR) this.th = lookTheme(this.lookR, this.th);
@@ -319,9 +319,8 @@ export class StageScene {
     // (after a chapter's film the stage's own talk is a bubble, even on a first meeting: one card, not two — 검토 2차 3, 13판)
     this.talkKeep = !retry && !this.scene?.bubble && !!(custom || this.preview || this.spec.tut <= 2 || G.save.settings?.oldMode || this.spec.boss || (!cine && (this.spec.intro || this.firstMeet(th.friend))));   // (a retry: the first line only — QA 10/18)
     if (this.story?.intro) { await this.talk(this.story.intro, { title: this.story.title }); if (this.dead) return; }
-    if (this.model) setTimeout(() => !this.dead && !this.result && this.say(this.friend, this.model.hello, 2400), 350);   // one line, no card
     if ((this.scene?.type === 'tut2' || (this.scene?.always && !this.incident)) && this.scene.intro) { await (this.scene.bubble ? this.openTalk(this.scene.intro, { title: th.name }) : this.talk(this.scene.intro, { title: th.name })); if (this.dead) return; }   // (스토리 룸 10/19: 2판은 말풍선)   // 2판 · 편의점
-    else if (this.hiddenStage) { await this.openTalk(hiddenIntro(this.idx, th.friend), { title: th.name }); if (this.dead) return; }
+    else if (this.hiddenStage && !this.kit?.hid) { await this.openTalk(hiddenIntro(this.idx, th.friend), { title: th.name }); if (this.dead) return; }   // (a kit's box says its own two lines — modelkit.js kitIntro)
     if (this.spec.gray && !custom) {
       // 대본: the owner, then 먹물이 by where we are in the story (a voice → caught again → quiet → helping)
       // (the first 흑백판 keeps its card: it says the rule; the next ones say it in a bubble — 레벨 v3 개선 1, was the first three)
@@ -401,7 +400,7 @@ export class StageScene {
       h('div', { style: 'display:flex;flex-direction:column;flex:1;min-width:0;gap:3px' }, this.tlEl = h('div', { class: 'tl' }, this.custom ? '숨긴 물건 찾기' : this.spec.timed ? `너굴이가 세는 중 · 0/${this.targets.length}` : this.th.name), h('div', { class: 'tbar' }, this.tbarI = h('i', { style: `width:${this.spec.timed ? 100 : 0}%` }))),
       this.tnum = h('div', { class: 'num ol' }, this.spec.timed ? String(this.spec.time) : this.incident ? (this.targets.length > 1 ? `0/${this.targets.length - 1}` : '') : `0/${this.targets.length}`));
     top.append(this.timerEl);
-    top.append(h('div', { class: 'stagetag ol', html: this.custom ? `${isRaid(this) ? '털기' : '놀러옴'}<b>${this.targets.length}개</b>` : this.model ? `프라모델<b>조립</b>` : this.preview ? `새 아트<b>미리</b>` : `STAGE<b>${this.idx + 1}</b>` }));
+    top.append(h('div', { class: 'stagetag ol', html: this.custom ? `${isRaid(this) ? '털기' : '놀러옴'}<b>${this.targets.length}개</b>` : this.model ? `프라모델<b>조립</b>` : this.preview ? `새 아트<b>미리</b>` : `스테이지<b>${this.idx + 1}</b>` }));
     if (this.spec.hard) top.lastChild.style.background = 'var(--r2)';
     col.append(top);
     this.inv = h('div', { class: 'inv' }); col.append(this.inv);
@@ -423,14 +422,21 @@ export class StageScene {
     col.append(this.tray);
     // many things to find: two rows of bigger pictures instead of one row of tiny ones (11 in a row were ~18 px)
     if (this.spec.gray) this.tray.classList.add('grayst');   // the list is drained of colour too: shapes only
-    const two = !this.kit && this.targets.length > 7, joyB = this.kit ? 132 : two ? 146 : 100;
+    const two = !this.kit && this.targets.length > 7, joyB = this.kit ? Math.max(118, Math.round(this.tray.getBoundingClientRect().height) + 26) : two ? 146 : 100;   // (a kit's card: just above it, however tall its skin is)
     // the buttons sit just above the (slimmer) tray (user, 10/17-18: "유아이가 너무 크고")
     document.getElementById('app').style.setProperty('--joyB', joyB + 'px');
     if (two) { this.tray.classList.add('two'); this.tray.style.setProperty('--cols', Math.ceil(this.targets.length / 2)); }
     const bottomY = `calc(${joyB}px + var(--safeB))`;   // clear of the tray
     this.mong = h('div', { class: 'mong' }, this.mongImg = h('img', { src: G.thumbs.face_mong }));
-    col.append(this.mong);
+    // (not on screen any more — user 10/19 on a phone: "기능이 없어 보여서 삭제해도 되지 않을까". A find, a miss and 어질어질 each already
+    // show elsewhere: the tap count and its -1, the friend's taunt, the toast and the sound. setMong still runs on it, harmlessly.)
     const side = h('div', { class: 'side', style: `bottom:${bottomY}` });
+    // two rows: the buttons go up by the tray's real height (146 left the hint button 14 px over it — QA 10/19, 2D UI 정리 ⑤)
+    if (two) requestAnimationFrame(() => {
+      if (this.dead) return;
+      const z = parseFloat(getComputedStyle(document.getElementById('hud')).zoom) || 1, need = Math.ceil(this.tray.getBoundingClientRect().height / z + 18);
+      if (need > joyB) { document.getElementById('app').style.setProperty('--joyB', need + 'px'); side.style.bottom = `calc(${need}px + var(--safeB))`; }
+    });
     this.hintBtn = ui.ibtn('hint', 'blue', () => this.useHint(), this.hints);
     this.hintBtn.style.width = this.hintBtn.style.height = '52px';
     if (G.econ) lensBadge(this);   // (경제 B5: free + bag)
@@ -666,8 +672,8 @@ export class StageScene {
     this.dizzy = 1.6; this.misses = [];
     G.audio.sfx('dizzy'); G.ui.toast('어질어질~ 천천히 찾아봐!', 'red');
     this.mongImg.src = G.thumbs.face_mong_dizzy; this.mong.classList.remove('hop', 'shake'); this.mong.classList.add('spin');
-    const r = this.mong.getBoundingClientRect();
-    G.world.fx.burst(r.left + r.width / 2, r.top, { n: 10, shape: 'star', speed: 160, gravity: 0, life: .9 });
+    const r = (this.tapPill || this.inv).getBoundingClientRect();   // (the stars come off the tap count now that the face is gone)
+    if (r.width) G.world.fx.burst(r.left + r.width / 2, r.top, { n: 10, shape: 'star', speed: 160, gravity: 0, life: .9 });
   }
 
   worldCenter(it) { const b = new THREE.Box3().setFromObject(it.g); return b.getCenter(new THREE.Vector3()); }
