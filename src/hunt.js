@@ -12,6 +12,8 @@ import { EN } from './i18n-en-dict.js';
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { ITEMS } from './gfx/items.js';
 import { attachItem } from './room.js';
+import { spotFits, capScale, faceItem, centerOn } from './fitspot.js';
+import { affOk } from './affinity.js';
 import { THEMES, stageSpec, STAGE_COUNT, REGIONS, regionOf } from './stages.js';
 import { hostAt, CAMEO_LINE } from './script.js';
 import { blindFor } from './hunt-blind.js';
@@ -52,11 +54,13 @@ export function moveItem(it, spot) {
   for (const ch of [...g.children]) if (ch.userData.proxy) g.remove(ch);
   g.parent?.remove(g);
   if (old.item === it) old.item = null;
-  attachItem(spot, g, { rotY: g.rotation.y, scale: k });
+  // (the same size where it fits; a little smaller where the new place is tighter — fitspot.js, and it looks out of it)
+  attachItem(spot, g, { rotY: g.rotation.y, scale: Math.min(k, capScale(it.type, spot)) });
+  faceItem(g, spot, g.userData.jit || 0); centerOn(g, spot);
   it.spot = spot; spot.item = it;
 }
 const CHAIN = new Set(['key', 'note', 'color', 'treat', 'tool', 'sock', 'book', 'gadget']);
-const fitsSpot = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat); };
+const fitsSpot = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat) && spotFits(type, s) && affOk(type, s); };
 // a key or a note out in the open that the start view can't see moves to the nearest free open place it can see
 export function chainToView(S) {
   const W = S.G.world, R = S.room; let moved = null;

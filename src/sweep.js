@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { ease } from './util.js';
 
 const ON = typeof location === 'undefined' || !/[?&]sweep=0(&|$)/.test(location.search);
+const OLD = typeof location !== 'undefined' && /[?&]hints=old(&|$)/.test(location.search);   // (the v157 timing, to compare)
 const MECH = new Set(['fishdock', 'liftbasket']);   // furniture whose moving part is a mechanism (levers, devices: by flag)
 const BODY = new Set(['liftbasket']);               // …and whose body shines with it (not the fishing dock: the whole deck would)
 const DIR = new THREE.Vector2(.7071, -.7071);       // ↘ on the screen, whichever way the room is turned
@@ -67,6 +68,16 @@ const worth = sw => !sw.used || sw.part.spots?.some(s => s.item && !s.item.found
 export function sweepUpdate(S, dt) {
   if (!S.sweeps?.length || !S.running || S.result || S.paused || S.cine) return;
   for (const sw of S.sweeps) if (sw.part.t > .5) sw.used = true;
+  if (!OLD) {
+    // (10/19 evening, user a third time: "힌트가 너무 많다" — 레벨 1~10 추천): only when stuck — half a minute without a find —
+    // once for that stretch, at most twice a stage; never on a clock
+    if ((S.idle || 0) < STUCK) { S._swDone = false; return; }
+    if (S._swDone || (S._swN || 0) >= 2) return;
+    const list = S.sweeps.filter(sw => worth(sw) && !sw.run && !sw.part.busy);
+    if (!list.length) return;
+    S._swDone = true; S._swN = (S._swN || 0) + 1;
+    play(S, list[Math.floor(Math.random() * list.length)]); return;
+  }
   if ((S._swT -= dt) > 0) return;
   const stuck = (S.idle || 0) > STUCK;
   S._swT = (stuck ? GAP_STUCK : GAP) + Math.random() * 3;

@@ -1,4 +1,5 @@
-import { affOk, affLike, isCold, habitSpot } from './affinity.js';   // 물건마다 나올 법한 자리 (10/19)
+import { affOk, affLike, isCold, habitSpot, placeLike } from './affinity.js';
+import { spotFits } from './fitspot.js';   // 자리에 맞는 물건 (10/19)   // 물건마다 나올 법한 자리 (10/19)
 import * as THREE from 'three';
 // Room themes, hand-placed layouts, stage specs and a seeded planner that hides targets / keys / decoys.
 import { rng } from './util.js';
@@ -772,7 +773,9 @@ export function layoutFor(roomKey, raw = false) {
   return raw ? L : applyEdit(roomKey, L);
 }
 
-const fits = (type, s) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat);
+// (and at the size it will be drawn: its box and the room round it — fitspot.js, 10/19 user "새집 안 축구공", "뚫려 있다")
+// (loose: the headroom only, as before — a lock's last chance, so a lock never goes missing)
+const fits = (type, s, role, loose) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat) && (loose || spotFits(type, s, role));
 
 // Mount a lever (or a light switch) where it stays visible: a free wall slot, else a free back-edge tile.
 function mountLever(room, r) {
@@ -831,13 +834,16 @@ export function planStage(room, spec, story = null) {
   const all = room.spots.filter(s => !s.reserved && (!s.part || ((s.part.reach ?? 1) >= .55 && !s.part.wallFacing)) && !spec.avoid?.(s));
   const used = new Set();
   let relaxAff = false;   // (a lock that would otherwise go missing takes what there is — 13판's moving boxes in the fridge)
+  let relaxFit = false;   // (…and, last of all, a place a little tight for it: drawn smaller — fitspot.js)
   // (10/19: a thing on the list goes where it can be drawn at its full size first — a low shelf gap kept a juice box at 21 px)
   let placingTarget = false;
   const roomy = (type, s) => ITEMS[type]?.flat || (s.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (s.scale || 1)) >= 1.25;
   const take = (pred, type) => {
-    const pool = all.filter(s => !used.has(s) && pred(s) && (!type || (fits(type, s) && (relaxAff || affOk(type, s)))));   // (affinity.js: nothing inside where it makes no sense)
+    const pool = all.filter(s => !used.has(s) && pred(s) && (!type || (fits(type, s, undefined, relaxFit) && (relaxAff || affOk(type, s)))));   // (affinity.js: nothing inside where it makes no sense)
     const roomyPool = placingTarget && type ? pool.filter(s => roomy(type, s)) : pool;
-    const c = r.shuffle(roomyPool.length ? roomyPool : pool);
+    // (3판: a place the story room picked for this thing first — affinity.js PLACE, 10/19)
+    const likePool = placingTarget && type ? roomyPool.filter(s => placeLike(type, s)) : [];
+    const c = r.shuffle(likePool.length ? likePool : roomyPool.length ? roomyPool : pool);
     if (!c.length) return null;
     used.add(c[0]); return c[0];
   };
@@ -887,9 +893,13 @@ export function planStage(room, spec, story = null) {
   if (!chainPlaced.length && spec.treat && ITEMS[spec.treat.item]) {
     const sit = q => q.lockable && q.spots.length && (q.reach ?? 1) >= .55 && !q.noHide;
     const onPart = spec.treat.on.map(t => room.parts.find(q => sit(q) && q.furn.type === t)).find(Boolean) || room.parts.find(sit);
-    const ht = onPart && targets.find(t => onPart.spots.some(x => !used.has(x) && fits(t, x)));
+    // (the box and the snack never go missing: a little tight if that's all there is — fitspot.js, 50·55판 10/19)
+    let ht = onPart && targets.find(t => onPart.spots.some(x => !used.has(x) && fits(t, x)));
+    if (onPart && !ht) { relaxFit = true; ht = targets.find(t => onPart.spots.some(x => !used.has(x) && fits(t, x, undefined, true))); }
     const hs = ht && take(x => x.part === onPart, ht);
-    const ts = hs && (take(x => x.kind === 'on' && x.part !== onPart, spec.treat.item) || take(x => x.part !== onPart && !x.part, spec.treat.item));
+    relaxFit = false;
+    let ts = hs && (take(x => x.kind === 'on' && x.part !== onPart, spec.treat.item) || take(x => x.part !== onPart && !x.part, spec.treat.item));
+    if (hs && !ts) { relaxFit = true; ts = take(x => x.part !== onPart && !x.part, spec.treat.item); relaxFit = false; }
     if (ts) {
       locks.push({ part: onPart, kind: 'treat', code: 'treat', chain: true });
       targets.splice(targets.indexOf(ht), 1);
@@ -946,7 +956,13 @@ export function planStage(room, spec, story = null) {
     if (L.chain) continue;
     let s = null;
     for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]];
-    if (!s) { relaxAff = true; for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]]; relaxAff = false; }
+    // (then a little tight but where it makes sense, then anything: 43·45판's recycling bins, 50판's shrine box — 10/19)
+    for (const [fit, aff] of [[true, false], [true, true]]) {
+      if (s) break;
+      relaxFit = fit; relaxAff = aff;
+      for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]];
+      relaxFit = relaxAff = false;
+    }
     if (s) placements.push({ type: targets[ti++], spot: s, role: 'target' });
     else { if (L.lever) L.lever.leverFor = null; locks.splice(li--, 1); }
   }
@@ -975,10 +991,15 @@ export function planStage(room, spec, story = null) {
     // a stage can say where a clue waits (2층집: the key comes down in the pulley basket)
     // (never on the very piece it opens: 8판's key sat on top of its own wardrobe — 1~10판 레벨 세션 10/19)
     const away = x => (x.furn || x.part?.furn) !== L.part.furn;
-    const cs = (spec.clueIn?.[L.kind] && take(x => x.furn.type === spec.clueIn[L.kind] && x.part && !inLocked(x), chainType))
+    // (a place the stage names — 7판's key coming down in the pulley basket — is the design: headroom only there)
+    let named = null;
+    if (spec.clueIn?.[L.kind]) { relaxFit = true; named = take(x => x.furn.type === spec.clueIn[L.kind] && x.part && !inLocked(x), chainType); relaxFit = false; }
+    const cs = named
       || (spec.clueOn?.[L.kind] && take(x => !inLocked(x) && x.kind === 'on' && away(x) && (spec.clueRoom == null || !!room.rooms?.[spec.clueRoom]?.spots.includes(x)) && spec.clueOn[L.kind].some(w => (x.furn?.type || '').includes(w)), chainType))   // (9판: the key in the bathroom, by the plant at its door — 검토 P1-4)
       || (spec.ho && take(x => !inLocked(x) && x.kind === 'on' && away(x), chainType))   // 숨은그림 판: a key / note / card is where you can see it
-      || take(x => !inLocked(x) && x.kind !== 'on' && away(x), chainType) || take(x => !inLocked(x) && away(x), chainType) || take(x => !inLocked(x), chainType);
+      || take(x => !inLocked(x) && x.kind !== 'on' && away(x), chainType) || take(x => !inLocked(x) && away(x), chainType) || take(x => !inLocked(x), chainType)
+      || ((relaxFit = true), take(x => !inLocked(x), chainType));   // (a clue never goes missing either)
+    relaxFit = false;
     if (cs) placements.push({ type: chainType, spot: cs, role, code: L.code, forPart: L.part });
   }
   const lockedParts = new Set(locks.map(l => l.part));
@@ -998,7 +1019,7 @@ export function planStage(room, spec, story = null) {
     const s = take(x => x.kind === 'inside' && x.furn?.type === spec.sureIn && x.part && !lockedParts.has(x.part) && !x.part.wallFacing, targets[k]);
     if (!s) continue;
     [targets[ti], targets[k]] = [targets[k], targets[ti]]; placements.push({ type: targets[ti++], spot: s, role: 'target' });
-    want.inside = Math.max(0, want.inside - 1); partsUsed.add(s.part); furnUsed.add(fk(s)); break;
+    partsUsed.add(s.part); furnUsed.add(fk(s)); break;   // (the line's own place, like a lock's: not out of the stage's count of things to open)
   }
   placingTarget = true;
   for (; ti < targets.length; ti++) {
@@ -1033,7 +1054,7 @@ export function planStage(room, spec, story = null) {
     const n = Math.round(c.length * frac);
     for (let k = 0; k < n; k++) {
       const s = c[k];
-      const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s) && affOk(t, s));
+      const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s, 'decoy') && affOk(t, s));
       if (!opts.length) continue;
       used.add(s); placements.push({ type: opts[0], spot: s, role: 'decoy', v: r.int(0, 3) });
     }
@@ -1194,7 +1215,7 @@ export function planCustom(room, doc, seed = 1) {
   for (const s of free) {
     if (n >= 8) break;
     if (s.kind !== 'on' && r() > .3) continue;
-    const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s));
+    const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s, 'decoy'));
     if (!opts.length) continue;
     used.add(s); placements.push({ type: opts[0], spot: s, role: 'decoy', v: r.int(0, 3) }); n++;
   }

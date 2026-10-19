@@ -7,6 +7,8 @@ import * as THREE from 'three';
 import { mat } from './gfx/kit.js';
 import { moveItem } from './hunt.js';
 import { ITEMS } from './gfx/items.js';
+import { spotFits } from './fitspot.js';
+import { affOk, isCold } from './affinity.js';
 import { EN } from './i18n-en-dict.js';
 import { tr } from './i18n.js';
 
@@ -38,8 +40,9 @@ export function reelSetup(S) {
   // 3판 (the fishing ground): one thing on the list always waits in the keep-net, so everyone meets the reel's surprise
   const reel = S.room.parts.find(p => p.reel), spot = reel?.spots[0];
   if (S.idx === 2 && spot && !(spot.item && spot.item.role === 'target')) {
-    const ok = t => !t.found && !t.friend && !t.spot.part && ITEMS[t.type] && ITEMS[t.type].h * (spot.scale || 1) <= spot.maxH + .001;
-    const it = S.targets.find(t => ok(t) && t.spot.kind !== 'on') || S.targets.find(ok);
+    // (a drink, kept cool in the water — 스토리 룸 10/19: a ball or a donut in the net made no sense; and only what fits in it)
+    const ok = t => !t.found && !t.friend && !t.spot.part && ITEMS[t.type] && ITEMS[t.type].h * (spot.scale || 1) <= spot.maxH + .001 && spotFits(t.type, spot) && affOk(t.type, spot);
+    const it = S.targets.find(t => ok(t) && isCold(t.type) && t.spot.kind !== 'on') || S.targets.find(t => ok(t) && isCold(t.type)) || S.targets.find(t => ok(t) && t.spot.kind !== 'on') || S.targets.find(ok);
     if (it && !spot.item) moveItem(it, spot);
   }
 }

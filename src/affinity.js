@@ -6,6 +6,7 @@
 // Matched on names: the item's type and the furniture's type (one table for all 70 stages; 11~70판 레벨 세션 fills in
 // its own furniture). ?aff=0 turns it off.
 import * as THREE from 'three';
+import { ITEMS } from './gfx/items.js';
 
 const ON = typeof location === 'undefined' || !/[?&]aff=0(&|$)/.test(location.search);
 
@@ -25,11 +26,48 @@ const F_TRASH = /(trash|bin|recycle)/;          // nothing to eat comes out of t
 const furnOf = s => s.furn?.type || s.part?.furn?.type || '';
 const cat = type => COLD.test(type) ? 'cold' : FOOD.test(type) ? 'food' : CLOTH.test(type) ? 'cloth' : BATH.test(type) ? 'bath' : 'other';
 
+// 한 판의 자리표 (스토리 룸 10/19, 사용자 3판 실폰: "축구공.. (작은 새집 안) 어떻게 의자 밑에서 오리가 나오니 ㅠ 스토리랑 상의해서
+// 다시 숨겨 줄래"): for a place the story room has gone through thing by thing — every kind of place, not only inside;
+// the first rule that matches decides. planStage names the place (setPlace) before it plans.
+const k = (re, kinds) => s => re.test(furnOf(s)) && (!kinds || kinds.includes(s.kind));
+const PLACE = {
+  fishing: [   // 3판 개굴이 낚시터
+    // 오리·고무 오리: 갈대 속(오리가 숨는 곳), 연잎 위(물에 떠 있음) — 담요 밑·새집·아이스박스·신문지 밑은 아니에요
+    [/duck/, s => k(/reeds/)(s) || k(/pond/, ['on'])(s), 'like'],
+    [/duck/, k(/campchair|tree|cooler|bench/, ['inside']), 'never'],   // (벤치 신문지 밑은 싸 둔 간식 자리)
+    // 축구공: 덤불 속, 벤치 밑, 파라솔 밑 — 새집·도구함·미끼통은 아니에요
+    [/^ball/, s => k(/bush/, ['inside'])(s) || k(/bench|parasol/, ['under'])(s), 'like'],
+    [/^ball/, k(/tree|tacklebox|baitbucket/, ['inside']), 'never'],
+    // 도토리: 새집 안(새가 모아 둔 것), 나무 밑동 — 아이스박스는 아니에요
+    [/acorn/, s => k(/tree/, ['inside'])(s) || (k(/tree/)(s) && s.label === '나무 밑동'), 'like'],
+    [/acorn/, k(/cooler/, ['inside']), 'never'],
+    // 선글라스: 좌대 의자 위(낚시꾼 거), 파라솔 아래 — 미끼통·그물망은 아니에요
+    [/sunglass/, s => k(/fishdock/, ['on'])(s) || k(/parasol/)(s), 'like'],
+    [/sunglass/, s => k(/baitbucket/)(s) || k(/fishdock/, ['inside'])(s), 'never'],
+    // 도넛·간식: 피크닉 바구니 안, 벤치 신문지 밑(싸 둔 간식) — 바구니 뒤(뚫림)·미끼통·그물망은 아니에요
+    [FOOD, s => k(/picnic|bench/, ['inside'])(s), 'like'],
+    [FOOD, s => k(/picnic/, ['behind'])(s) || k(/baitbucket/)(s), 'never'],
+  ],
+};
+let place = null;
+export const setPlace = room => { place = PLACE[room] || null; };
+// (the places the story room picked for a thing come first — planStage take)
+export const placeLike = (type, spot) => { if (!ON || !place || !spot || isCold(type)) return false; for (const [re, at, v] of place) if (re.test(type) && at(spot)) return v === 'like'; return false; };
+const tiny = type => (ITEMS[type]?.h ?? 1) <= .15;   // (손바닥보다 작은 것: an acorn, a candy)
+const low = type => !!ITEMS[type]?.flat || (ITEMS[type]?.h ?? 1) <= .06;   // (담요에 덮일 납작한 것: sunglasses, a card, a note)
+
 // 'like' | 'never' | 'ok' for putting this type inside this spot
 export function affinity(type, spot) {
-  if (!ON || !spot || spot.kind !== 'inside' || !type || type === 'friendtoken') return 'ok';   // (a friend may hide anywhere — even the fridge)
+  if (!ON || !spot || !type || type === 'friendtoken') return 'ok';   // (a friend may hide anywhere — even the fridge)
+  if (place && !isCold(type)) for (const [re, at, v] of place) if (re.test(type) && at(spot)) return v;
+  if (spot.kind !== 'inside') return 'ok';
   const f = furnOf(spot), c = cat(type);
-  if (/fishdock/.test(f)) return c === 'cold' ? 'like' : 'ok';                        // the keep-net in the pond: drinks keep cool there, anything may be caught
+  // (every stage, 스토리 룸 원칙 1 "몸이 들어가야 해요"): a birdhouse holds only something smaller than a hand, a camp
+  // chair's blanket or a rug only something flat enough to lie under it
+  if (/^tree/.test(f)) return tiny(type) ? 'ok' : 'never';
+  if (/campchair/.test(f)) return low(type) ? 'ok' : 'never';
+  if (/^rug/.test(f)) return low(type) ? 'ok' : 'never';   // (under a rug only something flat — a ball under it went into the sofa standing on it: 겹침 QA 감사 10/19)
+  if (/fishdock/.test(f)) return c === 'cold' ? 'like' : 'never';                     // the keep-net in the pond: drinks kept cool there (스토리 룸 10/19 — a ball or a donut in the water made no sense; the reel's junk is its own)
   if (c === 'cold') return F_COLD.test(f) ? 'like' : 'never';                           // ice cream, milk, drinks: only where it stays cold
   if (F_COLD.test(f)) return c === 'food' ? 'like' : 'never';                           // the fridge holds food, not a ball or a key
   if (F_DISH.test(f)) return c === 'food' ? 'like' : 'never';                          // (6판: a teddy came out of the dish cabinet)

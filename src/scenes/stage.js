@@ -19,6 +19,9 @@ import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~1
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
+import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
+import { setPlace } from '../affinity.js';
+const HINTS_OLD = typeof location !== 'undefined' && /[?&]hints=old(&|$)/.test(location.search);   // (the v157 automatic help, to compare)
 import { FURN_INFO } from '../gfx/furniture.js';
 const FURN_NAME = t => FURN_INFO[t]?.name || t;
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
@@ -183,6 +186,8 @@ export class StageScene {
     this.story = custom ? null : storyFor(this.idx);
     // 사건 판 (10/17 pivot): the owner hides behind a lock and finding them is the goal (세팅 → 더보기 has the old way)
     this.incident = !custom && !this.preview && (!!this.spec.incident || this.spec.tut === 1) && !G.save.settings?.oldMode;
+    setPlace(custom ? null : this.spec.room);   // (a place the story room went through thing by thing: 3판 — affinity.js)
+    fitPrep(this.room);   // (this room's walls for the box test — fitspot.js)
     this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : this.kit ? planModel(this.room, this.spec, this.story) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, { ...this.spec, habit: HABIT_BREAK.has(this.idx) ? null : habitOf(th.friend) }, this.story)) || planStage(this.room, this.spec, this.story);
     if (this.incident && !this.plan.incident) this.incident = false;
     if (!custom && !this.model && !this.preview) this.decoysCut = capDecoys(this.plan, this.spec);   // 함정 상한 (stages.js)
@@ -206,20 +211,15 @@ export class StageScene {
       // key was a few pixels on a phone (user, 10/17: "오렌지 너무 작아")
       // (10/18, user: "너무 작은 아이템들 있어. 오렌지 음료수나 왕관이나 또 열쇠 너무 작음 쪽지랑": to ~28 cm, up to 2x, and the
       // clues — keys, notes, colour cards, tools — too, not only the things on the list)
-      let sc = p.role === 'decoy' ? 1.08 : 1.15;
-      if (p.role !== 'decoy') {
-        const nat = new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3()), big = Math.max(nat.x, nat.y, nat.z) || .2;
-        const room = (p.spot.maxH + .02) / Math.max(.01, (ITEMS[p.type]?.h || .2) * (p.spot.scale || 1));
-        // (10/19, user after playing 1~10판 on the phone: "찾아야 할 물건 크기 너무 작게 하지 마.. 어느 정도 노멀라이징 하는 게 맞는 듯.
-        // 아주 약간 지금보다 살짝 더 키워 주고"): every thing to find ends near the same size — 34 cm on its longest side (was 28),
-        // the spot's own scale made up for (a seat or a tray at .7 drew its thing at 20 cm), up to 2.4× (was 2), still never
-        // taller than the place allows
-        // (most models are already 25–30 cm, so the floor goes up too: 1.15 → 1.25×, where the place has the headroom)
-        const ss = p.spot.scale || 1, want = (LOOK.has('items') && this.lookR?.itemSize || .34) / ss, lim = ITEMS[p.type]?.flat ? 2.4 : room;
-        sc = Math.max(sc, Math.min(lim, Math.max(1.25, Math.min(2.4, want / big))));   // (룩: a whole house on screen draws its things bigger)
-      }
-      attachItem(p.spot, g, { rotY: (r() - .5) * 1.4, scale: sc });
-      if (p.spot.kind === 'on' || p.spot.kind === 'inside') this.fitClear(p.spot, g);   // (10/19 user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ")
+      // (the size: wantScale/drawnScale in fitspot.js — ~34 cm on the longest side, at least 1.25×, up to 2.4×; held to the
+      // place's box: its headroom and the room round it, so nothing pokes through a cubby wall or a basket — 10/19 user)
+      // (a lock's thing that had to take a tight place: as big as the place lets it, never under .6)
+      const want = LOOK.has('items') && this.lookR?.itemSize || .34;
+      const sc = drawnScale(p.type, p.spot, p.role, want) || Math.max(.6, Math.min(wantScale(p.type, p.spot, p.role, want), capScale(p.type, p.spot)));
+      // (and it looks out of its place — 3판 "고무오리 얼굴이 바구니 쪽에 있음", user 10/19: a little either side of that)
+      const jit = (r() - .5) * .7; g.userData.jit = jit;
+      attachItem(p.spot, g, { rotY: 0, scale: sc }); faceItem(g, p.spot, jit); centerOn(g, p.spot);
+      if ((p.spot.kind === 'on' || p.spot.kind === 'inside') && !nestles(p.spot)) this.fitClear(p.spot, g);   // (10/19 user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ")
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
       if (p.vacHidden) { it.vacHidden = true; g.visible = false; }   // rides out on the robot vacuum (아파트 장치판)
       if (p.type === 'friendtoken') { it.friend = true; it.thumb = G.thumbs['face_' + this.th.friend]; this.friendItem = it; }
@@ -853,16 +853,21 @@ export class StageScene {
     const rooms = (this.room.rooms || [this.room]).map(R => R.group);
     let fr = spot.anchor; while (fr.parent && !rooms.includes(fr.parent)) fr = fr.parent;
     if (!fr.parent) return;
-    const mine = new Set(); g.traverse(o => mine.add(o));
+    // (not the other things already put in the furniture, nor their tap spheres — 5판's milk and the shelf's decoys shrank to
+    // 70% against a neighbour's invisible sphere, 레벨 1~10 10/19)
+    const mine = new Set(); g.traverse(o => mine.add(o)); for (const it of this.items) it.g?.traverse(o => mine.add(o));
     const rc = this._fitRc || (this._fitRc = new THREE.Raycaster());
     const need = () => {   // how much it must shrink to clear the furniture on all four sides (1 = it fits)
       g.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()); if (box.isEmpty()) return 1;
+      // (the thing's own meshes — not its tap sphere, ≥ 0.4 m across, which made every thing in a cubby shrink to 70%: 레벨 1~10 10/19)
+      const box = new THREE.Box3(), bb = new THREE.Box3();
+      g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); box.union(bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } });
+      const c = box.getCenter(new THREE.Vector3()); if (box.isEmpty()) return 1;
       let k = 1;
       for (const [dx, dz, half] of [[1, 0, box.max.x - c.x], [-1, 0, c.x - box.min.x], [0, 1, box.max.z - c.z], [0, -1, c.z - box.min.z]]) {
         if (half <= .01) continue;
         rc.set(c, new THREE.Vector3(dx, 0, dz)); rc.far = half + .05;
-        const hit = rc.intersectObject(fr, true).find(h => !mine.has(h.object) && h.object.visible !== false);
+        const hit = rc.intersectObject(fr, true).find(h => !mine.has(h.object) && !h.object.userData.proxy && h.object.visible !== false);
         if (hit) k = Math.min(k, (hit.distance - .015) / half);
       }
       return k;
@@ -1193,7 +1198,9 @@ export class StageScene {
         const ok = c => c && c.edge >= minEdge && (okUnder || !c.under);
         const pts = []; for (let k = 0; k < 6 && ok(cell[i + di * k]?.[j + dj * k]); k++) pts.push(cell[i + di * k][j + dj * k].p);
         const n2 = Math.hypot(di, dj);
-        for (let n = 3; n <= pts.length; n++) {   // (any length that ends safe — the longest isn't always the one)
+        // (and on the way: no print within .5 m of anything to find — 11판's trail passed 21 cm from a cookie, 레벨 1~10 10/19)
+        let clearN = pts.length; for (let q = 0; q < pts.length; q++) if (near(pts[q], avoid, .5, 1.2)) { clearN = q; break; }
+        for (let n = 3; n <= clearN; n++) {   // (any length that ends safe — the longest isn't always the one)
           const e = pts[n - 1]; if (!safeEnd(e, di / n2, dj / n2)) continue;
           const exit = near(e, exits, 1.3, 1.6), score = n + (exit ? 3 : 0);
           if (!best || score > best.score) best = { pts: pts.slice(0, n), dir: new THREE.Vector3(di, 0, dj).normalize(), score, exit, pass: minEdge + (okUnder ? 'u' : '') };
@@ -2685,7 +2692,10 @@ export class StageScene {
     this.hero?.update(dt, this.tw, !!this.result || !!this.talking);
     if (this.dizzy > 0) { this.dizzy -= dt; if (this.dizzy <= 0) { this.mong.classList.remove('spin'); this.mongImg.src = G.thumbs.face_mong; } }
     if (this.jailed?.in && this.running && !this.result && (this._jT = (this._jT ?? 9) - dt) <= 0) { this._jT = 11 + Math.random() * 5; this.say(this.jailed.ch, JAIL_LINES[(this._jn = (this._jn || 0) + 1) % JAIL_LINES.length], 2000); }   // the one in the cell keeps pleading
-    if (this.incident && this.friendHidden && this.running && !this.result && (!this.r1 || this.idle > 15) && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = (this.idle > 8 ? 4 : 6.5) + Math.random() * 3; this.giggle(); }
+    // (a hidden friend giggles once you've looked a while — 10 s, not from the start; every 7–10 s, not 4–9: 레벨 1~10 추천 10/19 —
+    // the first stage's lesson keeps its old pace)
+    const gigWait = HINTS_OLD || this.spec.tut === 1 ? (!this.r1 || this.idle > 15) : this.idle > (this.r1 ? 15 : 10);
+    if (this.incident && this.friendHidden && this.running && !this.result && gigWait && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = HINTS_OLD || this.spec.tut === 1 ? (this.idle > 8 ? 4 : 6.5) + Math.random() * 3 : 7 + Math.random() * 3; this.giggle(); }
     if (this.spec.night && !this.result && (this._starT = (this._starT || 0) - dt) <= 0) {
       this._starT = .45 + Math.random() * .5;
       W.fx.burst(Math.random() * W.W, Math.random() * W.H * .28 + 40, { n: 1, shape: 'star', speed: 6, gravity: 0, life: 1.3, size: 7, colors: ['#fff6c0', '#ffffff', '#cfe0ff'] });
@@ -2701,11 +2711,14 @@ export class StageScene {
       // F1: one thing left for 20 s → the owner looks at it; with one left the sparkle waits until 10 s after that look
       if (this.feelHelp) {
         const left = this.targets.filter(t => !t.found);
-        if (left.length === 1) { this._oneAt ??= this.t; if (this._gazeAt == null && this.t - this._oneAt >= 35) { this._gazeAt = this.t; this.gazeHint(left[0]); } }
+        if (left.length === 1) { this._oneAt ??= this.t; if (this._gazeAt == null && this.t - this._oneAt >= 35) { this._gazeAt = this.t; if (HINTS_OLD || !sceneAt(this.idx)?.lastSmoke) this.gazeHint(left[0]); } }   // (6판: the pancake smoke is that stage's look — not both)
         else this._oneAt = this._gazeAt = null;
       }
       const waitGaze = this.feelHelp && this._oneAt != null && (this._gazeAt == null || this.t - this._gazeAt < 10);
-      if (this.idle > this.sparkAfter && !waitGaze) {
+      // (10/19 evening, user a third time "힌트가 너무 많다" — 레벨 1~10 추천: a sparkle only for the last thing, the way the
+      // owner's look and 6판's smoke already wait for it; with more left the 힌트 button is there)
+      const lastOnly = HINTS_OLD || this.targets.filter(t => !t.found).length === 1;
+      if (this.idle > this.sparkAfter && !waitGaze && lastOnly) {
         this.twinkleT -= dt;
         if (this.twinkleT <= 0) {
           this.twinkleT = 10;   // (4 → 6 → 10 s: "힌트가 너무 많다", 10/19 evening)

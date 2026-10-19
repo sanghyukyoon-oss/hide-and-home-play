@@ -10,9 +10,10 @@
 import * as THREE from 'three';
 import { ITEMS } from './gfx/items.js';
 import { moveItem } from './hunt.js';
-import { affOk, habitSpot } from './affinity.js';   // (10/19: what goes behind a door has to make sense there)
+import { affOk, habitSpot, placeLike } from './affinity.js';
+import { spotFits } from './fitspot.js';   // (10/19: what goes behind a door has to make sense there)
 
-const fits = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat) && (I.flat || (s.maxH + .02) / (I.h * (s.scale || 1)) >= 1.25); };   // (moves only to places where the thing can be drawn at its full size — 10/19)
+const fits = (type, s, role) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat) && (I.flat || (s.maxH + .02) / (I.h * (s.scale || 1)) >= 1.25) && spotFits(type, s, role); };   // (and its box — fitspot.js)   // (moves only to places where the thing can be drawn at its full size — 10/19)
 const shown = o => { for (let p = o; p; p = p.parent) if (p.visible === false) return false; return true; };
 const V = () => new THREE.Vector3();
 
@@ -52,8 +53,8 @@ export function tierPass(S) {
   // moving things
   const T = () => S.targets.filter(it => !it.found && !it.friend && it.spot && !it.spot.part && tab.has(it.spot));
   const out = { l0Before: T().filter(it => tab.get(it.spot).L0).length, moved: [] };
-  const free0 = (it, ok) => C.filter(s => s !== it.spot && ok(s) && fits(it.type, s) && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
-    .map(s => ({ s, d: P.get(s).distanceTo(P.get(it.spot) || P.get(s)) + (s.kind === 'on' ? 0 : .6) + (s.item ? .3 : 0) })).sort((a, b) => a.d - b.d).map(o => o.s);
+  const free0 = (it, ok) => C.filter(s => s !== it.spot && ok(s) && fits(it.type, s) && affOk(it.type, s) && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot, 'decoy') && affOk(s.item.type, it.spot) && !rides(it.spot))))
+    .map(s => ({ s, d: P.get(s).distanceTo(P.get(it.spot) || P.get(s)) + (s.kind === 'on' ? 0 : .6) + (s.item ? .3 : 0) - (placeLike(it.type, s) ? 2 : 0) })).sort((a, b) => a.d - b.d).map(o => o.s);   // (3판: the story room's places first)
   // (a thing at its host's habit place moves only to another habit place — 7판's pencil went from the top shelf to a plant
   // pot, and the line "높은 데 숨기기" stopped being true; 검토 세션 P0-1, 10/19)
   // (strict: a habit thing only to a habit place — the L0 moves try that first and leave it for the next step if there's none)
@@ -82,8 +83,8 @@ export function tierPass(S) {
     const s1 = free(it, soft, true)[0];
     if (s1) { put(it, s1, 'L0→돌리면'); continue; }
     const can = (opened() + 1) * 2 <= S.targets.length;   // (after this move at most half behind doors: 9 things → 4, not 5 — GPT QA R2-05)
-    const at = P.get(it.spot), dd = can ? doors.filter(s => s !== it.spot && fits(it.type, s) && affOk(it.type, s) && !s.part.wallFacing && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
-      .sort((a, b) => a.anchor.getWorldPosition(V()).distanceTo(at) - b.anchor.getWorldPosition(V()).distanceTo(at)) : [];
+    const at = P.get(it.spot), dd = can ? doors.filter(s => s !== it.spot && fits(it.type, s) && affOk(it.type, s) && !s.part.wallFacing && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot, 'decoy') && affOk(s.item.type, it.spot) && !rides(it.spot))))
+      .sort((a, b) => a.anchor.getWorldPosition(V()).distanceTo(at) - (placeLike(it.type, a) ? 2 : 0) - b.anchor.getWorldPosition(V()).distanceTo(at) + (placeLike(it.type, b) ? 2 : 0)) : [];
     // a habit thing: behind a door at a habit place, else anywhere a turn away, else any door (as before)
     const s2 = hab(it) && dd.find(habit);
     if (s2) { put(it, s2, 'L0→열어야'); continue; }
