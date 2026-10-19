@@ -99,9 +99,11 @@ export class Game {
     // 너굴이 you don't (and in the disguise rounds, his mask under bunny ears); his side bounces while he is up, shakes on a miss
     const face = k => h('img', { src: L.thumbs['face_' + k] || '', alt: '' });
     const ban = k => h('span', { class: 'wh-ban' }, face(k));   // (user 10/19: a round 'no' sign over 너굴이's face, not a corner ✕)
+    // (10/19 evening, user: "너구리 얼굴만 크게, 밑에 금지 원에 하나 있으면 됨. 다른 눌러도 되는 애 표시 안 할게") just 너굴이 in a big
+    // no-entry ring (the disguise rounds add his bunny-eared mask); no friends card, no words
     this.rule = h('div', { class: 'wh-rule' },
-      h('div', { class: 'wh-rs ok' }, h('div', { class: 'wh-rf' }, face('bunny_happy'), face('frog_happy'), face('hamster_happy')), h('b', { class: 'ol' }, tr(WHACK_CARD.tap)), h('i', {}, '+1')),
-      this.ruleBad = h('div', { class: 'wh-rs no' }, h('div', { class: 'wh-rf' }, ban('raccoon_happy'), ...(LV.disguise ? [ban('raccoon_bunny_normal')] : [])), h('b', { class: 'ol' }, tr(WHACK_CARD.skip)), h('i', {}, '−1')));
+      this.ruleBad = h('div', { class: 'wh-rs no solo' }, h('div', { class: 'wh-rf' }, ban('raccoon_happy'), ...(LV.disguise ? [ban('raccoon_bunny_normal')] : []))));
+    void WHACK_CARD;
     col.append(this.rule);
     this.feverEl = h('div', { class: 'wh-fever' }); document.getElementById('app').append(this.feverEl);
   }

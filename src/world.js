@@ -671,7 +671,7 @@ export class World {
         e.stopPropagation(); if (e.pointerId !== tid) return;
         if (e.pointerType === 'mouse' && e.buttons === 0) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; return; }
         const k = 3.6 / Math.max(this.W, 360), dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
-        if (!this.camLock) this.turnAround(o.piv, -dx * k, dy * k * .65);
+        if (!this.camLock) this.turnAround(o.piv, -dx * k * 1.25, dy * k * .65);   // (10/19 evening, user: "게이지 로테이션은 횡 로테는 약간만 더 빠르게, 수직 로테는 지금 속도 유지")
         this._tdAx = this._domAxis(o, dx, dy); if (this._tdAx !== 'wait' && td.dataset.ax !== this._tdAx) td.dataset.ax = this._tdAx;
         if (this._tdTeach && this._tdAx === 'y' && (o.ty = (o.ty || 0) + Math.abs(dy)) > 24) {   // a real tilt with the dial: learned
           this._tdTeach = false; td.classList.remove('teach'); try { localStorage.setItem('sbk-dial-tilt', '1'); } catch {}

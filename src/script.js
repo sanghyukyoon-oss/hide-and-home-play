@@ -347,7 +347,9 @@ SCENES.push(
     after: [LP('bear', '다 찾았네! 팬케이크도 다 됐어. 조금 탔지만.', 'All found! The pancakes are done too. A little burnt.'), LP('bear', '아, 너굴이가 운동장에서 너 기다린대!', "Oh, and Rocky's waiting for you at the schoolyard!")] },
   // trace: 먹물이 passed through here too — a short trail of its colour-smeared footprints on the floor, nothing to tap
   // (1장 between the two 흑백판, so the thread doesn't drop from 4판 to 10판 — 스토리 룸 10/19 '다시 하고 싶게')
+  // keySay: the chest key comes down in the kitchen pulley — why it was up there (user 10/19: "도르래를 올린다고 왜 열쇠가 생겨? 스토리 보강")
   { id: 'house2fH', type: 'hidden', room: 'house2f', trace: true,
+    keySay: K('펭! 비결 2번. 열쇠는 도르래로 높이 올려 뒀지!', 'Peng! Tip number two: I sent the key up high on the pulley!'),
     pop: { say: K('펭! …쿵.', 'Peng! …Thud.'), move: 'thud' },   // (신나서 뛰다 배로 쿵 → 결과창 "비결 3번. 쿵 하지 않기")
     intro: [L('peng', '펭! 비결 2번 생각해 왔어. 높은 데 숨기기!', 'Peng! I came up with tip number two. Hide stuff up high!'), L('peng', '우리 집은 2층이야. 높을수록 1등이지!', 'My house has two floors. Higher means number one!')],
     say: { first: K('펭! 그건 비결 2번 안 쓴 거야!', "Peng! I didn't use tip number two on that one!"), half: K('반이나…? 비결 2번이 안 통해…', "Half…? Tip number two isn't working…"), last: K('마지막 하나! …쿵. 아무 소리 안 났어.', "Last one! …Thud. That wasn't me.") },
