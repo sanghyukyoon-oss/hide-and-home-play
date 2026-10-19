@@ -1026,6 +1026,23 @@ export const timedIntro = idx => ROCKY[Math.min(ROCKY.length - 1, bind().timed[i
 export const timedWin = idx => { const t = bind().timed[idx] || 0, l = L('raccoon', ROCKY_WIN[t % ROCKY_WIN.length]); return [t >= ROCKY_WIN.length - 1 ? { ...l, keep: true } : l]; };
 // boss games
 export const gameLines = (kind, lv) => GAME[`${kind}:${lv}`] || null;
+// 놀이 보상 이유 (경제·로비 세션 결과 카드, 10/19 사용자 "게임이라고 리워드가 없으니 이상"): 누가, 왜 주는지 한 줄 — 처음 이긴 때만 보임
+// (몽글 TV는 오락기 경품이라 따로 없음. yasik2는 70판 엔딩 바로 앞이라, 엔딩을 끊지 않게 엔딩 뒤에 보이거나 빼는 것을 권함)
+export const GAME_GIFT = {
+  whack: L('frog', '개굴! 수풀 놀이 1등 상품이야.', 'Ribbit! First prize for the bush game!'),
+  redlight: L('raccoon', '…봐준 거야. 이건 그냥 주는 거고.', '…I went easy on you. This is just a gift.'),
+  blanket: L('bunny', '다 맞혔네! 내 간식 반 줄게.', 'You got everyone! Half my snacks are yours.'),
+  gohome: L('hamster', '웁웁, 데려다줘서 고마워! 비상식량 나눠 줄게.', 'Mmf, thanks for walking us home! Have some of my emergency snacks.'),
+  spot: L('raccoon', '쳇, 들켰으니 이건 네 거.', 'Tch. You caught me, so this is yours.'),
+  lamp: L('hamster', '무서웠는데 같이 해 줘서 고마워!', 'That was scary, but thanks for playing with me!'),
+  lampboss: L('nerd', '흠. 실험 협조 사례지.', 'Hm. Consider it payment for helping with the experiment.'),
+  yasik0: L('bunny', '남은 푸딩은 네 거! 쉿.', "The last pudding's yours! Shh."),
+  yasik1: L('sundae', '같이 먹으려던 간식, 네 몫이야!', 'Here, your share of the snacks!'),
+  yasik2: L('bunny', '마지막 간식은 다 같이 나눠 먹자!', "Last snacks, let's all share!"),
+  hotel: L('bunny', '지배인님, 팁이에요! 다음에 또 묵을게요.', "A tip for the manager! We'll stay again."),
+  wakeup: L('sleepy', '음냐… 꿈에서 주운 거야… 너 가져…', 'Mmh… found this in a dream… you keep it…'),
+  treasure: L('raccoon', '…다 못 찾았어. 이건 지킨 상이야.', "…Couldn't find them all. Here's a prize for guarding them."),   // (하나 이상 지키면 이김: '다 못 찾았어'가 모든 경우에 맞음)
+};
 // 프라모델 조립판 (스토리 룸 10/19): go = 부품을 다 찾고 조립을 시작하기 직전 한 줄 (판 대사는 SCENES의 kit 장면)
 // ── 몽글 TV (판 속 TV·모니터와 내 방 TV의 픽셀 미니게임 — src/mongletv.js, 몽글 TV 세션 초안을 스토리 룸이 다듬음 10/19)
 // {who} = 친구 이름(토순이·곰돌이·개굴이: 셋 다 '이'로 끝나 '가/는'), {n} {goal} {s} = 숫자. 진 줄 뒤엔 코드가 ' · ' + again을 붙여요

@@ -1463,3 +1463,15 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .shieldchip svg { width: 20px; height: 20px; }
 .shieldline { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 12px; border-radius: 12px; background: #e9f9df; color: var(--g3); font-size: 14px; }
 .shieldline svg { width: 18px; height: 18px; }
+
+/* 끌다가 톡 회전 수업 (10/19, teachftap.js): the hand drags; partway a second fingertip taps beside it (a ripple), and the
+   drag carries on along a slight arc — the room turning while the finger is down */
+.hand.ftap { animation: handftap 2.6s ease-in-out infinite; }
+.hand.ftap::after { content: ''; position: absolute; left: 66px; top: -14px; width: 22px; height: 22px; border-radius: 50%; background: #fff;
+  border: 3.5px solid #3a2453; box-sizing: border-box; opacity: 0; animation: handftap2 2.6s ease-out infinite; }
+@keyframes handftap { 0% { transform: translate(-120%, -8%) scale(.9); opacity: 0; } 8% { transform: translate(-110%, -8%) scale(.9); opacity: 1; }
+  38% { transform: translate(-60%, -8%) scale(.9) rotate(0deg); } 66% { transform: translate(-5%, -24%) scale(.9) rotate(-6deg); }
+  90% { transform: translate(50%, -8%) scale(.9) rotate(-10deg); opacity: 1; } 100% { transform: translate(60%, -8%) scale(.9) rotate(-10deg); opacity: 0; } }
+@keyframes handftap2 { 0%, 20% { opacity: 0; transform: scale(1.3); box-shadow: 0 0 0 0 rgba(255, 225, 77, .9); }
+  26% { opacity: 1; transform: scale(.8); } 32% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 4px rgba(255, 225, 77, .9); }
+  44% { opacity: 0; transform: scale(1); box-shadow: 0 0 0 16px rgba(255, 225, 77, 0); } 100% { opacity: 0; } }
