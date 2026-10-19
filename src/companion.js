@@ -65,6 +65,7 @@ export function gridPath(from, to, block = new Set()) {
 }
 export const nearestTile = (tiles, x, z, avoid) => { let b = null, bd = 1e9; for (const t of tiles) { if (avoid?.has(t)) continue; const d = (t.x - x) ** 2 + (t.z - z) ** 2; if (d < bd) { bd = d; b = t; } } return b; };
 
+const STAY = true;   // 몽글이 (and the friend you bring) stay at their first spot — 10/19 user
 export class Companion {
   // rooms: the stage's Room(s); others(): characters to keep clear of
   constructor(G, rooms, others) {
@@ -136,6 +137,9 @@ export class Companion {
     const still = !W.ptrs?.size && !W._tdHeld && !W.flying && key === this._key;
     this._key = key; this._still = still ? (this._still || 0) + dt : 0;
     if (this._still < .4 || this.inSight(W)) return;
+    // (10/19 user, phone: "몽글이 왜 여적 따라댕겨, 자꾸 스폰돼서 쳐다보게 됨 — 처음 스폰 위치 고정") it stays where the stage put it;
+    // no pop-in at the screen's edge any more (popIn kept for reference)
+    if (STAY) return;
     this.popIn(W, tw);
   }
   // the part of the screen it should stand in: clear of the top bar, the list and the dial at the bottom

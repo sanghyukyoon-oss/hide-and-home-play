@@ -237,6 +237,7 @@ export class LobbyScene extends MyHomeScene {
       const d = this.doorAt(); ch.root.position.set(d.x, 0, d.z);
       await ch.walkTo(this.tw, p.x, p.z); if (this.dead) return s;
       ch.root.rotation.y = rec.a;
+      const L = SCRIPT.ROOM_ARRIVE?.[k]; if (L) this.say(ch, tr(L.text), 1500);   // (the same first line as on the way through — 스토리 룸)
     } else {
       ch.root.scale.setScalar(.2); G.audio.sfx('pop', 2);
       await this.tw.run(.3, k2 => ch.root.scale.setScalar(.2 + .8 * k2), ease.outBack);
@@ -520,8 +521,11 @@ export class LobbyScene extends MyHomeScene {
     G.save.ending = true; G.persist(); clearFollowupFinish(G, after);   // (GPT QA L02 10/19: staying home after the ending left the last 야식 as 이어하기)
     const stay = await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0;
     if (this.dead) return;
+    // 먹물이 keeps the seat left for it when the room has one free (else it comes in later, like any friend — arrivals)
+    const z = this.zone, keep = inky && !seatedAll(this.H).has('inky') && (z.friends ||= []).length < seatsOf(z) ? inky : null;
+    if (keep) { keep.ch.root.visible = true; keep.rec.a = keep.ch.root.rotation.y; z.friends.push(keep.rec); if (this.H.friendKnown) this.H.friendKnown = [...new Set([...this.H.friendKnown, 'inky'])]; G.persist(); }
     if (!stay) return G.go('stage', { idx: after + 1 });
-    for (const s of temp) { this.room.group.remove(s.ch.root); this.seated = this.seated.filter(x => x !== s); }
+    for (const s of temp) { if (s === keep) continue; this.room.group.remove(s.ch.root); this.seated = this.seated.filter(x => x !== s); }
     this.setMode('lobby');
   }
   giftCards(list) {
@@ -556,7 +560,8 @@ export class LobbyScene extends MyHomeScene {
     // ① the data first, so a page closed now keeps all of it: the pieces into the room, the friends to seats (or the box)
     const frecs = [];
     for (const f of furns) { const i = H.inventory.lastIndexOf(f); if (i < 0) continue; const n0 = this.room.furns.length; this.placeFromInv(i); this.select(null); if (this.room.furns.length > n0) frecs.push(this.room.furns[this.room.furns.length - 1]); }
-    H.friendKnown = metFriends(G.save);
+    // (anyone met who hasn't come in yet — 먹물이 after the ending — walks in now too, rather than being marked as seen)
+    const met = metFriends(G.save); if (H.friendKnown) { friends = [...friends, ...met.filter(k => !H.friendKnown.includes(k))]; H.friendKnown = met; }
     const seatedNow = seatedAll(H), boxNow = new Set(H.friendBox || []), comers = [], lookers = [];
     for (const k of [...new Set(friends)]) {
       if (!CHAR_DEFS[k] || seatedNow.has(k) || boxNow.has(k)) continue;
