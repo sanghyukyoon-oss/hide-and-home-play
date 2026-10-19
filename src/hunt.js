@@ -15,6 +15,7 @@ import { attachItem } from './room.js';
 import { THEMES, stageSpec, STAGE_COUNT, REGIONS, regionOf } from './stages.js';
 import { hostAt, CAMEO_LINE } from './script.js';
 import { blindFor } from './hunt-blind.js';
+import { offWall } from './companion.js';
 
 const K = (ko, en) => { if (en) EN[ko] = en; return ko; };
 export const HUNT = !/[?&]hunt=0(&|$)/.test(location.search);
@@ -170,7 +171,7 @@ export function placeCameo(S) {
   // (on a map, inside one of its rooms' floors — the map's own w/d is its outer box, centred anywhere: 36판 a peeker stood
   // 7 cm into the next room's wall — 겹침 QA 10/19)
   const inside = R.rooms ? (x, z) => R.rooms.some(q => { const o = q.group.position; return Math.abs(x - o.x) < q.w / 2 - .25 && Math.abs(z - o.z) < q.d / 2 - .25; }) : R.w && R.d ? (x, z) => Math.abs(x) < R.w / 2 - .25 && Math.abs(z - cz) < R.d / 2 - .25 : (x, z) => x > all.min.x + .1 && x < all.max.x - .1 && z > all.min.z + .1 && z < all.max.z - .1;
-  const free = (x, z, pad = .05) => inside(x, z) && !boxes.some(o => x > o.b.min.x - pad && x < o.b.max.x + pad && z > o.b.min.z - pad && z < o.b.max.z + pad);
+  const free = (x, z, pad = .05) => inside(x, z) && !boxes.some(o => x > o.b.min.x - pad && x < o.b.max.x + pad && z > o.b.min.z - pad && z < o.b.max.z + pad) && (!S.sides || offWall(S.sides, x, S.room.group.position.y, z));   // (off the walls too — 겹침 QA 10/19)
   const ch = new Char(kind); ch.root.scale.multiplyScalar(.8); ch.pose = 'idle'; ch.setFace?.('happy');
   W.root.add(ch.root);
   const hostAtPos = S.friend.root.position, y0 = W.yaw, p0 = W.pitch, t0 = performance.now();

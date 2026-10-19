@@ -22,19 +22,64 @@ export function crossOK(A, B, x, z) {
   }
   return true;
 }
+// The sides of the rooms that stand (a wall, a rail, a fence, a hedge, a cliff — a doorway's or a rail's gap is open), with
+// how far their pieces reach into the room and out of it near the floor: bodies keep WALL_GAP off them (10/19 겹침 QA, user
+// on 6판: "벽에 걸려 있는 애들 있어" — the walk grid reached .25 m from a wall: 7판 몽글이 12 cm from the balcony rail, the
+// friend you bring 21–25 cm, the host 21 cm from a hedge, walkers 22–34 cm from a cliff)
+export const WALL_GAP = .35;
+export function wallSides(rooms) {
+  const out = [], v = new THREE.Vector3();
+  for (const R of rooms) {
+    R.group.updateMatrixWorld(true);
+    const o = R.group.getWorldPosition(new THREE.Vector3()), inv = R.group.matrixWorld.clone().invert();
+    for (const k of ['N', 'S', 'W', 'E']) {
+      const kind = R.L.walls?.[k] || 'wall'; if (kind === 'none' || !R.walls?.[k]) continue;
+      const ns = k === 'N' || k === 'S', len = ns ? R.w : R.d, half = (ns ? R.d : R.w) / 2, sgn = k === 'N' || k === 'W' ? -1 : 1;
+      let inw = 0, outw = .16;
+      R.walls[k].body.traverse(m => {
+        if (!m.isMesh) return;
+        const pos = m.geometry.attributes.position, st = Math.max(1, Math.floor(pos.count / 400));
+        for (let i = 0; i < pos.count; i += st) {
+          v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).applyMatrix4(inv);
+          if (v.y < .05 || v.y > .9) continue;
+          const c = (ns ? v.z : v.x) * sgn - half;   // + outside the room, − inside
+          if (-c > inw && -c < .8) inw = -c; if (c > outw && c < .8) outw = c;
+        }
+      });
+      const open = [], gap = (u, hw) => { const c = k === 'E' || k === 'N' ? u : -u; open.push([c - hw + .1, c + hw - .1]); };
+      if (kind === 'door') gap(R.L.doorAt?.[k] ?? 0, .58);
+      if (kind === 'rail') for (const u of R.L.railGaps?.[k] || []) gap(u, .5);
+      out.push({ ns, sgn, half, len, ox: o.x, oz: o.z, y: o.y, inw, outw, open });
+    }
+  }
+  return out;
+}
+export function offWall(sides, x, y, z, m = WALL_GAP) {
+  for (const S of sides) {
+    if (Math.abs(S.y - y) > .5) continue;
+    const px = x - S.ox, pz = z - S.oz, along = S.ns ? px : pz, c = (S.ns ? pz : px) * S.sgn - S.half;
+    if (Math.abs(along) > S.len / 2 + m || S.open.some(([a, b]) => along > a && along < b)) continue;
+    if (c <= 0 ? -c < S.inw + m : c - S.outw < m) return false;
+  }
+  return true;
+}
 // walkable points every half tile on the floor (not a cut-out or a raised step) with room for a body, each with its
 // neighbours (one step apart, clear floor between)
 // opts.raised: raised platforms count as floor one step up (the boss runner and seeker climb them)
 export function walkGrid(rooms, r = .26, opts = null) {
-  const tiles = [];
-  for (const R of rooms) {
+  const tiles = [], sides = wallSides(rooms);
+  // furniture of the other rooms that reaches into this one's air (a slide from the floor below up onto a balcony: 7판 몽글이
+  // stood on its top — 겹침 QA 10/19), with the height it spans
+  const others = rooms.map(R => rooms.filter(Q => Q !== R).flatMap(Q => Q.furns.filter(e => e.type !== 'rug').map(e => new THREE.Box3().setFromObject(e.f.group, true))));
+  const inOther = (k, x, y, z) => others[k].some(b => b.min.y < y + .6 && b.max.y > y + .05 && Math.max(b.min.x - x, 0, x - b.max.x) ** 2 + Math.max(b.min.z - z, 0, z - b.max.z) ** 2 < r * r);
+  for (const [k, R] of rooms.entries()) {
     R.group.updateMatrixWorld(true); const o = R.group.position;
     for (let gz = .25; gz < R.d; gz += .5) for (let gx = .25; gx < R.w; gx += .5) {
       const i = Math.floor(gx), j = Math.floor(gz);
       const hh = R.heightAt?.(i, j) || 0;
       if (R.isCut?.(i, j) || (hh && !opts?.raised)) continue;
       const x = o.x + gx - R.w / 2, z = o.z + gz - R.d / 2;
-      if (R.clearAt(x, z, r, opts)) tiles.push({ x, z, y: o.y + hh, R });
+      if (R.clearAt(x, z, r, opts) && offWall(sides, x, o.y + hh, z) && !inOther(k, x, o.y + hh, z)) tiles.push({ x, z, y: o.y + hh, R });
     }
   }
   const climb = opts?.raised ? .38 : .05;

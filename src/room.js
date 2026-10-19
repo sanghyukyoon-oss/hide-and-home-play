@@ -98,6 +98,8 @@ const clearZones = (type, x, z, a) => (KEEP_CLEAR[type] || []).map(([x0, x1, z0,
   return { x: x + u * c + v * s, z: z - u * s + v * c, c, s, hw: (x1 - x0) / 2, hd: (z1 - z0) / 2 };
 });
 
+const hasFine = e => !!(e.s && e.s !== 1 || e.ry || e.dx || e.dz || e.dy);
+
 export class Room {
   constructor(world, layout) {
     this.world = world; this.L = layout; this.T = layout.theme;
@@ -109,8 +111,9 @@ export class Room {
       const rec = fd.x != null ? this.addFurnitureAt(fd.type, fd.x, fd.z, fd.a || 0, fd.id, fd.opts) : this.addFurniture(fd.type, fd.i, fd.j, fd.rot || 0, fd.id, fd.opts);
       const y = fd.y ?? this.heightAt(fd.i, fd.j);
       if (y) { rec.f.group.position.y = y; rec.y = y; }
+      if (hasFine(fd)) this.fine(rec, fd);
     }
-    for (const dd of layout.decor || []) this.addDecor(dd.type, dd.wall, dd.u, dd.opts);
+    for (const dd of layout.decor || []) { const rec = this.addDecor(dd.type, dd.wall, dd.u, dd.opts); if (hasFine(dd)) this.fine(rec, dd); }
     if (layout.door) this.doorDecor = this.addDecor('door', layout.door.wall, layout.door.u);
     // a window or door on a side with no wall at all (a map's open side onto the next room) would hang in the air
     for (const rec of this.decors) if ((layout.walls?.[rec.wall] || 'wall') === 'none') { rec.f.group.visible = false; rec.hidden = true; }
@@ -572,6 +575,26 @@ export class Room {
     this.group.remove(rec.f.group);
     this.furns = this.furns.filter(r => r !== rec);
     this.world.shadowDirty = true;
+  }
+  // 배치 편집's fine touches on top of the grid (10/19): s = size, ry = an extra turn in degrees, dx / dz = a nudge in
+  // metres, dy = up or down (wall pieces; they slide along the wall by u already). Set on the piece's group, so its
+  // hiding spots and doors go with it. A wall piece grows from its middle and keeps its back on the wall.
+  fine(rec, e = rec) {
+    const g = rec.f.group, s = +e.s || 1, ry = +e.ry || 0, dx = +e.dx || 0, dz = +e.dz || 0, dy = +e.dy || 0;
+    Object.assign(rec, { s, ry, dx, dz, dy });
+    if (rec.wall) {
+      if (!rec.c0) {
+        g.scale.setScalar(1); g.position.set(rec.u, 0, 0); g.updateWorldMatrix(true, true);
+        rec.c0 = g.worldToLocal(new THREE.Box3().setFromObject(g, true).getCenter(new THREE.Vector3()));
+      }
+      g.scale.setScalar(s); g.position.set(rec.u + rec.c0.x * (1 - s), dy + rec.c0.y * (1 - s), 0);
+    } else {
+      const [fw, fd] = this.footprint(rec.type, rec.rot), p = rec.x != null ? new THREE.Vector3(rec.x, 0, rec.z) : this.tileToWorld(rec.i, rec.j, fw, fd);
+      g.scale.setScalar(s); g.position.x = p.x + dx; g.position.z = p.z + dz;
+      g.rotation.y = (rec.x != null ? rec.a || 0 : rec.rot * Math.PI / 2) + ry * Math.PI / 180;
+    }
+    this.world.shadowDirty = true;
+    return rec;
   }
   addDecor(type, wallK, u, opts = {}) {
     const wall = this.walls[wallK];

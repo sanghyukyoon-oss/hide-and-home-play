@@ -4,7 +4,7 @@ import { Room, attachItem } from '../room.js';
 import { MapRooms, FLOOR_H } from '../map.js';
 import { disposeTree, put, rbox } from '../gfx/kit.js';
 import { Ambient } from '../ambient.js';
-import { Companion, walkGrid, seenAt } from '../companion.js';
+import { Companion, walkGrid, seenAt, wallSides, offWall } from '../companion.js';
 import { BOSS_AFTER } from './boss.js';
 import { MINI_AFTER, MINI_INFO, BOSS_GAMES } from '../minis.js';
 import { BOSS_GAME_INFO } from './bossgame.js';
@@ -241,11 +241,13 @@ export class StageScene {
     // the friend counting in the corner
     let fa = layout.friendAt || [1.6, 1.6];
     // never stand inside a piece of furniture: take the nearest clear spot to where the layout asked
-    if (this.room.clearAt && !this.room.clearAt(fa[0], fa[1], .48)) {
+    // (nor a body's width or less from a wall: 겹침 QA 10/19 — sides(): the stage's standing sides, wallSides in companion.js)
+    const sides = this.sides = wallSides(this.room.rooms || [this.room]), fy = (fa[2] || 0) * FLOOR_H;
+    if (this.room.clearAt && (!this.room.clearAt(fa[0], fa[1], .48) || !offWall(sides, fa[0], fy, fa[1]))) {
       let best = null;
       for (let dx = -3; dx <= 3; dx += .25) for (let dz = -3; dz <= 3; dz += .25) {
         const x = fa[0] + dx, z = fa[1] + dz, d = dx * dx + dz * dz;
-        if ((!best || d < best.d) && Math.abs(x) < this.room.w / 2 - .3 && Math.abs(z - (this.room.center?.z || 0)) < this.room.d / 2 - .3 && this.room.clearAt(x, z, .48)) best = { x, z, d };
+        if ((!best || d < best.d) && Math.abs(x) < this.room.w / 2 - .3 && Math.abs(z - (this.room.center?.z || 0)) < this.room.d / 2 - .3 && this.room.clearAt(x, z, .48) && offWall(sides, x, fy, z)) best = { x, z, d };
       }
       if (best) fa = [best.x, best.z, fa[2]];
     }
@@ -966,7 +968,7 @@ export class StageScene {
     // (on a map, inside one of its rooms' floors — the map's own w/d is its outer box, centred anywhere: 36판 a peeker stood
     // 7 cm into the next room's wall — 겹침 QA 10/19)
     const inside = R.rooms ? (x, z) => R.rooms.some(q => { const o = q.group.position; return Math.abs(x - o.x) < q.w / 2 - .25 && Math.abs(z - o.z) < q.d / 2 - .25; }) : R.w && R.d ? (x, z) => Math.abs(x) < R.w / 2 - .25 && Math.abs(z - cz) < R.d / 2 - .25 : (x, z) => x > all.min.x + .1 && x < all.max.x - .1 && z > all.min.z + .1 && z < all.max.z - .1;
-    const free = (x, z, pad = .05) => inside(x, z) && !boxes.some(o => x > o.b.min.x - pad && x < o.b.max.x + pad && z > o.b.min.z - pad && z < o.b.max.z + pad);
+    const free = (x, z, pad = .05) => inside(x, z) && !boxes.some(o => x > o.b.min.x - pad && x < o.b.max.x + pad && z > o.b.min.z - pad && z < o.b.max.z + pad) && (!this.sides || offWall(this.sides, x, R.group.position.y, z));
     ch.root.scale.setScalar(.85);
     const roots = [R.group, ch.root], y0 = W.yaw, p0 = W.pitch, t0 = performance.now();
     let best = null;
@@ -2273,6 +2275,7 @@ export class StageScene {
         if (occ.has(i + ',' + j)) continue;
         const x = o.x + i - R.w / 2 + .5, z = o.z + j - R.d / 2 + .5;
         if (!R.clearAt(x, z, .4)) continue;   // a free tile next to a bin can still be too tight for a body
+        if (this.sides && !offWall(this.sides, x, o.y, z)) continue;   // (nor hugging a wall, a cliff, a hedge)
         if (Math.hypot(x - fa[0], z - fa[1]) < .95) continue;
         free.push({ i, j, x, z, y: o.y, R });
       }
