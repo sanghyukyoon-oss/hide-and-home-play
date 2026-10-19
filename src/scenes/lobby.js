@@ -21,6 +21,7 @@ import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFu
 import { SHOP_FURN } from '../catalog.js';
 import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
+import { TV_TYPES, tvScreens, openMongleTV, tvLevel } from '../mongletv.js';   // 몽글 TV (10/19)
 const REGION_NAME = i => regionOf(i)?.name || '';
 const REGIONS_AT = ch => [0, 12, 21, 31, 40, 49, 60][ch - 1] ?? 0;   // (the first stage of chapter ch)
 
@@ -212,7 +213,11 @@ export class LobbyScene extends MyHomeScene {
   }
   seatedHit(x, y) { const hit = this.pick(x, y); return hit.kind === 'char' ? this.seated.find(s => s.ch === hit.char) || null : null; }
   tap(x, y) {
-    if (this.mode === 'lobby') { const hit = this.pick(x, y); if (hit.kind === 'char' && hit.char === this.mong) { this.heroView(); this.reactChar(this.mong); return; } }
+    if (this.mode === 'lobby') {
+      const hit = this.pick(x, y); if (hit.kind === 'char' && hit.char === this.mong) { this.heroView(); this.reactChar(this.mong); return; }
+      // 몽글 TV (10/19): the TV you bought plays too — just for fun here, no taps to win (its doors still open as before)
+      if (hit.kind === 'furn' && TV_TYPES.has(hit.furn.type) && !this.busyTut && !this.G.bot && !this.G.ui.panelOpen) { this.G.audio.sfx('click'); openMongleTV(this.G, { level: tvLevel(this.G.save.stage || 0) }); return; }
+    }
     if (this.mode === 'edit') { const s = this.seatedHit(x, y); if (s) { this.selectFriend(s); return; } this.selectFriend(null); }
     return super.tap(x, y);
   }
@@ -250,7 +255,7 @@ export class LobbyScene extends MyHomeScene {
     if (mode === 'lobby' && prev === 'edit' && this._placed) { const f = this._placed; this._placed = null; this.heroCheer(f); }
     return r;
   }
-  exit() { const W = this.G.world; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0; return super.exit(); }
+  exit() { const W = this.G.world; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0; this.G.tv?.close(); this.tvs?.dispose(); this.tvs = null; return super.exit(); }
   // a piece placed in 꾸미기: 몽글이 turns to it and hops (where it stands); the walk over comes on 완료
   placeFromInv(i) {
     const n0 = this.zone.furniture.length; super.placeFromInv(i);
@@ -434,6 +439,12 @@ export class LobbyScene extends MyHomeScene {
 
   update(dt) {
     super.update(dt);
+    // 몽글 TV: the screens in this room light up (again whenever the room is rebuilt or a TV is placed, moved or boxed)
+    if (!this.G.bot) {
+      const tvf = this.room.furns.filter(r => TV_TYPES.has(r.type)).map(r => r.f);
+      if (this._tvRoom !== this.room || tvf.length !== this._tvN || tvf.some(f => !this.tvs?.has(f))) { this.tvs?.dispose(); this._tvRoom = this.room; this._tvN = tvf.length; this.tvs = tvScreens(tvf); }
+    }
+    this.tvs?.update(dt);
     // left alone for 5 s: a slow sway (about ±8°, a minute a swing); a finger stops it where it is
     if (this.mode === 'lobby') {
       const W = this.G.world, idle = performance.now() - W.lastActive > 5000 && !W.flying && !this.busyTut && !this.G.ui.panelOpen;

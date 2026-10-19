@@ -19,6 +19,7 @@ export function installAppBack(G) {
     armed = false;
     const ui = G.ui, S = G.scene, scene = document.getElementById('app').dataset.scene;
     if (G.pending || !S) return;
+    if (G.tv) return G.tv.close();   // 몽글 TV: back = turn it off
     if (ui.panelOpen) {
       const x = ui.panelOpen.querySelector(':scope > .close');
       if (x) x.press();   // (buttons fire on pointerup — ui.js btn — so press() rather than click())

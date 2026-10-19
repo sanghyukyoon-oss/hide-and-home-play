@@ -58,6 +58,7 @@ import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitF
 import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
+import { tvScreens, openMongleTV, tvLevel } from '../mongletv.js';   // 몽글 TV (10/19)
 
 // 레벨 보고서 R1 '몰래 숨기' 시제품 (10/18) — only with ?hide=1 (the user compares it on the phone before anything changes):
 // you don't watch the friend hide ("눈 감아! 하나, 둘, 셋" and only the sounds), 2–3 big hideouts are candidates, a trail of
@@ -258,6 +259,9 @@ export class StageScene {
     // (D4 10/19, user "추천대로": every hidden-object stage after 1장 too — they showed 2~7 of the list at once)
     if (!this.custom && !this.preview && !this.incident && this.idx >= 1 && (this.idx <= 10 || this.hunt)) this.tiers = tierPass(this);
     this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
+    // 몽글 TV (10/19): the room's TVs and monitors are on — a little pixel picture, a flicker now and then — and a tap on one
+    // plays (not the TV puzzle's TV; a 흑백 target stays dark until it's found; never for the bots)
+    if (!this.G.bot) this.tvs = tvScreens((this.room.rooms || [this.room]).flatMap(R => R.furns).map(e => e.f).filter(f => f !== this.plan.tv?.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); } });
     if (this.v2) v2Prep(this);
     W.shadowDirty = true;
     // state
@@ -346,6 +350,7 @@ export class StageScene {
     this.dead = true;
     this.clearTapTimers();
     const G = this.G;
+    G.tv?.close(); this.tvs?.dispose(); this.tvs = null;   // 몽글 TV
     G.world.onPan = null; G.world.onDoubleTap = null; this.tutEls?.forEach(e => e.remove()); this.trick?.dispose();
     if (G.world.post) G.world.post.u.gray.value = 0;
     document.getElementById('app').style.removeProperty('--joyB');
@@ -479,7 +484,9 @@ export class StageScene {
     if (hit.kind === 'item') return hit.item.found ? null : { obj: hit.node, m: .16 };
     // plain furniture doesn't answer a tap any more (10/19), so it doesn't dip either — a 흑백 target still does
     if (hit.kind === 'furn') { const gt = this.grayTarget(hit.furn); if (gt && !gt.found) return { obj: hit.node, m: .035 };
-      const np = this.partNear(hit.furn, x, y); return np ? { obj: np.pivots[0], m: .06 } : null; }   // (QA3-fb5: the drawer a body tap will work dips)
+      const np = this.partNear(hit.furn, x, y);
+      if (this.tvAt(hit.furn) && (!np || this.tvs.screenAt(this.G.world, hit.furn, x, y))) return { obj: hit.node, m: .03 };   // 몽글 TV
+      return np ? { obj: np.pivots[0], m: .06 } : null; }   // (QA3-fb5: the drawer a body tap will work dips)
     return { obj: hit.node, m: hit.kind === 'char' ? .07 : .06 };
   }
   pickExact(x, y) {
@@ -529,15 +536,18 @@ export class StageScene {
     if (hit.kind === 'char') return this.tapChar(hit.char);
     if (hit.kind === 'furn' && hit.furn.type === 'puzzleframe') return this.openPuzzle(hit.furn);
     if (hit.kind === 'furn' && this.plan.tv && hit.furn === this.plan.tv.f) return this.useTv();
+    // 몽글 TV (10/19): a tap on the screen plays; on the body only when no drawer or door is right by the finger
+    const tvf = hit.kind === 'furn' && this.tvAt(hit.furn) ? hit.furn : null;
+    if (tvf && this.tvs.screenAt(G.world, tvf, x, y)) return this.openTv();
     // R7 (level report): a locked piece of furniture answers a tap on its body — its nearest locked door or drawer reacts
     if (hit.kind === 'furn') { const lp = this.lockedPartNear(hit.furn, x, y); if (lp) return this.onPart(lp, x, y); }
     if (hit.kind === 'furn') { const lv = hit.furn.parts?.find(p => p.isLever); if (lv) return this.onPart(lv, x, y); }   // (톡: the lever's post or box pulls it too)
-    if (hit.kind === 'furn' && ft?.found) return;   // 흑백판: a piece already coloured back is not a wrong tap (QA 10/18: each re-tap cost a 톡)
+    if (hit.kind === 'furn' && ft?.found && !tvf) return;   // 흑백판: a piece already coloured back is not a wrong tap (QA 10/18: each re-tap cost a 톡)
     // (10/19, user: "가구는 눌러도 반응 없지만 물건들 누르면 -1로") — the body of a plain piece of furniture: nothing at all
     // (it used to wobble and spend a 톡; a finger meant for a drawer often landed on the body)
     // (QA3-fb5 10/19, user: "스테이지2에서 책상 서랍이 잘 안닫힘") — a drawer or door often shows only a sliver past its own
     // furniture (2판's desk drawer: ~16 px of front, open or shut); a tap on the body right by one works that one
-    if (hit.kind === 'furn') { const np = this.partNear(hit.furn, x, y); if (np) return this.onPart(np, x, y); return; }
+    if (hit.kind === 'furn') { const np = this.partNear(hit.furn, x, y); if (np) return this.onPart(np, x, y); if (tvf) return this.openTv(); return; }
     this.addMiss(x, y, true);
   }
   // R7 (level report): every target left is behind something from this side. Try turning ±45°, ±90° and 180° (camera
@@ -1289,8 +1299,33 @@ export class StageScene {
     if (hit.kind === 'item') return hit.item.found || (hit.item.role === 'decoy' && !this.grayAt(x, y));
     if (hit.kind !== 'furn') return false;   // a door, drawer, lid, lever, friend, the peeking tell: it answered the first tap
     const f = hit.furn, gt = this.grayTarget(f);
-    if (f.type === 'puzzleframe' || f === this.plan.tv?.f || (gt && !gt.found)) return false;
+    if (f.type === 'puzzleframe' || f === this.plan.tv?.f || (gt && !gt.found) || this.tvAt(f)) return false;
     return !(this.lockedPartNear(f, x, y) || f.parts?.some(p => p.isLever) || this.partNear?.(f, x, y));
+  }
+  // ── 몽글 TV (10/19, src/mongletv.js): a TV or monitor in this room that plays (tvScreens; no bot, no TV puzzle)
+  tvAt(furn) { return !!this.tvs?.has(furn); }
+  // the stage stops while it's open (clock, hint sparkle, the 톡 timers: update() is paused); a win gives +3 taps once a
+  // stage, never past the stage's own count (user: "성공하면 한 판에 한 번 손가락 +3"); no tap count = just for fun
+  async openTv() {
+    const G = this.G;
+    if (G.tv || this.paused || this.result || !this.running || G.ui.panelOpen || G.bot) return;
+    this.paused = true; G.audio.sfx('click');
+    const pay = this.tapsLeft == null ? null : {
+      state: () => this._tvPaid ? 'already' : this.tapsLeft >= this.tapBudget ? 'full' : 'gain',
+      win: () => this.tvReward(),
+    };
+    await openMongleTV(G, { level: tvLevel(this.idx), pay });
+    if (this.dead) return;
+    this.paused = false; this.idle = 0;
+  }
+  tvReward() {
+    if (this.tapsLeft == null || this._tvPaid || this.result) return 0;
+    const n = Math.min(this.tapBudget, this.tapsLeft + 3) - this.tapsLeft;
+    if (n <= 0) return 0;   // (full: nothing given, so it's still there for later)
+    this._tvPaid = true; this.tapsLeft += n;
+    const p = this.tapPill;
+    if (p) { p.querySelector('.v').textContent = this.tapsLeft; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); p.classList.toggle('need', this.tapsLeft <= 3); }
+    return n;
   }
   lockedPartNear(furn, x, y) {
     const W = this.G.world; let best = null, bd = Infinity;
@@ -2290,7 +2325,7 @@ export class StageScene {
     this.tw.update(dt);
     this.t += dt;
     this.updateTapTimers(dt);
-    this.room.update(dt); this.ambient?.update(dt); this.look?.update(dt);
+    this.room.update(dt); this.ambient?.update(dt); this.look?.update(dt); this.tvs?.update(dt);
     this.friend.update(dt); this.trick?.update(dt); this.cameo?.ch.update(dt);
     if (this.v2) v2Update(this, dt);
     for (const n of this.npcs || []) n.ch.update(dt);
