@@ -711,7 +711,7 @@ export class StageScene {
     const onLine = L => {
       opts.onLine?.(L);
       const ch = this.charFor(L.who); if (ch) ch.faceTo?.(W.cam.position.x, W.cam.position.z);
-      if (opts.cam && ch) closeUp(this, ch);   // (10/19) an end-of-stage talk: the camera comes to whoever speaks
+      if (opts.cam && ch) closeUp(this, ch, { portrait: true });   // (10/19) an end-of-stage talk: the camera comes to whoever speaks
     };
     try { await playDialog(G, lines, { ...opts, onLine }); }
     finally { this.talking = false; app.classList.remove('cine'); }
@@ -839,7 +839,7 @@ export class StageScene {
     it.slot?.classList.add('found', 'bump');
     await tw.run(.6, k => { f.root.position.lerpVectors(pc, to, k); f.root.position.y = pc.y + (to.y - pc.y) * k + Math.sin(k * Math.PI) * .7; f.root.scale.setScalar(.25 + .75 * Math.min(1, k * 1.7)); });
     f.faceTo(W.cam.position.x, W.cam.position.z);
-    closeUp(this, f);   // (10/19 "등장하거나 말하는 경우 카메라를 잘 잡아 줘야지") in on the friend who popped out, while the room lights up
+    closeUp(this, f, { portrait: true });   // (10/19 "등장하거나 말하는 경우 카메라를 잘 잡아 줘야지") in on the friend who popped out, while the room lights up — the same frontal shot every stage
     this.tail?.mesh.parent?.remove(this.tail.mesh); this.tail = null;   // 1판: the tail goes back in with her
     // the room lights up: out of the dark, or a warm glow over the day
     const to2 = this.th.light || null, a0 = W.hemi.intensity, s0 = W.sun.intensity;
@@ -2296,7 +2296,7 @@ export class StageScene {
     this.bubble.style.display = 'none';
     const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);
     // (10/19) the camera comes in on the friend cheering — or on 먹물이 saying "…앗." first; it goes back out when 먹물이 bolts
-    if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch); else closeUp(this, f);
+    if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch, { portrait: true }); else closeUp(this, f, { portrait: true });   // (the same frontal shot every stage — user 10/19)
     // 깜짝 한 방 (스토리 룸 10/19): the host's one small moment, inside this close-up (script.js scene.pop) — else the plain cheer
     const pop = !this.custom && !this.preview && !this.model && !G.bot ? sceneAt(this.idx)?.pop : null;
     const popDone = pop ? this.popMove(f, pop) : null;

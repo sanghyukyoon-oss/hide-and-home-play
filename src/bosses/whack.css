@@ -25,7 +25,7 @@
 .wh-rs b { font-family: var(--font-display); font-size: 20px; line-height: 1.1; color: #fff; }
 .wh-rs.ok b { color: #8be07f; }
 .wh-rs.no b { color: #ff8a96; }
-.wh-rs i { font-style: normal; font-weight: 900; font-size: 15px; line-height: 1; }
+.wh-rs i { font-style: normal; font-weight: 900; font-size: 16px; line-height: 1; }   /* (UI 10/19: 폰에서 작아 보여 16px) */
 .wh-rs.ok i { color: #2f9a4a; }
 .wh-rs.no i { color: #e2475a; }
 .wh-rs.no.warn { animation: whWarn .42s ease-in-out infinite alternate; }
