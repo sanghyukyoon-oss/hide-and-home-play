@@ -60,7 +60,8 @@ export function moveItem(it, spot) {
   it.spot = spot; spot.item = it;
 }
 const CHAIN = new Set(['key', 'note', 'color', 'treat', 'tool', 'sock', 'book', 'gadget']);
-const fitsSpot = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat) && spotFits(type, s) && affOk(type, s); };
+// (aff false: inside a locked piece the planner may already have put something that only fits there — the lock comes first)
+const fitsSpot = (type, s, aff = true) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat) && spotFits(type, s) && (!aff || affOk(type, s)); };
 // a key or a note out in the open that the start view can't see moves to the nearest free open place it can see
 export function chainToView(S) {
   const W = S.G.world, R = S.room; let moved = null;
@@ -105,7 +106,7 @@ export function fixBlindSpots(S) {
     const o = S.worldCenter(it), lockedIn = it.spot.part?.lock ? it.spot.part : null;
     const open = s => fitsSpot(it.type, s) && (!s.part || ((s.part.reach ?? 1) >= .55 && !s.part.lock));
     let ok = false;
-    for (const s of near(o, s => fitsSpot(it.type, s) && (lockedIn ? s.part === lockedIn : open(s)), 5)) {
+    for (const s of near(o, s => fitsSpot(it.type, s, !lockedIn) && (lockedIn ? s.part === lockedIn : open(s)), 5)) {   // (13판's code lesson lost its fridge here when the table said 'food only' — 10/20)
       const old = it.spot; moveItem(it, s);
       if (views(it) >= 2) { moved.push(`${it.type}: ${old.label} → ${s.label}`); ok = true; break; }
       moveItem(it, old);
@@ -118,7 +119,7 @@ export function fixBlindSpots(S) {
     // 25판's before; 리포트 v3 P2, 11~70판 레벨 세션 10/19). Only things out on top of something swap in: their place is seen.
     if (!ok && lockedIn) {
       const a = it.spot;
-      for (const o of S.items.filter(o => o !== it && o.role === 'target' && !o.found && !o.friend && o.spot.kind === 'on' && !o.spot.part && fitsSpot(o.type, a) && fitsSpot(it.type, o.spot)).slice(0, 6)) {
+      for (const o of S.items.filter(o => o !== it && o.role === 'target' && !o.found && !o.friend && o.spot.kind === 'on' && !o.spot.part && fitsSpot(o.type, a, false) && fitsSpot(it.type, o.spot)).slice(0, 6)) {
         const b = o.spot; moveItem(it, b); moveItem(o, a);
         if (views(o) >= 2) { it.g.visible = true; moved.push(`${it.type} ↔ ${o.type}: ${a.label} (자물쇠 지킴)`); ok = true; break; }
         moveItem(it, a); moveItem(o, b); o.g.visible = true;

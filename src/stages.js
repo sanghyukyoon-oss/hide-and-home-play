@@ -680,8 +680,8 @@ const HO_SHAPE = {
   // (1~10판 밸런스 10/19 밤 — 사용자 실폰 30~35분 "막 다시 하고 싶진 않다": 4~11판이 거의 다 7~8개라 판마다 같은 일이었어요.
   // 5판(열쇠를 처음 배우는 판) 7 → 6, 7판(2층집) 8 → 7: 6 · 6 · 7 · 7 · 6 · 7 · 8로 오르고 8판 조립판에서 한숨)
   2: [4, 0], 3: [6, 0], 5: [6, 1], 6: [7, 1], 7: [7, 1], 8: [6, 1],   // (8판 프라모델: 부품 6개, 하나는 자물쇠 뒤)
-  9: [7, 1], 11: [8, 1],
-  13: [8, 1], 15: [7, 1], 19: [8, 2],
+  9: [7, 1], 11: [7, 1],   // (11판 8 → 7: 1~20판에서 가장 길었어요 — 사람 속도 봇 74초, 앞뒤 판보다 18초; 11~20판 레벨 점검 10/20)
+  13: [8, 1], 15: [7, 1], 19: [8, 2],   // (13판's count is its kit card's — KITS.moving, 7 since 10/20)
   22: [8, 1], 23: [8, 1], 25: [9, 1], 26: [11, 2], 27: [10, 1],
   33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 1],   // (36: the sock puzzle is its second chain — D3)
   41: [8, 1], 43: [10, 1], 44: [9, 2], 45: [10, 1],
@@ -872,7 +872,7 @@ export function planStage(room, spec, story = null) {
   // the first stages only ask for things with a readable shape (a thin pencil under a loft was hard even with a hint)
   const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard', 'toothbrush'];   // (+ toothbrush: 17 px on 9판, 10/19)
   // (짝 양말 판: no pair of socks on the list either — it would read as the puzzle's sock, and the odd ones lying about say "무늬가 달라")
-  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 10 && THIN.includes(t))   /* (1~10판: no pencil or USB on the list — 19 px on a phone, user 10/19 "너무 작게 하지 마") */
+  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 20 && THIN.includes(t))   /* (1~20판: no pencil or USB on the list — 19 px on a phone, user 10/19 "너무 작게 하지 마"; 11~20판 too, 10/20: 11판 연필, 13판 칫솔) */
     || (spec.showcase && DEVICE_LOOKALIKE[spec.room]?.includes(t)) || (spec.treat && t === spec.treat.item);   // a stage's tool is never a target or a decoy (간식: 50·55판 listed a 도토리 beside the 도토리 that moves the host)
   // the common things rotate through the stages (a window that moves on 5 places a stage) so the same milk carton
   // doesn't turn up stage after stage (user, 10/17: "계속 찾는것만 찾게"); the place's own things come first
@@ -980,6 +980,20 @@ export function planStage(room, spec, story = null) {
       relaxFit = fit; relaxAff = aff;
       for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]];
       relaxFit = relaxAff = false;
+    }
+    // (nothing on the list goes in that piece at all: the lock moves to another lockable piece something does go in, before it
+    // would go missing — 13판's code lesson, the chapter's new lock, lost its piece when the moving-box card changed; 10/20)
+    if (!s && !L.lever) {
+      const alt = room.parts.filter(p => p !== L.part && p.lockable && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p) && !p.wallFacing && !p.lockWallFacing);
+      for (const p of alt) {
+        for (const [fit, aff] of [[false, false], [true, false], [true, true]]) {
+          relaxFit = fit; relaxAff = aff;
+          for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === p, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]];
+          relaxFit = relaxAff = false;
+          if (s) break;
+        }
+        if (s) { L.part = p; break; }
+      }
     }
     if (s) placements.push({ type: targets[ti++], spot: s, role: 'target' });
     else { if (L.lever) L.lever.leverFor = null; locks.splice(li--, 1); }
@@ -1098,10 +1112,13 @@ export function planStage(room, spec, story = null) {
 // 너굴이's timed stages (no 톡 there); the laundromat's odd socks are the pair puzzle, not decoys. Runs on the finished plan.
 export const decoyCap = n => Math.max(6, Math.round(n * 1.5));
 export function capDecoys(plan, spec) {
-  if (!plan || spec.gray || spec.timed || spec.tut === 1 || spec.custom) return 0;   // (2판 counts too: 8 decoys round 4 things was double — 검토 P1-3)
+  const early = (spec.idx ?? -1) >= 0 && spec.idx < 20;   // (1~20판: 흑백·시간제 판도 — 17판 흑백 13개, 18판 시간제 17개가 다 보이는 데 깔렸어요, 11~20판 레벨 점검 10/20)
+  if (!plan || (!early && (spec.gray || spec.timed)) || spec.tut === 1 || spec.custom) return 0;   // (2판 counts too: 8 decoys round 4 things was double — 검토 P1-3)
   // (1~10판은 찾을 것 수만큼, 6 밑으로는 안 내려감 — 6~9판에 확대·두 칸 맵·함정 두 배가 한꺼번에 와서 1장에서 제일 빡빡했어요;
   // 검토 세션 실측 + 사용자 승인 10/19, 1~10판 레벨 세션)
-  const n = plan.targets.length, cap = spec.tut === 2 ? n : (spec.idx ?? -1) >= 0 && spec.idx < 10 ? Math.max(6, n) : decoyCap(n);   // (1~10판; 11판부터는 그대로)
+  // (1~20판: 찾을 것 수만큼, 6 밑으론 안 내려감 — 시간제는 1.5배. 11판 냥냥이 부엌이 함정 12개에 처음부터 8개가 보여서, 1장 끝에서
+  // 가장 어수선했어요; 21판부터는 그대로)
+  const n = plan.targets.length, cap = spec.tut === 2 ? n : early ? (spec.timed ? decoyCap(n) : Math.max(6, n)) : decoyCap(n);
   const dec = plan.placements.filter(p => p.role === 'decoy' && p.type !== 'sockp');
   if (dec.length <= cap) return 0;
   const drop = new Set(rng((spec.seed || 1) + 4241).shuffle(dec.slice()).slice(cap));
