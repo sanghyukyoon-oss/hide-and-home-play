@@ -79,7 +79,8 @@ function sub(S, kind, line, dir = '') {
 
 // free floor at (x, z): inside the room and clear of every piece of furniture's real box (room.clearAt is per 1 m tile —
 // it called the whole tile around a chest blocked, so the tell never found a side to peek from)
-function boxes(S) { return (S.room.rooms || [S.room]).flatMap(R => R.furns).map(e => ({ f: e.f, b: new THREE.Box3().setFromObject(e.f.group) })).filter(o => o.b.max.y - o.b.min.y > .06); }
+// (QA3-prints9 10/19, user: "장애물 밑에도 발자국 생긴다") the trail goes round the decor too (boxes, pots, cushions), not only furniture
+function boxes(S) { return (S.room.rooms || [S.room]).flatMap(R => [...R.furns, ...(R.decors || []).filter(q => q.type !== 'rug' && !(q.y > 1) && !q.hidden)]).map(e => ({ f: e.f, b: new THREE.Box3().setFromObject(e.f.group) })).filter(o => o.b.max.y - o.b.min.y > .06); }
 function freeAt(S, bx, x, z, pad = .03) {
   const R = S.room, cz = R.center?.z || 0;
   if (Math.abs(x) > R.w / 2 - .06 || Math.abs(z - cz) > R.d / 2 - .06) return false;

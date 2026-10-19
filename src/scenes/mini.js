@@ -103,15 +103,18 @@ export class MiniScene {
     const pad = this.pad = h('div', { class: 'mini-pad' });
     document.getElementById('app').append(pad);
     let down = null;
+    this._release = () => { if (down) { down = null; this.game?.up?.(); } };   // (QA3-mini10: the pause lets go of a held press)
     pad.addEventListener('pointerdown', e => { if (!this.running || this.paused) return; e.preventDefault(); try { pad.setPointerCapture(e.pointerId); } catch {} down = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId }; this.game?.down?.(e.clientX, e.clientY); });
     pad.addEventListener('pointermove', e => { if (!this.running || this.paused) return; this.game?.move?.(e.clientX, e.clientY, !!down); });
-    const up = e => {
+    // (QA3-mini10, GPT QA TECH-04) a lift ends a press and may be a tap; a press the system took away (pointercancel, a lost
+    // capture) only lets go — it was never a tap. A held press is let go even while paused, so nothing runs on by itself after.
+    const end = (e, cancelled) => {
       if (!down || e.pointerId !== down.id) return; const d = down; down = null;
-      if (!this.running || this.paused) return;
       this.game?.up?.(e.clientX, e.clientY);
+      if (cancelled || !this.running || this.paused) return;
       if (performance.now() - d.t < 450 && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 22) this.game?.tap?.(e.clientX, e.clientY);
     };
-    pad.addEventListener('pointerup', up); pad.addEventListener('pointercancel', up); pad.addEventListener('lostpointercapture', up);
+    pad.addEventListener('pointerup', e => end(e, false)); pad.addEventListener('pointercancel', e => end(e, true)); pad.addEventListener('lostpointercapture', e => end(e, true));
     pad.addEventListener('contextmenu', e => e.preventDefault());
   }
   setStatus(text, cls = '') { this.statusEl.textContent = text; this.statusEl.className = 'mini-status ol ' + cls; }
@@ -147,14 +150,14 @@ export class MiniScene {
   }
   pause() {
     if (this.result || !this.running) return;
-    const G = this.G; this.paused = true;
+    const G = this.G; this.paused = true; this._release?.();
     G.ui.panel({ title: '잠깐!', color: 'purple', close: () => { G.ui.closePanel(); this.paused = false; }, body: [h('div', { class: 'txt' }, this.game?.goal || '')],
       buttons: [G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => { G.ui.closePanel(); G.go('home'); } }), G.ui.btn('계속하기', { color: 'green', cls: 'big', onClick: () => { G.ui.closePanel(); this.paused = false; } }),
         G.ui.btn('건너뛰기', { color: 'gray', cls: 'sm', onClick: () => { G.ui.closePanel(); G.go('stage', { idx: this.after + 1 }); } })] });
   }
   update(dt) {
+    if (this.paused) return;   // (QA3-mini10, TECH-05) the scene's tweens wait too: cups, pop-ups, the 바꿔치기 peek
     this.tw.update(dt);
-    if (this.paused) return;
     for (const c of this.chars) c.update(dt);
     this.room?.update?.(dt);
     if (!this.running || !this.game) return;

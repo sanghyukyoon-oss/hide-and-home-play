@@ -203,7 +203,7 @@ export class World {
     this._fTurn(dr, dx, dy);
   }
   _fTurn(dr, dx, dy) {
-    if (!dr.ft) { dr.ft = {}; dr.piv = this._turnPivot(); }   // a new turn: its pivot is fixed for the whole of it
+    if (!dr.ft) { dr.ft = {}; dr.piv = this._pivNow = this._turnPivot(); }   // a new turn: its pivot is fixed for the whole of it
     const k = 3.6 / Math.max(this.W, 360);
     this.turnAround(dr.piv, -dx * k, dy * k * .65); dr.turned = true;
     this._tdAx = this._domAxis(dr.ft, dx, dy);
@@ -218,7 +218,7 @@ export class World {
     this.updateCam();
     const cx = this.W / 2, cy = this.H / 2, hit = this.pick(cx, cy, [this.root]).find(h => !h.object.userData.proxy);
     if (hit) return hit.point.clone();
-    return this.screenToGround(cx, cy, this.target.y);
+    return this.target.clone();   // (QA3-cam8: nothing there — the view's own centre, which never needs to move)
   }
   // the room's floor (meshes marked userData.floor), measured again for each turn — rooms change between scenes
   _floorBox() {
@@ -235,8 +235,11 @@ export class World {
     // centre and nothing is pushed back (it used to shift, get pushed back by clampTarget and swing the view about at a
     // map's edge: "미쳐버려"; measured 10/19 on 4판 — stopping the shift at the edge instead moved the view more)
     if (P) { this.updateCam(); const after = this.screenToGround(s0.x, s0.y, P.y);
-      if (after) { const nx = this.target.x + P.x - after.x, nz = this.target.z + P.z - after.z, [x0, x1, z0, z1] = this._box();
-        if (nx >= x0 && nx <= x1 && nz >= z0 && nz <= z1) { this.target.x = nx; this.target.z = nz; } } }
+      // (QA3-cam8, user: "회전중에 앵커가 변할 때가 있는데 이게 제일 ㅈ같아") the anchor never changes mid-turn: a step that would take
+      // the view past the box slides along its edge (it used to turn that step round the view's centre — the anchor flipped
+      // step by step, up to 581 px of drift on 7·8판); a view already past it is never pulled in
+      if (after) { const [x0, x1, z0, z1] = this._box(), t = this.target;
+        t.x = clamp(t.x + P.x - after.x, Math.min(x0, t.x), Math.max(x1, t.x)); t.z = clamp(t.z + P.z - after.z, Math.min(z0, t.z), Math.max(z1, t.z)); } }
     if (dyaw) { this.onRotate?.(-dyaw); this._notch(); }
   }
   clearTap() { if (this._pendTap) { clearTimeout(this._pendTap.timer); this._pendTap = null; } this._ring(null); this.eMode = this.eBase; this._lastTap = null; }
@@ -289,7 +292,29 @@ export class World {
     // screen (user, 10/18: "맵 끝을 줌인해서 못 봄. 좀 여유 주라니까")
     const zin = Math.max(0, 1 - 1 / this.zoom);
     const b = this.bounds * Math.max(this.panFree ?? .45, zin) + .01 + this.bounds * .35 + zin * (this.bounds * .6 + 1.5), sx = this.slack?.x || 0, sz = this.slack?.z || 0;
-    return [this.home.x - b - sx, this.home.x + b + sx, this.home.z - b - sz, this.home.z + b + sz];
+    let x0 = this.home.x - b - sx, x1 = this.home.x + b + sx, z0 = this.home.z - b - sz, z1 = this.home.z + b + sz;
+    // (QA3-cam8 10/19, user: "큰 맵에서 구석을 보려는데 카메라 중앙으로 안 가짐") in a stage every spot of the map can come to the middle:
+    // a thing at height y is in the middle when the view's centre sits (T.y − y)·cot(pitch) from it toward the camera, so the
+    // box is the map's floor swept that far for the map's lowest and highest things (and a little more when zoomed in)
+    const M = this._mapBox();
+    if (M) {
+      // (kk: the middle of the screen isn't the look-at point — the frame sits a little off it, fit.cy — so the middle's ray meets
+      // the view's plane that much further from the camera)
+      const c = 1 / Math.tan(Math.max(this.pitch, .165)), ux = Math.sin(this.yaw), uz = Math.cos(this.yaw), m = .45 + zin * 1.2;
+      const kk = ((this.fit?.cy ?? .5) - .5) * (this.viewH || 0) / this.zoom / Math.max(.15, Math.sin(this.pitch)), a = (this.target.y - M.y1) * c + kk, d = (this.target.y - M.y0) * c + kk;
+      x0 = Math.min(x0, M.x0 + Math.min(ux * a, ux * d) - m); x1 = Math.max(x1, M.x1 + Math.max(ux * a, ux * d) + m);
+      z0 = Math.min(z0, M.z0 + Math.min(uz * a, uz * d) - m); z1 = Math.max(z1, M.z1 + Math.max(uz * a, uz * d) + m);
+    }
+    return [x0, x1, z0, z1];
+  }
+  // (QA3-cam8) the stage's map — its floor (x, z) and how low / high things in it go — measured once (a stage sets
+  // mapBox = undefined; anywhere else it is null and the box is the old one)
+  _mapBox() {
+    if (this.mapBox !== undefined) return this.mapBox;
+    this.root.updateMatrixWorld(true);
+    const f = this._floorBox(); if (!f) return (this.mapBox = null);
+    const all = new THREE.Box3().setFromObject(this.root);
+    return (this.mapBox = { x0: f.min.x, x1: f.max.x, z0: f.min.z, z1: f.max.z, y0: Math.min(f.min.y, f.max.y), y1: Math.min(Math.max(all.max.y, f.max.y), f.min.y + 6) });
   }
   // 손맛 4: a finger may pull the view past the edge; ~90 px of pull shows as ~30 px (rubber band), never more than ~60 px
   _rbL() { return 90 * this.viewH / this.zoom / Math.max(this.H, 1); }
@@ -442,6 +467,13 @@ export class World {
       const show = this.joyOn && !this.joyHidden && !this.camLock;   // a scene can hide it (the home screen)
       if (show !== this._joyShown) { this._joyShown = show; this.joy.classList.toggle('on', show); if (!show) this.releaseStick(); }
     }
+    // (QA3-cam8, user idea) a small see-through '+' on the turn's anchor while a turn is held (the dial, or drag-then-tap)
+    { const pv = this._pivNow, on = !!pv && !this.camLock && (this._tdHeld || (this.eMode === 'turn' && this.ptrs.size > 0));
+      let el = this._pivEl;
+      if (on && !el) { el = this._pivEl = document.createElement('div'); el.className = 'turnpiv'; el.innerHTML = '<svg viewBox="0 0 26 26" width="26" height="26"><path d="M13 4v18M4 13h18" stroke="rgba(58,36,83,.5)" stroke-width="5.5" stroke-linecap="round"/><path d="M13 4v18M4 13h18" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>'; this.canvas.parentElement.append(el); }
+      if (el) { if (on) { this.updateCam(); const s = this.toScreen(pv); el.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px)`; }
+        if (on !== this._pivOn) { this._pivOn = on; el.classList.toggle('on', on); }
+        if (!on && !this._tdHeld && !this.ptrs.size) this._pivNow = null; } }
     // double-tap zoom glides
     if (this.zoomGoal && !this.drag?.moved) {
       // an even zoom step (no ease-in/out): a fixed rate in log-zoom toward the goal
@@ -620,7 +652,7 @@ export class World {
     td.innerHTML = '<i class="td-glass"><i class="td-band"><i class="td-mi"></i><i class="td-ma"></i></i><i class="td-shade"></i><i class="td-gloss"></i></i>' + ['l', 'r', 'lu', 'ld', 'ru', 'rd'].map(c => `<i class="td-ar td-${c}"></i>`).join('');
     app.append(td);
     { let tid = null, lx = 0, ly = 0; const o = {};
-      td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.drag) this.drag.moved = true; if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; o.piv = this._turnPivot(); this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });
+      td.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (this.drag) this.drag.moved = true; if (this.camLock) return; tid = e.pointerId; lx = e.clientX; ly = e.clientY; for (const k in o) delete o[k]; o.piv = this._pivNow = this._turnPivot(); this._tdHeld = true; this._tdAx = 'wait'; try { td.setPointerCapture(tid); } catch {} td.classList.add('held'); this.lastActive = performance.now(); });
       td.addEventListener('pointermove', e => {
         e.stopPropagation(); if (e.pointerId !== tid) return;
         if (e.pointerType === 'mouse' && e.buttons === 0) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; return; }
@@ -631,7 +663,7 @@ export class World {
           this._tdTeach = false; td.classList.remove('teach'); try { localStorage.setItem('sbk-dial-tilt', '1'); } catch {}
         }
       });
-      const tend = e => { e.stopPropagation(); if (e.pointerId === tid) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; } };
+      const tend = e => { e.stopPropagation(); if (e.pointerId === tid) { tid = null; td.classList.remove('held'); delete td.dataset.ax; this._tdHeld = false; this._tdAx = null; this._pivNow = null; } };
       td.addEventListener('pointerup', tend); td.addEventListener('pointercancel', tend); td.addEventListener('lostpointercapture', tend); }
     const mb = this.modeBadge = document.createElement('div'); mb.className = 'modebadge'; mb.innerHTML = '<span class="mt">회전</span><span class="mm">이동</span>'; app.append(mb);
     mb.addEventListener('pointerdown', e => {

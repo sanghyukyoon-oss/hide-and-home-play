@@ -283,7 +283,7 @@ const G = {
       // the practice link (?play=…&lv=…) leaves the address too: a reload (iOS drops big tabs) went back into practice (QA 10/18)
       if (WEB && /[?&]play=/.test(location.search)) { const u = new URLSearchParams(location.search); u.delete('play'); u.delete('lv'); try { history.replaceState(null, '', location.pathname + (u.toString() ? '?' + u : '') + location.hash); } catch {} }
     }
-    world.vYaw = 0; world.yawGoal = null; world.snap = !!save.settings?.snap; world.clearTap(); settleUntil = performance.now() + 5000;
+    world.vYaw = 0; world.yawGoal = null; world.mapBox = null;   // (QA3-cam8: a stage sets its own) world.snap = !!save.settings?.snap; world.clearTap(); settleUntil = performance.now() + 5000;
     const S = new SCENES[name](G);
     G.scene = S;
     G.stats.stageStart = gameTime;

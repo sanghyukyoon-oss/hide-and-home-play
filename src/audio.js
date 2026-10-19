@@ -62,7 +62,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'gearUp': tone({ type: 'triangle', f: 520, f2: 900, dur: .07, vol: .12 }); noise({ dur: .02, vol: .08, type: 'bandpass', f: 3200, q: 4, at: .045 }); break;
       case 'gearDown': tone({ type: 'triangle', f: 820, f2: 480, dur: .07, vol: .1 }); noise({ dur: .02, vol: .06, type: 'bandpass', f: 2200, q: 4, at: .04 }); break;
       // the turn ratchet (10/18): a tiny woody tick, a little different every time so a fast spin rolls "드르르륵"
-      case 'ratchet': { const r = Math.random(); noise({ dur: .014, vol: .07, type: 'bandpass', f: 2300 + r * 900, q: 5 }); tone({ type: 'triangle', f: 700 + r * 160, dur: .012, vol: .025 }); break; }
+      case 'ratchet': { const r = Math.random(); noise({ dur: .014, vol: .049, type: 'bandpass', f: 2300 + r * 900, q: 5 }); tone({ type: 'triangle', f: 700 + r * 160, dur: .012, vol: .0175 }); break; }   // (QA3-cam8, user: "약간 작게" — 70%)
       case 'btn': tone({ type: 'triangle', f: 520, f2: 820, dur: .08, vol: .3 }); tone({ type: 'sine', f: 1040, dur: .06, vol: .12, at: .03 }); break;
       case 'open': noise({ dur: .16, vol: .18, f: 700, f2: 1400, q: 1.5 }); tone({ type: 'triangle', f: 210, f2: 320, dur: .12, vol: .22 }); break;
       case 'drawer': noise({ dur: .22, vol: .2, f: 900, f2: 1800, q: 2 }); tone({ type: 'triangle', f: 150, dur: .06, vol: .2, at: .18 }); break;

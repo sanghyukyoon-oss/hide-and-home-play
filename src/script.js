@@ -431,7 +431,7 @@ SCENES.push(
     intro: [L('panda', '캠핑장 도착. 올라오다가 짐이 다 흩어졌어.', 'Made it to camp. Our stuff got scattered on the way up.'), L('robot', '삐빅. 산속 기지에서 내려왔음. 큐브봇이 수색을 돕겠음.', 'BEEP. Came down from the mountain base. Cubebot will assist the search.'), L('panda', '천천히 찾아. 기다릴게.', "Take your time. I'll wait.")],
     say: { first: K('삐빅. 1개 회수.', 'BEEP. One recovered.'), half: K('삐빅. 회수율 50%. 판다 표정: 흐뭇.', "BEEP. 50% recovered. Panda's expression: pleased."), last: K('삐빅. 1개 남음. 가장 깊은 곳으로 추정.', 'BEEP. One left. Probably the deepest spot.') },
     after: [L('panda', '고마워. 이제 텐트 치자.', "Thanks. Now let's pitch the tent."), L('panda', '어릴 때 묻은 건… 캠핑장 한가운데 있어. 나중에.', "What we buried as kids… it's in the middle of camp. Later."), L('robot', '삐빅. 「나중에」 일정 저장.', "BEEP. 'Later' saved to schedule.")] },
-  { id: 'camp2H', keep: true, type: 'hidden', room: 'camp2', goal: ['꿈속 물건', "things from Dozy's dreams"],
+  { id: 'camp2H', keep: true, type: 'hidden', room: 'camp2', goal: ['잠자리 물건', 'bedtime things'],   // (GPT QA ST-DREAM: 찾는 건 잘 때 쓰던 것)
     intro: [L('sleepy', '랜턴이… 꺼졌어… 스위치는… 쿨…', 'The lantern… went out… the switch is… zzz…'), L('mong', '자지 마. 같이 찾자.', "Don't fall asleep. Let's look together."), L('sleepy', '음냐… 잘 때 쓰던 것들도… 다 흩어졌어…', 'Mmh… all my sleepy-time stuff… scattered…')],
     say: { first: K('음냐… 그거 내 베개 친구…', "Mmh… that's my pillow buddy…"), half: K('반… 반쯤 깼어…', "Half… I'm half awake…"), last: K('하나… 남았… 쿨…', 'One… left… zzz…') },
     after: [L('sleepy', '음냐… 불 켜졌네.', "Mmh… the light's on."), L('sleepy', '끝나면 깨워 줘. 같이 돌아가게.', "Wake me when we're done. We'll walk home together."), L('mong', '…응. 약속.', '…Okay. Promise.')] },
@@ -554,7 +554,7 @@ const INKY = [
     miss: [K('거기 아니야.', 'Not there.')], idle: [K('다들 금방 포기하던데.', 'Everyone else gives up fast.')], found: [K('…또 찾았어?', '…Found it again?')], furn: [K('…그것까지?', '…That too?')] },
   { intro: K('…또 왔어?', '…You came again?'), caught: K('…너는 안 가네.', "…You don't go home, huh."),
     miss: [K('…', '…')], idle: [K('…아직 있어?', '…Still here?')], found: [K('…응.', '…Yeah.')], furn: [K('…응.', '…Yeah.')] },
-  { intro: K('여긴 아직 못 돌려놨어. 같이 찾자. 어디 뒀는지 알아.', "Haven't put this one back yet. Let's look. I know where."), caught: K('봐, 다 돌아왔지?', 'See? All back.'),
+  { intro: K('여긴 아직 못 돌려놨어. 같이 찾자. …어디 뒀는지 까먹었어.', "Haven't put this one back yet. Let's look together. …I forgot where I put it."), caught: K('봐, 다 돌아왔지?', 'See? All back.'),
     miss: [K('거긴 아니야. 나라면 거기 안 숨겨.', "Not there. I'd never hide it there.")], idle: [K('구석구석 봐. 난 늘 엉뚱한 데 숨겨.', 'Check every corner. I always pick the weird spots.'), K('…그건 내가 봐도 어렵다.', "…Okay, even I think that one's hard.")], found: [K('그거 내가 제일 잘 숨긴 건데.', 'That was my best hiding spot.')], furn: [K('맞아, 그거.', "Yep, that one.")] },
 ];
 // more of 먹물이 per phase, taken in turn by the 흑백판 count, so it doesn't say the same thing every time (70판 점검 10/18)
@@ -1081,6 +1081,11 @@ const HID_ANY = {
   after: K('다 찾았다! 고마워, 몽글아.', 'All found! Thanks, Mongle.'),
 };
 export const isHidden = idx => bind().type[idx] === 'hidden';
+// 먹물이's name is known once the office 흑백판 (where it says it) is cleared, or after the ending (GPT QA ST-NAME 10/19):
+// before that the 도감 card reads ??? like the dialog label
+// (the 바꿔치기 놀이 is 너굴이's — its title says so — so its goal names him, not 먹물이; minis.js Spot.goal)
+export const SPOT_GOAL = K('너굴이가 바꿔 놓은 곳을 톡! (틀리면 3초, 다시 보기는 4초가 줄어)', 'Tap what Rocky changed! (A wrong tap costs 3s, a peek costs 4s)');
+export const inkyNamed = save => { const e = Object.entries(bind().scene).find(([, x]) => x?.id === 'office'); return !e || (save?.stage || 0) > +e[0] || !!save?.ending; };
 export const hiddenIntro = (idx, host) => sceneAt(idx)?.intro || [L(host || bind().host[idx] || 'bunny', HID_ANY.intro)];
 // which: 'first' (the first find) · 'half' (found reaches half) · 'last' (exactly one left) — say it as the host's bubble
 export const hiddenSay = (idx, host, which) => sceneAt(idx)?.say?.[which] || HID_ANY[which] || null;

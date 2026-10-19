@@ -175,7 +175,7 @@ class Spot {
     if (this.peeking || this.phase !== 'find') return;
     const S = this.S; this.peeking = true; this.left -= 4;
     this.changes.filter(c => !c.found).forEach(c => c.revert()); S.setStatus('처음 모습이야!', 'yellow'); S.G.world.idsDirty = true;
-    setTimeout(() => { this.changes.filter(c => !c.found).forEach(c => c.apply()); this.peeking = false; S.G.world.idsDirty = true; }, 1300);
+    S.tw.wait(1.3).then(() => { if (S.dead) return; this.changes.filter(c => !c.found).forEach(c => c.apply()); this.peeking = false; S.G.world.idsDirty = true; });   // (QA3-mini10: on the scene's clock — stops with 잠깐!, gone with the scene)
   }
   tap(x, y) {
     if (this.phase !== 'find' || this.peeking) return;

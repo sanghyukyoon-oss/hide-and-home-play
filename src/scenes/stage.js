@@ -940,11 +940,15 @@ export class StageScene {
     }
     const away = p0.clone().addScaledVector(dir, 5);
     const perp = new THREE.Vector3(-dir.z, 0, dir.x), len = p0.distanceTo(away), rot = Math.atan2(dir.x, dir.z);
+    // (QA3-prints9 10/19, user: "장애물 밑에도 발자국 생긴다") no print on floor that furniture or decor covers (a rug is fine)
+    const solid = rooms.flatMap(R => [...R.furns, ...(R.decors || [])]).filter(q => q.type !== 'rug' && !(q.y > 1) && !q.hidden && q.f?.group?.visible !== false)
+      .map(q => new THREE.Box3().setFromObject(q.f.group)).filter(b => !b.isEmpty() && b.max.y - b.min.y > .06);
+    const bare = q => !solid.some(b => q.x > b.min.x - .05 && q.x < b.max.x + .05 && q.z > b.min.z - .05 && q.z < b.max.z + .05);
     const COLS = ['#ff8fb8', '#ffe14d', '#8fd3f4', '#9be38f', '#c9a0ff'];
     let last = 0, n = 0;
     return tw.wait(1.1).then(() => { if (!this.result) closeBack(this); ch.setFace('angry'); ch.root.rotation.y = rot; return tw.run(.7, k => {
       ch.root.position.lerpVectors(p0, away, k); ch.root.position.y = p0.y + Math.abs(Math.sin(k * Math.PI * 4)) * .18; ch.root.scale.setScalar(1 - .6 * k);
-      for (const d = k * len; d - last > .28;) { last += .28; const q = p0.clone().addScaledVector(dir, last).addScaledVector(perp, (n % 2 ? -1 : 1) * .07); if (inside(q)) this.footprint(q, COLS[n % COLS.length], rot); n++; }
+      for (const d = k * len; d - last > .28;) { last += .28; const q = p0.clone().addScaledVector(dir, last).addScaledVector(perp, (n % 2 ? -1 : 1) * .07); if (inside(q) && bare(q)) this.footprint(q, COLS[n % COLS.length], rot); n++; }
     }, ease.inQuad); }).then(() => { ch.root.visible = false; });
   }
   // 1장, between the two 흑백판 (스토리 룸 10/19 '다시 하고 싶게'): 먹물이 passed through a colour stage too — a short trail of
@@ -1988,6 +1992,7 @@ export class StageScene {
     W.bounds = Math.max(2.4, Math.max(rw, rd) * .48); W.minZoom = .85; W.maxZoom = 8 + (span > 9 ? 2 : 0); W.minPitch = .06; W.maxPitch = 1.45;   // a little room past the edges
     const extra = Math.max(0, span - fitW) / 2;
     W.slack = extra > 0 ? { x: extra * .9, z: extra * .9 } : null;
+    W.mapBox = undefined;   // (QA3-cam8) the move box is this map: measured from its floor the first time it is needed
     W.setFit(bleed ? fitW : fitW < 7.5 ? 7.5 : fitW, bleed ? fitW * .62 : Math.max(6.6, fitW * .62 + tall * .85), floors > 1 ? .55 : .47);
   }
 

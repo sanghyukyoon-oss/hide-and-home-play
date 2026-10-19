@@ -993,6 +993,8 @@ export class Game {
     if (this.result) return;
     const L = this.L, n = this.snacks.length; this.result = 'win'; this._up({});
     if (this.pr) { L.log({ practice: 2 }); this.endPractice(); }
+    // the controls go away with the win: the pad, the fridge button and the hint stayed under the result card (10/19)
+    for (const el of [this.pad, this.padGhost, this.fbtn, this.hint]) if (el) el.style.display = 'none';
     L.audio.sfx('win'); this.me.setFace('happy'); this.me.pose = 'cheer'; L.world.fx.confetti(90);
     L.say(this.me, '냠냠… 성공!', 1500);
     L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n, stars: n, max: 3, line: n >= 3 ? '세 개 다! 완벽한 밤이야' : n === 2 ? '두 개! 하나만 더 욕심내 볼까?' : '하나 성공! 다음엔 두 개 노려 볼까?' });   // (stars: the snacks you brought back; the campaign's reward reads them)
