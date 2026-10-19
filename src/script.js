@@ -176,11 +176,11 @@ const SCENES = [
     clue: K('앗, 내 간식!', 'Hey, my snack!'), peek: K('킥… 아, 아니야. 안 웃었어.', "Hee— n-no. I didn't giggle."), mongClue: K('…저쪽.', '…Over there.'),
     reveal: [L('bunny', '푸핫! 웃어 버렸다. 다음엔 진짜 안 웃을 거야!', "Pfft! I giggled. Next time I really won't!")] },
   { id: 'drawers', type: 'tut2', room: 'bunny', bubble: true,   // (스토리 룸 10/19: 1~5판이 다섯 번 연속 카드로 멈추던 것 → 말풍선)
-    intro: [L('bunny', '이번엔 내 물건! 서랍까지 꼭 닫았지.', 'My things this time! I even shut the drawers.')],
+    intro: [L('bunny', '이번엔 내 물건! 커튼까지 꼭 쳤지.', 'My things this time! I even drew the curtains.')],
     // (no item names here: what you find comes from the shared pool, so "내 머리핀!" fired on a star — 작가 검토 10/18)
     finds: [K('앗, 그거 내 거!', "Hey, that's mine!"), K('거기 있었어?!', 'It was in there?!'), K('그건 아끼는 건데!', 'I love that one!'), K('마지막 건 절대 못 찾아!', "You'll never find the last one!")],
     drawerFull: K('앗, 거긴…!', 'Hey, not in th—!'), drawerEmpty: K('거긴 양말 서랍인데…', "That's my sock drawer…"),
-    after: [L('bunny', '다 찾았어?! 서랍까지 닫았는데!', 'All of them?! I shut the drawers!'), L('bunny', '이번엔 네가 숨겨 봐. 내가 찾을게!', "Your turn to hide something. I'll find it!")], homeChoice: true },
+    after: [L('bunny', '다 찾았어?! 커튼까지 쳤는데!', 'All of them?! I drew the curtains and everything!'), L('bunny', '이번엔 네가 숨겨 봐. 내가 찾을게!', "Your turn to hide something. I'll find it!")], homeChoice: true },
   { id: 'museum', keep: true, type: 'gray', room: 'museum', teachMove: true,
     intro: [L('bear', '으헤헤, 새 그림 걸었는데… 내가 좋아하는 색이 없어졌어.', 'Ehehe, I hung a new painting… and my favorite color is gone.'), LK('bunny', '또 그 까만 애야! 펭펭이네 다락에서도 그랬대!', "That inky kid again! Same thing happened in Pengpeng's attic!")],   // (10/19: 둘째 흑백 — 첫 흑백은 4판 펭펭이네)
     inky: K('또 너야? 이번엔 안 들킬 거야.', 'You again? Not getting caught this time.'),
