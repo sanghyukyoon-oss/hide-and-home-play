@@ -135,7 +135,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // 배경음 (10/19 user: "배경음은 GPT가 Suno로 만든 두 가지 넣어줘" — one has come: 「햇살 사이 숨은 친구」, Opus → AAC for iPhone).
   // A track streams from an <audio> element routed through the music bus (mute and volume as before; a decoded buffer would
   // hold ~50 MB on a phone). Moods without a track keep the music box.
-  const TRACKS = { home: 'audio/bgm-home-v01.m4a' }, TRACK_GAIN = .55;
+  const TRACKS = { home: 'audio/bgm-home-v01.mp4' }, TRACK_GAIN = .55;
   A._trk = { el: null, node: null, gain: null, mood: null, url: null };
   function stopTrack() { const t = A._trk; if (t.el && !t.el.paused) t.el.pause(); t.mood = null; }
   function playTrack(mood) {
