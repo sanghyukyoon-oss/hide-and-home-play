@@ -336,7 +336,7 @@ SCENES.push(
   // 8판 프라모델 조립판 (스토리 룸 10/19, 정식판 세션 8a963f · 레벨 7dbff7 합의): 그 판 spec에 model/kit 'robot'이 있을 때만
   // 이 장면이 붙어요. 곰돌이가 어릴 때 박사님한테 받고 끝까지 못 맞춘 꼬마 로봇 → 12판 박사 첫인사(ifKit)로 이어짐
   { id: 'house3K', kit: 'robot', type: 'hidden', room: 'house3', goal: ['로봇 부품', 'robot parts'],
-    intro: [L('bear', '으헤헤, 어릴 때 끝까지 못 맞춘 로봇이야. 부품이 세 층에 흩어졌어.', 'Ehehe, a robot I never finished as a kid. Now its parts are on all three floors.')],
+    intro: [L('bear', '어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!', "Huh? The parts all ran off and hid. Let's check the blueprint and find them!")],   // (KIT_TALK.robot.open·hid가 있으면 그쪽을 씀)
     say: { first: K('으헤헤, 그게 다리야. …아마.', "Ehehe, that's a leg. …Probably."), half: K('반 모았다! 로봇이 반쯤 생각나.', "Half here! I'm starting to remember what it looks like."), last: K('하나 남았어. 그것만 있으면 완성이야.', "One left. That's all it needs.") },
     after: [L('bear', '움직인다! 으헤헤, 박사님이 보면 놀라겠다.', "It moves! Ehehe, Doc's gonna flip."), L('mong', '…박사님?', '…Doc?')] },
   { id: 'house3H', type: 'hidden', room: 'house3',
@@ -1074,7 +1074,9 @@ export const MONITOR_TV = {
   },
 };
 export const KIT_TALK = {
-  robot: { who: 'bear', go: K('다 모았다! 이번엔 끝까지 맞추자.', "All here! Let's finish it this time."), wrong: K('으헤헤, 순서가 있나 봐.', "Ehehe, guess there's an order.") },
+  robot: { who: 'bear', open: K('으헤헤, 다락에서 찾았다! 어릴 때 끝까지 못 맞춘 로봇이야.', 'Ehehe, found it in the attic! The robot I never got to finish as a kid.'),
+    hid: K('어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!', "Huh? The parts all ran off and hid. Let's check the blueprint and find them!"),
+    go: K('다 모았다! 이번엔 끝까지 맞추자.', "All here! Let's finish it this time."), wrong: K('으헤헤, 순서가 있나 봐.', "Ehehe, guess there's an order.") },
   moving: { who: 'bunny', go: K('다 찾았다! 이제 제자리에 놓자.', "All found! Now let's put everything where it goes."), wrong: K('거긴 그 자리가 아니야~', "Nope, that's not its spot~") },
   parfait: { who: 'sundae', go: K('다 찾았다! 녹기 전에 쌓자!', 'All found! Stack it before it melts!'), wrong: K('앗, 무거운 게 아래야!', 'Whoa, heavy stuff on the bottom!') },
 };

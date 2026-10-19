@@ -71,6 +71,8 @@ export class Companion {
     this.G = G; this.others = others;
     // walkable points every half tile: on the floor (not a cut-out or a raised step), clear of furniture for a body
     const tiles = this.tiles = walkGrid(rooms);
+    // (10/19 user, phone: "주인공 따라다니지 말고 가만있기로 하지 않았음?" — the friend is put next to 몽글이 when the stage starts
+    // and then stays where it is; only 몽글이 pops up at the screen's edge, as decided 10/18)
     // 같이 다니는 친구 (10/19, user OK; 스토리 룸): 몽글이 always walks — the script's 몽글이 lines stay on 몽글이 — and the friend
     // picked in the 도감 (save.hero) walks beside it. A friend who is in this stage already (its host, a friend hiding here)
     // stays home that day: never two of the same one in a room.
@@ -147,6 +149,7 @@ export class Companion {
     const p = this.ch.root.position, s = W.toScreen(new THREE.Vector3(p.x, p.y + .3, p.z)), r = this.rect(W);
     const qx = Math.min(r.x1 - 30, Math.max(r.x0 + 30, s.x)), qy = Math.min(r.y1 - 20, Math.max(r.y0 + 20, s.y));
     const block = this.taken(); block.delete(this.t);
+    if (this.buddy?.root.visible) { const bp = this.buddy.root.position; for (const t of this.tiles) if (Math.hypot(t.x - bp.x, t.z - bp.z) < .6) block.add(t); }   // (not onto the friend, who stays put)
     let best = null, bd = Infinity; const v = new THREE.Vector3();
     for (const t of this.tiles) {
       if (block.has(t) || t.stair) continue;
@@ -156,7 +159,6 @@ export class Companion {
     }
     if (!best) { this._still = 0; return; }   // no free floor on screen (zoomed into a wall): try again after the next move
     this.busy = true; this.t = best;
-    if (this.buddy) { this.besideHero(W); const br = this.buddy.root, b0 = br.scale.x; br.scale.setScalar(b0 * .01); tw.wait(.12).then(() => tw.run(.28, k => br.scale.setScalar(b0 * (k < .7 ? k / .7 * 1.12 : 1.12 - .12 * (k - .7) / .3)))).then(() => br.scale.setScalar(b0)); }
     const root = this.ch.root, s0 = root.scale.x;
     root.position.set(best.x, best.y || 0, best.z);
     root.rotation.y = Math.atan2(W.cam.position.x - best.x, W.cam.position.z - best.z);
@@ -193,7 +195,6 @@ export class Companion {
       this.t = t; p.y = y1;
       await tw.wait(.06);
     }
-    this.besideHero(this.G.world);
     this.busy = false; this.wait = .6;
   }
   dispose() { this.on = false; this.ch.root.parent?.remove(this.ch.root); this.buddy?.root.parent?.remove(this.buddy.root); }
