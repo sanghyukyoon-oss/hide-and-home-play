@@ -1642,3 +1642,8 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 /* ⑥ the break games' and bosses' instruction lines were one line at any length (English 'Start with the ? blankets! Check
    the ears and tail' ran 81 px off both sides of a 375 phone): inside the screen, wrapping between words when they must */
 #app :is(.bk-hint, .ik-hint, .fl-hint, .tr-hint, .rl-hint, .rp-hint, .cr-hint, .wh-hint, .ys-hint, .tg-hint) { white-space: normal; width: max-content; max-width: calc(100vw - 12px); box-sizing: border-box; text-align: center; word-break: keep-all; overflow-wrap: break-word; }
+
+/* ── 2D UI 정리 ⑦ 톡 규칙은 손으로 (UI 세션 10/19, 1~10판 기획안 C3) ── the first miss of the first tap stage: the hand count
+   wobbles (taps.js) — the -1 then rises off it */
+.inv .pill.shake { animation: tapshake .55s; }
+@keyframes tapshake { 0%, 100% { translate: 0 0; scale: 1; } 15% { translate: -6px 0; scale: 1.18; } 35% { translate: 6px 0; } 55% { translate: -4px 0; } 75% { translate: 3px 0; } }

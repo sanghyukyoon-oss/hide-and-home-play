@@ -12,7 +12,7 @@ import { ITEMS } from './gfx/items.js';
 import { moveItem } from './hunt.js';
 import { affOk } from './affinity.js';   // (10/19: what goes behind a door has to make sense there)
 
-const fits = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat); };
+const fits = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat) && (I.flat || (s.maxH + .02) / (I.h * (s.scale || 1)) >= 1.25); };   // (moves only to places where the thing can be drawn at its full size — 10/19)
 const shown = o => { for (let p = o; p; p = p.parent) if (p.visible === false) return false; return true; };
 const V = () => new THREE.Vector3();
 
@@ -74,7 +74,7 @@ export function tierPass(S) {
   for (const it of T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b)).slice(keep)) {
     const s1 = free(it, soft)[0];
     if (s1) { put(it, s1, 'L0→돌리면'); continue; }
-    if (opened() * 2 >= S.targets.length) break;
+    if ((opened() + 1) * 2 > S.targets.length) break;   // (after this move at most half behind doors: 9 things → 4, not 5 — GPT QA R2-05)
     const at = P.get(it.spot), s2 = doors.filter(s => s !== it.spot && fits(it.type, s) && affOk(it.type, s) && !s.part.wallFacing && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
       .sort((a, b) => a.anchor.getWorldPosition(V()).distanceTo(at) - b.anchor.getWorldPosition(V()).distanceTo(at))[0];
     if (s2) put(it, s2, 'L0→열어야');

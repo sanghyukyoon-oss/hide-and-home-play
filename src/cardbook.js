@@ -110,9 +110,10 @@ function zoom(c, G) {
     onClick: dis => { if (dis) return; G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(kind === 'mong' ? '이제 몽글이 혼자 다녀요' : `이제 ${ga(c.name)} 같이 다녀요!`, 'green'); layer.remove(); } }) : null;
   // 몽글이's diary line for this friend: the tell, the promise
   const line = kind && diaryLine(kind);
-  // R2: how this friend hides — '???' until you've found them hiding three times, then their habit fills in
+  // R2: how this friend hides — '???' until you've found them hiding twice, then their habit fills in (three never came in
+  // one campaign: a friend hides at most twice in the 70 stages — GPT QA L04, 10/19; a replay counts too)
   const hn = kind ? (G.save.habitSeen?.[kind] || 0) : 0, habit = kind && HABIT_LINE[kind];
-  const habitEl = habit ? h('div', { class: 'cb-habit' }, h('b', {}, tr('숨는 버릇')), h('span', {}, hn >= 3 ? tr(habit) : `??? (${hn}/3)`)) : null;
+  const habitEl = habit ? h('div', { class: 'cb-habit' }, h('b', {}, tr('숨는 버릇')), h('span', {}, hn >= 2 ? tr(habit) : `??? (${hn}/2)`)) : null;
   // 별 셋 = 비밀 한 줄 (스토리 룸 10/19): '???' until a stage this friend hosts gets three stars
   const sec = kind && diarySecret(kind), secEl = sec ? h('div', { class: 'cb-habit' }, h('b', {}, tr(SECRET_UI.book)), h('span', {}, secretOpen(G.save.best, kind) ? tr(sec) : tr(SECRET_UI.bookLock))) : null;
   const diary = line || habitEl || secEl ? h('div', { class: 'cb-diary' }, ...(line ? [h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))] : []), ...(habitEl ? [habitEl] : []), ...(secEl ? [secEl] : [])) : null;

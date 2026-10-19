@@ -80,7 +80,10 @@ export class Companion {
     const want = CHAR_DEFS[G.save.hero] && G.save.hero !== 'mong' ? G.save.hero : null;
     const cast = new Set((others?.() || []).map(c => c?.kind).filter(Boolean));
     this.ch = new Char('mong'); this.on = true; this.busy = false; this.wait = .6;
-    const W = G.world, start = this.nearest(W.target.x, W.target.z) || tiles[0];
+    // (10/19 user: 2판 몽글이 started on top of 토순이 — it stays where it starts since v144, so start a body's width or more
+    // from everyone: tiles within 1.1 m of another character are out, then the usual .6, then anything)
+    const far = new Set(); for (const o of others()) { const q = o.root.position; for (const t of tiles) if (Math.hypot(t.x - q.x, t.z - q.z) < 1.1) far.add(t); }
+    const W = G.world, start = this.nearest(W.target.x, W.target.z, far) || this.nearest(W.target.x, W.target.z, this.taken()) || this.nearest(W.target.x, W.target.z) || tiles[0];
     this.t = start; this.ch.root.position.set(start.x, start.y || 0, start.z);
     this.ch.root.rotation.y = Math.atan2(W.cam.position.x - start.x, W.cam.position.z - start.z);
     W.root.add(this.ch.root); W.idsDirty = true;

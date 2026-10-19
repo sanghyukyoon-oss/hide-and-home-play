@@ -908,6 +908,8 @@ export const ROOM_ARRIVE = {
   sleepy: L('sleepy', '여기서 한숨만… 쿨.', 'Just a little nap here… Zzz.'),
   robot: L('robot', '삐빅. 새 장소 저장 완료.', 'Beep-boop. New location saved.'),
   dj: L('dj', '오, 여기 베이스 좋은데!', 'Ooh, the bass sounds great in here!'),
+  // (after the ending only — walking in on a later visit; the 64판 promise "다음에 또 하자" coming back)
+  inky: L('inky', '…또 놀러 왔어. 다음에 또 하자며.', '…I came over again. You said "next time."'),
 };
 // whose stage it is (the friend who hides there, or 너굴이 on a timed one) — save.best is keyed by stage index
 export const stageHost = idx => (idx >= 0 ? bind().host[idx] || null : null);

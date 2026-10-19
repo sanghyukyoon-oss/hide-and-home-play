@@ -386,11 +386,11 @@ export class LobbyScene extends MyHomeScene {
   }
   // the close-up: 몽글이 about a sixth of the screen tall, its middle a little under the screen's middle — measured on the
   // screen (the lobby's fit depends on the room's size), the camera put back as it was before flying there
-  closeShot() {
+  closeShot(frac = .16, mid = .45) {
     const W = this.G.world, m = this.mong, p = m.root.position, t0 = W.target.clone(), z0 = W.zoom, V = (x, y, z) => new THREE.Vector3(x, y, z);
     const meas = (y, z) => { W.target.set(p.x, y, p.z); W.zoom = z; W.updateCam(); const f = W.toScreen(V(p.x, 0, p.z)), hd = W.toScreen(V(p.x, m.headTop(), p.z)); return { feet: f.y, size: f.y - hd.y }; };
-    const z = clamp(3 * W.H * .16 / Math.max(1, meas(1, 3).size), 2.2, W.maxZoom || 7);
-    const a = meas(1, z), b = meas(2, z), want = W.H * .45 + a.size / 2;
+    const z = clamp(3 * W.H * frac / Math.max(1, meas(1, 3).size), 2.2, Math.max(W.maxZoom || 7, 9));
+    const a = meas(1, z), b = meas(2, z), want = W.H * mid + a.size / 2;
     const y = 1 + (want - a.feet) / Math.max(1, b.feet - a.feet);
     W.target.copy(t0); W.zoom = z0; W.updateCam();
     return { target: V(p.x, y, p.z), zoom: z };
@@ -405,6 +405,14 @@ export class LobbyScene extends MyHomeScene {
   // 썰렁하니까 캐릭터 쪽 클로즈업으로 잡아주자"), opening out as furniture and friends fill it; 꾸미기·숨기기 see the whole room
   frameLobby(dur = .7, extra = [], cut = false) {
     if (this.dead || !this.room) return;
+    // (10/19 evening, user with a screenshot: "로비는 이 정도 뷰에서 캐릭터 위주로 처음에 보여지는 게 나을 거 같아 … 캐릭터가 정중앙에
+    // 있는 구도") the lobby's own view is 몽글이 big and dead centre; tapping 몽글이 opens out to the room (heroView). Friends
+    // arriving, the room pass and the star box (extra points, or the passage mode) still frame the whole group.
+    if (!extra.length && this.mode === 'lobby' && this._heroView !== 'room') {
+      const W = this.G.world, shot = this.closeShot(.3, .47); this._heroView = 'close';
+      if (this._framed && dur > 0) W.flyTo(this.tw, { ...shot, dur }); else { W.target.copy(shot.target); W.zoom = shot.zoom; this._framed = true; }
+      return;
+    }
     const W = this.G.world, pts = [this.mong.root.position, ...this.seated.map(s => s.rec), ...(this.guest ? [this.guest.root.position] : []), ...extra];
     const shelf = this.room.furns.find(r => r.type === 'findshelf');   // (the 찾은 것 선반 in the picture, end to end: what's still to find)
     if (shelf && !cut) { shelf.f.group.updateMatrixWorld(true); for (const sx of [-.95, .95]) { const q = shelf.f.group.localToWorld(new THREE.Vector3(sx, 0, -.25)); pts.push({ x: q.x, z: q.z }); } }

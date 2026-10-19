@@ -784,8 +784,10 @@ export class StageScene {
     G.audio.sfx('tap', 12); await tw.wait(.15); G.audio.sfx('tap', 14); await tw.wait(.2); G.audio.sfx(real.sfx || 'open'); await tw.wait(.35); G.audio.sfx('close');
     ov.classList.add('out'); setTimeout(() => ov.remove(), 300);
     this.friendHidden = true; this.r1Trail();
-    // a word from the hideout once it's done (the bubble over the hiding place, not the friend)
-    setTimeout(() => !this.dead && this.friendHidden && this.say({ root: { position: this.partCenter(real) }, headTop: () => .25 }, r1Line(this.th.friend, 'hidden'), 1300), 400);
+    // a word once it's done — from where they stood counting, not over the hiding place: a bubble on the hideout showed the
+    // answer before anyone looked (GPT QA L03, 10/19); the crumbs and the hiding sounds are the clues
+    const home = this.friendHome.clone();
+    setTimeout(() => !this.dead && this.friendHidden && this.say({ root: { position: home }, headTop: () => .9 }, r1Line(this.th.friend, 'hidden'), 1300), 400);
   }
   r1Trail() {
     const real = this.r1.real, pc = this.partCenter(real), y = new THREE.Vector3(); real.furn.group.getWorldPosition(y);
@@ -825,9 +827,12 @@ export class StageScene {
     it.found = true; this.found++; this.friendHidden = false; this.idle = 0;
     this.hero?.react('event', this.worldCenter(it), this.tw);
     // R2: the third time you find the same friend, their hiding habit fills in on their card (획득감, not a popup)
-    if (!this.custom && !this.preview) { const hs = G.save.habitSeen ||= {}, k = this.th.friend; hs[k] = (hs[k] || 0) + 1; if (hs[k] === 3) setTimeout(() => !this.dead && G.ui.toast('도감에 새 칸: 숨는 버릇!', 'green'), 1800); }
+    if (!this.custom && !this.preview) { const hs = G.save.habitSeen ||= {}, k = this.th.friend; hs[k] = (hs[k] || 0) + 1; if (hs[k] === 2) setTimeout(() => !this.dead && G.ui.toast('도감에 새 칸: 숨는 버릇!', 'green'), 1800); }
     const pc = this.partCenter(it.spot.part), fy = new THREE.Vector3(); it.spot.part.furn.group.getWorldPosition(fy);
-    const d = new THREE.Vector3(W.cam.position.x - pc.x, 0, W.cam.position.z - pc.z).normalize(), to = pc.clone().addScaledVector(d, .95); to.y = fy.y;
+    let d = new THREE.Vector3(W.cam.position.x - pc.x, 0, W.cam.position.z - pc.z).normalize();
+    { const furn = it.spot.part.furn, R = (this.room.rooms || [this.room]).find(r => r.furns?.some(e => e.f === furn));   // (10/19 user: 1판 토순이 popped out toward the wall after the view was turned — out the furniture's front, into the room)
+      if (R?.frontOf) { const fr = R.group.localToWorld(R.frontOf(furn).clone()), dv = new THREE.Vector3(fr.x - pc.x, 0, fr.z - pc.z); if (dv.lengthSq() > .01) d = dv.normalize(); } }
+    const to = pc.clone().addScaledVector(d, .95); to.y = fy.y;
     f.root.visible = true; f.root.position.copy(pc); f.root.scale.setScalar(.25); f.setFace('happy'); f.pose = 'cheer';
     G.audio.sfx('special'); G.hitstop(.08);
     const s = W.toScreen(pc); W.fx.burst(s.x, s.y, { n: 34, colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#ffffff'], speed: 360 }); W.fx.ring(s.x, s.y, { r: 130, color: '#ffe14d', width: 10 });
@@ -2218,7 +2223,11 @@ export class StageScene {
       if (!n.on || this.dead) return;
       if (ch.reacting || this.paused || this.result || this.talking) continue;   // everyone holds still while a talk is filmed
       n.rest -= .25; if (n.rest > 0) continue;
+      // (10/19 user: "어이없이 겹친 거" — a walker stepped onto 몽글이, who stays put since v144) not within .75 m of 몽글이, the friend
+      // you brought or the host
+      const bodies = [this.hero?.ch, this.hero?.buddy, this.friend?.root.visible ? this.friend : null].filter(Boolean).map(c => c.root.position);
       const nb = free.filter(t => t.R === n.t.R && Math.abs(t.i - n.t.i) + Math.abs(t.j - n.t.j) === 1 && !this.npcs.some(o => o !== n && (o.t === t || o.next === t))
+        && !bodies.some(b => Math.hypot(b.x - t.x, b.z - t.z) < .75)
         && t.R.clearAt((t.x + n.t.x) / 2, (t.z + n.t.z) / 2, .32));   // and the way between is clear too
       if (nb.length && Math.random() < .75) {
         const t = nb[Math.floor(Math.random() * nb.length)]; n.next = t;

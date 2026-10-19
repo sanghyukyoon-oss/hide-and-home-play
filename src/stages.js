@@ -823,8 +823,13 @@ export function planStage(room, spec, story = null) {
   const all = room.spots.filter(s => !s.reserved && (!s.part || ((s.part.reach ?? 1) >= .55 && !s.part.wallFacing)) && !spec.avoid?.(s));
   const used = new Set();
   let relaxAff = false;   // (a lock that would otherwise go missing takes what there is — 13판's moving boxes in the fridge)
+  // (10/19: a thing on the list goes where it can be drawn at its full size first — a low shelf gap kept a juice box at 21 px)
+  let placingTarget = false;
+  const roomy = (type, s) => ITEMS[type]?.flat || (s.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (s.scale || 1)) >= 1.25;
   const take = (pred, type) => {
-    const c = r.shuffle(all.filter(s => !used.has(s) && pred(s) && (!type || (fits(type, s) && (relaxAff || affOk(type, s))))));   // (affinity.js: nothing inside where it makes no sense)
+    const pool = all.filter(s => !used.has(s) && pred(s) && (!type || (fits(type, s) && (relaxAff || affOk(type, s)))));   // (affinity.js: nothing inside where it makes no sense)
+    const roomyPool = placingTarget && type ? pool.filter(s => roomy(type, s)) : pool;
+    const c = r.shuffle(roomyPool.length ? roomyPool : pool);
     if (!c.length) return null;
     used.add(c[0]); return c[0];
   };
@@ -833,9 +838,9 @@ export function planStage(room, spec, story = null) {
   const own = (ROOM_POOLS[spec.room] || room.T?.pool || []).filter(t => ITEMS[t] && (!SOCKS.has(t) || SOCK_ROOMS.has(spec.room)));
   const ownN = Math.min(own.length, Math.max(1, (spec.n || 1) - (spec.n > 7 ? 2 : 1)));
   // the first stages only ask for things with a readable shape (a thin pencil under a loft was hard even with a hint)
-  const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard'];
+  const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard', 'toothbrush'];   // (+ toothbrush: 17 px on 9판, 10/19)
   // (짝 양말 판: no pair of socks on the list either — it would read as the puzzle's sock, and the odd ones lying about say "무늬가 달라")
-  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 6 && THIN.includes(t))
+  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 10 && THIN.includes(t))   /* (1~10판: no pencil or USB on the list — 19 px on a phone, user 10/19 "너무 작게 하지 마") */
     || (spec.showcase && DEVICE_LOOKALIKE[spec.room]?.includes(t)) || (spec.treat && t === spec.treat.item);   // a stage's tool is never a target or a decoy (간식: 50·55판 listed a 도토리 beside the 도토리 that moves the host)
   // the common things rotate through the stages (a window that moves on 5 places a stage) so the same milk carton
   // doesn't turn up stage after stage (user, 10/17: "계속 찾는것만 찾게"); the place's own things come first
@@ -978,13 +983,14 @@ export function planStage(room, spec, story = null) {
   const furnUsed = new Set(), fk = x => x.furn || x.part?.furn;
   const okIn = x => !spec.ho || !furnUsed.has(fk(x));
   let firstFree = !!spec.ho;
+  placingTarget = true;
   for (; ti < targets.length; ti++) {
     const type = targets[ti];
     let s = null;
     if (firstFree) { firstFree = false; s = take(x => x.kind === 'on', type); }
     // (10/19 user: "아이스크림·음료수는 냉장고에서 나올 확률을 높여"): a cold thing goes into a fridge, freezer or cooler when the
-    // room has a free one, even past the stage's count of things to open
-    if (!s && isCold(type)) { s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && affLike(type, x), type); if (s) { want.inside = Math.max(0, want.inside - 1); partsUsed.add(s.part); furnUsed.add(fk(s)); } }
+    // room has a free one — within the stage's count of things to open (past it, 25판 had 5 of 9 behind doors: GPT QA R2-05)
+    if (!s && isCold(type) && want.inside > 0) { s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && affLike(type, x), type); if (s) { want.inside = Math.max(0, want.inside - 1); partsUsed.add(s.part); furnUsed.add(fk(s)); } }
     if (!s && habit && ti % 2 === 0) {
       // the habit place, out in the open first; inside only while there are things left to open
       s = take(x => habit(x) && x.kind !== 'inside' && (spec.ho ? x.kind === 'on' || want.behind > 0 : true), type)
@@ -1001,6 +1007,7 @@ export function planStage(room, spec, story = null) {
     if (!s) s = take(x => x.kind === 'on', type) || (!spec.ho && take(x => (x.kind === 'under' || x.kind === 'behind'), type)) || take(x => x.kind === 'inside' && !lockedParts.has(x.part) && okIn(x), type) || (spec.ho && take(x => (x.kind === 'under' || x.kind === 'behind'), type));
     if (s) placements.push({ type, spot: s, role: 'target' });
   }
+  placingTarget = false;
   // decoys: clutter in plain sight + red herrings inside containers
   // (함정, 10/18: the place's own unused things + DECOY_POOL only — never the common pool, never another stage's answers)
   const decoyTypes = DECOY_POOL.concat(own.filter(t => !targets.includes(t))).filter(t => !tool(t));

@@ -919,6 +919,11 @@ export function openMore(G, extra = []) {
     // web page; it shows for the owner (localhost, ?owner, the artifact's owner) and in the app's Debug APK (user, 10/19)
     (IN_APP ? QA_TOOLS : G.owner) && ui.btn('놀이 모음', { color: 'green', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
     ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
+    // (10/19 user: "옵션에 리셋(아예 처음 시작하는 것처럼) 기존 진행사항 지우고 새로 하는 버튼") — asks once, then reloads with ?reset
+    ui.btn('처음부터 새로', { color: 'red', onClick: () => { ui.closePanel(); setTimeout(() => ui.panel({ title: '처음부터 새로', color: 'red', close: () => {},
+      body: [h('div', { class: 'txt' }, '지금까지 한 게 모두 지워지고 1판부터 다시 시작해요.')],
+      buttons: [ui.btn('취소', { color: 'gray', cls: 'sm', onClick: () => ui.closePanel() }),
+        ui.btn('지우고 새로 시작', { color: 'red', onClick: () => { const u = new URLSearchParams(location.search); u.set('reset', ''); location.replace(location.pathname + '?' + u.toString().replace(/=(&|$)/g, '$1')); } })] }), 200); } }),
     QA_TOOLS && ui.btn('새 아트', { color: 'yellow', onClick: () => { ui.closePanel(); preview('apt'); } }),
     ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),
     // compare the new incident stages with the old find-the-list stages (10/17 pivot)
