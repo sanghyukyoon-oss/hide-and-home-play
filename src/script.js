@@ -233,15 +233,16 @@ const SCENES = [
   { id: 'oneroom', type: 'incident', room: 'oneroom', hide: K('웁…! 무서워서 숨는다!', 'Mmf…! Too scary. Hiding!'), name: K('햄찌네 원룸', "Hammy's Studio"),
     intro: [L('hamster', '웁웁! 불 나갔어! 해바라기씨 먹다가!', 'Mmf! The lights went out! Mid-snack!'), L('mong', '스위치부터 찾자. 금방 찾으러 갈게.', "Let's find the switch. I'll come find you.")],
     reveal: [L('hamster', '…무서워서 씨앗 다 먹었어.', '…I got scared and ate all my seeds.'), L('mong', '볼은 아직 빵빵한데.', 'Your cheeks are still full.'), L('hamster', '…비상식량이야.', '…Emergency rations.')] },
+  // (11~20 자리표 10/20: 다시 하면 자리가 바뀌니 시작·숨기·찾은 뒤 대사가 자리를 단정하지 않음 — 16판은 사물함이 아니었음)
   { id: 'school', type: 'incident', room: 'school', hide: K('교실엔 폭신한 데가 없는데… 어디 숨지?', "Nothing fluffy in a classroom… where do I hide?"),
-    intro: [L('bunny', '쉬는 시간이다! 교실 숨바꼭질은 사물함이지!', 'Recess! Classroom hide-and-seek means lockers!'), L('bunny', '종 치기 전에 찾을 수 있겠어?', 'Think you can find me before the bell?')],
+    intro: [L('bunny', '쉬는 시간이다! 교실에서 숨바꼭질!', 'Recess! Classroom hide-and-seek!'), L('bunny', '종 치기 전에 찾을 수 있겠어?', 'Think you can find me before the bell?')],
     reveal: [L('bunny', '벌써?! 종도 안 쳤는데!', "Already?! The bell hasn't even rung!"), L('bunny', '학교 끝나면 우리 집 가자! 새 부엌 구경시켜 줄게.', "After school, come over! I'll show you my new kitchen.")] },   // (→ 17판 토순이네 부엌)
   { id: 'firestation', type: 'incident', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'),
     intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('mong', '1등은?', "Who's first?"), L('peng', '…아직 안 정해졌어.', '…Not decided yet.')],
     reveal: [L('peng', '비결 4번. 소방관 모자는 벗고 숨기…', 'Tip number four. Take the helmet off before you hide…'), L('mong', '…몇 번까지 있어?', '…How many tips are there?'), L('peng', '1등 될 때까지!', 'As many as it takes to be number one!')] },
-  { id: 'aptmap', type: 'incident', room: 'aptmap', host: 'bear', hide: K('으헤헤, 맛있는 냄새 나는 데로 가야지~', "Ehehe, I'll go wherever smells tasty~"),
+  { id: 'aptmap', type: 'incident', room: 'aptmap', host: 'bear', hide: K('으헤헤, 따뜻한 데가 좋아~', 'Ehehe, somewhere nice and warm~'),
     intro: [L('bunny', '곰돌이도 집들이 왔어! 숨바꼭질 하재.', 'Bearie came to the housewarming too! Wants to play hide-and-seek.'), LK('bunny', '청소기가 자꾸 이상한 걸 물고 다녀. 조심해!', 'And the robot vacuum keeps carrying weird stuff around. Careful!')],
-    reveal: [L('bear', '어… 벌써 찾았어? 따뜻해서 그만.', 'Huh… found me already? It was just so warm up there.'), L('mong', '…높은 데서도 자네.', '…You even sleep up high.')] },
+    reveal: [L('bear', '어… 벌써 찾았어? 따뜻해서 그만.', 'Huh… found me already? It was just so warm up there.'), L('mong', '…또 잤구나.', '…Fell asleep again, huh.')] },
   // 동네 골목
   { id: 'alley1', type: 'incident', room: 'alley1',
     reveal: [L('grumpy', '…진짜 찾았네.', '…You actually found me.'), L('mong', '…의자가 두 개네.', '…There are two chairs.'), L('grumpy', '하, 하나는 가방 놓는 거야.', "O-one's for my bag.")] },
@@ -370,7 +371,7 @@ SCENES.push(
   // 13판 이삿짐 풀기 (kit 'moving', 사용자 10/19 새 아이디어 ①): 찾은 물건이 제자리로, 다 찾으면 상자가 접혀 '진짜 우리 집'
   { id: 'aptK', kit: 'moving', type: 'hidden', room: 'apt', goal: ['이삿짐 속 물건', 'things from the moving boxes'],
     intro: [],   // (장 영상이 이 판 이야기까지 함)
-    say: { first: K('그거! 그거 찾고 있었어!', 'That! I was looking for that!'), half: K('반 풀었다! 상자가 반으로 줄었어.', 'Half unpacked! Half the boxes are gone.'), last: K('하나 남았어. …아마 상자 속 상자 속에.', 'One left. …Probably in a box inside a box.') },
+    say: { first: K('그거! 그거 찾고 있었어!', 'That! I was looking for that!'), half: K('반 풀었다! 상자가 반으로 줄었어.', 'Half unpacked! Half the boxes are gone.'), last: K('하나 남았어. …이삿짐 어딘가에.', 'One left. …Somewhere in all this moving stuff.') },
     after: [LK('bunny', '다 풀었다! 이제 진짜 우리 집이야.', "All unpacked! Now it's really home."), L('mong', '…상자 하나는 남겨 둬. 숨기 좋겠다.', '…Keep one box. Good for hiding.')] },
   { id: 'aptH', type: 'hidden', room: 'apt', goal: ['이삿짐 속 물건', 'things from the moving boxes'],
     intro: [],   // (13판: 장 영상이 이 판 이야기까지 함 — 카드 하나 줄임)
