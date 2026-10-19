@@ -250,7 +250,8 @@ export class StageScene {
     }
     if (this.kit && !this.hunt) this.blindFixed = fixBlindSpots(this);   // no piece where nobody can see it, even opened
     // 1장 2~11판: one thing seen from the start, the rest a turn (or a tilt) away (갓겜 기획안 P0 L3)
-    if (!this.custom && !this.preview && !this.incident && this.idx >= 1 && this.idx <= 10) this.tiers = tierPass(this);
+    // (D4 10/19, user "추천대로": every hidden-object stage after 1장 too — they showed 2~7 of the list at once)
+    if (!this.custom && !this.preview && !this.incident && this.idx >= 1 && (this.idx <= 10 || this.hunt)) this.tiers = tierPass(this);
     this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
     if (this.v2) v2Prep(this);
     W.shadowDirty = true;

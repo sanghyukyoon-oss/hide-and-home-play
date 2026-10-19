@@ -600,7 +600,7 @@ export const PLAN = {
   alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'street:night', 'alley1:timed', 'skatepark:gray', 'alleyhouse:show', 'alleywide:boss'],
   shop: ['konbini:gray', 'laundry', 'cafe', 'konbini', 'shopmap:night', 'cafe:gray', 'konbini:timed', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
-  camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide', 'camp2:gray', 'cabin:show', 'campwide:boss'],
+  camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide:treat', 'camp2:gray', 'cabin:show', 'campwide:boss'],
   building: ['lobby', 'kpop', 'museum', 'officefloor:gray', 'rooftop:night', 'lobbymap:timed', 'officefloor:dark', 'kpop:show', 'lobby:gray', 'lobbymap:boss'],
 };
 // each chapter's locks: the kinds it may use (a boss takes them all), then each stage's locks in order — the chapter's new
@@ -618,7 +618,8 @@ const REGION_LOCKS = {
 // one thing; switch one back on to make it a chapter's own flavour
 const EXTRA = { tv: false, torn: false, dig: false, sock: false };
 // 6장 간식: who sits on what, and the snack that moves them (the stage's host guards it; 🆕 간식 card on the first touch)
-const TREAT = { trail: { on: ['shrinebox', 'tentsmall'], item: 'acorn' } };
+// (D3 10/19: 간식 a third time on 57판 — the camp's middle, the host on the small tent; 짝 양말 a third time on 36판, the 상가 at night)
+const TREAT = { trail: { on: ['shrinebox', 'tentsmall'], item: 'acorn' }, campwide: { on: ['tentsmall'], item: 'acorn' } };
 const planAt = (kind) => { const out = []; for (const [rid, list] of Object.entries(PLAN)) { const R = REGIONS.find(q => q.id === rid); list.forEach((e, l) => { if ((e.split(':')[1] || '') === kind) out.push(R.from + l); }); } return out; };
 // 너굴이's "숨바꼭질 놀이": a few stages run against a clock (the only timed ones); none in the first region any more —
 // the 비밀번호 tutorial (stage 7) used to have the clock on top of it
@@ -642,17 +643,19 @@ export const GRAY = new Set([3, 9, ...planAt('gray')]);
 // so, 8 (night bedroom, right before the pajama party) and 16 (classroom). Every other ordinary stage is a hidden-object stage
 // again, the owner standing by. Story + level sessions' plan: _handoff/stage-mix-plan-20261018.md, level-mix-shape-20261018.md.
 // ?mix=0 brings back the 10/17 rule (every ordinary stage a friend hunt) to compare.
-export const FRIEND_HIDE = new Set([11, 15, 19, 21, 29, 38, 40, 47, 50, 58, 67]);   // (1장: 1판 tutorial and the 12판 서재 only; 6장's opener is the 간식 stage, so 51판 camp1)
+export const FRIEND_HIDE = new Set([11, 15, 19, 29, 38, 47, 50, 58, 67]);   // (1장: 1판 tutorial and the 12판 서재 only; 6장's opener is the 간식 stage, so 51판 camp1)
+// (D1 10/19, user "추천대로": 22·41판 — 3·5장 첫 판 — are hidden-object stages now; '★장치 → 보스 → 친구' at the chapter turns read
+// as three thin stages in a row. The chapter's new lock still sits at a chain end there; the friend says hello in the start line, 스토리 룸)
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
 // really see on that map, chains ≤ the map's lockable pieces; 32·33·35·61·65 count the spots added 10/18)
 const HO_SHAPE = {
   2: [4, 0], 3: [6, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [6, 1],   // (8판 프라모델: 부품 6개, 하나는 자물쇠 뒤)
   9: [7, 1], 11: [8, 1],
   13: [8, 1], 15: [7, 1], 19: [8, 2],
-  23: [8, 1], 25: [9, 1], 26: [11, 2], 27: [10, 1],
-  33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 2],
-  43: [10, 1], 44: [9, 2], 45: [10, 1],
-  50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 1], 57: [12, 3],
+  22: [8, 1], 23: [8, 1], 25: [9, 1], 26: [11, 2], 27: [10, 1],
+  33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 1],   // (36: the sock puzzle is its second chain — D3)
+  41: [8, 1], 43: [10, 1], 44: [9, 2], 45: [10, 1],
+  50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 1], 57: [12, 2],   // (57: the snack box is its third chain — D3)
   61: [7, 1], 62: [11, 1], 63: [11, 2], 65: [7, 1], 67: [12, 2],
 };
 const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(location.search);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
@@ -740,7 +743,7 @@ function baseSpec(idx) {
     tv: EXTRA.tv && R.id === 'apt' && lock.includes('code'),
     // 4장's new thing: the laundromat's pair puzzle (흑백 comes from 1장 now) — and once more on the 상가 boss, whose laundry
     // corner has the same washers (리포트 v3 개선 2: a chapter's rule comes back at its boss)
-    sock: (EXTRA.sock || R.id === 'shop') && ((room === 'laundry' && kind !== 'show') || (room === 'shopmap' && boss)),   // (not on 39판's gadget stage — QA N7, user 10/19)
+    sock: (EXTRA.sock || R.id === 'shop') && ((room === 'laundry' && kind !== 'show') || room === 'shopmap'),   // (not on 39판's gadget stage — QA N7, user 10/19; 36판 too — D3)
     dark: P ? kind === 'dark' : false,
     // 6장 간식: 50판 teaches it, the night trail (55판) uses it again — 졸졸이 dozes on the box (리포트 v3 개선 3)
     treat: kind === 'treat' || (kind === 'night' && R.id === 'camp') ? TREAT[room] || null : null,
@@ -825,7 +828,7 @@ export function planStage(room, spec, story = null) {
   const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard'];
   // (짝 양말 판: no pair of socks on the list either — it would read as the puzzle's sock, and the odd ones lying about say "무늬가 달라")
   const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 6 && THIN.includes(t))
-    || (spec.showcase && DEVICE_LOOKALIKE[spec.room]?.includes(t));   // a stage's tool is never a target or a decoy
+    || (spec.showcase && DEVICE_LOOKALIKE[spec.room]?.includes(t)) || (spec.treat && t === spec.treat.item);   // a stage's tool is never a target or a decoy (간식: 50·55판 listed a 도토리 beside the 도토리 that moves the host)
   // the common things rotate through the stages (a window that moves on 5 places a stage) so the same milk carton
   // doesn't turn up stage after stage (user, 10/17: "계속 찾는것만 찾게"); the place's own things come first
   const common = TARGET_POOL.filter(t => !own.includes(t) && !tool(t)), off = ((spec.idx ?? 0) * 5) % Math.max(1, common.length);

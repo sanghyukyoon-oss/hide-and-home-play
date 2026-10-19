@@ -1,4 +1,4 @@
-// 보이는 층 (갓겜 기획안 P0 L3, 10/18 밤 user "진행하자"; 1장 2~11판): how much of the list the first screen gives away.
+// 보이는 층 (갓겜 기획안 P0 L3, 10/18 밤 user "진행하자"; 1장 2~11판, and from 10/19 every hidden-object stage after — D4): how much of the list the first screen gives away.
 //   L0  seen from the start view            — one per stage, the first find (≤ 20 % of the list)
 //   L1  hidden at the start, seen along at least 3 of 12 directions round it (the plan's ray measure) — at least two, one
 //       of them a single turn of the dial (±45°, ±90°) away, so the first "turn to find" comes inside a minute
@@ -39,11 +39,14 @@ export function tierPass(S) {
   const onScreen = p => { const sc = W.toScreen(p); return sc.x > 24 && sc.x < W.W - 24 && sc.y > 110 && sc.y < W.H - 120; };
   for (const s of C) tab.get(s).L0 = pts(s).some(p => onScreen(p) && clear(cam, p));
   const sweep = (y, pi, fn) => { W.yaw = y; W.updateCam(); R.update(1); R.group.updateMatrixWorld(true); for (const s of C) if (along(P.get(s), y, pi)) fn(tab.get(s)); };
-  for (let k = 0; k < 6; k++) for (const pi of [.62, .95]) sweep(start.y + k * Math.PI / 3, pi, t => { t.around++; if (pi === .62) t.low++; });
-  for (const d of [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2]) sweep(start.y + d, start.p, t => { t.near = true; });
+  // (D4 10/19: after 1장 the maps are big and outdoors — rays against hedges and trees made this up to 1 s while a stage loads; half
+  // the directions there, the same shape: 6 round at the usual tilt, a quarter turn either way)
+  const lite = S.idx > 10;
+  for (let k = 0; k < 6; k++) for (const pi of lite ? [.62] : [.62, .95]) sweep(start.y + k * Math.PI / 3, pi, t => { t.around++; if (pi === .62) t.low++; });
+  for (const d of lite ? [Math.PI / 2, -Math.PI / 2] : [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2]) sweep(start.y + d, start.p, t => { t.near = true; });
   if (S.idx === 1) for (let k = 0; k < 6; k++) sweep(start.y + k * Math.PI / 3, W.maxPitch ?? 1.15, t => { t.top++; });   // (as far as the dial tilts)
   restore(); S._tierTab = { tab, pts };   // (for the level tools)
-  const L1 = s => !tab.get(s).L0 && tab.get(s).around >= 3, near = s => L1(s) && tab.get(s).near;
+  const L1 = s => !tab.get(s).L0 && tab.get(s).around >= (lite ? 2 : 3), near = s => L1(s) && tab.get(s).near;
   const L2 = s => !tab.get(s).L0 && tab.get(s).low <= 1 && tab.get(s).top >= 2;
   // moving things
   const T = () => S.targets.filter(it => !it.found && !it.friend && it.spot && !it.spot.part && tab.has(it.spot));
@@ -55,18 +58,19 @@ export function tierPass(S) {
     if (d) moveItem(d, old);
     moveItem(it, s); out.moved.push(`${it.type}: ${old.label} → ${s.label} (${why})`);
   };
-  // L0: one — the most central stays
+  // L0: one — the most central stays (two on a list over 10 after 1장: D4, 10/19 — a big list with one in sight read as empty)
+  const keep = S.idx > 10 && S.targets.length > 10 ? 2 : 1;
   const mid = it => { const sc = W.toScreen(P.get(it.spot)); return Math.hypot(sc.x - W.W / 2, sc.y - W.H * .47); };
   const zero = T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b));
-  for (const it of zero.slice(1)) { const s = free(it, s => L1(s) && !tab.get(s).L0)[0]; if (s) put(it, s, 'L0→L1'); }
+  for (const it of zero.slice(keep)) { const s = free(it, s => L1(s) && !tab.get(s).L0)[0]; if (s) put(it, s, 'L0→L1'); }
   // (폰 세로 화면은 방이 한눈에 다 보여서 '처음엔 안 보이는 빈자리'가 모자라요 — 7판 2층집 8개 중 4개, 11판 냥냥이 부엌 5개가
   // 처음부터 보였어요, 리포트 v3 개선 5): what still shows goes, in turn, to a place a turn away or seen from a side or two,
   // then behind something you open (a curtain, a frame, a drawer, a door — opening is free) — never more than half the list
   // behind a door, so it stays a looking game
   const opened = () => S.targets.filter(it => !it.found && !it.friend && it.spot?.part).length;
   const soft = s => !tab.get(s).L0 && (tab.get(s).near || tab.get(s).around >= 1);
-  const doors = R.spots.filter(s => s.part && !s.part.lock && !s.part.isLever && !s.part.device && !s.reserved && s.anchor && s.kind !== 'on');
-  for (const it of T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b)).slice(1)) {
+  const doors = R.spots.filter(s => s.part && !s.part.lock && !s.part.isLever && !s.part.device && !s.reserved && s.anchor && s.kind !== 'on' && !S.spec.avoid?.(s));   // (never into a place no view sees — hunt-blind.js)
+  for (const it of T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b)).slice(keep)) {
     const s1 = free(it, soft)[0];
     if (s1) { put(it, s1, 'L0→돌리면'); continue; }
     if (opened() * 2 >= S.targets.length) break;
