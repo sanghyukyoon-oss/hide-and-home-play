@@ -768,8 +768,14 @@ export class StageScene {
     const sc = W.toScreen(pc), off = !(sc.x > 30 && sc.x < W.W - 30 && sc.y > 90 && sc.y < W.H - 170), keep = { target: W.target.clone(), zoom: W.zoom };
     if (off) await W.flyTo(tw, { target: pc.clone().setY(W.target.y), dur: .45 });
     f.root.rotation.y = Math.atan2(pc.x - from.x, pc.z - from.z);
-    await tw.run(.75, k => { f.root.position.lerpVectors(from, pc, k); f.root.position.y = from.y + (pc.y - from.y) * k + Math.abs(Math.sin(k * Math.PI * 2)) * .35; f.root.scale.setScalar(1 - .75 * Math.max(0, k - .6) / .4); });
+    // (user 10/19, on the phone: "토순이 숨을 때 뚜껑이라도 열리고 들어가게") the lid, door or drawer opens as she gets there,
+    // and shuts behind her — so you see *where* she went in, and that it is a thing that opens
+    const lid = typeof part.setOpen === 'function' && ['lid', 'door', 'drawer', 'lift'].includes(part.kind) && !part.lock;
+    const jump = tw.run(.75, k => { f.root.position.lerpVectors(from, pc, k); f.root.position.y = from.y + (pc.y - from.y) * k + Math.abs(Math.sin(k * Math.PI * 2)) * .35; f.root.scale.setScalar(1 - .75 * Math.max(0, k - .6) / .4); });
+    if (lid) { await tw.wait(.25); G.audio.sfx(part.sfx || 'open'); await tw.run(.25, k => part.setOpen(k), ease.outCubic); }
+    await jump;
     f.root.visible = false; this.friendHidden = true;
+    if (lid) { await tw.wait(.1); await tw.run(.22, k => part.setOpen(1 - k), ease.inCubic); G.audio.sfx('close'); }
     this.wobble(part.furn.group); G.audio.sfx('pop', 2);
     this.giggle('쏙!');
     if (off) await W.flyTo(tw, { ...keep, dur: .45 });
@@ -1374,6 +1380,8 @@ export class StageScene {
       await G.ui.flyImg(G.thumbs.item_key, s.x, s.y, this.keyPill, { size: 64 });
       this.keyPill.classList.add('pop'); setTimeout(() => this.keyPill.classList.remove('pop'), 300);
       G.ui.toast(this.v2 ? v2KeyToast() : '열쇠 획득! 잠긴 상자를 열어봐', 'green');
+      const ks = !this._keySaid && sceneAt(this.idx)?.keySay;   // (7판: why the key was in the pulley basket — 펭펭이's tip 2)
+      if (ks) { this._keySaid = true; setTimeout(() => !this.dead && !this.result && this.say(this.friend, tr(ks), 2200), 400); }
       this.pointAt(it.forPart);
     } else if (it.role === 'color') {
       this.colorCodes.add(it.code);

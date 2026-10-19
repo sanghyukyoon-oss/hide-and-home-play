@@ -761,13 +761,13 @@ export const DO = {
   turnDrag: K('옆으로 끌어서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 끌어 봐', 'Drag until the box faces you'),
   turnAny: K('방을 돌려서 상자 앞을 봐', 'Turn the room to face the box'),
   // 기본 조작 F (조작감 세션, 10/18): the turn dial bottom right — push it sideways to turn, up/down to tilt
-  turnDial: K('오른쪽 아래 돌림판을 옆으로 밀어 봐. 방이 돌아가!', 'Slide the dial at the bottom right. The room turns!'),
+  turnDial: K('돌림판을 밀어 봐', 'Slide the dial'),   // (짧게 — user 10/19 "힌트랑 손가락이 너무 많다"; the hand shows where and which way)
   tilt: K('돌림판을 위아래로 밀어 기울이기', 'Slide the dial up or down to tilt'), tilt2: K('돌림판을 위아래로 쭉 밀면 위에서 내려다볼 수 있어', 'Slide the dial up or down to look from above'),
-  turnDial2: K('오른쪽 아래 돌림판을 쭉 밀어서 상자 앞을 봐', 'Slide the dial till the box faces you'),
+  turnDial2: K('상자 앞이 보일 때까지 쭉', 'Keep going till the box faces you'),
   box: K('상자를 톡', 'Tap the box'), box2: K('흔들리는 상자를 톡 눌러 봐', 'Tap the shaking box'),
   drawer: K('서랍을 톡 해서 열기', 'Tap a drawer to open it'), drawer2: K('서랍이나 문을 톡! 안에 물건이 있어', 'Tap drawers and doors to look inside'),
   zoom: K('두 손가락을 벌려 크게 보기', 'Spread two fingers to zoom in'),
-  move: K('한 손가락으로 끌어서 옆으로 가 봐', 'Drag one finger to move'),
+  move: K('끌어서 둘러봐', 'Drag to look around'),
   moveE: K('✥ 이동을 톡 하고, 끌어서 옆으로 가 봐', 'Tap ✥ Move, then drag'),
 };
 // ── 엄마 몰래 야식, 첫째 밤: the practice the first time (bosses/yasik.js; GPT 안 10/18). The same rules: one action, over
