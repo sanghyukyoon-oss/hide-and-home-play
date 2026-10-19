@@ -1,3 +1,4 @@
+import { affOk, affLike, isCold } from './affinity.js';   // 물건마다 나올 법한 자리 (10/19)
 import * as THREE from 'three';
 // Room themes, hand-placed layouts, stage specs and a seeded planner that hides targets / keys / decoys.
 import { rng } from './util.js';
@@ -192,7 +193,7 @@ export const LAYOUTS = {
   // bunny on the side wall, the bronze Thinker between them, a draped piece to unveil, an easel, crates, the guide desk
   museum: { w: 7, d: 6, walls: { N: 'wall', W: 'wall' }, wallH: 3.0,
     furniture: [F('rug', 2, 2), F('rug', 4, 2), F('easel', 0, 0), F('thinker', 3, 0), F('veiled', 6, 0), F('stanchion', 1, 1), F('stanchion', 4, 1),
-      F('amphora', 1, 4), F('donutart', 6, 2), F('museumbench', 2, 4), F('artcrate', 6, 4), F('artcrate', 0, 5), F('guidedesk', 4, 5), F('plantbig', 6, 5)],
+      F('amphora', 1, 4), F('donutart', 6, 2), F('museumbench', 2, 4), F('artcrate', 6, 4), F('artcrate', 0, 5, 1), F('guidedesk', 4, 5, 2), F('plantbig', 6, 5)],   // (안내 데스크·작품 상자: 서랍과 자물쇠가 방 쪽을 보게 — user 10/19 "안내데스크도 벽 쪽으로 서랍이 열림")
     decor: [D('artwave', 'N', -1.6), D('artstars', 'N', 1.6), D('artlisa', 'W', 1.5), D('artpearl', 'W', -.6)],
     friendAt: [.4, -.3] },
   // 개굴이의 낚시터: a pond in the middle, the fishing platform on its north bank (the rod reaches over the water), a
@@ -320,10 +321,10 @@ export const MAPS = {
   // 침실 + 욕실
   bunnybath: () => ({ theme: THEMES.bunnybath, friendAt: [-1.5, 1.5], nBonus: 2, rooms: [
     { at: [-2.5, 0], layout: RM('bunny', 5, 5, { walls: { E: 'door' }, door: { wall: 'S', u: -1.2 },
-      furniture: [F('bed', 0, 0), F('wardrobe', 1, 0), F('drawers', 2, 0), F('plant', 4, 0), F('desk', 0, 3, 1), F('rug', 2, 2), F('stool', 1, 3), F('catbed', 4, 3), F('yarnbasket', 1, 4)],
+      furniture: [F('bed', 0, 0), F('wardrobe', 1, 0), F('drawers', 2, 0), F('plant', 4, 0), F('desk', 0, 3, 1), F('rug', 2, 2), F('stool', 1, 3), F('catbed', 4, 3), F('yarnbasket', 1, 4, 1)],   // (털실 바구니: 자물쇠가 방 쪽을 보게 — user 10/19 "바구니 자물쇠가 벽 쪽에 있어서")
       decor: [D('picture', 'N', -1.9), D('wallshelf', 'N', 1.6), D('window', 'W', -.5), D('clock', 'W', 1.6)] }) },
     { at: [2.5, 0], layout: RM('bath', 5, 5, { walls: { W: 'none' },
-      furniture: [F('bathtub', 1, 0), F('vanity', 3, 0), F('laundrybasket', 0, 1), F('toilet', 4, 2, 3), F('laundry', 4, 4), F('rug', 1, 2), F('plant', 0, 4), F('trash', 3, 4)],
+      furniture: [F('bathtub', 1, 0), F('vanity', 3, 0), F('laundrybasket', 0, 1), F('toilet', 4, 2, 3), F('laundry', 4, 4, 3), F('rug', 1, 2), F('plant', 0, 4), F('trash', 3, 4)],
       decor: [D('wallshelf2', 'N', -1.0), D('mirrorcab', 'N', 1.0), D('window', 'E', -1.5)] }) },
   ] }),
   // 곰돌이네 다락 3층집 (user 10/17: the 2층집 look is good, floors floating apart are not — "찾기 불편하기만 할듯"): one house
@@ -411,7 +412,7 @@ export const MAPS = {
         decor: [D('gate', 'N', 1.0), D('mailbox', 'W', 1.0)] } },
       { at: [2, 0], level: 0, layout: { w: 7, d: 7, theme: down, wallH: 2.9, timber: true, walls: { W: 'door' }, doorAt: { W: 1.0 },
         furniture: [F('stairsup', 6, 3), F('kimchifridge', 0, 0), F('counter', 1, 0, 0, { variant: 'stove' }), F('counter', 2, 0), F('dishcab', 3, 0), F('fridge', 4, 0), F('bookshelf', 5, 0, 0, { seed: 51 }), F('plant', 6, 0),
-          F('diningset', 1, 2), F('rug', 3, 3), F('sofa2', 3, 3), F('table', 4, 4), F('shoerack', 0, 5, 1), F('chest', 1, 6), F('tvlow', 3, 6, 2), F('laundrybasket', 5, 6)],
+          F('diningset', 1, 2), F('rug', 3, 3), F('sofa2', 3, 3), F('table', 4, 4), F('shoerack', 0, 5, 1), F('chest', 1, 6, 1), F('tvlow', 3, 6, 2), F('laundrybasket', 5, 6)],
         decor: [D('window', 'W', -2.2)] } },
       { at: [2, -2], level: 1, layout: { w: 7, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [-3.0] }, gable: 'N', timber: true,
         furniture: [F('bed', 0, 0), F('wardrobe', 1, 0), F('desk', 2, 0), F('stool', 2, 1), F('bookshelf', 4, 0, 0, { seed: 61 }), F('chest', 5, 0), F('plant', 6, 0), F('yarnbasket', 0, 2), F('beanbag', 4, 2)],
@@ -427,7 +428,7 @@ export const MAPS = {
     return { theme: THEMES.cabin, friendAt: [3.5, 1.5], nBonus: 3, fitAll: true, rooms: [
       { at: [-2.5, 0], level: 0, layout: { w: 6, d: 7, theme: down, wallH: 2.9, timber: true, walls: { E: 'door' }, doorAt: { E: 1.0 },
         furniture: [F('stairsup', 0, 3), F('bookshelf', 0, 0, 0, { seed: 71 }), F('drawers', 1, 0), F('counter', 2, 0, 0, { variant: 'stove' }), F('counter', 3, 0), F('dishcab', 4, 0), F('plant', 5, 0),
-          F('sofa', 1, 2), F('chest', 5, 2), F('rug', 2, 3), F('table', 3, 4), F('beanbag', 1, 4), F('laundrybasket', 2, 6), F('trunk', 5, 6), F('lamp', 4, 6)],
+          F('sofa', 1, 2), F('chest', 5, 2), F('rug', 2, 3), F('table', 3, 4), F('beanbag', 1, 4), F('laundrybasket', 2, 6), F('trunk', 5, 6, 3), F('lamp', 4, 6)],
         decor: [D('window', 'W', 2.0), D('picture', 'W', -.4)] } },
       { at: [3.0, 0], level: 0, layout: { w: 5, d: 7, theme: camp, walls: { N: 'cliff', W: 'none', S: 'none', E: 'none' },
         furniture: [F('firewood', 0, 0), F('pine', 2, 0), F('pine2', 4, 0), F('tent', 2, 2), F('cooler', 4, 2), F('lantern', 1, 3), F('campchair', 2, 4), F('rock', 4, 4), F('log', 0, 6), F('backpack2', 3, 6), F('mushrooms', 4, 6)] } },
@@ -444,7 +445,7 @@ export const MAPS = {
     return { theme: THEMES.duplex, friendAt: [-1.2, 1.6], nBonus: 3, fitAll: true, rooms: [
       { at: [0, 0], level: 0, layout: { w: 6, d: 7, theme: down, wallH: 2.9,
         furniture: [F('stairsup', 5, 3), F('minikitchen', 0, 0), F('minifridge', 2, 0), F('ricecooker', 3, 0), F('washer2', 4, 0), F('shoerack', 5, 0),
-          F('hanger', 0, 2), F('rug', 1, 3), F('foldtable', 2, 4), F('beanbag', 1, 4), F('sofa2', 1, 2), F('mirror2', 0, 5, 1), F('plantshelf', 0, 6), F('laundrybasket', 3, 6), F('pcdesk', 4, 6)],
+          F('hanger', 0, 2), F('rug', 1, 3), F('foldtable', 2, 4), F('beanbag', 1, 4), F('sofa2', 1, 2), F('mirror2', 0, 5, 1), F('plantshelf', 0, 6), F('laundrybasket', 3, 6), F('pcdesk', 4, 6, 3)],
         decor: [D('curtainwin', 'W', 1.6), D('posterwall', 'W', -1.0)] } },
       { at: [0, -2], level: 1, layout: { w: 6, d: 3, theme: up, walls: { S: 'rail' }, railGaps: { S: [-2.5] },
         furniture: [F('bed', 0, 0), F('wardrobe', 1, 0), F('drawers', 2, 0), F('bookshelf', 3, 0, 0, { seed: 81 }), F('plant', 5, 0), F('beanbag', 2, 2), F('chest', 0, 2, 1)],
@@ -818,10 +819,12 @@ export function planStage(room, spec, story = null) {
   if (spec.tv) { const e = (room.rooms || [room]).flatMap(Rm => Rm.furns).find(e => e.type === 'tvlow'); if (e) tv = tvPuzzle(e.f); }
   // a part that may only open a crack (a rug with a table on it, a gate against a vending machine) hides nothing
   // 숨은그림 판: places no view can see into, even opened (measured per room, src/hunt-blind.js), are never used
-  const all = room.spots.filter(s => !s.reserved && (!s.part || (s.part.reach ?? 1) >= .55) && !spec.avoid?.(s));
+  // (a drawer or door whose front looks into a wall close by holds nothing — facing.js, user 10/19 9·10판)
+  const all = room.spots.filter(s => !s.reserved && (!s.part || ((s.part.reach ?? 1) >= .55 && !s.part.wallFacing)) && !spec.avoid?.(s));
   const used = new Set();
+  let relaxAff = false;   // (a lock that would otherwise go missing takes what there is — 13판's moving boxes in the fridge)
   const take = (pred, type) => {
-    const c = r.shuffle(all.filter(s => !used.has(s) && pred(s) && (!type || fits(type, s))));
+    const c = r.shuffle(all.filter(s => !used.has(s) && pred(s) && (!type || (fits(type, s) && (relaxAff || affOk(type, s))))));   // (affinity.js: nothing inside where it makes no sense)
     if (!c.length) return null;
     used.add(c[0]); return c[0];
   };
@@ -883,7 +886,14 @@ export function planStage(room, spec, story = null) {
   const lockKinds = spec.lock === 'both' ? ['pad', 'code'] : Array.isArray(spec.lock) ? spec.lock : spec.lock ? [spec.lock] : [];
   const prefer = { pad: ['chest', 'mailbox', 'cooler', 'bike', 'picnic', 'tent'], code: ['safe', 'vending', 'shopfront', 'lostbox', 'trunk', 'slide'], color: ['kpopstage', 'wardrobe', 'chest', 'safe', 'gate', 'parkbin', 'trunk'], lever: ['wardrobe', 'safe', 'chest', 'aircon', 'firewood', 'slide'] };
   for (const lk of lockKinds) {
-    const free = room.parts.filter(p => p.lockable && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p));
+    // (10/19: no lock that faces a wall (facing.js), and a lock only where something on the list may sensibly be inside
+    // (affinity.js) — but a lock never goes missing for it: 13판's code lesson lost its fridge when only boxes were left)
+    const all0 = room.parts.filter(p => p.lockable && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p));
+    const okWall = p => !p.wallFacing && !p.lockWallFacing, holds = p => p.spots.some(s => targets.slice(ti).some(t => fits(t, s) && affOk(t, s)));
+    let free = all0.filter(p => okWall(p) && holds(p));
+    if (!free.length) free = all0.filter(holds);
+    if (!free.length) free = all0.filter(okWall);
+    if (!free.length) free = all0;
     const pref = spec.lockOn?.[lk] || prefer[lk] || [];
     // 사건 판: the friend hides in the first hideout-like piece (wardrobe, fridge, chest…) in that order, else the biggest
     // lockable piece — never the region's favourite small box (a coin changer is no hideout)
@@ -923,6 +933,7 @@ export function planStage(room, spec, story = null) {
     if (L.chain) continue;
     let s = null;
     for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]];
+    if (!s) { relaxAff = true; for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]]; relaxAff = false; }
     if (s) placements.push({ type: targets[ti++], spot: s, role: 'target' });
     else { if (L.lever) L.lever.leverFor = null; locks.splice(li--, 1); }
   }
@@ -971,6 +982,9 @@ export function planStage(room, spec, story = null) {
     const type = targets[ti];
     let s = null;
     if (firstFree) { firstFree = false; s = take(x => x.kind === 'on', type); }
+    // (10/19 user: "아이스크림·음료수는 냉장고에서 나올 확률을 높여"): a cold thing goes into a fridge, freezer or cooler when the
+    // room has a free one, even past the stage's count of things to open
+    if (!s && isCold(type)) { s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && affLike(type, x), type); if (s) { want.inside = Math.max(0, want.inside - 1); partsUsed.add(s.part); furnUsed.add(fk(s)); } }
     if (!s && habit && ti % 2 === 0) {
       // the habit place, out in the open first; inside only while there are things left to open
       s = take(x => habit(x) && x.kind !== 'inside' && (spec.ho ? x.kind === 'on' || want.behind > 0 : true), type)
@@ -979,7 +993,8 @@ export function planStage(room, spec, story = null) {
       if (s) { if (s.kind === 'inside') { want.inside--; partsUsed.add(s.part); furnUsed.add(fk(s)); } else if (s.kind !== 'on') want.behind--; }
     }
     if (!s && want.inside > 0) {
-      s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && okIn(x), type) || (!spec.ho && take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part), type));
+      s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && okIn(x) && affLike(type, x), type)   // (where it belongs first: ice cream in the freezer)
+        || take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && okIn(x), type) || (!spec.ho && take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part), type));
       if (s) { want.inside--; partsUsed.add(s.part); furnUsed.add(fk(s)); }
     }
     if (!s && want.behind > 0) { s = take(x => x.kind === 'under' || x.kind === 'behind', type); if (s) want.behind--; }
@@ -994,7 +1009,7 @@ export function planStage(room, spec, story = null) {
     const n = Math.round(c.length * frac);
     for (let k = 0; k < n; k++) {
       const s = c[k];
-      const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s));
+      const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s) && affOk(t, s));
       if (!opts.length) continue;
       used.add(s); placements.push({ type: opts[0], spot: s, role: 'decoy', v: r.int(0, 3) });
     }

@@ -1,4 +1,4 @@
-// WebAudio-synthesized SFX + generative music box BGM. No asset files.
+// WebAudio-synthesized SFX + generative music box BGM; a mood with a recorded track (TRACKS) plays that instead.
 import { store } from './util.js';
 import { hapticFor } from './feel.js';
 
@@ -20,10 +20,10 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // never resumed: no sound until a reload. Any state but running resumes, on presses and lifts; the music starts once the
   // context really runs (it used to wait for the next touch). The page hidden (home button, another app): everything
   // stops — Android kept the music box playing behind the home screen.
-  const goMusic = () => { if (A._wantMusic && !A._timer) A.music(A.mood); };
+  const goMusic = () => { if (A._wantMusic && !A._timer) A.music(A.mood); if (A._wantMusic && A._trk?.el?.paused && A._trk.mood === A.mood && !document.hidden) A._trk.el.play()?.catch?.(() => {}); };
   A.unlock = () => { const c = ensure(); if (c && c.state !== 'running' && c.state !== 'closed' && !document.hidden) { const pr = c.resume(); pr?.then?.(goMusic, () => {}); } goMusic(); };
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, A.unlock, { capture: true, passive: true });
-  document.addEventListener('visibilitychange', () => { const c = A.ctx; if (!c || c.state === 'closed') return; try { if (document.hidden) c.suspend()?.catch?.(() => {}); else c.resume()?.then?.(goMusic, () => {}); } catch {} });
+  document.addEventListener('visibilitychange', () => { const c = A.ctx; if (!c || c.state === 'closed') return; try { if (document.hidden) { c.suspend()?.catch?.(() => {}); A._trk?.el?.pause(); } else c.resume()?.then?.(goMusic, () => {}); } catch {} });
   A.setMuted = m => { A.muted = m; store.set(storageKey, m); if (A.master) A.master.gain.setTargetAtTime(m ? 0 : .9, A.ctx.currentTime, .02); };
 
   function tone({ type = 'sine', f = 440, f2 = null, dur = .12, vol = .5, attack = .004, at = 0, bus = A._bus || A.sfxBus, q = 0, filter = null, detune = 0, vib = 0 }) {
@@ -132,10 +132,29 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     play: { bpm: 118, root: -5, prog: [[0, 4, 7], [-5, -1, 2], [-3, 0, 4], [-7, -3, 0]], mel: [12, 14, 16, 19, 21, 19, 16, 14] },
     tense: { bpm: 84, root: -10, prog: [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -1, 2]], mel: [12, 15, 12, 10, 12, 15, 17, 15] },
   };
+  // 배경음 (10/19 user: "배경음은 GPT가 Suno로 만든 두 가지 넣어줘" — one has come: 「햇살 사이 숨은 친구」, Opus → AAC for iPhone).
+  // A track streams from an <audio> element routed through the music bus (mute and volume as before; a decoded buffer would
+  // hold ~50 MB on a phone). Moods without a track keep the music box.
+  const TRACKS = { home: 'audio/bgm-home-v01.m4a' }, TRACK_GAIN = .55;
+  A._trk = { el: null, node: null, gain: null, mood: null, url: null };
+  function stopTrack() { const t = A._trk; if (t.el && !t.el.paused) t.el.pause(); t.mood = null; }
+  function playTrack(mood) {
+    const t = A._trk, url = TRACKS[mood];
+    if (!t.el) {
+      t.el = new Audio(); t.el.loop = true; t.el.preload = 'auto'; t.el.crossOrigin = 'anonymous'; t.el.setAttribute('playsinline', '');
+      try { t.node = A.ctx.createMediaElementSource(t.el); t.gain = A.ctx.createGain(); t.gain.gain.value = TRACK_GAIN; t.node.connect(t.gain).connect(A.musicBus); } catch { t.node = null; }
+    }
+    if (t.url !== url) { t.url = url; t.el.src = url; }
+    t.mood = mood;
+    if (!t.node) t.el.volume = A.muted ? 0 : .3;   // (no WebAudio route: plain volume)
+    if (t.el.paused && !document.hidden) t.el.play()?.catch?.(() => {});   // (refused before a tap: goMusic tries again on the next one)
+  }
   A.music = (mood = 'home') => {
     A.mood = mood; A._wantMusic = true;
     if (A._timer) { clearInterval(A._timer); A._timer = null; }
     if (!ensure() || A.ctx.state !== 'running') return;
+    if (TRACKS[mood]) { if (A._trk.mood !== mood || A._trk.el?.paused) playTrack(mood); return; }
+    stopTrack();
     const M = MOODS[mood] || MOODS.home;
     const stepDur = 60 / M.bpm / 2; let next = A.ctx.currentTime + .06;
     A._timer = setInterval(() => {
@@ -158,6 +177,6 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       }
     }, 60);
   };
-  A.stopMusic = () => { A._wantMusic = false; if (A._timer) { clearInterval(A._timer); A._timer = null; } };
+  A.stopMusic = () => { A._wantMusic = false; if (A._timer) { clearInterval(A._timer); A._timer = null; } stopTrack(); };
   return A;
 }

@@ -235,6 +235,7 @@ const G = {
   onStageClear(idx, stars, coins) {
     const out = {};
     save.best[idx] = Math.max(save.best[idx] || 0, stars);
+    save.clears = save.clears || {}; save.clears[idx] = (save.clears[idx] || 0) + 1;   // (stage.js: a replay deals the things anew)
     save.stars = Object.values(save.best).reduce((a, b) => a + b, 0);
     const before = save.stage || 0;
     out.firstClear = idx + 1 > before;

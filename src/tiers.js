@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { ITEMS } from './gfx/items.js';
 import { moveItem } from './hunt.js';
+import { affOk } from './affinity.js';   // (10/19: what goes behind a door has to make sense there)
 
 const fits = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat); };
 const shown = o => { for (let p = o; p; p = p.parent) if (p.visible === false) return false; return true; };
@@ -74,7 +75,7 @@ export function tierPass(S) {
     const s1 = free(it, soft)[0];
     if (s1) { put(it, s1, 'L0→돌리면'); continue; }
     if (opened() * 2 >= S.targets.length) break;
-    const at = P.get(it.spot), s2 = doors.filter(s => s !== it.spot && fits(it.type, s) && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
+    const at = P.get(it.spot), s2 = doors.filter(s => s !== it.spot && fits(it.type, s) && affOk(it.type, s) && !s.part.wallFacing && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
       .sort((a, b) => a.anchor.getWorldPosition(V()).distanceTo(at) - b.anchor.getWorldPosition(V()).distanceTo(at))[0];
     if (s2) put(it, s2, 'L0→열어야');
   }

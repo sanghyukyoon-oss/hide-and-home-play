@@ -14,7 +14,7 @@ const ON = typeof location === 'undefined' || !/[?&]sweep=0(&|$)/.test(location.
 const MECH = new Set(['fishdock', 'liftbasket']);   // furniture whose moving part is a mechanism (levers, devices: by flag)
 const BODY = new Set(['liftbasket']);               // …and whose body shines with it (not the fishing dock: the whole deck would)
 const DIR = new THREE.Vector2(.7071, -.7071);       // ↘ on the screen, whichever way the room is turned
-const DUR = .6, GAP = 14, GAP_STUCK = 5.5, STUCK = 10;
+const DUR = .6, GAP = 25, GAP_STUCK = 8, STUCK = 15;   // (14 / 5.5 / 10 → 25 / 8 / 15: user 10/19 "힌트도 너무 많은 듯")
 
 function shine(meshes) {
   const U = { uSwT: { value: -99 }, uSwOn: { value: 0 }, uSwW: { value: .1 } };

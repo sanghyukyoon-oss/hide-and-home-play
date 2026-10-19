@@ -24,6 +24,7 @@ const FURN_NAME = t => FURN_INFO[t]?.name || t;
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { storyFor, playDialog, playCinematic, slidePuzzle, setFrameSolved } from '../story.js';
 import { Trickster } from '../trickster.js';
+import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
@@ -139,6 +140,11 @@ export class StageScene {
       layout.friendAt = [2.0, 2.0];
     } else {
       this.idx = idx; this.spec = { ...stageSpec(idx), ...(spec || {}) };
+      // (다시 할 때 자리 바꾸기 — 경제 세션 보상 고리, 10/19: a stage you've cleared before deals its things anew each replay,
+      // so chasing a missing ★ is looking again, not remembering; a '다시 하기' after a loss keeps the same deal; the two
+      // tutorials keep theirs — their script points at fixed places)
+      const clears = G.save.clears?.[idx] || 0;
+      if (clears && !retry && !spec && !(this.spec.tut <= 2)) this.spec.seed += 7919 * 13 * clears;
       layout = layoutFor(this.spec.room);
       this.th = THEMES[this.spec.room] || layout.theme;   // a map without its own THEMES entry wears its first room's look
       if (this.spec.timed) this.th = { ...this.th, friend: 'raccoon' };   // 너굴이 hosts the timed hide-and-seek
@@ -167,6 +173,7 @@ export class StageScene {
     }
     this.layout = layout;
     this.room = layout.rooms ? new MapRooms(W, layout) : new Room(W, layout);
+    this.wallFacing = markWallFacing(this.room);   // 벽을 보는 서랍·자물쇠 (facing.js, 10/19)
     W.root.add(this.room.group);
     this.ambient = new Ambient(this.room);   // plants sway, clothes sway, warm things steam
     // 숨은그림 판: about half the things where this host would put them, never a place nobody can see into (hunt.js)
@@ -203,7 +210,13 @@ export class StageScene {
       if (p.role !== 'decoy') {
         const nat = new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3()), big = Math.max(nat.x, nat.y, nat.z) || .2;
         const room = (p.spot.maxH + .02) / Math.max(.01, (ITEMS[p.type]?.h || .2) * (p.spot.scale || 1));
-        sc = Math.max(sc, Math.min(2, (LOOK.has('items') && this.lookR?.itemSize || .28) / big, ITEMS[p.type]?.flat ? 2 : room));   // (룩: a whole house on screen draws its things bigger)
+        // (10/19, user after playing 1~10판 on the phone: "찾아야 할 물건 크기 너무 작게 하지 마.. 어느 정도 노멀라이징 하는 게 맞는 듯.
+        // 아주 약간 지금보다 살짝 더 키워 주고"): every thing to find ends near the same size — 34 cm on its longest side (was 28),
+        // the spot's own scale made up for (a seat or a tray at .7 drew its thing at 20 cm), up to 2.4× (was 2), still never
+        // taller than the place allows
+        // (most models are already 25–30 cm, so the floor goes up too: 1.15 → 1.25×, where the place has the headroom)
+        const ss = p.spot.scale || 1, want = (LOOK.has('items') && this.lookR?.itemSize || .34) / ss, lim = ITEMS[p.type]?.flat ? 2.4 : room;
+        sc = Math.max(sc, Math.min(lim, Math.max(1.25, Math.min(2.4, want / big))));   // (룩: a whole house on screen draws its things bigger)
       }
       attachItem(p.spot, g, { rotY: (r() - .5) * 1.4, scale: sc });
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
@@ -2516,7 +2529,7 @@ export class StageScene {
       if (this.idle > 11) this.taunt('idle');
       // a sparkle on something findable after a while of nothing: 9 s on a friend hunt; on a hidden-object stage you get
       // time to look yourself first — 12 s in chapters 1-2, 20 s from 3 (레벨 세션 B3, user: "진득하게")
-      if (this.sparkAfter == null) { const ch = REGIONS.indexOf(regionOf(this.idx)); this.sparkAfter = this.incident || this.custom || this.spec.timed ? 9 : ch <= 1 ? 12 : 20; }
+      if (this.sparkAfter == null) { const ch = REGIONS.indexOf(regionOf(this.idx)); this.sparkAfter = this.incident || this.custom || this.spec.timed ? 9 : this.spec.tut <= 2 ? 12 : 20; }   // (12 → 20 s on hidden-object stages from 3판: user 10/19 "힌트도 너무 많은 듯")
       // F1: one thing left for 20 s → the owner looks at it; with one left the sparkle waits until 10 s after that look
       if (this.feelHelp) {
         const left = this.targets.filter(t => !t.found);
@@ -2527,7 +2540,7 @@ export class StageScene {
       if (this.idle > this.sparkAfter && !waitGaze) {
         this.twinkleT -= dt;
         if (this.twinkleT <= 0) {
-          this.twinkleT = 4;
+          this.twinkleT = 6;   // (4 → 6 s, the same note)
           const vis = this.targets.filter(t => !t.found && !(t.spot.part && t.spot.part.t < .5) && !W.occluded(t.g, this.worldCenter(t), [this.room.group]));
           const pick = vis[Math.floor(Math.random() * vis.length)];
           if (pick) { const s = W.toScreen(this.worldCenter(pick)); W.fx.burst(s.x, s.y, { n: 5, shape: 'star', speed: 60, gravity: -30, life: .9, size: 9, colors: ['#ffffff', '#fff3a0'] }); }

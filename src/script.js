@@ -335,10 +335,11 @@ SCENES.push(
     intro: [L('peng', '펭! 네가 토순이 한 번에 찾은 애야?', "Peng! You're the one who found Bunbun on the first try?"), L('peng', '나는 동네 숨기 2등. 1등은 너굴이.', "I'm the second-best hider in town. Rocky's first."), L('peng', '오늘은 내 물건을 꽁꽁 숨겼어. 다 찾으면 1등 비결 알려 줄게!', "Today I hid my stuff tight. Find it all and I'll tell you my number-one secret!")],
     say: { first: K('펭! 그건 연습용이야!', 'Peng! That one was for practice!'), half: K('반이나…? 1등 계획에 차질이…', 'Half…? My number-one plan is slipping…'), last: K('마지막 건 비결 1번으로 숨겼어. 못 찾을걸!', 'I hid the last one with tip number one. Good luck!') },
     after: [LK('peng', '1등 비결 1번. 숨길 땐 숨도 참아.', 'Pro tip number one. Hold your breath while you hide stuff.'), L('mong', '…물건은 숨 안 쉬어.', "…Stuff doesn't breathe."), L('peng', '…비결 2번 생각해 올게.', "…I'll come up with tip number two.")] },
+  // (say.first · say.last name no place: things move on a replay, so a line that says where would point the wrong way — 레벨 1~10 10/19)
   { id: 'bear2H', type: 'hidden', room: 'bear2',
     pop: { say: K('킁킁… 앗, 팬케이크!', 'Sniff sniff… Oh no, the pancakes!'), move: 'smoke', at: 'stove' },   // (가스레인지에서 연기 → 결과창 "조금 탔지만")
     intro: [L('bear', '으헤헤, 또 왔네! 이번엔 접시도 두 개야.', "Ehehe, you're back! Two plates this time."), LK('mong', '숟가락은?', 'And the spoons?'), LK('bear', '…깨끗한 걸로 두 개. 팬케이크 굽는 동안 내가 숨긴 거 찾아 봐.', '…Two clean ones. While I make pancakes, find what I hid.')],
-    say: { first: K('으헤헤, 그건 부엌 거야.', 'Ehehe, that goes in the kitchen.'), half: K('반 찾았네! 팬케이크도 반 구웠어.', 'Half found! The pancakes are half done too.'), last: K('하나 남았어! 킁킁… 아, 이건 팬케이크 냄새.', "One left! Sniff… oh, that's just the pancakes.") },
+    say: { first: K('으헤헤, 벌써 하나! 팬케이크는 아직이야.', "Ehehe, one already! The pancakes aren't ready yet."), half: K('반 찾았네! 팬케이크도 반 구웠어.', 'Half found! The pancakes are half done too.'), last: K('하나 남았어! 킁킁… 아, 이건 팬케이크 냄새.', "One left! Sniff… oh, that's just the pancakes.") },
     // (결과창 둘째 줄 = 다음 예고, 스토리 룸 10/19 '다시 하고 싶게': next is 너굴이's 무궁화 in the schoolyard)
     after: [LP('bear', '다 찾았네! 팬케이크도 다 됐어. 조금 탔지만.', 'All found! The pancakes are done too. A little burnt.'), LP('bear', '아, 너굴이가 운동장에서 너 기다린대!', "Oh, and Rocky's waiting for you at the schoolyard!")] },
   // trace: 먹물이 passed through here too — a short trail of its colour-smeared footprints on the floor, nothing to tap
@@ -346,7 +347,7 @@ SCENES.push(
   { id: 'house2fH', type: 'hidden', room: 'house2f', trace: true,
     pop: { say: K('펭! …쿵.', 'Peng! …Thud.'), move: 'thud' },   // (신나서 뛰다 배로 쿵 → 결과창 "비결 3번. 쿵 하지 않기")
     intro: [L('peng', '펭! 비결 2번 생각해 왔어. 높은 데 숨기기!', 'Peng! I came up with tip number two. Hide stuff up high!'), L('peng', '우리 집은 2층이야. 높을수록 1등이지!', 'My house has two floors. Higher means number one!')],
-    say: { first: K('펭! 그건 일부러 낮은 데 둔 거야!', 'Peng! I put that one low. On purpose!'), half: K('반이나…? 비결 2번이 안 통해…', "Half…? Tip number two isn't working…"), last: K('마지막 건 제일 높은 데! …쿵. 아무 소리 안 났어.', "The last one's the highest of all! …Thud. That wasn't me.") },
+    say: { first: K('펭! 그건 비결 2번 안 쓴 거야!', "Peng! I didn't use tip number two on that one!"), half: K('반이나…? 비결 2번이 안 통해…', "Half…? Tip number two isn't working…"), last: K('마지막 하나! …쿵. 아무 소리 안 났어.', "Last one! …Thud. That wasn't me.") },
     // (결과창 둘째 줄 = 다음 예고: 8판 곰돌이네 다락 상자)
     after: [LP('peng', '…비결 3번. 높은 데 올라갈 땐 쿵 하지 않기.', "…Tip number three. Don't go thud when you climb up high."), LP('peng', '아, 곰돌이가 다락에서 엄청 큰 상자를 찾았대!', 'Oh! Bearie found a huge box in the attic!')] },
   // 8판 프라모델 조립판 (스토리 룸 10/19, 정식판 세션 8a963f · 레벨 7dbff7 합의): 그 판 spec에 model/kit 'robot'이 있을 때만
@@ -474,12 +475,12 @@ SCENES.push(
   { id: 'bunnybathH', type: 'hidden', room: 'bunnybath',
     pop: { say: K('에… 에취!', 'Ah… ah-choo!'), move: 'sneeze' },   // (거품이 퐁퐁)
     intro: [L('bunny', '목욕 끝! …근데 내 물건 다 어디 갔지?', "Bath's done! …But where did all my stuff go?"), L('mong', '…거품 속에.', '…In the bubbles.')],
-    say: { first: K('앗, 그거 거품 속에 있었어?', 'Huh, that was in the bubbles?'), half: K('반 찾았다! 몸도 다 말랐어.', "Half found! I'm all dry now."), last: K('하나 남았어. 킥… 아니, 안 웃었어.', "One left. Hee… no, I didn't giggle.") },
+    say: { first: K('앗, 벌써? 아직 젖었는데!', "Huh, already? It's still wet!"), half: K('반 찾았다! 몸도 다 말랐어.', "Half found! I'm all dry now."), last: K('하나 남았어. 킥… 아니, 안 웃었어.', "One left. Hee… no, I didn't giggle.") },
     after: [L('bunny', '다 찾았다! 이제 파자마 파티 준비 끝!', 'All found! Pajama party: ready!'), L('bunny', '냥냥이도 불렀는데… 별로 안 궁금하대.', "I invited Nyannyan too… \"Not curious,\" apparently.")] },
   // 11판: 냥냥이 first (the 일기장 boss is gone from 1장) — the diary page and the tail stay with it
   { id: 'catH', keep: true, type: 'hidden', room: 'cat', trace: true,   // (10판 "냥냥이네 쪽으로 갔어!" — the footprints carry on here)
     intro: [L('cat', '흥. 네가 몽글이냐냥. 별로 안 궁금했다냥.', "Hmph. So you're Mongle, meow. Not that I care."), L('mong', '…꼬리는 궁금해 보이는데.', '…Your tail looks curious.'), L('cat', '…! 내 물건이나 찾아보라냥.', '…! Just find my stuff, meow.')],
-    say: { first: K('흥. 그 정도는 찾겠지냥.', 'Hmph. Anyone could find that one.'), half: K('…제법이다냥.', '…Not bad, meow.'), last: K('마지막 건 내 자리에 있다냥. …앗.', "The last one's in my spot, meow. …Oops.") },
+    say: { first: K('흥. 그 정도는 찾겠지냥.', 'Hmph. Anyone could find that one.'), half: K('…제법이다냥.', '…Not bad, meow.'), last: K('마지막 건 안 알려 준다냥. …진짜 안 알려 준다냥.', "Not telling you where the last one is, meow. …Really not telling.") },
     after: [L('cat', '…다들 네 일기장에 나온다길래. 나도 있나 궁금했다냥.', "…Everyone said they're in your diary. I wanted to see if I was."), L('mong', '오늘 쓸게. 꼬리는 못 숨김.', "I'll write it today. Can't hide that tail."), L('cat', '…! 수, 숨길 수 있거든?!', '…! I c-can so hide it!'),
       L('mong', '그리고, 같이 놀아서 재밌었음.', 'And: had fun playing together.'), L('cat', '…그것도 써라냥.', '…Write that too, meow.'),
       L('cat', '이거, 캣타워. 네 방에 둬. 내가 가면 앉게.', 'Here. A cat tower. Keep it at your place. For when I visit.')] },   // v98: the first clear gives the cat tower
