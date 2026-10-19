@@ -97,6 +97,16 @@ export class UI {
     if (close) { const c = this.ibtn('close', 'red', () => { this.closePanel(); close(); }); c.classList.add('close'); p.append(c); }
     this.overlay.innerHTML = ''; this.overlay.append(p); this.overlay.classList.add('on');
     this.panelOpen = p;
+    // short screens (a phone browser with its bars, 375×548): the panel shrinks to fit between its ribbon and the notice strip
+    // at the bottom instead of running off both edges (QA 10/19: 11판's first clear lost its title, a notice sat on its
+    // buttons) — measured unzoomed, once now and once after a result panel's late lines (2D UI 정리 ④)
+    const fit = () => {
+      if (!p.isConnected || p.classList.contains('closing')) return;
+      p.style.zoom = ''; p.style.margin = '';
+      const TOP = 34, BOTTOM = 58, z = Math.min(1, (this.overlay.clientHeight - TOP - BOTTOM) / p.offsetHeight);
+      if (z < 1) { const k = Math.max(.7, z); p.style.zoom = k.toFixed(3); p.style.margin = `${(TOP / k).toFixed(1)}px auto ${(BOTTOM / k).toFixed(1)}px`; }
+    };
+    requestAnimationFrame(fit); setTimeout(fit, 900);
     return p;
   }
   closePanel(instant = false) {

@@ -39,7 +39,7 @@ export const raidGoal = S => `${ga(ownerOf(S))} ${Math.ceil(S.spec.time)} 셀 �
 export function raidStart(S) {
   if (!S.raidRun) return;
   S.timerOn = true;
-  if (S.custom.brag) setTimeout(() => !S.dead && !S.result && S.say(S.friend, S.custom.brag, 1800), 300);
+  if (S.custom.brag && !S.scouted) setTimeout(() => !S.dead && !S.result && S.say(S.friend, S.custom.brag, 1800), 300);
 }
 
 // a find: into the bag (it pays now), the number rolls up when it lands
@@ -124,4 +124,64 @@ export async function raidSettle(S, why) {
   await S.tw.wait(.15); if (S.dead) return;
   G.ui.countUp(cv, 0, total, 800, v => { if (v % 10 === 0) G.audio.sfx('coin', 0); });
   return { res, p };
+}
+
+// ── ② 정찰 + 다음 집 (Clash's scout screen): tapping a house on the list shows the room first — slowly turning, its things
+// put away (the scout shows the place, never the answers), the clock not running — with what you could take home:
+// the 보물, my own things they hold, how many NEW things there are to pocket, the most coins it can pay.
+// [털러 가기] starts the raid right here (no reload); [다음 집] opens the next house on the list; [목록] goes back.
+let LIST = [];
+export const setScoutList = rooms => { LIST = rooms || []; };
+const sameRoom = (a, b) => a === b || (a.practice ? a.id === b.id : a.owner && a.owner === b.owner);
+export function raidScout(S) {
+  const G = S.G, W = G.world, ui = G.ui, R = S.raidRun, C = S.custom;
+  if (G.bot || !R) return Promise.resolve(true);
+  S.scouted = true;
+  const shown = S.items.filter(it => it.g.visible); for (const it of shown) it.g.visible = false;
+  S.col.style.visibility = 'hidden';
+  const press = W.onPress; W.onPress = null;
+  const v0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom }, joy0 = W.joyHidden;
+  W.joyHidden = true;   // (the zoom gauge and the turn dial wait too)
+  // pulled back and lifted a little, so the whole room turns above the card
+  const lift = W.target.clone(); lift.y -= .9;
+  W.flyTo(S.tw, { zoom: v0.zoom * .82, target: lift, dur: .5 }).then(() => { if (!S.dead && !done) W.autoSpin = .28; });
+  W.shadowDirty = true;
+  let done = false;
+  setTimeout(() => !S.dead && S.scouted && C.brag && S.say(S.friend, C.brag, 2400), 500);
+  // what it can pay: every find (보물 more), all three stars, my own things back
+  const mine = (C.stolen || []).filter(t => S.targets.some(x => x.type === t));
+  const tre = S.targets.find(t => t.treasure), n = S.targets.length;
+  const max = S.targets.reduce((a, t) => a + val(S, t.treasure ? RAID.treasure : RAID.find), 0) + val(S, RAID.star) * 3 + mine.length * RAID.back;
+  const have = new Set(G.save.collection);
+  const news = [...new Set(S.targets.map(t => t.type))].filter(t => !mine.includes(t) && !have.has(t) && ITEMS[t] && !ITEMS[t].decoy);
+  const grabOk = canGrab(G, C);
+  const tile = (src, tag, cls, sub) => h('div', { class: 'stile ' + cls }, h('img', { src }), h('div', { class: 'stag' }, tag), h('div', { class: 'ssub' }, sub));
+  const tiles = [];
+  if (tre) tiles.push(tile(tre.thumb || G.thumbs['item_' + tre.type], '보물', 'tre', `+${val(S, RAID.treasure)}`));
+  for (const t of mine.slice(0, 3)) tiles.push(tile(G.thumbs['item_' + t], '내 거', 'mine', '되찾기'));
+  if (news.length) tiles.push(h('div', { class: 'stile new' + (grabOk ? '' : ' off') }, h('b', { class: 'ol' }, String(news.length)), h('div', { class: 'stag' }, 'NEW'), h('div', { class: 'ssub' }, grabOk ? '하나 슬쩍' : '슬쩍은 쉬는 중')));
+  const facts = [`시간 ${Math.ceil(S.spec.time)}초`, `물건 ${n}개`, ...(S.plan.locks.length ? [`자물쇠 ${S.plan.locks.length}`] : []), ...(R.repeat ? ['전에 몽땅 턴 집 · ⅓'] : [])];
+  const i = LIST.findIndex(r => sameRoom(r, C)), next = LIST.length > 1 ? LIST[(i + 1) % LIST.length] : null;
+  return new Promise(res => {
+    const end = go => { if (done) return; done = true; wrap.remove(); if (go) start(); res(go); };
+    const start = () => {
+      W.autoSpin = 0; W.onPress = press; W.joyHidden = joy0;
+      for (const it of shown) it.g.visible = true;
+      S.col.style.visibility = '';
+      W.flyTo(S.tw, { yaw: v0.yaw, pitch: v0.pitch, zoom: v0.zoom, target: W.home, dur: .45 });
+      W.shadowDirty = true;
+    };
+    const card = h('div', { class: 'panel scout' },
+      h('div', { class: 'ribbon purple ol3' }, '정찰'),
+      h('div', { class: 'shead' }, h('img', { src: G.thumbs['face_' + (C.face || S.th.friend)] || G.thumbs.face_mong }), h('div', {}, h('div', { class: 'sname' }, S.th.name), h('div', { class: 'sfacts' }, facts.join(' · ')))),
+      h('div', { class: 'slabel' }, '가져올 수 있는 것'),
+      h('div', { class: 'stiles' }, ...tiles),
+      h('div', { class: 'reward smax', html: ICON.coin }, h('span', {}, `최대 ${max}`)),
+      h('div', { class: 'row' },
+        ui.btn('목록', { color: 'gray', cls: 'sm', onClick: () => { end(false); G.go('visit'); } }),
+        ...(next ? [ui.btn('다음 집', { color: 'blue', cls: 'sm', onClick: () => { end(false); G.go('stage', { custom: next, scout: true }); } })] : []),
+        ui.btn('털러 가기', { color: 'green', icon: 'play', cls: 'big', onClick: () => end(true) })));
+    const wrap = h('div', { class: 'scoutwrap' }, card);
+    ui.hud.append(wrap);
+  });
 }

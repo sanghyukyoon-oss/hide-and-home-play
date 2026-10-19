@@ -8,6 +8,7 @@ import { HOME_ZONES, ZONE_TYPES, zoneLayout, SHOP_FURN, STARTER } from '../catal
 import { net, initNet, listRooms, roomStats, names, practiceRooms } from '../net.js';
 import { FURN_INFO } from '../gfx/furniture.js';
 import { stolenBy, residentId } from '../raid.js';
+import { setScoutList } from '../raidrun.js';   // ② 정찰 + 다음 집
 
 const fakeWorld = { shadowDirty: false, yaw: Math.PI / 4 };
 
@@ -85,6 +86,7 @@ export class VisitScene {
     practice.sort((a, b) => (b.stolen?.length || 0) - (a.stolen?.length || 0));
     this.rooms = [...practice.filter(p => p.stolen?.length), ...others.map(r => ({ ...r, ownerName: nm[r.owner] || '누군가', stats: stats[r.owner] })), ...practice.filter(p => !p.stolen?.length)];
     this.listEl.innerHTML = '';
+    setScoutList(this.rooms);
     if (!N.ok) this.listEl.append(h('div', { class: 'note' }, '지금은 연습 방만 있어요. 공유된 Claude 링크로 열면 다른 사람이 올린 방도 여기 떠요.'));
     else if (!others.length) this.listEl.append(h('div', { class: 'note' }, '아직 올라온 방이 없어요. 내 방을 먼저 올려 볼까요?'));
     for (const r of this.rooms) {
@@ -98,7 +100,7 @@ export class VisitScene {
           ...(mine ? [h('div', { class: 'vmine' }, `내 물건 ${mine}개를 갖고 있어! 되찾으러 가자`)] : r.brag ? [h('div', { class: 'vbrag' }, `“${r.brag}”`)] : []),
           h('div', { class: 'vmeta' }, `숨긴 물건 ${r.count || r.hidden.length}개` + (r.locks?.length ? ' · 잠금 있음' : '') + (r.resident ? ' · 동네 주민' : r.practice ? ' · 연습' : '') + (r.stats ? ` · ${r.stats.plays}명 도전, ${r.stats.wins}명 성공` : ''))),
         mine ? h('div', { class: 'vbadge mine' }, '되찾기') : done?.ok ? h('div', { class: 'vbadge ok' }, '찾음') : h('div', { class: 'vbadge' }, '털기'));
-      card.addEventListener('click', () => { G.audio.sfx('btn'); G.go('stage', { custom: r }); });
+      card.addEventListener('click', () => { G.audio.sfx('btn'); G.go('stage', { custom: r, scout: true }); });   // (② 정찰 first)
       this.listEl.append(card);
     }
   }

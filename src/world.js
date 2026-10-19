@@ -721,8 +721,9 @@ export class World {
           if (P.tap) {
             const q = this.ptrs.get(P.tap.id);
             if (q && Math.hypot(q.x - P.tap.x, q.y - P.tap.y) <= 14 && performance.now() - P.tap.t <= 320) {
-              const f = this.ptrs.get(P.f1);
-              if (e.pointerId === P.f1 && f && this.drag && !this.camLock) { this._fDrag(this.drag, f.x - P.f1x, f.y - P.f1y); P.f1x = f.x; P.f1y = f.y; }
+              // (QA3-fb5 10/19, user: "이동중에 톡 할때도 … 버튼 회전같이 돌게") the view holds still while the second finger rests:
+              // a tap then turns from exactly here, like pressing the dial (it used to keep sliding for up to 0.32 s first);
+              // a pinch catches the held travel up below
               return;
             }
             // a real two-finger gesture from here: the first finger has already moved the view, so the spot between the
@@ -730,7 +731,9 @@ export class World {
             const a1 = Math.atan2(b.y - a.y, b.x - a.x);
             // the spread counts from the first finger as it is now and the second where it landed: the first finger's own
             // travel during the wait is a move, not a pinch (it read as a sudden 1.5x zoom — QA3 10/19)
-            const f = this.ptrs.get(P.f1); if (f) P.d = P.d0 = Math.hypot(f.x - P.tap.x, f.y - P.tap.y);
+            const f = this.ptrs.get(P.f1);
+            if (f && this.drag && !this.camLock && (f.x !== P.f1x || f.y !== P.f1y)) this._fDrag(this.drag, f.x - P.f1x, f.y - P.f1y);   // (QA3-fb5: the travel held during the wait, now)
+            if (f) P.d = P.d0 = Math.hypot(f.x - P.tap.x, f.y - P.tap.y);
             P.tap = null; P.mx = mx; P.my = my; P.ang = a1; P.tw = Math.atan2(Math.sin(a1 - P.ang0), Math.cos(a1 - P.ang0));
           }
           // F: spread = zoom, twist = turn (after ~12°, so a pinch never turns by accident), and the spot between the
@@ -853,12 +856,20 @@ export class World {
           // (QA 10/18: it hit the shelf or the floor and cost a 톡)
           // (a third quick tap on the spot of a double-tap zoom is part of the same burst: it does nothing unless it finds
           // something — "탁탁탁" used to cost a 톡 and stop the zoom half way, QA3 10/19)
+          // (QA3-dbl6 10/19, user decision) a scene may say where a double tap zooms (tapZoomable): in a stage only over a tap
+          // that did nothing — a second quick tap on a drawer, door, friend or lock that just answered does nothing at all
+          // lt.idle: did the first tap do nothing (read before it acted)? It answered → the second quick tap does nothing (an opened
+          // drawer doesn't shut at once). It did nothing but this one lands on something (a near miss, then the drawer
+          // beside it — 조작감 세션 10/19) → an ordinary tap. Both did nothing → the zoom
+          const burst = this.scheme !== 'E' && lt && !lt.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.noDblZoom && !this.tapInstant?.(e.clientX, e.clientY);
+          const zoomable = burst && lt.idle !== false && (this.tapZoomable ? !!this.tapZoomable(e.clientX, e.clientY) : true);
           if (lt?.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !(lt.dbl && this.tapInstant?.(e.clientX, e.clientY))) this._lastTap = null;
-          else if (this.scheme !== 'E' && lt && !lt.instant && now - lt.t < 320 && Math.hypot(e.clientX - lt.x, e.clientY - lt.y) < 36 && !this.camLock && !this.noDblZoom && !this.tapInstant?.(e.clientX, e.clientY)) {
+          else if (burst && lt.idle === false) this._lastTap = null;
+          else if (zoomable) {
             this._lastTap = { t: now, x: e.clientX, y: e.clientY, instant: true, dbl: true }; this.onDoubleTap?.(e.clientX, e.clientY);   // (the first tap of the two already went out as a tap: the stage takes it back)
             if (this.zoom > 1.8) { this.zoomGoal = { z: 1, x: null }; }
             else this.zoomGoal = { z: Math.min(this.maxZoom, 3), x: e.clientX, y: e.clientY };
-          } else { this._lastTap = { t: now, x: e.clientX, y: e.clientY, instant: !!this.tapInstant?.(e.clientX, e.clientY) }; this.onTap?.(e.clientX, e.clientY); }
+          } else { this._lastTap = { t: now, x: e.clientX, y: e.clientY, instant: !!this.tapInstant?.(e.clientX, e.clientY), idle: this.tapZoomable ? !!this.tapZoomable(e.clientX, e.clientY) : true }; this.onTap?.(e.clientX, e.clientY); }
         }
         this.drag = null;
       }

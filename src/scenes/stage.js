@@ -48,7 +48,7 @@ import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
 import { openTune } from '../tune.js';
 import { retrieve, canGrab, grab } from '../raid.js';
-import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle } from '../raidrun.js';   // 타이머 털기 (10/19)
+import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout } from '../raidrun.js';   // 타이머 털기 (10/19)
 // 프라모델 조립판 (정식판 10/19): the things to find are a model kit's pieces — the box opens first, a runner card holds them,
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
 import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitFinish, kitReward } from '../modelkit.js';
@@ -104,7 +104,7 @@ const TAUNT = {
 export class StageScene {
   constructor(G) { this.G = G; this.name = 'stage'; }
 
-  async enter({ idx = 0, custom = null, spec = null, preview = false, model = null, retry = false }) {
+  async enter({ idx = 0, custom = null, spec = null, preview = false, model = null, retry = false, scout = false }) {
     const G = this.G, W = G.world;
     this.tw = new Tweens();
     this._tapClock = 0; this.clearTapTimers();
@@ -265,6 +265,7 @@ export class StageScene {
     W.onTap = (x, y) => this.tap(x, y);
     W.onDoubleTap = () => this.undoLastMiss();
     W.tapInstant = (x, y) => { const hit = this.pickAt(x, y); return hit.kind === 'item' && !hit.item.found && hit.item.role !== 'decoy'; };
+    W.tapZoomable = (x, y) => this.tapIdle(x, y);   // (QA3-dbl6: a double tap zooms only where a tap does nothing)
     W.onRotate = d => { this.rotAccum += Math.abs(d); };
     W.onDragStart = null;
     W.onPress = (x, y) => this.pressAt(x, y);   // 손맛 7
@@ -274,6 +275,7 @@ export class StageScene {
     // the first run builds 1판 behind the start screen: the banner, the talk and the hide wait for the tap
     while (G.booting && !this.dead) await new Promise(r => setTimeout(r, 100));
     if (this.dead) return;
+    if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
     if (cine) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
@@ -347,7 +349,7 @@ export class StageScene {
     // this stage's own meshes, materials and textures (not the shared caches) go with it
     if (this.cameo) { G.world.root.remove(this.cameo.ch.root); disposeTree(this.cameo.ch.root); }
     for (const r of [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root)]) disposeTree(r);
-    G.world.onTap = null; G.world.onRotate = null; G.world.tapInstant = null; G.world.onPress = null;
+    G.world.onTap = null; G.world.onRotate = null; G.world.tapInstant = null; G.world.onPress = null; G.world.tapZoomable = null;
     G.world.camLock = false;   // (the model-kit assembly holds the camera; leaving mid-way must not keep it held)
     G.ui.clear(); this.tw.clear();
   }
@@ -469,7 +471,8 @@ export class StageScene {
     if (!hit.node) return null;
     if (hit.kind === 'item') return hit.item.found ? null : { obj: hit.node, m: .16 };
     // plain furniture doesn't answer a tap any more (10/19), so it doesn't dip either — a 흑백 target still does
-    if (hit.kind === 'furn') { const gt = this.grayTarget(hit.furn); return gt && !gt.found ? { obj: hit.node, m: .035 } : null; }
+    if (hit.kind === 'furn') { const gt = this.grayTarget(hit.furn); if (gt && !gt.found) return { obj: hit.node, m: .035 };
+      const np = this.partNear(hit.furn, x, y); return np ? { obj: np.pivots[0], m: .06 } : null; }   // (QA3-fb5: the drawer a body tap will work dips)
     return { obj: hit.node, m: hit.kind === 'char' ? .07 : .06 };
   }
   pickExact(x, y) {
@@ -525,7 +528,9 @@ export class StageScene {
     if (hit.kind === 'furn' && ft?.found) return;   // 흑백판: a piece already coloured back is not a wrong tap (QA 10/18: each re-tap cost a 톡)
     // (10/19, user: "가구는 눌러도 반응 없지만 물건들 누르면 -1로") — the body of a plain piece of furniture: nothing at all
     // (it used to wobble and spend a 톡; a finger meant for a drawer often landed on the body)
-    if (hit.kind === 'furn') return;
+    // (QA3-fb5 10/19, user: "스테이지2에서 책상 서랍이 잘 안닫힘") — a drawer or door often shows only a sliver past its own
+    // furniture (2판's desk drawer: ~16 px of front, open or shut); a tap on the body right by one works that one
+    if (hit.kind === 'furn') { const np = this.partNear(hit.furn, x, y); if (np) return this.onPart(np, x, y); return; }
     this.addMiss(x, y, true);
   }
   // R7 (level report): every target left is behind something from this side. Try turning ±45°, ±90° and 180° (camera
@@ -1255,6 +1260,31 @@ export class StageScene {
     G.ui.floatText(x, y - 30, it.type === 'sockp' ? '무늬가 달라~' : '이건 아니야~', '');
     this.addMiss(x, y + 20, true);
   }
+  // (QA3-fb5) the door / drawer / lid of this furniture whose screen box comes within 24 px of the tap (nearest centre wins)
+  partNear(furn, x, y, R = 24) {
+    const W = this.G.world; let best = null, bd = Infinity;
+    for (const p of furn.parts || []) {
+      if (p.busy || p.isLever || p.isGadget || p.dig || p.device || p.secret || p.secretShelf || !p.pivots?.length) continue;
+      const b = new THREE.Box3(); p.pivots.forEach(o => b.expandByObject(o)); if (b.isEmpty()) continue;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const px of [b.min.x, b.max.x]) for (const py of [b.min.y, b.max.y]) for (const pz of [b.min.z, b.max.z]) { const s = W.toScreen(new THREE.Vector3(px, py, pz)); x0 = Math.min(x0, s.x); x1 = Math.max(x1, s.x); y0 = Math.min(y0, s.y); y1 = Math.max(y1, s.y); }
+      const out = Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1)); if (out > R) continue;
+      const c = W.toScreen(b.getCenter(new THREE.Vector3())), d = out * 4 + Math.hypot(c.x - x, c.y - y);
+      if (d < bd) { bd = d; best = p; }
+    }
+    return best;
+  }
+  // (QA3-dbl6 10/19) would a tap here do nothing — the floor, a wall, empty space, a decoy, a found thing, a plain furniture
+  // body? Only there does a double tap zoom (the same order of checks as tap())
+  tapIdle(x, y) {
+    const hit = this.pickAt(x, y);
+    if (hit.kind === 'floor' || hit.kind === 'wall' || hit.kind === 'none') return true;
+    if (hit.kind === 'item') return hit.item.found || (hit.item.role === 'decoy' && !this.grayAt(x, y));
+    if (hit.kind !== 'furn') return false;   // a door, drawer, lid, lever, friend, the peeking tell: it answered the first tap
+    const f = hit.furn, gt = this.grayTarget(f);
+    if (f.type === 'puzzleframe' || f === this.plan.tv?.f || (gt && !gt.found)) return false;
+    return !(this.lockedPartNear(f, x, y) || f.parts?.some(p => p.isLever) || this.partNear?.(f, x, y));
+  }
   lockedPartNear(furn, x, y) {
     const W = this.G.world; let best = null, bd = Infinity;
     for (const p of furn.parts || []) {
@@ -1862,6 +1892,7 @@ export class StageScene {
     // (레벨 세션 10/19) 폰 세로에서 넓은 맵(두 방·두세 층)은 물건이 앞 판의 절반 크기(21~34px)로 보였어요 — 그 판은 조금 당겨서 시작
     if (this.spec.zoom && W.H > W.W) W.zoom = this.spec.zoom;
     this.zoom0 = W.zoom;   // ('처음 시점' 버튼의 기준 줌: 판이 시작되기 전(제목·상자 연출)에도 당긴 줌을 '움직임'으로 보지 않게)
+    W.flying = false;   // (앞 판이 카메라를 날리는 도중에 끝나면(조립 카메라·힌트·열쇠 길 안내 중 나가기) 그 tween이 버려져 flying이 true로 남고, 다음 판 톡이 전부 무시돼요 — 레벨 세션 10/19)
     W.bounds = Math.max(2.4, Math.max(rw, rd) * .48); W.minZoom = .85; W.maxZoom = 8 + (span > 9 ? 2 : 0); W.minPitch = .06; W.maxPitch = 1.45;   // a little room past the edges
     const extra = Math.max(0, span - fitW) / 2;
     W.slack = extra > 0 ? { x: extra * .9, z: extra * .9 } : null;

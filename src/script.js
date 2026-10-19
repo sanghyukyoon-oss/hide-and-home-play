@@ -372,6 +372,12 @@ SCENES.push(
     intro: [L('shiba', '여긴 우리 집! 마당이랑 집 곳곳에 보물을 숨겨 뒀거든.', "This is my place! I've stashed treasures all over the yard and the house."), L('shiba', '순경 눈썰미 시험이야. 다 찾으면 명예 순경!', "It's an officer's eye test. Find them all and you're an honorary officer!"), L('mong', '…해 볼게.', "…I'll try.")],
     say: { first: K('킁! 그거 내가 아끼는 거!', "Sniff! That's one of my favorites!"), half: K('반이나! 시험 점수 벌써 50점!', 'Half! Fifty points already!'), last: K('하나 남았어. 이건 순경도 못 찾는 데야.', "One left. Even officers can't find this spot.") },
     after: [L('shiba', '합격! 오늘부터 명예 순경이야.', "You pass! From today, you're an honorary officer."), L('shiba', '코 대신 눈으로 찾는 순경도 있어야지!', 'Every squad needs one who finds things by eye instead of nose!')] },
+  // 22판 (3장 첫 판, D1 10/19: 친구 숨기 → 숨은그림): 순찰 약속은 장 영상이 갚고, 판은 순찰 첫 임무 = 골목 분실물 찾기.
+  // 끝에서 다음 코스(23판 삐딱이네 골목, "삐딱이 물건이 흩어졌다는 신고")로 이어져요. 멍뭉이가 숨는 판은 30판 ★에 남아 있어요
+  { id: 'streetDayH', type: 'hidden', room: 'street', night: false, host: 'shiba', goal: ['골목 분실물', 'things lost in the alley'],
+    intro: [L('shiba', '순찰 첫 임무! 골목에 떨어진 분실물을 다 찾아라!', 'First patrol mission! Find everything lost in the alley!')],
+    say: { first: K('킁! 하나 확보!', 'Sniff! One secured!'), half: K('반 찾았다! 꼬리가 안 멈춰.', "Halfway! My tail won't stop."), last: K('하나 남았어. 킁킁… 냄새는 분명 여긴데!', "One left. Sniff sniff… it definitely smells like it's here!") },
+    after: [L('shiba', '임무 완료! 몇 개는 삐딱이 거 같은데. 킁.', "Mission complete! Some of these smell like Grumpy's. Sniff."), L('shiba', '다음 순찰 코스는 삐딱이네 골목. 같이 가자!', "Next stop on the patrol: Grumpy's alley. Let's go together!")] },
   { id: 'streetH', type: 'hidden', room: 'street', night: true, host: 'skater', goal: ['떨어진 물건', 'dropped things'],
     intro: [L('skater', '요! 밤 골목 보드 투어 중이었는데…', 'Yo! I was doing a night board tour of the alleys…'), LK('skater', '넘어지면서 주머니에 있던 게 다 날아갔어!', 'Wiped out, and everything in my pockets went flying!')],
     say: { first: K('요! 나이스 캐치!', 'Yo! Nice catch!'), half: K('반! 이 정도면 묘기 점수 만점!', "Half! That's a perfect trick score!"), last: K('하나 남았어. 마지막 건 제일 멀리 날아갔나 봐!', 'One left. Guess the last one flew the farthest!') },
@@ -392,10 +398,11 @@ SCENES.push(
     intro: [L('grumpy', '…문 닫을 시간인데 가게 열쇠랑 이것저것이 안 보여.', "…It's closing time, and the shop key and a bunch of stuff are missing."), L('sundae', '빨래방 쪽도야! 오늘 하루 종일 정신없었어.', "The laundromat too! It's been a crazy day."), L('mong', '…알바야?', '…You work here?'), L('grumpy', '…아니. 그냥 도와주는 거야.', '…No. Just helping out.')],
     say: { first: K('…하나. 됐어.', '…One. Fine.'), half: K('…반. 셔터는 반만 내려도 되겠네.', '…Half. Could pull the shutter halfway down.'), last: K('…하나 남았어. 찾으면 불 끄고 가자.', "…One left. Find it and we'll turn off the lights.") },
     after: [L('grumpy', '…문단속 끝. 오늘 같이 있어 준 건… 나쁘지 않았어.', "…All locked up. Having you around today… wasn't bad."), L('sundae', '내일은 카페로 와! 디저트 쏠게.', "Come to the café tomorrow! Dessert's on me.")] },
-  { id: 'park2H', keep: true, type: 'hidden', room: 'park2',
-    intro: [L('squirrel', '먹을 건 다 숨겼어.', 'I hid all the food.'), L('mong', '오늘 먹을 것도?', "Even today's lunch?"), L('squirrel', '……그것도. 어디 숨겼는지는… 기억 안 나.', "…That too. Where I hid it… I don't remember.")],
-    say: { first: K('아! 거기였구나! 고마워!', 'Oh! So that was the spot! Thanks!'), half: K('반이다! 이제 점심은 먹겠다.', 'Half! At least we have lunch now.'), last: K('하나 남았어. …겨울 거라 깊이 숨겼을 거야.', "One left. …That one's for winter, so I hid it deep.") },
-    after: [L('squirrel', '다 찾았다! 오늘은 숨기지 말고 같이 먹자.', "All found! Today, no hiding. Let's eat together."), L('mong', '…응. 반은 다람이 거.', '…Okay. Half is yours.')] },
+  // 41판 (5장 첫 판, D1 10/19: 친구 숨기 → 숨은그림, 다람이 첫 만남): 간식은 다 찾지만 제일 중요한 도시락은 못 찾음 → 49판 보스
+  { id: 'park2H', type: 'hidden', room: 'park2', goal: ['다람이가 숨긴 간식', 'snacks Chippy hid'],
+    intro: [L('squirrel', '난 다람이! 소풍 간식을 공원 여기저기 숨겼어. …어디였더라?', "I'm Chippy! I hid the picnic snacks all over the park. …Where, though?")],
+    say: { first: K('아! 거기였구나! 고마워!', 'Oh! So that was the spot! Thanks!'), half: K('반이다! 배가 꼬르륵해.', "Halfway! My tummy's rumbling."), last: K('하나 남았어. …그게 도시락이면 좋겠다.', "One left. …I hope it's the lunch.") },
+    after: [L('squirrel', '다 찾았다! …근데 제일 중요한 도시락이 없어.', 'All found! …But the most important thing, lunch, is missing.'), L('mong', '…그것도 숨겼구나.', '…You hid that too.')] },
   { id: 'park3H', type: 'hidden', room: 'park3', goal: ['소풍 보물', 'picnic treasures'],
     intro: [L('hamster', '웁웁! 소풍엔 보물찾기지! 내가 보물을 숨겼어!', 'Mmf! Picnics need a treasure hunt! I hid the treasures!'), L('hamster', '이번엔 안 무서워. 해 떠 있으니까!', "I'm not scared this time. The sun's out!")],
     say: { first: K('웁! 첫 번째 보물!', 'Mmf! First treasure!'), half: K('반이야! 볼에 넣어 둔 건 반칙 아니지?', "Halfway! Keeping some in my cheeks isn't cheating, right?"), last: K('하나 남았어! 그건 제일 좋은 보물이야.', "One left! It's the best treasure.") },
