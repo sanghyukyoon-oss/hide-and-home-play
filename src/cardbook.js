@@ -8,7 +8,7 @@ import { THEMES, stageSpec, STAGE_COUNT, CHAR_UNLOCK, REGIONS } from './stages.j
 import { STARTER_ITEMS } from './catalog.js';
 import { STORY_ITEMS } from './gfx/story-props.js';
 import { renderThumbs } from './thumbs.js';
-import { diaryLine, learnedCards, BOOK, HABIT_LINE, diarySecret, secretOpen, SECRET_UI } from './script.js';
+import { diaryLine, learnedCards, BOOK, HABIT_LINE, diarySecret, secretOpen, SECRET_UI, inkyNamed } from './script.js';
 import { tr } from './i18n.js';
 
 const ART = {};
@@ -23,6 +23,7 @@ function style() {
 .cb-diary b{display:block;font-size:12px;line-height:18px;margin-bottom:2px;color:#c0577f}
 .cb-diary span{font-size:15px}
 .cb-diary .cb-habit{margin-top:4px}
+.tcard.sec .cb-holo{opacity:.9;animation:cbshine 4s ease-in-out infinite alternate}.tcard.big.sec .cb-holo{animation:none}.tcard.sec{box-shadow:0 0 0 2px #fff8 inset,0 0 16px #ffd84aaa}
 .cb-learned{display:flex;flex-direction:column;gap:10px;max-height:min(58vh,560px);overflow-y:auto;padding:4px 4px 8px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .cl-card{background:#fffaf2;border:3px solid var(--ink,#3b2a55);border-radius:16px;padding:8px 10px 10px;color:#3b2a55;box-shadow:0 4px 0 rgba(42,26,61,.25)}
 .cl-card.off{border-style:dashed;opacity:.65;display:flex;align-items:center;gap:10px;box-shadow:none}
@@ -57,7 +58,7 @@ function friendCards(G) {
   const keys = Object.keys(CHAR_DEFS).filter(k => k !== 'mom' && !k.includes('_'));
   return keys.map((k, n) => {
     const at = first[k], reg = at != null ? regionOf(at) : null;
-    return { id: 'c:' + k, art: 'card_' + k, no: n + 1, of: keys.length, name: CHAR_DEFS[k].name, have: met.has(k),
+    return { id: 'c:' + k, art: 'card_' + k, no: n + 1, of: keys.length, name: k === 'inky' && !inkyNamed(S) ? '???' : CHAR_DEFS[k].name, have: met.has(k),   // (먹물이: ??? until it says its name, 64판 — GPT QA ST-NAME)
       rar: SPECIAL.has(k) ? 3 : hosts.has(k) ? 2 : 1, region: reg?.id || 'home', regionName: reg?.name || '동네',
       line: charLine(k), hint: at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '판에서 만난 친구를 톡 눌러 봐', build: () => buildCharArt(k) };
   });
@@ -86,7 +87,9 @@ function ensureArt(cards) {
 function cardEl(c, G, { big = false } = {}) {
   const seen = G.save.cardSeen || (G.save.cardSeen = {});
   if (!c.have) return h('div', { class: 'tcard back' + (big ? ' big' : '') }, h('div', { class: 'cb-q' }, '?'), h('div', { class: 'cb-hint' }, c.hint), h('div', { class: 'cb-no' }, `No.${String(c.no).padStart(3, '0')}`));
-  const el = h('div', { class: `tcard r${c.rar} reg-${c.region}` + (big ? ' big' : ''), role: 'button', tabindex: '0', 'aria-label': `${c.name} 카드` },
+  // 별 셋 = 비밀 한 줄 (스토리 룸 10/19, user "캐릭터 카드"): a friend whose secret is open has a holo card
+  const sec = c.id.startsWith('c:') && secretOpen(G.save.best, c.id.slice(2)); if (sec) style();
+  const el = h('div', { class: `tcard r${c.rar} reg-${c.region}` + (big ? ' big' : '') + (sec ? ' sec' : ''), role: 'button', tabindex: '0', 'aria-label': `${c.name} 카드` },
     h('div', { class: 'cb-top' }, h('span', { class: 'cb-name' }, c.name), h('span', { class: 'cb-rar' }, '★'.repeat(c.rar))),
     h('div', { class: 'cb-art' }, h('img', { src: ART[c.art] || '', alt: '' })),
     h('div', { class: 'cb-line' }, c.line ? `“${c.line}”` : ''),

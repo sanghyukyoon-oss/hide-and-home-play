@@ -255,7 +255,6 @@ export class StageScene {
     this.frameCamera();
     if (this.kit) kitSetup(this);   // 이삿짐's boxes, the big parfait
     if (this.villain?.hide) this.hideInky(retry);
-    if (sceneAt(this.idx)?.trace && !this.custom && !this.preview && !this.villain) this.inkyTrace();   // 7판: 먹물이 was here too
     if (this.hunt) {   // things that can be seen, the key where the start view sees it, the next friend peeking (not on the list)
       this.blindFixed = fixBlindSpots(this); chainToView(this);
       const c = placeCameo(this); if (c) { this.cameo = c; this.items.push(c); }
@@ -335,6 +334,11 @@ export class StageScene {
     }
     raidStart(this);   // (타이머 털기: the owner starts counting)
     this.running = true; this.tStart = this.t;
+    // 7·11판: 먹물이 was here too — its footprints, laid on the view you actually play from (after the intro's camera)
+    if (sceneAt(this.idx)?.trace && !custom && !this.preview && !this.villain) (async () => {
+      for (let i = 0; i < 25 && (G.world.flying || this.cine) && !this.dead; i++) await this.tw.wait(.1);
+      if (!this.dead) await this.inkyTrace();
+    })();
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
     if (this.spec.tut === 2) { this.tutorial2(); if (TILT_ON || !DBL_ON) this.teachTilt(); }
     if (this.scene?.card) newCard(G, this.scene.card);
@@ -952,27 +956,104 @@ export class StageScene {
       for (const d = k * len; d - last > .28;) { last += .28; const q = p0.clone().addScaledVector(dir, last).addScaledVector(perp, (n % 2 ? -1 : 1) * .07); if (inside(q) && bare(q)) this.footprint(q, COLS[n % COLS.length], rot); n++; }
     }, ease.inQuad); }).then(() => { ch.root.visible = false; });
   }
+  // 깜짝 한 방 (스토리 룸 10/19, 검토 → 사용자 "2·4번 추천대로"): as the last thing is found the host does one small thing that
+  // is just them — a bubble (script.js scene.pop.say) and one of these moves. No card, no rule, and no camera of its own:
+  // it plays inside the win close-up. ≤2 s; the result panel waits for it.
+  async popMove(ch, pop) {
+    const G = this.G, W = G.world, tw = this.tw, rx = ch.rx, sfx = (n, p = 0) => G.audio.sfx(n, p);
+    const t = (d, fn, e = ease.outCubic) => tw.run(d, fn, e), hop = (hgt, k) => hgt * 4 * k * (1 - k);
+    const scr = (k = .5) => W.toScreen(new THREE.Vector3(ch.root.position.x, ch.root.position.y + ch.headTop() * ch.root.scale.y * k, ch.root.position.z));
+    ch._rxTok = null; ch.reacting = false; for (const k in rx) rx[k] = 0;   // (a tap reaction still playing stops here)
+    if (pop.say) this.say(ch, tr(pop.say), 1800);
+    switch (pop.move) {
+      case 'flop': {   // 벌러덩 (2판 토순이: 커튼까지 쳤는데)
+        ch.setFace('wow'); ch._fx(tw, 'excl', { y: 1 }); sfx('gasp');
+        await t(.24, k => { rx.rx = -1.2 * k; rx.y = hop(.14, k); }, ease.outQuad);
+        sfx('thump'); ch.squash = .35; ch.setFace('dizzy');
+        await tw.wait(.6);
+        await t(.35, k => { rx.rx = -1.2 * (1 - k); }, ease.outBack); break;
+      }
+      case 'splash': {   // 놀라 펄쩍 → 퐁당 (3판 개굴이)
+        ch.setFace('wow'); ch._fx(tw, 'excl', { y: 1 }); sfx('gasp');
+        await t(.38, k => { rx.y = hop(.55, k); }, ease.linear);
+        const s = scr(.1); W.fx.burst(s.x, s.y, { n: 20, colors: ['#8fd3ff', '#5ab8ff', '#ffffff'], shape: 'dot', speed: 230, size: 9, gravity: 560, up: 170, life: .75 });
+        sfx('blub'); ch.setFace('sad');
+        await t(.6, k => { ch.squash = .45 * (1 - k * k); }, ease.linear);   // (sitting in the puddle)
+        ch._fx(tw, 'drop', { x: .22, y: .95 });
+        await t(.3, k => { rx.y = hop(.12, k); }, ease.linear); break;
+      }
+      case 'doze': {   // 기다리다 꾸벅 → 화들짝 (5판 곰돌이)
+        ch.pose = 'idle'; ch.setFace('sus'); sfx('snore');
+        for (let i = 0; i < 3; i++) ch._fx(tw, 'z', { x: .18 + i * .1, y: .85 + i * .12, delay: .1 + i * .28, dur: .9 });
+        await t(.95, k => { rx.rx = .32 * Math.sin(k * Math.PI / 2); }, ease.inOutQuad);
+        await tw.wait(.2);
+        ch.setFace('wow'); ch._fx(tw, 'excl', { y: 1 }); sfx('gasp');
+        await t(.36, k => { rx.rx = .32 * (1 - k); rx.y = hop(.3, k); }, ease.linear); break;
+      }
+      case 'smoke': {   // 킁킁 → 앗, 팬케이크! (6판 곰돌이: the stove smokes)
+        const R = this.room, rec = (R.rooms || [R]).flatMap(r => r.furns).find(e => e.type === pop.at || e.opts?.variant === pop.at);
+        // (from the stove; when the close-up has it off screen, from the screen's edge on its side — not out of the bear)
+        const from = () => {
+          if (!rec) { const p = scr(1.3); return { x: p.x + 60, y: p.y }; }
+          const b = new THREE.Box3().setFromObject(rec.f.group), c = b.getCenter(new THREE.Vector3()); c.y = b.max.y + .05;
+          const p = W.toScreen(c); return { x: clamp(p.x, 28, W.W - 28), y: clamp(p.y, 110, W.H - 200) };
+        };
+        ch.setFace('sus'); ch._fx(tw, 'ques', { x: .32, y: .9 }); sfx('hmm');
+        for (let i = 0; i < 5; i++) tw.wait(.1 + i * .2).then(() => { if (this.dead) return; const p = from(); W.fx.burst(p.x + (Math.random() - .5) * 16, p.y, { n: 4, colors: ['#8d8d9a', '#b9b9c4', '#6c6c78'], shape: 'dot', speed: 40, size: 18, gravity: -150, life: 1.2 }); });
+        await t(.8, k => { rx.rz = Math.sin(k * Math.PI * 4) * .07; }, ease.linear);   // (sniff sniff)
+        ch.setFace('wow'); ch._fx(tw, 'excl', { y: 1 }); sfx('gasp');
+        await t(.55, k => { rx.rz = Math.sin(k * Math.PI * 6) * .2 * (1 - k); rx.y = hop(.18, k); }, ease.linear); break;
+      }
+      case 'thud': {   // 신나서 뛰다 배로 쿵 (7판 펭펭이 → "비결 3번. 쿵 하지 않기")
+        ch.setFace('happy'); sfx('hop');
+        await t(.4, k => { rx.y = hop(.5, k); rx.rx = .9 * k * k; }, ease.linear);
+        await t(.1, k => { rx.rx = .9 + .55 * k; }, ease.inQuad);
+        sfx('thump'); ch.squash = .45; ch.setFace('dizzy');
+        const s = scr(.4); W.fx.burst(s.x, s.y, { n: 8, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 170, size: 11, gravity: 240 });
+        await tw.wait(.6);
+        await t(.35, k => { rx.rx = 1.45 * (1 - k); }, ease.outBack); ch.setFace('sweat'); break;
+      }
+      case 'sneeze': {   // 에… 에취! 거품이 퐁퐁 (9판 토순이 욕실)
+        ch.setFace('sus');
+        await t(.55, k => { rx.rx = -.3 * k; }, ease.inOutQuad);
+        sfx('pop', 3); ch.setFace('wow');
+        const s = scr(.7); W.fx.burst(s.x, s.y, { n: 24, colors: ['#ffffff', '#cfefff', '#ffd6ec'], shape: 'dot', speed: 230, size: 13, gravity: -130, life: 1.2 });
+        await t(.12, k => { rx.rx = -.3 + .75 * k; }, ease.outQuad);
+        ch.squash = .4;
+        await t(.4, k => { rx.rx = .45 * (1 - k); }, ease.outBack); break;
+      }
+    }
+    for (const k in rx) rx[k] = 0;
+    if (!this.dead) { ch.pose = 'cheer'; ch.setFace('happy'); }
+  }
   // 1장, between the two 흑백판 (스토리 룸 10/19 '다시 하고 싶게'): 먹물이 passed through a colour stage too — a short trail of
   // the same colour-smeared footprints across floor the start view shows. Nothing to tap, not on the list, no line; 10판's
   // "…발자국이다" is where it lands. (A floor point is a real ray hit, so a balcony or an upper floor works the same.)
-  inkyTrace() {
+  async inkyTrace() {
     const W = this.G.world, roots = this.pickRoots(), t0 = performance.now(), GS = .5;
+    const frame = () => new Promise(r => requestAnimationFrame(r));   // (the scan is spread over frames: no hitch as play starts)
     // a grid point counts when the first thing the ray meets there is the bare floor right at that point (not a rug: a print
     // there would get an outline against it)
-    const seen = q => { const sp = W.toScreen(q); if (sp.x < 30 || sp.x > W.W - 30 || sp.y < 170 || sp.y > W.H - 250) return null;
+    const rooms = this.room.rooms || [this.room];
+    // (not on floor under a balcony or an upper floor: it is in shadow there — 7판)
+    const under = q => rooms.some(R => R.group.position.y > q.y + .5 && Math.abs(q.x - R.group.position.x) < R.w / 2 && Math.abs(q.z - R.group.position.z) < R.d / 2);
+    const seen = q => { const sp = W.toScreen(q); if (sp.x < 30 || sp.x > W.W - 30 || sp.y < 170 || sp.y > W.H - 250 || under(q)) return null;
       const hh = W.pick(sp.x, sp.y, roots)[0]; return hh && this.classify(hh.object).kind === 'floor' && Math.hypot(hh.point.x - q.x, hh.point.z - q.z) < .1 && Math.abs(hh.point.y - q.y) < .03 ? hh.point.clone() : null; };
     const D8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]];
     let best = null;
-    for (const R of this.room.rooms || [this.room]) {
-      if (!R.w || !R.d || performance.now() - t0 > 450) continue;   // (it runs while the stage loads: ~200 rays, 0.4 ms each)
+    for (const R of rooms) {
+      if (!R.w || !R.d) continue;   // (~200 rays in all, 0.4 ms each)
       const o = R.group.position, nx = Math.floor((R.w - .5) / GS), nz = Math.floor((R.d - .5) / GS), cell = [];
-      for (let i = 0; i <= nx; i++) { cell[i] = []; for (let j = 0; j <= nz; j++) cell[i][j] = seen(new THREE.Vector3(o.x - nx * GS / 2 + i * GS, o.y, o.z - nz * GS / 2 + j * GS)); }
+      for (let i = 0; i <= nx; i++) {
+        cell[i] = []; for (let j = 0; j <= nz; j++) cell[i][j] = seen(new THREE.Vector3(o.x - nx * GS / 2 + i * GS, o.y, o.z - nz * GS / 2 + j * GS));
+        await frame(); if (this.dead || this.result) return;
+      }
       for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) if (cell[i][j]) for (const [di, dj] of D8) {
         const pts = []; for (let k = 0; k < 6 && cell[i + di * k]?.[j + dj * k]; k++) pts.push(cell[i + di * k][j + dj * k]);
         if (!best || pts.length > best.pts.length) best = { pts, dir: new THREE.Vector3(di, 0, dj).normalize() };
       }
     }
-    if (!best || best.pts.length < 3) return;
+    if (!best || best.pts.length < 3 || this.dead) return;
     // footsteps every .28 m along the visible run (the grid is coarser than a stride)
     const a0 = best.pts[0], a1 = best.pts.at(-1), len = a0.distanceTo(a1), steps = [];
     for (let d = 0; d <= len + .01; d += .28) steps.push(a0.clone().lerp(a1, d / len));
@@ -993,6 +1074,7 @@ export class StageScene {
     m.rotation.set(-Math.PI / 2, 0, -rot); m.position.set(at.x, (at.y || 0) + .012, at.z); m.scale.set(.01, .01, 1);
     if (flat) m.userData.floor = true; else m.userData.colored = true;
     W.root.add(m); (this.prints || (this.prints = [])).push(m); W.idsDirty = true;
+    if (flat) { m.scale.set(.75, 1.15, 1); return; }   // (the trail is just there — no pop while you play)
     this.tw.run(.18, k => m.scale.set(.75 * k, 1.15 * k, 1), ease.outBack);
   }
   // 흑백판: the list names a kind of furniture, so any piece of that kind counts (level report B4: two art crates on stage 3,
@@ -2140,12 +2222,15 @@ export class StageScene {
     const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);
     // (10/19) the camera comes in on the friend cheering — or on 먹물이 saying "…앗." first; it goes back out when 먹물이 bolts
     if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch); else closeUp(this, f);
-    if (!this.incident && !this.hiddenStage) this.say(f, this.model ? this.model.cheer : '우와! 다 찾았네!', 1800);   // (사건 판: the host has just had their say; 숨은그림 판: its closing talk starts with it)
+    // 깜짝 한 방 (스토리 룸 10/19): the host's one small moment, inside this close-up (script.js scene.pop) — else the plain cheer
+    const pop = !this.custom && !this.preview && !this.model && !G.bot ? sceneAt(this.idx)?.pop : null;
+    const popDone = pop ? this.popMove(f, pop) : null;
+    if (!pop && !this.incident && !this.hiddenStage) this.say(f, this.model ? this.model.cheer : '우와! 다 찾았네!', 1800);   // (사건 판: the host has just had their say; 숨은그림 판: its closing talk starts with it)
     for (const n of this.npcs || []) { if (n === this.villain) continue; n.on = false; n.ch.pose = 'cheer'; n.ch.setFace('happy'); n.ch.faceTo(W.cam.position.x, W.cam.position.z); n.ch.bump(.4); }
     // 먹물이 loses: a sulk, then it bolts off the edge of the room and is gone
     if (this.villain && !this.inkyIt) {
       const v = this.villain, ch = v.ch; v.on = false; this.say(ch, inkyCaught(this.idx), 1600);   // 대본: …앗. → …또 너야? → …너는 안 가네.
-      if (inkyStays(this.idx)) { ch.setFace('happy'); ch.faceTo(W.cam.position.x, W.cam.position.z); } else {   // 빌딩: it stays to talk, then as a friend
+      if (inkyStays(this.idx)) { ch.setFace('sus'); ch.faceTo(W.cam.position.x, W.cam.position.z); } else {   // (GPT QA ST-INKY-FACE: shy until it says yes — happy after the talk)   // 빌딩: it stays to talk, then as a friend
       ch.setFace('angry');
       const p0 = ch.root.position.clone(), away = p0.clone().add(new THREE.Vector3(p0.x >= 0 ? 4 : -4, 0, p0.z >= 0 ? 3 : -3));
       ch.root.rotation.y = Math.atan2(away.x - p0.x, away.z - p0.z);
@@ -2176,7 +2261,7 @@ export class StageScene {
     // the finished model goes home (once) — saved with the clear, before the pause (GPT QA R2-01 10/19: quitting in that
     // second kept the clear but lost the robot / boxes / parfait)
     const kitFurn = this.kit && KITS[this.kit.kit].furn, kitNew = this.kit ? kitReward(this) : null;
-    await this.tw.wait(1.0);
+    await (popDone ? Promise.race([popDone, this.tw.wait(2.6)]) : this.tw.wait(1.0));   // (the result panel waits for the pop, ~2 s)
     if (this.dead) return;
     let memento = null, newFriend = null, back = [], got = null;
     // one new thing to hide at home per stage, the first time it is cleared (not every find — that gave away too much)
@@ -2221,6 +2306,7 @@ export class StageScene {
       endLines = aft.filter(l => pick.has(l)); aft = null;
     }
     if (aft && !G.skipTalk && !G.bot) { await this.talk(aft, { cam: true }); if (this.dead) return; }
+    if (this.villain && !this.inkyIt && inkyStays(this.idx)) this.villain.ch.setFace('happy');   // ("다음엔 같이 칠하자" — now it smiles)
     // 경제·로비 on: a chapter's last stage, the first time — its box: one of three pieces (설계서 4-2)
     let picked = null;
     if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) {

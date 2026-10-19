@@ -110,7 +110,7 @@ const TINTS = ['#ff8fb8', '#7fd6c0', '#ffd23f', '#9f8fff'];
 class Spot {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '너굴이의 바꿔치기'; this.face = 'raccoon';   // (너굴이, not 먹물이: its name isn't known before 64판 — 검토 H7)
-    this.goal = '먹물이가 바꿔 놓은 곳을 톡! (틀리면 3초, 다시 보기는 4초가 줄어)';
+    this.goal = '너굴이가 바꿔 놓은 곳을 톡! (틀리면 3초, 다시 보기는 4초가 줄어)';   // (GPT QA ST-NAME: was 먹물이 — not named before 64판)
     this.tip = '처음 모습을 잘 봐 둬! 색이 바뀐 것, 사라진 것, 돌아간 것, 새로 생긴 것.';
     this.intro = [{ who: 'raccoon', text: '히히, 이 방 내가 몰래 바꿔 놓을 거야. 어디가 바뀌었는지 맞혀 볼래?' },
       { who: 'mong', text: '처음 모습을 잘 봐 두고, 바뀐 곳을 톡! 헷갈리면 "처음 모습"을 잠깐 볼 수 있어.' }];

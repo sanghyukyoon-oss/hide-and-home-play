@@ -97,7 +97,7 @@ export class BossScene {
     const mid = nearestTile(this.tiles, W.home.x, W.home.z) || this.tiles[0];
     const away = this.tiles.filter(t => Math.hypot(t.x - mid.x, t.z - mid.z) > 2.6);
     const far = away.length ? away[Math.floor(Math.random() * away.length)] : this.tiles.reduce((a, t) => (Math.hypot(t.x - mid.x, t.z - mid.z) > Math.hypot(a.x - mid.x, a.z - mid.z) ? t : a), mid);   // it starts somewhere new every time
-    this.hero = new Char('mong');   // (몽글이 hides: the 도감 pick is a friend who walks along in stages, not a new hero — 10/19) this.hero.root.position.set(mid.x, mid.y || 0, mid.z); W.root.add(this.hero.root);
+    this.hero = new Char('mong'); this.hero.root.position.set(mid.x, mid.y || 0, mid.z); W.root.add(this.hero.root);   // (몽글이 hides: the 도감 pick is a friend who walks along in stages, not a new hero — 10/19; the comment had swallowed the placing, fixed same day)
     defineChar('raccoon_seek', { ...CHAR_DEFS.raccoon, name: '술래 너굴이', acc: [['hairband', { color: this.tier >= 2 ? '#7a5cff' : '#ff4f6d', bow: this.tier >= 2, side: 0 }]] });
     this.seek = new Char('raccoon_seek'); this.seek.root.position.set(far.x, far.y || 0, far.z); W.root.add(this.seek.root);
     this.seek.root.rotation.y = Math.atan2(-far.x, -far.z) + Math.PI;
