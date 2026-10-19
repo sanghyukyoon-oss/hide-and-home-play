@@ -638,6 +638,11 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .logo .l2 { word-break: keep-all; }
 /* the pop-in animates transform: centre the tip with the separate translate property so it never starts off to the right */
 .tip { transform: none; translate: -50% 0; }
+/* ── 2D UI 정리 ⑭ 배우기 안내 (10/19 밤) ── the lesson line ('끌어서 둘러봐', '상자를 톡') was the one piece of UI in a white rim on
+   dark glass; the user picked the dark ink rim over white for this game's UI (10/18 시안: "스트로크는 흰색보다 … 어두운색이
+   낫겠어"). It takes the dialogue card's cream and ink — a UI card, not a speech bubble (those are white). 야식's own tips keep
+   their coloured rims */
+.tip:not(.ys-tip) { background: linear-gradient(#fffaf2, #ffeacd); color: var(--ink); border: 3px solid var(--ink); border-bottom-width: 6px; box-shadow: none; }
 /* a short (landscape) screen: keep the C switch on screen */
 .modesw, .joy.on ~ .modesw { bottom: min(calc(var(--joyB, 132px) + 300px + var(--safeB)), calc(100% - 70px - var(--safeT))); }
 /* two rows of targets when there are many */
