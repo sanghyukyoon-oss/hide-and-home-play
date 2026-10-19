@@ -37,7 +37,9 @@ export class MapRooms {
     // 이끼 뭉치 went 8 cm into the neighbour's wall): each room fits its parts again with the other rooms' wall pieces
     this.group.updateMatrixWorld(true);
     const wallBoxes = R => Object.values(R.walls).flatMap(Wl => { const out = []; Wl.body.traverse(o => { if (o.isMesh) out.push(new THREE.Box3().setFromObject(o).expandByScalar(-.02)); }); return out; }).filter(b => !b.isEmpty());
-    for (const R of this.rooms) { R.shellBoxes = this.rooms.filter(q => q !== R && q.level === R.level).flatMap(wallBoxes); if (R.shellBoxes.length) R.fitParts(); }
+    // and nothing of the next room in its way either (9판: the 거울 수납장's door swung into the bedroom's plant across the open side — 겹침 QA 10/19)
+    const furnBoxes = R => [...R.furns, ...R.decors].filter(r => r.type !== 'rug' && !r.hidden).map(r => { const bx = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) bx.expandByObject(o); }); return bx.expandByScalar(-.025); }).filter(bx => !bx.isEmpty());
+    for (const R of this.rooms) { const nb = this.rooms.filter(q => q !== R && q.level === R.level); R.shellBoxes = nb.flatMap(wallBoxes); R.nearBoxes = nb.flatMap(furnBoxes); if (R.shellBoxes.length || R.nearBoxes.length) R.fitParts(); }
     // one cake slab per ground-level block of rooms (upper floors bring their own thin slab)
     const box = this.box = new THREE.Box3();
     for (const R of this.rooms) {

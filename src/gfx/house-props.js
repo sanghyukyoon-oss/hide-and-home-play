@@ -72,7 +72,9 @@ function leaves(add, x, y, z, n, c1, c2, s = 1, drop = 0) {
 // ── balcony railing: wall-local coords, x along the side, the room on +z; o.gaps = [u, ...] where stairs arrive ─────
 export function houseRail(len, T = {}, o = {}) {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), leaf = col(T, 'leaf'), leaf2 = col(T, 'leaf2');
-  const gaps = (o.gaps || []).map(u => [u - .5, u + .5]), inGap = x => gaps.some(([a, b]) => x > a && x < b);
+  // (in order along the side: 펭펭이네 2층집 listed [2.5, −.5], and the rail ran on across both — over the stairs' landing and
+  // the slide's top; user, 10/19: "스테이지 7에서 미끄럼틀 벽에 막혀 있다")
+  const gaps = (o.gaps || []).slice().sort((a, b) => a - b).map(u => [u - .5, u + .5]), inGap = x => gaps.some(([a, b]) => x > a && x < b);
   const L = +len.toFixed(2), key = `hrail|${L}|${gaps.flat().join(',')}|${wood}|${woodD}|${leaf}`;
   return mc(key, ({ add, tube }) => {
     const H = .92, z = .06;

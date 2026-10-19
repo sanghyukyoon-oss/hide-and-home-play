@@ -46,14 +46,18 @@ function troughGeo(pts, R = .27, th = .045, seg = 28, n = 10) {
 B.tubeslide = (f) => {
   const H = FLOOR_H;
   // the lip sits just inside the balcony's rail gap, then a steep middle, then a run-out over the pit's rim
-  const path = [new THREE.Vector3(0, H + .06, -1.32), new THREE.Vector3(0, H - .08, -.95), new THREE.Vector3(0, H * .55, -.1),
-    new THREE.Vector3(0, .62, .72), new THREE.Vector3(0, .5, 1.25)];
+  // (10/19 user, phone: "스테이지 7에서 미끄럼틀 벽에 막혀 있다" — the trough hangs ~.25 below its path, so the top third ran
+  // inside the balcony's slab (front edge at z −.75, top H − .02) and the run-out through the pit's rim (top .4): measured,
+  // 겹침 QA. Now the trough rests on the balcony floor, clears the slab's edge, then dives; the legs follow the curve)
+  const path = [new THREE.Vector3(0, H + .3, -1.32), new THREE.Vector3(0, H + .31, -1.0), new THREE.Vector3(0, H + .29, -.7),
+    new THREE.Vector3(0, H * .52, .05), new THREE.Vector3(0, .8, .8), new THREE.Vector3(0, .7, 1.25)];
+  const curve = new THREE.CatmullRomCurve3(path), under = z => { let b = null; for (let i = 0; i <= 80; i++) { const p = curve.getPoint(i / 80); if (!b || Math.abs(p.z - z) < Math.abs(b.z - z)) b = p; } return b.y - .24; };
   f.add(mc('tubeslide|' + H, ({ addM, add }) => {
     addM(troughGeo(path), new THREE.Matrix4(), SLIDE_Y);
     addM(troughGeo(path, .225, .012), new THREE.Matrix4().makeTranslation(0, .004, 0), SLIDE_IN);
     // two white legs under the steep part and a little foot under the run-out
-    for (const [z, top] of [[-.62, H * .72], [.12, H * .44]]) { add(G.cyl(.04, .05, top, 10), POST, .2, top / 2, z); add(G.cyl(.04, .05, top, 10), POST, -.2, top / 2, z); add(G.box(.5, .05, .07, .02), POST, 0, top - .05, z); }
-    add(G.cyl(.05, .06, .3, 10), POST, 0, .15, 1.0);
+    for (const z of [-.5, .2]) { const top = under(z); add(G.cyl(.04, .05, top, 10), POST, .2, top / 2, z); add(G.cyl(.04, .05, top, 10), POST, -.2, top / 2, z); add(G.box(.5, .05, .07, .02), POST, 0, top - .05, z); }
+    { const top = under(.84); add(G.cyl(.05, .06, top, 10), POST, 0, top / 2, .84); }   // (in front of the pit's rim, not on it)
   }));
   f.spot('under', null, 0, 0, -.55, { maxH: .8, label: '미끄럼틀 밑', scale: .9 });
 };

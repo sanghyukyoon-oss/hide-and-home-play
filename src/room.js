@@ -87,6 +87,16 @@ function wallTex(kind, a, b) {
 
 // small wall pieces a stage can do without when there is no clear place for them (never a door, a puzzle frame, a gate…)
 const SPARE_DECOR = new Set(['window', 'curtainwin', 'posterwall', 'picture', 'clock', 'catclock', 'wallrack', 'poster']);
+// the floor a slide needs where you land (and at the climbing wall's foot): local rectangles [x0, x1, z0, z1] at the piece's
+// own turn, kept inside the room and clear of furniture when a piece is set down (내 방·로비·배치 편집) — 10/19 user: "미끄럼틀
+// 뚫는 부분 엄청 많으니까 정리 잘해 줘 봐" (겹침 QA)
+export const KEEP_CLEAR = { slide: [[1.0, 1.6, -.35, .35], [-1.45, -1.0, -.3, .3]], slidetower: [[-.3, .2, 1.0, 1.6], [-1.0, -.45, .9, 1.5], [1.0, 1.5, -.7, -.15]] };
+// what you may land on: a rug, a floor marking (사방치기), the sand pit, the ball pit
+const landing = t => t === 'rug' || t === 'sandbox2' || t === 'ballpit' || !!FURN_INFO[t]?.floor;
+const clearZones = (type, x, z, a) => (KEEP_CLEAR[type] || []).map(([x0, x1, z0, z1]) => {
+  const c = Math.cos(a), s = Math.sin(a), u = (x0 + x1) / 2, v = (z0 + z1) / 2;
+  return { x: x + u * c + v * s, z: z - u * s + v * c, c, s, hw: (x1 - x0) / 2, hd: (z1 - z0) / 2 };
+});
 
 export class Room {
   constructor(world, layout) {
@@ -117,6 +127,14 @@ export class Room {
     const solid = [...this.furns.filter(r => r.type !== 'rug').map(r => r.f.group), ...(this.lofts || []).map(l => l.group)]
       .map(o => new THREE.Box3().setFromObject(o, true)).filter(b => !b.isEmpty());
     const placed = [];
+    // pieces on the side walls count too, as far as their parts open — a window whose curtain slides along into the corner
+    // (10/19 겹침 QA, user on the phone: 9판 "커튼 열었을 때 욕실장 뚫림" — the 거울 수납장 had been slid into that corner)
+    const reachBox = rec => {
+      const g = rec.f.group; g.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(g, true);
+      for (const p of rec.f.parts) { const t0 = p.t; p.setOpen(1); g.updateMatrixWorld(true); b.union(new THREE.Box3().setFromObject(g, true)); p.setOpen(t0); }
+      g.updateMatrixWorld(true); return b;
+    };
+    const side = this.decors.filter(r => !r.hidden && r.wall !== 'N' && r.wall !== 'W').map(r => ({ wall: r.wall, b: reachBox(r) }));
     // doors first: they never move, so everything else on that wall has to keep clear of them
     for (const rec of [...this.decors].sort((a, b) => (b.type === 'door') - (a.type === 'door'))) {
       if (rec.hidden) continue;
@@ -131,7 +149,8 @@ export class Room {
           if (Math.min(f.max[ax], b.max[ax]) - Math.max(f.min[ax], b.min[ax]) > -GAP) return true;   // keep a little air beside it, not just no overlap
         }
         const bb = b.clone().expandByScalar(GAP);
-        return placed.some(o => o.wall === K && o._box && o._box.intersectsBox(bb));
+        if (side.some(o => o.wall !== K && o.b.intersectsBox(bb))) return true;
+        return placed.some(o => (o.wall === K ? o._box : o._reach)?.intersectsBox(bb));
       };
       let b = box();
       // a door stays put in a player's room; a stage layout (tidy) may slide it out from behind a shelf too
@@ -148,7 +167,7 @@ export class Room {
         if (!done && this.L.tidy && SPARE_DECOR.has(rec.type)) { g.visible = false; rec.hidden = true; continue; }
         b = box();
       }
-      rec._box = b; placed.push(rec);
+      rec._box = b; rec._reach = reachBox(rec); placed.push(rec);
     }
   }
   // Is there room for a character of radius r standing at world (x, z)? Furniture bodies (and open parts) count, rugs,
@@ -176,11 +195,14 @@ export class Room {
     const recs = [...this.furns, ...this.decors].filter(r => r.type !== 'rug');
     this.group.updateMatrixWorld(true);
     const boxes = recs.map(r => { const b = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) b.expandByObject(o); }); return b.expandByScalar(-.025); });
+    // a loft's floor, posts, rails and curtains too, piece by piece (1·2판: the wardrobe's door opened up into the loft bed)
+    const loftBoxes = []; for (const l of this.lofts || []) l.group.traverse(o => { if (o.isMesh) { const b = new THREE.Box3().setFromObject(o).expandByScalar(-.02); if (!b.isEmpty()) loftBoxes.push(b); } });
     const v = new THREE.Vector3();
     // nor into this room's own walls or floor (10/19 겹침 QA: 4판 옷장 문, 11판 냉장고 문, 15판 세탁기 문, 24·25판 자판기 문
-    // swung 5–10 cm into the wall); a doorway's gap and a floor's cut-out are open; on a map, the next room's walls too
-    // (shellBoxes, set by MapRooms)
+    // swung 5–10 cm into the wall); a doorway's gap and a floor's cut-out are open; on a map, the next room's walls and
+    // furniture too (shellBoxes, nearBoxes: set by MapRooms)
     const inv = this.group.matrixWorld.clone().invert(), lv = new THREE.Vector3();
+    const ray = new THREE.Ray(), ea = new THREE.Vector3(), eb = new THREE.Vector3(), ed = new THREE.Vector3(), eq = new THREE.Vector3(); let eL = 0;
     const shut = (k, along) => {
       const kind = this.L.walls?.[k] || 'wall'; if (kind === 'none') return false;
       if (kind !== 'door') return true;
@@ -200,13 +222,26 @@ export class Room {
         for (const reach of [1, .9, .8, .7, .6, .5, .42]) {
           p.reach = reach; p.setOpen(1); p.pivots.forEach(pv => pv.updateMatrixWorld(true));
           let hit = false;
+          // only what the opened piece can reach (its box), then its corners and — for thin pieces (a curtain, a rod) whose
+          // corners are all outside what they pass through — its edges (10/19 겹침 QA: 9판 창 커튼이 열리면 욕실장 속 19 cm)
+          const pb = new THREE.Box3(); p.pivots.forEach(pv => pb.expandByObject(pv));
+          const near = [...boxes.filter((b, k) => k !== ri && b.intersectsBox(pb)), ...(!r.wall && this.shellBoxes || []).filter(b => b.intersectsBox(pb)), ...(this.nearBoxes || []).filter(b => b.intersectsBox(pb)), ...loftBoxes.filter(b => b.intersectsBox(pb))];
+          const through = b => { const q = ray.intersectBox(b, eq); return q && q.distanceTo(ea) <= eL; };
           for (const pv of p.pivots) pv.traverse(o => {
             if (hit || !o.isMesh || o.userData.proxy) return;
             const pos = o.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 160));
             for (let i = 0; i < pos.count && !hit; i += step) {
               v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
-              for (let k = 0; k < boxes.length && !hit; k++) if (k !== ri && boxes[k].containsPoint(v)) hit = true;
-              if (!hit && !r.wall && (intoShell(v) || this.shellBoxes?.some(b => b.containsPoint(v)))) hit = true;
+              if (near.some(b => b.containsPoint(v)) || (!r.wall && intoShell(v))) hit = true;
+            }
+            if (hit || !near.length) return;
+            const idx = o.geometry.index, nt = (idx ? idx.count : pos.count) / 3, ts = Math.max(1, Math.floor(nt / 120));
+            for (let t = 0; t < nt && !hit; t += ts) for (let e = 0; e < 3 && !hit; e++) {
+              const i0 = idx ? idx.getX(t * 3 + e) : t * 3 + e, i1 = idx ? idx.getX(t * 3 + (e + 1) % 3) : t * 3 + (e + 1) % 3;
+              ea.fromBufferAttribute(pos, i0).applyMatrix4(o.matrixWorld); eb.fromBufferAttribute(pos, i1).applyMatrix4(o.matrixWorld);
+              eL = ea.distanceTo(eb); if (eL < .02) continue;
+              ray.set(ea, ed.subVectors(eb, ea).divideScalar(eL));
+              if (near.some(through)) hit = true;
             }
           });
           if (!hit) { fit = reach; break; }
@@ -343,6 +378,9 @@ export class Room {
     return true;
   }
   addFurniture(type, i, j, rot = 0, id = null, opts = {}) {
+    // stairs in the last column: the closet under them opens on the room's side, not into the wall beside them
+    // (10/19 겹침 QA: 8·18·26·30판 '계단 밑 창고' could not open at all without going into the wall)
+    if (type === 'stairsup' && !rot && !opts.side && i + this.footprint(type, rot)[0] >= this.w) opts = { ...opts, side: 'left' };
     const f = makeFurniture(type, this.T, opts);
     const [fw, fd] = this.footprint(type, rot);
     const p = this.tileToWorld(i, j, fw, fd);
@@ -368,7 +406,34 @@ export class Room {
       if (r.id === ignoreId || (r.type === 'rug') !== floor) continue;
       if (obbOverlap(me, this.recObb(r))) return false;
     }
+    if (floor) return true;
+    // a slide's landing stays open: inside the room with nothing standing on it, and nothing set down on another's
+    for (const zo of clearZones(type, x, z, a)) {
+      for (const [cx, cz] of obbCorners(zo)) if (Math.abs(cx) > this.w / 2 || Math.abs(cz) > this.d / 2) return false;
+      for (const r of this.furns) if (r.id !== ignoreId && !landing(r.type) && obbOverlap(zo, this.recObb(r))) return false;
+    }
+    if (landing(type)) return true;
+    for (const r of this.furns) {
+      if (r.id === ignoreId || !KEEP_CLEAR[r.type]) continue;
+      const o = this.recObb(r, 1);
+      if (clearZones(r.type, o.x, o.z, Math.atan2(o.s, o.c)).some(zo => obbOverlap(me, zo))) return false;
+    }
     return true;
+  }
+  // the slides of this room whose landing has something on it or runs out of the room (stage layouts are placed by hand;
+  // QA reads this)
+  blockedSlides() {
+    const out = [];
+    for (const r of this.furns) {
+      if (!KEEP_CLEAR[r.type]) continue;
+      const o = this.recObb(r, 1), zs = clearZones(r.type, o.x, o.z, Math.atan2(o.s, o.c));
+      zs.forEach((zo, i) => {
+        const off = obbCorners(zo).some(([cx, cz]) => Math.abs(cx) > this.w / 2 || Math.abs(cz) > this.d / 2);
+        const on = this.furns.filter(q => q !== r && !landing(q.type) && obbOverlap(zo, this.recObb(q))).map(q => q.type);
+        if (off || on.length) out.push({ type: r.type, id: r.id, zone: i, off, on });
+      });
+    }
+    return out;
   }
   addFurnitureAt(type, x, z, a = 0, id = null, opts = {}) {
     const f = makeFurniture(type, this.T, opts);

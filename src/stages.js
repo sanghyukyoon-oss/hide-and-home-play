@@ -62,8 +62,10 @@ const LF = (type, i, j, rot = 0, opts, y = 1.45) => ({ type, i, j, rot, opts, y 
 
 export const LAYOUTS = {
   bunny: { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 2.9,
+    // (10/19 겹침 QA: the tall wardrobe stood at the loft's edge — its top 42cm into the loft floor and, from v162, its door
+    // into the curtain; the low drawers take that place under the loft's rim and the wardrobe moves one along)
     lofts: [{ i: 0, j: 0, w: 2, d: 2, y: 1.45, ladder: 'S', ladderAt: .45 }], cut: [{ i: 4, j: 3, w: 2, d: 2 }],
-    furniture: [LF('futon', 0, 0, 0, null, 1.45), F('desk', 0, 1), F('chest', 0, 0), F('wardrobe', 2, 0), F('drawers', 3, 0), F('rug', 2, 2), F('beanbag', 3, 2), F('plantshelf', 4, 2), F('plant', 5, 2), F('laundrybasket', 1, 3), F('trash', 3, 4)],
+    furniture: [LF('futon', 0, 0, 0, null, 1.45), F('desk', 0, 1), F('chest', 0, 0), F('drawers', 2, 0), F('wardrobe', 3, 0), F('rug', 2, 2), F('beanbag', 3, 2), F('plantshelf', 4, 2), F('plant', 5, 2), F('laundrybasket', 1, 3), F('trash', 3, 4)],
     decor: [D('window', 'N', .25), D('posterwall', 'N', 1.6), D('catclock', 'N', 2.5), D('window', 'W', .1), D('door', 'W', -1.6)], friendAt: [2.4, 1.0] },
   bear: { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 2.9,
     raised: [{ i: 0, j: 0, w: 3, d: 2, h: .3, kind: 'carpet', a: '#dfe6b4', b: '#c9d39a', stepX: .6 }], cut: [{ i: 0, j: 4, w: 2, d: 1 }],
@@ -236,8 +238,10 @@ export const LAYOUTS = {
   // ── 공원: picket fence and a flowering hedge
   // the three parks each have their own thing (10/17: they were the same nine pieces shuffled): 개굴이's is the
   // playground, 다람이's has a pond, 햄찌's is a picnic yard
+  // (10/19 겹침 QA, user "미끄럼틀 뚫는 부분 정리": the tree stood on both of the tower's landings and the lost-property box on the
+  // climbing wall's foot — tree (0,2)→(1,3), box (2,0)→(2,1))
   park1: { walls: { N: 'fence', W: 'hedge', S: 'none', E: 'none' },
-    furniture: [F('slidetower', 0, 0), F('lostbox', 2, 0), F('swings2', 3, 0), F('tree', 0, 2), F('springrider', 2, 2), F('sandbox2', 3, 2), F('hopscotch', 0, 3), F('bench', 1, 4), F('parkbin', 4, 4)], friendAt: [-.4, .6] },
+    furniture: [F('slidetower', 0, 0), F('lostbox', 2, 1), F('swings2', 3, 0), F('tree', 1, 3), F('springrider', 2, 2), F('sandbox2', 3, 2), F('hopscotch', 0, 3), F('bench', 1, 4), F('parkbin', 4, 4)], friendAt: [-.4, .6] },
   park2: { walls: { N: 'fence', W: 'hedge', S: 'none', E: 'none' },
     furniture: [F('bench', 0, 0), F('tree', 3, 0), F('streetlamp2', 4, 0), F('picnic', 0, 2), F('pond', 1, 1), F('reeds', 4, 2), F('lostbox', 4, 3), F('bush', 0, 4), F('planter', 2, 4), F('parkbin', 4, 4)], friendAt: [2.0, -1.3] },
   park3: { walls: { N: 'hedge', W: 'fence', S: 'none', E: 'none' },
@@ -458,7 +462,8 @@ export const MAPS = {
   parkwide: () => ({ theme: THEMES.parkwide, friendAt: [-.5, -1.5], nBonus: 3, rooms: [
     { at: [0, 0], layout: RM('park1', 8, 6, { walls: { N: 'fence', W: 'hedge', S: 'none', E: 'none' },
       // the big park: a playground on the left, the pond in the middle, a picnic corner on the right
-      furniture: [F('slidetower', 0, 0), F('swings2', 2, 0), F('tree', 4, 0), F('picnic2', 5, 0), F('bush', 7, 0),
+      // (10/19 겹침 QA: the swings stood on the climbing wall's foot and through the tree — swings (2,0)→(3,0), tree (4,0)→(7,1))
+      furniture: [F('slidetower', 0, 0), F('swings2', 3, 0), F('tree', 7, 1), F('picnic2', 5, 0), F('bush', 7, 0),
         F('springrider', 2, 2), F('pond', 3, 2), F('streetlamp2', 6, 2), F('bbqgrill', 7, 2), F('hopscotch', 0, 3), F('reeds', 2, 4),
         F('planter', 6, 4), F('parkbin', 0, 5), F('bench', 1, 5), F('icecart', 5, 5), F('tree', 7, 5)] }) },
   ] }),
