@@ -446,20 +446,35 @@ export class Room {
     // the tilt lesson's place (검토 재검토 1: through the railing the quilt star showed from the first view)
     if (lf.curtain) {
       const cc = lf.curtainColor || shade(T.wall2 || '#ffb3a3', .12), cd = shade(cc, -.16), h = 1.05, top = y + 1.1;
+      // a real curtain, not a striped board (user, 2판 on a phone: "침대 쪽 벽인 거 같아서 이상함"): the cloth hangs in deep
+      // soft folds (a wavy sheet, so the toon light shades each fold), from rings on a round rod with knob ends, with a
+      // scalloped hem — it still closes the nook from the side, as the tilt lesson needs
       const panel = (ax, az, bx, bz) => {
-        const L = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax), mx = (ax + bx) / 2, mz = (az + bz) / 2;
-        add(put(rbox(L, h, .025, cc, .01), mx, top - h / 2, mz, 0, -ang, 0));
-        for (let t = .1; t < L - .05; t += .2) add(put(rbox(.045, h - .12, .05, cd, .02), ax + (bx - ax) * t / L, top - h / 2 - .05, az + (bz - az) * t / L, 0, -ang, 0));   // pleats
-        add(put(rbox(L + .02, .12, .05, cd, .02), mx, top - .07, mz, 0, -ang, 0));   // a frilled valance
-        add(put(rbox(L + .06, .04, .04, woodD, .015), mx, top + .02, mz, 0, -ang, 0));   // the rod
+        const L = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax);
+        const A = .045, k = Math.PI * 2 / .19, t = .02, n = Math.max(8, Math.round(L / .02));
+        const sh = new THREE.Shape(); sh.moveTo(0, t / 2);
+        for (let i = 1; i <= n; i++) { const u = L * i / n; sh.lineTo(u, A * Math.sin(k * u) + t / 2); }
+        for (let i = n; i >= 0; i--) { const u = L * i / n; sh.lineTo(u, A * Math.sin(k * u) - t / 2); }
+        const cg = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 4 }); cg.rotateX(-Math.PI / 2);
+        const cloth = add(new THREE.Mesh(cg, mat(cc, { rough: .9, rim: .1, side: THREE.DoubleSide })));
+        cloth.position.set(ax, top - h - .02, az); cloth.rotation.y = -ang;
+        const at = (u, yy) => [ax + (bx - ax) * u / L, yy, az + (bz - az) * u / L];
+        for (let u = .06; u < L - .03; u += .11) { const [px, py, pz] = at(u, top - h - .015); add(put(new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 5), mat(cd, { rough: .9 })), px, py, pz, 0, 0, 0, [1, .55, 1])); }   // the scalloped hem
+        add(put(new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, L + .1, 10), mat(woodD)), (ax + bx) / 2, top + .05, (az + bz) / 2, 0, -ang, Math.PI / 2));   // the rod
+        for (const u of [-.05, L + .05]) { const [px, , pz] = at(u, 0); add(put(new THREE.Mesh(new THREE.SphereGeometry(.035, 10, 8), mat(woodD)), px, top + .05, pz)); }   // its knobs
+        for (let u = .1; u < L - .05; u += .19) { const [px, , pz] = at(u, 0); add(put(new THREE.Mesh(new THREE.TorusGeometry(.03, .008, 4, 10), mat('#e8d6a8')), px, top + .05, pz, 0, Math.PI / 2 - ang, 0)); }   // rings round the rod
       };
-      panel(x0, z1 + .04, x1 + .04, z1 + .04); panel(x1 + .04, z0, x1 + .04, z1 + .04);
+      // (hung a hand outside the railing: the folds' hollows went behind it and the baluster tops showed through the cloth)
+      panel(x0, z1 + .1, x1 + .1, z1 + .1); panel(x1 + .1, z0, x1 + .1, z1 + .1);
     }
     // ladder leaning against the open side
     const lx = lad === 'S' ? cx + gap : x1 + .45, lz = lad === 'S' ? z1 + .45 : cz + gap, ry = lad === 'S' ? 0 : Math.PI / 2;
     const ladder = new THREE.Group(); ladder.position.set(lx, 0, lz); ladder.rotation.y = ry;
     const tilt = Math.atan2(.45, y);
-    for (const sx of [-.24, .24]) { const r = put(rbox(.07, y + .2, .07, woodD, .02), sx, (y + .2) / 2, 0); r.rotation.x = -tilt; ladder.add(r); }
+    // (the rails lean from their feet, the line the rungs follow — they used to turn about their middle, which left the rungs
+    // floating a hand in front of them: user, 4판 on a phone, "사다리 기둥이랑 다리랑 떨어져 있어")
+    const RL = y + .2;
+    for (const sx of [-.24, .24]) { const r = put(rbox(.07, RL, .07, woodD, .02), sx, RL / 2 * Math.cos(tilt), -RL / 2 * Math.sin(tilt)); r.rotation.x = -tilt; ladder.add(r); }
     for (let k = 1; k * .32 < y; k++) { const yy = k * .32; ladder.add(put(rbox(.48, .05, .06, wood, .015), 0, yy, -Math.tan(tilt) * yy)); }
     ladder.traverse(o => { if (o.isMesh) { o.userData.og = og; o.castShadow = true; } });
     g.add(ladder);
