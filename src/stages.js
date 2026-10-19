@@ -1,5 +1,5 @@
 import { affOk, affLike, isCold, habitSpot, placeLike } from './affinity.js';
-import { spotFits } from './fitspot.js';   // 자리에 맞는 물건 (10/19)   // 물건마다 나올 법한 자리 (10/19)
+import { spotFits, shapeFits } from './fitspot.js';   // 자리에 맞는 물건 (10/19)   // 물건마다 나올 법한 자리 (10/19)
 import * as THREE from 'three';
 // Room themes, hand-placed layouts, stage specs and a seeded planner that hides targets / keys / decoys.
 import { rng } from './util.js';
@@ -501,7 +501,7 @@ export const STAGES = [
   { room: 'bunny', n: 3, inside: 0, behind: 0, time: 60, tut: 1, clutter: .4 },
   { room: 'bunny', n: 4, inside: 2, behind: 0, time: 70, tut: 2, clutter: .5 },
   { room: 'fishing', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },
-  { room: 'peng', n: 5, inside: 1, behind: 0, time: 85, clutter: .5 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 5 things + 2 grey furniture — the first 흑백
+  { room: 'peng', n: 3, inside: 1, behind: 0, time: 85, clutter: .35 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 3 things + 2 grey furniture + 먹물이 — the first 흑백 (5 → 3, 1~10판 밸런스 10/19: a new rule's first stage carried the most to find, 8; now 6 — and clutter .5 → .35: a 흑백 stage has no decoy cap, fewer things left room for 9 decoys)
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4, habitMore: true, habit: ['kotatsu', 'table', 'zabuton', 'sofa', 'tvlow', 'recordcab', 'fridge', 'kitchen', 'counter', 'snack'] },   // (곰돌이: "손님 주려고 숨겨 놨는데" — by the food, 검토 P0-1)   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3, lockOn: { pad: ['dishcab'] } },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
   { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, zoom: 1.4, habitHigh: true },   // (펭펭이 "비결 2번: 높은 데 숨기기!" — up high, every other thing as on any stage: the upstairs alone already holds half the house, 검토 P0-1)
@@ -677,7 +677,9 @@ export const FRIEND_HIDE = new Set([11, 15, 19, 29, 38, 47, 50, 58, 67]);   // (
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
 // really see on that map, chains ≤ the map's lockable pieces; 32·33·35·61·65 count the spots added 10/18)
 const HO_SHAPE = {
-  2: [4, 0], 3: [6, 0], 5: [7, 1], 6: [7, 1], 7: [8, 1], 8: [6, 1],   // (8판 프라모델: 부품 6개, 하나는 자물쇠 뒤)
+  // (1~10판 밸런스 10/19 밤 — 사용자 실폰 30~35분 "막 다시 하고 싶진 않다": 4~11판이 거의 다 7~8개라 판마다 같은 일이었어요.
+  // 5판(열쇠를 처음 배우는 판) 7 → 6, 7판(2층집) 8 → 7: 6 · 6 · 7 · 7 · 6 · 7 · 8로 오르고 8판 조립판에서 한숨)
+  2: [4, 0], 3: [6, 0], 5: [6, 1], 6: [7, 1], 7: [7, 1], 8: [6, 1],   // (8판 프라모델: 부품 6개, 하나는 자물쇠 뒤)
   9: [7, 1], 11: [8, 1],
   13: [8, 1], 15: [7, 1], 19: [8, 2],
   22: [8, 1], 23: [8, 1], 25: [9, 1], 26: [11, 2], 27: [10, 1],
@@ -858,7 +860,10 @@ export function planStage(room, spec, story = null) {
     const likePool = placingTarget && type ? roomyPool.filter(s => placeLike(type, s)) : [];
     const c = r.shuffle(likePool.length ? likePool : roomyPool.length ? roomyPool : pool);
     if (!c.length) return null;
-    used.add(c[0]); return c[0];
+    // (the one picked tried with the thing's own shape — fitspot.js shapeFits; the next one if it would be drawn too small)
+    const pick = !type || relaxFit ? c[0] : c.find(s => shapeFits(type, s)) || null;
+    if (!pick) return null;
+    used.add(pick); return pick;
   };
   // a theme can bring its own things to find first (the everyday rooms hide a remote, slippers, a tangerine…)
   // (B-1 그 집 물건 10/18: nearly the whole list from the place's own things — n−1, n−2 from 8 up; socks only at the laundromat)
@@ -1068,8 +1073,9 @@ export function planStage(room, spec, story = null) {
     for (let k = 0; k < n; k++) {
       const s = c[k];
       const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s, 'decoy') && affOk(t, s));
-      if (!opts.length) continue;
-      used.add(s); placements.push({ type: opts[0], spot: s, role: 'decoy', v: r.int(0, 3) });
+      const t0 = opts.find(t => shapeFits(t, s, 'decoy'));   // (nothing running through it — fitspot.js)
+      if (!t0) continue;
+      used.add(s); placements.push({ type: t0, spot: s, role: 'decoy', v: r.int(0, 3) });
     }
   };
   // the story's secret collectible: tucked away somewhere open (not inside anything locked)

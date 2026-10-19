@@ -12,7 +12,7 @@ import { EN } from './i18n-en-dict.js';
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { ITEMS } from './gfx/items.js';
 import { attachItem } from './room.js';
-import { spotFits, capScale, faceItem, centerOn } from './fitspot.js';
+import { spotFits, shapeFits, capScale, faceItem, centerOn, squareIfCrossing } from './fitspot.js';
 import { affOk } from './affinity.js';
 import { THEMES, stageSpec, STAGE_COUNT, REGIONS, regionOf } from './stages.js';
 import { hostAt, CAMEO_LINE } from './script.js';
@@ -56,7 +56,7 @@ export function moveItem(it, spot) {
   if (old.item === it) old.item = null;
   // (the same size where it fits; a little smaller where the new place is tighter — fitspot.js, and it looks out of it)
   attachItem(spot, g, { rotY: g.rotation.y, scale: Math.min(k, capScale(it.type, spot)) });
-  faceItem(g, spot, g.userData.jit || 0); centerOn(g, spot);
+  faceItem(g, spot, g.userData.jit || 0); centerOn(g, spot); squareIfCrossing(g, spot);
   it.spot = spot; spot.item = it;
 }
 const CHAIN = new Set(['key', 'note', 'color', 'treat', 'tool', 'sock', 'book', 'gadget']);
@@ -73,6 +73,7 @@ export function chainToView(S) {
     const pref = S.spec?.clueOn?.[it.forPart?.lock?.kind] ? new Set(S.spec.clueRoom != null && S.room.rooms?.[S.spec.clueRoom] ? S.room.rooms[S.spec.clueRoom].spots : R.spots.filter(s => S.spec.clueOn[it.forPart.lock.kind].some(w => (s.furn?.type || '').includes(w)))) : null;
     const spots = R.spots.filter(s => !s.item && !s.part && s.kind === 'on' && !s.wallFace && s.anchor && fitsSpot(it.type, s) && s.furn !== it.forPart?.furn).map(s => ({ s, d: s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(o) - (pref?.has(s) ? 100 : 0) })).sort((a, b) => a.d - b.d).slice(0, 8);
     for (const { s } of spots) {
+      if (!shapeFits(it.type, s, it.role)) continue;   // (its own shape, as the drawing measures it — fitspot.js)
       const old = it.spot; moveItem(it, s);
       if (!W.occluded(it.g, S.worldCenter(it), [R.group])) { moved = `${it.type}: ${old.label} → ${s.label}`; break; }
       moveItem(it, old);

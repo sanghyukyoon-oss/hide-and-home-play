@@ -19,9 +19,11 @@ import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~1
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
-import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
+import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep, squareIfCrossing } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
 import { setPlace } from '../affinity.js';
 const HINTS_OLD = typeof location !== 'undefined' && /[?&]hints=old(&|$)/.test(location.search);   // (the v157 automatic help, to compare)
+// 톡톡 두 번 확대 수업: 3판 (was 2판 — 2판 teaches turning while you drag now, one hand a stage: 1~10판 밸런스 10/19, 조작감 세션과 맞춤; ?dbl2=1 → 2판)
+const DBL_AT = typeof location !== 'undefined' && /[?&]dbl2=1(&|$)/.test(location.search) ? 1 : 2;
 import { FURN_INFO } from '../gfx/furniture.js';
 const FURN_NAME = t => FURN_INFO[t]?.name || t;
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
@@ -218,8 +220,8 @@ export class StageScene {
       const sc = drawnScale(p.type, p.spot, p.role, want) || Math.max(.6, Math.min(wantScale(p.type, p.spot, p.role, want), capScale(p.type, p.spot)));
       // (and it looks out of its place — 3판 "고무오리 얼굴이 바구니 쪽에 있음", user 10/19: a little either side of that)
       const jit = (r() - .5) * .7; g.userData.jit = jit;
-      attachItem(p.spot, g, { rotY: 0, scale: sc }); faceItem(g, p.spot, jit); centerOn(g, p.spot);
-      if ((p.spot.kind === 'on' || p.spot.kind === 'inside') && !nestles(p.spot)) this.fitClear(p.spot, g);   // (10/19 user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ")
+      attachItem(p.spot, g, { rotY: 0, scale: sc }); faceItem(g, p.spot, jit); centerOn(g, p.spot); squareIfCrossing(g, p.spot);
+      if ((p.spot.kind === 'on' || p.spot.kind === 'inside') && !nestles(p.spot) && !p.spot.wallFace) this.fitClear(p.spot, g);   // (not flat on a wall behind a poster or a frame: the wall it lies on read as in the way — 70%)   // (10/19 user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ")
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
       if (p.vacHidden) { it.vacHidden = true; g.visible = false; }   // rides out on the robot vacuum (아파트 장치판)
       if (p.type === 'friendtoken') { it.friend = true; it.thumb = G.thumbs['face_' + this.th.friend]; this.friendItem = it; }
@@ -677,7 +679,7 @@ export class StageScene {
     if (penalty && this.timerOn) { this.misses.push(this.t); this.misses = this.misses.filter(t => this.t - t < 3); }
     if (penalty) {
       this.missCount++;
-      if (this.spec.tut === 2 && this.missCount === 2) { if (DBL_ON) teachDbl(this); else G.ui.toast(DO.zoom, 'green'); }   // 2판: small things → zoom, once it's needed
+      if (this.idx === DBL_AT && this.missCount === 2) { if (DBL_ON) teachDbl(this); else G.ui.toast(DO.zoom, 'green'); }   // 3판: small things far off → zoom, once it's needed
       this.taunt('miss');
       if (this.timerOn) { this.time = Math.max(0, this.time - 2); G.ui.floatText(x, y, '-2초', 'red'); }
       G.audio.sfx('miss', 0, false);   // (its tick went with the tap — addMiss)
@@ -2705,7 +2707,7 @@ export class StageScene {
     if (this.running && !this.result && !this.paused) {
       this.idle += dt;
       sweepUpdate(this, dt);
-      if (this.spec.tut === 2 && this.idle > 15 && !this._dbl) teachDbl(this);
+      if (this.idx === DBL_AT && this.idle > 15 && !this._dbl) teachDbl(this);
       if (this.idle > 11) this.taunt('idle');
       // a sparkle on something findable after a while of nothing: 9 s on a friend hunt; on a hidden-object stage you get
       // time to look yourself first — 12 s in chapters 1-2, 20 s from 3 (레벨 세션 B3, user: "진득하게")

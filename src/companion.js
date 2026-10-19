@@ -154,9 +154,11 @@ export class Companion {
     const rx = Math.cos(W.yaw), rz = -Math.sin(W.yaw), fx = Math.sin(W.yaw), fz = Math.cos(W.yaw);
     for (const t of this.tiles) {
       if (t === h || t.stair || taken.has(t) || Math.abs((t.y || 0) - (h.y || 0)) > .05) continue;
-      const d = Math.hypot(t.x - h.x, t.z - h.z); if (d < .6 || d > 1.2) continue;   // (.5 had the two touching — 44·51판)
+      const d = Math.hypot(t.x - h.x, t.z - h.z); if (d < .6 || d > 1.7) continue;   // (.5 had the two touching — 44·51판)
+      // (a step and a half away only when nothing nearer can be seen — 겹침 QA 10/20: 7판 every spot within 1.2 m was behind the slide)
+      const far = d > 1.2, seen = this.seen(W, t, roots); if (far && !seen) continue;
       const side = Math.abs((t.x - h.x) * rx + (t.z - h.z) * rz), front = (t.x - h.x) * fx + (t.z - h.z) * fz > 0;
-      const s = Math.abs(d - .75) + (this.seen(W, t, roots) ? 0 : 5) + (front && side < .45 ? 3 : 0); if (s < bd) { bd = s; best = t; }
+      const s = (far ? 4 + d - 1.2 : Math.abs(d - .75)) + (seen ? 0 : 5) + (front && side < .45 ? 3 : 0); if (s < bd) { bd = s; best = t; }
     }
     b.root.visible = !!best;
     if (best) { b.root.position.set(best.x, best.y || 0, best.z); b.root.rotation.y = Math.atan2(W.cam.position.x - best.x, W.cam.position.z - best.z); W.idsDirty = true; }
