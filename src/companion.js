@@ -63,6 +63,13 @@ export function gridPath(from, to, block = new Set()) {
   const out = []; for (let t = to; t && t !== from; t = prev.get(t)) out.unshift(t);
   return out;
 }
+// a world point is seen from the camera as it is now: on screen (inside rect when given) with nothing of roots in front of it
+export function seenAt(W, v, roots, rect = null) {
+  const s = W.toScreen(v);
+  if (rect ? s.x < rect.x0 || s.x > rect.x1 || s.y < rect.y0 || s.y > rect.y1 : s.x < 0 || s.x > W.W || s.y < 0 || s.y > W.H) return false;
+  const hit = W.pick(s.x, s.y, roots).find(q => !q.object.userData.proxy);
+  return !hit || hit.distance >= W.raycaster.ray.origin.distanceTo(v) - .08;
+}
 export const nearestTile = (tiles, x, z, avoid) => { let b = null, bd = 1e9; for (const t of tiles) { if (avoid?.has(t)) continue; const d = (t.x - x) ** 2 + (t.z - z) ** 2; if (d < bd) { bd = d; b = t; } } return b; };
 
 const STAY = true;   // 몽글이 (and the friend you bring) stay at their first spot — 10/19 user
@@ -83,7 +90,10 @@ export class Companion {
     // (10/19 user: 2판 몽글이 started on top of 토순이 — it stays where it starts since v144, so start a body's width or more
     // from everyone: tiles within 1.1 m of another character are out, then the usual .6, then anything)
     const far = new Set(); for (const o of others()) { const q = o.root.position; for (const t of tiles) if (Math.hypot(t.x - q.x, t.z - q.z) < 1.1) far.add(t); }
-    const W = G.world, start = this.nearest(W.target.x, W.target.z, far) || this.nearest(W.target.x, W.target.z, this.taken()) || this.nearest(W.target.x, W.target.z) || tiles[0];
+    // (10/19 겹침 QA: 7판 it stood wholly behind the slide, 12판 behind the desk — and stays there) the stage frames its start
+    // view first; the spot nearest the middle of it where you can see 몽글이 wins, then as before
+    const W = G.world; this.roots = [...rooms.map(R => R.group), ...others().map(o => o.root)];
+    const start = this.inView(W, far) || this.nearest(W.target.x, W.target.z, far) || this.nearest(W.target.x, W.target.z, this.taken()) || this.nearest(W.target.x, W.target.z) || tiles[0];
     this.t = start; this.ch.root.position.set(start.x, start.y || 0, start.z);
     this.ch.root.rotation.y = Math.atan2(W.cam.position.x - start.x, W.cam.position.z - start.z);
     W.root.add(this.ch.root); W.idsDirty = true;
@@ -94,14 +104,33 @@ export class Companion {
   besideHero(W) {
     const b = this.buddy; if (!b) return null;
     const h = this.t, taken = this.taken(); let best = null, bd = Infinity;
+    const roots = [...(this.roots || []), this.ch.root];   // (seen from the start view too, not behind a stool or 몽글이 — 겹침 QA 10/19: 8·12·18판)
+    // nor standing in front of 몽글이 as you look (beside it, or behind it a little to one side)
+    const rx = Math.cos(W.yaw), rz = -Math.sin(W.yaw), fx = Math.sin(W.yaw), fz = Math.cos(W.yaw);
     for (const t of this.tiles) {
       if (t === h || t.stair || taken.has(t) || Math.abs((t.y || 0) - (h.y || 0)) > .05) continue;
-      const d = Math.hypot(t.x - h.x, t.z - h.z); if (d < .5 || d > 1.2) continue;
-      const s = Math.abs(d - .75); if (s < bd) { bd = s; best = t; }
+      const d = Math.hypot(t.x - h.x, t.z - h.z); if (d < .6 || d > 1.2) continue;   // (.5 had the two touching — 44·51판)
+      const side = Math.abs((t.x - h.x) * rx + (t.z - h.z) * rz), front = (t.x - h.x) * fx + (t.z - h.z) * fz > 0;
+      const s = Math.abs(d - .75) + (this.seen(W, t, roots) ? 0 : 5) + (front && side < .45 ? 3 : 0); if (s < bd) { bd = s; best = t; }
     }
     b.root.visible = !!best;
     if (best) { b.root.position.set(best.x, best.y || 0, best.z); b.root.rotation.y = Math.atan2(W.cam.position.x - best.x, W.cam.position.z - best.z); W.idsDirty = true; }
     return best;
+  }
+  // a body standing on t is seen from the camera as it is now: its middle and its head on screen (clear of the bars) and
+  // nothing of the room (or anyone) in front of them
+  seen(W, t, roots = this.roots) {
+    if (!roots?.length) return true;
+    const r = this.rect(W), v = new THREE.Vector3();
+    for (const hgt of [.2, .42]) if (!seenAt(W, v.set(t.x, (t.y || 0) + hgt, t.z), roots, r)) return false;
+    return true;
+  }
+  // the free spot nearest the middle of the start view that the view sees (the nearest 60 tried, 200 ms at most — it runs
+  // while the stage loads); null when none
+  inView(W, avoid = new Set()) {
+    const c = W.target, t0 = performance.now(), list = this.tiles.filter(t => !t.stair && !avoid.has(t)).sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z));
+    for (const t of list.slice(0, 60)) { if (this.seen(W, t)) return t; if (performance.now() - t0 > 200) break; }
+    return null;
   }
   nearest(x, z, avoid = new Set()) {
     let b = null, bd = 1e9;

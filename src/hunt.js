@@ -43,7 +43,7 @@ const HABIT = {
 // R2 (10/18): the same table steers where a friend really hides on a 친구 숨기 판 (stage.js → planIncident spec.habit)
 export const habitOf = k => HABIT[k] || null;
 // the planner gets the host's habit places and the room's blind places (stages.js planStage: spec.prefer / spec.avoid)
-export const huntExtras = (spec, host) => ({ ...spec, prefer: HABIT[host] || null, avoid: blindFor(spec.room) });
+export const huntExtras = (spec, host) => ({ ...spec, prefer: spec.habit || HABIT[host] || null, avoid: blindFor(spec.room) });   // (a stage may name its own habit places — 9판's bathroom, 10/19)
 
 // ── things where they can be seen
 export function moveItem(it, spot) {
@@ -64,7 +64,9 @@ export function chainToView(S) {
     if (!W.occluded(it.g, S.worldCenter(it), [R.group])) continue;
     const o = S.worldCenter(it);
     // (never onto the piece it opens — 1~10판 레벨 세션 10/19)
-    const spots = R.spots.filter(s => !s.item && !s.part && s.kind === 'on' && !s.wallFace && s.anchor && fitsSpot(it.type, s) && s.furn !== it.forPart?.furn).map(s => ({ s, d: s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(o) })).sort((a, b) => a.d - b.d).slice(0, 8);
+    // (9판: the key stays in the bathroom if it can be seen there — 검토 P1-4)
+    const pref = S.spec?.clueOn?.[it.forPart?.lock?.kind] ? new Set(S.spec.clueRoom != null && S.room.rooms?.[S.spec.clueRoom] ? S.room.rooms[S.spec.clueRoom].spots : R.spots.filter(s => S.spec.clueOn[it.forPart.lock.kind].some(w => (s.furn?.type || '').includes(w)))) : null;
+    const spots = R.spots.filter(s => !s.item && !s.part && s.kind === 'on' && !s.wallFace && s.anchor && fitsSpot(it.type, s) && s.furn !== it.forPart?.furn).map(s => ({ s, d: s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(o) - (pref?.has(s) ? 100 : 0) })).sort((a, b) => a.d - b.d).slice(0, 8);
     for (const { s } of spots) {
       const old = it.spot; moveItem(it, s);
       if (!W.occluded(it.g, S.worldCenter(it), [R.group])) { moved = `${it.type}: ${old.label} → ${s.label}`; break; }
@@ -165,11 +167,14 @@ export function placeCameo(S) {
   const W = S.G.world, furns = (S.room.rooms || [S.room]).flatMap(R => R.furns);
   const boxes = furns.map(e => ({ e, b: new THREE.Box3().setFromObject(e.f.group) })).filter(o => o.b.max.y - o.b.min.y > .06);
   const R = S.room, cz = R.center?.z || 0, all = boxes.reduce((u, o) => u.union(o.b), new THREE.Box3());
-  const inside = R.w && R.d ? (x, z) => Math.abs(x) < R.w / 2 - .25 && Math.abs(z - cz) < R.d / 2 - .25 : (x, z) => x > all.min.x + .1 && x < all.max.x - .1 && z > all.min.z + .1 && z < all.max.z - .1;
+  // (on a map, inside one of its rooms' floors — the map's own w/d is its outer box, centred anywhere: 36판 a peeker stood
+  // 7 cm into the next room's wall — 겹침 QA 10/19)
+  const inside = R.rooms ? (x, z) => R.rooms.some(q => { const o = q.group.position; return Math.abs(x - o.x) < q.w / 2 - .25 && Math.abs(z - o.z) < q.d / 2 - .25; }) : R.w && R.d ? (x, z) => Math.abs(x) < R.w / 2 - .25 && Math.abs(z - cz) < R.d / 2 - .25 : (x, z) => x > all.min.x + .1 && x < all.max.x - .1 && z > all.min.z + .1 && z < all.max.z - .1;
   const free = (x, z, pad = .05) => inside(x, z) && !boxes.some(o => x > o.b.min.x - pad && x < o.b.max.x + pad && z > o.b.min.z - pad && z < o.b.max.z + pad);
   const ch = new Char(kind); ch.root.scale.multiplyScalar(.8); ch.pose = 'idle'; ch.setFace?.('happy');
   W.root.add(ch.root);
   const hostAtPos = S.friend.root.position, y0 = W.yaw, p0 = W.pitch, t0 = performance.now();
+  const near = S.bodies ? S.bodies(ch) : [];   // (not on 몽글이, the friend you brought, a walker or 먹물이 — 겹침 QA 10/19: 13판 .35 m from a walker)
   const roots = [S.room.group, ch.root];
   let best = null;
   const tall = boxes.filter(o => o.b.max.y - o.b.min.y > .45 && o.b.max.y < 2.4).sort(() => Math.random() - .5);
@@ -180,7 +185,7 @@ export function placeCameo(S) {
       const half = Math.abs(nx) * sz.x / 2 + Math.abs(nz) * sz.z / 2, tHalf = Math.abs(nz) * sz.x / 2 + Math.abs(nx) * sz.z / 2;
       for (const tk of [.75, -.75]) {
         const x = c.x + nx * (half + .22) + nz * tHalf * tk, z = c.z + nz * (half + .22) - nx * tHalf * tk;
-        if (!free(x, z) || Math.hypot(x - hostAtPos.x, z - hostAtPos.z) < 1.2) continue;
+        if (!free(x, z) || Math.hypot(x - hostAtPos.x, z - hostAtPos.z) < 1.2 || near.some(b => Math.hypot(b.x - x, b.z - z) < .8)) continue;
         ch.root.position.set(x, o.b.min.y, z); ch.root.rotation.y = Math.atan2(W.cam.position.x - x, W.cam.position.z - z); ch.root.updateMatrixWorld(true);
         const head = new THREE.Vector3(x, o.b.min.y + .45, z);
         const atStart = !!W.visibleAt(ch.root, head, roots);
@@ -218,6 +223,7 @@ export async function cameoFound(S, it) {
   G.audio.sfx('special'); G.hitstop(.06);
   if (!S.preview) { G.addCoins(20); G.ui.floatText(s.x, s.y - 40, '+20', 'gold'); }
   const to = p.clone().add(new THREE.Vector3(W.cam.position.x - p.x, 0, W.cam.position.z - p.z).normalize().multiplyScalar(.45));
+  { const t = S.standNear?.(to, ch, .6, .7); if (t) to.set(t.x, to.y, t.z); }   // (onto free floor, not into someone — 겹침 QA 10/19)
   ch.pose = 'cheer'; ch.setFace?.('wow');
   await S.tw.run(.45, k => { ch.root.position.lerpVectors(p, to, k); ch.root.position.y = p.y + Math.sin(k * Math.PI) * .5; });
   if (S.dead) return;

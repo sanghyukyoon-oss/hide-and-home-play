@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { ITEMS } from './gfx/items.js';
 import { moveItem } from './hunt.js';
-import { affOk } from './affinity.js';   // (10/19: what goes behind a door has to make sense there)
+import { affOk, habitSpot } from './affinity.js';   // (10/19: what goes behind a door has to make sense there)
 
 const fits = (type, s) => { const I = ITEMS[type]; return !!I && I.h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || I.flat) && (I.flat || (s.maxH + .02) / (I.h * (s.scale || 1)) >= 1.25); };   // (moves only to places where the thing can be drawn at its full size — 10/19)
 const shown = o => { for (let p = o; p; p = p.parent) if (p.visible === false) return false; return true; };
@@ -52,8 +52,13 @@ export function tierPass(S) {
   // moving things
   const T = () => S.targets.filter(it => !it.found && !it.friend && it.spot && !it.spot.part && tab.has(it.spot));
   const out = { l0Before: T().filter(it => tab.get(it.spot).L0).length, moved: [] };
-  const free = (it, ok) => C.filter(s => s !== it.spot && ok(s) && fits(it.type, s) && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
+  const free0 = (it, ok) => C.filter(s => s !== it.spot && ok(s) && fits(it.type, s) && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
     .map(s => ({ s, d: P.get(s).distanceTo(P.get(it.spot) || P.get(s)) + (s.kind === 'on' ? 0 : .6) + (s.item ? .3 : 0) })).sort((a, b) => a.d - b.d).map(o => o.s);
+  // (a thing at its host's habit place moves only to another habit place — 7판's pencil went from the top shelf to a plant
+  // pot, and the line "높은 데 숨기기" stopped being true; 검토 세션 P0-1, 10/19)
+  // (strict: a habit thing only to a habit place — the L0 moves try that first and leave it for the next step if there's none)
+  const habit = habitSpot(S.spec, R), hab = it => !!habit && !!it.spot && habit(it.spot);
+  const free = (it, ok, strict) => { const all = free0(it, ok); if (!hab(it)) return all; const hb = all.filter(habit); return hb.length || strict ? hb : all; };
   const put = (it, s, why) => {
     const old = it.spot, d = s.item && s.item.role === 'decoy' ? s.item : null;
     if (d) moveItem(d, old);
@@ -62,8 +67,10 @@ export function tierPass(S) {
   // L0: one — the most central stays (two on a list over 10 after 1장: D4, 10/19 — a big list with one in sight read as empty)
   const keep = S.idx > 10 && S.targets.length > 10 ? 2 : 1;
   const mid = it => { const sc = W.toScreen(P.get(it.spot)); return Math.hypot(sc.x - W.W / 2, sc.y - W.H * .47); };
-  const zero = T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b));
-  for (const it of zero.slice(keep)) { const s = free(it, s => L1(s) && !tab.get(s).L0)[0]; if (s) put(it, s, 'L0→L1'); }
+  // (5·7·9판: the one that stays in sight is one at the habit place, if any — it needn't move away from it)
+  const first = it => S.spec.habitMore && hab(it) ? 0 : 1;
+  const zero = T().filter(it => tab.get(it.spot).L0).sort((a, b) => first(a) - first(b) || mid(a) - mid(b));
+  for (const it of zero.slice(keep)) { const s = free(it, s => L1(s) && !tab.get(s).L0, true)[0]; if (s) put(it, s, 'L0→L1'); }
   // (폰 세로 화면은 방이 한눈에 다 보여서 '처음엔 안 보이는 빈자리'가 모자라요 — 7판 2층집 8개 중 4개, 11판 냥냥이 부엌 5개가
   // 처음부터 보였어요, 리포트 v3 개선 5): what still shows goes, in turn, to a place a turn away or seen from a side or two,
   // then behind something you open (a curtain, a frame, a drawer, a door — opening is free) — never more than half the list
@@ -71,17 +78,24 @@ export function tierPass(S) {
   const opened = () => S.targets.filter(it => !it.found && !it.friend && it.spot?.part).length;
   const soft = s => !tab.get(s).L0 && (tab.get(s).near || tab.get(s).around >= 1);
   const doors = R.spots.filter(s => s.part && !s.part.lock && !s.part.isLever && !s.part.device && !s.reserved && s.anchor && s.kind !== 'on' && !S.spec.avoid?.(s));   // (never into a place no view sees — hunt-blind.js)
-  for (const it of T().filter(it => tab.get(it.spot).L0).sort((a, b) => mid(a) - mid(b)).slice(keep)) {
-    const s1 = free(it, soft)[0];
+  for (const it of T().filter(it => tab.get(it.spot).L0).sort((a, b) => first(a) - first(b) || mid(a) - mid(b)).slice(keep)) {
+    const s1 = free(it, soft, true)[0];
     if (s1) { put(it, s1, 'L0→돌리면'); continue; }
-    if ((opened() + 1) * 2 > S.targets.length) break;   // (after this move at most half behind doors: 9 things → 4, not 5 — GPT QA R2-05)
-    const at = P.get(it.spot), s2 = doors.filter(s => s !== it.spot && fits(it.type, s) && affOk(it.type, s) && !s.part.wallFacing && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
-      .sort((a, b) => a.anchor.getWorldPosition(V()).distanceTo(at) - b.anchor.getWorldPosition(V()).distanceTo(at))[0];
-    if (s2) put(it, s2, 'L0→열어야');
+    const can = (opened() + 1) * 2 <= S.targets.length;   // (after this move at most half behind doors: 9 things → 4, not 5 — GPT QA R2-05)
+    const at = P.get(it.spot), dd = can ? doors.filter(s => s !== it.spot && fits(it.type, s) && affOk(it.type, s) && !s.part.wallFacing && (!s.item || (s.item.role === 'decoy' && fits(s.item.type, it.spot) && !rides(it.spot))))
+      .sort((a, b) => a.anchor.getWorldPosition(V()).distanceTo(at) - b.anchor.getWorldPosition(V()).distanceTo(at)) : [];
+    // a habit thing: behind a door at a habit place, else anywhere a turn away, else any door (as before)
+    const s2 = hab(it) && dd.find(habit);
+    if (s2) { put(it, s2, 'L0→열어야'); continue; }
+    const s3 = hab(it) && (free(it, s => L1(s) && !tab.get(s).L0)[0] || free(it, soft)[0]);
+    if (s3) { put(it, s3, 'L0→돌리면'); continue; }
+    if (!can) break;
+    if (dd[0]) put(it, dd[0], 'L0→열어야');
   }
-  if (!zero.length) { const it = T().find(x => x.spot.kind === 'on') || T()[0]; const s = it && free(it, s => tab.get(s).L0 && s.kind === 'on')[0]; if (s) put(it, s, '→L0'); }
+  // (none in sight: one comes out — one not at the habit place first)
+  if (!zero.length) { const it = T().find(x => x.spot.kind === 'on' && !hab(x)) || T().find(x => x.spot.kind === 'on') || T()[0]; const s = it && free(it, s => tab.get(s).L0 && s.kind === 'on')[0]; if (s) put(it, s, '→L0'); }
   // L1: at least two, one a turn away
-  const spare = () => T().filter(it => !tab.get(it.spot).L0 && !L1(it.spot));
+  const spare = () => T().filter(it => !tab.get(it.spot).L0 && !L1(it.spot)).sort((a, b) => hab(a) - hab(b));
   if (!T().some(it => near(it.spot))) { const it = spare()[0] || T().filter(it => L1(it.spot)).pop(); const s = it && free(it, near)[0]; if (s) put(it, s, '→L1 한 번 돌리면'); }
   while (T().filter(it => L1(it.spot)).length < 2 && spare().length) { const it = spare()[0], s = free(it, L1)[0]; if (!s) break; put(it, s, '→L1'); }
   // 2판: one on the loft quilt (or another place only seen from above)

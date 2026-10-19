@@ -177,6 +177,22 @@ export class Room {
     this.group.updateMatrixWorld(true);
     const boxes = recs.map(r => { const b = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) b.expandByObject(o); }); return b.expandByScalar(-.025); });
     const v = new THREE.Vector3();
+    // nor into this room's own walls or floor (10/19 겹침 QA: 4판 옷장 문, 11판 냉장고 문, 15판 세탁기 문, 24·25판 자판기 문
+    // swung 5–10 cm into the wall); a doorway's gap and a floor's cut-out are open; on a map, the next room's walls too
+    // (shellBoxes, set by MapRooms)
+    const inv = this.group.matrixWorld.clone().invert(), lv = new THREE.Vector3();
+    const shut = (k, along) => {
+      const kind = this.L.walls?.[k] || 'wall'; if (kind === 'none') return false;
+      if (kind !== 'door') return true;
+      const u = this.L.doorAt?.[k] ?? 0, c = k === 'E' || k === 'N' ? u : -u;
+      return Math.abs(along - c) > .58;
+    };
+    const intoShell = w => {
+      lv.copy(w).applyMatrix4(inv);
+      const hx = this.w / 2 + .02, hz = this.d / 2 + .02;
+      if ((lv.x < -hx && shut('W', lv.z)) || (lv.x > hx && shut('E', lv.z)) || (lv.z < -hz && shut('N', lv.x)) || (lv.z > hz && shut('S', lv.x))) return true;
+      return lv.y < -.03 && Math.abs(lv.x) < this.w / 2 && Math.abs(lv.z) < this.d / 2 && !this.isCut(Math.floor(lv.x + this.w / 2), Math.floor(lv.z + this.d / 2));
+    };
     recs.forEach((r, ri) => {
       for (const p of r.f.parts) {
         const t0 = p.t;
@@ -190,6 +206,7 @@ export class Room {
             for (let i = 0; i < pos.count && !hit; i += step) {
               v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
               for (let k = 0; k < boxes.length && !hit; k++) if (k !== ri && boxes[k].containsPoint(v)) hit = true;
+              if (!hit && !r.wall && (intoShell(v) || this.shellBoxes?.some(b => b.containsPoint(v)))) hit = true;
             }
           });
           if (!hit) { fit = reach; break; }

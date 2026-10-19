@@ -114,7 +114,10 @@ export class MyHomeScene {
     this.visitors = new Visitors(G, { parent: this.room.group, mong: this.mong, tw: this.tw, indoorRoom: !!ZONE_TYPES[this.zone.type].indoor,
       active: () => (this.mode === 'view' || this.mode === 'lobby') && !G.ui.panelOpen && !this.busyTut, skip: () => this.lobby ? seatedAll(this.H) : null,
       entry: () => door ? [door.x, door.z] : [-1.9, 2.1], meet: () => [this.mong.root.position.x - .8, this.mong.root.position.z - .3], say: (ch, t, ms) => this.say(ch, t, ms),
-      clear: (x, z, r) => this.room.clearAt(x, z, r), seats: () => giftSeats(G, this.room) });   // 대본: a gift is its friend's seat
+      // (10/19 겹침 QA: a visitor walked onto a friend seated in the lobby, .25 m, and then stopped .42 m from 몽글이) 몽글이 and the
+      // seated friends are in the way too — it still meets 몽글이 at its usual .85 m
+      clear: (x, z, r) => this.room.clearAt(x, z, r) && ![this.mong.root.position, ...(this.seated || []).map(s => s.ch.root.position)].some(p => Math.hypot(p.x - x, p.z - z) < r + .3),
+      seats: () => giftSeats(G, this.room) });   // 대본: a gift is its friend's seat
   }
   putItem(type, spot) {
     const g = buildItem(type, { code: this.H.hide.code || '000' });
@@ -240,8 +243,15 @@ export class MyHomeScene {
   placeFromInv(i) {
     const G = this.G, t = this.H.inventory[i], R = this.room;
     const cands = [];
-    for (let z = -R.d / 2 + .5; z <= R.d / 2 - .5; z += .5) for (let x = -R.w / 2 + .5; x <= R.w / 2 - .5; x += .5) for (const a of [0, Math.PI / 2])
-      if (R.canPlaceAt(t, x, z, a)) cands.push({ x, z, a, d: Math.hypot(x, z) + a * .05 });
+    // (10/19 겹침 QA: a gift or a star box piece was set down on 몽글이 or a seated friend) a piece's footprint and a body's
+    // width round it keep clear of them while there is room elsewhere
+    const bodies = [this.mong?.root.position, ...(this.seated || []).map(s => s.ch.root.position)].filter(Boolean);
+    const onBody = (x, z, a) => { const o = R.obb(t, x, z, a, 1); return bodies.some(p => { const px = p.x - o.x, pz = p.z - o.z, u = px * o.c - pz * o.s, v = px * o.s + pz * o.c; return Math.abs(u) < o.hw + .3 && Math.abs(v) < o.hd + .3; }); };
+    for (const keep of [true, false]) {
+      for (let z = -R.d / 2 + .5; z <= R.d / 2 - .5; z += .5) for (let x = -R.w / 2 + .5; x <= R.w / 2 - .5; x += .5) for (const a of [0, Math.PI / 2])
+        if (R.canPlaceAt(t, x, z, a) && !(keep && t !== 'rug' && onBody(x, z, a))) cands.push({ x, z, a, d: Math.hypot(x, z) + a * .05 });
+      if (cands.length) break;
+    }
     if (!cands.length) { G.ui.toast('자리가 없어! 가구를 보관함에 조금 넣어 봐', 'red'); return; }
     cands.sort((a, b) => a.d - b.d);
     const c = cands[0], id = 'f' + Date.now().toString(36) + i;

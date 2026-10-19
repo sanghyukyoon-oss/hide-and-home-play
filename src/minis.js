@@ -467,6 +467,15 @@ class Lamp {
     for (const b of spots) {
       if (this.friends.length >= this.n + this.decoys) break;
       const cc = b.getCenter(new THREE.Vector3()), p = new THREE.Vector3(cc.x + (b.max.x - cc.x) * .7, 0, cc.z - (b.max.z - cc.z) * .55);
+      // (10/19 겹침 QA: a friend stood 22 cm into the tent, 7–11 cm into a pine, a camp chair, a rock) the nearest clear floor
+      // beside the piece instead, within .9 m — else not this piece
+      const onFloor = (x, z) => rooms.some(q => { const o = q.group.position; return Math.abs(x - o.x) < q.w / 2 - .25 && Math.abs(z - o.z) < q.d / 2 - .25; }) && R.clearAt(x, z, .22);   // (clear of furniture and off the walls)
+      if (R.clearAt && !onFloor(p.x, p.z)) {
+        let q = null;
+        for (let dx = -.9; dx <= .91; dx += .1) for (let dz = -.9; dz <= .91; dz += .1) { const d = dx * dx + dz * dz; if ((!q || d < q.d) && onFloor(p.x + dx, p.z + dz)) q = { d, dx, dz }; }
+        if (!q) continue;
+        p.x += q.dx; p.z += q.dz;
+      }
       if (this.friends.some(f => f.p.distanceTo(p) < 1.2)) continue;
       const s = W.toScreen(p); if (s.x < 30 || s.x > W.W - 30 || s.y < 140 || s.y > W.H - 190) continue;
       const bad = this.friends.length >= this.n;   // after the friends: 너굴이 decoys

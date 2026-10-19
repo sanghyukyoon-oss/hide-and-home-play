@@ -5,6 +5,8 @@
 //   like:  where it belongs (ice cream in the freezer, socks in the drawers) — the planner tries these first
 // Matched on names: the item's type and the furniture's type (one table for all 70 stages; 11~70판 레벨 세션 fills in
 // its own furniture). ?aff=0 turns it off.
+import * as THREE from 'three';
+
 const ON = typeof location === 'undefined' || !/[?&]aff=0(&|$)/.test(location.search);
 
 const COLD = /^(icecream|milk|juice|bubbletea|soda|cola|popsicle|icepop|yogurt|pudding|smoothie|sundae|lemonade|drink|frozen|parfait|shake)/;
@@ -39,3 +41,18 @@ export function affinity(type, spot) {
 export const affOk = (type, spot) => affinity(type, spot) !== 'never';
 export const affLike = (type, spot) => affinity(type, spot) === 'like';
 export const isCold = type => COLD.test(type || '');
+
+// 버릇 자리 (검토 세션 10/19 P0-1, 사용자 승인: "대사가 버릇을 약속하는데 판이 안 지켜요"): the host's habit place — a furniture
+// name from its habit list (hunt.js HABIT, or the stage's own list); with habitHigh (7판 펭펭이 "비결 2번: 높은 데 숨기기!")
+// anything 1.1 m or more above the ground (a top shelf, the freezer, the whole upstairs of a two-storey house — not the
+// kitchen counter); with habitRoom k every place in room k of a map (9판: the bathroom after the bath). One test for the
+// planner and the first-screen tidy.
+const _hv = new THREE.Vector3();
+export function habitSpot(spec, room) {
+  const words = spec?.prefer?.length ? spec.prefer : null, high = !!spec?.habitHigh;
+  const area = spec?.habitRoom != null && room?.rooms?.[spec.habitRoom] ? new Set(room.rooms[spec.habitRoom].spots) : null;
+  if (!words && !high && !area) return null;
+  return x => (!!words && !!x.furn?.type && words.some(w => x.furn.type.includes(w)))
+    || (!!area && area.has(x))
+    || (high && !!x.anchor && x.anchor.getWorldPosition(_hv).y >= 1.1);
+}

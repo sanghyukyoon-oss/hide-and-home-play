@@ -218,7 +218,10 @@ export class LobbyScene extends MyHomeScene {
     this.seated = [];
     for (const f of z.friends.slice()) {
       if (!CHAR_DEFS[f.k]) { z.friends = z.friends.filter(x => x !== f); continue; }
-      if (!this.room.clearAt(f.x, f.z, .3)) { const p = this.freeSpot(f); if (!p) { this.toBox(f.k); continue; } f.x = p.x; f.z = p.z; }   // furniture moved onto the seat
+      // furniture moved onto the seat, or 몽글이 / a friend seated first stands there now (10/19 겹침 QA: 몽글이 takes the
+      // first clear spot of its own list, so new furniture moves it onto an old seat)
+      const onSomeone = [this.mong.root.position, ...this.seated.map(s => s.rec)].some(q => Math.hypot(q.x - f.x, q.z - f.z) < .6);
+      if (!this.room.clearAt(f.x, f.z, .3) || onSomeone) { const p = this.freeSpot(f); if (!p) { this.toBox(f.k); continue; } f.x = p.x; f.z = p.z; }
       this.addSeated(f);
     }
   }

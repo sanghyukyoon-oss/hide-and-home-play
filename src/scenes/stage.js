@@ -4,7 +4,7 @@ import { Room, attachItem } from '../room.js';
 import { MapRooms, FLOOR_H } from '../map.js';
 import { disposeTree, put, rbox } from '../gfx/kit.js';
 import { Ambient } from '../ambient.js';
-import { Companion } from '../companion.js';
+import { Companion, walkGrid, seenAt } from '../companion.js';
 import { BOSS_AFTER } from './boss.js';
 import { MINI_AFTER, MINI_INFO, BOSS_GAMES } from '../minis.js';
 import { BOSS_GAME_INFO } from './bossgame.js';
@@ -46,7 +46,7 @@ const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
 import { blindFor } from '../hunt-blind.js';
 import { PICKS, pickPanel, takePick, metFriends } from '../econ.js';   // 경제·로비 (10/19)
-import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac } from '../hunt.js';
+import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac, cameoKind } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
 const HABIT_BREAK = new Set([0, 29]);   // (41판 is 다람이's lever stage since v96 — no habit-breaking line there)
@@ -235,6 +235,9 @@ export class StageScene {
     if (this.spec.gray) this.setupGray();
     this.trick = new Trickster(this);
     sweepSetup(this); reelSetup(this);
+    // the start view comes first, so who stands where is chosen (and turned) for the view you start with — 몽글이 was put
+    // by the last scene's camera and could start behind a slide or a desk for the whole stage (10/19 겹침 QA: 7·12판)
+    this.frameCamera(); W.updateCam(); this.room.update?.(1);
     // the friend counting in the corner
     let fa = layout.friendAt || [1.6, 1.6];
     // never stand inside a piece of furniture: take the nearest clear spot to where the layout asked
@@ -257,6 +260,16 @@ export class StageScene {
       this.friend.root.position.set(c.x, b.max.y - .02, c.z);
       this.friend.root.rotation.y = Math.atan2(W.cam.position.x - c.x, W.cam.position.z - c.z);
       this.friend.pose = 'cross'; this.friend.setFace('angry'); this.guard = guard;
+    }
+    // (10/19 겹침 QA: 26·30판 멍뭉이 stood behind the house's wall from the start view and talked from there) a host the
+    // start view can't see at all moves to the nearest clear floor it can, 3 m at most
+    if (!guard && !custom) {
+      const roots = (this.room.rooms || [this.room]).map(R => R.group), p = this.friend.root.position, hh = this.friend.headTop?.() || .5, v = new THREE.Vector3();
+      if (!seenAt(W, v.set(p.x, p.y + hh * .45, p.z), roots) && !seenAt(W, v.set(p.x, p.y + hh * .85, p.z), roots)) {
+        const t0 = performance.now(), near = walkGrid(this.room.rooms || [this.room], .4).filter(t => !t.stair && Math.abs(t.y - p.y) < .3 && Math.hypot(t.x - p.x, t.z - p.z) < 3)
+          .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
+        for (const t of near) { if (seenAt(W, v.set(t.x, t.y + hh * .45, t.z), roots)) { p.set(t.x, t.y, t.z); break; } if (performance.now() - t0 > 150) break; }
+      }
     }
     this.spawnNpcs();
     // the player's own character walks along (not in other players' rooms)
@@ -865,6 +878,9 @@ export class StageScene {
     { const furn = it.spot.part.furn, R = (this.room.rooms || [this.room]).find(r => r.furns?.some(e => e.f === furn));   // (10/19 user: 1판 토순이 popped out toward the wall after the view was turned — out the furniture's front, into the room)
       if (R?.frontOf) { const fr = R.group.localToWorld(R.frontOf(furn).clone()), dv = new THREE.Vector3(fr.x - pc.x, 0, fr.z - pc.z); if (dv.lengthSq() > .01) d = dv.normalize(); } }
     const to = pc.clone().addScaledVector(d, .95); to.y = fy.y;
+    // (10/19 겹침 QA: 1판 토순이 came out .29 m from 몽글이, who stands in front of the hideout) onto free floor near there,
+    // a body's width from everyone else
+    { const t = this.standNear(to, f, .75, 1.3, true); if (t) to.set(t.x, to.y, t.z); }
     f.root.visible = true; f.root.position.copy(pc); f.root.scale.setScalar(.25); f.setFace('happy'); f.pose = 'cheer';
     G.audio.sfx('special'); G.hitstop(.08);
     const s = W.toScreen(pc); W.fx.burst(s.x, s.y, { n: 34, colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#ffffff'], speed: 360 }); W.fx.ring(s.x, s.y, { r: 130, color: '#ffe14d', width: 10 });
@@ -889,6 +905,26 @@ export class StageScene {
       if (this.targets.every(t => t.found)) this.win();
       else { const n = this.targets.filter(t => !t.found).length; this.say(f, `남은 물건 ${n}개도 찾아 줘!`, 2200); this.idle = 0; }
     }
+  }
+  // where everyone else stands (feet), for keeping a body's width apart (겹침 QA 10/19)
+  bodies(self = null) {
+    return [this.friend, this.hero?.ch, this.hero?.buddy, ...(this.npcs || []).map(n => n.ch), this.cameo?.ch, this.trick?.ch]
+      .filter(c => c?.root?.parent && c !== self && c.root.visible !== false).map(c => c.root.position);
+  }
+  // free floor (half-tile points clear of furniture, same level) nearest p, `gap` or more from everyone but `self`; null when
+  // there is none within `reach`; see: rather where the camera sees it (a spot behind a bin counts as .8 m further)
+  standNear(p, self = null, gap = .75, reach = 1.3, see = false) {
+    const tiles = this.hero?.tiles || (this._walk ||= walkGrid(this.room.rooms || [this.room])), B = this.bodies(self);
+    const W = this.G.world, roots = (this.room.rooms || [this.room]).map(R => R.group), v = new THREE.Vector3();
+    let best = null, bd = Infinity;
+    for (const t of tiles) {
+      if (t.stair || Math.abs((t.y || 0) - p.y) > .3) continue;
+      const d = Math.hypot(t.x - p.x, t.z - p.z); if (d > reach || d >= bd) continue;
+      if (B.some(b => Math.hypot(b.x - t.x, b.z - t.z) < gap)) continue;
+      const s = d + (see && !seenAt(W, v.set(t.x, (t.y || 0) + .3, t.z), roots) ? .8 : 0);
+      if (s < bd) { best = t; bd = s; }
+    }
+    return best;
   }
   cutFlash() { const f = h('div', { class: 'cutflash' }); document.getElementById('app').append(f); setTimeout(() => f.remove(), 260); }
   // ── 흑백판
@@ -918,9 +954,12 @@ export class StageScene {
     // level 1 (the first 흑백판) wants the peek on screen at the start; level 2 is happier hidden from the start view, as
     // long as some turn of the room shows it; never right beside the owner
     const v = this.villain, ch = v.ch, W = this.G.world, R = this.room, hp = this.friend.root.position;
+    const near = this.bodies(ch);   // (and not on 몽글이, the friend you brought or a walker — 겹침 QA 10/19)
     const boxes = (R.rooms || [R]).flatMap(r => r.furns).map(e => ({ e, b: new THREE.Box3().setFromObject(e.f.group) })).filter(o => o.b.max.y - o.b.min.y > .06);
     const cz = R.center?.z || 0, all = boxes.reduce((u, o) => u.union(o.b), new THREE.Box3());
-    const inside = R.w && R.d ? (x, z) => Math.abs(x) < R.w / 2 - .25 && Math.abs(z - cz) < R.d / 2 - .25 : (x, z) => x > all.min.x + .1 && x < all.max.x - .1 && z > all.min.z + .1 && z < all.max.z - .1;
+    // (on a map, inside one of its rooms' floors — the map's own w/d is its outer box, centred anywhere: 36판 a peeker stood
+    // 7 cm into the next room's wall — 겹침 QA 10/19)
+    const inside = R.rooms ? (x, z) => R.rooms.some(q => { const o = q.group.position; return Math.abs(x - o.x) < q.w / 2 - .25 && Math.abs(z - o.z) < q.d / 2 - .25; }) : R.w && R.d ? (x, z) => Math.abs(x) < R.w / 2 - .25 && Math.abs(z - cz) < R.d / 2 - .25 : (x, z) => x > all.min.x + .1 && x < all.max.x - .1 && z > all.min.z + .1 && z < all.max.z - .1;
     const free = (x, z, pad = .05) => inside(x, z) && !boxes.some(o => x > o.b.min.x - pad && x < o.b.max.x + pad && z > o.b.min.z - pad && z < o.b.max.z + pad);
     ch.root.scale.setScalar(.85);
     const roots = [R.group, ch.root], y0 = W.yaw, p0 = W.pitch, t0 = performance.now();
@@ -933,7 +972,7 @@ export class StageScene {
         const half = Math.abs(nx) * sz.x / 2 + Math.abs(nz) * sz.z / 2, tHalf = Math.abs(nz) * sz.x / 2 + Math.abs(nx) * sz.z / 2;
         for (const tk of [.75, -.75]) {
           const x = c.x + nx * (half + .22) + nz * tHalf * tk, z = c.z + nz * (half + .22) - nx * tHalf * tk;
-          if (!free(x, z) || Math.hypot(x - hp.x, z - hp.z) < 1.2) continue;
+          if (!free(x, z) || Math.hypot(x - hp.x, z - hp.z) < 1.2 || near.some(b => Math.hypot(b.x - x, b.z - z) < .8)) continue;
           ch.root.position.set(x, o.b.min.y, z); ch.root.rotation.y = Math.atan2(W.cam.position.x - x, W.cam.position.z - z); ch.root.updateMatrixWorld(true);
           const head = new THREE.Vector3(x, o.b.min.y + ch.headTop() * .8, z);
           const atStart = !!W.visibleAt(ch.root, head, roots), sp = W.toScreen(head);
@@ -2203,7 +2242,8 @@ export class StageScene {
     const sp = this.spec, W = this.G.world, rooms = this.room.rooms || [this.room];
     const outdoor = rooms.some(R => !!R.L.walls && !Object.values(R.L.walls).includes('door'));
     const want = sp.tut ? 0 : this.custom ? 1 : (outdoor ? 2 : (sp.idx >= 2 ? 1 : 0));
-    const fa = this.guard ? [99, 99] : (this.layout.friendAt || [1.6, 1.6]);
+    // (where the host really stands: the layout's spot is moved off furniture first — 겹침 QA 10/19)
+    const fa = this.guard ? [99, 99] : this.friend ? [this.friend.root.position.x, this.friend.root.position.z] : (this.layout.friendAt || [1.6, 1.6]);
     const free = [];
     for (const R of rooms) {
       const occ = R.occupied(), o = R.group.position;
@@ -2238,7 +2278,9 @@ export class StageScene {
     }
     if (free.length < 3 || !want) return;
     const seed = (sp.seed || 1) >>> 0;
-    const pool = (NPC_POOL[sp.region] || NPC_POOL.home).filter(k => k !== this.th.friend && CHAR_DEFS[k]);
+    // (not the friend peeking from behind something later, nor the friend you bring: 19판 곰돌이, 26판 투덜이 stood there twice — 겹침 QA 10/19)
+    const peek = this.hunt ? cameoKind(this.idx) : null, buddy = this.G.save.hero;
+    const pool = (NPC_POOL[sp.region] || NPC_POOL.home).filter(k => k !== this.th.friend && k !== peek && k !== buddy && CHAR_DEFS[k]);
     const taken = new Set();
     for (let k = 0; k < want && pool.length; k++) {
       const kind = pool[(seed + k * 3) % pool.length]; pool.splice(pool.indexOf(kind), 1);
@@ -2263,7 +2305,7 @@ export class StageScene {
       n.rest -= .25; if (n.rest > 0) continue;
       // (10/19 user: "어이없이 겹친 거" — a walker stepped onto 몽글이, who stays put since v144) not within .75 m of 몽글이, the friend
       // you brought or the host
-      const bodies = [this.hero?.ch, this.hero?.buddy, this.friend?.root.visible ? this.friend : null].filter(Boolean).map(c => c.root.position);
+      const bodies = [this.hero?.ch, this.hero?.buddy, this.friend?.root.visible ? this.friend : null, this.cameo?.ch, this.villain?.hide ? this.villain.ch : null].filter(Boolean).map(c => c.root.position);   // (and the peeking friend, 먹물이 in hiding — 겹침 QA 10/19: 13판 a walker .35 m from the peeker)
       const nb = free.filter(t => t.R === n.t.R && Math.abs(t.i - n.t.i) + Math.abs(t.j - n.t.j) === 1 && !this.npcs.some(o => o !== n && (o.t === t || o.next === t))
         && !bodies.some(b => Math.hypot(b.x - t.x, b.z - t.z) < .75)
         && t.R.clearAt((t.x + n.t.x) / 2, (t.z + n.t.z) / 2, .32));   // and the way between is clear too

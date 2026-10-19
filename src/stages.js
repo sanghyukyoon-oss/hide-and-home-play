@@ -1,4 +1,4 @@
-import { affOk, affLike, isCold } from './affinity.js';   // 물건마다 나올 법한 자리 (10/19)
+import { affOk, affLike, isCold, habitSpot } from './affinity.js';   // 물건마다 나올 법한 자리 (10/19)
 import * as THREE from 'three';
 // Room themes, hand-placed layouts, stage specs and a seeded planner that hides targets / keys / decoys.
 import { rng } from './util.js';
@@ -408,7 +408,9 @@ export const MAPS = {
     const up = { ...THEMES.my, wallKind: 'wood', wall: '#ffe3cf', wall2: '#f7c9a8', wainscot: '#e9a37a', trim: '#fff8ee', floorKind: 'planks', floor: '#f1cd9c', floor2: '#ddb07a', clad: '#fff3e2', roof: '#7a5f9e', roof2: '#9a80bf' };
     return { theme: THEMES.alleyhouse, friendAt: [-2.5, 1.5], nBonus: 3, fitAll: true, rooms: [
       { at: [-3.5, 0], level: 0, layout: { w: 4, d: 7, theme: yard, walls: { N: 'alleywall', W: 'alleywall', S: 'none', E: 'none' },
-        furniture: [F('jangdok', 0, 0), F('garden', 2, 0), F('catfeeder', 3, 1), F('daeya', 0, 2), F('clothesline', 1, 2), F('pyeongsang', 0, 4), F('bike', 2, 6), F('trashbags', 0, 6)],
+        // (10/19 겹침 QA, 26·30판: the 텃밭 stood right behind the gate — its doors opened into it — and the 급식소 stood
+        // 10 cm into the house's wall) both moved to free tiles of the yard
+        furniture: [F('jangdok', 0, 0), F('garden', 2, 4), F('catfeeder', 1, 1), F('daeya', 0, 2), F('clothesline', 1, 2), F('pyeongsang', 0, 4), F('bike', 2, 6), F('trashbags', 0, 6)],
         decor: [D('gate', 'N', 1.0), D('mailbox', 'W', 1.0)] } },
       { at: [2, 0], level: 0, layout: { w: 7, d: 7, theme: down, wallH: 2.9, timber: true, walls: { W: 'door' }, doorAt: { W: 1.0 },
         furniture: [F('stairsup', 6, 3), F('kimchifridge', 0, 0), F('counter', 1, 0, 0, { variant: 'stove' }), F('counter', 2, 0), F('dishcab', 3, 0), F('fridge', 4, 0), F('bookshelf', 5, 0, 0, { seed: 51 }), F('plant', 6, 0),
@@ -481,11 +483,12 @@ export const STAGES = [
   { room: 'bunny', n: 4, inside: 2, behind: 0, time: 70, tut: 2, clutter: .5 },
   { room: 'fishing', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },
   { room: 'peng', n: 5, inside: 1, behind: 0, time: 85, clutter: .5 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 5 things + 2 grey furniture — the first 흑백
-  { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4 },   // the key lesson (🆕 열쇠 card on the first padlock)
+  { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4, habitMore: true, habit: ['kotatsu', 'table', 'zabuton', 'sofa', 'tvlow', 'recordcab', 'fridge', 'kitchen', 'counter', 'snack'] },   // (곰돌이: "손님 주려고 숨겨 놨는데" — by the food, 검토 P0-1)   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3, lockOn: { pad: ['dishcab'] } },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
-  { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, zoom: 1.4 },
+  { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, zoom: 1.4, habitHigh: true },   // (펭펭이 "비결 2번: 높은 데 숨기기!" — up high, every other thing as on any stage: the upstairs alone already holds half the house, 검토 P0-1)
   { room: 'house3', n: 6, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .3, zoom: 1.4, kit: 'robot', lockOn: { pad: ['wardrobe'] } },   // 프라모델 조립판 (10/19, 스토리 룸·레벨 세션 합의): 곰돌이가 어릴 때 못 맞춘 꼬마 로봇 — 부품 6개, 머리는 잠긴 상자 속(열쇠 세 번째), 함정 절반 (modelkit.js)
-  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6, zoom: 1.25 },   // (then 이불 속 누구게 — the pajama party)
+  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
+    habitRoom: 1, habit: ['bed', 'futon', 'pillow', 'zabuton', 'catbed'], clueOn: { pad: ['plant'] }, clueRoom: 1 },   // ("목욕 끝! …내 물건 다 어디 갔지?" — the bathroom and the bed; one in the tub by the bubbles; the key in the bathroom where the first view reaches, its plant by the door — 검토 P0-1·P1-4)   // (then 이불 속 누구게 — the pajama party)
   { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55 },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .65 },
   { room: 'study', n: 4, inside: 1, behind: 0, time: 110, clutter: .5, showcase: true },   // 비밀 서재 ★ — the chapter's finale (friend game)
@@ -968,6 +971,7 @@ export function planStage(room, spec, story = null) {
     // (never on the very piece it opens: 8판's key sat on top of its own wardrobe — 1~10판 레벨 세션 10/19)
     const away = x => (x.furn || x.part?.furn) !== L.part.furn;
     const cs = (spec.clueIn?.[L.kind] && take(x => x.furn.type === spec.clueIn[L.kind] && x.part && !inLocked(x), chainType))
+      || (spec.clueOn?.[L.kind] && take(x => !inLocked(x) && x.kind === 'on' && away(x) && (spec.clueRoom == null || !!room.rooms?.[spec.clueRoom]?.spots.includes(x)) && spec.clueOn[L.kind].some(w => (x.furn?.type || '').includes(w)), chainType))   // (9판: the key in the bathroom, by the plant at its door — 검토 P1-4)
       || (spec.ho && take(x => !inLocked(x) && x.kind === 'on' && away(x), chainType))   // 숨은그림 판: a key / note / card is where you can see it
       || take(x => !inLocked(x) && x.kind !== 'on' && away(x), chainType) || take(x => !inLocked(x) && away(x), chainType) || take(x => !inLocked(x), chainType);
     if (cs) placements.push({ type: chainType, spot: cs, role, code: L.code, forPart: L.part });
@@ -977,21 +981,29 @@ export function planStage(room, spec, story = null) {
   const want = { inside: spec.inside || 0, behind: spec.behind || 0 };
   // 숨은그림 판 (10/18): about half the things go where the host would put them (곰돌이 by food, 개굴이 by water…) —
   // knowing the friend helps you look ("이 친구라면 여기 숨겼겠지")
-  const habit = spec.prefer?.length ? x => !!x.furn?.type && spec.prefer.some(w => x.furn.type.includes(w)) : null;
+  room.group.updateMatrixWorld(true);
+  const habit = habitSpot(spec, room);   // (affinity.js: by name, 7판's 'high up', 9판's bathroom)
   // 숨은그림 판: one thing to open per piece of furniture (emptying a chest of drawers isn't looking), and the first
   // free find in plain sight (a first success inside 10 s)
   const furnUsed = new Set(), fk = x => x.furn || x.part?.furn;
   const okIn = x => !spec.ho || !furnUsed.has(fk(x));
   let firstFree = !!spec.ho;
+  // (9판: one thing waits in the tub by the bubbles — 몽글이's "…거품 속에." is the one line that names a place; 스토리 룸 10/19)
+  if (spec.sureIn) for (let k = ti; k < targets.length; k++) {
+    const s = take(x => x.kind === 'inside' && x.furn?.type === spec.sureIn && x.part && !lockedParts.has(x.part) && !x.part.wallFacing, targets[k]);
+    if (!s) continue;
+    [targets[ti], targets[k]] = [targets[k], targets[ti]]; placements.push({ type: targets[ti++], spot: s, role: 'target' });
+    want.inside = Math.max(0, want.inside - 1); partsUsed.add(s.part); furnUsed.add(fk(s)); break;
+  }
   placingTarget = true;
   for (; ti < targets.length; ti++) {
     const type = targets[ti];
     let s = null;
-    if (firstFree) { firstFree = false; s = take(x => x.kind === 'on', type); }
+    if (firstFree) { firstFree = false; s = (spec.habitMore && habit && take(x => x.kind === 'on' && habit(x), type)) || take(x => x.kind === 'on', type); }
     // (10/19 user: "아이스크림·음료수는 냉장고에서 나올 확률을 높여"): a cold thing goes into a fridge, freezer or cooler when the
     // room has a free one — within the stage's count of things to open (past it, 25판 had 5 of 9 behind doors: GPT QA R2-05)
     if (!s && isCold(type) && want.inside > 0) { s = take(x => x.kind === 'inside' && x.part && !lockedParts.has(x.part) && !partsUsed.has(x.part) && affLike(type, x), type); if (s) { want.inside = Math.max(0, want.inside - 1); partsUsed.add(s.part); furnUsed.add(fk(s)); } }
-    if (!s && habit && ti % 2 === 0) {
+    if (!s && habit && (spec.habitMore || ti % 2 === 0)) {   // (5·7·9판: every thing tries the habit place first — the line promises it)
       // the habit place, out in the open first; inside only while there are things left to open
       s = take(x => habit(x) && x.kind !== 'inside' && (spec.ho ? x.kind === 'on' || want.behind > 0 : true), type)
         || (want.inside > 0 && take(x => habit(x) && x.kind === 'inside' && !(x.part && lockedParts.has(x.part)) && !(x.part && partsUsed.has(x.part)) && okIn(x), type));
@@ -1041,10 +1053,10 @@ export function planStage(room, spec, story = null) {
 // 너굴이's timed stages (no 톡 there); the laundromat's odd socks are the pair puzzle, not decoys. Runs on the finished plan.
 export const decoyCap = n => Math.max(6, Math.round(n * 1.5));
 export function capDecoys(plan, spec) {
-  if (!plan || spec.gray || spec.timed || spec.tut <= 2 || spec.custom) return 0;
+  if (!plan || spec.gray || spec.timed || spec.tut === 1 || spec.custom) return 0;   // (2판 counts too: 8 decoys round 4 things was double — 검토 P1-3)
   // (1~10판은 찾을 것 수만큼, 6 밑으로는 안 내려감 — 6~9판에 확대·두 칸 맵·함정 두 배가 한꺼번에 와서 1장에서 제일 빡빡했어요;
   // 검토 세션 실측 + 사용자 승인 10/19, 1~10판 레벨 세션)
-  const n = plan.targets.length, cap = (spec.idx ?? -1) >= 0 && spec.idx < 10 ? Math.max(6, n) : decoyCap(n);   // (1~10판; 11판부터는 그대로)
+  const n = plan.targets.length, cap = spec.tut === 2 ? n : (spec.idx ?? -1) >= 0 && spec.idx < 10 ? Math.max(6, n) : decoyCap(n);   // (1~10판; 11판부터는 그대로)
   const dec = plan.placements.filter(p => p.role === 'decoy' && p.type !== 'sockp');
   if (dec.length <= cap) return 0;
   const drop = new Set(rng((spec.seed || 1) + 4241).shuffle(dec.slice()).slice(cap));

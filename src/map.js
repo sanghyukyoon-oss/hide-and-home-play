@@ -33,6 +33,11 @@ export class MapRooms {
       room.level = r.level || 0; room.at = r.at;
       this.group.add(room.group); this.rooms.push(room);
     }
+    // a door or lid in one room must not swing into the next room's wall either (10/19 겹침 QA: 36·40판 세탁기 문, 54·59판
+    // 이끼 뭉치 went 8 cm into the neighbour's wall): each room fits its parts again with the other rooms' wall pieces
+    this.group.updateMatrixWorld(true);
+    const wallBoxes = R => Object.values(R.walls).flatMap(Wl => { const out = []; Wl.body.traverse(o => { if (o.isMesh) out.push(new THREE.Box3().setFromObject(o).expandByScalar(-.02)); }); return out; }).filter(b => !b.isEmpty());
+    for (const R of this.rooms) { R.shellBoxes = this.rooms.filter(q => q !== R && q.level === R.level).flatMap(wallBoxes); if (R.shellBoxes.length) R.fitParts(); }
     // one cake slab per ground-level block of rooms (upper floors bring their own thin slab)
     const box = this.box = new THREE.Box3();
     for (const R of this.rooms) {
