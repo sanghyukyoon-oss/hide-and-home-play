@@ -15,6 +15,7 @@ import { Char, CHAR_DEFS, defineChar } from '../gfx/chars.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
 import { h } from '../ui.js';
 import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
+import { giftRow } from '../gift.js';   // 놀이 보상: 누가, 왜 주는지 (경제·로비 10/19)
 import { Tweens, clamp } from '../util.js';
 import { walkGrid, gridPath, nearestTile, crossOK } from '../companion.js';
 import { Ambient } from '../ambient.js';
@@ -392,7 +393,7 @@ export class BossScene {
     G.stats.log.push({ boss: this.tier + 1, result: 'win', left });
     setTimeout(() => !this.dead && G.ui.panel({ title: '보물 지키기 성공!', color: 'green',
       body: [h('div', { class: 'tslots end' }, ...this.treasures.map(t => h('div', { class: 'tslot ' + (t.lost ? 'lost' : 'hidden') }, h('img', { src: G.thumbs['item_' + t.type] })))),
-        h('div', { class: 'txt' }, `보물 ${left}개를 지켰어!`), h('div', { class: 'reward' }, G.playMode ? '연습이라 코인은 없어' : `코인 +${coins}`), ...(first ? [h('div', { class: 'txt' }, '다음 너굴이는 코가 더 좋아질 거야…!')] : [])],
+        ...(G.playMode ? [] : [giftRow(G, 'treasure')].filter(Boolean)), h('div', { class: 'txt' }, `보물 ${left}개를 지켰어!`), h('div', { class: 'reward' }, G.playMode ? '연습이라 코인은 없어' : `코인 +${coins}`), ...(first ? [h('div', { class: 'txt' }, '다음 너굴이는 코가 더 좋아질 거야…!')] : [])],
       buttons: [this.nextBtn = G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', { idx: this.after + 1 }) })] }), 1200);
     if (lens) setTimeout(() => !this.dead && G.ui.panelOpen?.querySelector('.reward')?.after(lensPlus()), 1200);   // ("+ 돋보기 1" under the coins; same delay, so right after that panel)
   }

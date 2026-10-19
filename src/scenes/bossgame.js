@@ -8,6 +8,7 @@ import { followupAt, settleFollowup, clearFollowupFinish } from '../followup.js'
 import * as THREE from 'three';
 import { h } from '../ui.js';
 import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
+import { giftCard, giftKey } from '../gift.js';   // 놀이 보상 카드 (경제·로비 10/19)
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { ITEMS, buildItem } from '../gfx/items.js';
 import { renderThumbs } from '../thumbs.js';
@@ -132,8 +133,10 @@ export class BossGameScene {
     const reward = settleFollowup(G, followupAt(this.after), { coins: this.interlude ? 40 + st * 15 : 150 + st * 30, won: true, replayWin: true });
     const coins = reward.coins, lens = reward.lens;   // 경제 B5 (10/19): a won 놀이 / boss → a magnifier into the bag (not in practice)
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
-    G.ui.toast(G.playMode ? (this.interlude ? '쉬어가기 성공! (연습)' : '보스 클리어! (연습)') : this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');   // (practice pays nothing — QA N5)
-    if (lens) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
+    // (10/19, user: "미니게임에서 뭐 리워드를 줘야지"): the reward is a card after the game's own end panel (finish), not a toast
+    if (G.playMode || G.bot) G.ui.toast(G.playMode ? (this.interlude ? '쉬어가기 성공! (연습)' : '보스 클리어! (연습)') : this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
+    else this.reward = { coins, lens, st };   // (practice pays nothing — QA N5)
+    if (lens && (G.playMode || G.bot)) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
   }
   // an interlude lost: still on to the next stage, with a small reward
   pass() {
@@ -163,6 +166,9 @@ export class BossGameScene {
         if (await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0) return G.go('myhome');
       }
     }
+    // the reward card: who gives it and why (the first win only), the stars, the coins, the magnifier — then the next stage
+    // (never before the ending: the last 야식 goes to the ending room above and returns before this — 스토리 룸 10/19)
+    if (this.won && this.reward && !G.playMode && !G.bot) { const R = this.reward; this.reward = null; await giftCard(G, { key: giftKey(this.kind, this.lv), title: this.interlude ? '쉬어가기 성공!' : '보스 클리어!', ...R }); if (this.dead) return; }
     clearFollowupFinish(G, this.after);
     G.go('stage', { idx: this.after + 1 });
   }

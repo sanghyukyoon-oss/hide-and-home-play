@@ -13,6 +13,7 @@ import { spinePuzzle } from '../showcase.js';
 import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js';
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
 import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, lensClear } from '../lens.js';   // 돋보기 가방 (경제 B5, G.econ only, 10/19)
+import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
@@ -25,6 +26,7 @@ import { Trickster } from '../trickster.js';
 import { sweepSetup, sweepUpdate } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
+import { closeUp, closeBack } from '../closeup.js';   // 말할 때·끝날 때 카메라 (10/19)
 import { armFtap } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
 import { shown as isShown } from '../world.js';
@@ -683,6 +685,7 @@ export class StageScene {
     const onLine = L => {
       opts.onLine?.(L);
       const ch = this.charFor(L.who); if (ch) ch.faceTo?.(W.cam.position.x, W.cam.position.z);
+      if (opts.cam && ch) closeUp(this, ch);   // (10/19) an end-of-stage talk: the camera comes to whoever speaks
     };
     try { await playDialog(G, lines, { ...opts, onLine }); }
     finally { this.talking = false; app.classList.remove('cine'); }
@@ -805,6 +808,7 @@ export class StageScene {
     it.slot?.classList.add('found', 'bump');
     await tw.run(.6, k => { f.root.position.lerpVectors(pc, to, k); f.root.position.y = pc.y + (to.y - pc.y) * k + Math.sin(k * Math.PI) * .7; f.root.scale.setScalar(.25 + .75 * Math.min(1, k * 1.7)); });
     f.faceTo(W.cam.position.x, W.cam.position.z);
+    closeUp(this, f);   // (10/19 "등장하거나 말하는 경우 카메라를 잘 잡아 줘야지") in on the friend who popped out, while the room lights up
     this.tail?.mesh.parent?.remove(this.tail.mesh); this.tail = null;   // 1판: the tail goes back in with her
     // the room lights up: out of the dark, or a warm glow over the day
     const to2 = this.th.light || null, a0 = W.hemi.intensity, s0 = W.sun.intensity;
@@ -813,8 +817,9 @@ export class StageScene {
     W.fx.confetti(70);
     await tw.wait(.9);
     // 대본: the host says what was really going on — once, after the pop-out (no bubble + dialog twice, no stock "next room" ad)
-    if (!this.dead && !this.result && !G.skipTalk && !G.bot) await this.talk(incidentReveal(this.idx, this.th.friend), { title: this.th.name });   // (not over a fail panel — QA 10/18)
+    if (!this.dead && !this.result && !G.skipTalk && !G.bot) await this.talk(incidentReveal(this.idx, this.th.friend), { title: this.th.name, cam: true });   // (not over a fail panel — QA 10/18)
     if (!this.result && !this.dead) {
+      if (this.targets.some(t => !t.found)) closeBack(this);   // things still to find: back to where you were
       if (this.v2) return v2AfterFound(this);
       // the friend is found, but the stage ends only when everything is (user, 10/18: "캐릭터 찾으면 나머지 물건 안 찾아도
       // 깨지는 거 ㅈ같다니까") — the friend stays out and asks for the rest
@@ -909,6 +914,7 @@ export class StageScene {
     G.audio.sfx('found', this.found); G.ui.floatText(s.x, s.y - 60, INKY_FOUND, 'gold big');
     this.say(ch, inkyCaught(this.idx), 1600);   // 대본: …앗. → …또 들켰다.
     ch.setFace('wow'); ch.bump(.5); ch.faceTo(W.cam.position.x, W.cam.position.z);
+    closeUp(this, ch);   // (10/19, 스토리 룸) in on 먹물이's "…앗."; back out to the wide view as it bolts (inkyBolt)
     this.hero?.react('find', c, this.tw);
     if (this.feelHelp && this.targets.every(t => t.found)) this.lastOneFx();
     this.tnum.textContent = `${this.found}/${this.targets.length}`; this.tbarI.style.width = (this.found / this.targets.length * 100) + '%';
@@ -934,7 +940,7 @@ export class StageScene {
     const perp = new THREE.Vector3(-dir.z, 0, dir.x), len = p0.distanceTo(away), rot = Math.atan2(dir.x, dir.z);
     const COLS = ['#ff8fb8', '#ffe14d', '#8fd3f4', '#9be38f', '#c9a0ff'];
     let last = 0, n = 0;
-    return tw.wait(1.1).then(() => { ch.setFace('angry'); ch.root.rotation.y = rot; return tw.run(.7, k => {
+    return tw.wait(1.1).then(() => { if (!this.result) closeBack(this); ch.setFace('angry'); ch.root.rotation.y = rot; return tw.run(.7, k => {
       ch.root.position.lerpVectors(p0, away, k); ch.root.position.y = p0.y + Math.abs(Math.sin(k * Math.PI * 4)) * .18; ch.root.scale.setScalar(1 - .6 * k);
       for (const d = k * len; d - last > .28;) { last += .28; const q = p0.clone().addScaledVector(dir, last).addScaledVector(perp, (n % 2 ? -1 : 1) * .07); if (inside(q)) this.footprint(q, COLS[n % COLS.length], rot); n++; }
     }, ease.inQuad); }).then(() => { ch.root.visible = false; });
@@ -2087,6 +2093,8 @@ export class StageScene {
     W.fx.confetti(130);
     this.bubble.style.display = 'none';
     const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);
+    // (10/19) the camera comes in on the friend cheering — or on 먹물이 saying "…앗." first; it goes back out when 먹물이 bolts
+    if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch); else closeUp(this, f);
     if (!this.incident && !this.hiddenStage) this.say(f, this.model ? this.model.cheer : '우와! 다 찾았네!', 1800);   // (사건 판: the host has just had their say; 숨은그림 판: its closing talk starts with it)
     for (const n of this.npcs || []) { if (n === this.villain) continue; n.on = false; n.ch.pose = 'cheer'; n.ch.setFace('happy'); n.ch.faceTo(W.cam.position.x, W.cam.position.z); n.ch.bump(.4); }
     // 먹물이 loses: a sulk, then it bolts off the edge of the room and is gone
@@ -2096,16 +2104,16 @@ export class StageScene {
       ch.setFace('angry');
       const p0 = ch.root.position.clone(), away = p0.clone().add(new THREE.Vector3(p0.x >= 0 ? 4 : -4, 0, p0.z >= 0 ? 3 : -3));
       ch.root.rotation.y = Math.atan2(away.x - p0.x, away.z - p0.z);
-      this.tw.wait(1.1).then(() => this.tw.run(.7, k => { ch.root.position.lerpVectors(p0, away, k); ch.root.position.y = p0.y + Math.abs(Math.sin(k * Math.PI * 4)) * .18; ch.root.scale.setScalar(1 - .6 * k); }, ease.inQuad)).then(() => { ch.root.visible = false; });
+      this.tw.wait(1.1).then(() => { closeBack(this); return this.tw.run(.7, k => { ch.root.position.lerpVectors(p0, away, k); ch.root.position.y = p0.y + Math.abs(Math.sin(k * Math.PI * 4)) * .18; ch.root.scale.setScalar(1 - .6 * k); }, ease.inQuad); }).then(() => { ch.root.visible = false; });
       }
     }
     this.setMong('happy', 'hop');
     // one new thing to hide at home, on the first clear — given BEFORE the progress is saved, so a page closed in the
     // next second can't keep the cleared stage and lose the thing (GPT QA 10/18)
-    let newItem = null, seenN = 0;
+    let newItem = null, seenN = 0, seenNew = [];
     // 경제·로비 on: no thing given per stage any more — what you found goes into the card book (save.seen); things to hide
     // come from the shop's 물건 tab and 하나 슬쩍 (설계서 4-1)
-    if (G.econ && !this.preview && !this.custom) { const seen = G.save.seen || (G.save.seen = []), add = [...new Set(this.targets.map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !seen.includes(t)); seen.push(...add); seenN = add.length; }
+    if (G.econ && !this.preview && !this.custom) { const seen = G.save.seen || (G.save.seen = []), add = [...new Set(this.targets.map(t => t.type))].filter(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !seen.includes(t)); seen.push(...add); seenN = add.length; seenNew = add; }
     else if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
     // 경제 B5 (10/19): no free magnifier used → one into the bag (not a preview / model kit, not testing my own room)
     const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this) : null;
@@ -2130,7 +2138,7 @@ export class StageScene {
       if (k && !got.includes(k)) { got.push(k); newFriend = k; G.persist(); }
     }
     if (this.story) {
-      if (this.story.outro) await this.talk(this.story.outro);
+      if (this.story.outro) await this.talk(this.story.outro, { cam: true });
       if (this.dead) return;
       const done = G.save.storyDone || (G.save.storyDone = {});
       if (this.story.reward && !done[this.story.id]) {
@@ -2157,7 +2165,7 @@ export class StageScene {
       for (const l of aft) { if (pick.size >= 2) break; pick.add(l); }
       endLines = aft.filter(l => pick.has(l)); aft = null;
     }
-    if (aft && !G.skipTalk && !G.bot) { await this.talk(aft); if (this.dead) return; }
+    if (aft && !G.skipTalk && !G.bot) { await this.talk(aft, { cam: true }); if (this.dead) return; }
     // 경제·로비 on: a chapter's last stage, the first time — its box: one of three pieces (설계서 4-2)
     let picked = null;
     if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) {
@@ -2192,7 +2200,7 @@ export class StageScene {
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
         ...(picked ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · 꾸미기 보관함에 들어갔어`)))] : []),
-        ...(seenN ? [h('div', { class: 'txt' }, `도감 +${seenN}`)] : []),
+        ...(seenN ? [seenRow(G, seenNew)] : []),   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
         ...(newFriend ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
