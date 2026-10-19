@@ -40,9 +40,9 @@ const LEVELS = [
     route: [TW(0, 1), TW(6, 1)] },
   // 둘째 밤 — mom walks the house ("누가 안 자니~?"): her eyes move with her. The kitchen is on the west wall now, your door
   // on the north wall; you cross the house while she paces between the living room and the dining table
-  { name: '둘째 밤', sub: '엄마가 집 안을 순찰 중', mode: 'patrol', half: 46, range: 4.6, tel: .9, busy: [3, 5], look: [1.4, 2.1], fake: 0, tv: { half: 26, range: 1.6 },
+  { name: '둘째 밤', sub: '엄마가 집 안을 순찰 중', mode: 'patrol', half: 46, range: 4.6, tel: .9, checkT: 4.5, momWalk: .85, busy: [3, 5], look: [1.4, 2.1], fake: 0, tv: { half: 26, range: 1.6 },
     mom: { at: [2.5, 1.0], y: 0, busyYaw: -Math.PI / 2 },
-    patrol: { pts: [[2.5, 1.0], [-.9, 1.0]], speed: .72, pause: [1.3, 2.1], lines: ['누가 안 자니~?', '흠흠~ 문단속 했나?', '몽글이 자나…?'] },
+    patrol: { pts: [[2.5, 1.0], [-.9, 1.0]], speed: .62, pause: [1.5, 2.3], peek: .2, lines: ['누가 안 자니~?', '흠흠~ 문단속 했나?', '몽글이 자나…?'] },
     decor: [D('door', 'N', 2.3), D('catclock', 'N', -.4), D('window', 'N', .9), D('wallshelf2', 'W', .5)],
     zones: [{ i: 0, j: 0, w: 2, d: 5, kind: 'checker', a: '#fffaf0', b: '#cfe8d6' }],
     furniture: [F('snackcart', 0, 0, 1), F('counter', 0, 1, 1, { variant: 'stove' }), F('counter', 0, 2, 1), F('kimchifridge', 0, 3, 1), F('bigfridge', 0, 4, 1),
@@ -534,7 +534,7 @@ export class Game {
         if (d <= st) {
           p.x = t[0]; p.z = t[1]; this.wi = (this.wi + 1) % P.pts.length;
           this.mState = 'pause'; this.mT = rnd(P.pause); this.pauseYaw = this.momYaw; this.sweep0 = this.t;
-          if (Math.random() < .35) this.startHmm();   // now and then a real look round (the red preview first)
+          if (Math.random() < (P.peek ?? .35)) this.startHmm();   // now and then a real look round (the red preview first)
           else if (Math.random() < .5) this.msay(P.lines[Math.floor(Math.random() * P.lines.length)], 1300, 'think');
         } else { p.x += dx / d * st; p.z += dz / d * st; turnTo(Math.atan2(dx, dz), dt * 7); this.mom.lift = Math.abs(Math.sin(this.t * 8)) * .035; }
         break;
@@ -558,12 +558,12 @@ export class Game {
       case 'walk': case 'walkback': {
         const path = this.lure.path, p = this.mom.root.position;
         if (!path.length) {
-          if (this.mState === 'walk') { this.mState = 'check'; this.mT = CHECK_T; this.msay('누가 켰지…?', 1400, 'think'); }
+          if (this.mState === 'walk') { this.mState = 'check'; this.mT = LV.checkT || CHECK_T; this.msay('누가 켰지…?', 1400, 'think'); }
           else if (this.mode === 'patrol') { this.lure = null; this.toBase(); }   // back on her round
           else { this.mState = 'sit'; this.mT = .5; }
           break;
         }
-        const t = path[0], dx = t.x - p.x, dz = t.y - p.z, d = Math.hypot(dx, dz), st = MOM_WALK * dt;
+        const t = path[0], dx = t.x - p.x, dz = t.y - p.z, d = Math.hypot(dx, dz), st = (LV.momWalk || MOM_WALK) * dt;
         if (d <= st) { p.x = t.x; p.z = t.y; path.shift(); } else { p.x += dx / d * st; p.z += dz / d * st; turnTo(Math.atan2(dx, dz), dt * 10); }
         this.mom.lift = Math.abs(Math.sin(this.t * 9)) * .04;
         break;
@@ -595,6 +595,9 @@ export class Game {
     // she looks toward where the sound came from (roughly where you are), never quite straight at you
     const p = this.pos;
     this.lookYaw = this.yawTo(p.x, p.y) + (Math.random() - .5) * .5;
+    // on her round (둘째 밤) a quiet "흠…?" is a look round, not a look at you: somewhere ahead and to a side (only a noise
+    // turns her straight to you) — 10/19: a slow bot kept getting caught in the one gap she always looked through
+    if (this.mode === 'patrol' && !urgent) this.lookYaw = this.momYaw + (Math.random() < .5 ? -1 : 1) * (.5 + Math.random() * .9);
     if (this.mode === 'doze') this.sleepFace(false);
     this.mom.setFace('sus'); this.msay(this.mode === 'doze' ? '흠냐…?!' : '흠…?', Math.max(700, this.telDur * 1000), 'think');
     L.audio.sfx('hmm');
