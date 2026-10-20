@@ -1034,7 +1034,9 @@ export class StageScene {
       f.pose = 'cheer'; G.audio.sfx('special'); G.hitstop(.08);
       const s = W.toScreen(out.clone().setY(out.y + .5)); W.fx.burst(s.x, s.y, { n: 26, colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#ffffff'], speed: 300 }); W.fx.ring(s.x, s.y, { r: 110, color: '#ffe14d', width: 9 });
     } else {
-    f.root.visible = true; f.root.position.copy(pc); f.root.scale.setScalar(.25); f.setFace('happy'); f.pose = 'cheer';
+    // (10/20, user on the phone: "토순이 찾아서 나올 때도 뭔가 뒤로 나옴") she still faced into the hideout from hiding (friendHides):
+    // she comes out facing you
+    f.root.visible = true; f.root.position.copy(pc); f.root.scale.setScalar(.25); f.setFace('happy'); f.pose = 'cheer'; f.faceTo(W.cam.position.x, W.cam.position.z);
     G.audio.sfx('special'); G.hitstop(.08);
     const s = W.toScreen(pc); W.fx.burst(s.x, s.y, { n: 34, colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#ffffff'], speed: 360 }); W.fx.ring(s.x, s.y, { r: 130, color: '#ffe14d', width: 10 });
     it.slot?.classList.add('found', 'bump');
