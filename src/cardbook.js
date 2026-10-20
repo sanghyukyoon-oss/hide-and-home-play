@@ -124,11 +124,12 @@ function zoom(c, G) {
   layer.addEventListener('pointermove', e => tilt(e.clientX, e.clientY));
   layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target) || diary?.contains(e.target)) return; if (!card.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });
   for (const ev of ['pointerup', 'wheel']) layer.addEventListener(ev, e => e.stopPropagation());
-  G.audio.sfx('special');
+  G.audio.sfx('flip');   // (a card picked up — paper flip, 사운드 10/20)
   document.getElementById('app').append(layer);
 }
 
 export function openCardBook(G, tab = 'friends') {
+  G.audio?.sfx?.('flip');   // (the book opens / a tab turns — 사운드 10/20)
   const cards = tab === 'learned' ? [] : tab === 'items' ? itemCards(G) : friendCards(G);
   if (cards.some(c => c.have && !ART[c.art])) G.ui.toast('카드 인쇄 중…', '');
   // let the toast paint, then print the cards (a short pause on first open per tab)

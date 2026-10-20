@@ -838,10 +838,10 @@ export class StageScene {
     // and shuts behind her — so you see *where* she went in, and that it is a thing that opens
     const lid = typeof part.setOpen === 'function' && ['lid', 'door', 'drawer', 'lift'].includes(part.kind) && !part.lock;
     const jump = tw.run(.75, k => { f.root.position.lerpVectors(from, pc, k); f.root.position.y = from.y + (pc.y - from.y) * k + Math.abs(Math.sin(k * Math.PI * 2)) * .35; f.root.scale.setScalar(1 - .75 * Math.max(0, k - .6) / .4); });
-    if (lid) { await tw.wait(.25); G.audio.sfx(part.sfx || 'open'); await tw.run(.25, k => part.setOpen(k), ease.outCubic); }
+    if (lid) { await tw.wait(.25); G.audio.sfxPart(part, part.sfx || 'open'); await tw.run(.25, k => part.setOpen(k), ease.outCubic); }
     await jump;
     f.root.visible = false; this.friendHidden = true;
-    if (lid) { await tw.wait(.1); await tw.run(.22, k => part.setOpen(1 - k), ease.inCubic); G.audio.sfx('close'); }
+    if (lid) { await tw.wait(.1); await tw.run(.22, k => part.setOpen(1 - k), ease.inCubic); G.audio.sfxPart(part, part.kind === 'drawer' ? 'drawerClose' : 'close'); }
     this.wobble(part.furn.group); G.audio.sfx('pop', 2);
     this.giggle('쏙!');
     if (off) await W.flyTo(tw, { ...keep, dur: .45 });
@@ -2032,7 +2032,7 @@ export class StageScene {
     if (opening) {
       part.spots.forEach(s => { if (s.itemGroup && s.item) s.itemGroup.visible = true; });
       const junk = part.reel ? reelCast(this, part) : false;   // 낚싯대 릴: this cast may bring up junk instead
-      if (this.v2?.cands.includes(part)) v2OpenSound(this, part); else G.audio.sfx(part.sfx);
+      if (this.v2?.cands.includes(part)) v2OpenSound(this, part); else G.audio.sfxPart(part, part.sfx);   // (in its material — 사운드 10/20)
       this.partsOpened++;
       await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
       for (const it of this.items) if (it.hang === part && !it.found) this.dropHung(it, part);   // (7판: the basket came up under the hook)
@@ -2046,7 +2046,7 @@ export class StageScene {
       // 2판: a drawer of hers (with something in it, or only socks) — once each way
       else if (this.scene?.drawerFull && !this.incident && part.kind === 'drawer') { const full = part.spots.some(s => s.item && !s.item.found && s.item.role === 'target'), k = full ? '_dF' : '_dE'; if (!this[k]) { this[k] = true; this.say(this.friend, full ? this.scene.drawerFull : this.scene.drawerEmpty, 1400); } }
     } else {
-      G.audio.sfx('close');
+      G.audio.sfxPart(part, part.kind === 'drawer' ? 'drawerClose' : 'close');
       await this.tw.run(part.dur * .8, k => { part.setOpen(1 - k); W.shadowDirty = true; }, ease.inOutQuad);
       part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; });
       if (part.reel) reelClear(this, part);
@@ -2542,6 +2542,7 @@ export class StageScene {
     const coins = this.custom ? 40 + this.targets.length * 15 + (this.plan.locks.length ? 20 : 0) + stars * 5 : 30 + this.targets.length * 10 + stars * 10 + (this.spec.showcase ? this.plan.locks.length * 20 : 0) + (this.missCount === 0 ? 20 : 0);   // (검토 H5: a careful clear pays, not a combo; a gadget stage's steps pay)
     this.stars = stars;
     G.audio.sfx('win'); G.hitstop(.08);
+    setTimeout(() => { if (!this.dead) G.audio.sfx('cheer', 0, false); }, 380);   // (friends' little "yay" after the jingle — a file only, 사운드 10/20)
     // 흑백판: the whole room floods back into colour
     if (this.spec.gray && W.post) { const u = W.post.u.gray; this.tw.run(1.2, k => { u.value = 1 - k; }, ease.inOutQuad); }
     W.fx.confetti(130);

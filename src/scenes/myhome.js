@@ -654,8 +654,8 @@ export class MyHomeScene {
     const W = this.G.world;
     if (part.busy) return;
     part.busy = true;
-    if (open) { part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = true; }); this.G.audio.sfx(part.sfx); }
-    else this.G.audio.sfx('close');
+    if (open) { part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = true; }); this.G.audio.sfxPart(part, part.sfx); }
+    else this.G.audio.sfxPart(part, part.kind === 'drawer' ? 'drawerClose' : 'close');
     const a = part.t, b = open ? 1 : 0;
     await this.tw.run(part.dur, k => { part.setOpen(a + (b - a) * k); W.shadowDirty = true; }, open ? ease.outBack : ease.inOutQuad);
     if (!open) part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; });

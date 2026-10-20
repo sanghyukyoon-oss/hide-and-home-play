@@ -16,15 +16,36 @@ export const BGM = {
   king: { gpt: null, gain: 1 },   // 마지막 보스·숨바꼭질 왕 결정전       → audio/gpt/bgm-king.mp4
   tense: { gpt: null, gain: 1 },   // 다급할 때 (없으면 지금 곡을 1.07배로) → audio/gpt/bgm-tense.mp4
 };
-// 효과음: 이름 → 'audio/gpt/sfx-<이름>.mp4' (null = 코드로 만든 소리). { src, gain, pitch } 로 쓰면 크기 조절, pitch: true 는
-// 연달아 찾을수록 음이 올라가는 소리(found·pop·star)에 — 파일 하나를 높이만 바꿔 튼다. 짧게(1초 안), 모노 권장.
-export const SFX_FILES = {
-  found: null, pop: null, special: null, miss: null, tapLow: null, wobble: null, dizzy: null,
-  open: null, close: null, drawer: null, door: null, lift: null, swish: null, creak: null,
-  key: null, locked: null, unlock: null, coin: null, star: null, win: null, lose: null,
-  whoosh: null, btn: null, tap: null, click: null, tick: null, tock: null,
-  mugunghwa: null,   // 무궁화 꽃이 피었습니다 첫 구호 (파일이 있을 때만 — 없으면 너굴이 목소리로 한 글자씩)
-};
+// 효과음 파일 (사운드 10/20, 사용자: "효과음 ㅇㅋ", "ASMR스럽고… 질감 같은 게 잘 느껴지고 디테일한 사운드"): 사내 AI Proxy →
+// ElevenLabs sound-generation 으로 만든 audio/sfx/<이름>.mp4 (모노 AAC, 0.1~1.2초, 코드 소리 크기에 맞춤). 파일이 아직 안 왔거나
+// 못 읽으면 코드로 만든 소리가 대신 난다. <이름>_<재질>(open_metal …)은 그 재질의 가구에서만 난다(sfxPart, 아래 MAT).
+// 하나를 바꾸려면 SFX_FILES.<이름> = '경로' (또는 { src, gain, pitch, vary }), 코드 소리로 되돌리려면 null. 목록: audio/README-sound.md
+const SFX_SET = ('tap click btn gearUp gearDown ratchet tick tock tapLow miss found special star coin buy key unlock locked latch win lose cheer ' +
+  'whoosh swish swish_paper swish_leaves swish_plastic rustle flip pop place wobble dizzy hop land thump thunk clink blub heart snore ' +
+  'giggle hmm gasp angry phew creak slide lift lift_fabric lift_metal lift_ceramic lift_stone lift_plastic open open_metal open_plastic ' +
+  'open_paper open_wicker close close_metal close_plastic close_paper close_wicker door door_metal drawer drawer_metal drawer_plastic ' +
+  'drawerClose drawerClose_metal drawerClose_plastic').split(' ');
+export const SFX_FILES = Object.fromEntries(SFX_SET.map(n => [n, 'audio/sfx/' + n + '.mp4']));
+// pitch: 연달아 찾을수록 음이 올라감(코드 소리처럼) · vary: 칠 때마다 높이가 조금씩 달라짐(빠르게 반복되는 소리)
+Object.assign(SFX_FILES, {
+  found: { src: 'audio/sfx/found.mp4', pitch: true }, pop: { src: 'audio/sfx/pop.mp4', pitch: true }, star: { src: 'audio/sfx/star.mp4', pitch: true },
+  ratchet: { src: 'audio/sfx/ratchet.mp4', vary: .1 }, tap: { src: 'audio/sfx/tap.mp4', vary: .05 }, tick: { src: 'audio/sfx/tick.mp4', vary: .03 },
+  coin: { src: 'audio/sfx/coin.mp4', vary: .06 }, hop: { src: 'audio/sfx/hop.mp4', vary: .08 },
+  mugunghwa: null,   // 무궁화 꽃이 피었습니다 첫 구호 (Suno·Google 파일이 있을 때만 — 없으면 너굴이 목소리로 한 글자씩)
+});
+// 가구 재질: 부분의 이름표(label)로 정한다 — 첫 번째로 맞는 줄. 없으면 나무(기본 소리).
+const MAT = [
+  ['fabric', /수건|담요/],
+  ['plastic', /김치냉장고|장난감|아이스박스|복합기|턴테이블|라바콘|러버콘|트렁크|양동이|바가지|미끄럼틀|꺼내는 곳|어항|쓰레기 봉투|방수포|BINS/],
+  ['metal', /금고|냉장고|냉동|자판기|동전|우편함|우체통|실외기|보일러|세탁기|공구함|도구함|캐비닛|맨홀|밥솥|코펠|냄비|솥|그릴|셔터|유치장|순찰차|대문|옥상|돈통|정수기|찜기|분필|휴지통|우유 투입함|에어컨|엘리베이터/],
+  ['paper', /택배|작품 상자|소원 상자|짐칸 상자|장식 상자|^상자|포스터|전단지|차트|신문지/],
+  ['wicker', /바구니/],
+  ['ceramic', /단지|화분|변기/],
+  ['stone', /돌|바위/],
+  ['leaves', /덤불|가지|버섯/],
+  ['fabric', /방석|이불|쿠션|담요|러그|베개|빈백|빨래|수건|천|식탁보|상보|매트|방화복|커튼/],
+];
+const matOf = label => { const l = String(label || ''); for (const [m, re] of MAT) if (re.test(l)) return m; return null; };
 
 export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   const A = { ctx: null, master: null, sfxBus: null, musicBus: null, muted: store.get(storageKey, false), voiceOn: store.get('sbk.voice', true), mood: 'home' };
@@ -92,23 +113,36 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   let sfxAsked = false;
   function loadSfxFiles() {
     if (sfxAsked || !A.ctx) return; sfxAsked = true;
-    for (const [name, e] of Object.entries(SFX_FILES)) {
-      const src = typeof e === 'string' ? e : e?.src; if (!src) continue;
+    // four at a time, the everyday ones first (a burst of ~70 fetches and decodes at once is a memory spike on a phone)
+    const FIRST = ['tap', 'btn', 'click', 'pop', 'found', 'miss', 'open', 'close', 'drawer', 'drawerClose', 'whoosh', 'swish', 'lift', 'ratchet'];
+    const q = Object.entries(SFX_FILES).filter(([, e]) => typeof e === 'string' ? e : e?.src).sort(([a], [b]) => (FIRST.includes(b) ? 1 : 0) - (FIRST.includes(a) ? 1 : 0));
+    const next = () => {
+      const it = q.shift(); if (!it) return;
+      const [name, e] = it, src = typeof e === 'string' ? e : e.src;
       fetch(src).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status)))
         .then(ab => new Promise((res, rej) => A.ctx.decodeAudioData(ab, res, rej)))
-        .then(b => { sfxBuf[name] = b; }, err => console.warn('sfx file', name, src, err?.message || err));
-    }
+        .then(b => { sfxBuf[name] = b; }, err => console.warn('sfx file', name, src, err?.message || err))
+        .finally(next);
+    };
+    for (let i = 0; i < 4; i++) next();
   }
   function playFile(name, p) {
     const b = sfxBuf[name]; if (!b) return false;
     const e = SFX_FILES[name], c = A.ctx, s = c.createBufferSource(), g = c.createGain();
-    s.buffer = b; if (e?.pitch) s.playbackRate.value = 2 ** (PENTA[Math.max(0, p | 0) % 6] / 12);
+    let rate = e?.pitch ? 2 ** (PENTA[Math.max(0, p | 0) % 5] / 12) : 1;
+    if (e?.vary) rate *= 1 + (Math.random() - .5) * 2 * e.vary;
+    s.buffer = b; s.playbackRate.value = rate;
     g.gain.value = e?.gain ?? 1; s.connect(g).connect(A._bus || A.sfxBus); s.start();
     return true;
   }
+  // a furniture part's own sound in its material (a metal cupboard, a cardboard box …) when that file is in; else the plain one
+  A.sfxPart = (part, name) => {
+    const m = matOf(part?.label), v = m && name + '_' + m;
+    A.sfx(v && sfxBuf[v] ? v : name);
+  };
 
   A.sfx = (name, p = 0, buzz = true) => {
-    if (buzz) hapticFor(name);   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
+    if (buzz) hapticFor(name === 'drawerClose' ? 'close' : name.split('_')[0]);   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
     if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); }   // the jingle over the music, not under it; the hurry is over
@@ -188,7 +222,9 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'blub': for (let i = 0; i < 3; i++) tone({ type: 'sine', f: 380 + i * 140, f2: 900 + i * 220, dur: .06, vol: .2, at: i * .09 }); break;
       // a door (room door, elevator, rooftop): it swings through the air, then settles with a soft wooden knock
       case 'door': noise({ dur: .32, vol: .13, f: 420, f2: 950, q: 2.5, attack: .05 }); tone({ type: 'triangle', f: 150, f2: 112, dur: .24, vol: .1, vib: 5 }); tone({ type: 'sine', f: 125, f2: 72, dur: .13, vol: .22, at: .3 }); noise({ dur: .05, vol: .08, type: 'lowpass', f: 650, at: .3 }); break;
-      case 'mugunghwa': break;   // (a Suno·Google file only — without one 너굴이's voice says the chant, bosses/redlight.js)
+      case 'mugunghwa': case 'cheer': break;   // (file only)
+      case 'drawerClose': noise({ dur: .16, vol: .15, f: 1500, f2: 800, q: 1.8, attack: .02, grain: 34 }); tone({ type: 'sine', f: 170, f2: 100, dur: .09, vol: .26, at: .13 }); noise({ dur: .04, vol: .1, type: 'lowpass', f: 800, at: .13 }); break;
+      case 'flip': noise({ dur: .09, vol: .14, f: 3000, f2: 1600, q: 1.2, attack: .01 }); noise({ dur: .03, vol: .06, type: 'highpass', f: 5000, at: .06 }); break;   // (a Suno·Google file only — without one 너굴이's voice says the chant, bosses/redlight.js)
       default: tone({ f: 600, dur: .05, vol: .2 });
     }
   };
