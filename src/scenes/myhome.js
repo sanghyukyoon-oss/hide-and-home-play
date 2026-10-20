@@ -2,7 +2,7 @@
 // and strangers who open the shared game come to find what you hid.
 import * as THREE from 'three';
 import { Room, attachItem, indexSpots } from '../room.js';
-import { cachedGeos, STYLE, forgetMats } from '../gfx/kit.js';   // (QA3-tex11)
+import { cachedGeos, STYLE, forgetMats, rbox, canvasTex, roundRect } from '../gfx/kit.js';   // (QA3-tex11; the 넓히기 sign)
 import { validateRoom } from '../roomdoc.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
 import { FURN_INFO } from '../gfx/furniture.js';
@@ -11,13 +11,13 @@ import { pickSurface, resolveHost, makeFreeSpot, dropFreeSpot, toLocal, viewsOf 
 import { Visitors } from '../visitors.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
-import { HOME_ZONES, ZONE_TYPES, zoneLayout, zoneSize, SHOP_FURN } from '../catalog.js';
+import { HOME_ZONES, ZONE_TYPES, zoneLayout, zoneSize, SHOP_FURN, ZONE_SIZES, pinZoneFurniture } from '../catalog.js';
 import { playDialog } from '../story.js';
 import { HOME_TUT, giftSeats } from '../script.js';
 import { tr } from '../i18n.js';
 import { openShop } from '../shop.js';
 import { net, initNet, publishRoom, roomStats } from '../net.js';
-import { seatedAll } from '../econ.js';
+import { seatedAll, ECON, seatsOf } from '../econ.js';
 import { messOpen, messShut, askBuyLock } from '../raidreplay.js';   // 털린 흔적 · 자물쇠 사기 (털기 메타 10/19)
 import { locksOwned, locksUsed } from '../raid.js';
 
@@ -126,6 +126,78 @@ export class MyHomeScene {
     }
     return g;
   }
+  // ── 방 넓히기 (10/20, user: "그냥 방으로 하자. 나중에 넓히는 거 나오고 …"): the room's next size is the first thing to save for.
+  // A wooden sign hangs on the left wall near the front (it goes down with the wall when the view turns): the next size and
+  // its price, how far your coins are on a bar, and it bobs once you can pay. Tap it: a card, then 넓히기 — the walls go out.
+  growNext() { const z = this.zone, k = (z?.size || 0) + 1; return z && ZONE_TYPES[z.type]?.indoor !== false && k < ZONE_SIZES.length ? { k, S: ZONE_SIZES[k] } : null; }
+  buildGrowSign() {
+    const G = this.G, R = this.room, nx = this.growNext(); if (!nx || !R) return null;
+    const C = G.save.coins || 0, can = C >= nx.S.price, font = getComputedStyle(document.body).fontFamily || 'sans-serif';
+    const tex = canvasTex(480, 272, (ctx, W2, H2) => {
+      ctx.fillStyle = '#fff3dd'; roundRect(ctx, 8, 8, W2 - 16, H2 - 16, 26); ctx.fill(); ctx.lineWidth = 9; ctx.strokeStyle = '#3a2453'; ctx.stroke();
+      ctx.fillStyle = '#3a2453'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `bold 74px ${font}`; ctx.fillText(tr('방 넓히기'), W2 / 2, 82);
+      if (can) { ctx.fillStyle = '#4fbf6a'; roundRect(ctx, 50, 150, W2 - 100, 92, 46); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = `bold 60px ${font}`; ctx.fillText(tr(`넓히기 ${nx.S.price}`), W2 / 2, 197); }
+      else {
+        const k = Math.min(1, C / nx.S.price), bx = 46, bw = W2 - 92, by = 150;
+        ctx.fillStyle = '#efe0c8'; roundRect(ctx, bx, by, bw, 40, 20); ctx.fill();
+        ctx.fillStyle = '#ffc23a'; roundRect(ctx, bx, by, Math.max(40, bw * k), 40, 20); ctx.fill();
+        ctx.fillStyle = '#3a2453'; ctx.font = `bold 46px ${font}`; ctx.fillText(`${Math.min(C, nx.S.price)} / ${nx.S.price}`, W2 / 2, 226);
+      }
+    });
+    const g = new THREE.Group(), board = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.08), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+    const back = rbox(1.98, 1.16, .05, '#c98f57', .05); back.position.z = -.03; g.add(back, board);
+    const Wl = R.walls?.W;
+    if (Wl && Wl.kind === 'wall') { g.position.set(-(R.d / 2 - 1.2), 1.45, .12); Wl.decor.add(g); }   // (the left wall's own decor: down with the wall)
+    else { const stick = rbox(.08, 1.15, .08, '#a8703f', .02); stick.position.set(0, -.75, -.05); g.add(stick); g.position.set(-R.w / 2 + .7, 1.3, R.d / 2 - .7); g.rotation.y = Math.PI / 4; R.group.add(g); }
+    g.traverse(o => { o.userData.grow = true; });
+    return { g, can, y0: g.position.y, t: 0 };
+  }
+  growAt(x, y) { const s = this.growSign; return !!s && this.G.world.pick(x, y, [s.g]).length > 0; }
+  growCard() {
+    const G = this.G, ui = G.ui, z = this.zone, nx = this.growNext(); if (!nx) return;
+    const S0 = zoneSize(z), C = G.save.coins || 0, need = nx.S.price - C, seat = seatsOf({ size: nx.k }) > seatsOf(z);
+    G.audio.sfx('click');
+    ui.panel({ title: '방 넓히기', color: 'orange', body: [
+      h('div', { class: 'big-txt', style: 'text-align:center' }, `${S0.w} × ${S0.d}`, h('span', { style: 'font-family:system-ui,sans-serif;margin:0 8px' }, '→'), `${nx.S.w} × ${nx.S.d}`),   // (the title font has no arrow)
+      h('div', { class: 'txt', style: 'text-align:center' }, `가구 놓을 칸 +${nx.S.w * nx.S.d - S0.w * S0.d}` + (seat ? ' · 친구 자리 +1' : '')),
+      h('div', { style: 'display:flex;align-items:center;justify-content:center;gap:6px;font-size:24px;margin:6px 0' }, h('span', { html: ICON.coin, style: 'width:28px;height:28px;display:inline-block' }), h('b', {}, String(nx.S.price))),
+      h('div', { class: 'txt', style: `text-align:center;color:${need > 0 ? '#8a6a9a' : '#2f8f1b'}` }, need > 0 ? `코인 ${need}개 더 모으면 넓힐 수 있어` : '지금 넓힐 수 있어!')],
+      buttons: [ui.btn('닫기', { color: 'blue', cls: 'sm', onClick: () => ui.closePanel() }),
+        ui.btn('넓히기', { color: 'green', icon: 'coin', cls: 'big', disabled: need > 0, onClick: dis => {
+          if (dis) { ui.toast(`코인 ${need}개 더 모으면 넓힐 수 있어`, 'red'); return; }
+          if ((G.save.coins || 0) < nx.S.price) return;
+          ui.closePanel(); const from = z.size || 0; G.addCoins(-nx.S.price); pinZoneFurniture(z); z.size = nx.k; G.persist(); this.growShow(from);
+        } })] });
+  }
+  // the walls go out: three knocks and dust at the old corners, then the room — built again at its new size — swells from the
+  // old size to the new one (the things in it keep their shape and spread out with the floor), 몽글이 cheers
+  async growShow(from) {
+    const G = this.G, W = G.world, tw = this.tw, A = ZONE_SIZES[from] || ZONE_SIZES[0];
+    this.busyTut = true; this._growing = true;
+    if (this.mode === 'lobby') this._heroView = 'room';   // (the lobby looks at the whole room from here on: the bigger room is the news)
+    W.flyTo(tw, { target: W.home.clone(), zoom: 1, dur: .45 });
+    await tw.wait(.45); if (this.dead) return;
+    for (let i = 0; i < 3; i++) {
+      G.audio.sfx('place', i);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const s = W.toScreen(new THREE.Vector3(sx * A.w / 2, .1, sz * A.d / 2)); W.fx.burst(s.x, s.y, { n: 6, shape: 'dot', colors: ['#e8d6b8', '#d2b892', '#fff6e6'], speed: 110, size: 9, life: .5, gravity: -30 }); }
+      W.shake?.(.12); await tw.wait(.3); if (this.dead) return;
+    }
+    const inLobby = this.mode === 'lobby';
+    this.build(); if (inLobby) this.setMode('lobby'); else this.fitCam();   // (꾸미기 stays 꾸미기)
+    if (inLobby) { this._heroView = 'room'; this.homeMid(); W.target.copy(W.home); W.zoom = 1; W.updateCam?.(); }   // (setMode('lobby') forgets the view: the whole room, to see it grow)
+    const R = this.room, sx0 = A.w / R.w, sz0 = A.d / R.d;
+    const keep = [...R.furns.map(r => r.f.group), ...(this.seated || []).map(s => s.ch.root), ...(this.mong?.root?.parent === R.group ? [this.mong.root] : [])].map(o => [o, o.scale.clone()]);
+    await tw.run(.6, k => { const sx = sx0 + (1 - sx0) * k, sz = sz0 + (1 - sz0) * k; R.group.scale.set(sx, 1, sz); for (const [o, s0] of keep) o.scale.set(s0.x / sx, s0.y, s0.z / sz); }, ease.outBack);
+    R.group.scale.set(1, 1, 1); for (const [o, s0] of keep) o.scale.copy(s0);
+    if (this.dead) return;
+    G.audio.sfx('special'); W.fx.confetti?.(50);
+    const m = this.mong; if (m) { m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.45); }
+    G.ui.banner('방이 넓어졌어!', `${R.w} × ${R.d}`, 1300);
+    await tw.wait(1.2); if (this.dead) return;
+    if (m) { m.pose = 'idle'; m.setFace?.('happy'); }
+    this.busyTut = false; this._growing = false;
+  }
   // which neighbour (zone id) is under this point of the screen, if any
   nbAt(x, y) {
     if (!this.nbs?.length) return null;
@@ -149,6 +221,7 @@ export class MyHomeScene {
     this.room = new Room(W, zoneLayout(z));
     W.root.add(this.room.group);
     this.nbGroup = this.buildNeighbours(); W.root.add(this.nbGroup);
+    this.growSign = ECON ? this.buildGrowSign() : null;   // (방 넓히기: the room's next size, on its wall)
     if (old) freeRoom(old.group, [this.room.group, this.nbGroup]);
     if (oldNb) freeRoom(oldNb, [this.room.group, this.nbGroup]);
     const idx = indexSpots(this.room); this.spotByKey = idx.spots; this.partByKey = idx.parts;
@@ -232,6 +305,7 @@ export class MyHomeScene {
   zoneTabs() {
     const G = this.G;
     const bar = h('div', { class: 'zonetabs' });
+    if (ECON) return bar;   // (경제·로비: one room — 10/20 "그냥 방으로 하자"; the house and the town come later)
     let teaser = false;   // (open rooms, then only the next one to open, locked — the rest appear as they open, not four 🔒 tabs at once: 2D UI 정리 ③ 10/19)
     for (const z of HOME_ZONES) {
       const open = G.zoneOpen(z.id);
@@ -275,9 +349,10 @@ export class MyHomeScene {
     if (due > 0) el.append(G.ui.btn(`보상 +${due * 30}`, { color: 'yellow', icon: 'coin', cls: 'sm', onClick: () => { H.claimedFails = s.fails; G.addCoins(due * 30); G.persist(); G.audio.sfx('coin'); this.renderRecord(); } }));
   }
   shop(tab = 'furn') {
-    openShop(this.G, { zone: this.zone, onChange: kind => {
+    openShop(this.G, { zone: this.zone, onChange: (kind, from) => {
       if (kind === 'paint') { this.build(); this.fitCam(); this.setMode(this.mode); }
       if (kind === 'zone') { this.build(); this.setMode(this.mode); }   // (the new zone joins the map)
+      if (kind === 'grow') { this.growShow(from); return; }   // (방 넓히기 from the shop: the same walls going out)
       if (kind === 'furn' && this.mode === 'edit') this.renderInv();
     }, onClose: () => { if (this.mode !== 'edit') this.setMode(this.mode); } }, tab);
   }
@@ -711,6 +786,8 @@ export class MyHomeScene {
   tap(x, y) {
     const G = this.G, hit = this.pick(x, y);
     if (hit.kind === 'char') { this.reactChar(hit.char); return; }
+    // the 넓히기 sign (방 넓히기): its card
+    if (this.growSign && ['view', 'edit', 'lobby'].includes(this.mode) && !this.busyTut && !G.ui.panelOpen && this.growAt(x, y)) { this.growCard(); return; }
     // a tap on another room of the map: work there now (꾸미기: and the piece under the finger is picked up as well)
     if (hit.kind === 'none' && ['view', 'edit', 'hide'].includes(this.mode) && !this.busyTut && !G.ui.panelOpen) {
       const nb = this.nbAt(x, y);
@@ -751,6 +828,7 @@ export class MyHomeScene {
     this.tw.update(dt);
     this.room.update(dt);
     for (const n of this.nbs || []) n.room.update(dt);
+    const gs = this.growSign; if (gs?.can) { gs.t += dt; gs.g.position.y = gs.y0 + Math.abs(Math.sin(gs.t * 3.2)) * .07; }   // (you can pay for it: the sign bobs)
     this.mong.update(dt);
     this.visitors?.update(dt);
     if (this.mode === 'hide' && this.markers) this.updMarkers();

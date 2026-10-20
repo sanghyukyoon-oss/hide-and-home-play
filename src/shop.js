@@ -5,7 +5,7 @@ import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STY
 import { Room } from './room.js';
 import { layoutFor, LAYOUTS } from './stages.js';
 import { renderThumbs } from './thumbs.js';
-import { PICK_ITEMS, chapterOfFurn, chapterNow } from './econ.js';
+import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON } from './econ.js';
 import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_PRICE, LOCK_MAX } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
 import { EN } from './i18n-en-dict.js';
@@ -47,7 +47,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   const note = h('div', { class: 'txt', style: 'font-size:14px;margin:4px 0 8px' });
   const render = () => {
     tabsEl.innerHTML = '';
-    for (const [k, label] of TABS) if (k !== 'items' || G.econ) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
+    for (const [k, label] of TABS) if ((k !== 'items' || G.econ) && !(k === 'zone' && ECON)) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
     grid.innerHTML = '';
     note.textContent = '';
     if (tab === 'items') {
@@ -143,7 +143,9 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       ZONE_SIZES.forEach((S, k) => {
         const owned = k <= cur, next = k === cur + 1;
         grid.append(card(G, { swatch: swatch('#fff3e0', '#e8c49a', 'wood'), name: `${S.w} × ${S.d}`, sub: (k === 0 ? '기본 크기' : owned ? '넓힘' : next ? '다음 단계' : '앞 단계를 먼저') + (G.econ && k >= 1 && k <= 3 ? ' · 친구 자리 +1' : ''), price: owned || !next ? null : S.price, tag: k === cur ? '지금 크기' : owned ? '보유' : null,
-          onBuy: owned || !next ? null : () => { if (!zone) return; pinZoneFurniture(zone); zone.size = k; G.persist(); G.audio.sfx('win'); ui.toast(`${ga(zone.name)} ${S.w}×${S.d}로 넓어졌어!`, 'green'); ctx.onChange?.('paint'); render(); } }));
+          onBuy: owned || !next ? null : () => { if (!zone) return; const from = zone.size || 0; pinZoneFurniture(zone); zone.size = k; G.persist();
+            if (ECON) { ui.closePanel(); ctx.onClose?.(); ctx.onChange?.('grow', from); return; }   // (방 넓히기: the walls go out in the room, as from its sign)
+            G.audio.sfx('win'); ui.toast(`${ga(zone.name)} ${S.w}×${S.d}로 넓어졌어!`, 'green'); ctx.onChange?.('paint'); render(); } }));
       });
     } else if (tab === 'zone') {
       note.textContent = '스테이지를 깨면 무료로 열리고, 미리 사서 열 수도 있어요.';

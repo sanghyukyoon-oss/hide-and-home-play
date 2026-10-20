@@ -84,7 +84,7 @@ export const LAYOUTS = {
   // 몽글 파출소: the front desk, a barred cell on the back wall, lockers, a WANTED board with 잉키 on it, a waiting bench
   police: { w: 7, d: 6, walls: { N: 'wall', W: 'wall' }, wallH: 2.9,
     furniture: [F('filecab', 0, 0), F('safe', 1, 0), F('jailcell', 2, 0), F('lockers', 4, 0), F('watercooler', 5, 0), F('plantbig', 6, 0),
-      F('reception', 2, 2), F('officechair', 2, 1), F('officedesk', 4, 2), F('lostbox', 6, 2), F('copier', 6, 4), F('bench2', 0, 4), F('cones', 3, 5), F('plant', 6, 5)],
+      F('reception', 2, 2), F('officechair', 2, 1), F('officedesk', 4, 2), F('lostbox', 6, 2), F('copier', 6, 4), F('lobbysofa', 0, 4), F('cones', 3, 5), F('plant', 6, 5)],
     decor: [D('wantedboard', 'W', .5), D('window', 'W', -1.2), D('door', 'W', 2.4), D('catclock', 'N', 3.0)], friendAt: [.5, -.6] },
   // 119 안전센터 (outside): the engine out on the apron in front of the half-open bay, hose reel, hydrant, cones, the bell
   firestation: { w: 8, d: 6, bleed: {}, wallH: 3.2, walls: { N: 'wall', W: 'alleywall', S: 'none', E: 'none' },

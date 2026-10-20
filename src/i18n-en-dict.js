@@ -3553,7 +3553,7 @@ export const EN = {
 "로봇 주먹팔": "Robot Fist Arm", "로봇 주먹팔!": "Robot Fist Arm!",
 "로봇 머리": "Robot Head", "로봇 머리!": "Robot Head!",
 "로봇 안테나": "Robot Antenna", "로봇 안테나!": "Robot Antenna!",
-"다리": "Legs", "몸통": "Body", "제트팩": "Jetpack", "집게팔": "Claw", "주먹팔": "Fist", "머리": "Head", "부품 6개": "6 parts", "콕!": "Tap!", "짐 7개": "7 things", "토핑 7개": "7 toppings", "로봇 부품 6개를 모아 조립하자!": "Collect all 6 robot parts and build it!",
+"다리": "Legs", "몸통": "Body", "제트팩": "Jetpack", "집게팔": "Claw", "주먹팔": "Fist", "머리": "Head", "부품 6개": "6 parts", "콕!": "Tap!", "슬리퍼": "Slippers", "우산": "Umbrella", "짐 7개": "7 things", "토핑 7개": "7 toppings", "로봇 부품 6개를 모아 조립하자!": "Collect all 6 robot parts and build it!",
 "흠, 거기가 아니군.": "Hm. Not there.",
 "이삿짐 풀기": "Unpacking", "파르페 쌓기": "Parfait Stack", "생크림": "Whipped Cream", "웨하스": "Wafer", "체리": "Cherry", "이삿짐 상자": "Moving Box", "큰 파르페": "Giant Parfait",
 "꼬마 로봇": "Tiny Bot",
@@ -3660,4 +3660,18 @@ export const EN = {
 "냉장고 앞에서": "At the fridge",
 "꾹 꺼내기": "Hold to take",
 "꺼내는 중…": "Taking…",
+// 선물 상자 (경제, 10/20)
+"서랍 잠그기": "Lock a drawer",
+"자물쇠": "Padlock",
+"숨길 보물": "Treasure to hide",
+"상점에 없는 소품": "Not in the shop",
+"보스를 이긴 선물! 하나 골라 · 이 장 가구는 상점 기념품 칸에 있어": "A gift for beating the boss! Pick one · this chapter's furniture is in the shop's souvenirs",
+"하나 골라! 이 장 가구는 상점 기념품 칸에 있어": "Pick one! This chapter's furniture is in the shop's souvenirs",
+"별 15개를 모았어! 하나 골라": "15 stars! Pick one",
+"🎁 상자 열기": "🎁 Open the box",
+// 방 넓히기 (경제, 10/20)
+"방 넓히기": "Expand the room",
+"넓히기": "Expand",
+"지금 넓힐 수 있어!": "You can expand it now!",
+"방이 넓어졌어!": "The room got bigger!",
 };

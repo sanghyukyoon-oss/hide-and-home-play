@@ -142,7 +142,8 @@ registerOutdoorShop(OUTDOOR_INFO);
 const KEY = 'sumbakkokjip.v1';
 // (경제·로비 on: 몽글이's room starts as a rug and 몽글이, nothing else — 설계서 2-2)
 const starterOf = id => ECON && id === 'room1' ? STARTER[id].filter(f => f.type === 'rug') : STARTER[id] || [];
-const newZone = id => { const z = HOME_ZONES.find(x => x.id === id); return { id, type: z.type, name: z.name, ...(z.type === 'room' ? { style: 'st-open' } : {}), furniture: starterOf(id).map((f, i) => ({ ...f, id: id + '-' + i })), paint: {} }; };
+// (경제·로비: a room with walls — 10/20 user "그냥 방으로 하자")
+const newZone = id => { const z = HOME_ZONES.find(x => x.id === id); return { id, type: z.type, name: z.name, ...(z.type === 'room' ? { style: ECON ? 'st-classic' : 'st-open' } : {}), furniture: starterOf(id).map((f, i) => ({ ...f, id: id + '-' + i })), paint: {} }; };
 const defaultHome = () => ({ zones: { room1: newZone('room1') }, current: 'room1', inventory: ECON ? [] : ['wardrobe'], bought: [], owned: { wall: [], floor: [] }, hide: { zoneId: 'room1', items: [], locks: {}, code: null }, published: null, claimedFails: 0 });
 const defaultSave = () => econSaveFields({ v: 2, stage: 0, best: {}, coins: 150, stars: 0, home: defaultHome(), collection: STARTER_ITEMS.slice(), visits: {} });
 // v1 (with the old Mom-inspection room) → v2: keep coins, progress and the furniture you placed
@@ -231,7 +232,9 @@ const G = {
     for (const p of G.coinPills) { if (!p.isConnected) continue; const v = p.querySelector('.v'); if (anim) ui.countUp(v, from, save.coins, 500); else v.textContent = save.coins; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); }
   },
   homeOpen: () => (save.stage || 0) >= 2 || qs.get('scene') === 'myhome',
-  zoneOpen(id) { const z = HOME_ZONES.find(x => x.id === id); if (!z) return false; return (save.stage || 0) >= z.unlock.stage || save.home.bought.includes(id); },
+  // (경제·로비 on, 10/20 user on the one-map home: "아무도 이런 거 안 갖고 싶을 거야.. 그냥 방으로 하자" — one room, 몽글이's; it grows
+  // by 방 크기, and the house and the town come later. The other zones keep their records for then, but don't open.)
+  zoneOpen(id) { const z = HOME_ZONES.find(x => x.id === id); if (!z) return false; if (ECON) return id === 'room1'; return (save.stage || 0) >= z.unlock.stage || save.home.bought.includes(id); },
   ensureZone(id) { if (!save.home.zones[id]) save.home.zones[id] = newZone(id); return save.home.zones[id]; },
   collect(type) { if (!ITEMS[type] || ITEMS[type].decoy || ITEMS[type].noCollect || save.collection.includes(type)) return false; save.collection.push(type); G.persist(); return true; },
   onStageClear(idx, stars, coins) {
@@ -247,7 +250,7 @@ const G = {
     save.stage = Math.max(before, idx + 1);
     if (before < 2 && save.stage >= 2) out.unlockedHome = true;
     if (before < STAGE_COUNT && save.stage >= STAGE_COUNT) out.allClear = true;
-    out.newZones = HOME_ZONES.filter(z => z.unlock.stage > before && z.unlock.stage <= save.stage && z.unlock.stage > 0 && !save.home.bought.includes(z.id)).map(z => { G.ensureZone(z.id); return z.name; });
+    out.newZones = ECON ? [] : HOME_ZONES.filter(z => z.unlock.stage > before && z.unlock.stage <= save.stage && z.unlock.stage > 0 && !save.home.bought.includes(z.id)).map(z => { G.ensureZone(z.id); return z.name; });
     if (!G.playMode && idx + 1 === save.stage) queueFollowup(save, idx);
     G.persist();
     G.stats.cleared++; const secs = (gameTime - G.stats.stageStart); G.stats.levelSecs.push(secs); G.stats.log.push({ stage: idx + 1, result: 'clear', stars, secs: +secs.toFixed(1) });

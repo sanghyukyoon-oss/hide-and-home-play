@@ -1431,6 +1431,42 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kitrun.skin-runner.build .kitrun-row.framed .kitrun-gate { width: 15px; height: 6px; top: calc(50% - 3px); }
 .kitrun.skin-runner.build .kitrun-row.framed .kitrun-no { min-width: 26px; height: 26px; border-radius: 6px; font-size: 16px; line-height: 21px; left: -7px; top: -7px; }
 .kitrun.skin-runner.build .kitrun-row.framed .kitrun-cell.next { box-shadow: inset 0 0 0 2.5px var(--ink), 0 0 0 4px #ffe14d, 0 0 18px 6px rgba(255, 225, 77, .7); }
+/* 13판's own card (10/20, user: "이삿짐 풀기 UI는 왜 또 프라모델로 한 거야? 의미가 있어?" — two to choose from, ?kitskin=) */
+.kitrun-chk, .kitrun-stamp { display: none; }
+.kitrun:is(.skin-list, .skin-labels) .kitrun-gate { display: none; }
+/* A · 이삿짐 목록: a kraft-paper checklist on ruled lines, taped on — a tick box, the thing's little picture, its name;
+   found → a red tick, the picture in colour, the name struck through */
+.kitrun.skin-list { width: min(calc(100vw - 24px), 372px); bottom: calc(18px + var(--safeB)); padding: 20px 12px 8px; border-radius: 5px; border-bottom-width: 5px;
+  background: repeating-linear-gradient(180deg, transparent 0 30px, rgba(140, 92, 44, .22) 30px 31.5px) 0 19px / 100% 100% no-repeat, linear-gradient(180deg, #f3e0b4, #e8cb93);
+  box-shadow: 0 4px 0 rgba(42, 26, 61, .22); }
+.kitrun.skin-list .kitrun-tag { left: 50%; top: -13px; transform: translateX(-50%) rotate(-2deg); background: rgba(250, 240, 208, .96) !important; color: var(--ink);
+  border: none; border-radius: 2px; padding: 2px 16px 3px; box-shadow: 0 1px 0 rgba(58, 36, 83, .25), inset 0 0 0 1px rgba(160, 120, 60, .25); -webkit-text-stroke: 0; text-shadow: none; }
+.kitrun.skin-list .kitrun-row { grid-template-columns: repeat(3, 1fr); gap: 0 6px; }
+.kitrun.skin-list .kitrun-cell { aspect-ratio: auto; height: 31.5px; border-radius: 0; background: none; box-shadow: none; }
+.kitrun.skin-list .kitrun-chk { display: block; position: absolute; left: 1px; top: 8px; width: 15px; height: 15px; border: 2px solid var(--ink); border-radius: 3px; background: #fffaf0; }
+.kitrun.skin-list .kitrun-cell img { left: 21px; top: 2px; width: 27px; height: 26px; }
+.kitrun.skin-list .kitrun-ghost { filter: brightness(0) opacity(.5); }
+.kitrun.skin-list .kitrun-nm { display: block; position: absolute; left: 51px; right: 0; top: 50%; bottom: auto; transform: translateY(-50%); text-align: left; font-size: 13px; color: var(--ink); overflow: visible; }
+.kitrun.skin-list .kitrun-cell.found .kitrun-chk::after { content: ''; position: absolute; left: -3px; top: -11px; width: 24px; height: 24px; animation: kitpen .28s ease-out both;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 13 L9 19 L22 3' fill='none' stroke='%23e2453a' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain; }
+@keyframes kitpen { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.kitrun.skin-list .kitrun-cell.found .kitrun-nm { color: rgba(58, 36, 83, .62); text-decoration: line-through; text-decoration-color: #e2453a; text-decoration-thickness: 2px; }
+/* B · 상자 라벨: a row of little moving boxes, each with a white label of what's packed in it; found → the thing in colour
+   and a red 완료 stamp thumped on */
+.kitrun.skin-labels { bottom: calc(18px + var(--safeB)); padding: 18px 10px 10px; background: linear-gradient(180deg, #fff8ea, #f6e6c6); }
+.kitrun.skin-labels .kitrun-row { gap: 6px; }
+.kitrun.skin-labels .kitrun-tag { left: 50%; transform: translateX(-50%); }   /* (in the middle: the magnifier sits over the card's left end) */
+.kitrun.skin-labels .kitrun-cell { aspect-ratio: .86; border-radius: 4px; background: linear-gradient(180deg, #c99554 0 20%, #e3b778 20% 100%);
+  box-shadow: inset 0 0 0 2px var(--ink), inset 0 -4px 0 rgba(90, 50, 20, .18); overflow: visible; }
+.kitrun.skin-labels .kitrun-cell::before { content: ''; position: absolute; left: 50%; top: 0; width: 28%; height: 26%; transform: translateX(-50%); background: rgba(246, 234, 204, .9); box-shadow: inset 0 0 0 1px rgba(58, 36, 83, .2); }
+.kitrun.skin-labels .kitrun-cell::after { content: ''; position: absolute; left: 12%; right: 12%; top: 33%; bottom: 11%; background: #fffdf6; border-radius: 3px; box-shadow: 0 0 0 1.5px rgba(58, 36, 83, .45); }
+.kitrun.skin-labels .kitrun-cell img { left: 15%; top: 35%; width: 70%; height: 52%; z-index: 1; }
+.kitrun.skin-labels .kitrun-ghost { filter: brightness(0) opacity(.55); }
+.kitrun.skin-labels .kitrun-stamp { display: flex; position: absolute; right: -7px; bottom: -6px; z-index: 3; width: 30px; height: 30px; align-items: center; justify-content: center;
+  border: 2.5px solid #e2453a; border-radius: 50%; color: #e2453a; font-size: 11px; font-weight: 700; letter-spacing: -.5px; background: rgba(255, 250, 240, .75);
+  transform: rotate(-16deg) scale(1); opacity: 0; pointer-events: none; }
+.kitrun.skin-labels .kitrun-cell.found .kitrun-stamp { opacity: 1; animation: kitstamp .32s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes kitstamp { 0% { opacity: 0; transform: rotate(-30deg) scale(2.2); } 60% { opacity: 1; transform: rotate(-14deg) scale(.9); } 100% { opacity: 1; transform: rotate(-16deg) scale(1); } }
 .kitrun.gone { opacity: 0; transform: translateX(-50%) translateY(40px); pointer-events: none; }
 .kitintro { position: absolute; inset: 0; z-index: 30; background: rgba(42, 26, 61, .22); pointer-events: auto; animation: kitfade .25s ease-out; }
 .kitintro.out { opacity: 0; transition: opacity .25s; }

@@ -53,7 +53,8 @@ const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
 import { blindFor } from '../hunt-blind.js';
-import { PICKS, pickPanel, takePick, metFriends } from '../econ.js';   // 경제·로비 (10/19)
+import { PICKS, pickPanel, takePick, takeGiftPick, metFriends } from '../econ.js';   // 경제·로비 (10/19)
+import { giftChoices, giftPanel, grantGift, giftName, openStarGifts } from '../gifts.js';   // 선물 상자: 특별한 것·자물쇠 (10/20)
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac, cameoKind, moveItem } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
@@ -1035,6 +1036,10 @@ export class StageScene {
     const tall = e => new THREE.Box3().setFromObject(e.f.group).getSize(new THREE.Vector3()).y > .3;   // not a flat thing on the ground (a hopscotch, a manhole): hard to tap
     const cands = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && tall(e) && G.hasThumb('furn_' + e.type)));
     this.grayFurn = new Map();
+    // what you find comes back alone (사용자 실폰 10/20, 14판 "의자를 찾으면 의자만 색이 돌아오는 게 나을 것 같아"): a found
+    // piece doesn't colour the juice still to find on its seat, a thing left on it, or another piece of furniture standing on it
+    for (const R of RS) for (const e of R.furns) e.f.group.userData.grayStop = true;
+    for (const it of this.items) it.g.userData.grayStop = true;
     const pick = [];
     for (const e of cands) { if (pick.length >= k || used.has(e.type)) continue; used.add(e.type); pick.push(e); }
     G.needThumbs(pick.map(e => 'furn_' + e.type));   // just these icons, in one batch
@@ -1330,9 +1335,12 @@ export class StageScene {
   }
   grayAt(x, y) {
     if (!this.grayFurn?.size) return null;
+    // the first piece of furniture behind the thing tapped only — not one further back (24판: a juice box in front of the
+    // quarter pipe counted the pipe behind it)
     for (const hh of this.G.world.pick(x, y, [this.room.group])) {
-      const c = this.classify(hh.object), f2 = c.kind === 'furn' ? c.furn : c.kind === 'part' ? c.part.furn : null;
-      const t = f2 && this.grayTarget(f2); if (t && !t.found) return t;
+      const c = this.classify(hh.object); if (c.kind === 'item') continue;
+      const f2 = c.kind === 'furn' ? c.furn : c.kind === 'part' ? c.part.furn : null;
+      const t = f2 && this.grayTarget(f2); return t && !t.found ? t : null;
     }
     return null;
   }
@@ -2654,9 +2662,10 @@ export class StageScene {
     // 경제·로비 on: a chapter's last stage, the first time — its box: one of three pieces (설계서 4-2)
     let picked = null;
     if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) {
-      picked = await pickPanel(G, PICKS[this.idx], { title: '장 끝 선물 상자!', line: '이 장에서 본 것 중 하나를 골라! 나머지 둘은 상점 기념품 칸에서 살 수 있어' });
+      // (10/20: a gift, not the chapter's furniture — that's in the shop's 기념품 now; gifts.js)
+      picked = await giftPanel(G, giftChoices(G.save, 100 + this.idx), { title: '장 끝 선물 상자!', line: '보스를 이긴 선물! 하나 골라 · 이 장 가구는 상점 기념품 칸에 있어' });
       if (this.dead) return;
-      takePick(G, this.idx, picked);
+      picked.line = grantGift(G, picked); takeGiftPick(G, this.idx, picked);
     }
     // 2판 (home just opened): go and hide something at home now, or keep going — both on the result panel
     // 판 끝 집으로 가져가기 (검토 세션 10/19, 사용자 OK — "찾은 게 아무 데도 안 남는다"): '다음' goes through 몽글이's room for under
@@ -2668,7 +2677,7 @@ export class StageScene {
     let passage = null, boxOn = false, gotNow = [];
     if (metBefore && G.homeOpen?.() && !G.playMode && !G.bot && !this.model) {
       const H = G.save.home, Q = H.homeQ || (H.homeQ = { friends: [], furns: [], items: [] });
-      const fr = metFriends(G.save).filter(k => !metBefore.has(k)), fu = memento || picked || (kitNew ? kitFurn : null);
+      const fr = metFriends(G.save).filter(k => !metBefore.has(k)), fu = memento || (kitNew ? kitFurn : null);
       for (const k of fr) if (!Q.friends.includes(k)) Q.friends.push(k);
       if (fu) Q.furns.push(fu);
       gotNow = [...fr.map(k => ({ face: k })), ...(fu ? [{ furn: fu }] : [])];   // (no find for the shelf: the 찾은 것 선반 is gone, 10/19 evening)
@@ -2677,7 +2686,8 @@ export class StageScene {
       passage = { items: Q.items.slice(), furns: Q.furns.slice(), friends: Q.friends.slice(), box: boxOn };
     }
     const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;
-    const passOn = !!passage && !homeNow && (boxOn || (PASSAGE_EVERY && !!(passage.items.length || passage.furns.length || passage.friends.length)));
+    // (10/20: a star box opens right here — 🎁 상자 열기 — not in the room: no scene between the stages, gifts.js)
+    const passOn = !!passage && !homeNow && PASSAGE_EVERY && !!(passage.items.length || passage.furns.length || passage.friends.length);
     // the first run doesn't offer the home after 1판: the home first shows after 2판, when 내 집 opens (기획안 7장)
     const noHome = G.firstRun && this.idx === 0 && !this.custom && !this.preview && !this.model;
     const bossNext = BOSS_AFTER.includes(this.idx) && !G.save.bossDone?.[this.idx], gameNext = !bossNext && !!BOSS_GAMES[this.idx] && !G.save.bossDone?.['g' + this.idx], miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && !G.save.bossDone?.['m' + this.idx];
@@ -2707,7 +2717,7 @@ export class StageScene {
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
-        ...(picked ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['furn_' + picked] }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, `${FURN_NAME(picked)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : []),
+        ...(picked ? [h('div', { class: 'memento tile' }, picked.kind === 'thing' ? h('img', { src: G.thumbs['item_' + picked.t] }) : picked.kind === 'decor' ? h('img', { src: G.thumbs['furn_' + picked.t] }) : h('div', { style: 'width:56px;height:56px;display:grid;place-items:center', html: picked.kind === 'lock' ? ICON.lock : ICON.coin }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, picked.line || giftName(picked))))] : []),
         ...(seenN ? [seenRow(G, seenNew)] : []),
         ...(!PASSAGE_EVERY && gotNow.length ? [homeRow(G, gotNow)] : []),   // (rooms only on a box: what went home this time, on its way)   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
         ...(newFriend ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
@@ -2722,8 +2732,9 @@ export class StageScene {
         this.nextBtn = this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'green', icon: 'home', cls: 'big', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })
           : this.preview ? G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })
-          : G.ui.btn(passOn && boxOn ? '🎁 방에서 열기' : bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: passOn && boxOn ? 'orange' : 'green', icon: 'play', cls: 'big',
-              onClick: () => { const go = (n, d) => passOn ? G.go('home', { passage: { ...passage, next: [n, d] }, quick: true }) : G.go(n, d); return bossNext ? go('boss', { after: this.idx }) : gameNext ? go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? (MINI_AFTER[this.idx].lab ? go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx })) : go('stage', { idx: this.idx + 1 }); } })],
+          : G.ui.btn(boxOn ? '🎁 상자 열기' : bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: boxOn ? 'orange' : 'green', icon: 'play', cls: 'big',
+              onClick: async () => { if (boxOn) { if (this._boxing) return; this._boxing = true; await openStarGifts(G); if (this.dead) return; }   // (별 상자: one of three, then on — 10/20)
+                const go = (n, d) => passOn ? G.go('home', { passage: { ...passage, next: [n, d] }, quick: true }) : G.go(n, d); return bossNext ? go('boss', { after: this.idx }) : gameNext ? go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? (MINI_AFTER[this.idx].lab ? go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx })) : go('stage', { idx: this.idx + 1 }); } })],
     });
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }
     const paid = first?.awarded ?? coins;

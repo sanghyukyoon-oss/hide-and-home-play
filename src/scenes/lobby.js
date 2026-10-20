@@ -5,6 +5,7 @@
 // (3 seats, +1 for each of the first three room sizes); in 꾸미기 they move, turn and go to the friend box like furniture.
 import * as THREE from 'three';
 import { MyHomeScene } from './myhome.js';
+import { giftChoices, giftPanel, grantGift, openStarGifts } from '../gifts.js';   // 선물 상자 (10/20)
 import { HomeScene, playButton, openMore } from './home.js';
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { FURN_INFO } from '../gfx/furniture.js';
@@ -23,7 +24,7 @@ import { buildItem, ITEMS } from '../gfx/items.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
-import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow } from '../econ.js';
+import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow, takeGiftPick } from '../econ.js';
 import { SHOP_FURN, STARTER_ITEMS } from '../catalog.js';
 import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
@@ -140,7 +141,9 @@ export class LobbyScene extends MyHomeScene {
     this.playBtn = playButton(G);
     const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : go() });
     const row = h('div', { class: 'row2 three' },
-      lock('꾸미기', 'orange', 'paint', () => this.setMode('edit')),
+      (() => { const b = lock('꾸미기', 'orange', 'paint', () => this.setMode('edit')), nx = open && this.growNext?.();   // (방 넓히기: the room can grow now → a 🔨 on 꾸미기; the lobby's close-up doesn't show its sign)
+        if (nx && (S.coins || 0) >= nx.S.price) { b.style.position = 'relative'; b.append(h('span', { style: 'position:absolute;top:-8px;right:-6px;font-size:16px;line-height:1;background:#fff;border:2px solid #3a2453;border-radius:999px;padding:3px 4px' }, '🔨')); }
+        return b; })(),
       lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater ? this.hideLesson() : this.setMode('hide')),
       lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
@@ -150,8 +153,8 @@ export class LobbyScene extends MyHomeScene {
     if ((q.length || sb) && open) {
       const gift = ui.btn(q.length ? `🎁 지난 장 선물 ${q.length}` : `🎁 별 상자${sb > 1 ? ' ' + sb : ''}`, { color: 'yellow', cls: 'sm pulse', onClick: async () => {
         if (!q.length) { gift.remove(); await this.openStarBoxLobby(); return; }
-        const i = q[0], t = await pickPanel(G, PICKS[i], { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 나머지 둘은 상점 기념품 칸에서 살 수 있어' });
-        takePick(G, i, t); ui.toast(`${FURN_INFO[t].name} · 꾸미기 보관함에 들어갔어`, 'green'); this.setMode('lobby');
+        const i = q[0], c = await giftPanel(G, giftChoices(G.save, 100 + i), { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 이 장 가구는 상점 기념품 칸에 있어' });   // (10/20: a gift — gifts.js)
+        ui.toast(grantGift(G, c), 'green'); takeGiftPick(G, i, c); this.setMode('lobby');
       } });
       gift.style.cssText += 'position:absolute;left:12px;top:calc(76px + var(--safeT));pointer-events:auto';
       col.append(gift);
@@ -454,7 +457,7 @@ export class LobbyScene extends MyHomeScene {
   // the lobby looks at 몽글이 and whoever sits with it, close up while the room is still bare (user, 10/19: "처음에 너무
   // 썰렁하니까 캐릭터 쪽 클로즈업으로 잡아주자"), opening out as furniture and friends fill it; 꾸미기·숨기기 see the whole room
   frameLobby(dur = .7, extra = [], cut = false) {
-    if (this.dead || !this.room) return;
+    if (this.dead || !this.room || this._growing) return;   // (방 넓히기: the room's own camera while its walls go out)
     // (10/19 evening, user with a screenshot: "로비는 이 정도 뷰에서 캐릭터 위주로 처음에 보여지는 게 나을 거 같아 … 캐릭터가 정중앙에
     // 있는 구도") the lobby's own view is 몽글이 big and dead centre; tapping 몽글이 opens out to the room (heroView). Friends
     // arriving, the room pass and the star box (extra points, or the passage mode) still frame the whole group.
@@ -661,21 +664,16 @@ export class LobbyScene extends MyHomeScene {
     this.passageDone();
   }
   // the lobby's 🎁 별 상자: one of three, set down in the room, 몽글이 goes over to it
-  async openStarBoxLobby() {
-    const G = this.G, H = this.H; if (starBoxState(G.save).pending <= 0) return;
-    const n = H.starBoxOpened || 0, three = starBoxThree(G.save, n);
-    const t = three.length ? await pickPanel(G, three, { title: '별 상자!', line: '별 15개를 모았어! 마음에 드는 걸 하나 골라', tag: '별 상자' }) : null;
-    if (this.dead) return;
-    H.starBoxOpened = n + 1;
-    if (t) { H.inventory.push(t); this.placeFromInv(H.inventory.length - 1); this.select(null); }
-    G.persist(); this.setMode('lobby');
-    const f = t && this.zone.furniture[this.zone.furniture.length - 1]; if (f) this.heroCheer({ x: f.x, z: f.z });
+  async openStarBoxLobby() {   // (10/20: one of three gifts — a padlock, a thing to hide, a piece the shop doesn't sell; gifts.js)
+    const G = this.G; if (starBoxState(G.save).pending <= 0) return;
+    await openStarGifts(G); if (this.dead) return;
+    this.setMode('lobby'); const m = this.mong; if (m) { m.bump(.4); m.setFace?.('wow'); }
   }
   // 별 상자 (경제 A1+A2): a gift box drops in front of 몽글이; a tap opens it — one of three pieces, set straight down in the room
   async openStarBoxes() {
     const G = this.G, W = G.world, H = this.H, tw = this.tw, m = this.mong, R = this.room.group;
     for (let guard = 0; guard < 3 && starBoxState(G.save).pending > 0 && !this.dead; guard++) {
-      const n = H.starBoxOpened || 0, three = starBoxThree(G.save, n);
+      const n = H.starBoxOpened || 0, three = giftChoices(G.save, n);   // (10/20: gifts, not furniture — gifts.js)
       const b = noPick(buildItem('gift', { code: '★★★' })), s1 = 3.2, at = (guard === 0 && this._boxAt) || this.boxSpot();
       b.scale.setScalar(.01); b.position.set(at.x, 1.4, at.z); R.add(b); W.idsDirty = true; G.audio.sfx('pop', 3);
       await tw.run(.45, k => { b.scale.setScalar(s1 * Math.max(.01, Math.min(1, k * 1.6))); b.position.y = 1.4 * (1 - k) + Math.abs(Math.sin(k * Math.PI)) * .2; }, ease.outBounce); if (this.dead) return;
@@ -686,11 +684,11 @@ export class LobbyScene extends MyHomeScene {
       clearInterval(wiggle); this._boxTap = null; W.onTap = () => this.passageDone();
       if (this.dead) return;
       G.audio.sfx('special'); W.fx.confetti?.(40);
-      const t = three.length ? await pickPanel(G, three, { title: '별 상자!', line: '별 15개를 모았어! 마음에 드는 걸 하나 골라', tag: '별 상자' }) : null;
+      const t = await giftPanel(G, three, { title: '별 상자!', line: '별 15개를 모았어! 하나 골라' });
       if (this.dead) return;
       R.remove(b);
       H.starBoxOpened = n + 1;
-      if (t) { H.inventory.push(t); this.placeFromInv(H.inventory.length - 1); this.select(null); const f = this.zone.furniture[this.zone.furniture.length - 1]; if (f) { m.faceTo(f.x, f.z); m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); } }
+      if (t) { G.ui.toast(grantGift(G, t), 'green'); m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); }
       G.persist();
       if (hint) hint.textContent = tr('콕 하면 계속');
       await tw.wait(.9);

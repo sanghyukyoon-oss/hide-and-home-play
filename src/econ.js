@@ -22,7 +22,7 @@ export const PICK_AT = [11, 20, 30, 39, 48, 59, 69];
 // a new save with it on: the fields below from the start (so econMigrate leaves it alone)
 export function econSaveFields(s) {
   if (!ECON) return s;
-  Object.assign(s, { mig: 1, lens: { bag: 3 }, seen: s.collection.slice() });
+  Object.assign(s, { mig: 2, lens: { bag: 3 }, seen: s.collection.slice() });
   Object.assign(s.home, { offered: [], picks: {}, boxQ: [], friendBox: [], friendKnown: [] });
   for (const z of Object.values(s.home.zones)) z.friends = z.friends || [];
   return s;
@@ -30,7 +30,8 @@ export function econSaveFields(s) {
 // an old save, the first time it is opened with it on: new fields only. save.v stays 2 (a cached old build would rebuild a
 // save that isn't v2 and lose the home — 설계서 8장); coins, stage, best, stars, furniture and collection are not touched.
 export function econMigrate(s) {
-  if (!ECON || (s.mig || 0) >= 1) return s;
+  if (!ECON) return s;
+  if ((s.mig || 0) >= 1) { if (s.mig < 2) oneRoom(s); return s; }
   s.lens = s.lens || { bag: 5 };   // the update's gift: a full bag
   s.seen = [...new Set([...(s.seen || []), ...(s.collection || [])])];
   const H = s.home;
@@ -39,7 +40,25 @@ export function econMigrate(s) {
   H.friendKnown = H.friendKnown || null;   // null: the first lobby seats whoever you've met, quietly (one toast)
   H.boxQ = PICK_AT.filter(i => (s.stage || 0) > i && !(i in H.picks));   // boxes of chapters already behind you: 🎁 in the lobby
   s.mig = 1;
+  oneRoom(s);
   return s;
+}
+// mig 2 (10/20, user: "그냥 방으로 하자"): the home is 몽글이's room alone. The other zones' furniture goes to the 보관함 (nothing is
+// lost; the zone records stay, empty, for the house and the town later), anyone sitting there comes over to 몽글이's room, and
+// what was hidden in another zone comes out of hiding (the padlocks you own stay yours). The room gets its walls back if it
+// still has the open floor everyone started with — a theme you chose stays.
+function oneRoom(s) {
+  const H = s.home;
+  for (const [id, z] of Object.entries(H.zones || {})) {
+    if (id === 'room1') continue;
+    H.inventory = [...(H.inventory || []), ...(z.furniture || []).map(f => f.type)]; z.furniture = [];
+    // (whoever sat there comes over to 몽글이's room on the next visit — the lobby's arrivals seat them, or box them when it's full)
+    const gone = (z.friends || []).map(f => f.k).filter(Boolean); if (H.friendKnown) H.friendKnown = H.friendKnown.filter(k => !gone.includes(k)); z.friends = [];
+  }
+  H.current = 'room1';
+  if (H.hide && H.hide.zoneId !== 'room1') H.hide = { zoneId: 'room1', items: [], locks: {}, code: H.hide.code ?? null };
+  if (H.zones?.room1 && (!H.zones.room1.style || H.zones.room1.style === 'st-open')) H.zones.room1.style = 'st-classic';
+  s.mig = 2;
 }
 
 // everyone you have met: a stage's host once that stage is behind you, and the friends a stage gave you (save.chars)
@@ -82,6 +101,15 @@ export function pickPanel(G, list, { title = '선물 상자!', line = '하나 �
     });
     G.ui.panel({ title, color: 'orange', body: [h('div', { class: 'txt' }, line), h('div', { class: 'lootgrid' }, ...cards)] });
   });
+}
+// 장 끝 상자 as a gift (10/20 — gifts.js): what you picked is recorded; the chapter's three pieces of furniture all go up in the
+// shop's 기념품 (common furniture is the shop's, never a gift)
+export function takeGiftPick(G, idx, c) {
+  const H = G.save.home;
+  H.picks = { ...(H.picks || {}), [idx]: c.kind === 'lock' || c.kind === 'coins' ? c.kind : c.t };
+  H.offered = [...new Set([...(H.offered || []), ...(PICKS[idx] || [])])];
+  H.boxQ = (H.boxQ || []).filter(i => i !== idx);
+  G.persist();
 }
 export function takePick(G, idx, chosen) {
   const H = G.save.home;

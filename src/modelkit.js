@@ -109,11 +109,14 @@ function trimPic(G, k) {
 // of moving boxes that fold as they're emptied (이삿짐), little dishes of toppings (파르페).
 export function kitRunner(S) {
   const G = S.G, kit = S.kit.kit, K = KITS[kit], key = ensurePics(G, kit);
+  // the card's look: the kit's own — or ?kitskin= to compare (10/20: 13판's moving things got the robot's plastic runner, user:
+  // "이삿짐 풀기 UI는 왜 또 프라모델로 한 거야? 의미가 있어?" — 'list' a kraft checklist, 'labels' little labelled boxes)
+  const skin = /[?&]kitskin=(runner|list|labels)(&|$)/.exec(location.search)?.[1] || K.skin || 'runner', framed = !!K.frame && skin === 'runner';
   const cells = {};
   const row = h('div', { class: 'kitrun-row', style: `--n:${K.order.length}` });
   // a runner's windows aren't all one size (user 10/19: "너무 다 균등해서… 이런느낌으로", sprue-frame references): the big piece
   // in a big window, the arms in tall thin ones — KITS[kit].frame gives the grid's areas and its columns
-  if (K.frame) {
+  if (framed) {
     row.classList.add('framed');
     row.style.gridTemplateAreas = K.frame.areas.map(a => `"${a}"`).join(' ');
     row.style.setProperty('--cols', K.frame.cols.map(c => c + 'fr').join(' '));
@@ -123,17 +126,19 @@ export function kitRunner(S) {
     const c = h('div', { class: 'kitrun-cell' },
       h('i', { class: 'kitrun-gate l' }), h('i', { class: 'kitrun-gate r' }), h('i', { class: 'kitrun-box' }),
       h('img', { class: 'kitrun-ghost', src, alt: '' }), h('img', { class: 'kitrun-pc', src, alt: '' }),
-      h('span', { class: 'kitrun-no' }, String(i + 1)), h('span', { class: 'kitrun-nm' }, K.short?.[p] || ''));
-    c.dataset.p = p; if (K.frame) c.style.gridArea = p; row.append(c); cells[p] = c;
+      h('span', { class: 'kitrun-no' }, String(i + 1)), h('span', { class: 'kitrun-nm' }, K.short?.[p] || (skin === 'list' ? ITEMS[kitItem(kit, p)]?.name || '' : '')),
+      h('i', { class: 'kitrun-chk' }), h('b', { class: 'kitrun-stamp' }, '완료'));   // (a checklist's tick box, a label's stamp)
+    c.dataset.p = p; if (framed) c.style.gridArea = p; row.append(c); cells[p] = c;
   });
-  // (a frame's windows aren't square: each picture is trimmed to its piece, so a thin arm fills its thin window)
-  if (K.frame) for (const p of K.order) trimPic(G, key(p)).then(src => { if (src) cells[p].querySelectorAll('img').forEach(im => { im.src = src; }); });
+  // (a frame's windows aren't square: each picture is trimmed to its piece, so a thin arm fills its thin window; a list's or a
+  // label's small picture too, so the thing is as big as it can be)
+  if (framed || skin === 'list' || skin === 'labels') for (const p of K.order) trimPic(G, key(p)).then(src => { if (src) cells[p].querySelectorAll('img').forEach(im => { im.src = src; }); });
   const byType = Object.fromEntries(K.order.map(p => [kitItem(kit, p), p]));
   const tag = h('div', { class: 'kitrun-tag ol', style: `background:${K.color}` }, K.name);
   for (const it of S.targets) if (byType[it.type]) { it.kitPart = byType[it.type]; it.slot = cells[it.kitPart]; } else it.slot = tag;   // (anything else flies to the tag)
   S.kitCells = cells; S.kitPic = key;
   if (K.boxArt) { const im = new Image(); im.decoding = 'async'; im.src = K.boxArt; S.kitArt = im; }   // (the box's lid picture, ready before the box drops)
-  return h('div', { class: `kitrun skin-${K.skin || 'runner'}${K.numbers === false ? ' nonum' : ''}`, style: `--run:${K.runner};--runsh:${K.color}` }, tag, row);
+  return h('div', { class: `kitrun skin-${skin}${K.numbers === false ? ' nonum' : ''}`, style: `--run:${K.runner};--runsh:${K.color}` }, tag, row);
 }
 
 // ── the stage set up for the kit (stage.js, once the room and the things are in): 이삿짐's boxes about the room, the

@@ -256,8 +256,9 @@ export class ToonPost {
       if (!m.isMesh) return;
       const k = groupKey(m);
       if (!ids.has(k)) ids.set(k, next++);
-      // anything under a group marked `colored` keeps its colour in a 흑백판 (its IDs live from 40000 up)
-      let col = false; for (let o = m; o && !col; o = o.parent) col = !!o.userData.colored;
+      // anything under a group marked `colored` keeps its colour in a 흑백판 (its IDs live from 40000 up) — up to a group
+      // marked `grayStop` (another piece of furniture, a thing sitting on it: what you found comes back alone)
+      let col = false; for (let o = m; o; o = o.parent) { if (o.userData.colored) { col = true; break; } if (o.userData.grayStop) break; }
       m.userData.oid = ids.get(k) % 39000 + (col ? 40000 : 0);
       m.onBeforeRender = this._hook;
     });
