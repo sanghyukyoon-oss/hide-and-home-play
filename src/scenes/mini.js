@@ -14,7 +14,7 @@ import { Char } from '../gfx/chars.js';
 import { h } from '../ui.js';
 import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { giftRow, giftKey } from '../gift.js';
-import { starTotal, gameStar, starBar } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)   // 놀이 보상: 누가, 왜 주는지 (경제·로비 10/19)
+import { gameStar } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)   // 놀이 보상: 누가, 왜 주는지 (경제·로비 10/19)
 import { Tweens } from '../util.js';
 import { disposeTree } from '../gfx/kit.js';
 import { playDialog } from '../story.js';
@@ -137,10 +137,10 @@ export class MiniScene {
       const reward = settleFollowup(G, followupAt(this.after), { coins: this.boss ? 120 + this.si * 30 : 50, won: true, replayWin: true });
       const coins = reward.coins, lens = reward.lens;   // 경제 B5 (10/19): a won 놀이 → a magnifier into the bag (not in practice)
       G.audio.sfx('win'); G.world.fx.confetti(140);
-      const sb0 = starTotal(G.save); gameStar(G, 'm' + this.after, this.boss ? 3 : 2);   // (별 상자: no stars in these — a win is 2, the flashlight boss 3)
+      gameStar(G, 'm' + this.after, this.boss ? 3 : 2);   // (별 상자: no stars in these — a win is 2, the flashlight boss 3)
       G.stats.log.push({ mini: this.kind, result: 'win' });
       setTimeout(() => !this.dead && G.ui.panel({ title: this.boss ? `${this.info.name} 승리!` : `${this.info.name} 성공!`, color: 'green',
-        body: [...(G.playMode ? [] : [giftRow(G, giftKey(this.kind, 0, this.boss))].filter(Boolean)), h('div', { class: 'txt' }, detail || this.info.winLine || '해냈다!'), ...(G.playMode || !G.econ ? [] : [starBar(G, sb0)]), h('div', { class: 'reward' }, G.playMode ? '연습이라 코인은 없어' : `코인 +${coins}`)],
+        body: [...(G.playMode ? [] : [giftRow(G, giftKey(this.kind, 0, this.boss))].filter(Boolean)), h('div', { class: 'txt' }, detail || this.info.winLine || '해냈다!'), h('div', { class: 'reward' }, G.playMode ? '연습이라 코인은 없어' : `코인 +${coins}`)],
         buttons: [this.nextBtn = G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', { idx: this.after + 1 }) })] }), 900);
       if (lens) setTimeout(() => !this.dead && G.ui.panelOpen?.querySelector('.reward')?.after(lensPlus()), 900);   // ("+ 돋보기 1" under the coins; same delay, so right after that panel)
     } else {

@@ -7,7 +7,7 @@ import { GAME_GIFT } from './script.js';
 import { tr } from './i18n.js';
 import { CHAR_DEFS } from './gfx/chars.js';
 import { lensPlus } from './lens.js';
-import { starBar } from './starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
+import { chapterGift } from './gifts.js';   // 선물은 아주 가끔: 31·49·70판's gift on the boss's win card (10/20)
 
 let css = false;
 function style() {
@@ -47,17 +47,20 @@ const starRow = n => h('div', { class: 'stars' }, ...[0, 1, 2].map(i => h('div',
 // (실험실 10/19: in the campaign a won game skips its own result panel, so this card is the result — the game's line under
 // the stars, a '최고 기록!' stamp past the best stars before, and a small '다시' under three stars). Resolves 'next' | 'retry'.
 // (prevBest: the best before this win, when the win already kept the new best — bossgame.js, 외부 QA 10/20)
-export function giftCard(G, { key, title, st = 0, coins = 0, lens = false, line = null, retry = false, starBefore = null, prevBest }) {
+// (after: the stage before this game — 31·49·70판 give their gift here; no 별 막대 since 10/20)
+export function giftCard(G, { key, title, st = 0, coins = 0, lens = false, line = null, retry = false, prevBest, after = null }) {
   style();
   const best = G.save.gameBest || (G.save.gameBest = {}), prev = prevBest !== undefined ? prevBest : best[key], record = prev != null && st > prev;
   if (prev == null || st > prev) { best[key] = st; G.persist(); }
   return new Promise(res => {
     const row = giftRow(G, key);
     const reward = h('div', { class: 'reward', html: ICON.coin }, `+${coins}`);
+    const buttons = [...(retry ? [G.ui.btn('다시', { color: 'gray', cls: 'sm', onClick: () => { G.ui.closePanel(); res('retry'); } })] : []),
+      G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => { G.ui.closePanel(); res('next'); } })];
+    const gift = after != null ? chapterGift(G, after, buttons) : null;
     G.ui.panel({ title, color: 'green', cls: 'giftcard', body: [...(row ? [row] : []), h('div', { class: 'gstars' }, starRow(st), ...(record ? [h('div', { class: 'bestmark' }, '최고 기록!')] : [])),
-      ...(line ? [h('div', { class: 'txt gline' }, tr(line))] : []), ...(starBefore != null && G.econ ? [starBar(G, starBefore)] : []), reward, ...(lens ? [lensPlus()] : [])],
-      buttons: [...(retry ? [G.ui.btn('다시', { color: 'gray', cls: 'sm', onClick: () => { G.ui.closePanel(); res('retry'); } })] : []),
-        G.ui.btn('다음 판', { color: 'green', icon: 'play', cls: 'big', onClick: () => { G.ui.closePanel(); res('next'); } })] });
+      ...(line ? [h('div', { class: 'txt gline' }, tr(line))] : []), reward, ...(lens ? [lensPlus()] : []), ...(gift ? [gift] : [])],
+      buttons });
     G.audio?.sfx?.('coin');
   });
 }

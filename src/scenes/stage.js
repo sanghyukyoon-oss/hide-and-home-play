@@ -14,7 +14,7 @@ import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
 import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, lensClear } from '../lens.js';   // 돋보기 가방 (경제 B5, G.econ only, 10/19)
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
-import { starTotal, starBar, starBoxState, homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
+import { homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
 import { zoneLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
@@ -53,9 +53,8 @@ const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
 import { blindFor } from '../hunt-blind.js';
-import { PICKS, pickPanel, takePick, takeGiftPick, metFriends, callableFriends, friendPrice } from '../econ.js';
+import { PICKS, GIFT_AT, FREE_KITS, pickPanel, takePick, metFriends, callableFriends, friendPrice, keepsake, toShop } from '../econ.js';
 import * as SCRIPT_ALL from '../script.js';   // (callResult: the stage result's '이제 ○○를 집에 부를 수 있어 · 120' — 스토리 룸)   // 경제·로비 (10/19)
-import { giftChoices, giftPanel, grantGift, giftName, openStarGifts } from '../gifts.js';   // 선물 상자: 특별한 것·자물쇠 (10/20)
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac, cameoKind, moveItem } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
@@ -2708,13 +2707,14 @@ export class StageScene {
     else if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
     // 경제 B5 (10/19): no free magnifier used → one into the bag (not a preview / model kit, not testing my own room)
     const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this) : null;
-    if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) { const H = G.save.home; H.boxQ = [...new Set([...(H.boxQ || []), this.idx])]; }   // (takePick takes it off again — 경제 세션 12장)
+    // 선물은 아주 가끔 (10/20): a chapter's last stage, cleared — its furniture into the shop's 기념품; a gift's stage (econ.js GIFT_AT)
+    // also waits in boxQ for the lobby's 🎁 지난 장 선물 until its boss card gives it (takeGiftPick takes it off)
+    if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx]) { const H = G.save.home; H.offered = [...new Set([...(H.offered || []), ...PICKS[this.idx]])]; if (GIFT_AT.includes(this.idx) && !(this.idx in (H.picks || {}))) H.boxQ = [...new Set([...(H.boxQ || []), this.idx])]; }
     // 별 셋 = 비밀 한 줄 (스토리 룸 10/19): whose stage this is, and whether their diary secret was open before this clear
     const sHost = !this.custom && !this.preview && !this.model && !G.bot ? stageHost(this.idx) : null, secret = sHost && diarySecret(sHost);
     const secWas = !!secret && secretOpen(G.save.best, sHost), secKnown = anySecret(G.save.best);
     const secretNew = !!secret && !secWas && stars >= 3, secretLock = !!secret && !secWas && stars < 3 && secKnown;
     const metBefore = G.econ && !this.custom && !this.preview ? new Set(metFriends(G.save)) : null;   // (who is new after this clear — 판 끝 집으로 가져가기)
-    const starBefore = metBefore && !this.model ? starTotal(G.save) : null;   // (별 상자: the bar fills from here)
     // (외부 QA 10/20 TECH-STORY-LOSS) the new friend, the story's gift (furniture + coins) and 11판's cat tower are given here,
     // before the clear is saved — they used to come after the 1 s wait and the outro talk, so a page closed in between kept
     // the clear and lost them for good (11·21·31·40·49·60·70판). They are still shown on the result panel as before.
@@ -2728,7 +2728,7 @@ export class StageScene {
       const done = G.save.storyDone || (G.save.storyDone = {});
       if (this.story.reward && !done[this.story.id]) {
         done[this.story.id] = true;
-        if (this.story.reward.furn) { G.save.home.inventory.push(this.story.reward.furn); memento = this.story.reward.furn; }
+        if (this.story.reward.furn) { keepsake(G, this.story.reward.furn); memento = this.story.reward.furn; }   // (선물은 아주 가끔 10/20: to the shop's 기념품 — econ.js)
         if (this.story.reward.coins) G.addCoins(this.story.reward.coins);
       }
     }
@@ -2736,14 +2736,14 @@ export class StageScene {
     // your place (script.js giftSeats) still comes (user picked this, 10/18). Marked as that story's gift, once.
     if (this.idx === 10 && !this.custom && !this.preview) {
       const done = G.save.storyDone || (G.save.storyDone = {});
-      if (!done.grumpycat) { done.grumpycat = true; G.save.home.inventory.push('cattower'); memento = 'cattower'; setTimeout(() => !this.dead && G.ui.toast('도감 · 몽글이 일기장에 냥냥이가 적혔어!', 'green'), 2600); }   // (the diary page she mentions — 검토 10/19)
+      if (!done.grumpycat) { done.grumpycat = true; keepsake(G, 'cattower'); memento = 'cattower'; setTimeout(() => !this.dead && G.ui.toast('도감 · 몽글이 일기장에 냥냥이가 적혔어!', 'green'), 2600); }   // (the diary page she mentions — 검토 10/19)
     }
     if (this.preview || this.custom) G.persist();   // (a stage clear saves all of it in G.onStageClear just below)
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
     // the finished model goes home (once) — saved with the clear, before the pause (GPT QA R2-01 10/19: quitting in that
     // second kept the clear but lost the robot / boxes / parfait)
-    const kitFurn = this.kit && KITS[this.kit.kit].furn, kitNew = this.kit ? kitReward(this) : null;
+    const kitFurn = this.kit && KITS[this.kit.kit].furn, kitNew = this.kit ? kitReward(this) : null, kitShop = !!this.kit && toShop(G) && !FREE_KITS.includes(this.kit.kit);   // (only the robot comes home free — 10/20)
     // 흑백판: the whole room floods back into colour — seen as a whole room first, then the friend (colorBloom)
     // (외부 3차 QA 10/20 TECH-GRAY-BLOOM-SAVE: the clear is saved above, before this — a page closed during the bloom lost it)
     if (this.spec.gray && W.post?.u.gray.value > .5) { await this.colorBloom(); if (this.dead) return; }
@@ -2796,14 +2796,8 @@ export class StageScene {
     }
     if (aft && !G.skipTalk && !G.bot) { await this.talk(aft, { cam: true }); if (this.dead) return; }
     if (this.villain && !this.inkyIt && inkyStays(this.idx)) this.villain.ch.setFace('happy');   // ("다음엔 같이 칠하자" — now it smiles)
-    // 경제·로비 on: a chapter's last stage, the first time — its box: one of three pieces (설계서 4-2)
-    let picked = null;
-    if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx] && !(this.idx in (G.save.home.picks || {}))) {
-      // (10/20: a gift, not the chapter's furniture — that's in the shop's 기념품 now; gifts.js)
-      picked = await giftPanel(G, giftChoices(G.save, 100 + this.idx), { title: '장 끝 선물 상자!', line: '보스를 이긴 선물! 하나 골라 · 이 장 가구는 상점 기념품 칸에 있어' });
-      if (this.dead) return;
-      picked.line = grantGift(G, picked); takeGiftPick(G, this.idx, picked);
-    }
+    // (선물은 아주 가끔 10/20: no chapter box here any more — 31·49·70판's gift is on the win card of the boss right after,
+    // gifts.js chapterGift; boxQ above keeps it for the lobby's 🎁 지난 장 선물 if that boss is left)
     // 2판 (home just opened): go and hide something at home now, or keep going — both on the result panel
     // 판 끝 집으로 가져가기 (검토 세션 10/19, 사용자 OK — "찾은 게 아무 데도 안 남는다"): '다음' goes through 몽글이's room for under
     // 3 s on the way — the friend met here walks in and sits, a piece won here is set down, the thing found goes on the shelf
@@ -2811,16 +2805,15 @@ export class StageScene {
     // '계속 찾기' the next stage's passage is the room's first opening (검토 P1)
     // what came home this time joins the queue for the room (homeQ — the room shows it all next time it is passed through);
     // a star box waiting turns '다음' into '🎁 방에서 열기' (별 상자, 경제 A1+A2)
-    let passage = null, boxOn = false, gotNow = [];
+    let passage = null, gotNow = [];
     if (metBefore && G.homeOpen?.() && !G.playMode && !G.bot && !this.model) {
       const H = G.save.home, Q = H.homeQ || (H.homeQ = { friends: [], furns: [], items: [] });
-      const fr = metFriends(G.save).filter(k => !metBefore.has(k)), fu = memento || (kitNew ? kitFurn : null);
+      const fr = metFriends(G.save).filter(k => !metBefore.has(k)), fu = (toShop(G) ? null : memento) || (kitNew && !kitShop ? kitFurn : null);
       for (const k of fr) if (!Q.friends.includes(k)) Q.friends.push(k);
       if (fu) Q.furns.push(fu);
       gotNow = [...fr.map(k => ({ face: k })), ...(fu ? [{ furn: fu }] : [])];   // (no find for the shelf: the 찾은 것 선반 is gone, 10/19 evening)
       G.persist();
-      boxOn = starBoxState(G.save).pending > 0;
-      passage = { items: Q.items.slice(), furns: Q.furns.slice(), friends: Q.friends.slice(), box: boxOn };
+      passage = { items: Q.items.slice(), furns: Q.furns.slice(), friends: Q.friends.slice(), box: false };   // (no 별 상자 since 10/20)
     }
     const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;
     // (10/20: a star box opens right here — 🎁 상자 열기 — not in the room: no scene between the stages, gifts.js)
@@ -2832,7 +2825,7 @@ export class StageScene {
     const cv = h('span', {}, '0');
     const p = G.ui.panel({
       title: this.model ? '완성!' : first?.allClear ? `${STAGE_COUNT}판 올클리어!` : this.v2 ? v2Title(this) : this.spec.hard ? '하드 클리어!' : (!this.custom && this.idx < 6) ? ['대단해!', '최고야!', '숨바꼭질 천재!', '멋져!', '완벽해!', '진짜 잘한다!'][this.idx] : '다 찾았다!', color: 'green', cls: 'result',
-      body: [h('div', { class: 'stars' }, ...starEls), ...(starBefore != null ? [starBar(G, starBefore)] : []),
+      body: [h('div', { class: 'stars' }, ...starEls), 
         // 사건 판: what each star is for, so a missing one says how to get it (GPT QA 10/18: 보너스 0/2 → '다 찾았네', 별 2개)
         ...(this.v2 ? [h('div', { class: 'starwhy' }, ...v2StarWhy(this).map(([t, on]) => h('span', { class: on ? 'on' : '' }, t)))].concat(v2Stamp(this) || [])
           : this.hiddenStage || this.model ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛손질 ${this.missCount}` : TAP_TXT.star))]   // 숨은그림 판: what each star is for
@@ -2848,7 +2841,7 @@ export class StageScene {
         // 별 셋 = 비밀 한 줄: the line itself the moment it opens; short of three (once you know secrets exist), a grey 'one secret'
         ...(secretNew ? [h('div', { class: 'memento secret' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost] }) : '', h('div', {}, h('b', {}, tr(SECRET_UI.got)), h('div', {}, tr(secret))))] : []),
         ...(secretLock ? [h('div', { class: 'memento secret', style: 'opacity:.75' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost], style: 'filter:grayscale(1) brightness(.55)' }) : '', h('div', {}, h('b', {}, '🔒 ' + tr(SECRET_UI.lockT)), h('div', {}, tr(SECRET_UI.lock))))] : []),
-        ...(this.kit ? [h('div', { class: 'memento tile gift' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))] : []),
+        ...(this.kit ? [h('div', { class: 'memento tile gift' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? kitShop ? '상점 기념품!' : '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · ${kitShop ? '상점 기념품에 들어갔어' : passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}` : `${FURN_NAME(kitFurn)} · ${kitShop ? '상점 기념품 칸에 있어' : '이미 내 집에 있어요'}`)))] : []),
         ...(this.model ? [] : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
         /* (no '걸린 시간 · 힌트 없이!' line: the star chips above already say hints, and the time isn't a goal — 2D UI 정리 10/19) */
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
@@ -2856,22 +2849,21 @@ export class StageScene {
         ...(newItem ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
         // 친구 부르기 (10/20): a friend met in this clear can be called home now — one line, its face and price (no scene)
         ...(metBefore && G.homeOpen?.() ? callableFriends(G.save).filter(k => !metBefore.has(k)) : []).map(k => h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, h('b', {}, '부를 수 있어!'), h('div', {}, SCRIPT_ALL.callResult ? SCRIPT_ALL.callResult(k, friendPrice(k)) : `${CHAR_DEFS[k]?.name || ''} · ${friendPrice(k)}`)))),
-        ...(picked ? [h('div', { class: 'memento tile gift' }, picked.kind === 'thing' ? h('img', { src: G.thumbs['item_' + picked.t] }) : picked.kind === 'decor' ? h('img', { src: G.thumbs['furn_' + picked.t] }) : h('div', { style: 'width:56px;height:56px;display:grid;place-items:center', html: picked.kind === 'lock' ? ICON.lock : ICON.coin }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, picked.line || giftName(picked))))] : []),
         /* (no '도감에 새로' and '내 방으로' rows: a number on 도감 and on 꾸미기 says it — user 10/20 "이거 필요없어. 도감이랑 내 방에 숫자 배지") */
         ...(newFriend ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
         ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, got.isNew ? `${ITEMS[got.item]?.name || ''} · 내 수집품에 추가! 내 집에 숨길 수 있어` : `${ITEMS[got.item]?.name || ''} · 이미 있어서 코인 +${got.coins}`)))] : []),
         ...(got && this.custom?.resident ? [h('div', { class: 'txt' }, `${ga(this.custom.nick)} 눈치챘을지도… 복수하러 올 수 있어! 내 집 물건을 더 꼭꼭 숨겨 둬`)] : []),
-        ...(memento ? [h('div', { class: 'memento tile gift' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : [])],
+        ...(memento ? [h('div', { class: 'memento tile gift' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, toShop(G) ? '상점 기념품!' : '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · ${toShop(G) ? '상점 기념품에 들어갔어' : passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : [])],
       buttons: this.model ? [G.ui.btn('놀이 모음', { color: 'blue', cls: 'sm', onClick: () => G.go('home', { gallery: true }) }),
         this.nextBtn = G.ui.btn('다시 조립', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })]
         : [...(noHome ? [] : [homeNow ? G.ui.btn(SUI.homeHide, { color: 'orange', icon: 'home', cls: 'sm', onClick: () => G.go('myhome') }) : G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') })]),
         this.nextBtn = this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'green', icon: 'home', cls: 'big', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })
           : this.preview ? G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })
-          : G.ui.btn(boxOn ? '🎁 상자 열기' : bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: boxOn ? 'orange' : 'green', icon: 'play', cls: 'big',
-              onClick: async () => { if (boxOn) { if (this._boxing) return; this._boxing = true; await openStarGifts(G); if (this.dead) return; }   // (별 상자: one of three, then on — 10/20)
+          : G.ui.btn(bossNext || gameNext || (miniNext && MINI_AFTER[this.idx].boss) ? '보스 등장!' : miniNext ? '다음' : this.idx + 1 >= STAGE_COUNT ? '무한 모드' : homeNow ? SUI.keepGoing : '다음', { color: 'green', icon: 'play', cls: 'big',
+              onClick: () => {
                 const go = (n, d) => passOn ? G.go('home', { passage: { ...passage, next: [n, d] }, quick: true }) : G.go(n, d); return bossNext ? go('boss', { after: this.idx }) : gameNext ? go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx }) : miniNext ? (MINI_AFTER[this.idx].lab ? go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx })) : go('stage', { idx: this.idx + 1 }); } })],
     });
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }

@@ -22,6 +22,7 @@ import { blindFor } from './hunt-blind.js';
 import { haptic } from './feel.js';
 import { rng, ease } from './util.js';
 import { h, ICON } from './ui.js';
+import { keepsake, FREE_KITS } from './econ.js';   // 선물은 아주 가끔: only the robot comes home free (10/20)
 
 // one entry per playable kit stage in 놀이 모음 (listed there as levels)
 export const MODEL_STAGES = {
@@ -867,7 +868,7 @@ export function kitReward(S) {
   const done = G.save.kitsDone || (G.save.kitsDone = {});
   if (done[K.id]) return null;
   done[K.id] = true;
-  G.save.home.inventory.push(K.furn);
+  if (FREE_KITS.includes(K.id)) G.save.home.inventory.push(K.furn); else keepsake(G, K.furn);
   G.persist();
   return K.furn;
 }

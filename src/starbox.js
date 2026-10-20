@@ -15,8 +15,8 @@ export const PASSAGE_EVERY = false;   // (10/19 evening, user: "방에 그 전�
 
 export const starTotal = save => Object.values(save.best || {}).reduce((a, b) => a + (b || 0), 0) + Object.values(save.gameStars || {}).reduce((a, b) => a + (b || 0), 0);
 export function starBoxState(save) {
-  const H = save.home, total = starTotal(save), earned = Math.floor(total / STAR_BOX);
-  if (H.starBoxOpened == null) H.starBoxOpened = Math.max(0, earned - 1);
+  const H = save.home, total = starTotal(save), earned = Math.min(Math.floor(total / STAR_BOX), H.starBoxCap ?? 0);   // (no new boxes since 10/20: econ.js mig 3)
+  if (H.starBoxOpened == null) H.starBoxOpened = earned;
   return { total, earned, pending: Math.max(0, earned - H.starBoxOpened), into: total % STAR_BOX };
 }
 // a 판 사이 놀이·보스 won: its best stars; returns how many it added to the bar

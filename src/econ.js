@@ -17,14 +17,32 @@ export const ECON = (() => {
   } catch { return q === '1'; }
 })();
 
+// 선물은 아주 가끔 (10/20, user: "선물 50판에 한 세 개면 될 듯? 로봇 포함 10판째는 하나 주자."): the free things in 1~50판 are three —
+// 8판's robot (the model kit you built), then a special gift (one of three: a padlock, a thing to hide, a piece the shop doesn't
+// sell) on the win card of the boss after 31판 and after 49판, and one more after 70판 (about one in 17 past 50). No 별 상자, no
+// chapter box: a chapter's furniture goes into the shop's 기념품 when its last stage is cleared (stage.js).
+export const GIFT_AT = [30, 48, 69];   // (0-based stage before the boss: 31판 → 깨우기, 49판 → 보물 지키기, 70판 → 야식)
+export const FREE_KITS = ['robot'];    // (the kits whose model comes home free; the rest go to the shop's 기념품)
+// 11판's cat tower, the stories' keepsakes and the other kits' models go to the shop's 기념품 — yours to buy — not free into the
+// 보관함. true gives them all free again (one switch). Old saves keep theirs.
+export const FREE_KEEPSAKES = false;
+export const KEEPSAKE_PRICE = 300;   // (a kit's model has no price of its own: 0 in KIT_INFO)
+export const toShop = G => G.econ && !FREE_KEEPSAKES;
+// a keepsake earned: to the shop's 기념품 (true) or the 보관함 (false)
+export function keepsake(G, t) {
+  const H = G.save.home;
+  if (!toShop(G)) { H.inventory.push(t); return false; }
+  H.offered = [...new Set([...(H.offered || []), t])]; return true;
+}
+
 // the stages whose clear opens a chapter's box (0-based: 12·21·31·40·49·60·70판) — 설계서 4-2
 export const PICK_AT = [11, 20, 30, 39, 48, 59, 69];
 
 // a new save with it on: the fields below from the start (so econMigrate leaves it alone)
 export function econSaveFields(s) {
   if (!ECON) return s;
-  Object.assign(s, { mig: 2, lens: { bag: 3 }, seen: s.collection.slice() });
-  Object.assign(s.home, { offered: [], picks: {}, boxQ: [], friendBox: [], friendKnown: [] });
+  Object.assign(s, { mig: 3, lens: { bag: 3 }, seen: s.collection.slice() });
+  Object.assign(s.home, { offered: [], picks: {}, boxQ: [], friendBox: [], friendKnown: [], starBoxCap: 0, starBoxOpened: 0 });
   for (const z of Object.values(s.home.zones)) z.friends = z.friends || [];
   return s;
 }
@@ -32,7 +50,7 @@ export function econSaveFields(s) {
 // save that isn't v2 and lose the home — 설계서 8장); coins, stage, best, stars, furniture and collection are not touched.
 export function econMigrate(s) {
   if (!ECON) return s;
-  if ((s.mig || 0) >= 1) { if (s.mig < 2) oneRoom(s); return s; }
+  if ((s.mig || 0) >= 1) { if (s.mig < 2) oneRoom(s); if (s.mig < 3) starFreeze(s); return s; }
   s.lens = s.lens || { bag: 5 };   // the update's gift: a full bag
   s.seen = [...new Set([...(s.seen || []), ...(s.collection || [])])];
   const H = s.home;
@@ -42,6 +60,7 @@ export function econMigrate(s) {
   H.boxQ = PICK_AT.filter(i => (s.stage || 0) > i && !(i in H.picks));   // boxes of chapters already behind you: 🎁 in the lobby
   s.mig = 1;
   oneRoom(s);
+  starFreeze(s);
   return s;
 }
 // mig 2 (10/20, user: "그냥 방으로 하자"): the home is 몽글이's room alone. The other zones' furniture goes to the 보관함 (nothing is
@@ -63,6 +82,14 @@ function oneRoom(s) {
   if (H.hide && H.hide.zoneId !== 'room1') H.hide = { zoneId: 'room1', items: [], locks: {}, code: H.hide.code ?? null };
   if (H.zones?.room1 && (!H.zones.room1.style || H.zones.room1.style === 'st-open')) H.zones.room1.style = 'st-classic';
   s.mig = 2;
+}
+// mig 3 (10/20, user: "그 스테이지 끝나고 선물 존나게 주네 진짜", "선물 50판에 한 세 개면 될 듯?"): no new 별 상자. The boxes this save had
+// already filled stay, opened from the lobby's 🎁 별 상자; a save that never had one gets none (GIFT_AT above)
+function starFreeze(s) {
+  const H = s.home, total = Object.values(s.best || {}).reduce((a, b) => a + (b || 0), 0) + Object.values(s.gameStars || {}).reduce((a, b) => a + (b || 0), 0);
+  H.starBoxCap = Math.floor(total / 15);
+  if (H.starBoxOpened == null) H.starBoxOpened = H.starBoxCap;
+  s.mig = 3;
 }
 
 // everyone you have met: a stage's host once that stage is behind you, and the friends a stage gave you (save.chars)

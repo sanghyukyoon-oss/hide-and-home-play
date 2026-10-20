@@ -25,7 +25,7 @@ import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
 import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow, takeGiftPick, ECON, friendPrice, callableFriends } from '../econ.js';
-import { SHOP_FURN, STARTER_ITEMS } from '../catalog.js';
+import { SHOP_FURN, STARTER_ITEMS, WALLPAPERS, FLOORS } from '../catalog.js';
 import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
 import { TV_TYPES, tvScreens, openMongleTV, tvLevel } from '../mongletv.js';   // 몽글 TV (10/19)
@@ -102,7 +102,9 @@ export class LobbyScene extends MyHomeScene {
     const ch = chapterNow(G.save);
     if (G.homeOpen() && ch > (this.H.shopCh || 1)) {
       const n = SHOP_FURN.filter(it => chapterOfFurn(it.type) === ch).length; this.H.shopCh = ch; G.persist();
-      if (n) setTimeout(() => !this.dead && G.ui.toast(`상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개가 들어왔어!`, 'green'), 3200);
+      const m = [...WALLPAPERS, ...FLOORS].filter(p => p.ch === ch).length;   // (the chapter's new wallpapers and floors too — 10/20)
+      const msg = n && m ? `상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개, 벽지·바닥 ${m}개가 들어왔어!` : n ? `상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개가 들어왔어!` : m ? `상점에 새 벽지·바닥 ${m}개가 들어왔어!` : null;
+      if (msg) setTimeout(() => !this.dead && G.ui.toast(msg, 'green'), 3200);
     }
   }
 

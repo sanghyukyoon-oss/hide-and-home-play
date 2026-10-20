@@ -5,21 +5,23 @@ import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STY
 import { Room } from './room.js';
 import { layoutFor, LAYOUTS } from './stages.js';
 import { renderThumbs } from './thumbs.js';
-import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON } from './econ.js';
+import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON, KEEPSAKE_PRICE } from './econ.js';
 import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_PRICE, LOCK_MAX } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
 import { EN } from './i18n-en-dict.js';
+import { hasWall, hasFloor, patternThumb } from './patterns.js';   // 벽지·바닥 더하기 (10/20)
 
 // furniture not open yet (10/19 night, user: "아직 오픈하지 못한 가구들은 실루엣만 보여주고"): a later chapter's piece, or a chapter
 // box's piece nobody has shown you, stays in the grid as its own picture gone dark (no name, no price) under the rest
 const K = (ko, en) => { EN[ko] = en; return ko; };
 const SIL_TXT = {
   head: K('아직 안 열린 가구', 'Furniture not open yet'),
-  box: K('장 끝 선물 상자', 'Chapter gift box'),
-  boxToast: K('장 끝 선물 상자에서 고를 수 있어!', 'You can pick it from a chapter gift box!'),
+  box: K('장을 끝내면 들어와', 'Comes when the chapter ends'),   // (no chapter box since 10/20: its pieces come into the shop at the chapter's end)
+  boxToast: K('그 장 마지막 판을 깨면 상점에 들어와!', 'It comes to the shop when you clear the chapter\'s last stage!'),
   chToast: K('아직 안 열렸어! 그 장에 가면 상점에 들어와', 'Not open yet! It comes to the shop in its chapter'),
 };
 const chOpens = c => K(`${c}장에서 열려`, `Opens in chapter ${c}`);
+const PAT_LATER = K('다음 장에 들어오는 무늬', 'Patterns coming in later chapters');
 
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 
@@ -45,6 +47,15 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   const tabsEl = h('div', { class: 'shoptabs' });
   const grid = h('div', { class: 'shopgrid' });
   const note = h('div', { class: 'txt', style: 'font-size:14px;margin:4px 0 8px' });
+  // a later chapter's wallpapers / floors under the rest: their picture gone dark, '???', and when they come (10/20)
+  const laterPats = (list, floor) => {
+    if (!list.length) return;
+    grid.append(h('div', { class: 'shopsep' }, PAT_LATER));
+    for (const p of list.sort((x, y) => (x.ch || 1) - (y.ch || 1))) {
+      const sw = patSwatch(floor ? p.floorKind : p.wallKind, floor ? p.floor : p.wall, floor ? p.floor2 : p.wall2, floor); sw.style.filter = 'grayscale(1) brightness(.55)';
+      grid.append(h('div', { class: 'card silc', 'aria-label': '???', onclick: () => { ui.toast(SIL_TXT.chToast, ''); G.audio.sfx('locked'); } }, sw, h('div', {}, '???'), h('div', { style: 'font-size:11px;color:#9b6cff' }, chOpens(p.ch))));
+    }
+  };
   const render = () => {
     tabsEl.innerHTML = '';
     for (const [k, label] of TABS) if ((k !== 'items' || G.econ) && !(k === 'zone' && ECON)) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
@@ -74,11 +85,11 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       // 경제·로비 on: a chapter's pieces stay out until its last stage is cleared; then they're here as 기념품, at their price,
       // on top (and they go in any room). (10/20: the chapter box gives a gift now, not these — 재QA ST75-CHAPTER-SHOP-COPY)
       const offered = G.econ ? (H.offered || []).filter(t => FURN_INFO[t]) : [];
-      for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: '장을 끝내면 들어오는 기념품', price: furnPrice(t), tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
+      for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: PICK_ITEMS.has(t) ? '장을 끝내면 들어오는 기념품' : '판을 깨서 들어온 기념품', price: furnPrice(t) || KEEPSAKE_PRICE, tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
         onBuy: () => { H.inventory.push(t); G.persist(); ui.toast(`${FURN_INFO[t].name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } })); }
       const later = [];
       for (const it of SHOP_FURN) {
-        if (G.econ && PICK_ITEMS.has(it.type) && offered.includes(it.type)) continue;   // (on top, as 기념품)
+        if (G.econ && offered.includes(it.type)) continue;   // (on top, as 기념품 — a chapter's pieces and the keepsakes, 10/20)
         if (ztype && !(ztype.indoor ? it.indoor : it.outdoor)) continue;
         const inf = FURN_INFO[it.type]; if (!inf) continue;
         // not open yet: a chapter box's piece you haven't been shown, or a later chapter's piece — a silhouette below
@@ -95,10 +106,12 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       }
     } else if (tab === 'wall' || tab === 'paint') {
       if (!zone || !ztype.indoor) { note.textContent = '벽지와 페인트는 실내 구역(방·창고)에 쓸 수 있어요.'; }
+      const laterP = [];
       for (const wp of tab === 'wall' ? WALLPAPERS : PAINTS) {
         const owned = H.owned.wall.includes(wp.id) || !wp.price, on = zone?.paint?.wallId === wp.id || (!zone?.paint?.wallId && wp.price === 0 && tab === 'wall');
+        if (G.econ && !owned && (wp.ch || 1) > chapterNow(G.save)) { laterP.push(wp); continue; }   // (a later chapter's pattern: below, dark — 10/20)
         const look = { wallId: wp.id, wallKind: wp.wallKind, wall: wp.wall, wall2: wp.wall2, ...(wp.wainscot ? { wainscot: wp.wainscot } : {}) };
-        grid.append(card(G, { swatch: swatch(wp.wall, wp.wall2, wp.wallKind), name: wp.name, price: owned ? null : wp.price, tag: on ? '사용 중' : owned ? '보유' : null,
+        grid.append(card(G, { swatch: patSwatch(wp.wallKind, wp.wall, wp.wall2, false), name: wp.name, price: owned ? null : wp.price, tag: on ? '사용 중' : owned ? '보유' : null,
           action: owned ? '바르기' : null,
           // (10/20, user: "상점 벽 바닥은 미리보기 가능하게 가능?": one you don't own goes on your walls first — 사기 or 되돌리기)
           onBuy: null, blocked: !zone || !ztype.indoor ? '실내에서만 바를 수 있어' : null,
@@ -109,12 +122,15 @@ export function openShop(G, ctx = {}, tab = 'furn') {
           G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render();
         }
       }
+      laterPats(laterP, false);
     } else if (tab === 'floor') {
+      const laterP = [];
       for (const fl of FLOORS) {
         if (ztype && fl.indoor !== ztype.indoor) continue;
         const owned = fl.price === 0 || H.owned.floor.includes(fl.id), on = zone?.paint?.floorId === fl.id;
+        if (G.econ && !owned && (fl.ch || 1) > chapterNow(G.save)) { laterP.push(fl); continue; }
         const look = { floorId: fl.id, floorKind: fl.floorKind, floor: fl.floor, floor2: fl.floor2 };
-        grid.append(card(G, { swatch: swatch(fl.floor, fl.floor2, fl.floorKind === 'checker' ? 'check' : fl.floorKind === 'planks' ? 'wood' : 'dots'), name: fl.name, price: owned ? null : fl.price, tag: on ? '사용 중' : owned ? '보유' : null,
+        grid.append(card(G, { swatch: patSwatch(fl.floorKind, fl.floor, fl.floor2, true), name: fl.name, price: owned ? null : fl.price, tag: on ? '사용 중' : owned ? '보유' : null,
           action: owned ? '깔기' : null,
           onBuy: null,   // (미리보기 first, as the walls)
           onUse: () => owned ? apply() : zone && preview(fl.name, fl.price, look, () => H.owned.floor.push(fl.id)) }));
@@ -124,6 +140,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
           G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render();
         }
       }
+      laterPats(laterP, true);
     } else if (tab === 'style') {
       note.textContent = zone ? `${zone.name}의 분위기를 통째로 바꿔요. 바꾸면 벽지·바닥은 그 테마 것으로 돌아가요.` : '';
       H.owned.style = H.owned.style || [];
@@ -212,6 +229,11 @@ function swatch(a, b, kind) {
     : kind === 'wood' ? `repeating-linear-gradient(90deg, ${a} 0 14px, ${b} 14px 16px)`
     : `radial-gradient(${b} 22%, transparent 24%) 0 0/14px 14px, ${a}`;
   return h('div', { class: 'swatch', style: `background:${bg}` });
+}
+// a pattern's swatch: the painted picture for the newer ones (patterns.js), the CSS stand-in for the first eight
+function patSwatch(kind, a, b, floor) {
+  if (!(floor ? hasFloor(kind) : hasWall(kind))) return swatch(a, b, floor ? kind === 'checker' ? 'check' : kind === 'planks' ? 'wood' : 'dots' : kind);
+  return h('div', { class: 'swatch', style: `background:url(${patternThumb(kind, a, b, floor)}) 0 0/100% 100%` });
 }
 function countOwned(H, t) { let n = H.inventory.filter(x => x === t).length; for (const id in H.zones) n += H.zones[id].furniture.filter(f => f.type === t).length; return n; }
 const _sc = {};

@@ -12,6 +12,7 @@ import { FURN_INFO } from './gfx/furniture.js';
 import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_MAX } from './raid.js';
 import { starBoxState } from './starbox.js';
+import { GIFT_AT, takeGiftPick } from './econ.js';
 
 export const GIFT_THINGS = ['goldbone', 'console', 'snack', 'report'];
 export const GIFT_DECOR = ['easel', 'amphora', 'veiled', 'speaker', 'micstand', 'tacklebox', 'parasol', 'boardrack', 'fishsign', 'baitbucket', 'artcrate'];
@@ -37,6 +38,8 @@ export const giftName = c => c.kind === 'lock' ? '자물쇠' : c.kind === 'thing
 const giftTag = c => c.kind === 'lock' ? '서랍 잠그기' : c.kind === 'thing' ? '숨길 보물' : c.kind === 'decor' ? '상점에 없는 소품' : '코인';
 const giftImg = (G, c) => c.kind === 'thing' ? G.thumbs['item_' + c.t] : c.kind === 'decor' ? G.thumbs['furn_' + c.t] : null;
 
+const lootCard = (G, c) => { const img = giftImg(G, c), pic = img ? h('img', { src: img }) : h('div', { class: 'giftico', html: c.kind === 'lock' ? ICON.lock : ICON.coin, style: 'width:64px;height:64px;margin:6px auto;display:grid;place-items:center' });
+  return h('div', { class: 'lootcard new', role: 'button', tabindex: '0' }, pic, h('div', { class: 'lname' }, giftName(c)), h('div', { class: 'ltag' }, giftTag(c))); };
 // one of three, picked on a card (like the old pick panel); resolves the chosen one
 export function giftPanel(G, choices, { title = '선물 상자!', line = '하나 골라!' } = {}) {
   G.needThumbs?.(choices.map(c => c.kind === 'thing' ? 'item_' + c.t : c.kind === 'decor' ? 'furn_' + c.t : null).filter(Boolean));
@@ -44,8 +47,7 @@ export function giftPanel(G, choices, { title = '선물 상자!', line = '하나
   return new Promise(res => {
     let done = false;
     const cards = choices.map(c => {
-      const img = giftImg(G, c), pic = img ? h('img', { src: img }) : h('div', { class: 'giftico', html: c.kind === 'lock' ? ICON.lock : ICON.coin, style: 'width:64px;height:64px;margin:6px auto;display:grid;place-items:center' });
-      const card = h('div', { class: 'lootcard new', role: 'button', tabindex: '0' }, pic, h('div', { class: 'lname' }, giftName(c)), h('div', { class: 'ltag' }, giftTag(c)));
+      const card = lootCard(G, c);
       const pick = () => { if (done) return; done = true; G.audio.sfx('special'); G.ui.closePanel(); res(c); };
       card.addEventListener('click', pick); card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') pick(); });
       return card;
@@ -61,6 +63,31 @@ export function grantGift(G, c) {
   if (c.kind === 'thing') { G.collect(c.t); S.seen = [...new Set([...(S.seen || []), c.t])]; G.persist(); return `${ITEMS[c.t]?.name || ''} · 숨기기에서 집에 숨겨 봐`; }
   if (c.kind === 'decor') { S.home.inventory.push(c.t); G.persist(); return `${FURN_INFO[c.t]?.name || ''} · 꾸미기 보관함에 들어갔어`; }
   G.addCoins(c.n); return `코인 ${c.n}개!`;
+}
+// 선물은 아주 가끔 (10/20, user: "선물 50판에 한 세 개면 될 듯? 로봇 포함 10판째는 하나 주자."): a special gift on the win card of
+// the boss after 31·49·70판 (econ.js GIFT_AT), one of three picked right on the card — no box before a stage's result, no 별 상자.
+// The card's buttons wait for the pick. Null when this boss has none (not a gift's boss, already picked, a replay from the 놀이
+// 모음); one whose boss was left keeps its gift in the lobby's 🎁 지난 장 선물 (stage.js boxQ).
+export function chapterGift(G, after, buttons = []) {
+  const H = G.save.home;
+  if (!G.econ || G.playMode || G.bot || !GIFT_AT.includes(after) || after in (H.picks || {})) return null;
+  const choices = giftChoices(G.save, 100 + after);
+  G.needThumbs?.(choices.map(c => c.kind === 'thing' ? 'item_' + c.t : c.kind === 'decor' ? 'furn_' + c.t : null).filter(Boolean));
+  for (const b of buttons) b.style.visibility = 'hidden';
+  const head = h('div', { class: 'txt gline' }, h('b', {}, '특별한 선물!'), ' 하나 골라'), grid = h('div', { class: 'lootgrid' });
+  let done = false;
+  for (const c of choices) {
+    const card = lootCard(G, c);
+    const pick = () => {
+      if (done) return; done = true; G.audio.sfx('special');
+      const line = grantGift(G, c); takeGiftPick(G, after, c);
+      card.classList.remove('new'); grid.replaceChildren(card); grid.style.gridTemplateColumns = 'minmax(0, 33%)'; grid.style.justifyContent = 'center'; head.replaceChildren(h('b', {}, '고른 선물! '), line);
+      for (const b of buttons) b.style.visibility = '';
+    };
+    card.addEventListener('click', pick); card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') pick(); });
+    grid.append(card);
+  }
+  return h('div', { class: 'chgift' }, head, grid);
 }
 // the 별 상자s waiting (each 15 stars): one of three each, in a row (at most 3 at once) — from the stage result's 🎁 상자 열기
 // or the lobby's 🎁 별 상자; no trip to the room (10/20: no scene between the stages)

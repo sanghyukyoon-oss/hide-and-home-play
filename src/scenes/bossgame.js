@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { h } from '../ui.js';
 import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { giftCard, giftKey } from '../gift.js';
-import { starTotal, gameStar } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)   // 놀이 보상 카드 (경제·로비 10/19)
+import { gameStar } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)   // 놀이 보상 카드 (경제·로비 10/19)
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { ITEMS, buildItem } from '../gfx/items.js';
 import { renderThumbs } from '../thumbs.js';
@@ -151,7 +151,7 @@ export class BossGameScene {
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
     // (10/19, user: "미니게임에서 뭐 리워드를 줘야지"): the reward is a card after the game's own end panel (finish), not a toast
     if (G.playMode || G.bot) G.ui.toast(G.playMode ? (this.interlude ? '쉬어가기 성공! (연습)' : '보스 클리어! (연습)') : this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
-    else { const sb0 = starTotal(G.save); gameStar(G, (this.interlude ? 'm' : 'g') + this.after, st); this.reward = { coins, lens, st, line: e.line || null, starBefore: sb0 };   // (line: the game's own result line — 실험실 10/19)   // (practice pays nothing — QA N5)
+    else { gameStar(G, (this.interlude ? 'm' : 'g') + this.after, st); this.reward = { coins, lens, st, line: e.line || null };   // (line: the game's own result line — 실험실 10/19)   // (practice pays nothing — QA N5)
       // (외부 QA 10/20 ST-RESUME-REWARD-CARD) the best stars are kept now, with the win — the card shows '최고 기록!' against the
       // best before (prevBest) — and the card itself goes into the save, so leaving before it shows it again on 놀이 이어하기
       const gb = G.save.gameBest || (G.save.gameBest = {}), gk = giftKey(this.kind, this.lv), pb = gb[gk] ?? null;
@@ -196,7 +196,7 @@ export class BossGameScene {
     // (never before the ending: the last 야식 goes to the ending room above and returns before this — 스토리 룸 10/19)
     if (this.won && this.reward && !G.playMode && !G.bot) {
       const R = this.reward; this.reward = null;
-      const r = await giftCard(G, { key: giftKey(this.kind, this.lv), title: this.interlude ? '쉬어가기 성공!' : '보스 클리어!', ...R, retry: R.st < 3 });
+      const r = await giftCard(G, { key: giftKey(this.kind, this.lv), title: this.interlude ? '쉬어가기 성공!' : '보스 클리어!', ...R, retry: R.st < 3, after: this.interlude ? null : this.after });   // (31·70판: a special gift on this card — gifts.js chapterGift)
       if (this.dead) return;
       // (a small '다시' on the card under three stars: the game's own result panel with its retry is skipped in the campaign)
       if (r === 'retry') { clearFollowupFinish(G, this.after); return G.go('bossgame', { kind: this.kind, after: this.after, lv: this.lv, interlude: this.interlude }); }

@@ -5,6 +5,7 @@ import { makeFurniture, FURN_INFO } from './gfx/furniture.js';
 import { clamp } from './util.js';
 import { houseRail, gableTop, timberFrame, entryNook } from './gfx/house-props.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { hasWall, hasFloor, paint } from './patterns.js';   // 벽지·바닥 더하기 (10/20): the shop's newer patterns
 
 const WALL_H = 2.5, WALL_T = .16;
 // for each wall: the side walls at its local -x and +x ends
@@ -33,6 +34,7 @@ function noiseGround(a, b, dots = 120, r0 = 3, r1 = 9) {
   });
 }
 function floorTex(kind, a, b, T = null) {
+  if (hasFloor(kind)) return canvasTex(512, 512, (c, W) => paint(c, W, kind, a, b, true));
   if (['grass', 'sand', 'asphalt', 'brickpave', 'dirt'].includes(kind)) {
     if (OUTDOOR?.groundTex) { try { return OUTDOOR.groundTex(kind, T || { floor: a, floor2: b }); } catch {} }
     return noiseGround(a, b, kind === 'grass' ? 160 : 90);
@@ -64,6 +66,7 @@ function floorTex(kind, a, b, T = null) {
   });
 }
 function wallTex(kind, a, b) {
+  if (hasWall(kind)) return canvasTex(512, 512, (c, W) => paint(c, W, kind, a, b, false), { repeat: [1, 1] });
   return canvasTex(512, 512, (c, W, H) => {
     c.scale(2, 2); const w = W / 2, h = H / 2;
     c.fillStyle = a; c.fillRect(0, 0, w, h); c.fillStyle = b;

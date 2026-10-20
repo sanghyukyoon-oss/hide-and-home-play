@@ -166,7 +166,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'gearUp': tone({ type: 'triangle', f: 520, f2: 900, dur: .07, vol: .12 }); noise({ dur: .02, vol: .08, type: 'bandpass', f: 3200, q: 4, at: .045 }); break;
       case 'gearDown': tone({ type: 'triangle', f: 820, f2: 480, dur: .07, vol: .1 }); noise({ dur: .02, vol: .06, type: 'bandpass', f: 2200, q: 4, at: .04 }); break;
       // the turn ratchet (10/18): a tiny woody tick, a little different every time so a fast spin rolls "드르르륵"
-      case 'ratchet': { const r = Math.random(); noise({ dur: .014, vol: .049, type: 'bandpass', f: 2300 + r * 900, q: 5 }); tone({ type: 'triangle', f: 700 + r * 160, dur: .012, vol: .0175 }); break; }   // (QA3-cam8, user: "약간 작게" — 70%)
+      case 'ratchet': { const r = Math.random(); noise({ dur: .016, vol: .1, type: 'bandpass', f: 2100 + r * 800, q: 4 }); tone({ type: 'triangle', f: 640 + r * 140, dur: .014, vol: .04 }); break; }   // (QA3-cam8 "약간 작게" 70% → 10/20 user: "저음에서 소리가 아예 안 들려… 거슬리지 않게 좋게 들리는 정도로" — ×2, a touch lower and longer so it reads as a soft wooden tick)
       case 'btn': tone({ type: 'triangle', f: 520, f2: 820, dur: .08, vol: .3 }); tone({ type: 'sine', f: 1040, dur: .06, vol: .12, at: .03 }); break;
       // 사운드 세션 10/19: a lid / a cupboard door — a little hinge, the air, a soft wooden pop (it was one noise sweep)
       case 'open': tone({ type: 'triangle', f: 640, f2: 900, dur: .07, vol: .05, vib: 25 }); noise({ dur: .18, vol: .13, f: 600, f2: 1500, q: 1.4, attack: .03 }); tone({ type: 'sine', f: 230, f2: 380, dur: .13, vol: .2, at: .02 }); break;
