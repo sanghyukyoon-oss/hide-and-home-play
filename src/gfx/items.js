@@ -271,17 +271,26 @@ export const ITEMS = {
     }
     return g;
   } },
-  // 스노우볼 (4·7판, 선반·책장 칸): a glass globe with a glint on a wide wooden plinth, a fir tree and a snowman in the snow inside
-  snowglobe: { name: '스노우볼', h: .24, build() {
-    const g = grp(), wood = '#b0703f';
-    g.add(put(cyl(.155, .18, .07, wood, null, 22), 0, .035, 0));
-    g.add(put(cyl(.16, .16, .014, '#ff5a6a', GLOSS, 22), 0, .062, 0));
-    g.add(put(sph(.09, '#ffffff', null, 14, 6), 0, .075, 0, 0, 0, 0, [1, .45, 1]));
-    g.add(put(cone(.042, .1, '#3fae6a', null, 10), -.028, .14, -.01));
-    g.add(put(sph(.026, '#ffffff', null, 10, 8), .04, .1, .025)); g.add(put(sph(.019, '#ffffff', null, 10, 8), .04, .135, .025));
-    for (const [x, y, z] of [[-.06, .18, .03], [.05, .2, -.02], [.0, .21, .05], [.07, .15, -.05]]) g.add(put(sph(.008, '#ffffff', null, 6, 4), x, y, z));
-    g.add(put(sph(.11, '#9fdcff', { opacity: .5, rough: .1 }, 20, 14), 0, .125, 0));
-    g.add(put(sph(.024, '#ffffff', { opacity: .85 }, 8, 6), -.05, .19, .06, 0, 0, .6, [1, 1.6, .5]));   // the glint that says glass
+  // 스노우볼 (4·7판, 선반·책장 칸): a glass ball with a little winter scene in it (user, 10/20 실폰: "생김새가 별로" — it read as a
+  // flat white dome with a green horn on a red puck). The ball's inside is painted sky blue (its back faces), so the whole ball
+  // reads and gets its ink line; a clear front with one glint; snow on the floor, a snowman in a red scarf, a fir tree and a few
+  // flakes; a two-step wooden stand with one red band (kept wide: the shape stays ≤ .7 for the shelves)
+  snowglobe: { name: '스노우볼', h: .26, build() {
+    const g = grp(), wood = '#b77a45', R = .122, cy = .128, ink = '#2a2433';
+    g.add(put(cyl(.185, .185, .032, shade(wood, -.08), null, 24), 0, .016, 0));
+    g.add(put(cyl(.13, .15, .04, wood, null, 22), 0, .052, 0));
+    g.add(put(cyl(.141, .146, .016, '#ff4f5e', null, 22), 0, .058, 0));
+    g.add(put(sph(R, '#a8dcff', { side: THREE.BackSide }, 18, 12), 0, cy, 0));
+    g.add(put(sph(.11, '#ffffff', null, 16, 6), 0, .076, 0, 0, 0, 0, [1, .28, 1]));
+    g.add(put(sph(.03, '#ffffff', null, 10, 8), .035, .11, .035)); g.add(put(sph(.022, '#ffffff', null, 10, 8), .035, .15, .035));
+    g.add(put(cyl(.016, .016, .02, ink, null, 10), .035, .177, .035)); g.add(put(cyl(.026, .026, .005, ink, null, 12), .035, .167, .035));
+    g.add(put(tor(.021, .007, '#ff4f5e', null, Math.PI * 2, 4, 12), .035, .13, .035, Math.PI / 2));
+    g.add(put(cone(.008, .026, '#ff9a2a', null, 6), .035, .15, .066, Math.PI / 2));
+    g.add(put(cone(.042, .11, '#2f9e5f', null, 10), -.045, .14, -.02));
+    for (const [x, y, z] of [[-.06, .2, .04], [.05, .21, -.03], [-.005, .222, .05], [.075, .17, -.05], [-.075, .13, .05]]) g.add(put(sph(.008, '#ffffff', null, 6, 4), x, y, z));
+    // the glass: sky blue and half see-through, so it reads as a glass ball and the scene still shows (user 10/20 "투명도를 줄여 줘 봐": .2 → .3, A of .3/.45/.6)
+    g.add(put(sph(R + .005, '#8fd0ff', { opacity: .3, rough: .1 }, 18, 12), 0, cy, 0));   // (clear of the blue inside by more than deFlush's 1.5 mm, or it reads them as one flush face)
+    g.add(put(sph(.026, '#ffffff', { opacity: .9 }, 8, 6), -.058, .2, .068, 0, 0, .7, [1, 1.7, .45]));
     return g;
   } },
   // 꿀단지 (5·6판, 찬장·조리대): a squat brown pot, golden honey running over the lip, a dipper resting on the rim
