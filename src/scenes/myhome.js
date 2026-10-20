@@ -164,11 +164,9 @@ export class MyHomeScene {
     }
     R.group.add(g);
     g.traverse(o => { o.userData.grow = true; });
-    // the chip: how far your coins are, or 넓히기 when you can pay, or 집 짓기 · 곧 열려요 (HUD: drawn by the page, not on a board)
-    const chip = h('div', { class: 'growchip' + (can ? ' can' : '') + (house ? ' house' : '') });
-    if (house) chip.append(h('span', {}, '🏠 ' + tr('집 짓기') + ' · ' + tr('곧 열려요')));
-    else if (can) chip.append(h('span', {}, '🔨 ' + tr(`넓히기 ${nx.S.price}`)));
-    else chip.append(h('i', { style: `width:${Math.round(Math.min(1, C / nx.S.price) * 100)}%` }), h('span', {}, `🔨 ${Math.min(C, nx.S.price)} / ${nx.S.price}`));
+    // the chip: just a round 🔨 (🏠 at the biggest room) — green and shining once you can pay, grey till then; a tap opens the
+    // card with the size, the price and [넓히기] (user 10/20: "망치 아이콘만 있어도 알 듯? 클릭하면 넓히기 800 이런 식으로 인포")
+    const chip = h('div', { class: 'growchip' + (can ? ' can' : house ? ' house' : ' short'), role: 'button', 'aria-label': tr(house ? '집 짓기' : '방 넓히기') }, house ? '🏠' : '🔨');
     chip.addEventListener('pointerdown', e => e.stopPropagation());
     chip.addEventListener('pointerup', e => { e.stopPropagation(); if (house) this.houseCard(); else this.growCard(); });
     G.ui.wui.append(chip);
@@ -192,7 +190,7 @@ export class MyHomeScene {
     // corner — always inside the screen)
     const W = this.G.world, cw = gs.chip.offsetWidth / 2, ch = gs.chip.offsetHeight / 2;
     const d = W.turnDial?.isConnected && W.turnDial.offsetParent ? W.turnDial.getBoundingClientRect() : null;
-    const hitsDial = (x, y) => d && x + cw > d.left - 6 && x - cw < d.right + 6 && y + ch > d.top - 6 && y - ch < d.bottom + 6;
+    const hitsDial = (x, y) => d && x + cw > d.left - 14 && x - cw < d.right + 14 && y + ch > d.top - 14 && y - ch < d.bottom + 14;   // (a thumb's width clear of the turn dial)
     const L = gs.ax === 'x' ? R.d : R.w, spots = gs.house ? [R.group.localToWorld(new THREE.Vector3(sx * R.w / 2, .05, sz * R.d / 2))]
       : [0, -L / 3, L / 3].map(zz => gs.g.localToWorld(new THREE.Vector3(gs.gw / 2, .05, zz)));
     let x = 0, y = 0, ok = false;
@@ -202,7 +200,7 @@ export class MyHomeScene {
       if (!hitsDial(x, y)) break;
     }
     if (!ok) { gs.chip.style.display = 'none'; return; }   // (the lobby's close-up: the patch is off the screen, so is its chip)
-    if (hitsDial(x, y)) y = d.top - 8 - ch;
+    if (hitsDial(x, y)) y = d.top - 16 - ch;
     gs.chip.style.left = x + 'px'; gs.chip.style.top = y + 'px';
   }
   // 집 짓기 · 곧 열려요 (예고 A): what's next — a picture of the two-floor house (art/concepts H, cropped) and one line
