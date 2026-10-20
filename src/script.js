@@ -623,7 +623,8 @@ const BOSS = [
       L('cat', '그 까만 애? 졸졸이가 알 거다냥. 밤새 창밖만 보거든.', 'The inky kid? Ask Dozy. Dozy watches the window all night.')],
     reward: { furn: 'cattower', coins: 200 } },
   { id: 'apt-boss', room: 'policefront', title: K('분실물 보관함', 'The Lost-and-Found'), cast: 'shiba',
-    intro: [L('shiba', '분실물 보관함을 너무 꼼꼼히 잠갔어.', 'I locked the lost-and-found a little too well.'), L('shiba', '열쇠랑 번호가 필요해… 킁.', 'We need a key and the code… sniff.'), L('shiba', '주인들한테 돌려줘야 해. 같이 열자!', "We have to get these back to their owners. Let's open them together!")],
+    // (스토리 룸 10/20: 20판 "한 명 빠졌어. 그 까만 애." 바로 뒤 — 집들이 발자국 신고로 시작, 3줄 → 2줄)
+    intro: [L('shiba', '멍! 집들이 발자국 신고 접수! 순찰 전에 분실물부터 돌려주자.', "Woof! Footprints reported at the housewarming! But first, let's return the lost things."), L('shiba', '근데 보관함을 너무 꼼꼼히 잠갔어. 열쇠랑 번호가 필요해… 킁.', 'Except I locked the lost-and-found a little too well. We need a key and the code… sniff.')],
     secret: 'goldbone',
     lines: { tap: [K('킁킁, 거의 다 왔어!', "Sniff sniff, we're close!"), K('그건 우산 주인 거야.', "That one's the umbrella owner's."), K('붕붕붕!', 'Wag wag wag!')] },
     outro: [L('shiba', '다 돌려줬다! …하나 남았네. 이름 없는 크레파스 상자.', 'All returned! …Except one. A crayon box with no name.'), L('mong', '…바닥에 까만 손자국. 누군지 알 것 같아.', '…A little inky handprint on the bottom. I think I know whose.'), L('shiba', '그럼 네가 갖고 있어. 주인 만나면 전해 줘.', 'Then you hold onto it. Give it back when you find the owner.'), L('mong', '응. 만나면 꼭 돌려줄게.', "Okay. I'll give it back when I meet them."), L('bunny', '이 코타츠, 너네 집에 둘래. 겨울엔 내 자리야!', "This kotatsu's going to your place. In winter, that's my spot!")],
@@ -902,6 +903,30 @@ const DIARY_SECRET = {
   dj: K('새 곡 제목은 전부 친구 이름. 다음 곡은 "몽글".', 'Every new track is named after a friend. Next one: "Mongle."'),
 };
 export const diarySecret = k => DIARY_SECRET[k] || null;
+// ── 다시 하기 인사 (스토리 룸 10/20, 검토 P2 → 사용자 '추천대로'): opening a stage you've already cleared, its host says one
+// different line instead of the usual opening — and, while their secret is still locked, what three stars would get you
+const REPLAY = {
+  bunny: [K('또 왔네! 이번엔 진짜 안 웃어!', "You're back! This time I really won't giggle!"), K('또 하자고? 별 셋이면 내 비밀 알려 줄게!', "Again? Get three stars and I'll tell you a secret!")],
+  frog: [K('개굴! 한 판 더? 좋지!', 'Ribbit! One more round? You bet!'), K('개굴! 별 셋이면 챔피언 비밀 알려 줄게.', "Ribbit! Three stars and I'll share a champion secret.")],
+  peng: [K('펭! 다시 왔네. 비결 복습 중이야.', "Peng! You're back. I'm going over my tips."), K('펭! 별 셋이면 비결 노트 보여 줄게.', "Peng! Three stars and I'll show you my tip notebook.")],
+  bear: [K('으헤헤, 또 왔네. 숟가락 두 개 챙겼어.', "Ehehe, you're back. I brought two spoons."), K('으헤헤, 별 셋이면 내 비밀 하나 알려 줄게.', "Ehehe, three stars and I'll tell you a secret.")],
+  cat: [K('…또 왔냐냥. 딱히 기다린 건 아니다냥.', "…Back again, meow? Not that I was waiting."), K('…별 셋이면 비밀 하나 알려 주겠다냥.', "…Three stars and I'll tell you a secret, meow.")],
+  nerd: [K('흠. 다시 도전인가. 좋아.', 'Hm. Another attempt. Good.'), K('흠. 별 셋이면 내 비밀 하나 공개하지.', "Hm. Three stars and I'll reveal one of my secrets.")],
+  shiba: [K('멍! 재순찰이야? 같이 가!', "Woof! Patrol round two? Let's go!"), K('멍! 별 셋이면 순찰 일지 비밀 알려 줄게.', "Woof! Three stars and I'll share a secret from my patrol log.")],
+  hamster: [K('웁웁! 또 왔어? 이번엔 안 쏟을게.', "Mmf! Back again? I won't spill this time."), K('웁! 별 셋이면 볼 속 비밀 알려 줄게.', "Mmf! Three stars and I'll tell you what's in my cheeks.")],
+  raccoon: [K('또 왔어? 이번엔 봐주는 거 없다.', 'Back again? No going easy this time.'), K('별 셋? 해 보시든가. 그럼 비밀 하나 알려 주지.', "Three stars? Go ahead and try. Then I'll tell you a secret.")],
+  grumpy: [K('…또 왔네. 한 판만이야.', '…You again. Just one round.'), K('…별 셋이면. 비밀 하나 알려 줄게. 딱 하나.', "…Three stars, and I'll tell you a secret. Just one.")],
+  skater: [K('요! 다시 한 바퀴?', 'Yo! Another lap?'), K('요! 별 셋이면 내 비밀 기술 알려 줄게.', "Yo! Three stars and I'll show you my secret trick.")],
+  sundae: [K('또 왔어? 녹기 전에 시작하자!', "You're back? Let's start before I melt!"), K('별 셋이면 비밀 토핑 알려 줄게!', "Three stars and I'll tell you my secret topping!")],
+  squirrel: [K('또 왔네! 이번엔 더 잘 숨겼어.', "You're back! I hid things better this time."), K('별 셋이면 내 지도 비밀 알려 줄게.', "Three stars and I'll tell you about my map.")],
+  panda: [K('천천히 와도 돼. 기다렸어.', 'Take your time. I waited.'), K('별 셋이면 대나무 비밀 알려 줄게.', "Three stars and I'll share a bamboo secret.")],
+  sleepy: [K('음냐… 또 왔어…?', 'Mmh… you came again…?'), K('음냐… 별 셋이면… 꿈 얘기 해 줄게…', "Mmh… three stars… and I'll tell you a dream…")],
+  robot: [K('삐빅. 재방문 기록 저장.', 'Beep-boop. Return visit saved.'), K('삐빅. 별 셋 달성 시 비밀 기록 공개.', 'Beep-boop. Three stars unlocks a secret record.')],
+  dj: [K('오! 앙코르야?', 'Oh! An encore?'), K('별 셋이면 다음 곡 비밀 알려 줄게!', "Three stars and I'll tell you the next track's secret!")],
+};
+export const replayHi = (host, secretIsOpen) => { const R = REPLAY[host]; return R ? (secretIsOpen ? R[0] : R[1]) : null; };
+// 몽글이 방의 빈 자리 (스토리 룸 10/20): 20판 "다음엔 우리 집에서 놀자. 그 애도 같이." 뒤, 엔딩 전까지 — 처음 볼 때 한 번
+export const INKY_SEAT = L('mong', '…그 애 자리. 비워 둘게.', "…That kid's seat. I'll keep it free.");
 // ── 판 끝 집으로 가져가기 (검토 · 경제 10/19): the friend you just met comes in and sits — one word on the way in, why
 // they're here (a promise from their stage, their habit). One bubble, 1.5 s, once per friend (econ: lobby passage).
 export const ROOM_ARRIVE = {

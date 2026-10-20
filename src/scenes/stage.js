@@ -42,7 +42,7 @@ import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incid
 import { R1, r1Line, KIT_TALK } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
-  stageHost, diarySecret, secretOpen, anySecret, SECRET_UI } from '../script.js';
+  stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi } from '../script.js';
 import { tr } from '../i18n.js';
 import { EN } from '../i18n-en-dict.js';
 // the star reasons the 흑백·너굴이·방탈출 stages had none of (QA 10/18: 2 stars on a boss with no word why)
@@ -340,7 +340,12 @@ export class StageScene {
     this.talkKeep = !retry && !this.scene?.bubble && !!(custom || this.preview || this.spec.tut <= 2 || G.save.settings?.oldMode || this.spec.boss || (!cine && (this.spec.intro || this.firstMeet(th.friend))));   // (a retry: the first line only — QA 10/18)
     if (this.story?.intro) { await this.talk(this.story.intro, { title: this.story.title }); if (this.dead) return; }
     if ((this.scene?.type === 'tut2' || (this.scene?.always && !this.incident)) && this.scene.intro) { await (this.scene.bubble ? this.openTalk(this.scene.intro, { title: th.name }) : this.talk(this.scene.intro, { title: th.name })); if (this.dead) return; }   // (스토리 룸 10/19: 2판은 말풍선)   // 2판 · 편의점
-    else if (this.hiddenStage && !this.kit?.hid) { await this.openTalk(hiddenIntro(this.idx, th.friend), { title: th.name }); if (this.dead) return; }   // (a kit's box says its own two lines — modelkit.js kitIntro)
+    else if (this.hiddenStage && !this.kit?.hid) {
+      // 다시 하기 인사 (스토리 룸 10/20): a stage already cleared — its host greets you with one different line (and, while
+      // their secret is locked, what three stars would get you) instead of the first-time opening
+      const rh = !custom && !this.preview && !this.model && !G.bot && G.save.best?.[this.idx] != null && stageHost(this.idx), rl = rh && replayHi(rh, secretOpen(G.save.best, rh));
+      await this.openTalk(rl ? [{ who: rh, text: rl }] : hiddenIntro(this.idx, th.friend), { title: th.name }); if (this.dead) return;
+    }   // (a kit's box says its own two lines — modelkit.js kitIntro)
     if (this.spec.gray && !custom) {
       // 대본: the owner, then 먹물이 by where we are in the story (a voice → caught again → quiet → helping)
       // (the first 흑백판 keeps its card: it says the rule; the next ones say it in a bubble — 레벨 v3 개선 1, was the first three)

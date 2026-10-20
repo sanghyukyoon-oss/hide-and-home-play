@@ -49,6 +49,13 @@ const qMat = () => QMAT || (QMAT = (() => {
   return new THREE.SpriteMaterial({ map: QTEX, transparent: true, depthWrite: false });
 })());
 const noPick = o => { o.traverse(c => { c.userData.noPick = true; c.raycast = () => {}; }); return o; };
+// 먹물이 빈 자리 (스토리 룸 10/20): one cushion and crayon footprints from the door, shared meshes so a visit adds nothing new
+let INK = null;
+const inkMeshes = () => INK ||= {
+  cushion: new THREE.CylinderGeometry(.24, .26, .07, 20), cm: new THREE.MeshStandardMaterial({ color: '#3d3658', roughness: .9 }),
+  dot: new THREE.CircleGeometry(.035, 12), paw: new THREE.CircleGeometry(.06, 14),
+  cols: ['#ff6fa8', '#5ab8ff', '#a77bff', '#4fcf86'].map(color => new THREE.MeshBasicMaterial({ color, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })),
+};
 const qSprite = s => { const sp = new THREE.Sprite(qMat()); sp.scale.setScalar(s); return noPick(sp); };
 function seatGhost() {
   RING ||= { g: new THREE.RingGeometry(.19, .25, 32), m: new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .8, depthWrite: false }) };
@@ -75,7 +82,7 @@ export class LobbyScene extends MyHomeScene {
     this._shelfHold = new Set([...(pass?.items || []), ...(pass?.item ? [pass.item] : [])]);   // (the things fly onto the shelf, so the shelf starts without them)
     await super.enter({ ...o, mode: pass ? 'passage' : !o.mode || o.mode === 'view' ? 'lobby' : o.mode });
     if (this.dead) return;
-    if (o.ending) return this.playEnding(o.ending);   // 엔딩 (스토리 룸 10/19)
+    if (o.ending) { this.placeInkySeat(true); return this.playEnding(o.ending); }   // 엔딩 (스토리 룸 10/19) — 먹물이는 비워 둔 방석에
     if (pass) return this.runPassage(pass);
     delete this.H.shelfNew;
     // things gathered for the room that never passed through it (the 홈 button instead of '다음'): set down now, quietly
@@ -86,6 +93,7 @@ export class LobbyScene extends MyHomeScene {
     if (G.homeOpen() && !tut.home) await this.roomOpens();
     else if (G.homeOpen() && this.H.giftDue) { const t = await this.giftCards(GIFTS); if (this.dead) return; this.giveGift(t); this.frameLobby(); this.arrivals(); }   // (left before picking)
     else if (G.homeOpen()) this.arrivals();
+    if (G.homeOpen()) this.placeInkySeat();   // (after the arrivals: the friends' seats first, the inky kid's cushion on what is left)
     // 같이 다니는 친구 (10/19, user OK): after 12판, once — a 🆕 badge and a friend in the room asks to come along
     if (G.homeOpen() && (G.save.stage || 0) >= 12 && !G.save.cards?.buddy && !G.bot) setTimeout(() => !this.dead && this.mode === 'lobby' && !this.busyTut && this.buddyHint(), 5200);
     // a new chapter's furniture is in the shop now (설계서 N3): one toast, once per chapter
@@ -235,13 +243,39 @@ export class LobbyScene extends MyHomeScene {
   // a clear bit of floor for a friend: away from 몽글이, the other friends and the furniture; the front of the room first
   freeSpot(near = null, extra = []) {
     this.room._solid = null;   // (room.clearAt keeps the furniture's boxes from the first call: a piece placed or moved since wasn't in them)
-    const R = this.room, taken = [this.mong.root.position, ...this.seated.map(s => s.rec), ...extra], c = [];   // (a seat, not where its friend is walking from)
+    const R = this.room, taken = [this.mong.root.position, ...this.seated.map(s => s.rec), ...(this.inkySeat ? [this.inkySeat.p] : []), ...extra], c = [];   // (a seat, not where its friend is walking from)
     for (let x = -R.w / 2 + .6; x <= R.w / 2 - .6; x += .35) for (let z = -R.d / 2 + .6; z <= R.d / 2 - .6; z += .35) {
       if (!R.clearAt(x, z, .32) || taken.some(p => Math.hypot(p.x - x, p.z - z) < .9)) continue;
       c.push({ x: +x.toFixed(2), z: +z.toFixed(2), d: near ? Math.hypot(x - near.x, z - near.z) : Math.hypot(x - .9, z - 1.1) });
     }
     c.sort((a, b) => a.d - b.d);
     return c[0] || null;
+  }
+  // 20판 뒤 엔딩 전까지 (스토리 룸 10/20 — 20판 "다음엔 우리 집에서 놀자. 그 애도 같이."): a cushion kept free for the inky kid,
+  // its crayon footprints coming in from the door. No friend sits there; in the ending 먹물이 walks in and sits on it.
+  // Not saved: it is placed fresh each visit on clear floor. The first time, 몽글이 says why (script.js INKY_SEAT).
+  placeInkySeat(quiet = false) {
+    const G = this.G, S = G.save;
+    if (this.inkySeat || !this.room?.group || (S.stage || 0) < 20 || S.ending || seatedAll(this.H).has('inky')) return;
+    const p = this.freeSpot(null, this.zone?.friends || []); if (!p) return;   // (clear of friends still walking to their seats)
+    const M = inkMeshes(), g = new THREE.Group();
+    const c = new THREE.Mesh(M.cushion, M.cm); c.position.y = .035; g.add(c);
+    [[-.08, .05], [.07, -.04], [.02, .1]].forEach(([x, z], i) => { const d = new THREE.Mesh(M.dot, M.cols[i]); d.rotation.x = -Math.PI / 2; d.position.set(x, .072, z); g.add(d); });
+    g.position.set(p.x, 0, p.z); this.room.group.add(noPick(g));
+    // the footprints: from the door to just short of the cushion, flat on the floor like paint (no outline)
+    const dr = this.doorAt(), len = Math.hypot(p.x - dr.x, p.z - dr.z), ux = (p.x - dr.x) / (len || 1), uz = (p.z - dr.z) / (len || 1), rot = Math.atan2(ux, uz);
+    for (let k = 0, d = .5; d < len - .45 && k < 8; d += .3, k++) {
+      const s = k % 2 ? -1 : 1, m = new THREE.Mesh(M.paw, M.cols[k % 4]);
+      m.rotation.set(-Math.PI / 2, 0, -rot); m.scale.set(.75, 1.15, 1); m.position.set(dr.x + ux * d - uz * .08 * s, .012, dr.z + uz * d + ux * .08 * s);
+      m.userData.floor = true; this.room.group.add(noPick(m));
+    }
+    this.inkySeat = { p, g }; G.world.idsDirty = true;
+    if (!quiet && !this.H.inkySeatSeen && !G.bot) {
+      this.H.inkySeatSeen = 1; G.persist?.();
+      let n = 0;   // (after any friend's hello — never on top of another bubble)
+      const tell = () => { if (this.dead || this.mode !== 'lobby') return; if (document.querySelector('.bubble.pop') && n++ < 5) return setTimeout(tell, 1200); this.say(this.mong, tr(SCRIPT.INKY_SEAT.text), 2400); };
+      setTimeout(tell, 2400);
+    }
   }
   doorAt() { const d = this.room.doorDecor ? this.room.frontOf(this.room.doorDecor.f) : null; return d ? { x: d.x, z: d.z } : { x: -this.room.w / 2 + .6, z: this.room.d / 2 - .6 }; }
   // sit `k` down at p: walking in from the door (a newcomer) or popping up (placed from the box)
@@ -529,7 +563,7 @@ export class LobbyScene extends MyHomeScene {
       return s;
     };
     // 먹물이 자리 먼저 비워 둠 (방 가운데 쪽)
-    const spot = this.freeSpot(); const inky = spot ? sit('inky', spot.x, spot.z) : null; if (inky) inky.ch.root.visible = false;
+    const spot = this.inkySeat?.p || this.freeSpot(); const inky = spot ? sit('inky', spot.x, spot.z) : null; if (inky) inky.ch.root.visible = false;   // (20판 뒤 비워 둔 방석이 있으면 거기 — 스토리 룸 10/20)
     for (const S of giftSeats(G, this.room)) { if (here.has(S.who)) continue; here.add(S.who); sit(S.who, S.stand[0], S.stand[1], S.top ? { x: S.top.x, y: S.top.y, z: S.top.z } : null); }
     for (const k of metFriends(G.save)) {
       if (here.has(k) || k === 'inky' || temp.length >= 12) continue;
