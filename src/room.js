@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { rbox, put, grp, mat, mesh, geo, canvasTex, shade, plane, sph } from './gfx/kit.js';
 import { makeFurniture, FURN_INFO } from './gfx/furniture.js';
 import { clamp } from './util.js';
-import { houseRail, gableTop, timberFrame } from './gfx/house-props.js';
+import { houseRail, gableTop, timberFrame, entryNook } from './gfx/house-props.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const WALL_H = 2.5, WALL_T = .16;
 // for each wall: the side walls at its local -x and +x ends
@@ -272,7 +273,13 @@ export class Room {
     const slab = {}, sk = this.L.slab || (this.L.bleed ? 'none' : 'cake');
     // 'cut': an upper floor whose slab keeps its floor's cut-outs open — a hatch for a pulley, a ladder or a slide to
     // pass through (10/19 user: "도르레도 있는데 잘 써먹지도 못하는거같아 유기적으로"); each hole gets a wooden rim
+    // 현관 (검토 10/20): a lone room's cut corner is its entrance, a step down — the slab's top tier has the cut open and a
+    // block in it .12 lower than the floor (one mesh, the same colour); buildEntry lays its tiles, the nosing and the shoes
+    // (most rooms stand on the bleed floor, no slab: there the plain ground plane draws first and writes no depth, so the
+    // entrance's floor just goes in under it and shows — no hole needed)
+    const entry = this.L.cut?.length && !this.L.noEntry && (sk === 'cake' || (sk === 'none' && this.L.bleed));
     if (sk === 'cut') { g.add(put(holedSlab(w, d, this.L.cut || [], T.base), 0, -.38, 0)); g.children.at(-1).userData.og = slab; this.buildHatchRims(); }
+    else if (entry && sk === 'cake') { g.add(put(holedSlab(w, d, this.L.cut, T.base, ENTRY_DROP), 0, -.38, 0)); g.children.at(-1).userData.og = slab; }
     else if (sk !== 'none') { g.add(put(rbox(w + .5, .36, d + .5, T.base, .16), 0, -.2, 0)); g.children.at(-1).userData.og = slab; }
     if (sk === 'cake') { g.add(put(rbox(w + .62, .2, d + .62, shade(T.base, -.08), .1), 0, -.4, 0)); g.children.at(-1).userData.og = slab; }
     const ft = floorTex(T.floorKind || 'planks', T.floor, T.floor2, T);
@@ -296,6 +303,7 @@ export class Room {
     // background, so the room reads as one corner of a bigger home or street
     this.floorTexture = ft;
     if (this.L.bleed) { const ap = makeApron(w, d, ft, T, this.L.bleed); ap.position.y = -.004; g.add(ap); this.apron = ap; }
+    if (entry) this.buildEntry();
     for (const k of ['N', 'W', 'S', 'E']) this.walls[k] = this.buildWall(k);
     // sunlight through a window: a warm, soft-edged patch on the floor (no outline, never picked)
     for (const sn of this.L.sun || autoSun(this.L, w, d)) g.add(sunPatch(sn));
@@ -467,6 +475,27 @@ export class Room {
       const x0 = -w / 2 + c.i, z0 = -d / 2 + c.j, x1 = x0 + c.w, z1 = z0 + c.d, t = .07, h = .05;
       for (const [cx, cz, sx, sz] of [[(x0 + x1) / 2, z0 + t / 2, c.w, t], [(x0 + x1) / 2, z1 - t / 2, c.w, t], [x0 + t / 2, (z0 + z1) / 2, t, c.d - 2 * t], [x1 - t / 2, (z0 + z1) / 2, t, c.d - 2 * t]]) {
         this.group.add(put(rbox(sx, h, sz, col, .015), cx, h / 2, cz));
+      }
+    }
+  }
+  // 현관 floor: big calm checker tiles (two squares a metre, quieter than the room's own colours), the wooden nosing on the
+  // step and the owner's shoes (gfx/house-props.js entryNook — one mesh). No light, no shadow of their own; nobody stands there
+  // (cut tiles are never walked or placed on) and no hiding place yet (the level session's call)
+  buildEntry() {
+    // (the room's own floor colour, drained to a greige and lightened: two calm tones a step apart — quieter than the room)
+    const { w, d, T } = this, hsl = {}; new THREE.Color(T.floor || T.base || '#d8c4a8').getHSL(hsl);
+    const a = '#' + new THREE.Color().setHSL(hsl.h, Math.min(.22, hsl.s * .3), .86).getHexString(), b = '#' + new THREE.Color().setHSL(hsl.h, Math.min(.22, hsl.s * .3), .75).getHexString();
+    for (const c of this.L.cut) {
+      const tt = floorTex('checker', a, b, T); tt.wrapS = tt.wrapT = THREE.RepeatWrapping; tt.repeat.set(c.w, c.d);
+      const tm = put(plane(c.w, c.d, mat('#ffffff', { map: tt, rough: .75, rim: .1 })), -w / 2 + c.i + c.w / 2, -ENTRY_DROP + .001, -d / 2 + c.j + c.d / 2, -Math.PI / 2);
+      tm.userData.floor = true; tm.receiveShadow = true; this.group.add(tm);
+      const nook = entryNook(c, w, d, T, T.friend, ENTRY_DROP); nook.castShadow = false; nook.receiveShadow = true; this.group.add(nook);
+      // the ground plane round a bleed room is see-through, so it draws after everything solid — over the sunken entrance too:
+      // its mask gets the cut corner punched out (its own canvas, made for this room — makeApron)
+      const am = this.apron?.material.alphaMap, cv = am?.image;
+      if (cv?.getContext) {
+        const N = cv.width, S = this.apron.geometry.parameters.width, px = v => (v + S / 2) / S * N, x = cv.getContext('2d');
+        x.fillStyle = '#000'; x.fillRect(px(-w / 2 + c.i), px(-d / 2 + c.j), c.w / S * N, c.d / S * N); am.needsUpdate = true;
       }
     }
   }
@@ -665,8 +694,10 @@ export function attachItem(spot, g, { rotY = null, scale = 1 } = {}) {
 }
 const PROXY_MAT = new THREE.MeshBasicMaterial({ visible: false });
 
-// an upper floor's slab (.36 thick, overhanging .25 like the solid one) with its floor's cut-outs left open
-function holedSlab(w, d, cuts, color) {
+// an upper floor's slab (.36 thick, overhanging .25 like the solid one) with its floor's cut-outs left open — or, with
+// fill (a lone room's 현관), each cut-out filled again up to `fill` under the floor: a step down into the entrance
+const ENTRY_DROP = .12;
+function holedSlab(w, d, cuts, color, fill = 0) {
   const W = w + .5, D = d + .5, r = .16, sh = new THREE.Shape();
   sh.moveTo(-W / 2 + r, -D / 2); sh.lineTo(W / 2 - r, -D / 2); sh.quadraticCurveTo(W / 2, -D / 2, W / 2, -D / 2 + r);
   sh.lineTo(W / 2, D / 2 - r); sh.quadraticCurveTo(W / 2, D / 2, W / 2 - r, D / 2); sh.lineTo(-W / 2 + r, D / 2);
@@ -676,9 +707,15 @@ function holedSlab(w, d, cuts, color) {
     hole.moveTo(x0, y0); hole.lineTo(x0, y0 + c.d); hole.lineTo(x0 + c.w, y0 + c.d); hole.lineTo(x0 + c.w, y0); hole.lineTo(x0, y0);
     sh.holes.push(hole);
   }
-  const geo = new THREE.ExtrudeGeometry(sh, { depth: .36, bevelEnabled: false, curveSegments: 4 });
+  let geo = new THREE.ExtrudeGeometry(sh, { depth: .36, bevelEnabled: false, curveSegments: 4 });
   geo.rotateX(Math.PI / 2);   // shape x/y → world x/z, extruded downward from y 0 to -.36… then lifted by the caller
   geo.translate(0, .36, 0);
+  if (fill) {
+    const parts = [geo.index ? geo.toNonIndexed() : geo];
+    for (const c of cuts) { const b = new THREE.BoxGeometry(c.w, .36 - fill, c.d).toNonIndexed(); b.translate(-w / 2 + c.i + c.w / 2, (.36 - fill) / 2, -d / 2 + c.j + c.d / 2); b.deleteAttribute('uv'); parts.push(b); }
+    parts.forEach(q => { for (const k of Object.keys(q.attributes)) if (k !== 'position' && k !== 'normal') q.deleteAttribute(k); });
+    geo = mergeGeometries(parts, false);
+  }
   return mesh(geo, mat(color, { rough: .8 }));
 }
 

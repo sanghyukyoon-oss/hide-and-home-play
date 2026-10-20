@@ -203,6 +203,28 @@ RECIPES.house3 = RECIPES.house2f;
 // 7판 a little brighter (user 10/20 on a phone: "스테이지 7은 약간 더 밝게") — more fill and a whiter sun, a touch lighter shade;
 // the sun stays where it is (no long shadows). 8판 keeps the house light it had.
 RECIPES.house2f = { ...RECIPES.house2f, light: { ambColor: '#f3eff5', amb: 1.36, sunColor: '#ffe6c6', sun: 2.75, shadow: .56 } };
+// ── 11~20판 (우리 아파트 장, 10/20 아트 개선안 — 사용자 컨펌 전): the same rule as 1~10 — no white glow behind the room, a
+// mid-value backdrop of the room's own colour and a light mood; the sun stays where it is (no long shadows)
+Object.assign(RECIPES, {
+  // 냥냥이네 부엌 (11판): a mint kitchen on a soft sage
+  cat: { light: { ambColor: '#f0eef2', amb: 1.26, sunColor: '#ffe8c8', sun: 2.55, shadow: .62 }, sky: ['#cfe3d6', '#dcece2', '#bdd5c6'] },
+  // 박사님의 비밀 서재 (12판): parchment, a little dusky
+  study: { light: { ambColor: '#f2ebe6', amb: 1.24, sunColor: '#ffe0b4', sun: 2.55, shadow: .62 }, sky: ['#e2d3bb', '#ebdfcb', '#d2bfa3'] },
+  // 우리 아파트 거실 (13판) and the 투룸 map (20판): an afternoon apartment, warm peach
+  apt: { light: { ambColor: '#f2ecf0', amb: 1.24, sunColor: '#ffe2bc', sun: 2.6, shadow: .62 }, sky: ['#ecd3c2', '#f3e0d2', '#dec2ad'] },
+  // 파출소 (14판, 흑백) · 아파트 주방 (17판, 흑백): the gallery's quiet lilac-grey, a cooler and a warmer one
+  police: { light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 }, sky: ['#d8d5e6', '#e5e2ef', '#c8c3d9'] },
+  aptkitchen: { light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 }, sky: ['#e0d6dd', '#ebe3e8', '#d0c4cc'] },
+  // 햄찌네 원룸 (15판): a small flat in dusty lavender
+  oneroom: { light: { ambColor: '#f2eef6', amb: 1.28, sunColor: '#fff0dc', sun: 2.5, shadow: .62 }, sky: ['#d9d0e6', '#e5def0', '#c9bedc'] },
+  // 토순이네 교실 (16판): a school morning, powder blue
+  school: { light: { ambColor: '#eef0f6', amb: 1.28, sunColor: '#fff4e2', sun: 2.5, shadow: .62 }, sky: ['#cbdcec', '#dde8f2', '#bccde0'] },
+  // 햄찌네 복층 원룸 (18판, 너굴이 술래): warm sand
+  duplex: { light: { ambColor: '#f2ecf0', amb: 1.24, sunColor: '#ffe2bc', sun: 2.6, shadow: .62 }, sky: ['#e6d6c0', '#efe4d4', '#d8c5ab'] },
+  // 동네 119 안전센터 (19판): out on the street — the houses' late-afternoon sky
+  firestation: { light: { ambColor: '#ece6f2', amb: 1.18, sunColor: '#ffdcb0', sun: 2.6, shadow: .62 }, sky: ['#a9d4ee', '#f6e4cf', '#dcc4ad'] },
+});
+RECIPES.aptmap = RECIPES.apt;
 // (22·27판 골목 'street': waits for the user's art sign-off — 10/19 "22판 골목 룩 … 빼고"; sumbak-look keeps it)
 delete RECIPES.street;
 

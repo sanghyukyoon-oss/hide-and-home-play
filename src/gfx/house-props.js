@@ -69,6 +69,73 @@ function leaves(add, x, y, z, n, c1, c2, s = 1, drop = 0) {
   }
 }
 
+// ── 현관 (검토 세션 10/20, user on a phone, 2판: the grey cut corner "비어있는 거 같다, 단차도 없고… 테두리라도, 텍스처라도 있어야
+// 하는데, 신발이랑" — "꽉 채우지 말고 센스 있게"): the cut corner of a room is its entrance, a step down. Here: the wooden nosing
+// along the step's edge(s) into the room, and the owner's one pair of shoes set neatly in it, toes toward the room — one mesh
+// (vertex colours), in room-local coords. The sunken floor and its tiles are room.js's (buildEntry).
+//   c: the cut { i, j, w, d } · w, d: the room · owner: the room's friend (whose shoes)
+const SHOES = {
+  bunny: { kind: 'slipper', c: '#ffb3cd', c2: '#fff4f8', ears: 'bunny' },
+  cat: { kind: 'slipper', c: '#ffcf8f', c2: '#fff6e8', ears: 'cat' },
+  bear: { kind: 'boot', c: '#b9824a', c2: '#fff1dc', h: .15 },        // 털신: brown, a fluffy cream cuff
+  peng: { kind: 'boot', c: '#ffd25c', c2: '#ffffff', h: .13, rain: true },   // 작은 장화
+  nerd: { kind: 'loafer', c: '#8a5a35', c2: '#5e3b22' },
+};
+export function entryNook(c, w, d, T = {}, owner = null, drop = .12) {
+  const x0 = -w / 2 + c.i, z0 = -d / 2 + c.j, x1 = x0 + c.w, z1 = z0 + c.d, wood = col(T, 'woodD'), sh = SHOES[owner] || { kind: 'slipper', c: col(T, 'accent'), c2: '#ffffff' };
+  // the sides of the cut that meet the room's floor (the others are the room's own outer edge)
+  const sides = [];
+  if (c.j > 0) sides.push({ k: 'N', len: c.w }); if (c.i > 0) sides.push({ k: 'W', len: c.d });
+  if (c.j + c.d < d) sides.push({ k: 'S', len: c.w }); if (c.i + c.w < w) sides.push({ k: 'E', len: c.d });
+  const face = [...sides].sort((a, b) => b.len - a.len || 'NWSE'.indexOf(a.k) - 'NWSE'.indexOf(b.k))[0]?.k || 'N';
+  const key = ['entry', c.i, c.j, c.w, c.d, w, d, wood, owner, sh.c, T?.base || ''].join('|');
+  return mc(key, ({ add }) => {
+    // the sides on the room's outer edge: a wall seen from inside the step only (one face, turned inward) — from outside the
+    // ground runs on over it
+    const rim = shade(T?.base || '#d8c4a8', -.06);
+    for (const k of ['N', 'W', 'S', 'E']) {
+      if (sides.some(q => q.k === k)) continue;
+      const len = k === 'N' || k === 'S' ? c.w : c.d, ry = { N: 0, S: PI, W: HP, E: -HP }[k];
+      const x = k === 'W' ? x0 : k === 'E' ? x1 : (x0 + x1) / 2, z = k === 'N' ? z0 : k === 'S' ? z1 : (z0 + z1) / 2;
+      add(new THREE.PlaneGeometry(len, drop), rim, x, -drop / 2, z, 0, ry, 0);
+    }
+    const t = .05, h = drop + .016;   // a wooden nosing on each step edge, flush with the room's floor on top
+    for (const { k } of sides) {
+      if (k === 'N') add(G.box(c.w, h, t, .01), wood, (x0 + x1) / 2, .016 - h / 2, z0 + t / 2);
+      if (k === 'S') add(G.box(c.w, h, t, .01), wood, (x0 + x1) / 2, .016 - h / 2, z1 - t / 2);
+      if (k === 'W') add(G.box(t, h, c.d, .01), wood, x0 + t / 2, .016 - h / 2, (z0 + z1) / 2);
+      if (k === 'E') add(G.box(t, h, c.d, .01), wood, x1 - t / 2, .016 - h / 2, (z0 + z1) / 2);
+    }
+    // the pair: by the step, in the middle of that side, toes into the room
+    const ry = { N: PI, S: 0, W: -HP, E: HP }[face], fy = -drop;
+    const K = 1.35;   // a little over life size for the mochi friends: at the start view a real-size pair was a few pixels
+    const cx = face === 'W' ? x0 + .27 : face === 'E' ? x1 - .27 : (x0 + x1) / 2, cz = face === 'N' ? z0 + .27 : face === 'S' ? z1 - .27 : (z0 + z1) / 2;
+    const dir = [Math.sin(ry), Math.cos(ry)], side = [Math.cos(ry), -Math.sin(ry)];
+    for (const s of [-1, 1]) {
+      const px = cx + side[0] * s * .075 * K, pz = cz + side[1] * s * .075 * K, at = (f, u, y) => [px + dir[0] * f * K + side[0] * u * K, fy + y * K, pz + dir[1] * f * K + side[1] * u * K];
+      const put3 = (g, colr, f, u, y, rx = 0, rz = 0, sc = 1) => { const [x, yy, z] = at(f, u, y); add(g, colr, x, yy, z, rx, ry, rz, sc * K); };
+      if (sh.kind === 'boot') {
+        const H = sh.h;
+        put3(G.box(.085, .03, .17, .014), shade(sh.c, -.12), .01, 0, .015);                 // sole
+        put3(G.box(.08, .05, .1, .03), sh.c, .045, 0, .045);                                 // toe
+        put3(G.box(.08, H - .02, .08, .025), sh.c, -.035, 0, (H - .02) / 2 + .02);            // shaft
+        put3(G.box(.092, .04, .092, .02), sh.c2, -.035, 0, H - .005);                        // cuff (fur / white band)
+        if (sh.rain) put3(G.pbox(.082, .012, .082), '#ffffff', -.035, 0, .06);
+      } else if (sh.kind === 'loafer') {
+        put3(G.box(.085, .018, .2, .008), sh.c2, 0, 0, .009);
+        put3(G.box(.08, .045, .17, .03), sh.c, .005, 0, .036);
+        put3(G.pbox(.05, .006, .03), shade(sh.c, .12), .05, 0, .06);                          // the strap
+      } else {
+        put3(G.box(.085, .022, .2, .01), sh.c2, 0, 0, .011);                                 // sole
+        put3(G.box(.084, .04, .11, .03), sh.c, .045, 0, .036);                               // the toe cap
+        put3(G.box(.07, .012, .06, .006), sh.c2, .095, 0, .058);                             // a soft fluffy edge
+        if (sh.ears === 'bunny') for (const e of [-1, 1]) put3(G.box(.022, .055, .012, .01), sh.c, .07, e * .02, .075, -.35, e * .25);
+        if (sh.ears === 'cat') for (const e of [-1, 1]) put3(G.cone(.018, .03, 4), sh.c, .065, e * .025, .07);
+      }
+    }
+  });
+}
+
 // ── balcony railing: wall-local coords, x along the side, the room on +z; o.gaps = [u, ...] where stairs arrive ─────
 export function houseRail(len, T = {}, o = {}) {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), leaf = col(T, 'leaf'), leaf2 = col(T, 'leaf2');
