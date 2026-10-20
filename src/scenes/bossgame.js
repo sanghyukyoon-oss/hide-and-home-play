@@ -17,6 +17,7 @@ import { disposeTree } from '../gfx/kit.js';
 import { playDialog } from '../story.js';
 // 대본 (10/18): who you're with and what's at stake before a game's first time, a word after the first win, and the ending
 import { gameLines, ENDING, endCard, choose, UI as SUI } from '../script.js';
+import { tr } from '../i18n.js';
 
 const LOAD = {
   yasik: () => import('../bosses/yasik.js'), villa: () => import('../bosses/villa.js'), tag: () => import('../bosses/tag.js'),
@@ -109,12 +110,14 @@ export class BossGameScene {
         for (const t of items) { const key = 'item_' + t; if (!L.thumbs[key] && ITEMS[t]) jobs.push({ key, build: () => buildItem(t, { code: '★★★' }), dir: ITEMS[t].flat ? [.25, 1.3, .7] : [.45, .55, 1], fit: 1 }); }
         if (jobs.length) Object.assign(L.thumbs, renderThumbs(jobs, 128));
       },
+      // held where it popped up, and a line (not a word or two) carries its speaker's face in front (2D UI 정리 ⑯, user 10/20)
       say(ch, text, ms = 1200, cls = '') {
-        const b = h('div', { class: 'bubble pop ' + cls }, text); G.ui.wui.append(b);
+        const t = String(tr(text) || ''), short = t.replace(/\s/g, '').length <= (/[가-힣]/.test(t) ? 6 : 12), face = !short && ch?.kind && (G.thumbs['face_' + ch.kind] || L.thumbs[`face_${ch.kind}_normal`]);
+        const b = h('div', { class: 'bubble pop ' + cls + (face ? ' withface' : '') }, face ? h('img', { class: 'bface', src: face }) : '', text); G.ui.wui.append(b);
         G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
-        const V = new THREE.Vector3();
-        const upd = () => { const p = G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .22)); b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px'; };
-        upd(); const iv = setInterval(() => b.isConnected ? upd() : clearInterval(iv), 30); setTimeout(() => { clearInterval(iv); b.remove(); }, ms);   // (gone from the page → the timer stops too — QA3 10/19)
+        const p = G.world.toScreen(new THREE.Vector3().copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .22));
+        b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px';
+        setTimeout(() => b.remove(), ms);
         return b;
       },
       // the lab restarts a game with a level: here a won boss goes on with the campaign, anything else replays the boss

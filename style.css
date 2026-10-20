@@ -1841,3 +1841,61 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .inv .pill.coinpop.out { animation: coinpopout .3s ease-in forwards; }
 @keyframes coinpopin { 0% { scale: .3; opacity: 0; } 100% { scale: 1; opacity: 1; } }
 @keyframes coinpopout { 100% { scale: .3; opacity: 0; } }
+
+/* ── 2D UI 정리 ⑮ 별·무궁화 줄 (UI 세션 10/20, 실폰 피드백) ── the result stars one step smaller (the icon itself now has round
+   tips — ui.js ICON.star); the red-light chant fits any phone: each syllable as wide as its letters (English 'gung', 'seum' ran
+   out of 29 px boxes and off the bar), sized with the screen */
+.stars .st { width: 64px; height: 64px; }
+.stars .st:nth-child(2) { width: 80px; height: 80px; margin-top: -12px; }
+.rl-chant { max-width: calc(100vw - 16px); box-sizing: border-box; }
+.rl-chant img { width: min(40px, 9.5vw); height: min(40px, 9.5vw); }
+.rl-syl { width: auto; min-width: min(29px, 6.8vw); font-size: min(27px, 6.4vw); }
+.rl-syl::before { content: attr(data-s); }   /* (the syllable itself — Korean in either language) */
+#world-ui .rl-tang { translate: var(--dx, 0px) 0; }
+
+/* ── 2D UI 정리 ⑯ 누가 말하는지 (UI 세션 10/20, user on a phone: "말풍선이 누가 말하는지 모르겠고, 움직여서 정신없다") ── a line
+   sits in one caption above the tray — the speaker's face and name, then the words — in the dialogue card's look; it stays
+   clear of the hint button, the turn dial and the zoom gauge. A word or two stays over the head where it popped up. In the
+   break games a line carries a small face in front */
+.subline { position: absolute; left: 50%; bottom: calc(var(--joyB, 100px) + 80px + var(--safeB)); transform: translate(-50%, 8px); opacity: 0; width: max-content; max-width: min(300px, calc(100% - 136px)); box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 5px 14px 6px 5px; background: #fffaf2; border: 3px solid var(--ink); border-bottom-width: 5px; border-radius: 20px; pointer-events: none; transition: opacity .18s, transform .18s var(--eo); z-index: 3; }
+.subline.on { opacity: 1; transform: translate(-50%, 0); }
+.subline .sl-face { flex: none; width: 42px; height: 42px; border-radius: 50%; overflow: hidden; background: radial-gradient(#fff, #ffe2ec); border: 2.5px solid var(--ink); box-sizing: border-box; }
+.subline .sl-face img { display: block; width: 100%; height: 100%; object-fit: cover; scale: 1.34; transform-origin: 50% 42%; }
+.subline .sl-body { min-width: 0; text-align: left; line-height: 1.3; word-break: keep-all; overflow-wrap: break-word; }
+.subline .sl-body b { display: block; font-size: 13.5px; line-height: 1.15; color: #7a5bd6; margin-bottom: 1px; }
+.subline .sl-body span { font-size: 17px; color: var(--ink); }
+.bubble.withface { display: flex; align-items: center; gap: 6px; padding-left: 5px; text-align: left; }
+.bubble .bface { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--ink); background: radial-gradient(#fff, #ffe2ec); object-fit: cover; }
+
+/* ── 2D UI 정리 ⑳ 칸 크게 보기 (UI 세션 10/20) ── a tapped slot's picture, big over the list for a moment, in the dialogue card's
+   look */
+.peek { position: absolute; bottom: calc(var(--joyB, 100px) + 6px + var(--safeB)); translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px; background: #fffaf2; border: 3px solid var(--ink); border-bottom-width: 6px; border-radius: 20px; pointer-events: none; z-index: 6; animation: pop .22s cubic-bezier(.2, 1.6, .4, 1); }
+.peek img { width: 92px; height: 92px; object-fit: contain; scale: 1.16; }   /* (the icon's own empty edge taken in: one even margin all round — user 10/20 "빈공간이 너무 크고") */
+.peek b { font-size: 16px; color: var(--ink); max-width: 140px; text-align: center; word-break: keep-all; line-height: 1.15; }
+.peek.sil img { filter: brightness(0) opacity(.72); }
+.peek.gray img { filter: grayscale(1) contrast(1.05); }
+
+/* ── 2D UI 정리 ⑰ 선물 (UI 세션 10/20) ── a piece of furniture comes to you: its tile pops into the result, and in the room
+   a number pops onto 꾸미기 and stays until 꾸미기 is opened */
+/* (the 🔨 방 넓히기 sign sits on the top-right corner, so the number goes top-left; 🎁 is the 별 상자's — 경제 10/20) */
+.homebar .row2 .btn .badge { left: -8px; right: auto; top: -10px; z-index: 2; }
+.homebar .row2 .btn .badge.new { animation: badgepop .6s cubic-bezier(.2, 1.8, .4, 1) .35s both; }
+@keyframes badgepop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+.panel.result > .memento.tile.gift { animation: tilegift .5s cubic-bezier(.2, 1.7, .4, 1) .9s both; }
+@keyframes tilegift { 0% { transform: scale(.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* ── 2D UI 정리 ⑱ 내 방 아래 버튼 (A안, user 10/20 "a가 나은거같아") ── the big button and the three below share both edges; the big
+   one is one line ("▶ 스테이지 4") with the place as a small chip over it; every button's symbol and words held together in its
+   middle */
+.homebar { gap: 10px; }
+.homebar .playbtn { width: 100%; max-width: none; justify-content: center; padding-top: .3em; padding-bottom: .36em; }
+.homebar .playbtn.stack { gap: 8px; }
+.homebar .playbtn.stack > svg { width: 30px; height: 30px; }
+.homebar .playbtn .lbl { text-align: center; }
+.homebar .playbtn .lbl .sub { position: absolute; left: 50%; bottom: calc(100% + 20px); translate: -50% 0; display: block; white-space: nowrap; font-family: var(--font); font-size: 13px; line-height: 1; padding: 4px 11px 5px; border-radius: 999px; background: rgba(42, 26, 61, .62); color: #fff; -webkit-text-stroke: 0; text-shadow: none; margin: 0; }
+.homebar .row2.three { gap: 8px; }
+.homebar .row2.three .btn { max-width: none; flex: 1 1 0; justify-content: center; gap: .3em; font-size: 17px; padding-top: .55em; padding-bottom: .6em; }
+/* 더보기: the font credits as small as they can go, and a thank-you after them (user 10/20) */
+.panel.more .credits { font-size: 8px; line-height: 1.35; margin-top: 6px; color: #a796b6; }
+.panel.more .credits.thanks { text-align: center; font-size: 9px; margin-top: 2px; }
+.col:has(> .peek) > .subline { opacity: 0; }   /* (a picture being shown big puts the caption away for that moment) */

@@ -935,7 +935,8 @@ export function openMore(G, extra = []) {
     QA_TOOLS && ui.btn(G.econ ? '새 경제 끄기' : '새 경제·내 방 로비 켜기', { color: G.econ ? 'gray' : 'pink', cls: 'sm qa', onClick: () => { try { localStorage.setItem('sbk-econ', G.econ ? '0' : '1'); } catch {} location.replace(location.pathname + location.search.replace(/[?&]econ=[01]/, '').replace(/^&/, '?') + location.hash); } })),
     // font credits (한국기계연구원 서체 is 공공누리 제1유형: the credit has to be shown)
     h('div', { class: 'credits' }, VERSION_LABEL),   // the version name in the game (Discovery 26-4 rule)
-    h('div', { class: 'credits' }, '글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 \'한국기계연구원 서체\'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.')],
+    h('div', { class: 'credits' }, '글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 \'한국기계연구원 서체\'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.'),
+    h('div', { class: 'credits thanks' }, '감사합니다')],
     // (one way out: the ✕ at the corner — the gray 닫기 under the credits said it twice; 2D UI 정리 ⑫ 10/19)
     buttons: [] });
   if (!G.owner) G.ownerP.then(o => { if (o && ui.panelOpen) { ui.closePanel(); openMore(G, extra); } });

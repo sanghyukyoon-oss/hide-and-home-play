@@ -147,6 +147,11 @@ export class LobbyScene extends MyHomeScene {
       lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater ? this.hideLesson() : this.setMode('hide')),
       lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
+    // furniture you haven't seen in 꾸미기 yet: its number on the button, popping in once when it grows (user 10/20:
+    // "방꾸미기 숫자 배지" — 2D UI 정리 ⑰; 🎁 is the 별 상자's own sign now, so none here); opening 꾸미기 counts them as seen
+    const HH = this.H; if (!HH.seenFurn) HH.seenFurn = [...new Set(HH.inventory)];
+    const nNew = open ? HH.inventory.filter(t => !HH.seenFurn.includes(t)).length : 0;
+    if (nNew) { const grew = nNew > (HH.giftPopN || 0); row.firstChild.append(h('div', { class: 'badge' + (grew ? ' new' : '') }, String(nNew))); if (grew) { HH.giftPopN = nNew; G.persist(); } }
     // the boxes of chapters you'd already finished before this update (설계서 8장): one 🎁 each, opened here
     const q = (this.H.boxQ || []).filter(i => PICKS[i] && !(i in (this.H.picks || {})));
     const sb = open ? starBoxState(S).pending : 0;   // 별 상자 waiting (the room wasn't passed since it came)
@@ -394,6 +399,7 @@ export class LobbyScene extends MyHomeScene {
   }
   setMode(mode) {   // (꾸미기·숨기기 '완료' come back to the lobby)
     this.fsel = null; mode = mode === 'view' ? 'lobby' : mode;
+    if (mode === 'edit') { this.H.seenFurn = [...new Set(this.H.inventory)]; this.H.giftPopN = 0; this.G.persist(); }   // (the new ones are seen now — ⑰)
     if (mode === 'passage') {   // 판 끝 집으로 가져가기: no buttons, just "톡 하면 계속"
       const G = this.G, W = G.world; this.mode = 'passage'; this.sel = null; G.ui.clear(); if (this.room) this.fitCam();
       W.joyHidden = true; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0;
@@ -757,10 +763,30 @@ export class LobbyScene extends MyHomeScene {
     }
     for (const s of this.seated) s.ch.update(dt);
     this.guest?.update(dt);
+    if (this.mode === 'lobby' && !this.busyTut && !this._growing) this.faceYou(dt);
     if (this.ftool && this.fsel) {
       const p = this.G.world.toScreen(new THREE.Vector3(this.fsel.ch.root.position.x, this.fsel.ch.headTop() + .35, this.fsel.ch.root.position.z));
       this.ftool.style.left = p.x + 'px'; this.ftool.style.top = p.y + 'px';
     }
+  }
+  // (10/20, user: "로비에서 왜 이렇게 등 돌리고 있냐") in the lobby 몽글이 and the friends who sit with it turn, gently, to you —
+  // whichever way the room has been turned or is swaying. The friends lean a little toward 몽글이 (three-quarters, not a row of
+  // stiff fronts). Someone hopping is left alone, and a turn something else gave (몽글이 looking at a new piece, a friend at
+  // 몽글이) is kept for 2.5 s before they look back at you. Only the picture: the seats' saved facing (rec.a) is untouched.
+  faceYou(dt) {
+    const cp = this.G.world.cam.position, k = 1 - Math.exp(-dt * 4.5), now = performance.now(), mp = this.mong?.root.position;
+    const turn = (ch, lean) => {
+      if (!ch || ch.hopping) return;
+      const r = ch.root, p = r.position;
+      if (ch._myYaw != null && Math.abs(r.rotation.y - ch._myYaw) > 1e-3) ch._holdTill = now + 2500;   // (someone else turned it)
+      if (now < (ch._holdTill || 0)) { ch._myYaw = r.rotation.y; return; }
+      let want = Math.atan2(cp.x - p.x, cp.z - p.z);
+      if (lean && mp) { const tm = Math.atan2(mp.x - p.x, mp.z - p.z), d = Math.atan2(Math.sin(tm - want), Math.cos(tm - want)); want += d * .25; }
+      const d = Math.atan2(Math.sin(want - r.rotation.y), Math.cos(want - r.rotation.y));
+      r.rotation.y += d * k; ch._myYaw = r.rotation.y;
+    };
+    turn(this.mong, false);
+    for (const s of this.seated) turn(s.ch, true);
   }
   botStep(dt) {
     if (this.mode === 'passage') return this.passageDone();

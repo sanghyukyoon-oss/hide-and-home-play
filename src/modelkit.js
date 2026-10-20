@@ -113,7 +113,10 @@ export function kitRunner(S) {
   // "이삿짐 풀기 UI는 왜 또 프라모델로 한 거야? 의미가 있어?" — 'list' a kraft checklist, 'labels' little labelled boxes)
   const skin = /[?&]kitskin=(runner|list|labels)(&|$)/.exec(location.search)?.[1] || K.skin || 'runner', framed = !!K.frame && skin === 'runner';
   const cells = {};
-  const row = h('div', { class: 'kitrun-row', style: `--n:${K.order.length}` });
+  // one rule for every card of things to find (level session 10/20; user: "8개인데 어떤 판은 1×8, 어떤 판은 2×4"): 8 or more cells
+  // make two rows, the top one the larger half — a skin with its own grid keeps it
+  const nC = K.order.length >= 8 ? Math.ceil(K.order.length / 2) : K.order.length;
+  const row = h('div', { class: 'kitrun-row', style: `--n:${nC}` });
   // a runner's windows aren't all one size (user 10/19: "너무 다 균등해서… 이런느낌으로", sprue-frame references): the big piece
   // in a big window, the arms in tall thin ones — KITS[kit].frame gives the grid's areas and its columns
   if (framed) {

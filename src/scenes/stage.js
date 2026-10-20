@@ -449,6 +449,7 @@ export class StageScene {
       const mine = this.custom?.stolen?.includes(it.type);   // my own thing, taken from my home: get it back
       const s = h('div', { class: 'slot' + (this.spec.silhouette ? ' sil' : '') + (mine ? ' mine' : '') + (it.friend ? ' friendslot' : it.inky ? ' inkyslot' : this.incident ? ' bonus' : '') }, h('img', { src: it.thumb || G.thumbs['item_' + it.type] }), h('div', { class: 'chk', html: ICON.check }), ...(mine ? [h('div', { class: 'minetag' }, '내 거')] : []));
       this.tray.append(s); it.slot = s;
+      s.addEventListener('pointerup', e => { e.stopPropagation(); this.peek(it, s); });   // (a tap shows it big — 2D UI 정리 ⑳)
     });
     col.append(this.tray);
     // many things to find: two rows of bigger pictures instead of one row of tiny ones (11 in a row were ~18 px)
@@ -2536,16 +2537,45 @@ export class StageScene {
     this._tauntAt = this.t; this._tn = (this._tn || 0) + 1;
     this.say(this.villain?.ch || this.friend, L[(this._tn * 7 + (this.idx | 0)) % L.length], 1700);   // 먹물이 does the needling when it's here
   }
+  // who is talking, held still (user 10/20 on a phone: "말풍선이 누가 말하는지 모르겠고, 움직여서 정신없다" — "말풍선 앞에 얼굴
+  // 박아서 고정"): a word or two stays where it popped up over the speaker's head; a line goes in one caption above the tray,
+  // the speaker's face and name first, replaced by the next line — never two at once (2D UI 정리 ⑯)
   say(ch, text, ms = 1200) {
+    this.G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
+    const t = String(tr(text) || ''), short = t.replace(/\s/g, '').length <= (/[가-힣]/.test(t) ? 6 : 12);
+    if (!short && this.col) return this.subline(ch, text, ms);
     const b = h('div', { class: 'bubble pop' }, text);
     this.G.ui.wui.append(b);
-    this.G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
-    // keep the bubble on screen (it is centred on its x)
-    const upd = () => { const p = this.G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .2)); const hw = (b.offsetWidth || 120) / 2 + 8; b.style.left = Math.max(hw, Math.min(innerWidth - hw, p.x)) + 'px'; b.style.top = Math.max(40, p.y) + 'px'; };
-    upd(); const iv = setInterval(upd, 30);
-    const kill = () => { clearInterval(iv); b.remove(); };
+    const p = this.G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .2));
+    b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px';   // (placed once — ui.js keepIn keeps it inside the screen)
+    const kill = () => b.remove();
     setTimeout(kill, ms);
     return { el: b, kill };
+  }
+  // a picture in the list, big for a moment (user 10/20: "칸 아이콘이 작게 느껴질 때가 있다") — as its slot shows it (a 흑백
+  // shape stays a shape, a grey one grey), its name under it; tapping it again or a moment closes it; the stage counts nothing
+  peek(it, s) {
+    if (this._peek?.isConnected && this._peek.slot === s) { this._peek.remove(); this._peek = null; return; }
+    this._peek?.remove();
+    const sil = s.classList.contains('sil'), gray = this.tray.classList.contains('grayst') && !s.classList.contains('found');
+    const name = sil ? '' : it.friend ? (CHAR_DEFS[this.th.friend]?.name || '') : (ITEMS[it.type]?.name || '');
+    const p = this._peek = h('div', { class: 'peek' + (sil ? ' sil' : '') + (gray ? ' gray' : '') }, h('img', { src: s.querySelector('img')?.src || '' }), name ? h('b', {}, name) : '');
+    p.slot = s; this.col.append(p);
+    const r = s.getBoundingClientRect(), cr = this.col.getBoundingClientRect(), z = parseFloat(getComputedStyle(document.getElementById('hud')).zoom) || 1;
+    p.style.left = Math.max(90, Math.min(cr.width / z - 90, (r.left + r.width / 2 - cr.left) / z)) + 'px';
+    clearTimeout(this._peekT); this._peekT = setTimeout(() => { if (this._peek === p) { p.remove(); this._peek = null; } }, 1300);
+    this.G.audio.sfx('btn');
+  }
+  subline(ch, text, ms) {
+    const G = this.G, k = ch?.kind || this.th.friend, face = G.thumbs['face_' + k];
+    let s = this._sub;
+    if (!s?.isConnected) { s = this._sub = h('div', { class: 'subline' }); this.col.append(s); }
+    s.replaceChildren(h('div', { class: 'sl-face' }, face ? h('img', { src: face }) : ''), h('div', { class: 'sl-body' }, CHAR_DEFS[k] ? h('b', {}, CHAR_DEFS[k].name) : '', h('span', {}, text)));
+    s.classList.remove('on'); void s.offsetWidth; s.classList.add('on');
+    const tok = this._subTok = (this._subTok || 0) + 1;
+    const kill = () => { if (this._subTok === tok) s.classList.remove('on'); };
+    setTimeout(kill, ms);
+    return { el: s, kill };
   }
 
   // ── end states
@@ -2711,13 +2741,13 @@ export class StageScene {
         // 별 셋 = 비밀 한 줄: the line itself the moment it opens; short of three (once you know secrets exist), a grey 'one secret'
         ...(secretNew ? [h('div', { class: 'memento secret' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost] }) : '', h('div', {}, h('b', {}, tr(SECRET_UI.got)), h('div', {}, tr(secret))))] : []),
         ...(secretLock ? [h('div', { class: 'memento secret', style: 'opacity:.75' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost], style: 'filter:grayscale(1) brightness(.55)' }) : '', h('div', {}, h('b', {}, '🔒 ' + tr(SECRET_UI.lockT)), h('div', {}, tr(SECRET_UI.lock))))] : []),
-        ...(this.kit ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))] : []),
+        ...(this.kit ? [h('div', { class: 'memento tile gift' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}` : `${FURN_NAME(kitFurn)} · 이미 내 집에 있어요`)))] : []),
         ...(this.model ? [] : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
         /* (no '걸린 시간 · 힌트 없이!' line: the star chips above already say hints, and the time isn't a goal — 2D UI 정리 10/19) */
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
-        ...(picked ? [h('div', { class: 'memento tile' }, picked.kind === 'thing' ? h('img', { src: G.thumbs['item_' + picked.t] }) : picked.kind === 'decor' ? h('img', { src: G.thumbs['furn_' + picked.t] }) : h('div', { style: 'width:56px;height:56px;display:grid;place-items:center', html: picked.kind === 'lock' ? ICON.lock : ICON.coin }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, picked.line || giftName(picked))))] : []),
+        ...(picked ? [h('div', { class: 'memento tile gift' }, picked.kind === 'thing' ? h('img', { src: G.thumbs['item_' + picked.t] }) : picked.kind === 'decor' ? h('img', { src: G.thumbs['furn_' + picked.t] }) : h('div', { style: 'width:56px;height:56px;display:grid;place-items:center', html: picked.kind === 'lock' ? ICON.lock : ICON.coin }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, picked.line || giftName(picked))))] : []),
         ...(seenN ? [seenRow(G, seenNew)] : []),
         ...(!PASSAGE_EVERY && gotNow.length ? [homeRow(G, gotNow)] : []),   // (rooms only on a box: what went home this time, on its way)   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
         ...(newFriend ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
@@ -2725,7 +2755,7 @@ export class StageScene {
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
         ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, got.isNew ? `${ITEMS[got.item]?.name || ''} · 내 수집품에 추가! 내 집에 숨길 수 있어` : `${ITEMS[got.item]?.name || ''} · 이미 있어서 코인 +${got.coins}`)))] : []),
         ...(got && this.custom?.resident ? [h('div', { class: 'txt' }, `${ga(this.custom.nick)} 눈치챘을지도… 복수하러 올 수 있어! 내 집 물건을 더 꼭꼭 숨겨 둬`)] : []),
-        ...(memento ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : [])],
+        ...(memento ? [h('div', { class: 'memento tile gift' }, h('img', { src: G.thumbs['furn_' + memento] }), h('div', {}, h('b', {}, '기념 가구 획득!'), h('div', {}, `${FURN_NAME(memento)} · ${passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}`)))] : [])],
       buttons: this.model ? [G.ui.btn('놀이 모음', { color: 'blue', cls: 'sm', onClick: () => G.go('home', { gallery: true }) }),
         this.nextBtn = G.ui.btn('다시 조립', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })]
         : [...(noHome ? [] : [homeNow ? G.ui.btn(SUI.homeHide, { color: 'orange', icon: 'home', cls: 'sm', onClick: () => G.go('myhome') }) : G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') })]),

@@ -1,8 +1,8 @@
 // DOM UI kit: Supercell-style chunky buttons, ribbon panels, pills, toasts, world-anchored bubbles, fly-to animations.
 export const ICON = {
   coin: '<svg viewBox="0 0 40 40"><circle cx="20" cy="21" r="16" fill="#d99a0b" stroke="#3a2453" stroke-width="3"/><circle cx="20" cy="19" r="14" fill="#ffd23f"/><circle cx="20" cy="19" r="9" fill="none" stroke="#ffb300" stroke-width="3"/><path d="M14 12a10 10 0 0 1 8-3" stroke="#fff6c4" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
-  star: '<svg viewBox="0 0 40 40"><path d="M20 3l5.2 10.6 11.7 1.7-8.5 8.2 2 11.6L20 29.6 9.6 35.1l2-11.6-8.5-8.2 11.7-1.7z" fill="#ffd23f" stroke="#3a2453" stroke-width="3" stroke-linejoin="round"/><path d="M14 15l4-1" stroke="#fff6c4" stroke-width="3" stroke-linecap="round"/></svg>',
-  starGray: '<svg viewBox="0 0 40 40"><path d="M20 3l5.2 10.6 11.7 1.7-8.5 8.2 2 11.6L20 29.6 9.6 35.1l2-11.6-8.5-8.2 11.7-1.7z" fill="#cbbfd8" stroke="#3a2453" stroke-width="3" stroke-linejoin="round"/></svg>',
+  star: '<svg viewBox="0 0 40 40"><g transform="translate(2.4 2.6) scale(.88)"><path d="M20 3l5.2 10.6 11.7 1.7-8.5 8.2 2 11.6L20 29.6 9.6 35.1l2-11.6-8.5-8.2 11.7-1.7z" fill="#3a2453" stroke="#3a2453" stroke-width="7" stroke-linejoin="round"/><path d="M20 3l5.2 10.6 11.7 1.7-8.5 8.2 2 11.6L20 29.6 9.6 35.1l2-11.6-8.5-8.2 11.7-1.7z" fill="#ffd23f" stroke="#ffd23f" stroke-width="2.5" stroke-linejoin="round"/><path d="M14 15l4-1" stroke="#fff6c4" stroke-width="3" stroke-linecap="round"/></g></svg>',
+  starGray: '<svg viewBox="0 0 40 40"><g transform="translate(2.4 2.6) scale(.88)"><path d="M20 3l5.2 10.6 11.7 1.7-8.5 8.2 2 11.6L20 29.6 9.6 35.1l2-11.6-8.5-8.2 11.7-1.7z" fill="#3a2453" stroke="#3a2453" stroke-width="7" stroke-linejoin="round"/><path d="M20 3l5.2 10.6 11.7 1.7-8.5 8.2 2 11.6L20 29.6 9.6 35.1l2-11.6-8.5-8.2 11.7-1.7z" fill="#cbbfd8" stroke="#cbbfd8" stroke-width="2.5" stroke-linejoin="round"/></g></svg>',
   key: '<svg viewBox="0 0 40 40"><circle cx="13" cy="20" r="8" fill="#ffd23f" stroke="#3a2453" stroke-width="3"/><circle cx="13" cy="20" r="3" fill="#3a2453"/><path d="M20 20h16M30 20v6M35 20v4" stroke="#3a2453" stroke-width="7" stroke-linecap="round"/><path d="M20 20h16M30 20v6M35 20v4" stroke="#ffd23f" stroke-width="3.5" stroke-linecap="round"/></svg>',
   note: '<svg viewBox="0 0 40 40"><rect x="7" y="6" width="26" height="29" rx="5" fill="#fff7d6" stroke="#3a2453" stroke-width="3"/><path d="M12 15h16M12 21h16M12 27h10" stroke="#ff8fb8" stroke-width="3" stroke-linecap="round"/></svg>',
   hint: '<svg viewBox="0 0 40 40"><circle cx="17" cy="17" r="11" fill="#bfe8ff" stroke="#fff" stroke-width="4"/><path d="M25 25l9 9" stroke="#fff" stroke-width="6" stroke-linecap="round"/><path d="M12 13a6 6 0 0 1 5-4" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
@@ -63,7 +63,7 @@ export class UI {
     // frame a speech bubble, a floating word or a tip that runs past an edge is nudged in with `translate` (style.css keeps a
     // bubble's tail on its speaker) — 2D UI 정리 ⑥
     const M = 8, keepIn = () => {
-      for (const el of document.querySelectorAll('#world-ui .bubble, #world-ui .ftxt, #tut-ui .tip')) {
+      for (const el of document.querySelectorAll('#world-ui .bubble, #world-ui .ftxt, #world-ui .rl-tang, #tut-ui .tip')) {
         const dx = parseFloat(el.style.getPropertyValue('--dx')) || 0, r = el.getBoundingClientRect();
         if (!r.width) continue;
         const L = r.left - dx, R = r.right - dx, W = innerWidth, n = R - L > W - 2 * M ? (W - R - L) / 2 : L < M ? M - L : R > W - M ? W - M - R : 0;

@@ -20,7 +20,9 @@ import { LANG } from '../i18n.js';
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const SUNNY = { ambColor: '#fff2e4', amb: 1.55, sunColor: '#fff6e8', sun: 2.4 };
 // (숨바꼭집: in English the chant reads in romanized syllables, set here rather than through one-letter dictionary keys)
-const SYL = LANG === 'en' ? ['Mu', 'gung', 'hwa', 'kkot', 'i', 'pi', 'eot', 'seum', 'ni', 'da'] : ['무', '궁', '화', '꽃', '이', '피', '었', '습', '니', '다'];
+// the chant is sung in Korean in English too (user 10/20: "걍 한글로 해도 될거같아 영어라도" — known from Squid Game; the romanised
+// syllables ran into each other); drawn from data-s so the translator leaves it — the rule is told in the line at the bottom
+const SYL = ['무', '궁', '화', '꽃', '이', '피', '었', '습', '니', '다'];
 const NAME = { mong: '몽글이', bunny: '토순이', frog: '개굴이', hamster: '햄찌', sleepy: '졸졸이', shiba: '멍뭉이', peng: '펭펭이' };
 const PERSONA = { bunny: 'late', frog: 'hop', hamster: 'sneeze', sleepy: 'doze', shiba: 'wag', peng: 'wobble' };
 const OUT_LINE = { late: '움직였다!', hop: '공중에 떠 있잖아!', sneeze: '에취 했지?', doze: '졸다 깼지?', wag: '꼬리 흔들었지?', wobble: '뒤뚱거렸지?', kik: '너도 속았지?', dbl: '한 번 더 봤지롱!' };
@@ -123,7 +125,7 @@ export class Game {
     this.clock = h('div', { class: 'rl-clock' }, this.clockI = h('i'), this.clockN = h('b', { class: 'ol' }, String(LV.time)));
     top.append(this.clock);
     col.append(top);
-    this.syls = SYL.map((s, i) => h('span', { class: 'rl-syl ol' + (i === 9 ? ' da' : '') }, s));
+    this.syls = SYL.map((s, i) => h('span', { class: 'rl-syl ol' + (i === 9 ? ' da' : ''), 'data-s': s }));
     this.chantEl = h('div', { class: 'rl-chant' }, this.sulImg = h('img', { src: L.thumbs.face_raccoon_happy }), ...this.syls, h('div', { class: 'rl-kik ol' }, '킥!'));
     col.append(this.chantEl);
     this.heartEls = [0, 1, 2].map(() => h('span', {}, '♥'));
@@ -255,7 +257,7 @@ export class Game {
       this.close++; const p = L.world.toScreen(H.ch.root.position.clone().setY(1.6));
       L.ui.floatText(p.x, p.y, '아슬아슬 세이프!', 'gold'); L.audio.sfx('phew');
     } else if (H.st === 'play' && H.v <= .15 && !this._iceSaid && H.z < Z0 - .3) { this._iceSaid = true; L.say(H.ch, '얼음!', 650); }
-    if (!this._hintGone && this.chants >= 2) { this._hintGone = true; this.hint.classList.add('gone'); }
+    // (the rule line stays at the bottom the whole game now — user 10/20: "룰만 알려주면 될듯 아래쪽 빈곳에")
   }
 
   // ── the friends: run while he chants, stop (mostly) in time, and get caught in their own silly way
