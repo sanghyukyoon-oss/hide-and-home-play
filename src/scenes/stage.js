@@ -769,8 +769,24 @@ export class StageScene {
       if (this.dead) return; g.position.copy(to); g.quaternion.copy(qTo); G.audio.sfx('land');
       const p = W.toScreen(this.worldCenter(it)); W.fx.burst(p.x, p.y, { n: 8, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 });
       this.wobble(part.pivots[0]);
-      return this.tw.run(.24, k => { if (!this.dead) g.position.y = to.y + Math.sin(k * Math.PI) * .06; }, ease.linear).then(() => { if (!this.dead) g.position.copy(to); });
+      return this.tw.run(.24, k => { if (!this.dead) g.position.y = to.y + Math.sin(k * Math.PI) * .06; }, ease.linear).then(() => { if (!this.dead) { g.position.copy(to); this.lookHung(it); } });
     });
+  }
+  // ...and if it landed small or at the edge (7판's start view: 28 px behind the upstairs railing — 디자인 세션 10/20), the view
+  // glides in a little to the basket and stays there: the payoff of the pulley is seeing the key drop in
+  lookHung(it) {
+    const W = this.G.world;
+    if (this.dead || this.result || this.botOn() || W.flying) return;
+    // (the meshes only: the tap sphere round every thing is 0.4 m and would read as big)
+    const b = new THREE.Box3(); it.g.updateMatrixWorld(true);
+    it.g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); b.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+    if (b.isEmpty()) return;
+    const c = b.getCenter(new THREE.Vector3()), s = W.toScreen(c), lo = W.toScreen(b.min), hi = W.toScreen(b.max);
+    const px = Math.max(Math.abs(hi.x - lo.x), Math.abs(hi.y - lo.y));
+    const edge = s.x < 60 || s.x > W.W - 60 || s.y < 130 || s.y > W.H - 200;
+    if (px >= 40 && !edge) return;
+    // (a little from above too: from the start angle the upstairs railing stands in front of the basket)
+    W.flyTo(this.tw, { target: new THREE.Vector3(c.x, c.y - .15, c.z), zoom: Math.min(2.6, Math.max(W.zoom * 1.4, 2.3)), pitch: Math.min(W.maxPitch ?? .95, Math.max(W.pitch, .88)), dur: .6 });
   }
   // ── 막혔을 때 힌트, 1~5판 (user 10/20: "1~5판에서 못 찾으면 힌트 두 가지 — 말풍선으로 대놓고, 캐릭터가 간접적으로. 힌트 너무 많은 건
   // 싫음"; the lines are the story room's, script.js STUCK): soft — the host glances at a thing and lets something slip; hard —
