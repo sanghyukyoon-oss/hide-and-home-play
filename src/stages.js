@@ -672,6 +672,9 @@ export const GRAY = new Set([3, 9, ...planAt('gray')]);
 // again, the owner standing by. Story + level sessions' plan: _handoff/stage-mix-plan-20261018.md, level-mix-shape-20261018.md.
 // ?mix=0 brings back the 10/17 rule (every ordinary stage a friend hunt) to compare.
 export const FRIEND_HIDE = new Set([11, 15, 19, 29, 38, 47, 50, 58, 67]);   // (1장: 1판 tutorial and the 12판 서재 only; 6장's opener is the 간식 stage, so 51판 camp1)
+// how many things beside the friend (0-based; else half the stage's count, 2~3): 16판 교실 4 — "물건들 좀 더 찾게 해 줄래? 쉽게
+// 느껴짐" (user 10/20, it was 친구+1)
+const FRIEND_BONUS = { 15: 4 };
 // (D1 10/19, user "추천대로": 22·41판 — 3·5장 첫 판 — are hidden-object stages now; '★장치 → 보스 → 친구' at the chapter turns read
 // as three thin stages in a row. The chapter's new lock still sits at a chain end there; the friend says hello in the start line, 스토리 룸)
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
@@ -681,8 +684,8 @@ const HO_SHAPE = {
   // 5판(열쇠를 처음 배우는 판) 7 → 6, 7판(2층집) 8 → 7: 6 · 6 · 7 · 7 · 6 · 7 · 8로 오르고 8판 조립판에서 한숨)
   2: [4, 0], 3: [6, 0], 5: [6, 1], 6: [7, 1], 7: [7, 1], 8: [6, 1],   // (8판 프라모델: 부품 6개, 하나는 자물쇠 뒤)
   9: [7, 1], 11: [7, 1],   // (11판 8 → 7: 1~20판에서 가장 길었어요 — 사람 속도 봇 74초, 앞뒤 판보다 18초; 11~20판 레벨 점검 10/20)
-  13: [8, 1], 15: [7, 1], 19: [7, 2],   // (13판's count is its kit card's — KITS.moving, 7 since 10/20; 19판 8 → 7: the big outdoor map with 24 px things, half of them behind doors, and now 말썽이's first stage — 1~20 한 줄 점검 10/20)
-  22: [8, 1], 23: [8, 1], 25: [9, 1], 26: [11, 2], 27: [10, 1],
+  13: [8, 1], 14: [4, 1], 15: [8, 1], 19: [7, 2],   // (1~30 밸런스 10/20 — user "게임이 전반적으로 쉽다": 2장이 1장 끝보다 가벼웠어요(봇 42~55초 < 52~70초); 14판 흑백 물건 3 → 4, 15판 7 → 8)   // (13판's count is its kit card's — KITS.moving, 7 since 10/20; 19판 8 → 7: the big outdoor map with 24 px things, half of them behind doors, and now 말썽이's first stage — 1~20 한 줄 점검 10/20)
+  22: [8, 1], 23: [8, 1], 25: [9, 1], 26: [10, 2], 27: [10, 1],   // (26판 11 → 10: 11개가 다 28px 밑, 사람 속도 봇 84초 — 27판(82초)과 둘이 1~30에서 가장 무거웠어요, 1~30 밸런스 10/20)
   33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 1],   // (36: the sock puzzle is its second chain — D3)
   41: [8, 1], 43: [10, 1], 44: [9, 2], 45: [10, 1],
   50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 1], 57: [12, 2],   // (57: the snack box is its third chain — D3)
@@ -705,6 +708,7 @@ export function stageSpec(idx) {
   // you work your way to them; 흑백판 keep their own colour game, timed and boss stages theirs
   // (대본 10/18: the 열쇠·비밀번호 lessons, tut 4 and 7, are friend-finding stages too; only the two tutorials aren't)
   if (idx >= 2 && !s.timed && !s.boss && !s.gray && !(s.tut <= 2) && (MIX_OLD || FRIEND_HIDE.has(idx))) s.incident = true;
+  if (s.incident && FRIEND_BONUS[idx]) s.bonus = FRIEND_BONUS[idx];
   // a hidden-object stage (레벨 세션 B2): hard spots (under / behind) 0 in chapters 1-2, 1 in 3-4, 2 from 5; inside a drawer
   // or door 30 % early, 40 % later
   if (!MIX_OLD && s.tut === 2 && HO_SHAPE[2]) s.n = HO_SHAPE[2][0];   // the things tutorial keeps its own spots, just the count
@@ -716,7 +720,7 @@ export function stageSpec(idx) {
       for (const k of REGION_LOCKS[regionOf(idx).id]?.kinds || ['pad']) if (kinds.length < shape[1] && !kinds.includes(k) && !(k === 'color' && (s.gray || s.night || s.dark))) kinds.push(k);   // (only what the chapter has taught)
       s.lock = kinds;
     }
-    s.behind = ch <= 1 ? 0 : ch <= 3 ? 1 : 2;
+    s.behind = ch < 1 ? 0 : ch <= 3 ? 1 : 2;   // (2장부터 밑·뒤 하나 — 1~30 밸런스 10/20; was 3장부터)
     // 열어야 하는 것 (잠금 안 포함) = n × 30 % (1~2장) / 40 %; minus the chain ends = things found by opening, at least 1,
     // at most 2 in chapter 1 (레벨 세션 비율 가이드 10/18 — GPT QA found 58.5 % inside, "서랍 열기" the user agreed)
     const chains = (Array.isArray(s.lock) ? s.lock.length : 0) + (s.dig ? 1 : 0), open =   // (a sandbox dig is a chain end too — 레벨 세션)
@@ -1150,7 +1154,7 @@ export function planIncident(room, spec, story = null) {
   const kind0 = given[0] === 'lever' ? 'lever' : given.find(k => DOOR.includes(k)) || (spec.idx % 2 ? 'code' : 'pad');
   const order = [kind0, ...given.filter(k => k !== kind0)];
   if (spec.idx >= 9 && !order.some((k, i) => i > 0 && DOOR.includes(k))) order.push(kind0 === 'pad' ? 'code' : 'pad');   // from stage 10 on, two doors in a row
-  const bonus = Math.max(2, Math.min(3, Math.round((spec.n || 4) / 2)));
+  const bonus = spec.bonus ?? Math.max(2, Math.min(3, Math.round((spec.n || 4) / 2)));
   const s2 = { ...spec, n: 1 + bonus, lock: order, force: ['friendtoken'], inside: Math.min(spec.inside || 0, 1), behind: Math.min(spec.behind || 0, 1),
     // R2 (10/18): the host's habit places first — "멍뭉이는 또 쓰레기통이겠지?" (not on the stages where the story breaks the habit)
     hideout: spec.habit ? [...HIDEOUT.filter(t => spec.habit.some(k => t.includes(k))), ...HIDEOUT.filter(t => !spec.habit.some(k => t.includes(k)))] : HIDEOUT };
@@ -1167,7 +1171,13 @@ export function planIncident(room, spec, story = null) {
     let sp = clue && L1.part.spots.find(x => !taken.has(x) && fits(clue.type, x));
     if (clue && !sp) {
       const g = plan.placements.find(p => p.role === 'target' && p.type !== 'friendtoken' && p.spot.part === L1.part && fits(clue.type, p.spot));
-      if (g) { sp = g.spot; if (fits(g.type, clue.spot)) g.spot = clue.spot; else { plan.placements.splice(plan.placements.indexOf(g), 1); plan.targets.splice(plan.targets.indexOf(g.type), 1); } }
+      if (g) {
+        sp = g.spot;
+        // the bonus thing it pushed out goes where the clue was, else to another free place it fits — it used to drop out
+        // (16판 was friend + 1: "물건들 좀 더 찾게 해 줄래? 쉽게 느껴짐", user 10/20)
+        const alt = fits(g.type, clue.spot) ? clue.spot : rng(spec.seed + 313).shuffle(room.spots.filter(x => !taken.has(x) && !x.reserved && x.kind !== 'inside' && !plan.locks.some(l => l.part === x.part) && fits(g.type, x)))[0];
+        if (alt) { g.spot = alt; taken.add(alt); } else { plan.placements.splice(plan.placements.indexOf(g), 1); plan.targets.splice(plan.targets.indexOf(g.type), 1); }
+      }
     }
     if (sp) { clue.spot = sp; plan.nested = true; }
   }

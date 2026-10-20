@@ -298,7 +298,10 @@ export class StageScene {
     if (this.kit && !this.hunt) this.blindFixed = fixBlindSpots(this);   // no piece where nobody can see it, even opened
     // 1장 2~11판: one thing seen from the start, the rest a turn (or a tilt) away (갓겜 기획안 P0 L3)
     // (D4 10/19, user "추천대로": every hidden-object stage after 1장 too — they showed 2~7 of the list at once)
-    if (!this.custom && !this.preview && !this.incident && this.idx >= 1 && (this.idx <= 10 || this.hunt)) this.tiers = tierPass(this);
+    // (and a friend-finding stage from 2장 with three or more things beside the friend: 16판 friend + 4 showed three of them at
+    // the start — 1~30 밸런스 10/20, user "쉽게 느껴짐")
+    const many = this.incident && this.idx >= 12 && this.targets.filter(t => !t.friend).length >= 3;
+    if (!this.custom && !this.preview && (!this.incident || many) && this.idx >= 1 && (this.idx <= 10 || this.hunt || many)) this.tiers = tierPass(this);
     this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
     // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;

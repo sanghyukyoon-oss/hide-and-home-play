@@ -2,7 +2,9 @@
 // "횟수 제한 두는 게 나을 거 같아. 그래서 트라이어게인 뜨는 게 나을 듯"). Each stage gives a number of wasted taps (a hand
 // at the top left); it goes down on a tap that finds nothing — the bare floor, a decoy, the body of a piece of furniture,
 // a door or drawer opened on nothing — and never on a tap that finds, opens something with a thing in it, or that a lock
-// answers. At 0 the stage is lost: "다시 하기". Not on the two tutorials, 너굴이's timed stages or someone else's room.
+// answers. At 0 the stage is lost: "다시 하기". Not on the two tutorials or someone else's room.
+// (10/20, user on the phone, 18판: "찾기도 줄어들게 해 줘. 카운트 + 기존 룰" — 너굴이's timed stages count taps too, a little
+// roomier: the clock is already pressing, and a miss there costs seconds as well)
 // (The name isn't 돋보기: that's the hint button.)
 import { EN } from './i18n-en-dict.js';
 import { REGIONS, regionOf } from './stages.js';
@@ -24,15 +26,16 @@ export const TAP_TXT = {
 // (10/19 night, user: "너무 여유가 있다, 지금보다 약간 야박하게" — every chapter ×0.8 (1장 1.5 → 1.2, as the 레벨 1~10 session
 // measured: a person-speed bot wastes 0–5, a masher runs out in 18–27 s), the floor 10 → 8; 3판, the first stage with taps,
 // cut less: 1.35)
-const PER_CHAPTER = [1.2, 1.05, .92, .8, .8, .8, .8], FIRST_TAP_STAGE = 2, FIRST_MUL = 1.35;
+// (10/20 1~30 밸런스, user "게임이 전반적으로 쉽다": 2장 1.05 → .95, 3장 .92 → .85 — a person-speed bot wasted 0~1 of 16~25)
+const PER_CHAPTER = [1.2, .95, .85, .8, .8, .8, .8], FIRST_TAP_STAGE = 2, FIRST_MUL = 1.35, TIMED_MUL = 1.3;
 export function tapBudget(S) {
   const sp = S.spec;
-  if (S.custom || S.preview || sp.tut === 1 || sp.tut === 2 || sp.timed) return null;
+  if (S.custom || S.preview || sp.tut === 1 || sp.tut === 2) return null;
   const ch = Math.min(6, Math.max(0, REGIONS.indexOf(regionOf(sp.idx ?? S.idx))));
   const n = S.targets.length, L = S.plan.locks.length;
   const area = (S.room.rooms || [S.room]).reduce((a, R) => a + (R.w || 5) * (R.d || 5), 0);
   const big = area > 40 ? 4 : 0;
-  const mul = (sp.idx ?? S.idx) === FIRST_TAP_STAGE ? FIRST_MUL : PER_CHAPTER[ch];
+  const mul = ((sp.idx ?? S.idx) === FIRST_TAP_STAGE ? FIRST_MUL : PER_CHAPTER[ch]) * (sp.timed ? TIMED_MUL : 1);
   return Math.max(8, Math.round((6 + n + 2 * L + big) * mul * (sp.boss ? 1.2 : 1)));
 }
 
