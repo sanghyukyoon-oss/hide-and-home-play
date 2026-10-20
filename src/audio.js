@@ -40,7 +40,7 @@ Object.assign(SFX_FILES, {
   // (10/20 user: "회전 효과음은 예전 게 더 나은 것 같다") the camera turn's tick is the code sound again
   ratchet: null,
   bloom: 'audio/sfx/bloom.mp4',   // 흑백판 끝 색이 번질 때 '뾰로롱' (사운드 v3 10/20, 종 없이)
-  mugunghwa: 'audio/sfx/mugunghwa.mp4',   // 무궁화 꽃이 피었습니다 첫 구호 (10/20 사용자 "니가 해 줘 봐": AI Proxy 한국어 TTS, 한 글자 한 박 158 BPM, 3.7초)
+  mugunghwa: null,   // (10/21 user: "무궁화꽃이 음성 이상하다, 전에 거가 더 나음") back to 너굴이's voice, one syllable at a time; the TTS take is in _backup/sfx-mugunghwa-tts.mp4
 });
 // 가구 재질: 부분의 이름표(label)로 정한다 — 첫 번째로 맞는 줄. 없으면 나무(기본 소리).
 // (10/20 user, 1판: "쓸모없이 깡깡하는 이상한 소리" — the room's bins are plastic, but 휴지통 was listed as metal)
