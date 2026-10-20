@@ -153,6 +153,7 @@ B.secretshelf = (f, T) => {
   const strip = mesh(new THREE.PlaneGeometry(BW * SPINE_N, BH), mat('#ffffff', { map: tex }), { cast: false });
   strip.userData.noMerge = true; put(strip, 0, y0 + BH / 2, back + .03 + BD + .004); sv.add(strip);
   f.spines = {
+    books,   // (the book standing in each slot — 12판's first lesson hand points at the gap)
     draw(order, missing = -1, glow = false) {
       paintSpines(cv.getContext('2d'), cw, ch, order, missing, glow); tex.needsUpdate = true;
       order.forEach((id, s) => { books[s].visible = id !== missing; });

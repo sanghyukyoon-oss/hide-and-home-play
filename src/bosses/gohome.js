@@ -243,7 +243,8 @@ export class Game {
       const arrow = new THREE.Mesh(new THREE.PlaneGeometry(.72, 1.08), new THREE.MeshBasicMaterial({ map: arrowTex(p.spin ? 'spin' : p.sleep ? 'sleep' : 'chalk'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
       arrow.rotation.x = -Math.PI / 2; arrow.renderOrder = 2; this.add(arrow);
       // and a faint copy drawn through bodies: an arrow behind its friend still shows (not a sticker on top of it)
-      const ghost = new THREE.Mesh(arrow.geometry, new THREE.MeshBasicMaterial({ map: arrow.material.map, transparent: true, opacity: .42, depthWrite: false, depthTest: false }));
+      // (10/20 user: "몽글이 몸 뚫려 있다. 귀여운데 너무 투명… 60 → 70~80" — the body read ~60% solid with the arrow at .42 over it; .25 keeps it ~75%)
+      const ghost = new THREE.Mesh(arrow.geometry, new THREE.MeshBasicMaterial({ map: arrow.material.map, transparent: true, opacity: .25, depthWrite: false, depthTest: false }));
       ghost.renderOrder = 6; arrow.add(ghost);
       const q = { ...p, kind, c, arrow, state: p.hid ? 'hid' : 'idle', box: null, awake: !p.sleep };
       if (p.hid) { q.box = hides.find(b => b.i === p.x + RING && b.j === p.y + RING) || null; c.root.visible = false; arrow.visible = false; }

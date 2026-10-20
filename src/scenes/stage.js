@@ -46,6 +46,8 @@ import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hid
   stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
 import { tr } from '../i18n.js';
 import { EN } from '../i18n-en-dict.js';
+const SHELF_GOAL = '빠진 그림책을 찾아서 책장에 꽂아 줘!';   // (12판 첫 손 — 스토리 룸이 대사를 맞추면 script.js로 옮겨도 돼요)
+EN[SHELF_GOAL] ??= 'Find the missing picture book and put it back on the shelf!';
 // the star reasons the 흑백·너굴이·방탈출 stages had none of (QA 10/18: 2 stars on a boss with no word why)
 const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★ 시간 넉넉히'), secret: (EN['★ 비밀 아이템'] = '★ Secret item', '★ 비밀 아이템') };
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
@@ -383,6 +385,7 @@ export class StageScene {
     if (this.scene?.card) newCard(G, this.scene.card);
     else if (this.obs) newCard(G, 'obs');   // 61판: the observation locks' card, once (스토리 v96 CARDS.obs)   // e.g. 비밀 서재: 🆕 연쇄 장치
     if (this.scene?.teachMove && !G.save.tut?.move) this.teachMove();
+    if (this.plan.showcase?.shelf && !custom && !this.preview) this.teachShelf();   // 비밀 서재: what to do, once (사용자 실폰 10/20)
     armFtap(this);   // 6판부터 한 번: 끌다가 다른 손가락 톡 = 회전 (10/19)
     if (this.spec.boss) G.ui.toast('방탈출 보스판! 단서를 차례로 풀어 봐', 'red');
     else if (this.spec.night && !this.incident) G.ui.toast('밤이 됐어! 달빛 아래 숨은 물건을 찾아봐', 'green');
@@ -1527,6 +1530,7 @@ export class StageScene {
     const G = this.G, S = this.plan.showcase;
     if (!S) return;
     if (!this.hasBook) {
+      this.shelfTried = true;
       G.audio.sfx('locked'); this.wobble(part.furn.group);
       G.ui.toast('무지개 그림책 한 권이 빠져 있어! 방 어딘가에서 찾아 줘', 'red');
       const P = this.toolPill; P.style.display = ''; P.classList.add('need'); P.querySelector('.v').textContent = '?'; P.querySelector('img').src = G.thumbs.item_spinebook;
@@ -1539,12 +1543,22 @@ export class StageScene {
       await this.tw.wait(.5); if (this.dead) return;
     }
     this.paused = true;
-    const ok = await spinePuzzle(G, S.order);
+    const ok = await spinePuzzle(G, S.order, { hand: !this.spineTaught, taught: () => { this.spineTaught = true; } });
     this.paused = false; this.idle = 0;
     S.shelf.furn.spines.draw(S.order, -1);
     if (!ok || this.dead) return;
     this.cine = true; await this.tw.wait(1.15); if (this.dead) return;   // let the '무지개 완성!' card finish first
     await this.solveShowcase();
+  }
+  // 비밀 서재 (사용자 실폰 10/20 "무슨 도감? 뭔지 전혀 모르겠다"): the book you need waits in the pill from the start, and one
+  // hand points at the gap on the shelf with the stage's goal in one line — gone once the shelf is tapped or the book found
+  async teachShelf() {
+    const G = this.G, S = this.plan.showcase, bk = this.items.find(i => i.role === 'book');
+    const P = this.toolPill; P.style.display = ''; P.classList.add('need'); P.querySelector('.v').textContent = '?'; P.querySelector('img').src = G.thumbs.item_spinebook;
+    for (let i = 0; i < 60 && (G.world.flying || this.cine || this.talking) && !this.dead; i++) await this.tw.wait(.1);
+    if (this.dead || this.hasBook) return;
+    const gap = () => { const b = S.shelf.furn.spines?.books?.[S.order.indexOf(S.missing)]; return b ? b.getWorldPosition(new THREE.Vector3()) : this.partCenter(S.shelf); };
+    await this.teach(SHELF_GOAL, 'tap', gap, () => !!this.shelfTried || !!bk?.found || !!this.hasBook, null, 12);
   }
   async solveShowcase() {
     const G = this.G, W = G.world, tw = this.tw, S = this.plan.showcase, shelf = S.shelf, door = S.door;

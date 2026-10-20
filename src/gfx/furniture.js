@@ -1038,7 +1038,25 @@ B.rug = (f, T) => {
     addM(boxUV(G.ext(scallopShape(R - .04, .04, 30), .03, 0, 2), -R, -R, 2 * R, 2 * R), xf(0, 0, .88, -HP, 0, 0));
   });
   rug.castShadow = false; pv.add(rug);
-  const p = f.part('lift', pv, (t) => { pv.rotation.x = -.62 * t; }, { label: '러그', sfx: 'lift', dur: .32 });
+  // (10/20, user on a phone: "카펫 같은 천 — 들추면 판때기처럼 올라가는데, 큰 건 휘면서 열리게") the cloth peels up from its front
+  // edge over a soft curl and folds back, instead of tilting up stiff like a board. Its own copy of the (shared, merged)
+  // geometry is bent only while it moves — the part's apply runs when t changes — and its normals turn with each bend.
+  rug.geometry = rug.geometry.clone();
+  const G2 = rug.geometry, pos = G2.attributes.position, nor = G2.attributes.normal, P0 = pos.array.slice(), N0 = nor ? nor.array.slice() : null;
+  let zMax = -1e9; for (let i = 2; i < P0.length; i += 3) zMax = Math.max(zMax, P0[i]);
+  const CR = .2, TH = 2.4;   // the curl's radius and how far round it turns before the flap runs on straight
+  const peel = t => {
+    const a = pos.array, n = nor?.array, zl = zMax - 1.1 * t;
+    for (let i = 0; i < a.length; i += 3) {
+      const y0 = P0[i + 1], z0 = P0[i + 2], d = z0 - zl;
+      if (t <= 0 || d <= 0) { a[i + 1] = y0; a[i + 2] = z0; if (n) { n[i + 1] = N0[i + 1]; n[i + 2] = N0[i + 2]; } continue; }
+      const th = Math.min(d / CR, TH), s = d - CR * th, c = Math.cos(th), sn = Math.sin(th);
+      a[i + 2] = zl + (CR - y0) * sn + s * c; a[i + 1] = CR - (CR - y0) * c + s * sn;
+      if (n) { const nz = N0[i + 2], ny = N0[i + 1]; n[i + 2] = nz * c - ny * sn; n[i + 1] = nz * sn + ny * c; }
+    }
+    pos.needsUpdate = true; if (nor) nor.needsUpdate = true; G2.computeBoundingSphere(); G2.computeBoundingBox();
+  };
+  const p = f.part('lift', pv, (t) => peel(t), { label: '러그', sfx: 'lift', dur: .42 });
   f.spot('inside', null, -.3, 0, .18, { part: p, maxH: .09, label: '러그 밑' });
   f.spot('inside', null, .32, 0, -.12, { part: p, maxH: .09, label: '러그 밑' });
   f.floor = true;

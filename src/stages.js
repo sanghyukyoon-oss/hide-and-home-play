@@ -1181,19 +1181,26 @@ export function planIncident(room, spec, story = null) {
 export function planShowcase(room, spec, story = null) {
   const shelf = room.parts.find(p => p.secretShelf), door = room.parts.find(p => p.secret);
   if (!shelf || !door) return null;
-  const plan = planStage(room, { ...spec, lock: ['pad'], lockOn: { pad: ['chest'] }, n: Math.max(2, (spec.n || 4) - 1) }, story);
+  const plan = planStage(room, { ...spec, n: Math.max(2, (spec.n || 4) - 1) }, story);
   const r = rng(spec.seed + 77);
-  // the missing book goes in the padlocked chest, in place of the bonus thing hidden there
-  const L = plan.locks.find(l => l.kind === 'pad');
-  let bp = L && plan.placements.find(p => p.role === 'target' && p.spot.part === L.part);
-  if (bp) plan.targets.splice(plan.targets.indexOf(bp.type), 1);
-  else bp = plan.placements.find(p => p.role === 'target');
+  // the missing book is the first thing to find, hidden like any other thing — in a place that opens (the toy chest first,
+  // else a drawer), no key and padlock before it (사용자 실폰 10/20 "무슨 도감? 뭔지 전혀 모르겠다. 어렵기도 하고":
+  // 열쇠 → 상자 → 책 → 책장 → 무지개 → 구슬 → 문 was seven steps; now 책 → 책장 → 무지개, the rest plays by itself)
+  const tg = plan.placements.filter(p => p.role === 'target');
+  const bp = tg.find(p => p.spot.part && p.spot.furn?.type === 'chest') || tg.find(p => p.spot.part) || tg[0];
   if (!bp) return null;
-  if (!L) plan.targets.splice(plan.targets.indexOf(bp.type), 1);
+  plan.targets.splice(plan.targets.indexOf(bp.type), 1);
+  // ...and where a picture book would be put away: a toy chest, a desk drawer, a chest of drawers (one run put it in the cookie jar)
+  const used = new Set(plan.placements.map(p => p.spot)), booky = s => /^(chest|desk|drawers)/.test(s.furn?.type || '');
+  if (!booky(bp.spot) || !fits('spinebook', bp.spot)) {
+    const home = r.pick(room.spots.filter(s => !s.reserved && s.part && !used.has(s) && booky(s) && !plan.locks.some(l => l.part === s.part) && fits('spinebook', s)));
+    if (home) bp.spot = home;
+  }
   Object.assign(bp, { type: 'spinebook', role: 'book', forPart: shelf });
-  // a scrambled shelf: at most one book already in its place; one of the five is the missing one
-  let order;
-  do order = r.shuffle([0, 1, 2, 3, 4]); while (order.filter((id, s) => id === s).length > 1);
+  // a scrambled shelf two swaps from right (was up to four): two pairs traded places, one book home; one of the five is missing
+  const sw = r.shuffle([0, 1, 2, 3, 4]), order = [0, 1, 2, 3, 4];
+  [order[sw[0]], order[sw[1]]] = [order[sw[1]], order[sw[0]]];
+  [order[sw[2]], order[sw[3]]] = [order[sw[3]], order[sw[2]]];
   const missing = r.int(0, 4);
   const spine = { part: shelf, kind: 'spine', code: order.join('') }, marble = { part: door, kind: 'marble', code: 'marble' };
   plan.locks.push(spine, marble);
