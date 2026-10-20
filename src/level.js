@@ -5,5 +5,6 @@ export const XP = { star: 10, per: 60, find: 4, raidStar: 8, treasure: 6 };
 export const xpOf = save => (save.stars || 0) * XP.star + (save.raidXp || 0);
 export function lvOf(save) { const x = xpOf(save); return { lv: 1 + Math.floor(x / XP.per), into: x % XP.per, need: XP.per, xp: x }; }
 // a raid's XP (rate: the house's own rate — ⅓ when it was cleaned out before)
-export const raidXp = (found, stars, treasure, rate = 1) => Math.max(1, Math.round((found * XP.find + stars * XP.raidStar + (treasure ? XP.treasure : 0)) * rate));
+// (QA9 10/21: a raid with nothing found gives no XP — stop at once, other house, again was +1 each time)
+export const raidXp = (found, stars, treasure, rate = 1) => !found ? 0 : Math.max(1, Math.round((found * XP.find + stars * XP.raidStar + (treasure ? XP.treasure : 0)) * rate));
 export function addRaidXp(save, n) { const a = lvOf(save).lv; save.raidXp = (save.raidXp || 0) + n; const b = lvOf(save).lv; return { from: a, to: b, up: b > a }; }

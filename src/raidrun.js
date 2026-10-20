@@ -86,14 +86,15 @@ export async function raidSettle(S, why) {
   const starCoins = val(S, RAID.star) * starN;
   const res = G.onVisitResult(S.custom, all, found.length, n, R.bag + starCoins, true);
   const back = retrieve(G, S.custom, found.map(t => t.type));
-  const xp = raidXp(found.length, starN, !!tre?.found, R.rate), lu = addRaidXp(G.save, xp); G.persist();
+  const xp = raidXp(found.length, starN, !!tre?.found, R.rate), lu = addRaidXp(G.save, xp);
+  const lensLine = all && G.econ ? lensClear(S) : null;   // (QA9: with the rest, before the wait — it came after the loot pick and was lost on a close there)
+  G.persist();
   await S.tw.wait(1.3);
   if (S.dead) return;
   // one thing pocketed from what was found
   let got = null;
   if (found.some(t => !back.includes(t.type)) && canGrab(G, S.custom)) got = await S.pickLoot(back, found);
   if (S.dead) return;
-  const lensLine = all && G.econ ? lensClear(S) : null;
   // the panel: three stamps, the loot tally, a total that rolls up
   const starEls = [0, 1, 2].map(() => h('div', { class: 'st', html: ICON.star }));
   const line = (k, sub, v) => h('div', { class: 'lrow' }, h('span', { class: 'k' }, k, sub ? h('small', {}, sub) : ''), h('b', {}, `+${v}`));

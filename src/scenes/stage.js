@@ -2431,7 +2431,7 @@ export class StageScene {
     }
     if (this.dead || this.result || loft.found || !r?.width) return;
     const p1 = W.pitch;
-    await this.teach(DO.tilt, 'vswipe', () => ({ sx: r.left + r.width / 2, sy: r.top + r.height / 2 }), () => loft.found || Math.abs(W.pitch - p1) > .2, DO.tilt2);
+    if (!await this.teach(DO.tilt, 'vswipe', () => ({ sx: r.left + r.width / 2, sy: r.top + r.height / 2 }), () => loft.found || Math.abs(W.pitch - p1) > .2, DO.tilt2)) return;   // (QA9: not done — the stage ended — is not learnt)
     (G.save.tut || (G.save.tut = {})).tilt = 1; G.persist();
   }
   // 미술관 (the first wide room): not moved around after a while → how to, once

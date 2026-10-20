@@ -198,6 +198,7 @@ const PAT = [
   [/^(.+?) · 찾은 물건 (\d+)\/(\d+)$/, (a, b, c) => `${a} · found ${b}/${c}`],
   [/^내 물건 (\d+)개를 갖고 있어! 되찾으러 가자$/, n => `They have ${n} of your things! Go get them back`],
   [/^ · (\d+)명 도전, (\d+)명 성공$/, (a, b) => ` · ${a} tried, ${b} succeeded`],
+  [/^(\d+)명 도전, (\d+)명 성공$/, (a, b) => `${a} tried, ${b} succeeded`],   // (QA9: after the ' · ' split the piece has no dot)
   [/^(.+?)에 놓을 수 있는 가구예요\. 숨을 곳이 많을수록 찾기 어려워져요\.$/, n => `Furniture for the ${n}. More hiding spots make it harder to search.`],
   [/^(.+?)의 분위기를 통째로 바꿔요\. 바꾸면 벽지·바닥은 그 테마 것으로 돌아가요\.$/, n => `Changes the whole look of the ${n}. Walls and floor switch to the theme's.`],
   [/^(.+?)[이가] '(.+?)' 테마로 바뀌었어!$/, (a, b) => `${a} is now '${b}'!`],
@@ -295,6 +296,9 @@ const PAT = [
   [/^안 쓰임 \(([\d/]+) 뺌\)$/, a => `not in the story (cut ${a})`],
   [/^(.+?) 쏙!$/, n => `${n} — slipped in!`],
   [/^((?:(?! · ).)+?) \+(\d+)$/, (a, n) => `${a} +${n}`],   // (not across ' · ': pieces are translated one by one below)
+  // (QA9 10/21) the padlock card, the hide hint's count, a hiding place's label (freehide.js: '소파 위', '서랍 안')
+  [/^가진 것 (\d+)개$/, n => `You have ${n}`], [/^(\d+)개 다 있어$/, n => `All ${n} owned`], [/^최대 (\d+)개$/, n => `up to ${n}`],
+  [/^(.+) 위$/, n => `On the ${n}`], [/^(.+) 안$/, n => `In the ${n}`],
   [/^(.+?)의 (.+)$/, (a, b) => `${a}'s ${b.replace(/^(the|a|an) /i, '')}`],   // broad ones last (no article after a possessive: "Grumpy's Room You'll Never Solve", not "Grumpy's The Room…" — 이웃 방 이름 10/20)
 ];
 

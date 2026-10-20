@@ -302,6 +302,7 @@ export class LobbyScene extends MyHomeScene {
   async seatOne(k, p, walk = false) {
     const z = this.zone, rec = { k, x: p.x, z: p.z, a: Math.atan2(2.2 - p.x, 2.2 - p.z) };
     z.friends.push(rec); this.H.friendBox = (this.H.friendBox || []).filter(x => x !== k);
+    this.G.persist();   // (QA9: the coins were saved at once and the friend only after the walk-in — an app closed meanwhile lost the friend)
     const s = this.addSeated(rec), ch = s.ch, G = this.G;
     if (walk) {
       const d = this.doorAt(); ch.root.position.set(d.x, 0, d.z);
@@ -371,6 +372,7 @@ export class LobbyScene extends MyHomeScene {
   // 친구 칸 사기: one more seat, in order, once its stage is cleared
   buySeat() {
     const G = this.G, z = this.zone, nx = nextSeat(G.save, z); if (!nx) return;
+    const now = performance.now(); if (now - (this._seatAt || 0) < 450) return; this._seatAt = now;   // (QA9: a quick double tap bought two seats)
     if (!nx.ok) { G.ui.toast(`${nx.stage}판을 깨면 ${nx.n}번째 칸을 살 수 있어`, ''); G.audio.sfx('locked'); return; }
     if ((G.save.coins || 0) < nx.price) { G.ui.toast(`코인 ${nx.price - (G.save.coins || 0)}개 더 모으면 칸을 늘릴 수 있어`, 'red'); G.audio.sfx('miss'); return; }
     G.addCoins(-nx.price); z.seats = nx.n; G.persist(); G.audio.sfx('buy');

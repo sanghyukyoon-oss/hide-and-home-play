@@ -1,6 +1,8 @@
 // English for every Korean string the player can see (generated from the source, 2026-10-17). Keys are the exact
 // Korean text; see i18n.js for how they are applied (whole text, then patterns, then phrase by phrase).
 export const EN = {
+"서랍을 잠가 지켜": "Lock a drawer to guard it", "목록에서 고르고, 드래그해서 숨겨요": "Pick from the list and drag to hide",
+"특별한 선물!": "A special gift!", "하나 골라": "Pick one", "판을 깨서 들어온 기념품": "Keepsake from a cleared stage", "위에 올린 걸 먼저 내려 줘!": "Take the thing on top off first!",
 "…다음에 또 와도 돼. 진짜 이번만이야.": "…You can come again. Just this once, really.",
 "개굴! 숨바꼭질 챔피언 납신다~": "Ribbit! The hide-and-seek champ is here~",
 "개굴?! 내 자리를 어떻게 알았어?": "Ribbit?! How did you know my spot?",

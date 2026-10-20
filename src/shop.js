@@ -209,7 +209,8 @@ export function openShop(G, ctx = {}, tab = 'furn') {
     if (!zone) return;
     const A = ZONE_SIZES[zone.size || 0];
     ui.closePanel(true); ctx.onPreview?.(true); ctx.onChange?.('growpeek', true); G.audio.sfx('place');
-    const done = () => { bar.remove(); ctx.onChange?.('growpeek', false); ctx.onPreview?.(false); };
+    const done = () => { G._pvUndo = null; bar.remove(); ctx.onChange?.('growpeek', false); ctx.onPreview?.(false); };
+    G._pvUndo = () => { G._pvUndo = null; bar.remove(); };   // (QA9: the scene left while this was up — main.js go; the bar went with it)
     const grow = ui.btn('넓히기', { color: 'green', icon: 'hammer', cls: 'sm', onClick: () => {
       const need = S.price - (G.save.coins || 0);
       if (need > 0) { ui.toast(`코인 ${need}개 더 모으면 넓힐 수 있어`, 'red'); G.audio.sfx('miss'); return; }
@@ -226,9 +227,14 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   function preview(name, price, look, own, style = null) {
     if (!zone) return;
     const was = zone.paint ? { ...zone.paint } : null, wasStyle = zone.style;
+    // (QA9 10/21) while you look, the room's own look rides in the save (zone._pv): a save written meanwhile (the lobby saves on a
+    // mode change) and an app closed mid-look come back as they were — main.js puts it back on load — and leaving the scene
+    // undoes it (G._pvUndo, main.js go): the bar used to stay up over the next scene, its buttons working the old one
+    zone._pv = { paint: was, style: wasStyle };
+    G._pvUndo = () => { G._pvUndo = null; bar.remove(); zone.paint = was; if (style) zone.style = wasStyle; delete zone._pv; };
     ui.closePanel(true); ctx.onPreview?.(true); if (style) { zone.style = style; zone.paint = {}; } else zone.paint = { ...(zone.paint || {}), ...look }; ctx.onChange?.('paint'); ctx.onPreview?.(true); G.audio.sfx('place');   // (the view before the rebuild too: the lobby mustn't fly back to its close-up)
     // (10/20, user: "테마든 벽이든 사기 누르면 다시 상점으로 나오는 게 아니고 방으로 가야 할 듯": 사기 → the room, dressed in it; 되돌리기 → the shop's same tab)
-    const done = keep => { bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); if (keep && ctx.onBought) ctx.onBought({ kind: style ? 'style' : 'paint' }); else openShop(G, ctx, tab); };
+    const done = keep => { G._pvUndo = null; delete zone._pv; bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); if (keep && ctx.onBought) ctx.onBought({ kind: style ? 'style' : 'paint' }); else openShop(G, ctx, tab); };
     const buy = ui.btn('사기', { color: 'green', icon: 'coin', cls: 'sm', onClick: () => {
       if ((G.save.coins || 0) < price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
       G.addCoins(-price); own(); G.persist(); G.audio.sfx('buy'); ui.toast(`${name} 샀어!`, 'green'); done(true); } });

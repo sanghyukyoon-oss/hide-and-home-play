@@ -164,8 +164,13 @@ function migrate(s) {
 // (10/21 user: "다음 빌드는 친구한테 처음부터 다시 시키고 싶구먼. 첫 시작은 처음부터, 그 후 저장되게") once per device: the first
 // open of this build starts a fresh game (the save and the #s= copy in the address are dropped), every later open loads as usual
 const FRESH_ONCE = 'fresh-1021';
-const freshNow = store.get('sumbakkokjip.fresh', null) !== FRESH_ONCE;
-if (freshNow) { store.del(KEY); store.set('sumbakkokjip.fresh', FRESH_ONCE); try { if (/[#&]s=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search); } catch {} }
+// (QA9 10/21) the mark rides in the save too (save.fresh), so the address copy (#s=) says it as well: a browser that keeps
+// no storage (in-app browsers, blocked cookies) could never keep the mark in storage and started over on every load
+const freshMarked = store.get('sumbakkokjip.fresh', null) === FRESH_ONCE;
+const hashRaw = (() => { if (window.claude) return null; try { const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); return m ? JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))) : null; } catch { return null; } })();
+const freshNow = !freshMarked && hashRaw?.fresh !== FRESH_ONCE;
+if (freshNow) { store.del(KEY); store.del('sbk-dial-tilt'); try { if (/[#&]s=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search); } catch {} }
+if (!freshMarked) store.set('sumbakkokjip.fresh', FRESH_ONCE);
 if (qs.has('reset')) {
   store.del(KEY);
   // (QA3 10/19) once: it used to stay in the address, so every reload — iOS drops big tabs, the language switch reloads —
@@ -185,7 +190,8 @@ if (/Android/i.test(navigator.userAgent)) document.documentElement.classList.add
 const WEB = !window.claude;
 const b64e = str => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const b64d = str => decodeURIComponent(escape(atob(str.replace(/-/g, '+').replace(/_/g, '/'))));
-const hashSave = (() => { if (!WEB || qs.has('reset') || freshNow) return null; try { const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); return m ? JSON.parse(b64d(m[1])) : null; } catch { return null; } })();
+// (QA9) after the fresh start an address copy from before it (no save.fresh) is an old game: it never wins over this one
+const hashSave = (() => { if (!WEB || qs.has('reset') || freshNow) return null; try { const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); const h = m ? JSON.parse(b64d(m[1])) : null; return h && (h.fresh === FRESH_ONCE || !store.get(KEY, null)) ? h : null; } catch { return null; } })();
 const storageOk = (() => { try { localStorage.setItem('sumbakkokjip.t', '1'); return localStorage.getItem('sumbakkokjip.t') === '1'; } catch { return false; } })();
 try { navigator.storage?.persist?.(); } catch {}   // ask the browser to keep this site's storage
 let stored = store.get(KEY, null);
@@ -193,6 +199,9 @@ let stored = store.get(KEY, null);
 // purchases, furniture and collection) — the address only wins when it is newer, or when there is nothing in storage
 if (hashSave && (!stored || (hashSave.rev || 0) > (stored.rev || 0))) stored = hashSave;
 let save = econMigrate(migrate(stored));   // (경제·로비: new fields only, and only with it on — coins, stages, stars, furniture untouched)
+save.fresh = FRESH_ONCE;   // (QA9: this game is from after the fresh start — the #s= copy carries it)
+// (QA9) a wallpaper / floor / theme still being tried on when the app closed (shop.js preview): the room's own look comes back
+for (const z of Object.values(save.home?.zones || {})) if (z?._pv) { z.paint = z._pv.paint; if (z._pv.style !== undefined) z.style = z._pv.style; delete z._pv; }
 // 처음 하는 사람 (기획안 7장 '처음 20분', 사용자 10/18 밤 승인): 저장이 하나도 없으면 타이틀 다음 바로 1판으로 간다. 홈은
 // 2판 뒤 '내 집 열림'과 함께 처음 본다. (주소의 #s= 저장도 stored에 들어 있으니, 그걸로 이어 하는 사람은 처음이 아니다)
 normalizeFollowup(save);
@@ -292,6 +301,7 @@ const G = {
     G.pending = name;
     audio.sfx('whoosh');
     await ui.irisOut(undefined, undefined, data.quick ? 200 : undefined);   // (quick: the room passed on the way from a stage — 경제·로비 10/19)
+    try { G._pvUndo?.(); } catch {}   // (QA9: a shop preview still up goes back first — shop.js)
     try { G.scene?.exit(); } catch (e) { console.error('scene exit', e); }   // (a throw here kept G.pending set: a pink screen for good — QA3 10/19)
     G.scene = null;
     if (endPractice) {

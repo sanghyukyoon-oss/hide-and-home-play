@@ -98,7 +98,8 @@ export class MyHomeScene {
     const busy = this.mode === 'hide' || this.mode === 'edit' || this.mode === 'lobby';   // (the lobby: the play button and its row)
     W.setFit(Math.max(7.5, span), Math.max(6.6, span * .62) * (busy ? 1.05 : 1), busy ? (this.nbs?.length ? .43 : .405) : .45);   // (a wide map is shallow: a little lower)
   }
-  exit() { document.getElementById('app').style.removeProperty('--joyB'); this.dead = true; this.visitors?.dispose(); const W = this.G.world; W.root.remove(this.room.group); freeRoom(this.room.group); if (this.nbGroup) { W.root.remove(this.nbGroup); freeRoom(this.nbGroup); } W.onTap = null; W.onDragStart = null; this.G.ui.clear(); this.tw.clear(); }
+  exit() { if (this.held) { try { holdCancel(this, true); this.G.persist(); } catch {} }   // (QA9: a thing picked up to move goes back to its place)
+    document.getElementById('app').style.removeProperty('--joyB'); this.dead = true; this.visitors?.dispose(); const W = this.G.world; W.root.remove(this.room.group); freeRoom(this.room.group); if (this.nbGroup) { W.root.remove(this.nbGroup); freeRoom(this.nbGroup); } W.onTap = null; W.onDragStart = null; this.G.ui.clear(); this.tw.clear(); }
   // the whole home's floor (the zone you're in at the origin): { x0, x1, z0, z1, w, d, cx, cz }
   mapBox() {
     const R = this.room, b = { x0: -R.w / 2, x1: R.w / 2, z0: -R.d / 2, z1: R.d / 2 };
@@ -208,6 +209,7 @@ export class MyHomeScene {
   // old size to the new one (the things in it keep their shape and spread out with the floor), 몽글이 cheers
   async growShow(from) {
     const G = this.G, W = G.world, tw = this.tw, A = ZONE_SIZES[from] || ZONE_SIZES[0];
+    if (this.sel) this.select(null);   // (QA9: the piece picked before was the old room's — rotate / box worked a mesh that was gone)
     const push = this.growFront(A);   // (the new row goes on the side the dashed patch was on — UI 10/20)
     this.busyTut = true; this._growing = true;
     if (this.mode === 'lobby') this._heroView = 'room';   // (the lobby looks at the whole room from here on: the bigger room is the news)
@@ -775,12 +777,14 @@ export class MyHomeScene {
   }
   // 내가 풀어보기: play my own room exactly as a visitor would — no coins, no stats — then come back to fix it
   selfTest() {
+    if (this.held) holdCancel(this, true);   // (QA9: a thing still in your hand went missing from the room you test)
     const r = this.ready(); if (!r.ok) return this.whyNot();
     this.G.persist();
     this.G.go('stage', { custom: { ...this.roomDoc(), id: 'self-' + this.zoneId, practice: true, selfTest: true, nick: '나', title: this.zone.name, back: this.zoneId } });
   }
   async publish() {
     const G = this.G, H = this.H, hid = H.hide;
+    if (this.held) holdCancel(this, true);   // (QA9: … and from the room you put up)
     const r = this.ready(); if (!r.ok) return this.whyNot();
     const doc = this.roomDoc();
     const bad = validateRoom(doc);

@@ -78,7 +78,7 @@ export function chapterGift(G, after, buttons = []) {
   const choices = giftChoices(G.save, 100 + after);
   G.needThumbs?.(choices.map(c => c.kind === 'thing' ? 'item_' + c.t : c.kind === 'decor' ? 'furn_' + c.t : null).filter(Boolean));
   for (const b of buttons) b.style.visibility = 'hidden';
-  const head = h('div', { class: 'txt gline' }, h('b', {}, '특별한 선물!'), ' 하나 골라'), grid = h('div', { class: 'lootgrid' });
+  const head = h('div', { class: 'txt gline' }, h('b', {}, '특별한 선물!'), ' ', h('span', {}, '하나 골라')), grid = h('div', { class: 'lootgrid' });
   let done = false;
   for (const c of choices) {
     const card = lootCard(G, c);

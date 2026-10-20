@@ -61,6 +61,7 @@ export function econMigrate(s) {
   s.mig = 1;
   oneRoom(s);
   starFreeze(s);
+  seatsKeep(s);   // (QA9: it stopped at mig 3 — the next load ran seatsKeep and took back a friend seat bought in between)
   return s;
 }
 // mig 2 (10/20, user: "그냥 방으로 하자"): the home is 몽글이's room alone. The other zones' furniture goes to the 보관함 (nothing is
