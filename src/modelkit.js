@@ -250,7 +250,9 @@ export async function kitIntro(S) {
   // (the panel every time, the short one too — user 10/19: "뒤에 배경 완전히 가려야 하는데 지금 노란색만 살짝 보임")
   const lay = h('div', { class: 'kitintro comic', style: 'opacity:0' },
     h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box, ...(cut ? [cut] : []));
-  col.append(lay);
+  // (over the whole screen — the HUD, not its middle column, which stops at 560 px: on a wide screen or a PC window the room
+  // showed either side, user 10/20 "기종에 따라서 배경이 이럴 수도 있겠어")
+  (document.getElementById('hud') || col).append(lay);
   const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
   cube.style.transform = KB3_VIEW; lid.style.transform = KB3_LID;
   // a tap: before the box waits, hurry on to it; while it waits, open it; once it's open, skip to the end
@@ -314,7 +316,7 @@ export async function kitIntro(S) {
     phase = 'prompt';
     const beat = cube.animate([{ transform: KB3_VIEW }, { transform: KB3_VIEW + ' scale3d(1.07,1.07,1.07)', offset: .16 }, { transform: KB3_VIEW, offset: .32 }, { transform: KB3_VIEW + ' scale3d(1.04,1.04,1.04)', offset: .46 }, { transform: KB3_VIEW, offset: .62 }], { duration: 950, iterations: Infinity });
     const shine = glowEl.animate([{ opacity: .35, transform: 'scale(.85)' }, { opacity: .9, transform: 'scale(1)', offset: .2 }, { opacity: .35, transform: 'scale(.85)' }], { duration: 950, iterations: Infinity });
-    const lt0 = box.querySelector('.kb3-ltop').getBoundingClientRect(), cc0 = col.getBoundingClientRect();
+    const lt0 = box.querySelector('.kb3-ltop').getBoundingClientRect(), cc0 = lay.getBoundingClientRect();
     const hx = lt0.left + lt0.width * .74 - cc0.left, hy = lt0.top + lt0.height * .55 - cc0.top;   // (beside the lid's picture, not over it)
     const hand = h('div', { class: 'hand tap kithand', html: ICON.hand, style: `left:${hx}px;top:${hy}px` });
     const kok = h('div', { class: 'kitkok ol', style: `left:${hx}px;top:${lt0.top - cc0.top - 30}px` }, '콕!');
@@ -327,48 +329,45 @@ export async function kitIntro(S) {
     if (S.dead) throw 0;
     // 펑! the lid bursts off (a white flash, a comic burst), light pours out
     G.audio.sfx('special'); G.audio.sfx('pop', 6); haptic('ok');
-    const lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), cc = col.getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2, y: lt.top + lt.height / 2 };
+    const lr = lay.getBoundingClientRect(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top };
     {
-      const fl = h('div', { class: 'kitflash' }); col.append(fl); outs.push(fl); A(fl, [{ opacity: .85 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' });
-      const bang = h('div', { class: 'kitbang', style: `left:${mouth.x - cc.left}px;top:${mouth.y - cc.top}px` }); col.append(bang); outs.push(bang);
+      const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .85 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' });
+      const bang = h('div', { class: 'kitbang', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(bang); outs.push(bang);
       A(bang, [{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(12deg)', opacity: 1, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(16deg)', opacity: 0 }], { duration: 520, easing: 'ease-out' });
     }
     // (the lid flies up and off the screen — no fading: a 3D group fading flattens into a plane)
     A(lid, [{ transform: KB3_LID }, { transform: 'translate3d(0,-120px,0) rotateX(16deg) rotateZ(-8deg)', offset: .35 }, { transform: 'translate3d(240px,-760px,0) rotateX(40deg) rotateZ(-44deg)' }], { duration: 520, easing: 'cubic-bezier(.3,.1,.6,1)' });
     box.classList.add('open');   // (light inside)
     A(glowEl, [{ opacity: .9, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.6)' }], { duration: 320, easing: 'ease-out' });
-    await wait(130); if (skipped) throw 0;
-    // 팍: every piece out of the box at once, fanning up and away, each down to where it hides — and the panel clears as they
-    // go, so they land in the room (쏙)
-    lay.classList.add('calm');
-    A(box, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(30px) scale(.9)', opacity: 0 }], { duration: 420, delay: 300, easing: 'ease-in' });
-    const byKey = new Map(its.map(t => [t.kitPart, t])), lands = [], n = K.order.length, x0 = mouth.x - cc.left, y0 = mouth.y - cc.top;
+    // 팍: every piece out of the box at once, fanning up and out over the panel, spinning — then a shine fills the screen,
+    // and as it clears it's the room, each piece already where it hides (user 10/20: "흩어질 때는 그 배경 위에서 부품이
+    // 흩어지고 → 반짝 트랜지션 → 그 뒤에 집 장면")
+    const n = K.order.length, R0 = Math.min(lr.width, lr.height) * .34;
     K.order.forEach((p, i) => {
-      const it = byKey.get(p), cell = S.kitCells[p];
-      const img = h('img', { class: 'kitfly', src: cell?.querySelector('.kitrun-pc')?.src || '', style: `left:${x0 - 30}px;top:${y0 - 30}px` });
-      col.append(img); outs.push(img);
-      const wp = it ? new THREE.Box3().setFromObject(it.g).getCenter(new THREE.Vector3()) : null;
-      const sp = wp ? W.toScreen(wp) : { x: cc.left + cc.width * (.15 + .7 * i / Math.max(1, n - 1)), y: cc.top + cc.height * .4 };
-      const tx = sp.x - cc.left - x0, ty = sp.y - cc.top - y0;
-      const fan = (i / Math.max(1, n - 1) - .5) * 2, mx = tx * .3 + fan * 110, my = Math.min(0, ty * .3) - 150 - (i % 3) * 45, spin = (i % 2 ? 1 : -1) * (200 + i * 30);
-      lands.push(A(img, [{ transform: 'translate(0,0) scale(.4) rotate(0)', opacity: 0 }, { transform: `translate(${mx * .55}px,${my * .7}px) scale(1.3) rotate(${spin * .3}deg)`, opacity: 1, offset: .25 },
-        { transform: `translate(${mx}px,${my}px) scale(1.15) rotate(${spin * .55}deg)`, opacity: 1, offset: .48 }, { transform: `translate(${tx}px,${ty}px) scale(.35) rotate(${spin}deg)`, opacity: .9 }],
-        { duration: quick ? 600 : 700, delay: i * 35, easing: 'cubic-bezier(.3,.15,.45,1)' }).then(() => {
-        img.remove();
-        if (it && !skipped) {
-          it.g.visible = vis0.get(it); W.idsDirty = true;
-          const g = it.g, s1 = s0.get(it);
-          S.tw.run(.28, k => g.scale.copy(s1).multiplyScalar(.3 + .7 * ease.outBack(k)), ease.linear).then(() => g.scale.copy(s1));
-          W.fx.burst(sp.x, sp.y, { n: 9, shape: 'circle', colors: ['#ffffff', '#f3ecff', '#ffe9c9'], speed: 130, up: 30, size: 7, life: .35 });
-          G.audio.sfx('tock', 2 + i); haptic('tick');
-        }
-      }));
+      const img = h('img', { class: 'kitfly', src: S.kitCells[p]?.querySelector('.kitrun-pc')?.src || '', style: `left:${mouth.x - 30}px;top:${mouth.y - 30}px` });
+      lay.append(img); outs.push(img);
+      const a = -Math.PI / 2 + (i / Math.max(1, n - 1) - .5) * Math.PI * 1.3, r = R0 * (.8 + (i % 2) * .3);   // a fan over the box, left round to right
+      const tx = Math.cos(a) * r, ty = Math.sin(a) * r, spin = (i % 2 ? 1 : -1) * (200 + i * 35);
+      A(img, [{ transform: 'translate(0,0) scale(.3) rotate(0)', opacity: 0 }, { transform: `translate(${tx * .8}px,${ty * .8 - 30}px) scale(1.55) rotate(${spin * .5}deg)`, opacity: 1, offset: .4 },
+        { transform: `translate(${tx}px,${ty}px) scale(1.4) rotate(${spin * .8}deg)`, opacity: 1, offset: .7 }, { transform: `translate(${tx * 1.7}px,${ty * 1.7}px) scale(1.25) rotate(${spin}deg)`, opacity: 1 }],
+        { duration: 1100, delay: i * 35, easing: 'cubic-bezier(.2,.8,.4,1)' });
       setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), i * 35);
     });
-    await Promise.all(lands);
-    if (skipped) throw 0;
+    G.audio.sfx('whoosh');
+    await wait(quick ? 520 : 680); if (skipped) throw 0;
+    // 반짝: white, with a few stars, over everything — under it the panel goes and the pieces are in their places
+    const wash = h('div', { class: 'kitshine' }); lay.append(wash); outs.push(wash);
+    G.audio.sfx('star');
+    await A(wash, [{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-in' }); if (skipped) throw 0;
+    lay.classList.add('clear');
+    its.forEach(t => { t.g.visible = vis0.get(t); }); W.idsDirty = true;
+    card.style.transform = 'translateX(-50%) translateY(140%)'; card.style.visibility = '';   // (below the screen till it rises: never seen in place first)
+    for (let i = 0; i < 8; i++) {
+      const sp = h('i', { class: 'kitspark', style: `left:${8 + ((i * 37) % 84)}%;top:${14 + ((i * 53) % 68)}%` }); wash.append(sp);
+      A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.25) rotate(45deg)', offset: .4 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 620, delay: i * 45, easing: 'ease-out' });
+    }
+    await A(wash, [{ opacity: 1 }, { opacity: 0 }], { duration: 560, easing: 'ease-out' }); if (skipped) throw 0;
     // the card comes up into its place, empty: its shapes waiting
-    card.style.visibility = '';
     G.audio.sfx('swish');
     await A(card, [{ transform: 'translateX(-50%) translateY(140%)' }, { transform: 'translateX(-50%) translateY(-6px)', offset: .75 }, { transform: 'translateX(-50%)' }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
   } catch {}
@@ -380,7 +379,7 @@ export async function kitIntro(S) {
   if (skipped) W.flyTo(S.tw, { ...v0, cut: true });
   W.camLock = false;
   cells.forEach(c => c.classList.remove('full', 'pop'));
-  card.style.visibility = ''; card.style.zIndex = '';
+  card.style.visibility = ''; card.style.zIndex = ''; card.style.transform = '';
   lay.removeEventListener('pointerdown', tapped); card.removeEventListener('pointerdown', tapped);
   lay.classList.add('out'); setTimeout(() => lay.remove(), 260);
   if (S.kit.hid && !S.dead) S.say(f, S.kit.hid, 2600);   // "어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!"
@@ -524,6 +523,57 @@ function standView(S, P, hW, wW, own) {
   S.kitSpot = { yaw: +best.yaw.toFixed(2), clutter: best.n, whole: best.whole };   // (QA)
   return { yaw: best.yaw, pitch };
 }
+// the build's shot kept clear (10/20, user on the phone: "조립할 때도 강제 뷰… 잘 안 보일 때가 많아" — a pot plant over the
+// build, 곰돌이 cut by the screen's edge): furniture in front of the model or the floor before it steps aside (shrinks
+// away, a puff) — and for a see-through model (파르페's glass) whatever stands just behind it too — and anyone half in the
+// picture goes wholly out of it. The furniture stays aside after: the win's close-up and the result come next, and a
+// table popping back in front of the robot spoiled the close-up (QA 10/20).
+function clearShot(S, P, hW, wW, midY, yaw, pitch, own) {
+  const G = S.G, W = G.world, tw = S.tw, cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), view = new THREE.Vector3(cp * Math.sin(yaw), sp, cp * Math.cos(yaw)), up = new THREE.Vector3(-sp * Math.sin(yaw), cp, -sp * Math.cos(yaw));
+  const mine = o => { for (let q = o; q; q = q.parent) if (q === own) return true; return false; };
+  const furn = [];
+  S.room.group.traverse(o => { if (o.userData.furn && o.userData.furn.group === o && o.visible && !mine(o)) { const b = new THREE.Box3().setFromObject(o); if (!b.isEmpty() && b.max.y - b.min.y > .08) furn.push({ o, b }); } });
+  const ray = new THREE.Ray(), hit = new THREE.Vector3(), c = new THREE.Vector3(), aside = new Set();
+  const mid = new THREE.Vector3(P.x, midY, P.z), span = Math.max(wW, hW * .6);
+  for (const k of [-.75, -.4, 0, .4, .75]) for (const u of [-.8, -.5, -.2, .1, .4, .65]) {   // (over the model, and the floor before it down to the board)
+    const q = mid.clone().addScaledVector(side, k * span).addScaledVector(up, u * hW);
+    ray.origin.copy(q).addScaledVector(view, 20); ray.direction.copy(view).negate();
+    for (const f of furn) {
+      if (aside.has(f)) continue;
+      const d = f.b.containsPoint(q) ? null : ray.intersectBox(f.b, hit) ? hit.distanceTo(ray.origin) : 1e9;
+      const inWay = d === null ? f.b.getCenter(c).sub(q).dot(view) > 0 || !!own : d < 19.98 || (!!own && d < 21.6);   // (behind a glass, within 1.6 m, shows through it)
+      if (inWay) aside.add(f);
+    }
+  }
+  const out = [...aside].map(({ o }) => {
+    const s0 = o.scale.clone(), p = W.toScreen(new THREE.Box3().setFromObject(o).getCenter(c));
+    W.fx.burst(p.x, p.y, { n: 10, shape: 'circle', colors: ['#ffffff', '#f3ecff', '#e9dcc8'], speed: 150, up: 30, size: 9, life: .4 });
+    tw.run(.26, k => o.scale.copy(s0).multiplyScalar(Math.max(.001, 1 - ease.inBack(k))), ease.linear).then(() => { o.visible = false; o.scale.copy(s0); W.idsDirty = true; W.shadowDirty = true; });
+    return { o, s0 };
+  });
+  if (out.length) G.audio.sfx('swish');
+  // whoever is half in the picture: wholly out of it, on the nearest free tile that is (the win's close-up finds the friend
+  // wherever they are)
+  const sw = innerWidth, sh = innerHeight, ox = 0;   // (the room's canvas fills the window, past the HUD's column)
+  const rectOf = o => { const b = new THREE.Box3().setFromObject(o); let l = 1e9, r = -1e9, t = 1e9, bt = -1e9;
+    for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) { const s = W.toScreen(new THREE.Vector3(x, y, z)); l = Math.min(l, s.x); r = Math.max(r, s.x); t = Math.min(t, s.y); bt = Math.max(bt, s.y); }
+    return { l, r, t, b: bt }; };
+  const offScreen = q => q.r < ox || q.l > ox + sw || q.b < 0 || q.t > sh;
+  const half = q => !offScreen(q) && (q.l < ox + 4 || q.r > ox + sw - 4 || q.t < 4);
+  const taken = [];
+  for (const ch of [S.friend, S.hero?.ch, ...(S.npcs || []).map(n => n.ch)]) {
+    if (!ch?.root?.visible) continue;
+    const r0 = rectOf(ch.root);
+    if (!half(r0)) continue;
+    const at = ch.root.getWorldPosition(new THREE.Vector3()), s0 = W.toScreen(at);
+    const to = (S.freeTiles || []).map(t => new THREE.Vector3(t.x, t.y || 0, t.z)).filter(q => !taken.some(o => o.distanceTo(q) < .6) && Math.hypot(q.x - P.x, q.z - P.z) > .8)
+      .map(q => { const s1 = W.toScreen(q), dx = s1.x - s0.x, dy = s1.y - s0.y; return { q, r: { l: r0.l + dx, r: r0.r + dx, t: r0.t + dy, b: r0.b + dy } }; })
+      .filter(x => offScreen(x.r)).sort((u, v) => u.q.distanceTo(at) - v.q.distanceTo(at))[0];
+    if (to) { taken.push(to.q); poofTo(S, ch, to.q, yaw); }
+  }
+  return out.length;
+}
 export async function kitBuild(S) {
   const G = S.G, W = G.world, tw = S.tw, K = KITS[S.kit.kit], B = K.build || {}, f = S.friend, card = S.tray, cells = S.kitCells;
   const stack = K.type === 'stack';   // (파르페: no model to put up — each topping goes onto its layer of the glass)
@@ -555,6 +605,7 @@ export async function kitBuild(S) {
     const view = buildView(S, P, hW, wW, midY, pitch);
     await Promise.all([W.flyTo(tw, { target: view.target, yaw, pitch, zoom: view.zoom, dur: .7, e: ease.inOutCubic }), stack ? null : gather(S, P, tile?.R, yaw)]);
     if (S.dead) return;
+    st.aside = clearShot(S, P, hW, wW, midY, yaw, pitch, stack ? PF.g : null);   // (QA: how many stepped aside)
     f.faceTo?.(P.x, P.z); S.hero?.ch?.faceTo?.(P.x, P.z);
     const face = Math.atan2(W.cam.position.x - P.x, W.cam.position.z - P.z), local = v => S.room.group.worldToLocal(v.clone());
     let R = null, glow = null;

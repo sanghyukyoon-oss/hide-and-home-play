@@ -1,5 +1,5 @@
 import { affOk, affLike, isCold, habitSpot, placeLike } from './affinity.js';
-import { spotFits, shapeFits } from './fitspot.js';   // 자리에 맞는 물건 (10/19)   // 물건마다 나올 법한 자리 (10/19)
+import { spotFits, shapeFits, fullSize } from './fitspot.js';   // 자리에 맞는 물건 (10/19)   // 물건마다 나올 법한 자리 (10/19)
 import * as THREE from 'three';
 // Room themes, hand-placed layouts, stage specs and a seeded planner that hides targets / keys / decoys.
 import { rng } from './util.js';
@@ -504,7 +504,7 @@ export const STAGES = [
   { room: 'peng', n: 3, inside: 1, behind: 0, time: 85, clutter: .35 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 3 things + 2 grey furniture + 먹물이 — the first 흑백 (5 → 3, 1~10판 밸런스 10/19: a new rule's first stage carried the most to find, 8; now 6 — and clutter .5 → .35: a 흑백 stage has no decoy cap, fewer things left room for 9 decoys)
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4, habitMore: true, habit: ['kotatsu', 'table', 'zabuton', 'sofa', 'tvlow', 'recordcab', 'fridge', 'kitchen', 'counter', 'snack'] },   // (곰돌이: "손님 주려고 숨겨 놨는데" — by the food, 검토 P0-1)   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3, lockOn: { pad: ['dishcab'] } },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
-  { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, clueHang: { pad: 'liftbasket' }, zoom: 1.4, habitHigh: true },   // (clueHang: the key hangs at the pulley's top, out of reach, until the basket comes up — user 10/20)   // (펭펭이 "비결 2번: 높은 데 숨기기!" — up high, every other thing as on any stage: the upstairs alone already holds half the house, 검토 P0-1)
+  { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, clueHang: { pad: 'liftbasket' }, zoom: 1.4, habitHigh: true, habitMore: true, habit: [] },   // (habit: [] — only 'high up' is 펭펭이's habit here, not its everyday list: the bottom shelf counted as a habit place — 검토 10/20)   // (clueHang: the key hangs at the pulley's top, out of reach, until the basket comes up — user 10/20)   // (펭펭이 "비결 2번: 높은 데 숨기기!" — up high, every other thing as on any stage: the upstairs alone already holds half the house, 검토 P0-1)
   { room: 'house3', n: 6, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .3, zoom: 1.4, kit: 'robot', lockOn: { pad: ['wardrobe'] } },   // 프라모델 조립판 (10/19, 스토리 룸·레벨 세션 합의): 곰돌이가 어릴 때 못 맞춘 꼬마 로봇 — 부품 6개, 머리는 잠긴 상자 속(열쇠 세 번째), 함정 절반 (modelkit.js)
   { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
     habitRoom: 1, habit: ['bed', 'futon', 'pillow', 'zabuton', 'catbed'], clueOn: { pad: ['plant'] }, clueRoom: 1 },   // ("목욕 끝! …내 물건 다 어디 갔지?" — the bathroom and the bed; one in the tub by the bubbles; the key in the bathroom where the first view reaches, its plant by the door — 검토 P0-1·P1-4)   // (then 이불 속 누구게 — the pajama party)
@@ -858,7 +858,10 @@ export function planStage(room, spec, story = null) {
     const roomyPool = placingTarget && type ? pool.filter(s => roomy(type, s)) : pool;
     // (3판: a place the story room picked for this thing first — affinity.js PLACE, 10/19)
     const likePool = placingTarget && type ? roomyPool.filter(s => placeLike(type, s)) : [];
-    const c = r.shuffle(likePool.length ? likePool : roomyPool.length ? roomyPool : pool);
+    // (1장: a place where the thing is drawn at its full size first — 검토 10/20: under 28 px went from 16% to 32% of 1~10판's
+    // things; not shrinking, but low places and small place scales — fitspot.js fullSize)
+    const bigPool = placingTarget && type && !likePool.length && (spec.idx ?? 99) < 12 ? (roomyPool.length ? roomyPool : pool).filter(s => fullSize(type, s)) : [];
+    const c = r.shuffle(likePool.length ? likePool : bigPool.length ? bigPool : roomyPool.length ? roomyPool : pool);
     if (!c.length) return null;
     // (the one picked tried with the thing's own shape — fitspot.js shapeFits; the next one if it would be drawn too small)
     const pick = !type || relaxFit ? c[0] : c.find(s => shapeFits(type, s)) || null;

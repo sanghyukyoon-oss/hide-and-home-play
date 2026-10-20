@@ -39,7 +39,7 @@ function headOf(chs) {
 // how much of a character something stands in front of, as the camera is now: a 5×3 grid over it on the screen; a
 // point counts only where the ray reaches the character and something else (a wall, the floor's front edge, another
 // floor, furniture, someone else) comes first — points beside its outline don't count
-function covered(W, c) {
+function covered(W, c, parts = null) {
   // (the box from the feet and the head's height, about as wide as tall: a character's whole box takes in the flat shadow
   // disc at its feet, far wider than it is)
   const p = posOf(c), h = c.headTop?.() ?? .5, right = new THREE.Vector3(1, 0, 0).applyQuaternion(W.cam.quaternion); right.y = 0; right.normalize();
@@ -47,15 +47,40 @@ function covered(W, c) {
   const hw = Math.abs(r.x - f.x), x0 = f.x - hw, x1 = f.x + hw, y0 = t.y, y1 = f.y;
   const mine = o => { for (; o; o = o.parent) if (o === c.root) return true; return false; };
   let n = 0;
-  for (const fx of [.15, .33, .5, .67, .85]) for (const fy of [.12, .45, .8]) {
-    let other = false;
+  // (the face rows count double: a lamp or a leaf over the face is what spoils the shot — user 10/20, 11·12판)
+  for (const fx of [.15, .33, .5, .67, .85]) for (const [fy, wgt] of [[.12, 1], [.45, 2], [.68, 2], [.88, 1]]) {
+    const before = [];
     for (const hit of W.pick(x0 + (x1 - x0) * fx, y1 - (y1 - y0) * fy, [W.root])) {
       if (hit.object.userData.proxy || !hit.object.visible) continue;
-      if (mine(hit.object)) { if (other) n++; break; }
-      other = true;
+      if (mine(hit.object)) { if (before.length) { n += wgt; if (parts) for (const o of before) if (o.userData.part) parts.add(o.userData.part); } break; }
+      before.push(hit.object);
     }
   }
   return n;
+}
+// (10/20, user: "얼굴 가리는 건 구도 바꾸면 되지 않을까" · "뚜껑 닫아 줘") before any shot of someone talking: what stands in front
+// of them — an open door, drawer, lid or curtain — shuts (S.shutOpenParts); the end of a stage shuts everything (stage.js)
+export async function clearParts(S, chs) {
+  const W = S.G.world; chs = (Array.isArray(chs) ? chs : [chs]).filter(c => c?.root?.visible); if (!chs.length) return;
+  W.updateCam(); const parts = new Set(); for (const c of chs) covered(W, c, parts);
+  const open = [...parts].filter(p => !p.busy && p.t > .05 && !p.isLever && !p.isGadget && ['door', 'drawer', 'lid', 'curtain'].includes(p.kind));
+  if (open.length) await S.shutOpenParts?.(open);
+}
+// … and if someone is still hidden, the view turns (zoom and middle kept) to the diagonal they are least hidden from — the
+// stage-start talks, where nothing else moves the camera (the stage's own start view first; not on the tutorials)
+export async function clearTurn(S, chs) {
+  const W = S.G.world; chs = (Array.isArray(chs) ? chs : [chs]).filter(c => c?.root?.visible);
+  if (!CLOSEUP_ON || !chs.length || S.G.bot || W.camLock || W.ptrs?.size) return;
+  W.updateCam(); const now = chs.reduce((s, c) => s + covered(W, c), 0); if (!now) return;
+  const save = view(W), room = S.room; let best = { yaw: W.yaw, n: now };
+  for (const d of [Math.PI / 8, -Math.PI / 8, Math.PI / 2, -Math.PI / 2, Math.PI]) {
+    W.yaw = save.yaw + d; W.updateCam(); room?.update?.(1); W.root.updateMatrixWorld(true);
+    const n = chs.reduce((s, c) => s + covered(W, c), 0);
+    if (n < best.n) best = { yaw: W.yaw, n };
+    if (!n) break;
+  }
+  setView(W, save); room?.update?.(1);
+  if (best.yaw !== save.yaw) await glide(S, { ...save, target: save.target.clone(), yaw: best.yaw }, P_DUR, chs);
 }
 
 // the target that puts the point P at (atX, H*atY) at zoom z (with the view's current turn and tilt)
@@ -93,7 +118,9 @@ function portraitShot(S, chs, keepTurn) {
   // the stage's own start view first (the diagonal the room is laid out for: its walls behind, nothing in front), then the
   // two beside it, then the back one — taken the short way round from where the view is now
   const home = S.view0?.yaw ?? Math.PI / 4;
-  const yaws = keepTurn ? [W.yaw] : DIAG.map(d => home + wrap(d - home)).sort((a, b) => Math.abs(a - home) - Math.abs(b - home)).map(y => W.yaw + wrap(y - W.yaw));
+  const diag = DIAG.map(d => home + wrap(d - home)).sort((a, b) => Math.abs(a - home) - Math.abs(b - home));
+  // (then a little either side of each — a plant's leaves or a lamp in front often clear with a small turn: user 10/20)
+  const yaws = keepTurn ? [W.yaw] : diag.concat(diag.flatMap(d => [d + Math.PI / 8, d - Math.PI / 8])).map(y => W.yaw + wrap(y - W.yaw));
   let best = null, bestN = Infinity;
   search: for (const yaw of yaws) for (const pitch of pitches) {
     W.yaw = yaw; W.pitch = pitch;
@@ -105,7 +132,7 @@ function portraitShot(S, chs, keepTurn) {
     // stage's shot is the same size; nothing is played at that zoom: the win panel comes, or the view goes back)
     const z = clamp(Math.min(W.H * P_SIZE / tall, W.W * P_WIDE / Math.max(1, wide)), W.minZoom, W.maxZoom * 1.3);
     const target = placeAt(W, F, z, P_FEET);
-    room?.update?.(1);   // (the walls that hide themselves for this view)
+    room?.update?.(1); W.root.updateMatrixWorld(true);   // (the walls that hide themselves for this view — folded before the rays look: a ray reads last frame's matrices)
     const n = chs.reduce((s, c) => s + covered(W, c), 0);
     if (n < bestN) { best = { zoom: z, yaw, pitch, target, anchor: F }; bestN = n; }   // (the start view wins a tie: the list starts there)
     if (!n) break search;
@@ -145,6 +172,7 @@ export async function closeUp(S, chs, { portrait = false, mul = 1.5 } = {}) {
   if (!CLOSEUP_ON || S.dead || G.bot || W.camLock || W.ptrs?.size) return null;
   chs = (Array.isArray(chs) ? chs : [chs]).filter(c => c?.root?.visible);
   if (!chs.length) return null;
+  await clearParts(S, chs); if (S.dead || W.ptrs?.size) return null;
   W.updateCam();
   const to = portrait ? portraitShot(S, chs, !!S._closePortrait) : lightShot(S, chs, mul);
   if (!to) return null;

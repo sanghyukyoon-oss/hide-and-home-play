@@ -66,6 +66,7 @@ export function affinity(type, spot) {
   // chair's blanket or a rug only something flat enough to lie under it
   if (/^tree/.test(f)) return tiny(type) ? 'ok' : 'never';
   if (/campchair/.test(f)) return low(type) ? 'ok' : 'never';
+  if (/^trash/.test(f)) return /^(note|receipt|postit|lottery|colornote|notepiece|ticket|letter|paper)/.test(type) ? 'ok' : 'never';   // (an indoor bin holds paper only — 2판's heart in the bin was a why-would-she: 숨기기 원칙 4, 검토 10/20)
   if (/^rug/.test(f)) return low(type) ? 'ok' : 'never';   // (under a rug only something flat — a ball under it went into the sofa standing on it: 겹침 QA 감사 10/19)
   if (/fishdock/.test(f)) return c === 'cold' ? 'like' : 'never';                     // the keep-net in the pond: drinks kept cool there (스토리 룸 10/19 — a ball or a donut in the water made no sense; the reel's junk is its own)
   if (c === 'cold') return F_COLD.test(f) ? 'like' : 'never';                           // ice cream, milk, drinks: only where it stays cold
@@ -85,12 +86,14 @@ export const isCold = type => COLD.test(type || '');
 // anything 1.1 m or more above the ground (a top shelf, the freezer, the whole upstairs of a two-storey house — not the
 // kitchen counter); with habitRoom k every place in room k of a map (9판: the bathroom after the bath). One test for the
 // planner and the first-screen tidy.
-const _hv = new THREE.Vector3();
+const _hv = new THREE.Vector3(), _fv = new THREE.Vector3();
+// the floor a place stands on: its own room's (a two-storey map's upper rooms sit 2.9 m up)
+const floorOf = (room, x) => { const R = room?.rooms?.find(r => r.spots.includes(x)) || room; return R?.group ? R.group.getWorldPosition(_fv).y : 0; };
 export function habitSpot(spec, room) {
   const words = spec?.prefer?.length ? spec.prefer : null, high = !!spec?.habitHigh;
   const area = spec?.habitRoom != null && room?.rooms?.[spec.habitRoom] ? new Set(room.rooms[spec.habitRoom].spots) : null;
   if (!words && !high && !area) return null;
   return x => (!!words && !!x.furn?.type && words.some(w => x.furn.type.includes(w)))
     || (!!area && area.has(x))
-    || (high && !!x.anchor && x.anchor.getWorldPosition(_hv).y >= 1.1);
+    || (high && !!x.anchor && x.anchor.getWorldPosition(_hv).y - floorOf(room, x) >= .9);   // (above the floor it is on: 검토 10/20 — 7판's "높은 데" counted the upstairs floor itself, a stool's underside too; 0.9 m is over a penguin's head: counters, top shelves, the freezer, window sills)
 }

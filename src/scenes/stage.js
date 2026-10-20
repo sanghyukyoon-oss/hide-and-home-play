@@ -33,7 +33,7 @@ import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
-import { closeUp, closeBack } from '../closeup.js';
+import { closeUp, closeBack, clearParts, clearTurn } from '../closeup.js';
 import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
 import { armFtap } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
@@ -449,7 +449,7 @@ export class StageScene {
     col.append(this.tray);
     // many things to find: two rows of bigger pictures instead of one row of tiny ones (11 in a row were ~18 px)
     if (this.spec.gray) this.tray.classList.add('grayst');   // the list is drained of colour too: shapes only
-    const two = !this.kit && this.targets.length > 7, joyB = this.kit ? Math.max(118, Math.round(this.tray.getBoundingClientRect().height) + 26) : two ? 146 : 100;   // (a kit's card: just above it, however tall its skin is)
+    const two = !this.kit && this.targets.length > 7, joyB = this.kit ? Math.max(118, Math.round(this.tray.getBoundingClientRect().height) + 36) : two ? 146 : 100;   // (a kit's card: just above it, however tall its skin is)
     // the buttons sit just above the (slimmer) tray (user, 10/17-18: "유아이가 너무 크고")
     document.getElementById('app').style.setProperty('--joyB', joyB + 'px');
     if (two) { this.tray.classList.add('two'); this.tray.style.setProperty('--cols', Math.ceil(this.targets.length / 2)); }
@@ -788,6 +788,13 @@ export class StageScene {
       const ch = this.charFor(L.who); if (ch) ch.faceTo?.(W.cam.position.x, W.cam.position.z);
       if (opts.cam && ch) closeUp(this, ch, { portrait: true });   // (10/19) an end-of-stage talk: the camera comes to whoever speaks
     };
+    // a stage's opening card (user 10/20, 12판: 박사님 behind a lamp, 몽글이 behind an open bin lid): what stands in front of
+    // the speakers shuts, and if they're still hidden the view turns to where they show — not on the two tutorials (1판's box
+    // has to start with its back to you)
+    if (opts.title && !opts.cam && !this.running && !(this.spec.tut <= 2) && !G.skipTalk && !G.bot) {
+      const chs = [...new Set(lines.map(L => this.charFor(L.who)).filter(Boolean))];
+      await clearParts(this, chs); if (!this.dead) await clearTurn(this, chs);
+    }
     try { await playDialog(G, lines, { ...opts, onLine }); }
     finally { this.talking = false; app.classList.remove('cine'); }
   }
@@ -951,11 +958,30 @@ export class StageScene {
     // (10/19 겹침 QA: 1판 토순이 came out .29 m from 몽글이, who stands in front of the hideout) onto free floor near there,
     // a body's width from everyone else
     { const t = this.standNear(to, f, .75, 1.3, true); if (t) to.set(t.x, to.y, t.z); }
+    // (10/20, user on the phone: 박사님 "문 너머 검은 곳에서 나와야 하는데 하늘에서 그냥 떨어져요") the secret-door stage: out of the dark
+    // doorway the bookcase slid away from, at floor height, walking — not a pop out of the cupboard above it
+    const sc = this.plan.showcase, viaDoor = sc?.shelf && it.spot.part === sc.door;
+    if (viaDoor) {
+      // from the floor of the nook (the friend's own spot, in the dark behind the door) out along the case's front, in the
+      // game's own little walking hops; the view follows down to the floor (it was up on the marble run)
+      const fg = it.spot.part.furn.group, q = new THREE.Quaternion(), fd = new THREE.Vector3(0, 0, 1).applyQuaternion(fg.getWorldQuaternion(q)); fd.y = 0; fd.normalize();
+      const from = it.spot.anchor.getWorldPosition(new THREE.Vector3()); from.y = fy.y;
+      const out = from.clone().addScaledVector(fd, 1.05); { const s = this.standNear(out, f, .75, 1.3, true); if (s) out.set(s.x, out.y, s.z); }
+      f.root.visible = true; f.root.position.copy(from); f.root.scale.setScalar(1); f.setFace('happy'); f.pose = 'idle';
+      f.root.rotation.y = Math.atan2(out.x - from.x, out.z - from.z);
+      it.slot?.classList.add('found', 'bump');
+      W.flyTo(tw, { target: new THREE.Vector3((from.x + out.x) / 2, fy.y + .6, (from.z + out.z) / 2), zoom: Math.min(W.zoom, 2.2), dur: .7 });
+      await tw.wait(.3);
+      for (let k = 1; k <= 3; k++) await f.hopTo(tw, from.x + (out.x - from.x) * k / 3, from.z + (out.z - from.z) * k / 3, { height: .18, dur: .28, sfx: k === 1 ? n => G.audio.sfx(n) : null });
+      f.pose = 'cheer'; G.audio.sfx('special'); G.hitstop(.08);
+      const s = W.toScreen(out.clone().setY(out.y + .5)); W.fx.burst(s.x, s.y, { n: 26, colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#ffffff'], speed: 300 }); W.fx.ring(s.x, s.y, { r: 110, color: '#ffe14d', width: 9 });
+    } else {
     f.root.visible = true; f.root.position.copy(pc); f.root.scale.setScalar(.25); f.setFace('happy'); f.pose = 'cheer';
     G.audio.sfx('special'); G.hitstop(.08);
     const s = W.toScreen(pc); W.fx.burst(s.x, s.y, { n: 34, colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#ffffff'], speed: 360 }); W.fx.ring(s.x, s.y, { r: 130, color: '#ffe14d', width: 10 });
     it.slot?.classList.add('found', 'bump');
     await tw.run(.6, k => { f.root.position.lerpVectors(pc, to, k); f.root.position.y = pc.y + (to.y - pc.y) * k + Math.sin(k * Math.PI) * .7; f.root.scale.setScalar(.25 + .75 * Math.min(1, k * 1.7)); });
+    }
     f.faceTo(W.cam.position.x, W.cam.position.z);
     closeUp(this, f, { portrait: true });   // (10/19 "등장하거나 말하는 경우 카메라를 잘 잡아 줘야지") in on the friend who popped out, while the room lights up — the same frontal shot every stage
     this.tail?.mesh.parent?.remove(this.tail.mesh); this.tail = null;   // 1판: the tail goes back in with her
@@ -1987,8 +2013,9 @@ export class StageScene {
   }
   // the stage is won: shut whatever stands open (doors, drawers, lids, curtains — not levers, gadgets or lifts, which are a
   // puzzle's state), all together in 0.22 s with one sound; nothing open → at once, no sound
-  async shutOpenParts() {
-    const W = this.G.world, open = (this.room.rooms || [this.room]).flatMap(R => R.furns).flatMap(e => e.f.parts || [])
+  // (list: just these — closeup.js clearParts shuts only what stands in front of someone talking, mid-stage)
+  async shutOpenParts(list = null) {
+    const W = this.G.world, open = (list || (this.room.rooms || [this.room]).flatMap(R => R.furns).flatMap(e => e.f.parts || []))
       .filter(p => !p.busy && p.t > .05 && !p.isLever && !p.isGadget && ['door', 'drawer', 'lid', 'curtain'].includes(p.kind));
     if (!open.length) return;
     this.G.audio.sfx('close');
