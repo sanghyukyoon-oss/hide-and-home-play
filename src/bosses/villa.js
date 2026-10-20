@@ -285,7 +285,7 @@ export class Game {
       const s = this.sel; this.select(null); this.dropTenant(s, r); return;
     }
     if (o >= 0) { this.select(o); this.touchCard(this.ten[o]); return; }
-    this.setInfo('아래 카드를 이 방으로 끌어 와요', 'flash');
+    this.setInfo('아래 카드를 이 방으로 드래그해요', 'flash');
   }
   select(i) {
     if (this.sel === i) return;
@@ -304,7 +304,7 @@ export class Game {
   setInfo(html, cls = '') {
     if (!html) {
       const n = this.ten.length, ok = this.ten.filter(T => T.mood?.ok).length, left = this.pos.filter(p => p < 0).length;
-      html = this.lvIdx === 0 && this.moves === 0 ? '카드를 끌어서 방에 넣어 주세요' : left ? `행복한 이웃 <b>${ok}</b> / ${n} · 남은 입주자 ${left}명` : `행복한 이웃 <b>${ok}</b> / ${n}`;
+      html = this.lvIdx === 0 && this.moves === 0 ? '카드를 드래그해서 방에 넣어 주세요' : left ? `행복한 이웃 <b>${ok}</b> / ${n} · 남은 입주자 ${left}명` : `행복한 이웃 <b>${ok}</b> / ${n}`;
     }
     this.info.innerHTML = html; this.info.className = 'vl-info';
     if (cls) { void this.info.offsetWidth; this.info.classList.add(...cls.split(' ')); }

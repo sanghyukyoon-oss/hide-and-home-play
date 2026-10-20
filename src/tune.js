@@ -66,7 +66,7 @@ export function openTune(G, { onClose } = {}) {
   }
   // camera: the turn dial (default) or the second-finger tap — the only two left (10/18)
   const ST = G.save.settings || (G.save.settings = {});
-  const ctrlLbl = () => ST.ctrl === 'E' ? '조작: 터치 (끌면 이동 · 다른 손 터치 = 회전)' : '조작: 기본 (끌면 이동 · 돌림판 = 회전 · 끌다가 다른 손 터치 = 그동안 회전)' /* QA3 10/19: no twist since v113 */;
+  const ctrlLbl = () => ST.ctrl === 'E' ? '조작: 터치 (드래그하면 이동 · 다른 손 터치 = 회전)' : '조작: 기본 (드래그하면 이동 · 돌림판 = 회전 · 드래그 중 다른 손 터치 = 그동안 회전)' /* QA3 10/19: no twist since v113 */;
   const ctrlBtn = G.ui.btn(ctrlLbl(), { color: 'purple', cls: 'sm', onClick: () => { ST.ctrl = ST.ctrl === 'E' ? 'F' : 'E'; W.scheme = ST.ctrl; W.eMode = W.eBase = 'move'; G.persist(); ctrlBtn.querySelector('.lbl').textContent = ctrlLbl(); } });
   // quick switches for the two looks the user wanted to try: AO and the vinyl-toy sheen on characters
   const aoLbl = () => ART.ao > .001 ? 'AO: 켜짐' : 'AO: 꺼짐';

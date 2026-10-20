@@ -652,7 +652,7 @@ export class Game {
     col.append(top);
     this.slots = this.friends.map(F => h('div', { class: 'tg-face' }, h('img', { src: L.thumbs[`face_${F.k}_normal`] })));
     col.append(h('div', { class: 'tg-faces' }, ...this.slots));
-    if (this.lv.hint) col.append(this.hint = h('div', { class: 'tg-hint ol' }, h('span', { class: 'tg-hand' }), h('span', {}, '누른 채로 끌면 달려요')));
+    if (this.lv.hint) col.append(this.hint = h('div', { class: 'tg-hint ol' }, h('span', { class: 'tg-hand' }), h('span', {}, '드래그하면 달려요')));
     this.joyEl = h('div', { class: 'tg-joy' }, this.knob = h('i'));
     document.getElementById('app').append(this.joyEl);
   }

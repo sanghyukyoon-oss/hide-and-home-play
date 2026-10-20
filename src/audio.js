@@ -36,8 +36,8 @@ Object.assign(SFX_FILES, {
   coin: { src: 'audio/sfx/coin.mp4', vary: .06 }, hop: { src: 'audio/sfx/hop.mp4', vary: .08 },
   // (10/20 user: "회전 효과음은 예전 게 더 나은 것 같다") the camera turn's tick is the code sound again
   ratchet: null,
-  bloom: null,   // 흑백판 끝 색이 번질 때 '뾰로롱' (디자인 10/20): 파일 자리 — tools/sound/sfx-prompts.tsv 의 bloom 줄로 만든 audio/sfx/bloom.mp4 를 넣으면 'audio/sfx/bloom.mp4' 로. 그 전엔 코드 소리
-  mugunghwa: null,   // 무궁화 꽃이 피었습니다 첫 구호 (Suno·Google 파일이 있을 때만 — 없으면 너굴이 목소리로 한 글자씩)
+  bloom: 'audio/sfx/bloom.mp4',   // 흑백판 끝 색이 번질 때 '뾰로롱' (사운드 v3 10/20, 종 없이)
+  mugunghwa: 'audio/sfx/mugunghwa.mp4',   // 무궁화 꽃이 피었습니다 첫 구호 (10/20 사용자 "니가 해 줘 봐": AI Proxy 한국어 TTS, 한 글자 한 박 158 BPM, 3.7초)
 });
 // 가구 재질: 부분의 이름표(label)로 정한다 — 첫 번째로 맞는 줄. 없으면 나무(기본 소리).
 // (10/20 user, 1판: "쓸모없이 깡깡하는 이상한 소리" — the room's bins are plastic, but 휴지통 was listed as metal)
@@ -153,6 +153,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     if (buzz) { const b = name.split('_')[0]; hapticFor(b === 'drawerClose' ? 'close' : b); }   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
+    // (10/20 user: "무궁화는… 보이스 넣을 건데 디졸브 잘 넣거나 후처리 잘해서 어색하지 않게") the chant: the music steps back under it and comes up again
+    if (name === 'mugunghwa') A.duck(4, .32);
     if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); }   // the jingle over the music, not under it; the hurry is over
     if (playFile(name, p)) return;
     switch (name) {

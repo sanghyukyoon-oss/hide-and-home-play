@@ -772,7 +772,7 @@ export const HOME_TUT = {
 export const DO = {
   donut: K('도넛을 터치', 'Tap the donut'), donut2: K('바닥의 도넛을 터치해 봐', 'Tap the donut on the floor'),
   turnBadge: K('↻ 회전을 터치', 'Tap ↻ Turn'), turnBadge2: K('오른쪽 아래 ↻ 회전 버튼을 터치', 'Tap ↻ Turn at the bottom right'),
-  turnDrag: K('옆으로 끌어서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 끌어 봐', 'Drag until the box faces you'),
+  turnDrag: K('옆으로 드래그해서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 드래그해 봐', 'Drag until the box faces you'),
   turnAny: K('방을 돌려서 상자 앞을 봐', 'Turn the room to face the box'),
   // 기본 조작 F (조작감 세션, 10/18): the turn dial bottom right — push it sideways to turn, up/down to tilt
   turnDial: K('돌림판을 밀어 봐', 'Slide the dial'),   // (짧게 — user 10/19 "힌트랑 손가락이 너무 많다"; the hand shows where and which way)
@@ -781,11 +781,11 @@ export const DO = {
   box: K('상자를 터치', 'Tap the box'), box2: K('흔들리는 상자를 터치해 봐', 'Tap the shaking box'),
   drawer: K('서랍을 터치해서 열기', 'Tap a drawer to open it'), drawer2: K('서랍이나 문을 터치! 안에 물건이 있어', 'Tap drawers and doors to look inside'),
   zoom: K('두 손가락을 벌려 크게 보기', 'Spread two fingers to zoom in'),
-  move: K('끌어서 둘러봐', 'Drag to look around'),
+  move: K('드래그해서 둘러봐', 'Drag to look around'),
   // 이동 중 톡 회전 수업 (user 10/19: 튜토리얼에 꼭, 더 이르게; 발동되면 십자 가운데가 중심이라고) — teachftap.js reads these
-  ftap: K('끌다가 터치하면 빙글', 'Drag, then tap to spin'),
+  ftap: K('드래그 중에 터치하면 빙글', 'Drag, then tap to spin'),
   ftapOn: K('십자 가운데로 빙글', 'Spins around the cross'),
-  moveE: K('✥ 이동을 터치하고, 끌어서 옆으로 가 봐', 'Tap ✥ Move, then drag'),
+  moveE: K('✥ 이동을 터치하고, 드래그해서 옆으로 가 봐', 'Tap ✥ Move, then drag'),
 };
 // ── 엄마 몰래 야식, 첫째 밤: the practice the first time (bosses/yasik.js; GPT 안 10/18). The same rules: one action, over
 // only when it's done, a more exact line (…2) when you're stuck. Never "stand still and you're safe": in her eyes,
@@ -939,7 +939,7 @@ export const STUCK = {
 };
 export const stuckLine = (host, kind) => STUCK[host]?.[kind] || null;
 // ── 2판 끝 조작법 요약 (조작감 세션이 띄움): what the first two stages taught, one line each, the 콕 / 끌기 words of DO
-export const CONTROLS_SUM = { title: K('조작법 정리', 'How to play'), rows: [K('터치: 열고 찾기', 'Tap: open and find'), K('끌기: 둘러보기', 'Drag: look around'), K('돌림판: 방 돌리기', 'Dial: turn the room'), K('두 번 터치: 크게 보기', 'Double tap: zoom in')] };
+export const CONTROLS_SUM = { title: K('조작법 정리', 'How to play'), rows: [K('터치: 열고 찾기', 'Tap: open and find'), K('드래그: 둘러보기', 'Drag: look around'), K('돌림판: 방 돌리기', 'Dial: turn the room'), K('두 번 터치: 크게 보기', 'Double tap: zoom in')] };
 export const replayHi = (host, secretIsOpen) => { const R = REPLAY[host]; return R ? (secretIsOpen ? R[0] : R[1]) : null; };
 // 몽글이 방의 빈 자리 (스토리 룸 10/20): 20판 "다음엔 우리 집에서 놀자. 그 애도 같이." 뒤, 엔딩 전까지 — 처음 볼 때 한 번
 export const INKY_SEAT = L('mong', '…그 애 자리. 비워 둘게.', "…That kid's seat. I'll keep it free.");
@@ -1228,7 +1228,7 @@ export const MONITOR_TV = {
     win: K('성공! {s}초 버텼다', 'You did it! Lasted {s}s'),
   },
   brk: {
-    go: K('끌어서 베개를 움직이고, 터치하면 공을 튕겨!', 'Drag to move the pillow, tap to launch!'),
+    go: K('드래그해서 베개를 움직이고, 터치하면 공을 튕겨!', 'Drag to move the pillow, tap to launch!'),
     found: K('찾았다! {who}!', 'Found {who}!'),
     miss: K('앗, 놓쳤다! 남은 공 {n}', 'Oops! {n} balls left'),
     lose: K('아쉽다! 친구 {n}명 찾았어', 'So close! Found {n}'),

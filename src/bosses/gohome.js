@@ -402,7 +402,7 @@ export class Game {
     q.chip?.classList.add('home', 'pop'); setTimeout(() => q.chip?.classList.remove('pop'), 260);
     for (const p of this.live()) if (p.spin && p !== q) { this.turn(p); const w = this.cellW(p.x, p.y), s = W.toScreen(new THREE.Vector3(w.x, 1.1, w.z)); L.ui.floatText(s.x, s.y, '빙글~', ''); }
     this.unstick();
-    if (this.home >= 2 && !this._hint2) { this._hint2 = true; if (!this.turned) this.hint.textContent = '화면을 끌면 돌려 볼 수 있어요'; else this.hint.classList.add('gone'); setTimeout(() => !this.dead && this.hint.classList.add('gone'), 2600); }
+    if (this.home >= 2 && !this._hint2) { this._hint2 = true; if (!this.turned) this.hint.textContent = '화면을 드래그하면 돌려 볼 수 있어요'; else this.hint.classList.add('gone'); setTimeout(() => !this.dead && this.hint.classList.add('gone'), 2600); }
     if (this.homeR >= this.pieces.length) setTimeout(() => { if (this.dead || this.result) return; if (this.ri < this.rounds.length - 1) this.nextRound(); else this.finish(true); }, 650);
   }
   // (외부 QA 10/20 LEVEL-20261020-02) the square is solvable at the start, but sending friends in some orders turned 빙글 너굴이

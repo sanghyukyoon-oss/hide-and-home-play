@@ -484,7 +484,7 @@ export class Game {
       this.ear = h('div', { class: 'ys-ear' }, h('span', { class: 'ol' }, '소리'), h('b', {}, this.earBar = h('i')));
       col.append(this.ear);
     }
-    this.hint = h('div', { class: 'ys-hint ol' }, h('span', { class: 'ys-hand' }), this.hintTx = h('span', {}, '아래를 끌어서 살금살금'));
+    this.hint = h('div', { class: 'ys-hint ol' }, h('span', { class: 'ys-hand' }), this.hintTx = h('span', {}, '아래를 드래그해서 살금살금'));
     // the thumb pad (shown where the thumb lands; a faint one waits bottom-left until the first move) and the fridge button
     if (!document.getElementById('ys-css-pad')) document.head.append(h('style', { id: 'ys-css-pad' }, `
 .ys-pad { position: absolute; z-index: 6; width: 116px; height: 116px; margin: -58px 0 0 -58px; border-radius: 50%; background: rgba(255, 250, 242, .16); border: 3px solid rgba(255, 255, 255, .6); pointer-events: none; }
@@ -770,9 +770,9 @@ export class Game {
     else if (nearFridge) this.setHint(this.mode === 'doze' && this.doorOpen && this.openT > 1.1 ? '띠링 울리기 전에 버튼에서 손 떼기!' : this.grabbing ? `꺼내는 중… ${this.taken()}/3` : n ? '냉장고 버튼을 꾹 · 하나 더' : '냉장고 위 버튼을 꾹!');
     else if (this.wob > SPILL.warn) this.setHint('휘청휘청! 살금살금 가야 안 쏟아져');
     else if (this.dropped.length) this.setHint(this.scurry ? '후다닥 말고 살금살금!' : '떨어진 간식 위로 가면 주워요');
-    else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '아래를 끌어서 살금살금' : '코 골 때 움직이면 안 들려');
+    else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '아래를 드래그해서 살금살금' : '코 골 때 움직이면 안 들려');
     else if (n) this.setHint(this.scurry ? '후다닥하면 간식이 흔들려!' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
-    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 끌어서 살금살금' : live ? `${this.lures.find(d => !d.used).name}를 터치하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
+    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 드래그해서 살금살금' : live ? `${this.lures.find(d => !d.used).name}를 터치하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
     { const at = nearFridge, busy = at && (this.grabbing || this.btnId != null); this.fbtn.classList.toggle('near', at && !busy); this.fbtn.classList.toggle('far', !at); this.fbtn.classList.toggle('busy', busy); }
     if (this.dog && !this.dog.awake && (this.zzT -= dt) <= 0) { this.zzT = 2.4; const d = this.dog.root.position, s = W.toScreen(new THREE.Vector3(d.x, this.dog.headTop() + .15, d.z)); L.ui.floatText(s.x + 10, s.y, 'Zz', ''); }

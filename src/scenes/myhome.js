@@ -234,6 +234,7 @@ export class MyHomeScene {
   // old size to the new one (the things in it keep their shape and spread out with the floor), 몽글이 cheers
   async growShow(from) {
     const G = this.G, W = G.world, tw = this.tw, A = ZONE_SIZES[from] || ZONE_SIZES[0];
+    const push = this.growFront(A);   // (the new row goes on the side the dashed patch was on — UI 10/20)
     this.busyTut = true; this._growing = true;
     if (this.mode === 'lobby') this._heroView = 'room';   // (the lobby looks at the whole room from here on: the bigger room is the news)
     W.flyTo(tw, { target: W.home.clone(), zoom: 1, dur: .45 });
@@ -246,10 +247,11 @@ export class MyHomeScene {
     const inLobby = this.mode === 'lobby';
     this.build(); if (inLobby) this.setMode('lobby'); else this.fitCam();   // (꾸미기 stays 꾸미기)
     if (inLobby) { this._heroView = 'room'; this.homeMid(); W.target.copy(W.home); W.zoom = 1; W.updateCam?.(); }   // (setMode('lobby') forgets the view: the whole room, to see it grow)
-    const R = this.room, sx0 = A.w / R.w, sz0 = A.d / R.d;
+    const R = this.room, sx0 = A.w / R.w, sz0 = A.d / R.d, p0 = R.group.position.clone();
     const keep = [...R.furns.map(r => r.f.group), ...(this.seated || []).map(s => s.ch.root), ...(this.mong?.root?.parent === R.group ? [this.mong.root] : [])].map(o => [o, o.scale.clone()]);
-    await tw.run(.6, k => { const sx = sx0 + (1 - sx0) * k, sz = sz0 + (1 - sz0) * k; R.group.scale.set(sx, 1, sz); for (const [o, s0] of keep) o.scale.set(s0.x / sx, s0.y, s0.z / sz); }, ease.outBack);
-    R.group.scale.set(1, 1, 1); for (const [o, s0] of keep) o.scale.copy(s0);
+    // (it swells out of the old room's place: the far walls stay where they were and the room grows toward you)
+    await tw.run(.6, k => { const sx = sx0 + (1 - sx0) * k, sz = sz0 + (1 - sz0) * k; R.group.scale.set(sx, 1, sz); R.group.position.set(p0.x - push.x * (1 - k), p0.y, p0.z - push.z * (1 - k)); for (const [o, s0] of keep) o.scale.set(s0.x / sx, s0.y, s0.z / sz); }, ease.outBack);
+    R.group.scale.set(1, 1, 1); R.group.position.copy(p0); for (const [o, s0] of keep) o.scale.copy(s0);
     if (this.dead) return;
     G.audio.sfx('special'); W.fx.confetti?.(50);
     const m = this.mong; if (m) { m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.45); }
@@ -257,6 +259,21 @@ export class MyHomeScene {
     await tw.wait(1.2); if (this.dead) return;
     if (m) { m.pose = 'idle'; m.setFace?.('happy'); }
     this.busyTut = false; this._growing = false;
+  }
+  // 방 넓히기 toward you (UI 10/20: "앞쪽(점선 칸 쪽)으로만 한 줄이 붙게"): the room's floor is centred, so a bigger room moves
+  // both walls out half a step. Everything in it — the furniture, the friends' seats, a thing hidden on the bare floor — moves
+  // half a step back, so it keeps its place against the far wall and the new row is the one by the dashed patch (on the side
+  // that faced you). Returns how far the old room's middle sits from the new one's (for the swell).
+  growFront(A) {
+    const z = this.zone, B = zoneSize(z), R = this.room, Wl = R?.walls || {}, gs = this.growSign;
+    const sx = Wl.E?.down ? 1 : Wl.W?.down ? -1 : 1, sz = Wl.S?.down ? 1 : Wl.N?.down ? -1 : 1;
+    const dx = (B.w - A.w) / 2 * sx, dz = (B.d - A.d) / 2 * sz;
+    if (!dx && !dz) return { x: 0, z: 0 };
+    for (const f of z.furniture || []) if (f.x != null) { f.x -= dx; f.z -= dz; }
+    for (const f of z.friends || []) { f.x -= dx; f.z -= dz; }
+    const hid = this.H.hide; if (hid?.zoneId === this.zoneId) for (const e of hid.items || []) if (e.free?.host === 'room' && Array.isArray(e.free.p)) { e.free.p[0] -= dx; e.free.p[2] -= dz; }
+    this.G.persist();
+    return { x: dx, z: dz };
   }
   // 상점 미리보기 (10/20): the whole room in view while a wallpaper or floor is tried on (the lobby's close-up shows none of it);
   // the lobby stops re-framing itself meanwhile
@@ -426,7 +443,7 @@ export class MyHomeScene {
   // ── decorate
   editHud() {
     const G = this.G, ui = G.ui;
-    this.col.append(h('div', { class: 'hint' }, h('span', {}, '가구를 터치해서 고르고, 끌어서 옮겨요')));
+    this.col.append(h('div', { class: 'hint' }, h('span', {}, '가구를 터치해서 고르고, 드래그해서 옮겨요')));
     const bar = h('div', { class: 'modebar' });
     this.cardsEl = h('div', { class: 'cards' });
     bar.append(this.cardsEl);
@@ -644,7 +661,7 @@ export class MyHomeScene {
   heldShow(big) {
     const t = this.selItem, hand = this.hand; if (!hand?.alive || this.mode !== 'hide') return;
     const chain = t === 'key' || t === 'note', full = !chain && t && !this.items[t] && this.targetCount() >= MAX_HIDE;
-    if (!t || full) { hand.done(full ? `${MAX_HIDE}개 다 숨겼어! 옮기려면 끌어` : '다 숨겼어!'); return; }
+    if (!t || full) { hand.done(full ? `${MAX_HIDE}개 다 숨겼어! 옮기려면 드래그해` : '다 숨겼어!'); return; }
     const k = Math.min(MAX_HIDE, this.targetCount() + (this.items[t] ? 0 : 1));
     hand.show(t, { name: ITEMS[t]?.name || '', label: chain ? '꼭 숨겨야 해' : `숨길 물건 ${k}/${MAX_HIDE}`, hint: '어디든 터치해서 숨겨!', count: chain ? '' : `${k}/${MAX_HIDE}`, big });
   }

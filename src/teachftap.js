@@ -28,7 +28,8 @@ const fturning = W => W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 
 
 export function armFtap(S) {
   const G = S.G, W = G.world;
-  if (!FTAP_ON || G.save.tut?.ftap || W.scheme !== 'F' || S.idx < 1 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
+  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 1 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
+  if (G.save.tut?.ftap) return refresh(S);
   const st = { turned: 0, on: false };
   const prevPan = W.onPan, prevRot = W.onRotate;
   const begin = () => { if (st.on || (G.save.tut?.ftapN || 0) >= 3) return; st.on = true; demo(S, st); };
@@ -36,7 +37,7 @@ export function armFtap(S) {
   // done it: a real drag-then-touch turn of ~20° — the one place with words
   W.onRotate = d => { prevRot?.(d); if (!fturning(W) || G.save.tut?.ftap) return; st.turned += Math.abs(d) || 0;
     if (st.turned < .35) return;
-    (G.save.tut || (G.save.tut = {})).ftap = 1; G.persist?.(); st.on = true; st.got = true;
+    const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; T.ftapIdle = 0; G.persist?.(); st.on = true; st.got = true;
     // the "새로 얻었다!" waits for the lift (스토리 룸 10/20: not on top of "됐다!") — in a lesson, after ④ too
     if (!st.live) (async () => { while (W.ptrs.size && !S.dead) await S.tw.wait(.1); if (!S.dead) got(S); })(); };
   // needed now: every thing still to find is out of sight from this view, and nothing found for 8 s
@@ -51,12 +52,52 @@ export function armFtap(S) {
   })();
 }
 
+// 한 번 더 (10/20 밤, user: "뒤쪽 가서도 이동 중 터치해서 잠시 회전 안 쓰면 튜토 한 번 더 내보낼 수 있어?"): once learned, every
+// stage (the same stages as the lesson) counts as unused until a drag-then-touch turn happens in it — the dial or a two-finger
+// twist doesn't count, it's this move we remind of. Three stages in a row unused → at the start of the next one, one short
+// play with lines ② ③ only (no ① ④, no coaching after). Once; never again after that.
+function refresh(S) {
+  const G = S.G, W = G.world, T = G.save.tut;
+  if (T.ftapRe) return;
+  const idle = T.ftapIdle || 0;
+  T.ftapIdle = idle + 1; G.persist?.();
+  const prevRot = W.onRotate;
+  W.onRotate = d => { prevRot?.(d); if (fturning(W) && T.ftapIdle) { T.ftapIdle = 0; G.persist?.(); } };
+  if (idle >= 3) remind(S);
+}
+async function remind(S) {
+  const G = S.G, W = G.world, T = G.save.tut;
+  const stop = () => S.dead || !!S.result || !T.ftapIdle;   // (used it meanwhile: no need)
+  // the stage's start: 2 s in, the glass free for a second, no other lesson up and 1.5 s after one (레벨: one guide at a time)
+  for (let free = 0; free < 1 && !stop(); ) { if (S.tutEls || !calm(S) || S.t - (S.tStart ?? S.t) < 2 || S.t - (S._tutEnd ?? -9) < 1.5) free = 0; else free += .2; await S.tw.wait(.2); }
+  if (stop()) return;
+  T.ftapRe = 1; G.persist?.();
+  css();
+  const { L, cap, keep } = lines(['hold', 'spin']);
+  G.ui.tut.append(cap, keep); S.tutEls = [cap, keep];
+  try { if (await play(S, 1, L)) await S.tw.wait(.3); }
+  finally { cap.remove(); keep.remove(); if (S.tutEls?.[0] === cap) { S.tutEls = null; S._tutEnd = S.t; } }
+}
+const calm = S => { const W = S.G.world; return !(W.ptrs.size || !S.running || S.paused || S.talking || S.cine || W.flying); };
+// the line at the top and the "떼지 마!" tag; only = the lines this one shows (others leave the top empty)
+function lines(only = null) {
+  const cap = h('div', { class: 'tip ftcap', style: `left:50%;top:${innerHeight * .2}px` }), keep = h('div', { class: 'ftkeep' }, tr(FTAP_CAP.keep));
+  let said = null;
+  const L = {
+    say: k => { if (k === said) return; said = k; const on = !only || only.includes(k); cap.style.visibility = on ? '' : 'hidden'; if (!on) return; cap.textContent = tr(FTAP_CAP[k]); cap.classList.remove('ftnew'); void cap.offsetWidth; cap.classList.add('ftnew'); },
+    keepAt: (x, y) => { keep.style.transform = `translate(${x.toFixed(1)}px, ${(y - 52).toFixed(1)}px)`; keep.classList.add('on'); },
+    keepOff: () => keep.classList.remove('on'),
+  };
+  if (only) cap.style.visibility = 'hidden';
+  return { L, cap, keep };
+}
+
 // the step lines (문구: 스토리 룸 10/20 — the game's own 반말; "됐다!" only when you did it yourself, not in the play)
 export const FTAP_CAP = {
-  drag: K('한 손가락으로 화면을 끌어 봐. 방이 움직여', 'Drag with one finger. The room moves'),
+  drag: K('한 손가락으로 화면을 드래그해 봐. 방이 움직여', 'Drag with one finger. The room moves'),
   hold: K('그 손가락은 그대로 꾹! 다른 손가락으로 한 번 터치', 'Keep that finger down! Tap once with another finger'),
-  spin: K('이제 끌면 방이 빙글 돌아', 'Now dragging spins the room'),
-  spinYou: K('됐다! 이제 끌면 방이 빙글 돌아', 'Got it! Now dragging spins the room'),
+  spin: K('이제 드래그하면 방이 빙글 돌아', 'Now dragging spins the room'),
+  spinYou: K('됐다! 이제 드래그하면 방이 빙글 돌아', 'Got it! Now dragging spins the room'),
   back: K('손을 떼면 다시 이동으로 바뀌어', "Let go, and you're back to moving"),
   keep: K('떼지 마!', 'Keep holding!'),
 };
@@ -68,18 +109,11 @@ const got = S => { S.G.ui.toast(tr(FTAP_TXT.got), 'green'); S.G.audio.sfx('speci
 async function demo(S, st) {
   const G = S.G, W = G.world;
   const over = () => S.dead || !!S.result || (!!G.save.tut?.ftap && !st.got);
-  const calm = () => !(W.ptrs.size || !S.running || S.paused || S.talking || S.cine || W.flying);
-  for (let free = 0; free < 1 && !over() && !st.got; ) { if (S.tutEls || !calm() || S.t - (S._tutEnd ?? -9) < 1.5) free = 0; else free += .2; await S.tw.wait(.2); }
+  for (let free = 0; free < 1 && !over() && !st.got; ) { if (S.tutEls || !calm(S) || S.t - (S._tutEnd ?? -9) < 1.5) free = 0; else free += .2; await S.tw.wait(.2); }
   if (over() || st.got) return;   // (done alone meanwhile: its own toast is on its way)
   css();
   const T = G.save.tut || (G.save.tut = {}); T.ftapN = (T.ftapN || 0) + 1; G.persist?.();
-  const cap = h('div', { class: 'tip ftcap', style: `left:50%;top:${innerHeight * .2}px` }), keep = h('div', { class: 'ftkeep' }, tr(FTAP_CAP.keep));
-  let said = null;
-  const L = {
-    say: k => { if (k === said) return; said = k; cap.textContent = tr(FTAP_CAP[k]); cap.classList.remove('ftnew'); void cap.offsetWidth; cap.classList.add('ftnew'); },
-    keepAt: (x, y) => { keep.style.transform = `translate(${x.toFixed(1)}px, ${(y - 52).toFixed(1)}px)`; keep.classList.add('on'); },
-    keepOff: () => keep.classList.remove('on'),
-  };
+  const { L, cap, keep } = lines();
   G.ui.tut.append(cap, keep); S.tutEls = [cap, keep]; st.live = true;
   const t0 = S.t;
   let plays = 0, free = 0, quiet = 0, turned = false, backT = -9;
@@ -97,7 +131,7 @@ async function demo(S, st) {
         if (turned) { turned = false; backT = S.t; }
         L.say(S.t - backT < 2 ? 'back' : 'drag');
         if (st.got && S.t - backT >= 1.6) break;   // done it, let go, read ④: then "새로 얻었다!"
-        if (calm()) free += dt; quiet += dt;
+        if (calm(S)) free += dt; quiet += dt;
         if (plays >= 2 && quiet > 8) break;   // nobody tried: it comes back on a later stage
       }
       await S.tw.wait(dt);
@@ -112,7 +146,7 @@ async function demo(S, st) {
 async function play(S, dir, L) {
   const G = S.G, W = G.world, tw = S.tw;
   css();
-  const cut = () => W.ptrs.size > 0 || S.dead || !!S.result || S.paused || !!G.save.tut?.ftap;
+  const cut = () => W.ptrs.size > 0 || S.dead || !!S.result || S.paused;   // (not on tut.ftap: the 한 번 더 play is for those who learned it)
   // a step of the play: fn(k) each frame for dur seconds, or false the moment it's cut (the tween is dropped)
   const TAG = 'ftapdemo';
   const step = (dur, fn) => new Promise(res => { let end = false; tw.run(dur, k => { if (end) return; if (cut()) { end = true; tw.kill(TAG); res(false); return; } fn(k); if (k >= 1) { end = true; res(true); } }, k => k, 0, TAG); });

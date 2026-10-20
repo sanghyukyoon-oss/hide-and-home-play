@@ -720,7 +720,7 @@ export class Game {
     // the hint says what to do right now (only when there is something to say)
     this._recentHintT = Math.max(0, (this._recentHintT || 0) - dt);
     let hint = '', first = false;
-    if (this.lvIdx === 0 && !this.everMoved) { hint = danger ? '엄마가 온다! 성적표를 끌어서 딴 데로!' : '성적표를 끌어서 다른 곳에 쏙!'; first = true; }
+    if (this.lvIdx === 0 && !this.everMoved) { hint = danger ? '엄마가 온다! 성적표를 드래그해서 딴 데로!' : '성적표를 드래그해서 다른 곳에 쏙!'; first = true; }
     else if (danger && this.meS === 'idle') hint = '엄마가 온다! 얼른 딴 데로!';
     else if (this.meS !== 'idle' && this.lvIdx === 0 && this.moves <= 2) hint = '노란 빛(엄마 눈)은 피해서!';
     else if (this.dState === 'sniff') hint = '멍뭉이가 냄새 맡는 중!';

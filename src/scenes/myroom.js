@@ -106,7 +106,7 @@ export class MyRoomScene {
   // ── edit (decorate)
   editHud() {
     const G = this.G, ui = G.ui;
-    this.col.append(h('div', { class: 'hint' }, h('span', {}, '가구를 터치해서 고르고, 끌어서 옮겨!')));
+    this.col.append(h('div', { class: 'hint' }, h('span', {}, '가구를 터치해서 고르고, 드래그해서 옮겨!')));
     const bar = h('div', { class: 'modebar' });
     this.cardsEl = h('div', { class: 'cards' });
     bar.append(this.cardsEl);

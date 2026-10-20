@@ -412,7 +412,7 @@ export class Game {
     col.append(top);
     this.slots = this.friends.map(Fr => h('div', { class: 'fl-face' }, h('img', { src: L.thumbs[`face_${Fr.kind}_normal`] })));
     col.append(h('div', { class: 'fl-faces' }, ...this.slots));
-    if (this.lv.hint || this.posts.length > 1) col.append(this.hint = h('div', { class: 'fl-hint ol gone' }, h('span', { class: 'fl-hand' }), this.hintTx = h('span', {}, '누른 채로 끌어서 비춰 봐')));
+    if (this.lv.hint || this.posts.length > 1) col.append(this.hint = h('div', { class: 'fl-hint ol gone' }, h('span', { class: 'fl-hand' }), this.hintTx = h('span', {}, '드래그해서 비춰 봐')));
     const app = document.getElementById('app');
     this.vig = h('div', { class: 'fl-vig' }); app.append(this.vig);
     this.aimRing = new THREE.Mesh(new THREE.RingGeometry(.12, .18, 24), new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0, depthWrite: false }));

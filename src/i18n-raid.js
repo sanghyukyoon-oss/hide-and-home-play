@@ -73,5 +73,5 @@ addI18n({
   [/^가진 것 (\d+)개$/, n => `Have ${n}`],
   [/^보물 (\d+)\/(\d+)$/, (a, b) => `Treasure ${a}/${b}`],
   [/^숨길 물건 (\d+)\/(\d+)$/, (a, b) => `To hide ${a}/${b}`],
-  [/^(\d+)개 다 숨겼어! 옮기려면 끌어$/, n => `All ${n} hidden! Drag one to move it`],
+  [/^(\d+)개 다 숨겼어! 옮기려면 드래그해$/, n => `All ${n} hidden! Drag one to move it`],
 ]);

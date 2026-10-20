@@ -2248,10 +2248,10 @@ export class StageScene {
     let pan = 0; W.onPan = d => { pan += d; };
     const mb = W.modeBadge, mt = mb?.querySelector('.mt'), mm = mb?.querySelector('.mm');
     W.eBase = W.eMode = 'move';
-    if (!await step('한 손가락으로 끌면 이동! 쓱 끌어 봐', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => pan > 160)) return;
+    if (!await step('한 손가락으로 드래그하면 이동! 쓱 드래그해 봐', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => pan > 160)) return;
     this.rotAccum = 0;
-    if (!await step('이번엔 돌려 보자! ↻ 회전을 누르거나, 끄는 중에 다른 손가락으로 터치!', 'tap', at(mt), () => W.eBase === 'turn' || this.rotAccum > .3, 30, mb)) return;
-    if (W.eBase === 'turn' && !await step('이제 끌면 방이 빙글! 손을 떼도 회전 그대로야', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => this.rotAccum > 1.0)) return;
+    if (!await step('이번엔 돌려 보자! ↻ 회전을 누르거나, 드래그 중에 다른 손가락으로 터치!', 'tap', at(mt), () => W.eBase === 'turn' || this.rotAccum > .3, 30, mb)) return;
+    if (W.eBase === 'turn' && !await step('이제 드래그하면 방이 빙글! 손을 떼도 회전 그대로야', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => this.rotAccum > 1.0)) return;
     if (W.eBase === 'turn' && !await step('다시 움직이려면 ✥ 이동을 터치!', 'tap', at(mm), () => W.eBase === 'move', 12, mb)) return;
     const z0 = W.zoom, gauge = document.querySelector('.zgauge');
     if (!await step('두 손가락을 벌리면 확대! 오른쪽 막대로도 돼', 'tap', at(gauge), () => Math.abs(W.zoom / z0 - 1) > .15, 14, gauge)) return;
@@ -2342,7 +2342,7 @@ export class StageScene {
     const G = this.G, ui = G.ui;
     this.tutStep = 1;
     if (G.world.scheme === 'E' && !G.world.joyOn) return this.tutorialE();
-    const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '끌면 이동! 끄는 중에 다른 손가락으로 터치하면 회전으로 바뀌어!' : G.world.scheme === 'D' ? '한 손가락으로 끌면 방이 돌아가! (누른 곳을 중심으로)' : G.world.scheme === 'B' ? '터치하고 바로 끌면 방이 돌아가! (옆으로·위아래로)' : G.world.scheme === 'C' ? '오른쪽 아래 스위치가 ↻ 회전일 때 옆으로 끌면 방이 돌아가!' : '한 손가락으로 옆으로 끌어서 방을 돌려봐!');
+    const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '드래그하면 이동! 드래그 중에 다른 손가락으로 터치하면 회전으로 바뀌어!' : G.world.scheme === 'D' ? '한 손가락으로 드래그하면 방이 돌아가! (누른 곳을 중심으로)' : G.world.scheme === 'B' ? '터치하고 바로 드래그하면 방이 돌아가! (옆으로·위아래로)' : G.world.scheme === 'C' ? '오른쪽 아래 스위치가 ↻ 회전일 때 옆으로 드래그하면 방이 돌아가!' : '한 손가락으로 옆으로 드래그해서 방을 돌려봐!');
     const hand = h('div', { class: 'hand swipe', html: ICON.hand, style: `left:${innerWidth / 2}px;top:${innerHeight * .58}px` });
     ui.tut.append(tip, hand);
     this.tutEls = [tip, hand];
@@ -2351,7 +2351,7 @@ export class StageScene {
     if (this.dead) return;
     G.audio.sfx('special');
     this.tutStep = 2;
-    const tip2 = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '숨은 물건을 찾아서 터치! (두 손가락 벌리면 확대)' : G.world.scheme === 'D' ? '숨은 물건을 찾아서 터치! (오른쪽 아래 패드로 이동 · 게이지나 두 손가락으로 확대)' : G.world.scheme === 'B' ? '숨은 물건을 찾아서 터치! (끌면 이동 · 터치하고 끌면 회전 · 오른쪽 게이지로 확대)' : G.world.scheme === 'C' ? '숨은 물건을 찾아서 터치! (스위치로 회전↔이동 · 벌리거나 두 번 터치하면 확대)' : '숨은 물건을 찾아서 터치! (두 손가락으로 끌면 이동 · 벌리면 확대)');
+    const tip2 = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '숨은 물건을 찾아서 터치! (두 손가락 벌리면 확대)' : G.world.scheme === 'D' ? '숨은 물건을 찾아서 터치! (오른쪽 아래 패드로 이동 · 게이지나 두 손가락으로 확대)' : G.world.scheme === 'B' ? '숨은 물건을 찾아서 터치! (드래그하면 이동 · 터치하고 드래그하면 회전 · 오른쪽 게이지로 확대)' : G.world.scheme === 'C' ? '숨은 물건을 찾아서 터치! (스위치로 회전↔이동 · 벌리거나 두 번 터치하면 확대)' : '숨은 물건을 찾아서 터치! (두 손가락으로 드래그하면 이동 · 벌리면 확대)');
     const hand2 = h('div', { class: 'hand tap', html: ICON.hand });
     ui.tut.append(tip2, hand2); this.tutEls = [tip2, hand2]; this.tutHand = hand2;
   }

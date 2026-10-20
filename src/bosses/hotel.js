@@ -439,7 +439,7 @@ export class Game {
       const s = this.sel; this.select(null); this.dropGuest(s, r); return;
     }
     if (o >= 0) { this.select(o); this.touch(this.guests[o]); return; }
-    this.setInfo('로비의 손님을 이 방으로 끌어 와요', 'flash');
+    this.setInfo('로비의 손님을 이 방으로 드래그해요', 'flash');
   }
   select(i) {
     if (this.sel === i) return;
@@ -463,7 +463,7 @@ export class Game {
   }
   statusHtml() {
     const here = this.guests.filter(G => this.present(G.i)), wait = here.filter(G => this.pos[G.i] === -1).length, ok = here.filter(G => G.mood?.ok).length;
-    if (this.lvIdx === 0 && this.n === 0 && this.movesUsed === 0 && wait === here.length) return '로비의 손님을 끌어서 방에 넣어 주세요';
+    if (this.lvIdx === 0 && this.n === 0 && this.movesUsed === 0 && wait === here.length) return '로비의 손님을 드래그해서 방에 넣어 주세요';
     if (wait) return `로비에서 기다리는 손님 <b>${wait}</b>명 · 행복한 손님 ${ok}/${here.length}`;
     return ok === here.length ? '모두 행복해! 불 끌까?' : `행복한 손님 <b>${ok}</b> / ${here.length} · 그래도 불 끌까?`;
   }
