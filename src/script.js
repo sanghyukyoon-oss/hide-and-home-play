@@ -240,9 +240,13 @@ const SCENES = [
   { id: 'firestation', type: 'incident', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'),
     intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('mong', '1등은?', "Who's first?"), L('peng', '…아직 안 정해졌어.', '…Not decided yet.')],
     reveal: [L('peng', '비결 4번. 소방관 모자는 벗고 숨기…', 'Tip number four. Take the helmet off before you hide…'), L('mong', '…몇 번까지 있어?', '…How many tips are there?'), L('peng', '1등 될 때까지!', 'As many as it takes to be number one!')] },
-  { id: 'aptmap', type: 'incident', room: 'aptmap', host: 'bear', hide: K('으헤헤, 따뜻한 데가 좋아~', 'Ehehe, somewhere nice and warm~'),
+  // 20판 = 1~20 마무리 (스토리 룸 10/20, 사용자 "20판까지 달려 보자"): 친구가 하나씩 모여 집들이에 다 모였는데 — 한 명이
+  // 빠졌다. "다음엔 우리 집에서 놀자"(이 게임의 등뼈)를 처음으로 먹물이 몫까지 말한다 → 64판 "다음에 또 하자는 말,
+  // 아무도 안 해 줬어", 엔딩 "똑, 똑."이 갚는다. trace: 그 애의 발자국이 집들이에도 (stage.js inkyTrace)
+  { id: 'aptmap', type: 'incident', room: 'aptmap', host: 'bear', trace: true, hide: K('으헤헤, 따뜻한 데가 좋아~', 'Ehehe, somewhere nice and warm~'),
     intro: [L('bunny', '곰돌이도 집들이 왔어! 숨바꼭질 하재.', 'Bearie came to the housewarming too! Wants to play hide-and-seek.'), LK('bunny', '청소기가 자꾸 이상한 걸 물고 다녀. 조심해!', 'And the robot vacuum keeps carrying weird stuff around. Careful!')],
-    reveal: [L('bear', '어… 벌써 찾았어? 따뜻해서 그만.', 'Huh… found me already? It was just so warm up there.'), L('mong', '…또 잤구나.', '…Fell asleep again, huh.')] },
+    reveal: [L('bear', '어… 벌써 찾았어? 따뜻해서 그만.', 'Huh… found me already? It was just so warm in there.'), L('bunny', '이제 다 모였다! 집들이 대성공!', "Everyone's here! Best housewarming ever!"),
+      L('mong', '…한 명 빠졌어. 그 까만 애.', '…One is missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
   // 동네 골목
   { id: 'alley1', type: 'incident', room: 'alley1',
     reveal: [L('grumpy', '…진짜 찾았네.', '…You actually found me.'), L('mong', '…의자가 두 개네.', '…There are two chairs.'), L('grumpy', '하, 하나는 가방 놓는 거야.', "O-one's for my bag.")] },
@@ -676,7 +680,8 @@ const GAME = {
     out: [L('bunny', '다 왔다! 이제 이웃이니까 내일 또 놀자!', "We made it! We're neighbors now, so let's play again tomorrow!")] },
   'whack:0': { lead: [L('frog', '개굴! 수풀 놀이 할 사람?', 'Ribbit! Who wants to play in the bushes?'), L('frog', '고개 내밀 때 톡 하면 찾은 거야.', "Tap us when we pop up. That's a catch!"), L('raccoon', '나도 낄래~ 근데 나 누르면 하나 빼기다?', 'Count me in! Tap me, though, and you lose one.'), L('mong', '…누구야.', "…Who's that?")],
     out: [L('frog', '손 빠르다! 낚시터에서보다 더 빠르네, 개굴!', 'Fast hands! Even faster than at my fishing spot, ribbit!')] },
-  'yasik:0': { lead: [L('bunny', '몽글아! 오늘 너네 집에서 자도 돼?', 'Mongle! Can I sleep over at your place tonight?'), L('bunny', '꼬르륵… 들었어?', 'Grumble… Did you hear that?'), L('mong', '네 배.', 'Your stomach.'), L('bunny', '냉장고에 컵케이크 있잖아…', 'There are cupcakes in the fridge…'), L('mom', '얘들아~ 이제 자야지~', 'Kids! Bedtime!'), L('mong', '…이번엔 우리가 안 들킬 차례.', '…Our turn to stay out of sight.')],
+  // (1장 끝 → 2장: 토순이가 이사 짐 때문에 자러 온다 — 2장 시작 "우리 아파트로 이사 왔어!"로 이어짐. 6줄 → 4줄, 스토리 룸 10/20)
+  'yasik:0': { lead: [L('bunny', '몽글아! 우리 집은 이삿짐 때문에 난리야. 오늘 너네 집에서 자도 돼?', "Mongle! My place is all moving boxes. Can I sleep over tonight?"), L('bunny', '꼬르륵… 냉장고에 컵케이크 있잖아…', 'Grumble… There are cupcakes in the fridge…'), L('mom', '얘들아~ 이제 자야지~', 'Kids! Bedtime!'), L('mong', '…이번엔 우리가 안 들킬 차례.', '…Our turn to stay out of sight.')],
     out: [L('bunny', '야식 작전 성공! 하나는 내 거.', "Snack mission: success! One's mine."), L('mom', '…냉장고 문은 닫고 자라~', '…And close the fridge before bed, dears.'), L('mong', '…!!', '…!!'),
       L('bunny', '몽글아! 나 아파트로 이사 가!', "Mongle! I'm moving to the apartments!"), L('bunny', '집들이 와 줄 거지?', "You'll come to my housewarming, right?"), L('mong', '응. 다음엔 너네 새 집에서.', 'Yeah. Next time, at your new place.'), L('bunny', '그리고 마지막엔 다 같이 너네 집! 약속!', 'And at the end, everyone at your place! Promise!')] },
   'blanket:0': { lead: [L('bunny', '오늘 다 같이 파자마 파티! 불 끄고 이불 뒤집어쓰기!', "Pajama party tonight! Lights off, blankets on!"), L('bunny', '왼쪽부터 한 명씩, 누군지 맞혀 봐!', "Left to right, one by one. Guess who's who!")],

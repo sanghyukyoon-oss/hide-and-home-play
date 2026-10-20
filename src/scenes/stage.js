@@ -1175,7 +1175,8 @@ export class StageScene {
     // (레벨 1~10 기준 10/19) the trail must not read as a hint: where it ends — and the next .8 m on — keeps .8 m from anything
     // to find, a key, a locked piece; and it would rather end at a door or the stairs, the way out (where 먹물이 went)
     const mid = o => { const bx = new THREE.Box3().setFromObject(o); return bx.isEmpty() ? null : bx.getCenter(new THREE.Vector3()); };
-    const avoid = [...this.items.map(it => it.g && mid(it.g)), ...this.plan.locks.map(l => { const g = l.part?.furn?.group || l.part?.pivots?.[0]; return g && mid(g); })].filter(Boolean);
+    const hideG = this.plan.incident?.part?.furn?.group;   // (a 사건 판 — 20판 집들이: nor where the friend is hiding)
+    const avoid = [...this.items.map(it => it.g && mid(it.g)), ...this.plan.locks.map(l => { const g = l.part?.furn?.group || l.part?.pivots?.[0]; return g && mid(g); }), ...(hideG ? [mid(hideG)] : [])].filter(Boolean);
     const exits = rooms.flatMap(R => [...(R.decors || []).filter(d => d.type === 'door' && !d.hidden), ...R.furns.filter(f => /stair/.test(f.type))]).map(r => mid(r.f.group)).filter(Boolean);
     const near = (q, list, r, dy) => list.some(c => Math.hypot(c.x - q.x, c.z - q.z) < r && Math.abs(c.y - q.y) < dy);
     const safeEnd = (e, di, dj) => [0, .4, .8].every(k => !near({ x: e.x + di * k, y: e.y, z: e.z + dj * k }, avoid, .8, 1.2));
