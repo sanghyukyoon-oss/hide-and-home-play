@@ -1985,6 +1985,18 @@ export class StageScene {
     G.ui.toast('철컥! 비밀 칸이 열렸어!', 'green');
     await this.togglePart(target, true);
   }
+  // the stage is won: shut whatever stands open (doors, drawers, lids, curtains — not levers, gadgets or lifts, which are a
+  // puzzle's state), all together in 0.22 s with one sound; nothing open → at once, no sound
+  async shutOpenParts() {
+    const W = this.G.world, open = (this.room.rooms || [this.room]).flatMap(R => R.furns).flatMap(e => e.f.parts || [])
+      .filter(p => !p.busy && p.t > .05 && !p.isLever && !p.isGadget && ['door', 'drawer', 'lid', 'curtain'].includes(p.kind));
+    if (!open.length) return;
+    this.G.audio.sfx('close');
+    const t0 = open.map(p => p.t);
+    open.forEach(p => { p.busy = true; });
+    await this.tw.run(.22, k => { open.forEach((p, i) => p.setOpen(t0[i] * (1 - k))); W.shadowDirty = true; }, ease.inQuad);
+    open.forEach(p => { p.busy = false; });
+  }
   async togglePart(part, open = null) {
     const G = this.G, W = G.world;
     if (part.busy) return;
@@ -2509,7 +2521,9 @@ export class StageScene {
     this.bubble.style.display = 'none';
     const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);
     // (10/19) the camera comes in on the friend cheering — or on 먹물이 saying "…앗." first; it goes back out when 먹물이 bolts
-    if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch, { portrait: true }); else closeUp(this, f, { portrait: true });   // (the same frontal shot every stage — user 10/19)
+    // (10/20, user on the phone, 11판: an open cupboard door hid 몽글이's face in the last talk — "엔딩 갈 때 문 닫아 주는 게 나을 듯")
+    // every open door, drawer, lid and curtain shuts first — one quick 탁 — then the camera comes in
+    this.shutOpenParts().then(() => { if (this.dead) return; if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch, { portrait: true }); else closeUp(this, f, { portrait: true }); });   // (the same frontal shot every stage — user 10/19)
     // 깜짝 한 방 (스토리 룸 10/19): the host's one small moment, inside this close-up (script.js scene.pop) — else the plain cheer
     const pop = !this.custom && !this.preview && !this.model && !G.bot ? sceneAt(this.idx)?.pop : null;
     const popDone = pop ? this.popMove(f, pop) : null;
