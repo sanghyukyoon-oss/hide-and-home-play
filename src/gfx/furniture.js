@@ -1031,32 +1031,72 @@ B.plant = (f, T) => {
 
 // 러그 (2×2): a round scalloped rug — a contrast border, dotted rings, a ring of hearts and a flower medallion. It lifts
 // at the front to show what slipped under it.
+// the rug's own mesh, dense enough to bend: concentric rings out to the scalloped edge (the extruded outline it had was a
+// handful of long triangles from rim to rim — bent, they folded into lumps: user 10/20 "폴리곤이 이상해서 … 거지같이 휘냐"),
+// top and underside and the rim, in the part's space (lying flat, back edge at z ≈ 0, front at z ≈ 2R)
+function rugGeo(R, a, n, K = 16) {
+  const J = n * 8, pos = [], nor = [], uv = [], idx = [], z0 = .88;
+  const rim = j => R - a + a * Math.sin(PI * ((j % 8) / 8));
+  const ring = (y, ny) => {   // (K+1) × (J+1) vertices
+    const b = pos.length / 3;
+    for (let k = 0; k <= K; k++) for (let j = 0; j <= J; j++) {
+      const t = j / J * PI * 2, r = rim(j % J) * k / K, x = Math.cos(t) * r, sy = Math.sin(t) * r;
+      pos.push(x, y, z0 - sy); nor.push(0, ny, 0); uv.push((x + R) / (2 * R), (sy + R) / (2 * R));
+    }
+    return b;
+  };
+  const top = ring(.03, 1), bot = ring(0, -1), W = J + 1;
+  for (let k = 0; k < K; k++) for (let j = 0; j < J; j++) {
+    const q = [k * W + j, k * W + j + 1, (k + 1) * W + j + 1, (k + 1) * W + j];
+    idx.push(top + q[0], top + q[2], top + q[1], top + q[0], top + q[3], top + q[2]);
+    idx.push(bot + q[0], bot + q[1], bot + q[2], bot + q[0], bot + q[2], bot + q[3]);
+  }
+  const side = pos.length / 3;
+  for (let j = 0; j <= J; j++) {
+    const t = j / J * PI * 2, r = rim(j % J), x = Math.cos(t) * r, sy = Math.sin(t) * r;
+    for (const y of [0, .03]) { pos.push(x, y, z0 - sy); nor.push(Math.cos(t), 0, -Math.sin(t)); uv.push((x + R) / (2 * R), (sy + R) / (2 * R)); }
+  }
+  for (let j = 0; j < J; j++) { const a0 = side + j * 2; idx.push(a0, a0 + 2, a0 + 1, a0 + 1, a0 + 2, a0 + 3); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  return g;
+}
+// how the big rug opens (user 10/20 "참치캔 따듯이"): 'roll' — from the front edge it winds up into a neat roll on one axis
+// that travels back as it opens, like a tin's lid round its key; 'lift' — the front just lifts in one soft curve.
+// ?rug=lift shows the other one.
+const RUG_OPEN = typeof location !== 'undefined' && /[?&]rug=lift(&|$)/.test(location.search) ? 'lift' : 'roll';
+// 러그 (2×2): a round scalloped rug — a contrast border, dotted rings, a ring of hearts and a flower medallion. It lifts
+// at the front to show what slipped under it.
 B.rug = (f, T) => {
   const c1 = T.rug || '#ffd1e0', c2 = T.rug2 || WHITE, c3 = T.accent2 || SKY, R = .9;
   const pv = new THREE.Group(); put(pv, 0, 0, -.88); f.add(pv);
-  const rug = mg('rug|' + c1 + c2 + c3, mat('#ffffff', { map: rugTex(c1, c2, c3) }), ({ addM }) => {
-    addM(boxUV(G.ext(scallopShape(R - .04, .04, 30), .03, 0, 2), -R, -R, 2 * R, 2 * R), xf(0, 0, .88, -HP, 0, 0));
-  });
+  // its own mesh (bent in place while it moves — the part's apply runs only when t changes); the base shape is shared
+  const G2 = geo('rug2|' + R, () => rugGeo(R, .04, 30)).clone();
+  const rug = mesh(G2, mat('#ffffff', { map: rugTex(c1, c2, c3) }));
   rug.castShadow = false; pv.add(rug);
-  // (10/20, user on a phone: "카펫 같은 천 — 들추면 판때기처럼 올라가는데, 큰 건 휘면서 열리게") the cloth peels up from its front
-  // edge over a soft curl and folds back, instead of tilting up stiff like a board. Its own copy of the (shared, merged)
-  // geometry is bent only while it moves — the part's apply runs when t changes — and its normals turn with each bend.
-  rug.geometry = rug.geometry.clone();
-  const G2 = rug.geometry, pos = G2.attributes.position, nor = G2.attributes.normal, P0 = pos.array.slice(), N0 = nor ? nor.array.slice() : null;
+  const pos = G2.attributes.position, nor = G2.attributes.normal, P0 = pos.array.slice(), N0 = nor.array.slice();
   let zMax = -1e9; for (let i = 2; i < P0.length; i += 3) zMax = Math.max(zMax, P0[i]);
-  const CR = .2, TH = 2.4;   // the curl's radius and how far round it turns before the flap runs on straight
+  // roll: wound round an axis at height CR over the line where it leaves the floor, each turn a little tighter (a cloth's
+  // thickness) so the layers never cross; 1.3 m of it at full open — the roll ends clear of both hiding spots
+  // lift: one soft arc of radius .9, then straight on — the front edge ends ~.45 up
+  const ROLL = RUG_OPEN === 'roll', CR = ROLL ? .12 : .9, TH = ROLL ? 1e9 : .7, LEN = ROLL ? 1.3 : 1.0, TK = .034;
   const peel = t => {
-    const a = pos.array, n = nor?.array, zl = zMax - 1.1 * t;
+    const a = pos.array, n = nor.array, zl = zMax - LEN * t;
     for (let i = 0; i < a.length; i += 3) {
       const y0 = P0[i + 1], z0 = P0[i + 2], d = z0 - zl;
-      if (t <= 0 || d <= 0) { a[i + 1] = y0; a[i + 2] = z0; if (n) { n[i + 1] = N0[i + 1]; n[i + 2] = N0[i + 2]; } continue; }
-      const th = Math.min(d / CR, TH), s = d - CR * th, c = Math.cos(th), sn = Math.sin(th);
-      a[i + 2] = zl + (CR - y0) * sn + s * c; a[i + 1] = CR - (CR - y0) * c + s * sn;
-      if (n) { const nz = N0[i + 2], ny = N0[i + 1]; n[i + 2] = nz * c - ny * sn; n[i + 1] = nz * sn + ny * c; }
+      if (t <= 0 || d <= 0) { a[i + 1] = y0; a[i + 2] = z0; n[i + 1] = N0[i + 1]; n[i + 2] = N0[i + 2]; continue; }
+      let th, r, s = 0;
+      if (ROLL) {   // arc length d along a spiral that tightens by TK a turn: solve d = ∫ r(θ) dθ for θ (r = CR − k·θ)
+        const k = TK / (PI * 2); th = (CR - Math.sqrt(Math.max(0, CR * CR - 2 * k * d))) / k; r = CR - k * th;
+      } else { th = Math.min(d / CR, TH); s = d - CR * th; r = CR; }
+      const c = Math.cos(th), sn = Math.sin(th);
+      a[i + 2] = zl + (r - y0) * sn + s * c; a[i + 1] = CR - (r - y0) * c + s * sn;
+      const nz = N0[i + 2], ny = N0[i + 1]; n[i + 2] = nz * c - ny * sn; n[i + 1] = nz * sn + ny * c;
     }
-    pos.needsUpdate = true; if (nor) nor.needsUpdate = true; G2.computeBoundingSphere(); G2.computeBoundingBox();
+    pos.needsUpdate = true; nor.needsUpdate = true; G2.computeBoundingSphere(); G2.computeBoundingBox();
   };
-  const p = f.part('lift', pv, (t) => peel(t), { label: '러그', sfx: 'lift', dur: .42 });
+  const p = f.part('lift', pv, (t) => peel(t), { label: '러그', sfx: 'lift', dur: ROLL ? .55 : .42 });
   f.spot('inside', null, -.3, 0, .18, { part: p, maxH: .09, label: '러그 밑' });
   f.spot('inside', null, .32, 0, -.12, { part: p, maxH: .09, label: '러그 밑' });
   f.floor = true;
