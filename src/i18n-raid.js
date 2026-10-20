@@ -30,6 +30,9 @@ addI18n({
   '찾기 시작하면 조이스틱으로 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!': 'Once it starts looking, move with the stick — blow the whistle and Rocky runs my way instead!',
   // 친구 지킴이 (10/20)
   '친구가 막았다!': 'A friend stopped it!', '안 돼! 몽글이 거야!': "No! That's Mongle's!", '앗!': 'Eek!', '앗! 친구가 지키고 있었어?': 'Eek! A friend was on guard?', '친구가 막음': 'Stopped by friends',
+  // 숨기기 = 가구 놓기처럼 (hidehold.js, 10/20)
+  '여기 숨기기': 'Hide here', '숨을 곳': 'Hiding place',
+  '보물을 골라, 드래그해서 숨겨!': 'Pick a treasure, drag it to hide!', '숨을 곳으로 드래그': 'Drag to a hiding place', '숨을 곳(가구) 가까이로 드래그해 봐!': 'Drag it near a hiding place (furniture)!',
   '자물쇠': 'Padlock', '서랍을 잠가 지켜': 'lock a drawer to guard it',
 }, [
   // the raid news (raid.js newsLine): revenge first, so the plain one doesn't take "복수하러 와서 …" for a name
@@ -71,6 +74,7 @@ addI18n({
   [/^자물쇠 (\d+)\/(\d+)$/, (a, b) => `Padlocks ${a}/${b}`],
   [/^(\d+)개 다 있어$/, n => `All ${n} owned`],
   [/^가진 것 (\d+)개$/, n => `Have ${n}`],
+  [/^목록에서 고르고, 드래그해서 숨겨요 · 최대 (\d+)개$/, n => `Pick from the list, drag to hide · up to ${n}`],
   [/^보물 (\d+)\/(\d+)$/, (a, b) => `Treasure ${a}/${b}`],
   [/^숨길 물건 (\d+)\/(\d+)$/, (a, b) => `To hide ${a}/${b}`],
   [/^(\d+)개 다 숨겼어! 옮기려면 드래그해$/, n => `All ${n} hidden! Drag one to move it`],

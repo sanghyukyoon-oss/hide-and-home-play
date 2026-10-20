@@ -20,7 +20,8 @@ import { net, initNet, publishRoom, roomStats } from '../net.js';
 import { seatedAll, ECON, seatsOf } from '../econ.js';
 import { messOpen, messShut, askBuyLock } from '../raidreplay.js';   // 털린 흔적 · 자물쇠 사기 (털기 메타 10/19)
 import { locksOwned, locksUsed } from '../raid.js';
-import { Hand } from '../handhold.js';   // 손에 든 물건: 하나씩 크게 → 손 → 콕 → 쏙 (보물 지키기와 같은 손맛, 10/20)
+import { Hand } from '../handhold.js';
+import { holdStart, holdDrag, holdCancel, holdTick } from '../hidehold.js';   // 숨기기 = 가구 놓기처럼 (10/20)   // 손에 든 물건: 하나씩 크게 → 손 → 콕 → 쏙 (보물 지키기와 같은 손맛, 10/20)
 
 const V = new THREE.Vector3();
 const MAX_HIDE = 5;
@@ -344,6 +345,7 @@ export class MyHomeScene {
 
   // ── HUD
   setMode(mode) {
+    if (this.held) holdCancel(this, true);   // (숨기기: a thing still held goes back)
     const G = this.G, ui = G.ui;
     this.mode = mode; this.sel = null; this.markers = null; this.ftool = null; this.dropFootprint();   // (it stayed on the floor after 완료 — QA3 10/19)
     ui.clear(); if (this.room) this.fitCam();
@@ -526,7 +528,11 @@ export class MyHomeScene {
   }
   syncRec(r) { const f = this.zone.furniture.find(x => x.id === r.id); if (f) { f.x = +r.x.toFixed(3); f.z = +r.z.toFixed(3); f.a = +r.a.toFixed(4); f.i = r.i; f.j = r.j; f.rot = r.rot; } this.room.fitParts(); }
   dragStart(x, y) {
-    if (this.mode === 'hide') return this.dragItem(x, y);
+    if (this.mode === 'hide') {   // (숨기기: only the held thing moves; a hidden thing you drag is picked up first — the rest is the camera's)
+      const d = holdDrag(this, x, y); if (d) return d;
+      const hit = this.pick(x, y); if (hit.kind === 'item') { holdStart(this, hit.item.type); return holdDrag(this, x, y); }
+      return null;
+    }
     if (this.mode !== 'edit' || !this.sel) return null;
     const hit = this.pick(x, y);
     if (hit.kind !== 'furn' || hit.furn.rec !== this.sel) return null;
@@ -582,7 +588,7 @@ export class MyHomeScene {
     } else { const s = this.spotByKey[e.spot]; if (s && !s.item) this.putItem(e.item, s); }
   }
   // hide `type` on a surface picked with pickSurface(); refuses places nobody could ever see
-  async freePlace(s, type = this.selItem, moving = false) {
+  async freePlace(s, type = this.selItem, moving = false, ryWant = null) {
     const G = this.G, hid = this.H.hide;
     if (!type) return false;
     if ((type === 'key' || type === 'note') && s.part && hid.locks[s.part.key]) { G.ui.toast('잠근 곳 안에 열쇠를 넣으면 못 열어!', 'red'); return false; }
@@ -590,7 +596,7 @@ export class MyHomeScene {
     if (isTarget && !this.items[type] && this.targetCount() >= MAX_HIDE) { G.ui.toast(`한 번에 ${MAX_HIDE}개까지 숨길 수 있어`, 'red'); return false; }
     const prevAt = hid.items.findIndex(e => e.item === type), prev = prevAt >= 0 ? hid.items[prevAt] : null;
     if (this.items[type]) this.removeItem(type);
-    const local = toLocal(s, s.point), ry = +((Math.random() - .5) * 1.2).toFixed(2);
+    const local = toLocal(s, s.point), ry = +((ryWant ?? (Math.random() - .5) * 1.2)).toFixed(2);
     const it = this.putItem(type, makeFreeSpot(s, local, ry));
     if (!viewsOf(G.world, this.room, it)) {
       this.removeItem(type); G.audio.sfx('miss');
@@ -628,7 +634,7 @@ export class MyHomeScene {
       G.persist();
       this.build();
     }
-    const hintTxt = `물건 고르고 숨길 곳 터치 · 최대 ${MAX_HIDE}개`, hintSpan = h('span', {}, zoneMsg || hintTxt);
+    const hintTxt = `목록에서 고르고, 드래그해서 숨겨요 · 최대 ${MAX_HIDE}개`, hintSpan = h('span', {}, zoneMsg || hintTxt);
     this.col.append(h('div', { class: 'hint' }, hintSpan));
     if (zoneMsg) setTimeout(() => { if (!this.dead) hintSpan.textContent = tr(hintTxt); }, 2600);
     const tut = G.save.tut || (G.save.tut = {});
@@ -644,8 +650,7 @@ export class MyHomeScene {
     this.col.append(bar);
     this.selItem = null;
     this.renderHideCards();
-    this.hand = new Hand(G, bar, { inline: true });   // (right above the cards: what's in the hand, then where it came from)
-    this.heldShow(true);
+    this.hand = null;   // (숨기기 = 가구 놓기처럼, 10/20: the list is the start — no big show; the thing picked is held in the room)
     this.markers = null;   // no round guide markers (user, 2026-10-15): tap a drawer to open it, then tap inside
   }
   chainNeeded() { return Object.values(this.H.hide.locks).map(k => k === 'pad' ? 'key' : 'note'); }
@@ -666,7 +671,7 @@ export class MyHomeScene {
     if (!this.selItem) this.selItem = list.find(t => !placed.has(t));
     for (const t of list) {
       const e = hid.items.find(x => x.item === t), s = e && this.items[t]?.spot;   // fixed spots and free places alike
-      this.cardsEl.append(h('div', { class: 'card' + (this.selItem === t ? ' sel' : '') + (s ? ' done' : ''), onclick: () => { this.selItem = t; G.audio.sfx('click'); this.renderHideCards(); this.heldShow(false); } },
+      this.cardsEl.append(h('div', { class: 'card' + (this.selItem === t ? ' sel' : '') + (s ? ' done' : ''), onclick: () => { this.selItem = t; G.audio.sfx('click'); holdStart(this, t); this.renderHideCards(); } },
         s ? h('div', { class: 'tag' }, '숨김') : null, h('img', { src: G.thumbs['item_' + t] }), h('div', {}, ITEMS[t].name), h('div', { style: 'font-size:11px;color:#9b6cff' }, s ? s.label : (t === 'key' || t === 'note') ? '꼭 숨겨야 해요' : '')));
     }
     this.cardsEl.append(h('div', { class: 'card lockedc', style: 'display:flex;align-items:center;justify-content:center;font-size:12px;min-height:110px' }, `스테이지에서 찾은 물건이 여기 모여요 (${coll.length}종)`));
@@ -735,7 +740,7 @@ export class MyHomeScene {
     const s = place.spots.find(x => x.item?.type === t) || place.spots.find(x => !x.item && ok(x)) || place.spots.find(ok) || place.spots[0];
     await this.placeTreasure(s);
   }
-  async placeTreasure(spot) {
+  async placeTreasure(spot, ry = null) {
     const G = this.G, t = this.selItem, hid = this.H.hide;
     if (!t || !spot) return;
     const def = ITEMS[t];
@@ -745,7 +750,7 @@ export class MyHomeScene {
     if (isTarget && !this.items[t] && this.targetCount() >= MAX_HIDE) { G.ui.toast(`한 번에 ${MAX_HIDE}개까지 숨길 수 있어`, 'red'); return; }
     if (spot.item && spot.item.type !== t) this.removeItem(spot.item.type);
     if (this.items[t]) this.removeItem(t);
-    this.putItem(t, spot);
+    const it = this.putItem(t, spot); if (ry != null) it.g.rotation.y = ry;
     hid.items.push({ item: t, spot: spot.key });
     G.persist(); G.audio.sfx('place');
     const sp = G.world.toScreen(this.room.spotWorld(spot));
@@ -884,14 +889,10 @@ export class MyHomeScene {
     }
     if (this.mode === 'edit') { if (hit.kind === 'furn' && !hit.furn.wall) this.select(hit.furn.rec); else this.select(null); return; }
     if (this.mode === 'hide') {
-      if (this.hand?.busy) { this.hand.skip?.(); return; }   // (a tap during the big show: straight into the hand)
-      if (this.selItem) {
-        const s = pickSurface(G.world, this.room, x, y);
-        if (s && !s.side && (!s.part || s.part.t > .5)) { this.freePlace(s); return; }
-      }
+      // 숨기기 = 가구 놓기처럼 (10/20): a tap never hides — pick from the list, drag, [여기 숨기기]. A hidden thing tapped is picked up.
+      if (hit.kind === 'item' && hit.item.type) { holdStart(this, hit.item.type); this.selItem = hit.item.type; this.renderHideCards(); return; }
       if (hit.kind === 'part' && !hit.part.lock) { this.openPart(hit.part, hit.part.t < .5); return; }
       if (hit.kind === 'part' && hit.part.lock) { G.audio.sfx('locked'); return; }
-      if (this.selItem) G.ui.toast('바닥이나 가구 위, 열어 둔 서랍 안을 터치해서 숨겨', '');
       return;
     }
     if (hit.kind === 'part' && !hit.part.lock) this.openPart(hit.part, hit.part.t < .5);
@@ -922,6 +923,7 @@ export class MyHomeScene {
     this.mong.update(dt);
     this.visitors?.update(dt);
     if (this.mode === 'hide' && this.markers) this.updMarkers();
+    this._ht = (this._ht || 0) + dt; holdTick(this, this._ht);
     if (this.ftool && this.sel) {
       const b = new THREE.Box3().setFromObject(this.sel.f.group);
       const p = this.G.world.toScreen(new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + .1, (b.min.z + b.max.z) / 2));

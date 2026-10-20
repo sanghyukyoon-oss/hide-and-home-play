@@ -3581,7 +3581,7 @@ export const EN = {
 "로봇 주먹팔": "Robot Fist Arm", "로봇 주먹팔!": "Robot Fist Arm!",
 "로봇 머리": "Robot Head", "로봇 머리!": "Robot Head!",
 "로봇 안테나": "Robot Antenna", "로봇 안테나!": "Robot Antenna!",
-"다리": "Legs", "몸통": "Body", "제트팩": "Jetpack", "집게팔": "Claw", "주먹팔": "Fist", "머리": "Head", "부품 6개": "6 parts", "터치!": "Tap!", "슬리퍼": "Slippers", "우산": "Umbrella", "짐 7개": "7 things", "토핑 7개": "7 toppings", "로봇 부품 6개를 모아 조립하자!": "Collect all 6 robot parts and build it!",
+"다리": "Legs", "몸통": "Body", "제트팩": "Jetpack", "집게팔": "Claw", "주먹팔": "Fist", "머리": "Head", "터치!": "Tap!", "캣타워": "Cat Tower", "미니 소방차": "Mini Fire Truck", "캣타워 · 도감에 남았어요": "Cat Tower · kept in your book", "미니 소방차 · 도감에 남았어요": "Mini Fire Truck · kept in your book", "또 완성!": "Built again!", "다 모았다! 이제 쌓아 보자!": "Got them all! Let's stack it up!", "다 모았다! 출동 준비!": "Got them all! Ready to roll!", "캣타워 받침": "Cat tower base", "캣타워 집": "Cat tower house", "캣타워 기둥": "Cat tower post", "캣타워 작은 기둥": "Cat tower short post", "캣타워 옆 방석": "Cat tower side seat", "캣타워 가운데 판": "Cat tower deck", "캣타워 위 기둥": "Cat tower top post", "캣타워 꼭대기": "Cat tower top bed", "캣타워 방울 공": "Cat tower bell ball", "소방차 몸통": "Fire truck body", "소방차 뒷바퀴": "Fire truck back wheels", "소방차 앞바퀴": "Fire truck front wheels", "소방차 운전석": "Fire truck cab", "소방차 사다리": "Fire truck ladder", "소방차 물대포": "Fire truck water cannon", "소방차 경광등": "Fire truck siren light", "부품 6개": "6 parts", "터치!": "Tap!", "슬리퍼": "Slippers", "우산": "Umbrella", "짐 7개": "7 things", "토핑 7개": "7 toppings", "로봇 부품 6개를 모아 조립하자!": "Collect all 6 robot parts and build it!",
 "흠, 거기가 아니군.": "Hm. Not there.",
 "이삿짐 풀기": "Unpacking", "파르페 쌓기": "Parfait Stack", "생크림": "Whipped Cream", "웨하스": "Wafer", "체리": "Cherry", "이삿짐 상자": "Moving Box", "큰 파르페": "Giant Parfait",
 "꼬마 로봇": "Tiny Bot",

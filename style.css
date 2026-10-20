@@ -1467,6 +1467,19 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
   transform: rotate(-16deg) scale(1); opacity: 0; pointer-events: none; }
 .kitrun.skin-labels .kitrun-cell.found .kitrun-stamp { opacity: 1; animation: kitstamp .32s cubic-bezier(.3, 1.6, .5, 1) both; }
 @keyframes kitstamp { 0% { opacity: 0; transform: rotate(-30deg) scale(2.2); } 60% { opacity: 1; transform: rotate(-14deg) scale(.9); } 100% { opacity: 1; transform: rotate(-16deg) scale(1); } }
+/* 11판 캣타워: the stage's ordinary find list (user 10/20: "캣타워가 프라모델 ui쓰는건 이상한데.. 그냥 일반 숨은그림 찾기처럼
+   밑에 ui는 해줄래? 상자는 괜찮지만") — the .tray's cream card and white rounded slots, the same dark silhouettes; the numbers
+   show only once it unfolds into the build's board (the order to put it up in) */
+.kitrun.skin-tray { padding: 7px; border-radius: 18px; border: 3px solid var(--ink); border-bottom-width: 5px; background: linear-gradient(#fffaf2, #ffe7c9); box-shadow: none; }
+.kitrun.skin-tray .kitrun-tag, .kitrun.skin-tray .kitrun-gate { display: none; }
+.kitrun.skin-tray .kitrun-row { gap: 6px; }
+.kitrun.skin-tray .kitrun-cell { aspect-ratio: 1; border-radius: 15px; background: #fff; box-shadow: inset 0 0 0 2.5px #e9cfae; }
+.kitrun.skin-tray .kitrun-cell img { left: 13%; top: 13%; width: 74%; height: 74%; }
+.kitrun.skin-tray .kitrun-ghost { filter: brightness(0) opacity(.72); }
+.kitrun.skin-tray .kitrun-cell.used .kitrun-ghost { filter: brightness(0) opacity(.1); }
+.kitrun.skin-tray:not(.build) .kitrun-no { display: none; }
+.kitrun.skin-tray.build { padding: 10px; }
+.kitrun.skin-tray.build .kitrun-cell.next { box-shadow: inset 0 0 0 2.5px #e9cfae, 0 0 0 4px #ffe14d, 0 0 16px 5px rgba(255, 225, 77, .7); }
 .kitrun.gone { opacity: 0; transform: translateX(-50%) translateY(40px); pointer-events: none; }
 .kitintro { position: absolute; inset: 0; z-index: 30; background: rgba(42, 26, 61, .22); pointer-events: auto; animation: kitfade .25s ease-out; }
 .kitintro.out { opacity: 0; transition: opacity .25s; }
@@ -1474,7 +1487,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 /* the box's comic panel (10/19 — user: "오프닝도 뒤에 배경이나 좀 만화같이", then a green zoom-burst reference: "배경은 이런느낌으로
    아예 뒤를 가려도 상관없으니 새롭게"): it covers the room — a lime-to-green burst, speed lines turning slowly round the box,
    halftone dots growing to the edges, zigzag bolts pointing in. It fades ('calm') before the pieces fly off to hide. */
-.kitintro.comic { background: #3cb22c; overflow: hidden; transition: background-color .45s; }   /* (a solid green under it all: the room never shows through) */
+.kitintro.comic { background: var(--k4); overflow: hidden; transition: background-color .45s; }   /* (a solid green under it all: the room never shows through) */
 .kitintro.comic.calm { background-color: transparent; }
 /* (10/20) the panel is on the whole HUD now, past the 560-px column: the cut-in stays the column's width in the middle */
 .kitintro .kitcut { left: max(14px, calc(50% - 266px)); right: max(14px, calc(50% - 266px)); }
@@ -1487,18 +1500,22 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts { position: absolute; pointer-events: none; transition: opacity .45s; }
 .kitintro:not(.comic) :is(.kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts) { display: none; }
 .kitintro.calm :is(.kitintro-bg, .kitintro-rays, .kitintro-dots, .kitintro-bolts) { opacity: 0; }
-.kitintro-bg { inset: 0; background: radial-gradient(circle at 50% 50%, #f6ff8a 0 5%, #c4f43c 20%, #74d832 50%, #3cb22c 80%, #2c9a26 100%); }
+/* the panel's colours: each kit its own (10/20, user: "색깔 변경 가능하면 바꿔가면서 써 ㅋㅋ 돌려쓰지말고" — modelkit.js BURST
+   sets these on the panel); green is the robot's. The middle fades in smoothly: a solid yellow disc at 0–5% had an edge
+   behind the box (user: "노란색… 경계 느껴질때가 있어") */
+.kitintro { --k1: #f6ff8a; --k2: #c4f43c; --k3: #74d832; --k4: #3cb22c; --k5: #2c9a26; --kl: rgba(255, 255, 150, .5); --kd: rgba(20, 110, 30, .22); --kdot: rgba(22, 104, 30, .3); --kbolt: rgba(24, 110, 32, .42); }
+.kitintro-bg { inset: 0; background: radial-gradient(circle at 50% 50%, var(--k1) 0%, var(--k2) 20%, var(--k3) 50%, var(--k4) 80%, var(--k5) 100%); }
 /* (the speed lines: a square half again as wide as the screen's longer side, round the screen's middle — the circle inside it
    covers every corner however it turns, so no edge ever shows: user 10/19 "확대해서 경계선 안보이게… 화면 중심에서") */
 .kitintro-rays { left: 50%; top: 50%; width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; animation: kitrays 24s linear infinite;
-  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 150, .5) 0 2.6deg, transparent 2.6deg 7deg, rgba(20, 110, 30, .22) 7deg 9.5deg, transparent 9.5deg 13deg),
+  background: repeating-conic-gradient(from 0deg at 50% 50%, var(--kl) 0 2.6deg, transparent 2.6deg 7deg, var(--kd) 7deg 9.5deg, transparent 9.5deg 13deg),
     repeating-conic-gradient(from 4deg at 50% 50%, rgba(255, 255, 255, .22) 0 1.2deg, transparent 1.2deg 17deg); }
 @keyframes kitrays { to { transform: rotate(360deg); } }
 .kitintro-dots { inset: 0;
-  background-image: radial-gradient(circle, rgba(22, 104, 30, .3) 0 3.2px, transparent 3.7px), radial-gradient(circle, rgba(22, 104, 30, .22) 0 2px, transparent 2.5px);
+  background-image: radial-gradient(circle, var(--kdot) 0 3.2px, transparent 3.7px), radial-gradient(circle, var(--kdot) 0 2px, transparent 2.5px);
   background-size: 18px 18px, 18px 18px; background-position: 0 0, 9px 9px;
   -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 0 22%, #000 62%); mask-image: radial-gradient(circle at 50% 50%, transparent 0 22%, #000 62%); }
-.kitintro-bolts { inset: 0; }
+.kitintro-bolts { inset: 0; color: var(--kbolt); }
 .kitintro-bolts svg { width: 100%; height: 100%; }
 /* the friend's comic cut-in: a round framed face and their line beside it */
 .kitcut { position: absolute; left: 14px; top: calc(96px + var(--safeT)); right: 14px; display: flex; align-items: center; gap: 8px; z-index: 3; pointer-events: none; }
@@ -1556,7 +1573,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
   transform: rotateX(90deg) translateZ(calc(var(--h) / -2 - 1px)); backface-visibility: hidden; -webkit-backface-visibility: hidden;
   background: radial-gradient(closest-side, rgba(12, 64, 10, .5) 66%, rgba(12, 64, 10, 0)); }
 .kb3-glow { position: absolute; left: 50%; top: 50%; width: 380px; height: 330px; margin: -250px 0 0 -190px; opacity: 0; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 62%, rgba(255, 252, 214, 1) 0 16%, rgba(255, 232, 130, .7) 36%, rgba(255, 214, 90, 0) 68%); }
+  background: radial-gradient(closest-side at 50% 62%, rgba(255, 252, 214, 1) 0%, rgba(255, 238, 150, .7) 40%, rgba(255, 214, 90, 0) 100%); }   /* (closest-side: gone before any edge of its box) */
 /* 콕 (10/20, user on the phone: "'콕 하세요' 같은 확실한 행동 유도(큰 손·두근거림)"; the word is 스토리 룸's): a big hand
    tapping the waiting box, and 콕! over it, bouncing */
 .kithand { width: 104px; height: 104px; z-index: 5; }
@@ -1936,3 +1953,19 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .previewbar .btn.short { filter: grayscale(.7); opacity: .8; }
 /* 도감's number (cardbook.js bookBadge): the same red number as 꾸미기's, popping in once */
 .btn > .badge.bookn { top: -9px; right: -9px; min-width: 22px; height: 22px; font-size: 13px; animation: badgepop .6s cubic-bezier(.2, 1.8, .4, 1) .35s both; }
+
+/* ── 장 카드 A '이야기책 라벨' (UI 세션 10/20, user: "챕터 디자인 맘에 안 드네" → A) ── a cream label with an ink edge, tilted a
+   touch; the chapter on an orange tab over its top edge, the title in the title face, the region under it between two short lines */
+.cine-card { top: 27%; box-sizing: border-box; max-width: calc(100vw - 28px); background: #fffaf2; border: 4px solid var(--ink); border-radius: 24px; box-shadow: 0 7px 0 var(--ink); padding: 26px 30px 16px; min-width: 230px; rotate: -2deg; }
+.cine-ch { position: absolute; left: 50%; top: -20px; translate: -50% 0; background: #ffb23a; border: 3.5px solid var(--ink); border-radius: 999px; padding: 5px 16px 6px; font-size: 18px; letter-spacing: 0; color: #fff; text-shadow: 0 2px 0 var(--ink); -webkit-text-stroke: 1px var(--ink); white-space: nowrap; }
+.cine-title, #app .cine-title { font-family: 'TitleKo', var(--font-display); font-size: min(34px, 7.6vw); line-height: 1.1; margin-top: 0; color: var(--ink); -webkit-text-stroke: 0; text-shadow: none; white-space: nowrap; }
+.cine-sub { margin-top: 8px; font-family: var(--font); font-size: 15px; color: #8a6a9a; white-space: nowrap; }
+.cine-sub::before, .cine-sub::after { content: ''; display: inline-block; width: 22px; height: 3px; border-radius: 2px; background: #e6d4ef; vertical-align: middle; margin: 0 8px; }
+.cine-faces { top: calc(27% + 82px); }
+
+/* 숨기기 = 가구 놓기처럼 (10/20): the place label under the held thing */
+.holdlabel { position: absolute; transform: translate(-50%, 0); padding: 2px 10px; border-radius: 10px; background: rgba(42, 26, 61, .72); color: #fff; font-size: 13px; pointer-events: none; white-space: nowrap; z-index: 11; }
+.holdlabel:empty { display: none; }
+.holdlabel.snap { background: #3cc46a; border: 2px solid #1d6b38; }
+.holdtool .btn .lbl { font-size: 15px; }
+.modebar.bossbar { padding-bottom: calc(10px + var(--safeB)); }   /* 보물 지키기 숨길 보물 목록 (10/20) */

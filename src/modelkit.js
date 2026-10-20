@@ -30,7 +30,7 @@ export const MODEL_STAGES = {
     hello: '흠. 로봇 부품이 다 흩어졌어.', go: '다 모았다! 조립 시작!', wrong: '흠, 거기가 아니군.', cheer: '흠! 완벽한 조립이군!' },
 };
 // the line said when the last piece is found, before the build (campaign: 스토리 룸's script.js KIT_TALK when it has one)
-export const KIT_GO = { robot: '다 모았다! 이번엔 끝까지 맞추자.' };
+export const KIT_GO = { robot: '다 모았다! 이번엔 끝까지 맞추자.', cattower: '다 모았다! 이제 쌓아 보자!', firetruck: '다 모았다! 출동 준비!' };
 const RS = 1.15;   // the finished model's size in the room
 
 // ── the plan: the kit's pieces are the things to find, placed by the hidden-object rules (planStage with them forced in:
@@ -58,7 +58,7 @@ export function planModel(room, spec, story = null) {
     if (!usedF.has(furnOf(p.spot))) { usedF.add(furnOf(p.spot)); continue; }
     // a second piece on the same furniture: out on some other piece of furniture instead (an empty place first, else one
     // with clutter on it — the clutter goes)
-    const ok = s => s.kind === 'on' && !s.part && !s.reserved && !s.wallFace && !spec.avoid?.(s) && !usedF.has(furnOf(s)) && fits(p.type, s) && taken.get(s)?.role !== 'target';
+    const ok = s => s.kind === 'on' && !s.part && !s.reserved && !s.wallFace && !spec.avoid?.(s) && !usedF.has(furnOf(s)) && fits(p.type, s) && (!taken.get(s) || taken.get(s).role === 'decoy');   // (only an empty place or a decoy's: a password note moved off for a piece left 19판's code lock with no way to open it — QA 10/20)
     const c = r.shuffle(room.spots.filter(ok)).sort((a, b) => (taken.has(a) ? 1 : 0) - (taken.has(b) ? 1 : 0))[0];
     if (!c) { usedF.add(furnOf(p.spot)); continue; }
     const d = taken.get(c); if (d) plan.placements.splice(plan.placements.indexOf(d), 1);
@@ -112,7 +112,7 @@ export function kitRunner(S) {
   const G = S.G, kit = S.kit.kit, K = KITS[kit], key = ensurePics(G, kit);
   // the card's look: the kit's own — or ?kitskin= to compare (10/20: 13판's moving things got the robot's plastic runner, user:
   // "이삿짐 풀기 UI는 왜 또 프라모델로 한 거야? 의미가 있어?" — 'list' a kraft checklist, 'labels' little labelled boxes)
-  const skin = /[?&]kitskin=(runner|list|labels)(&|$)/.exec(location.search)?.[1] || K.skin || 'runner', framed = !!K.frame && skin === 'runner';
+  const skin = /[?&]kitskin=(runner|list|labels|tray)(&|$)/.exec(location.search)?.[1] || K.skin || 'runner', framed = !!K.frame && skin === 'runner';
   const cells = {};
   // one rule for every card of things to find (level session 10/20; user: "8개인데 어떤 판은 1×8, 어떤 판은 2×4"): 8 or more cells
   // make two rows, the top one the larger half — a skin with its own grid keeps it
@@ -136,7 +136,7 @@ export function kitRunner(S) {
   });
   // (a frame's windows aren't square: each picture is trimmed to its piece, so a thin arm fills its thin window; a list's or a
   // label's small picture too, so the thing is as big as it can be)
-  if (framed || skin === 'list' || skin === 'labels') for (const p of K.order) trimPic(G, key(p)).then(src => { if (src) cells[p].querySelectorAll('img').forEach(im => { im.src = src; }); });
+  if (framed || skin === 'list' || skin === 'labels' || skin === 'tray') for (const p of K.order) trimPic(G, key(p)).then(src => { if (src) cells[p].querySelectorAll('img').forEach(im => { im.src = src; }); });
   const byType = Object.fromEntries(K.order.map(p => [kitItem(kit, p), p]));
   const tag = h('div', { class: 'kitrun-tag ol', style: `background:${K.color}` }, K.name);
   for (const it of S.targets) if (byType[it.type]) { it.kitPart = byType[it.type]; it.slot = cells[it.kitPart]; } else it.slot = tag;   // (anything else flies to the tag)
@@ -219,10 +219,20 @@ function lidPic(G, K) {
   if (!G.thumbStore[key]) Object.assign(G.thumbStore, renderThumbs([{ key, build: LID_MODELS[K.id], dir: [.3, .22, 1] }], 200));
   return G.thumbStore[key];
 }
+// the comic panel's colours, each kit its own (user 10/20: "바꿔가면서 써… 돌려쓰지말고"): middle → edge, the light and dark
+// speed lines, the dots, the bolts. (The robot keeps the green the user first chose.)
+const BURST = {
+  robot: null,
+  cattower: ['#fff3c9', '#ffd27a', '#ffae4d', '#f08a3a', '#d96d2a', 'rgba(255,248,205,.5)', 'rgba(150,60,10,.2)', 'rgba(150,60,10,.26)', 'rgba(150,60,10,.36)'],
+  firetruck: ['#ecffff', '#a3e8ff', '#56c6f7', '#2b97e2', '#1d74c6', 'rgba(235,255,255,.5)', 'rgba(10,55,130,.2)', 'rgba(10,55,130,.26)', 'rgba(10,55,130,.36)'],
+  moving: ['#fcf0ff', '#e2c8ff', '#bf96ff', '#9767ea', '#7448cb', 'rgba(255,240,255,.5)', 'rgba(60,20,120,.2)', 'rgba(60,20,120,.26)', 'rgba(60,20,120,.36)'],
+  parfait: ['#fff1f7', '#ffc8dd', '#ff99bf', '#f36c9f', '#d54b83', 'rgba(255,240,248,.5)', 'rgba(130,20,70,.2)', 'rgba(130,20,70,.26)', 'rgba(130,20,70,.36)'],
+};
+const burstVars = id => (BURST[id] || []).map((c, i) => `--${['k1', 'k2', 'k3', 'k4', 'k5', 'kl', 'kd', 'kdot', 'kbolt'][i]}:${c}`).join(';');
 // the box seen from above its front-right corner; the lid sits on the body's top (its transform moves it from there)
 const KB3_VIEW = 'rotateX(-28deg) rotateY(-34deg)', KB3_LID = 'translate3d(0,0,0)', KB3_PEEK = 'translate3d(0,-46px,0) rotateX(10deg)';
 // the comic panel's zigzag bolts round the edges, pointing in (like the user's green zoom-burst reference)
-const BOLTS_SVG = '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="rgba(24,110,32,.42)"><path d="M0 14 L30 30 L22 31 L44 44 L19 37 L26 35 L0 24 Z"/><path d="M100 10 L72 28 L80 29 L56 43 L82 35 L75 33 L100 20 Z"/><path d="M0 70 L28 62 L24 67 L44 56 L20 74 L24 70 L0 80 Z"/><path d="M100 66 L74 60 L78 65 L56 56 L80 72 L76 69 L100 77 Z"/><path d="M38 100 L44 78 L40 80 L49 62 L46 82 L50 80 L46 100 Z"/><path d="M58 0 L54 20 L58 18 L50 36 L52 16 L48 18 L50 0 Z"/></g></svg>';
+const BOLTS_SVG = '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="currentColor"><path d="M0 14 L30 30 L22 31 L44 44 L19 37 L26 35 L0 24 Z"/><path d="M100 10 L72 28 L80 29 L56 43 L82 35 L75 33 L100 20 Z"/><path d="M0 70 L28 62 L24 67 L44 56 L20 74 L24 70 L0 80 Z"/><path d="M100 66 L74 60 L78 65 L56 56 L80 72 L76 69 L100 77 Z"/><path d="M38 100 L44 78 L40 80 L49 62 L46 82 L50 80 L46 100 Z"/><path d="M58 0 L54 20 L58 18 L50 36 L52 16 L48 18 L50 0 Z"/></g></svg>';
 // ── the box (before the hunt), every kit stage. 10/20, the user on the phone (8판, "모든 조립판에 같게"): "상자 등장 → '콕
 // 하세요' 같은 확실한 행동 유도 → 콕 하면 부품이 팍 흩어지는 애니메이션 → 집 장면". A comic panel covers the room; the box
 // drops in — 쿵 — (the first time: the friend's cut-in line, a rattle, two little eyes in the gap); then it waits, beating,
@@ -245,7 +255,7 @@ export async function kitIntro(S) {
   // the box, a real box: a body with every side (and its inside, dark, for when it's open) and a lid that is a shallow box
   // itself — the kit's picture on its top (GPT's box art; or the finished thing; or plain kraft and tape for the moving box),
   // the kit's name on its rim
-  const art = K.boxArt || (LID_MODELS[K.id] ? lidPic(G, K) : null) || (K.lid ? null : G.thumbStore[S.kitPic('box')]);
+  const art = K.boxArt || (LID_MODELS[K.id] ? lidPic(G, K) : null) || (K.type === 'model' ? G.thumbStore[S.kitPic('box')] : null);   // (a model kit before its GPT box art: the finished model)
   const F = (c, ...k) => h('div', { class: 'kb3-face kb3-' + c }, ...k);
   const DROP0 = 'translateY(-80vh) rotate(-6deg)';
   const box = h('div', { class: 'kb3 big' + (K.lid ? ' lid-' + K.lid : ''), style: `--box:${K.color};transform:${DROP0}` },
@@ -261,7 +271,7 @@ export async function kitIntro(S) {
   const who = S.kit.who || S.th?.friend || 'bear', face = G.thumbs['face_' + who];
   const cut = !quick && S.kit.open ? h('div', { class: 'kitcut', style: 'transform:translateX(-115%)' }, h('div', { class: 'kitcut-face' }, h('img', { src: face || '', alt: '' })), h('div', { class: 'kitcut-say' }, S.kit.open)) : null;
   // (the panel every time, the short one too — user 10/19: "뒤에 배경 완전히 가려야 하는데 지금 노란색만 살짝 보임")
-  const lay = h('div', { class: 'kitintro comic', style: 'opacity:0' },
+  const lay = h('div', { class: 'kitintro comic', style: 'opacity:0;' + burstVars(K.id) },
     h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box, ...(cut ? [cut] : []));
   // (over the whole screen — the HUD, not its middle column, which stops at 560 px: on a wide screen or a PC window the room
   // showed either side, user 10/20 "기종에 따라서 배경이 이럴 수도 있겠어")
@@ -432,11 +442,15 @@ function buildSpot(S) {
     for (const t of tiles) {
       const y = t.y || 0, at = (k, h) => new THREE.Vector3(t.x + side.x * k, y + h, t.z + side.z * k);
       if (![[0, .08], [0, .45], [0, .88], [.2, .4], [-.2, .4]].every(([k, h]) => seen(at(k, h)))) continue;
-      const room = k => { const q = at(k * SIDE, 0); return (!t.R?.clearAt || t.R.clearAt(q.x, q.z, .28)) && seen(at(k * SIDE, .35)); };
+      const inRoom = (x, z) => !t.R?.group || (Math.abs(x - t.R.group.position.x) < t.R.w / 2 - .15 && Math.abs(z - t.R.group.position.z) < t.R.d / 2 - .15);   // (clearAt says yes past the room's edge)
+      const room = k => { const q = at(k * SIDE, 0); return inRoom(q.x, q.z) && (!t.R?.clearAt || t.R.clearAt(q.x, q.z, .28)) && seen(at(k * SIDE, .35)); };
       const c = clutter(new THREE.Vector3(t.x, y + .4, t.z), side, up, view);
       const front = !t.R?.clearAt || t.R.clearAt(t.x + toCam.x * .6, t.z + toCam.z * .6, .34);
+      // (room before it on the camera's side: on a small map's front edge the room's low front wall cut the friends' feet and
+      // the group sat at the screen's bottom — 11판 냥냥이 부엌, QA 10/20)
+      const margin = inRoom(t.x + toCam.x * 1.1, t.z + toCam.z * 1.1);
       const score = (room(1) ? 2 : 0) + (room(-1) ? 2 : 0) + (t.R?.clearAt?.(t.x, t.z, .7) ? 1 : 0) - c * 1.1 - (front ? 0 : 6)
-        + .25 * ((t.x - rc.x) * toCam.x + (t.z - rc.z) * toCam.z) - .15 * Math.hypot(t.x - f.x, t.z - f.z) - di * .6;
+        + .25 * ((t.x - rc.x) * toCam.x + (t.z - rc.z) * toCam.z) - .15 * Math.hypot(t.x - f.x, t.z - f.z) - di * .6 - (margin ? 0 : 16);   // (heavier than clutter: what is in front steps aside anyway, the room's edge does not)
       if (!best || score > best.score) best = { t, yaw, score, clutter: c };
     }
   });
@@ -459,10 +473,17 @@ async function poofTo(S, ch, to, yaw) {
   await tw.run(.26, k => ch.root.scale.setScalar(Math.max(.01, s0 * k)), ease.outBack);
   ch.root.scale.setScalar(s0);
 }
-async function gather(S, P, R, yaw) {
+async function gather(S, P, R, yaw, dF = SIDE, dH = SIDE) {
   const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), toCam = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));   // screen-right, towards the camera
-  const clear = q => !R?.clearAt || R.clearAt(q.x, q.z, .28);
-  const near = k => [SIDE, SIDE + .15, SIDE - .12].map(d => P.clone().addScaledVector(side, k * d).addScaledVector(toCam, -.1)).find(clear);
+  const inRoom = q => !R?.group || (Math.abs(q.x - R.group.position.x) < R.w / 2 - .2 && Math.abs(q.z - R.group.position.z) < R.d / 2 - .2);
+  const clear = q => inRoom(q) && (!R?.clearAt || R.clearAt(q.x, q.z, .28));
+  // beside the model on its side; else a step back on that side; else in the room at least (never past its edge: a friend
+  // stood half through 11판's wall — QA 10/20)
+  const near = (k, d0 = SIDE) => {
+    const qs = [d0, d0 + .1, d0 + .2].map(d => P.clone().addScaledVector(side, k * d).addScaledVector(toCam, -.1));
+    const back = [.35, .55].map(b => P.clone().addScaledVector(side, k * d0 * .6).addScaledVector(toCam, -b));
+    return qs.find(clear) || back.find(clear) || qs.concat(back).find(inRoom) || P.clone().addScaledVector(toCam, -.45);
+  };
   // in the way: close to the spot, or anywhere between it and the camera (an orthographic view)
   const inWay = q => { const dx = q.x - P.x, dz = q.z - P.z, along = dx * toCam.x + dz * toCam.z, lat = dx * side.x + dz * side.z; return Math.hypot(dx, dz) < 1.1 || (along > -.25 && Math.abs(lat) < .6); };
   const taken = [];
@@ -470,15 +491,15 @@ async function gather(S, P, R, yaw) {
     .filter(q => !inWay(q) && Math.hypot(q.x - P.x, q.z - P.z) > 1.2 && !taken.some(o => o.distanceTo(q) < .7))
     .sort((u, v) => u.distanceTo(from) - v.distanceTo(from))[0] || null;
   const jobs = [];
-  const fTo = near(1) || near(-1); if (fTo) { taken.push(fTo); jobs.push(poofTo(S, S.friend, fTo, yaw)); }
+  const fTo = near(1, dF); taken.push(fTo); jobs.push(poofTo(S, S.friend, fTo, yaw));
   // 몽글이 beside the spot on the other side, the locals off to a free tile — whoever would stand in the shot. (Wait for a
   // walk under way to end first: 몽글이 walks towards the middle of the view, and the last find may have set it off right
   // into the spot; after the clear nobody starts a new one.)
   const hero = S.hero;
   for (let i = 0; i < 20 && hero?.busy; i++) await S.tw.wait(.1);
-  if (hero?.ch && inWay(hero.ch.root.position)) {
-    const to = [near(-1), near(1)].find(q => q && !taken.some(o => o.distanceTo(q) < .4)) || free(hero.ch.root.position);
-    if (to) { taken.push(to); hero.t = hero.nearest(to.x, to.z) || hero.t; jobs.push(poofTo(S, hero.ch, to, yaw)); }
+  if (hero?.ch) {   // (always, to the other side: the three of them in the picture together — user 10/20, 8판)
+    const to = near(-1, dH);
+    taken.push(to); hero.t = hero.nearest(to.x, to.z) || hero.t; jobs.push(poofTo(S, hero.ch, to, yaw));
   }
   for (const n of S.npcs || []) {
     if (!n.ch?.root || n === S.villain || !inWay(n.ch.root.position)) continue;
@@ -505,7 +526,26 @@ function buildView(S, P, hW, wW, midY, pitch) {
   const top = .15, bot = card ? Math.min(.8, Math.max(.5, card.offsetTop / H)) : .72, Y = (top + bot) / 2;
   const F = Math.min(.4, (bot - top) * .66, .84 * hW * cp * wide / Math.max(.01, wW));
   const zoom = Math.max(1.2, Math.min(16, vh * F / (hW * cp))), atT = .5 + (cy - .5) * zoom;   // (8 was too low: a room drawn small left the robot a fifth of the screen)
-  return { target: new THREE.Vector3(P.x, midY - (atT - Y) * (vh / zoom) / cp, P.z), zoom };
+  return { target: new THREE.Vector3(P.x, midY - (atT - Y) * (vh / zoom) / cp, P.z), zoom, Y };
+}
+// the view's target nudged so the given point lands exactly where it should on the screen (the middle across, Y down):
+// the camera is set there for a moment, the point measured, the target moved by the measured slope, twice; then the view
+// is put back. (The worked-out target was right in big rooms; in 11판's small kitchen the group sat at the screen's
+// bottom — QA 10/20)
+function aimView(S, view, yaw, pitch, at) {
+  const W = S.G.world, save = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom, target: W.target.clone() };
+  const up = new THREE.Vector3(-Math.sin(pitch) * Math.sin(yaw), Math.cos(pitch), -Math.sin(pitch) * Math.cos(yaw)), side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const put = t => { W.yaw = yaw; W.pitch = pitch; W.zoom = view.zoom; W.target.copy(t); W.updateCam(); return W.toScreen(at); };
+  const want = { x: innerWidth / 2, y: view.Y * innerHeight }, t = view.target.clone();
+  for (let i = 0; i < 2; i++) {
+    const s0 = put(t), sy = put(t.clone().addScaledVector(up, .05)), sx = put(t.clone().addScaledVector(side, .05));
+    const jy = (sy.y - s0.y) / .05, jx = (sx.x - s0.x) / .05;
+    if (Math.abs(jy) > 1e-3) t.addScaledVector(up, -(s0.y - want.y) / jy);
+    if (Math.abs(jx) > 1e-3) t.addScaledVector(side, -(s0.x - want.x) / jx);
+  }
+  W.yaw = save.yaw; W.pitch = save.pitch; W.zoom = save.zoom; W.target.copy(save.target); W.updateCam();
+  view.target.copy(t);
+  return view;
 }
 // 파르페's angle for the build: it stands where it stands, so the angle is what's picked — of the room's views round it, the
 // nearest with nothing in front of the glass and the glass seen whole (QA 10/20: from the hunt's last angle a monstera stood
@@ -575,7 +615,7 @@ function clearShot(S, P, hW, wW, midY, yaw, pitch, own) {
   const offScreen = q => q.r < ox || q.l > ox + sw || q.b < 0 || q.t > sh;
   const half = q => !offScreen(q) && (q.l < ox + 4 || q.r > ox + sw - 4 || q.t < 4);
   const taken = [];
-  for (const ch of [S.friend, S.hero?.ch, ...(S.npcs || []).map(n => n.ch)]) {
+  for (const ch of (S.npcs || []).filter(n => n !== S.villain).map(n => n.ch)) {   // (the friend and 몽글이 stand in it on purpose)
     if (!ch?.root?.visible) continue;
     const r0 = rectOf(ch.root);
     if (!half(r0)) continue;
@@ -590,6 +630,7 @@ function clearShot(S, P, hW, wW, midY, yaw, pitch, own) {
 export async function kitBuild(S) {
   const G = S.G, W = G.world, tw = S.tw, K = KITS[S.kit.kit], B = K.build || {}, f = S.friend, card = S.tray, cells = S.kitCells;
   const stack = K.type === 'stack';   // (파르페: no model to put up — each topping goes onto its layer of the glass)
+  const RSk = RS * (K.scale || 1);   // (a kit's own size: the fire truck is found outdoors and shown bigger)
   const st = S.kitState = { phase: 'build', placed: 0, total: K.order.length, drops: 0, taps: 0 };
   W.camLock = true;
   const off = [], flying = [];
@@ -614,12 +655,22 @@ export async function kitBuild(S) {
     const gs = S.room.group.getWorldScale(new THREE.Vector3()).y;
     let hW, wW, midY;
     if (stack) { const bb = new THREE.Box3().setFromObject(PF.g), sz = bb.getSize(new THREE.Vector3()); hW = sz.y; wW = Math.max(sz.x, sz.z); midY = (bb.min.y + bb.max.y) / 2; }
-    else { const bb = K._bb ??= new THREE.Box3().setFromObject(buildKitModel(K.id)), sz = bb.getSize(new THREE.Vector3()); hW = sz.y * RS * gs; wW = Math.max(sz.x, sz.z) * RS * gs; midY = P.y + (bb.min.y + sz.y / 2) * RS * gs; }
-    const view = buildView(S, P, hW, wW, midY, pitch);
-    await Promise.all([W.flyTo(tw, { target: view.target, yaw, pitch, zoom: view.zoom, dur: .7, e: ease.inOutCubic }), stack ? null : gather(S, P, tile?.R, yaw)]);
+    else { const bb = K._bb ??= new THREE.Box3().setFromObject(buildKitModel(K.id)), sz = bb.getSize(new THREE.Vector3()), RS = RSk; hW = sz.y * RS * gs; wW = Math.max(sz.x, sz.z) * RS * gs; midY = P.y + (bb.min.y + sz.y / 2) * RS * gs; }
+    // …with the friend and 몽글이 close either side of it: the three of them in the picture (10/20, user: "스테이지 8에서도 그
+    // 구도를 주인공이랑 캐릭 다 좀 모이게 해서 ㅋㅋ 처음엔 그리 나왔는데 지금은 로봇밖에 안 나와" — since the build view was
+    // made model-only and big, they stood off the screen's edges)
+    const dims = ch => { if (!ch?.root) return { r: 0, h: 0 }; const z = new THREE.Box3().setFromObject(ch.root).getSize(new THREE.Vector3()); return { r: Math.min(Math.max(z.x, z.z) / 2, z.y * .45), h: z.y }; };
+    const fd = dims(f), hd = dims(S.hero?.ch), dF = wW / 2 + fd.r + .04, dH = wW / 2 + hd.r + .04;
+    const right = dF + fd.r, left = S.hero?.ch ? dH + hd.r : wW / 2;
+    const sideV = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), Pc = P.clone().addScaledVector(sideV, (right - left) / 2);
+    const top = Math.max(midY + hW / 2, P.y + fd.h, P.y + hd.h), bottom = Math.min(midY - hW / 2, P.y);
+    const gW = right + left, gH = top - bottom, gMid = (top + bottom) / 2;
+    const view = aimView(S, buildView(S, Pc, gH, gW, gMid, pitch), yaw, pitch, new THREE.Vector3(Pc.x, gMid, Pc.z));
+    S.kitView = { zoom: +view.zoom.toFixed(2), gH: +gH.toFixed(2), gW: +gW.toFixed(2), hW: +hW.toFixed(2), wW: +wW.toFixed(2), f: [+fd.r.toFixed(2), +fd.h.toFixed(2)], m: [+hd.r.toFixed(2), +hd.h.toFixed(2)] };   // (QA)
+    await Promise.all([W.flyTo(tw, { target: view.target, yaw, pitch, zoom: view.zoom, dur: .7, e: ease.inOutCubic }), gather(S, P, tile?.R, yaw, dF, dH)]);
     if (S.dead) return;
-    st.aside = clearShot(S, P, hW, wW, midY, yaw, pitch, stack ? PF.g : null);   // (QA: how many stepped aside)
-    f.faceTo?.(P.x, P.z); S.hero?.ch?.faceTo?.(P.x, P.z);
+    st.aside = clearShot(S, Pc, gH, gW, gMid, yaw, pitch, stack ? PF.g : null);   // (QA: how many stepped aside)
+    { const q = P.clone().addScaledVector(new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), 1.4); f.faceTo?.(q.x, q.z); S.hero?.ch?.faceTo?.(q.x, q.z); }   // (turned to the model's front, half to us: faces, not backs)
     const face = Math.atan2(W.cam.position.x - P.x, W.cam.position.z - P.z), local = v => S.room.group.worldToLocal(v.clone());
     let R = null, glow = null;
     const pcs = {};
@@ -628,7 +679,7 @@ export async function kitBuild(S) {
     // a little green work mat under the robot
     const mat = buildMat(.82, .62); mat.position.copy(local(P)); mat.rotation.y = face; S.room.group.add(mat);
     // the model: a group at the spot, facing the camera; one pivot per piece, at the piece's joint
-    R = new THREE.Group(); R.position.copy(local(P)); R.position.y += .013; R.rotation.y = face; R.scale.setScalar(RS);
+    R = new THREE.Group(); R.position.copy(local(P)); R.position.y += .013; R.rotation.y = face; R.scale.setScalar(RSk);
     const sh = blobShadow(.2, .3); sh.scale.set(.42, .42, 1); R.add(sh);
     S.room.group.add(R); R.updateMatrixWorld(true);
     S.kitModel = R;
@@ -730,7 +781,7 @@ export async function kitBuild(S) {
       W.lastActive = now;   // full frame rate on phones while it plays
       squash = Math.max(0, squash - dt / .16);
       const sq = Math.sin(squash * Math.PI) * .08;
-      if (R) R.scale.set(RS * (1 + sq * .5), RS * (1 - sq), RS * (1 + sq * .5));
+      if (R) R.scale.set(RSk * (1 + sq * .5), RSk * (1 - sq), RSk * (1 + sq * .5));
       // nothing done for a while: a hand taps the next piece on the board, no words
       if (!hand && now - lastAct > 2600 && !S.botOn()) {
         const k = (ordered ? nextKey() : null) || K.order.find(q => !pcs[q].done && !pcs[q].busy);
@@ -758,6 +809,9 @@ export async function kitBuild(S) {
 const NIP_SVG = '<svg viewBox="0 0 64 64"><path d="M30 34 L12 58 Q8 62 13 62 L33 38 Z" fill="#ff8fb8" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/><path d="M34 34 L52 58 Q56 62 51 62 L31 38 Z" fill="#ff8fb8" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/><g class="jaw"><path d="M29 36 L26 8 Q32 4 33 12 L33 36 Z" fill="#cfd6e6" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/></g><g class="jaw2"><path d="M35 36 L38 8 Q32 4 31 12 L31 36 Z" fill="#e6ebf5" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/></g><circle cx="32" cy="36" r="4" fill="#ffe14d" stroke="#3a2453" stroke-width="3"/></svg>';
 // it comes alive: eyes on, a hop, a wave with the fist, a spin — then it stays and idles (while the result panel is up)
 async function comeAlive(S, R, pcs, glow, P) {
+  const id = S.kit.kit;
+  if (id === 'cattower') return catUp(S, R, pcs, P);
+  if (id === 'firetruck') return truckGo(S, R, pcs, glow);
   const G = S.G, W = G.world, tw = S.tw, f = S.friend;
   const fist = pcs.fist?.pv, claw = pcs.claw?.pv, head = pcs.head?.pv;
   const y0 = S.room.group.worldToLocal(P.clone()).y, r0 = R.rotation.y;
@@ -780,6 +834,50 @@ async function comeAlive(S, R, pcs, glow, P) {
   if (S.dead) return;
   R.position.y = y0; R.rotation.y = r0; G.audio.sfx('land');
   (async () => { let k = 0; while (!S.dead && R.parent) { await tw.run(1.1, e => { R.position.y = y0 + Math.abs(Math.sin(e * Math.PI)) * .03; if (head) head.rotation.z = Math.sin(e * Math.PI) * (k % 2 ? .1 : -.1); }, ease.linear); k++; } })();
+}
+
+// 캣타워 done: 냥냥이 jumps up into the top bed — a hop from where it stands, a squash as it lands, the pom-pom swinging —
+// and stays up there, purring (the win's shot takes it there with 몽글이 beside the tower)
+async function catUp(S, R, pcs, P) {
+  const G = S.G, W = G.world, tw = S.tw, f = S.friend;
+  G.audio.sfx('unlock'); haptic('big');
+  const s = W.toScreen(R.localToWorld(new THREE.Vector3(0, .35, .1)));
+  W.fx.burst(s.x, s.y, { n: 26, shape: 'heart', colors: ['#ff9fbe', '#ffe14d', '#ffffff', '#8fe3c8'], speed: 300 }); W.fx.ring(s.x, s.y, { r: 110, color: '#ffffff', width: 8 });
+  const ball = pcs.ball?.pv;
+  if (f?.root) {
+    f.setFace?.('wow'); f.bump?.(.4); await tw.wait(.35); if (S.dead) return;
+    const p0 = f.root.position.clone(), p1 = R.localToWorld(new THREE.Vector3(-.07, .475, 0)), hop = Math.max(.35, p1.y - p0.y + .3);
+    f.faceTo?.(p1.x, p1.z); G.audio.sfx('hop');
+    await tw.run(.6, k => { f.root.position.lerpVectors(p0, p1, k); f.root.position.y = p0.y + (p1.y - p0.y) * k + Math.sin(k * Math.PI) * hop; W.lastActive = performance.now(); }, ease.inOutQuad);
+    if (S.dead) return;
+    G.audio.sfx('land'); haptic('tick');
+    const q = W.toScreen(p1); W.fx.burst(q.x, q.y, { n: 10, shape: 'circle', colors: ['#ffffff', '#fff1d6'], speed: 140, up: 40, size: 8, life: .4 });
+    f.faceTo?.(W.cam.position.x, W.cam.position.z); f.pose = 'cheer'; f.setFace?.('happy'); f.bump?.(.5);
+  }
+  await tw.run(1.1, k => { R.scale.set(R.scale.x, R.scale.x * (1 - Math.sin(Math.min(1, k * 4) * Math.PI) * .05), R.scale.x); if (ball) ball.rotation.z = Math.sin(k * 14) * .5 * (1 - k); W.lastActive = performance.now(); }, ease.linear);
+  if (ball) ball.rotation.z = 0;
+}
+// 미니 소방차 done: the light on the roof flashes red-blue, a siren's whoop, it rolls forward a little (the wheels turn) and
+// back, and the cannon sprays an arc of water
+async function truckGo(S, R, pcs, glow) {
+  const G = S.G, W = G.world, tw = S.tw, f = S.friend;
+  G.audio.sfx('unlock'); haptic('big'); G.audio.sfx('special');
+  const lights = glow.g.children; glow.g.visible = true; W.idsDirty = true;
+  f.pose = 'cheer'; f.setFace?.('happy'); f.bump?.(.5);
+  const x0 = R.position.clone(), fwd = new THREE.Vector3(Math.cos(R.rotation.y), 0, -Math.sin(R.rotation.y)), wheels = [pcs.wheelsF?.pv, pcs.wheelsB?.pv].filter(Boolean);
+  const nozzle = () => W.toScreen(R.localToWorld(new THREE.Vector3(-.19, .29, -.065)));
+  let blink = 0, spray = 0;
+  await tw.run(2, k => {
+    const u = k * 2; W.lastActive = performance.now();
+    if ((blink += 1) % 6 === 0) lights.forEach((m, i) => { m.visible = (Math.floor(blink / 6) + i) % 2 === 0; });
+    const d = u < .7 ? ease.inOutQuad(u / .7) * .22 : u < 1.3 ? .22 : .22 * (1 - ease.inOutQuad((u - 1.3) / .7));
+    R.position.copy(x0).addScaledVector(fwd, d);
+    for (const w of wheels) w.rotation.z = -d / .062;
+    if (u > .6 && u < 1.6 && (spray += 1) % 3 === 0) { const s = nozzle(); W.fx.burst(s.x, s.y, { n: 4, shape: 'circle', colors: ['#7fd8ff', '#bff0ff', '#ffffff'], speed: 220, up: 160, gravity: 520, size: 7, life: .6 }); }
+  }, ease.linear);
+  if (S.dead) return;
+  R.position.copy(x0); lights.forEach(m => { m.visible = true; });
+  G.audio.sfx('land');
 }
 
 // ── the quick start for a kit without a box (이삿짐, 파르페): the card pops up empty and the things jump out of the moving
@@ -833,6 +931,13 @@ async function kitHome(S) {
   tw.run(.9, k => { const w = Math.sin(Math.min(1, k * 1.4) * Math.PI / 2); W.hemi.intensity = a0 * (1 + .18 * w); W.sun.intensity = s0 * (1 + .12 * w); }, ease.outQuad);   // (stays a little warmer: it's home now)
   for (let i = 0; i < 5; i++) { W.fx.burst(W.W * (.2 + .15 * i), W.H * (.32 + (i % 2) * .12), { n: 10, shape: 'heart', colors: ['#ff8fb8', '#ffb3cc', '#ffffff'], speed: 160, up: 120, size: 12, life: .9 }); await tw.wait(.07); }
   S.friend.pose = 'cheer'; S.friend.setFace?.('happy'); S.friend.bump?.(.5);
+  // 몽글이 beside the friend (the win's shot takes the two together — 10/20, the kit stages alike)
+  const hero = S.hero, fp = S.friend.root.position;
+  if (hero?.ch) {
+    const to = (S.freeTiles || []).map(t => new THREE.Vector3(t.x, t.y || 0, t.z)).filter(q => { const d = Math.hypot(q.x - fp.x, q.z - fp.z); return d > .45 && d < 1.3; })
+      .sort((u, v) => Math.abs(Math.hypot(u.x - fp.x, u.z - fp.z) - .7) - Math.abs(Math.hypot(v.x - fp.x, v.z - fp.z) - .7))[0];
+    if (to && Math.hypot(hero.ch.root.position.x - fp.x, hero.ch.root.position.z - fp.z) > 1.3) { hero.t = hero.nearest(to.x, to.z) || hero.t; await poofTo(S, hero.ch, to, W.yaw); }
+  }
   await tw.wait(.6);
 }
 // 파르페: in close on the glass, the cherry flies off the card onto the top — 딸깍, sparkles, its owner cheers

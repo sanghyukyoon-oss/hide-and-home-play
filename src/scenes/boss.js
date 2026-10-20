@@ -13,7 +13,7 @@ import { MapRooms } from '../map.js';
 import { layoutFor, stageSpec, THEMES, REGIONS, BOSS_MAZE } from '../stages.js';
 import { Char, CHAR_DEFS, defineChar } from '../gfx/chars.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
-import { h } from '../ui.js';
+import { h, ICON } from '../ui.js';
 import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { giftRow } from '../gift.js';
 import { chapterGift } from '../gifts.js';   // 선물은 아주 가끔 (10/20)
@@ -111,7 +111,7 @@ export class BossScene {
     this.time = this.T.time; this.phase = 'intro'; this.sState = 'count'; this.route = null; this.target = null; this.stun = 0; this.bumpCd = 0; this.blockT = 0;
     W.idsDirty = true; W.shadowDirty = true;
     this._was = { joy: W.joyOn, scheme: W.scheme }; W.joyOn = false;   // tap to walk, tap furniture to hide (no pad)
-    W.onPad = null; W.onTap = (x, y) => this.tapAt(x, y); W.onDragStart = null; W.onRotate = null;
+    W.onPad = null; W.onTap = (x, y) => this.tapAt(x, y); W.onDragStart = (x, y) => this.holdDrag(x, y); W.onRotate = null;   // (숨길 땐 들고 있는 보물만 드래그로 옮겨요 — 나머지는 카메라)
     this.lures = 0; this.fooled = 2 + Math.floor(Math.random() * 2);   // how many whistles it falls for (never said)
     this.buildHud();
     G.audio.music('play');
@@ -166,7 +166,7 @@ export class BossScene {
     const top = h('div', { class: 'topbar' });
     top.append(ui.ibtn('pause', 'purple', () => this.pause()));
     this.timerEl = h('div', { class: 'timer' }, h('div', { class: 'face' }, h('img', { src: G.thumbs.face_raccoon })),
-      h('div', { style: 'display:flex;flex-direction:column;flex:1;min-width:0;gap:3px' }, this.tlEl = h('div', { class: 'tl' }, '보물을 숨겨! 너굴이는 눈 감고 기다려'), h('div', { class: 'tbar' }, this.tbarI = h('i', { style: 'width:100%' }))),
+      h('div', { style: 'display:flex;flex-direction:column;flex:1;min-width:0;gap:3px' }, this.tlEl = h('div', { class: 'tl' }, '보물을 골라, 드래그해서 숨겨!'), h('div', { class: 'tbar' }, this.tbarI = h('i', { style: 'width:100%' }))),
       this.tnum = h('div', { class: 'num ol' }, String(this.T.time)));
     top.append(this.timerEl, h('div', { class: 'stagetag ol', html: `보스<b>${this.tier + 1}</b>` }));
     col.append(top);
@@ -175,17 +175,85 @@ export class BossScene {
     this.hideBtn = ui.btn('휘슬 삐익!', { color: 'pink', cls: 'big', onClick: () => this.whistle() });
     this.goBtn = ui.btn('바로 시작!', { color: 'green', cls: 'boss-go', onClick: () => { if (this.phase === 'count' && this.treasures.every(t => t.spot)) this._startAt = this.t; } });   // (셋 다 숨기면 2초 뒤 저절로 — 이 버튼은 바로)
     col.append(this.goBtn, h('div', { class: 'boss-left' }, this.hideBtn));
-    this.hand = new Hand(G, col, { bottom: 'calc(28px + var(--safeB))' });
+    this.cardsEl = h('div', { class: 'cards bosscards' }); col.append(h('div', { class: 'modebar bossbar' }, this.cardsEl));   // 숨길 보물 목록 (가구 놓기처럼, 10/20)
     this.vig = h('div', { class: 'boss-vig' }); document.getElementById('app').append(this.vig);
     this.drawSlots();
   }
   // the next treasure to hide: big in the middle, then into the hand; none left — the hand says start
+  // 숨기기 = 가구 놓기처럼 (10/20 user: "배치 가능한 목록을 먼저 … 하나씩 선택 … 가구처럼 이동 … 회전도"): the three treasures in a list;
+  // a tap holds one in the room, a drag takes it to a hiding place (it snaps, glowing), [여기 숨기기] puts it there
   nextHeld() {
-    if (!this.hand || this.dead || this.phase !== 'count') return;
-    const i = this.treasures.findIndex(t => !t.spot), n = this.treasures.length;
-    if (i < 0) { this.hand.done('셋 다 숨겼어! 곧 너굴이가 찾아'); return; }
-    const t = this.treasures[i];
-    this.hand.show(t.type, { name: t.name, label: `보물 ${i + 1}/${n}`, hint: '어디든 터치해서 숨겨!', count: `${i + 1}/${n}` });
+    const G = this.G; if (!this.cardsEl || this.dead) return;
+    this.cardsEl.innerHTML = '';
+    if (this.phase !== 'count') { this.cardsEl.parentElement.style.display = 'none'; return; }
+    for (const t of this.treasures) {
+      const c = h('div', { class: 'card' + (t.spot ? ' done' : '') + (this.held?.t === t ? ' sel' : '') }, t.spot ? h('div', { class: 'tag' }, '숨김') : null, h('img', { src: G.thumbs['item_' + t.type] }), h('div', {}, t.name));
+      c.addEventListener('click', () => { if (t.spot) { G.ui.toast(`${t.name}은(는) 벌써 숨겼어`, ''); return; } G.audio.sfx('click'); this.holdStart(t); });
+      this.cardsEl.append(c);
+    }
+    this.tlEl.textContent = this.treasures.every(t => t.spot) ? '셋 다 숨겼어! 곧 너굴이가 찾아' : '보물을 골라, 드래그해서 숨겨!';
+  }
+  holdStart(t) {
+    const G = this.G, W = G.world;
+    this.holdEnd();
+    const g = buildItem(t.type); g.scale.setScalar(.85); W.root.add(g);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.24, .34, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthTest: false }));
+    ring.rotation.x = -Math.PI / 2; ring.renderOrder = 10; W.root.add(ring);
+    const ui = G.ui, tool = h('div', { class: 'ftool holdtool' },
+      ui.btn(null, { color: 'blue', icon: 'rotate', onClick: () => { const H = this.held; if (H) { H.ry += Math.PI / 4; H.g.rotation.y = H.ry; G.audio.sfx('click'); } } }),
+      ui.btn('여기 숨기기', { color: 'green', icon: ICON.check, onClick: () => this.holdConfirm() }),
+      ui.btn(null, { color: 'gray', icon: 'close', onClick: () => { this.holdEnd(); this.nextHeld(); } }));
+    const label = h('div', { class: 'holdlabel' }); ui.wui.append(tool, label);
+    tool.querySelectorAll('.btn').forEach(b => b.style.pointerEvents = 'auto');
+    this.held = { t, g, ring, tool, label, ry: Math.random() * Math.PI * 2, spot: null };
+    const p = W.screenToGround(innerWidth / 2, innerHeight * .5, 0) || this.hero.root.position.clone();
+    this.holdTo(null, p);
+    G.audio.sfx('pop', 4); this.nextHeld();
+  }
+  // a hiding place (snapped, green, its name) or just where the finger is on the floor
+  holdTo(spot, p) {
+    const H = this.held; if (!H) return;
+    const at = spot ? spot.c.clone().setY(Math.max(spot.c.y, (spot.t.y || 0) + .35)) : p;
+    H.g.position.copy(at); H.g.rotation.set(0, H.ry, 0);
+    H.ring.position.set(at.x, (spot ? (spot.t.y || 0) : (p.y || 0)) + .02, at.z);
+    H.ring.material.color.set(spot ? '#5be37a' : '#ffffff');
+    H.label.textContent = spot ? spot.name : '숨을 곳으로 드래그'; H.label.classList.toggle('snap', !!spot);
+    if (spot && H.spot !== spot) this.G.audio.sfx('tap', 12);
+    H.spot = spot; this.G.world.shadowDirty = true;
+  }
+  holdDrag(x, y) {
+    const H = this.held, W = this.G.world; if (!H || this.phase !== 'count') return null;
+    const p = W.toScreen(H.g.getWorldPosition(new THREE.Vector3())); if (Math.hypot(p.x - x, p.y - y) > 80) return null;
+    return {
+      move: (mx, my) => {
+        let best = null, bd = 80;
+        for (const s of this.spots) { if (s.tre) continue; const q = W.toScreen(s.c); const d = Math.hypot(q.x - mx, q.y - my); if (d < bd) { bd = d; best = s; } }
+        if (best) this.holdTo(best); else { const g = W.screenToGround(mx, my, H.g.position.y > .6 ? 0 : 0); if (g) this.holdTo(null, g); }
+      },
+      end: () => {}, cancel: () => {},
+    };
+  }
+  holdConfirm() {
+    const H = this.held, G = this.G; if (!H) return;
+    if (!H.spot) { G.ui.toast('숨을 곳(가구) 가까이로 드래그해 봐!', ''); G.audio.sfx('miss'); return; }
+    const { t, spot, ry } = H; this.holdEnd(true);
+    const fs = (spot.f.spots || []).filter(q => !q.bossTre)[0] || null;
+    const was = this.treasures.find(x => !x.spot); if (was !== t) { const i = this.treasures.indexOf(t), j = this.treasures.indexOf(was); [this.treasures[i], this.treasures[j]] = [this.treasures[j], this.treasures[i]]; }   // (hideTreasure takes the first not hidden)
+    this.hideTreasure(spot, false, fs);
+    if (t.g) t.g.rotation.y = ry;
+    this.drawSlots(); this.nextHeld();
+  }
+  holdEnd(quiet = false) {
+    const H = this.held; if (!H) return; this.held = null;
+    H.g.parent?.remove(H.g); H.ring.parent?.remove(H.ring); H.ring.geometry.dispose(); H.ring.material.dispose(); H.tool.remove(); H.label.remove();
+    if (!quiet) this.G.audio.sfx('pop', 1);
+  }
+  holdTick() {
+    const H = this.held; if (!H) return;
+    const W = this.G.world, b = new THREE.Box3().setFromObject(H.g), top = W.toScreen(new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + .15, (b.min.z + b.max.z) / 2));
+    const tw = H.tool.offsetWidth || 220; H.tool.style.left = Math.max(tw / 2 + 8, Math.min(innerWidth - tw / 2 - 8, top.x)) + 'px'; H.tool.style.top = Math.max(110, top.y) + 'px';
+    const r = W.toScreen(H.ring.position); H.label.style.left = r.x + 'px'; H.label.style.top = (r.y + 18) + 'px';
+    H.ring.scale.setScalar(1 + Math.sin((this.t || 0) * 6) * .12);
   }
   drawSlots() { this.treasures.forEach((t, i) => { const el = this.slots[i]; el.classList.toggle('hidden', !!t.spot && !t.lost); el.classList.toggle('lost', t.lost); el.classList.toggle('todo', !t.spot); el.classList.toggle('danger', !t.lost && !!t.spot && this.target === t.spot && this.phase === 'seek'); }); }
   say(ch, text, ms = 1200) {
@@ -236,8 +304,7 @@ export class BossScene {
     const spot = f && this.spots.find(s => s.f === f);
     // while it counts: the treasure goes straight into the very place you tapped — a drawer, behind the curtain, on the
     // shelf — the way you hide things at home (user, 10/18: "걸어다니면서 숨기지 않고 그냥 내가 원하는 곳에 배치")
-    if (this.phase === 'count' && this.hand?.busy) { this.hand.skip?.(); return; }   // (a tap during the big show: straight into the hand)
-    if (this.phase === 'count' && !(f && this.treasures.some(t => !t.spot))) return;   // (숨기는 동안 몽글이는 가만히: 바닥 콕은 아무 일 없음 — 10/20)
+    if (this.phase === 'count') return;   // (숨기기 = 가구 놓기처럼: 터치로는 숨기지 않아요 — 목록에서 골라 드래그, [여기 숨기기] — 10/20)
     if (f && this.phase === 'count' && this.treasures.some(t => !t.spot)) {
       const fs = (f.spots || []).filter(q => !q.bossTre).sort((a, b) => a.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point) - b.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point))[0] || null;
       if (spot && !spot.tre) { this.hand?.drop(x, y); this.hideTreasure(spot, false, fs); setTimeout(() => this.nextHeld(), 650); } else if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 터치', '');
@@ -313,7 +380,7 @@ export class BossScene {
   // 찾기 시작: 너굴이가 돌아서고, 조이스틱이 생겨 몽글이를 움직여요 (숨기는 동안엔 가만히 — 10/20)
   startSeek() {
     const G = this.G, W = G.world;
-    this.hideRest(); this.hand?.remove(); this.phase = 'seek'; this.sState = 'search';
+    this.holdEnd(true); this.hideRest(); this.phase = 'seek'; this.sState = 'search'; this.nextHeld();
     this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '조이스틱으로 움직이고, 휘슬로 엉뚱한 데로!'; this.seek.root.rotation.y += Math.PI;
     W.joyOn = true; W.onPad = (dir, v, dt) => this.padMove(dir, v, dt);
   }
@@ -435,6 +502,7 @@ export class BossScene {
     this.hideBtn.style.visibility = this.phase === 'seek' && !this.result ? '' : 'hidden';
     this.hideBtn.classList.toggle('disabled', this.whT > 0);
     this.goBtn.style.display = this.phase === 'count' && !this.result && this.treasures.every(t => t.spot) ? '' : 'none';
+    this.holdTick();
     for (const t of this.treasures) this.placePin(t);
     if (this.phase === 'intro' || this.result) return;
     if (this.phase === 'count') {

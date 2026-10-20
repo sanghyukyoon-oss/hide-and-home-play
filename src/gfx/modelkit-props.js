@@ -87,6 +87,79 @@ const ROBOT = {
   } },
 };
 
+// ── 11판 캣타워 (10/20, user: "이렇게 조립식 많이 들어가면 좋겠다" — 레벨 세션: 11판 캣타워·19판 미니 소방차): a flat-pack cat
+// tower, built bottom-up — a round base, a little house, two rope posts, a middle deck, the top bed, a pom-pom on a string.
+// Chunky and pastel; 냥냥이 jumps up into the top bed when it's done (modelkit.js comeAlive)
+const MINT = '#6fdcb4', CT_CREAM = '#fff4e2', WOOD = '#f2b866', ROPE = '#f1dcae', CT_ORANGE = '#ffad42', CT_BALL = '#ffc34a';
+const ropePost = (g, x, y0, y1, z = 0) => {
+  const h = y1 - y0; g.add(put(cyl(.034, .034, h, ROPE, null, 14), x, y0 + h / 2, z));
+  for (let y = y0 + .022; y < y1 - .008; y += .024) g.add(put(tor(.035, .005, '#d9bd84', null, Math.PI * 2, 6, 16), x, y, z, Math.PI / 2, 0, 0));   // the rope's turns
+  for (const y of [y0 + .012, y1 - .01]) g.add(put(cyl(.042, .042, .02, MINT, null, 16), x, y, z));   // the mint caps
+};
+// (as GPT's box art: two rope posts on a round wooden base, a cream house with a round door on the taller one, a cushioned
+// bed on the house's roof, a lower side seat on the other, a pom-pom hanging from the bed)
+const CATTOWER = {
+  base: { name: '캣타워 받침', color: WOOD, joint: [0, .02, 0], nub: [[.22, .02, 0], [1, 0, 0]], build(g) {
+    g.add(put(cyl(.24, .24, .022, MINT, null, 30), 0, .011, 0));
+    g.add(put(cyl(.232, .232, .03, WOOD, null, 30), 0, .036, 0));
+  } },
+  pole1: { name: '캣타워 기둥', color: ROPE, joint: [-.07, .14, 0], nub: [[-.07, .2, .04], [0, 0, 1]], build(g) { ropePost(g, -.07, .051, .25); } },
+  pole2: { name: '캣타워 작은 기둥', color: ROPE, joint: [.13, .11, 0], nub: [[.13, .15, .04], [0, 0, 1]], build(g) { ropePost(g, .13, .051, .19); } },
+  house: { name: '캣타워 집', color: CT_CREAM, joint: [-.07, .33, 0], nub: [[.03, .33, 0], [1, 0, 0]], build(g) {
+    g.add(put(rbox(.19, .016, .17, MINT, .006), -.07, .256, 0));                                // its mint floor
+    g.add(put(rbox(.18, .15, .16, CT_CREAM, .02), -.07, .34, 0));
+    g.add(put(tor(.048, .012, CT_ORANGE, null, Math.PI * 2, 8, 22), -.07, .335, .082));         // the round door's rim
+    g.add(put(cyl(.046, .046, .01, '#5a3d2a', null, 20), -.07, .335, .078, Math.PI / 2, 0, 0));   // the dark doorway
+  } },
+  deck: { name: '캣타워 옆 방석', color: MINT, joint: [.13, .21, 0], nub: [[.25, .21, 0], [1, 0, 0]], build(g) {
+    g.add(put(cyl(.11, .11, .03, MINT, null, 24), .13, .205, 0));
+    g.add(put(cyl(.098, .1, .022, CT_CREAM, null, 24), .13, .23, 0));
+  } },
+  top: { name: '캣타워 꼭대기', color: MINT, joint: [-.07, .44, 0], nub: [[.06, .44, 0], [1, 0, 0]], build(g) {
+    g.add(put(cyl(.13, .13, .032, MINT, null, 26), -.07, .432, 0));
+    g.add(put(cyl(.115, .118, .026, CT_CREAM, null, 26), -.07, .46, 0));                          // the cushion
+  } },
+  ball: { name: '캣타워 방울 공', color: CT_BALL, joint: [-.19, .42, 0], nub: [[-.19, .28, .04], [0, 0, 1]], build(g) {
+    g.add(put(cyl(.005, .005, .08, '#5a3d2a', null, 6), -.19, .38, 0));                          // the string, from the bed's edge
+    g.add(put(sph(.034, CT_BALL, null, 14, 12), -.19, .316, 0));
+  } },
+};
+// ── 19판 미니 소방차: a chunky toy fire truck, side on (its length along x), built from the chassis up — the back wheels,
+// the front wheels, the cab, the ladder, the water cannon, the light on the roof. Big lumps: it's found outdoors, small
+// on the screen (레벨 세션 10/20)
+const FRED = '#ff4a4a', FWHITE = '#fffaf2', TYRE = '#3a3348', HUB = '#ffd23c', GLASS = '#9fe8ff';
+const wheelPair = (g, x) => { for (const z of [-.105, .105]) {
+  g.add(put(cyl(.062, .062, .045, TYRE, null, 20), x, .062, z, Math.PI / 2, 0, 0));
+  g.add(put(cyl(.03, .03, .05, HUB, null, 14), x, .062, z, Math.PI / 2, 0, 0)); } };
+const FIRETRUCK = {
+  chassis: { name: '소방차 몸통', color: FRED, joint: [0, .12, 0], nub: [[0, .12, .11], [0, 0, 1]], build(g) {
+    g.add(put(rbox(.44, .11, .2, FRED, .03), -.02, .125, 0));
+    g.add(put(rbox(.44, .022, .202, FWHITE, .008), -.02, .135, 0));                          // the white stripe
+    g.add(put(rbox(.1, .025, .17, TYRE, .01), -.2, .07, 0));                                  // the back bumper
+  } },
+  wheelsB: { name: '소방차 뒷바퀴', color: TYRE, joint: [-.12, .062, 0], nub: [[-.12, .14, .105], [0, 1, 0]], build(g) { wheelPair(g, -.12); } },
+  wheelsF: { name: '소방차 앞바퀴', color: TYRE, joint: [.13, .062, 0], nub: [[.13, .14, .105], [0, 1, 0]], build(g) { wheelPair(g, .13); } },
+  cab: { name: '소방차 운전석', color: FRED, joint: [.14, .23, 0], nub: [[.14, .31, 0], [0, 1, 0]], build(g) {
+    g.add(put(rbox(.15, .13, .19, FRED, .035), .14, .245, 0));
+    g.add(put(rbox(.016, .07, .15, GLASS, .01, GLOSS), .215, .26, 0));                         // the windscreen
+    for (const z of [-.096, .096]) g.add(put(rbox(.07, .055, .008, GLASS, .008, GLOSS), .15, .265, z));   // side windows
+  } },
+  ladder: { name: '소방차 사다리', color: FWHITE, joint: [-.06, .21, 0], nub: [[-.06, .2, .07], [0, 0, 1]], build(g) {
+    const a = .12, len = .34;
+    for (const z of [-.05, .05]) g.add(put(rbox(len, .018, .018, FWHITE, .006), -.06, .215, z, 0, 0, a));
+    for (let i = 0; i < 7; i++) { const u = -len / 2 + .025 + i * (len - .05) / 6; g.add(put(rbox(.012, .012, .1, FWHITE, .004), -.06 + Math.cos(a) * u, .215 + Math.sin(a) * u, 0)); }
+    g.add(put(rbox(.04, .03, .12, '#c9c6d6', .008), -.2, .195, 0));                          // its foot
+  } },
+  cannon: { name: '소방차 물대포', color: '#c9c6d6', joint: [-.15, .21, 0], nub: [[-.15, .19, .06], [0, 0, 1]], build(g) {
+    g.add(put(cyl(.035, .04, .03, '#c9c6d6', null, 14), -.15, .195, -.065));
+    g.add(put(cyl(.016, .022, .1, YELLOW, null, 12), -.15, .245, -.065, 0, 0, .9));          // the nozzle, up and back
+  } },
+  light: { name: '소방차 경광등', color: '#4a8bff', joint: [.14, .32, 0], nub: [[.14, .345, .05], [0, 0, 1]], build(g) {
+    g.add(put(rbox(.09, .02, .1, '#d6d3e2', .006), .14, .318, 0));
+    g.add(put(rbox(.05, .028, .03, '#4a8bff', .008, GLOSS), .14, .34, -.034)); g.add(put(rbox(.05, .028, .026, YELLOW, .008, GLOSS), .14, .34, 0)); g.add(put(rbox(.05, .028, .03, RED, .008, GLOSS), .14, .34, .034));   // (blue · yellow · red, as the box art)
+  } },
+};
+
 // the kits (one for now). order = the runner's order (1, 2, 3…)
 export const KITS = {
   // order = the runner's numbers = the build order (user 10/19 picked 순서 맞추기, e.g. 몸통 → 다리 → 팔 → 머리)
@@ -122,6 +195,17 @@ KITS.parfait = { id: 'parfait', type: 'stack', skin: 'runner', intro: 'box', lid
   build: { ordered: true, glow: true },
   frame: { areas: ['pf_cereal pf_icecream pf_banana pf_banana pf_wafer', 'pf_cereal pf_strawberry pf_cream pf_cherry pf_wafer'], cols: [1.5, 1, 1, 1, .7] },
   order: ['pf_cereal', 'pf_icecream', 'pf_banana', 'pf_strawberry', 'pf_cream', 'pf_wafer', 'pf_cherry'], last: 'pf_cherry', runner: '#ffc9dc', color: '#ff6fa6' };
+// 11판 캣타워·19판 미니 소방차 (10/20): the robot's flow and board; each its own box, payoff and last piece. Their
+// furniture goes to the shop's 기념품, not my room (the user's gift rule — econ.js FREE_KITS is the robot only)
+KITS.cattower = { id: 'cattower', name: '캣타워', parts: CATTOWER, order: ['base', 'pole1', 'pole2', 'house', 'deck', 'top', 'ball'],
+  build: { ordered: true, glow: true, ghost: false }, type: 'model', skin: 'tray', intro: 'box', lid: 'kraft', scale: 1.5,   // (the card: the stage's ordinary find list — user 10/20 "캣타워가 프라모델 ui쓰는건 이상한데")
+  short: { base: '받침', pole1: '기둥', pole2: '작은 기둥', house: '집', deck: '옆 방석', top: '꼭대기', ball: '공' }, runner: '#c8f0e2', color: '#c99554',
+  boxArt: 'art/kits/cattower-box.jpg',   // (GPT's box art, 10/20 — 640 px JPEG)
+  frame: { areas: ['base base pole1 pole2 house', 'deck top pole1 pole2 ball'], cols: [1, 1, .6, .6, 1.3] }, locked: 'top', furn: 'cattower' };
+KITS.firetruck = { id: 'firetruck', name: '미니 소방차', parts: FIRETRUCK, order: ['chassis', 'wheelsB', 'wheelsF', 'cab', 'ladder', 'cannon', 'light'],
+  build: { ordered: true, glow: true, ghost: false }, type: 'model', skin: 'runner', intro: 'box', scale: 1.35, boxArt: 'art/kits/firetruck-box.jpg',
+  short: { chassis: '몸통', wheelsB: '뒷바퀴', wheelsF: '앞바퀴', cab: '운전석', ladder: '사다리', cannon: '물대포', light: '경광등' }, runner: '#ffd0d0', color: '#e83838',
+  frame: { areas: ['chassis chassis cab cannon light', 'wheelsB wheelsF ladder ladder ladder'], cols: [1, 1, 1, .8, .8] }, locked: 'light', furn: 'kitfiretruck' };
 export const kitItem = (kit, key) => KITS[kit].type === 'model' ? 'kit_' + kit + '_' + key : key;
 
 // a piece in its place on the model (model frame)
@@ -148,6 +232,8 @@ export function buildMat(w = 1.5, d = 1.25) {
 export function buildKitGlow(kit) {
   const g = grp();
   if (kit === 'robot') for (const sx of [-1, 1]) g.add(put(sph(.019, '#ffffff', { emissive: '#bff4ff', ei: 1.5 }, 10, 8), sx * .032, .5, .087, 0, 0, 0, [1, 1, .5]));
+  if (kit === 'firetruck') { g.add(put(sph(.03, '#ff6a6a', { emissive: '#ff3030', ei: 1.6 }, 10, 8), .14, .342, -.025)); g.add(put(sph(.03, '#7ab0ff', { emissive: '#3070ff', ei: 1.6 }, 10, 8), .14, .342, .025)); return { part: 'light', g }; }
+  if (kit !== 'robot') return { part: null, g };
   return { part: 'head', g };
 }
 // the loose piece as a thing to find: laid down if it lies better, the runner stub on, sitting on the floor — a size
@@ -176,6 +262,12 @@ for (const kit in KITS) if (KITS[kit].type === 'model') for (const key of KITS[k
 
 // ── the finished model on a little display stand: a piece of furniture for my home (the reward)
 const B = {};
+// 19판's mini fire truck on a little stand (the shop's 기념품; 11판's cat tower is the room's own cattower furniture)
+B.kitfiretruck = f => {
+  f.add(put(cyl(.28, .3, .05, '#fff3e0', null, 28), 0, .025, 0));
+  f.add(put(cyl(.29, .29, .014, FRED, null, 28), 0, .056, 0));
+  const m = buildKitModel('firetruck'); m.scale.setScalar(1.3); m.position.y = .063; f.add(m);
+};
 B.kitrobot = f => {
   f.add(put(cyl(.26, .29, .06, '#fff3e0', null, 28), 0, .03, 0));
   f.add(put(cyl(.27, .27, .014, BLUE, null, 28), 0, .066, 0));
@@ -185,6 +277,7 @@ B.kitrobot = f => {
 export const KIT_BUILDERS = B;
 export const KIT_INFO = { kitrobot: { w: 1, d: 1, name: '조립 로봇', price: 0 } };
 Object.assign(KIT_INFO, { kitmovebox: { w: 1, d: 1, name: '이삿짐 상자', price: 0 }, kitparfait: { w: 1, d: 1, name: '큰 파르페', price: 0 } });
+KIT_INFO.kitfiretruck = { w: 1, d: 1, name: '미니 소방차', price: 0 };   // (19판: the shop's 기념품 — econ.js FREE_KITS is the robot only)
 
 // ── 13판: a moving box (kraft card, a strip of tape, the flaps' seams) — a dozen sit about the room, one folds flat for
 // every thing found; and the one 몽글이 keeps ("…상자 하나는 남겨 둬. 숨기 좋겠다.") is the reward

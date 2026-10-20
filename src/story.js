@@ -169,7 +169,9 @@ export async function playCinematic(G, c) {
   if (!c || G.bot || G.skipTalk) return;
   const root = h('div', { class: 'cine' },
     h('div', { class: 'cine-bar top' }), h('div', { class: 'cine-bar bot' }),
-    h('div', { class: 'cine-card' }, h('div', { class: 'cine-ch' }, `CHAPTER ${c.chapter}`), h('div', { class: 'cine-title ol3' }, c.title)),
+    // (장 카드 A '이야기책 라벨' — user 10/20 "챕터 디자인 맘에 안 드네" → A: a cream label with an ink edge, the chapter on an
+    // orange tab, the region underneath; the cast hop in under it)
+    h('div', { class: 'cine-card' }, h('div', { class: 'cine-ch' }, tr(`${c.chapter}장`)), h('div', { class: 'cine-title' }, c.title), c.region ? h('div', { class: 'cine-sub' }, tr(c.region)) : ''),
     h('div', { class: 'cine-faces' }, ...(c.cast || []).map((k, i) => h('img', { src: G.thumbs['face_' + k], style: `animation-delay:${.35 + i * .2}s` }))));
   document.getElementById('app').append(root);
   G.audio.sfx('whoosh');

@@ -20,6 +20,9 @@ import { THEMES } from '../stages.js';
 import { Char } from '../gfx/chars.js';
 import { Tweens, clamp, ease } from '../util.js';
 import { disposeTree } from '../gfx/kit.js';
+import { EN } from '../i18n-en-dict.js';
+import { tr } from '../i18n.js';
+for (const [k, v] of [['골목에도 아직 친구들이 남았어!', 'More friends are still in the alley!'], ['너굴이가 빙글빙글 돌고 있어! 다들 보내면 돌아', "Rocky's spinning! He turns each time someone goes home"], ['골목길', 'Alley'], ['빙글 너굴이', 'Spinning Rocky']]) EN[k] ??= v;
 
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const DAY = { ambColor: '#fff2e4', amb: 1.5, sunColor: '#fff3e0', sun: 2.3 };
@@ -49,13 +52,21 @@ const LEVELS = [
   // 1:30 at most, the second one short (4×4, four friends, 30 s), one speech line between, no card): 43판 뒤 and 52판 뒤
   { name: '놀이터 + 덤불', set: [0, { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 2, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 터치!' }],
     lines: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '이제 진짜 다 찾았다~'] },
-  { name: '캠핑장 + 졸린 친구', set: [{ name: '캠핑장', place: 'camp', n: 5, count: 7, rocks: 3, hidden: 0, spin: 0, sleepy: 0, time: 60 },
-    { name: '텐트 앞 졸린 친구', place: 'camp', n: 4, count: 4, rocks: 1, hidden: 0, spin: 0, sleepy: 2, time: 30, hint: '자는 친구는 터치해서 깨워요', sleeper: 'sleepy' }],
+  // (10/20, user "다 같이 집으로 1번 나올 때 3판으로 하자. 첫 판만 맵 작게 하고 2·3판은 좀 넓게", "이거 재밌네" — the second
+  // time, 52판 뒤, three too: the campsite, the sleepy ones, then 빙글 너굴이 on a wide square, his first time in the campaign)
+  { name: '캠핑장 + 졸린 친구 + 빙글 너굴이', set: [{ name: '캠핑장', place: 'camp', n: 5, count: 7, rocks: 3, hidden: 0, spin: 0, sleepy: 0, time: 60 },
+    { name: '텐트 앞 졸린 친구', place: 'camp', n: 5, count: 6, rocks: 2, hidden: 0, spin: 0, sleepy: 2, time: 50, hint: '자는 친구는 터치해서 깨워요', sleeper: 'sleepy' },
+    { name: '빙글 너굴이', place: 'alley', n: 6, count: 8, rocks: 2, hidden: 0, spin: 1, sleepy: 0, time: 70, card: 'spin' }],
+    between: ['어? 텐트 앞에서 쿨쿨 소리가…', '너굴이가 빙글빙글 돌고 있어! 다들 보내면 돌아'],
     lines: ['어? 텐트 앞에서 쿨쿨 소리가…', '이제 진짜 다 갔다~'] },
   // the first time it comes up, early in the campaign (user, 10/19: "무궁화보다 이게 더 재밌어", "9판째 이후면 좋겠다"):
   // two small ones a first-timer finishes inside a minute; the arrows that can go glow until the first friend is sent
-  { name: '첫 놀이터 + 덤불', teach: true, set: [{ name: '놀이터', place: 'park', n: 4, count: 4, rocks: 0, hidden: 0, spin: 0, sleepy: 0, time: 40 },
-    { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 1, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 터치!' }],
+  // (10/20, user: "다 같이 집으로 1번 나올 때 3판으로 하자. 첫 판만 맵 작게 하고 2·3판은 좀 넓게" — the first small square to learn
+  // on, then a wider one with a friend in a bush, then the alley: more friends and things in the way; one new thing a round)
+  { name: '첫 놀이터 + 덤불 + 골목길', teach: true, set: [{ name: '놀이터', place: 'park', n: 4, count: 4, rocks: 0, hidden: 0, spin: 0, sleepy: 0, time: 40 },
+    { name: '덤불 속 친구', place: 'park', n: 5, count: 6, rocks: 1, hidden: 1, spin: 0, sleepy: 0, time: 50, hint: '흔들리는 덤불을 터치!' },
+    { name: '골목길', place: 'alley', n: 6, count: 8, rocks: 3, hidden: 1, spin: 0, sleepy: 0, time: 65 }],
+    between: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '골목에도 아직 친구들이 남았어!'],
     lines: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '이제 진짜 다 찾았다~'] },
 ];
 export { LEVELS };
@@ -265,7 +276,7 @@ export class Game {
   // the first round done: 몽글이 says the one line, the square swaps for the short second one
   async nextRound() {
     const L = this.L, W = L.world; this.phase = 'between';
-    const line = this.set.lines?.[0]; if (line) L.say(this.me, line, 1500);
+    const line = this.set.between?.[this.ri] ?? this.set.lines?.[0]; if (line) L.say(this.me, tr(line), 1500);
     this.me.pose = 'point'; L.audio.sfx('gasp');
     await this.tw.wait(1.3); if (this.dead) return;
     await L.ui.irisOut?.(); if (this.dead) return;
@@ -274,6 +285,7 @@ export class Game {
     this.ri++; this.buildRound(this.rounds[this.ri]);
     await L.ui.irisIn?.(); if (this.dead) return;
     this.phase = 'play'; this.glowT = 2;
+    if (this.lv.card) this.gotCard(this.lv.card);   // (a round's own new thing — 빙글 너굴이 in the 52판 set)
   }
   cellW(x, y) { return { x: -this.half + x + RING + .5, z: -this.half + y + RING + .5 }; }
   // the chalk arrow from a friend's feet to the edge of its slab (the tip shows past the friend from any side)

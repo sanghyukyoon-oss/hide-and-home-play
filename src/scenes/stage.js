@@ -339,7 +339,7 @@ export class StageScene {
     if (this.dead) return;
     if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
-    if (cine) { await playCinematic(G, REGION_INTRO[this.spec.chapter]); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
+    if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], region: REGIONS.find(r => r.id === this.spec.chapter)?.name }); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
@@ -2764,7 +2764,7 @@ export class StageScene {
     // (10/19) the camera comes in on the friend cheering — or on 먹물이 saying "…앗." first; it goes back out when 먹물이 bolts
     // (10/20, user on the phone, 11판: an open cupboard door hid 몽글이's face in the last talk — "엔딩 갈 때 문 닫아 주는 게 나을 듯")
     // every open door, drawer, lid and curtain shuts first — one quick 탁 — then the camera comes in
-    this.shutOpenParts().then(() => { if (this.dead) return; if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch, { portrait: true }); else closeUp(this, f, { portrait: true }); });   // (the same frontal shot every stage — user 10/19)
+    this.shutOpenParts().then(() => { if (this.dead) return; if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch, { portrait: true }); else closeUp(this, this.kit && this.hero?.ch ? [f, this.hero.ch] : f, { portrait: true }); });   // (a kit stage: the friend and 몽글이 together, the model between them — user 10/20)   // (the same frontal shot every stage — user 10/19)
     // 깜짝 한 방 (스토리 룸 10/19): the host's one small moment, inside this close-up (script.js scene.pop) — else the plain cheer
     const pop = !this.custom && !this.preview && !this.model && !G.bot ? sceneAt(this.idx)?.pop : null;
     const popDone = pop ? this.popMove(f, pop) : null;
