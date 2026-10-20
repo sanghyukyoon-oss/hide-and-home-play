@@ -335,7 +335,8 @@ export class Game {
     this._up = e => {
       const P = this.ptr; if (!P || (e.pointerId != null && e.pointerId !== P.id)) return;
       this.ptr = null;
-      if (!P.drag) { if (!this.result && this.phase === 'play') this.tapAt(P.x, P.y); return; }
+      // (외부 QA 10/20 TECH-CANCEL-GOHOME) a cancelled press (the OS, or the 잠깐! menu) is no tap: no send, no bonk, no time off
+      if (!P.drag) { if (e.type !== 'pointercancel' && !this.result && this.phase === 'play') this.tapAt(P.x, P.y); return; }
       // settle on the nearest of the four views the stages use (the square's sides then line up as they do there)
       const W = this.L.world, base = this.yaw0, step = Math.PI / 2;
       this.yawGoal = base + Math.round((W.yaw - base) / step) * step;
@@ -400,8 +401,29 @@ export class Game {
     setTimeout(() => !this.dead && L.say(q.c, BYE[Math.floor(Math.random() * BYE.length)], 900), 80);
     q.chip?.classList.add('home', 'pop'); setTimeout(() => q.chip?.classList.remove('pop'), 260);
     for (const p of this.live()) if (p.spin && p !== q) { this.turn(p); const w = this.cellW(p.x, p.y), s = W.toScreen(new THREE.Vector3(w.x, 1.1, w.z)); L.ui.floatText(s.x, s.y, '빙글~', ''); }
+    this.unstick();
     if (this.home >= 2 && !this._hint2) { this._hint2 = true; if (!this.turned) this.hint.textContent = '화면을 끌면 돌려 볼 수 있어요'; else this.hint.classList.add('gone'); setTimeout(() => !this.dead && this.hint.classList.add('gone'), 2600); }
     if (this.homeR >= this.pieces.length) setTimeout(() => { if (this.dead || this.result) return; if (this.ri < this.rounds.length - 1) this.nextRound(); else this.finish(true); }, 650);
+  }
+  // (외부 QA 10/20 LEVEL-20261020-02) the square is solvable at the start, but sending friends in some orders turned 빙글 너굴이
+  // into a dead end (놀이 모음 lv3 seed 5, lv5 seed 2: nobody's way clear, and he turns on a tap only when alone). After each
+  // turn: if no order gets everyone home from here, the spinners turn a step or two further — the fewest steps that open a way
+  unstick() {
+    const live = this.live(), sp = live.filter(p => p.spin);
+    if (!sp.length || solve(live, this.rocks, this.n)) return;
+    let best = null;
+    const tryK = (i, ks) => {
+      if (i === sp.length) {
+        const sum = ks.reduce((a, b) => a + b, 0); if (!sum || (best && sum >= best.sum)) return;
+        const test = live.map(p => { const j = sp.indexOf(p); return j < 0 ? p : { ...p, dir: (p.dir + ks[j]) % 4 }; });
+        if (solve(test, this.rocks, this.n)) best = { sum, ks: ks.slice() };
+        return;
+      }
+      for (let k = 0; k < 4; k++) { ks.push(k); tryK(i + 1, ks); ks.pop(); }
+    };
+    if (sp.length <= 3) tryK(0, []);
+    if (!best) return;
+    sp.forEach((p, j) => { for (let k = 0; k < best.ks[j]; k++) this.turn(p); });
   }
   // way blocked: it runs up to whoever (or whatever) is in front, bonks, and walks back; the sun sinks a little
   bonk(q) {

@@ -29,7 +29,7 @@ export function normalizeFollowup(save) {
   const p = canonical(save.followup), tail = canonical(save.followupFinish);
   if (!p || save.bossDone?.[p.key]) delete save.followup; else save.followup = p;
   if (!tail) delete save.followupFinish;
-  else save.followupFinish = { ...tail, won: !!save.followupFinish.won };
+  else save.followupFinish = { ...tail, won: !!save.followupFinish.won, ...(save.followupFinish.card ? { card: save.followupFinish.card } : {}) };   // (card: a won game's result card not seen yet — 외부 QA 10/20)
   // Old saves resume only the activity immediately after their last stage; never replay an old backlog.
   if (!save.followup && !save.followupFinish) queueFollowup(save, (save.stage || 0) - 1);
   const last = followupAt(69);
@@ -37,7 +37,7 @@ export function normalizeFollowup(save) {
 }
 export function resumeFollowup(save) {
   const f = canonical(save.followupFinish);
-  if (f) return { name: f.scene, data: { ...f, resumeFinish: true, resumeWon: !!save.followupFinish.won } };
+  if (f) return { name: f.scene, data: { ...f, resumeFinish: true, resumeWon: !!save.followupFinish.won, resumeCard: save.followupFinish.card || null } };
   const p = canonical(save.followup);
   return p ? { name: p.scene, data: { ...p } } : null;
 }

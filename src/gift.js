@@ -46,9 +46,10 @@ const starRow = n => h('div', { class: 'stars' }, ...[0, 1, 2].map(i => h('div',
 // a 쉬어가기 / boss game won (bossgame.js finish, after the game's own end panel): the reward, then on to the next stage
 // (실험실 10/19: in the campaign a won game skips its own result panel, so this card is the result — the game's line under
 // the stars, a '최고 기록!' stamp past the best stars before, and a small '다시' under three stars). Resolves 'next' | 'retry'.
-export function giftCard(G, { key, title, st = 0, coins = 0, lens = false, line = null, retry = false, starBefore = null }) {
+// (prevBest: the best before this win, when the win already kept the new best — bossgame.js, 외부 QA 10/20)
+export function giftCard(G, { key, title, st = 0, coins = 0, lens = false, line = null, retry = false, starBefore = null, prevBest }) {
   style();
-  const best = G.save.gameBest || (G.save.gameBest = {}), prev = best[key], record = prev != null && st > prev;
+  const best = G.save.gameBest || (G.save.gameBest = {}), prev = prevBest !== undefined ? prevBest : best[key], record = prev != null && st > prev;
   if (prev == null || st > prev) { best[key] = st; G.persist(); }
   return new Promise(res => {
     const row = giftRow(G, key);

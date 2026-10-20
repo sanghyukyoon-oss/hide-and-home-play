@@ -318,7 +318,7 @@ export class Game {
     this._up = e => {
       const T = this.touch; if (!T || (e?.pointerId != null && e.pointerId !== T.id)) return;
       this.touch = null;
-      if (this.result || !this.started || e?.type === 'blur') return;
+      if (this.result || !this.started || e?.type === 'blur' || e?.type === 'pointercancel') return;   // (cancelled — the OS, or the 잠깐! menu: no order — 외부 QA 10/20)
       const s = this.spotAtScreen(T.x, T.y - (T.steer ? LIFT : 0), T.steer);
       if (s) this.order(s);
       else if (T.steer && this.meS === 'carry') this.order(this.nearestSpot(this.pos.x, this.pos.y));

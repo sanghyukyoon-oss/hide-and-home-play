@@ -32,7 +32,7 @@ const TW = (i, j) => [-3.5 + i + .5, -2.5 + j + .5];
 // three nights. mom: where she sits, which way her busy face points; route: a good way from your door to the fridge
 // (the bots follow it; you go where you like); lures: gadgets you can set off (furn = a piece of the room, or a speaker)
 const LEVELS = [
-  { name: '첫째 밤', sub: '엄마는 TV 보는 중', tel: 1.15, busy: [3.6, 6.0], look: [1.3, 2.0], fake: 0, half: 52, range: 7, tv: { half: 30, range: 4 },
+  { name: '첫째 밤', sub: '엄마는 TV 보는 중', spillK: .7, tel: 1.15, busy: [3.6, 6.0], look: [1.3, 2.0], fake: 0, half: 52, range: 7, tv: { half: 30, range: 4 },
     mom: { at: [-.5, 1.06], y: .3, busyYaw: 0, sit: 'sofa2' },
     furniture: [F('monstera', 0, 0), F('bookshelf', 1, 0, 0, { seed: 7 }), F('recordcab', 2, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0), F('bigfridge', 6, 0),
       F('dryrack', 1, 2, 1), F('plant', 2, 2), F('laundrybasket', 3, 2), F('monstera', 4, 2), F('sofa2', 2, 3), F('tvlow', 2, 4, 2), F('robovac', 0, 3), F('diningset', 4, 4), F('floorlamp', 0, 4), F('plant', 6, 4)],
@@ -70,6 +70,10 @@ export { LEVELS };
 const SNEAK = 1.05, SCURRY = 2.2, SCURRY_AT = 2.6;
 const PAD_R = 58, PAD_RUN = .92;   // the thumb pad's reach (px), and how far out a slide turns into a scurry   // units / s; a finger this far ahead breaks into a scurry
 const MOM_WALK = 1.15, CHECK_T = 3.4;
+// 쏟기 (10/20, user: "야식 담고 빨리 가면 다 쏟아지게 해 줄래? 그리고 다시 주워 오게"): a scurry with snacks on your head
+// makes the stack sway (fill / s by how many you carry, × the night's spillK); past warn it says 휘청 and sways hard, full =
+// the lot spills round you with a clatter, and you tiptoe onto each one to put it back on your head
+const SPILL = { fill: [.55, .75, .95], warn: .5, decay: 1.4, pick: .42, hear: 3.2 };
 const EYE_H = 1.25, BODY_H = .58, CROUCH_H = .3, ME_R = .16;
 
 export function mapFor(lv) {
@@ -149,6 +153,8 @@ export class Game {
     this.fridge = this.goalFurn(map, LV);
     // 몽글이
     const me = this.me = new Char('mong'); W.root.add(me.root);
+    const big = c => { c.S *= 1.2; c.body.scale.setScalar(c.S); };   // (10/20 "크기가 작아서": 몽글이 and the dog a size up)
+    big(me);
     this.ring = new THREE.Mesh(new THREE.RingGeometry(.3, .4, 32), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .5, depthWrite: false }));
     this.ring.rotation.x = -Math.PI / 2; W.root.add(this.ring);
     this.aim = new THREE.Mesh(new THREE.RingGeometry(.1, .15, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false }));
@@ -169,7 +175,7 @@ export class Game {
     if (this.mode === 'patrol') { this.wi = 1; this.mState = 'patrol'; this.occ = this.occFull; this.momYaw = this.baseYaw(); mom.root.rotation.y = this.momYaw; }
     if (this.mode === 'doze') { this.mState = 'doze'; this.snT = 0; this.sleepFace(true); }
     if (LV.dog) {
-      const dog = this.dog = new Char('shiba'); W.root.add(dog.root);
+      const dog = this.dog = new Char('shiba'); W.root.add(dog.root); big(dog);
       dog.root.position.set(LV.dog.at[0], 0, LV.dog.at[1]); dog.root.rotation.y = LV.dog.yaw; dog.setFace('happy'); dog.awake = false;
       this.zzT = 1;   // (its Zz puffs up now and then from update — a standing bubble covered the way to the fridge, 10/19)
       this.bodies.push({ x: LV.dog.at[0], z: LV.dog.at[1], r: .32 });
@@ -184,7 +190,7 @@ export class Game {
     if (this.fridge) { const b = new THREE.Box3().setFromObject(this.fridge.f.group); this.fridgeTop = new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y, (b.min.z + b.max.z) / 2); }
     this.goal = new THREE.Mesh(new THREE.RingGeometry(.22, .3, 28), new THREE.MeshBasicMaterial({ color: '#ffe36b', transparent: true, opacity: .6, depthWrite: false }));
     this.goal.rotation.x = -Math.PI / 2; this.goal.position.set(this.fridgeAt.x, .03, this.fridgeAt.y); W.root.add(this.goal);
-    this.snacks = []; this.grabT = 0; this.fridgeOpen = 0; this.doorOpen = false;
+    this.snacks = []; this.dropped = []; this.wob = 0; this.grabT = 0; this.fridgeOpen = 0; this.doorOpen = false;
     this.touch = null; this.result = null; this.moving = false; this.noise = 0; this.everMoved = false;
     this.frame();
     this.gk = LV.guard || 'mom';
@@ -350,7 +356,35 @@ export class Game {
     const W = this.L.world, R = this.room, span = (R.w + R.d) / Math.SQRT2 + .5;
     W.home.set(0, .5, .2); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .8; W.zoom = 1;
     W.bounds = 99; W.slack = null; W.camLock = true;
-    W.setFit(span, span * .7, .47);   // (a little higher than before: the strip under the room is the thumbs' — 10/19)
+    // (10/20, user: "야식은 귀여워. 근데 크기가 작아서"): the shot holds what the night is about — your door, the fridge (and its
+    // button over it), where mom sits or walks, the gadgets, the dog — not the room's empty far corners: about 1.4× closer
+    const V = THREE.Vector3, pts = [new V(this.door.x, 0, this.door.y), new V(this.door.x, .9, this.door.y), new V(this.fridgeAt.x, 0, this.fridgeAt.y)];
+    if (this.fridge) { const b = new THREE.Box3().setFromObject(this.fridge.f.group); for (const x of [b.min.x, b.max.x]) for (const z of [b.min.z, b.max.z]) pts.push(new V(x, b.max.y + .45, z), new V(x, 0, z)); }
+    for (const [x, z] of [this.lv.mom.at, ...(this.lv.patrol?.pts || [])]) pts.push(new V(x, 0, z), new V(x, 1.5, z));
+    for (const d of this.lures) pts.push(d.g.getWorldPosition(new V()).setY(.8));
+    if (this.dog) pts.push(this.dog.root.position.clone(), this.dog.root.position.clone().setY(.8));
+    W.updateCam();
+    const m = W.cam.matrixWorld.elements, rt = new V(m[0], m[1], m[2]), up = new V(m[4], m[5], m[6]), c = W.target.clone();
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const q of pts) { const d = q.sub(c), x = d.dot(rt), y = d.dot(up); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    W.home.addScaledVector(rt, (x0 + x1) / 2).addScaledVector(up, (y0 + y1) / 2); W.target.copy(W.home);
+    W.setFit(clamp(x1 - x0 + 1.1, span / 1.6, span), y1 - y0 + .9, .45);   // (the strip under the room stays the thumbs' — 10/19)
+    this.cam0 = { home: W.home.clone(), rt, up, w: W.viewH * W.W / W.H, vh: W.viewH };
+  }
+  // the shot moves in on 몽글이 and mom (and a gadget not used yet, while it's near): up to 1.4× when they're near each other, back out
+  // to the whole night when they're apart — slowly, so it never swims. It starts wide (the banner shows the whole night)
+  aimCam(dt) {
+    const W = this.L.world, C = this.cam0, V = THREE.Vector3, p = this.pos, m = this.mom.root.position;
+    const pts = [new V(p.x, 0, p.y), new V(p.x, 1.0, p.y), new V(m.x, 0, m.z), new V(m.x, 1.6, m.z)];
+    for (const d of this.lures) if (!d.used) { const q = d.g.getWorldPosition(new V()); if (Math.hypot(q.x - p.x, q.z - p.y) < 3.2) pts.push(q.setY(.8)); }   // (a gadget only while it's near you)
+    if (this.fridgeTop && this.taken() < 3 && p.distanceTo(this.fridgeAt) < 2) pts.push(this.fridgeTop.clone().setY(this.fridgeTop.y + .5));
+    for (const d of this.dropped) pts.push(new V(d.at.x, 0, d.at.y));
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const q of pts) { const d = q.sub(C.home), x = d.dot(C.rt), y = d.dot(C.up); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const z = clamp(Math.min(C.w / (x1 - x0 + 1.8), C.vh * .5 / (y1 - y0 + 1.2)), 1, 1.4), k = 1 - Math.exp(-dt * 1.2);
+    const hx = C.w / 2 * (1 - 1 / z), hy = C.vh / 2 * (1 - 1 / z);
+    W.zoom += (z - W.zoom) * k;
+    W.target.lerp(C.home.clone().addScaledVector(C.rt, clamp((x0 + x1) / 2, -hx, hx)).addScaledVector(C.up, clamp((y0 + y1) / 2, -hy, hy)), k);
   }
 
   // ── input (10/19, user: "버튼 이전처럼 하나로 하던가 이동패드로", "냉장고 누를때 엄지땜에 말풍선 안보인다"): a thumb pad —
@@ -459,13 +493,20 @@ export class Game {
 .ys-pad.ghost { left: 88px; top: auto; bottom: calc(30px + var(--safeB, 0px)); margin: 0 0 0 -58px; opacity: .8; transition: opacity .3s; }
 .ys-pad.ghost.gone { opacity: 0; }
 .ys-pad.ghost b { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 14px; text-shadow: 0 2px 0 #3a2453; }
-.ys-fbtn { position: absolute; z-index: 7; right: 24px; bottom: calc(40px + var(--safeB, 0px)); width: 88px; height: 88px; border-radius: 50%; background: #fffaf2; border: 4px solid #3a2453; box-shadow: 0 5px 0 #3a2453;
+.ys-fbtn { position: absolute; z-index: 7; left: -200px; top: -200px; width: 66px; height: 66px; margin: -33px 0 0 -33px; border-radius: 50%; background: #fffaf2; border: 4px solid #3a2453; box-shadow: 0 4px 0 #3a2453;
   display: grid; place-items: center; touch-action: none; -webkit-user-select: none; user-select: none; transition: transform .1s, opacity .2s, filter .2s; }
-.ys-fbtn svg { width: 44px; height: 44px; }
-.ys-fbtn b { position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 14px; text-shadow: 0 2px 0 #3a2453; }
-.ys-fbtn.far { opacity: .55; filter: grayscale(.7); }
+.ys-fbtn svg { width: 34px; height: 34px; }
+.ys-fbtn b { position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 15px; text-shadow: 0 2px 0 #3a2453; }
+.ys-fbtn.far { opacity: .5; filter: grayscale(.7); transform: scale(.7); pointer-events: none; }
+.ys-fbtn.far b, .ys-fbtn.busy b { display: none; }
 .ys-fbtn.near { background: #fff3b0; animation: ysBtn 1s ease-in-out infinite; }
-.ys-fbtn.down { transform: translateY(4px) scale(.94); box-shadow: 0 1px 0 #3a2453; animation: none; background: #ffe16b; }
+.ys-fbtn.down { transform: translateY(3px) scale(.94); box-shadow: 0 1px 0 #3a2453; animation: none; background: #ffe16b; }
+.ys-slot.lost { animation: ysLost .5s ease-in-out infinite alternate; opacity: .7; }
+.ys-ptr { position: absolute; z-index: 6; width: 42px; height: 42px; margin: -21px 0 0 -21px; border-radius: 50%; background: #fff3b0; border: 3px solid #3a2453; box-shadow: 0 3px 0 #3a2453; display: grid; place-items: center; pointer-events: none; }
+.ys-ptr svg, .ys-ptr img { width: 26px; height: 26px; }
+.ys-ptr .ar { position: absolute; inset: 0; }
+.ys-ptr .ar::after { content: ''; position: absolute; right: -15px; top: 50%; margin-top: -7px; border: 7px solid transparent; border-left: 10px solid #3a2453; }
+@keyframes ysLost { to { transform: translateY(-3px) rotate(-8deg); } }
 @keyframes ysBtn { 50% { box-shadow: 0 5px 0 #3a2453, 0 0 0 10px rgba(255, 225, 107, .35); } }
 #app .ys-hint { bottom: calc(150px + var(--safeB, 0px)); }
 #app .ys-get { top: calc(72px + var(--safeT, 0px)); left: calc(50% + 34px); max-width: calc(100vw - 110px); transform: translate(-50%, 0); animation: ysGetTop .45s cubic-bezier(.2, 1.7, .4, 1); }
@@ -473,9 +514,11 @@ export class Game {
     const appEl = document.getElementById('app');
     this.pad = h('div', { class: 'ys-pad', style: 'display:none' }, this.padK = h('i')); appEl.append(this.pad);
     this.padGhost = h('div', { class: 'ys-pad ghost' }, h('i')); appEl.append(this.padGhost);   // (the line above says what it's for)
-    this.fbtn = h('div', { class: 'ys-fbtn far', role: 'button', 'aria-label': '냉장고' }, this.fbtnL = h('b', {}, '냉장고 앞에서'));
+    this.fbtn = h('div', { class: 'ys-fbtn far', role: 'button', 'aria-label': '냉장고' }, this.fbtnL = h('b', {}, '꾹!'));
     this.fbtn.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" fill="none" stroke="#3a2453" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="#cfe9ff"/><path d="M5 10h14"/><path d="M8.5 5.5v2.2M8.5 12.5v4"/></svg>');
     appEl.append(this.fbtn);
+    // where to go when it's off the closer shot (the fridge, your door, a spilled snack): a pointer on the screen's edge
+    this.goPtr = h('div', { class: 'ys-ptr', style: 'display:none' }, this.goIc = h('span', { class: 'ic' }), this.goAr = h('span', { class: 'ar' })); appEl.append(this.goPtr);
     // the fridge gauge (10/18, user: "냉장고 앞에서 꾹 누르고 있으면 문 열리고 프로그레스 게이지 나오는 게 나을 거 같아"): over the
     // fridge while you hold it — fills while the door opens, then once per snack
     this.grabG = h('div', { class: 'ys-grab' }, this.grabI = h('i')); ui.wui.append(this.grabG);
@@ -646,12 +689,11 @@ export class Game {
       if (d.on) { d.g.position.y = Math.abs(Math.sin(this.t * 14)) * .03 + (d.own ? 0 : d.g.position.y * 0); d.g.rotation.z = Math.sin(this.t * 22) * .05; if (Math.random() < dt * 2.2) { const s = W.toScreen(d.g.getWorldPosition(new THREE.Vector3()).setY(.15)); L.ui.floatText(s.x + (Math.random() - .5) * 40, s.y + 10, d.lullaby ? '자장~' : d.speaker ? '랄라~' : '삐-', 'gold'); } }
     }
     if (this.camHold) { this.paintVision(); return; }
-    // the camera drifts a little toward 몽글이
-    W.target.x += ((W.home.x + (p.x - W.home.x) * .3) - W.target.x) * (1 - Math.exp(-dt * 2));
-    W.target.z += ((W.home.z + (p.y - W.home.z) * .3) - W.target.z) * (1 - Math.exp(-dt * 2));
+    if (this.started && !this.result) this.aimCam(dt);
     this.fridgeGlow.material.opacity = this.fridgeOpen * .55;
     if (this.tvGlow) this.tvGlow.material.opacity = .16 + Math.max(0, Math.sin(this.t * 7.3) * Math.sin(this.t * 2.1)) * .14;
-    for (const [i, x] of this.snacks.entries()) { x.g.rotation.z = Math.sin(this.t * 9 + i) * (this.moving ? .12 : .03) * (i + 1); x.g.position.x = Math.sin(this.t * 9 + i) * (this.moving ? .02 : 0) * (i + 1); }
+    for (const [i, x] of this.snacks.entries()) { const w = this.wob || 0, f = 9 + w * 7; x.g.rotation.z = Math.sin(this.t * f + i) * ((this.moving ? .12 : .03) + w * .32) * (i + 1); x.g.position.x = Math.sin(this.t * f + i) * ((this.moving ? .02 : 0) + w * .05) * (i + 1); }
+    for (const d of this.dropped) if (!d.flying) { d.g.rotation.y += dt * 1.6; d.g.position.y = Math.abs(Math.sin(this.t * 3.2 + d.k)) * .06; d.ring.material.opacity = .5 + Math.sin(this.t * 5 + d.k) * .25; }
     this.goal.material.opacity = .35 + Math.sin(this.t * 4) * .25; this.goal.scale.setScalar(1 + Math.sin(this.t * 4) * .1);
     if (!this.started || this.result) { this.paintVision(); return; }
     this.stepMom(dt);
@@ -682,14 +724,16 @@ export class Game {
     }
     this.placeMe(dt);
     // at the fridge: the door opens with a tap (or after a moment's hold), and holding the open fridge takes snacks
-    const nearFridge = this.atFridge() && this.snacks.length < 3;
+    const nearFridge = this.atFridge() && this.taken() < 3;
     if (I.fridge && nearFridge && !this.moving) { this.fHold = (this.fHold || 0) + dt; if (!this.doorOpen && this.fHold > .2) this.setDoor(true); } else this.fHold = 0;
     if (this.doorOpen && (p.distanceTo(this.fridgeAt) > 1.1 || (!I.fridge && !this.botFridge && !this.L.bot))) this.setDoor(false);   // let go of the button (or walked off): it swings shut
     this.grabbing = nearFridge && this.doorOpen && I.fridge && I.down && !this.moving;
+    this.placeFbtn();
     this.stepFridge(dt);
+    this.stepSpill(dt);
     if (this.mode === 'doze') this.stepHear(dt);
     if (this.snacks.length && p.distanceTo(this.door) < .55) return this.win();
-    this.goal.position.set(...(this.snacks.length ? [this.door.x, .03, this.door.y] : [this.fridgeAt.x, .03, this.fridgeAt.y]));
+    { const lost = !this.snacks.length && this.dropped[0]; this.goal.position.set(...(this.snacks.length ? [this.door.x, .03, this.door.y] : lost ? [lost.at.x, .03, lost.at.y] : [this.fridgeAt.x, .03, this.fridgeAt.y])); }
     // the dog wakes to a scurry nearby
     if (this.dog && !this.dog.awake && this.noise && Math.hypot(this.dog.root.position.x - p.x, this.dog.root.position.z - p.y) < 1.9) this.wakeDog();
     // a scurry close to mom makes her look at once
@@ -723,12 +767,14 @@ export class Game {
     // the hint says what a press does right now
     const n = this.snacks.length, live = this.lures.some(d => !d.used);
     if (AWAY.has(this.mState) && this.mState !== 'sit') this.setHint(this.mState === 'check' ? '지금이야! 엄마가 딴 데 봐' : '엄마가 일어났어…');
-    else if (nearFridge) this.setHint(this.mode === 'doze' && this.doorOpen && this.openT > 1.1 ? '띠링 울리기 전에 버튼에서 손 떼기!' : this.grabbing ? `꺼내는 중… ${n}/3` : n ? '냉장고 버튼을 꾹 · 하나 더' : '오른쪽 냉장고 버튼을 꾹!');
+    else if (nearFridge) this.setHint(this.mode === 'doze' && this.doorOpen && this.openT > 1.1 ? '띠링 울리기 전에 버튼에서 손 떼기!' : this.grabbing ? `꺼내는 중… ${this.taken()}/3` : n ? '냉장고 버튼을 꾹 · 하나 더' : '냉장고 위 버튼을 꾹!');
+    else if (this.wob > SPILL.warn) this.setHint('휘청휘청! 살금살금 가야 안 쏟아져');
+    else if (this.dropped.length) this.setHint(this.scurry ? '후다닥 말고 살금살금!' : '떨어진 간식 위로 가면 주워요');
     else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '아래를 끌어서 살금살금' : '코 골 때 움직이면 안 들려');
-    else if (n) this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
+    else if (n) this.setHint(this.scurry ? '후다닥하면 간식이 흔들려!' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
     else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 끌어서 살금살금' : live ? `${this.lures.find(d => !d.used).name}를 콕 하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
-    { const at = nearFridge, lbl = !at ? '냉장고 앞에서' : this.grabbing ? '꺼내는 중…' : '꾹 꺼내기'; this.fbtn.classList.toggle('near', at && !this.grabbing); this.fbtn.classList.toggle('far', !at); if (this.fbtnL.textContent !== lbl) this.fbtnL.textContent = lbl; }
+    { const at = nearFridge, busy = at && (this.grabbing || this.btnId != null); this.fbtn.classList.toggle('near', at && !busy); this.fbtn.classList.toggle('far', !at); this.fbtn.classList.toggle('busy', busy); }
     if (this.dog && !this.dog.awake && (this.zzT -= dt) <= 0) { this.zzT = 2.4; const d = this.dog.root.position, s = W.toScreen(new THREE.Vector3(d.x, this.dog.headTop() + .15, d.z)); L.ui.floatText(s.x + 10, s.y, 'Zz', ''); }
     this.stepPractice(dt);
   }
@@ -779,10 +825,10 @@ export class Game {
     this.fridgeOpen += ((this.doorOpen ? 1 : 0) - this.fridgeOpen) * (1 - Math.exp(-dt * 9));
     part?.setOpen(this.fridgeOpen);
     // the gauge over the fridge: the door's hold, then each snack's
-    const holding = this.atFridge() && this.snacks.length < 3 && this.touchFridge();
+    const holding = this.atFridge() && this.taken() < 3 && this.touchFridge();
     const fill = this.grabbing ? this.grabT / .7 : !this.doorOpen && holding ? Math.min(1, (this.fHold || 0) / .2) : 0;
     this.grabG.style.display = holding || this.grabbing ? '' : 'none';
-    if (this.grabG.style.display === '') { const s = L.world.toScreen(this.fridgeTop || new THREE.Vector3(this.fridgeAt.x, 1.6, this.fridgeAt.y)); this.grabG.style.left = s.x + 'px'; this.grabG.style.top = (s.y - 18) + 'px'; this.grabI.style.width = Math.round(Math.min(1, fill) * 100) + '%'; this.grabG.classList.toggle('open', this.doorOpen); }
+    if (this.grabG.style.display === '') { const [x, y] = this.fbXY; this.grabG.style.left = x + 'px'; this.grabG.style.top = (y - 44) + 'px'; this.grabI.style.width = Math.round(Math.min(1, fill) * 100) + '%'; this.grabG.classList.toggle('open', this.doorOpen); }
     if (this.grabbing) {
       this.grabT += dt;
       if (this.grabT > .7) { this.grabT = 0; this.takeSnack(); }
@@ -791,16 +837,87 @@ export class Game {
       this.grabT = 0;
     }
   }
+  // snacks out of the fridge so far: on your head, or spilled on the floor
+  taken() { return this.snacks.length + this.dropped.length; }
   takeSnack() {
-    const L = this.L, type = this.snackTypes[this.snacks.length], g = buildItem(type);
-    const s = .55; g.scale.setScalar(s);
+    const type = this.snackTypes.find(t => !this.snacks.some(x => x.type === t) && !this.dropped.some(x => x.type === t)); if (!type) return;
+    this.carry(type, buildItem(type));
+    // the name pops over the fridge button, above the thumb (10/20: over 몽글이 the thumb on the button hid it)
+    const [x, y] = this.fbXY || [innerWidth / 2, 200], up = y - 74 > 165;   // (no room above, under mom's face: beside it)
+    this.L.ui.floatText(up ? x : x + (x < innerWidth / 2 ? 84 : -84), up ? y - 74 : y - 4, `${ITEMS[type].name}${this.taken() === 3 ? '까지' : ''}!`, 'gold');
+  }
+  carry(type, g) {
+    const L = this.L, s = .7; g.scale.setScalar(s); g.rotation.set(0, 0, 0);
     // stacked on 몽글이's head, wobbling a little
     const y0 = this.me.headTop() + .02 + this.snacks.reduce((a, x) => a + ITEMS[x.type].h * s, 0);
     g.position.set(0, y0, 0); this.me.root.add(g);
     this.snacks.push({ type, g }); L.audio.sfx('pop', 3 + this.snacks.length * 2); this.me.bump(.3);
-    this.slots[this.snacks.length - 1].classList.add('got');
-    L.say(this.me, `${ITEMS[type].name}${this.snacks.length === 3 ? '까지' : ''}!`, 700);
-    this.L.world.idsDirty = true;
+    this.paintSlots(); L.world.idsDirty = true;
+  }
+  paintSlots() { this.snackTypes.forEach((t, i) => { this.slots[i].classList.toggle('got', this.snacks.some(x => x.type === t)); this.slots[i].classList.toggle('lost', this.dropped.some(x => x.type === t)); }); }
+  // 쏟기: the stack sways while you scurry with it (see SPILL); full → it all spills, and a snack on the floor goes back on
+  // your head when you tiptoe onto it
+  stepSpill(dt) {
+    const L = this.L, n = this.snacks.length;
+    if (n && this.scurry) this.wob = Math.min(1, this.wob + dt * SPILL.fill[n - 1] * (this.lv.spillK ?? 1));
+    else this.wob = Math.max(0, this.wob - dt * SPILL.decay);
+    if (this.wob > SPILL.warn && !this._wobWarn) { this._wobWarn = true; L.say(this.me, '휘청…!', 700, 'think'); L.audio.sfx('gasp'); }
+    if (this.wob < .2) this._wobWarn = false;
+    if (this.wob >= 1) this.spill();
+    if (!this.scurry) { const d = this.dropped.find(d => !d.flying && this.pos.distanceTo(d.at) < SPILL.pick); if (d) this.pickUp(d); }
+  }
+  spill() {
+    const L = this.L, W = L.world, p = this.pos, n = this.snacks.length; this.wob = 0; this._wobWarn = false;
+    this.snacks.forEach((x, i) => {
+      // each lands round you (behind, fanned out), never inside the furniture
+      let at = null;
+      for (let k = 0; k < 14 && !at; k++) { const a = this.face + Math.PI + (i - (n - 1) / 2) * .95 + (Math.random() - .5) * k * .25, r = .55 + Math.random() * .25 + k * .03, q = new THREE.Vector2(p.x + Math.sin(a) * r, p.y + Math.cos(a) * r); if (this.free(q.x, q.y)) at = q; }
+      at = at || p.clone();
+      const g = x.g, from = g.getWorldPosition(new THREE.Vector3()); this.me.root.remove(g); W.root.add(g); g.position.copy(from);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(.27, .36, 28), new THREE.MeshBasicMaterial({ color: '#ffe36b', transparent: true, opacity: 0, depthWrite: false }));
+      ring.rotation.x = -Math.PI / 2; ring.position.set(at.x, .035, at.y); W.root.add(ring);
+      const d = { type: x.type, g, at, ring, flying: true, k: i * 2 }, hop = .5 + i * .16, spin = (Math.random() < .5 ? -1 : 1) * (4 + i * 2);
+      this.dropped.push(d);
+      const s0 = g.scale.x;
+      this.tw.run(.48 + i * .07, k => { g.position.set(from.x + (at.x - from.x) * k, from.y * (1 - k) + Math.sin(k * Math.PI) * hop, from.z + (at.y - from.z) * k); g.rotation.z = spin * k; g.scale.setScalar(s0 + (1.05 - s0) * k); }, k => k)
+        .then(() => { if (this.dead) return; d.flying = false; g.rotation.z = 0; g.position.y = 0; L.audio.sfx('tap', 4 + i * 3); W.idsDirty = true; });
+    });
+    this.snacks = []; this.paintSlots();
+    L.say(this.me, '와르르!', 900, 'red'); this.me.setFace('sweat'); this.me.bump(.45); L.audio.sfx('drawer');
+    L.log({ spill: n, x: +p.x.toFixed(2), z: +p.y.toFixed(2) });
+    // the clatter: she hears it if she's near enough (asleep, it fills the sound gauge)
+    if (this.mode === 'doze') this.hear = Math.min(1, this.hear + .28 * this.mask);
+    else if (['busy', 'patrol', 'pause'].includes(this.mState) && Math.hypot(p.x - this.eye.x, p.y - this.eye.z) < SPILL.hear * (this.lv.spillK ?? 1)) this.startHmm(true);
+  }
+  pickUp(d) {
+    const L = this.L; this.dropped.splice(this.dropped.indexOf(d), 1);
+    d.ring.parent?.remove(d.ring); d.ring.geometry.dispose(); d.ring.material.dispose(); d.g.parent?.remove(d.g);
+    this.carry(d.type, d.g); L.say(this.me, `${ITEMS[d.type].name}!`, 600);
+    if (!this.dropped.length) this.me.setFace('happy');
+  }
+  // the fridge button floats over the fridge (10/20, user: "냉장고 위에 버튼 하던가, 냉장고에다 하던가" — in the corner it sat on
+  // the words); its gauge and the snack you take show above it, where the thumb on it doesn't cover them
+  placeFbtn() {
+    const s = this.L.world.toScreen(this.fridgeTop || new THREE.Vector3(this.fridgeAt.x, 1.6, this.fridgeAt.y));
+    const x = clamp(s.x, 44, innerWidth - 44), y = Math.max(136, s.y - 40);
+    this.fbXY = [x, y]; this.fbtn.style.left = x + 'px'; this.fbtn.style.top = y + 'px';
+    this.fbtn.style.visibility = s.x < 0 || s.x > innerWidth || s.y < 90 ? 'hidden' : '';
+    this.placePtr();
+  }
+  placePtr() {
+    const P = this.goPtr, g = this.snacks.length ? 'door' : this.dropped.length ? 'drop' : this.taken() < 3 ? 'fridge' : null;
+    const v = g === 'door' ? new THREE.Vector3(this.door.x, .5, this.door.y) : g === 'fridge' ? new THREE.Vector3(this.fridgeAt.x, 1.0, this.fridgeAt.y) : g && new THREE.Vector3(this.dropped[0].at.x, .1, this.dropped[0].at.y);
+    const s = v && this.L.world.toScreen(v), x0 = 30, x1 = innerWidth - 30, y0 = 150, y1 = innerHeight - 190;
+    const off = !!s && (s.x < x0 || s.x > x1 || s.y < y0 || s.y > y1);
+    P.style.display = off ? '' : 'none'; if (!off) return;
+    const cx = innerWidth / 2, cy = (y0 + y1) / 2, dx = s.x - cx, dy = s.y - cy;
+    const k = Math.min(dx ? ((dx > 0 ? x1 : x0) - cx) / dx : Infinity, dy ? ((dy > 0 ? y1 : y0) - cy) / dy : Infinity);
+    P.style.left = (cx + dx * k) + 'px'; P.style.top = (cy + dy * k) + 'px'; this.goAr.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+    const key = g === 'drop' ? 'drop' + this.dropped[0].type : g;
+    if (P.dataset.g !== key) { P.dataset.g = key;
+      this.goIc.innerHTML = g === 'drop' ? `<img src="${this.L.thumbs['item_' + this.dropped[0].type]}">` : g === 'door'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="#3a2453" stroke-width="2.2" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2" fill="#ffd9a8"/><circle cx="14.6" cy="12.5" r="1.1" fill="#3a2453"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="#3a2453" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="#cfe9ff"/><path d="M5 10h14"/><path d="M8.5 5.5v2.2M8.5 12.5v4"/></svg>'; }
   }
   wakeDog() {
     const L = this.L, dog = this.dog; dog.awake = true; this.zzz?.remove();
@@ -972,6 +1089,7 @@ export class Game {
   caught() {
     if (this.result) return;
     const L = this.L, me = this.me, mom = this.mom; this.result = 'fail'; this._up({}); this.endPractice();
+    for (const el of [this.fbtn, this.goPtr]) if (el) el.style.display = 'none';   // (the closer shot's pointer and the fridge button: not over the caught moment)
     L.audio.sfx('angry'); L.world.fx.ring(innerWidth / 2, innerHeight / 2, { r: 120, color: '#ff5d6c', width: 10, life: .5 });
     mom.setFace('angry'); mom.bump(.5); me.setFace('wow'); me.pose = 'flail';
     const p = this.pos; mom.root.rotation.y = this.yawTo(p.x, p.y); this.momYaw = mom.root.rotation.y;
@@ -994,7 +1112,7 @@ export class Game {
     const L = this.L, n = this.snacks.length; this.result = 'win'; this._up({});
     if (this.pr) { L.log({ practice: 2 }); this.endPractice(); }
     // the controls go away with the win: the pad, the fridge button and the hint stayed under the result card (10/19)
-    for (const el of [this.pad, this.padGhost, this.fbtn, this.hint]) if (el) el.style.display = 'none';
+    for (const el of [this.pad, this.padGhost, this.fbtn, this.hint, this.goPtr]) if (el) el.style.display = 'none';
     L.audio.sfx('win'); this.me.setFace('happy'); this.me.pose = 'cheer'; L.world.fx.confetti(90);
     L.say(this.me, '냠냠… 성공!', 1500);
     L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n, stars: n, max: 3, line: n >= 3 ? '세 개 다! 완벽한 밤이야' : n === 2 ? '두 개! 하나만 더 욕심내 볼까?' : '하나 성공! 다음엔 두 개 노려 볼까?' });   // (stars: the snacks you brought back; the campaign's reward reads them)
@@ -1010,7 +1128,7 @@ export class Game {
     }, 1200);
   }
   exit() {
-    this.grabG?.remove(); this.pad?.remove(); this.padGhost?.remove(); this.fbtn?.remove();
+    this.grabG?.remove(); this.pad?.remove(); this.padGhost?.remove(); this.fbtn?.remove(); this.goPtr?.remove();
     this.dead = true; const W = this.L.world, app = document.getElementById('app');
     app.dataset.night = '';
     app.removeEventListener('pointerdown', this._down); removeEventListener('pointermove', this._move); removeEventListener('pointerup', this._up); removeEventListener('pointercancel', this._up);
@@ -1115,6 +1233,6 @@ export class Game {
     if (this.doorOpen && back) this.setDoor(false);
     if (quiet && this.hear < .55) go(); else this.botStop();
   }
-  state() { return { scene: 'yasik', lv: this.lvIdx + 1, mom: this.mState, x: +this.pos.x.toFixed(2), z: +this.pos.y.toFixed(2), sus: +this.sus.toFixed(2), snacks: this.snacks.length, lures: this.lures.filter(d => d.used).length, mode: this.mode, hear: +(this.hear || 0).toFixed(2), result: this.result || null, pr: this.pr?.step || null, tip: this.pr?.key || null }; }
+  state() { return { scene: 'yasik', lv: this.lvIdx + 1, mom: this.mState, x: +this.pos.x.toFixed(2), z: +this.pos.y.toFixed(2), sus: +this.sus.toFixed(2), snacks: this.snacks.length, dropped: this.dropped.length, wob: +this.wob.toFixed(2), lures: this.lures.filter(d => d.used).length, mode: this.mode, hear: +(this.hear || 0).toFixed(2), result: this.result || null, pr: this.pr?.step || null, tip: this.pr?.key || null }; }
   get api() { return { win: () => this.win(), caught: () => this.caught(), look: () => this.startHmm(true), lure: i => this.fireLure(this.lures[i || 0]), noise: v => { this.hear = v; } }; }
 }

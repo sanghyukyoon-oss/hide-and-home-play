@@ -2313,13 +2313,40 @@ export class StageScene {
     await this.tw.wait(6);
     if (this.dead || this.result || this.partsOpened > 0) return;
     const shut = t => !t.found && t.spot.part && t.spot.part.t < .5;
-    const g = this.targets.find(t => shut(t) && t.spot.part.kind === 'drawer') || this.targets.find(t => shut(t) && t.spot.furn?.type !== 'futon') || this.targets.find(shut);   // (a real drawer first; not the curtained loft's quilt)
-    if (!g) return;
+    const order = [...this.targets.filter(t => shut(t) && t.spot.part.kind === 'drawer'), ...this.targets.filter(t => shut(t) && t.spot.furn?.type !== 'futon'), ...this.targets.filter(shut)];   // (a real drawer first; not the curtained loft's quilt)
+    if (!order.length) return;
+    // (외부 QA 10/20 LEVEL-20261020-01) the hand goes only where a tap really opens it: a spot on the part that the tap's own
+    // pick lands on, on screen and clear of the HUD — the first such of the list above (2판's toy chest lid sat behind the loft
+    // from the opening view and the hand pointed at the loft). Nothing tappable from this view yet: look again as the view moves
+    const W = this.G.world;
+    const tapSpot = part => {
+      const b = new THREE.Box3(); part.pivots.forEach(o => b.expandByObject(o)); if (b.isEmpty()) return null;
+      const c = b.getCenter(new THREE.Vector3()), q = new THREE.Vector3();
+      for (const [fx, fy, fz] of [[.5, .5, .5], [.5, .75, .5], [.5, .25, .5], [.25, .5, .5], [.75, .5, .5], [.5, .5, .25], [.5, .5, .75]]) {
+        q.set(b.min.x + (b.max.x - b.min.x) * fx, b.min.y + (b.max.y - b.min.y) * fy, b.min.z + (b.max.z - b.min.z) * fz); if (fx === .5 && fy === .5 && fz === .5) q.copy(c);
+        const s = W.toScreen(q);
+        if (s.x < 24 || s.x > W.W - 24 || s.y < 110 || s.y > W.H - 170) continue;
+        const hit = this.pickAt(s.x, s.y);
+        if (hit.kind === 'part' && hit.part === part) return { sx: s.x, sy: s.y };
+      }
+      return null;
+    };
+    const t0 = this.t;
+    let g = null, spot = null;
+    while (!this.dead && !this.result && this.partsOpened === 0 && this.t - t0 < 30) {
+      for (const t of order) { if (!shut(t)) continue; const sp = tapSpot(t.spot.part); if (sp) { g = t; spot = sp; break; } }
+      if (g) break;
+      await this.tw.wait(.5);
+    }
+    if (!g || this.dead || this.result || this.partsOpened > 0) return;
     // the words name what the hand points at (검토 2차 1: it said 서랍 over 2판's curtain), and the lesson ends by itself
     // after 30 s or once that thing is found, so the loft's tilt lesson isn't kept waiting behind it (검토 2차 2)
-    const part = g.spot.part, k = part.kind, t0 = this.t;
+    const part = g.spot.part, k = part.kind;
     const say = k === 'drawer' ? DO.drawer : k === 'curtain' ? '커튼을 콕 해서 열기' : k === 'door' ? '문을 콕 해서 열기' : k === 'lid' ? '뚜껑을 콕 해서 열기' : '콕 해서 들춰 보기';
-    await this.teach(say, 'tap', () => this.partCenter(part), () => this.partsOpened > 0 || part.t > .5 || g.found, k === 'drawer' ? DO.drawer2 : '닫힌 곳을 콕! 안에 물건이 숨어 있어', 30);
+    // (the spot is looked for again now and then as the view moves; hidden from this view → the hand waits out of sight)
+    let at0 = this.t;
+    const at = () => { if (this.t - at0 > .25) { at0 = this.t; spot = tapSpot(part); if (this.tutHand) this.tutHand.style.visibility = spot ? '' : 'hidden'; } return spot; };
+    await this.teach(say, 'tap', at, () => this.partsOpened > 0 || part.t > .5 || g.found, k === 'drawer' ? DO.drawer2 : '닫힌 곳을 콕! 안에 물건이 숨어 있어', 30);
   }
   // 2판: tilting, moved here from 1판 (검토 H3) — only if the thing on the loft futon is still there a while later, once
   async teachTilt() {
@@ -2638,6 +2665,30 @@ export class StageScene {
     const secretNew = !!secret && !secWas && stars >= 3, secretLock = !!secret && !secWas && stars < 3 && secKnown;
     const metBefore = G.econ && !this.custom && !this.preview ? new Set(metFriends(G.save)) : null;   // (who is new after this clear — 판 끝 집으로 가져가기)
     const starBefore = metBefore && !this.model ? starTotal(G.save) : null;   // (별 상자: the bar fills from here)
+    // (외부 QA 10/20 TECH-STORY-LOSS) the new friend, the story's gift (furniture + coins) and 11판's cat tower are given here,
+    // before the clear is saved — they used to come after the 1 s wait and the outro talk, so a page closed in between kept
+    // the clear and lost them for good (11·21·31·40·49·60·70판). They are still shown on the result panel as before.
+    let memento = null, newFriend = null;
+    if (!this.custom) {
+      const got = G.save.chars || (G.save.chars = []);
+      const k = this.spec.timed ? 'raccoon' : CHAR_UNLOCK[this.idx];
+      if (k && !got.includes(k)) { got.push(k); newFriend = k; }
+    }
+    if (this.story) {
+      const done = G.save.storyDone || (G.save.storyDone = {});
+      if (this.story.reward && !done[this.story.id]) {
+        done[this.story.id] = true;
+        if (this.story.reward.furn) { G.save.home.inventory.push(this.story.reward.furn); memento = this.story.reward.furn; }
+        if (this.story.reward.coins) G.addCoins(this.story.reward.coins);
+      }
+    }
+    // 11판, meeting 냥냥이: the cat tower — the gift of the 냥냥이 escape boss that the 1장 trim removed — so her seat at
+    // your place (script.js giftSeats) still comes (user picked this, 10/18). Marked as that story's gift, once.
+    if (this.idx === 10 && !this.custom && !this.preview) {
+      const done = G.save.storyDone || (G.save.storyDone = {});
+      if (!done.grumpycat) { done.grumpycat = true; G.save.home.inventory.push('cattower'); memento = 'cattower'; setTimeout(() => !this.dead && G.ui.toast('도감 · 몽글이 일기장에 냥냥이가 적혔어!', 'green'), 2600); }   // (the diary page she mentions — 검토 10/19)
+    }
+    if (this.preview || this.custom) G.persist();   // (a stage clear saves all of it in G.onStageClear just below)
     const first = this.preview ? { awarded: 0 } : this.custom ? G.onVisitResult(this.custom, true, this.found, this.targets.length, coins) : G.onStageClear(this.idx, stars, coins);
     if (!this.preview) this.logRun('clear', stars);
     // the finished model goes home (once) — saved with the clear, before the pause (GPT QA R2-01 10/19: quitting in that
@@ -2645,7 +2696,7 @@ export class StageScene {
     const kitFurn = this.kit && KITS[this.kit.kit].furn, kitNew = this.kit ? kitReward(this) : null;
     await (popDone ? Promise.race([popDone, this.tw.wait(2.6)]) : this.tw.wait(1.0));   // (the result panel waits for the pop, ~2 s)
     if (this.dead) return;
-    let memento = null, newFriend = null, back = [], got = null;
+    let back = [], got = null;
     // one new thing to hide at home per stage, the first time it is cleared (not every find — that gave away too much)
     // (the first-clear thing is given before the progress is saved, above — 10/18 GPT QA: leaving during the 1 s wait lost it)
     // 털기: take back what was mine, then pocket one thing from this room
@@ -2654,28 +2705,7 @@ export class StageScene {
       if (canGrab(G, this.custom)) got = await this.pickLoot(back);
       if (this.dead) return;
     }
-    if (!this.custom) {
-      const got = G.save.chars || (G.save.chars = []);
-      const k = this.spec.timed ? 'raccoon' : CHAR_UNLOCK[this.idx];
-      if (k && !got.includes(k)) { got.push(k); newFriend = k; G.persist(); }
-    }
-    if (this.story) {
-      if (this.story.outro) await this.talk(this.story.outro, { cam: true });
-      if (this.dead) return;
-      const done = G.save.storyDone || (G.save.storyDone = {});
-      if (this.story.reward && !done[this.story.id]) {
-        done[this.story.id] = true;
-        if (this.story.reward.furn) { G.save.home.inventory.push(this.story.reward.furn); memento = this.story.reward.furn; }
-        if (this.story.reward.coins) G.addCoins(this.story.reward.coins);
-        G.persist();
-      }
-    }
-    // 11판, meeting 냥냥이: the cat tower — the gift of the 냥냥이 escape boss that the 1장 trim removed — so her seat at
-    // your place (script.js giftSeats) still comes (user picked this, 10/18). Marked as that story's gift, once.
-    if (this.idx === 10 && !this.custom && !this.preview) {
-      const done = G.save.storyDone || (G.save.storyDone = {});
-      if (!done.grumpycat) { done.grumpycat = true; G.save.home.inventory.push('cattower'); memento = 'cattower'; G.persist(); setTimeout(() => !this.dead && G.ui.toast('도감 · 몽글이 일기장에 냥냥이가 적혔어!', 'green'), 2600); }   // (the diary page she mentions — 검토 10/19)
-    }
+    if (this.story?.outro) { await this.talk(this.story.outro, { cam: true }); if (this.dead) return; }   // (its gift was given before the save, above)
     // 대본: a few words after the clear — 2판's "이번엔 네가 숨겨 봐", a 흑백판's footprints, 너굴이's excuse
     let aft = this.custom || this.preview ? null : this.spec.timed ? timedWin(this.idx) : sceneAfter(this.idx), endLines = null;
     // 말 줄이기 2 (검토 2차 3 · 레벨 리포트 v3 개선 1, 10/19): the words after a clear sit in the result panel — the

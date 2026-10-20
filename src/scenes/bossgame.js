@@ -61,8 +61,13 @@ export class BossGameScene {
     // interlude: a 쉬어가기 between stages, not a boss — a loss still goes on (smaller reward), marked done as 'm'+after
     this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this._out = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
+    // (외부 QA 10/20 TECH-HOTEL-PAUSE-INPUT) the fingers down right now, so the 잠깐! menu can end their presses (menu())
+    this._down = new Set();
+    this._pd = e => this._down.add(e.pointerId); this._pu = e => this._down.delete(e.pointerId);
+    addEventListener('pointerdown', this._pd, true); addEventListener('pointerup', this._pu, true); addEventListener('pointercancel', this._pu, true);
     W.scheme = 'E'; W.joyOn = false; W.joyHidden = true; W.gaugeOn = false; W.camLock = false;
-    if (resumeFinish && !G.playMode) { this.won = resumeWon; this.talking = true; await Promise.resolve(); if (!this.dead) await this.finish(); return; }
+    // (외부 QA 10/20 ST-RESUME-REWARD-CARD) a won game left before its card: the same card comes back (nothing is paid again)
+    if (resumeFinish && !G.playMode) { this.won = resumeWon; if (resumeWon && more.resumeCard) this.reward = { ...more.resumeCard }; this.talking = true; await Promise.resolve(); if (!this.dead) await this.finish(); return; }
     const app = document.getElementById('app'); for (const [k, v] of Object.entries(APP_FLAGS[this.kind] || {})) app.dataset[k] = v;
     // 아침 깨우기 opens with a little story and a find-the-ball-and-clock phase the first time only — remembered in the save
     // (the lab kept it per page)
@@ -146,7 +151,14 @@ export class BossGameScene {
     G.stats.log.push({ [this.interlude ? 'mini' : 'bossgame']: this.kind, result: 'win' });
     // (10/19, user: "미니게임에서 뭐 리워드를 줘야지"): the reward is a card after the game's own end panel (finish), not a toast
     if (G.playMode || G.bot) G.ui.toast(G.playMode ? (this.interlude ? '쉬어가기 성공! (연습)' : '보스 클리어! (연습)') : this.interlude ? `쉬어가기 성공! 코인 +${coins}` : `보스 클리어! 코인 +${coins}`, 'green');
-    else { const sb0 = starTotal(G.save); gameStar(G, (this.interlude ? 'm' : 'g') + this.after, st); this.reward = { coins, lens, st, line: e.line || null, starBefore: sb0 }; }   // (line: the game's own result line — 실험실 10/19)   // (practice pays nothing — QA N5)
+    else { const sb0 = starTotal(G.save); gameStar(G, (this.interlude ? 'm' : 'g') + this.after, st); this.reward = { coins, lens, st, line: e.line || null, starBefore: sb0 };   // (line: the game's own result line — 실험실 10/19)   // (practice pays nothing — QA N5)
+      // (외부 QA 10/20 ST-RESUME-REWARD-CARD) the best stars are kept now, with the win — the card shows '최고 기록!' against the
+      // best before (prevBest) — and the card itself goes into the save, so leaving before it shows it again on 놀이 이어하기
+      const gb = G.save.gameBest || (G.save.gameBest = {}), gk = giftKey(this.kind, this.lv), pb = gb[gk] ?? null;
+      if (pb == null || st > pb) gb[gk] = st;
+      this.reward.prevBest = pb;
+      if (G.save.followupFinish?.after === this.after) G.save.followupFinish.card = { ...this.reward };
+      G.persist(); }
     if (lens && (G.playMode || G.bot)) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
   }
   // an interlude lost: still on to the next stage, with a small reward
@@ -192,6 +204,9 @@ export class BossGameScene {
   menu() {
     const G = this.G; if (G.ui.panelOpen) return;
     this.menuOpen = true;
+    // (외부 QA 10/20 TECH-HOTEL-PAUSE-INPUT) a finger still down from the game (a guest held in 몽글 호텔) would go on moving
+    // and dropping it behind the menu: every press still down is cancelled — each game's own cancel puts things back
+    for (const id of [...(this._down || [])]) dispatchEvent(new PointerEvent('pointercancel', { pointerId: id, isPrimary: false, bubbles: true }));
     G.ui.panel({ title: '잠깐!', color: 'purple', close: () => G.ui.closePanel(), body: [h('div', { class: 'txt' }, BOSS_GAME_INFO[this.kind].name)],
       buttons: [G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => { G.ui.closePanel(); G.go('home'); } }),
         G.ui.btn('건너뛰기', { color: 'gray', cls: 'sm', onClick: () => { G.ui.closePanel(); this.finish(); } }),
@@ -245,6 +260,7 @@ export class BossGameScene {
   }
   exit() {
     this.dead = true; const W = this.G.world;
+    removeEventListener('pointerdown', this._pd, true); removeEventListener('pointerup', this._pu, true); removeEventListener('pointercancel', this._pu, true);
     this.game?.exit?.();
     this.sheet?.remove(); this.sheet = null;
     const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night', 'wh', 'rl', 'ik', 'tr', 'bk', 'gh', 'fp');

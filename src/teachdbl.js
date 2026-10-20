@@ -35,7 +35,13 @@ export async function teachDbl(S) {
     return { sx: cx, sy: cy };
   };
   const at = () => { if (!spot || S.t - at0 > 1) { spot = find(); at0 = S.t; } return spot; };
+  // (외부 QA 10/20 ST-DBL-CONSUMED) learnt only by a double tap that zoomed in — not a pinch, not the lesson timing out or the
+  // stage ending: those leave it to be taught again the next time 3판 is played (S._dbl keeps it to once a play)
+  let dbl = false; const prev = W.onDoubleTap;
+  W.onDoubleTap = (x, y) => { prev?.(x, y); if (W.zoom <= 1.8) dbl = true; };
   const ok = await S.teach(tr(DBL_TXT.tip), 'dtap', at, () => W.zoom > z0 + .6 || (W.zoomGoal?.z ?? 0) > z0 + .6, DBL_TXT.more, 20);
+  if (!S.dead) W.onDoubleTap = prev;
+  if (!ok || !dbl) return;
   (G.save.tut || (G.save.tut = {})).dbl = 1; G.persist?.();
-  if (ok) G.ui.toast(tr(DBL_TXT.got), 'green');
+  G.ui.toast(tr(DBL_TXT.got), 'green');
 }

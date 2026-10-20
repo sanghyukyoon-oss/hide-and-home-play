@@ -1166,7 +1166,7 @@ export const gameLines = (kind, lv) => GAME[`${kind}:${lv}`] || null;
 export const GAME_GIFT = {
   whack: L('frog', '개굴! 1등 상금이야!', 'Ribbit! Prize money for first place!'),
   redlight: L('raccoon', '…봐준 거야. 이건 그냥 주는 거고.', '…I went easy on you. This is just a gift.'),
-  blanket: L('bunny', '다 맞혔네! 파자마 파티 1등은 너야!', 'You got everyone! Pajama party champ: you!'),
+  blanket: L('bunny', '잘 찾았네! 파자마 파티 1등은 너야!', 'Nice work! Pajama party champ: you!'),   // (a win with a wrong guess too — not '다 맞혔네': 외부 QA 10/20 ST-BLANKET-PERFECT-COPY)
   gohome: L('hamster', '웁웁, 데려다줘서 고마워! 이건 내 저금통에서 꺼낸 거야.', 'Mmf, thanks for walking us home! This is from my piggy bank.'),
   spot: L('raccoon', '쳇, 들켰으니 이건 네 거.', 'Tch. You caught me, so this is yours.'),
   lamp: L('hamster', '무서웠는데 같이 해 줘서 고마워!', 'That was scary, but thanks for playing with me!'),

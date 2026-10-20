@@ -270,7 +270,7 @@ export class Game {
   ptrUp(e) {
     const d = this.drag; if (!d || e.pointerId !== d.id) return;
     this.drag = null;
-    if (d.moved) { const dest = this.dropAt(e.clientX, e.clientY); this.endHover(); this.dropTenant(d.tid, dest); return; }
+    if (d.moved) { const dest = e.type === 'pointercancel' ? null : this.dropAt(e.clientX, e.clientY); this.endHover(); this.dropTenant(d.tid, dest); return; }   // (cancelled — the OS, or the 잠깐! menu: back where it was, as in 몽글 호텔 — 외부 QA 10/20)
     if (e.type === 'pointercancel') return;
     if (d.from === 'card') { this.select(this.sel === d.tid ? null : d.tid); return; }
     this.tapRoom(d.room);

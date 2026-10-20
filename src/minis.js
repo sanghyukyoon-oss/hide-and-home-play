@@ -169,7 +169,7 @@ class Spot {
     const n = this.changes.filter(c => c.found).length;
     if (!this.peeking) S.setStatus(`바뀐 곳 ${n} / ${this.changes.length}`, '');
     for (const m of this.marks) { const s = W.toScreen(m.p); m.el.style.left = s.x + 'px'; m.el.style.top = s.y + 'px'; }
-    if (this.left <= 0) return S.done(false, '시간 끝! 먹물이: "히히, 아직 못 찾은 게 있지롱~"');
+    if (this.left <= 0) return S.done(false, '시간 끝! 너굴이: "히히, 아직 못 찾은 게 있지롱~"');   // (너굴이 says it, as everywhere in this game — 외부 QA 10/20 ST-SPOT-TIMEOUT-ACTOR)
   }
   peek() {
     if (this.peeking || this.phase !== 'find') return;
