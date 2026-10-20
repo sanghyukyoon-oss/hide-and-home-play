@@ -82,6 +82,7 @@ export class MiniScene {
   screen(p) { return this.G.world.toScreen(p); }
   say(ch, text, ms = 1200) {
     const b = h('div', { class: 'bubble pop' }, text); this.G.ui.wui.append(b);
+    this.G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
     const root = ch.root || ch;
     const upd = () => { const p = this.G.world.toScreen(V.copy(root.position).setY(root.position.y + (ch.headTop?.() ?? .5) + .2)); b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px'; };
     upd(); const iv = setInterval(upd, 30); setTimeout(() => { clearInterval(iv); b.remove(); }, ms);

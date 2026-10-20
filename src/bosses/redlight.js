@@ -167,7 +167,7 @@ export class Game {
     const LV = this.lv, n = this.chants++;
     const kind = n === 0 ? 'even' : pickW(LV.mix);
     let g;
-    if (kind === 'even') { const b = n === 0 ? .38 : rnd(.28, .37); g = SYL.map(() => b * rnd(.9, 1.1)); }
+    if (kind === 'even') { const b = n === 0 ? .38 : rnd(.28, .37), exact = n === 0 && this.L.audio.hasFile?.('mugunghwa'); g = SYL.map(() => b * (exact ? 1 : rnd(.9, 1.1))); }   // (the first chant on the beat of a chant file, if there is one — 10/20)
     else if (kind === 'drawl') { const cut = 4 + Math.floor(Math.random() * 3); g = SYL.map((_, i) => i < cut ? rnd(.48, .6) : rnd(.11, .14)); }
     else if (kind === 'rush') g = SYL.map(() => rnd(.13, .17));
     else { const b = rnd(.24, .3); g = SYL.map((_, i) => i === 9 ? rnd(.9, 1.6) : b * rnd(.9, 1.1)); }
@@ -179,6 +179,7 @@ export class Game {
   startChant() {
     const s = this.sul, c = this.makeChant();
     Object.assign(s, { st: 'chant', t: 0, si: 0, next: 0, kikT: null, gaps: c.gaps, kind: c.kind, kikAt: c.kikAt });
+    s.jingle = this.chants === 1 && !!this.L.audio.hasFile?.('mugunghwa'); if (s.jingle) this.L.audio.sfx('mugunghwa');   // 구호 파일 (audio/gpt/sfx-mugunghwa.mp4)
     s.ch.pose = 'cover'; s.ch.setFace('happy');
     this.chantEl.className = 'rl-chant safe'; this.setSyl(0);
     for (const f of this.friends) this.npcChant(f);
@@ -188,7 +189,8 @@ export class Game {
   }
   sayNext() {
     const s = this.sul, L = this.L;
-    s.si++; L.audio.sfx('hop', s.si); s.ch.bump(.14);
+    s.si++; s.ch.bump(.14);
+    if (!s.jingle) { if (L.audio.voiceOn && L.audio.voice) L.audio.voice(SYL[s.si - 1], 'raccoon', { one: true }); else L.audio.sfx('hop', s.si); }   // 너굴이 says each syllable (목소리 off: the old hop)
     this.setSyl(s.si);
     if (s.si >= SYL.length) return this.turn('da');
     if (s.kikAt === s.si) { s.kikT = s.t + (this.lvIdx >= 2 ? .5 : .58); L.say(s.ch, '킥킥', 500, 'think'); L.audio.sfx('giggle'); this.chantEl.classList.add('kik'); s.ch.rx.fluff = 1; return; }

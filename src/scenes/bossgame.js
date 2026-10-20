@@ -111,6 +111,7 @@ export class BossGameScene {
       },
       say(ch, text, ms = 1200, cls = '') {
         const b = h('div', { class: 'bubble pop ' + cls }, text); G.ui.wui.append(b);
+        G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
         const V = new THREE.Vector3();
         const upd = () => { const p = G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .22)); b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px'; };
         upd(); const iv = setInterval(() => b.isConnected ? upd() : clearInterval(iv), 30); setTimeout(() => { clearInterval(iv); b.remove(); }, ms);   // (gone from the page → the timer stops too — QA3 10/19)

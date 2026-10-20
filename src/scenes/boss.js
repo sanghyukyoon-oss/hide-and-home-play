@@ -177,6 +177,7 @@ export class BossScene {
   drawSlots() { this.treasures.forEach((t, i) => { const el = this.slots[i]; el.classList.toggle('hidden', !!t.spot && !t.lost); el.classList.toggle('lost', t.lost); el.classList.toggle('todo', !t.spot); el.classList.toggle('danger', !t.lost && !!t.spot && this.target === t.spot && this.phase === 'seek'); }); }
   say(ch, text, ms = 1200) {
     const b = h('div', { class: 'bubble pop' }, text); this.G.ui.wui.append(b);
+    this.G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
     const upd = () => { const p = this.G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .2)); b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px'; };
     upd(); const iv = setInterval(upd, 30); setTimeout(() => { clearInterval(iv); b.remove(); }, ms);
   }

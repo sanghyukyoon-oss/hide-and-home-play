@@ -1,19 +1,20 @@
-// WebAudio-synthesized SFX + streamed background music per scene slot; a slot without a file plays the music box.
+// WebAudio-synthesized SFX + streamed background music per scene slot (every slot without its own file plays the lobby song).
 import { store } from './util.js';
 import { hapticFor } from './feel.js';
 
 // ── 소리 파일 자리 (사운드 세션 10/19, user: "지피티가 효과음 만든 것도 있거든? 비지엠이랑. 이거 받아다가 적용도 해 줘")
-// GPT가 만든 파일은 audio/gpt/ 에 넣고, 아래 그 칸의 gpt: null 을 그 파일 경로로 바꾼다 (웹은 폴더를 못 읽어서 이 표가 목록).
-// gpt 가 있으면 그것, 없거나 못 읽으면 tmp 를 튼다. gain: 곡끼리 크기 맞춤 (1 = 그대로). 주소에 ?bgm=tmp → 임시 곡으로 비교.
-// 음악은 <audio> 하나로 흘려 듣기(스트리밍)만 한다 — 통째로 풀면 아이폰에서 곡당 ~50 MB. 표 전체와 바꾸는 법: audio/README-sound.md
+// Suno·Google로 만든 곡은 audio/gpt/ 에 넣고, 아래 그 칸의 gpt: null 을 그 파일 경로로 바꾼다 (웹은 폴더를 못 읽어서 이 표가 목록).
+// 10/20 사용자 규칙: 음악은 Suno·Google로만 만든다(코드로 만든 곡 X). 자기 곡이 없는 칸은 로비 곡을 그대로 이어서 튼다 —
+// 같은 곡이면 장면이 바뀌어도 처음부터 다시 틀지 않는다. gain: 곡끼리 크기 맞춤(1 = 그대로). 주소에 ?bgm=lobby → 전부 로비 곡.
+// 음악은 <audio> 하나로 흘려 듣기(스트리밍)만 한다 — 통째로 풀면 아이폰에서 곡당 ~50 MB. 표·만드는 법: audio/README-sound.md
 export const BGM = {
-  lobby: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 홈·로비·내 집·놀러 가기·배치 편집 (「햇살 사이 숨은 친구」, GPT·Suno)
-  map: { tmp: 'audio/bgm-map-tmp01.mp4', gpt: null, gain: 1 },   // 스테이지(맵)
-  mini: { tmp: 'audio/bgm-mini-tmp01.mp4', gpt: null, gain: 1 },   // 쉬어가기 놀이 (미니게임)
-  tv: { tmp: 'audio/bgm-tv-tmp01.mp4', gpt: null, gain: 1 },   // 몽글 TV가 켜져 있는 동안
-  boss: { tmp: 'audio/bgm-boss-tmp01.mp4', gpt: null, gain: 1 },   // 방탈출 보스판·보스 놀이·지역 보스 놀이·엄마 습격(내 방)
-  king: { tmp: 'audio/bgm-king-tmp01.mp4', gpt: null, gain: 1 },   // 마지막 보스(70판 뒤)·숨바꼭질 왕 결정전
-  tense: { tmp: null, gpt: null, gain: 1 },   // 막판 10초 같은 다급함: 파일이 없으면 지금 곡을 조금 빠르게(+피치)
+  lobby: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 홈·로비·내 집·놀러 가기·배치 편집 (「햇살 사이 숨은 친구」, Suno) — 다른 칸의 기본값
+  map: { gpt: null, gain: 1 },   // 스테이지(맵)                       → audio/gpt/bgm-map.mp4
+  mini: { gpt: null, gain: 1 },   // 쉬어가기 놀이 (미니게임)            → audio/gpt/bgm-mini.mp4
+  tv: { gpt: null, gain: 1 },   // 몽글 TV가 켜져 있는 동안             → audio/gpt/bgm-tv.mp4
+  boss: { gpt: null, gain: 1 },   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
+  king: { gpt: null, gain: 1 },   // 마지막 보스·숨바꼭질 왕 결정전       → audio/gpt/bgm-king.mp4
+  tense: { gpt: null, gain: 1 },   // 다급할 때 (없으면 지금 곡을 1.07배로) → audio/gpt/bgm-tense.mp4
 };
 // 효과음: 이름 → 'audio/gpt/sfx-<이름>.mp4' (null = 코드로 만든 소리). { src, gain, pitch } 로 쓰면 크기 조절, pitch: true 는
 // 연달아 찾을수록 음이 올라가는 소리(found·pop·star)에 — 파일 하나를 높이만 바꿔 튼다. 짧게(1초 안), 모노 권장.
@@ -22,19 +23,20 @@ export const SFX_FILES = {
   open: null, close: null, drawer: null, door: null, lift: null, swish: null, creak: null,
   key: null, locked: null, unlock: null, coin: null, star: null, win: null, lose: null,
   whoosh: null, btn: null, tap: null, click: null, tick: null, tock: null,
+  mugunghwa: null,   // 무궁화 꽃이 피었습니다 첫 구호 (파일이 있을 때만 — 없으면 너굴이 목소리로 한 글자씩)
 };
 
 export function createAudio({ storageKey = 'sbk.mute' } = {}) {
-  const A = { ctx: null, master: null, sfxBus: null, musicBus: null, muted: store.get(storageKey, false), _timer: null, _step: 0, mood: 'home' };
+  const A = { ctx: null, master: null, sfxBus: null, musicBus: null, muted: store.get(storageKey, false), voiceOn: store.get('sbk.voice', true), mood: 'home' };
   const MUSIC_VOL = .3;
   function ensure() {
     if (A.ctx) return A.ctx;
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
     try { A.ctx = new AC(); } catch { return null; }
-    A.master = A.ctx.createGain(); A.master.gain.value = A.muted ? 0 : .9;
-    const comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
-    A.master.connect(comp).connect(A.ctx.destination);
-    A.sfxBus = A.ctx.createGain(); A.sfxBus.gain.value = .8; A.sfxBus.connect(A.master);
+    A.master = A.ctx.createGain(); A.master.gain.value = A.muted ? 0 : .9; A.master.connect(A.ctx.destination);
+    // the squeeze is on the sound effects only (10/20: it sat on everything, so a loud tap pressed the music down with it)
+    const comp = A._comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(A.master);
+    A.sfxBus = A.ctx.createGain(); A.sfxBus.gain.value = .8; A.sfxBus.connect(comp);
     A.musicBus = A.ctx.createGain(); A.musicBus.gain.value = MUSIC_VOL; A.musicBus.connect(A.master);
     loadSfxFiles();
     return A.ctx;
@@ -44,8 +46,12 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // never resumed: no sound until a reload. Any state but running resumes, on presses and lifts; the music starts once the
   // context really runs (it used to wait for the next touch). The page hidden (home button, another app): everything
   // stops — Android kept the music box playing behind the home screen.
-  const goMusic = () => { if (A._wantMusic && !A._timer) A.music(A.mood); };
-  A.unlock = () => { const c = ensure(); if (c && c.state !== 'running' && c.state !== 'closed' && !document.hidden) { const pr = c.resume(); pr?.then?.(goMusic, () => {}); } goMusic(); };
+  // (10/20, user: "음악이 끊길 때가 있어 — 터치하거나 돌릴 때") every press, lift and click came here and asked the music
+  // again, which wrote the element's pitch setting each time — on iPhone that resets the audio path, a cut you hear. And
+  // each haptic tick is a made-up click (feel.js tick1), ~8 a second while turning. Now: made-up events are ignored, and
+  // the track that is already playing what was asked is not touched at all.
+  const goMusic = () => { if (!A._wantMusic) return; if (A._req && T.url && T.el && !T.el.paused && !T.swapT && !T.stopT) return; A.music(A.mood); };
+  A.unlock = e => { if (e && e.isTrusted === false) return; const c = ensure(); if (c && c.state !== 'running' && c.state !== 'closed' && !document.hidden) { const pr = c.resume(); pr?.then?.(goMusic, () => {}); } goMusic(); };
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, A.unlock, { capture: true, passive: true });
   document.addEventListener('visibilitychange', () => { const c = A.ctx; if (!c || c.state === 'closed') return; try { if (document.hidden) { c.suspend()?.catch?.(() => {}); pauseDecks(); } else c.resume()?.then?.(goMusic, () => {}); } catch {} });
   A.setMuted = m => { A.muted = m; store.set(storageKey, m); if (A.master) A.master.gain.setTargetAtTime(m ? 0 : .9, A.ctx.currentTime, .02); if (T.el && !T.gain) T.el.volume = m || !T.goal ? 0 : MUSIC_VOL; };
@@ -182,6 +188,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'blub': for (let i = 0; i < 3; i++) tone({ type: 'sine', f: 380 + i * 140, f2: 900 + i * 220, dur: .06, vol: .2, at: i * .09 }); break;
       // a door (room door, elevator, rooftop): it swings through the air, then settles with a soft wooden knock
       case 'door': noise({ dur: .32, vol: .13, f: 420, f2: 950, q: 2.5, attack: .05 }); tone({ type: 'triangle', f: 150, f2: 112, dur: .24, vol: .1, vib: 5 }); tone({ type: 'sine', f: 125, f2: 72, dur: .13, vol: .22, at: .3 }); noise({ dur: .05, vol: .08, type: 'lowpass', f: 650, at: .3 }); break;
+      case 'mugunghwa': break;   // (a Suno·Google file only — without one 너굴이's voice says the chant, bosses/redlight.js)
       default: tone({ f: 600, dur: .05, vol: .2 });
     }
   };
@@ -195,6 +202,52 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     A._bus = g; try { A.sfx(name); } finally { A._bus = null; }
     setTimeout(() => { try { g.disconnect(); p?.disconnect(); } catch {} }, 3000);
   };
+  A.hasFile = name => !!sfxBuf[name];
+
+  // ── 목소리 (10/20): a friend's line as cute babble — one soft blip per syllable, its vowel colouring the blip (animal-
+  // crossing-like gibberish made from the text, nobody's real voice). Short (8 syllables at most), quiet, never two at once;
+  // off with setVoice(false) (설정 → 목소리). Only 너굴이 has one for now (VOICES).
+  const VOICES = { raccoon: { f0: 590, step: .072, vol: .12, wave: 'triangle' } };
+  //            a          e          i          o          u   (F1/F2, raised for a small animal)
+  const VOW = { a: [950, 1500], e: [620, 2300], i: [400, 2800], o: [620, 1100], u: [440, 1000] };
+  const JUNG = 'aeaeoeoeoaeeouoeiuuii';   // the 21 Hangul vowels → a e i o u
+  const voiceOf = who => { if (!who) return null; for (const k in VOICES) if (who === k || who.startsWith(k + '_')) return VOICES[k]; return null; };
+  function syllables(text, max) {
+    const out = [];
+    for (const ch of String(text)) {
+      const c = ch.codePointAt(0);
+      if (c >= 0xAC00 && c <= 0xD7A3) { const k = c - 0xAC00; out.push({ v: JUNG[Math.floor((k % 588) / 28)], hard: Math.floor(k / 588) !== 11, n: k }); }
+      else if (/[aeiouy]/i.test(ch)) out.push({ v: ch.toLowerCase() === 'y' ? 'i' : ch.toLowerCase(), hard: true, n: c });
+      if (out.length >= max) break;
+    }
+    return out;
+  }
+  A.setVoice = on => { A.voiceOn = !!on; store.set('sbk.voice', A.voiceOn); };
+  A.voice = (text, who, { max = 8, one = false } = {}) => {
+    const V = voiceOf(who);
+    if (!V || !A.voiceOn || !ensure() || A.muted || A.ctx.state !== 'running') return;
+    const c = A.ctx, now = c.currentTime;
+    if (!one && A._voiceEnd > now) return;
+    const syl = syllables(text, one ? 1 : max); if (!syl.length) return;
+    const ask = /[?？]\s*$/.test(text), cheer = /[!！~]\s*$/.test(text);
+    const out = c.createGain(); out.gain.value = V.vol; out.connect(A.sfxBus);
+    syl.forEach((S, i) => {
+      const t0 = now + i * V.step, d = V.step * .82, last = i === syl.length - 1;
+      const semi = [0, 3, 5, 7, 5, 3, 0, 2][S.n % 8] + (cheer ? 2 : 0) + (ask && last ? 5 : 0);
+      const f = V.f0 * 2 ** (semi / 12), o = c.createOscillator(), g = c.createGain();
+      o.type = V.wave; o.frequency.setValueAtTime(f * 1.04, t0); o.frequency.exponentialRampToValueAtTime(f * (ask && last ? 1.12 : .96), t0 + d);
+      const [F1, F2] = VOW[S.v] || VOW.a, b1 = c.createBiquadFilter(), b2 = c.createBiquadFilter();
+      b1.type = b2.type = 'bandpass'; b1.frequency.value = F1; b2.frequency.value = F2; b1.Q.value = 3; b2.Q.value = 5;
+      g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(1, t0 + .008); g.gain.setValueAtTime(1, t0 + d * .45); g.gain.exponentialRampToValueAtTime(.001, t0 + d);
+      o.connect(b1).connect(g); o.connect(b2).connect(g); g.connect(out);
+      const dry = c.createGain(); dry.gain.value = .35; o.connect(dry).connect(g);
+      o.start(t0); o.stop(t0 + d + .02);
+      if (S.hard) noise({ dur: .012, vol: .05, type: 'bandpass', f: 3200, q: 2, at: i * V.step });
+    });
+    A._voiceEnd = now + syl.length * V.step;
+    setTimeout(() => { try { out.disconnect(); } catch {} }, (syl.length * V.step + .5) * 1000);
+  };
+
   // the music steps back for a moment (a win's jingle) and comes back on its own
   A.duck = (sec = 2, to = .3) => {
     if (!A.musicBus) return;
@@ -203,29 +256,30 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     g.linearRampToValueAtTime(MUSIC_VOL * to, t + .08); g.setValueAtTime(MUSIC_VOL * to, t + sec); g.linearRampToValueAtTime(MUSIC_VOL, t + sec + .8);
   };
 
-  // ── background music: a slot per scene (BGM above), streamed, faded across (사운드 세션 10/19)
+  // ── background music: a slot per scene (BGM above), streamed, faded across (사운드 세션 10/19, 10/20)
   // One <audio> element for every track (memory, and iPhone lets an element play on its own only after a tap has started it
   // once — a second element would stay silent until the next tap): the track going out fades down, the next one comes in
-  // as soon as it really plays (~0.8 s in all, under the iris). A gpt file that can't be read falls back to its tmp.
+  // as soon as it really plays (~0.8 s in all, under the iris). A slot with no file of its own plays the lobby song — the
+  // same file, so it just goes on. A gpt file that can't be read is dropped (the lobby song again).
   const XF = .8, TRACK_GAIN = .55, HURRY = 1.07;
-  const forceTmp = /[?&]bgm=tmp\b/.test(location.search), failed = new Set();
-  const urlOf = slot => { const b = BGM[slot]; if (!b) return null; return b.gpt && !forceTmp && !failed.has(b.gpt) ? b.gpt : b.tmp; };
-  const T = A._trk = { el: null, gain: null, url: null, slot: null, want: null, goal: 0, pending: null, swapT: 0, stopT: 0 };
+  const lobbyOnly = /[?&]bgm=(lobby|tmp)\b/.test(location.search), failed = new Set();
+  const own = slot => { const b = BGM[slot]; if (!b) return null; const url = (b.gpt && !lobbyOnly && !failed.has(b.gpt) && b.gpt) || b.tmp; return url ? { url, gain: b.gain ?? 1 } : null; };
+  const fileOf = slot => own(slot) || own('lobby');
+  const T = A._trk = { el: null, gain: null, url: null, slot: null, want: null, goal: 0, pending: null, swapT: 0, stopT: 0, rate: 1 };
   function mkTrack() {
     const el = T.el = new Audio(); el.loop = true; el.preload = 'auto'; el.crossOrigin = 'anonymous'; el.setAttribute('playsinline', '');
     try { const node = A.ctx.createMediaElementSource(el); T.gain = A.ctx.createGain(); T.gain.gain.value = 0; node.connect(T.gain).connect(A.musicBus); } catch { T.gain = null; }
     el.addEventListener('playing', () => { if (T.pending != null) { fade(T.pending, XF * .6); T.pending = null; } });
     el.addEventListener('error', () => {
-      const b = BGM[T.slot];
-      if (!b || !T.url || T.url !== b.gpt) return;
-      console.warn('bgm file', T.url, 'could not be read — playing', b.tmp);
+      if (!T.url || !Object.values(BGM).some(b => b.gpt === T.url)) return;
+      console.warn('bgm file', T.url, 'could not be read — playing the lobby song');
       failed.add(T.url); T.url = null; A._req = null; goMusic();
     });
   }
+  // the speed only when it changes, and never the pitch setting (writing it, even the same value, cut the sound on iPhone)
   function setRate(rate) {
-    const el = T.el;
-    el.preservesPitch = el.webkitPreservesPitch = el.mozPreservesPitch = rate === 1;   // (hurried: a touch higher too, like a wind-up toy)
-    if (el.playbackRate !== rate) el.playbackRate = rate;
+    if (T.rate === rate && T.el.playbackRate === rate) return;
+    T.rate = rate; T.el.defaultPlaybackRate = rate; T.el.playbackRate = rate;
   }
   function fade(to, sec) {
     T.goal = to;
@@ -235,16 +289,17 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   }
   function swap() {
     T.swapT = 0; const w = T.want;
-    T.url = w.url; T.el.src = w.url; setRate(w.rate);
+    T.url = w.url; T.el.src = w.url; T.rate = 0; setRate(w.rate);
     fade(0, .02); T.pending = w.level;   // (comes up on 'playing' — a slow network doesn't eat the fade-in)
     if (!document.hidden) T.el.play()?.catch?.(() => {});   // (refused before a tap: goMusic tries again on the next one)
   }
   function playSlot(slot, rate) {
     if (!T.el) mkTrack();
-    const url = urlOf(slot), level = TRACK_GAIN * (BGM[slot]?.gain ?? 1);
+    const f = fileOf(slot); if (!f) return stopTrack();
+    const url = f.url, level = TRACK_GAIN * f.gain;
     clearTimeout(T.stopT); T.stopT = 0;
     T.slot = slot; T.want = { url, rate, level };
-    if (T.url === url) {   // this track already: a swap under way is called off, and it plays at its own level
+    if (T.url === url) {   // this file already (another slot falling back to the same song too): it goes on, at its own level
       if (T.swapT) { clearTimeout(T.swapT); T.swapT = 0; }
       setRate(rate);
       if (T.pending != null) T.pending = level; else if (T.goal !== level) fade(level, .35);
@@ -263,8 +318,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   }
   function pauseDecks() { T.el?.pause(); }
 
-  // mood → slot: 'home' the lobby, 'play' this scene's own (A.scene), 'tense' the tense file or a hurried boss track; a
-  // slot's name works as a mood too ('boss', 'king', 'tv' …)
+  // mood → slot: 'home' the lobby, 'play' this scene's own (A.scene), 'tense' the tense file or the playing track hurried;
+  // a slot's name works as a mood too ('boss', 'king', 'tv' …)
   const SCENE_SLOT = { stage: 'map', mini: 'mini', boss: 'boss', bossgame: 'boss' };
   A.playSlot = 'map'; A._hurry = false; A._req = null;
   A.scene = (name, data = {}) => {
@@ -275,12 +330,12 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   A.hurry = (on = true) => { A._hurry = !!on; if (A._req) A._req.rate = on ? HURRY : 1; if (T.el && T.url) setRate(on ? HURRY : 1); };
   function request(mood) {
     if (mood === 'tense') {
-      if (urlOf('tense')) return { slot: 'tense', rate: 1 };
+      if (own('tense')) return { slot: 'tense', rate: 1 };
       const now = T.url && !T.stopT ? T.slot : null, s = now === 'boss' || now === 'king' ? now : 'boss';
       return { slot: s, rate: s === now ? HURRY : 1 };
     }
-    const slot = mood === 'home' ? 'lobby' : mood === 'play' ? A.playSlot : BGM[mood] ? mood : null;
-    return { slot: slot && urlOf(slot) ? slot : null, rate: A._hurry ? HURRY : 1 };
+    const slot = mood === 'home' ? 'lobby' : mood === 'play' ? A.playSlot : BGM[mood] ? mood : 'lobby';
+    return { slot, rate: A._hurry ? HURRY : 1 };
   }
   // (a pushed slot — 몽글 TV — gives the music back to what was playing when it closes)
   A.pushMusic = slot => {
@@ -288,44 +343,14 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     A.music(slot);
     return () => { if (A.mood !== slot) return; if (prev.want) A.music(prev.mood); else A.stopMusic(); };
   };
-
-  // Music box loop (a slot with no file). mood: 'home' | 'play' | 'tense'
-  const MOODS = {
-    home: { bpm: 96, root: -7, prog: [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]], mel: [12, 16, 19, 16, 14, 12, 9, 12] },
-    play: { bpm: 118, root: -5, prog: [[0, 4, 7], [-5, -1, 2], [-3, 0, 4], [-7, -3, 0]], mel: [12, 14, 16, 19, 21, 19, 16, 14] },
-    tense: { bpm: 84, root: -10, prog: [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -1, 2]], mel: [12, 15, 12, 10, 12, 15, 17, 15] },
-  };
+  // (10/20: the music box that played when a slot had no file is gone — music comes from Suno·Google files only)
   A.music = (mood = 'home') => {
     const again = mood === A.mood && A._wantMusic && A._req;
     A.mood = mood; A._wantMusic = true;
-    if (!again && A._timer) { clearInterval(A._timer); A._timer = null; }
     if (!ensure() || A.ctx.state !== 'running') { if (!again) A._req = null; return; }
     if (!again) A._req = request(mood);
-    if (A._req.slot) return playSlot(A._req.slot, A._req.rate);
-    stopTrack();
-    if (A._timer) return;
-    const M = MOODS[mood] || MOODS.home;
-    const stepDur = 60 / M.bpm / 2; let next = A.ctx.currentTime + .06;
-    A._timer = setInterval(() => {
-      if (!A.ctx) return;
-      if (A.muted) { next = A.ctx.currentTime + .05; return; }
-      if (next < A.ctx.currentTime) next = A.ctx.currentTime + .05;   // (a timer that slept doesn't replay the missed steps in one blast — QA3 10/19)
-      while (next < A.ctx.currentTime + .25) {
-        const s = A._step++, bar = Math.floor(s / 8) % M.prog.length, chord = M.prog[bar], at = next - A.ctx.currentTime;
-        if (s % 8 === 0) chord.forEach(n => tone({ type: 'triangle', f: hz(M.root + n), dur: stepDur * 7.6, vol: .06, attack: .1, at, bus: A.musicBus, filter: 'lowpass', q: 1300 }));
-        if (s % 4 === 0) tone({ type: 'sine', f: hz(M.root - 12 + chord[0]), dur: stepDur * 3, vol: .14, at, bus: A.musicBus });
-        if (s % 4 === 2) tone({ type: 'sine', f: hz(M.root - 12 + chord[2]), dur: stepDur * 2, vol: .09, at, bus: A.musicBus });
-        // music-box melody: sine + octave bell
-        if ((s * 5) % 8 < 5) {
-          const n = M.mel[s % M.mel.length] + (bar === 2 ? -3 : 0);
-          tone({ type: 'sine', f: hz(M.root + n), dur: stepDur * 1.6, vol: .07, at, bus: A.musicBus });
-          tone({ type: 'sine', f: hz(M.root + n + 12), dur: stepDur * .9, vol: .025, at, bus: A.musicBus });
-        }
-        if (mood !== 'home' && s % 2 === 1) tone({ type: 'square', f: 5200, dur: .015, vol: .012, at, bus: A.musicBus, filter: 'highpass', q: 4000 });
-        next += stepDur;
-      }
-    }, 60);
+    playSlot(A._req.slot, A._req.rate);
   };
-  A.stopMusic = () => { A._wantMusic = false; A._req = null; if (A._timer) { clearInterval(A._timer); A._timer = null; } stopTrack(); };
+  A.stopMusic = () => { A._wantMusic = false; A._req = null; stopTrack(); };
   return A;
 }

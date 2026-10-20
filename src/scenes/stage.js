@@ -2477,6 +2477,7 @@ export class StageScene {
   say(ch, text, ms = 1200) {
     const b = h('div', { class: 'bubble pop' }, text);
     this.G.ui.wui.append(b);
+    this.G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
     // keep the bubble on screen (it is centred on its x)
     const upd = () => { const p = this.G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .2)); const hw = (b.offsetWidth || 120) / 2 + 8; b.style.left = Math.max(hw, Math.min(innerWidth - hw, p.x)) + 'px'; b.style.top = Math.max(40, p.y) + 'px'; };
     upd(); const iv = setInterval(upd, 30);
@@ -2760,7 +2761,8 @@ export class StageScene {
     const ctrl = row('조작', () => S.ctrl === 'E' ? '콕 전환' : '돌림판', () => { S.ctrl = S.ctrl === 'E' ? 'F' : 'E'; G.world.scheme = S.ctrl; G.world.eMode = G.world.eBase = 'move'; G.persist(); });
     // (10/20, user: "조작 도움말 화면에 1~10판까지 버튼으로 다시 볼 수 있게") — the help, and this panel again when it closes
     const help = row('조작 도움말', () => '›', () => { ui.closePanel(); openHelp(G, { onClose: () => { if (!this.dead && !this.result) this.pause(); } }); });
-    const rows = [snd, ctrl, help];
+    const voice = row('목소리', () => G.audio.voiceOn ? '켜짐' : '꺼짐', () => G.audio.setVoice?.(!G.audio.voiceOn));   // (너굴이 옹알이 — 10/20)
+    const rows = [snd, voice, ctrl, help];
     const fsOk = !IN_APP && !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && document.fullscreenEnabled !== false;   // (the app is full screen already)
     if (fsOk) rows.push(row('전체화면', () => document.fullscreenElement || document.webkitFullscreenElement ? '켜짐' : '꺼짐', async () => {
       const el = document.documentElement;

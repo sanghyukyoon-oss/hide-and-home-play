@@ -209,6 +209,7 @@ export function playDialog(G, lines, { title = null, onLine = null, parent = nul
       card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
       G.audio.sfx('pop', L.who === 'mong' ? 4 : 1);
       let k = 0; text.textContent = ''; const LT = tr(L.text);
+      G.audio.voice?.(LT, L.who);   // (목소리: 너굴이's babble, quiet and short — 10/20)
       clearInterval(typing);
       typing = setInterval(() => { k++; text.textContent = LT.slice(0, k); if (k >= LT.length) { clearInterval(typing); typing = null; } }, 28);
     };
