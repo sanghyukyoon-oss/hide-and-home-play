@@ -61,7 +61,7 @@ const LEVELS = [
     decor: [D('door', 'W', -1.0), D('catclock', 'N', -1.0), D('balconywin', 'W', 1.2), D('wallrack', 'N', 1.5)],
     furniture: [F('monstera', 0, 0), F('bookshelf', 1, 0, 0, { seed: 7 }), F('recordcab', 3, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0), F('bigfridge', 6, 0),
       F('sofa2', 2, 2), F('plant', 1, 2), F('monstera', 5, 3), F('tvlow', 2, 4, 2), F('floorlamp', 0, 4), F('diningset', 4, 4), F('plant', 6, 4)],
-    lures: [{ speaker: TW(1.1, 3.6), name: '자장가 스피커', line: '', lullaby: true, card: '터치하면 자장가 · 엄마가 더 깊이 잠들어요' }],
+    lures: [{ speaker: TW(1.1, 3.6), name: '자장가 스피커', line: '', lullaby: true, card: '아래 리모컨을 터치하면 자장가 · 엄마가 더 깊이 잠들어요' }],
     snacks: ['snack', 'candy', 'icecream'],
     route: [[-3.0, 1.0], [-2.85, -1.45], [-.6, -1.45], [1.0, -1.45], [3.0, -1.0]] },
 ];
@@ -74,6 +74,10 @@ const MOM_WALK = 1.15, CHECK_T = 3.4;
 // makes the stack sway (fill / s by how many you carry, × the night's spillK); past warn it says 휘청 and sways hard, full =
 // the lot spills round you with a clatter, and you tiptoe onto each one to put it back on your head
 const SPILL = { fill: [.55, .75, .95], warn: .5, decay: 1.4, pick: .42, hear: 3.2 };
+let spillTold = 0;   // the first spill of the visit says why it happened; later ones are short
+// the snacks you carry, stacked on 몽글이's head: big enough to read on a phone (10/20, user: "캐릭 위에 음식들이 안 보이니까
+// 키우라는 얘기였어. 음식 아이콘을 키워 줘. 캐릭은 다시 원래 크기로") — 몽글이 is back to its size, the snacks ~1.7× (was .7)
+const SNACK_S = 1.2;
 const EYE_H = 1.25, BODY_H = .58, CROUCH_H = .3, ME_R = .16;
 
 export function mapFor(lv) {
@@ -153,8 +157,6 @@ export class Game {
     this.fridge = this.goalFurn(map, LV);
     // 몽글이
     const me = this.me = new Char('mong'); W.root.add(me.root);
-    const big = c => { c.S *= 1.2; c.body.scale.setScalar(c.S); };   // (10/20 "크기가 작아서": 몽글이 and the dog a size up)
-    big(me);
     this.ring = new THREE.Mesh(new THREE.RingGeometry(.3, .4, 32), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .5, depthWrite: false }));
     this.ring.rotation.x = -Math.PI / 2; W.root.add(this.ring);
     this.aim = new THREE.Mesh(new THREE.RingGeometry(.1, .15, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false }));
@@ -175,7 +177,7 @@ export class Game {
     if (this.mode === 'patrol') { this.wi = 1; this.mState = 'patrol'; this.occ = this.occFull; this.momYaw = this.baseYaw(); mom.root.rotation.y = this.momYaw; }
     if (this.mode === 'doze') { this.mState = 'doze'; this.snT = 0; this.sleepFace(true); }
     if (LV.dog) {
-      const dog = this.dog = new Char('shiba'); W.root.add(dog.root); big(dog);
+      const dog = this.dog = new Char('shiba'); W.root.add(dog.root);
       dog.root.position.set(LV.dog.at[0], 0, LV.dog.at[1]); dog.root.rotation.y = LV.dog.yaw; dog.setFace('happy'); dog.awake = false;
       this.zzT = 1;   // (its Zz puffs up now and then from update — a standing bubble covered the way to the fridge, 10/19)
       this.bodies.push({ x: LV.dog.at[0], z: LV.dog.at[1], r: .32 });
@@ -375,7 +377,8 @@ export class Game {
   // to the whole night when they're apart — slowly, so it never swims. It starts wide (the banner shows the whole night)
   aimCam(dt) {
     const W = this.L.world, C = this.cam0, V = THREE.Vector3, p = this.pos, m = this.mom.root.position;
-    const pts = [new V(p.x, 0, p.y), new V(p.x, 1.0, p.y), new V(m.x, 0, m.z), new V(m.x, 1.6, m.z)];
+    const top = this.me.headTop() + this.snacks.reduce((a, x) => a + ITEMS[x.type].h * SNACK_S, 0) + .3;
+    const pts = [new V(p.x, 0, p.y), new V(p.x, Math.max(1.0, top), p.y), new V(m.x, 0, m.z), new V(m.x, 1.6, m.z)];
     for (const d of this.lures) if (!d.used) { const q = d.g.getWorldPosition(new V()); if (Math.hypot(q.x - p.x, q.z - p.y) < 3.2) pts.push(q.setY(.8)); }   // (a gadget only while it's near you)
     if (this.fridgeTop && this.taken() < 3 && p.distanceTo(this.fridgeAt) < 2) pts.push(this.fridgeTop.clone().setY(this.fridgeTop.y + .5));
     for (const d of this.dropped) pts.push(new V(d.at.x, 0, d.at.y));
@@ -397,8 +400,6 @@ export class Game {
     this._down = e => {
       if (e.button > 0 || this.result || !this.started) return;
       if (e.isPrimary && this.touch) { this.touch = null; this.padHide(); }   // (a primary press: no other finger is down — the old touch lost its lift, QA3 10/19)
-      const d = this.lureAt(e.clientX, e.clientY);
-      if (d) { this.fireLure(d); return; }   // (a gadget answers a second finger too)
       if (this.btnId == null && this.atFridge() && this.onFridge(e.clientX, e.clientY)) { this.btnId = e.pointerId; this.fbtn.classList.add('down'); return; }
       if (this.touch) return;
       this.touch = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
@@ -502,6 +503,20 @@ export class Game {
 .ys-fbtn.near { background: #fff3b0; animation: ysBtn 1s ease-in-out infinite; }
 .ys-fbtn.down { transform: translateY(3px) scale(.94); box-shadow: 0 1px 0 #3a2453; animation: none; background: #ffe16b; }
 .ys-slot.lost { animation: ysLost .5s ease-in-out infinite alternate; opacity: .7; }
+.ys-rbtn { position: absolute; z-index: 7; right: 22px; bottom: calc(40px + var(--safeB, 0px)); width: 74px; height: 74px; border-radius: 50%; background: #fffaf2; border: 4px solid #3a2453; box-shadow: 0 5px 0 #3a2453;
+  display: grid; place-items: center; touch-action: none; -webkit-user-select: none; user-select: none; transition: transform .1s, opacity .25s; }
+.ys-rbtn svg { width: 40px; height: 40px; }
+.ys-rbtn b { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 14px; text-shadow: 0 2px 0 #3a2453; }
+.ys-rbtn.fresh { background: #fff3b0; animation: ysRb .8s ease-in-out infinite; }
+.ys-rbtn.down { transform: translateY(4px) scale(.94); box-shadow: 0 1px 0 #3a2453; animation: none; }
+.ys-rbtn.used { opacity: 0; pointer-events: none; transform: scale(.6); }
+@keyframes ysRb { 50% { box-shadow: 0 5px 0 #3a2453, 0 0 0 12px rgba(255, 225, 107, .45); transform: scale(1.06); } }
+.ys-why { position: absolute; left: 50%; top: calc(150px + var(--safeT, 0px)); transform: translate(-50%, 0); z-index: 8; width: max-content; max-width: calc(100vw - 40px); text-align: center; pointer-events: none;
+  background: #fffaf2; border: 4px solid #3a2453; border-radius: 18px; box-shadow: 0 5px 0 #3a2453; padding: 10px 16px; color: #3a2453; font-size: 18px; word-break: keep-all; animation: ysGetTop .45s cubic-bezier(.2, 1.7, .4, 1); }
+.ys-why b { display: block; font-family: var(--font-display); font-size: 26px; color: #e2455b; }
+.ys-why.out { animation: fadeout .35s forwards; }
+.ys-carry { position: absolute; z-index: 5; display: flex; gap: 2px; padding: 3px; background: #fffaf2; border: 3px solid #3a2453; border-radius: 12px; box-shadow: 0 3px 0 #3a2453; pointer-events: none; transform-origin: 0 50%; }
+.ys-carry img { width: 30px; height: 30px; display: block; }
 .ys-ptr { position: absolute; z-index: 6; width: 42px; height: 42px; margin: -21px 0 0 -21px; border-radius: 50%; background: #fff3b0; border: 3px solid #3a2453; box-shadow: 0 3px 0 #3a2453; display: grid; place-items: center; pointer-events: none; }
 .ys-ptr svg, .ys-ptr img { width: 26px; height: 26px; }
 .ys-ptr .ar { position: absolute; inset: 0; }
@@ -517,6 +532,17 @@ export class Game {
     this.fbtn = h('div', { class: 'ys-fbtn far', role: 'button', 'aria-label': '냉장고' }, this.fbtnL = h('b', {}, '꾹!'));
     this.fbtn.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" fill="none" stroke="#3a2453" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><rect x="5" y="2.5" width="14" height="19" rx="3" fill="#cfe9ff"/><path d="M5 10h14"/><path d="M8.5 5.5v2.2M8.5 12.5v4"/></svg>');
     appEl.append(this.fbtn);
+    // the gadget's remote (10/20, user: "로봇청소기를 누르는 게 별로. 따로 아래에 리모컨 버튼 만들어 줄래? 처음 이동 조이스틱·회전판
+    // 있는 데쯤"): down in the thumbs' strip; one press sets tonight's gadget off (a badge still marks the gadget itself)
+    const rl = this.lures[0];
+    if (rl) {
+      this.rbtn = h('div', { class: 'ys-rbtn', role: 'button', 'aria-label': '리모컨' }, h('b', {}, '리모컨'));
+      this.rbtn.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 24 24" fill="none" stroke="#3a2453" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="7" y="2.5" width="10" height="19" rx="4" fill="#cfe9ff"/><circle cx="12" cy="7.5" r="2" fill="#ff8a6b"/><path d="M10 12.5h4M10 15.5h4M10 18.5h4"/></svg>`);
+      this.rbtn.addEventListener('pointerdown', e => { e.stopPropagation(); if (this.result || !this.started || this.camHold) return; const d = this.lures.find(x => !x.used); if (!d) return; this.rbtn.classList.add('down'); this.fireLure(d); setTimeout(() => this.rbtn?.classList.add('used'), 160); });
+      appEl.append(this.rbtn);
+    }
+    // what's on your head, as icons in an inked chip beside 몽글이's head (the 3D stack alone was too small to read — 10/20)
+    this.carryEl = h('div', { class: 'ys-carry', style: 'display:none' }); ui.wui.append(this.carryEl);
     // where to go when it's off the closer shot (the fridge, your door, a spilled snack): a pointer on the screen's edge
     this.goPtr = h('div', { class: 'ys-ptr', style: 'display:none' }, this.goIc = h('span', { class: 'ic' }), this.goAr = h('span', { class: 'ar' })); appEl.append(this.goPtr);
     // the fridge gauge (10/18, user: "냉장고 앞에서 꾹 누르고 있으면 문 열리고 프로그레스 게이지 나오는 게 나을 거 같아"): over the
@@ -531,7 +557,8 @@ export class Game {
   }
   gotCard(d) {
     const L = this.L, h = L.h;
-    const c = h('div', { class: 'ys-get' }, h('div', { class: 'ys-get-t ol' }, '새로 얻었다!'), h('div', { class: 'ys-get-n', style: 'word-break: keep-all' }, `${d.name} 리모컨`), h('div', { class: 'ys-get-s' }, d.card || `터치하면 ${this.lv.guard && this.lv.guard !== 'mom' ? '술래가' : '엄마가'} 끄러 가요 · 한 번만`));
+    const c = h('div', { class: 'ys-get' }, h('div', { class: 'ys-get-t ol' }, '새로 얻었다!'), h('div', { class: 'ys-get-n', style: 'word-break: keep-all' }, `${d.name} 리모컨`), h('div', { class: 'ys-get-s' }, d.card || `아래 리모컨을 터치하면 ${this.lv.guard && this.lv.guard !== 'mom' ? '술래가' : '엄마가'} 끄러 가요 · 한 번만`));
+    this.rbtn?.classList.add('fresh'); setTimeout(() => this.rbtn?.classList.remove('fresh'), 4200);
     document.getElementById('app').append(c); L.audio.sfx('special');
     setTimeout(() => { c.classList.add('out'); setTimeout(() => c.remove(), 400); }, 2600);
   }
@@ -649,7 +676,7 @@ export class Game {
   fireLure(d) {
     const L = this.L, LV = this.lv;
     if (d.used) return;
-    d.used = true; d.badge?.remove(); d.on = true; L.audio.sfx('pop', 8); L.audio.sfx(d.speaker ? 'special' : 'wobble');
+    d.used = true; d.badge?.remove(); d.on = true; if (!this.lures.some(x => !x.used)) this.rbtn?.classList.add('used'); L.audio.sfx('pop', 8); L.audio.sfx(d.speaker ? 'special' : 'wobble');
     L.log({ lure: d.name, t: +this.t.toFixed(1), mom: this.mState });
     if (d.lullaby) { this.lullT = LV.doze?.lull || 9; if (DOZING.has(this.mState)) this.msay('쿨… 쿨…', 1500, 'think'); return; }   // she sleeps deeper while it plays
     if (AWAY.has(this.mState)) return;   // she's already up: it just plays until she gets to it
@@ -728,7 +755,7 @@ export class Game {
     if (I.fridge && nearFridge && !this.moving) { this.fHold = (this.fHold || 0) + dt; if (!this.doorOpen && this.fHold > .2) this.setDoor(true); } else this.fHold = 0;
     if (this.doorOpen && (p.distanceTo(this.fridgeAt) > 1.1 || (!I.fridge && !this.botFridge && !this.L.bot))) this.setDoor(false);   // let go of the button (or walked off): it swings shut
     this.grabbing = nearFridge && this.doorOpen && I.fridge && I.down && !this.moving;
-    this.placeFbtn();
+    this.placeFbtn(); this.placeCarry();
     this.stepFridge(dt);
     this.stepSpill(dt);
     if (this.mode === 'doze') this.stepHear(dt);
@@ -772,7 +799,7 @@ export class Game {
     else if (this.dropped.length) this.setHint(this.scurry ? '후다닥 말고 살금살금!' : '떨어진 간식 위로 가면 주워요');
     else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '아래를 드래그해서 살금살금' : '코 골 때 움직이면 안 들려');
     else if (n) this.setHint(this.scurry ? '후다닥하면 간식이 흔들려!' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
-    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 드래그해서 살금살금' : live ? `${this.lures.find(d => !d.used).name}를 터치하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
+    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 드래그해서 살금살금' : live ? '아래 리모컨을 터치하면 엄마가 가요' : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
     { const at = nearFridge, busy = at && (this.grabbing || this.btnId != null); this.fbtn.classList.toggle('near', at && !busy); this.fbtn.classList.toggle('far', !at); this.fbtn.classList.toggle('busy', busy); }
     if (this.dog && !this.dog.awake && (this.zzT -= dt) <= 0) { this.zzT = 2.4; const d = this.dog.root.position, s = W.toScreen(new THREE.Vector3(d.x, this.dog.headTop() + .15, d.z)); L.ui.floatText(s.x + 10, s.y, 'Zz', ''); }
@@ -847,12 +874,22 @@ export class Game {
     this.L.ui.floatText(up ? x : x + (x < innerWidth / 2 ? 84 : -84), up ? y - 74 : y - 4, `${ITEMS[type].name}${this.taken() === 3 ? '까지' : ''}!`, 'gold');
   }
   carry(type, g) {
-    const L = this.L, s = .7; g.scale.setScalar(s); g.rotation.set(0, 0, 0);
+    const L = this.L, s = SNACK_S; g.scale.setScalar(s); g.rotation.set(0, 0, 0);
     // stacked on 몽글이's head, wobbling a little
     const y0 = this.me.headTop() + .02 + this.snacks.reduce((a, x) => a + ITEMS[x.type].h * s, 0);
     g.position.set(0, y0, 0); this.me.root.add(g);
     this.snacks.push({ type, g }); L.audio.sfx('pop', 3 + this.snacks.length * 2); this.me.bump(.3);
     this.paintSlots(); L.world.idsDirty = true;
+  }
+  placeCarry() {
+    const C = this.carryEl, n = this.snacks.length; if (!C) return;
+    if (!n || this.result) { C.style.display = 'none'; return; }
+    const key = this.snacks.map(x => x.type).join();
+    if (C.dataset.k !== key) { C.dataset.k = key; C.replaceChildren(...this.snacks.map(x => this.L.h('img', { src: this.L.thumbs['item_' + x.type] }))); }
+    const p = this.me.root.position, s = this.L.world.toScreen(new THREE.Vector3(p.x, this.me.headTop() * .7, p.z));
+    const w = n * 32 + 10, left = s.x + 16 + w > innerWidth - 6;   // (near the right edge: on 몽글이's other side)
+    C.style.display = ''; C.style.left = (left ? s.x - 16 - w : s.x + 16) + 'px'; C.style.top = (s.y - 20) + 'px'; C.style.transformOrigin = left ? '100% 50%' : '0 50%';
+    C.style.transform = `translateY(-50%) rotate(${Math.sin(this.t * (9 + this.wob * 7)) * (3 + this.wob * 14)}deg)`;
   }
   paintSlots() { this.snackTypes.forEach((t, i) => { this.slots[i].classList.toggle('got', this.snacks.some(x => x.type === t)); this.slots[i].classList.toggle('lost', this.dropped.some(x => x.type === t)); }); }
   // 쏟기: the stack sways while you scurry with it (see SPILL); full → it all spills, and a snack on the floor goes back on
@@ -879,13 +916,22 @@ export class Game {
       const d = { type: x.type, g, at, ring, flying: true, k: i * 2 }, hop = .5 + i * .16, spin = (Math.random() < .5 ? -1 : 1) * (4 + i * 2);
       this.dropped.push(d);
       const s0 = g.scale.x;
-      this.tw.run(.48 + i * .07, k => { g.position.set(from.x + (at.x - from.x) * k, from.y * (1 - k) + Math.sin(k * Math.PI) * hop, from.z + (at.y - from.z) * k); g.rotation.z = spin * k; g.scale.setScalar(s0 + (1.05 - s0) * k); }, k => k)
+      this.tw.run(.48 + i * .07, k => { g.position.set(from.x + (at.x - from.x) * k, from.y * (1 - k) + Math.sin(k * Math.PI) * hop, from.z + (at.y - from.z) * k); g.rotation.z = spin * k; g.scale.setScalar(s0 + (SNACK_S * 1.1 - s0) * k); }, k => k)
         .then(() => { if (this.dead) return; d.flying = false; g.rotation.z = 0; g.position.y = 0; L.audio.sfx('tap', 4 + i * 3); W.idsDirty = true; });
     });
     this.snacks = []; this.paintSlots();
-    L.say(this.me, '와르르!', 900, 'red'); this.me.setFace('sweat'); this.me.bump(.45); L.audio.sfx('drawer');
+    this.me.setFace('sweat'); this.me.bump(.45); L.audio.sfx('drawer');
+    const first = !spillTold++;
+    if (first) {   // the first time: why, in big words up top (and mom doesn't hear this one, so there's time to read it)
+      this.why?.remove();
+      this.why = L.h('div', { class: 'ys-why' }, L.h('b', {}, '와르르!'), '너무 빨리 달려서 다 떨어뜨렸어! 살금살금 가서 다시 줍자');
+      document.getElementById('app').append(this.why); const w = this.why;
+      setTimeout(() => { w.classList.add('out'); setTimeout(() => w.remove(), 400); }, 3200);
+      L.say(this.me, '앗, 다 떨어뜨렸어!', 1500, 'red');
+    } else L.say(this.me, '와르르! 다시 줍자', 1100, 'red');
     L.log({ spill: n, x: +p.x.toFixed(2), z: +p.y.toFixed(2) });
     // the clatter: she hears it if she's near enough (asleep, it fills the sound gauge)
+    if (first) return;
     if (this.mode === 'doze') this.hear = Math.min(1, this.hear + .28 * this.mask);
     else if (['busy', 'patrol', 'pause'].includes(this.mState) && Math.hypot(p.x - this.eye.x, p.y - this.eye.z) < SPILL.hear * (this.lv.spillK ?? 1)) this.startHmm(true);
   }
@@ -1089,7 +1135,7 @@ export class Game {
   caught() {
     if (this.result) return;
     const L = this.L, me = this.me, mom = this.mom; this.result = 'fail'; this._up({}); this.endPractice();
-    for (const el of [this.fbtn, this.goPtr]) if (el) el.style.display = 'none';   // (the closer shot's pointer and the fridge button: not over the caught moment)
+    for (const el of [this.fbtn, this.goPtr, this.rbtn, this.carryEl]) if (el) el.style.display = 'none';   // (the closer shot's pointer and the fridge button: not over the caught moment)
     L.audio.sfx('angry'); L.world.fx.ring(innerWidth / 2, innerHeight / 2, { r: 120, color: '#ff5d6c', width: 10, life: .5 });
     mom.setFace('angry'); mom.bump(.5); me.setFace('wow'); me.pose = 'flail';
     const p = this.pos; mom.root.rotation.y = this.yawTo(p.x, p.y); this.momYaw = mom.root.rotation.y;
@@ -1112,7 +1158,7 @@ export class Game {
     const L = this.L, n = this.snacks.length, have = new Set(this.snacks.map(x => x.type)); this.result = 'win'; this._up({});   // (have: the kinds really brought back — 외부 3차 QA 10/20)
     if (this.pr) { L.log({ practice: 2 }); this.endPractice(); }
     // the controls go away with the win: the pad, the fridge button and the hint stayed under the result card (10/19)
-    for (const el of [this.pad, this.padGhost, this.fbtn, this.hint, this.goPtr]) if (el) el.style.display = 'none';
+    for (const el of [this.pad, this.padGhost, this.fbtn, this.hint, this.goPtr, this.rbtn, this.carryEl]) if (el) el.style.display = 'none';
     L.audio.sfx('win'); this.me.setFace('happy'); this.me.pose = 'cheer'; L.world.fx.confetti(90);
     L.say(this.me, '냠냠… 성공!', 1500);
     L.log({ result: 'win', lv: this.lvIdx + 1, snacks: n, stars: n, max: 3, line: n >= 3 ? '세 개 다! 완벽한 밤이야' : n === 2 ? '두 개! 하나만 더 욕심내 볼까?' : '하나 성공! 다음엔 두 개 노려 볼까?' });   // (stars: the snacks you brought back; the campaign's reward reads them)
@@ -1128,7 +1174,7 @@ export class Game {
     }, 1200);
   }
   exit() {
-    this.grabG?.remove(); this.pad?.remove(); this.padGhost?.remove(); this.fbtn?.remove(); this.goPtr?.remove();
+    this.grabG?.remove(); this.pad?.remove(); this.padGhost?.remove(); this.fbtn?.remove(); this.goPtr?.remove(); this.rbtn?.remove(); this.why?.remove(); this.carryEl?.remove();
     this.dead = true; const W = this.L.world, app = document.getElementById('app');
     app.dataset.night = '';
     app.removeEventListener('pointerdown', this._down); removeEventListener('pointermove', this._move); removeEventListener('pointerup', this._up); removeEventListener('pointercancel', this._up);

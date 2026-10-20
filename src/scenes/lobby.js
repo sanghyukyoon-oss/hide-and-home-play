@@ -24,7 +24,7 @@ import { buildItem, ITEMS } from '../gfx/items.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
-import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow, takeGiftPick, ECON, friendPrice, callableFriends } from '../econ.js';
+import { nextSeat, metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow, takeGiftPick, ECON, friendPrice, callableFriends } from '../econ.js';
 import { SHOP_FURN, STARTER_ITEMS, WALLPAPERS, FLOORS } from '../catalog.js';
 import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
@@ -70,6 +70,8 @@ function shelfThing(t) {
   return noPick(g);
 }
 
+// (친구 칸 사기 10/20) every seat taken: the next seat to buy, or the box
+const seatFullMsg = (save, z) => { const nx = nextSeat(save, z); return `친구 칸 ${seatsOf(z)}개가 다 찼어 · ` + (nx ? '친구 탭 끝에서 칸을 늘리거나 앉은 친구를 상자에 넣어 봐' : '앉은 친구를 상자에 넣으면 자리가 나'); };
 export class LobbyScene extends MyHomeScene {
   constructor(G) { super(G); this.name = 'home'; this.lobby = true; this.seated = []; }
   async enter(o = {}) {
@@ -335,7 +337,7 @@ export class LobbyScene extends MyHomeScene {
     }
     if (came.length) setTimeout(() => !this.dead && this.mode === 'lobby' && this.frameLobby(1), 2600);
     if (came.length) setTimeout(() => !this.dead && G.ui.toast(came.length === 1 ? `${ga(nameOf(came[0]))} 놀러 왔어!` : `친구 ${came.length}명이 놀러 왔어!`, 'green'), 600);
-    if (full && !H.fullTold) { H.fullTold = 1; setTimeout(() => !this.dead && G.ui.toast('자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', ''), 2200); }
+    if (full && !H.fullTold) { H.fullTold = 1; setTimeout(() => !this.dead && G.ui.toast(ECON ? seatFullMsg(G.save, this.zone) : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', ''), 2200); }
     G.persist();
   }
 
@@ -359,12 +361,25 @@ export class LobbyScene extends MyHomeScene {
       const p = friendPrice(k), short = (G.save.coins || 0) < p;
       el.append(h('div', { class: 'card', style: short ? 'opacity:.6' : '', onclick: () => this.callFriend(k) }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, nameOf(k)), h('div', { class: 'pr', html: ICON.coin + p })));
     }
+    // 친구 칸 사기 (10/20): the next seat, last in the row — its price, or the stage that opens it
+    const nx = nextSeat(G.save, this.zone);
+    if (nx) el.append(h('div', { class: 'card' + (nx.ok ? '' : ' silc'), style: nx.ok && (G.save.coins || 0) < nx.price ? 'opacity:.6' : '', onclick: () => this.buySeat() },
+      h('div', { class: 'swatch', style: 'display:grid;place-items:center;font-size:30px;background:#fff3e0' }, nx.ok ? '🪑' : '🔒'),
+      h('div', {}, nx.ok ? `${nx.n}번째 칸` : `${nx.stage}판 깨면`), nx.ok ? h('div', { class: 'pr', html: ICON.coin + nx.price }) : h('div', { style: 'font-size:11px;color:#9b6cff' }, `${nx.n}번째 칸`)));
+  }
+  // 친구 칸 사기: one more seat, in order, once its stage is cleared
+  buySeat() {
+    const G = this.G, z = this.zone, nx = nextSeat(G.save, z); if (!nx) return;
+    if (!nx.ok) { G.ui.toast(`${nx.stage}판을 깨면 ${nx.n}번째 칸을 살 수 있어`, ''); G.audio.sfx('locked'); return; }
+    if ((G.save.coins || 0) < nx.price) { G.ui.toast(`코인 ${nx.price - (G.save.coins || 0)}개 더 모으면 칸을 늘릴 수 있어`, 'red'); G.audio.sfx('miss'); return; }
+    G.addCoins(-nx.price); z.seats = nx.n; G.persist(); G.audio.sfx('buy');
+    G.ui.toast(`친구 칸이 ${nx.n}개가 됐어! 한 명 더 부를 수 있어`, 'green'); this.setMode('edit');
   }
   // 친구 부르기: coins, once — then the friend is yours (walks in, sits; boxed and seated again for free)
   callFriend(k) {
     const G = this.G, z = this.zone, p = friendPrice(k);
     if (!callableFriends(G.save).includes(k)) return;
-    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast('친구 자리 4개가 다 찼어 · 앉은 친구를 상자에 넣으면 자리가 나', 'red'); return; }
+    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(seatFullMsg(G.save, z), 'red'); return; }
     if ((G.save.coins || 0) < p) { G.ui.toast(`코인 ${p - (G.save.coins || 0)}개 더 모으면 부를 수 있어`, 'red'); G.audio.sfx('miss'); return; }
     const spot = this.seatSpot(); if (!spot) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
     G.addCoins(-p); G.audio.sfx('buy');
@@ -375,7 +390,7 @@ export class LobbyScene extends MyHomeScene {
   placeFriend(k) {
     const G = this.G, z = this.zone;
     if (!(this.H.friendBox || []).includes(k)) return;   // (already out of the box: a double tap seated it twice — QA3 10/19)
-    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(ECON ? '친구 자리 4개가 다 찼어 · 앉은 친구를 상자에 넣으면 자리가 나' : seatsOf(z) >= seatsOf({ size: 3 }) ? '자리가 꽉 찼어 (최대 7)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
+    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(ECON ? seatFullMsg(G.save, z) : seatsOf(z) >= seatsOf({ size: 3 }) ? '자리가 꽉 찼어 (최대 7)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
     const p = this.seatSpot(); if (!p) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
     this.seatOne(k, p, false).then(() => { if (!this.dead && this.mode === 'edit') this.setMode('edit'); });
   }
@@ -805,7 +820,7 @@ export class LobbyScene extends MyHomeScene {
     ch.root.position.set(d.x, 0, d.z); ch.faceTo(this.mong.root.position.x, this.mong.root.position.z); ch.pose = 'wave';
     ch.root.scale.setScalar(.01); this.room.group.add(ch.root); this.guest = ch; G.world.idsDirty = true; G.audio.sfx('pop', 6);
     await tw.run(.25, q => ch.root.scale.setScalar(Math.max(.01, q)), ease.outBack); if (this.dead) return;
-    if (!this.H.fullTold) { this.H.fullTold = 1; G.persist(); G.ui.toast('자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', ''); }
+    if (!this.H.fullTold) { this.H.fullTold = 1; G.persist(); G.ui.toast(ECON ? seatFullMsg(G.save, this.zone) : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', ''); }
     await tw.wait(1.2); if (this.dead) return;
     await tw.run(.2, q => ch.root.scale.setScalar(Math.max(.01, 1 - q))); this.room.group.remove(ch.root); if (this.guest === ch) this.guest = null;
   }

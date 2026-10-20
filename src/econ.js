@@ -41,7 +41,7 @@ export const PICK_AT = [11, 20, 30, 39, 48, 59, 69];
 // a new save with it on: the fields below from the start (so econMigrate leaves it alone)
 export function econSaveFields(s) {
   if (!ECON) return s;
-  Object.assign(s, { mig: 3, lens: { bag: 3 }, seen: s.collection.slice() });
+  Object.assign(s, { mig: 4, lens: { bag: 3 }, seen: s.collection.slice() });
   Object.assign(s.home, { offered: [], picks: {}, boxQ: [], friendBox: [], friendKnown: [], starBoxCap: 0, starBoxOpened: 0 });
   for (const z of Object.values(s.home.zones)) z.friends = z.friends || [];
   return s;
@@ -50,7 +50,7 @@ export function econSaveFields(s) {
 // save that isn't v2 and lose the home — 설계서 8장); coins, stage, best, stars, furniture and collection are not touched.
 export function econMigrate(s) {
   if (!ECON) return s;
-  if ((s.mig || 0) >= 1) { if (s.mig < 2) oneRoom(s); if (s.mig < 3) starFreeze(s); return s; }
+  if ((s.mig || 0) >= 1) { if (s.mig < 2) oneRoom(s); if (s.mig < 3) starFreeze(s); if (s.mig < 4) seatsKeep(s); return s; }
   s.lens = s.lens || { bag: 5 };   // the update's gift: a full bag
   s.seen = [...new Set([...(s.seen || []), ...(s.collection || [])])];
   const H = s.home;
@@ -91,6 +91,12 @@ function starFreeze(s) {
   if (H.starBoxOpened == null) H.starBoxOpened = H.starBoxCap;
   s.mig = 3;
 }
+// mig 4 (10/20, user: "친구 슬롯을 또 사야 멀티로 할 수 있게 해 줄래? 처음부터 3개 다 살 수 없고"): a room starts with one friend seat
+// and the next ones are bought (SEAT_STEPS). A save from before keeps a seat for everyone sitting there now (nothing taken away)
+function seatsKeep(s) {
+  for (const z of Object.values(s.home?.zones || {})) z.seats = Math.max(1, Math.min(SEAT_STEPS.length, (z.friends || []).length));
+  s.mig = 4;
+}
 
 // everyone you have met: a stage's host once that stage is behind you, and the friends a stage gave you (save.chars)
 export function metFriends(save) {
@@ -104,7 +110,15 @@ export function metFriends(save) {
 // (검토 P0 10/19: 4 first seats — 1장's four hosts 토순·개굴·펭·곰 all sit down in 1~10판; 방 넓히기 is for 2장's friends on)
 // 친구 부르기 (10/20, user: "처음부터 친구 하지 말고 친구도 돈 줘야 소환되게 해 줘. 아이템처럼. 친구 슬롯을 최대 4개고 …"): 4 seats,
 // whatever the room's size; a friend comes home when you call them (coins, once — then they're yours to seat or box)
-export const seatsOf = zone => ECON ? 4 : 4 + Math.min(zone?.size || 0, 3);
+// 친구 칸 사기 (10/20, user: "처음부터 3개 다 살 수 없고"): one seat to start; each next one is bought in order, once the stage
+// before it is cleared — SEAT_STEPS[k] is seat k+1: { stage: clears needed, price }
+export const SEAT_STEPS = [{ stage: 0, price: 0 }, { stage: 5, price: 250 }, { stage: 15, price: 600 }, { stage: 30, price: 1200 }];
+export const seatsOf = zone => ECON ? Math.max(1, Math.min(SEAT_STEPS.length, zone?.seats || 1)) : 4 + Math.min(zone?.size || 0, 3);
+// the next seat to buy: null when all four are open; ok when the stages are cleared
+export function nextSeat(save, zone) {
+  const k = seatsOf(zone); if (!ECON || k >= SEAT_STEPS.length) return null;
+  const st = SEAT_STEPS[k]; return { n: k + 1, ...st, ok: (save.stage || 0) >= st.stage };
+}
 export const FRIEND_PRICE = [120, 200, 280, 360, 440, 520, 600];   // by the chapter you met them in
 // the stage whose clear brought this friend (its host, a 너굴이 timed stage, a stage's own gift such as 11판's 냥냥이)
 export function friendMetAt(k) {

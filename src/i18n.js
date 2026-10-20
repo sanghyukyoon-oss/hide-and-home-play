@@ -104,6 +104,13 @@ const PAT = [
   [/^보상 \+(\d+)$/, n => `Reward +${n}`],
   // 친구 부르기 (경제, 10/20)
   [/^코인 (\d+)개 더 모으면 부를 수 있어$/, n => `${n} more coins and you can call them`],
+  // 친구 칸 사기 (경제, 10/20)
+  [/^코인 (\d+)개 더 모으면 칸을 늘릴 수 있어$/, n => `${n} more coins and you can add a seat`],
+  [/^친구 칸 (\d+)개가 다 찼어$/, n => `All ${n} friend seats are taken`],
+  [/^(\d+)판을 깨면 (\d+)번째 칸을 살 수 있어$/, (a, b) => `Clear stage ${a} to buy seat ${b}`],
+  [/^친구 칸이 (\d+)개가 됐어! 한 명 더 부를 수 있어$/, n => `${n} friend seats now! You can call one more`],
+  [/^(\d+)번째 칸$/, n => `Seat ${n}`],
+  [/^(\d+)판 깨면$/, n => `After stage ${n}`],
   // 상점 미리보기 (경제, 10/20)
   [/^(.+) 샀어!$/, n => `Bought ${n}!`],
   // 남은 터치 → 코인 (경제, 10/20)
