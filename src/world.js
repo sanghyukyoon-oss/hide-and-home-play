@@ -200,7 +200,10 @@ export class World {
   // (1:1, turn and tilt free), and the dial's ruler follows (one direction at a time)
   _fDrag(dr, dx, dy) {
     // (10/19 20:30, user: "이동은 아주 약간만 빠르게" — the room runs 8% ahead of the finger; pinch and keys stay as they were)
-    if (this.eMode !== 'turn') { this.panBy(dx * 1.08, dy * 1.08); return; }
+    // (10/20, user on the phone: "확대하면 이동이 느리게 느껴져요" — the view moved with the finger at any zoom, so at ×3 a swipe
+    // crossed a third of what it does at ×1) one finger's drag goes a little further the closer you are: zoom^0.35, at most
+    // ×1.9 (×2 ≈ 1.38, ×3 ≈ 1.59 on top of the 1.08); pinches and two-finger moves still keep the spot under the fingers
+    if (this.eMode !== 'turn') { const g = 1.08 * Math.min(1.9, Math.pow(Math.max(1, this.zoom), .35)); this.panBy(dx * g, dy * g); return; }
     this._fTurn(dr, dx, dy);
   }
   _fTurn(dr, dx, dy) {

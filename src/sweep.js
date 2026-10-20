@@ -62,6 +62,9 @@ export function sweepSetup(S) {
   S._swT = 30;   // the first one only after half a minute (was 7 s: 10/19 evening "힌트가 너무 많다")
 }
 
+// one shine on this part now (7판: a tap on the key hanging out of reach shines the pulley's crank — stage.js tapHung)
+export function shinePart(S, part) { const sw = S.sweeps?.find(x => x.part === part); if (sw && !sw.run && !part.busy) play(S, sw); }
+
 // is it still worth pointing at: never worked yet, or something not found in it
 const worth = sw => !sw.used || sw.part.spots?.some(s => s.item && !s.item.found && s.item.role !== 'decoy');
 

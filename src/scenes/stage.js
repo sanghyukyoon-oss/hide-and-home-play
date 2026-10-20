@@ -30,10 +30,11 @@ import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { storyFor, playDialog, playCinematic, slidePuzzle, setFrameSolved } from '../story.js';
 import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
-import { sweepSetup, sweepUpdate } from '../sweep.js';   // 빛 쓸기 (10/19)
+import { sweepSetup, sweepUpdate, shinePart } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
-import { closeUp, closeBack } from '../closeup.js';   // 말할 때·끝날 때 카메라 (10/19)
+import { closeUp, closeBack } from '../closeup.js';
+import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
 import { armFtap } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
 import { shown as isShown } from '../world.js';
@@ -42,7 +43,7 @@ import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incid
 import { R1, r1Line, KIT_TALK } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
-  stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi } from '../script.js';
+  stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
 import { tr } from '../i18n.js';
 import { EN } from '../i18n-en-dict.js';
 // the star reasons the 흑백·너굴이·방탈출 stages had none of (QA 10/18: 2 stars on a boss with no word why)
@@ -51,7 +52,7 @@ const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
 import { blindFor } from '../hunt-blind.js';
 import { PICKS, pickPanel, takePick, metFriends } from '../econ.js';   // 경제·로비 (10/19)
-import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac, cameoKind } from '../hunt.js';
+import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac, cameoKind, moveItem } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
 const HABIT_BREAK = new Set([0, 29]);   // (41판 is 다람이's lever stage since v96 — no habit-breaking line there)
@@ -223,6 +224,7 @@ export class StageScene {
       attachItem(p.spot, g, { rotY: 0, scale: sc }); faceItem(g, p.spot, jit); centerOn(g, p.spot); squareIfCrossing(g, p.spot); settleOn(g, p.spot);
       if ((p.spot.kind === 'on' || p.spot.kind === 'inside') && !nestles(p.spot) && !p.spot.wallFace) this.fitClear(p.spot, g);   // (not flat on a wall behind a poster or a frame: the wall it lies on read as in the way — 70%)   // (10/19 user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ")
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
+      if (p.hang) it.hang = p.hang;   // (7판: on the pulley's top hook, out of reach until the basket comes up — tapHung / dropHung)
       if (p.vacHidden) { it.vacHidden = true; g.visible = false; }   // rides out on the robot vacuum (아파트 장치판)
       if (p.type === 'friendtoken') { it.friend = true; it.thumb = G.thumbs['face_' + this.th.friend]; this.friendItem = it; }
       g.userData.item = it; p.spot.item = it;
@@ -567,6 +569,7 @@ export class StageScene {
     if (hit.kind === 'item') {
       const it = hit.item;
       if (it.found) return;
+      if (it.hang) return this.tapHung(it);   // (out of reach: no find, no 톡 spent)
       // the hidden friend is only ever found by its door opening (revealFriend): a tap on it while the door is still swinging
       // used to go to onFound and the stage could never end (level report 10/18 B1, stage 20)
       if (it.friend) { const pt = it.spot?.part; if (!pt || (!pt.busy && pt.t > .5)) this.revealFriend(it); return; }
@@ -707,6 +710,52 @@ export class StageScene {
   get feelHelp() { return !this.model && (this.hiddenStage || this.spec.tut === 2 || (!!this.spec.gray && !this.incident && !this.spec.timed && !this.spec.boss && !this.custom && !this.preview)); }
   // F1 시선 힌트: one thing left for 20 s — the owner slowly turns (0.4 s) to look at it; no words, no sparkle, no arrow
   // (user: "F1은 화살표 빼고 친구 시선만"). The sparkle is the second help, 10 s after the look.
+  // ── 7판 도르래 (user 10/20: "열쇠가 도르래 맨 위에 딱 보이게 걸려 있고, 그냥 터치하면 안 눌림. 반짝임이 아래 도르래 손잡이로 이어짐.
+  // 도르래를 누르면 바구니가 올라가면서 맨 위 열쇠가 바구니에 탁 떨어짐. 그때 터치 가능"): seen but out of reach — a tap swings it on its
+  // hook and a trail of sparkles runs down to the crank, which shines; no 톡 is spent
+  tapHung(it) {
+    const G = this.G, W = G.world, part = it.hang;
+    G.audio.sfx('clink');
+    const g = it.g, r0 = g.rotation.z;
+    this.tw.run(.6, k => { if (!this.dead) g.rotation.z = r0 + Math.sin(k * Math.PI * 4) * (1 - k) * .35; }, ease.linear).then(() => { g.rotation.z = r0; });
+    if (!part || part.busy || part.t > .5) return;
+    const a = W.toScreen(this.worldCenter(it)), b = W.toScreen(this.partCenter(part));
+    for (let k = 1; k <= 6; k++) setTimeout(() => { if (this.dead) return; const t = k / 6; W.fx.burst(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, { n: 3, shape: 'star', speed: 30, gravity: -20, life: .5, size: 8, colors: ['#ffffff', '#fff3a0'] }); }, k * 70);
+    setTimeout(() => !this.dead && shinePart(this, part), 450);
+  }
+  // the basket has come up under the hook: the thing drops into it with a bump — now it can be taken
+  dropHung(it, part) {
+    const G = this.G, W = G.world, spot = part.spots.find(s => s.kind === 'inside' && (!s.item || s.item === it));
+    it.hang = null;
+    if (!spot) return;
+    const from = it.g.getWorldPosition(new THREE.Vector3());
+    moveItem(it, spot);
+    const g = it.g, to = g.position.clone(), f = g.parent.worldToLocal(from.clone());
+    g.position.copy(f); g.visible = true;
+    this.tw.run(.38, k => { if (!this.dead) g.position.lerpVectors(f, to, k * k); }, ease.linear).then(() => {
+      if (this.dead) return; g.position.copy(to); G.audio.sfx('land');
+      const p = W.toScreen(this.worldCenter(it)); W.fx.burst(p.x, p.y, { n: 8, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 });
+      this.wobble(part.pivots[0]);
+    });
+  }
+  // ── 막혔을 때 힌트, 1~5판 (user 10/20: "1~5판에서 못 찾으면 힌트 두 가지 — 말풍선으로 대놓고, 캐릭터가 간접적으로. 힌트 너무 많은 건
+  // 싫음"; the lines are the story room's, script.js STUCK): soft — the host glances at a thing and lets something slip; hard —
+  // the host names the furniture it is in or by. Only while two or more are left (the last one keeps K's look and sparkle)
+  stuckHint(kind, left) {
+    const W = this.G.world, host = stageHost(this.idx), L = host && stuckLine(host, kind), f = this.friend;
+    if (!L || !f?.root) return;
+    const near = it => { const s = W.toScreen(this.worldCenter(it)); return Math.hypot(s.x - W.W / 2, s.y - W.H * .47); };
+    const t = left.filter(x => !x.spot?.part?.lock).sort((a, b) => near(a) - near(b))[0] || left[0];
+    if (!t) return;
+    let line = tr(L);
+    if (kind === 'hard') {
+      const ft = t.spot?.furn?.type || t.spot?.part?.furn?.type; if (!ft) return;
+      let name = tr(FURN_NAME(ft)); if (/^[A-Z][a-z]/.test(name)) name = name[0].toLowerCase() + name.slice(1);   // ("near the sofa")
+      line = line.replace('{f}', name);
+    }
+    this.gazeHint(t);
+    this.say(f, line, 2600);
+  }
   gazeHint(t) {
     const f = this.friend; if (!f?.root) return;
     const c = this.worldCenter(t), p = f.root.getWorldPosition(new THREE.Vector3()), r0 = f.root.rotation.y;
@@ -1620,17 +1669,47 @@ export class StageScene {
     await openMongleTV(G, { level: tvLevel(this.idx), game: this.tvGame, pay });
     if (this.dead) return;
     this.paused = false; this.idle = 0;
+    if (this._tvFly) { const f = this._tvFly; this._tvFly = null; this.rewardFly(f); }
+  }
+  // (10/20, user on the phone: "보상 연출이 없음 — 이겨도 톡 숫자가 오르는 게 안 보여요") once the TV has closed: "+3" with the hand
+  // flies into the tap count, which counts up; a coin pill pops in beside it (the stage has no coin count of its own —
+  // shown only while coins come in, as 인수인계 suggested), a coin flies into it and it counts up, then it tucks away
+  rewardFly({ taps0, taps1, coins0, coins1 }) {
+    const G = this.G, W = G.world, p = this.tapPill, from = { x: W.W / 2, y: W.H * .45 };
+    const fly = (el, to, dur = 620) => new Promise(res => {
+      const r = to.getBoundingClientRect(), x1 = r.left + r.width / 2, y1 = r.top + r.height / 2;
+      el.style.left = from.x + 'px'; el.style.top = from.y + 'px'; document.getElementById('app').append(el);
+      const a = el.animate([{ translate: '-50% -50%', scale: 1.4, opacity: 0 }, { translate: '-50% -50%', scale: 1.5, opacity: 1, offset: .15 },
+        { translate: `calc(-50% + ${x1 - from.x}px) calc(-50% + ${y1 - from.y}px)`, scale: .7, opacity: 1 }], { duration: dur, easing: 'cubic-bezier(.5, 0, .75, .4)' });
+      a.onfinish = () => { el.remove(); res(); };
+    });
+    if (p) {
+      fly(h('div', { class: 'flyrew ol' }, h('span', { class: 'ico', html: ICON.hand }), '+' + (taps1 - taps0)), p).then(() => {
+        if (this.dead) return;
+        p.classList.remove('pop', 'hit'); void p.offsetWidth; p.classList.add('pop'); G.audio.sfx('coin', 2);
+        G.ui.countUp(p.querySelector('.v'), taps0, taps1, 450).then(() => { if (!this.dead) { p.querySelector('.v').textContent = this.tapsLeft; p.classList.toggle('need', this.tapsLeft <= 3); } });
+      });
+    }
+    if (coins1 > coins0 && this.inv) {
+      const cp = h('div', { class: 'pill coinpop', html: `<span class="ico">${ICON.coin}</span><span class="v">${coins0}</span>` });
+      this.inv.append(cp);
+      setTimeout(() => fly(h('div', { class: 'flyrew ol' }, h('span', { class: 'ico', html: ICON.coin }), '+' + (coins1 - coins0)), cp).then(() => {
+        if (this.dead) return;
+        cp.classList.add('pop'); G.audio.sfx('coin', 0);
+        G.ui.countUp(cp.querySelector('.v'), coins0, coins1, 600).then(() => setTimeout(() => { cp.classList.add('out'); setTimeout(() => cp.remove(), 300); }, 900));
+      }), 260);
+    }
   }
   // (10/19 night, user: "그 판 이기면 돈이랑 클릭 몇 개 주기") a win pays both now: +3 taps, even past the stage's own count (a
   // full hand used to get coins instead, so one of the two was always missing), and the coins
   tvReward() {
     if (this.tapsLeft == null || this._tvPaid || this.result) return null;
     this._tvPaid = true;
-    const n = TV_TAPS;
+    const n = TV_TAPS, taps0 = this.tapsLeft, coins0 = this.G.save.coins || 0;
     this.tapsLeft += n;
     this.G.addCoins(TV_COINS); this.G.audio.sfx('coin');
-    const p = this.tapPill;
-    if (p) { p.querySelector('.v').textContent = this.tapsLeft; p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); p.classList.toggle('need', this.tapsLeft <= 3); }
+    // (the count on screen goes up when the reward flies in, after the TV has closed — rewardFly)
+    this._tvFly = { taps0, taps1: this.tapsLeft, coins0, coins1: this.G.save.coins || coins0 + TV_COINS };
     return { taps: n, coins: TV_COINS };
   }
   lockedPartNear(furn, x, y) {
@@ -1916,6 +1995,7 @@ export class StageScene {
       if (this.v2?.cands.includes(part)) v2OpenSound(this, part); else G.audio.sfx(part.sfx);
       this.partsOpened++;
       await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
+      for (const it of this.items) if (it.hang === part && !it.found) this.dropHung(it, part);   // (7판: the basket came up under the hook)
       if (junk) reelSay(this, part);
       else for (const s of part.spots) if (s.item && !s.item.found) { const p = W.toScreen(this.worldCenter(s.item)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 }); }
       if (this.jailed?.in && part === this.jailed.door) this.freeJailed();
@@ -1994,6 +2074,7 @@ export class StageScene {
     const W = this.G.world;
     const cand = [];
     const addItemGoal = (it, depth = 0) => {
+      if (it.hang && it.hang.t < .5) return cand.push({ kind: 'part', part: it.hang, obj: it.hang.pivots[0], pos: this.partCenter(it.hang) });   // (7판: the way to the hanging key is the pulley)
       if (it.vacHidden) {   // still under the sofa: the way to it is the robot vacuum (and its remote)
         const vac = this.plan.showcase?.vac; if (!vac?.lock) return;
         if (this.gadgets.has(vac.lock.code)) return cand.push({ kind: 'part', part: vac, obj: vac.pivots[0], pos: this.partCenter(vac) });
@@ -2068,13 +2149,20 @@ export class StageScene {
   }
   // ── 1판 (대본 10/18, GPT 첫판 안): one thing to do at a time, each only once it's needed, done only when it's really
   // done — never because time passed. Stuck for a while: the line says more and the spot rings.
-  async teach(text, cls, posFn, done, more = null, maxT = 0) {
+  // extra: more marks drawn with this lesson and gone with it (the drag-then-tap lesson's fixed tap circle)
+  async teach(text, cls, posFn, done, more = null, maxT = 0, extra = null) {
     const G = this.G, W = G.world, ui = G.ui;
+    const over = () => this.dead || !!this.result || this.botOn();
+    // one hand at a time (user 10/20 on the phone: 2판 showed the turn lesson's hand and the drawer's "open here" hand
+    // together — the drawer lesson didn't wait): a lesson waits until the one on screen is done; done by then → none at all
+    while (this.tutEls && !over()) await this.tw.wait(.3);
+    if (over()) return false;
+    if (done()) return true;
     const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, text);
     const hand = h('div', { class: 'hand ' + cls, html: ICON.hand });
-    ui.tut.append(tip, hand); this.tutEls = [tip, hand]; this.tutHand = hand; this.tutHandPos = posFn;
+    const more$ = extra ? [].concat(extra(posFn)) : [];
+    ui.tut.append(tip, ...more$, hand); this.tutEls = [tip, hand, ...more$]; this.tutHand = hand; this.tutHandPos = posFn;
     const t0 = this.t; let said = false, ringT = 0;
-    const over = () => this.dead || !!this.result || this.botOn();
     let gaveUp = false;
     while (!over() && !done()) {
       const dt = this.t - t0;
@@ -2083,7 +2171,7 @@ export class StageScene {
       if (dt > 18 && this.t - ringT > 2) { ringT = this.t; const p = posFn?.(); if (p) { const s = p.sx != null ? { x: p.sx, y: p.sy } : W.toScreen(p); W.fx.ring(s.x, s.y, { r: dt > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); } }
       await this.tw.wait(.1);
     }
-    tip.remove(); hand.remove(); this.tutEls = null; this.tutHand = null; this.tutHandPos = null;
+    tip.remove(); hand.remove(); more$.forEach(e => e.remove()); this.tutEls = null; this.tutHand = null; this.tutHandPos = null;
     if (over() || gaveUp) return false;
     G.audio.sfx('special'); await this.tw.wait(.3);
     return !over();
@@ -2548,6 +2636,8 @@ export class StageScene {
             ? [h('span', { class: this.time / this.timeMax >= .3 ? 'on' : '' }, STAR_TXT.time), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이')]
             : [h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), this.story?.secret ? h('span', { class: this.secretFound ? 'on' : '' }, STAR_TXT.secret)
               : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star)]))]),
+        // (10/20, user: "2판 끝나면 결과 팝업과 같이 조작법 요약" — in this panel, so it is one popup, not two)
+        ...(this.spec.tut === 2 && !this.custom && !this.preview && G.world.scheme === 'F' ? [controlsBlock()] : []),
         // (each line with its speaker's face and, but for 몽글이's own, a small name — two friends can share the two lines)
         ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, L.who !== 'mong' && CHAR_DEFS[L.who] ? h('b', { class: 'who' }, CHAR_DEFS[L.who].name) : '', tr(L.text)))))] : []),
         // 별 셋 = 비밀 한 줄: the line itself the moment it opens; short of three (once you know secrets exist), a grey 'one secret'
@@ -2668,7 +2758,9 @@ export class StageScene {
     };
     const snd = row('소리', () => G.audio.muted ? '꺼짐' : '켜짐', () => G.audio.setMuted(!G.audio.muted));
     const ctrl = row('조작', () => S.ctrl === 'E' ? '콕 전환' : '돌림판', () => { S.ctrl = S.ctrl === 'E' ? 'F' : 'E'; G.world.scheme = S.ctrl; G.world.eMode = G.world.eBase = 'move'; G.persist(); });
-    const rows = [snd, ctrl];
+    // (10/20, user: "조작 도움말 화면에 1~10판까지 버튼으로 다시 볼 수 있게") — the help, and this panel again when it closes
+    const help = row('조작 도움말', () => '›', () => { ui.closePanel(); openHelp(G, { onClose: () => { if (!this.dead && !this.result) this.pause(); } }); });
+    const rows = [snd, ctrl, help];
     const fsOk = !IN_APP && !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && document.fullscreenEnabled !== false;   // (the app is full screen already)
     if (fsOk) rows.push(row('전체화면', () => document.fullscreenElement || document.webkitFullscreenElement ? '켜짐' : '꺼짐', async () => {
       const el = document.documentElement;
@@ -2734,6 +2826,14 @@ export class StageScene {
       const waitGaze = this.feelHelp && this._oneAt != null && (this._gazeAt == null || this.t - this._gazeAt < 10);
       // (10/19 evening, user a third time "힌트가 너무 많다" — 레벨 1~10 추천: a sparkle only for the last thing, the way the
       // owner's look and 6판's smoke already wait for it; with more left the 힌트 button is there)
+      // 1~5판 막혔을 때 (2~5판의 숨은그림 — 1판은 친구 찾기의 킥킥이 있어요): 25초 soft, 45초 hard, 판마다 한 번씩, 둘 이상 남았을 때만
+      if (this.idx >= 1 && this.idx <= 4 && !this.incident && !this.custom && !this.preview && !this.tutEls && !this.talking) {
+        const left = this.targets.filter(t => !t.found && !t.friend && !t.furnTarget);
+        if (left.length >= 2) {
+          if (!this._stSoft && this.idle > 25) { this._stSoft = true; this.stuckHint('soft', left); }
+          else if (this._stSoft && !this._stHard && this.idle > 45) { this._stHard = true; this.stuckHint('hard', left); }
+        }
+      }
       const lastOnly = HINTS_OLD || this.targets.filter(t => !t.found).length === 1;
       if (this.idle > this.sparkAfter && !waitGaze && lastOnly) {
         this.twinkleT -= dt;
@@ -2772,8 +2872,9 @@ export class StageScene {
       else { const g = this.nextGoal(); if (g) pos = g.pos; }
       if (pos) {
         const s = pos.sx != null ? { x: pos.sx, y: pos.sy } : W.toScreen(pos), btn = pos.sx != null;
-        // (a 3D target: the finger points from just below-right so it doesn't cover what it shows — 검토 H4; a button: on it)
-        this.tutHand.style.left = (s.x + (btn ? 0 : 26)) + 'px'; this.tutHand.style.top = (s.y + (btn ? 0 : 30)) + 'px';
+        // (the fingertip right on the spot — a thing or a button alike: user 10/20 on the phone, "정확히 눌러야 하는 곳에";
+        // it used to point from just below-right so as not to cover the thing — 검토 H4)
+        this.tutHand.style.left = s.x + 'px'; this.tutHand.style.top = s.y + 'px';
         const tip = this.tutEls?.[0]; if (tip?.classList?.contains('tip')) { const top = s.y < innerHeight * .45; if (tip._low !== top) { tip._low = top; tip.style.top = (top ? innerHeight * .72 : innerHeight * .2) + 'px'; } }   // the band on the far half
       }
     }

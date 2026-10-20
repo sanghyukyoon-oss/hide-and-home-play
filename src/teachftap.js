@@ -12,8 +12,10 @@
 import { EN } from './i18n-en-dict.js';
 import { tr } from './i18n.js';
 import { DO } from './script.js';   // (the lesson's two lines are the 스토리 룸's: DO.ftap, DO.ftapOn)
+import { h } from './ui.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
+const TAPWORD = K('콕', 'Tap');   // (the word in the tap circle)
 export const FTAP_ON = typeof location === 'undefined' || !/[?&]ftapteach=0(&|$)/.test(location.search);
 // (문구 초안: 조작감 세션 10/19 — 스토리 룸이 고쳐 주세요)
 export const FTAP_TXT = {
@@ -53,13 +55,15 @@ async function teachFtap(S, learned, st) {
   const G = S.G, W = G.world;
   while (S.tutEls && !S.dead && !S.result) await S.tw.wait(.5);   // (never over another lesson's hand)
   if (S.dead || S.result || G.save.tut?.ftap) return;
-  // the hand drags across the open middle of the room (clear of the list at the top and the dial at the bottom right)
-  const at = () => ({ sx: W.W * .42, sy: W.H * .54 });
+  // the hand drags along a line low in the middle of the room; the tap is a big circle of its own, fixed up and to the right,
+  // well clear of the dragging hand (user 10/20: the tap mark rode along with the drag and made it "진심 헷갈린다")
+  const at = () => ({ sx: W.W * .34, sy: W.H * .6 });
+  const mark = () => { const m = h('div', { class: 'ftapmark' }, tr(TAPWORD)); m.style.left = W.W * .74 + 'px'; m.style.top = W.H * .4 + 'px'; return m; };
   st.turned = 0;
   const done = () => st.turned > .35;   // ~20° turned that way
   const T = G.save.tut || (G.save.tut = {}); T.ftapN = (T.ftapN || 0) + 1; G.persist?.();   // (shown: three times at most)
   st.live = true;
-  const ok = await S.teach(tr(DO.ftap), 'ftap', at, done, FTAP_TXT.more, 22);
+  const ok = await S.teach(tr(DO.ftap), 'ftap', at, done, FTAP_TXT.more, 22, mark);
   st.live = false;
   if (!ok) return;   // ran out or the stage ended: not learned — again on a later stage
   learned();

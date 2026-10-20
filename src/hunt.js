@@ -66,7 +66,7 @@ const fitsSpot = (type, s, aff = true) => { const I = ITEMS[type]; return !!I &&
 export function chainToView(S) {
   const W = S.G.world, R = S.room; let moved = null;
   for (const it of S.items) {
-    if (!CHAIN.has(it.role) || it.found || it.vacHidden || it.spot.part) continue;
+    if (!CHAIN.has(it.role) || it.found || it.vacHidden || it.hang || it.spot.part) continue;   // (7판's key on the pulley hook stays up there)
     if (!W.occluded(it.g, S.worldCenter(it), [R.group])) continue;
     const o = S.worldCenter(it);
     // (never onto the piece it opens — 1~10판 레벨 세션 10/19)
@@ -100,7 +100,7 @@ export function fixBlindSpots(S) {
   const near = (o, ok, n) => R.spots.filter(s => !s.item && !s.reserved && !s.wallFace && s.anchor && ok(s)).map(s => ({ s, d: s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(o) })).sort((a, b) => a.d - b.d).slice(0, n).map(x => x.s);
   for (const it of [...S.items]) {
     if (performance.now() - t0 > 450) break;   // a time budget, not a hitch
-    if (it.found || it.vacHidden || !(it.role === 'target' || CHAIN.has(it.role))) continue;
+    if (it.found || it.vacHidden || it.hang || !(it.role === 'target' || CHAIN.has(it.role))) continue;
     if (it.spot.kind === 'on' && !it.spot.part) continue;
     if (views(it) >= 2) continue;
     const o = S.worldCenter(it), lockedIn = it.spot.part?.lock ? it.spot.part : null;

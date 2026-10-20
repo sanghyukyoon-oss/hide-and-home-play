@@ -196,6 +196,13 @@ B.liftbasket = (f, T, o = {}) => {
     crank.rotation.x = (up ? 1 : -1) * t * PI * 6; setRope(basket.position.y);
   }, { label: '도르래 바구니', sfx: 'swish', dur: up ? 1.4 : .9 });
   f.spot('inside', basket, 0, .04, 0, { part: p, maxH: .26, label: '도르래 바구니 안', scale: .8 });
+  // (o.hook, 7판 — user 10/20: "열쇠가 도르래 맨 위에 딱 보이게 걸려 있고, 그냥 터치하면 안 눌림… 도르래를 누르면 바구니가 올라가면서
+  // 맨 위 열쇠가 바구니에 탁 떨어짐"): a little hook under the top beam, beside the rope, where a thing hangs out of reach until
+  // the basket comes up under it (stage.js hung things)
+  if (o.hook) {
+    f.add(mc('lifthook', ({ add, tube }) => { tube([.17, TOP - .1, z0 + .1], [.17, TOP - .3, z0 + .1], .008, '#c9cfe0', 5); add(G.tor(.03, .008, PI * 1.4, 5, 10), '#c9cfe0', .17, TOP - .32, z0 + .1, 0, HP, 0); }));
+    f.spot('on', null, .17, TOP - .58, z0 + .1, { maxH: .24, label: '도르래 꼭대기 고리', scale: .8, wallFace: true }).hang = p;
+  }
   f.spot('behind', null, 0, 0, z0 - .05, { maxH: .3, label: '바구니 기둥 뒤', scale: .7 });
 };
 export const HOUSE_BUILDERS = B;

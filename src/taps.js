@@ -58,12 +58,14 @@ export function spendTap(S, x, y) {
   const teach = S._tapTeach || 0; if (teach) S._tapTeach++;
   if (p) {
     p.querySelector('.v').textContent = S.tapsLeft;
-    p.classList.remove('pop', 'shake'); void p.offsetWidth; p.classList.add(teach === 1 ? 'shake' : 'pop');
+    // (10/20, user on the phone: the count swells — growing to the right, inside the frame — goes red, then the -1 rises)
+    p.classList.remove('pop', 'shake', 'hit'); void p.offsetWidth; p.classList.add(teach === 1 ? 'shake' : 'hit');
     p.classList.toggle('need', S.tapsLeft <= 3);
   }
   // the -1 rises off the count itself (what went down, and where), a little dust where the finger landed
   const r = p?.getBoundingClientRect();
-  if (r?.width) G.ui.floatText(r.right + 14, r.top + r.height / 2, '-1', 'red'); else if (x != null) G.ui.floatText(x, y - 34, '-1', 'red');
+  const minus = () => { const q = p?.getBoundingClientRect(); if (q?.width) G.ui.floatText(q.right + 14, q.top + q.height / 2, '-1', 'red'); else if (x != null) G.ui.floatText(x, y - 34, '-1', 'red'); };
+  if (r?.width) setTimeout(minus, 220); else minus();   // (once the count has swelled and gone red)
   if (x != null) { G.world.fx.burst(x, y, { n: 7, shape: 'dot', colors: ['#efe4d2', '#d6c8b2', '#fffaf0'], speed: 90, size: 8, life: .45, gravity: -40 }); G.world.fx.ring(x, y, { r: 20, color: 'rgba(255, 250, 240, .85)', width: 3, life: .3 }); }
   missJolt(S);
   if (teach === 2) G.ui.toast(TAP_TXT.free, '');
