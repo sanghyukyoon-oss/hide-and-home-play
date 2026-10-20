@@ -724,11 +724,31 @@ export class StageScene {
   // ── 7판 도르래 (user 10/20: "열쇠가 도르래 맨 위에 딱 보이게 걸려 있고, 그냥 터치하면 안 눌림. 반짝임이 아래 도르래 손잡이로 이어짐.
   // 도르래를 누르면 바구니가 올라가면서 맨 위 열쇠가 바구니에 탁 떨어짐. 그때 터치 가능"): seen but out of reach — a tap swings it on its
   // hook and a trail of sparkles runs down to the crank, which shines; no 톡 is spent
+  // a hung thing swings round its hook (the point .276 over its spot — gfx/house-props.js liftbasket hook), not round its foot
+  swingHung(it, a) {
+    const g = it.g; if (!g?.parent) return;
+    let h0 = it._hang0;
+    if (!h0) {
+      const P = g.parent, Z = new THREE.Vector3(0, 0, 1), at = P.worldToLocal(it.spot.anchor.localToWorld(new THREE.Vector3(0, .276, 0)));
+      // a key hangs by its ring: turned so the ring end (items.js key: ring at -x, bit at +x) points straight up, the ring
+      // sitting on the hook's bottom (design 10/20: it lay sideways by the post)
+      if (it.type === 'key') {
+        const loc = v => { g.updateMatrixWorld(true); return P.worldToLocal(g.localToWorld(v.clone())); }, RING = new THREE.Vector3(-.1, .02, 0), BIT = new THREE.Vector3(.1, .02, 0);
+        const r = loc(RING), b = loc(BIT);
+        g.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(Z, Math.PI / 2 - Math.atan2(r.y - b.y, r.x - b.x)));
+        const r2 = loc(RING); g.position.x += at.x - r2.x; g.position.y += at.y - .05 * g.scale.x - r2.y;
+      }
+      h0 = it._hang0 = { p: g.position.clone(), q: g.quaternion.clone(), at, Z };
+    }
+    const c = Math.cos(a), s = Math.sin(a), dx = h0.p.x - h0.at.x, dy = h0.p.y - h0.at.y;
+    g.position.set(h0.at.x + dx * c - dy * s, h0.at.y + dx * s + dy * c, h0.p.z);
+    g.quaternion.copy(h0.q).premultiply(new THREE.Quaternion().setFromAxisAngle(h0.Z, a));
+  }
   tapHung(it) {
     const G = this.G, W = G.world, part = it.hang;
     G.audio.sfx('clink');
-    const g = it.g, r0 = g.rotation.z;
-    this.tw.run(.6, k => { if (!this.dead) g.rotation.z = r0 + Math.sin(k * Math.PI * 4) * (1 - k) * .35; }, ease.linear).then(() => { g.rotation.z = r0; });
+    it._swing = true;
+    this.tw.run(.7, k => { if (!this.dead && it.hang) this.swingHung(it, Math.sin(k * Math.PI * 4) * (1 - k) * .4); }, ease.linear).then(() => { it._swing = false; });
     if (!part || part.busy || part.t > .5) return;
     const a = W.toScreen(this.worldCenter(it)), b = W.toScreen(this.partCenter(part));
     for (let k = 1; k <= 6; k++) setTimeout(() => { if (this.dead) return; const t = k / 6; W.fx.burst(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, { n: 3, shape: 'star', speed: 30, gravity: -20, life: .5, size: 8, colors: ['#ffffff', '#fff3a0'] }); }, k * 70);
@@ -739,14 +759,17 @@ export class StageScene {
     const G = this.G, W = G.world, spot = part.spots.find(s => s.kind === 'inside' && (!s.item || s.item === it));
     it.hang = null;
     if (!spot) return;
-    const from = it.g.getWorldPosition(new THREE.Vector3());
+    const from = it.g.getWorldPosition(new THREE.Vector3()), qW = it.g.getWorldQuaternion(new THREE.Quaternion());
     moveItem(it, spot);
-    const g = it.g, to = g.position.clone(), f = g.parent.worldToLocal(from.clone());
-    g.position.copy(f); g.visible = true;
-    this.tw.run(.38, k => { if (!this.dead) g.position.lerpVectors(f, to, k * k); }, ease.linear).then(() => {
-      if (this.dead) return; g.position.copy(to); G.audio.sfx('land');
+    // it falls the way it hung and turns once on the way down into how it lies in the basket, then bounces once (design 10/20)
+    const g = it.g, to = g.position.clone(), f = g.parent.worldToLocal(from.clone()), qTo = g.quaternion.clone();
+    const qFrom = g.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qW), spin = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+    g.position.copy(f); g.quaternion.copy(qFrom); g.visible = true;
+    this.tw.run(.42, k => { if (this.dead) return; g.position.lerpVectors(f, to, k * k); spin.setFromAxisAngle(up, Math.PI * 2 * k); g.quaternion.slerpQuaternions(qFrom, qTo, k).premultiply(spin); }, ease.linear).then(() => {
+      if (this.dead) return; g.position.copy(to); g.quaternion.copy(qTo); G.audio.sfx('land');
       const p = W.toScreen(this.worldCenter(it)); W.fx.burst(p.x, p.y, { n: 8, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 });
       this.wobble(part.pivots[0]);
+      return this.tw.run(.24, k => { if (!this.dead) g.position.y = to.y + Math.sin(k * Math.PI) * .06; }, ease.linear).then(() => { if (!this.dead) g.position.copy(to); });
     });
   }
   // ── 막혔을 때 힌트, 1~5판 (user 10/20: "1~5판에서 못 찾으면 힌트 두 가지 — 말풍선으로 대놓고, 캐릭터가 간접적으로. 힌트 너무 많은 건
@@ -2952,6 +2975,8 @@ export class StageScene {
     this.t += dt;
     this.updateTapTimers(dt);
     this.room.update(dt); this.ambient?.update(dt); this.look?.update(dt); this.tvs?.update(dt);
+    // 7판: the key on the pulley's hook sways a little while it hangs there, round the hook
+    if (this.items) for (const it of (this._hung ||= this.items.filter(i => i.hang))) if (it.hang && !it._swing) this.swingHung(it, Math.sin(this.t * 2.1) * .05);
     this.friend.update(dt); this.trick?.update(dt); this.cameo?.ch.update(dt);
     if (this.v2) v2Update(this, dt);
     for (const n of this.npcs || []) n.ch.update(dt);

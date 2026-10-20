@@ -195,12 +195,22 @@ B.liftbasket = (f, T, o = {}) => {
     basket.position.y = bB.p.y + ((up ? yT : yB) - (up ? yB : yT)) * t; basket.rotation.z = Math.sin(t * PI * 3) * .04 * (1 - t);
     crank.rotation.x = (up ? 1 : -1) * t * PI * 6; setRope(basket.position.y);
   }, { label: '도르래 바구니', sfx: 'swish', dur: up ? 1.4 : .9 });
-  f.spot('inside', basket, 0, .04, 0, { part: p, maxH: .26, label: '도르래 바구니 안', scale: .8 });
+  // (the hook's basket — 7판 — has a straw pad in it, so a key dropped in sits up over the rim where the camera sees it, and the
+  // key is drawn a little bigger: down on the wicker it hid behind the rim from the start view — design 10/20)
+  if (o.hook) basket.add(mc('liftpad', ({ add }) => { add(G.box(.44, .05, .34, .02), '#f2dc9a', 0, .065, 0); for (const [x, z, r] of [[-.12, .08, .3], [.1, -.06, -.5], [.02, .1, .9]]) add(G.box(.16, .012, .018, .004), '#e2c26e', x, .093, z, 0, r, 0); }));
+  f.spot('inside', basket, 0, o.hook ? .09 : .04, 0, { part: p, maxH: .26, label: '도르래 바구니 안', scale: o.hook ? .95 : .8 });
   // (o.hook, 7판 — user 10/20: "열쇠가 도르래 맨 위에 딱 보이게 걸려 있고, 그냥 터치하면 안 눌림… 도르래를 누르면 바구니가 올라가면서
   // 맨 위 열쇠가 바구니에 탁 떨어짐"): a little hook under the top beam, beside the rope, where a thing hangs out of reach until
   // the basket comes up under it (stage.js hung things)
   if (o.hook) {
-    f.add(mc('lifthook', ({ add, tube }) => { tube([.17, TOP - .1, z0 + .1], [.17, TOP - .3, z0 + .1], .008, '#c9cfe0', 5); add(G.tor(.03, .008, PI * 1.4, 5, 10), '#c9cfe0', .17, TOP - .32, z0 + .1, 0, HP, 0); }));
+    // a brass J-hook on a short cord, facing the front: the cord comes down to its right side, it curves round the bottom and
+    // up to a round tip on the left — what hangs on it reads as hung up there (design 10/20; the grey wire and side-on ring
+    // read as a stray line)
+    f.add(mc('lifthook2', ({ add, tube }) => {
+      tube([.175, TOP - .1, z0 + .1], [.175, TOP - .236, z0 + .1], .007, '#a87a34', 5);
+      add(G.tor(.034, .01, PI * 1.45, 6, 16), '#e0b04a', .17, TOP - .27, z0 + .1, 0, 0, PI);
+      add(G.sph(.015, 8, 6), '#e0b04a', .136, TOP - .27, z0 + .1);
+    }));
     f.spot('on', null, .17, TOP - .58, z0 + .1, { maxH: .24, label: '도르래 꼭대기 고리', scale: .8, wallFace: true }).hang = p;
   }
   f.spot('behind', null, 0, 0, z0 - .05, { maxH: .3, label: '바구니 기둥 뒤', scale: .7 });
