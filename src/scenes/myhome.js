@@ -410,12 +410,14 @@ export class MyHomeScene {
   }
   shop(tab = 'furn') {
     openShop(this.G, { zone: this.zone, onChange: (kind, from) => {
-      if (kind === 'paint') { this.build(); this.fitCam(); this.setMode(this.mode); }
+      // (바르기 with the shop open: the room is rebuilt behind it and the shop stays — setMode's ui.clear closed it, so trying
+      // several wallpapers meant opening it again each time, QA9 10/21; the HUD is redone when the shop closes)
+      if (kind === 'paint') { this.build(); this.fitCam(); if (this.G.ui.panelOpen) this._modeStale = true; else this.setMode(this.mode); }
       if (kind === 'zone') { this.build(); this.setMode(this.mode); }   // (the new zone joins the map)
       if (kind === 'grow') { this.growShow(from); return; }   // (방 넓히기 from the shop: the same walls going out)
       if (kind === 'growpeek') { this._growPeek = !!from; return; }   // (방 크기 미리보기: the new row on the floor)
       if (kind === 'furn' && this.mode === 'edit') this.renderInv();
-    }, onPreview: on => this.previewView(on), onBought: b => this.bought(b), onClose: () => { if (this.mode !== 'edit') this.setMode(this.mode); } }, tab);
+    }, onPreview: on => this.previewView(on), onBought: b => this.bought(b), onClose: () => { if (this.mode !== 'edit' || this._modeStale) { this._modeStale = false; this.setMode(this.mode); } } }, tab);
   }
   // 사면 방으로 (10/20, user: "테마든 벽이든 사기 누르면 다시 상점으로 나오는 게 아니고 방으로 가야 할 듯"): bought → 꾸미기 with it in
   // the room — a piece set down where there is room (and picked, to move it), a wallpaper / floor / theme already on — and a

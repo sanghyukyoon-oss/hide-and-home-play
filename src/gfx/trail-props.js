@@ -1253,15 +1253,17 @@ export const TRAIL_ITEMS = {
   } },
   // 등산 손수건: a blue paisley bandana folded in half corner to corner, the top flap a triangle, a little mountain print
   towel: { name: '등산 손수건', h: .04, flat: true, build() {
-    const g = grp(), BL = '#3f86e0', S = .2, rc = subCell(RG.towel, .12, .88, 0, 1);
-    const tri = new THREE.Shape(); tri.moveTo(-S / 2, -S / 2); tri.lineTo(S / 2, -S / 2); tri.lineTo(S / 2, S / 2); tri.closePath();
-    g.add(mc('it-towel', ({ add, addM }) => {
+    // a folded hiking handkerchief: folded in half (a rounded fold at the back), blue with white stripes and a little
+    // mountain patch (10/20 "야매한 것들": a flat square with a printed triangle read as a book)
+    const g = grp(), BL = '#3f86e0', S = .2;
+    g.add(mc('it-towel2', ({ add }) => {
       add(G.box(S, .012, S, .004), BL, 0, .006, 0);
-      addM(G.ext(tri, .01, .003, 1).rotateX(-HP), xf(0, .014, 0, 0, 0, 0), shade(BL, -.05));
-    }));
-    g.add(mg('it-towel-print', atlasMat(), ({ addM }) => {
-      addM(quadGeo(S - .01, S - .01, rc).rotateX(-HP), xf(0, .012 + .006, 0));
-      addM(shapeRect(tri, S, S, rc).rotateX(-HP), xf(0, .014 + .013 + .006, 0));
+      add(G.box(S, .012, S * .62, .004), shade(BL, .06), 0, .02, -S * .19);
+      add(G.cyl(.016, .016, S, 10), shade(BL, .03), 0, .016, -S / 2 + .004, 0, 0, HP);
+      for (const z of [.055, .078]) add(G.pbox(S - .004, .004, .01), WHITE, 0, .012, z);
+      add(G.pbox(S - .004, .004, .01), WHITE, 0, .026, .008);
+      add(G.cyl(.028, .028, .004, 14), WHITE, .045, .027, -.04);
+      add(G.cone(.022, .022, 4), LEAF2, .045, .034, -.04, 0, .3, 0, [1, .5, 1]);
     }));
     return g;
   } },

@@ -1141,17 +1141,20 @@ export const STREET_ITEMS = {
   } },
   // 접은 우산: a folded sky umbrella with a strap, a steel tip and a wooden J handle, lying on its side
   umbrella: { name: '접은 우산', h: .09, flat: true, build() {
-    const g = grp(), uc = '#4f9be8', y = .042;
-    g.add(mc('it-umbrella', ({ add, addM, tube }) => {
-      add(G.cyl(.016, .04, .26, 14), uc, .07, y, 0, 0, 0, -HP);
-      for (const a of [.6, 2.2, 3.8, 5.2]) tube([-.04, y + Math.sin(a) * .035, Math.cos(a) * .035], [.17, y + Math.sin(a) * .016, Math.cos(a) * .016], .006, shade(uc, -.12), 5);
-      add(G.tor(.035, .008, PI * 2, 4, 14), '#2f6fc0', .02, y, 0, 0, HP, 0);
-      add(G.sph(.009, 6, 4), WHITE, .02, y + .042, 0);
-      add(G.cone(.01, .06, 8), STEEL, .23, y, 0, 0, 0, -HP);
-      add(G.cyl(.008, .008, .08, 8), STEEL, -.1, y, 0, 0, 0, HP);
-      add(G.cyl(.016, .016, .06, 10), BROWN, -.16, y, 0, 0, 0, HP);
-      addM(G.tor(.04, .016, PI, 6, 12), new THREE.Matrix4().makeTranslation(-.19, y, -.04).multiply(new THREE.Matrix4().makeRotationY(-HP)).multiply(new THREE.Matrix4().makeRotationX(HP)), BROWN);
-      add(G.sph(.016, 8, 6), BROWN, -.19, y, -.08);
+    // a folded umbrella lying down: a fat pleated canopy (eight folds) in yellow with white dots, wound with its strap, a
+    // metal tip and a brown crook handle (10/20 "야매한 것들": a thin stick nobody read as an umbrella)
+    const g = grp(), uc = '#ffc93a', y = .045, X = .04;
+    const P = [[0, -.158], [.014, -.155], [.03, -.13], [.043, -.09], [.041, -.02], [.033, .05], [.021, .11], [.008, .145], [0, .147]];
+    const rAt = ly => { for (let i = 1; i < P.length; i++) if (ly <= P[i][1]) { const [r0, y0] = P[i - 1], [r1, y1] = P[i]; return r0 + (r1 - r0) * (ly - y0) / (y1 - y0); } return 0; };
+    g.add(mc('it-umbrella2', ({ add, addM }) => {
+      add(G.lathe(P, 8), uc, X, y, 0, 0, 0, -HP);
+      for (const [x, a] of [[-.06, .5], [.0, -1.2], [.06, 1.1], [.11, -.3]]) { const r = rAt(x - X) * .93; add(G.sph(.012, 5, 3), WHITE, x, y + Math.cos(a) * r, Math.sin(a) * r); }
+      add(G.tor(.04, .007, PI * 2, 4, 10), shade(uc, -.2), .02, y, 0, 0, HP, 0);
+      add(G.cone(.008, .055, 6), STEEL, .215, y, 0, 0, 0, -HP);
+      add(G.cyl(.008, .008, .057, 8), STEEL, -.1465, y, 0, 0, 0, HP);
+      add(G.cyl(.016, .016, .04, 8), BROWN, -.19, y, 0, 0, 0, HP);
+      addM(G.tor(.04, .016, PI, 4, 8), new THREE.Matrix4().makeTranslation(-.205, y, -.04).multiply(new THREE.Matrix4().makeRotationY(-HP)).multiply(new THREE.Matrix4().makeRotationX(HP)), BROWN);
+      add(G.sph(.016, 6, 4), BROWN, -.205, y, -.08);
     }));
     return g;
   } },

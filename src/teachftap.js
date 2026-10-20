@@ -64,9 +64,10 @@ async function remind(S) {
   const G = S.G, T = G.save.tut;
   const stop = () => S.dead || !!S.result || !T.ftapIdle;   // (used it meanwhile: no need)
   if (!await waitStart(S, stop)) return;
-  T.ftapRe = 1; G.persist?.();
   const L = lines(S); S.tutEls = L.els;
-  try { if (await play(S, L)) await S.tw.wait(.6); }
+  // (QA9 P3: a finger that cut the play short no longer counts it as seen — only a play shown to the end is; else it comes
+  // back at the next stage's start)
+  try { if (await play(S, L)) { T.ftapRe = 1; G.persist?.(); await S.tw.wait(.6); } }
   finally { L.remove(); if (S.tutEls === L.els) { S.tutEls = null; S._tutEnd = S.t; } }
 }
 // the stage's start: the opening done, 1 s in, the glass free for a second, no other lesson up and 1.5 s after one

@@ -1470,14 +1470,16 @@ export const BUILDING_ITEMS = {
   } },
   // 스테이플러: a red stapler on a dark base, steel tip and hinge
   stapler: { name: '스테이플러', h: .09, build() {
+    // a desk stapler, a little open: a dark base with a silver anvil, a chunky red arm with a white top strip and a rounded
+    // nose, a silver hinge at the back (10/20 "야매한 것들": it read as a red bar on a grey one)
     const g = grp();
-    g.add(mc('it-stapler', ({ add }) => {
-      add(G.box(.24, .022, .065, .01), CHAR, 0, .011, 0);
-      add(G.pbox(.04, .004, .046), STEEL, .085, .022 + .002, 0);
-      add(G.box(.22, .042, .058, .018), TOMATO, .005, .052, 0, 0, 0, .05);
-      add(G.box(.03, .014, .05, .004), STEEL, .105, .04, 0, 0, 0, .05);
-      add(G.cyl(.018, .018, .068, 12), STEEL2, -.1, .034, 0, HP, 0, 0);
-      add(G.pbox(.12, .006, .03), shade(TOMATO, -.15), -.01, .074 + .003, 0, 0, 0, .05);
+    g.add(mc('it-stapler2', ({ add }) => {
+      add(G.box(.24, .022, .07, .01), CHAR, 0, .011, 0);
+      add(G.pbox(.05, .004, .05), STEEL, .08, .024, 0);
+      add(G.cyl(.02, .02, .074, 12), STEEL2, -.1, .03, 0, HP, 0, 0);
+      add(G.box(.22, .036, .062, .016), RED, .005, .052, 0, 0, 0, .1);
+      add(G.cyl(.018, .018, .062, 12), RED, .114, .063, 0, HP, 0, 0);
+      add(G.pbox(.15, .006, .034), WHITE, -.01, .0715, 0, 0, 0, .1);
     }));
     return g;
   } },

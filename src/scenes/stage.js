@@ -2284,9 +2284,9 @@ export class StageScene {
     const over = () => this.dead || !!this.result || this.botOn();
     // one hand at a time (user 10/20 on the phone: 2판 showed the turn lesson's hand and the drawer's "open here" hand
     // together — the drawer lesson didn't wait): a lesson waits until the one on screen is done; done by then → none at all
-    while (this.tutEls && !over()) await this.tw.wait(.3);
     // (and a breath after the last one: two lessons back to back read as one long list of instructions — user 10/20)
-    while (this.t - (this._tutEnd ?? -9) < 1.5 && !over() && !done()) await this.tw.wait(.2);
+    // (QA9 P3: one wait for both — a lesson that came up during the breath (?tilt=1) used to be missed and two showed at once)
+    while (!over() && (this.tutEls || (this.t - (this._tutEnd ?? -9) < 1.5 && !done()))) await this.tw.wait(.2);
     if (over()) return false;
     if (done()) return true;
     const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, text);

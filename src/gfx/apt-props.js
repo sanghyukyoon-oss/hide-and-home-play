@@ -1191,13 +1191,15 @@ export const APT_ITEMS = {
   } },
   // 게임 패드: a white controller with coloured buttons and two sticks
   gamepad: { name: '게임 패드', h: .07, flat: true, build() {
-    const g = grp(), body = '#f6f3fb', dk = '#4a4560';
-    g.add(mc('it-gamepad', ({ add }) => {
-      add(G.box(.2, .045, .1, .03), body, 0, .028, -.01);
-      for (const s of [-1, 1]) add(G.sph(.055, 12, 8), body, s * .09, .028, .03, 0, -s * .35, 0, [1, .5, 1.3]);
-      add(G.box(.044, .012, .015, .004), dk, -.065, .053, -.015); add(G.box(.015, .012, .044, .004), dk, -.065, .053, -.015);
-      [[.065, -.04, TOMATO], [.088, -.017, MUSTARD], [.065, .006, SKY], [.042, -.017, MINT]].forEach(([x, z, c]) => add(G.cyl(.011, .011, .012, 10), c, x, .053, z));
-      for (const s of [-1, 1]) { add(G.cyl(.016, .018, .02, 12), dk, s * .022, .058, .012); add(G.cyl(.012, .012, .006, 12), '#8a85a0', s * .022, .069, .012); }
+    // a lavender controller with a white D-pad, four coloured buttons and two dark sticks
+    // (10/20 "야매한 것들": white on white, and 2.4k corners)
+    const g = grp(), body = '#9b8cff', dk = '#3d3758';
+    g.add(mc('it-gamepad2', ({ add }) => {
+      add(G.box(.2, .04, .1, .03), body, 0, .026, -.01);
+      for (const s of [-1, 1]) add(G.sph(.055, 7, 4), body, s * .09, .026, .03, 0, -s * .35, 0, [1, .5, 1.3]);
+      add(G.pbox(.046, .012, .016), WHITE, -.065, .053, -.015); add(G.pbox(.016, .012, .046), WHITE, -.065, .053, -.015);
+      [[.065, -.04, TOMATO], [.088, -.017, MUSTARD], [.065, .006, SKY], [.042, -.017, MINT]].forEach(([x, z, c]) => add(G.cyl(.012, .012, .012, 6), c, x, .053, z));
+      for (const s of [-1, 1]) add(G.cyl(.016, .019, .026, 8), dk, s * .022, .061, .016);
     }));
     return g;
   } },
