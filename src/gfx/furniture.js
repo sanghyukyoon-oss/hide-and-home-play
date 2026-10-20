@@ -1062,10 +1062,6 @@ function rugGeo(R, a, n, K = 16) {
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
   return g;
 }
-// how the big rug opens (user 10/20 "참치캔 따듯이"): 'roll' — from the front edge it winds up into a neat roll on one axis
-// that travels back as it opens, like a tin's lid round its key; 'lift' — the front just lifts in one soft curve.
-// ?rug=lift shows the other one.
-const RUG_OPEN = typeof location !== 'undefined' && /[?&]rug=lift(&|$)/.test(location.search) ? 'lift' : 'roll';
 // 러그 (2×2): a round scalloped rug — a contrast border, dotted rings, a ring of hearts and a flower medallion. It lifts
 // at the front to show what slipped under it.
 B.rug = (f, T) => {
@@ -1077,26 +1073,24 @@ B.rug = (f, T) => {
   rug.castShadow = false; pv.add(rug);
   const pos = G2.attributes.position, nor = G2.attributes.normal, P0 = pos.array.slice(), N0 = nor.array.slice();
   let zMax = -1e9; for (let i = 2; i < P0.length; i += 3) zMax = Math.max(zMax, P0[i]);
-  // roll: wound round an axis at height CR over the line where it leaves the floor, each turn a little tighter (a cloth's
-  // thickness) so the layers never cross; 1.3 m of it at full open — the roll ends clear of both hiding spots
-  // lift: one soft arc of radius .9, then straight on — the front edge ends ~.45 up
-  const ROLL = RUG_OPEN === 'roll', CR = ROLL ? .12 : .9, TH = ROLL ? 1e9 : .7, LEN = ROLL ? 1.3 : 1.0, TK = .034;
+  // it opens as a neat roll (user 10/20 "참치캔 따듯이", A안 picked): from the front edge it winds round an axis at height
+  // CR over the line where it leaves the floor, each turn a little tighter (a cloth's thickness) so the layers never cross,
+  // and the roll travels back as it opens, like a tin's lid round its key; 1.3 m of it at full open — clear of both spots
+  const CR = .12, LEN = 1.3, TK = .034, k = TK / (PI * 2);
   const peel = t => {
     const a = pos.array, n = nor.array, zl = zMax - LEN * t;
     for (let i = 0; i < a.length; i += 3) {
       const y0 = P0[i + 1], z0 = P0[i + 2], d = z0 - zl;
       if (t <= 0 || d <= 0) { a[i + 1] = y0; a[i + 2] = z0; n[i + 1] = N0[i + 1]; n[i + 2] = N0[i + 2]; continue; }
-      let th, r, s = 0;
-      if (ROLL) {   // arc length d along a spiral that tightens by TK a turn: solve d = ∫ r(θ) dθ for θ (r = CR − k·θ)
-        const k = TK / (PI * 2); th = (CR - Math.sqrt(Math.max(0, CR * CR - 2 * k * d))) / k; r = CR - k * th;
-      } else { th = Math.min(d / CR, TH); s = d - CR * th; r = CR; }
+      // arc length d along a spiral that tightens by TK a turn: solve d = ∫ r(θ) dθ for θ (r = CR − k·θ)
+      const th = (CR - Math.sqrt(Math.max(0, CR * CR - 2 * k * d))) / k, r = CR - k * th;
       const c = Math.cos(th), sn = Math.sin(th);
-      a[i + 2] = zl + (r - y0) * sn + s * c; a[i + 1] = CR - (r - y0) * c + s * sn;
+      a[i + 2] = zl + (r - y0) * sn; a[i + 1] = CR - (r - y0) * c;
       const nz = N0[i + 2], ny = N0[i + 1]; n[i + 2] = nz * c - ny * sn; n[i + 1] = nz * sn + ny * c;
     }
     pos.needsUpdate = true; nor.needsUpdate = true; G2.computeBoundingSphere(); G2.computeBoundingBox();
   };
-  const p = f.part('lift', pv, (t) => peel(t), { label: '러그', sfx: 'lift', dur: ROLL ? .55 : .42 });
+  const p = f.part('lift', pv, (t) => peel(t), { label: '러그', sfx: 'lift', dur: .55 });
   f.spot('inside', null, -.3, 0, .18, { part: p, maxH: .09, label: '러그 밑' });
   f.spot('inside', null, .32, 0, -.12, { part: p, maxH: .09, label: '러그 밑' });
   f.floor = true;

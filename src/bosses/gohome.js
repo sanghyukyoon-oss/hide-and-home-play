@@ -22,7 +22,7 @@ import { Tweens, clamp, ease } from '../util.js';
 import { disposeTree } from '../gfx/kit.js';
 import { EN } from '../i18n-en-dict.js';
 import { tr } from '../i18n.js';
-for (const [k, v] of [['골목에도 아직 친구들이 남았어!', 'More friends are still in the alley!'], ['너굴이가 빙글빙글 돌고 있어! 다들 보내면 돌아', "Rocky's spinning! He turns each time someone goes home"], ['골목길', 'Alley'], ['빙글 너굴이', 'Spinning Rocky']]) EN[k] ??= v;
+for (const [k, v] of [['골목에도 아직 집에 못 간 친구들이 있어!', "Some friends in the alley still haven't gone home!"], ['너굴이는 친구 하나 보낼 때마다 빙글 돌아!', 'Rocky spins each time a friend goes home!'], ['골목길', 'Alley'], ['빙글 너굴이', 'Spinning Rocky']]) EN[k] ??= v;
 
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const DAY = { ambColor: '#fff2e4', amb: 1.5, sunColor: '#fff3e0', sun: 2.3 };
@@ -57,7 +57,7 @@ const LEVELS = [
   { name: '캠핑장 + 졸린 친구 + 빙글 너굴이', set: [{ name: '캠핑장', place: 'camp', n: 5, count: 7, rocks: 3, hidden: 0, spin: 0, sleepy: 0, time: 60 },
     { name: '텐트 앞 졸린 친구', place: 'camp', n: 5, count: 6, rocks: 2, hidden: 0, spin: 0, sleepy: 2, time: 50, hint: '자는 친구는 터치해서 깨워요', sleeper: 'sleepy' },
     { name: '빙글 너굴이', place: 'alley', n: 6, count: 8, rocks: 2, hidden: 0, spin: 1, sleepy: 0, time: 70, card: 'spin' }],
-    between: ['어? 텐트 앞에서 쿨쿨 소리가…', '너굴이가 빙글빙글 돌고 있어! 다들 보내면 돌아'],
+    between: ['어? 텐트 앞에서 쿨쿨 소리가…', '너굴이는 친구 하나 보낼 때마다 빙글 돌아!'],
     lines: ['어? 텐트 앞에서 쿨쿨 소리가…', '이제 진짜 다 갔다~'] },
   // the first time it comes up, early in the campaign (user, 10/19: "무궁화보다 이게 더 재밌어", "9판째 이후면 좋겠다"):
   // two small ones a first-timer finishes inside a minute; the arrows that can go glow until the first friend is sent
@@ -66,7 +66,7 @@ const LEVELS = [
   { name: '첫 놀이터 + 덤불 + 골목길', teach: true, set: [{ name: '놀이터', place: 'park', n: 4, count: 4, rocks: 0, hidden: 0, spin: 0, sleepy: 0, time: 40 },
     { name: '덤불 속 친구', place: 'park', n: 5, count: 6, rocks: 1, hidden: 1, spin: 0, sleepy: 0, time: 50, hint: '흔들리는 덤불을 터치!' },
     { name: '골목길', place: 'alley', n: 6, count: 8, rocks: 3, hidden: 1, spin: 0, sleepy: 0, time: 65 }],
-    between: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '골목에도 아직 친구들이 남았어!'],
+    between: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '골목에도 아직 집에 못 간 친구들이 있어!'],
     lines: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '이제 진짜 다 찾았다~'] },
 ];
 export { LEVELS };

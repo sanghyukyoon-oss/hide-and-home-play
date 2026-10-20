@@ -105,7 +105,9 @@ Object.assign(RECIPES, {
   bunnybath: {
     light: { ambColor: '#f4eef6', amb: 1.32, sunColor: '#fff0dc', sun: 2.5, shadow: .62 },
     sky: ['#ecc9c4', '#f3d9cf', '#dfb7aa'],
-    night: { light: { ambColor: '#9ea6ec', amb: .86, sunColor: '#c9d1ff', sun: .62, shadow: .5 }, sky: ['#151a45', '#25286a', '#33316f'] },
+    // (10/20 아트 기획안 A-2, 사용자 "진행 ㄱ": the room sank into one blue and the things in it with it — a little more
+    // moonlight, still blue; the lamps' warm pools do the rest)
+    night: { light: { ambColor: '#a3aaea', amb: 1.0, sunColor: '#cdd4ff', sun: .78, shadow: .5 }, sky: ['#151a45', '#25286a', '#33316f'] },
   },
   // 미술관 (10판, 흑백): a gallery's quiet lilac-grey
   museum: {
@@ -213,8 +215,13 @@ Object.assign(RECIPES, {
   // 우리 아파트 거실 (13판) and the 투룸 map (20판): an afternoon apartment, warm peach
   apt: { light: { ambColor: '#f2ecf0', amb: 1.24, sunColor: '#ffe2bc', sun: 2.6, shadow: .62 }, sky: ['#ecd3c2', '#f3e0d2', '#dec2ad'] },
   // 파출소 (14판, 흑백) · 아파트 주방 (17판, 흑백): the gallery's quiet lilac-grey, a cooler and a warmer one
-  police: { light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 }, sky: ['#d8d5e6', '#e5e2ef', '#c8c3d9'] },
-  aptkitchen: { light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 }, sky: ['#e0d6dd', '#ebe3e8', '#d0c4cc'] },
+  // gray: the light while the stage is 흑백 (14·17판, 기획안 B-2): white walls and pale floors all came out one light grey
+  // with only the outlines left — a little less light and deeper shade, so walls, floor and things sit in three greys like
+  // 4·10판. The day light comes back with the colour (stage.js colorBloom)
+  police: { light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 }, sky: ['#d8d5e6', '#e5e2ef', '#c8c3d9'],
+    gray: { light: { ambColor: '#f2eef6', amb: 1.02, sunColor: '#fff6ea', sun: 2.15, shadow: .74 } } },
+  aptkitchen: { light: { ambColor: '#f2eef6', amb: 1.3, sunColor: '#fff6ea', sun: 2.4, shadow: .62 }, sky: ['#e0d6dd', '#ebe3e8', '#d0c4cc'],
+    gray: { light: { ambColor: '#f2eef6', amb: 1.02, sunColor: '#fff6ea', sun: 2.15, shadow: .74 } } },
   // 햄찌네 원룸 (15판): a small flat in dusty lavender
   oneroom: { light: { ambColor: '#f2eef6', amb: 1.28, sunColor: '#fff0dc', sun: 2.5, shadow: .62 }, sky: ['#d9d0e6', '#e5def0', '#c9bedc'] },
   // 토순이네 교실 (16판): a school morning, powder blue

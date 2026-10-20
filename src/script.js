@@ -179,13 +179,15 @@ const SCENES = [
   // thing that is just them — a bubble and a body move (stage.js popMove: flop · splash · doze · smoke · thud · sneeze), no
   // card, no rule, no camera of its own (it plays inside the win close-up). 1·4·8·10판 already have theirs (토순이's giggle,
   // 먹물이 bolting, the robot coming alive).
-  { id: 'drawers', type: 'tut2', room: 'bunny', bubble: true,   // (스토리 룸 10/19: 1~5판이 다섯 번 연속 카드로 멈추던 것 → 말풍선)
+  { id: 'drawers', type: 'tut2', room: 'bunny', alt: ['bunnyattic'], host: 'bunny', bubble: true,   // (스토리 룸 10/19: 1~5판이 다섯 번 연속 카드로 멈추던 것 → 말풍선)
     pop: { say: K('헉!', 'Gasp!'), move: 'flop' },   // (벌러덩 — 커튼까지 쳤는데)
     intro: [L('bunny', '이번엔 내 물건! 커튼까지 꼭 쳤지.', 'My things this time! I even drew the curtains.')],
     // (no item names here: what you find comes from the shared pool, so "내 머리핀!" fired on a star — 작가 검토 10/18)
     finds: [K('앗, 그거 내 거!', "Hey, that's mine!"), K('거기 있었어?!', 'It was in there?!'), K('그건 아끼는 건데!', 'I love that one!'), K('마지막 건 절대 못 찾아!', "You'll never find the last one!")],
     drawerFull: K('앗, 거긴…!', 'Hey, not in th—!'), drawerEmpty: K('거긴 양말 서랍인데…', "That's my sock drawer…"),
-    after: [L('bunny', '다 찾았어?! 커튼까지 쳤는데!', 'All of them?! I drew the curtains and everything!'), L('bunny', '이번엔 네가 숨겨 봐. 내가 찾을게!', "Your turn to hide something. I'll find it!")], homeChoice: true },
+    after: [L('bunny', '다 찾았어?! 커튼까지 쳤는데!', 'All of them?! I drew the curtains and everything!'), L('bunny', '이번엔 네가 숨겨 봐. 내가 찾을게!', "Your turn to hide something. I'll find it!")], homeChoice: true,
+    // (1~20 v2: 다락 놀이방 맵이 들어오면 이 줄로 — ifMap)
+    ifMap: { bunnyattic: { intro: [L('bunny', '이번엔 내 물건! 다락 놀이방에 꼭꼭 숨겼지.', 'My things this time! All tucked away in my attic playroom.')], after: [L('bunny', '다 찾았어?! 다락까지 올라가서 숨겼는데!', 'All of them?! I climbed all the way up to the attic to hide them!'), L('bunny', '이번엔 네가 숨겨 봐. 내가 찾을게!', "Your turn to hide something. I'll find it!")] } } },
   { id: 'museum', keep: true, type: 'gray', room: 'museum',
     intro: [L('bear', '으헤헤, 새 그림 걸었는데… 내가 좋아하는 색이 없어졌어.', 'Ehehe, I hung a new painting… and my favorite color is gone.'), LK('bunny', '또 그 까만 애야! 펭펭이네 다락에서도 그랬대!', "That inky kid again! Same thing happened in Pengpeng's attic!")],   // (10/19: 둘째 흑백 — 첫 흑백은 4판 펭펭이네)
     inky: K('또 너야? 이번엔 안 들킬 거야.', 'You again? Not getting caught this time.'),
@@ -238,7 +240,8 @@ const SCENES = [
   // (11~20 자리표 10/20: 다시 하면 자리가 바뀌니 시작·숨기·찾은 뒤 대사가 자리를 단정하지 않음 — 16판은 사물함이 아니었음)
   { id: 'school', type: 'incident', room: 'school', hide: K('교실엔 폭신한 데가 없는데… 어디 숨지?', "Nothing fluffy in a classroom… where do I hide?"),
     intro: [L('bunny', '쉬는 시간이다! 교실에서 숨바꼭질!', 'Recess! Classroom hide-and-seek!'), L('bunny', '종 치기 전에 찾을 수 있겠어?', 'Think you can find me before the bell?')],
-    reveal: [L('bunny', '벌써?! 종도 안 쳤는데!', "Already?! The bell hasn't even rung!"), L('bunny', '학교 끝나면 우리 집 가자! 새 부엌 구경시켜 줄게.', "After school, come over! I'll show you my new kitchen.")] },   // (→ 17판 토순이네 부엌)
+    reveal: [L('bunny', '벌써?! 종도 안 쳤는데!', "Already?! The bell hasn't even rung!"), L('bunny', '학교 끝나면 우리 집 가자! 새 부엌 구경시켜 줄게.', "After school, come over! I'll show you my new kitchen.")],   // (→ 17판 토순이네 부엌)
+    ifMap: { library: { reveal: [L('bunny', '벌써?! 종도 안 쳤는데!', "Already?! The bell hasn't even rung!"), L('bunny', '학교 끝나면 도서관 가자! 그림책 빌리러.', "After school, let's go to the library! For picture books.")] } } },   // (1~20 v2 → 17판 동네 도서관 흑백)
   { id: 'firestation', type: 'incident', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'),
     intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('mong', '1등은?', "Who's first?"), L('peng', '…아직 안 정해졌어.', '…Not decided yet.')],
     reveal: [L('peng', '비결 4번. 소방관 모자는 벗고 숨기…', 'Tip number four. Take the helmet off before you hide…'), L('mong', '…몇 번까지 있어?', '…How many tips are there?'), L('peng', '1등 될 때까지!', 'As many as it takes to be number one!')] },
@@ -280,6 +283,10 @@ const SCENES = [
   // (v96: 흑백 12 → 4판, 32·47·53·64). host: whoever owns that stage says the line.
   { id: 'lobbyGray', keep: true, type: 'gray', room: 'lobby',
     after: [L('inky', '…이제 숨길 게 하나도 없네.', "…Nothing left to hide."), L('mong', '그럼 마지막 퍼즐은 같이 풀자.', "Then let's solve the last puzzle together."), L('inky', '…응. 같이.', '…Yeah. Together.')] },
+  // 17판 동네 도서관 흑백 (1~20 v2: 아파트가 13·17·20판 세 번 → 도서관). 판 주인 토순이(16판 학교 끝 "도서관 가자!")
+  { id: 'libraryGray', type: 'gray', room: 'library', host: 'bunny', inky: K('…그림책 색이 제일 맛있어 보였어.', '…The picture-book colors looked the tastiest.'), caught: K('…책장 사이에 숨을걸.', "…Should've hidden between the shelves."),
+    // (결과창 = 다음 예고: 18판 아파트 옥상 정원에서 너굴이 시간 대결)
+    after: [LP('bunny', '색 돌아왔다! …근데 너굴이가 옥상에서 시합하재.', 'Colors are back! …But Rocky wants a match on the rooftop.'), LP('mong', '…또 너굴이.', '…Rocky again.')] },
   { id: 'aptkitchenGray', type: 'gray', room: 'aptkitchen', inky: K('…새 집 냄새 나는 색은 처음이었는데.', "…I'd never had new-house colors before."), caught: K('…이삿짐 속에 숨을걸.', '…Should\'ve hidden in a moving box.'),
     // (결과창 = 다음 예고: 18판 햄찌네 복층에서 너굴이 시간 대결)
     after: [LP('bunny', '색 돌아왔다! …근데 너굴이가 햄찌네서 시합하재.', "Colors are back! …But Rocky wants a match at Hammy's."), LP('mong', '…또 너굴이.', '…Rocky again.')] },
@@ -329,17 +336,27 @@ const SCENES = [
 // The host stays out and talks four times: intro, first find, half, one left (hiddenSay), then after. goal: the banner's
 // noun when the things weren't simply hidden by the host. Same map + same kind + order as the 사건 scenes.
 SCENES.push(
-  { id: 'bearH', type: 'hidden', room: 'bear', bubble: true,   // (첫 만남이어도 말풍선 한 줄 + 곰돌이 등장 동작 — 스토리 룸 10/19)
+  { id: 'bearH', type: 'hidden', room: 'bear', alt: ['bearbakery'], host: 'bear', bubble: true,   // (첫 만남이어도 말풍선 한 줄 + 곰돌이 등장 동작 — 스토리 룸 10/19)
     pop: { say: K('…쿨. 으헤?', '…Zzz. Huh?'), move: 'doze' },   // (기다리다 잠듦 — 그 친구 버릇)
     intro: [L('bear', '으헤헤, 왔구나. 손님 주려고 숨겨 놨는데… 어디 뒀더라?', "Ehehe, you came. I hid some treats for guests… now where'd I put them?")],
     say: { first: K('으헤헤, 그거 거기 있었구나!', "Ehehe, so that's where it was!"), half: K('벌써 반이야? 난 반도 기억 안 나는데.', "Halfway already? I don't even remember half of them."), last: K('하나 남았어. …꿀단지는 아니겠지?', "One left. …It's not the honey pot, is it?") },
     // (결과창 둘째 줄 = 다음 예고: 6판 팬케이크, 숟가락은 6판 "깨끗한 걸로 두 개"로)
-    after: [LP('bear', '다 찾았다! 내일은 팬케이크야. 숟가락 두 개 챙겨 둘게!', "All found! Pancakes tomorrow. I'll set out two spoons!"), LP('mong', '…깨끗한 걸로.', '…Clean ones, please.')] },
-  { id: 'fishingH', type: 'hidden', room: 'fishing', bubble: true,   // (첫 만남이어도 말풍선 한 줄 + 개굴이 등장 동작 — 스토리 룸 10/19)
+    after: [LP('bear', '다 찾았다! 내일은 팬케이크야. 숟가락 두 개 챙겨 둘게!', "All found! Pancakes tomorrow. I'll set out two spoons!"), LP('mong', '…깨끗한 걸로.', '…Clean ones, please.')],
+    // (1~20 v2: 5·6판이 빵 굽는 부엌 한 판 — 맵이 들어오면 팬케이크·연기·무궁화 예고까지 이 판에서)
+    ifMap: { bearbakery: { pop: { say: K('킁킁… 앗, 팬케이크!', 'Sniff sniff… Oh no, the pancakes!'), move: 'smoke', at: 'stove' }, intro: [L('bear', '으헤헤, 왔구나. 손님 주려고 숨겨 놨는데… 어디 뒀더라?', "Ehehe, you came. I hid some treats for guests… now where'd I put them?"), LK('bear', '찾는 동안 팬케이크 구울게. 숟가락은 두 개!', "I'll make pancakes while you look. Two spoons!")], after: [LP('bear', '다 찾았네! 팬케이크도 다 됐어. 조금 탔지만.', 'All found! The pancakes are done too. A little burnt.'), LP('bear', '아, 너굴이가 운동장에서 너 기다린대!', "Oh, and Rocky's waiting for you at the schoolyard!")] } } },
+  // 3판 기차역 (1~20 배치 v2, 사용자 "3,4판 고고 … 서있게 해줘" 10/20 밤): 개굴이 첫 만남. 개굴이는 숨지 않고 플랫폼에서 시계를
+  // 봐요. 낚시 가방이 터져 역에 흩어진 걸 기차 오기 전에 → 끝 줄이 두더지(3판 뒤 놀이)와 4판 호수 섬으로
+  { id: 'stationH', type: 'hidden', room: 'station', host: 'frog', bubble: true, goal: ['개굴이 낚시 가방 물건', "Froggy's fishing bag things"],
+    intro: [L('frog', '개굴! 난 개굴이. 기차 타고 호수 섬에 낚시 가는 길이야.', "Ribbit! I'm Froggy. I'm taking the train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')],
+    say: { first: K('개굴! 하나 찾았다! 기차는 아직이야.', "Ribbit! Got one! The train's not here yet."), half: K('반이야! 저 멀리 땡땡 소리 들려.', "Halfway! I can hear the crossing bell."), last: K('하나 남았어! 기차 오기 전에!', 'One left! Before the train comes!') },
+    after: [LP('frog', '다 찾았다! 기차 왔어. 다음 역은 호수 섬!', "Got 'em all! Here's the train. Next stop: the lake island!"), LP('frog', '가는 동안 한 판 하자. 이번엔 내가 숨는다, 개굴!', "Let's play on the way. This time I hide. Ribbit!")] },
+  // 4판 호수 섬 (3판 낚시터를 다시 만듦): 챔피언 자리 = 큰 나무 아래 데크 끝. 끝 줄 → 5판 펭펭이 다락
+  { id: 'fishingH', type: 'hidden', room: 'fishing', alt: ['island'], host: 'frog', bubble: true,   // (첫 만남이어도 말풍선 한 줄 + 개굴이 등장 동작 — 스토리 룸 10/19)
     pop: { say: K('개굴?! …퐁당.', 'Ribbit?! …Splash.'), move: 'splash' },   // (놀라 펄쩍 → 퐁당)
     intro: [L('frog', '개굴! 여긴 내 낚시터. 보물 다 찾으면 챔피언 자리 줄게!', "Ribbit! My fishing spot. Find all my treasure and the champ title's yours!")],
     say: { first: K('개굴?! 그걸 벌써?', 'Ribbit?! Already?'), half: K('반이나…! 물소리가 도와줄 줄 알았는데.', 'Half…! I thought the water would cover for me.'), last: K('마지막 건 진짜 못 찾을걸! …아마.', "You'll never find the last one! …Probably.") },
-    after: [L('frog', '다 찾았다고?! 한 판 더! 다음엔 내가 숨는다!', 'All of them?! One more round! Next time, I hide!'), L('mong', '좋아. 그땐 내가 찾을게.', "Okay. Then I'll find you.")] },
+    after: [L('frog', '다 찾았다고?! 한 판 더! 다음엔 내가 숨는다!', 'All of them?! One more round! Next time, I hide!'), L('mong', '좋아. 그땐 내가 찾을게.', "Okay. Then I'll find you.")],
+    ifMap: { island: { intro: [L('frog', '개굴, 도착! 여긴 내 낚시 섬. 보물 다 찾으면 챔피언 자리 줄게!', "Ribbit, we're here! My fishing island. Find all my treasure and the champion's seat is yours!")], after: [LP('frog', '다 찾았다고?! 챔피언 자리는 네 거야. …오늘만!', "All of them?! The champion's seat is yours. …Just for today!"), LP('frog', '참, 펭펭이가 너 찾던데? 동네 숨기 2등이래.', "Oh, Pengpeng was looking for you. Says they're the second-best hider in town.")] } } },
   { id: 'pengH', type: 'hidden', room: 'peng',
     intro: [L('peng', '펭! 네가 토순이 한 번에 찾은 애야?', "Peng! You're the one who found Bunbun on the first try?"), L('peng', '나는 동네 숨기 2등. 1등은 너굴이.', "I'm the second-best hider in town. Rocky's first."), L('peng', '오늘은 내 물건을 꽁꽁 숨겼어. 다 찾으면 1등 비결 알려 줄게!', "Today I hid my stuff tight. Find it all and I'll tell you my number-one secret!")],
     say: { first: K('펭! 그건 연습용이야!', 'Peng! That one was for practice!'), half: K('반이나…? 1등 계획에 차질이…', 'Half…? My number-one plan is slipping…'), last: K('마지막 건 비결 1번으로 숨겼어. 못 찾을걸!', 'I hid the last one with tip number one. Good luck!') },
@@ -357,13 +374,14 @@ SCENES.push(
   // trace: 먹물이 passed through here too — a short trail of its colour-smeared footprints on the floor, nothing to tap
   // (1장 between the two 흑백판, so the thread doesn't drop from 4판 to 10판 — 스토리 룸 10/19 '다시 하고 싶게')
   // keySay: the chest key comes down in the kitchen pulley — why it was up there (user 10/19: "도르래를 올린다고 왜 열쇠가 생겨? 스토리 보강")
-  { id: 'house2fH', type: 'hidden', room: 'house2f', trace: true,
+  { id: 'house2fH', type: 'hidden', room: 'house2f', alt: ['penggreen'], host: 'peng', trace: true,
     keySay: K('펭! 비결 2번. 열쇠는 도르래 꼭대기에 걸어 뒀지!', 'Peng! Tip number two: I hung the key at the very top of the pulley!'),   // (레벨 Q 10/20: 열쇠가 도르래 꼭대기 고리에, 돌리면 바구니로 떨어짐)
     pop: { say: K('펭! …쿵.', 'Peng! …Thud.'), move: 'thud' },   // (신나서 뛰다 배로 쿵 → 결과창 "비결 3번. 쿵 하지 않기")
     intro: [L('peng', '펭! 비결 2번 생각해 왔어. 높은 데 숨기기!', 'Peng! I came up with tip number two. Hide stuff up high!'), L('peng', '우리 집은 2층이야. 높을수록 1등이지!', 'My house has two floors. Higher means number one!')],
     say: { first: K('펭! 그건 비결 2번 안 쓴 거야!', "Peng! I didn't use tip number two on that one!"), half: K('반이나…? 비결 2번이 안 통해…', "Half…? Tip number two isn't working…"), last: K('마지막 하나! …쿵. 아무 소리 안 났어.', "Last one! …Thud. That wasn't me.") },
     // (결과창 둘째 줄 = 다음 예고: 8판 곰돌이네 다락 상자)
-    after: [LP('peng', '…비결 3번. 높은 데 올라갈 땐 쿵 하지 않기.', "…Tip number three. Don't go thud when you climb up high."), LP('peng', '아, 곰돌이가 다락에서 엄청 큰 상자를 찾았대!', 'Oh! Bearie found a huge box in the attic!')] },
+    after: [LP('peng', '…비결 3번. 높은 데 올라갈 땐 쿵 하지 않기.', "…Tip number three. Don't go thud when you climb up high."), LP('peng', '아, 곰돌이가 다락에서 엄청 큰 상자를 찾았대!', 'Oh! Bearie found a huge box in the attic!')],
+    ifMap: { penggreen: { intro: [L('peng', '펭! 비결 2번 생각해 왔어. 높은 데 숨기기!', 'Peng! I came up with tip number two. Hide stuff up high!'), L('peng', '여긴 우리 옥상 온실. 높을수록 1등이지!', 'This is our rooftop greenhouse. Higher means number one!')] } } },
   // 8판 프라모델 조립판 (스토리 룸 10/19, 정식판 세션 8a963f · 레벨 7dbff7 합의): 그 판 spec에 model/kit 'robot'이 있을 때만
   // 이 장면이 붙어요. 곰돌이가 어릴 때 박사님한테 받고 끝까지 못 맞춘 꼬마 로봇 → 12판 박사 첫인사(ifKit)로 이어짐
   { id: 'house3K', kit: 'robot', type: 'hidden', room: 'house3', goal: ['로봇 부품', 'robot parts'],
@@ -375,7 +393,7 @@ SCENES.push(
     say: { first: K('으헤헤, 그건 아기 때 쓰던 거야.', 'Ehehe, I used that when I was little.'), half: K('반 찾았다! 다락 냄새 난다.', 'Half found! I can smell the attic.'), last: K('하나 남았어. 그게 제일 소중한 건데…', "One left. And it's the most precious one…") },
     after: [LK('bear', '어릴 때 인형 찾았다! …아 참, 냥냥이가 네 얘기 묻더라.', 'Found my old teddy! …Oh, Nyannyan was asking about you.')] },
   // 13판 이삿짐 풀기 (kit 'moving', 사용자 10/19 새 아이디어 ①): 찾은 물건이 제자리로, 다 찾으면 상자가 접혀 '진짜 우리 집'
-  { id: 'aptK', kit: 'moving', type: 'hidden', room: 'apt', goal: ['이삿짐 속 물건', 'things from the moving boxes'],
+  { id: 'aptK', kit: 'moving', type: 'hidden', room: 'apt', alt: ['aptlobby'], host: 'bunny', goal: ['이삿짐 속 물건', 'things from the moving boxes'],
     intro: [],   // (장 영상이 이 판 이야기까지 함)
     say: { first: K('그거! 그거 찾고 있었어!', 'That! I was looking for that!'), half: K('반 풀었다! 상자가 반으로 줄었어.', 'Half unpacked! Half the boxes are gone.'), last: K('하나 남았어. …이삿짐 어딘가에.', 'One left. …Somewhere in all this moving stuff.') },
     after: [LK('bunny', '다 풀었다! 이제 진짜 우리 집이야.', "All unpacked! Now it's really home."), L('mong', '…빈 상자에 숨으면 아무도 못 찾겠다.', "…Hide in an empty box, and nobody'd find you.")] },
@@ -1002,13 +1020,13 @@ function bind() {
   if (B) return B;
   B = { scene: {}, host: {}, meet: {}, fmeet: {}, gray: {}, timed: {}, type: {} };
   const specs = []; for (let i = 0; i < STAGE_COUNT; i++) specs.push(stageSpec(i));
-  const used = new Set(), met = {}, fmet = {}, gown = {}, kits = new Set(); let g = 0, t = 0; B.grayOwn = {};
+  const roomsAll = new Set(specs.map(q => q.room)), used = new Set(), met = {}, fmet = {}, gown = {}, kits = new Set(); let g = 0, t = 0; B.grayOwn = {};
   for (let i = 0; i < specs.length; i++) {
     const s = specs[i], ty = typeOf(s); B.type[i] = ty;
     const kit = s.kit || s.model || null;   // 프라모델 조립판: a scene with kit only lands on that kit's stage (and is picked first there)
-    const pick = t => SCENES.find(x => !used.has(x.id) && x.type === t && x.nth == null && x.room === s.room && (x.night == null || !!s.night === x.night) && (!x.kit || x.kit === kit));
+    const pick = t => SCENES.find(x => !used.has(x.id) && x.type === t && x.nth == null && (x.room === s.room || x.alt?.includes(s.room)) && (x.night == null || !!s.night === x.night) && (!x.kit || x.kit === kit));
     const sc = pick(ty) || (ty === 'gray' && SCENES.find(x => !used.has(x.id) && x.type === 'gray' && x.nth === g)) || null;   // (v2: the map's own 흑백 scene first)
-    if (sc) { used.add(sc.id); if (sc.uses) used.add(sc.uses); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; }
+    if (sc) { used.add(sc.id); if (sc.uses) used.add(sc.uses); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; const mp = sc.ifMap && Object.keys(sc.ifMap).filter(r => roomsAll.has(r)); if (mp?.length) B.scene[i] = Object.assign({}, B.scene[i], ...mp.map(r => sc.ifMap[r])); }
     if (kit) kits.add(kit);
     // a visit told the other way (사건 ↔ 숨은그림) is used up with it, so it can't land on a later visit to the same map
     if (ty === 'hidden' || ty === 'incident') { const tw = pick(ty === 'hidden' ? 'incident' : 'hidden'); if (tw) used.add(tw.id); }

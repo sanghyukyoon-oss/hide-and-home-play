@@ -180,6 +180,9 @@ export class StageScene {
       if (nightL) { G.setBg([nightL.sky[1], nightL.sky[2]]); setSky(nightL.sky); W.setLight(nightL.light); }
       else { G.setBg(['#2b3270', '#4a3f86']); W.setLight({ ambColor: '#a3adff', amb: 1.0, sunColor: '#cfd7ff', sun: .8 }); }
     }
+    // 흑백판: the look's grey-stage light, if it has one (look.js — 14·17판), till the colour comes back
+    const grayL = this.lookR && LOOK.has('light') && this.lookR.gray;
+    if (this.spec.gray && grayL) W.setLight(grayL.light);
     this.layout = layout;
     this.room = layout.rooms ? new MapRooms(W, layout) : new Room(W, layout);
     this.wallFacing = markWallFacing(this.room);   // 벽을 보는 서랍·자물쇠 (facing.js, 10/19)
@@ -2686,6 +2689,7 @@ export class StageScene {
     G.audio.sfx('bloom');
     W.fx.burst(s.x, s.y, { n: 18, shape: 'star', colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#9be38f', '#ffffff'], speed: 260, gravity: 0, life: .9 });
     W.fx.ring(s.x, s.y, { r: 160, color: '#ffffff', width: 10, life: .7 });
+    if (this.lookR?.gray && LOOK.has('light')) W.setLight(this.th.light);   // (the day light with the colour)
     await this.tw.run(1.1, k => { u.grayR.value = far * k; W.dirty?.invalidate(); }, ease.inOutQuad);
     u.gray.value = 0; u.grayR.value = -1; W.dirty?.invalidate();
     await this.tw.wait(.6);
