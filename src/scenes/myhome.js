@@ -20,6 +20,7 @@ import { net, initNet, publishRoom, roomStats } from '../net.js';
 import { seatedAll, ECON, seatsOf } from '../econ.js';
 import { messOpen, messShut, askBuyLock } from '../raidreplay.js';   // 털린 흔적 · 자물쇠 사기 (털기 메타 10/19)
 import { locksOwned, locksUsed } from '../raid.js';
+import { Hand } from '../handhold.js';   // 손에 든 물건: 하나씩 크게 → 손 → 콕 → 쏙 (보물 지키기와 같은 손맛, 10/20)
 
 const V = new THREE.Vector3();
 const MAX_HIDE = 5;
@@ -131,13 +132,17 @@ export class MyHomeScene {
   // its price, how far your coins are on a bar, and it bobs once you can pay. Tap it: a card, then 넓히기 — the walls go out.
   growNext() { const z = this.zone, k = (z?.size || 0) + 1; return z && ZONE_TYPES[z.type]?.indoor !== false && k < ZONE_SIZES.length ? { k, S: ZONE_SIZES[k] } : null; }
   buildGrowSign() {
-    const G = this.G, R = this.room, nx = this.growNext(); if (!nx || !R) return null;
-    const C = G.save.coins || 0, can = C >= nx.S.price, font = getComputedStyle(document.body).fontFamily || 'sans-serif';
+    const G = this.G, R = this.room, nx = this.growNext(), z = this.zone;
+    // (the room at its biggest — 집 짓기 is next, in an update: the sign says so — 로드맵 예고 A, user 10/20 "제출판은 1단계 + 예고 A")
+    const house = !nx && !!z && ZONE_TYPES[z.type]?.indoor !== false && (z.size || 0) >= ZONE_SIZES.length - 1;
+    if ((!nx && !house) || !R) return null;
+    const C = G.save.coins || 0, can = !house && C >= nx.S.price, font = getComputedStyle(document.body).fontFamily || 'sans-serif';
     const tex = canvasTex(480, 272, (ctx, W2, H2) => {
       ctx.fillStyle = '#fff3dd'; roundRect(ctx, 8, 8, W2 - 16, H2 - 16, 26); ctx.fill(); ctx.lineWidth = 9; ctx.strokeStyle = '#3a2453'; ctx.stroke();
       ctx.fillStyle = '#3a2453'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `bold 74px ${font}`; ctx.fillText(tr('방 넓히기'), W2 / 2, 82);
-      if (can) { ctx.fillStyle = '#4fbf6a'; roundRect(ctx, 50, 150, W2 - 100, 92, 46); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = `bold 60px ${font}`; ctx.fillText(tr(`넓히기 ${nx.S.price}`), W2 / 2, 197); }
+      ctx.font = `bold 74px ${font}`; ctx.fillText(tr(house ? '집 짓기' : '방 넓히기'), W2 / 2, 82);
+      if (house) { ctx.fillStyle = '#ffe0a8'; roundRect(ctx, 50, 150, W2 - 100, 92, 46); ctx.fill(); ctx.fillStyle = '#c0661c'; ctx.font = `bold 56px ${font}`; ctx.fillText(tr('곧 열려요'), W2 / 2, 197); }
+      else if (can) { ctx.fillStyle = '#4fbf6a'; roundRect(ctx, 50, 150, W2 - 100, 92, 46); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = `bold 60px ${font}`; ctx.fillText(tr(`넓히기 ${nx.S.price}`), W2 / 2, 197); }
       else {
         const k = Math.min(1, C / nx.S.price), bx = 46, bw = W2 - 92, by = 150;
         ctx.fillStyle = '#efe0c8'; roundRect(ctx, bx, by, bw, 40, 20); ctx.fill();
@@ -151,7 +156,15 @@ export class MyHomeScene {
     if (Wl && Wl.kind === 'wall') { g.position.set(-(R.d / 2 - 1.2), 1.45, .12); Wl.decor.add(g); }   // (the left wall's own decor: down with the wall)
     else { const stick = rbox(.08, 1.15, .08, '#a8703f', .02); stick.position.set(0, -.75, -.05); g.add(stick); g.position.set(-R.w / 2 + .7, 1.3, R.d / 2 - .7); g.rotation.y = Math.PI / 4; R.group.add(g); }
     g.traverse(o => { o.userData.grow = true; });
-    return { g, can, y0: g.position.y, t: 0 };
+    return { g, can, house, y0: g.position.y, t: 0 };
+  }
+  // 집 짓기 · 곧 열려요 (예고 A): what's next — a picture of the two-floor house (art/concepts H, cropped) and one line
+  houseCard() {
+    const G = this.G, ui = G.ui, img = h('img', { src: 'art/keyart/house-teaser.webp', style: 'display:block;width:100%;max-height:46vh;object-fit:cover;object-position:top;border-radius:14px;border:3px solid var(--ink,#3a2453);margin:4px 0 8px' });
+    img.onerror = () => { img.onerror = null; img.src = 'art/keyart/house-teaser.jpg'; };
+    G.audio.sfx('click');
+    ui.panel({ title: '집 짓기', color: 'orange', body: [img, h('div', { class: 'txt', style: 'text-align:center' }, h('b', {}, '방을 끝까지 넓혔어!')), h('div', { class: 'txt', style: 'text-align:center' }, '다음 업데이트에서 방이 여럿인 집을 지을 수 있어')],
+      buttons: [ui.btn('기대할게', { color: 'green', cls: 'big', onClick: () => ui.closePanel() })] });
   }
   growAt(x, y) { const s = this.growSign; return !!s && this.G.world.pick(x, y, [s.g]).length > 0; }
   growCard() {
@@ -532,6 +545,7 @@ export class MyHomeScene {
     if (!moving) {
       const placed = new Set(hid.items.map(e => e.item));
       this.selItem = [...this.chainNeeded(), ...G.save.collection].find(x => !placed.has(x)) || null;
+      this.hand?.drop(sp.x, sp.y); setTimeout(() => !this.dead && this.heldShow(true), 450);   // (손에서 그 자리로, 그다음 것이 크게)
     }
     this.renderHideCards();
     return true;
@@ -568,9 +582,19 @@ export class MyHomeScene {
     this.col.append(bar);
     this.selItem = null;
     this.renderHideCards();
+    this.hand = new Hand(G, bar, { inline: true });   // (right above the cards: what's in the hand, then where it came from)
+    this.heldShow(true);
     this.markers = null;   // no round guide markers (user, 2026-10-15): tap a drawer to open it, then tap inside
   }
   chainNeeded() { return Object.values(this.H.hide.locks).map(k => k === 'pad' ? 'key' : 'note'); }
+  // 손에 든 물건 (10/20): the thing picked to hide — big in the middle (big), then in the hand with how many so far
+  heldShow(big) {
+    const t = this.selItem, hand = this.hand; if (!hand?.alive || this.mode !== 'hide') return;
+    const chain = t === 'key' || t === 'note', full = !chain && t && !this.items[t] && this.targetCount() >= MAX_HIDE;
+    if (!t || full) { hand.done(full ? `${MAX_HIDE}개 다 숨겼어! 옮기려면 끌어` : '다 숨겼어!'); return; }
+    const k = Math.min(MAX_HIDE, this.targetCount() + (this.items[t] ? 0 : 1));
+    hand.show(t, { name: ITEMS[t]?.name || '', label: chain ? '꼭 숨겨야 해' : `숨길 물건 ${k}/${MAX_HIDE}`, hint: '어디든 콕 해서 숨겨!', count: chain ? '' : `${k}/${MAX_HIDE}`, big });
+  }
   renderHideCards() {
     const G = this.G, hid = this.H.hide;
     this.cardsEl.innerHTML = '';
@@ -580,7 +604,7 @@ export class MyHomeScene {
     if (!this.selItem) this.selItem = list.find(t => !placed.has(t));
     for (const t of list) {
       const e = hid.items.find(x => x.item === t), s = e && this.items[t]?.spot;   // fixed spots and free places alike
-      this.cardsEl.append(h('div', { class: 'card' + (this.selItem === t ? ' sel' : '') + (s ? ' done' : ''), onclick: () => { this.selItem = t; G.audio.sfx('click'); this.renderHideCards(); } },
+      this.cardsEl.append(h('div', { class: 'card' + (this.selItem === t ? ' sel' : '') + (s ? ' done' : ''), onclick: () => { this.selItem = t; G.audio.sfx('click'); this.renderHideCards(); this.heldShow(false); } },
         s ? h('div', { class: 'tag' }, '숨김') : null, h('img', { src: G.thumbs['item_' + t] }), h('div', {}, ITEMS[t].name), h('div', { style: 'font-size:11px;color:#9b6cff' }, s ? s.label : (t === 'key' || t === 'note') ? '꼭 숨겨야 해요' : '')));
     }
     this.cardsEl.append(h('div', { class: 'card lockedc', style: 'display:flex;align-items:center;justify-content:center;font-size:12px;min-height:110px' }, `스테이지에서 찾은 물건이 여기 모여요 (${coll.length}종)`));
@@ -640,6 +664,7 @@ export class MyHomeScene {
       G.world.idsDirty = true;
     }
     G.persist(); this.renderHideCards();
+    this.heldShow(!!hid.locks[p.key]);   // (just locked: the key or the note comes up big — it must be hidden too)
   }
   async placeIn(place) {
     const t = this.selItem; if (!t) return;
@@ -664,10 +689,12 @@ export class MyHomeScene {
     const sp = G.world.toScreen(this.room.spotWorld(spot));
     G.world.fx.burst(sp.x, sp.y, { n: 10, shape: 'heart', colors: ['#ff6fa6', '#ffb3d1', '#ffffff'], speed: 140 });
     G.ui.floatText(sp.x, sp.y - 30, spot.label, '');
+    this.hand?.drop(sp.x, sp.y);   // (손에서 그 자리로)
     if (spot.part) { await this.openPart(spot.part, true); await this.tw.wait(.35); await this.openPart(spot.part, false); }
     const placed = new Set(hid.items.map(e => e.item));
     this.selItem = [...this.chainNeeded(), ...G.save.collection].find(x => !placed.has(x)) || null;
     this.renderHideCards();
+    this.heldShow(true);
   }
   roomDoc() {
     const hid = this.H.hide;
@@ -787,7 +814,7 @@ export class MyHomeScene {
     const G = this.G, hit = this.pick(x, y);
     if (hit.kind === 'char') { this.reactChar(hit.char); return; }
     // the 넓히기 sign (방 넓히기): its card
-    if (this.growSign && ['view', 'edit', 'lobby'].includes(this.mode) && !this.busyTut && !G.ui.panelOpen && this.growAt(x, y)) { this.growCard(); return; }
+    if (this.growSign && ['view', 'edit', 'lobby'].includes(this.mode) && !this.busyTut && !G.ui.panelOpen && this.growAt(x, y)) { if (this.growSign.house) this.houseCard(); else this.growCard(); return; }
     // a tap on another room of the map: work there now (꾸미기: and the piece under the finger is picked up as well)
     if (hit.kind === 'none' && ['view', 'edit', 'hide'].includes(this.mode) && !this.busyTut && !G.ui.panelOpen) {
       const nb = this.nbAt(x, y);
@@ -795,6 +822,7 @@ export class MyHomeScene {
     }
     if (this.mode === 'edit') { if (hit.kind === 'furn' && !hit.furn.wall) this.select(hit.furn.rec); else this.select(null); return; }
     if (this.mode === 'hide') {
+      if (this.hand?.busy) { this.hand.skip?.(); return; }   // (a tap during the big show: straight into the hand)
       if (this.selItem) {
         const s = pickSurface(G.world, this.room, x, y);
         if (s && !s.side && (!s.part || s.part.t > .5)) { this.freePlace(s); return; }

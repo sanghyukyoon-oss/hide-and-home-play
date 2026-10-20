@@ -1899,3 +1899,24 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .panel.more .credits { font-size: 8px; line-height: 1.35; margin-top: 6px; color: #a796b6; }
 .panel.more .credits.thanks { text-align: center; font-size: 9px; margin-top: 2px; }
 .col:has(> .peek) > .subline { opacity: 0; }   /* (a picture being shown big puts the caption away for that moment) */
+
+/* 손에 든 물건 (숨기기 10/20): the big show in the middle, the hand chip at the bottom */
+.handbig { position: absolute; left: 50%; top: 44%; z-index: 40; width: min(46vw, 210px); padding: 14px 14px 12px; border-radius: 28px; background: #fffaf2; border: 4px solid var(--ink); border-bottom-width: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; transform: translate(-50%, -50%); }
+.handbig img { width: 78%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 6px 0 rgba(58, 36, 83, .25)); }
+.handbig .hlabel { font-size: 15px; color: #fff; background: var(--o2); border: 3px solid var(--ink); border-radius: 12px; padding: 2px 12px; margin-top: -30px; white-space: nowrap; }
+.handbig .hname { font-size: 20px; color: var(--ink); }
+.handchip { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 22px; background: rgba(255, 250, 242, .96); border: 3px solid var(--ink); border-bottom-width: 6px; pointer-events: none; max-width: calc(100% - 32px); z-index: 5; }
+.handchip .hpic { width: 64px; height: 64px; border-radius: 16px; background: #fff0f6; border: 3px dashed #ff9ec2; display: grid; place-items: center; flex: none; }
+.handchip .hpic img { width: 54px; height: 54px; object-fit: contain; }
+.handchip.empty .hpic img { visibility: hidden; }
+.handchip .htxt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; color: var(--ink); }
+.handchip .htxt b { font-size: 16px; }
+.handchip .htxt span { font-size: 14px; color: #8a6a9a; white-space: nowrap; }
+.handchip .hcount { font-size: 15px; color: var(--o3); font-variant-numeric: tabular-nums; }
+.handchip.empty .htxt b, .handchip.empty .hcount { display: none; }
+.handchip.alldone { background: #eafbe2; } .handchip.alldone .hpic { display: none; } .handchip.alldone .htxt span { color: var(--g3); font-size: 15px; }
+.handchip.pop { animation: handpop .32s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes handpop { 0% { transform: translateX(-50%) scale(.85); } 100% { transform: translateX(-50%) scale(1); } }
+.handchip.inline { position: relative; left: auto; transform: none; margin: 0 auto 8px; width: max-content; max-width: 100%; }
+.handchip.inline.pop { animation: handpopin .32s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes handpopin { 0% { transform: scale(.85); } 100% { transform: scale(1); } }

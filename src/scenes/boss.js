@@ -21,6 +21,7 @@ import { Tweens, clamp } from '../util.js';
 import { walkGrid, gridPath, nearestTile, crossOK } from '../companion.js';
 import { Ambient } from '../ambient.js';
 import { disposeTree } from '../gfx/kit.js';
+import { Hand } from '../handhold.js';   // 손에 든 보물: 하나씩 크게 → 손 → 콕 → 쏙 (10/20)
 
 // once in the middle of each region (level design 10/18): the first after stage 5 as a gentle try, then after 17, 26, 36, 45,
 // 55, 65 — no longer right after a region's escape-room boss (two bosses back to back)
@@ -123,6 +124,7 @@ export class BossScene {
       if (this.dead) return;
     }
     this.phase = 'count'; this.countT = this.T.count;
+    this.nextHeld();   // 손에 든 보물: the first one comes up big, then into the hand (the count waits while it shows)
     if (!this.T.climb && this.rooms.some(R => R.L.raised?.length)) setTimeout(() => !this.dead && G.ui.toast('이번 너굴이는 단 위로 못 올라와! 높은 곳에 숨겨 봐', 'green'), 900);
   }
   buildFloor() {
@@ -171,8 +173,17 @@ export class BossScene {
     this.hideBtn = ui.btn('휘슬 삐익!', { color: 'pink', cls: 'big', onClick: () => this.whistle() });
     this.goBtn = ui.btn('다 숨겼어! 시작', { color: 'green', cls: 'boss-go', onClick: () => { if (this.phase === 'count') this.countT = Math.min(this.countT, .01); } });
     col.append(this.goBtn, h('div', { class: 'boss-left' }, this.hideBtn));
+    this.hand = new Hand(G, col, { bottom: 'calc(28px + var(--safeB))' });
     this.vig = h('div', { class: 'boss-vig' }); document.getElementById('app').append(this.vig);
     this.drawSlots();
+  }
+  // the next treasure to hide: big in the middle, then into the hand; none left — the hand says start
+  nextHeld() {
+    if (!this.hand || this.dead || this.phase !== 'count') return;
+    const i = this.treasures.findIndex(t => !t.spot), n = this.treasures.length;
+    if (i < 0) { this.hand.done('셋 다 숨겼어! 위의 시작을 콕'); return; }
+    const t = this.treasures[i];
+    this.hand.show(t.type, { name: t.name, label: `보물 ${i + 1}/${n}`, hint: '어디든 콕 해서 숨겨!', count: `${i + 1}/${n}` });
   }
   drawSlots() { this.treasures.forEach((t, i) => { const el = this.slots[i]; el.classList.toggle('hidden', !!t.spot && !t.lost); el.classList.toggle('lost', t.lost); el.classList.toggle('todo', !t.spot); el.classList.toggle('danger', !t.lost && !!t.spot && this.target === t.spot && this.phase === 'seek'); }); }
   say(ch, text, ms = 1200) {
@@ -223,9 +234,10 @@ export class BossScene {
     const spot = f && this.spots.find(s => s.f === f);
     // while it counts: the treasure goes straight into the very place you tapped — a drawer, behind the curtain, on the
     // shelf — the way you hide things at home (user, 10/18: "걸어다니면서 숨기지 않고 그냥 내가 원하는 곳에 배치")
+    if (this.phase === 'count' && this.hand?.busy) { this.hand.skip?.(); return; }   // (a tap during the big show: straight into the hand)
     if (f && this.phase === 'count' && this.treasures.some(t => !t.spot)) {
       const fs = (f.spots || []).filter(q => !q.bossTre).sort((a, b) => a.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point) - b.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point))[0] || null;
-      if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 콕', '');
+      if (spot && !spot.tre) { this.hand?.drop(x, y); this.hideTreasure(spot, false, fs); setTimeout(() => this.nextHeld(), 650); } else if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 콕', '');
       W.fx.ring(x, y, { r: 40, color: '#ff9ec2', width: 6, life: .4 }); return;
     }
     const p = spot ? spot.t : hit.point; this._ty = spot ? (spot.t.y || 0) : hit.point.y;
@@ -369,9 +381,10 @@ export class BossScene {
     this.goBtn.style.display = this.phase === 'count' && !this.result ? '' : 'none';
     if (this.phase === 'intro' || this.result) return;
     if (this.phase === 'count') {
+      if (this.hand?.busy) return;   // (the count waits while a treasure shows big)
       const before = Math.ceil(this.countT); this.countT -= dt; const now = Math.ceil(this.countT);
       if (now !== before && now > 0) { this.say(this.seek, String(now), 800); G.audio.sfx('tap', 20 - now); this.tlEl.textContent = `보물을 숨겨! 너굴이가 세는 중… ${now}`; }
-      if (this.countT <= 0) { this.hideRest(); this.phase = 'seek'; this.sState = 'search'; this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '휘슬로 엉뚱한 데로 유인해!'; this.seek.root.rotation.y += Math.PI; }
+      if (this.countT <= 0) { this.hideRest(); this.hand?.remove(); this.phase = 'seek'; this.sState = 'search'; this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '휘슬로 엉뚱한 데로 유인해!'; this.seek.root.rotation.y += Math.PI; }
       return;
     }
     this.time -= dt; this.tnum.textContent = String(Math.max(0, Math.ceil(this.time))); this.tbarI.style.width = Math.max(0, this.time / this.T.time * 100) + '%';

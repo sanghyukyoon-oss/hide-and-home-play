@@ -3678,6 +3678,12 @@ export const EN = {
 "하나 골라! 이 장 가구는 상점 기념품 칸에 있어": "Pick one! This chapter's furniture is in the shop's souvenirs",
 "별 15개를 모았어! 하나 골라": "15 stars! Pick one",
 "🎁 상자 열기": "🎁 Open the box",
+// 집 짓기 예고 (경제, 10/20)
+"집 짓기": "Build a house",
+"곧 열려요": "Coming soon",
+"방을 끝까지 넓혔어!": "Your room is as big as it gets!",
+"다음 업데이트에서 방이 여럿인 집을 지을 수 있어": "In the next update you can build a house with more rooms",
+"기대할게": "Can't wait",
 // 방 넓히기 (경제, 10/20)
 "방 넓히기": "Expand the room",
 "넓히기": "Expand",

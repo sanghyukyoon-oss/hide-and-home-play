@@ -21,6 +21,8 @@ addI18n({
   // 문단속 · 자물쇠
   '털린 뒤라 문을 꽁꽁 잠갔어': 'Robbed, so the door is locked', '자물쇠가 다 쓰였어': 'Out of padlocks',
   '잠근 서랍 속 물건은 동네 주민이 거의 못 털어 가': 'Things in a locked drawer are hardly ever taken', '다른 데 걸린 걸 풀어서 옮겨 봐': 'Take one off and move it',
+  // 손에 든 물건 (handhold.js — 보물 지키기 · 내 집 숨기기, 10/20)
+  '어디든 콕 해서 숨겨!': 'Tap anywhere to hide it!', '셋 다 숨겼어! 위의 시작을 콕': 'All three hidden! Tap Start up top', '꼭 숨겨야 해': 'Must be hidden', '다 숨겼어!': 'All hidden!',
   '자물쇠': 'Padlock', '서랍을 잠가 지켜': 'lock a drawer to guard it',
 }, [
   // the raid news (raid.js newsLine): revenge first, so the plain one doesn't take "복수하러 와서 …" for a name
@@ -60,4 +62,7 @@ addI18n({
   [/^자물쇠 (\d+)\/(\d+)$/, (a, b) => `Padlocks ${a}/${b}`],
   [/^(\d+)개 다 있어$/, n => `All ${n} owned`],
   [/^가진 것 (\d+)개$/, n => `Have ${n}`],
+  [/^보물 (\d+)\/(\d+)$/, (a, b) => `Treasure ${a}/${b}`],
+  [/^숨길 물건 (\d+)\/(\d+)$/, (a, b) => `To hide ${a}/${b}`],
+  [/^(\d+)개 다 숨겼어! 옮기려면 끌어$/, n => `All ${n} hidden! Drag one to move it`],
 ]);
