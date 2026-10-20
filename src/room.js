@@ -104,12 +104,19 @@ const clearZones = (type, x, z, a) => (KEEP_CLEAR[type] || []).map(([x0, x1, z0,
 
 const hasFine = e => !!(e.s && e.s !== 1 || e.ry || e.dx || e.dz || e.dy);
 
+// 가구 위에 올리기 (10/20, user: "로봇은 가구 위에 못 올리나 근데?"): in my home (layout.stack) a small piece may stand on a piece
+// with a flat top — dragged over it, it sits on that top (the height of the top's '…위' hiding spot). A piece with something on
+// it stays put until that is taken off (myhome).
+export const STACK_SMALL = new Set(['kitrobot', 'kitparfait', 'kitmovebox', 'lamp', 'plant', 'monstera', 'amphora', 'tacklebox', 'baitbucket', 'speaker', 'yarnbasket']);
+export const STACK_TOP = { drawers: 1.01, desk: .81, table: .69, counter: .94, safe: .94, stool: .55, guidedesk: .85, kitchentable: .77, merchtable: .71, schooldesk: .68, kitmovebox: .47 };
+
 export class Room {
   constructor(world, layout) {
     this.world = world; this.L = layout; this.T = layout.theme;
     this.w = layout.w || 5; this.d = layout.d || 5;
     this.group = new THREE.Group();
     this.furns = []; this.decors = []; this.walls = {}; this.occ = []; this.floorOcc = [];
+    this.stack = !!layout.stack;
     this.buildShell();
     for (const fd of layout.furniture || []) {
       const rec = fd.x != null ? this.addFurnitureAt(fd.type, fd.x, fd.z, fd.a || 0, fd.id, fd.opts) : this.addFurniture(fd.type, fd.i, fd.j, fd.rot || 0, fd.id, fd.opts);
@@ -117,6 +124,7 @@ export class Room {
       if (y) { rec.f.group.position.y = y; rec.y = y; }
       if (hasFine(fd)) this.fine(rec, fd);
     }
+    if (this.stack) for (const r of this.furns) if (STACK_SMALL.has(r.type)) this.settle(r);   // (once all are in: a base may come later in the list)
     for (const dd of layout.decor || []) { const rec = this.addDecor(dd.type, dd.wall, dd.u, dd.opts); if (hasFine(dd)) this.fine(rec, dd); }
     if (layout.door) this.doorDecor = this.addDecor('door', layout.door.wall, layout.door.u);
     // a window or door on a side with no wall at all (a map's open side onto the next room) would hang in the air
@@ -416,8 +424,11 @@ export class Room {
     const full = this.obb(type, x, z, a, 1);
     for (const [cx, cz] of obbCorners(full)) if (Math.abs(cx) > this.w / 2 + .02 || Math.abs(cz) > this.d / 2 + .02) return false;
     const floor = type === 'rug', me = this.obb(type, x, z, a);
+    // (on a top: only the others on that same top are in the way)
+    const sp = this.stackSpot(type, x, z, a, ignoreId);
+    if (sp) { const at = this.obb(type, sp.x, sp.z, a); return !this.furns.some(r => r.id !== ignoreId && r.on === sp.base.id && obbOverlap(at, this.recObb(r))); }
     for (const r of this.furns) {
-      if (r.id === ignoreId || (r.type === 'rug') !== floor) continue;
+      if (r.id === ignoreId || (r.type === 'rug') !== floor || (r.on && !floor)) continue;
       if (obbOverlap(me, this.recObb(r))) return false;
     }
     if (floor) return true;
@@ -456,14 +467,37 @@ export class Room {
     const rec = { f, type, x, z, a, id: id ?? ('f' + Math.random().toString(36).slice(2, 8)), opts };
     this.tileApprox(rec);
     f.rec = rec; this.furns.push(rec);
+    if (this.stack) this.settle(rec);
     this.world.shadowDirty = true;
     return rec;
   }
   moveFurnitureAt(rec, x, z, a) {
     rec.x = x; rec.z = z; rec.a = a; this.tileApprox(rec);
     rec.f.group.position.set(x, 0, z); rec.f.group.rotation.y = a;
+    if (this.stack) this.settle(rec);
     this.world.shadowDirty = true;
   }
+  // 가구 위에 올리기: the piece a small one at (x, z) would stand on — its centre over the top — and where on that top it goes
+  // (pulled in so it doesn't hang over the edge); null on the floor
+  stackSpot(type, x, z, a, ignoreId = null) {
+    if (!this.stack || !STACK_SMALL.has(type)) return null;
+    for (const r of this.furns) {
+      if (r.id === ignoreId || r.on || STACK_TOP[r.type] == null || r.type === type) continue;
+      const o = this.recObb(r, 1), dx = x - o.x, dz = z - o.z, u = dx * o.c - dz * o.s, v = dx * o.s + dz * o.c;
+      if (Math.abs(u) > o.hw || Math.abs(v) > o.hd) continue;
+      const me = this.obb(type, 0, 0, 0, 1), mu = Math.max(0, o.hw - me.hw * .8), mv = Math.max(0, o.hd - me.hd * .8);
+      const cu = clamp(u, -mu, mu), cv = clamp(v, -mv, mv);
+      return { base: r, x: o.x + cu * o.c + cv * o.s, z: o.z - cu * o.s + cv * o.c, y: STACK_TOP[r.type] };
+    }
+    return null;
+  }
+  // a small piece sits on whatever it is over (rec.on: that piece's id), or back on the floor
+  settle(rec) {
+    if (!STACK_SMALL.has(rec.type)) return;
+    const sp = this.stackSpot(rec.type, rec.x, rec.z, rec.a, rec.id);
+    rec.on = sp ? sp.base.id : null; rec.y = sp ? sp.y : 0; rec.f.group.position.y = rec.y;
+  }
+  topsOn(rec) { return this.furns.filter(r => r.on === rec.id); }
   // tile-based callers (stage planner, NPC tiles) still see an approximate i, j, rot
   tileApprox(rec) {
     const rot = ((Math.round(rec.a / (Math.PI / 2)) % 4) + 4) % 4, [fw, fd] = this.footprint(rec.type, rot);

@@ -9,6 +9,7 @@ import { RESIDENTS } from './net.js';
 import { ITEMS } from './gfx/items.js';
 import './i18n-raid.js';   // the raid's English (10/20)
 import { seatedAll } from './econ.js';   // 친구 지킴이: 방에 앉은 친구들 (10/20)
+import { bumpFeat } from './specials.js';   // 스페셜 칸 '털림 막기 N번' (경제 10/20)
 import { CHAR_DEFS } from './gfx/chars.js';
 
 const FIRST_DELAY = 3 * 60e3;        // the first raid comes soon after you first hide something
@@ -90,7 +91,7 @@ function raidOnce(G, now) {
     if (!st.includes(item)) st.push(item);
     R.shield = ev.shield = now + SHIELD;   // 문단속
     R.next = Math.max(R.next || 0, R.shield);
-  } else { ev.kind = 'fail'; ev.coins = 15 * hid.length; }
+  } else { ev.kind = 'fail'; ev.coins = 15 * hid.length; bumpFeat(save, 'keeps'); }
   if (ev.coins) save.coins += ev.coins;
   R.log.push(ev); R.log = R.log.slice(-20);
   return ev;

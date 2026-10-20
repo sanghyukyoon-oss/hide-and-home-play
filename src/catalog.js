@@ -129,7 +129,7 @@ export function zoneLayout(zone) {
   const Z = ZONE_TYPES[zone.type] || ZONE_TYPES.room, st = styleOf(zone), S = zoneSize(zone);
   const base = st?.theme && THEMES[st.theme] ? THEMES[st.theme] : Z.theme;
   const theme = { ...base, ...(zone.paint || {}) };
-  return { w: S.w, d: S.d, theme, furniture: zone.furniture.map(f => ({ ...f })), decor: st?.decor || Z.decor, door: st && 'door' in st ? st.door : Z.door, walls: st?.walls || Z.walls, indoor: Z.indoor,
+  return { w: S.w, d: S.d, theme, furniture: zone.furniture.map(f => ({ ...f })), decor: st?.decor || Z.decor, door: st && 'door' in st ? st.door : Z.door, walls: st?.walls || Z.walls, indoor: Z.indoor, stack: true,
     ...(st?.bleed ? { bleed: {} } : {}) };
 }
 // Before a zone changes size, pin every tile-placed piece to its centre-relative position so nothing jumps.

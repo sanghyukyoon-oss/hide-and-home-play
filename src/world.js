@@ -222,7 +222,21 @@ export class World {
     this.updateCam();
     const cx = this.W / 2, cy = this.H / 2, hit = this.pick(cx, cy, [this.root]).find(h => !h.object.userData.proxy);
     if (hit) return hit.point.clone();
-    return this.target.clone();   // (QA3-cam8: nothing there — the view's own centre, which never needs to move)
+    // (QA7 10/20, user on an iPhone: "스테이지 8 원거리서 돌리면 맵 사라짐") nothing under the middle — the view has been dragged past
+    // the map's edge: the turn goes round the spot of the map's floor that shows nearest the middle of the screen, so the map
+    // stays where it is on screen. Round the view's own centre (empty space 15–30 m off the map, zoomed out and tilted low) the
+    // map swung off the screen and past the far plane (headless, 7·8·13·20판: 0 % of the screen)
+    const f = this._floorBox();
+    if (f) {
+      let best = null, bd = Infinity; const q = new THREE.Vector3();
+      for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) {
+        q.set(f.min.x + (f.max.x - f.min.x) * i / 8, f.min.y, f.min.z + (f.max.z - f.min.z) * j / 8);
+        const s = this.toScreen(q), d = Math.hypot(clamp(s.x, 0, this.W) - cx, clamp(s.y, 0, this.H) - cy) + Math.hypot(s.x - clamp(s.x, 0, this.W), s.y - clamp(s.y, 0, this.H)) * 4;
+        if (d < bd) { bd = d; best = q.clone(); }
+      }
+      if (best) return best;
+    }
+    return this.target.clone();   // (QA3-cam8: no floor at all — the view's own centre, which never needs to move)
   }
   // the room's floor (meshes marked userData.floor), measured again for each turn — rooms change between scenes
   _floorBox() {

@@ -510,19 +510,21 @@ export class MyHomeScene {
     G.audio.sfx('click');
   }
   dropFootprint() { const f = this.footprint; if (!f) return; f.parent?.remove(f); f.geometry.dispose(); f.material.dispose(); this.footprint = null; }
-  updFootprint(x, z, a, ok) {
+  updFootprint(x, z, a, ok, y = this.sel?.y || 0) {
     if (!this.sel || !this.footprint) return;   // (a mode change in the middle of a drag — QA3 10/19)
     const inf = FURN_INFO[this.sel.type];
-    this.footprint.position.set(x, .02, z); this.footprint.rotation.set(-Math.PI / 2, a, 0); this.footprint.scale.set((inf.w || 1) - .06, (inf.d || 1) - .06, 1);
+    this.footprint.position.set(x, y + .02, z); this.footprint.rotation.set(-Math.PI / 2, a, 0); this.footprint.scale.set((inf.w || 1) - .06, (inf.d || 1) - .06, 1);
     this.footprint.material.color.set(ok ? '#7be04f' : '#ff4f66');
   }
+  // 가구 위에 올리기 (10/20): a piece with something standing on it stays put — take that off first
+  stackHeld(r) { if (!this.room.topsOn(r).length) return false; this.G.ui.toast('위에 올린 걸 먼저 내려 줘!', 'red'); this.G.audio.sfx('miss'); return true; }
   rotateSel() {
-    const r = this.sel; if (!r) return;
+    const r = this.sel; if (!r || this.stackHeld(r)) return;
     for (let k = 1; k <= 8; k++) { const a = r.a + k * Math.PI / 4; if (this.room.canPlaceAt(r.type, r.x, r.z, a, r.id)) { this.room.moveFurnitureAt(r, r.x, r.z, ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)); this.syncRec(r); this.updFootprint(r.x, r.z, r.a, true); this.G.audio.sfx('swish'); this.G.persist(); return; } }
     this.G.ui.toast('돌릴 자리가 없어!', 'red');
   }
   storeSel() {
-    const r = this.sel; if (!r) return;
+    const r = this.sel; if (!r || this.stackHeld(r)) return;
     for (const s of r.f.spots) if (s.item) this.removeItem(s.item.type);
     for (const t in this.items) { let on = false; for (let o = this.items[t].spot.anchor; o; o = o.parent) if (o === r.f.group) on = true; if (on) this.removeItem(t); }
     for (const p of r.f.parts) if (p.key) delete this.H.hide.locks[p.key];
@@ -539,6 +541,7 @@ export class MyHomeScene {
     if (this.mode !== 'edit' || !this.sel) return null;
     const hit = this.pick(x, y);
     if (hit.kind !== 'furn' || hit.furn.rec !== this.sel) return null;
+    if (this.stackHeld(this.sel)) return null;
     const r = this.sel, R = this.room, W = this.G.world, snap = v => Math.round(v * 4) / 4;
     const start = { x: r.x, z: r.z }, g0 = W.screenToGround(x, y, 0);
     let cur = { ...start, ok: true };
@@ -547,14 +550,16 @@ export class MyHomeScene {
         const g = W.screenToGround(mx, my, 0); if (!g || !g0) return;
         const nx = clamp(snap(start.x + g.x - g0.x), -R.w / 2, R.w / 2), nz = clamp(snap(start.z + g.z - g0.z), -R.d / 2, R.d / 2);
         if (nx === cur.x && nz === cur.z) return;
-        cur = { x: nx, z: nz, ok: R.canPlaceAt(r.type, nx, nz, r.a, r.id) };
-        r.f.group.position.set(nx, .15, nz);
-        this.updFootprint(nx, nz, r.a, cur.ok); this.G.audio.sfx('tap');
+        // (over a flat top a small piece goes up onto it — 가구 위에 올리기 10/20)
+        const sp = R.stackSpot(r.type, nx, nz, r.a, r.id);
+        cur = { x: nx, z: nz, ok: R.canPlaceAt(r.type, nx, nz, r.a, r.id), px: sp ? sp.x : nx, pz: sp ? sp.z : nz, y: sp ? sp.y : 0 };
+        r.f.group.position.set(cur.px, cur.y + .15, cur.pz);
+        this.updFootprint(cur.px, cur.pz, r.a, cur.ok, cur.y); this.G.audio.sfx('tap');
       },
       end: () => {
-        if (cur.ok && (cur.x !== start.x || cur.z !== start.z)) { R.moveFurnitureAt(r, cur.x, cur.z, r.a); this.syncRec(r); this.G.audio.sfx('place'); this.G.persist(); }
+        if (cur.ok && (cur.x !== start.x || cur.z !== start.z)) { R.moveFurnitureAt(r, cur.px ?? cur.x, cur.pz ?? cur.z, r.a); this.syncRec(r); this.G.audio.sfx(r.on ? 'pop' : 'place', r.on ? 3 : undefined); this.G.persist(); }
         else { R.moveFurnitureAt(r, start.x, start.z, r.a); if (!cur.ok) this.G.ui.toast('거긴 놓을 수 없어', 'red'); }
-        this.updFootprint(r.x, r.z, r.a, true);
+        this.updFootprint(r.x, r.z, r.a, true, r.y || 0);
       },
       cancel: () => { R.moveFurnitureAt(r, start.x, start.z, r.a); this.updFootprint(r.x, r.z, r.a, true); },   // (back where it was — QA3 10/19)
     };

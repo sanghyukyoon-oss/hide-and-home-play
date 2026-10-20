@@ -9,6 +9,7 @@ import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON, KEEPSAKE_PRICE } from './e
 import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_PRICE, LOCK_MAX } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
 import { EN } from './i18n-en-dict.js';
+import { SPECIALS, SPECIAL_TXT, specialState, feats } from './specials.js';   // 스페셜 칸 (10/20)
 import { hasWall, hasFloor, patternThumb } from './patterns.js';   // 벽지·바닥 더하기 (10/20)
 
 // furniture not open yet (10/19 night, user: "아직 오픈하지 못한 가구들은 실루엣만 보여주고"): a later chapter's piece, or a chapter
@@ -38,7 +39,7 @@ function styleArt(list) {
   return STYLE_ART;
 }
 
-const TABS = [['items', '물건'], ['furn', '가구'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
+const TABS = [['items', '물건'], ['furn', '가구'], ['special', '스페셜'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
 
 // ctx: { G, zone (current zone object or null), onChange() }
 export function openShop(G, ctx = {}, tab = 'furn') {
@@ -58,7 +59,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   };
   const render = () => {
     tabsEl.innerHTML = '';
-    for (const [k, label] of TABS) if ((k !== 'items' || G.econ) && !(k === 'zone' && ECON)) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
+    for (const [k, label] of TABS) if ((k !== 'items' || G.econ) && (k !== 'special' || G.econ) && !(k === 'zone' && ECON)) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
     grid.innerHTML = '';
     note.textContent = '';
     if (tab === 'items') {
@@ -141,6 +142,23 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         }
       }
       laterPats(laterP, true);
+    } else if (tab === 'special') {
+      // 스페셜 (10/20): open ones at their price; locked ones dark, with their condition and how far along
+      note.textContent = SPECIAL_TXT.note;
+      const f = feats(G.save);
+      G.needThumbs?.(SPECIALS.map(sp => 'furn_' + sp.t));
+      for (const sp of SPECIALS) {
+        const inf = FURN_INFO[sp.t]; if (!inf) continue;
+        const st = specialState(G.save, sp, f), owned = countOwned(H, sp.t);
+        if (!st.open) {
+          grid.append(h('div', { class: 'card silc', onclick: () => { ui.toast(`${SPECIAL_TXT.locked} · ${sp.say}`, ''); G.audio.sfx('locked'); } },
+            G.thumbs['furn_' + sp.t] ? h('img', { src: G.thumbs['furn_' + sp.t], alt: '', draggable: 'false' }) : h('div', { class: 'swatch' }),
+            h('div', {}, '🔒 ' + sp.say), h('div', { style: 'font-size:11px;color:#9b6cff' }, `${st.have}/${st.n}`)));
+          continue;
+        }
+        grid.append(card(G, { img: G.thumbs['furn_' + sp.t], name: inf.name, sub: sp.say, price: sp.price, tag: owned ? `보유 ${owned}` : SPECIAL_TXT.head,
+          onBuy: () => { H.inventory.push(sp.t); G.persist(); ui.toast(`${inf.name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } }));
+      }
     } else if (tab === 'style') {
       note.textContent = zone ? `${zone.name}의 분위기를 통째로 바꿔요. 바꾸면 벽지·바닥은 그 테마 것으로 돌아가요.` : '';
       H.owned.style = H.owned.style || [];
@@ -149,8 +167,8 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         const owned = st.price === 0 || H.owned.style.includes(st.id), on = (zone?.style || (st.price === 0 ? st.id : null)) === st.id && (zone?.style ? true : st.price === 0);
         grid.append(card(G, { img: art[st.id], swatch: swatch(st.sw[0], st.sw[1], st.indoor ? 'wood' : 'dots'), name: st.name, price: owned ? null : st.price, tag: on ? '사용 중' : owned ? '보유' : null,
           action: owned ? '바꾸기' : null,
-          onBuy: owned ? null : () => { H.owned.style.push(st.id); apply(); },
-          onUse: () => apply() }));
+          onBuy: null,   // (user 10/20: "테마도 미리보기 가능하게" — one you don't own goes on the room first: 사기 or 되돌리기)
+          onUse: () => owned ? apply() : zone && preview(st.name, st.price, null, () => H.owned.style.push(st.id), st.id) }));
         function apply() {
           if (!zone) return;
           zone.style = st.id; zone.paint = {};
@@ -179,11 +197,12 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   };
   // 미리보기 (10/20): the shop steps aside, the room wears it, and a bar at the bottom asks — 사기 (the coins, and it stays) or
   // 되돌리기 (back as it was). Either way the shop comes back on the same tab. Nothing is saved while you look.
-  function preview(name, price, look, own) {
+  // (style: a theme's id — the whole room's look tried on, its walls and floor back to the theme's own, as 바꾸기 does)
+  function preview(name, price, look, own, style = null) {
     if (!zone) return;
-    const was = zone.paint ? { ...zone.paint } : null;
-    ui.closePanel(true); ctx.onPreview?.(true); zone.paint = { ...(zone.paint || {}), ...look }; ctx.onChange?.('paint'); ctx.onPreview?.(true); G.audio.sfx('place');   // (the view before the rebuild too: the lobby mustn't fly back to its close-up)
-    const done = keep => { bar.remove(); if (!keep) { zone.paint = was; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); openShop(G, ctx, tab); };
+    const was = zone.paint ? { ...zone.paint } : null, wasStyle = zone.style;
+    ui.closePanel(true); ctx.onPreview?.(true); if (style) { zone.style = style; zone.paint = {}; } else zone.paint = { ...(zone.paint || {}), ...look }; ctx.onChange?.('paint'); ctx.onPreview?.(true); G.audio.sfx('place');   // (the view before the rebuild too: the lobby mustn't fly back to its close-up)
+    const done = keep => { bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); openShop(G, ctx, tab); };
     const buy = ui.btn('사기', { color: 'green', icon: 'coin', cls: 'sm', onClick: () => {
       if ((G.save.coins || 0) < price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
       G.addCoins(-price); own(); G.persist(); G.audio.sfx('buy'); ui.toast(`${name} 샀어!`, 'green'); done(true); } });

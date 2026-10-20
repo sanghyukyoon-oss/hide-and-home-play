@@ -50,6 +50,7 @@ import { BossGameScene } from './scenes/bossgame.js';
 import { LayEditScene } from './scenes/layedit.js';
 import { LobbyScene } from './scenes/lobby.js';
 import { ECON, econMigrate, econSaveFields } from './econ.js';
+import { bumpFeat } from './specials.js';   // 스페셜 칸의 해금 조건 (10/20)
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
 import { openGallery, playGame } from './gallery.js';
 import { queueFollowup, normalizeFollowup, routeFollowup } from './followup.js';
@@ -269,6 +270,7 @@ const G = {
     save.coins += awarded;
     G.persist();
     if (!room.practice) recordPlay(room.owner, { found, total, ok });
+    if (ok && !room.practice) bumpFeat(save, 'raids');   // (스페셜 칸's '친구네 털기 N번' — specials.js)
     G.stats.visits++; G.stats.log.push({ visit: key, result: ok ? 'clear' : 'fail' });
     return { awarded, repeat: ok && !firstWin };
   },
