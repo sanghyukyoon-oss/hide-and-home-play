@@ -15,7 +15,7 @@ import { Char } from '../gfx/chars.js';
 import { makeFurniture } from '../gfx/furniture.js';
 import { ICON } from '../ui.js';
 import { Tweens, clamp, ease } from '../util.js';
-import { disposeTree } from '../gfx/kit.js';
+import { disposeTree, fadeDisc } from '../gfx/kit.js';
 
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const D = (type, wall, u, opts) => ({ type, wall, u, opts });
@@ -91,7 +91,7 @@ export class Game {
     if (!this.sols.length) console.warn('villa: level', this.lvIdx + 1, 'has no solution');
     this.app = document.getElementById('app'); this.app.classList.add('vl');
     W.setLight(DUSK);
-    this.tex = { glow: canvasTexture(128, 128, (x) => { const g = x.createRadialGradient(64, 96, 4, 64, 84, 84); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.5, 'rgba(255,255,255,.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }),
+    this.tex = { glow: fadeDisc(128, '#ffffff', r => 1 - r * .76, { cx: .5, cy: .34 }),
       frame: canvasTexture(256, 200, (x, w, h) => { const r = 26, i = 9; x.beginPath(); x.roundRect(i, i, w - 2 * i, h - 2 * i, r); x.fillStyle = 'rgba(255,255,255,.2)'; x.fill(); x.lineWidth = 11; x.strokeStyle = '#ffffff'; x.stroke(); }) };
     this.buildVilla();
     this.buildChars();

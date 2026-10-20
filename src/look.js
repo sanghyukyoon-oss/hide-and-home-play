@@ -12,7 +12,7 @@
 //           discs, no real lights: next to nothing for a phone)
 // ?look=0 turns everything off (the map as it was); ?look=light,ring picks layers. Only maps with a recipe change.
 import * as THREE from 'three';
-import { put, rbox, mat, shade } from './gfx/kit.js';
+import { put, rbox, mat, shade, fadeDisc } from './gfx/kit.js';
 import { reindexExact } from './gfx/bake.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { makeFurniture, FURN_INFO } from './gfx/furniture.js';
@@ -626,7 +626,7 @@ export class Look {
     for (const [x, z, r, c] of this.R.glows || []) {
       const m = new THREE.MeshBasicMaterial({ color: c, map: tex, transparent: true, opacity: .78, blending: THREE.AdditiveBlending, depthWrite: false });
       const p = new THREE.Mesh(new THREE.PlaneGeometry(r * 2, r * 2), m);
-      p.rotation.x = -HP; p.position.set(x, .014, z); p.renderOrder = 3; p.userData.noOcclude = true;
+      p.rotation.x = -HP; p.position.set(x, .014, z); p.renderOrder = 3; p.userData.noOcclude = true; p.layers.set(2);
       this.room.group.add(p);
     }
   }
@@ -643,6 +643,10 @@ export class Look {
       poly = clipXZ(poly, px - Rm.w / 2, px + Rm.w / 2, pz - Rm.d / 2, pz + Rm.d / 2); if (!poly) return;
       const m = new THREE.MeshBasicMaterial({ color: c, map: tex, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
       const p = new THREE.Mesh(polyGeo(poly), m);
+      // colour only, like the halo below: on layer 0 the pool went into the outline pass too — with no outline ID of its
+      // own (added after the IDs were given out) it drew in whatever ID came before it, a 1.6 cm step over the floor; on
+      // the phone that came out as red / green / black dots all over the lamp's light (10/20 실폰 9판 "변기 쪽도 이럼")
+      p.layers.set(2);
       p.renderOrder = 3; p.userData.noOcclude = true; g.add(p); this.own.push(m);
     };
     const v = new THREE.Vector3(), n = new THREE.Vector3();
@@ -796,11 +800,7 @@ function speckleTex(col) {
 }
 
 let GLOW = null;
+// the soft disc of a lamp's light: white, fading out (kit.js fadeDisc — a canvas gradient came out speckled on the iPhone)
 function glowTex() {
-  if (GLOW) return GLOW;
-  const N = 128, c = document.createElement('canvas'); c.width = c.height = N;
-  const x = c.getContext('2d'), g = x.createRadialGradient(N / 2, N / 2, 0, N / 2, N / 2, N / 2);
-  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.35, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-  x.fillStyle = g; x.fillRect(0, 0, N, N);
-  return (GLOW = new THREE.CanvasTexture(c));
+  return GLOW ||= fadeDisc(128, '#ffffff', r => r < .35 ? 1 - .45 * r / .35 : .55 * (1 - (r - .35) / .65));
 }

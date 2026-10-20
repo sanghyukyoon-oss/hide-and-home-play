@@ -180,6 +180,20 @@ export function canvasTex(w, h, draw, { repeat = null } = {}) {
   if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat[0], repeat[1]); }
   return t;
 }
+// a soft disc of one colour that fades out in alpha (a glow, a blob shadow), worked out pixel by pixel: Safari dithers a
+// canvas gradient and stores it premultiplied, so a canvas-painted fade came back with red / green / black specks in its
+// nearly clear edge (10/20 실폰 9판). alpha(r): r = the distance from (cx, cy) in half-widths (1 = the texture's side;
+// a row of data is a row up, v — not a canvas row down).
+export function fadeDisc(N, hex, alpha, { cx = .5, cy = .5 } = {}) {
+  const d = new Uint8Array(N * N * 4), n = parseInt(hex.slice(1), 16), R = n >> 16 & 255, G = n >> 8 & 255, B = n & 255;   // (the sRGB bytes as written)
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const r = Math.hypot((i + .5) / N - cx, (j + .5) / N - cy) * 2, k = (j * N + i) * 4;
+    d[k] = R; d[k + 1] = G; d[k + 2] = B; d[k + 3] = Math.round(Math.max(0, Math.min(1, alpha(r))) * 255);
+  }
+  const t = new THREE.DataTexture(d, N, N, THREE.RGBAFormat);
+  t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.generateMipmaps = true; t.needsUpdate = true;
+  return t;
+}
 export function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
@@ -195,11 +209,7 @@ export function tag(root, data) { root.traverse(o => { if (o.isMesh) Object.assi
 // Soft blob shadow (no shadow-map cost) for characters and props that move every frame.
 let _blobTex = null;
 export function blobShadow(r = 0.4, opacity = 0.28) {
-  if (!_blobTex) _blobTex = canvasTex(64, 64, (c, w, h) => {
-    const g = c.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2);
-    g.addColorStop(0, 'rgba(60,30,70,1)'); g.addColorStop(1, 'rgba(60,30,70,0)');
-    c.fillStyle = g; c.fillRect(0, 0, w, h);
-  });
+  if (!_blobTex) _blobTex = fadeDisc(64, '#3c1e46', r => 1 - Math.max(0, r - 1 / 16) / (15 / 16));
   const m = new THREE.MeshBasicMaterial({ map: _blobTex, transparent: true, opacity, depthWrite: false });
   const p = new THREE.Mesh(geo('blob', () => new THREE.PlaneGeometry(1, 1)), m);
   p.rotation.x = -Math.PI / 2; p.scale.set(r * 2, r * 2, 1); p.position.y = 0.012; p.renderOrder = 1;

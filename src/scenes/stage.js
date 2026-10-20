@@ -2088,9 +2088,13 @@ export class StageScene {
   // the stage is won: shut whatever stands open (doors, drawers, lids, curtains — not levers, gadgets or lifts, which are a
   // puzzle's state), all together in 0.22 s with one sound; nothing open → at once, no sound
   // (list: just these — closeup.js clearParts shuts only what stands in front of someone talking, mid-stage)
+  // the end of a stage also lays back what was lifted, flipped or slid (a rug, a cushion, a blanket): left up, it went
+  // through the friend in the closing shot (10/20 실폰 10판 "카펫 연 채로 엔딩 나오니까 뚫리네") — not a device's part,
+  // not what something still hangs from, and no slide / hatch / shutter (12판's secret bookcase, a lift's doors: the way in)
   async shutOpenParts(list = null) {
+    const kinds = list ? ['door', 'drawer', 'lid', 'curtain'] : ['door', 'drawer', 'lid', 'curtain', 'lift', 'flip'];
     const W = this.G.world, open = (list || (this.room.rooms || [this.room]).flatMap(R => R.furns).flatMap(e => e.f.parts || []))
-      .filter(p => !p.busy && p.t > .05 && !p.isLever && !p.isGadget && ['door', 'drawer', 'lid', 'curtain'].includes(p.kind));
+      .filter(p => !p.busy && p.t > .05 && !p.isLever && !p.isGadget && !p.device && kinds.includes(p.kind) && !this.items.some(it => it.hang === p));
     if (!open.length) return;
     this.G.audio.sfx('close');
     const t0 = open.map(p => p.t);

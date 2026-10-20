@@ -16,7 +16,7 @@ import { Char } from '../gfx/chars.js';
 import { makeFurniture } from '../gfx/furniture.js';
 import { ICON } from '../ui.js';
 import { Tweens, clamp, ease } from '../util.js';
-import { disposeTree, rbox, sph, cyl, put, mat } from '../gfx/kit.js';
+import { disposeTree, rbox, sph, cyl, put, mat, fadeDisc } from '../gfx/kit.js';
 
 const Fu = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const De = (type, wall, u, opts) => ({ type, wall, u, opts });
@@ -96,7 +96,7 @@ export class Game {
     if (this.dead) return;
     W.setLight(EVENING);
     this.tex = {
-      glow: canvasTexture(128, 128, x => { const g = x.createRadialGradient(64, 96, 4, 64, 84, 84); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.5, 'rgba(255,255,255,.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); }),
+      glow: fadeDisc(128, '#ffffff', r => 1 - r * .76, { cx: .5, cy: .34 }),
       frame: canvasTexture(256, 200, (x, w, h) => { x.beginPath(); x.roundRect(9, 9, w - 18, h - 18, 26); x.fillStyle = 'rgba(255,255,255,.2)'; x.fill(); x.lineWidth = 11; x.strokeStyle = '#ffffff'; x.stroke(); }),
       tape: canvasTexture(256, 32, (x, w, h) => { x.fillStyle = '#ffd23f'; x.fillRect(0, 0, w, h); x.fillStyle = '#2a2433'; for (let i = -2; i < 18; i++) { x.beginPath(); x.moveTo(i * 16, h); x.lineTo(i * 16 + 8, h); x.lineTo(i * 16 + 20, 0); x.lineTo(i * 16 + 12, 0); x.fill(); } }),
     };

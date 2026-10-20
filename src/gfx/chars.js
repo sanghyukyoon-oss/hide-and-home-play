@@ -837,7 +837,9 @@ export class Char {
       h.add(put(rbox(.33, .26, .07, '#fffaf0', .01), .012, 0, 0));
       h.add(put(rbox(.03, .28, .11, '#e84f5c', .012), -.17, 0, 0));
       h.add(put(rbox(.15, .06, .02, '#ffd23f', .01), .01, .04, .058));
-      h.userData = { two: [0, .15, .55, -.42], one: [-.04, .05, .12, -.2], grip: .2, gy: .17 };
+      // held out in front by its lower corners, the hands on its side edges (10/20 실폰 12판 "책이 몸을 뚫음. 모서리 잡는
+      // 걸로"): leaning back .42 its top edge went 6 cm into the tummy; one hand holds it by the near corner, the book outward
+      h.userData = { two: [0, .17, .58, -.1], one: [.13, .06, .1, -.15], grip: .2, gy: .1, gz: .48 };
     } else if (name === 'lollipop') {
       h.add(put(cap(.022, .24, '#ffffff'), 0, .02, 0));
       h.add(put(cyl(.13, .13, .06, '#ff6fa6', { rough: .45 }, 22), 0, .24, 0, Math.PI / 2, 0, 0));
@@ -934,7 +936,7 @@ export class Char {
       else if (P === 'cheer') { a.position.set(sx * .45, .55 + Math.sin(t * 14 + i) * .05, .05); }
       else if (P === 'search') { a.position.set(sx * .4, .3 + Math.sin(t * 10 + i * 2) * .08, .3); }
       else if (P === 'cross') { a.position.set(sx * .13, .1 + i * .055, .43 + i * .035); rz = sx * (i ? .3 : -.12); s = [1.95, .95, .95]; }
-      else if (P === 'hold') { const u = this.held?.userData; a.position.set(sx * (u?.grip ?? .2), (u?.gy ?? .25) + Math.sin(t * 3.6 + i) * .01, .44); }
+      else if (P === 'hold') { const u = this.held?.userData; a.position.set(sx * (u?.grip ?? .2), (u?.gy ?? .25) + Math.sin(t * 3.6 + i) * .01, u?.gz ?? .44); }
       else if (P === 'ride') { a.position.set(sx * .52, .3 + Math.sin(t * 1.7 + i * Math.PI) * .035, .02); }
       else if (P === 'hips') { a.position.set(sx * .49, .17, .06); rz = -sx * .7; s = [.7, 1.15, .7]; }
       else if (P === 'push' && i === 1) { a.position.set(.21, .44, .46); }
