@@ -368,6 +368,7 @@ const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
 const rnd = (a, b) => a + Math.random() * (b - a);
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 
+const FLOOR_PTS = new WeakMap(), _fl = new THREE.Vector3();   // (Char._floorLift: a few hundred points of the body's shape)
 export class Char {
   constructor(kind) {
     const d = CHAR_DEFS[kind];
@@ -891,6 +892,16 @@ export class Char {
     if (this.lids) this.lids.forEach(l => { l.visible = !this.sleeping && (calm || f === 'angry'); });
     if (this.bubble) this.bubble.visible = this.sleeping;
   }
+  // how far the body's lowest point is under its base as it is turned and squashed now (body units; 0 when it isn't)
+  _floorLift() {
+    const g = this.bodyMesh.geometry;
+    let pts = FLOOR_PTS.get(g);
+    if (!pts) { const p = g.attributes.position, st = Math.max(1, Math.floor(p.count / 240)); pts = []; for (let i = 0; i < p.count; i += st) pts.push(new THREE.Vector3().fromBufferAttribute(p, i)); FLOOR_PTS.set(g, pts); }
+    const q = this.inner.quaternion, s = this.inner.scale, bp = this.bodyMesh.position;
+    let lo = 0;
+    for (const p of pts) { _fl.copy(p).add(bp).multiply(s).applyQuaternion(q); if (_fl.y < lo) lo = _fl.y; }
+    return -lo;
+  }
   update(dt) {
     this.t += dt;
     const t = this.t, I = this.idl, rx = this.rx;
@@ -903,6 +914,11 @@ export class Char {
     this.inner.rotation.z = this.lean + (this.face === 'dizzy' ? Math.sin(t * 9) * .12 : 0) + this.tilt + I.lean + rx.rz + this.moveLean;
     this.inner.rotation.x = I.nod + rx.rx; this.inner.rotation.y = rx.ry;
     this.inner.position.set(I.x + rx.x, this.lift + I.y + rx.y, rx.z);
+    // a body tipped far over rests on its edge instead of going through the floor (겹침 QA 10/20, phone: 2판 토순이's 벌러덩,
+    // tipped 69° back round the middle of its base, had its back half down in the floor). Small sways stay as they were: the
+    // lift comes in between 20° and 34° of tip
+    const tip = Math.abs(this.inner.rotation.x) + Math.abs(this.inner.rotation.z);
+    if (tip > .35 && this.bodyMesh) { const need = this._floorLift() - this.inner.position.y; if (need > 0) this.inner.position.y += need * Math.min(1, (tip - .35) / .25); }
     // blink
     this.blinkT -= dt;
     if (this.blinkT < 0) { this.blinkT = 2 + Math.random() * 2.5; this._blink = .13; }

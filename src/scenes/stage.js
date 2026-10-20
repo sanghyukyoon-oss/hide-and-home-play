@@ -406,7 +406,7 @@ export class StageScene {
     const G = this.G;
     G.tv?.close(); this.tvs?.dispose(); this.tvs = null;   // 몽글 TV
     G.world.onPan = null; G.world.onDoubleTap = null; this.tutEls?.forEach(e => e.remove()); this.trick?.dispose();
-    if (G.world.post) G.world.post.u.gray.value = 0;
+    if (G.world.post) { G.world.post.u.gray.value = 0; G.world.post.u.grayR.value = -1; }
     document.getElementById('app').style.removeProperty('--joyB');
     G.world.root.remove(this.room.group); G.world.root.remove(this.friend.root); this.look?.dispose(); setSky(null);
     for (const n of this.npcs || []) { n.on = false; G.world.root.remove(n.ch.root); }
@@ -1010,8 +1010,14 @@ export class StageScene {
   // where everyone else stands (feet), for keeping a body's width apart (겹침 QA 10/19)
   bodies(self = null) {
     return [this.friend, this.hero?.ch, this.hero?.buddy, ...(this.npcs || []).map(n => n.ch), this.cameo?.ch, this.trick?.ch]
-      .filter(c => c?.root?.parent && c !== self && c.root.visible !== false).map(c => c.root.position);
+      .filter(c => c?.root?.parent && c !== self && c.root.visible !== false).map(c => c.root.position)
+      .concat(this.floorThings().map(o => o.getWorldPosition(new THREE.Vector3())));
   }
+  // things the stage itself set down on the floor after the furniture (이삿짐's boxes, the big parfait — modelkit.js kitSetup):
+  // as solid as furniture to anyone placed or walking (겹침 QA 10/20, phone: 13판 식빵 walked through the moving boxes —
+  // "초능력자야?" — it stood on a tile a box was then set down on, and the walkers' tiles never lost the boxes' ones)
+  floorThings() { return [...(this.kitBoxes || []), ...(this.kitParfait ? [this.kitParfait.g] : [])].filter(o => o?.parent && o.visible !== false); }
+  blockTile(t) { for (const L of [this.walkTiles, this.freeTiles]) { const k = L ? L.indexOf(t) : -1; if (k >= 0) L.splice(k, 1); } }
   // free floor (half-tile points clear of furniture, same level) nearest p, `gap` or more from everyone but `self`; null when
   // there is none within `reach`; see: rather where the camera sees it (a spot behind a bin counts as .8 m further)
   standNear(p, self = null, gap = .75, reach = 1.3, see = false) {
@@ -1031,7 +1037,7 @@ export class StageScene {
   // ── 흑백판
   setupGray() {
     const G = this.G, W = G.world, r = this.plan.rotSeed;
-    if (W.post) W.post.u.gray.value = 1;
+    if (W.post) { W.post.u.gray.value = 1; W.post.u.grayR.value = -1; }
     // a few pieces of furniture join the list: big and easy, they set how hard the stage is
     const RS = this.room.rooms || [this.room], k = this.idx < 12 ? 2 : 3, used = new Set();
     const tall = e => new THREE.Box3().setFromObject(e.f.group).getSize(new THREE.Vector3()).y > .3;   // not a flat thing on the ground (a hopscotch, a manhole): hard to tap
@@ -1114,7 +1120,7 @@ export class StageScene {
   }
   async onFoundInky(it) {
     const G = this.G, W = G.world, ch = this.villain.ch;
-    it.found = true; this.idle = 0; this.found++;
+    it.found = true; this.idle = 0; this.found++; this._lastIt = it;
     const c = ch.root.position.clone().setY(ch.root.position.y + ch.headTop() * .6), s = W.toScreen(c);
     W.fx.burst(s.x, s.y, { n: 24, colors: ['#ff8fb8', '#ffe14d', '#8fd3f4', '#9be38f', '#c9a0ff'], speed: 330 });
     W.fx.ring(s.x, s.y, { r: 110, color: '#ffe14d', width: 9 });
@@ -1347,7 +1353,7 @@ export class StageScene {
   }
   async onFoundFurn(it) {
     const G = this.G, W = G.world;
-    it.found = true; this.idle = 0; this.found++;
+    it.found = true; this.idle = 0; this.found++; this._lastIt = it;
     setTimeout(() => !this.dead && this.taunt('furn'), 500);
     const c = this.worldCenter(it), s = W.toScreen(c);
     this.colorIn(it.g);
@@ -1366,7 +1372,7 @@ export class StageScene {
   }
   async onFound(it) {
     const G = this.G, W = G.world;
-    it.found = true; this.idle = 0; this.found++;
+    it.found = true; this.idle = 0; this.found++; this._lastIt = it;
     this.combo = this.t - this.lastFind < 3.5 ? this.combo + 1 : 1; this.lastFind = this.t;
     this.bestCombo = Math.max(this.bestCombo, this.combo);
     const c = this.worldCenter(it), s = W.toScreen(c);
@@ -2477,6 +2483,7 @@ export class StageScene {
       }
     }
     this.freeTiles = free.slice().sort((a, b) => Math.hypot(a.x - 1.6, a.z - 1.6) - Math.hypot(b.x - 1.6, b.z - 1.6));
+    this.walkTiles = free;   // (the walkers' own list: blockTile takes a tile out of it)
     if (sp.gray && !this.custom && free.length) {
       const t = free.slice().sort((a, b) => Math.hypot(a.x - fa[0], a.z - fa[1]) - Math.hypot(b.x - fa[0], b.z - fa[1]))[0];
       const ch = new Char('inky'); ch.root.position.set(t.x, t.y || 0, t.z); ch.root.rotation.y = Math.atan2(W.cam.position.x - t.x, W.cam.position.z - t.z); W.root.add(ch.root);
@@ -2606,6 +2613,23 @@ export class StageScene {
   }
 
   // ── end states
+  // 흑백판 끝 (user 10/20 on a phone: "컬러로 바뀐 방 풀샷이 안 나와서 아쉽다"): the camera stands back to the stage's start
+  // view, the colour spreads out of the last thing found in a circle with a 뾰로롱, the whole room holds a moment in full
+  // colour — then the friend's close-up as before
+  async colorBloom() {
+    const G = this.G, W = G.world, u = W.post.u, v = this.view0 || { yaw: Math.PI / 4, pitch: .62, zoom: 1 };
+    await W.flyTo(this.tw, { zoom: v.zoom || 1, target: W.home, yaw: v.yaw, pitch: v.pitch, dur: .55 });
+    if (this.dead) return;
+    const it = this._lastIt, s = W.toScreen(it?.g ? this.worldCenter(it) : W.home.clone()), C = u.grayC.value.set(s.x / W.W, 1 - s.y / W.H);
+    const asp = W.W / W.H, far = Math.max(...[[0, 0], [1, 0], [0, 1], [1, 1]].map(([x, y]) => Math.hypot((x - C.x) * asp, y - C.y))) + .08;
+    u.grayR.value = 0;
+    G.audio.sfx('bloom');
+    W.fx.burst(s.x, s.y, { n: 18, shape: 'star', colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#9be38f', '#ffffff'], speed: 260, gravity: 0, life: .9 });
+    W.fx.ring(s.x, s.y, { r: 160, color: '#ffffff', width: 10, life: .7 });
+    await this.tw.run(1.1, k => { u.grayR.value = far * k; W.dirty?.invalidate(); }, ease.inOutQuad);
+    u.gray.value = 0; u.grayR.value = -1; W.dirty?.invalidate();
+    await this.tw.wait(.6);
+  }
   async win() {
     if (this.raidRun) return raidSettle(this, 'all');   // 타이머 털기: everything found — the same end as the clock running out, full
     const G = this.G, W = G.world;
@@ -2622,8 +2646,9 @@ export class StageScene {
     this.stars = stars;
     G.audio.sfx('win'); G.hitstop(.08);
     setTimeout(() => { if (!this.dead) G.audio.sfx('cheer', 0, false); }, 380);   // (friends' little "yay" after the jingle — a file only, 사운드 10/20)
-    // 흑백판: the whole room floods back into colour
-    if (this.spec.gray && W.post) { const u = W.post.u.gray; this.tw.run(1.2, k => { u.value = 1 - k; }, ease.inOutQuad); }
+    // 흑백판: the whole room floods back into colour — seen as a whole room first, then the friend (colorBloom)
+    if (this.spec.gray && W.post?.u.gray.value > .5) { await this.colorBloom(); if (this.dead) return; }
+    else if (this.spec.gray && W.post) W.post.u.gray.value = 0;
     W.fx.confetti(130);
     this.bubble.style.display = 'none';
     const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);

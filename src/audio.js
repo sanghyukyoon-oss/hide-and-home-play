@@ -31,6 +31,7 @@ Object.assign(SFX_FILES, {
   found: { src: 'audio/sfx/found.mp4', pitch: true }, pop: { src: 'audio/sfx/pop.mp4', pitch: true }, star: { src: 'audio/sfx/star.mp4', pitch: true },
   ratchet: { src: 'audio/sfx/ratchet.mp4', vary: .1 }, tap: { src: 'audio/sfx/tap.mp4', vary: .05 }, tick: { src: 'audio/sfx/tick.mp4', vary: .03 },
   coin: { src: 'audio/sfx/coin.mp4', vary: .06 }, hop: { src: 'audio/sfx/hop.mp4', vary: .08 },
+  bloom: null,   // 흑백판 끝 색이 번질 때 '뾰로롱' (디자인 10/20): 파일 자리 — tools/sound/sfx-prompts.tsv 의 bloom 줄로 만든 audio/sfx/bloom.mp4 를 넣으면 'audio/sfx/bloom.mp4' 로. 그 전엔 코드 소리
   mugunghwa: null,   // 무궁화 꽃이 피었습니다 첫 구호 (Suno·Google 파일이 있을 때만 — 없으면 너굴이 목소리로 한 글자씩)
 });
 // 가구 재질: 부분의 이름표(label)로 정한다 — 첫 번째로 맞는 줄. 없으면 나무(기본 소리).
@@ -197,6 +198,12 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       case 'whoosh': noise({ dur: .32, vol: .17, f: 350, f2: 2400, q: .7, attack: .09 }); noise({ dur: .24, vol: .04, type: 'highpass', f: 5000, at: .03, attack: .1 }); break;
       case 'swish': noise({ dur: .16, vol: .18, f: 2400, f2: 900, q: 1.2 }); break;
       case 'pop': tone({ type: 'sine', f: hz(PENTA[p % PENTA.length]), f2: hz(PENTA[p % PENTA.length]) * 1.6, dur: .09, vol: .35 }); noise({ dur: .04, vol: .1, f: 3000 }); break;
+      // 흑백판 끝 '뾰로롱' (10/20): a quick rising run of little bells and a soft shimmer while the colour spreads
+      case 'bloom':
+        [0, 2, 4, 7, 9, 12, 14, 16, 19].forEach((s, i) => bell(hz(s + 19), i * .05, .07, .45));
+        tone({ type: 'sine', f: hz(19), f2: hz(31), dur: .5, vol: .07 });
+        noise({ dur: .9, vol: .035, type: 'highpass', f: 6500, attack: .1 });
+        break;
       case 'star': tone({ type: 'triangle', f: hz(12 + p * 4), dur: .4, vol: .3 }); tone({ type: 'sine', f: hz(24 + p * 4), dur: .3, vol: .14, at: .02 }); break;
       // a win: the quick arpeggio, then the chord held under a bell and a sparkle run (the music steps back for it — duck)
       case 'win':

@@ -393,6 +393,18 @@ let lastDraw = 0;
 // from real screens' rates, and a new N must come out the same three checks in a row, so it never flips.
 export function capN(hz) { let n = Math.max(1, Math.ceil(hz / 64)); if (n > 1 && hz / n < 40) n--; return n; }
 let rafLast = 0, rafN = 1, rafTick = 0, rafCount = 0, rafWant = 1, rafAgree = 0; const rafGaps = [];
+// the page's elements and the canvas change in the same moment (겹침 QA 10/20, phone: "잠깐 다른 자리에 보였다가 배치됨"): a
+// game that starts after its talk, a timer's bubble, a round's new cards change the page between frames, and the page shows
+// at once — while the canvas waited for the next frame it draws (every other one when still: 30 fps, or 20 behind a panel),
+// so for a frame or two the new screen stood over the old picture (무궁화: the talk's two faces under the game's bubble and
+// colours). An element added or taken away outside the frame now draws the canvas in that same moment; inside the frame
+// the frame's own drawing is it. (A frame where nothing in the room changed costs only the still-view check: dirty.js.)
+let inFrame = false;
+new MutationObserver(recs => {
+  if (inFrame || G.pending || !G.scene) return;
+  if (!recs.some(r => [...r.addedNodes, ...r.removedNodes].some(n => n.nodeType === 1))) return;   // (a number's text: not a new thing)
+  try { world.syncNow(); } catch (e) { console.error(e); }
+}).observe(document.body, { childList: true, subtree: true });
 function frame(now) {
   // phones draw less often whenever nothing is being touched or moved — the picture is the same, only the frame count
   // drops (user, 10/18: "아트 유지하면서 최적화 가능할까?"): 60 fps while a finger is on the screen or the view moves, 30 fps
@@ -443,14 +455,18 @@ function frame(now) {
   if (now < G.hitstopUntil) gdt *= .05;
   gameTime += gdt;
   const t0 = performance.now();
+  inFrame = true;
+  let t1 = t0;
   try {
-    if (G.bot && G.scene && !G.pending) G.scene.botStep?.(gdt, G.botMode);
-    G.scene?.update(gdt);
-    world.update(rdt);
-    world.fx.update(rdt);
-  } catch (e) { console.error(e); }
-  const t1 = performance.now();
-  world.render();
+    try {
+      if (G.bot && G.scene && !G.pending) G.scene.botStep?.(gdt, G.botMode);
+      G.scene?.update(gdt);
+      world.update(rdt);
+      world.fx.update(rdt);
+    } catch (e) { console.error(e); }
+    t1 = performance.now();
+    world.render();
+  } finally { queueMicrotask(() => { inFrame = false; }); }   // (after the page changes this frame made have been seen)
   const t2 = performance.now();
   updMs = updMs * .9 + (t1 - t0) * .1; drawMs = drawMs * .9 + (t2 - t1) * .1;
   requestAnimationFrame(frame);

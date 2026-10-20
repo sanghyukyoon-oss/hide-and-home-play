@@ -148,7 +148,10 @@ export function kitRunner(S) {
 // big parfait beside its owner
 export function kitSetup(S) {
   const K = KITS[S.kit.kit], W = S.G.world, rnd = rng((S.spec.seed || 1) + 23);
-  const tiles = (S.freeTiles || []).filter(t => !t.R?.clearAt || t.R.clearAt(t.x, t.z, .3));
+  // (not where anyone stands: a box set down on a walker's tile had 식빵 inside it all stage — 겹침 QA 10/20; and each tile used
+  // goes out of the walkers' list, S.blockTile)
+  const near = S.bodies ? S.bodies() : [];
+  const tiles = (S.freeTiles || []).filter(t => (!t.R?.clearAt || t.R.clearAt(t.x, t.z, .3)) && !near.some(p => Math.hypot(p.x - t.x, p.z - t.z) < .7));
   const at = (t, o) => { const P = new THREE.Vector3(t.x, t.y || 0, t.z); o.position.copy(S.room.group.worldToLocal(P)); S.room.group.add(o); };
   if (K.type === 'place') {
     // a box for every thing, on free floor (the ones nearest the walls first: the middle stays clear to walk)
@@ -159,6 +162,7 @@ export function kitSetup(S) {
       const b = buildMoveBox(i); b.scale.setScalar(1.3); b.rotation.y = (rnd() - .5) * .9; at(t, b);
       const tw = Math.random() < .5 && i > 0 && S.kitBoxes.length ? S.kitBoxes[S.kitBoxes.length - 1] : null;   // (some stacked two high)
       if (tw && rnd() < .4) { b.position.copy(tw.position); b.position.y += (.26 + (i % 2) * .05) * 1.3; b.rotation.y += .4; }
+      else S.blockTile?.(t);
       S.kitBoxes.push(b);
     }
     W.idsDirty = true; W.shadowDirty = true;
@@ -166,7 +170,7 @@ export function kitSetup(S) {
     // the big parfait: on a clear tile near its owner, facing the view
     const f = S.friend.root.position, t = tiles.slice().sort((a, b) => Math.hypot(a.x - f.x, a.z - f.z) - Math.hypot(b.x - f.x, b.z - f.z)).find(q => Math.hypot(q.x - f.x, q.z - f.z) > .5) || tiles[0];
     if (t) {
-      const p = buildParfait(); p.g.scale.setScalar(1.45); at(t, p.g);
+      const p = buildParfait(); p.g.scale.setScalar(1.45); at(t, p.g); S.blockTile?.(t);
       p.g.rotation.y = Math.atan2(W.cam.position.x - t.x, W.cam.position.z - t.z);
       S.kitParfait = p; W.idsDirty = true; W.shadowDirty = true;
     }

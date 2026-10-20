@@ -79,6 +79,7 @@ varying vec2 vUv;
 uniform sampler2D tColor, tAOb;
 uniform vec2 res; uniform float thick, innerRatio, overlap, nLo, nHi, innerStr, lineAlpha, tint, tintDark, levels, aoStr, useAO;
 uniform vec3 ink, aoTint; uniform float dbg, gray;
+uniform vec2 grayC; uniform float grayR;
 uniform sampler2D tMask; uniform float useMask, blk;
 ${COMMON}
 void main(){
@@ -127,7 +128,9 @@ void main(){
   vec3 col = c.rgb;
   if (useAO > .5) { float ao = texture2D(tAOb, vUv).r * aoStr; col = mix(col, col * aoTint, clamp(ao, 0., 1.)); }
   // 흑백판: everything drained of colour except what has been found (IDs from 40000 up, see assignIds)
-  if (gray > 0. && id0 < 39999.5) { float l = dot(col, vec3(.299, .587, .114)); col = mix(col, vec3(l * 1.04 + .02), gray); }
+  // (흑백판 끝: with grayR ≥ 0 the colour comes back inside a growing circle round grayC — screen uv, height = 1)
+  if (gray > 0. && id0 < 39999.5) { float gk = gray; if (grayR >= 0.) gk *= smoothstep(grayR - .05, grayR + .05, length((vUv - grayC) * vec2(res.x / res.y, 1.)));
+    float l = dot(col, vec3(.299, .587, .114)); col = mix(col, vec3(l * 1.04 + .02), gk); }
   if (levels > 0.) col = floor(col * levels + .5) / levels;
   // colour-trace line: a darker, slightly richer version of the object's own colour, mixed with the picked ink.
   // darkened in display (gamma) space so 'tintDark' reads as perceived brightness: .5 = half as bright as the object
@@ -218,7 +221,7 @@ export class ToonPost {
       res: { value: new THREE.Vector2(1, 1) }, thick: { value: 2 }, innerRatio: { value: .6 }, overlap: { value: .25 },
       nLo: { value: .3 }, nHi: { value: .48 }, innerStr: { value: 0 }, lineAlpha: { value: 1 },
       ink: { value: new THREE.Color('#3d2233') }, tint: { value: .35 }, tintDark: { value: .45 }, levels: { value: 0 },
-      aoStr: { value: .5 }, useAO: { value: 1 }, dbg: { value: 0 }, aoTint: { value: new THREE.Color('#6e5a8f') }, gray: { value: 0 },
+      aoStr: { value: .5 }, useAO: { value: 1 }, dbg: { value: 0 }, aoTint: { value: new THREE.Color('#6e5a8f') }, gray: { value: 0 }, grayC: { value: new THREE.Vector2(.5, .5) }, grayR: { value: -1 },
       tMask: { value: null }, useMask: { value: 0 }, blk: { value: 8 },
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };

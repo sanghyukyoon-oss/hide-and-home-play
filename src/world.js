@@ -357,6 +357,7 @@ export class World {
     return s;
   }
   updateCam() {
+    this._camAt = this._camKey(this._camAt);
     const d = 40, cp = Math.cos(this.pitch), T = this._shownTarget();
     this.cam.position.set(T.x + d * cp * Math.sin(this.yaw), T.y + d * Math.sin(this.pitch), T.z + d * cp * Math.cos(this.yaw));
     this.cam.lookAt(T);
@@ -518,6 +519,9 @@ export class World {
     else s.position.set(this.home.x + 4, 10, this.home.z + 6);
     s.target.position.copy(this.home); s.target.updateMatrixWorld();
   }
+  // draw now, outside the frame loop: the canvas changes in the same moment as the page around it (main.js, on a change
+  // to the page's elements made between frames)
+  syncNow() { if (this._camStale()) this.updateCam(); this.render(); }
   render() {
     const unsquish = this._squish();
     try { this._render(); } finally { unsquish?.(); }
@@ -595,7 +599,14 @@ export class World {
     this._shA = null;   // the shadow map is redrawn for the new sun
   }
   // ── projection / picking
+  // what the camera is placed from (updateCam): when any of it changed since, the camera is a step behind
+  _camKey(a = []) { const t = this.target; a[0] = this.yaw; a[1] = this.pitch; a[2] = this.zoom; a[3] = t.x; a[4] = t.y; a[5] = t.z; a[6] = this._rbOver ? 1 : 0; return a; }
+  _camStale() { const a = this._camAt, t = this.target; return !a || a[0] !== this.yaw || a[1] !== this.pitch || a[2] !== this.zoom || a[3] !== t.x || a[4] !== t.y || a[5] !== t.z || a[6] !== (this._rbOver ? 1 : 0); }
+  // (a bubble, a burst, a label put where a thing is on the screen: always from the view as it is now — 겹침 QA 10/20, a
+  // game set its view and said "내가 술래~!" in the same moment, and the bubble stood in the top corner for three frames
+  // because the camera only follows the view at the next frame's update)
   toScreen(v) {
+    if (this._camStale()) this.updateCam();
     V.copy(v).project(this.cam);
     return { x: (V.x + 1) / 2 * this.W, y: (1 - V.y) / 2 * this.H, z: V.z };
   }

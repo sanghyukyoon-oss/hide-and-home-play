@@ -200,6 +200,9 @@ RECIPES.house2f.ring = [
 ];
 RECIPES.house2f.itemSize = .38;
 RECIPES.house3 = RECIPES.house2f;
+// 7판 a little brighter (user 10/20 on a phone: "스테이지 7은 약간 더 밝게") — more fill and a whiter sun, a touch lighter shade;
+// the sun stays where it is (no long shadows). 8판 keeps the house light it had.
+RECIPES.house2f = { ...RECIPES.house2f, light: { ambColor: '#f3eff5', amb: 1.36, sunColor: '#ffe6c6', sun: 2.75, shadow: .56 } };
 // (22·27판 골목 'street': waits for the user's art sign-off — 10/19 "22판 골목 룩 … 빼고"; sumbak-look keeps it)
 delete RECIPES.street;
 
