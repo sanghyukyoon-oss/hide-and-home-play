@@ -131,7 +131,18 @@ function zoom(c, G) {
   document.getElementById('app').append(layer);
 }
 
+// 도감's number (user 10/20: "도감이랑 내 방에 숫자 배지"): cards you have that came since the book was last opened; opening it
+// clears the number (the cards inside keep their own NEW until you look at each)
+const haveIds = G => [...friendCards(G), ...itemCards(G)].filter(c => c.have).map(c => c.id);
+export function bookBadge(G, btn) {
+  const S = G.save; if (!S.bookOpened) { S.bookOpened = haveIds(G); G.persist(); }
+  const was = new Set(S.bookOpened), n = haveIds(G).filter(id => !was.has(id)).length;
+  if (n) btn.append(h('div', { class: 'badge new bookn' }, String(n)));
+  return btn;
+}
 export function openCardBook(G, tab = 'friends') {
+  { const S = G.save, b = haveIds(G); if ((S.bookOpened || []).length !== b.length || b.some(id => !S.bookOpened.includes(id))) { S.bookOpened = b; G.persist(); } }
+  document.querySelectorAll('.badge.bookn').forEach(e => e.remove());
   G.audio?.sfx?.('flip');   // (the book opens / a tab turns — 사운드 10/20)
   const cards = tab === 'learned' ? [] : tab === 'items' ? itemCards(G) : friendCards(G);
   if (cards.some(c => c.have && !ART[c.art])) G.ui.toast('카드 인쇄 중…', '');

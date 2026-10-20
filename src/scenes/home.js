@@ -11,7 +11,7 @@ import { deFlush } from '../gfx/bake.js';
 import { makeFurniture } from '../gfx/furniture.js';
 import { groundTex } from '../gfx/outdoor.js';
 import { openTune } from '../tune.js';
-import { openCardBook } from '../cardbook.js';
+import { openCardBook, bookBadge } from '../cardbook.js';
 import { runRaids, unseen, markSeen, newsLine } from '../raid.js';
 import { canReplay, playRaidReplay, shieldTxt } from '../raidreplay.js';   // ① 털림 다시 보기 · 문단속 (10/19)
 import { shieldLeft } from '../raid.js';
@@ -1109,7 +1109,7 @@ export class HomeScene {
     const side = h('div', { class: 'homeside' });   // (one colour for the side buttons: same role, same look — 2D UI 정리 ② 10/19)
     side.append(snd,
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
-      ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) }),
+      bookBadge(G, ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) })),
       ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G) }));
     col.append(side);
     bar.append(this.playBtn, h('div', { class: 'row2' }, roomBtn, raidBtn));

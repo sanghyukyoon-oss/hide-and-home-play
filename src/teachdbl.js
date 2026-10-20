@@ -20,7 +20,7 @@ export async function teachDbl(S) {
   const G = S.G, W = G.world;
   if (!DBL_ON || S._dbl || G.save.tut?.dbl || S.result || S.dead || S.botOn?.()) return;
   S._dbl = true;
-  while (S.tutEls && !S.dead && !S.result) await S.tw.wait(.5);   // (never over another lesson's hand)
+  while ((S.tutEls || S.t - (S._tutEnd ?? -9) < 1.5) && !S.dead && !S.result) await S.tw.wait(.5);   // (never over another lesson's hand, and 1.5 s after one — 레벨 10/20)
   if (S.dead || S.result) return;
   const z0 = W.zoom;
   // (v122 QA3-dbl6: a double tap zooms only where a tap does nothing — not on a drawer, a door or a friend) so the hand

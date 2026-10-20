@@ -3680,6 +3680,10 @@ export const EN = {
 "꾸미기 → 친구": "Decorate → Friends",
 "집에 부르면 같이 다녀": "Invite them home to walk together",
 "꾸미기 → 친구에서 먼저 집에 불러 줘": "Invite them home first from Decorate → Friends",
+// 상점 미리보기 (경제, 10/20)
+"사기": "Buy",
+"부를 수 있어!": "You can invite!",
+"되돌리기": "Undo",
 // 선물 상자 (경제, 10/20)
 "서랍 잠그기": "Lock a drawer",
 "자물쇠": "Padlock",

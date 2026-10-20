@@ -10,7 +10,7 @@ import { HomeScene, playButton, openMore } from './home.js';
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { FURN_INFO } from '../gfx/furniture.js';
 import { openRoadmap } from '../roadmap.js';
-import { openCardBook } from '../cardbook.js';
+import { openCardBook, bookBadge } from '../cardbook.js';
 import { runRaids } from '../raid.js';
 import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/19)
 import { playDialog } from '../story.js';
@@ -135,7 +135,7 @@ export class LobbyScene extends MyHomeScene {
     const town = ui.btn('동네 구경', { color: 'orange', onClick: () => { ui.closePanel(); G.go('town'); } });
     const side = h('div', { class: 'homeside' }, snd,
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
-      ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) }),
+      bookBadge(G, ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) })),
       ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
       ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G, [town]) }));
     col.append(side);
@@ -146,16 +146,18 @@ export class LobbyScene extends MyHomeScene {
           // (방 넓히기: the room can grow now → a 🔨 on 꾸미기; the lobby's close-up doesn't show its sign)
         // (친구 부르기 10/20: a friend you can call now — the coins and a free seat — comes first: 👋)
         const z = this.zone, call = open && ECON && (z?.friends?.length || 0) < seatsOf(z) && callableFriends(S).some(k => (S.coins || 0) >= friendPrice(k));
-        const mark = call ? '👋' : nx && (S.coins || 0) >= nx.S.price ? '🔨' : null;
-        if (mark) { b.style.position = 'relative'; b.append(h('span', { style: 'position:absolute;top:-8px;right:-6px;font-size:16px;line-height:1;background:#fff;border:2px solid #3a2453;border-radius:999px;padding:3px 4px' }, mark)); }
+        // (👋 and 🔨 are not marks of their own any more: they count into 꾸미기's one number, below — user 10/20 "숫자 배지")
+        this._callNow = call ? callableFriends(S).filter(k => (S.coins || 0) >= friendPrice(k)) : [];
+        this._growNow = !!(nx && (S.coins || 0) >= nx.S.price);
         return b; })(),
       lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater ? this.hideLesson() : this.setMode('hide')),
       lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
-    // furniture you haven't seen in 꾸미기 yet: its number on the button, popping in once when it grows (user 10/20:
-    // "방꾸미기 숫자 배지" — 2D UI 정리 ⑰; 🎁 is the 별 상자's own sign now, so none here); opening 꾸미기 counts them as seen
+    // 꾸미기's one number (user 10/20: "방꾸미기 숫자 배지", "도감이랑 내 방에 숫자 배지"): furniture you haven't seen there yet,
+    // a friend you can call now that you haven't seen there, and the room once it can grow — popping in when it grows;
+    // opening 꾸미기 counts them all as seen (🎁 is the 별 상자's own sign, so none here)
     const HH = this.H; if (!HH.seenFurn) HH.seenFurn = [...new Set(HH.inventory)];
-    const nNew = open ? HH.inventory.filter(t => !HH.seenFurn.includes(t)).length : 0;
+    const nNew = open ? HH.inventory.filter(t => !HH.seenFurn.includes(t)).length + this._callNow.filter(k => !(HH.seenCall || []).includes(k)).length + (this._growNow && HH.seenGrow !== (this.zone?.size || 0) ? 1 : 0) : 0;
     if (nNew) { const grew = nNew > (HH.giftPopN || 0); row.firstChild.append(h('div', { class: 'badge' + (grew ? ' new' : '') }, String(nNew))); if (grew) { HH.giftPopN = nNew; G.persist(); } }
     // the boxes of chapters you'd already finished before this update (설계서 8장): one 🎁 each, opened here
     const q = (this.H.boxQ || []).filter(i => PICKS[i] && !(i in (this.H.picks || {})));
@@ -424,7 +426,7 @@ export class LobbyScene extends MyHomeScene {
   }
   setMode(mode) {   // (꾸미기·숨기기 '완료' come back to the lobby)
     this.fsel = null; mode = mode === 'view' ? 'lobby' : mode;
-    if (mode === 'edit') { this.H.seenFurn = [...new Set(this.H.inventory)]; this.H.giftPopN = 0; this.G.persist(); }   // (the new ones are seen now — ⑰)
+    if (mode === 'edit') { const H = this.H; H.seenFurn = [...new Set(H.inventory)]; H.seenCall = [...new Set([...(H.seenCall || []), ...(this._callNow || [])])]; if (this._growNow) H.seenGrow = this.zone?.size || 0; H.giftPopN = 0; this.G.persist(); }   // (the new ones are seen now — ⑰)
     if (mode === 'passage') {   // 판 끝 집으로 가져가기: no buttons, just "톡 하면 계속"
       const G = this.G, W = G.world; this.mode = 'passage'; this.sel = null; G.ui.clear(); if (this.room) this.fitCam();
       W.joyHidden = true; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0;
@@ -488,7 +490,7 @@ export class LobbyScene extends MyHomeScene {
   // the lobby looks at 몽글이 and whoever sits with it, close up while the room is still bare (user, 10/19: "처음에 너무
   // 썰렁하니까 캐릭터 쪽 클로즈업으로 잡아주자"), opening out as furniture and friends fill it; 꾸미기·숨기기 see the whole room
   frameLobby(dur = .7, extra = [], cut = false) {
-    if (this.dead || !this.room || this._growing) return;   // (방 넓히기: the room's own camera while its walls go out)
+    if (this.dead || !this.room || this._growing || this._previewing) return;   // (방 넓히기: the room's own camera while its walls go out)
     // (10/19 evening, user with a screenshot: "로비는 이 정도 뷰에서 캐릭터 위주로 처음에 보여지는 게 나을 거 같아 … 캐릭터가 정중앙에
     // 있는 구도") the lobby's own view is 몽글이 big and dead centre; tapping 몽글이 opens out to the room (heroView). Friends
     // arriving, the room pass and the star box (extra points, or the passage mode) still frame the whole group.

@@ -96,14 +96,16 @@ export function openShop(G, ctx = {}, tab = 'furn') {
     } else if (tab === 'wall' || tab === 'paint') {
       if (!zone || !ztype.indoor) { note.textContent = '벽지와 페인트는 실내 구역(방·창고)에 쓸 수 있어요.'; }
       for (const wp of tab === 'wall' ? WALLPAPERS : PAINTS) {
-        const owned = H.owned.wall.includes(wp.id), on = zone?.paint?.wallId === wp.id || (!zone?.paint?.wallId && wp.price === 0 && tab === 'wall');
+        const owned = H.owned.wall.includes(wp.id) || !wp.price, on = zone?.paint?.wallId === wp.id || (!zone?.paint?.wallId && wp.price === 0 && tab === 'wall');
+        const look = { wallId: wp.id, wallKind: wp.wallKind, wall: wp.wall, wall2: wp.wall2, ...(wp.wainscot ? { wainscot: wp.wainscot } : {}) };
         grid.append(card(G, { swatch: swatch(wp.wall, wp.wall2, wp.wallKind), name: wp.name, price: owned ? null : wp.price, tag: on ? '사용 중' : owned ? '보유' : null,
           action: owned ? '바르기' : null,
-          onBuy: owned ? null : () => { H.owned.wall.push(wp.id); apply(); }, blocked: !zone || !ztype.indoor ? '실내에서만 바를 수 있어' : null,
-          onUse: () => apply() }));
+          // (10/20, user: "상점 벽 바닥은 미리보기 가능하게 가능?": one you don't own goes on your walls first — 사기 or 되돌리기)
+          onBuy: null, blocked: !zone || !ztype.indoor ? '실내에서만 바를 수 있어' : null,
+          onUse: () => owned ? apply() : !zone || !ztype.indoor ? ui.toast('실내에서만 바를 수 있어', 'red') : preview(wp.name, wp.price, look, () => H.owned.wall.push(wp.id)) }));
         function apply() {
           if (!zone || !ztype.indoor) { ui.toast('실내에서만 바를 수 있어', 'red'); G.persist(); render(); return; }
-          zone.paint = { ...(zone.paint || {}), wallId: wp.id, wallKind: wp.wallKind, wall: wp.wall, wall2: wp.wall2, ...(wp.wainscot ? { wainscot: wp.wainscot } : {}) };
+          zone.paint = { ...(zone.paint || {}), ...look };
           G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render();
         }
       }
@@ -111,13 +113,14 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       for (const fl of FLOORS) {
         if (ztype && fl.indoor !== ztype.indoor) continue;
         const owned = fl.price === 0 || H.owned.floor.includes(fl.id), on = zone?.paint?.floorId === fl.id;
+        const look = { floorId: fl.id, floorKind: fl.floorKind, floor: fl.floor, floor2: fl.floor2 };
         grid.append(card(G, { swatch: swatch(fl.floor, fl.floor2, fl.floorKind === 'checker' ? 'check' : fl.floorKind === 'planks' ? 'wood' : 'dots'), name: fl.name, price: owned ? null : fl.price, tag: on ? '사용 중' : owned ? '보유' : null,
           action: owned ? '깔기' : null,
-          onBuy: owned ? null : () => { H.owned.floor.push(fl.id); apply(); },
-          onUse: () => apply() }));
+          onBuy: null,   // (미리보기 first, as the walls)
+          onUse: () => owned ? apply() : zone && preview(fl.name, fl.price, look, () => H.owned.floor.push(fl.id)) }));
         function apply() {
           if (!zone) return;
-          zone.paint = { ...(zone.paint || {}), floorId: fl.id, floorKind: fl.floorKind, floor: fl.floor, floor2: fl.floor2 };
+          zone.paint = { ...(zone.paint || {}), ...look };
           G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render();
         }
       }
@@ -157,6 +160,21 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       }
     }
   };
+  // 미리보기 (10/20): the shop steps aside, the room wears it, and a bar at the bottom asks — 사기 (the coins, and it stays) or
+  // 되돌리기 (back as it was). Either way the shop comes back on the same tab. Nothing is saved while you look.
+  function preview(name, price, look, own) {
+    if (!zone) return;
+    const was = zone.paint ? { ...zone.paint } : null;
+    ui.closePanel(true); ctx.onPreview?.(true); zone.paint = { ...(zone.paint || {}), ...look }; ctx.onChange?.('paint'); ctx.onPreview?.(true); G.audio.sfx('place');   // (the view before the rebuild too: the lobby mustn't fly back to its close-up)
+    const done = keep => { bar.remove(); if (!keep) { zone.paint = was; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); openShop(G, ctx, tab); };
+    const buy = ui.btn('사기', { color: 'green', icon: 'coin', cls: 'sm', onClick: () => {
+      if ((G.save.coins || 0) < price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
+      G.addCoins(-price); own(); G.persist(); G.audio.sfx('buy'); ui.toast(`${name} 샀어!`, 'green'); done(true); } });
+    const bar = h('div', { class: 'previewbar', style: 'position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffaf2;border:4px solid var(--ink,#3a2453);border-radius:20px;pointer-events:auto;z-index:30;white-space:nowrap' },
+      h('div', { style: 'display:flex;flex-direction:column;line-height:1.15' }, h('b', {}, name), h('span', { style: 'font-size:13px;color:#8a6a9a', html: `${ICON.coin}`.replace('<svg', '<svg style="width:14px;height:14px;vertical-align:-2px"') + ' ' + price })),
+      ui.btn('되돌리기', { color: 'blue', cls: 'sm', onClick: () => done(false) }), buy);
+    document.getElementById('app').append(bar);
+  }
   render();
   const coinPill = ui.pill('coin', G.save.coins);
   G.coinPills = [...(G.coinPills || []), coinPill];

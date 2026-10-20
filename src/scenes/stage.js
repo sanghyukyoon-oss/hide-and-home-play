@@ -2691,7 +2691,7 @@ export class StageScene {
     const stars = this.v2 ? v2Stars(this) : this.incident ? 1 + (this.hintsUsed === 0 ? 1 : 0) + (wrong <= 1 ? 1 : 0)   // ★ found them all · ★ no hint · ★ 헛짚기 1번 이하 (QA B25, user 10/19: two wrong hideouts at most, so '2번 이하' never missed)
       : this.spec.timed ? 1 + (this.time / this.timeMax >= .3 ? 1 : 0) + (this.hintsUsed === 0 ? 1 : 0)
       : 1 + (this.hintsUsed === 0 ? 1 : 0) + ((this.story?.secret ? this.secretFound : tapsStarOk(this)) ? 1 : 0);   // (톡: half of them left)
-    const coins = this.custom ? 40 + this.targets.length * 15 + (this.plan.locks.length ? 20 : 0) + stars * 5 : 30 + this.targets.length * 10 + stars * 10 + (this.spec.showcase ? this.plan.locks.length * 20 : 0) + (this.missCount === 0 ? 20 : 0);   // (검토 H5: a careful clear pays, not a combo; a gadget stage's steps pay)
+    const coins = this.custom ? 40 + this.targets.length * 15 + (this.plan.locks.length ? 20 : 0) + stars * 5 : 30 + this.targets.length * 10 + stars * 10 + (this.spec.showcase ? this.plan.locks.length * 20 : 0) + this.carefulPay();   // (검토 H5: a careful clear pays, not a combo; a gadget stage's steps pay)
     this.stars = stars;
     G.audio.sfx('win'); G.hitstop(.08);
     setTimeout(() => { if (!this.dead) G.audio.sfx('cheer', 0, false); }, 380);   // (friends' little "yay" after the jingle — a file only, 사운드 10/20)
@@ -2853,10 +2853,9 @@ export class StageScene {
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
         // 친구 부르기 (10/20): a friend met in this clear can be called home now — one line, its face and price (no scene)
-        ...(metBefore && G.homeOpen?.() ? callableFriends(G.save).filter(k => !metBefore.has(k)) : []).map(k => h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, h('b', {}, SCRIPT_ALL.callResult ? SCRIPT_ALL.callResult(k, friendPrice(k)) : `${CHAR_DEFS[k]?.name || ''} · ${friendPrice(k)}`), h('div', {}, '꾸미기 → 친구')))),
+        ...(metBefore && G.homeOpen?.() ? callableFriends(G.save).filter(k => !metBefore.has(k)) : []).map(k => h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, h('b', {}, '부를 수 있어!'), h('div', {}, SCRIPT_ALL.callResult ? SCRIPT_ALL.callResult(k, friendPrice(k)) : `${CHAR_DEFS[k]?.name || ''} · ${friendPrice(k)}`)))),
         ...(picked ? [h('div', { class: 'memento tile gift' }, picked.kind === 'thing' ? h('img', { src: G.thumbs['item_' + picked.t] }) : picked.kind === 'decor' ? h('img', { src: G.thumbs['furn_' + picked.t] }) : h('div', { style: 'width:56px;height:56px;display:grid;place-items:center', html: picked.kind === 'lock' ? ICON.lock : ICON.coin }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, picked.line || giftName(picked))))] : []),
-        ...(seenN ? [seenRow(G, seenNew)] : []),
-        ...(!PASSAGE_EVERY && gotNow.length ? [homeRow(G, gotNow)] : []),   // (rooms only on a box: what went home this time, on its way)   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
+        /* (no '도감에 새로' and '내 방으로' rows: a number on 도감 and on 꾸미기 says it — user 10/20 "이거 필요없어. 도감이랑 내 방에 숫자 배지") */
         ...(newFriend ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
           : back.length ? [h('div', { class: 'memento mine' }, h('div', {}, h('b', {}, `${back.length}개 되찾았다! (+${back.length * 20})`), h('div', { class: 'icons' }, ...back.slice(0, 12).map(t => h('img', { src: G.thumbs['item_' + t] }))), back.length > 12 ? h('div', {}, `외 ${back.length - 12}개`) : ''))] : []),
@@ -2875,12 +2874,41 @@ export class StageScene {
     });
     for (let i = 0; i < stars; i++) { await this.tw.wait(.28); starEls[i].classList.add('on'); G.audio.sfx('star', i); }
     const paid = first?.awarded ?? coins;
-    if (!this.model) G.ui.countUp(cv, 0, paid, 700, v => { if (v % 10 === 0) G.audio.sfx('coin', 0); });   // (a model kit pays in the model, not coins)
+    // 남은 터치 → 코인 (10/20, user: "ㅇㅇ 그러자. 연출만 잘 해 줘"): the base counts up, then each touch kept past half flies from
+    // the hand in the corner into the coin row, +5 each (a replay pays a third of it, like the rest)
+    const over = this._tapOver || 0, bonus = over && !this.model ? paid - Math.round((coins - over * 5) * (first?.repeat ? 1 / 3 : 1)) : 0;
+    if (!this.model) { await G.ui.countUp(cv, 0, paid - bonus, 700, v => { if (v % 10 === 0) G.audio.sfx('coin', 0); }); if (bonus > 0 && !this.dead) await this.tapCoins(cv, paid - bonus, over, bonus); }   // (a model kit pays in the model, not coins)
     // (QA 10/20: under the coin row, not inside it — in English the line ran off the panel's right edge)
     if (first?.repeat) (cv.parentElement || cv).after(h('div', { class: 'txt sm' }, '다시 찾은 방이라 보상이 1/3이에요'));
     if (first?.unlockedHome) setTimeout(() => G.ui.toast('내 집이 열렸어! 방을 꾸미고 물건을 숨겨 봐', 'green'), 900);
     if (first?.allClear) { W.fx.confetti(220); setTimeout(() => !this.dead && W.fx.confetti(160), 900); }
     for (const z of first?.newZones || []) setTimeout(() => G.ui.toast(`내 집에 ${ga(z)} 생겼어!`, 'green'), 1700);
+  }
+  // a careful clear: the touches kept past half of them, 5 coins each (a stage with no touch count: no miss at all, +20 as before)
+  carefulPay() {
+    if (this.tapBudget == null || this.tapsLeft == null) { this._tapOver = 0; return this.missCount === 0 ? 20 : 0; }
+    this._tapOver = Math.max(0, this.tapsLeft - Math.ceil(this.tapBudget / 2));
+    return this._tapOver * 5;
+  }
+  // the kept touches fly into the coin row one by one (at most 12 trips; the last carries the rest), the pill counting down,
+  // the row counting up with a coin sound, and a line under it says what they were
+  async tapCoins(cv, from, over, bonus) {
+    const G = this.G, row = cv.parentElement || cv, pill = this.tapPill, pr = pill?.isConnected ? pill.getBoundingClientRect() : null;
+    const src = 'data:image/svg+xml;utf8,' + encodeURIComponent(ICON.hand.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')), trips = Math.min(over, 12);
+    row.after(h('div', { class: 'txt sm tapcoin' }, `남긴 터치 ${over}개 → +${bonus}`));
+    let got = 0;
+    for (let i = 0; i < trips && !this.dead; i++) {
+      const x0 = pr ? pr.left + pr.width / 2 : innerWidth * .15, y0 = pr ? pr.top + pr.height / 2 : 90;
+      const step = i === trips - 1 ? bonus - got : Math.round(bonus / trips);
+      G.ui.flyImg(src, x0, y0, row.querySelector('svg') || row, { size: 30, dur: 520 }).then(() => {   // (into the coin icon — UI 10/20)
+        if (this.dead) return; got += step; cv.textContent = from + got; G.audio.sfx('coin', 1);
+        row.animate?.([{ transform: 'scale(1)' }, { transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+      });
+      if (pill) { const v = pill.querySelector('.v'); if (v) v.textContent = Math.max(0, (this.tapsLeft || 0) - i - 1); }
+      await this.tw.wait(.11);
+    }
+    await this.tw.wait(.6); if (this.dead) return;
+    cv.textContent = from + bonus;
   }
   // 털기: one of the things found here goes home with 몽글이
   pickLoot(back = [], only = null) {   // (only: 타이머 털기 — just what was found)

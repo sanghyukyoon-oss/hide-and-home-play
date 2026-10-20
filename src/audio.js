@@ -8,12 +8,15 @@ import { hapticFor } from './feel.js';
 // 같은 곡이면 장면이 바뀌어도 처음부터 다시 틀지 않는다. gain: 곡끼리 크기 맞춤(1 = 그대로). 주소에 ?bgm=lobby → 전부 로비 곡.
 // 음악은 <audio> 하나로 흘려 듣기(스트리밍)만 한다 — 통째로 풀면 아이폰에서 곡당 ~50 MB. 표·만드는 법: audio/README-sound.md
 export const BGM = {
-  lobby: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 홈·로비·내 집·놀러 가기·배치 편집 (「햇살 사이 숨은 친구」, Suno) — 다른 칸의 기본값
-  map: { gpt: null, gain: 1 },   // 스테이지(맵)                       → audio/gpt/bgm-map.mp4
-  mini: { gpt: null, gain: 1 },   // 쉬어가기 놀이 (미니게임)            → audio/gpt/bgm-mini.mp4
-  tv: { gpt: null, gain: 1 },   // 몽글 TV가 켜져 있는 동안             → audio/gpt/bgm-tv.mp4
-  boss: { gpt: null, gain: 1 },   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
-  king: { gpt: null, gain: 1 },   // 마지막 보스·숨바꼭질 왕 결정전       → audio/gpt/bgm-king.mp4
+  // (10/20 user: "지금 정본 노래 좋음 첫 시작할 때 나오는 노래. 이걸 메인으로" + 수노 곡은 "내가 스샷 찍은 3개만 써") the main song 「햇살 사이 숨은 친구」
+  // is what the game opens with (홈·로비·내 집) and the default of every slot (boss·king too, until a song they like); the stages,
+  // mini and TV get the three Suno songs
+  lobby: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 홈·로비·내 집 — 메인 곡
+  map: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gain: 1 },   // 스테이지(맵) (Suno 'lobby' 0:43, 92 BPM 잔잔)
+  mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-mini.mp4', gain: 1 },   // 쉬어가기 놀이 (Suno 'ingame' 1:02)
+  tv: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 몽글 TV (Suno 'hideandhome-tv-v1' 2:16)
+  boss: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
+  king: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 마지막 보스·숨바꼭질 왕 결정전       → audio/gpt/bgm-king.mp4
   tense: { gpt: null, gain: 1 },   // 다급할 때 (없으면 지금 곡을 1.07배로) → audio/gpt/bgm-tense.mp4
 };
 // 효과음 파일 (사운드 10/20, 사용자: "효과음 ㅇㅋ", "ASMR스럽고… 질감 같은 게 잘 느껴지고 디테일한 사운드"): 사내 AI Proxy →

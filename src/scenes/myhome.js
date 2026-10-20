@@ -128,35 +128,82 @@ export class MyHomeScene {
     return g;
   }
   // ── 방 넓히기 (10/20, user: "그냥 방으로 하자. 나중에 넓히는 거 나오고 …"): the room's next size is the first thing to save for.
-  // A wooden sign hangs on the left wall near the front (it goes down with the wall when the view turns): the next size and
-  // its price, how far your coins are on a bar, and it bobs once you can pay. Tap it: a card, then 넓히기 — the walls go out.
+  // Not a sign on the wall (user 10/20: "HUD처럼 … 점선이랑 … 넓히는 쪽 바닥에 화살표도 … 게이지 너무 크고 액자인 줄") — on the
+  // floor, where the room will grow: the new row as a dashed patch with arrows running outward, on whichever side faces you
+  // (the view turns: growTick moves it), and a small chip by it — how far your coins are (🔨 240 / 300), green 넓히기 once you
+  // can pay. Tap the patch or the chip: a card, then 넓히기 — the walls go out. At the biggest room: the chip alone, 집 짓기.
   growNext() { const z = this.zone, k = (z?.size || 0) + 1; return z && ZONE_TYPES[z.type]?.indoor !== false && k < ZONE_SIZES.length ? { k, S: ZONE_SIZES[k] } : null; }
   buildGrowSign() {
     const G = this.G, R = this.room, nx = this.growNext(), z = this.zone;
-    // (the room at its biggest — 집 짓기 is next, in an update: the sign says so — 로드맵 예고 A, user 10/20 "제출판은 1단계 + 예고 A")
+    this.growSign?.chip?.remove();
+    // (the room at its biggest — 집 짓기 is next, in an update: the chip says so — 로드맵 예고 A, user 10/20 "제출판은 1단계 + 예고 A")
     const house = !nx && !!z && ZONE_TYPES[z.type]?.indoor !== false && (z.size || 0) >= ZONE_SIZES.length - 1;
     if ((!nx && !house) || !R) return null;
-    const C = G.save.coins || 0, can = !house && C >= nx.S.price, font = getComputedStyle(document.body).fontFamily || 'sans-serif';
-    const tex = canvasTex(480, 272, (ctx, W2, H2) => {
-      ctx.fillStyle = '#fff3dd'; roundRect(ctx, 8, 8, W2 - 16, H2 - 16, 26); ctx.fill(); ctx.lineWidth = 9; ctx.strokeStyle = '#3a2453'; ctx.stroke();
-      ctx.fillStyle = '#3a2453'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `bold 74px ${font}`; ctx.fillText(tr(house ? '집 짓기' : '방 넓히기'), W2 / 2, 82);
-      if (house) { ctx.fillStyle = '#ffe0a8'; roundRect(ctx, 50, 150, W2 - 100, 92, 46); ctx.fill(); ctx.fillStyle = '#c0661c'; ctx.font = `bold 56px ${font}`; ctx.fillText(tr('곧 열려요'), W2 / 2, 197); }
-      else if (can) { ctx.fillStyle = '#4fbf6a'; roundRect(ctx, 50, 150, W2 - 100, 92, 46); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = `bold 60px ${font}`; ctx.fillText(tr(`넓히기 ${nx.S.price}`), W2 / 2, 197); }
-      else {
-        const k = Math.min(1, C / nx.S.price), bx = 46, bw = W2 - 92, by = 150;
-        ctx.fillStyle = '#efe0c8'; roundRect(ctx, bx, by, bw, 40, 20); ctx.fill();
-        ctx.fillStyle = '#ffc23a'; roundRect(ctx, bx, by, Math.max(40, bw * k), 40, 20); ctx.fill();
-        ctx.fillStyle = '#3a2453'; ctx.font = `bold 46px ${font}`; ctx.fillText(`${Math.min(C, nx.S.price)} / ${nx.S.price}`, W2 / 2, 226);
+    const C = G.save.coins || 0, can = !house && C >= nx.S.price;
+    const g = new THREE.Group(), gx = house ? 0 : nx.S.w - R.w, gz = house ? 0 : nx.S.d - R.d, ax = gx > 0 ? 'x' : 'z', gw = Math.max(gx, gz, 0), len = ax === 'x' ? R.d : R.w;
+    const chev = [];
+    if (!house && gw > 0) {
+      // the new row: a pale patch with an ink dashed edge, lying on the floor's level; local +x is 'outward'
+      const px = 128, tex = canvasTex(Math.round(px * gw), Math.round(px * len), (ctx, W2, H2) => {
+        ctx.fillStyle = can ? 'rgba(206,246,206,.8)' : 'rgba(255,251,240,.8)'; roundRect(ctx, 8, 8, W2 - 16, H2 - 16, 22); ctx.fill();
+        ctx.setLineDash([24, 16]); ctx.lineWidth = 8; ctx.strokeStyle = can ? '#2f8f3a' : '#3a2453'; ctx.stroke();
+      });
+      const patch = new THREE.Mesh(new THREE.PlaneGeometry(gw, len), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+      patch.rotation.x = -Math.PI / 2; patch.position.set(gw / 2, .025, 0); patch.renderOrder = 2; g.add(patch);
+      // arrows: a fat arrow (shaft and head — a chevron reads as an 'ㄴ' on the tilted floor), three along the row, sliding outward
+      const ctex = canvasTex(128, 128, (ctx) => {
+        ctx.lineJoin = 'round'; ctx.beginPath();
+        ctx.moveTo(12, 50); ctx.lineTo(62, 50); ctx.lineTo(62, 22); ctx.lineTo(116, 64); ctx.lineTo(62, 106); ctx.lineTo(62, 78); ctx.lineTo(12, 78); ctx.closePath();
+        ctx.lineWidth = 12; ctx.strokeStyle = '#3a2453'; ctx.stroke(); ctx.fillStyle = can ? '#5fd36f' : '#ffb23a'; ctx.fill();
+      });
+      const cmat = new THREE.MeshBasicMaterial({ map: ctex, transparent: true, depthWrite: false });
+      for (const zz of [-len / 3, 0, len / 3]) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(.7, .7), cmat.clone()); m.rotation.x = -Math.PI / 2; m.position.set(gw / 2, .04, zz); m.renderOrder = 3;
+        g.add(m); chev.push(m);
       }
-    });
-    const g = new THREE.Group(), board = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.08), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-    const back = rbox(1.98, 1.16, .05, '#c98f57', .05); back.position.z = -.03; g.add(back, board);
-    const Wl = R.walls?.W;
-    if (Wl && Wl.kind === 'wall') { g.position.set(-(R.d / 2 - 1.2), 1.45, .12); Wl.decor.add(g); }   // (the left wall's own decor: down with the wall)
-    else { const stick = rbox(.08, 1.15, .08, '#a8703f', .02); stick.position.set(0, -.75, -.05); g.add(stick); g.position.set(-R.w / 2 + .7, 1.3, R.d / 2 - .7); g.rotation.y = Math.PI / 4; R.group.add(g); }
+    }
+    R.group.add(g);
     g.traverse(o => { o.userData.grow = true; });
-    return { g, can, house, y0: g.position.y, t: 0 };
+    // the chip: how far your coins are, or 넓히기 when you can pay, or 집 짓기 · 곧 열려요 (HUD: drawn by the page, not on a board)
+    const chip = h('div', { class: 'growchip' + (can ? ' can' : '') + (house ? ' house' : '') });
+    if (house) chip.append(h('span', {}, '🏠 ' + tr('집 짓기') + ' · ' + tr('곧 열려요')));
+    else if (can) chip.append(h('span', {}, '🔨 ' + tr(`넓히기 ${nx.S.price}`)));
+    else chip.append(h('i', { style: `width:${Math.round(Math.min(1, C / nx.S.price) * 100)}%` }), h('span', {}, `🔨 ${Math.min(C, nx.S.price)} / ${nx.S.price}`));
+    chip.addEventListener('pointerdown', e => e.stopPropagation());
+    chip.addEventListener('pointerup', e => { e.stopPropagation(); if (house) this.houseCard(); else this.growCard(); });
+    G.ui.wui.append(chip);
+    return { g, can, house, chip, chev, ax, gw, t: 0 };
+  }
+  // every frame: on the side of the room that faces you (the front walls are the folded ones), the arrows running out, the chip by it
+  growTick(dt) {
+    const gs = this.growSign; if (!gs) return;
+    const R = this.room, Wl = R.walls || {}, on = ['view', 'edit', 'lobby'].includes(this.mode) && !this._growing;
+    gs.g.visible = on;
+    const sx = Wl.E?.down ? 1 : Wl.W?.down ? -1 : 1, sz = Wl.S?.down ? 1 : Wl.N?.down ? -1 : 1;
+    if (gs.ax === 'x') { gs.g.position.set(sx * R.w / 2, 0, 0); gs.g.rotation.y = sx > 0 ? 0 : Math.PI; }
+    else { gs.g.position.set(0, 0, sz * R.d / 2); gs.g.rotation.y = sz > 0 ? -Math.PI / 2 : Math.PI / 2; }
+    gs.t += dt;
+    gs.chev.forEach((m, i) => { const k = (gs.t * (gs.can ? .9 : .6) + i * .18) % 1; m.position.x = gs.gw / 2 - .16 + k * .32; m.material.opacity = .45 + .55 * Math.sin(k * Math.PI); });
+    const showChip = on && !this.G.ui.panelOpen && !this.busyTut;
+    gs.chip.style.display = showChip ? '' : 'none';
+    if (!showChip) return;
+    if (!gs.chip.isConnected) this.G.ui.wui.append(gs.chip);   // (a mode change clears the world layer)
+    // (the chip sits on the patch — its middle, or further along it where the turn dial isn't; at the biggest room, on the front
+    // corner — always inside the screen)
+    const W = this.G.world, cw = gs.chip.offsetWidth / 2, ch = gs.chip.offsetHeight / 2;
+    const d = W.turnDial?.isConnected && W.turnDial.offsetParent ? W.turnDial.getBoundingClientRect() : null;
+    const hitsDial = (x, y) => d && x + cw > d.left - 6 && x - cw < d.right + 6 && y + ch > d.top - 6 && y - ch < d.bottom + 6;
+    const L = gs.ax === 'x' ? R.d : R.w, spots = gs.house ? [R.group.localToWorld(new THREE.Vector3(sx * R.w / 2, .05, sz * R.d / 2))]
+      : [0, -L / 3, L / 3].map(zz => gs.g.localToWorld(new THREE.Vector3(gs.gw / 2, .05, zz)));
+    let x = 0, y = 0, ok = false;
+    for (const v of spots) {
+      const p = W.toScreen(v); if (p.x < -10 || p.x > innerWidth + 10 || p.y < 0 || p.y > innerHeight) continue;
+      x = clamp(p.x, 12 + cw, Math.max(12 + cw, innerWidth - 12 - cw)); y = p.y; ok = true;
+      if (!hitsDial(x, y)) break;
+    }
+    if (!ok) { gs.chip.style.display = 'none'; return; }   // (the lobby's close-up: the patch is off the screen, so is its chip)
+    if (hitsDial(x, y)) y = d.top - 8 - ch;
+    gs.chip.style.left = x + 'px'; gs.chip.style.top = y + 'px';
   }
   // 집 짓기 · 곧 열려요 (예고 A): what's next — a picture of the two-floor house (art/concepts H, cropped) and one line
   houseCard() {
@@ -211,6 +258,12 @@ export class MyHomeScene {
     if (m) { m.pose = 'idle'; m.setFace?.('happy'); }
     this.busyTut = false; this._growing = false;
   }
+  // 상점 미리보기 (10/20): the whole room in view while a wallpaper or floor is tried on (the lobby's close-up shows none of it);
+  // the lobby stops re-framing itself meanwhile
+  previewView(on) {
+    const W = this.G.world; this._previewing = !!on;
+    if (on) { if (this.mode === 'lobby') this._heroView = 'room'; this.homeMid(); W.target.copy(W.home); W.zoom = 1; W.updateCam?.(); }
+  }
   // which neighbour (zone id) is under this point of the screen, if any
   nbAt(x, y) {
     if (!this.nbs?.length) return null;
@@ -234,7 +287,7 @@ export class MyHomeScene {
     this.room = new Room(W, zoneLayout(z));
     W.root.add(this.room.group);
     this.nbGroup = this.buildNeighbours(); W.root.add(this.nbGroup);
-    this.growSign = ECON ? this.buildGrowSign() : null;   // (방 넓히기: the room's next size, on its wall)
+    this.growSign = ECON ? this.buildGrowSign() : null;   // (방 넓히기: the room's next row, on the floor)
     if (old) freeRoom(old.group, [this.room.group, this.nbGroup]);
     if (oldNb) freeRoom(oldNb, [this.room.group, this.nbGroup]);
     const idx = indexSpots(this.room); this.spotByKey = idx.spots; this.partByKey = idx.parts;
@@ -367,7 +420,7 @@ export class MyHomeScene {
       if (kind === 'zone') { this.build(); this.setMode(this.mode); }   // (the new zone joins the map)
       if (kind === 'grow') { this.growShow(from); return; }   // (방 넓히기 from the shop: the same walls going out)
       if (kind === 'furn' && this.mode === 'edit') this.renderInv();
-    }, onClose: () => { if (this.mode !== 'edit') this.setMode(this.mode); } }, tab);
+    }, onPreview: on => this.previewView(on), onClose: () => { if (this.mode !== 'edit') this.setMode(this.mode); } }, tab);
   }
 
   // ── decorate
@@ -856,7 +909,7 @@ export class MyHomeScene {
     this.tw.update(dt);
     this.room.update(dt);
     for (const n of this.nbs || []) n.room.update(dt);
-    const gs = this.growSign; if (gs?.can) { gs.t += dt; gs.g.position.y = gs.y0 + Math.abs(Math.sin(gs.t * 3.2)) * .07; }   // (you can pay for it: the sign bobs)
+    this.growTick(dt);   // (방 넓히기: the patch on the floor's front side, its arrows and chip)
     this.mong.update(dt);
     this.visitors?.update(dt);
     if (this.mode === 'hide' && this.markers) this.updMarkers();

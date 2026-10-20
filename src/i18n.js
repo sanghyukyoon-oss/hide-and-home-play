@@ -104,6 +104,10 @@ const PAT = [
   [/^보상 \+(\d+)$/, n => `Reward +${n}`],
   // 친구 부르기 (경제, 10/20)
   [/^코인 (\d+)개 더 모으면 부를 수 있어$/, n => `${n} more coins and you can call them`],
+  // 상점 미리보기 (경제, 10/20)
+  [/^(.+) 샀어!$/, n => `Bought ${n}!`],
+  // 남은 터치 → 코인 (경제, 10/20)
+  [/^남긴 터치 (\d+)개 → \+(\d+)$/, (a, b) => `${a} touches saved → +${b}`],
   // 선물 상자 (경제, 10/20)
   [/^자물쇠 (\d+)개째! 숨기기에서 서랍을 잠가 봐$/, n => `Padlock no. ${n}! Lock a drawer when you hide things`],
   [/^(.+) · 숨기기에서 집에 숨겨 봐$/, n => `${n} · hide it at home`],

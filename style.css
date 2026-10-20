@@ -1929,3 +1929,14 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 @keyframes pindrop { 0% { transform: translate(-50%, -160%) scale(.4); opacity: 0; } 100% { transform: translate(-50%, -100%) scale(1); opacity: 1; } }
 .tpin.lost { filter: grayscale(1) opacity(.55); }
 .ftxt.pink { color: #ffb3d1; }   /* 친구가 막았다! (털기 친구 지킴이 10/20) */
+
+/* ── 방 넓히기 (UI 세션 10/20) ── not a wooden board on the wall: the next row lies on the floor as a dashed patch with arrows
+   (myhome.js growTick), and this small chip sits by it — the coins as a fill (🔨 240 / 300), green 넓히기 once you can pay */
+#world-ui .growchip { position: absolute; translate: -50% -50%; pointer-events: auto; overflow: hidden; display: flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 999px; background: #fff6e6; border: 2.5px solid var(--ink); box-shadow: 0 2.5px 0 var(--ink); font-family: var(--font); font-size: 14px; line-height: 1; color: var(--ink); white-space: nowrap; cursor: pointer; }
+#world-ui .growchip > i { position: absolute; left: 0; top: 0; bottom: 0; background: #ffd05a; }
+#world-ui .growchip > span { position: relative; }
+#world-ui .growchip.can { background: #4fbf6a; color: #fff; text-shadow: 0 1.5px 0 var(--ink); animation: growbob 1.1s ease-in-out infinite; }
+#world-ui .growchip.house { background: #ffe0a8; }
+@keyframes growbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+/* 도감's number (cardbook.js bookBadge): the same red number as 꾸미기's, popping in once */
+.btn > .badge.bookn { top: -9px; right: -9px; min-width: 22px; height: 22px; font-size: 13px; animation: badgepop .6s cubic-bezier(.2, 1.8, .4, 1) .35s both; }
