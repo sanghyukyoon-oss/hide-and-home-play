@@ -1540,6 +1540,7 @@ export class StageScene {
     door.lock = null; this.cine = false;
     await tw.wait(.15);
     if (!this.dead) await this.togglePart(door, true);
+    if (!this.dead && this.scene?.cardAfter) newCard(G, this.scene.cardAfter);   // (12판: 연쇄 장치 카드는 장치가 다 움직인 뒤에 — 스토리 룸 10/20)
   }
   async freeJailed() {
     const J = this.jailed, ch = J.ch, W = this.G.world; J.in = false;

@@ -177,7 +177,7 @@ export function kitFound(S, it) {
     S.kitBoxes.splice(S.kitBoxes.indexOf(b), 1);
     foldBox(S, b);
   }
-  if (K.type === 'stack' && S.kitParfait && it?.kitPart && it.kitPart !== K.last) popLayer(S, it.kitPart);
+  if (K.type === 'stack' && !K.build && S.kitParfait && it?.kitPart && it.kitPart !== K.last) popLayer(S, it.kitPart);   // (a kit put together at the end: nothing goes on yet)
 }
 function foldBox(S, b) {
   const G = S.G, W = G.world, s0 = b.scale.clone(), y0 = b.position.y;
@@ -199,16 +199,24 @@ function popLayer(S, key) {
   S.tw.run(.3, k => l.scale.setScalar(.6 + .4 * ease.outBack(k)), ease.linear).then(() => l.scale.setScalar(1));
 }
 
+// a lid showing the finished thing (a kit with no box art: 파르페 — the full glass), drawn once
+const LID_MODELS = { parfait: () => { const p = buildParfait(); for (const k in p.layers) p.layers[k].visible = true; return p.g; } };
+function lidPic(G, K) {
+  const key = 'kitlid_' + K.id;
+  if (!G.thumbStore[key]) Object.assign(G.thumbStore, renderThumbs([{ key, build: LID_MODELS[K.id], dir: [.3, .22, 1] }], 200));
+  return G.thumbStore[key];
+}
 // the box seen from above its front-right corner; the lid sits on the body's top (its transform moves it from there)
 const KB3_VIEW = 'rotateX(-28deg) rotateY(-34deg)', KB3_LID = 'translate3d(0,0,0)', KB3_PEEK = 'translate3d(0,-46px,0) rotateX(10deg)';
 // the comic panel's zigzag bolts round the edges, pointing in (like the user's green zoom-burst reference)
 const BOLTS_SVG = '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="rgba(24,110,32,.42)"><path d="M0 14 L30 30 L22 31 L44 44 L19 37 L26 35 L0 24 Z"/><path d="M100 10 L72 28 L80 29 L56 43 L82 35 L75 33 L100 20 Z"/><path d="M0 70 L28 62 L24 67 L44 56 L20 74 L24 70 L0 80 Z"/><path d="M100 66 L74 60 L78 65 L56 56 L80 72 L76 69 L100 77 Z"/><path d="M38 100 L44 78 L40 80 L49 62 L46 82 L50 80 L46 100 Z"/><path d="M58 0 L54 20 L58 18 L50 36 L52 16 L48 18 L50 0 Z"/></g></svg>';
-// ── the box (before the hunt), user 10/19 on the phone: "처음에 박스 여는 오프닝 후 착착 숨어지는 애니메이션을 한 다음에 이게 나와야
-// 하는데" — and with the story room: two bubbles, no card. The view eases in on the friend ("말할 때 카메라를 잘 잡아 달라,
-// 약간 클로즈업, 이즈아웃 스무스하게"), the box drops in front of them and opens, the runner rises out of it; the view eases back
-// to the whole room and the pieces snap off and fly, one after another, to where they really hide — 쏙, 쏙 — then the
-// runner goes down into its place and the friend says they've all hidden. ~5 s the first time this kit is played, ~1 s
-// on a retry; a tap skips to the end.
+// ── the box (before the hunt), every kit stage. 10/20, the user on the phone (8판, "모든 조립판에 같게"): "상자 등장 → '콕
+// 하세요' 같은 확실한 행동 유도 → 콕 하면 부품이 팍 흩어지는 애니메이션 → 집 장면". A comic panel covers the room; the box
+// drops in — 쿵 — (the first time: the friend's cut-in line, a rattle, two little eyes in the gap); then it waits, beating,
+// light round its lid, a big hand tapping it and 콕! (스토리 룸's word). The tap bursts it — 펑 — and the pieces fly out all
+// at once, each to where it hides, as the panel clears; the card comes up empty, its shapes waiting. A tap before the box
+// waits only hurries on to it. (The box is made off-screen, where its drop starts: it never shows at rest first — the user
+// saw it "다른 위치에서 탁 튐".)
 export async function kitIntro(S) {
   const G = S.G, W = G.world, K = KITS[S.kit.kit], card = S.tray, col = S.col, f = S.friend;
   if (!card || !col) return;
@@ -218,36 +226,41 @@ export async function kitIntro(S) {
   if (!G.playMode) { seen[K.id] = (seen[K.id] || 0) + 1; G.persist?.(); }
   const anims = new Set(), outs = [];
   const A = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); return a.finished.catch(() => {}); };
-  const wait = ms => new Promise(r => setTimeout(r, ms));
-  let skipped = false;
-  // the box, a real box (user 10/19: "상자도 상자처럼 느껴지고 기대감 들게", then "상자가 상자같아야되지않을까"): a CSS 3D box seen
-  // from above its front-right corner — a body with every side (and its inside, dark, for when it's open) and a lid that is a
-  // shallow box itself: GPT's box art on its top, the kit's name on its front rim — in front of a comic panel's backdrop
-  // (speed lines from the box, halftone dots at the edges: "오프닝도 뒤에 배경이나 좀 만화같이")
-  const art = K.boxArt || G.thumbStore[S.kitPic('box')];
+  let wake = null;
+  const wait = ms => new Promise(r => { const t = setTimeout(r, ms); wake = () => { clearTimeout(t); r(); }; });   // (a hurry cuts a wait short)
+  let skipped = false, hurry = false, phase = 'pre', open = null;
+  // the box, a real box: a body with every side (and its inside, dark, for when it's open) and a lid that is a shallow box
+  // itself — the kit's picture on its top (GPT's box art; or the finished thing; or plain kraft and tape for the moving box),
+  // the kit's name on its rim
+  const art = K.boxArt || (LID_MODELS[K.id] ? lidPic(G, K) : null) || (K.lid ? null : G.thumbStore[S.kitPic('box')]);
   const F = (c, ...k) => h('div', { class: 'kb3-face kb3-' + c }, ...k);
-  const box = h('div', { class: 'kb3 big', style: `--box:${K.color}` },
+  const DROP0 = 'translateY(-80vh) rotate(-6deg)';
+  const box = h('div', { class: 'kb3 big' + (K.lid ? ' lid-' + K.lid : ''), style: `--box:${K.color};transform:${DROP0}` },
     h('div', { class: 'kb3-glow' }),
     h('div', { class: 'kb3-cube' },
       h('div', { class: 'kb3-floor' }),
       F('ifloor'), F('iback'), F('ileft'), F('back'), F('left'), F('bottom'), F('right'),
-      F('front', h('span', { class: 'kb3-count' }, `부품 ${K.order.length}개`)),
-      h('div', { class: 'kb3-lid' }, F('lback'), F('lleft'), F('lright'), F('lfront', h('b', { class: 'kb3-name' }, K.name)), F('ltop', h('img', { src: art, alt: '' })))));
-  // the comic panel covers the room (user 10/19, a green zoom-burst reference: "배경은 이런느낌으로 아예 뒤를 가려도 상관없으니
-  // 새롭게") — so the friend comes in as a comic cut-in: their face in a round frame, the line in a bubble beside it
+      F('front', h('span', { class: 'kb3-count' }, `${K.countWord || '부품'} ${K.order.length}개`)),
+      h('div', { class: 'kb3-lid' }, F('lback'), F('lleft'), F('lright'), F('lfront', h('b', { class: 'kb3-name' }, K.name)),
+        F('ltop', art ? h('img', { src: art, alt: '' }) : h('i', { class: 'kb3-ltape' })))));
+  if (LID_MODELS[K.id]) trimPic(G, 'kitlid_' + K.id).then(src => { const im = src && box.querySelector('.kb3-ltop img'); if (im) im.src = src; });   // (cut to the thing: it fills the lid)
+  // the friend comes in as a comic cut-in (the panel covers the room): their face in a round frame, the line beside it
   const who = S.kit.who || S.th?.friend || 'bear', face = G.thumbs['face_' + who];
   const cut = !quick && S.kit.open ? h('div', { class: 'kitcut', style: 'transform:translateX(-115%)' }, h('div', { class: 'kitcut-face' }, h('img', { src: face || '', alt: '' })), h('div', { class: 'kitcut-say' }, S.kit.open)) : null;
-  // (the panel every time, the short one too — user 10/19 on the phone, after a short one: "뒤에 배경 완전히 가려야 하는데 지금
-  // 노란색만 살짝 보임")
-  const lay = h('div', { class: 'kitintro comic' },
+  // (the panel every time, the short one too — user 10/19: "뒤에 배경 완전히 가려야 하는데 지금 노란색만 살짝 보임")
+  const lay = h('div', { class: 'kitintro comic', style: 'opacity:0' },
     h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box, ...(cut ? [cut] : []));
   col.append(lay);
   const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
   cube.style.transform = KB3_VIEW; lid.style.transform = KB3_LID;
-  const skip = () => { skipped = true; };
-  lay.addEventListener('pointerdown', skip); card.addEventListener('pointerdown', skip);
+  // a tap: before the box waits, hurry on to it; while it waits, open it; once it's open, skip to the end
+  const tapped = () => {
+    if (phase === 'pre') { hurry = true; wake?.(); for (const a of anims) { try { a.finish(); } catch {} } }
+    else if (phase === 'prompt') open?.(); else skipped = true;
+  };
+  lay.addEventListener('pointerdown', tapped); card.addEventListener('pointerdown', tapped);
+  const H = () => { if (skipped) throw 0; if (hurry) throw 1; };
   const cells = Object.values(S.kitCells);
-  cells.forEach(c => c.classList.add('full'));   // the runner comes out of the box whole
   card.style.zIndex = 31; card.style.visibility = 'hidden';
   // the pieces aren't in the room yet: each shows the moment it lands where it hides
   const its = S.targets.filter(t => t.kitPart && t.g);
@@ -255,100 +268,92 @@ export async function kitIntro(S) {
   its.forEach(t => { t.g.visible = false; }); W.idsDirty = true;
   const v0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom, target: W.target.clone() };
   W.camLock = true;
-  let bub = null;
+  let hb = 0;
   try {
-    // the comic panel slams in over the room
-    G.audio.sfx('swish');
-    await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: quick ? 200 : 300, easing: 'cubic-bezier(.2,.9,.3,1)' });
-    if (skipped) throw 0;
-    const br = () => box.getBoundingClientRect();
-    G.audio.sfx('whoosh');
-    // it drops in — 쿵 — and settles (a puff of dust)
-    await A(box, [{ transform: 'translateY(-80vh) rotate(-6deg)' }, { transform: 'translateY(0) rotate(0)', offset: .7 }, { transform: 'translateY(0) scale(1.1, .84)', offset: .82 }, { transform: 'translateY(-6px) scale(.97, 1.04)', offset: .92 }, { transform: 'none' }], { duration: quick ? 420 : 560, easing: 'cubic-bezier(.45,.05,.7,1)' });
-    if (skipped) throw 0;
-    G.audio.sfx('land'); G.audio.sfx('thunk'); haptic('tick');
-    { const r = front.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.bottom - 6, { n: 16, shape: 'circle', colors: ['#ffffff', '#f3e6d6', '#e9d6c0'], speed: 220, up: 20, gravity: 300, size: 10, life: .5 }); }
-    if (!quick) {
-      // the friend's line now, while the box sits still (스토리 룸: a bubble during the shaking goes unread) — in from the side
-      if (cut) {
-        await A(cut, [{ transform: 'translateX(-115%) rotate(-6deg)' }, { transform: 'translateX(4%) rotate(1deg)', offset: .75 }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.9,.3,1)' });
-        if (skipped) throw 0;
-        await wait(1800); if (skipped) throw 0;
-        A(cut, [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-115%)', opacity: 0 }], { duration: 260, easing: 'ease-in' });
-      } else await wait(300);
-      if (skipped) throw 0;
-      // 덜컹… 덜컹덜컹… something's moving in there, each shake a bit bigger (no sound words on screen — 스토리 룸)
-      for (const [amp, n, gap, peek] of [[3, 2, 320, 0], [5, 3, 260, 0], [8, 4, 0, 1]]) {
-        const kf = [{ transform: 'none' }]; for (let i = 0; i < n; i++) kf.push({ transform: `translateY(${-amp}px) rotate(${(i % 2 ? 1 : -1) * amp * .7}deg)` }, { transform: 'none' });
-        G.audio.sfx('thunk'); haptic('tick');
-        await A(box, kf, { duration: 80 * n * 2, easing: 'ease-in-out' }); if (skipped) throw 0;
-        if (peek) {
-          // …the lid lifts a crack, two little robot eyes blink in the dark — and duck back in (스토리 룸's idea: the parts are
-          // alive, and up to mischief — so "다 숨어 버렸네" needs no more words)
-          // (inside the box, just behind its front wall: they show only in the gap under the lifted lid)
-          const eyes = h('div', { class: 'kiteyes' }, h('i'), h('i')), at = h('div', { class: 'kb3-eyes' }, eyes);
-          cube.append(at); outs.push(at);
-          A(lid, [{ transform: KB3_LID }, { transform: KB3_PEEK, offset: .2 }, { transform: KB3_PEEK, offset: .8 }, { transform: KB3_LID }], { duration: 900, easing: 'ease-in-out' });
-          A(eyes, [{ opacity: 0, transform: 'translate(-50%,-30%) scale(.3)' }, { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .25 }, { opacity: 1, transform: 'translate(-50%,-50%) scaleY(.15)', offset: .45 }, { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .55 }, { opacity: 1, transform: 'translate(-30%,-50%) scale(1)', offset: .7 }, { opacity: 0, transform: 'translate(-30%,-10%) scale(.4)' }], { duration: 900, easing: 'ease-in-out' });
-          G.audio.sfx('giggle'); await wait(950); at.remove(); if (skipped) throw 0;
-          G.audio.sfx('thunk'); await A(box, [{ transform: 'none' }, { transform: 'translateY(-10px) rotate(-5deg)' }, { transform: 'none' }], { duration: 200, easing: 'ease-out' }); if (skipped) throw 0;
+    try {
+      // the comic panel slams in over the room
+      G.audio.sfx('swish');
+      await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: quick ? 200 : 300, easing: 'cubic-bezier(.2,.9,.3,1)' });
+      H();
+      // it drops in — 쿵 — and settles (a puff of dust)
+      G.audio.sfx('whoosh');
+      await A(box, [{ transform: DROP0 }, { transform: 'translateY(0) rotate(0)', offset: .7 }, { transform: 'translateY(0) scale(1.1, .84)', offset: .82 }, { transform: 'translateY(-6px) scale(.97, 1.04)', offset: .92 }, { transform: 'none' }], { duration: quick ? 420 : 560, easing: 'cubic-bezier(.45,.05,.7,1)' });
+      G.audio.sfx('land'); G.audio.sfx('thunk'); haptic('tick');
+      { const r = front.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.bottom - 6, { n: 16, shape: 'circle', colors: ['#ffffff', '#f3e6d6', '#e9d6c0'], speed: 220, up: 20, gravity: 300, size: 10, life: .5 }); }
+      H();
+      if (!quick) {
+        // the friend's line now, while the box sits still (스토리 룸: a bubble during the shaking goes unread) — in from the side
+        if (cut) {
+          await A(cut, [{ transform: 'translateX(-115%) rotate(-6deg)' }, { transform: 'translateX(4%) rotate(1deg)', offset: .75 }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.9,.3,1)' });
+          H(); await wait(1700); H();
+          A(cut, [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-115%)', opacity: 0 }], { duration: 260, easing: 'ease-in' });
         }
-        await wait(gap); if (skipped) throw 0;
+        // 덜컹… 덜컹덜컹 — and the lid lifts a crack: two little eyes blink in the dark, and duck back in (스토리 룸's idea:
+        // the parts are alive, and up to mischief)
+        for (const [amp, n, peek] of [[4, 2, 0], [7, 3, 1]]) {
+          const kf = [{ transform: 'none' }]; for (let i = 0; i < n; i++) kf.push({ transform: `translateY(${-amp}px) rotate(${(i % 2 ? 1 : -1) * amp * .7}deg)` }, { transform: 'none' });
+          G.audio.sfx('thunk'); haptic('tick');
+          await A(box, kf, { duration: 80 * n * 2, easing: 'ease-in-out' }); H();
+          if (peek) {
+            // (inside the box, just behind its front wall: they show only in the gap under the lifted lid)
+            const eyes = h('div', { class: 'kiteyes' }, h('i'), h('i')), at = h('div', { class: 'kb3-eyes' }, eyes);
+            cube.append(at); outs.push(at);
+            A(lid, [{ transform: KB3_LID }, { transform: KB3_PEEK, offset: .2 }, { transform: KB3_PEEK, offset: .8 }, { transform: KB3_LID }], { duration: 900, easing: 'ease-in-out' });
+            A(eyes, [{ opacity: 0, transform: 'translate(-50%,-30%) scale(.3)' }, { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .25 }, { opacity: 1, transform: 'translate(-50%,-50%) scaleY(.15)', offset: .45 }, { opacity: 1, transform: 'translate(-50%,-50%) scale(1)', offset: .55 }, { opacity: 1, transform: 'translate(-30%,-50%) scale(1)', offset: .7 }, { opacity: 0, transform: 'translate(-30%,-10%) scale(.4)' }], { duration: 900, easing: 'ease-in-out' });
+            G.audio.sfx('giggle'); await wait(950); at.remove(); H();
+          }
+          await wait(220); H();
+        }
       }
-      // light leaks round the lid, and the box swells like a heartbeat (두근, 두근)
-      A(glowEl, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: .95, transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
-      for (let i = 0; i < 2; i++) {
-        G.audio.sfx('heart'); haptic('tick');
-        await A(cube, [{ transform: KB3_VIEW }, { transform: KB3_VIEW + ' scale3d(1.08,1.08,1.08)', offset: .35 }, { transform: KB3_VIEW }], { duration: 260, easing: 'ease-out' });
-        if (skipped) throw 0;
-        await wait(70);
-      }
-    } else {
-      // (the short one: light round the lid, one heartbeat, and it pops)
-      A(glowEl, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: .95, transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
-      G.audio.sfx('heart'); haptic('tick');
-      await A(cube, [{ transform: KB3_VIEW }, { transform: KB3_VIEW + ' scale3d(1.08,1.08,1.08)', offset: .35 }, { transform: KB3_VIEW }], { duration: 260, easing: 'ease-out' });
-      if (skipped) throw 0;
+    } catch (e) { if (e !== 1) throw e; }
+    if (hurry) {   // (hurried: whatever was moving jumps to its end — the panel up, the box landed — and the cut-in and the eyes go)
+      for (const a of anims) { try { a.finish(); } catch {} }
+      cut?.remove(); cube.querySelectorAll('.kb3-eyes').forEach(e => e.remove());
     }
+    // 콕: it waits, beating, light round its lid, a big hand tapping it
+    phase = 'prompt';
+    const beat = cube.animate([{ transform: KB3_VIEW }, { transform: KB3_VIEW + ' scale3d(1.07,1.07,1.07)', offset: .16 }, { transform: KB3_VIEW, offset: .32 }, { transform: KB3_VIEW + ' scale3d(1.04,1.04,1.04)', offset: .46 }, { transform: KB3_VIEW, offset: .62 }], { duration: 950, iterations: Infinity });
+    const shine = glowEl.animate([{ opacity: .35, transform: 'scale(.85)' }, { opacity: .9, transform: 'scale(1)', offset: .2 }, { opacity: .35, transform: 'scale(.85)' }], { duration: 950, iterations: Infinity });
+    const lt0 = box.querySelector('.kb3-ltop').getBoundingClientRect(), cc0 = col.getBoundingClientRect();
+    const hx = lt0.left + lt0.width * .74 - cc0.left, hy = lt0.top + lt0.height * .55 - cc0.top;   // (beside the lid's picture, not over it)
+    const hand = h('div', { class: 'hand tap kithand', html: ICON.hand, style: `left:${hx}px;top:${hy}px` });
+    const kok = h('div', { class: 'kitkok ol', style: `left:${hx}px;top:${lt0.top - cc0.top - 30}px` }, '콕!');
+    lay.append(hand, kok);
+    G.audio.sfx('heart'); hb = setInterval(() => G.audio.sfx('heart'), 1900);
+    await new Promise(res => { open = res; if (G.bot || S.botOn?.()) setTimeout(res, 700); setTimeout(res, 15000); });   // (a bot opens it; nobody for 15 s: it opens itself)
+    open = null; clearInterval(hb); hb = 0;
+    phase = 'burst';
+    hand.remove(); kok.remove(); beat.cancel(); shine.cancel(); glowEl.style.opacity = '.9';
+    if (S.dead) throw 0;
     // 펑! the lid bursts off (a white flash, a comic burst), light pours out
     G.audio.sfx('special'); G.audio.sfx('pop', 6); haptic('ok');
-    const b0 = br(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2, y: lt.top + lt.height / 2 };
+    const lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), cc = col.getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2, y: lt.top + lt.height / 2 };
     {
       const fl = h('div', { class: 'kitflash' }); col.append(fl); outs.push(fl); A(fl, [{ opacity: .85 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' });
-      const bang = h('div', { class: 'kitbang', style: `left:${mouth.x - col.getBoundingClientRect().left}px;top:${mouth.y - col.getBoundingClientRect().top}px` }); col.append(bang); outs.push(bang);
+      const bang = h('div', { class: 'kitbang', style: `left:${mouth.x - cc.left}px;top:${mouth.y - cc.top}px` }); col.append(bang); outs.push(bang);
       A(bang, [{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(12deg)', opacity: 1, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(16deg)', opacity: 0 }], { duration: 520, easing: 'ease-out' });
     }
-    W.fx.burst(mouth.x, mouth.y, { n: 26, shape: 'star', colors: ['#ffe14d', '#ffffff', '#8fd3f4', '#ff8fb8'], speed: 340, life: .6, size: 11 });
     // (the lid flies up and off the screen — no fading: a 3D group fading flattens into a plane)
-    A(lid, [{ transform: KB3_LID }, { transform: 'translate3d(0,-120px,0) rotateX(16deg) rotateZ(-8deg)', offset: .35 }, { transform: 'translate3d(240px,-760px,0) rotateX(40deg) rotateZ(-44deg)' }], { duration: quick ? 320 : 560, easing: 'cubic-bezier(.3,.1,.6,1)' });
+    A(lid, [{ transform: KB3_LID }, { transform: 'translate3d(0,-120px,0) rotateX(16deg) rotateZ(-8deg)', offset: .35 }, { transform: 'translate3d(240px,-760px,0) rotateX(40deg) rotateZ(-44deg)' }], { duration: 520, easing: 'cubic-bezier(.3,.1,.6,1)' });
     box.classList.add('open');   // (light inside)
-    A(glowEl, [{ opacity: .95, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.5)' }], { duration: 300, easing: 'ease-out' });
-    await wait(quick ? 120 : 240);
-    if (skipped) throw 0;
-    // the runner rises out of it into the middle of the screen; the box goes; the view eases back out to the whole room
-    const cr = card.getBoundingClientRect(), cc = col.getBoundingClientRect(), dy = (innerHeight * .42) - (cr.top + cr.height / 2), dyB = (b0.top + b0.height * .42) - (cr.top + cr.height / 2);
-    card.style.visibility = '';
-    G.audio.sfx('swish');
-    A(box, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(40px) scale(.9)', opacity: 0 }], { duration: 380, easing: 'ease-in' });
-    // (the card is full width: it rises no bigger than its own size, or it runs off the screen)
-    await A(card, [{ transform: `translateX(-50%) translateY(${dyB + 20}px) scale(.55)`, opacity: 0 }, { transform: `translateX(-50%) translateY(${dy - 10}px) scale(1.03)`, opacity: 1, offset: .7 }, { transform: `translateX(-50%) translateY(${dy}px) scale(1)`, opacity: 1 }], { duration: quick ? 280 : 480, easing: 'cubic-bezier(.2,.9,.3,1)' });
-    if (skipped) throw 0;
-    lay.classList.add('calm'); await wait(quick ? 300 : 450); if (skipped) throw 0;   // (the comic panel fades: the room shows again for the hiding)
-    // the pieces snap off the runner one by one and fly to where they hide — the piece shows there as it lands (쏙)
-    const order = cells.slice(), byKey = new Map(its.map(t => [t.kitPart, t]));
-    const lands = [];
-    for (let i = 0; i < order.length; i++) {
-      const c = order[i], it = byKey.get(c.dataset.p), r = c.getBoundingClientRect(), x0 = r.left + r.width / 2 - cc.left, y0 = r.top + r.height / 2 - cc.top;
-      const img = h('img', { class: 'kitfly', src: c.querySelector('.kitrun-pc').src, style: `left:${x0 - 30}px;top:${y0 - 30}px` });
+    A(glowEl, [{ opacity: .9, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.6)' }], { duration: 320, easing: 'ease-out' });
+    await wait(130); if (skipped) throw 0;
+    // 팍: every piece out of the box at once, fanning up and away, each down to where it hides — and the panel clears as they
+    // go, so they land in the room (쏙)
+    lay.classList.add('calm');
+    A(box, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(30px) scale(.9)', opacity: 0 }], { duration: 420, delay: 300, easing: 'ease-in' });
+    const byKey = new Map(its.map(t => [t.kitPart, t])), lands = [], n = K.order.length, x0 = mouth.x - cc.left, y0 = mouth.y - cc.top;
+    K.order.forEach((p, i) => {
+      const it = byKey.get(p), cell = S.kitCells[p];
+      const img = h('img', { class: 'kitfly', src: cell?.querySelector('.kitrun-pc')?.src || '', style: `left:${x0 - 30}px;top:${y0 - 30}px` });
       col.append(img); outs.push(img);
-      c.classList.remove('full'); c.classList.add('pop');
-      G.audio.sfx('pop', 4 + i);
-      let wp = it ? new THREE.Box3().setFromObject(it.g).getCenter(new THREE.Vector3()) : null;
-      const sp = wp ? W.toScreen(wp) : { x: cc.left + cc.width * (.2 + .6 * Math.random()), y: cc.top + cc.height * .35 };
-      const tx = sp.x - cc.left - x0, ty = sp.y - cc.top - y0, up = 110 + Math.min(120, Math.abs(tx) * .3);
-      const dur = quick ? 360 : 520;
-      lands.push(A(img, [{ transform: 'translate(0,0) scale(1) rotate(0)' }, { transform: `translate(${tx * .5}px,${ty * .5 - up}px) scale(1.15) rotate(${i % 2 ? 160 : -160}deg)`, offset: .5 },
-        { transform: `translate(${tx}px,${ty}px) scale(.35) rotate(${i % 2 ? 320 : -320}deg)`, opacity: .9 }], { duration: dur, easing: 'cubic-bezier(.35,.2,.45,1)' }).then(() => {
+      const wp = it ? new THREE.Box3().setFromObject(it.g).getCenter(new THREE.Vector3()) : null;
+      const sp = wp ? W.toScreen(wp) : { x: cc.left + cc.width * (.15 + .7 * i / Math.max(1, n - 1)), y: cc.top + cc.height * .4 };
+      const tx = sp.x - cc.left - x0, ty = sp.y - cc.top - y0;
+      const fan = (i / Math.max(1, n - 1) - .5) * 2, mx = tx * .3 + fan * 110, my = Math.min(0, ty * .3) - 150 - (i % 3) * 45, spin = (i % 2 ? 1 : -1) * (200 + i * 30);
+      lands.push(A(img, [{ transform: 'translate(0,0) scale(.4) rotate(0)', opacity: 0 }, { transform: `translate(${mx * .55}px,${my * .7}px) scale(1.3) rotate(${spin * .3}deg)`, opacity: 1, offset: .25 },
+        { transform: `translate(${mx}px,${my}px) scale(1.15) rotate(${spin * .55}deg)`, opacity: 1, offset: .48 }, { transform: `translate(${tx}px,${ty}px) scale(.35) rotate(${spin}deg)`, opacity: .9 }],
+        { duration: quick ? 600 : 700, delay: i * 35, easing: 'cubic-bezier(.3,.15,.45,1)' }).then(() => {
         img.remove();
         if (it && !skipped) {
           it.g.visible = vis0.get(it); W.idsDirty = true;
@@ -358,24 +363,25 @@ export async function kitIntro(S) {
           G.audio.sfx('tock', 2 + i); haptic('tick');
         }
       }));
-      await wait(quick ? 50 : 140);   // 착, 착, 착
-      if (skipped) throw 0;
-    }
+      setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), i * 35);
+    });
     await Promise.all(lands);
     if (skipped) throw 0;
-    await wait(quick ? 120 : 260);
-    // the runner, empty now, down into its place
-    await A(card, [{ transform: `translateX(-50%) translateY(${dy}px) scale(1)` }, { transform: 'translateX(-50%)' }], { duration: quick ? 260 : 380, easing: 'cubic-bezier(.16,1,.3,1)' });
+    // the card comes up into its place, empty: its shapes waiting
+    card.style.visibility = '';
+    G.audio.sfx('swish');
+    await A(card, [{ transform: 'translateX(-50%) translateY(140%)' }, { transform: 'translateX(-50%) translateY(-6px)', offset: .75 }, { transform: 'translateX(-50%)' }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
   } catch {}
+  if (hb) clearInterval(hb);
   box.style.visibility = 'hidden';   // (before the cancels: cancelling its fade-out would flash it back)
   for (const a of anims) { try { a.cancel(); } catch {} }
   outs.forEach(o => o.remove());
   its.forEach(t => { t.g.visible = vis0.get(t); t.g.scale.copy(s0.get(t)); }); W.idsDirty = true;
-  if (skipped) { bub?.kill?.(); W.flyTo(S.tw, { ...v0, cut: true }); }
+  if (skipped) W.flyTo(S.tw, { ...v0, cut: true });
   W.camLock = false;
   cells.forEach(c => c.classList.remove('full', 'pop'));
   card.style.visibility = ''; card.style.zIndex = '';
-  lay.removeEventListener('pointerdown', skip); card.removeEventListener('pointerdown', skip);
+  lay.removeEventListener('pointerdown', tapped); card.removeEventListener('pointerdown', tapped);
   lay.classList.add('out'); setTimeout(() => lay.remove(), 260);
   if (S.kit.hid && !S.dead) S.say(f, S.kit.hid, 2600);   // "어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!"
 }
@@ -477,8 +483,50 @@ async function gather(S, P, R, yaw) {
 // to the robot standing on its little work mat and clicks on (딸깍). Out of turn it hops in its window and the friend says
 // so once; nothing is lost, no tap spent. A small manual card (top right) shows the step.
 const GHOST = '#8fd0ff';
+// the build's view (10/20, user on the phone: "조립할 때 구도를 잘 잡아 줘. 모델이 가운데에 크게, 잘리지 않게"): the model's
+// middle half way between the top bar and the board, about a third of the screen tall and never wider than most of it.
+// (The view zooms about its frustum's middle, not its target — world.js applyFrustum cy — so the target is set where it
+// lands; a height h stands h·cos(pitch) tall on the screen.)
+function buildView(S, P, hW, wW, midY, pitch) {
+  const W = S.G.world, vh = W.viewH || 11, cy = W.fit?.cy ?? .46, cp = Math.max(.3, Math.cos(pitch));
+  const H = S.col?.clientHeight || innerHeight, wide = (S.col?.clientWidth || innerWidth) / H, card = S.tray;
+  const top = .15, bot = card ? Math.min(.8, Math.max(.5, card.offsetTop / H)) : .72, Y = (top + bot) / 2;
+  const F = Math.min(.4, (bot - top) * .66, .84 * hW * cp * wide / Math.max(.01, wW));
+  const zoom = Math.max(1.2, Math.min(16, vh * F / (hW * cp))), atT = .5 + (cy - .5) * zoom;   // (8 was too low: a room drawn small left the robot a fifth of the screen)
+  return { target: new THREE.Vector3(P.x, midY - (atT - Y) * (vh / zoom) / cp, P.z), zoom };
+}
+// 파르페's angle for the build: it stands where it stands, so the angle is what's picked — of the room's views round it, the
+// nearest with nothing in front of the glass and the glass seen whole (QA 10/20: from the hunt's last angle a monstera stood
+// in front of it)
+function standView(S, P, hW, wW, own) {
+  const W = S.G.world, y0 = W.yaw, p0 = W.pitch, roots = [S.room.group], pitch = Math.min(Math.max(p0, .45), .8);
+  const mine = o => { for (let q = o; q; q = q.parent) if (q === own) return true; return false; };   // (its own glass isn't in the way)
+  const boxes = [];
+  S.room.group.traverse(o => { if (o.userData.furn && o.userData.furn.group === o) { const b = new THREE.Box3().setFromObject(o); if (!b.isEmpty() && b.max.y - b.min.y > .1) boxes.push(b); } });
+  const ray = new THREE.Ray(), hit = new THREE.Vector3();
+  const seen = q => { const s = W.toScreen(q); const x = W.pick(s.x, s.y, roots).find(x => !x.object.userData.proxy && !mine(x.object)); return !x || x.distance > W.raycaster.ray.origin.distanceTo(q) - .12; };
+  let best = null;
+  W.pitch = pitch;
+  [0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2, Math.PI * .75, -Math.PI * .75, Math.PI].forEach((d, di) => {
+    const yaw = y0 + d; W.yaw = yaw; W.updateCam();
+    const cp = Math.cos(pitch), sp = Math.sin(pitch), side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), view = new THREE.Vector3(cp * Math.sin(yaw), sp, cp * Math.cos(yaw));
+    let n = 0;
+    for (const k of [-.5, -.25, 0, .25, .5]) for (const u of [.05, .3, .55, .8, 1]) {
+      const q = new THREE.Vector3(P.x, P.y + u * hW, P.z).addScaledVector(side, k * wW);
+      ray.origin.copy(q).addScaledVector(view, 20); ray.direction.copy(view).negate();
+      for (const b of boxes) if (!b.containsPoint(q) && ray.intersectBox(b, hit) && hit.distanceTo(ray.origin) < 19.9) { n++; break; }   // (a box round the glass itself — a counter it stands by — isn't in front)
+    }
+    const whole = [.1, .5, .9].every(u => seen(new THREE.Vector3(P.x, P.y + u * hW, P.z)));
+    const score = n + (whole ? 0 : 30) + di * .4;
+    if (!best || score < best.score) best = { yaw, score, n, whole };
+  });
+  W.yaw = y0; W.pitch = p0; W.updateCam();
+  S.kitSpot = { yaw: +best.yaw.toFixed(2), clutter: best.n, whole: best.whole };   // (QA)
+  return { yaw: best.yaw, pitch };
+}
 export async function kitBuild(S) {
   const G = S.G, W = G.world, tw = S.tw, K = KITS[S.kit.kit], B = K.build || {}, f = S.friend, card = S.tray, cells = S.kitCells;
+  const stack = K.type === 'stack';   // (파르페: no model to put up — each topping goes onto its layer of the glass)
   const st = S.kitState = { phase: 'build', placed: 0, total: K.order.length, drops: 0, taps: 0 };
   W.camLock = true;
   const off = [], flying = [];
@@ -486,31 +534,41 @@ export async function kitBuild(S) {
   try {
     card?.classList.add('done');
     await tw.wait(.3); if (S.dead) return;
-    const { p: P, yaw, pitch, tile } = buildSpot(S);
+    const PF = stack ? S.kitParfait : null;
+    let spot;
+    if (stack) {
+      const p = PF.g.getWorldPosition(new THREE.Vector3()), bb = new THREE.Box3().setFromObject(PF.g), sz = bb.getSize(new THREE.Vector3());
+      spot = { p, tile: null, ...standView(S, new THREE.Vector3(p.x, bb.min.y, p.z), sz.y, Math.max(sz.x, sz.z), PF.g) };
+    } else spot = buildSpot(S);
+    const { p: P, yaw, pitch, tile } = spot;
     f.setFace('wow'); f.bump?.(.4);
     const goBub = S.say(f, S.kit.go || KIT_GO[K.id] || '다 모았다!', 1600); G.audio.sfx('special');
-    // the view: the robot's middle a third of the way down (the runner board takes the lower part of the screen). (The view
-    // zooms about its frustum's middle, not its target — world.js applyFrustum cy — so the target is set where it lands.)
-    const gs = S.room.group.getWorldScale(new THREE.Vector3()).y;
-    const vh = W.viewH || 11, zoom = Math.max(1.5, Math.min(8, vh / 1.85)), cy = W.fit?.cy ?? .46, atT = .5 + (cy - .5) * zoom;
-    const tY = P.y + .36 * RS * gs - (atT - .3) * (vh / zoom) / Math.max(.3, Math.cos(pitch));   // (closer: the robot big above the board)
     card?.classList.remove('done');
     const side = S.col?.querySelector('.side'); if (side) { side.style.visibility = 'hidden'; off.push(() => { side.style.visibility = ''; }); }   // (the hint button: nothing to look for now, and the board is wide)
     if (card) { card.classList.add('build'); card.animate([{ transform: 'translateX(-50%) translateY(30px) scale(.92)', opacity: .6 }, { transform: 'translateX(-50%)', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.2,1.4,.4,1)' }); }
     Object.values(cells).forEach(c => c.classList.add('ready'));
-    await Promise.all([W.flyTo(tw, { target: new THREE.Vector3(P.x, tY, P.z), yaw, pitch, zoom, dur: .7, e: ease.inOutCubic }), gather(S, P, tile?.R, yaw)]);
+    // the view, the board now up: the whole model (every piece in place) or the whole glass, big in the space left
+    const gs = S.room.group.getWorldScale(new THREE.Vector3()).y;
+    let hW, wW, midY;
+    if (stack) { const bb = new THREE.Box3().setFromObject(PF.g), sz = bb.getSize(new THREE.Vector3()); hW = sz.y; wW = Math.max(sz.x, sz.z); midY = (bb.min.y + bb.max.y) / 2; }
+    else { const bb = K._bb ??= new THREE.Box3().setFromObject(buildKitModel(K.id)), sz = bb.getSize(new THREE.Vector3()); hW = sz.y * RS * gs; wW = Math.max(sz.x, sz.z) * RS * gs; midY = P.y + (bb.min.y + sz.y / 2) * RS * gs; }
+    const view = buildView(S, P, hW, wW, midY, pitch);
+    await Promise.all([W.flyTo(tw, { target: view.target, yaw, pitch, zoom: view.zoom, dur: .7, e: ease.inOutCubic }), stack ? null : gather(S, P, tile?.R, yaw)]);
     if (S.dead) return;
     f.faceTo?.(P.x, P.z); S.hero?.ch?.faceTo?.(P.x, P.z);
     const face = Math.atan2(W.cam.position.x - P.x, W.cam.position.z - P.z), local = v => S.room.group.worldToLocal(v.clone());
+    let R = null, glow = null;
+    const pcs = {};
+    if (stack) for (const key of K.order) pcs[key] = { key, done: false, busy: false, L: PF.layers[key] };
+    else {
     // a little green work mat under the robot
     const mat = buildMat(.82, .62); mat.position.copy(local(P)); mat.rotation.y = face; S.room.group.add(mat);
     // the model: a group at the spot, facing the camera; one pivot per piece, at the piece's joint
-    const R = new THREE.Group(); R.position.copy(local(P)); R.position.y += .013; R.rotation.y = face; R.scale.setScalar(RS);
+    R = new THREE.Group(); R.position.copy(local(P)); R.position.y += .013; R.rotation.y = face; R.scale.setScalar(RS);
     const sh = blobShadow(.2, .3); sh.scale.set(.42, .42, 1); R.add(sh);
     S.room.group.add(R); R.updateMatrixWorld(true);
     S.kitModel = R;
-    const glow = buildKitGlow(K.id); glow.g.visible = false;
-    const pcs = {};
+    glow = buildKitGlow(K.id); glow.g.visible = false;
     for (const key of K.order) {
       const J = new THREE.Vector3(...K.parts[key].joint), C = new THREE.Box3().setFromObject(buildKitPart(K.id, key)).getCenter(new THREE.Vector3());
       let ghost = null, gm = null;
@@ -519,6 +577,7 @@ export async function kitBuild(S) {
         ghost.traverse(o => { if (o.isMesh) { o.material = gm; o.castShadow = false; o.renderOrder = 2; } }); R.add(ghost);
       }
       pcs[key] = { key, J, C, ghost, mat: gm, pv: null, done: false, busy: false };
+    }
     }
     W.idsDirty = true; W.shadowDirty = true;
     G.audio.sfx('swish');
@@ -533,7 +592,9 @@ export async function kitBuild(S) {
       return pv;
     };
     const scrOf = v => W.toScreen(R.localToWorld(v.clone()));
-    const hpx = Math.abs(scrOf(new THREE.Vector3(0, 0, 0)).y - scrOf(new THREE.Vector3(0, .7, 0)).y);   // the model's height on screen
+    const at = c => stack ? W.toScreen(new THREE.Box3().setFromObject(c.L).getCenter(new THREE.Vector3())) : scrOf(c.C);   // (where a piece goes, on the screen)
+    const hpx = stack ? Math.abs(W.toScreen(new THREE.Vector3(P.x, midY - hW / 2, P.z)).y - W.toScreen(new THREE.Vector3(P.x, midY + hW / 2, P.z)).y)
+      : Math.abs(scrOf(new THREE.Vector3(0, 0, 0)).y - scrOf(new THREE.Vector3(0, .7, 0)).y);   // the model's height on screen
     let squash = 0, lastAct = performance.now();
     const hideHand = () => { hand?.remove(); hand = null; };
     // 순서 맞추기 (user 10/19): the runner's numbers are the order, like a kit's instructions; ?kitorder=0 tries any order
@@ -561,12 +622,15 @@ export async function kitBuild(S) {
     };
     // click! into place: the 3D piece appears where it goes, a little big, and settles in
     const snap = c => {
-      c.pv = makePiece(c.key); c.pv.position.copy(c.J);
-      tw.run(.22, k => c.pv.scale.setScalar(1.3 - .3 * ease.outBack(k)), ease.linear).then(() => c.pv && c.pv.scale.setScalar(1));
+      if (stack) popLayer(S, c.key);
+      else {
+        c.pv = makePiece(c.key); c.pv.position.copy(c.J);
+        tw.run(.22, k => c.pv.scale.setScalar(1.3 - .3 * ease.outBack(k)), ease.linear).then(() => c.pv && c.pv.scale.setScalar(1));
+      }
       c.done = true; c.busy = false; st.placed++;
       if (c.ghost) c.ghost.visible = false; squash = 1;
       G.audio.sfx('latch'); G.audio.sfx('pop', 3 + st.placed); haptic('ok');
-      const s = scrOf(c.C); W.fx.burst(s.x, s.y, { n: 16, shape: 'star', colors: ['#ffe14d', '#ffffff', '#8fd3f4'], speed: 260, gravity: 0, life: .45, size: 11 });
+      const s = at(c); W.fx.burst(s.x, s.y, { n: 16, shape: 'star', colors: ['#ffe14d', '#ffffff', '#8fd3f4'], speed: 260, gravity: 0, life: .45, size: 11 });
       W.fx.ring(s.x, s.y, { r: 60, color: '#ffffff', width: 7, life: .3 });
       if (st.placed === st.total) G.hitstop(.07);
       markNext();
@@ -581,7 +645,7 @@ export async function kitBuild(S) {
       const r = el.getBoundingClientRect(), x0 = r.left + r.width / 2, y0 = r.top + r.height / 2;
       nip(r.left + r.width * .1, y0); G.audio.sfx('tap'); haptic('tick');
       el.classList.remove('ready', 'next'); el.classList.add('used');   // (the window empty, two cut stubs)
-      const t = scrOf(c.C), size = Math.max(56, Math.min(120, hpx * .42)), img = h('img', { class: 'kitfly', src: pic(c.key), style: `left:${x0 - size / 2}px;top:${y0 - size / 2}px;width:${size}px;height:${size}px` });
+      const t = at(c), size = Math.max(56, Math.min(120, hpx * .42)), img = h('img', { class: 'kitfly', src: pic(c.key), style: `left:${x0 - size / 2}px;top:${y0 - size / 2}px;width:${size}px;height:${size}px` });
       document.getElementById('app').append(img); flying.push(img);
       const dx = t.x - x0, dy = t.y - y0;
       img.animate([{ transform: 'translate(0,0) scale(.8) rotate(0)' }, { transform: `translate(${dx * .4}px,${dy * .55 - 60}px) scale(1.25) rotate(-12deg)`, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(1) rotate(0)` }],
@@ -602,7 +666,7 @@ export async function kitBuild(S) {
       W.lastActive = now;   // full frame rate on phones while it plays
       squash = Math.max(0, squash - dt / .16);
       const sq = Math.sin(squash * Math.PI) * .08;
-      R.scale.set(RS * (1 + sq * .5), RS * (1 - sq), RS * (1 + sq * .5));
+      if (R) R.scale.set(RS * (1 + sq * .5), RS * (1 - sq), RS * (1 + sq * .5));
       // nothing done for a while: a hand taps the next piece on the board, no words
       if (!hand && now - lastAct > 2600 && !S.botOn()) {
         const k = (ordered ? nextKey() : null) || K.order.find(q => !pcs[q].done && !pcs[q].busy);
@@ -616,10 +680,15 @@ export async function kitBuild(S) {
     card?.classList.remove('build'); card?.classList.add('gone');
     await tw.wait(.25); if (S.dead) return;
     st.phase = 'alive';
-    await comeAlive(S, R, pcs, glow, P);
-    // back out to the room's first view (as '처음 시점'), so the win's close-up on the friend starts from the room: from the
-    // build's angle — picked for the robot — it landed behind a pot plant (8판, QA 10/19)
-    if (!S.dead) { const v = S.view0 || { yaw: Math.PI / 4, pitch: .62 }; await W.flyTo(tw, { zoom: v.zoom || 1, target: W.home, yaw: v.yaw, pitch: v.pitch, dur: .5, e: ease.inOutCubic }); }
+    if (stack) {   // 파르페: done — hearts all round, its owner cheers
+      const s = W.toScreen(new THREE.Vector3(P.x, midY + hW * .4, P.z));
+      G.audio.sfx('unlock'); haptic('big');
+      W.fx.burst(s.x, s.y, { n: 26, shape: 'heart', colors: ['#ff8fb8', '#ffe14d', '#ffffff'], speed: 300, life: .7, size: 11 }); W.fx.ring(s.x, s.y, { r: 110, color: '#ffffff', width: 8 });
+      f.pose = 'cheer'; f.setFace?.('happy'); f.bump?.(.5);
+      await tw.wait(.8);
+    } else await comeAlive(S, R, pcs, glow, P);
+    // (no going back out to the whole room after: the win's close-up goes from here to the friend — user 10/20 "깨면 집
+    // 풀샷으로 넘어가지 말고 친구 쪽으로")
   } finally { off.forEach(fn => fn()); flying.forEach(i => i.remove()); hand?.remove(); manual?.remove(); W.camLock = false; }
 }
 const NIP_SVG = '<svg viewBox="0 0 64 64"><path d="M30 34 L12 58 Q8 62 13 62 L33 38 Z" fill="#ff8fb8" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/><path d="M34 34 L52 58 Q56 62 51 62 L31 38 Z" fill="#ff8fb8" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/><g class="jaw"><path d="M29 36 L26 8 Q32 4 33 12 L33 36 Z" fill="#cfd6e6" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/></g><g class="jaw2"><path d="M35 36 L38 8 Q32 4 31 12 L31 36 Z" fill="#e6ebf5" stroke="#3a2453" stroke-width="4" stroke-linejoin="round"/></g><circle cx="32" cy="36" r="4" fill="#ffe14d" stroke="#3a2453" stroke-width="3"/></svg>';
@@ -687,8 +756,8 @@ async function kitPop(S) {
 export async function kitFinish(S) {
   const K = KITS[S.kit.kit];
   if (K.type === 'place') return kitHome(S);
-  if (K.type === 'stack') return kitTop(S);
-  return kitBuild(S);
+  if (K.type === 'stack' && !K.build) return kitTop(S);
+  return kitBuild(S);   // (the robot; 파르페 too since 10/20 — topping by topping onto the glass)
 }
 // 이삿짐: the last boxes fold, the room warms up, hearts — "다 풀었다! 이제 진짜 우리 집이야." (the result panel says it)
 async function kitHome(S) {

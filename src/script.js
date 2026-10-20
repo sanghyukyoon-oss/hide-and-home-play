@@ -200,9 +200,11 @@ const SCENES = [
     intro: [L('frog', '개굴! 낚시터에선 내가 챔피언이야.', "Ribbit! At the fishing spot, I'm the champ."), L('frog', '이번엔 물소리도 내 편이야.', "The water's on my side this time.")],
     stuck: [K('뽀글뽀글', 'Blub blub')],
     reveal: [L('frog', '거품이 배신했어!', 'The bubbles betrayed me!'), L('frog', '한 판 더! 이번엔 안 들킨다!', "One more! I won't get caught this time!"), L('mong', '…다음에도 그럴 거지?', "…You'll say that next time too, right?")] },
-  { id: 'study', type: 'incident', room: 'study', card: 'chain', hide: K('흠. 책 냄새 나는 곳이 제일 편하지.', 'Hm. Anywhere that smells like books is the comfiest.'),
-    intro: [L('nerd', '흠. 펭펭이한테 비결을 세 개나 들었다는 그 몽글이군.', "Hm. So you're the Mongle who got three pro tips out of Pengpeng."), L('nerd', '내 비밀 방은 아직 아무도 끝까지 못 풀었어. 난 거기 있을게.', "Nobody's solved my secret room yet. I'll be in there.")],
-    ifKit: { robot: { intro: [L('nerd', '흠. 내 로봇을 끝까지 맞췄다는 그 몽글이군.', "Hm. So you're the Mongle who finished my robot."), L('nerd', '내 비밀 방은 아직 아무도 끝까지 못 풀었어. 난 거기 있을게.', "Nobody's solved my secret room yet. I'll be in there.")] } },   // (스토리 룸 10/19: 8판 조립판이 있으면)
+  // (사용자 실폰 10/20: "스테이지 12 무슨 도감? 뭔지 전혀 모르겠다" — 박사가 할 일을 한 줄로 말하고, '연쇄 장치' 카드는 판 시작이
+  // 아니라 비밀 문이 열리는 순간에 받음: cardAfter, stage.js solveShowcase)
+  { id: 'study', type: 'incident', room: 'study', cardAfter: 'chain', hide: K('흠. 책 냄새 나는 곳이 제일 편하지.', 'Hm. Anywhere that smells like books is the comfiest.'),
+    intro: [L('nerd', '흠. 펭펭이한테 비결을 세 개나 들었다는 그 몽글이군.', "Hm. So you're the Mongle who got three pro tips out of Pengpeng."), L('nerd', '책장 그림책으로 무지개를 맞추면 비밀 문이 열려. 난 그 안에 있을게.', "Line up the picture books on my shelf into a rainbow, and the secret door opens. I'll be inside.")],
+    ifKit: { robot: { intro: [L('nerd', '흠. 내 로봇을 끝까지 맞췄다는 그 몽글이군.', "Hm. So you're the Mongle who finished my robot."), L('nerd', '책장 그림책으로 무지개를 맞추면 비밀 문이 열려. 난 그 안에 있을게.', "Line up the picture books on my shelf into a rainbow, and the secret door opens. I'll be inside.")] } },   // (스토리 룸 10/19: 8판 조립판이 있으면)
     stuck: [K('흠흠. 무지개가 끊긴 건 봤겠지?', 'Ahem. You noticed the rainbow is broken, yes?')],
     reveal: [L('nerd', '놀랍군. 계산보다 빨라.', 'Remarkable. Faster than I calculated.'), L('nerd', '…사실 누가 풀어 주길 기다렸어. 퍼즐은 혼자 하면 재미없거든.', '…Truth is, I hoped someone would solve it. Puzzles are no fun alone.'), L('mong', '다음 것도 풀어 보고 싶어.', "I'd like to solve the next one too."), L('nerd', '그럼 다음 건 너만을 위해 만들지.', "Then I'll make the next one just for you.")] },
   { id: 'peng', type: 'incident', room: 'peng',

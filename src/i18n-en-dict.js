@@ -3553,7 +3553,7 @@ export const EN = {
 "로봇 주먹팔": "Robot Fist Arm", "로봇 주먹팔!": "Robot Fist Arm!",
 "로봇 머리": "Robot Head", "로봇 머리!": "Robot Head!",
 "로봇 안테나": "Robot Antenna", "로봇 안테나!": "Robot Antenna!",
-"다리": "Legs", "몸통": "Body", "제트팩": "Jetpack", "집게팔": "Claw", "주먹팔": "Fist", "머리": "Head", "부품 6개": "6 parts", "로봇 부품 6개를 모아 조립하자!": "Collect all 6 robot parts and build it!",
+"다리": "Legs", "몸통": "Body", "제트팩": "Jetpack", "집게팔": "Claw", "주먹팔": "Fist", "머리": "Head", "부품 6개": "6 parts", "콕!": "Tap!", "짐 7개": "7 things", "토핑 7개": "7 toppings", "로봇 부품 6개를 모아 조립하자!": "Collect all 6 robot parts and build it!",
 "흠, 거기가 아니군.": "Hm. Not there.",
 "이삿짐 풀기": "Unpacking", "파르페 쌓기": "Parfait Stack", "생크림": "Whipped Cream", "웨하스": "Wafer", "체리": "Cherry", "이삿짐 상자": "Moving Box", "큰 파르페": "Giant Parfait",
 "꼬마 로봇": "Tiny Bot",

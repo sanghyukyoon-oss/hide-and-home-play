@@ -109,9 +109,15 @@ export const KITS = {
 //   place  things out of the moving boxes: each find folds a box in the room; all found → the room is home (13판)
 //   stack  parfait toppings: each find goes onto the big parfait, on its own layer; the cherry waits and goes on top last
 // order: the card's cells (things to find: ITEMS types); locked: the one the stage's first lock guards (13판: the code safe)
-KITS.moving = { id: 'moving', type: 'place', skin: 'boxes', intro: 'pop', numbers: false, name: '이삿짐 풀기', furn: 'kitmovebox',
+// 10/20 (user on the phone: every kit stage like the robot's — the box and 콕, the runner card): each has its box (a kraft
+// moving box; a parfait kit with the parfait on its lid), the runner with windows of its own sizes, and 파르페 is put
+// together at the end like the robot, topping by topping in its order (the moving things have nothing to build: its end stays)
+KITS.moving = { id: 'moving', type: 'place', skin: 'runner', intro: 'box', lid: 'kraft', countWord: '짐', numbers: false, name: '이삿짐 풀기', furn: 'kitmovebox',
+  frame: { areas: ['teddy slipper slipper remote umbrella', 'teddy glasses console duck umbrella'], cols: [1.5, 1, 1, .8, .7] },
   order: ['teddy', 'slipper', 'remote', 'glasses', 'console', 'duck', 'umbrella'], locked: 'teddy', runner: '#e8c28a', color: '#c98a4b' };   // (8 → 7, no toothbrush: 22 px on a phone, and the first code lock comes on this stage too — 11~20판 레벨 점검 10/20)
-KITS.parfait = { id: 'parfait', type: 'stack', skin: 'bowls', intro: 'pop', numbers: false, name: '파르페 쌓기', furn: 'kitparfait',
+KITS.parfait = { id: 'parfait', type: 'stack', skin: 'runner', intro: 'box', lid: 'pic', countWord: '토핑', name: '파르페 쌓기', furn: 'kitparfait',
+  build: { ordered: true, glow: true },
+  frame: { areas: ['pf_cereal pf_icecream pf_banana pf_banana pf_wafer', 'pf_cereal pf_strawberry pf_cream pf_cherry pf_wafer'], cols: [1.5, 1, 1, 1, .7] },
   order: ['pf_cereal', 'pf_icecream', 'pf_banana', 'pf_strawberry', 'pf_cream', 'pf_wafer', 'pf_cherry'], last: 'pf_cherry', runner: '#ffc9dc', color: '#ff6fa6' };
 export const kitItem = (kit, key) => KITS[kit].type === 'model' ? 'kit_' + kit + '_' + key : key;
 
