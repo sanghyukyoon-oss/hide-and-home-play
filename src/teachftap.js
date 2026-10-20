@@ -3,7 +3,7 @@
 // a see-through hand plays it in three beats, one short line each (스토리 룸) — the mode word coloured, so "이동 → 회전 → 이동"
 // reads without reading the rest:
 //   ① "드래그하면 이동"          the hand drags, the room slides
-//   ② "드래그 중 터치! 뗄 때까지 회전" it keeps holding ("떼지 마!" over it), a second hand touches once, the drag now spins the room
+//   ② "드래그한 채 터치! 손 뗄 때까지 회전" it keeps holding ("떼지 마!" over it), a second hand touches once, the drag now spins the room
 //   ③ "손 떼면 다시 이동"        it lifts, comes down again and drags: the room slides again
 // Then your turn: the line follows your own fingers (nothing down ①, a finger down ② and "떼지 마!", you let go after a turn
 // ③); done → after ③ the game's '새로 얻었다!' badge (빙글 돌리기 · 드래그 중 터치). Doing it alone counts the same.
@@ -20,7 +20,7 @@ export const FTAP_ON = typeof location === 'undefined' || !/[?&]ftapteach=0(&|$)
 // the words (스토리 룸 10/20 밤): three beats, the tag, and the badge
 export const FTAP_CAP = {
   move: K('드래그하면 이동', 'Drag to move'),
-  spin: K('드래그 중 터치! 뗄 때까지 회전', 'Tap while dragging: spin till you let go'),
+  spin: K('드래그한 채 터치! 손 뗄 때까지 회전', 'Tap while dragging: spin until you let go'),   // (user 10/20: "드래그하던 손을 떼기 전까지 회전으로 바뀌어요라는 의미가 있었으면")
   back: K('손 떼면 다시 이동', 'Let go: back to moving'),
   keep: K('떼지 마!', 'Keep holding!'),
 };
@@ -82,7 +82,7 @@ async function waitStart(S, stop) {
 // the line at the top (its mode word coloured) and the "떼지 마!" tag over the first finger
 function lines(S) {
   css();
-  const cap = h('div', { class: 'tip ftcap', style: `left:50%;top:${innerHeight * .2}px` }), keep = h('div', { class: 'ftkeep' }, tr(FTAP_CAP.keep));
+  const cap = h('div', { class: 'tip ftcap', style: `left:50%;top:${innerHeight * .2}px` }), keep = h('div', { class: 'ftkeep' }, tr(FTAP_CAP.keep), h('i', { class: 'ftspin' }, '↻'));
   let said = null;
   const L = {
     els: [cap, keep],
@@ -93,7 +93,9 @@ function lines(S) {
       cap.classList.remove('ftnew'); void cap.offsetWidth; cap.classList.add('ftnew');
     },
     keepAt: (x, y) => { keep.style.transform = `translate(${x.toFixed(1)}px, ${(y - 52).toFixed(1)}px)`; keep.classList.add('on'); },
-    keepOff: () => keep.classList.remove('on'),
+    keepOff: () => keep.classList.remove('on', 'turning'),
+    // (user 10/20, via 인수인계: a small ↻ turning beside "떼지 마!" while the turn lasts — '뗄 때까지' seen, not read)
+    turning: on => keep.classList.toggle('turning', !!on),
     remove: () => { cap.remove(); keep.remove(); },
   };
   S.G.ui.tut.append(cap, keep);
@@ -124,7 +126,8 @@ async function lesson(S, st) {
       if (W.ptrs.size) {
         free = 0; quiet = 0;
         const f = [...W.ptrs.values()][0];
-        L.say('spin'); L.keepAt(f.x, f.y); if (W.eMode === 'turn' && W.eBase !== 'turn') turned = true;
+        const spin = W.eMode === 'turn' && W.eBase !== 'turn';
+        L.say('spin'); L.keepAt(f.x, f.y); L.turning(spin); if (spin) turned = true;
       } else {
         L.keepOff();
         if (turned) { turned = false; backT = S.t; }
@@ -164,7 +167,7 @@ async function play(S, L) {
     if (!await step(.35)) return false;
     A.classList.add('down');
     if (!await drag(x0, x1, 1.0)) return false;
-    // ② 드래그 중 터치! 뗄 때까지 회전 — it holds ("떼지 마!"), the second hand touches once, the same drag now spins
+    // ② 드래그한 채 터치! 손 뗄 때까지 회전 — it holds ("떼지 마!"), the second hand touches once, the same drag now spins
     L.say('spin'); L.keepAt(x1, y0);
     if (!await step(.7)) return false;
     at(B, bx, by); at(ring, bx, by); B.classList.add('on');
@@ -173,6 +176,7 @@ async function play(S, L) {
     if (!await step(.2)) return false;
     B.classList.remove('down', 'on');
     if (!await step(.25)) return false;
+    L.turning(true);
     if (!await drag(x1, x2, 1.3, W._turnPivot())) return false;
     // ③ 손 떼면 다시 이동 — it lifts, comes down again and drags: the room slides again
     if (!await step(.25)) return false;
@@ -205,7 +209,6 @@ function css() {
 .gring { position: absolute; left: 0; top: 0; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; box-shadow: 0 0 0 3.5px #ffd23f; z-index: 29; pointer-events: none; opacity: 0; }
 .gring.go { animation: gringgo .45s ease-out; }
 @keyframes gringgo { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
-#tut-ui .ftcap { transform: translateX(-50%); }   /* (style.css's keep-on-screen translate: var(--dx) takes the .tip's own -50% away: a short line sat right of centre) */
 .ftcap.ftnew { animation: ftcapin .25s ease-out; }
 @keyframes ftcapin { 0% { opacity: .2; scale: .94; } 100% { opacity: 1; scale: 1; } }
 .ftcap .ftm { font-weight: normal; padding: 0 5px; border-radius: 8px; color: #fff; }
@@ -214,5 +217,8 @@ function css() {
 .ftkeep { position: absolute; left: 0; top: 0; z-index: 31; pointer-events: none; translate: -50% -100%; padding: 3px 11px; border-radius: 12px; background: #fff; color: #3b2a55; border: 2.5px solid #3b2a55; font-size: 15px; white-space: nowrap; opacity: 0; transition: opacity .15s; }
 .ftkeep::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -7px; border: 7px solid transparent; border-top-color: #3b2a55; border-bottom: 0; }
 .ftkeep.on { opacity: 1; }
+.ftkeep .ftspin { position: absolute; right: -30px; top: 50%; margin-top: -13px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #ff6f91; color: #fff; font-style: normal; font-size: 18px; line-height: 1; border: 2px solid #3b2a55; opacity: 0; transition: opacity .15s; }
+.ftkeep.turning .ftspin { opacity: 1; animation: ftspin .9s linear infinite; }
+@keyframes ftspin { to { rotate: 360deg; } }
 `));
 }

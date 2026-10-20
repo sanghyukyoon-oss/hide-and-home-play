@@ -1731,7 +1731,8 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .endtalk .et.me span { border-bottom-left-radius: 18px; border-bottom-right-radius: 6px; }
 /* ⑥ words in the world stay on screen (ui.js keepIn sets --dx); a bubble's tail stays over its speaker; the stage banner and
    the dialogue title wrap between words inside the screen instead of running off it */
-#world-ui .bubble, #world-ui .ftxt, #tut-ui .tip { translate: var(--dx, 0px) 0; }
+#world-ui .bubble, #world-ui .ftxt { translate: var(--dx, 0px) 0; }
+#tut-ui .tip { translate: calc(-50% + var(--dx, 0px)) 0; }   /* (the .tip is centred by translate itself — keep its -50% and add the push: 10/20, short lesson lines sat right of centre) */
 #world-ui .bubble::after { margin-left: clamp(-38%, calc(-1 * var(--dx, 0px)), 38%); }
 .banner, .dlg-title { padding-left: 16px; padding-right: 16px; word-break: keep-all; overflow-wrap: break-word; }
 .banner .t1 { font-size: min(44px, 11vw); }
