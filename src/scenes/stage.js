@@ -418,6 +418,9 @@ export class StageScene {
     // this stage's own meshes, materials and textures (not the shared caches) go with it
     if (this.cameo) { G.world.root.remove(this.cameo.ch.root); disposeTree(this.cameo.ch.root); }
     for (const r of [this.room.group, this.friend.root, ...(this.npcs || []).map(n => n.ch.root)]) disposeTree(r);
+    // (the planner's wall list lets go of this room's walls — they held its wall canvases into the next scene, QA 10/20)
+    fitPrep(null);
+    clearTimeout(this._moveT);
     G.world.onTap = null; G.world.onRotate = null; G.world.tapInstant = null; G.world.onPress = null; G.world.tapZoomable = null;
     G.world.camLock = false;   // (the model-kit assembly holds the camera; leaving mid-way must not keep it held)
     G.ui.clear(); this.tw.clear();
@@ -2379,7 +2382,8 @@ export class StageScene {
   teachMove() {
     const G = this.G, W = G.world; let pan = 0; const prev = W.onPan;
     W.onPan = d => { pan += Math.abs(d) || 0; prev?.(d); };
-    setTimeout(() => { if (this.dead || this.result) return; (G.save.tut || (G.save.tut = {})).move = 1; G.persist(); if (pan < 80) G.ui.toast(W.scheme === 'E' && W.eBase === 'turn' ? DO.moveE : DO.move, 'green'); }, 12000);
+    // (kept, so leaving the stage clears it: pending, it held the whole stage — room, canvases — 12 s into the next scene, QA 10/20)
+    this._moveT = setTimeout(() => { if (this.dead || this.result) return; (G.save.tut || (G.save.tut = {})).move = 1; G.persist(); if (pan < 80) G.ui.toast(W.scheme === 'E' && W.eBase === 'turn' ? DO.moveE : DO.move, 'green'); }, 12000);
   }
   // 1판: the donut 토순이 dropped — the box answers at once (GPT 첫판: 첫 탭부터 반응)
   async onClue(it) {

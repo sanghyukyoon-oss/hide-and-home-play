@@ -30,11 +30,18 @@ export function forgetMats(texs) { for (const [k, m] of MAT) if (m.map && texs.h
 // was reloaded (user, 10/17: "스테이지 몇판 하다보면 튕김"). Each scene build is a generation: purgeGeo() frees whatever
 // the last two scenes never asked for; a freed shape is simply rebuilt if it is wanted again.
 let GEN = 0; const USED = new Map();
+// textured materials in the material cache, by the generation they were last asked for (see purgeGeo). A cached material
+// holds its texture and the texture its canvas; the cache never let go of them, so every stage left its floor, wall, ground
+// and apron canvases behind (look.js swaps the apron's material and makes its own textured ones; texCache textures went but
+// their materials stayed) — 1판→7판 the live canvases went 56 → 97 MB, and an iPhone reloaded the page after 9판's 이불 놀이
+// (QA 10/20). Dropping the cache's hold changes nothing on screen: whatever still shows keeps its own material.
+const MUSE = new Map();
 export function geo(key, make) { let g = GEO.get(key); if (!g) { g = make(); GEO.set(key, g); } USED.set(key, GEN); return g; }
 export function purgeGeo() {
   GEN++;
   for (const [k, g] of GEO) if ((USED.get(k) ?? -9) < GEN - 2) { g.dispose(); GEO.delete(k); USED.delete(k); }
   for (const m of TEXCACHES) for (const [k, e] of m) if (e.gen < GEN - 2) { e.t.dispose(); m.delete(k); }
+  for (const [k, g] of MUSE) if (g < GEN - 2) { MAT.delete(k); MUSE.delete(k); }
 }
 // The props' painted textures (signs, labels, patterns — keyed by theme colours and text) are cached the same way. They
 // used to live forever: ~5 more canvases every stage, 146 canvases / ~60 MB after 28 stages, on top of what each scene
@@ -79,6 +86,8 @@ export function mat(color, o) {
   const rough = o.rough ?? 0.82, metal = o.metal ?? 0, em = o.emissive ?? null, ei = o.ei ?? 1;
   const op = o.opacity ?? 1, side = o.side ?? THREE.FrontSide, map = o.map ?? null, rim = o.rim ?? 0.34;
   const key = [STYLE.mode, color, rough, metal, em, ei, op, side, map ? map.uuid : '', rim].join('|');
+  // (a textured one goes from the cache two scenes after it was last asked for — purgeGeo)
+  if (map) MUSE.set(key, GEN);
   let m = MAT.get(key);
   if (m) return m;
   if (STYLE.mode !== 'std') {

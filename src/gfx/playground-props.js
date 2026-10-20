@@ -105,6 +105,9 @@ function mc(key, fn) {
 const VTM = {};
 function vtmat(map) {
   const k = STYLE.mode + '|' + map.uuid;
+  // (the texture comes from the per-scene texture cache: when that lets it go, this material goes too — QA 10/20: the
+  // cache's old signs stayed alive through here, their canvases piling up stage after stage)
+  if (!VTM[k]) map.addEventListener('dispose', () => { delete VTM[k]; });
   return VTM[k] || (VTM[k] = STYLE.mode !== 'std'
     ? new THREE.MeshToonMaterial({ color: '#ffffff', vertexColors: true, map, gradientMap: STYLE.grad })
     : new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, map, roughness: .82 }));
