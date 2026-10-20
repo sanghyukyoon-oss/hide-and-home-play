@@ -24,7 +24,7 @@ import { buildItem, ITEMS } from '../gfx/items.js';
 import { h, ICON } from '../ui.js';
 import { ease, clamp } from '../util.js';
 import { tr } from '../i18n.js';
-import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow, takeGiftPick } from '../econ.js';
+import { metFriends, seatsOf, seatedAll, PICKS, pickPanel, takePick, chapterOfFurn, chapterNow, takeGiftPick, ECON, friendPrice, callableFriends } from '../econ.js';
 import { SHOP_FURN, STARTER_ITEMS } from '../catalog.js';
 import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
@@ -92,7 +92,8 @@ export class LobbyScene extends MyHomeScene {
     this.tw.wait(.8).then(() => !this.dead && HomeScene.prototype.raidNews.call(this));
     const tut = G.save.tut || (G.save.tut = {});
     if (G.homeOpen() && !tut.home) await this.roomOpens();
-    else if (G.homeOpen() && this.H.giftDue) { const t = await this.giftCards(GIFTS); if (this.dead) return; this.giveGift(t); this.frameLobby(); this.arrivals(); }   // (left before picking)
+    else if (G.homeOpen() && this.H.giftDue && !ECON) { const t = await this.giftCards(GIFTS); if (this.dead) return; this.giveGift(t); this.frameLobby(); this.arrivals(); }   // (left before picking)
+    else if (G.homeOpen() && this.H.giftDue) { delete this.H.giftDue; this.ensureDrawer(); this.arrivals(); }   // (경제·로비: no housewarming pick any more — the room's drawer instead, 10/20)
     else if (G.homeOpen()) this.arrivals();
     if (G.homeOpen()) this.placeInkySeat();   // (after the arrivals: the friends' seats first, the inky kid's cushion on what is left)
     // 같이 다니는 친구 (10/19, user OK): after 12판, once — a 🆕 badge and a friend in the room asks to come along
@@ -141,8 +142,12 @@ export class LobbyScene extends MyHomeScene {
     this.playBtn = playButton(G);
     const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : go() });
     const row = h('div', { class: 'row2 three' },
-      (() => { const b = lock('꾸미기', 'orange', 'paint', () => this.setMode('edit')), nx = open && this.growNext?.();   // (방 넓히기: the room can grow now → a 🔨 on 꾸미기; the lobby's close-up doesn't show its sign)
-        if (nx && (S.coins || 0) >= nx.S.price) { b.style.position = 'relative'; b.append(h('span', { style: 'position:absolute;top:-8px;right:-6px;font-size:16px;line-height:1;background:#fff;border:2px solid #3a2453;border-radius:999px;padding:3px 4px' }, '🔨')); }
+      (() => { const b = lock('꾸미기', 'orange', 'paint', () => { if (call) this.invTab = 'friends'; this.setMode('edit'); }), nx = open && this.growNext?.();   // (👋: straight to the 친구 tab)
+          // (방 넓히기: the room can grow now → a 🔨 on 꾸미기; the lobby's close-up doesn't show its sign)
+        // (친구 부르기 10/20: a friend you can call now — the coins and a free seat — comes first: 👋)
+        const z = this.zone, call = open && ECON && (z?.friends?.length || 0) < seatsOf(z) && callableFriends(S).some(k => (S.coins || 0) >= friendPrice(k));
+        const mark = call ? '👋' : nx && (S.coins || 0) >= nx.S.price ? '🔨' : null;
+        if (mark) { b.style.position = 'relative'; b.append(h('span', { style: 'position:absolute;top:-8px;right:-6px;font-size:16px;line-height:1;background:#fff;border:2px solid #3a2453;border-radius:999px;padding:3px 4px' }, mark)); }
         return b; })(),
       lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater ? this.hideLesson() : this.setMode('hide')),
       lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
@@ -310,6 +315,9 @@ export class LobbyScene extends MyHomeScene {
   // whoever you've met since the last time comes in and sits down by themselves (a toast, no card — 설계서 2-4)
   arrivals() {
     const G = this.G, H = this.H, z = this.zone; z.friends = z.friends || [];
+    // (경제·로비, 10/20 user: "처음부터 친구 하지 말고 친구도 돈 줘야 소환되게": a friend you meet doesn't come by itself any more —
+    // you call them from 꾸미기's 친구 tab; the stage result says who can be called)
+    if (ECON) { H.friendKnown = metFriends(G.save); G.persist(); return; }
     const met = metFriends(G.save), seated = seatedAll(H), box = new Set(H.friendBox || []), known = H.friendKnown;
     const fresh = met.filter(k => !seated.has(k) && !box.has(k) && !(known || []).includes(k));
     H.friendKnown = met;
@@ -332,21 +340,38 @@ export class LobbyScene extends MyHomeScene {
     super.editHud();
     const tabs = h('div', { class: 'invtabs' },
       h('button', { class: 'shoptab' + (this.invTab !== 'friends' ? ' on' : ''), onclick: () => { this.invTab = 'furn'; this.setMode('edit'); } }, '가구'),
-      h('button', { class: 'shoptab' + (this.invTab === 'friends' ? ' on' : ''), onclick: () => { this.invTab = 'friends'; this.setMode('edit'); } }, `친구 ${this.zone.friends?.length || 0}/${seatsOf(this.zone)}`));
+      h('button', { class: 'shoptab' + (this.invTab === 'friends' ? ' on' : ''), onclick: () => { this.invTab = 'friends'; this.setMode('edit'); } }, `친구 ${this.zone.friends?.length || 0}/${seatsOf(this.zone)}`, ECON && callableFriends(this.G.save).length ? h('span', { style: 'margin-left:4px' }, '👋') : null));
     this.cardsEl?.before(tabs);
   }
   renderInv() {
     if (this.invTab !== 'friends') return super.renderInv();
     const G = this.G, el = this.cardsEl; if (!el) return;
     el.innerHTML = '';
-    const box = this.H.friendBox || [];
-    if (!box.length) el.append(h('div', { style: 'padding:14px;font-size:16px;color:#8a6a9a' }, '친구 상자가 비었어요. 방에 앉은 친구를 터치하면 상자에 넣을 수 있어요'));
+    const box = this.H.friendBox || [], call = ECON ? callableFriends(G.save) : [];
+    if (!box.length && !call.length) el.append(h('div', { style: 'padding:14px;font-size:16px;color:#8a6a9a' }, ECON ? '판에서 친구를 만나면 여기서 집에 부를 수 있어요' : '친구 상자가 비었어요. 방에 앉은 친구를 터치하면 상자에 넣을 수 있어요'));
     for (const k of box) el.append(h('div', { class: 'card', onclick: () => this.placeFriend(k) }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, nameOf(k))));
+    // 친구 부르기 (10/20): the friends you've met and not called yet — their price; a tap calls them in (they walk in at the door)
+    for (const k of call) {
+      const p = friendPrice(k), short = (G.save.coins || 0) < p;
+      el.append(h('div', { class: 'card', style: short ? 'opacity:.6' : '', onclick: () => this.callFriend(k) }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, nameOf(k)), h('div', { class: 'pr', html: ICON.coin + p })));
+    }
+  }
+  // 친구 부르기: coins, once — then the friend is yours (walks in, sits; boxed and seated again for free)
+  callFriend(k) {
+    const G = this.G, z = this.zone, p = friendPrice(k);
+    if (!callableFriends(G.save).includes(k)) return;
+    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast('친구 자리 4개가 다 찼어 · 앉은 친구를 상자에 넣으면 자리가 나', 'red'); return; }
+    if ((G.save.coins || 0) < p) { G.ui.toast(`코인 ${p - (G.save.coins || 0)}개 더 모으면 부를 수 있어`, 'red'); G.audio.sfx('miss'); return; }
+    const spot = this.seatSpot(); if (!spot) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
+    G.addCoins(-p); G.audio.sfx('buy');
+    this.H.friendKnown = [...new Set([...(this.H.friendKnown || []), k])];
+    this.seatOne(k, spot, true).then(() => { if (!this.dead && this.mode === 'edit') this.setMode('edit'); });   // (seatOne's walk says the friend's ROOM_ARRIVE line)
+    G.ui.toast(`${ga(nameOf(k))} 놀러 왔어!`, 'green');
   }
   placeFriend(k) {
     const G = this.G, z = this.zone;
     if (!(this.H.friendBox || []).includes(k)) return;   // (already out of the box: a double tap seated it twice — QA3 10/19)
-    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(seatsOf(z) >= seatsOf({ size: 3 }) ? '자리가 꽉 찼어 (최대 7)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
+    if ((z.friends?.length || 0) >= seatsOf(z)) { G.ui.toast(ECON ? '친구 자리 4개가 다 찼어 · 앉은 친구를 상자에 넣으면 자리가 나' : seatsOf(z) >= seatsOf({ size: 3 }) ? '자리가 꽉 찼어 (최대 7)' : '자리가 꽉 찼어 · 방을 넓히면 자리가 늘어', 'red'); return; }
     const p = this.seatSpot(); if (!p) { G.ui.toast('앉을 자리가 없어! 가구를 조금 치워 봐', 'red'); return; }
     this.seatOne(k, p, false).then(() => { if (!this.dead && this.mode === 'edit') this.setMode('edit'); });
   }
@@ -507,6 +532,7 @@ export class LobbyScene extends MyHomeScene {
   // then 토순이 asks to stay. Two things to do with your hands; no explaining up front.
   async roomOpens() {
     const G = this.G, tut = G.save.tut || (G.save.tut = {});
+    if (ECON) return this.roomOpensCall();   // (10/20: no housewarming pick, 토순이 doesn't stay — she's called later)
     tut.home = true; this.H.giftDue = 1; G.persist();   // (giftDue: a page closed before the pick gets the cards again — 경제 세션 12장)
     if (G.bot || G.skipTalk) { this.giveGift(GIFTS[0]); const p = this.freeSpot(); if (p) await this.seatOne('bunny', p); this.arrivals(); return; }
     this.busyTut = true;
@@ -538,6 +564,38 @@ export class LobbyScene extends MyHomeScene {
     G.audio.sfx('special'); G.ui.toast('토순이 자리가 생겼어! 이제 자주 놀러 올 거야', 'green'); G.persist(); this.frameLobby();
     this.busyTut = false;
     this.arrivals();
+    this.playBtn?.classList.add('pulse');
+  }
+  // the room's own chest of drawers (the hide lesson's "inside, nobody finds it" and the padlocks need one): there from the
+  // start in a new home; an older home that never got one gets it now, quietly
+  ensureDrawer() {
+    const z = this.zone; if (!z || z.furniture.some(f => f.type === 'drawers') || this.H.inventory.includes('drawers')) return;
+    this.H.inventory.push('drawers'); this.placeFromInv(this.H.inventory.length - 1); this.select(null); this.G.persist();
+  }
+  // 경제·로비 (10/20, user: "바로 선물 주네… 선물도 특이한 거 주라니까", "처음부터 친구 하지 말고 친구도 돈 줘야 소환되게"): the room
+  // opens with no gift to pick — its drawer is already there — and 토순이 drops in for the hide lesson, then goes: call her back
+  // from 꾸미기's 친구 tab (the first friend you buy)
+  async roomOpensCall() {
+    const G = this.G, tut = G.save.tut || (G.save.tut = {});
+    tut.home = true; delete this.H.giftDue; this.ensureDrawer(); G.persist();
+    if (G.bot || G.skipTalk) return;
+    this.busyTut = true;
+    await this.tw.wait(.5); if (this.dead) return;
+    await G.ui.banner('몽글이 방이 열렸어!', null, 1300); if (this.dead) return;
+    const meet = this.freeSpot({ x: this.mong.root.position.x - .9, z: this.mong.root.position.z - .2 }) || { x: 0, z: 0 };
+    const bun = new Char('bunny'), d = this.doorAt(); bun.root.position.set(d.x, 0, d.z); this.room.group.add(bun.root); this.guest = bun;
+    await bun.walkTo(this.tw, meet.x, meet.z); if (this.dead) return;
+    bun.faceTo(this.mong.root.position.x, this.mong.root.position.z); this.mong.faceTo(meet.x, meet.z);
+    this.say(bun, '와, 몽글이 방이다! 숨바꼭질 하자.', 2000);
+    await this.tw.wait(1.4); if (this.dead) return;
+    await this.hideLesson(); if (this.dead) return;
+    this.setMode('lobby');
+    const L = SCRIPT.HOME_TUT?.callMe; this.say(bun, L ? tr(L.text) : '또 불러 줘! 언제든 놀러 올게.', 2200);
+    await this.tw.wait(1.8); if (this.dead) return;
+    bun.faceTo(d.x, d.z); await bun.walkTo(this.tw, d.x, d.z); if (this.dead) return;
+    this.room.group.remove(bun.root); this.guest = null;
+    G.ui.toast('꾸미기 → 친구에서 토순이를 부를 수 있어', 'green');
+    this.busyTut = false; this.setMode('lobby');
     this.playBtn?.classList.add('pulse');
   }
   // the hide lesson (HOME_TUT): hide one thing, 토순이 counts and looks for it. In the room's opening, or — when the room opened

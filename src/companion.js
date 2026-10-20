@@ -3,6 +3,7 @@
 // the other characters. It is never pickable, so it can't block a tap on a hidden thing behind it.
 import * as THREE from 'three';
 import { Char, CHAR_DEFS } from './gfx/chars.js';
+import { ECON, ownedFriends } from './econ.js';
 
 // Between two rooms of a map you pass only through a doorway or an open side — never through a wall (the walk grid,
 // the boss runner and the seeker's eyes all use this; before, everyone walked and looked straight through walls).
@@ -129,7 +130,7 @@ export class Companion {
     // 같이 다니는 친구 (10/19, user OK; 스토리 룸): 몽글이 always walks — the script's 몽글이 lines stay on 몽글이 — and the friend
     // picked in the 도감 (save.hero) walks beside it. A friend who is in this stage already (its host, a friend hiding here)
     // stays home that day: never two of the same one in a room.
-    const want = CHAR_DEFS[G.save.hero] && G.save.hero !== 'mong' ? G.save.hero : null;
+    const want = CHAR_DEFS[G.save.hero] && G.save.hero !== 'mong' && (!ECON || ownedFriends(G.save.home).has(G.save.hero)) ? G.save.hero : null;   // (친구 부르기: a friend you've called home)
     const cast = new Set((others?.() || []).map(c => c?.kind).filter(Boolean));
     this.ch = new Char('mong'); this.on = true; this.busy = false; this.wait = .6;
     // (10/19 user: 2판 몽글이 started on top of 토순이 — it stays where it starts since v144, so start a body's width or more

@@ -783,8 +783,8 @@ export const DO = {
   zoom: K('두 손가락을 벌려 크게 보기', 'Spread two fingers to zoom in'),
   move: K('끌어서 둘러봐', 'Drag to look around'),
   // 이동 중 톡 회전 수업 (user 10/19: 튜토리얼에 꼭, 더 이르게; 발동되면 십자 가운데가 중심이라고) — teachftap.js reads these
-  ftap: K('끌면서 다른 손가락으로 터치!', 'Drag, then tap with another finger!'),
-  ftapOn: K('십자 가운데를 중심으로 빙글', 'It spins around the cross'),
+  ftap: K('끌다가 터치하면 빙글', 'Drag, then tap to spin'),
+  ftapOn: K('십자 가운데로 빙글', 'Spins around the cross'),
   moveE: K('✥ 이동을 터치하고, 끌어서 옆으로 가 봐', 'Tap ✥ Move, then drag'),
 };
 // ── 엄마 몰래 야식, 첫째 밤: the practice the first time (bosses/yasik.js; GPT 안 10/18). The same rules: one action, over

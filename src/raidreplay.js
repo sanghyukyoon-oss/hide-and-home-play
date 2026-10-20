@@ -47,8 +47,30 @@ export function goRevenge(G, who) {
 function tally(S, ev) {
   const rp = ev.rp, partOf = e => e.free ? e.free.part || (e.free.host?.startsWith?.('p:') ? e.free.host.slice(2) : null) : S.spotByKey[e.spot]?.part?.key;
   const kept = rp.items.filter(e => !e.found), byLock = kept.filter(e => { const k = partOf(e); return k && rp.locks[k]; });
-  const left = rp.items.filter(e => e.found && e.item !== ev.item).length;   // found, but a raid takes one thing
-  return { kept: kept.length, byLock: byLock.length, left, total: rp.items.length };
+  const left = rp.items.filter(e => e.found && !e.by && e.item !== ev.item).length;   // found, but a raid takes one thing
+  const byFriend = rp.items.filter(e => e.by).length;   // 친구 지킴이 (10/20)
+  return { kept: kept.length, byLock: byLock.length, byFriend, left, total: rp.items.length };
+}
+
+// 친구 지킴이 (10/20): the friend sitting at home hops over to the thief, "안 돼! 몽글이 거야!", the thief backs off; back to the seat
+async function friendBlock(S, k, thief, g, tw, live, floatAt) {
+  const G = S.G, fr = (S.seated || []).find(s => s.k === k), tp = thief.root.position;
+  floatAt(g, '친구가 막았다!', 'pink big');
+  if (!fr) { S.say(thief, '앗! 친구가 지키고 있었어?', 1200); await tw.wait(1.2); return; }
+  const c = fr.ch, p = c.root.position, home = p.clone(), a = Math.atan2(p.x - tp.x, p.z - tp.z);
+  const to = { x: tp.x + Math.sin(a) * .62, z: tp.z + Math.cos(a) * .62 };
+  G.audio.sfx('pop', 4);
+  await tw.run(.4, k2 => { p.x = home.x + (to.x - home.x) * k2; p.z = home.z + (to.z - home.z) * k2; p.y = home.y + Math.sin(k2 * Math.PI) * .5; });
+  if (!live()) { p.copy(home); return; }
+  c.faceTo(tp.x, tp.z); c.setFace?.('angry'); c.bump?.(.4); S.say(c, '안 돼! 몽글이 거야!', 1200);
+  thief.setFace('sad'); thief.bump?.(.35);
+  const t0 = tp.clone(), back = { x: tp.x - Math.sin(a) * .35, z: tp.z - Math.cos(a) * .35 };
+  await tw.run(.3, k2 => { tp.x = t0.x + (back.x - t0.x) * k2; tp.z = t0.z + (back.z - t0.z) * k2; });
+  S.say(thief, '앗!', 700);
+  await tw.wait(.9);
+  c.setFace?.('happy');
+  await tw.run(.4, k2 => { p.x = to.x + (home.x - to.x) * k2; p.z = to.z + (home.z - to.z) * k2; p.y = home.y + Math.sin(k2 * Math.PI) * .4; });
+  p.copy(home);
 }
 
 export async function playRaidReplay(S, ev) {
@@ -58,7 +80,7 @@ export async function playRaidReplay(S, ev) {
   if (rp.zone && rp.zone !== S.zoneId && G.zoneOpen(rp.zone)) S.switchZone(rp.zone);
   // the stage: no buttons, no 몽글이 (you were out), the whole room in view
   if (S.col) S.col.style.visibility = 'hidden';
-  const away = [S.mong, ...(S.seated || []).map(s => s.ch)].filter(Boolean); for (const c of away) c.root.visible = false;
+  const away = [S.mong].filter(Boolean); for (const c of away) c.root.visible = false;   // (몽글이만 외출 — 친구들은 집을 지켜요, 10/20)
   S.busyTut = true; S.visitors?.drop();
   const messed = new Set(messHere(S)); for (const p of messed) { p.setOpen(0); p.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; }); }   // (털린 흔적: shut until the resident opens them)
   const joy0 = W.joyHidden; W.joyHidden = true;
@@ -88,7 +110,9 @@ export async function playRaidReplay(S, ev) {
   }
   const taken = ev.kind === 'steal' ? visits.find(v => v.e.item === ev.item) : null;
   const misses = visits.filter(v => !v.e.found).sort(() => Math.random() - .5);
-  const seq = [...misses.filter(v => v.locked).slice(0, 1), ...misses.filter(v => !v.locked)].slice(0, taken ? 3 : 4);
+  const guarded = visits.filter(v => v.e.by).slice(0, 4);   // 친구 지킴이: found, and a friend stepped in
+  const seq = [...misses.filter(v => v.locked).slice(0, 1), ...misses.filter(v => !v.locked)].slice(0, Math.max(1, (taken ? 3 : 4) - guarded.length));
+  seq.push(...guarded.sort(() => Math.random() - .5));
   if (taken) seq.push(taken);
   // the resident
   const ch = new Char(ev.face), room = S.room;
@@ -150,6 +174,11 @@ export async function playRaidReplay(S, ev) {
       ch.setFace('happy'); S.say(ch, '헤헤, 이건 내 거~', 1200);
       await tw.wait(1.1);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
+    } else if (v.e.by) {   // found — and a friend at home jumps in (친구 지킴이)
+      ch.setFace('wow'); S.say(ch, '찾았다!', 800); G.audio.sfx('found', 2);
+      await tw.wait(.6); if (!live()) break;
+      await friendBlock(S, v.e.by, ch, v.it.g, tw, live, floatAt);
+      if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
     } else {   // right there, and never noticed
       ch.setFace('sad'); S.say(ch, v.part ? '없네?' : '여긴 없네~', 1000); floatAt(v.it.g, '안 들킴!', 'green');
       await tw.wait(1.0);
@@ -185,6 +214,7 @@ function replayCard(S, ev) {
   const row = (k, v, cls = '') => h('div', { class: 'lrow ' + cls }, h('span', { class: 'k' }, k), h('b', {}, v));
   const rows = [row('안 들킴', `${t.kept}개`, 'good')];
   if (t.byLock) rows.push(row('자물쇠가 막음', `${t.byLock}개`, 'good'));
+  if (t.byFriend) rows.push(row('친구가 막음', `${t.byFriend}개`, 'good'));
   if (t.left) rows.push(row('들켰지만 두고 감', `${t.left}개`));
   if (stole) rows.push(row('털림', ITEMS[ev.item]?.name || '물건', 'bad'));
   G.ui.panel({

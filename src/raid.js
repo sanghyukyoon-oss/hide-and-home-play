@@ -8,12 +8,17 @@
 import { RESIDENTS } from './net.js';
 import { ITEMS } from './gfx/items.js';
 import './i18n-raid.js';   // the raid's English (10/20)
+import { seatedAll } from './econ.js';   // 친구 지킴이: 방에 앉은 친구들 (10/20)
+import { CHAR_DEFS } from './gfx/chars.js';
 
 const FIRST_DELAY = 3 * 60e3;        // the first raid comes soon after you first hide something
 const EVERY = 4 * 3600e3;            // then about every four hours you are away
 const REVENGE = 5 * 60e3;            // rob a resident and they come round for revenge soon after
 const MAX_CATCHUP = 2;               // at most this many raids are counted for one absence
 const ROB_COOLDOWN = 6 * 3600e3;     // one grab per room per six hours
+// 친구 지킴이 (10/20 user: "친구 넣으면 친구가 침입당할 때 한 번 찾는 거 방해"): each friend sitting in my room stops one find a raid,
+// in the order they sat; the stopped thing stays. Tune the most a raid can be stopped here (shelves, 5 hidden, 0~4 friends: 97/81/50/19/3%).
+export const FRIEND_BLOCK_MAX = 4;
 const SHIELD = 8 * 3600e3;           // 문단속 (Clash's shield, 10/19): robbed once, nobody comes for eight hours
 // some noses are better than others
 const NOSE = { shiba: .15, nerd: .1, grumpy: .05, hamster: .05, skater: 0, panda: 0, frog: -.05, sleepy: -.15 };
@@ -67,11 +72,16 @@ function raidOnce(G, now) {
     if (Math.random() < Math.max(.08, Math.min(.85, p))) found.push(e.item);
   }
   const ev = { at: now, who: id, nick: who.nick, face: who.face, revenge, seen: false };
+  // 친구 지킴이: each friend at home stops one of the finds (a random one), up to FRIEND_BLOCK_MAX
+  const guards = [...seatedAll(H)].filter(k => CHAR_DEFS[k]).slice(0, FRIEND_BLOCK_MAX), blockedBy = {};
+  for (const it of found.slice().sort(() => Math.random() - .5)) { const k = guards[Object.keys(blockedBy).length]; if (!k) break; blockedBy[it] = k; }
+  const taken = found.filter(it => !blockedBy[it]);
+  if (Object.keys(blockedBy).length) ev.blocked = Object.values(blockedBy);
   // ① 털림 다시 보기 (10/19): what was hidden where and what this resident found — raidreplay.js plays it back in my room
-  ev.rp = { zone: H.hide.zoneId, locks: { ...locks }, items: hid.map(e => ({ item: e.item, ...(e.free ? { free: e.free } : { spot: e.spot }), found: found.includes(e.item) })) };
-  if (found.length) {
-    const item = found[Math.floor(Math.random() * found.length)];
-    ev.kind = 'steal'; ev.item = item; ev.coins = (hid.length - found.length) * 10;
+  ev.rp = { zone: H.hide.zoneId, locks: { ...locks }, items: hid.map(e => ({ item: e.item, ...(e.free ? { free: e.free } : { spot: e.spot }), found: found.includes(e.item), ...(blockedBy[e.item] ? { by: blockedBy[e.item] } : {}) })) };
+  if (taken.length) {
+    const item = taken[Math.floor(Math.random() * taken.length)];
+    ev.kind = 'steal'; ev.item = item; ev.coins = (hid.length - taken.length) * 10;
     // it really goes: out of the hiding place, the drafts and my collection, into their room until I take it back
     H.hide.items = H.hide.items.filter(x => x.item !== item);
     for (const d of Object.values(H.drafts || {})) if (d?.items) d.items = d.items.filter(x => x.item !== item);
@@ -89,7 +99,9 @@ function raidOnce(G, now) {
 export const unseen = save => raidOf(save).log.filter(e => !e.seen);
 export function markSeen(G) { for (const e of raidOf(G.save).log) e.seen = true; G.persist(); }
 export function newsLine(e) {
-  if (e.kind === 'steal') return `${ga(e.nick)} ${e.revenge ? '복수하러 와서 ' : ''}${eul(ITEMS[e.item]?.name || '물건')} 털어 갔어!` + (e.coins ? ` (못 찾은 물건 덕에 +${e.coins})` : '');
+  const fr = (e.blocked || []).map(k => CHAR_DEFS[k]?.name).filter(Boolean);
+  if (e.kind === 'steal') return `${ga(e.nick)} ${e.revenge ? '복수하러 와서 ' : ''}${eul(ITEMS[e.item]?.name || '물건')} 털어 갔어!` + (fr.length ? ` (친구가 ${fr.length}개 막아 줌)` : e.coins ? ` (못 찾은 물건 덕에 +${e.coins})` : '');
+  if (fr.length) return `${ga(e.nick)} 왔다가 ${fr.join('·')}한테 막혀서 하나도 못 가져갔어! +${e.coins}`;
   return `${ga(e.nick)} ${e.revenge ? '복수하러 왔다가' : '몰래 왔다가'} 하나도 못 찾고 갔어! +${e.coins}`;
 }
 

@@ -102,6 +102,8 @@ const PAT = [
   [/^올린 방: (.*?) · 물건 (\d+)개 \(연습 모드에선 나만 볼 수 있어요\)$/, (a, b) => `Posted: ${a} · ${b} things (only you can see it in practice mode)`],
   [/^내 방에 놀러 온 사람 (\d+)명 · 도전 (\d+)번 · 다 찾음 (\d+) · 못 찾음 (\d+)$/, (a, b, c, d) => `Visitors ${a} · tries ${b} · found all ${c} · gave up ${d}`],
   [/^보상 \+(\d+)$/, n => `Reward +${n}`],
+  // 친구 부르기 (경제, 10/20)
+  [/^코인 (\d+)개 더 모으면 부를 수 있어$/, n => `${n} more coins and you can call them`],
   // 선물 상자 (경제, 10/20)
   [/^자물쇠 (\d+)개째! 숨기기에서 서랍을 잠가 봐$/, n => `Padlock no. ${n}! Lock a drawer when you hide things`],
   [/^(.+) · 숨기기에서 집에 숨겨 봐$/, n => `${n} · hide it at home`],

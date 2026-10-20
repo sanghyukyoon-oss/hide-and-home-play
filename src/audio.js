@@ -29,16 +29,19 @@ export const SFX_FILES = Object.fromEntries(SFX_SET.map(n => [n, 'audio/sfx/' + 
 // pitch: 연달아 찾을수록 음이 올라감(코드 소리처럼) · vary: 칠 때마다 높이가 조금씩 달라짐(빠르게 반복되는 소리)
 Object.assign(SFX_FILES, {
   found: { src: 'audio/sfx/found.mp4', pitch: true }, pop: { src: 'audio/sfx/pop.mp4', pitch: true }, star: { src: 'audio/sfx/star.mp4', pitch: true },
-  ratchet: { src: 'audio/sfx/ratchet.mp4', vary: .1 }, tap: { src: 'audio/sfx/tap.mp4', vary: .05 }, tick: { src: 'audio/sfx/tick.mp4', vary: .03 },
+  tap: { src: 'audio/sfx/tap.mp4', vary: .05 }, tick: { src: 'audio/sfx/tick.mp4', vary: .03 },
   coin: { src: 'audio/sfx/coin.mp4', vary: .06 }, hop: { src: 'audio/sfx/hop.mp4', vary: .08 },
+  // (10/20 user: "회전 효과음은 예전 게 더 나은 것 같다") the camera turn's tick is the code sound again
+  ratchet: null,
   bloom: null,   // 흑백판 끝 색이 번질 때 '뾰로롱' (디자인 10/20): 파일 자리 — tools/sound/sfx-prompts.tsv 의 bloom 줄로 만든 audio/sfx/bloom.mp4 를 넣으면 'audio/sfx/bloom.mp4' 로. 그 전엔 코드 소리
   mugunghwa: null,   // 무궁화 꽃이 피었습니다 첫 구호 (Suno·Google 파일이 있을 때만 — 없으면 너굴이 목소리로 한 글자씩)
 });
 // 가구 재질: 부분의 이름표(label)로 정한다 — 첫 번째로 맞는 줄. 없으면 나무(기본 소리).
+// (10/20 user, 1판: "쓸모없이 깡깡하는 이상한 소리" — the room's bins are plastic, but 휴지통 was listed as metal)
 const MAT = [
   ['fabric', /수건|담요/],
-  ['plastic', /김치냉장고|장난감|아이스박스|복합기|턴테이블|라바콘|러버콘|트렁크|양동이|바가지|미끄럼틀|꺼내는 곳|어항|쓰레기 봉투|방수포|BINS/],
-  ['metal', /금고|냉장고|냉동|자판기|동전|우편함|우체통|실외기|보일러|세탁기|공구함|도구함|캐비닛|맨홀|밥솥|코펠|냄비|솥|그릴|셔터|유치장|순찰차|대문|옥상|돈통|정수기|찜기|분필|휴지통|우유 투입함|에어컨|엘리베이터/],
+  ['plastic', /김치냉장고|장난감|아이스박스|복합기|턴테이블|라바콘|러버콘|트렁크|양동이|바가지|미끄럼틀|꺼내는 곳|어항|쓰레기 봉투|방수포|BINS|휴지통/],
+  ['metal', /금고|냉장고|냉동|자판기|동전|우편함|우체통|실외기|보일러|세탁기|공구함|도구함|캐비닛|맨홀|밥솥|코펠|냄비|솥|그릴|셔터|유치장|순찰차|대문|옥상|돈통|정수기|찜기|분필|우유 투입함|에어컨|엘리베이터/],
   ['paper', /택배|작품 상자|소원 상자|짐칸 상자|장식 상자|^상자|포스터|전단지|차트|신문지/],
   ['wicker', /바구니/],
   ['ceramic', /단지|화분|변기/],

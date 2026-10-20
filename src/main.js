@@ -141,7 +141,9 @@ registerOutdoorShop(OUTDOOR_INFO);
 
 const KEY = 'sumbakkokjip.v1';
 // (경제·로비 on: 몽글이's room starts as a rug and 몽글이, nothing else — 설계서 2-2)
-const starterOf = id => ECON && id === 'room1' ? STARTER[id].filter(f => f.type === 'rug') : STARTER[id] || [];
+// (경제·로비: 몽글이's room starts with its rug and one chest of drawers — the hide lesson and the padlocks need a drawer; it's the
+// room's own, not a gift — 10/20 user "바로 선물 주네", the housewarming pick is gone)
+const starterOf = id => ECON && id === 'room1' ? STARTER[id].filter(f => f.type === 'rug' || f.type === 'drawers') : STARTER[id] || [];
 // (경제·로비: a room with walls — 10/20 user "그냥 방으로 하자")
 const newZone = id => { const z = HOME_ZONES.find(x => x.id === id); return { id, type: z.type, name: z.name, ...(z.type === 'room' ? { style: ECON ? 'st-classic' : 'st-open' } : {}), furniture: starterOf(id).map((f, i) => ({ ...f, id: id + '-' + i })), paint: {} }; };
 const defaultHome = () => ({ zones: { room1: newZone('room1') }, current: 'room1', inventory: ECON ? [] : ['wardrobe'], bought: [], owned: { wall: [], floor: [] }, hide: { zoneId: 'room1', items: [], locks: {}, code: null }, published: null, claimedFails: 0 });

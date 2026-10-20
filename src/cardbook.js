@@ -10,6 +10,7 @@ import { STORY_ITEMS } from './gfx/story-props.js';
 import { renderThumbs } from './thumbs.js';
 import { diaryLine, learnedCards, BOOK, HABIT_LINE, diarySecret, secretOpen, SECRET_UI, inkyNamed } from './script.js';
 import { tr } from './i18n.js';
+import { ECON, ownedFriends } from './econ.js';
 
 const ART = {};
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };   // key → data URL, filled per tab
@@ -106,8 +107,10 @@ function zoom(c, G) {
   // a friend card can be made your own character: it walks with you in stages and hides in the boss stages
   const kind = c.id.startsWith('c:') ? c.id.slice(2) : null, isHero = kind && (G.save.hero || 'mong') === kind;
   // 같이 다니는 친구 (10/19): the friend you pick walks beside 몽글이 in the stages (companion.js); 몽글이 stays the hero
-  const heroBtn = kind ? G.ui.btn(kind === 'mong' ? (isHero ? '혼자 다니는 중' : '혼자 다니기') : isHero ? '같이 다니는 중' : '같이 다니기', { color: isHero ? 'gray' : 'pink', cls: 'sm', disabled: isHero,
-    onClick: dis => { if (dis) return; G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(kind === 'mong' ? '이제 몽글이 혼자 다녀요' : `이제 ${ga(c.name)} 같이 다녀요!`, 'green'); layer.remove(); } }) : null;
+  // (친구 부르기 10/20, 레벨 세션: only a friend you've called home walks along — one you haven't wouldn't be with you)
+  const notMine = ECON && kind && kind !== 'mong' && !isHero && !ownedFriends(G.save.home).has(kind);
+  const heroBtn = kind ? G.ui.btn(kind === 'mong' ? (isHero ? '혼자 다니는 중' : '혼자 다니기') : isHero ? '같이 다니는 중' : notMine ? '집에 부르면 같이 다녀' : '같이 다니기', { color: isHero || notMine ? 'gray' : 'pink', cls: 'sm', disabled: isHero || notMine,
+    onClick: dis => { if (dis) { if (notMine) G.ui.toast('꾸미기 → 친구에서 먼저 집에 불러 줘', ''); return; } G.save.hero = kind; G.persist(); G.audio.sfx('special'); G.ui.toast(kind === 'mong' ? '이제 몽글이 혼자 다녀요' : `이제 ${ga(c.name)} 같이 다녀요!`, 'green'); layer.remove(); } }) : null;
   // 몽글이's diary line for this friend: the tell, the promise
   const line = kind && diaryLine(kind);
   // R2: how this friend hides — '???' until you've found them hiding twice, then their habit fills in (three never came in

@@ -3670,6 +3670,16 @@ export const EN = {
 "후다닥 말고 살금살금!": "Tiptoe, don't scurry!",
 "떨어진 간식 위로 가면 주워요": "Walk onto a dropped snack to pick it up",
 "후다닥하면 간식이 흔들려!": "Scurry and the snacks wobble!",
+// 친구 부르기 (경제, 10/20)
+"판에서 친구를 만나면 여기서 집에 부를 수 있어요": "Friends you meet in stages can be called home from here",
+"친구 자리 4개가 다 찼어": "All 4 friend seats are taken",
+"앉은 친구를 상자에 넣으면 자리가 나": "Put a seated friend in the box to free a seat",
+"와, 몽글이 방이다! 숨바꼭질 하자.": "Wow, Mongle's room! Let's play hide-and-seek.",
+"또 불러 줘! 언제든 놀러 올게.": "Call me again! I'll come over anytime.",
+"꾸미기 → 친구에서 토순이를 부를 수 있어": "You can invite Bunbun from Decorate → Friends",
+"꾸미기 → 친구": "Decorate → Friends",
+"집에 부르면 같이 다녀": "Invite them home to walk together",
+"꾸미기 → 친구에서 먼저 집에 불러 줘": "Invite them home first from Decorate → Friends",
 // 선물 상자 (경제, 10/20)
 "서랍 잠그기": "Lock a drawer",
 "자물쇠": "Padlock",

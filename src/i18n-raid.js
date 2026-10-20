@@ -1,7 +1,7 @@
 // 털기 메타의 영어 (10/20 — Discovery 26-4 needs English + Korean; the raid's own words were left Korean on the English screen).
 // 타이머 털기 · 정찰 · 다시 보기 · 문단속 · 털린 흔적 · 자물쇠: exact lines here, sentences with names and numbers as patterns.
 // (A name capture never takes in ' · ', so a line made of pieces is still split and translated piece by piece.)
-import { addI18n } from './i18n.js';
+import { addI18n, tr } from './i18n.js';
 
 const S = 's';
 addI18n({
@@ -28,6 +28,8 @@ addI18n({
   '셋 다 숨겼어! 곧 너굴이가 찾아': 'All three hidden! Rocky starts looking soon', '조이스틱으로 움직이고, 휘슬로 엉뚱한 데로!': 'Move with the stick, whistle to lure it away!', '비켜~': 'Scoot~',
   '너굴이가 눈 감고 기다리는 동안 숨길 곳을 터치! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.': 'While Rocky waits with eyes shut, tap a hiding place! In a drawer, behind a curtain, on a shelf… it pops right in where you tap.',
   '찾기 시작하면 조이스틱으로 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!': 'Once it starts looking, move with the stick — blow the whistle and Rocky runs my way instead!',
+  // 친구 지킴이 (10/20)
+  '친구가 막았다!': 'A friend stopped it!', '안 돼! 몽글이 거야!': "No! That's Mongle's!", '앗!': 'Eek!', '앗! 친구가 지키고 있었어?': 'Eek! A friend was on guard?', '친구가 막음': 'Stopped by friends',
   '자물쇠': 'Padlock', '서랍을 잠가 지켜': 'lock a drawer to guard it',
 }, [
   // the raid news (raid.js newsLine): revenge first, so the plain one doesn't take "복수하러 와서 …" for a name
@@ -36,6 +38,8 @@ addI18n({
   // 타이머 털기
   [/^([^·]+?)[이가] (\d+) 셀 동안 털어라!$/, (n, t) => `Raid it before ${n} counts to ${t}!`],
   [/^(\d+)개 털었어$/, n => `Took ${n}`],
+  [/^([^·]+?)[이가] (?:복수하러 와서 )?([^·]+?)[을를] 털어 갔어! \(친구가 (\d+)개 막아 줌\)$/, (n, it, k) => `${n} took ${it}! (friends stopped ${k})`],
+  [/^([^·]+?)[이가] 왔다가 (.+?)한테 막혀서 하나도 못 가져갔어! \+(\d+)$/, (n, f, c) => `${n} came, but ${f.split('·').map(x => tr(x)).join(' & ')} stopped them — nothing taken! +${c}`],
   [/^아직 ([^·]+?)[이가] 내 물건 (\d+)개를 갖고 있어\. 다시 털러 오자!$/, (n, k) => `${n} still has ${k} of mine. Come back for ${+k > 1 ? 'them' : 'it'}!`],
   [/^([^·]+?)[이가] 복수하러 올지도!$/, n => `${n} might come for revenge!`],
   // 정찰

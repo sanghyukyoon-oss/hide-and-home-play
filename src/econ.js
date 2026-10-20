@@ -75,7 +75,20 @@ export function metFriends(save) {
 }
 // seats in a zone: 3, and one more for each of the first three room sizes (max 6) — 설계서 2-4 (사용자 결정 3, 추천값)
 // (검토 P0 10/19: 4 first seats — 1장's four hosts 토순·개굴·펭·곰 all sit down in 1~10판; 방 넓히기 is for 2장's friends on)
-export const seatsOf = zone => 4 + Math.min(zone?.size || 0, 3);
+// 친구 부르기 (10/20, user: "처음부터 친구 하지 말고 친구도 돈 줘야 소환되게 해 줘. 아이템처럼. 친구 슬롯을 최대 4개고 …"): 4 seats,
+// whatever the room's size; a friend comes home when you call them (coins, once — then they're yours to seat or box)
+export const seatsOf = zone => ECON ? 4 : 4 + Math.min(zone?.size || 0, 3);
+export const FRIEND_PRICE = [120, 200, 280, 360, 440, 520, 600];   // by the chapter you met them in
+// the stage whose clear brought this friend (its host, a 너굴이 timed stage, a stage's own gift such as 11판's 냥냥이)
+export function friendMetAt(k) {
+  for (let i = 0; i < STAGE_COUNT; i++) { const sp = stageSpec(i); if ((sp.timed ? 'raccoon' : THEMES[sp.room]?.friend) === k || CHAR_UNLOCK[i] === k) return i; }
+  return 0;
+}
+export const friendPrice = k => FRIEND_PRICE[Math.min(FRIEND_PRICE.length - 1, Math.max(0, REGIONS.indexOf(regionOf(friendMetAt(k)))))];
+// yours: called before (sitting somewhere, or in the friend box)
+export const ownedFriends = H => new Set([...seatedAll(H), ...(H.friendBox || [])]);
+// met in a cleared stage and not called yet
+export const callableFriends = save => metFriends(save).filter(k => k !== 'inky' && !ownedFriends(save.home).has(k));
 export const seatedAll = H => new Set(Object.values(H.zones).flatMap(z => (z.friends || []).map(f => f.k)));
 
 // ── 장 끝 상자 (설계서 4-2, 사용자 결정 2 추천값): after a chapter's last stage, the first time, pick one of three pieces from

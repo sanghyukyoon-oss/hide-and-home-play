@@ -1928,3 +1928,4 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .tpin.drop { animation: pindrop .45s cubic-bezier(.2, 1.6, .4, 1); }
 @keyframes pindrop { 0% { transform: translate(-50%, -160%) scale(.4); opacity: 0; } 100% { transform: translate(-50%, -100%) scale(1); opacity: 1; } }
 .tpin.lost { filter: grayscale(1) opacity(.55); }
+.ftxt.pink { color: #ffb3d1; }   /* 친구가 막았다! (털기 친구 지킴이 10/20) */

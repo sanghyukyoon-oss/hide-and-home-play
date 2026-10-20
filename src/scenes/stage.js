@@ -53,7 +53,8 @@ const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
 // friend peeking — an optional find) and the 몰래 숨기 v2 prototype (?hide=2, r1v2.js; off unless asked for)
 import { blindFor } from '../hunt-blind.js';
-import { PICKS, pickPanel, takePick, takeGiftPick, metFriends } from '../econ.js';   // 경제·로비 (10/19)
+import { PICKS, pickPanel, takePick, takeGiftPick, metFriends, callableFriends, friendPrice } from '../econ.js';
+import * as SCRIPT_ALL from '../script.js';   // (callResult: the stage result's '이제 ○○를 집에 부를 수 있어 · 120' — 스토리 룸)   // 경제·로비 (10/19)
 import { giftChoices, giftPanel, grantGift, giftName, openStarGifts } from '../gifts.js';   // 선물 상자: 특별한 것·자물쇠 (10/20)
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac, cameoKind, moveItem } from '../hunt.js';
 import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
@@ -2851,6 +2852,8 @@ export class StageScene {
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
+        // 친구 부르기 (10/20): a friend met in this clear can be called home now — one line, its face and price (no scene)
+        ...(metBefore && G.homeOpen?.() ? callableFriends(G.save).filter(k => !metBefore.has(k)) : []).map(k => h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, h('b', {}, SCRIPT_ALL.callResult ? SCRIPT_ALL.callResult(k, friendPrice(k)) : `${CHAR_DEFS[k]?.name || ''} · ${friendPrice(k)}`), h('div', {}, '꾸미기 → 친구')))),
         ...(picked ? [h('div', { class: 'memento tile gift' }, picked.kind === 'thing' ? h('img', { src: G.thumbs['item_' + picked.t] }) : picked.kind === 'decor' ? h('img', { src: G.thumbs['furn_' + picked.t] }) : h('div', { style: 'width:56px;height:56px;display:grid;place-items:center', html: picked.kind === 'lock' ? ICON.lock : ICON.coin }), h('div', {}, h('b', {}, '고른 선물!'), h('div', {}, picked.line || giftName(picked))))] : []),
         ...(seenN ? [seenRow(G, seenNew)] : []),
         ...(!PASSAGE_EVERY && gotNow.length ? [homeRow(G, gotNow)] : []),   // (rooms only on a box: what went home this time, on its way)   // (the things found here for the first time, as pictures with NEW — was '도감 +3', 경제·로비 10/19)
