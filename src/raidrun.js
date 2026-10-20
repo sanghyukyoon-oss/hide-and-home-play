@@ -8,6 +8,7 @@ import { h, ICON } from './ui.js';
 import { ITEMS } from './gfx/items.js';
 import { retrieve, canGrab } from './raid.js';
 import { lensClear } from './lens.js';
+import { raidXp, addRaidXp, lvOf } from './level.js';   // 털면 Lv이 올라요 (10/20)
 
 // what a raid pays (a room raided before pays a third). A full clear of 5 things is about what the old win paid (40+15n+…).
 export const RAID = { find: 15, treasure: 40, star: 15, back: 20 };
@@ -85,6 +86,7 @@ export async function raidSettle(S, why) {
   const starCoins = val(S, RAID.star) * starN;
   const res = G.onVisitResult(S.custom, all, found.length, n, R.bag + starCoins, true);
   const back = retrieve(G, S.custom, found.map(t => t.type));
+  const xp = raidXp(found.length, starN, !!tre?.found, R.rate), lu = addRaidXp(G.save, xp); G.persist();
   await S.tw.wait(1.3);
   if (S.dead) return;
   // one thing pocketed from what was found
@@ -108,6 +110,8 @@ export async function raidSettle(S, why) {
       h('div', { class: 'starwhy' }, ...['★ 절반', '★ 보물', '★ 전부'].map((t, i) => h('span', { class: stars[i] ? 'on' : '' }, t))),
       h('div', { class: 'loottab' }, ...rows),
       h('div', { class: 'reward', html: ICON.coin }, cv),
+      // 내 Lv: the XP this raid gave, the bar filling, Lv.UP when it tips over
+      (() => { const L = lvOf(G.save); return h('div', { class: 'xpline' + (lu.up ? ' up' : '') }, h('b', { class: 'xplv ol' }, `Lv.${L.lv}`), h('div', { class: 'xpbar' }, h('i', { style: `width:${Math.round(L.into / L.need * 100)}%` })), h('span', { class: 'xpn' }, `경험치 +${xp}`), ...(lu.up ? [h('span', { class: 'xpup ol' }, 'Lv.UP!')] : [])); })(),
       ...(R.repeat ? [h('div', { class: 'txt' }, '전에 몽땅 턴 집이라 ⅓만 나와요')] : []),
       ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),
       ...(left.length ? [h('div', { class: 'txt' }, `아직 ${ga(ownerOf(S))} 내 물건 ${left.length}개를 갖고 있어. 다시 털러 오자!`)] : []),
@@ -131,6 +135,9 @@ export async function raidSettle(S, why) {
 // [털러 가기] starts the raid right here (no reload); [다음 집] opens the next house on the list; [목록] goes back.
 let LIST = [];
 export const setScoutList = rooms => { LIST = rooms || []; };
+// [다른 집]: what looking again costs (free while you have less — never stuck with one house)
+export const NEXT_COST = 10;
+const nextCost = G => G.save.coins >= NEXT_COST ? NEXT_COST : 0;
 const sameRoom = (a, b) => a === b || (a.practice ? a.id === b.id : a.owner && a.owner === b.owner);
 export function raidScout(S) {
   const G = S.G, W = G.world, ui = G.ui, R = S.raidRun, C = S.custom;
@@ -172,13 +179,19 @@ export function raidScout(S) {
     };
     const card = h('div', { class: 'panel scout' },
       h('div', { class: 'ribbon purple ol3' }, '정찰'),
-      h('div', { class: 'shead' }, h('img', { src: G.thumbs['face_' + (C.face || S.th.friend)] || G.thumbs.face_mong }), h('div', {}, h('div', { class: 'sname' }, S.th.name), h('div', { class: 'sfacts' }, facts.join(' · ')))),
+      h('div', { class: 'shead' }, h('div', { class: 'sface' }, h('img', { src: G.thumbs['face_' + (C.face || S.th.friend)] || G.thumbs.face_mong }), ...(C.lv ? [h('b', { class: 'slv ol' }, 'Lv.' + C.lv)] : [])), h('div', {}, h('div', { class: 'sname' }, S.th.name), h('div', { class: 'sfacts' }, facts.join(' · ')))),
       h('div', { class: 'slabel' }, '가져올 수 있는 것'),
       h('div', { class: 'stiles' }, ...tiles),
       h('div', { class: 'reward smax', html: ICON.coin }, h('span', {}, `최대 ${max}`)),
       h('div', { class: 'row' },
-        ui.btn('목록', { color: 'gray', cls: 'sm', onClick: () => { end(false); G.go('visit'); } }),
-        ...(next ? [ui.btn('다음 집', { color: 'blue', cls: 'sm', onClick: () => { end(false); G.go('stage', { custom: next, scout: true }); } })] : []),
+        ...(C.found ? [
+          // 털 집 찾기 (10/20): no list to go back to — home, or look for another house (Clash's 'next', a few coins; free while you have fewer)
+          ui.btn('집으로', { color: 'gray', cls: 'sm', onClick: () => { end(false); G.go('home'); } }),
+          h('div', { class: 'snext' }, ui.btn('다른 집', { color: 'blue', cls: 'sm', onClick: () => { const c = nextCost(G); if (c) G.addCoins(-c); end(false); G.go('visit', { again: true }); } }), h('div', { class: 'scost', html: nextCost(G) ? ICON.coin : '' }, nextCost(G) ? String(nextCost(G)) : '무료')),
+        ] : [
+          ui.btn('목록', { color: 'gray', cls: 'sm', onClick: () => { end(false); G.go('visit'); } }),
+          ...(next ? [ui.btn('다음 집', { color: 'blue', cls: 'sm', onClick: () => { end(false); G.go('stage', { custom: next, scout: true }); } })] : []),
+        ]),
         ui.btn('털러 가기', { color: 'green', icon: 'play', cls: 'big', onClick: () => end(true) })));
     const wrap = h('div', { class: 'scoutwrap' }, card);
     ui.hud.append(wrap);

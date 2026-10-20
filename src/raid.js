@@ -4,13 +4,14 @@
 //   save.raid = { next, revenge, log: [{ at, who, nick, face, kind: 'steal'|'fail', item?, coins, seen }],
 //                 stolen: { 'practice-<i>': [item…] }, robbed: { roomKey: time }, loot: [{ item, from, at }],
 //                 shield: time (문단속 until), armStage: the stage count when the first raid was set up }
-// Residents are the characters of the visit list (net.js RESIDENTS) and are always shown as residents, never as players.
+// Who comes round: the residents and the (made-up) players of the ready-made houses (houses.js) — raiders(); robbed, they come back for revenge.
 import { RESIDENTS } from './net.js';
 import { ITEMS } from './gfx/items.js';
 import './i18n-raid.js';   // the raid's English (10/20)
 import { seatedAll } from './econ.js';   // 친구 지킴이: 방에 앉은 친구들 (10/20)
 import { bumpFeat } from './specials.js';   // 스페셜 칸 '털림 막기 N번' (경제 10/20)
 import { CHAR_DEFS } from './gfx/chars.js';
+import { HOUSES } from './houses.js';   // 털 집 찾기 (10/20): the neighbourhood's (made-up) players come round too
 
 const FIRST_DELAY = 3 * 60e3;        // the first raid comes soon after you first hide something
 const EVERY = 4 * 3600e3;            // then about every four hours you are away
@@ -28,6 +29,12 @@ const isTarget = t => t !== 'key' && t !== 'note';
 export const raidOf = save => save.raid || (save.raid = { next: 0, revenge: null, log: [], stolen: {}, robbed: {}, loot: [] });
 export const hiddenTargets = save => (save.home?.hide?.items || []).filter(e => isTarget(e.item));
 export const residentId = i => 'practice-' + i;
+// who comes round: the residents (a resident with a ready-made house as its owner) and every other house's owner
+export function raiders() {
+  const m = RESIDENTS.map((r, i) => ({ id: residentId(i), nick: r.nick, face: r.face }));
+  for (const H of HOUSES) { const o = { id: H.owner.id, nick: H.owner.nick, face: H.owner.face }, k = m.findIndex(x => x.id === o.id); if (k >= 0) m[k] = o; else m.push(o); }
+  return m;
+}
 export const shieldLeft = (save, now = Date.now()) => Math.max(0, (raidOf(save).shield || 0) - now);
 // 자물쇠 사기 (10/19, user via 인수인계: "자물쇠랑 열쇠도 구매 가능하게?"): padlocks for my home are owned, one to start (or
 // as many as already hang there), more from the shop's 물건 tab. Keys are not sold — a bought key would skip the stages'
@@ -61,9 +68,10 @@ export function runRaids(G, { now = Date.now(), force = 0 } = {}) {
 function raidOnce(G, now) {
   const save = G.save, R = raidOf(save), H = save.home, hid = hiddenTargets(save);
   if (!hid.length) return null;
-  let i = R.revenge != null ? R.revenge : Math.floor(Math.random() * RESIDENTS.length);
-  const revenge = R.revenge != null; R.revenge = null;
-  const who = RESIDENTS[i], id = residentId(i);
+  // (an old save keeps a resident's index for revenge; now it's the owner's id)
+  const pool = raiders(), rv = R.revenge; R.revenge = null;
+  const back = rv != null ? pool.find(o => o.id === (typeof rv === 'number' ? residentId(rv) : rv)) : null;
+  const who = back || pool[Math.floor(Math.random() * pool.length)], id = who.id, revenge = !!back;
   const locks = H.hide.locks || {}, nLocks = Object.keys(locks).length;
   const found = [];
   for (const e of hid) {
@@ -134,7 +142,7 @@ export function grab(G, room, item) {
   const isNew = !G.save.collection.includes(item) && !ITEMS[item]?.decoy;
   if (isNew) G.save.collection.push(item); else G.addCoins(25);
   // a resident you robbed comes round for revenge — soon, if there is anything at home to find
-  if (room.resident) { const i = +String(room.id).split('-')[1]; if (Number.isFinite(i)) { R.revenge = i; R.next = Math.min(R.next || Infinity, now + REVENGE); } }
+  if (room.resident) { R.revenge = room.id; R.next = Math.min(R.next || Infinity, now + REVENGE); }
   G.persist();
   return { item, isNew, coins: isNew ? 0 : 25 };
 }

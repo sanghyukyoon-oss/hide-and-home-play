@@ -26,6 +26,7 @@ import { tr, LANG, setLang } from '../i18n.js';
 import { openGallery } from '../gallery.js';
 import { openHelp } from '../controlshelp.js';   // 조작 도움말 (10/20)
 import { BOSS_GAMES } from '../minis.js';
+import { lvOf } from '../level.js';   // 내 Lv: 별 + 털기 (10/20)
 
 // ═════════════════════════════════════════ village kit ═════════════════════════════════════════
 // Every building is a few "parts". A part is one ink-outline shape (userData.og) drawn as 1–3 merged meshes: all plain
@@ -1075,7 +1076,7 @@ export class HomeScene {
   }
   buildHud() {
     const G = this.G, ui = G.ui, col = ui.col(), S = G.save;
-    const lv = 1 + Math.floor((S.stars || 0) / 6);
+    const lv = lvOf(S).lv;   // (털기도 Lv을 올려요 — level.js, 10/20)
     const prof = h('div', { class: 'profile' }, h('div', { class: 'av' }, h('img', { src: G.thumbs.face_mong })), h('div', {}, h('div', { class: 'nm ol' }, '몽글이'), h('div', { class: 'lv' }, `Lv.${lv}`, h('span', { class: 'lvt' }, ' 숨바꼭질 탐정'))));
     // review shortcut: tap the profile 5 times quickly → pick any stage (★ = story stage)
     let taps = [];

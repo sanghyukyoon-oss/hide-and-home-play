@@ -13,6 +13,7 @@ import { practiceRooms } from './net.js';
 import { stolenBy, residentId, shieldLeft, locksOwned, locksUsed, LOCK_PRICE, LOCK_MAX } from './raid.js';
 import { setScoutList } from './raidrun.js';
 import { makePractice } from './scenes/visit.js';
+import { housePool } from './presets.js';
 
 const V = new THREE.Vector3();
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
@@ -36,11 +37,11 @@ export const canReplay = (S, ev) => !!(ev?.rp?.items?.length && S?.room && S.spo
 
 // 복수하러 가기: that resident's house, scouted first (the list for 다음 집 is the neighbourhood, robbers first)
 export function goRevenge(G, who) {
-  const list = practiceRooms((r, i) => makePractice(r, i, stolenBy(G.save, residentId(i))));
-  list.sort((a, b) => (b.stolen?.length || 0) - (a.stolen?.length || 0));
-  setScoutList(list);
+  // (털 집 찾기 10/20: their house — a ready-made one or a resident's — scouted with the search's own buttons)
+  const list = housePool(G, { practiceRooms, makePractice, stolenBy, residentId });
+  setScoutList([]);
   const room = list.find(r => r.id === who);
-  if (room) G.go('stage', { custom: room, scout: true }); else G.go('visit');
+  if (room) G.go('stage', { custom: { ...room, found: true }, scout: true }); else G.go('visit');
 }
 
 // how it went, from the record: things never found, the ones a lock kept, the one taken

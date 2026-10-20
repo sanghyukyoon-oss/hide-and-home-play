@@ -129,8 +129,14 @@ export function zoneLayout(zone) {
   const Z = ZONE_TYPES[zone.type] || ZONE_TYPES.room, st = styleOf(zone), S = zoneSize(zone);
   const base = st?.theme && THEMES[st.theme] ? THEMES[st.theme] : Z.theme;
   const theme = { ...base, ...(zone.paint || {}) };
-  return { w: S.w, d: S.d, theme, furniture: zone.furniture.map(f => ({ ...f })), decor: st?.decor || Z.decor, door: st && 'door' in st ? st.door : Z.door, walls: st?.walls || Z.walls, indoor: Z.indoor, stack: true,
+  return { w: S.w, d: S.d, theme, furniture: zone.furniture.map(f => ({ ...f })), decor: zone.decor || st?.decor || Z.decor, door: zone.door !== undefined ? zone.door : st && 'door' in st ? st.door : Z.door, walls: { ...(st?.walls || Z.walls), ...(zone.walls || {}) }, indoor: Z.indoor, stack: true,
     ...(st?.bleed ? { bleed: {} } : {}) };
+}
+// a house of several rooms joined (털 집 찾기 프리셋, 10/20): { rooms: [{ at: [x, z], ...zone }] } → a map like the stages' two-room homes
+export function houseLayout(zone) {
+  if (!zone.rooms) return zoneLayout(zone);
+  const rooms = zone.rooms.map(z => ({ at: z.at, layout: zoneLayout(z) }));
+  return { theme: rooms[0].layout.theme, bleed: true, rooms };
 }
 // Before a zone changes size, pin every tile-placed piece to its centre-relative position so nothing jumps.
 export function pinZoneFurniture(zone) {

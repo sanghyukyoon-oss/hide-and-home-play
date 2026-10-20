@@ -11,7 +11,7 @@ import { digPatch } from './gfx/outdoor.js';
 import { tvPuzzle } from './gfx/apt-props.js';
 import { applyEdit } from './layedits.js';
 import { planDevice } from './devices.js';
-import { ROOM_POOLS, SOCKS, SOCK_ROOMS } from './pools.js';
+import { ROOM_POOLS, ROOM_FEATURE, SOCKS, SOCK_ROOMS } from './pools.js';
 
 export const THEMES = {
   bunny: { name: '토순이네 침실', friend: 'bunny', bg: ['#fff4ea', '#ffe6d4'], base: '#e8b98c', floorKind: 'planks', floor: '#d9a066', floor2: '#a96c3c', wallKind: 'heart', wall: '#fff7ef', wall2: '#ffb3a3', wainscot: '#bfe3d3', trim: '#ffffff', wallEdge: '#fffaf4',
@@ -897,7 +897,8 @@ export function planStage(room, spec, story = null) {
   // 나옴": 1~20판 103 things were 40 kinds, a star, a ball, a duck, a tangerine and a slipper five times each; stage.js keeps
   // save.recentT)
   const recent = new Set(spec.recentTypes || []), fresh = l => [...l.filter(t => !recent.has(t)), ...l.filter(t => recent.has(t))];
-  const ownT = fresh(ownTurn), turnT = fresh(turn);
+  const feat = (ROOM_FEATURE[spec.room] || []).filter(t => ITEMS[t] && !tool(t) && own.includes(t));
+  const ownT = [...feat, ...fresh(ownTurn).filter(t => !feat.includes(t))], turnT = fresh(turn);
   const targets = [...r.shuffle(ownT.slice(0, ownN)), ...r.shuffle(turnT.slice(0, Math.max(6, spec.n))), ...turnT.slice(Math.max(6, spec.n))].slice(0, spec.n);
   if (spec.force) { targets.unshift(...spec.force); targets.length = Math.min(targets.length, spec.n); }   // 사건 판: the hidden friend's marker comes first, so the first lock guards it
   const placements = [];   // { type, spot, role: 'target'|'key'|'note'|'decoy', code }

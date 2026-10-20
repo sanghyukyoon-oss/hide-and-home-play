@@ -272,7 +272,7 @@ const G = {
     save.coins += awarded;
     G.persist();
     if (!room.practice) recordPlay(room.owner, { found, total, ok });
-    if (ok && !room.practice) bumpFeat(save, 'raids');   // (스페셜 칸's '친구네 털기 N번' — specials.js)
+    if (ok && (!room.practice || room.resident)) bumpFeat(save, 'raids');   // (스페셜 칸's '친구네 털기 N번' — specials.js; every neighbour's house counts, 털 집 찾기 10/20)
     G.stats.visits++; G.stats.log.push({ visit: key, result: ok ? 'clear' : 'fail' });
     return { awarded, repeat: ok && !firstWin };
   },

@@ -16,7 +16,7 @@ import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, l
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
 import { homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
-import { zoneLayout, ZONE_TYPES } from '../catalog.js';
+import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
 import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
@@ -140,13 +140,13 @@ export class StageScene {
       // someone else's room: their furniture, their hiding places, their locks
       const seed = [...String(custom.owner || custom.id)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
       const kinds = ['bunny', 'bear', 'cat', 'peng'];
-      layout = zoneLayout(custom.zone);
+      layout = custom.zone.rooms ? houseLayout(custom.zone) : zoneLayout(custom.zone);   // (a ready-made house may be two rooms — presets.js)
       const count = (custom.hidden || []).filter(e => e.item !== 'key' && e.item !== 'note').length;
       this.idx = -1;
       this.spec = { idx: -1, room: custom.zone.type, time: 40 + count * 12 + (custom.locks?.length ? 12 : 0), n: count, seed, custom: true };
       this.th = { ...layout.theme, name: custom.practice ? `${custom.nick}의 ${custom.title}` : `${custom.ownerName || '누군가'}의 ${custom.title || '방'}`,
         friend: custom.face && CHAR_DEFS[custom.face] && custom.face !== 'mong' ? custom.face : kinds[seed % kinds.length], bg: ZONE_TYPES[custom.zone.type]?.indoor ? ['#fff3e3', '#ffe2c4'] : ['#e4f6ff', '#d6f3d8'] };
-      layout.friendAt = [2.0, 2.0];
+      if (!layout.rooms) layout.friendAt = [2.0, 2.0];
     } else {
       this.idx = idx; this.spec = { ...stageSpec(idx), ...(spec || {}) };
       // (다시 할 때 자리 바꾸기 — 경제 세션 보상 고리, 10/19: a stage you've cleared before deals its things anew each replay,

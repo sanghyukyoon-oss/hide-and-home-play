@@ -5,6 +5,15 @@ import { addI18n, tr } from './i18n.js';
 
 const S = 's';
 addI18n({
+  // 털 집 찾기 (10/20)
+  '냥펀치DJ': 'DJ Cat Punch', 'K팝 연습실': 'K-pop Studio', '내 무대 밟지 마! …숨긴 건 찾아도 돼.': "Don't step on my stage! …The hidden stuff is fair game.",
+  '삼색바리스타': 'Calico Barista', '골목 카페와 부엌': 'Alley Café & Kitchen', '오늘의 원두는… 비밀이야.': "Today's beans are… a secret.",
+  '비 오는 날 연못': 'Rainy Day Pond', '볼주머니 편의점': 'Cheek Pouch Mart', '마당 있는 거실': 'Living Room with a Yard', '절대 못 찾는 서재': "The Study You'll Never Solve",
+  'Lv.UP!': 'Lv. UP!',
+  '털 집 찾는 중…': 'Finding a house to raid…', '찾았다!': 'Found one!', '다른 집을 찾고 있어': 'Looking for another house',
+  '동네에서 털 만한 집을 찾고 있어': 'Looking around the neighbourhood for a house to raid', '집으로': 'Home', '다른 집': 'Next', '무료': 'Free',
+  '딸기우유냥': 'Strawberry Milk Cat', '딸기 다락방': 'Strawberry Loft', '내 방 예쁘지? 구경만 하고 가~': 'Pretty, right? Just look, okay~',
+  '턱시도관장': 'Curator Tux', '작은 미술관': 'Little Gallery', '작품엔 손대지 마세요. 숨긴 건… 찾아도 되고.': "Please don't touch the art. The hidden things… fair game.",
   // 타이머 털기 (raidrun.js)
   '보물 털었다!': 'Got the treasure!', '내 거 찾았다!': 'Found mine!', '다 셌다! 거기까지~': "Done counting! That's it~", '어? 벌써 가?': 'Huh? Leaving already?',
   '몽땅 털었다!': 'Cleaned out!', '그만 털기!': 'Raid stopped!', '보물까지 싹!': 'Treasure and all!', '하나도 안 남겼어!': 'Not a thing left!', '찾은 만큼 내 거!': 'What you found is yours!',
@@ -75,6 +84,7 @@ addI18n({
   [/^(\d+)개 다 있어$/, n => `All ${n} owned`],
   [/^가진 것 (\d+)개$/, n => `Have ${n}`],
   [/^목록에서 고르고, 드래그해서 숨겨요 · 최대 (\d+)개$/, n => `Pick from the list, drag to hide · up to ${n}`],
+  [/^경험치 \+(\d+)$/, n => `XP +${n}`],
   [/^보물 (\d+)\/(\d+)$/, (a, b) => `Treasure ${a}/${b}`],
   [/^숨길 물건 (\d+)\/(\d+)$/, (a, b) => `To hide ${a}/${b}`],
   [/^(\d+)개 다 숨겼어! 옮기려면 드래그해$/, n => `All ${n} hidden! Drag one to move it`],

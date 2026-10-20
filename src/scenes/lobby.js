@@ -29,6 +29,7 @@ import { SHOP_FURN, STARTER_ITEMS, WALLPAPERS, FLOORS } from '../catalog.js';
 import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
 import { TV_TYPES, tvScreens, openMongleTV, tvLevel } from '../mongletv.js';   // 몽글 TV (10/19)
+import { lvOf } from '../level.js';   // 내 Lv: 별 + 털기 (10/20)
 const REGION_NAME = i => regionOf(i)?.name || '';
 const REGIONS_AT = ch => [0, 12, 21, 31, 40, 49, 60][ch - 1] ?? 0;   // (the first stage of chapter ch)
 
@@ -113,7 +114,7 @@ export class LobbyScene extends MyHomeScene {
   // ── the lobby's HUD: profile, ★ · coins · magnifiers, the side column, the play button and the three room buttons
   lobbyHud() {
     const G = this.G, ui = G.ui, S = G.save, col = this.col, open = G.homeOpen();
-    const lv = 1 + Math.floor((S.stars || 0) / 6), hero = 'mong';   // (the room's owner is always 몽글이; save.hero is the friend who walks along — 10/19)
+    const lv = lvOf(S).lv, hero = 'mong';   // (the room's owner is always 몽글이; save.hero is the friend who walks along — 10/19)
     const prof = h('div', { class: 'profile' }, h('div', { class: 'av' }, h('img', { src: G.thumbs['face_' + hero] || G.thumbs.face_mong })), h('div', {}, h('div', { class: 'nm ol' }, nameOf(hero) || '몽글이'), h('div', { class: 'lv' }, `Lv.${lv}`, h('span', { class: 'lvt' }, ' 숨바꼭질 탐정'))));
     let taps = [];   // review shortcut, as on the old home: the profile 5 times quickly → every stage open on the map
     prof.addEventListener('pointerup', () => {

@@ -9,8 +9,12 @@ import { net, initNet, listRooms, roomStats, names, practiceRooms } from '../net
 import { FURN_INFO } from '../gfx/furniture.js';
 import { stolenBy, residentId } from '../raid.js';
 import { setScoutList } from '../raidrun.js';   // ② 정찰 + 다음 집
+import { housePool, pickHouse } from '../presets.js';   // 털 집 찾기 (10/20)
+import { raidOf } from '../raid.js';
 
 const fakeWorld = { shadowDirty: false, yaw: Math.PI / 4 };
+// ?visit=list: the old list (to compare)
+const LIST_MODE = (() => { try { return new URLSearchParams(location.search).get('visit') === 'list'; } catch { return false; } })();
 
 // A believable practice room: a zone with furniture and a few things hidden, keyed the same way as real rooms.
 // mine = things this resident took from my home: hidden here too, marked as mine
@@ -53,7 +57,8 @@ export function makePractice(r, i, mine = []) {
 
 export class VisitScene {
   constructor(G) { this.G = G; this.name = 'visit'; }
-  async enter() {
+  async enter(args = {}) {
+    if (!LIST_MODE) return this.search(args);
     const G = this.G, ui = G.ui;
     this.tw = new Tweens();
     G.setBg(['#e4f3ff', '#ffe0ee']); G.world.setLight(null);
@@ -69,6 +74,47 @@ export class VisitScene {
     col.append(this.listEl);
     col.append(h('div', { class: 'modebar' }, ui.btn('내 방 꾸미러 가기', { color: 'orange', icon: 'home', onClick: () => G.go('myhome') })));
     this.load();
+  }
+  // ── 털 집 찾기 (10/20 user: "진짜 클래시 오브 클랜처럼 랜덤한 방 찾는 거지. 사진에 이거는 폐기하고"): no list — the
+  // '털 집 찾는 중…' and a bar for a second or so, then one house; its scout card (raidrun.js) says whose,
+  // and from there [털러 가기] or [다른 집] (a few coins, the way Clash's 'next' costs gold).
+  async search({ again = false, force = null } = {}) {   // (force: a house id — tests and pictures)
+    const G = this.G, ui = G.ui;
+    this.tw = new Tweens();
+    G.setBg(['#e4f3ff', '#ffe0ee']); G.world.setLight(null);
+    G.world.onTap = null; G.world.onDragStart = null;
+    G.audio.music('home');
+    const col = ui.col();
+    const back = ui.ibtn('home', 'blue', () => G.go('home'));
+    back.style.cssText += 'position:absolute;left:12px;top:calc(12px + var(--safeT))';
+    const pills = h('div', { class: 'pills' }); const cp = ui.pill('coin', G.save.coins); pills.append(cp); G.coinPills = [cp];
+    // (10/20 user: "이거 좀 과하고 그냥 로딩 중 프로그래스바? 그런 거 넣어 주면 되지 않을까?" — the map and the magnifier went; the words and a bar)
+    const fill = h('i', {}), bar = h('div', { class: 'hbar' }, fill);
+    const title = h('div', { class: 'visit-title ol3' }, '털 집 찾는 중…');
+    col.append(back, pills, h('div', { class: 'hsearch' }, title, bar));
+    const t0 = performance.now(), DUR = G.bot ? 300 : again ? 900 : 1300;
+    fill.animate([{ width: '0%' }, { width: '70%', offset: .55 }, { width: '100%' }], { duration: DUR, easing: 'cubic-bezier(.3,.1,.3,1)', fill: 'forwards' });
+    // the pool (shared rooms too, if they answer in time — the real players later)
+    const S = G.save, R = raidOf(S);
+    let shared = [];
+    try {
+      await Promise.race([initNet(), new Promise(res => setTimeout(res, 500))]);
+      const N0 = net();
+      if (N0.ok) { const rooms = await Promise.race([listRooms(), new Promise(res => setTimeout(() => res([]), 700))]); shared = (rooms || []).filter(x => x.owner && x.owner !== N0.uid && x.zone && x.hidden?.length).map(x => ({ ...x, ownerName: x.ownerName || '누군가' })); }
+    } catch { }
+    if (this.dead) return;
+    const pool = housePool(G, { practiceRooms, makePractice, stolenBy, residentId, shared });
+    const pick = (force && pool.find(x => x.id === force || x.house === force)) || pickHouse(pool, S.stage, R.seen || []);
+    R.seen = [...(R.seen || []).filter(k => k !== (pick.id || pick.owner)), pick.id || pick.owner].slice(-4); G.persist();
+    this.rooms = [pick];
+    const left = DUR - (performance.now() - t0);
+    if (left > 0) await new Promise(res => setTimeout(res, left));
+    if (this.dead) return;
+    title.textContent = '찾았다!'; G.audio.sfx('pop', 5);
+    await new Promise(res => setTimeout(res, 200));
+    if (this.dead) return;
+    setScoutList([]);
+    G.go('stage', { custom: { ...pick, found: true }, scout: true });
   }
   exit() { this.dead = true; this.G.ui.clear(); }
   async load() {
@@ -106,6 +152,6 @@ export class VisitScene {
     }
   }
   update(dt) { this.tw.update(dt); }
-  botStep(dt) { this._bt = (this._bt || 0) + dt; if (this._bt > 1.5 && this.rooms?.length) { this._bt = -99; this.G.go('stage', { custom: this.rooms[0] }); } }
+  botStep(dt) { if (!LIST_MODE) return; this._bt = (this._bt || 0) + dt; if (this._bt > 1.5 && this.rooms?.length) { this._bt = -99; this.G.go('stage', { custom: this.rooms[0] }); } }
   state() { return { scene: 'visit', rooms: this.rooms?.length ?? 0 }; }
 }
