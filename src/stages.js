@@ -590,6 +590,9 @@ export const REGIONS = [
 export const STAGE_COUNT = 70;
 // the reason we move on, told as a little cinematic before each region's first stage
 export const REGION_INTRO = {
+  // 1장 (UI 세션 10/20, user: "1장은 2장 아파트처럼 뭐 타이틀 없냐?"): the same chapter card before 1판 — the card alone, no talk
+  // (1판 has its own opening); the title is the 스토리 룸's to change (script.js REGION)
+  home: { chapter: 1, title: '숨바꼭질, 시작!', cast: ['mong', 'bunny'], lines: [] },
   apt: { chapter: 2, title: '우리 아파트로!', cast: ['mong', 'bunny'], lines: [
     { who: 'bunny', text: '몽글아, 우리 아파트로 이사 왔어! 집들이하러 올래?' },
     { who: 'mong', text: '갈래 갈래! 근데… 짐 정리는 다 했어?' },
@@ -749,7 +752,7 @@ function endlessSpec(idx) {
 }
 function baseSpec(idx) {
   const seed = 1000 + idx * 7919;
-  if (idx < STAGES.length) return { ...STAGES[idx], idx, seed, region: 'home' };
+  if (idx < STAGES.length) return { ...STAGES[idx], idx, seed, region: 'home', ...(idx === 0 ? { intro: true, chapter: 'home' } : {}) };   // (1판: 1장's card — UI 세션 10/20)
   const R = regionOf(idx), ri = REGIONS.indexOf(R);
   const local = idx - R.from, len = R.to - R.from, d = local / Math.max(1, len - 1);
   const built = R.rooms.filter(k => LAYOUTS[k]);

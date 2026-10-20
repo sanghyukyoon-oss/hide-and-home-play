@@ -2588,6 +2588,7 @@ export const EN = {
 "박사의 연구 사무실": "Doc's Research Office",
 "몽글 마을 집": "Mongle Town Homes",
 "우리 아파트": "Our Apartment",
+"숨바꼭질, 시작!": "Ready or Not!",
 "편의점·상가": "Mart & Shops",
 "공원·놀이터": "Park & Playground",
 "산길·캠핑": "Trail & Camping",

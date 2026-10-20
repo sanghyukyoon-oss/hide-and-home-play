@@ -696,6 +696,8 @@ const BOSS = [
 
 // ── chapter cinematics: why we go somewhere new (stages.js REGION_INTRO, rewritten in place)
 const REGION = {
+  // 1장 제목 (UI 1.0.111 시작 카드, 사용자 "1장은 2장 아파트처럼 뭐 타이틀 없냐?"): 다른 장처럼 '하러 가자' 말투 — 친구네 집을 하나씩 놀러 다니는 장
+  home: { title: K('친구네 놀러 가자!', "Let's Go Play!") },
   apt: { title: K('토순이네 새 집', "Bunbun's New Place"), cast: ['mong', 'bunny'], lines: [L('bunny', '몽글아! 여기가 새 집이야! 짐은 아직 덜 풀었지만.', "Mongle! This is my new place! Not quite unpacked yet."), L('mong', '…숨을 데가 많네.', '…Lots of places to hide.'), L('bunny', '그래서 내 물건도 다 숨어 버렸어. 같이 찾아 줘!', "Which is why all my stuff is hiding too. Help me find it!")] },
   alley: { title: K('순찰 가자!', 'Patrol Time!'), cast: ['mong', 'shiba', 'grumpy'], lines: [L('shiba', '약속한 순찰이다! 오늘은 골목.', 'Patrol time, like I promised! Today, the alleys.'), L('shiba', '삐딱이네 골목은 조심해. 걔는 말을 좀… 삐딱하게 해.', "Careful in Grumpy's alley. Grumpy talks a little… grumpy."), L('mong', '…그래서 삐딱이구나.', '…Hence the name.')] },
   shop: { title: K('배고픈데 편의점 가자!', "Snack Run!"), cast: ['mong', 'shiba', 'grumpy'], lines: [L('mong', '꼬르륵…', 'Grumble…'), L('shiba', '사건이다. 네 배에서.', "We've got a case. Your stomach."), L('grumpy', '…나도 간다. 배고파서야. 너 때문 아니고.', "…I'm coming too. 'Cause I'm hungry. Not 'cause of you.")] },
@@ -1268,7 +1270,11 @@ export const KIT_TALK = {
   robot: { who: 'bear', open: K('으헤헤, 다락에서 찾았다! 어릴 때 끝까지 못 맞춘 로봇이야.', 'Ehehe, found it in the attic! The robot I never got to finish as a kid.'),
     hid: K('어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!', "Huh? The parts all ran off and hid. Let's check the blueprint and find them!"),
     go: K('다 모았다! 이번엔 끝까지 맞추자.', "All here! Let's finish it this time."), wrong: K('으헤헤, 순서가 있나 봐.', "Ehehe, guess there's an order.") },
-  moving: { who: 'bunny', go: K('다 찾았다! 이제 제자리에 놓자.', "All found! Now let's put everything where it goes."), wrong: K('거긴 그 자리가 아니야~', "Nope, that's not its spot~") },
+  moving: { who: 'bunny', go: K('다 찾았다! 이제 제자리에 놓자.', "All found! Now let's put everything where it goes."), wrong: K('거긴 그 자리가 아니야~', "Nope, that's not its spot~"),
+    // 13판 이사 트럭·상자 더미 시안 (프라모델 10/20, 사용자 OK 전): 하나 찾을 때마다 맨 위 상자가 사라지고, 다 찾으면 더미 밑에서 하나 더.
+    // pile = 더미를 처음 터치했을 때, under = 마지막 상자가 사라지고 밑에서 나올 때('하나 남음'과 같은 순간이라 그때는 under만)
+    pile: K('짐이 산더미야! 하나 찾을 때마다 상자 하나씩 치우자.', 'Boxes everywhere! Every find clears one box.'),
+    under: K('어? 상자 밑에 하나 더 있었네!', 'Huh? There was one more under the boxes!') },
   // 11판 캣타워 · 19판 미니 소방차 (프라모델 정식판 10/20): open = 상자가 쿵 + 컷인, hid = 터치해서 부품이 흩어진 뒤
   cattower: { who: 'cat', open: K('흥. 네가 몽글이냐냥. …이 상자, 혼자서도 조립할 수 있거든냥.', "Hmph. So you're Mongle, meow. …I can build this by myself, you know."),
     hid: K('…! 네가 건드려서 다 흩어졌다냥! 책임지고 찾으라냥.', "…! You touched it and now it's everywhere, meow! Go find it all!"),

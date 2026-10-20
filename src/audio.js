@@ -15,11 +15,12 @@ export const BGM = {
   // (10/20 user: "미니게임 노래가 젤 좋음 이거 승격. 미니게임은 따로 노래 쓰지 말고 원래 거 들으면 될 듯 이어지게") the Suno 'ingame' song
   // is the stages' song now, and the mini games play the same file, so it just goes on across
   map: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gain: 1 },   // 스테이지(맵) (Suno 'ingame' 1:02)
-  mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gain: 1 },   // 쉬어가기 놀이 — 맵과 같은 곡, 끊기지 않고 이어짐
+  // (10/21 user: "미니게임 노래는 다 좋네? 1, 3으로 돌려 쓰자") the mini games take turns between two Suno songs (gpts)
+  mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gpts: ['audio/gpt/bgm-map.mp4'], gain: 1 },   // → ['audio/gpt/bgm-mini-1.mp4', 'audio/gpt/bgm-mini-3.mp4'] when the two Suno files are in
   tv: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 몽글 TV (Suno 'hideandhome-tv-v1' 2:16)
   // (10/20 user: "티비게임에 나오는 노래도 정규 음악으로 넣어 줄래?") the TV song is the boss games' song too
   boss: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
-  king: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 마지막 보스·숨바꼭질 왕 결정전       → audio/gpt/bgm-king.mp4
+  king: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // (10/21 user: "4도 좋은데 어디 쓸 만한 데") 마지막 보스·결정전 — Suno minigame-v3 ④
   tense: { gpt: null, gain: 1 },   // 다급할 때 (없으면 지금 곡을 1.07배로) → audio/gpt/bgm-tense.mp4
 };
 // 효과음 파일 (사운드 10/20, 사용자: "효과음 ㅇㅋ", "ASMR스럽고… 질감 같은 게 잘 느껴지고 디테일한 사운드"): 사내 AI Proxy →
@@ -318,7 +319,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // same file, so it just goes on. A gpt file that can't be read is dropped (the lobby song again).
   const XF = .8, TRACK_GAIN = .55, HURRY = 1.07;
   const lobbyOnly = /[?&]bgm=(lobby|tmp)\b/.test(location.search), failed = new Set();
-  const own = slot => { const b = BGM[slot]; if (!b) return null; const url = (b.gpt && !lobbyOnly && !failed.has(b.gpt) && b.gpt) || b.tmp; return url ? { url, gain: b.gain ?? 1 } : null; };
+  const own = slot => { const b = BGM[slot]; if (!b) return null; const g = b.gpts ? b.gpts[(A._rot || 0) % b.gpts.length] : b.gpt; const url = (g && !lobbyOnly && !failed.has(g) && g) || b.tmp; return url ? { url, gain: b.gain ?? 1 } : null; };
   const fileOf = slot => own(slot) || own('lobby');
   const T = A._trk = { el: null, gain: null, url: null, slot: null, want: null, goal: 0, pending: null, swapT: 0, stopT: 0, rate: 1 };
   function mkTrack() {
@@ -326,7 +327,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     try { const node = A.ctx.createMediaElementSource(el); T.gain = A.ctx.createGain(); T.gain.gain.value = 0; node.connect(T.gain).connect(A.musicBus); } catch { T.gain = null; }
     el.addEventListener('playing', () => { if (T.pending != null) { fade(T.pending, XF * .6); T.pending = null; } });
     el.addEventListener('error', () => {
-      if (!T.url || !Object.values(BGM).some(b => b.gpt === T.url)) return;
+      if (!T.url || !Object.values(BGM).some(b => b.gpt === T.url || b.gpts?.includes(T.url))) return;
       console.warn('bgm file', T.url, 'could not be read — playing the lobby song');
       failed.add(T.url); T.url = null; A._req = null; goMusic();
     });
@@ -379,6 +380,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   A.playSlot = 'map'; A._hurry = false; A._req = null;
   A.scene = (name, data = {}) => {
     A.playSlot = data.final || data.kind === 'finale' ? 'king' : SCENE_SLOT[name] || 'map';
+    if (A.playSlot === 'mini') A._rot = (A._rot || 0) + 1;   // (the next mini game, the other song)
     A._hurry = false; A._req = null; if (T.el && T.url) setRate(1);
   };
   // 막판 (the stage's last 10 seconds): the track playing hurries a little; off again on the next scene

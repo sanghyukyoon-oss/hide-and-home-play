@@ -491,7 +491,7 @@ export class Game {
 .ys-pad { position: absolute; z-index: 6; width: 116px; height: 116px; margin: -58px 0 0 -58px; border-radius: 50%; background: rgba(255, 250, 242, .16); border: 3px solid rgba(255, 255, 255, .6); pointer-events: none; }
 .ys-pad i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; border-radius: 50%; background: #fffaf2; border: 3px solid #3a2453; box-shadow: 0 3px 0 #3a2453; transform: translate(-50%, -50%); }
 .ys-pad.rim i { background: #ffb36b; }
-.ys-pad.ghost { left: 88px; top: auto; bottom: calc(30px + var(--safeB, 0px)); margin: 0 0 0 -58px; opacity: .8; transition: opacity .3s; }
+.ys-pad.ghost { left: auto; right: 16px; top: auto; bottom: calc(30px + var(--safeB, 0px)); margin: 0; opacity: .8; transition: opacity .3s; }
 .ys-pad.ghost.gone { opacity: 0; }
 .ys-pad.ghost b { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 14px; text-shadow: 0 2px 0 #3a2453; }
 .ys-fbtn { position: absolute; z-index: 7; left: -200px; top: -200px; width: 66px; height: 66px; margin: -33px 0 0 -33px; border-radius: 50%; background: #fffaf2; border: 4px solid #3a2453; box-shadow: 0 4px 0 #3a2453;
@@ -503,7 +503,7 @@ export class Game {
 .ys-fbtn.near { background: #fff3b0; animation: ysBtn 1s ease-in-out infinite; }
 .ys-fbtn.down { transform: translateY(3px) scale(.94); box-shadow: 0 1px 0 #3a2453; animation: none; background: #ffe16b; }
 .ys-slot.lost { animation: ysLost .5s ease-in-out infinite alternate; opacity: .7; }
-.ys-rbtn { position: absolute; z-index: 7; right: 22px; bottom: calc(40px + var(--safeB, 0px)); width: 74px; height: 74px; border-radius: 50%; background: #fffaf2; border: 4px solid #3a2453; box-shadow: 0 5px 0 #3a2453;
+.ys-rbtn { position: absolute; z-index: 7; right: 150px; bottom: calc(51px + var(--safeB, 0px)); width: 74px; height: 74px; border-radius: 50%; background: #fffaf2; border: 4px solid #3a2453; box-shadow: 0 5px 0 #3a2453;
   display: grid; place-items: center; touch-action: none; -webkit-user-select: none; user-select: none; transition: transform .1s, opacity .25s; }
 .ys-rbtn svg { width: 40px; height: 40px; }
 .ys-rbtn b { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); white-space: nowrap; color: #fff; font-size: 14px; text-shadow: 0 2px 0 #3a2453; }
@@ -511,9 +511,10 @@ export class Game {
 .ys-rbtn.down { transform: translateY(4px) scale(.94); box-shadow: 0 1px 0 #3a2453; animation: none; }
 .ys-rbtn.used { opacity: 0; pointer-events: none; transform: scale(.6); }
 @keyframes ysRb { 50% { box-shadow: 0 5px 0 #3a2453, 0 0 0 12px rgba(255, 225, 107, .45); transform: scale(1.06); } }
-.ys-why { position: absolute; left: 50%; top: calc(150px + var(--safeT, 0px)); transform: translate(-50%, 0); z-index: 8; width: max-content; max-width: calc(100vw - 40px); text-align: center; pointer-events: none;
-  background: #fffaf2; border: 4px solid #3a2453; border-radius: 18px; box-shadow: 0 5px 0 #3a2453; padding: 10px 16px; color: #3a2453; font-size: 18px; word-break: keep-all; animation: ysGetTop .45s cubic-bezier(.2, 1.7, .4, 1); }
-.ys-why b { display: block; font-family: var(--font-display); font-size: 26px; color: #e2455b; }
+.ys-why { position: absolute; left: 84px; right: 12px; top: calc(62px + var(--safeT, 0px)); z-index: 8; pointer-events: none; text-align: left;
+  background: rgba(255, 250, 242, .94); border: 3px solid #3a2453; border-radius: 14px; padding: 6px 10px; color: #3a2453; font-size: 14px; line-height: 1.3; word-break: keep-all; animation: ysWhy .3s ease-out; }
+.ys-why b { color: #e2455b; margin-right: 4px; }
+@keyframes ysWhy { from { opacity: 0; transform: translateY(-6px); } }
 .ys-why.out { animation: fadeout .35s forwards; }
 .ys-carry { position: absolute; z-index: 5; display: flex; gap: 2px; padding: 3px; background: #fffaf2; border: 3px solid #3a2453; border-radius: 12px; box-shadow: 0 3px 0 #3a2453; pointer-events: none; transform-origin: 0 50%; }
 .ys-carry img { width: 30px; height: 30px; display: block; }
@@ -926,7 +927,7 @@ export class Game {
       this.why?.remove();
       this.why = L.h('div', { class: 'ys-why' }, L.h('b', {}, '와르르!'), '너무 빨리 달려서 다 떨어뜨렸어! 살금살금 가서 다시 줍자');
       document.getElementById('app').append(this.why); const w = this.why;
-      setTimeout(() => { w.classList.add('out'); setTimeout(() => w.remove(), 400); }, 3200);
+      setTimeout(() => { w.classList.add('out'); setTimeout(() => w.remove(), 400); }, 2800);
       L.say(this.me, '앗, 다 떨어뜨렸어!', 1500, 'red');
     } else L.say(this.me, '와르르! 다시 줍자', 1100, 'red');
     L.log({ spill: n, x: +p.x.toFixed(2), z: +p.y.toFixed(2) });

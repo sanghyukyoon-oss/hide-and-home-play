@@ -161,6 +161,11 @@ function migrate(s) {
   if (s.myroom?.inventory) n.home.inventory = s.myroom.inventory.slice();
   return n;
 }
+// (10/21 user: "다음 빌드는 친구한테 처음부터 다시 시키고 싶구먼. 첫 시작은 처음부터, 그 후 저장되게") once per device: the first
+// open of this build starts a fresh game (the save and the #s= copy in the address are dropped), every later open loads as usual
+const FRESH_ONCE = 'fresh-1021';
+const freshNow = store.get('sumbakkokjip.fresh', null) !== FRESH_ONCE;
+if (freshNow) { store.del(KEY); store.set('sumbakkokjip.fresh', FRESH_ONCE); try { if (/[#&]s=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search); } catch {} }
 if (qs.has('reset')) {
   store.del(KEY);
   // (QA3 10/19) once: it used to stay in the address, so every reload — iOS drops big tabs, the language switch reloads —
@@ -180,7 +185,7 @@ if (/Android/i.test(navigator.userAgent)) document.documentElement.classList.add
 const WEB = !window.claude;
 const b64e = str => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const b64d = str => decodeURIComponent(escape(atob(str.replace(/-/g, '+').replace(/_/g, '/'))));
-const hashSave = (() => { if (!WEB || qs.has('reset')) return null; try { const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); return m ? JSON.parse(b64d(m[1])) : null; } catch { return null; } })();
+const hashSave = (() => { if (!WEB || qs.has('reset') || freshNow) return null; try { const m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash); return m ? JSON.parse(b64d(m[1])) : null; } catch { return null; } })();
 const storageOk = (() => { try { localStorage.setItem('sumbakkokjip.t', '1'); return localStorage.getItem('sumbakkokjip.t') === '1'; } catch { return false; } })();
 try { navigator.storage?.persist?.(); } catch {}   // ask the browser to keep this site's storage
 let stored = store.get(KEY, null);
