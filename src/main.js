@@ -281,7 +281,7 @@ const G = {
     const key = room.practice ? room.id : room.owner;
     const prev = save.visits[key];
     const firstWin = ok && !prev?.ok;
-    save.visits[key] = { ok: ok || !!prev?.ok, at: Date.now() };
+    save.visits[key] = { ok: ok || !!prev?.ok, at: Date.now(), n: found };   // (n: how many were found — raidrun.js recentRaid)
     const awarded = exact ? coins : ok ? (firstWin ? coins : Math.round(coins / 3)) : 0;
     save.coins += awarded;
     G.persist();

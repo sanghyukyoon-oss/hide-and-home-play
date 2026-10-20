@@ -104,7 +104,11 @@ export class VisitScene {
     } catch { }
     if (this.dead) return;
     const pool = housePool(G, { practiceRooms, makePractice, stolenBy, residentId, shared });
-    const pick = (force && pool.find(x => x.id === force || x.house === force)) || pickHouse(pool, S.stage, R.seen || []);
+    // the house on offer stays the same for a while unless you pay for another (QA9 P3: 집으로 → 놀러 가기 skipped [다른 집]'s coins)
+    const now = Date.now(), O = R.offer, keyOf = x => x.id || x.owner;
+    const kept = !force && !again && O && now - O.at < 30 * 60e3 && !((S.visits?.[O.id]?.at || 0) > O.at) ? pool.find(x => keyOf(x) === O.id) : null;
+    const pick = (force && pool.find(x => x.id === force || x.house === force)) || kept || pickHouse(pool.filter(x => !again || !O || keyOf(x) !== O.id), S.stage, R.seen || []);
+    if (!kept) R.offer = { id: keyOf(pick), at: now };
     R.seen = [...(R.seen || []).filter(k => k !== (pick.id || pick.owner)), pick.id || pick.owner].slice(-4); G.persist();
     this.rooms = [pick];
     const left = DUR - (performance.now() - t0);

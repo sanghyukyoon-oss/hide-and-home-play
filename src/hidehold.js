@@ -20,17 +20,20 @@ function placesFor(S, type) {
   return Object.values(S.spotByKey || {}).filter(s => (!s.item || s.item.type === type) && fits(type, s) && !(chain && s.part && locks[s.part.key]));
 }
 
-export function holdStart(S, type) {
+// opts: x, y — where the finger picked it up (a drag starts it there); prev, prevAt — its old place, kept across a refused [여기 숨기기]
+export function holdStart(S, type, opts = {}) {
   const G = S.G, W = G.world;
   if (!type) return;
   holdCancel(S, true);
   // already hidden: pick it up (its old place comes back if you let go with ✕)
-  const hid = S.H.hide, at = hid.items.findIndex(e => e.item === type), prev = at >= 0 ? hid.items[at] : null;
+  const hid = S.H.hide;
+  let at = hid.items.findIndex(e => e.item === type), prev = at >= 0 ? hid.items[at] : null;
   if (prev) S.removeItem(type);
+  else if (opts.prev) { prev = opts.prev; at = opts.prevAt ?? -1; }   // (QA9 P2: a refused place used to forget where it had been)
   const g = buildItem(type, { code: hid.code || '000' }); g.traverse(o => { if (o.isMesh) o.userData.held = true; });
   S.room.group.add(g);
   const ring = new THREE.Mesh(new THREE.RingGeometry(.2, .3, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthTest: false }));
-  ring.rotation.x = -Math.PI / 2; ring.renderOrder = 10; S.room.group.add(ring);
+  ring.rotation.x = -Math.PI / 2; ring.renderOrder = 10; ring.raycast = () => {}; S.room.group.add(ring);   // (QA9 P3: the ring never catches the finger's surface pick)
   const ui = G.ui;
   const tool = h('div', { class: 'ftool holdtool' },
     ui.btn(null, { color: 'blue', icon: 'rotate', onClick: () => holdRotate(S) }),
@@ -40,10 +43,18 @@ export function holdStart(S, type) {
   ui.wui.append(tool, label);
   tool.querySelectorAll('.btn').forEach(b => b.style.pointerEvents = 'auto');
   S.held = { type, g, ring, tool, label, prev, prevAt: at, ry: (Math.random() - .5) * 1.2, target: null, opened: null };
-  // where it first sits: out in the open on the surface in the middle of the screen (so you see it), then you drag it into a place
-  let at0 = null;
-  for (const [fx, fy] of [[.5, .5], [.5, .58], [.42, .52], [.58, .52], [.5, .42]]) { const s = pickSurface(W, S.room, innerWidth * fx, innerHeight * fy); if (s && !s.side && (!s.part || s.part.t > .5)) { at0 = s; break; } }
-  holdTo(S, { free: at0 || { key: 'room', node: S.room.group, label: '바닥', point: S.room.group.localToWorld(new THREE.Vector3(0, 0, 0)) } });
+  // where it first sits: a thing picked up stays where it was (its hiding place, or the surface under the finger — QA9 P2: it
+  // jumped to the middle and the drag moved the view); a new one sits out in the open in the middle of the screen (so you see it)
+  const ok0 = s => s && !s.side && (!s.part || s.part.t > .5);
+  let first = null;
+  if (prev?.spot && S.spotByKey?.[prev.spot]) first = { fixed: S.spotByKey[prev.spot] };
+  else if (opts.x != null) { const s = pickSurface(W, S.room, opts.x, opts.y, g); if (ok0(s)) first = { free: s }; }
+  if (!first) {
+    let at0 = null;
+    for (const [fx, fy] of [[.5, .5], [.5, .58], [.42, .52], [.58, .52], [.5, .42]]) { const s = pickSurface(W, S.room, innerWidth * fx, innerHeight * fy, g); if (ok0(s)) { at0 = s; break; } }
+    first = { free: at0 || { key: 'room', node: S.room.group, label: '바닥', point: S.room.group.localToWorld(new THREE.Vector3(0, 0, 0)) } };
+  }
+  holdTo(S, first);
   G.audio.sfx('pop', 4);
   const s0 = g.scale.x; S.tw.run(.3, k => g.scale.setScalar(s0 * (.4 + .6 * k + Math.sin(k * Math.PI) * .25)));
   S.onHold?.(type);
@@ -94,13 +105,13 @@ export function holdDrag(S, x, y) {
 
 export async function holdConfirm(S) {
   const H = S.held; if (!H || !H.target) return;
-  const { type, target, ry } = H;
+  const { type, target, ry, prev, prevAt } = H;
   holdCancel(S, true, true);   // (the held mesh goes; the real one is put by the scene's own place)
   S.selItem = type;
   let ok = true;
   if (target.fixed) await S.placeTreasure(target.fixed, ry);
   else ok = await S.freePlace(target.free, type, false, ry);
-  if (!ok) holdStart(S, type);   // (nobody could ever see it there: keep holding)
+  if (!ok) holdStart(S, type, { prev, prevAt });   // (nobody could ever see it there: keep holding — its old place still remembered)
   S.onHoldDone?.(ok);
 }
 

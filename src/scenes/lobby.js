@@ -30,6 +30,7 @@ import { regionOf } from '../stages.js';
 import { QA_TOOLS } from '../build.js';
 import { TV_TYPES, tvScreens, openMongleTV, tvLevel } from '../mongletv.js';   // 몽글 TV (10/19)
 import { lvOf } from '../level.js';   // 내 Lv: 별 + 털기 (10/20)
+import { settleOpen } from '../raidrun.js';   // 털다 만 집 정산 (QA9, 10/21)
 const REGION_NAME = i => regionOf(i)?.name || '';
 const REGIONS_AT = ch => [0, 12, 21, 31, 40, 49, 60][ch - 1] ?? 0;   // (the first stage of chapter ch)
 
@@ -77,6 +78,7 @@ export class LobbyScene extends MyHomeScene {
   constructor(G) { super(G); this.name = 'home'; this.lobby = true; this.seated = []; }
   async enter(o = {}) {
     const G = this.G;
+    { const c = settleOpen(G); if (c) setTimeout(() => G.ui.toast(`지난번 털다 만 집 정산 · 코인 +${c}`, 'green'), 900); }   // (QA9 P2: the app closed mid-raid)
     if (!o.ending) runRaids(G);   // residents who sneaked in while you were away (coins land before the pills show them)
     // 판 끝 집으로 가져가기 (10/19): on the way to the next stage, the room for under 3 s (the room's first opening plays instead)
     // (검토 P1 10/19: after 2판's '계속 찾기' the room's first opening is on the way too — 3 s, the gift set down, no pick; the

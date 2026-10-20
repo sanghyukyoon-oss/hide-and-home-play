@@ -7,7 +7,7 @@ import { layoutFor, LAYOUTS } from './stages.js';
 import { renderThumbs } from './thumbs.js';
 import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON, KEEPSAKE_PRICE } from './econ.js';
 import { ITEMS } from './gfx/items.js';
-import { locksOwned, LOCK_PRICE, LOCK_MAX } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
+import { locksOwned, LOCK_PRICE, LOCK_MAX, holderOf } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
 import { EN } from './i18n-en-dict.js';
 import { SPECIALS, SPECIAL_TXT, specialState, feats } from './specials.js';   // 스페셜 칸 (10/20)
 import { hasWall, hasFloor, patternThumb } from './patterns.js';   // 벽지·바닥 더하기 (10/20)
@@ -83,7 +83,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       for (const t of (G.save.seen || []).filter(t => ITEMS[t] && !G.save.collection.includes(t))) {
         grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: took.has(t) ? '털려 갔어 · 되찾으러 가기' : '도감에서 본 것', price: took.has(t) ? null : 40, action: took.has(t) ? '되찾기' : '',
           onBuy: () => { G.collect(t); ui.toast(`${ITEMS[t].name} · 이제 내 집에 숨길 수 있어`, 'green'); render(); },
-          onUse: took.has(t) ? () => { ui.closePanel(); G.go('visit'); } : null }));
+          onUse: took.has(t) ? () => { ui.closePanel(); G.go('visit', { force: holderOf(G.save, t) }); } : null }));
       }
       if (!(G.save.seen || []).some(t => ITEMS[t] && !G.save.collection.includes(t))) grid.append(h('div', { class: 'txt', style: 'font-size:14px;padding:8px' }, '판에서 찾은 물건이 도감에 모이면 여기서 가져올 수 있어요'));
     } else if (tab === 'furn') {

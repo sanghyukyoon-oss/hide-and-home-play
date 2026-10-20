@@ -11,7 +11,7 @@ addI18n({
   '비 오는 날 연못': 'Rainy Day Pond', '볼주머니 편의점': 'Cheek Pouch Mart', '마당 있는 거실': 'Living Room with a Yard', '절대 못 찾는 서재': "The Study You'll Never Solve",
   'Lv.UP!': 'Lv. UP!',
   '털 집 찾는 중…': 'Finding a house to raid…', '찾았다!': 'Found one!', '다른 집을 찾고 있어': 'Looking for another house',
-  '동네에서 털 만한 집을 찾고 있어': 'Looking around the neighbourhood for a house to raid', '집으로': 'Home', '다른 집': 'Next', '무료': 'Free',
+  '동네에서 털 만한 집을 찾고 있어': 'Looking around the neighbourhood for a house to raid', '집으로': 'Home', '다른 집 찾기': 'Next', '무료': 'Free', '최근에 턴 집': 'Raided lately', '12시간 안에 또 턴 집이라 ⅓만 나와요': 'Raided in the last 12 hours · ⅓ pay',
   '딸기우유냥': 'Strawberry Milk Cat', '딸기 다락방': 'Strawberry Loft', '내 방 예쁘지? 구경만 하고 가~': 'Pretty, right? Just look, okay~',
   '턱시도관장': 'Curator Tux', '작은 미술관': 'Little Gallery', '작품엔 손대지 마세요. 숨긴 건… 찾아도 되고.': "Please don't touch the art. The hidden things… fair game.",
   // 타이머 털기 (raidrun.js)
@@ -85,6 +85,8 @@ addI18n({
   [/^가진 것 (\d+)개$/, n => `Have ${n}`],
   [/^목록에서 고르고, 드래그해서 숨겨요 · 최대 (\d+)개$/, n => `Pick from the list, drag to hide · up to ${n}`],
   [/^경험치 \+(\d+)$/, n => `XP +${n}`],
+  [/^털다 나온 집 정산 · 코인 \+(\d+)$/, n => `Raid left half way · +${n} coins`],
+  [/^지난번 털다 만 집 정산 · 코인 \+(\d+)$/, n => `Last unfinished raid · +${n} coins`],
   [/^보물 (\d+)\/(\d+)$/, (a, b) => `Treasure ${a}/${b}`],
   [/^숨길 물건 (\d+)\/(\d+)$/, (a, b) => `To hide ${a}/${b}`],
   [/^(\d+)개 다 숨겼어! 옮기려면 드래그해$/, n => `All ${n} hidden! Drag one to move it`],

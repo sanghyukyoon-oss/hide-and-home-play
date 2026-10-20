@@ -6,7 +6,7 @@
 // Not in testing my own room (selfTest) or an art preview. Diagnosis: https://claude.ai/artifact/GP26M9AFDHdPV7GvCFFBcn
 import { h, ICON } from './ui.js';
 import { ITEMS } from './gfx/items.js';
-import { retrieve, canGrab } from './raid.js';
+import { retrieve, canGrab, raidOf } from './raid.js';
 import { lensClear } from './lens.js';
 import { raidXp, addRaidXp, lvOf } from './level.js';   // 털면 Lv이 올라요 (10/20)
 
@@ -17,12 +17,38 @@ export const isRaid = S => !OFF && !!(S.custom && !S.custom.selfTest && !S.previ
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
 const ownerOf = S => S.custom.nick || S.custom.ownerName || '주인';
 const val = (S, v) => Math.max(1, Math.round(v * S.raidRun.rate));
+const REPEAT_MS = 12 * 3600e3;
+export function recentRaid(save, key) { const v = save.visits?.[key]; return !!v && Date.now() - (v.at || 0) < REPEAT_MS && (v.n ?? 1) > 0; }
+const roomKey = C => C.practice ? C.id : C.owner;
+// a raid under way: what was found so far, in the save (raid.open) until the end panel takes it
+function noteFind(S, it) {
+  const G = S.G, C = S.custom, R = S.raidRun, Rd = raidOf(G.save);
+  const o = Rd.open && Rd.open.key === roomKey(C) ? Rd.open : (Rd.open = { key: roomKey(C), room: { id: C.id, owner: C.owner, practice: !!C.practice, resident: !!C.resident, nick: C.nick || C.ownerName }, n: S.targets.length, rate: R.rate, found: [], tre: false, bag: 0, at: Date.now() });
+  o.found.push(it.type); o.bag = R.bag; if (it.treasure) o.tre = true;
+  G.persist();
+}
+// a raid that never reached its end (left from the pause menu, the app closed): pay what was found, my own things back,
+// the stars it earned, the XP — the house counts as raided (so '다시 하기' is ⅓). Returns the coins, or 0.
+export function settleOpen(G) {
+  const Rd = raidOf(G.save), o = Rd.open;
+  if (!o) return 0;
+  delete Rd.open;
+  const found = o.found.length, starN = [found * 2 >= o.n, o.tre, found >= o.n].filter(Boolean).length;
+  const coins = o.bag + Math.max(1, Math.round(RAID.star * o.rate)) * starN;
+  G.onVisitResult(o.room, false, found, o.n, coins, true);
+  const back = retrieve(G, o.room, o.found);
+  addRaidXp(G.save, raidXp(found, starN, o.tre, o.rate));
+  G.persist();
+  return coins + back.length * RAID.back;
+}
 
 // after buildHud: the 보물, the loot bag, the clock in the top bar
 export function raidSetup(S) {
   if (!isRaid(S)) return;
   const G = S.G, key = S.custom.practice ? S.custom.id : S.custom.owner;
-  const repeat = !!G.save.visits?.[key]?.ok;
+  // ⅓: a house you took something from in the last 12 hours, cleaned out or not (QA9 P2: it was 'cleaned out' only — leave one and
+  // it paid in full every time; and an old save's practice rooms made the new houses ⅓ for good)
+  const repeat = recentRaid(G.save, key);
   S.raidRun = { bag: 0, shown: 0, rate: repeat ? 1 / 3 : 1, repeat };
   // the 보물: never one of my own things; behind the room's lock first, then inside a drawer or a lid, else one by the room's seed
   const mine = new Set(S.custom.stolen || []), pool = S.targets.filter(t => !mine.has(t.type)), cand = pool.length ? pool : S.targets;
@@ -48,6 +74,7 @@ export function raidFind(S, it, s) {
   const G = S.G, R = S.raidRun;
   const v = val(S, it.treasure ? RAID.treasure : RAID.find);
   R.bag += v;
+  noteFind(S, it);   // (QA9 P2: kept as it happens — a raid left half way, or the app closed, still pays what was found)
   if (it.treasure) { G.ui.floatText(s.x, s.y - 92, '보물 털었다!', 'gold big'); G.world.fx.ring(s.x, s.y, { r: 130, color: '#ffb300', width: 10 }); G.hitstop?.(.08); }
   else if (S.custom.stolen?.includes(it.type)) G.ui.floatText(s.x, s.y - 92, '내 거 찾았다!', 'gold');
   const pill = S.lootPill;
@@ -84,6 +111,7 @@ export async function raidSettle(S, why) {
   // coins: the bag (paid per find) + the stars, sent as they are; my things come back only if found — both saved before
   // the 1.3 s moment (GPT QA R2-02 10/19: quitting during it lost the coins)
   const starCoins = val(S, RAID.star) * starN;
+  delete raidOf(G.save).open;   // (the raid closes here — nothing left to settle later)
   const res = G.onVisitResult(S.custom, all, found.length, n, R.bag + starCoins, true);
   const back = retrieve(G, S.custom, found.map(t => t.type));
   const xp = raidXp(found.length, starN, !!tre?.found, R.rate), lu = addRaidXp(G.save, xp);
@@ -113,7 +141,7 @@ export async function raidSettle(S, why) {
       h('div', { class: 'reward', html: ICON.coin }, cv),
       // 내 Lv: the XP this raid gave, the bar filling, Lv.UP when it tips over
       (() => { const L = lvOf(G.save); return h('div', { class: 'xpline' + (lu.up ? ' up' : '') }, h('b', { class: 'xplv ol' }, `Lv.${L.lv}`), h('div', { class: 'xpbar' }, h('i', { style: `width:${Math.round(L.into / L.need * 100)}%` })), h('span', { class: 'xpn' }, `경험치 +${xp}`), ...(lu.up ? [h('span', { class: 'xpup ol' }, 'Lv.UP!')] : [])); })(),
-      ...(R.repeat ? [h('div', { class: 'txt' }, '전에 몽땅 턴 집이라 ⅓만 나와요')] : []),
+      ...(R.repeat ? [h('div', { class: 'txt' }, '12시간 안에 또 턴 집이라 ⅓만 나와요')] : []),
       ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),
       ...(left.length ? [h('div', { class: 'txt' }, `아직 ${ga(ownerOf(S))} 내 물건 ${left.length}개를 갖고 있어. 다시 털러 오자!`)] : []),
       ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, ITEMS[got.item]?.name || '')))] : []),
@@ -167,7 +195,7 @@ export function raidScout(S) {
   if (tre) tiles.push(tile(tre.thumb || G.thumbs['item_' + tre.type], '보물', 'tre'));
   for (const t of mine.slice(0, 3)) tiles.push(tile(G.thumbs['item_' + t], '내 거', 'mine'));
   if (news.length) tiles.push(h('div', { class: 'stile new' + (grabOk ? '' : ' off') }, h('b', { class: 'ol' }, String(news.length)), h('div', { class: 'stag' }, 'NEW')));
-  const facts = [`시간 ${Math.ceil(S.spec.time)}초`, `물건 ${n}개`, ...(S.plan.locks.length ? [`자물쇠 ${S.plan.locks.length}`] : []), ...(R.repeat ? ['전에 몽땅 턴 집 · ⅓'] : [])];
+  const facts = [`시간 ${Math.ceil(S.spec.time)}초`, `물건 ${n}개`, ...(S.plan.locks.length ? [`자물쇠 ${S.plan.locks.length}`] : []), ...(R.repeat ? ['최근에 턴 집 · ⅓'] : [])];
   const i = LIST.findIndex(r => sameRoom(r, C)), next = LIST.length > 1 ? LIST[(i + 1) % LIST.length] : null;
   return new Promise(res => {
     const end = go => { if (done) return; done = true; wrap.remove(); if (go) start(); res(go); };
@@ -188,7 +216,7 @@ export function raidScout(S) {
         ...(C.found ? [
           // 털 집 찾기 (10/20): no list to go back to — home, or look for another house (Clash's 'next', a few coins; free while you have fewer)
           ui.btn('집으로', { color: 'gray', cls: 'sm', onClick: () => { end(false); G.go('home'); } }),
-          h('div', { class: 'snext' }, ui.btn('다른 집', { color: 'blue', cls: 'sm', onClick: () => { const c = nextCost(G); if (c) G.addCoins(-c); end(false); G.go('visit', { again: true }); } }), h('div', { class: 'scost', html: nextCost(G) ? ICON.coin : '' }, nextCost(G) ? String(nextCost(G)) : '무료')),
+          h('div', { class: 'snext' }, ui.btn('다른 집 찾기', { color: 'blue', cls: 'sm', onClick: () => { const c = nextCost(G); if (c) G.addCoins(-c); end(false); G.go('visit', { again: true }); } }), h('div', { class: 'scost', html: nextCost(G) ? ICON.coin : '' }, nextCost(G) ? String(nextCost(G)) : '무료')),
         ] : [
           ui.btn('목록', { color: 'gray', cls: 'sm', onClick: () => { end(false); G.go('visit'); } }),
           ...(next ? [ui.btn('다음 집', { color: 'blue', cls: 'sm', onClick: () => { end(false); G.go('stage', { custom: next, scout: true }); } })] : []),

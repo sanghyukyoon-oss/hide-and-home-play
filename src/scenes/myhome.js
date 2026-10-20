@@ -534,7 +534,7 @@ export class MyHomeScene {
   dragStart(x, y) {
     if (this.mode === 'hide') {   // (숨기기: only the held thing moves; a hidden thing you drag is picked up first — the rest is the camera's)
       const d = holdDrag(this, x, y); if (d) return d;
-      const hit = this.pick(x, y); if (hit.kind === 'item') { holdStart(this, hit.item.type); return holdDrag(this, x, y); }
+      const hit = this.pick(x, y); if (hit.kind === 'item') { holdStart(this, hit.item.type, { x, y }); return holdDrag(this, x, y); }
       return null;
     }
     if (this.mode !== 'edit' || !this.sel) return null;

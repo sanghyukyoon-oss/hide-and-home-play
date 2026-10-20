@@ -12,7 +12,7 @@ import { makeFurniture } from '../gfx/furniture.js';
 import { groundTex } from '../gfx/outdoor.js';
 import { openTune } from '../tune.js';
 import { openCardBook, bookBadge } from '../cardbook.js';
-import { runRaids, unseen, markSeen, newsLine } from '../raid.js';
+import { runRaids, unseen, markSeen, newsLine, holderOf } from '../raid.js';
 import { canReplay, playRaidReplay, shieldTxt } from '../raidreplay.js';   // ① 털림 다시 보기 · 문단속 (10/19)
 import { shieldLeft } from '../raid.js';
 import { Visitors } from '../visitors.js';
@@ -27,6 +27,7 @@ import { openGallery } from '../gallery.js';
 import { openHelp } from '../controlshelp.js';   // 조작 도움말 (10/20)
 import { BOSS_GAMES } from '../minis.js';
 import { lvOf } from '../level.js';   // 내 Lv: 별 + 털기 (10/20)
+import { settleOpen } from '../raidrun.js';   // 털다 만 집 정산 (QA9, 10/21)
 
 // ═════════════════════════════════════════ village kit ═════════════════════════════════════════
 // Every building is a few "parts". A part is one ink-outline shape (userData.og) drawn as 1–3 merged meshes: all plain
@@ -1011,6 +1012,7 @@ export class HomeScene {
     W.shadowDirty = true;
     W.onTap = (x, y) => this.tap(x, y);
     W.onRotate = null; W.onDragStart = null;
+    { const c = settleOpen(G); if (c) setTimeout(() => G.ui.toast(`지난번 털다 만 집 정산 · 코인 +${c}`, 'green'), 900); }   // (QA9 P2: the app closed mid-raid)
     runRaids(G);   // residents who sneaked in while you were away (coins land before the HUD shows them)
     this.buildHud();
     G.audio.music('home');
@@ -1035,7 +1037,7 @@ export class HomeScene {
       body: [...rows, h('div', { class: 'txt' }, took.length ? '털어 간 친구 방에 가서 다 찾으면 되찾을 수 있어!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자'),
         ...(took.length && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : [])],
       buttons: last ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => replay(last) })]
-        : took.length ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('되찾으러 가기', { color: 'orange', cls: 'big', onClick: () => { markSeen(G); G.go('visit'); } })]
+        : took.length ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('되찾으러 가기', { color: 'orange', cls: 'big', onClick: () => { markSeen(G); G.go('visit', { force: holderOf(G.save) }); } })]
         : [G.ui.btn('좋아!', { color: 'green', onClick: close })] });
   }
   // Portrait: 몽글이 big and centred just above the play button, its house filling the screen behind it, the roof

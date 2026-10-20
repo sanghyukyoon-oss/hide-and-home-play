@@ -116,6 +116,12 @@ export function newsLine(e) {
 
 // my things that a resident is holding (their room hides them, marked as mine)
 export const stolenBy = (save, id) => raidOf(save).stolen[id] || [];
+// who holds my things: the one holding `item`, else the one holding the most (QA9 P2: 되찾으러 가기 went to a random house)
+export function holderOf(save, item = null) {
+  const e = Object.entries(raidOf(save).stolen || {}).filter(([, l]) => l?.length && (!item || l.includes(item)));
+  e.sort((a, b) => b[1].length - a[1].length);
+  return e[0]?.[0] || null;
+}
 
 // after clearing someone's room: take back what was mine (all of it — it was all found), then pocket one thing
 // (only: 타이머 털기 — just the ones found before the count ran out; the rest stay there)

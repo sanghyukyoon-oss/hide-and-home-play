@@ -66,7 +66,7 @@ import { h, ICON } from '../ui.js';
 import { ease, clamp, Tweens } from '../util.js';
 import { openTune } from '../tune.js';
 import { retrieve, canGrab, grab } from '../raid.js';
-import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout } from '../raidrun.js';   // 타이머 털기 (10/19)
+import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout, settleOpen } from '../raidrun.js';   // 타이머 털기 (10/19)
 // 프라모델 조립판 (정식판 10/19): the things to find are a model kit's pieces — the box opens first, a runner card holds them,
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
 import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitFinish, kitReward } from '../modelkit.js';
@@ -415,6 +415,7 @@ export class StageScene {
     this.dead = true;
     this.clearTapTimers();
     const G = this.G;
+    if (this.raidRun && !this.result) { const c = settleOpen(G); if (c) setTimeout(() => G.ui.toast(`털다 나온 집 정산 · 코인 +${c}`, 'green'), 700); }   // (QA9 P2: leaving a raid half way kept nothing)
     G.tv?.close(); this.tvs?.dispose(); this.tvs = null;   // 몽글 TV
     G.world.onPan = null; G.world.onDoubleTap = null; this.tutEls?.forEach(e => e.remove()); this.trick?.dispose();
     if (G.world.post) { G.world.post.u.gray.value = 0; G.world.post.u.grayR.value = -1; }
