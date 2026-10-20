@@ -12,7 +12,7 @@ import { EN } from './i18n-en-dict.js';
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { ITEMS } from './gfx/items.js';
 import { attachItem } from './room.js';
-import { spotFits, shapeFits, capScale, faceItem, centerOn, squareIfCrossing } from './fitspot.js';
+import { spotFits, shapeFits, capScale, faceItem, centerOn, squareIfCrossing, settleOn } from './fitspot.js';
 import { affOk } from './affinity.js';
 import { THEMES, stageSpec, STAGE_COUNT, REGIONS, regionOf } from './stages.js';
 import { hostAt, CAMEO_LINE } from './script.js';
@@ -56,7 +56,7 @@ export function moveItem(it, spot) {
   if (old.item === it) old.item = null;
   // (the same size where it fits; a little smaller where the new place is tighter — fitspot.js, and it looks out of it)
   attachItem(spot, g, { rotY: g.rotation.y, scale: Math.min(k, capScale(it.type, spot)) });
-  faceItem(g, spot, g.userData.jit || 0); centerOn(g, spot); squareIfCrossing(g, spot);
+  faceItem(g, spot, g.userData.jit || 0); centerOn(g, spot); squareIfCrossing(g, spot); settleOn(g, spot);
   it.spot = spot; spot.item = it;
 }
 const CHAIN = new Set(['key', 'note', 'color', 'treat', 'tool', 'sock', 'book', 'gadget']);
@@ -170,6 +170,7 @@ export const cameoKind = idx => peekers()[idx] || null;
 export function placeCameo(S) {
   // (not in chapter 1: one thing at a time while you're learning — 1장 덜어내기, 10/18)
   if (REGIONS.indexOf(regionOf(S.idx)) === 0) return null;
+  if (S.spec.kit || S.kit) return null;   // (nor on a kit stage: 13판 already brings the code lock and the moving-box card — one new thing a stage; 1~20 한 줄 점검 10/20, the first peek is 15판 now)
   const kind = !NO_PEEK && cameoKind(S.idx); if (!kind) return null;
   const W = S.G.world, furns = (S.room.rooms || [S.room]).flatMap(R => R.furns);
   const boxes = furns.map(e => ({ e, b: new THREE.Box3().setFromObject(e.f.group) })).filter(o => o.b.max.y - o.b.min.y > .06);

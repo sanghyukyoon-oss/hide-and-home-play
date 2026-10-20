@@ -91,7 +91,7 @@ const LEVELS = [
     decor: [D('balconywin', 'W', 1.8), D('catclock', 'N', -1.5), D('wallshelf2', 'N', .4), D('picture', 'W', -1.2)],
     friends: [['trickster', 'wardrobe'], ['churro', 'laundrybasket'], ['squirrel', 'boxes'], ['coolcat', 'sofa2'], ['shiba', 'diningset']], spare: [2.5, -1.3], moon: [{ from: [-3.5, -1.1, -3.5, -2.5], dir: [2.1, .9] }] },
   // 펭펭이네 2층집 (engine/stages.js MAPS.house2f, refurnished): the living room below, a balcony bedroom up the stairs
-  { name: '펭펭이네 2층집', sub: '계단을 톡! 위아래층을 오가며 찾아', theme: 'house2f', map: 'house2f', scatter: 3.2,
+  { name: '펭펭이네 2층집', sub: '계단을 콕! 위아래층을 오가며 찾아', theme: 'house2f', map: 'house2f', scatter: 3.2,
     posts: [[.75, 3.0], [-.75, -.75]], look: [.35, -1], looks: [[.35, -1], [.6, -1]], battery: 70, half: 18, range: 6.6, tell: [4.5, 7.5], tellDur: 1.05, move: [5, 8.5], sneak: .9, creep: .66, foundT: 1.1, maxCreep: 2, spookCost: 7,
     cam: { y: 1.55, pitch: .72, zoom: .97, dx: .3, dz: -.25 },
     edit: m => {
@@ -593,7 +593,7 @@ export class Game {
     if (this.bubbles < 3) this.sayAt(S.c.x, S.top + .12, S.c.z, txt, Math.min(1400, LV.tellDur * 1000), 'think fl-tell');
     if ((this._gig = (this._gig || 0)) <= 0) { this.sfx(Fr.k === 'sleepy' ? 'hmm' : 'giggle'); this._gig = .5; }
     // two floors: the first giveaway you can't reach from where you stand points you at the stairs
-    if (this.posts.length > 1 && !this._stairHint && !this.reach(S.c.x, S.c.z, S.f, this.spotH(S), S.rec)) { this._stairHint = true; this.showHint(S.f > this.cur ? '위층에서 소리가! ⬆ 계단을 톡' : '아래층에서 소리가! ⬇ 계단을 톡', 4200); }
+    if (this.posts.length > 1 && !this._stairHint && !this.reach(S.c.x, S.c.z, S.f, this.spotH(S), S.rec)) { this._stairHint = true; this.showHint(S.f > this.cur ? '위층에서 소리가! ⬆ 계단을 콕' : '아래층에서 소리가! ⬇ 계단을 콕', 4200); }
   }
   endTell(Fr) { Fr.tellOn = 0; Fr.eyesOn = false; if (Fr.spot && Fr.state !== 'frozen') Fr.spot.goal = 0; }
 
@@ -993,7 +993,7 @@ export class Game {
       L.ui.panel({ title: '배터리가 다 됐어!', color: 'red', body: [
         h('div', { class: 'fl-endfaces' }, ...this.friends.map(Fr => { const got = ['found', 'toTeam', 'team'].includes(Fr.state); return h('div', { class: 'fl-face' + (got ? ' got' : '') }, h('img', { src: L.thumbs[`face_${Fr.kind}_${got ? 'happy' : 'normal'}`] })); })),
         h('div', { class: 'txt' }, `${this.friends.length}명 중 ${this.foundN}명 찾았어!`),
-        h('div', { class: 'fl-tip' }, scared ? '살금살금 다가오는 친구부터 비춰!' : this.posts.length > 1 ? '소리 나는 층으로 계단을 톡!' : '킥킥 소리가 나면 바로 그쪽을 비춰!')],
+        h('div', { class: 'fl-tip' }, scared ? '살금살금 다가오는 친구부터 비춰!' : this.posts.length > 1 ? '소리 나는 층으로 계단을 콕!' : '킥킥 소리가 나면 바로 그쪽을 비춰!')],
         buttons: [this.againBtn = L.ui.btn('다시 하기', { color: 'orange', cls: 'big', onClick: () => L.go({ lv: this.lvIdx }) })] });
     }, 2700);
   }

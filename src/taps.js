@@ -11,11 +11,11 @@ import { lensNudge } from './lens.js';   // 경제 B5 (10/19)
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
 export const TAP_TXT = {
-  title: K('톡을 다 썼어!', 'Out of taps!'),
-  body: K('아무 데나 누르면 톡이 줄어. 잘 보고 눌러 보자!', 'Every tap on nothing uses one up. Look first, then tap!'),
+  title: K('콕을 다 썼어!', 'Out of taps!'),
+  body: K('아무 데나 누르면 콕이 줄어. 잘 보고 눌러 보자!', 'Every tap on nothing uses one up. Look first, then tap!'),
   free: K('서랍·문은 공짜!', 'Drawers and doors are free!'),   // (the one line the tap rule still says: on the first tap stage's second miss)
-  low: K('톡이 얼마 안 남았어! 잘 보고 눌러', 'Only a few taps left! Look before you tap'),
-  star: K('★ 톡 절반 남기기', '★ Half the taps left'),
+  low: K('콕이 얼마 안 남았어! 잘 보고 눌러', 'Only a few taps left! Look before you tap'),
+  star: K('★ 콕 절반 남기기', '★ Half the taps left'),
   friend: K('헤헤, 못 찾았지?', "Hehe, couldn't find me?"),
 };
 

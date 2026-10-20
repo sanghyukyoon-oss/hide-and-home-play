@@ -118,6 +118,7 @@ export function capScale(type, spot, role) {
 
 // fitClear's measure, before the thing is there: its own model on the place at scale sc, turned square to the furniture
 // either way, rays from its middle to the four sides against its furniture and the walls → how much of sc fits (1 = all)
+const EDGE_KINDS = new Set(['on', 'behind', 'under']);   // (out in the open next to its piece; in a box the box's insides are fitClear's)
 const PROTO = new Map(), _pb = new THREE.Box3(), _pbb = new THREE.Box3(), _pc = new THREE.Vector3(), _pd = new THREE.Vector3(), _po = new THREE.Vector3();
 const _eb = new THREE.Box3(), _mb2 = new THREE.Box3(), _ta = new THREE.Vector3(), _tb = new THREE.Vector3(), _tc = new THREE.Vector3(), _ray = new THREE.Ray(), _hp = new THREE.Vector3();
 const segIn = (p, q, box) => { const L = p.distanceTo(q); if (L < 1e-5) return false; _ray.origin.copy(p); _ray.direction.subVectors(q, p).divideScalar(L); return !!_ray.intersectBox(box, _hp) && _hp.distanceTo(p) <= L; };
@@ -167,7 +168,7 @@ function probe(type, spot, sc, edgeOnly = false) {
     // out on top of something: no edge of the furniture's own triangles passes through the thing (a floor lamp's pole 1.2 cm
     // off the middle, a plant's thin slanting stem slipped between rays — 겹침 QA 10/20 실측). Its box less 5 mm a side, from
     // 1 cm above the place up (what it stands on is no crossing). In a box or a drawer the closed lid and the insides are fitClear's.
-    if (spot.kind === 'on') {
+    if (EDGE_KINDS.has(spot.kind)) {   // (and behind or under a piece: 10판's heart behind the big pot grazed it 4 cm — 겹침 QA v178)
       a.getWorldPosition(_po);
       // (at the size it will be drawn: shrunk by k round its middle when the side rays said a little less fits)
       const kk = edgeOnly ? 1 : Math.max(0, Math.min(1, k)), hx = (_pb.max.x - _pb.min.x) / 2 * kk, hz = (_pb.max.z - _pb.min.z) / 2 * kk;
@@ -196,7 +197,7 @@ export const spotFits = (type, spot, role) => drawnScale(type, spot, role) > 0;
 export function shapeFits(type, spot, role = 'target') {
   if (!PROBE || spot.wallFace || spot.kind === 'in' || nestles(spot) || !ITEMS[type]?.build) return true;
   // (a decoy too, on top of something: nothing running through it — 겹침 QA 10/20, a pot on the monstera's soil)
-  if (role === 'decoy') { if (spot.kind !== 'on') return true; const d = drawnScale(type, spot, 'decoy'); return d > 0 && probe(type, spot, d, true) > 0; }
+  if (role === 'decoy') { if (!EDGE_KINDS.has(spot.kind)) return true; const d = drawnScale(type, spot, 'decoy'); return d > 0 && probe(type, spot, d, true) > 0; }
   const want = wantScale(type, spot, role), sc = drawnScale(type, spot, role);
   if (!(sc > 0) || sc >= want * 2) return sc > 0;
   return sc * probe(type, spot, sc) >= Math.max(1, want * KEEP) - 1e-6;
@@ -244,7 +245,7 @@ export function centerOn(g, spot) {
 const _ib = new THREE.Box3(), _ibb = new THREE.Box3(), _ia = new THREE.Vector3();
 function itemBox(g) { _ib.makeEmpty(); g.updateMatrixWorld(true); g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _ib.union(_ibb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } }); return _ib; }
 export function squareIfCrossing(g, spot) {
-  if (!PROBE || !g || spot.kind !== 'on' || spot.wallFace || nestles(spot) || !spot.anchor) return;
+  if (!PROBE || !g || !EDGE_KINDS.has(spot.kind) || spot.wallFace || nestles(spot) || !spot.anchor) return;
   const fr = furnRoot(spot.anchor); if (!fr) return;
   const ms = meshesOf(fr).filter(o => o.visible !== false);
   spot.anchor.getWorldPosition(_ia);
@@ -253,4 +254,20 @@ export function squareIfCrossing(g, spot) {
   const ry = g.rotation.y;
   for (const a of [0, Math.PI / 2]) { g.rotation.y = a; g.position.x = g.position.z = 0; centerOn(g, spot); if (!crosses()) return; }
   g.rotation.y = ry; g.position.x = g.position.z = 0; centerOn(g, spot);
+}
+// a thing on top of something sits on it: when the place's mark is a little under the board it stands on (a plant shelf's top
+// shelf: 6–9 mm sunk, 겹침 QA v178), it comes up onto the surface — never more than 2 cm (a thing meant to sit in sand stays)
+const _sd = new THREE.Vector3(0, -1, 0), _so = new THREE.Vector3(), _sl = new THREE.Vector3();
+export function settleOn(g, spot) {
+  if (!g || spot.kind !== 'on' || spot.wallFace || nestles(spot) || !spot.anchor || !g.parent) return;
+  const fr = furnRoot(spot.anchor); if (!fr) return;
+  const b = itemBox(g); if (b.isEmpty()) return;
+  const rc = new THREE.Raycaster(); b.getCenter(_so); _so.y = b.min.y + .02; rc.set(_so, _sd); rc.far = .021;
+  const hit = rc.intersectObjects(meshesOf(fr).filter(o => o.visible !== false), false)[0];
+  if (!hit) return;
+  const up = hit.point.y - b.min.y;
+  if (up > .001 && up < .02) {   // (up by that much in the world, whatever the place's own frame is)
+    const pw = g.parent.getWorldPosition(new THREE.Vector3()), a1 = g.parent.worldToLocal(pw.clone()), a2 = g.parent.worldToLocal(pw.clone().add(_sl.set(0, up, 0)));
+    g.position.add(a2.sub(a1)); g.updateMatrixWorld(true);
+  }
 }

@@ -110,10 +110,10 @@ const TINTS = ['#ff8fb8', '#7fd6c0', '#ffd23f', '#9f8fff'];
 class Spot {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '너굴이의 바꿔치기'; this.face = 'raccoon';   // (너굴이, not 먹물이: its name isn't known before 64판 — 검토 H7)
-    this.goal = '너굴이가 바꿔 놓은 곳을 톡! (틀리면 3초, 다시 보기는 4초가 줄어)';   // (GPT QA ST-NAME: was 먹물이 — not named before 64판)
+    this.goal = '너굴이가 바꿔 놓은 곳을 콕! (틀리면 3초, 다시 보기는 4초가 줄어)';   // (GPT QA ST-NAME: was 먹물이 — not named before 64판)
     this.tip = '처음 모습을 잘 봐 둬! 색이 바뀐 것, 사라진 것, 돌아간 것, 새로 생긴 것.';
     this.intro = [{ who: 'raccoon', text: '히히, 이 방 내가 몰래 바꿔 놓을 거야. 어디가 바뀌었는지 맞혀 볼래?' },
-      { who: 'mong', text: '처음 모습을 잘 봐 두고, 바뀐 곳을 톡! 헷갈리면 "처음 모습"을 잠깐 볼 수 있어.' }];
+      { who: 'mong', text: '처음 모습을 잘 봐 두고, 바뀐 곳을 콕! 헷갈리면 "처음 모습"을 잠깐 볼 수 있어.' }];
     this.n = P.n || 3; this.time = P.time || 40;
   }
   map() { return this.P.map || 'apt'; }
@@ -272,7 +272,7 @@ class RedLight {
 class Shell {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '햄찌의 야바위'; this.face = 'hamster';
-    this.goal = '햄찌가 숨은 바구니를 눈으로 따라가서 톡!';
+    this.goal = '햄찌가 숨은 바구니를 눈으로 따라가서 콕!';
     this.tip = '바구니 하나만 눈으로 계속 따라가 봐!';
     this.intro = [{ who: 'hamster', text: '웁웁! 내가 바구니 속에 쏙 숨을게. 섞은 다음에 어디 있는지 맞혀 봐!' },
       { who: 'mong', text: '햄찌가 들어간 바구니만 눈으로 꼭 따라가자!' }];
@@ -319,7 +319,7 @@ class Shell {
       await tw.run(dur, k => { const s = Math.sin(k * PI); ca.position.lerpVectors(pa, pb, k); ca.position.z += s * .35; cb.position.lerpVectors(pb, pa, k); cb.position.z -= s * .35; });
       [this.order[a], this.order[b]] = [this.order[b], this.order[a]];
     }
-    this.phase = 'pick'; S.setStatus('어느 바구니일까? 톡!', 'green');
+    this.phase = 'pick'; S.setStatus('어느 바구니일까? 콕!', 'green');
   }
   async tap(x, y) {
     if (this.phase !== 'pick') return;
@@ -353,9 +353,9 @@ const POPPERS = ['bunny', 'frog', 'hamster', 'squirrel', 'shiba', 'panda'];
 class Whack {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '두더지 숨바꼭질'; this.face = 'frog';
-    this.goal = '덤불 뒤에서 쏙 나온 친구를 톡! 너굴이는 누르면 안 돼';
-    this.tip = '너굴이(술래)가 나오면 꾹 참기! 친구만 톡톡.';
-    this.intro = [{ who: 'frog', text: '개굴! 덤불 뒤에 친구들이 숨었다 나왔다 해. 나올 때 톡 하면 찾은 거야!' },
+    this.goal = '덤불 뒤에서 쏙 나온 친구를 콕! 너굴이는 누르면 안 돼';
+    this.tip = '너굴이(술래)가 나오면 꾹 참기! 친구만 콕콕.';
+    this.intro = [{ who: 'frog', text: '개굴! 덤불 뒤에 친구들이 숨었다 나왔다 해. 나올 때 콕 하면 찾은 거야!' },
       { who: 'raccoon', text: '나도 가끔 나올 건데… 나를 누르면 하나 빼기다~!' }];
     this.goalN = P.goal || 12; this.time = P.time || 35;
   }
@@ -436,20 +436,20 @@ class Whack {
 class Lamp {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '손전등 술래'; this.face = 'panda';
-    this.goal = '손전등으로 비추고, 보이는 친구를 톡! "킥킥" 소리가 힌트야';
+    this.goal = '손전등으로 비추고, 보이는 친구를 콕! "킥킥" 소리가 힌트야';
     this.tip = '말풍선 "킥킥"이 뜬 곳 근처를 비춰 봐!';
     this.intro = [{ who: 'panda', text: '캠핑의 꽃은 밤 숨바꼭질! 손전등 하나로 다섯 명 찾아 봐~' },
-      { who: 'mong', text: '화면을 문지르면 손전등이 따라와. 불빛에 보이는 친구를 톡!' }];
+      { who: 'mong', text: '화면을 문지르면 손전등이 따라와. 불빛에 보이는 친구를 콕!' }];
     this.time = P.time || 50; this.n = P.n || 5; this.decoys = P.decoys || 0;
     this.bg = ['#1d2250', '#2c2a5e']; this.light = { ambColor: '#5a63b8', amb: .7, sunColor: '#9fa9ff', sun: .45 };
     // the boss version (user, 10/18: "손전등 술래를 보스로 키우기" — it was more fun than the flashlight boss): a bigger floor,
     // more friends, and 너굴이 hiding among them — lighting it up and tapping it costs time while it laughs at you
     if (P.boss) {
       this.title = '손전등 술래 · 보스';
-      this.goal = `불 꺼진 층에서 친구 ${this.n}명 찾기! 너굴이를 톡 하면 시간이 줄어`;
+      this.goal = `불 꺼진 층에서 친구 ${this.n}명 찾기! 너굴이를 콕 하면 시간이 줄어`;
       this.tip = '"킥킥"은 친구, "흐흐흐"는 너굴이야!';
       this.intro = [{ who: 'raccoon', text: '불 다 껐지롱! 친구들 사이에 나도 숨었다~ 나를 비추면 시간 뺏을 거야!' },
-        { who: 'mong', text: '"킥킥"은 친구, "흐흐흐"는 너굴이! 손전등으로 잘 보고 톡!' }];
+        { who: 'mong', text: '"킥킥"은 친구, "흐흐흐"는 너굴이! 손전등으로 잘 보고 콕!' }];
     }
   }
   map() { return this.P.map || 'camp1'; }

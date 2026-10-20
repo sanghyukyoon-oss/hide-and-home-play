@@ -17,9 +17,9 @@ const K = (ko, en) => { EN[ko] = en; return ko; };
 export const FTAP_ON = typeof location === 'undefined' || !/[?&]ftapteach=0(&|$)/.test(location.search);
 // (문구 초안: 조작감 세션 10/19 — 스토리 룸이 고쳐 주세요)
 export const FTAP_TXT = {
-  tip: K('끌면서 다른 손가락으로 톡! 그대로 끌면 방이 빙글', 'Drag, then tap with another finger. Keep dragging to spin the room!'),
-  more: K('한 손가락은 그대로 두고, 다른 손가락으로 톡!', 'Keep one finger down and tap with another!'),
-  got: K('새로 얻었다! 끌다가 톡 → 빙글 · 손 떼면 다시 이동', 'New move! Drag + tap to spin · Let go to move again'),   // (문구: 스토리 룸 10/19)
+  tip: K('끌면서 다른 손가락으로 콕! 그대로 끌면 방이 빙글', 'Drag, then tap with another finger. Keep dragging to spin the room!'),
+  more: K('한 손가락은 그대로 두고, 다른 손가락으로 콕!', 'Keep one finger down and tap with another!'),
+  got: K('새로 얻었다! 끌다가 콕 → 빙글 · 손 떼면 다시 이동', 'New move! Drag + tap to spin · Let go to move again'),   // (문구: 스토리 룸 10/19)
 };
 
 // a drag that a second-finger tap turned into a turn (not the dial, not the 회전 badge of the E controls)

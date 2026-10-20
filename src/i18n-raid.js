@@ -17,7 +17,7 @@ addI18n({
   '어디 보자… 딸깍!': "Let's see… click!", '잠겼잖아!': "It's locked!", '헤헤, 이건 내 거~': 'Hehe, mine now~', '없네?': 'Nothing?', '여긴 없네~': 'Nothing here~', '하나도 없잖아! 흥!': 'Nothing at all! Hmph!',
   '자물쇠를 땄어!': 'Lock picked!', '자물쇠가 막았다!': 'The lock held!', '안 들킴!': 'Not found!', '털렸다…': 'Robbed…', '지켜 냈다!': 'Defended!',
   '안 들킴': 'Not found', '자물쇠가 막음': 'Lock held', '들켰지만 두고 감': 'Found, left behind', '털림': 'Taken', '잘 숨겨 둔 덕분이야!': 'Your hiding paid off!',
-  '톡 하면 닫혀': 'tap to shut', '더 꽁꽁 숨기기': 'Hide better', '복수하러 가기': 'Get revenge',
+  '콕 하면 닫혀': 'tap to shut', '더 꽁꽁 숨기기': 'Hide better', '복수하러 가기': 'Get revenge',
   // 문단속 · 자물쇠
   '털린 뒤라 문을 꽁꽁 잠갔어': 'Robbed, so the door is locked', '자물쇠가 다 쓰였어': 'Out of padlocks',
   '잠근 서랍 속 물건은 동네 주민이 거의 못 털어 가': 'Things in a locked drawer are hardly ever taken', '다른 데 걸린 걸 풀어서 옮겨 봐': 'Take one off and move it',

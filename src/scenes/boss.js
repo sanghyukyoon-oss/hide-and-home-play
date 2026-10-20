@@ -116,8 +116,8 @@ export class BossScene {
       const { playDialog } = await import('../story.js');
       await playDialog(G, [
         { who: 'raccoon', text: '이번엔 보물 지키기야! 네가 제일 아끼는 보물 3개, 내가 다 찾으면 내 거~' },
-        { who: 'mong', text: '너굴이가 세는 동안 숨길 곳을 톡! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.' },
-        { who: 'mong', text: '찾기 시작하면 바닥을 톡 해서 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!' },
+        { who: 'mong', text: '너굴이가 세는 동안 숨길 곳을 콕! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.' },
+        { who: 'mong', text: '찾기 시작하면 바닥을 콕 해서 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!' },
         { who: 'raccoon', text: '시간 끝까지 하나라도 남으면 네 승리! 각오해~' },
       ], { title: '보스 · 보물 지키기' });
       if (this.dead) return;
@@ -224,7 +224,7 @@ export class BossScene {
     // shelf — the way you hide things at home (user, 10/18: "걸어다니면서 숨기지 않고 그냥 내가 원하는 곳에 배치")
     if (f && this.phase === 'count' && this.treasures.some(t => !t.spot)) {
       const fs = (f.spots || []).filter(q => !q.bossTre).sort((a, b) => a.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point) - b.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point))[0] || null;
-      if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 톡', '');
+      if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 콕', '');
       W.fx.ring(x, y, { r: 40, color: '#ff9ec2', width: 6, life: .4 }); return;
     }
     const p = spot ? spot.t : hit.point; this._ty = spot ? (spot.t.y || 0) : hit.point.y;
@@ -264,7 +264,7 @@ export class BossScene {
   hideTreasure(at = null, quiet = false, fs = undefined) {
     const G = this.G, s = at || this.spotNear(), t = this.treasures.find(x => !x.spot);
     if (!t || this.phase !== 'count') return;
-    if (!s) { G.ui.toast('숨길 가구를 톡 해 봐!', ''); return; }
+    if (!s) { G.ui.toast('숨길 가구를 콕 해 봐!', ''); return; }
     if (s.tre) { G.ui.toast('여긴 벌써 숨겼어! 다른 곳에', ''); return; }
     t.spot = s; s.tre = t;
     if (fs === undefined) fs = (s.f.spots || []).filter(q => !q.bossTre)[Math.floor(Math.random() * Math.max(1, (s.f.spots || []).length))] || null;

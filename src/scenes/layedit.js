@@ -71,7 +71,7 @@ export class LayEditScene {
     this.load(idx);
     if (!G.save.tut?.layedit) {
       (G.save.tut || (G.save.tut = {})).layedit = true; G.persist();
-      G.ui.toast('가구를 톡 골라서 끌면 옮겨져요. 크기·돌리기·살짝 옮기기는 아래 버튼으로!', 'green');
+      G.ui.toast('가구를 콕 골라서 끌면 옮겨져요. 크기·돌리기·살짝 옮기기는 아래 버튼으로!', 'green');
     }
   }
   exit() {

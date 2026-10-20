@@ -162,7 +162,9 @@ if (qs.has('reset')) {
   try { const u = new URLSearchParams(location.search); u.delete('reset'); history.replaceState(null, '', location.pathname + (u.toString() ? '?' + u : '')); } catch {}
 }
 // a long press on a picture opened Android's "download image" menu (iOS: style.css -webkit-touch-callout) — QA3 10/19
-addEventListener('contextmenu', e => { if (e.target?.tagName === 'IMG') e.preventDefault(); });
+// (10/20 user on a PC: a right-drag turns the room, but the right click also opened the page's 복사/모두 선택 menu — only
+// text boxes keep the browser menu now; it used to be blocked on images and on the 3D canvas alone)
+addEventListener('contextmenu', e => { const t = e.target; if (!(t?.closest?.('input, textarea, [contenteditable="true"]'))) e.preventDefault(); });
 // Android: the turn dial sat ~11 px from the right edge, inside the system's back-swipe strip (~24 dp) — a slide from its
 // right end closed the app (Android 16). style.css moves it in on Android only; the iPhone layout stays as it is
 if (/Android/i.test(navigator.userAgent)) document.documentElement.classList.add('android');

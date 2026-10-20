@@ -545,7 +545,7 @@ export class Game {
     this.bar = h('div', { class: 'ik-bar' }, this.barI = h('i'), ...LV.stars.map((s, k) => h('span', { class: 'ik-mark', style: `left:${s / max * 100}%` }, '★'.repeat(k + 1))));
     this.barMax = max;
     col.append(h('div', { class: 'ik-head' }, this.scoreEl, this.bar));
-    this.hint = h('div', { class: 'ik-hint ol' }, '깜빡·꿈틀하는 물건이 먹물이! 톡!'); col.append(this.hint);
+    this.hint = h('div', { class: 'ik-hint ol' }, '깜빡·꿈틀하는 물건이 먹물이! 콕!'); col.append(this.hint);
     this.feverEl = h('div', { class: 'ik-fever' }); document.getElementById('app').append(this.feverEl);
   }
   updCombo() { this.scoreEl.dataset.combo = this.combo >= 2 ? tr(`${this.combo} 연속`) : ''; }

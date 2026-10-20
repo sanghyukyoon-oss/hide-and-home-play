@@ -217,7 +217,7 @@ export class Game {
     col.append(h('div', { class: 'tr-head' }, this.scoreEl, this.bar, this.poolEl));
     this.rivalEl = h('div', { class: 'tr-rival' }, h('img', { src: L.thumbs.face_raccoon_happy }), this.rivalN_ = h('b', { class: 'ol' }, '0'));
     col.append(this.rivalEl);
-    this.hint = h('div', { class: 'tr-hint ol' }, '톡! 뒤져 보기 · 뜨거울수록 가까워'); col.append(this.hint);
+    this.hint = h('div', { class: 'tr-hint ol' }, '콕! 뒤져 보기 · 뜨거울수록 가까워'); col.append(this.hint);
     this.feverEl = h('div', { class: 'tr-fever' }); document.getElementById('app').append(this.feverEl);
     // chips over the places: the heat of a searched place, and the paw over where 너굴이 is heading
     for (const s of this.spots) { s.chip = h('div', { class: 'tr-chip' }); ui.wui.append(s.chip); }

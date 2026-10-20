@@ -1400,9 +1400,9 @@ const REACTS = {
     { line: '흠흠, 넥타이 삐뚤어졌나?', run: async (c, R) => { R.face('sus'); R.pose('push'); R.sfx('hmm'); await R.t(.3, k => { c.rx.rz = -.12 * k; }); await R.wait(.4); await R.t(.25, k => { c.rx.rz = -.12 * (1 - k); }); R.face('happy'); await R.wait(.2); } },
   ],
   churro: [
-    { line: '여긴 내 책상이다냥.', run: async (c, R) => { R.face('sus'); R.sfx('hmm'); await R.t(.35, k => { c.squash = .18 * k; }); await R.wait(.4); await R.t(.25, k => { c.squash = .18 * (1 - k); }); R.face('happy'); R.fx('heart', { x: .35, y: .9, s: .8 }); await R.wait(.3); } },
-    { line: '추로 왔다! 쓰다듬어도 돼.', run: async (c, R) => { R.face('happy'); R.sfx('pop', 6); c.rx.wag = 1; R.hearts(2, { y: .95 }); await R.jump(.25, .32); await R.wait(.4); } },
-    { line: '…마우스 위가 따뜻해.', run: async (c, R) => { R.face('happy'); R.sfx('wobble'); await R.t(.9, k => { c.rx.rz = Math.sin(k * 50) * .025; c.squash = Math.sin(k * 36) * .03; }, ease.linear); R.fx('z', { x: -.35, y: .85, dur: .8 }); await R.wait(.3); } },
+    { line: '이건 추로님의 책상이다.', run: async (c, R) => { R.face('sus'); R.sfx('hmm'); await R.t(.35, k => { c.squash = .18 * k; }); await R.wait(.4); await R.t(.25, k => { c.squash = .18 * (1 - k); }); R.face('happy'); R.fx('heart', { x: .35, y: .9, s: .8 }); await R.wait(.3); } },
+    { line: '추로님이 왔다. 쓰다듬어도 좋다.', run: async (c, R) => { R.face('happy'); R.sfx('pop', 6); c.rx.wag = 1; R.hearts(2, { y: .95 }); await R.jump(.25, .32); await R.wait(.4); } },
+    { line: '…마우스 위는 추로님 자리다.', run: async (c, R) => { R.face('happy'); R.sfx('wobble'); await R.t(.9, k => { c.rx.rz = Math.sin(k * 50) * .025; c.squash = Math.sin(k * 36) * .03; }, ease.linear); R.fx('z', { x: -.35, y: .85, dur: .8 }); await R.wait(.3); } },
   ],
   // ── object friends
   milk: [

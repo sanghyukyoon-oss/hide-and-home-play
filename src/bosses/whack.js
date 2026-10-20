@@ -155,7 +155,7 @@ export class Game {
         w.state = 'up'; w.t = w.stay; this.L.audio.sfx('hop');
         const y1 = o.top - .32; this.tw.run(.16, k => { if (w.state === 'up') set(-1.2 + (y1 + 1.2) * k); }, ease.outBack);
         w.chs.forEach(c => { c.pose = w.bad ? (w.disguised ? 'wave' : 'hips') : ['wave', 'clap', 'cheer', 'idle'][Math.floor(Math.random() * 4)]; });
-        if (w.golden) this.L.say(w.chs[0], '츄르 줄 거야?', 900);
+        if (w.golden) this.L.say(w.chs[0], '추로님한테 츄르 줄 거야?', 900);
       }
     } else if (w.state === 'up') {
       // peeking: a little look left and right

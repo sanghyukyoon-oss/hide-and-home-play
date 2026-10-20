@@ -14,7 +14,8 @@ const V = new THREE.Vector3();
 export function tricksterFor(stage) {
   const sp = stage.spec;
   if (stage.custom || stage.preview || sp.tut || sp.timed || sp.boss || sp.gray || stage.idx < 12 || sp.intro) return null;
-  if (sp.kit || stage.model || stage.kit) return null;   // (10/19, user ㅇㅋ: no prankster in a kit stage — 13판 이삿짐·34판 파르페 pieces stayed put; one rule a stage)   // (1장은 한 번에 하나씩 배우는 장이라 말썽이는 2장부터, 장 첫 판(새 자물쇠 배우는 판)도 빼고 — QA N12, 레벨 세션 10/19)
+  if (sp.kit || stage.model || stage.kit) return null;
+  if (stage.incident) return null;   // (nor on a friend-hiding or ★ stage: 16판 학교 met it the same stage the friend hid — one new thing a stage; 1~20 한 줄 점검 10/20, its first is 19판 now)   // (10/19, user ㅇㅋ: no prankster in a kit stage — 13판 이삿짐·34판 파르페 pieces stayed put; one rule a stage)   // (1장은 한 번에 하나씩 배우는 장이라 말썽이는 2장부터, 장 첫 판(새 자물쇠 배우는 판)도 빼고 — QA N12, 레벨 세션 10/19)
   if ((stage.idx * 7 + 3) % 3) return null;   // about one stage in three
   return { at: 14 + (stage.idx % 4) * 4, finds: 2 };
 }
@@ -68,7 +69,7 @@ export class Trickster {
     this.shot = { target: new THREE.Vector3(startT.x, (startT.y || 0) + .4, startT.z), zoom: Math.max(W.zoom, 1.7) };
     W.flyTo(S.tw, { ...this.shot, dur: .45 });
     S.say(ch, '히히! 이건 내 거~', 1400);
-    G.ui.toast('앗! 말썽이가 나타났다! 톡 해서 잡아라!', 'red');
+    G.ui.toast('앗! 말썽이가 나타났다! 콕 해서 잡아라!', 'red');
     if (!await this.walk(route)) return;
     // grab
     const it = v.it; if (it.found || this.gone()) return this.leave();

@@ -61,9 +61,9 @@ export const EN_APP = {
   '헤헤, 나는 술래지롱~!': "Hehe, I'm it!",
   '나 눌렀지? 하나 빼기~!': 'You tapped me? Minus one!',
   '메롱~ 나였어!': 'Nyah~ it was me!',
-  '너굴이가 세는 동안 숨길 곳을 톡! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.': 'Tap a hiding place while Rocky counts! In a drawer, behind a curtain, on a shelf… it goes right where you tap.',
-  '찾기 시작하면 바닥을 톡 해서 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!': 'Once he starts looking, tap the floor to move. Blow the whistle and Rocky comes bumbling your way!',
-  '여기엔 숨길 데가 없어! 다른 가구를 톡': 'Nowhere to hide it here! Tap other furniture',
+  '너굴이가 세는 동안 숨길 곳을 콕! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.': 'Tap a hiding place while Rocky counts! In a drawer, behind a curtain, on a shelf… it goes right where you tap.',
+  '찾기 시작하면 바닥을 콕 해서 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!': 'Once he starts looking, tap the floor to move. Blow the whistle and Rocky comes bumbling your way!',
+  '여기엔 숨길 데가 없어! 다른 가구를 콕': 'Nowhere to hide it here! Tap other furniture',
   '이불 모양만 봐도 다 알아! 이불 속 탐정 인정': 'You can tell just from the blanket shape! Certified blanket detective',
   '앗, 너무 일렀어': 'Oops, too early',
   '공 찾았다!': 'Found the ball!',
@@ -72,13 +72,13 @@ export const EN_APP = {
   '· 친구 자리 +1': '· +1 friend seat',
   '이 폰의 브라우저는 3D 그림(WebGL2)을 지원하지 않아요.': "This phone's browser can't show 3D (WebGL2).",
   '최신 크롬이나 사파리에서 열어 주세요.': 'Please open it in the latest Chrome or Safari.',
-  '조작: 톡 (끌면 이동 · 다른 손 톡 = 회전)': 'Controls: Tap (drag to move · tap with another finger = turn)',
+  '조작: 콕 (끌면 이동 · 다른 손 콕 = 회전)': 'Controls: Tap (drag to move · tap with another finger = turn)',
   '조작: 기본 (끌면 이동 · 돌림판이나 두 손가락 비틀기 = 회전)': 'Controls: Standard (drag to move · wheel or two-finger twist = turn)',
   '한 번 더 누르면 게임을 닫아요': 'Press back again to close the game',
   "글꼴: 카페24 써라운드 · 써라운드 에어 (카페24) / Fredoka · Bagel Fat One · 주아 (OFL) / 본 저작물은 한국기계연구원에서 2022년 작성하여 공공누리 제1유형으로 개방한 '한국기계연구원 서체'를 이용하였으며, 해당 저작물은 한국기계연구원 웹폰트(www.kimm.re.kr/webfont)에서 무료로 받을 수 있습니다.": "Fonts: Cafe24 Ssurround · Ssurround Air (Cafe24) / Fredoka · Bagel Fat One · Jua (OFL) / This work uses the 'KIMM font' released in 2022 by the Korea Institute of Machinery & Materials under KOGL Type 1; it is free at www.kimm.re.kr/webfont.",
   // (스토리 룸 10/20 새벽, 영어 화면 한 바퀴: 1~3판·몽글 TV·상점·배치 편집·내 집 — 털기 글자는 털기 세션 몫)
   // 배치 편집 (scenes/layedit.js)
-  '가구를 톡 골라서 끌면 옮겨져요. 크기·돌리기·살짝 옮기기는 아래 버튼으로!': 'Tap a piece of furniture, then drag to move it. Size, turn and nudge are the buttons below!',
+  '가구를 콕 골라서 끌면 옮겨져요. 크기·돌리기·살짝 옮기기는 아래 버튼으로!': 'Tap a piece of furniture, then drag to move it. Size, turn and nudge are the buttons below!',
   '고침': 'edited', '처음 배치로 돌렸어요': 'Back to the original layout', '되돌릴 게 없어요': 'Nothing to undo', '하나 되돌렸어요': 'Undid one step', '되돌리기': 'Undo', '다 했어요': 'Done', '저장됨': 'Saved',
   '방에 비해 너무 커요': 'Too big for this room', '여기선 더 못 돌려요': "Can't turn it any further here", '벽에 닿아요': 'It hits the wall',
   '크기': 'Size', '방향': 'Turn', '살짝 옮기기': 'Nudge', '위아래': 'Up/down', '옆으로': 'Sideways', '제자리': 'In place',
@@ -89,4 +89,7 @@ export const EN_APP = {
   '카페 간판': 'Café Sign', '입간판': 'Sidewalk Sign', '현관 매트': 'Door Mat',
   // 그 가구들 위에 그린 글자 (canvas)
   '맛있다!': 'Yummy!', '음료': 'Drinks', '빵과 커피': 'Bread & Coffee', '어서 오세요': 'Welcome', '오늘의 케이크': "Today's Cake",
+  // 추로 (사용자네 고양이): it calls itself 추로님 — "the great Churro" (스토리 룸 10/20, user: "추로를 누르면 이름이 들어간 말")
+  '이건 추로님의 책상이다.': "This desk belongs to the great Churro.", '추로님이 왔다. 쓰다듬어도 좋다.': 'The great Churro is here. You may pet.',
+  '…마우스 위는 추로님 자리다.': "…The mouse is the great Churro's seat.", '추로님한테 츄르 줄 거야?': 'A treat for the great Churro?',
 };

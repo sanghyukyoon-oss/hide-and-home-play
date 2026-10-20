@@ -724,7 +724,7 @@ export class MyHomeScene {
       }
       if (hit.kind === 'part' && !hit.part.lock) { this.openPart(hit.part, hit.part.t < .5); return; }
       if (hit.kind === 'part' && hit.part.lock) { G.audio.sfx('locked'); return; }
-      if (this.selItem) G.ui.toast('바닥이나 가구 위, 열어 둔 서랍 안을 톡 해서 숨겨', '');
+      if (this.selItem) G.ui.toast('바닥이나 가구 위, 열어 둔 서랍 안을 콕 해서 숨겨', '');
       return;
     }
     if (hit.kind === 'part' && !hit.part.lock) this.openPart(hit.part, hit.part.t < .5);

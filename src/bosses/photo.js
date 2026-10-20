@@ -494,7 +494,7 @@ export class Game {
       this.slots[m.id] = s; this.fillSlot(m.id, a, false); strip.append(s);
     }
     col.append(strip);
-    if (LV.hint) { this.hint = h('div', { class: 'ph-hint ol' }, h('span', { class: 'ph-hand' }), h('span', {}, '친구의 멋진 순간에 톡! 찰칵')); col.append(this.hint); }
+    if (LV.hint) { this.hint = h('div', { class: 'ph-hint ol' }, h('span', { class: 'ph-hand' }), h('span', {}, '친구의 멋진 순간에 콕! 찰칵')); col.append(this.hint); }
     this.flash = h('div', { class: 'ph-flash' }); document.getElementById('app').append(this.flash); this.doms.push(this.flash);
   }
   fillSlot(id, a, pop = true) {
