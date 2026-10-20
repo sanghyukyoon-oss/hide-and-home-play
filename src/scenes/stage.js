@@ -194,9 +194,13 @@ export class StageScene {
     this.incident = !custom && !this.preview && (!!this.spec.incident || this.spec.tut === 1) && !G.save.settings?.oldMode;
     setPlace(custom ? null : this.spec.room);   // (a place the story room went through thing by thing: 3판 — affinity.js)
     fitPrep(this.room);   // (this room's walls for the box test — fitspot.js)
+    // what the last three stages played asked for: this one picks other things first (stages.js planStage, 10/20)
+    const recentT = G.save.recentT || [];
+    if (!custom && !this.preview) this.spec = { ...this.spec, recentTypes: recentT.filter(e => e.i !== this.idx).flatMap(e => e.t) };
     this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : this.kit ? planModel(this.room, this.spec, this.story) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, { ...this.spec, habit: HABIT_BREAK.has(this.idx) ? null : habitOf(th.friend) }, this.story)) || planStage(this.room, this.spec, this.story);
     if (this.incident && !this.plan.incident) this.incident = false;
     if (!custom && !this.model && !this.preview) this.decoysCut = capDecoys(this.plan, this.spec);   // 함정 상한 (stages.js)
+    if (!custom && !this.preview && !G.bot) { G.save.recentT = [{ i: this.idx, t: this.plan.targets.filter(t => t !== 'friendtoken') }, ...recentT.filter(e => e.i !== this.idx)].slice(0, 3); G.persist?.(); }
     this.v2 = null; const wantV2 = v2Wanted(this);
     if (wantV2) this.plan.placements = this.plan.placements.filter(p => p.role !== 'decoy');   // v2: a friend-finding stage has no decoys
     for (const l of this.plan.locks) {

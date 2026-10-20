@@ -7,28 +7,28 @@ export const ROOM_POOLS = {
   bunnybath: ['rubberduck2', 'toothbrush', 'towel', 'tissue', 'slipper', 'donut', 'hairpin', 'duck'],
   school: ['pencil', 'postit', 'juicebox', 'hairpin', 'donut', 'ball', 'glasses', 'snack'],
   apt: ['remote', 'slipper', 'mandarin', 'gamepad', 'tissue', 'donut', 'cookie', 'milk'],
-  aptkitchen: ['remote', 'slipper', 'mandarin', 'gamepad', 'tissue', 'donut', 'cookie', 'milk'],
-  aptmap: ['remote', 'slipper', 'mandarin', 'gamepad', 'tissue', 'donut', 'cookie', 'milk'],
-  bear: ['teddy', 'cookie', 'milk', 'cupcake', 'snack', 'mandarin', 'icecream', 'apple'],
-  bear2: ['teddy', 'cookie', 'milk', 'cupcake', 'snack', 'mandarin', 'icecream', 'apple'],
+  aptkitchen: ['mandarin', 'milk', 'kimbap', 'onigiri', 'sandwich', 'cookie', 'tissue', 'apple'],   // (방마다 다른 물건 10/20 — user "비슷한 방이 계속 나옴": was the 거실's list)
+  aptmap: ['remote', 'gamepad', 'console', 'gift', 'umbrella', 'keyring', 'coin', 'candy'],
+  bear: ['teddy', 'cookie', 'snack', 'console', 'candy', 'gift', 'gamepad', 'mandarin'],   // (곰돌이 거실: 손님 줄 간식과 놀 거리 — 부엌과 따로, 10/20)
+  bear2: ['milk', 'apple', 'mandarin', 'icecream', 'kimbap', 'onigiri', 'sandwich', 'cupcake'],   // (곰돌이 부엌: 부엌 것 — 거실과 따로, 10/20)
   house3: ['teddy', 'cookie', 'milk', 'cupcake', 'snack', 'mandarin', 'icecream', 'apple'],
   museum: ['star', 'heart', 'crown', 'glasses', 'pencil', 'postit', 'teddy', 'gift'],
   study: ['glasses', 'stapler', 'coffee', 'apple', 'star', 'cookie', 'milk', 'pencil'],
   officefloor: ['glasses', 'pencil', 'postit', 'stapler', 'usb', 'coffee', 'receipt', 'apple'],
   peng: ['crown', 'star', 'icecream', 'milk', 'sunglasses', 'juicebox', 'ball', 'whistle'],
-  house2f: ['crown', 'star', 'icecream', 'milk', 'sunglasses', 'juicebox', 'ball', 'whistle'],
+  house2f: ['crown', 'sunglasses', 'whistle', 'gamepad', 'ball2', 'umbrella', 'candy', 'bubbletea'],   // (펭펭이 2층집 ≠ 다락 — 4판과 같은 목록이었어요, 10/20)
   cat: ['fishsnack', 'milk', 'teddy', 'heart', 'star', 'cookie', 'mandarin', 'icecream'],   // 냥냥이네 부엌 (11판; 레벨 세션)
   firestation: ['whistle', 'crown', 'star', 'juicebox', 'milk', 'ball', 'sunglasses', 'umbrella'],
   police: ['whistle', 'snack', 'cookie', 'ball', 'umbrella', 'keyring', 'juicebox', 'idcard'],
-  policefront: ['whistle', 'snack', 'cookie', 'ball', 'umbrella', 'keyring', 'juicebox', 'idcard'],
-  alley3: ['whistle', 'snack', 'cookie', 'ball', 'umbrella', 'keyring', 'juicebox', 'idcard'],
-  alleyhouse: ['whistle', 'snack', 'cookie', 'ball', 'umbrella', 'keyring', 'juicebox', 'idcard'],
+  policefront: ['whistle', 'umbrella', 'coffee', 'fishcake', 'juicebox', 'ball', 'keyring', 'sunglasses'],
+  alley3: ['fishcake', 'coffee', 'umbrella', 'candy', 'keyring', 'bubbletea', 'gamepad', 'lottery'],
+  alleyhouse: ['kimbap', 'onigiri', 'ball2', 'umbrella', 'gift', 'teddy', 'gamepad', 'slipper'],
   street: ['bubbletea', 'kimbap', 'onigiri', 'fishcake', 'umbrella', 'cookie', 'milk', 'whistle'],
   alley1: ['fishcake', 'earphones', 'gamepad', 'umbrella', 'coffee', 'lottery', 'receipt', 'keyring'],
   alleywide: ['fishcake', 'earphones', 'gamepad', 'umbrella', 'coffee', 'lottery', 'receipt', 'keyring'],
   skatepark: ['sunglasses', 'juicebox', 'bubbletea', 'ball2', 'earphones', 'gamepad', 'keyring', 'snack'],
   oneroom: ['earphones', 'ramen', 'keyring', 'toothbrush', 'coin', 'remote', 'slipper', 'mandarin'],
-  duplex: ['earphones', 'ramen', 'keyring', 'toothbrush', 'coin', 'remote', 'slipper', 'mandarin'],
+  duplex: ['gamepad', 'console', 'bubbletea', 'coin', 'gift', 'sunglasses', 'umbrella', 'ramen'],   // (복층 ≠ 원룸 — 15·18판이 같은 목록이었어요, 10/20)
   park3: ['kimbap', 'onigiri', 'juicebox', 'candy', 'cookie', 'snack', 'keyring', 'coin'],
   konbini: ['receipt', 'sandwich', 'coffee', 'lottery', 'onigiri', 'bubbletea', 'kimbap', 'ramen'],
   shopmap: ['receipt', 'sandwich', 'coffee', 'lottery', 'onigiri', 'bubbletea', 'kimbap', 'ramen'],

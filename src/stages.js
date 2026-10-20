@@ -659,6 +659,9 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // (the old LOCK_PLAN — the same lock order in every region — is REGION_LOCKS above now)
 // Timer per stage from the balance pass (tools/balance.py): human-pace bot clear time / (1 - wanted spare time).
 // Stages missing here keep their rule-based time. Replace with real playtest numbers when there are some.
+// 폰 세로 시작 줌 (0-based; 10/20 레벨·디자인 기획안 D): the wide maps started with things at 17~25 px (19·22·26·27판) and 18·20판's
+// house small in the frame; 6판 at 1.3 cut the living room off the left — 1.2 shows both rooms
+const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 19: 1.2, 21: 1.2, 25: 1.25, 26: 1.2 };
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 100, 8: 105, 9: 105, 10: 110, 11: 110 };
 // 흑백판: the room has lost its colour; what you find (things AND a few pieces of furniture) gets it back
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")
@@ -701,6 +704,7 @@ export function stageSpec(idx) {
   const s = baseSpec(idx);
   if (KIT_AT[idx]) s.kit = KIT_AT[idx];
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
+  if (ZOOM_TUNE[idx]) s.zoom = ZOOM_TUNE[idx];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }
   if (s.boss && s.sock) s.n = Math.max(5, (s.n || 8) - 1);   // (the 상가 boss's fourth lock, the sock: one thing fewer to find)
   if (GRAY.has(idx) && !s.timed && !s.boss) { s.gray = true; s.night = false; if (Array.isArray(s.lock)) s.lock = s.lock.filter(k => k !== 'color'); }   // a colour lock can't be read in grey
@@ -888,7 +892,12 @@ export function planStage(room, spec, story = null) {
   // the place's own things rotate too: neighbouring stages of one region take different ones
   const mine = own.filter(t => !tool(t)), oo = mine.length ? ((spec.idx ?? 0) * ownN) % mine.length : 0;
   const ownTurn = [...mine.slice(oo), ...mine.slice(0, oo)];
-  const targets = [...r.shuffle(ownTurn.slice(0, ownN)), ...r.shuffle(turn.slice(0, Math.max(6, spec.n))), ...turn.slice(Math.max(6, spec.n))].slice(0, spec.n);
+  // (and not what the last three stages you played asked for, while there is anything else — 10/20, user "비슷한 방이 계속
+  // 나옴": 1~20판 103 things were 40 kinds, a star, a ball, a duck, a tangerine and a slipper five times each; stage.js keeps
+  // save.recentT)
+  const recent = new Set(spec.recentTypes || []), fresh = l => [...l.filter(t => !recent.has(t)), ...l.filter(t => recent.has(t))];
+  const ownT = fresh(ownTurn), turnT = fresh(turn);
+  const targets = [...r.shuffle(ownT.slice(0, ownN)), ...r.shuffle(turnT.slice(0, Math.max(6, spec.n))), ...turnT.slice(Math.max(6, spec.n))].slice(0, spec.n);
   if (spec.force) { targets.unshift(...spec.force); targets.length = Math.min(targets.length, spec.n); }   // 사건 판: the hidden friend's marker comes first, so the first lock guards it
   const placements = [];   // { type, spot, role: 'target'|'key'|'note'|'decoy', code }
   const locks = [];        // { part, kind, code }
@@ -1098,7 +1107,8 @@ export function planStage(room, spec, story = null) {
     const n = Math.round(c.length * frac);
     for (let k = 0; k < n; k++) {
       const s = c[k];
-      const opts = r.shuffle(decoyTypes.slice()).filter(t => fits(t, s, 'decoy') && affOk(t, s));
+      // (two of a kind at most: the mug was 29 of 1~20판's decoys — 10/20)
+      const opts = r.shuffle(decoyTypes.slice()).filter(t => placements.filter(p => p.role === 'decoy' && p.type === t).length < 2 && fits(t, s, 'decoy') && affOk(t, s));
       const t0 = opts.find(t => shapeFits(t, s, 'decoy'));   // (nothing running through it — fitspot.js)
       if (!t0) continue;
       used.add(s); placements.push({ type: t0, spot: s, role: 'decoy', v: r.int(0, 3) });
