@@ -5,6 +5,7 @@ import { stageSpec, THEMES, STAGE_COUNT, CHAR_UNLOCK, REGIONS, regionOf } from '
 import { CHAR_DEFS } from './gfx/chars.js';
 import { FURN_INFO } from './gfx/furniture.js';
 import { h } from './ui.js';
+import { locksOwned } from './raid.js';   // (mig 2: the padlocks you own are counted before another room's hiding is cleared)
 
 export const ECON = (() => {
   const q = new URLSearchParams(location.search).get('econ');
@@ -56,6 +57,9 @@ function oneRoom(s) {
     const gone = (z.friends || []).map(f => f.k).filter(Boolean); if (H.friendKnown) H.friendKnown = H.friendKnown.filter(k => !gone.includes(k)); z.friends = [];
   }
   H.current = 'room1';
+  // (재QA TECH-MIG2-LOCK-LOSS 10/20: a save with no padlock count yet owns as many as hang in its hiding room — 털기's own rule —
+  // so that number is fixed here, before another room's hiding is cleared; otherwise it fell back to 1)
+  locksOwned(s);
   if (H.hide && H.hide.zoneId !== 'room1') H.hide = { zoneId: 'room1', items: [], locks: {}, code: H.hide.code ?? null };
   if (H.zones?.room1 && (!H.zones.room1.style || H.zones.room1.style === 'st-open')) H.zones.room1.style = 'st-classic';
   s.mig = 2;

@@ -630,6 +630,7 @@ export const EN = {
 "이 장에서 본 것 중 하나를 골라! 나머지 둘은 상점 기념품 칸에 올라가": "Pick one from this chapter! The other two go to the shop as keepsakes",
 "고른 선물!": "Your pick!",
 "장 끝 상자에서 본 것": "From a chapter box",
+"장을 끝내면 들어오는 기념품": "Souvenir of a finished chapter",
 "판에서 무료 2개를 다 쓰면 가방에서 꺼내 써요": "after the 2 free ones in a stage, they come from the bag",
 "가방이 가득 찼어요": "The bag is full",
 "가방에 1개": "1 for the bag",

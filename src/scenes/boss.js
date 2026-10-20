@@ -26,7 +26,8 @@ import { Hand } from '../handhold.js';   // 손에 든 보물: 하나씩 크게 
 // once in the middle of each region (level design 10/18): the first after stage 5 as a gentle try, then after 17, 26, 36, 45,
 // 55, 65 — no longer right after a region's escape-room boss (two bosses back to back)
 // 10/18: also the old flashlight-boss slots after 31 and 49 (user chose 보물 지키기 new maps there)
-export const BOSS_AFTER = [17, 26, 36, 48, 54];   // 18·27·37·49·55판 뒤 (10/18 밤: one a chapter from 2장, the 골목 one back)
+export const BOSS_AFTER = [17, 26, 36, 48, 54];
+const SEP = .55;   // 너굴이와 몽글이 몸 사이 (겹침 QA 규칙 0.55 m — 10/20 user: "너굴이가 몽글이 몸을 뚫고 지나가요")   // 18·27·37·49·55판 뒤 (10/18 밤: one a chapter from 2장, the 골목 one back)
 const BOSS_MAPS = { 17: 'house2f', 26: 'alleyhouse', 36: 'shopmap', 48: 'parkwide', 54: 'cabin' };
 // the nearest walkable tile to a point, floors counted (a tile right under an upper room is not near a thing up there)
 const near3 = (tiles, x, y, z) => { let b = null, bd = 1e9; for (const t of tiles) { const d = Math.hypot(t.x - x, t.z - z) + Math.abs((t.y || 0) - y) * 2; if (d < bd) { bd = d; b = t; } } return b; };   // now and then, like a mid-boss (user, 10/18: "중간 보스처럼 간간히"); each region ends on a minigame boss (minis.js)   // stage index after which a boss stage comes
@@ -117,8 +118,8 @@ export class BossScene {
       const { playDialog } = await import('../story.js');
       await playDialog(G, [
         { who: 'raccoon', text: '이번엔 보물 지키기야! 네가 제일 아끼는 보물 3개, 내가 다 찾으면 내 거~' },
-        { who: 'mong', text: '너굴이가 세는 동안 숨길 곳을 콕! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.' },
-        { who: 'mong', text: '찾기 시작하면 바닥을 콕 해서 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!' },
+        { who: 'mong', text: '너굴이가 눈 감고 기다리는 동안 숨길 곳을 콕! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.' },
+        { who: 'mong', text: '찾기 시작하면 조이스틱으로 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!' },
         { who: 'raccoon', text: '시간 끝까지 하나라도 남으면 네 승리! 각오해~' },
       ], { title: '보스 · 보물 지키기' });
       if (this.dead) return;
@@ -164,14 +165,14 @@ export class BossScene {
     const top = h('div', { class: 'topbar' });
     top.append(ui.ibtn('pause', 'purple', () => this.pause()));
     this.timerEl = h('div', { class: 'timer' }, h('div', { class: 'face' }, h('img', { src: G.thumbs.face_raccoon })),
-      h('div', { style: 'display:flex;flex-direction:column;flex:1;min-width:0;gap:3px' }, this.tlEl = h('div', { class: 'tl' }, '보물을 숨겨!'), h('div', { class: 'tbar' }, this.tbarI = h('i', { style: 'width:100%' }))),
+      h('div', { style: 'display:flex;flex-direction:column;flex:1;min-width:0;gap:3px' }, this.tlEl = h('div', { class: 'tl' }, '보물을 숨겨! 너굴이는 눈 감고 기다려'), h('div', { class: 'tbar' }, this.tbarI = h('i', { style: 'width:100%' }))),
       this.tnum = h('div', { class: 'num ol' }, String(this.T.time)));
     top.append(this.timerEl, h('div', { class: 'stagetag ol', html: `보스<b>${this.tier + 1}</b>` }));
     col.append(top);
     this.slots = this.treasures.map(t => h('div', { class: 'tslot' }, h('img', { src: G.thumbs['item_' + t.type] })));
     col.append(h('div', { class: 'tslots' }, ...this.slots));
     this.hideBtn = ui.btn('휘슬 삐익!', { color: 'pink', cls: 'big', onClick: () => this.whistle() });
-    this.goBtn = ui.btn('다 숨겼어! 시작', { color: 'green', cls: 'boss-go', onClick: () => { if (this.phase === 'count') this.countT = Math.min(this.countT, .01); } });
+    this.goBtn = ui.btn('바로 시작!', { color: 'green', cls: 'boss-go', onClick: () => { if (this.phase === 'count' && this.treasures.every(t => t.spot)) this._startAt = this.t; } });   // (셋 다 숨기면 2초 뒤 저절로 — 이 버튼은 바로)
     col.append(this.goBtn, h('div', { class: 'boss-left' }, this.hideBtn));
     this.hand = new Hand(G, col, { bottom: 'calc(28px + var(--safeB))' });
     this.vig = h('div', { class: 'boss-vig' }); document.getElementById('app').append(this.vig);
@@ -181,7 +182,7 @@ export class BossScene {
   nextHeld() {
     if (!this.hand || this.dead || this.phase !== 'count') return;
     const i = this.treasures.findIndex(t => !t.spot), n = this.treasures.length;
-    if (i < 0) { this.hand.done('셋 다 숨겼어! 위의 시작을 콕'); return; }
+    if (i < 0) { this.hand.done('셋 다 숨겼어! 곧 너굴이가 찾아'); return; }
     const t = this.treasures[i];
     this.hand.show(t.type, { name: t.name, label: `보물 ${i + 1}/${n}`, hint: '어디든 콕 해서 숨겨!', count: `${i + 1}/${n}` });
   }
@@ -235,6 +236,7 @@ export class BossScene {
     // while it counts: the treasure goes straight into the very place you tapped — a drawer, behind the curtain, on the
     // shelf — the way you hide things at home (user, 10/18: "걸어다니면서 숨기지 않고 그냥 내가 원하는 곳에 배치")
     if (this.phase === 'count' && this.hand?.busy) { this.hand.skip?.(); return; }   // (a tap during the big show: straight into the hand)
+    if (this.phase === 'count' && !(f && this.treasures.some(t => !t.spot))) return;   // (숨기는 동안 몽글이는 가만히: 바닥 콕은 아무 일 없음 — 10/20)
     if (f && this.phase === 'count' && this.treasures.some(t => !t.spot)) {
       const fs = (f.spots || []).filter(q => !q.bossTre).sort((a, b) => a.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point) - b.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point))[0] || null;
       if (spot && !spot.tre) { this.hand?.drop(x, y); this.hideTreasure(spot, false, fs); setTimeout(() => this.nextHeld(), 650); } else if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 콕', '');
@@ -251,6 +253,7 @@ export class BossScene {
   stepHero(dt) {
     const t = this.hpath?.[0]; if (!t) return;
     const p = this.hero.root.position, dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz), st = this.T.run * dt;
+    { const sp = this.seek.root.position, nx = d <= st ? t.x : p.x + dx / d * st, nz = d <= st ? t.z : p.z + dz / d * st; if (Math.hypot(nx - sp.x, nz - sp.z) < SEP && Math.hypot(nx - sp.x, nz - sp.z) < Math.hypot(p.x - sp.x, p.z - sp.z)) return; }   // (너굴이 몸 앞에선 멈춤)
     if (d <= st) { p.x = t.x; p.z = t.z; this.hpath.shift(); if (!this.hpath.length && this.hthen) { const f = this.hthen; this.hthen = null; f(); } }
     else { p.x += dx / d * st; p.z += dz / d * st; }
     p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10);
@@ -291,9 +294,40 @@ export class BossScene {
       this.G.world.root.add(g);
     }
     this.G.world.idsDirty = true; this.G.world.shadowDirty = true;
-    if (!quiet) { G.audio.sfx('pop', 3 + this.treasures.filter(x => x.spot).length); this.say(this.hero, `${fs?.label || s.name}에 ${t.name} 쏙!`, 1000); const s0 = g.scale.x; this.tw.run(.25, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .3))); }
+    this.addPin(t);   // 숨긴 자리 위 초록 핀 (계속 떠 있음 — 10/20)
+    if (!quiet) { G.audio.sfx('pop', 3 + this.treasures.filter(x => x.spot).length); setTimeout(() => !this.dead && G.audio.sfx('star', this.treasures.filter(x => x.spot).length - 1), 180); this.say(this.hero, `${fs?.label || s.name}에 ${t.name} 쏙!`, 1000);
+      { const p = this.G.world.toScreen(this.pinAt(t)); G.ui.floatText(p.x, p.y - 20, '✓ 숨겼다!', 'green big'); } const s0 = g.scale.x; this.tw.run(.25, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .3))); }
     this.drawSlots();
-    if (this.treasures.every(x => x.spot)) { this.goBtn.classList.add('pulse'); if (!quiet) G.ui.toast('셋 다 숨겼어! 시작을 눌러도 돼', 'green'); }
+    if (this.treasures.every(x => x.spot)) { this.goBtn.classList.add('pulse'); if (this._startAt == null) this._startAt = this.t + 2; }   // (셋 다: 2초 뒤 너굴이가 찾기 시작)
+  }
+  // 위치 핀 (10/20 — user: "콕 해도 숨겨졌다 표시가 안 떠서 이상해요 … 위치 핀 마크"): a green map pin over each hidden
+  // treasure, with the treasure's picture in it; it stays all game, and turns grey when 너굴이 finds that one
+  pinAt(t) { const v = new THREE.Vector3(); (t.g || t.spot.f.group).getWorldPosition(v); if (!t.g) v.y += .4; v.y += .35; return v; }
+  addPin(t) {
+    if (t.pin) return;
+    const G = this.G, el = h('div', { class: 'tpin drop', html: '<svg viewBox="0 0 40 52"><path d="M20 50C20 50 4 31 4 19a16 16 0 0 1 32 0c0 12-16 31-16 31z" fill="#3cc46a" stroke="#1d6b38" stroke-width="3"/><circle cx="20" cy="19" r="10.5" fill="#fff"/></svg>' }, h('img', { src: G.thumbs['item_' + t.type] }));
+    t.pin = el; G.ui.wui.append(el); this.placePin(t);
+  }
+  placePin(t) { if (!t.pin) return; const p = this.G.world.toScreen(this.pinAt(t)); t.pin.style.left = p.x + 'px'; t.pin.style.top = p.y + 'px'; t.pin.classList.toggle('lost', !!t.lost); }
+  // 찾기 시작: 너굴이가 돌아서고, 조이스틱이 생겨 몽글이를 움직여요 (숨기는 동안엔 가만히 — 10/20)
+  startSeek() {
+    const G = this.G, W = G.world;
+    this.hideRest(); this.hand?.remove(); this.phase = 'seek'; this.sState = 'search';
+    this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '조이스틱으로 움직이고, 휘슬로 엉뚱한 데로!'; this.seek.root.rotation.y += Math.PI;
+    W.joyOn = true; W.onPad = (dir, v, dt) => this.padMove(dir, v, dt);
+  }
+  // the pad moves 몽글이 the way it is pushed on the screen; never into furniture, never into 너굴이 (SEP)
+  padMove(dir, v, dt) {
+    if (this.phase !== 'seek' || this.result || this.paused || !v) return;
+    const W = this.G.world, p = this.hero.root.position, Y = W.yaw, st = this.T.run * v * dt;
+    const mx = dir[0] * Math.cos(Y) + dir[1] * Math.sin(Y), mz = -dir[0] * Math.sin(Y) + dir[1] * Math.cos(Y);
+    this.hpath = null;
+    const sp = this.seek.root.position, ok = (x, z) => this.canStand(x, z) && Math.hypot(x - sp.x, z - sp.z) >= SEP;
+    const tryAt = (x, z) => { if (!ok(x, z)) return false; p.x = x; p.z = z; return true; };
+    tryAt(p.x + mx * st, p.z + mz * st) || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st);
+    const a = Math.atan2(mx, mz), r = this.hero.root.rotation.y; this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 12);
+    this.hero.lift = Math.abs(Math.sin(this.t * 14)) * .06;
+    const R = this.roomAt(p.x, p.z); if (R) { const t = near3(this.tiles, p.x, p.y, p.z); if (t) p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10); }
   }
   // whatever is still in your hands when it stops counting goes somewhere at random
   hideRest() {
@@ -326,6 +360,16 @@ export class BossScene {
     const S = this.seek, p = S.root.position, speed = this.T.walk * k;
     if (this.route?.length) {
       const t = this.route[0], dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz), st = speed * dt;
+      // 몽글이 몸은 뚫지 않아요(SEP): 옆으로 비켜 돌아가고, 좁은 길을 1초 넘게 막고 있으면 "비켜~" 하고 몽글이가 옆으로 폴짝
+      const hp = this.hero.root.position, nx = d <= st ? t.x : p.x + dx / d * st, nz = d <= st ? t.z : p.z + dz / d * st;
+      if (Math.hypot(nx - hp.x, nz - hp.z) < SEP) {
+        const dd = Math.max(d, 1e-4), px = -dz / dd, pz = dx / dd, side = ((hp.x - p.x) * px + (hp.z - p.z) * pz) > 0 ? -1 : 1, sx = p.x + px * side * st, sz = p.z + pz * side * st;
+        if (Math.hypot(sx - hp.x, sz - hp.z) >= Math.min(SEP, Math.hypot(p.x - hp.x, p.z - hp.z)) && this.roomAt(sx, sz)) { p.x = sx; p.z = sz; }
+        this.blockT = (this.blockT || 0) + dt;
+        if (this.blockT > 1) { this.blockT = 0; this.nudgeHero(); }
+        return false;
+      }
+      this.blockT = 0;
       if (d <= st) { p.x = t.x; p.z = t.z; this.route.shift(); }
       else { p.x += dx / d * st; p.z += dz / d * st; }
       p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10);
@@ -334,6 +378,17 @@ export class BossScene {
       return false;
     }
     return true;
+  }
+  // 너굴이 길을 막고 서 있으면: "비켜~" 하고 몽글이가 옆 빈자리로 폴짝 (몸으로 막기는 없음 — user 10/18)
+  nudgeHero() {
+    const p = this.hero.root.position, sp = this.seek.root.position, a = Math.atan2(p.x - sp.x, p.z - sp.z);
+    for (const da of [Math.PI / 2, -Math.PI / 2, Math.PI / 4, -Math.PI / 4, 0, Math.PI * .75, -Math.PI * .75]) {
+      const x = sp.x + Math.sin(a + da) * (SEP + .35), z = sp.z + Math.cos(a + da) * (SEP + .35);
+      if (!this.canStand(x, z)) continue;
+      this.say(this.seek, '비켜~', 700); this.hpath = null;
+      const x0 = p.x, z0 = p.z; this.tw.run(.25, k => { p.x = x0 + (x - x0) * k; p.z = z0 + (z - z0) * k; this.hero.lift = Math.sin(k * Math.PI) * .25; });
+      return;
+    }
   }
   async peekAt(s) {
     this.sState = 'peek'; const S = this.seek; S.faceTo?.(s.c.x, s.c.z);
@@ -378,13 +433,12 @@ export class BossScene {
     this.whT = Math.max(0, (this.whT || 0) - dt);
     this.hideBtn.style.visibility = this.phase === 'seek' && !this.result ? '' : 'hidden';
     this.hideBtn.classList.toggle('disabled', this.whT > 0);
-    this.goBtn.style.display = this.phase === 'count' && !this.result ? '' : 'none';
+    this.goBtn.style.display = this.phase === 'count' && !this.result && this.treasures.every(t => t.spot) ? '' : 'none';
+    for (const t of this.treasures) this.placePin(t);
     if (this.phase === 'intro' || this.result) return;
     if (this.phase === 'count') {
-      if (this.hand?.busy) return;   // (the count waits while a treasure shows big)
-      const before = Math.ceil(this.countT); this.countT -= dt; const now = Math.ceil(this.countT);
-      if (now !== before && now > 0) { this.say(this.seek, String(now), 800); G.audio.sfx('tap', 20 - now); this.tlEl.textContent = `보물을 숨겨! 너굴이가 세는 중… ${now}`; }
-      if (this.countT <= 0) { this.hideRest(); this.hand?.remove(); this.phase = 'seek'; this.sState = 'search'; this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '휘슬로 엉뚱한 데로 유인해!'; this.seek.root.rotation.y += Math.PI; }
+      // 숨기는 동안엔 시간 제한 없음 (10/20 user): 너굴이는 눈 감고 기다리고, 셋 다 숨기면 2초 뒤(또는 '바로 시작!') 찾기 시작
+      if (this._startAt != null && this.t >= this._startAt) this.startSeek();
       return;
     }
     this.time -= dt; this.tnum.textContent = String(Math.max(0, Math.ceil(this.time))); this.tbarI.style.width = Math.max(0, this.time / this.T.time * 100) + '%';
@@ -435,9 +489,9 @@ export class BossScene {
       return false;
     };
     if (this.phase === 'count') {
-      if (this.treasures.every(t => t.spot)) { this.countT = Math.min(this.countT, .01); return; }
+      if (this.treasures.every(t => t.spot)) { this._startAt = Math.min(this._startAt ?? this.t, this.t); return; }
       if (!this.bspot || this.bspot.tre) { const pool = this.spots.filter(s => !s.tre); this.bspot = (mode === 'random' ? pool.sort(() => Math.random() - .5) : pool.sort((a, b) => Math.hypot(b.t.x - sp.x, b.t.z - sp.z) - Math.hypot(a.t.x - sp.x, a.t.z - sp.z)))[0]; this.bpath = null; }
-      if (this.bspot && walkTo(this.bspot.t.x, this.bspot.t.z)) { this.hideTreasure(this.bspot); this.bspot = null; }
+      if (this.bspot) { this.hideTreasure(this.bspot); this.bspot = null; }   // (숨기는 동안 몽글이는 가만히 — 봇도 콕만)
       return;
     }
     // seek: when it heads for a real treasure, whistle it away (from wherever we are)

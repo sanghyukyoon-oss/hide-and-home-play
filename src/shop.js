@@ -71,10 +71,10 @@ export function openShop(G, ctx = {}, tab = 'furn') {
     } else if (tab === 'furn') {
       note.textContent = zone ? `${zone.name}에 놓을 수 있는 가구예요. 숨을 곳이 많을수록 찾기 어려워져요.` : '';
       G.needThumbs?.(SHOP_FURN.map(it => 'furn_' + it.type));   // the grid's icons in one batch, not one by one
-      // 경제·로비 on: a chapter box's pieces stay out until the box has shown them; then the two you didn't pick are here
-      // as 기념품, at their price, on top (and they go in any room)
+      // 경제·로비 on: a chapter's pieces stay out until its last stage is cleared; then they're here as 기념품, at their price,
+      // on top (and they go in any room). (10/20: the chapter box gives a gift now, not these — 재QA ST75-CHAPTER-SHOP-COPY)
       const offered = G.econ ? (H.offered || []).filter(t => FURN_INFO[t]) : [];
-      for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: '장 끝 상자에서 본 것', price: furnPrice(t), tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
+      for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: '장을 끝내면 들어오는 기념품', price: furnPrice(t), tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
         onBuy: () => { H.inventory.push(t); G.persist(); ui.toast(`${FURN_INFO[t].name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } })); }
       const later = [];
       for (const it of SHOP_FURN) {

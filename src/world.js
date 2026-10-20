@@ -450,7 +450,7 @@ export class World {
         if (Math.abs(kk - (this._zgK ?? -1)) > .002) { this._zgK = kk; this.zoomGauge.style.setProperty('--k', kk.toFixed(3)); } }
     }
     if (this.turnDial) {
-      const on = this.scheme === 'F' && !this.joyHidden && !this.camLock;
+      const on = this.scheme === 'F' && !this.joyHidden && !this.camLock && !this.joyOn;   // (조이스틱이 나오면 돌림판은 비켜 줌 — 보물 지키기 찾기, 10/20)
       if (on !== this._tdShown) { this._tdShown = on; this.turnDial.classList.toggle('on', on); }
       // a finger turning after the second-finger tap: the dial looks held and its arrows say which way
       const ft = on && this.eMode === 'turn' && this.ptrs.size > 0 && !this._tdHeld;

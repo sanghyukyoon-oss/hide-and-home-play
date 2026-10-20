@@ -143,7 +143,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   };
 
   A.sfx = (name, p = 0, buzz = true) => {
-    if (buzz) hapticFor(name === 'drawerClose' ? 'close' : name.split('_')[0]);   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
+    // (the material comes off first, then drawerClose reads as close: drawerClose_metal / _plastic had no buzz — 외부 재QA 10/20 TECH-AUDIO-DRAWER-HAPTIC)
+    if (buzz) { const b = name.split('_')[0]; hapticFor(b === 'drawerClose' ? 'close' : b); }   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
     if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); }   // the jingle over the music, not under it; the hurry is over

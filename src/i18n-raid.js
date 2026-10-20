@@ -23,6 +23,11 @@ addI18n({
   '잠근 서랍 속 물건은 동네 주민이 거의 못 털어 가': 'Things in a locked drawer are hardly ever taken', '다른 데 걸린 걸 풀어서 옮겨 봐': 'Take one off and move it',
   // 손에 든 물건 (handhold.js — 보물 지키기 · 내 집 숨기기, 10/20)
   '어디든 콕 해서 숨겨!': 'Tap anywhere to hide it!', '셋 다 숨겼어! 위의 시작을 콕': 'All three hidden! Tap Start up top', '꼭 숨겨야 해': 'Must be hidden', '다 숨겼어!': 'All hidden!',
+  // 보물 지키기 숨기기 (boss.js, 10/20): 핀·시간 없음·조이스틱
+  '✓ 숨겼다!': '✓ Hidden!', '보물을 숨겨! 너굴이는 눈 감고 기다려': 'Hide your treasures! Rocky waits, eyes shut', '바로 시작!': 'Start now!',
+  '셋 다 숨겼어! 곧 너굴이가 찾아': 'All three hidden! Rocky starts looking soon', '조이스틱으로 움직이고, 휘슬로 엉뚱한 데로!': 'Move with the stick, whistle to lure it away!', '비켜~': 'Scoot~',
+  '너굴이가 눈 감고 기다리는 동안 숨길 곳을 콕! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.': 'While Rocky waits with eyes shut, tap a hiding place! In a drawer, behind a curtain, on a shelf… it pops right in where you tap.',
+  '찾기 시작하면 조이스틱으로 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!': 'Once it starts looking, move with the stick — blow the whistle and Rocky runs my way instead!',
   '자물쇠': 'Padlock', '서랍을 잠가 지켜': 'lock a drawer to guard it',
 }, [
   // the raid news (raid.js newsLine): revenge first, so the plain one doesn't take "복수하러 와서 …" for a name
