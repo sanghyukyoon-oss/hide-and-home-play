@@ -2849,7 +2849,7 @@ export class StageScene {
             : [h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), this.story?.secret ? h('span', { class: this.secretFound ? 'on' : '' }, STAR_TXT.secret)
               : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛손질 ${this.missCount}` : TAP_TXT.star)]))]),
         // (10/20, user: "2판 끝나면 결과 팝업과 같이 조작법 요약" — in this panel, so it is one popup, not two)
-        ...(this.spec.tut === 2 && !this.custom && !this.preview && G.world.scheme === 'F' ? [controlsBlock()] : []),
+        ...(this.spec.tut === 2 && !this.custom && !this.preview && G.world.scheme === 'F' ? [controlsBlock('ftap')] : []),
         // (each line with its speaker's face and, but for 몽글이's own, a small name — two friends can share the two lines)
         ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, L.who !== 'mong' && CHAR_DEFS[L.who] ? h('b', { class: 'who' }, CHAR_DEFS[L.who].name) : '', tr(L.text)))))] : []),
         // 별 셋 = 비밀 한 줄: the line itself the moment it opens; short of three (once you know secrets exist), a grey 'one secret'

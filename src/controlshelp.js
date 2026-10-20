@@ -16,6 +16,7 @@ const T = {
   title: K('조작 도움말', 'How to Play'), sum: K('조작 정리', 'Controls'), stages: K('판별로 다시 보기', 'Stage by stage'),
   none: K('이 판엔 새 조작이 없어. 지금까지 배운 걸로 충분해!', "Nothing new here. What you've learned is all you need!"),
   stageN: K('{n}판', 'Stage {n}'), back: K('조작 정리로', 'Back to controls'),
+  learned: K('새로 배운 조작', 'New move'), more: K('전체 조작은 멈춤 메뉴의 조작 도움말에서', 'All controls: How to Play in the pause menu'),
   drag: K('드래그', 'Drag'), dial: K('돌림판', 'Dial'), ftap: K('드래그 중 터치', 'Drag + tap'), dtap: K('두 번 터치', 'Double tap'),
 };
 const GRAY_LINE = '색을 잃은 방! 찾을 때마다 색이 돌아와 — 큰 가구도 찾아 봐';   // (stage.js's own 흑백 line, already in English)
@@ -51,16 +52,18 @@ const row = r => h('div', { class: 'chrow' },
 // the summary tiles: the 스토리 룸's own lines (CONTROLS_SUM: 콕 · 끌기 · 돌림판 · 콕콕), and 끌다가 콕 (taught in 2판, on the
 // user's list) — two to a row, so the result panel stays short
 const FTAP_SUM = K('드래그 중 터치: 방 빙글', 'Drag + tap: spin the room');   // (문구: 스토리 룸 10/20 저녁 — 글자 수업이 없어져 '십자 가운데'는 뺌)
-function sumTiles() {
+function sumTiles(only = null) {
   const rows = CONTROLS_SUM?.rows || [], pick = (pre, alt) => rows.find(r => r.startsWith(pre)) || alt;
   const tiles = [{ cls: 'tap', text: pick('터치:', null) }, { cls: 'swipe', text: pick('드래그:', DO.move) }, { cls: 'dialr', text: pick('돌림판:', DO.turnDial) },
-    { cls: 'ftap', text: FTAP_SUM }, { cls: 'dtap', text: pick('두 번 터치:', DBL_TXT.tip) }].filter(x => x.text);
-  return h('div', { class: 'chgrid' }, ...tiles.map(x => h('div', { class: 'chtile' }, demo(x.cls, true), h('span', {}, tr(x.text)))));
+    { cls: 'ftap', text: FTAP_SUM }, { cls: 'dtap', text: pick('두 번 터치:', DBL_TXT.tip) }].filter(x => x.text && (!only || x.cls === only));
+  return h('div', { class: 'chgrid' + (only ? ' one' : '') }, ...tiles.map(x => h('div', { class: 'chtile' }, demo(x.cls, true), h('span', {}, tr(x.text)))));
 }
-// 2판's result panel: the tiles under a small heading
-export function controlsBlock() {
+// a stage's result panel: just what that stage taught (only: the tile's cls — 2판 'ftap'), and where the rest is (user 10/20 on the
+// phone: "이거 드래그 중 터치 회전만 나와도 되겠다. 도움말 같은 게 있다면 이렇게 풀로 나와도 되고" — the full five stay in openHelp)
+export function controlsBlock(only = null) {
   css();
-  return h('div', { class: 'chblock' }, h('div', { class: 'chhead' }, tr(CONTROLS_SUM?.title || T.sum)), sumTiles());
+  return h('div', { class: 'chblock' }, h('div', { class: 'chhead' }, tr(only ? T.learned : CONTROLS_SUM?.title || T.sum)), sumTiles(only),
+    ...(only ? [h('div', { class: 'chmore' }, tr(T.more))] : []));
 }
 
 // the help panel (pause · 더보기): the four, then 1판~10판; a stage button swaps the list for that stage's lessons
@@ -98,6 +101,9 @@ function css() {
 .chgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .chtile { display: flex; align-items: center; gap: 6px; background: #fbf3e8; border-radius: 12px; padding: 4px 6px; font-size: 14px; line-height: 1.2; text-align: left; word-break: keep-all; color: #3b2a55; }
 .chdemo.sm { width: 40px; height: 36px; border-radius: 10px; }
+.chgrid.one { grid-template-columns: 1fr; }
+.chgrid.one .chtile { justify-content: center; gap: 10px; padding: 6px 12px; font-size: 16px; }
+.chmore { margin-top: 5px; font-size: 12px; color: #a796b6; text-align: center; }
 .chdemo.sm .hand { width: 28px; height: 28px; left: 15px; top: 8px; }
 .chnone { padding: 12px 6px; font-size: 16px; color: #6b5a80; word-break: keep-all; }
 .chstages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 2px 0 6px; }
