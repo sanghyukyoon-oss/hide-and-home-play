@@ -2271,6 +2271,8 @@ export class StageScene {
     // one hand at a time (user 10/20 on the phone: 2판 showed the turn lesson's hand and the drawer's "open here" hand
     // together — the drawer lesson didn't wait): a lesson waits until the one on screen is done; done by then → none at all
     while (this.tutEls && !over()) await this.tw.wait(.3);
+    // (and a breath after the last one: two lessons back to back read as one long list of instructions — user 10/20)
+    while (this.t - (this._tutEnd ?? -9) < 1.5 && !over() && !done()) await this.tw.wait(.2);
     if (over()) return false;
     if (done()) return true;
     const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, text);
@@ -2286,7 +2288,7 @@ export class StageScene {
       if (dt > 18 && this.t - ringT > 2) { ringT = this.t; const p = posFn?.(); if (p) { const s = p.sx != null ? { x: p.sx, y: p.sy } : W.toScreen(p); W.fx.ring(s.x, s.y, { r: dt > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); } }
       await this.tw.wait(.1);
     }
-    tip.remove(); hand.remove(); more$.forEach(e => e.remove()); this.tutEls = null; this.tutHand = null; this.tutHandPos = null;
+    tip.remove(); hand.remove(); more$.forEach(e => e.remove()); this.tutEls = null; this.tutHand = null; this.tutHandPos = null; this._tutEnd = this.t;
     if (over() || gaveUp) return false;
     G.audio.sfx('special'); await this.tw.wait(.3);
     return !over();
@@ -3098,7 +3100,10 @@ export class StageScene {
       if (this.time <= 0 && !this.targets.every(t => t.found)) { if (this.raidRun) raidSettle(this, 'time'); else this.lose(); }   // (타이머 털기: the count ran out — keep what you found)   // (the last find still flying when the clock ran out: it wins — QA 10/18, 이어하기 then had nothing left to find)
     }
     this.bubble.style.display = this.timerOn && !this.result ? '' : 'none';
-    if (this.zoomTools) { if (!this.view0 && this.running) this.view0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom }; const v = this.view0, off = W.zoom > (v?.zoom || this.zoom0 || 1) + .12 || (v && (Math.abs(Math.atan2(Math.sin(W.yaw - v.yaw), Math.cos(W.yaw - v.yaw))) > .2 || Math.abs(W.pitch - v.pitch) > .12)) || W.target.distanceTo(W.home) > .6; this.zoomTools.classList.toggle('show', !!(off && this.running && !this.result)); /* (not before play starts: the title band, the kit's box — 10/19; a class, so nothing else showing the HUD can bring it back) */ }
+    if (this.zoomTools) { if (!this.view0 && this.running) this.view0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom }; const v = this.view0, off = W.zoom > (v?.zoom || this.zoom0 || 1) + .12 || (v && (Math.abs(Math.atan2(Math.sin(W.yaw - v.yaw), Math.cos(W.yaw - v.yaw))) > .2 || Math.abs(W.pitch - v.pitch) > .12)) || W.target.distanceTo(W.home) > .6; this.zoomTools.classList.toggle('show', !!(off && this.running && !this.result && !this.tutEls)); /* (not before play starts: the title band, the kit's box — 10/19; a class, so nothing else showing the HUD can bring it back) */ }
+    // (one guide at a time, 1~10판 — user 10/20 "힌트가 너무 많아": while a lesson's hand is up, '처음 시점' waits and the hint
+    // button with its count steps back)
+    if (this.hintBtn) { const q = !!this.tutEls; if (q !== this._hintQuiet) { this._hintQuiet = q; this.hintBtn.style.opacity = q ? '.3' : ''; this.hintBtn.style.transition = 'opacity .3s'; } }
     // friend count bubble
     const fp = W.toScreen(V.copy(this.friend.root.position).setY(this.friend.S * 1.05 + .25));
     this.bubble.style.left = fp.x + 'px'; this.bubble.style.top = fp.y + 'px';

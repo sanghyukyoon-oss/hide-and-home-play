@@ -69,7 +69,7 @@ export function shinePart(S, part) { const sw = S.sweeps?.find(x => x.part === p
 const worth = sw => !sw.used || sw.part.spots?.some(s => s.item && !s.item.found && s.item.role !== 'decoy');
 
 export function sweepUpdate(S, dt) {
-  if (!S.sweeps?.length || !S.running || S.result || S.paused || S.cine) return;
+  if (!S.sweeps?.length || !S.running || S.result || S.paused || S.cine || S.tutEls) return;   // (not over a lesson's hand — one guide at a time, 10/20)
   for (const sw of S.sweeps) if (sw.part.t > .5) sw.used = true;
   if (!OLD) {
     // (10/19 evening, user a third time: "힌트가 너무 많다" — 레벨 1~10 추천): only when stuck — half a minute without a find —

@@ -167,17 +167,22 @@ export class Companion {
   }
   // a body standing on t is seen from the camera as it is now: its middle and its head on screen (clear of the bars) and
   // nothing of the room (or anyone) in front of them
-  seen(W, t, roots = this.roots) {
+  // (strict: the face too — its middle and both sides at face height, and the top of the head; 1판 몽글이 stood behind the
+  // heart beanbag with only its ears showing: two points up the middle got through a gap in the plant shelf — user 10/20)
+  seen(W, t, roots = this.roots, strict = false) {
     if (!roots?.length) return true;
-    const r = this.rect(W), v = new THREE.Vector3();
-    for (const hgt of [.2, .42]) if (!seenAt(W, v.set(t.x, (t.y || 0) + hgt, t.z), roots, r)) return false;
+    const r = this.rect(W), v = new THREE.Vector3(), y = t.y || 0;
+    if (!strict) { for (const hgt of [.2, .42]) if (!seenAt(W, v.set(t.x, y + hgt, t.z), roots, r)) return false; return true; }
+    const rx = Math.cos(W.yaw) * .16, rz = -Math.sin(W.yaw) * .16;
+    for (const [dx, dz, hgt] of [[0, 0, .28], [0, 0, .44], [rx, rz, .28], [-rx, -rz, .28]]) if (!seenAt(W, v.set(t.x + dx, y + hgt, t.z + dz), roots, r)) return false;
     return true;
   }
   // the free spot nearest the middle of the start view that the view sees (the nearest 60 tried, 200 ms at most — it runs
   // while the stage loads); null when none
   inView(W, avoid = new Set()) {
     const c = W.target, t0 = performance.now(), list = this.tiles.filter(t => !t.stair && !avoid.has(t)).sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z));
-    for (const t of list.slice(0, 60)) { if (this.seen(W, t)) return t; if (performance.now() - t0 > 200) break; }
+    // (the whole face first; else, as before, its middle and head)
+    for (const strict of [true, false]) for (const t of list.slice(0, 60)) { if (this.seen(W, t, this.roots, strict)) return t; if (performance.now() - t0 > (strict ? 160 : 260)) break; }
     return null;
   }
   nearest(x, z, avoid = new Set()) {

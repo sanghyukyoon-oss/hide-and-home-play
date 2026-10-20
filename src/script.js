@@ -388,6 +388,11 @@ SCENES.push(
     say: { first: K('웁! 그거 내 거야!', "Mmf! That's mine!"), half: K('반 찾았어! 볼이 다시 빵빵해질 거야.', 'Half found! My cheeks will be full again.'), last: K('하나 남았어. …볼에 넣은 건 아니야. 진짜로.', "One left. …It's not in my cheeks. Really.") },
     // (결과창 두 줄 안에 펀치라인까지 — 다음은 햄찌의 "다 같이 집으로!")
     after: [LP('mong', '다 주웠는데… 볼은 왜 아직 빵빵해?', "All picked up… so why are your cheeks still full?"), LP('hamster', '…비상식량이야.', '…Emergency rations.')] },
+  // 19판 미니 소방차 조립판 (kit 'firetruck', 프라모델 정식판 10/20): 체험의 날 선물. 끝은 20판 집들이로 그대로 이어져요
+  { id: 'firestationK', kit: 'firetruck', uses: 'firestationH', type: 'hidden', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'), goal: ['소방차 부품', 'fire truck parts'],
+    intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('peng', '선물로 받은 소방차 부품을 다 찾아 줘!', 'Help me find all the parts of my gift fire truck!')],
+    say: { first: K('펭! 빠르다. 출동 속도 1등!', 'Peng! Fast. First-class response time!'), half: K('반이야. 사이렌 울려야 하나…', 'Halfway. Should I sound the siren…'), last: K('하나 남았어. 그것만 있으면 출동 준비 끝!', "One left. Then we're ready to roll!") },
+    after: [LP('peng', '삐뽀삐뽀! 출동 성공! 비결 4번은 집들이 가서 생각해 올게.', "Nee-naw! Mission success! I'll think up tip four at the housewarming."), LP('mong', '…공책 하나 더 사야겠다.', "…I'll need another notebook.")] },   // (→ 20판 집들이)
   { id: 'firestationH', type: 'hidden', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'),
     intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('mong', '1등은?', "Who's first?"), L('peng', '…아직 안 정해졌어. 오늘 미션은 내가 숨긴 거 다 찾기!', "…Not decided yet. Today's mission: find everything I hid!")],
     say: { first: K('펭! 빠르다. 출동 속도 1등!', 'Peng! Fast. First-class response time!'), half: K('반이야. 사이렌 울려야 하나…', 'Halfway. Should I sound the siren…'), last: K('마지막 건 비결 4번으로 숨겼어!', 'I hid the last one with tip number four!') },
@@ -492,6 +497,12 @@ SCENES.push(
     intro: [L('bunny', '목욕 끝! …근데 내 물건 다 어디 갔지?', "Bath's done! …But where did all my stuff go?"), L('mong', '…거품 속에.', '…In the bubbles.')],
     say: { first: K('앗, 벌써? 아직 젖었는데!', "Huh, already? It's still wet!"), half: K('반 찾았다! 몸도 다 말랐어.', "Half found! I'm all dry now."), last: K('하나 남았어. 킥… 아니, 안 웃었어.', "One left. Hee… no, I didn't giggle.") },
     after: [L('bunny', '다 찾았다! 이제 파자마 파티 준비 끝!', 'All found! Pajama party: ready!'), L('bunny', '냥냥이도 불렀는데… 별로 안 궁금하대.', "I invited Nyannyan too… \"Not curious,\" apparently.")] },
+  // 11판 캣타워 조립판 (kit 'cattower', 프라모델 정식판 10/20): spec에 kit이 있을 때만 붙고 catH를 대신해요(uses).
+  // 냥냥이 첫 만남은 KIT_TALK.cattower.open이 맡고, 끝은 일기장·꼬리만. 캣타워는 방에 안 가요(도감 기록만) — "네 방에 둬"는 뺌
+  { id: 'catK', kit: 'cattower', uses: 'catH', keep: true, type: 'hidden', room: 'cat', trace: true, goal: ['캣타워 부품', 'cat tower parts'],
+    intro: [L('cat', '흥. 네가 몽글이냐냥. 별로 안 궁금했다냥.', "Hmph. So you're Mongle, meow. Not that I care."), L('cat', '…캣타워 부품이나 찾아보라냥.', '…Just find the cat tower parts, meow.')],
+    say: { first: K('흥. 그건 기둥이다냥.', "Hmph. That's a post, meow."), half: K('…제법이다냥.', '…Not bad, meow.'), last: K('마지막 건 안 알려 준다냥. …진짜 안 알려 준다냥.', "Not telling you where the last one is, meow. …Really not telling.") },
+    after: [L('cat', '…꼭대기는 내 자리다냥. 같이 만들어서 기쁜 건 아니다냥.', "…The top is my spot, meow. Not that building it together made me happy."), L('mong', '오늘 일기에 쓸게. 꼬리는 못 숨김.', "I'll put it in my diary today. Can't hide that tail."), L('cat', '…! 수, 숨길 수 있거든?!', '…! I c-can so hide it!')] },
   // 11판: 냥냥이 first (the 일기장 boss is gone from 1장) — the diary page and the tail stay with it
   { id: 'catH', keep: true, type: 'hidden', room: 'cat', trace: true,   // (10판 "냥냥이네 쪽으로 갔어!" — the footprints carry on here)
     intro: [L('cat', '흥. 네가 몽글이냐냥. 별로 안 궁금했다냥.', "Hmph. So you're Mongle, meow. Not that I care."), L('mong', '…꼬리는 궁금해 보이는데.', '…Your tail looks curious.'), L('cat', '…! 내 물건이나 찾아보라냥.', '…! Just find my stuff, meow.')],
@@ -997,7 +1008,7 @@ function bind() {
     const kit = s.kit || s.model || null;   // 프라모델 조립판: a scene with kit only lands on that kit's stage (and is picked first there)
     const pick = t => SCENES.find(x => !used.has(x.id) && x.type === t && x.nth == null && x.room === s.room && (x.night == null || !!s.night === x.night) && (!x.kit || x.kit === kit));
     const sc = pick(ty) || (ty === 'gray' && SCENES.find(x => !used.has(x.id) && x.type === 'gray' && x.nth === g)) || null;   // (v2: the map's own 흑백 scene first)
-    if (sc) { used.add(sc.id); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; }
+    if (sc) { used.add(sc.id); if (sc.uses) used.add(sc.uses); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; }
     if (kit) kits.add(kit);
     // a visit told the other way (사건 ↔ 숨은그림) is used up with it, so it can't land on a later visit to the same map
     if (ty === 'hidden' || ty === 'incident') { const tw = pick(ty === 'hidden' ? 'incident' : 'hidden'); if (tw) used.add(tw.id); }
@@ -1240,6 +1251,15 @@ export const KIT_TALK = {
     hid: K('어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!', "Huh? The parts all ran off and hid. Let's check the blueprint and find them!"),
     go: K('다 모았다! 이번엔 끝까지 맞추자.', "All here! Let's finish it this time."), wrong: K('으헤헤, 순서가 있나 봐.', "Ehehe, guess there's an order.") },
   moving: { who: 'bunny', go: K('다 찾았다! 이제 제자리에 놓자.', "All found! Now let's put everything where it goes."), wrong: K('거긴 그 자리가 아니야~', "Nope, that's not its spot~") },
+  // 11판 캣타워 · 19판 미니 소방차 (프라모델 정식판 10/20): open = 상자가 쿵 + 컷인, hid = 터치해서 부품이 흩어진 뒤
+  cattower: { who: 'cat', open: K('흥. 네가 몽글이냐냥. …이 상자, 혼자서도 조립할 수 있거든냥.', "Hmph. So you're Mongle, meow. …I can build this by myself, you know."),
+    hid: K('…! 네가 건드려서 다 흩어졌다냥! 책임지고 찾으라냥.', "…! You touched it and now it's everywhere, meow! Go find it all!"),
+    go: K('…다 모았다냥. 설명서는 내가 읽는다냥. 너는 맞추라냥.', "…All here, meow. I'll read the instructions. You build."),
+    wrong: K('흥, 설명서 안 봤냥? 번호 순서다냥.', "Hmph, didn't read the instructions? Go by the numbers, meow.") },
+  firetruck: { who: 'peng', open: K('펭! 소방서 체험 선물이야. 소방관 2등이 조립해 줄게!', 'Peng! A gift from fire station day. The number-two firefighter will build it!'),
+    hid: K('어? 부품이 먼저 출동해 버렸어! 다 데려오자!', "Huh? The parts rolled out first! Let's bring them all back!"),
+    go: K('다 모였다! 소방관은 순서가 생명이야.', 'All here! For firefighters, order is everything.'),
+    wrong: K('펭! 그건 아직이야. 번호 순서대로!', 'Peng! Not that yet. Go by the numbers!') },
   parfait: { who: 'sundae', go: K('다 찾았다! 녹기 전에 쌓자!', 'All found! Stack it before it melts!'), wrong: K('앗, 무거운 게 아래야!', 'Whoa, heavy stuff on the bottom!') },
 };
 
