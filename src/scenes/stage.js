@@ -40,7 +40,7 @@ import { FEEL, haptic } from '../feel.js';
 import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
-import { R1, r1Line, KIT_TALK } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
+import { R1, r1Line, KIT_TALK, inkyNamed } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
   stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
@@ -867,7 +867,7 @@ export class StageScene {
     let at = 350;
     for (const L of show) {
       const ch = this.charFor(L.who) || this.friend, n = String(tr(L.text) || '').length, ms = Math.max(1800, Math.min(4600, 900 + n * 60));
-      setTimeout(() => !this.dead && !this.result && this.say(ch, L.text, ms), at);
+      setTimeout(() => !this.dead && !this.result && this.say(ch, L.text, ms, L.name), at);   // (L.name: '???' before 먹물이 says its name — 외부 3차 QA 10/20)
       at += ms + 250;
     }
   }
@@ -2620,10 +2620,10 @@ export class StageScene {
   // who is talking, held still (user 10/20 on a phone: "말풍선이 누가 말하는지 모르겠고, 움직여서 정신없다" — "말풍선 앞에 얼굴
   // 박아서 고정"): a word or two stays where it popped up over the speaker's head; a line goes in one caption above the tray,
   // the speaker's face and name first, replaced by the next line — never two at once (2D UI 정리 ⑯)
-  say(ch, text, ms = 1200) {
+  say(ch, text, ms = 1200, name) {
     this.G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
     const t = String(tr(text) || ''), short = t.replace(/\s/g, '').length <= (/[가-힣]/.test(t) ? 6 : 12);
-    if (!short && this.col) return this.subline(ch, text, ms);
+    if (!short && this.col) return this.subline(ch, text, ms, name);
     const b = h('div', { class: 'bubble pop' }, text);
     this.G.ui.wui.append(b);
     const p = this.G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .2));
@@ -2646,11 +2646,13 @@ export class StageScene {
     clearTimeout(this._peekT); this._peekT = setTimeout(() => { if (this._peek === p) { p.remove(); this._peek = null; } }, 1300);
     this.G.audio.sfx('btn');
   }
-  subline(ch, text, ms) {
+  subline(ch, text, ms, name) {
     const G = this.G, k = ch?.kind || this.th.friend, face = G.thumbs['face_' + k];
+    // (외부 3차 QA 10/20 ST78-CAPTION-EARLY-NAME) the line's own name first; 먹물이 is ??? until it has said its name (64판)
+    const who = name ?? (k === 'inky' && !inkyNamed(G.save) ? '???' : CHAR_DEFS[k]?.name);
     let s = this._sub;
     if (!s?.isConnected) { s = this._sub = h('div', { class: 'subline' }); this.col.append(s); }
-    s.replaceChildren(h('div', { class: 'sl-face' }, face ? h('img', { src: face }) : ''), h('div', { class: 'sl-body' }, CHAR_DEFS[k] ? h('b', {}, CHAR_DEFS[k].name) : '', h('span', {}, text)));
+    s.replaceChildren(h('div', { class: 'sl-face' }, face ? h('img', { src: face }) : ''), h('div', { class: 'sl-body' }, who ? h('b', {}, who) : '', h('span', {}, text)));
     s.classList.remove('on'); void s.offsetWidth; s.classList.add('on');
     const tok = this._subTok = (this._subTok || 0) + 1;
     const kill = () => { if (this._subTok === tok) s.classList.remove('on'); };
@@ -2692,32 +2694,6 @@ export class StageScene {
     this.stars = stars;
     G.audio.sfx('win'); G.hitstop(.08);
     setTimeout(() => { if (!this.dead) G.audio.sfx('cheer', 0, false); }, 380);   // (friends' little "yay" after the jingle — a file only, 사운드 10/20)
-    // 흑백판: the whole room floods back into colour — seen as a whole room first, then the friend (colorBloom)
-    if (this.spec.gray && W.post?.u.gray.value > .5) { await this.colorBloom(); if (this.dead) return; }
-    else if (this.spec.gray && W.post) W.post.u.gray.value = 0;
-    W.fx.confetti(130);
-    this.bubble.style.display = 'none';
-    const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);
-    // (10/19) the camera comes in on the friend cheering — or on 먹물이 saying "…앗." first; it goes back out when 먹물이 bolts
-    // (10/20, user on the phone, 11판: an open cupboard door hid 몽글이's face in the last talk — "엔딩 갈 때 문 닫아 주는 게 나을 듯")
-    // every open door, drawer, lid and curtain shuts first — one quick 탁 — then the camera comes in
-    this.shutOpenParts().then(() => { if (this.dead) return; if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch, { portrait: true }); else closeUp(this, f, { portrait: true }); });   // (the same frontal shot every stage — user 10/19)
-    // 깜짝 한 방 (스토리 룸 10/19): the host's one small moment, inside this close-up (script.js scene.pop) — else the plain cheer
-    const pop = !this.custom && !this.preview && !this.model && !G.bot ? sceneAt(this.idx)?.pop : null;
-    const popDone = pop ? this.popMove(f, pop) : null;
-    if (!pop && !this.incident && !this.hiddenStage) this.say(f, this.model ? this.model.cheer : '우와! 다 찾았네!', 1800);   // (사건 판: the host has just had their say; 숨은그림 판: its closing talk starts with it)
-    for (const n of this.npcs || []) { if (n === this.villain) continue; n.on = false; n.ch.pose = 'cheer'; n.ch.setFace('happy'); n.ch.faceTo(W.cam.position.x, W.cam.position.z); n.ch.bump(.4); }
-    // 먹물이 loses: a sulk, then it bolts off the edge of the room and is gone
-    if (this.villain && !this.inkyIt) {
-      const v = this.villain, ch = v.ch; v.on = false; this.say(ch, inkyCaught(this.idx), 1600);   // 대본: …앗. → …또 너야? → …너는 안 가네.
-      if (inkyStays(this.idx)) { ch.setFace('sus'); ch.faceTo(W.cam.position.x, W.cam.position.z); } else {   // (GPT QA ST-INKY-FACE: shy until it says yes — happy after the talk)   // 빌딩: it stays to talk, then as a friend
-      ch.setFace('angry');
-      const p0 = ch.root.position.clone(), away = p0.clone().add(new THREE.Vector3(p0.x >= 0 ? 4 : -4, 0, p0.z >= 0 ? 3 : -3));
-      ch.root.rotation.y = Math.atan2(away.x - p0.x, away.z - p0.z);
-      this.tw.wait(1.1).then(() => { closeBack(this); return this.tw.run(.7, k => { ch.root.position.lerpVectors(p0, away, k); ch.root.position.y = p0.y + Math.abs(Math.sin(k * Math.PI * 4)) * .18; ch.root.scale.setScalar(1 - .6 * k); }, ease.inQuad); }).then(() => { ch.root.visible = false; });
-      }
-    }
-    this.setMong('happy', 'hop');
     // one new thing to hide at home, on the first clear — given BEFORE the progress is saved, so a page closed in the
     // next second can't keep the cleared stage and lose the thing (GPT QA 10/18)
     let newItem = null, seenN = 0, seenNew = [];
@@ -2765,6 +2741,33 @@ export class StageScene {
     // the finished model goes home (once) — saved with the clear, before the pause (GPT QA R2-01 10/19: quitting in that
     // second kept the clear but lost the robot / boxes / parfait)
     const kitFurn = this.kit && KITS[this.kit.kit].furn, kitNew = this.kit ? kitReward(this) : null;
+    // 흑백판: the whole room floods back into colour — seen as a whole room first, then the friend (colorBloom)
+    // (외부 3차 QA 10/20 TECH-GRAY-BLOOM-SAVE: the clear is saved above, before this — a page closed during the bloom lost it)
+    if (this.spec.gray && W.post?.u.gray.value > .5) { await this.colorBloom(); if (this.dead) return; }
+    else if (this.spec.gray && W.post) W.post.u.gray.value = 0;
+    W.fx.confetti(130);
+    this.bubble.style.display = 'none';
+    const f = this.friend; f.pose = 'cheer'; f.setFace('wow'); f.faceTo(W.cam.position.x, W.cam.position.z);
+    // (10/19) the camera comes in on the friend cheering — or on 먹물이 saying "…앗." first; it goes back out when 먹물이 bolts
+    // (10/20, user on the phone, 11판: an open cupboard door hid 몽글이's face in the last talk — "엔딩 갈 때 문 닫아 주는 게 나을 듯")
+    // every open door, drawer, lid and curtain shuts first — one quick 탁 — then the camera comes in
+    this.shutOpenParts().then(() => { if (this.dead) return; if (this.villain && !this.inkyIt) closeUp(this, this.villain.ch, { portrait: true }); else closeUp(this, f, { portrait: true }); });   // (the same frontal shot every stage — user 10/19)
+    // 깜짝 한 방 (스토리 룸 10/19): the host's one small moment, inside this close-up (script.js scene.pop) — else the plain cheer
+    const pop = !this.custom && !this.preview && !this.model && !G.bot ? sceneAt(this.idx)?.pop : null;
+    const popDone = pop ? this.popMove(f, pop) : null;
+    if (!pop && !this.incident && !this.hiddenStage) this.say(f, this.model ? this.model.cheer : '우와! 다 찾았네!', 1800);   // (사건 판: the host has just had their say; 숨은그림 판: its closing talk starts with it)
+    for (const n of this.npcs || []) { if (n === this.villain) continue; n.on = false; n.ch.pose = 'cheer'; n.ch.setFace('happy'); n.ch.faceTo(W.cam.position.x, W.cam.position.z); n.ch.bump(.4); }
+    // 먹물이 loses: a sulk, then it bolts off the edge of the room and is gone
+    if (this.villain && !this.inkyIt) {
+      const v = this.villain, ch = v.ch; v.on = false; this.say(ch, inkyCaught(this.idx), 1600);   // 대본: …앗. → …또 너야? → …너는 안 가네.
+      if (inkyStays(this.idx)) { ch.setFace('sus'); ch.faceTo(W.cam.position.x, W.cam.position.z); } else {   // (GPT QA ST-INKY-FACE: shy until it says yes — happy after the talk)   // 빌딩: it stays to talk, then as a friend
+      ch.setFace('angry');
+      const p0 = ch.root.position.clone(), away = p0.clone().add(new THREE.Vector3(p0.x >= 0 ? 4 : -4, 0, p0.z >= 0 ? 3 : -3));
+      ch.root.rotation.y = Math.atan2(away.x - p0.x, away.z - p0.z);
+      this.tw.wait(1.1).then(() => { closeBack(this); return this.tw.run(.7, k => { ch.root.position.lerpVectors(p0, away, k); ch.root.position.y = p0.y + Math.abs(Math.sin(k * Math.PI * 4)) * .18; ch.root.scale.setScalar(1 - .6 * k); }, ease.inQuad); }).then(() => { ch.root.visible = false; });
+      }
+    }
+    this.setMong('happy', 'hop');
     await (popDone ? Promise.race([popDone, this.tw.wait(2.6)]) : this.tw.wait(1.0));   // (the result panel waits for the pop, ~2 s)
     if (this.dead) return;
     let back = [], got = null;

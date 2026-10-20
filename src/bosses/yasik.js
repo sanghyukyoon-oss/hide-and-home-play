@@ -1109,7 +1109,7 @@ export class Game {
   }
   win() {
     if (this.result) return;
-    const L = this.L, n = this.snacks.length; this.result = 'win'; this._up({});
+    const L = this.L, n = this.snacks.length, have = new Set(this.snacks.map(x => x.type)); this.result = 'win'; this._up({});   // (have: the kinds really brought back — 외부 3차 QA 10/20)
     if (this.pr) { L.log({ practice: 2 }); this.endPractice(); }
     // the controls go away with the win: the pad, the fridge button and the hint stayed under the result card (10/19)
     for (const el of [this.pad, this.padGhost, this.fbtn, this.hint, this.goPtr]) if (el) el.style.display = 'none';
@@ -1121,7 +1121,7 @@ export class Game {
       if (L.campaign) return L.go({});   // the campaign: the reward card is the result screen — 10/19, 결과창 한 번만
       const h = L.h, last = this.lvIdx >= this.levelCount - 1;
       L.ui.panel({ title: '야식 성공!', color: 'green', body: [
-        h('div', { class: 'ys-endslots' }, ...this.snackTypes.map((t, i) => h('div', { class: 'ys-slot big' + (i < n ? ' got' : '') }, h('img', { src: L.thumbs['item_' + t] })))),
+        h('div', { class: 'ys-endslots' }, ...this.snackTypes.map(t => h('div', { class: 'ys-slot big' + (have.has(t) ? ' got' : '') }, h('img', { src: L.thumbs['item_' + t] })))),
         h('div', { class: 'txt' }, n >= 3 ? '세 개 다! 완벽한 밤이야' : n === 2 ? '두 개! 하나만 더 욕심내 볼까?' : '하나 성공! 다음엔 두 개 노려 볼까?')],
         buttons: [L.ui.btn('다시', { color: 'gray', cls: 'sm', onClick: () => L.go({ lv: this.lvIdx }) }),
           this.nextBtn = L.ui.btn(this.lv.nextLabel ? this.lv.nextLabel(last) : last ? '처음 밤부터' : '다음 밤', { color: 'green', cls: 'big', onClick: () => L.go({ lv: last ? 0 : this.lvIdx + 1 }) })] });
@@ -1135,6 +1135,9 @@ export class Game {
     removeEventListener('blur', this._blur); removeEventListener('keydown', this._kd); removeEventListener('keyup', this._ku);
     for (const o of [this.map.group, this.me.root, this.mom.root, this.dog?.root, this.vmesh, this.fridgeGlow, this.ring, this.aim, this.goal, this.tvGlow, this.moon, this.prMark, ...(this.creaks || []).map(c => c.m), ...this.lures.filter(d => d.own).map(d => d.g)].filter(Boolean)) { W.root.remove(o); disposeTree(o); }
     for (const d of this.lures) d.badge?.remove();
+    // (외부 3차 QA 10/20 LEVEL-20261020-03) the snacks spilled on the floor and their pick-up rings sit on world.root itself: gone too
+    for (const d of this.dropped || []) { if (d.g) { d.g.parent?.remove(d.g); disposeTree(d.g); } if (d.ring) { d.ring.parent?.remove(d.ring); d.ring.geometry.dispose(); d.ring.material.dispose(); } }
+    this.dropped = [];
     for (const el of [this.prTip, this.prHand, this.prTag]) el?.remove();
     this.vig?.remove(); this.vtex?.dispose(); W.camLock = false;
   }

@@ -157,6 +157,9 @@ export class BossGameScene {
       const gb = G.save.gameBest || (G.save.gameBest = {}), gk = giftKey(this.kind, this.lv), pb = gb[gk] ?? null;
       if (pb == null || st > pb) gb[gk] = st;
       this.reward.prevBest = pb;
+      // (외부 3차 QA 10/20 ST78-INTERLUDE-CARD-RESUME) a 쉬어가기 has no story to finish, so nothing was kept for it and its card
+      // was lost on a quit: it is kept the same way now (cleared once '다음 판' is pressed — finish)
+      if (!G.save.followupFinish && this.interlude && followupAt(this.after)?.interlude) G.save.followupFinish = { ...followupAt(this.after), won: true };
       if (G.save.followupFinish?.after === this.after) G.save.followupFinish.card = { ...this.reward };
       G.persist(); }
     if (lens && (G.playMode || G.bot)) G.ui.toasts?.lastElementChild?.append(lensPlus());   // ("+ 돋보기 1" under that toast's words)
