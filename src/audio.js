@@ -12,8 +12,10 @@ export const BGM = {
   // is what the game opens with (홈·로비·내 집) and the default of every slot (boss·king too, until a song they like); the stages,
   // mini and TV get the three Suno songs
   lobby: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 홈·로비·내 집 — 메인 곡
-  map: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gain: 1 },   // 스테이지(맵) (Suno 'lobby' 0:43, 92 BPM 잔잔)
-  mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-mini.mp4', gain: 1 },   // 쉬어가기 놀이 (Suno 'ingame' 1:02)
+  // (10/20 user: "미니게임 노래가 젤 좋음 이거 승격. 미니게임은 따로 노래 쓰지 말고 원래 거 들으면 될 듯 이어지게") the Suno 'ingame' song
+  // is the stages' song now, and the mini games play the same file, so it just goes on across
+  map: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gain: 1 },   // 스테이지(맵) (Suno 'ingame' 1:02)
+  mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gain: 1 },   // 쉬어가기 놀이 — 맵과 같은 곡, 끊기지 않고 이어짐
   tv: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 몽글 TV (Suno 'hideandhome-tv-v1' 2:16)
   boss: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
   king: { tmp: 'audio/bgm-home-v01.mp4', gpt: null, gain: 1 },   // 마지막 보스·숨바꼭질 왕 결정전       → audio/gpt/bgm-king.mp4
