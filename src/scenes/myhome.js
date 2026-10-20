@@ -373,7 +373,7 @@ export class MyHomeScene {
   // ── decorate
   editHud() {
     const G = this.G, ui = G.ui;
-    this.col.append(h('div', { class: 'hint' }, h('span', {}, '가구를 탭해서 고르고, 끌어서 옮겨요')));
+    this.col.append(h('div', { class: 'hint' }, h('span', {}, '가구를 터치해서 고르고, 끌어서 옮겨요')));
     const bar = h('div', { class: 'modebar' });
     this.cardsEl = h('div', { class: 'cards' });
     bar.append(this.cardsEl);
@@ -566,7 +566,7 @@ export class MyHomeScene {
       G.persist();
       this.build();
     }
-    const hintTxt = `물건 고르고 숨길 곳 탭 · 최대 ${MAX_HIDE}개`, hintSpan = h('span', {}, zoneMsg || hintTxt);
+    const hintTxt = `물건 고르고 숨길 곳 터치 · 최대 ${MAX_HIDE}개`, hintSpan = h('span', {}, zoneMsg || hintTxt);
     this.col.append(h('div', { class: 'hint' }, hintSpan));
     if (zoneMsg) setTimeout(() => { if (!this.dead) hintSpan.textContent = tr(hintTxt); }, 2600);
     const tut = G.save.tut || (G.save.tut = {});
@@ -593,7 +593,7 @@ export class MyHomeScene {
     const chain = t === 'key' || t === 'note', full = !chain && t && !this.items[t] && this.targetCount() >= MAX_HIDE;
     if (!t || full) { hand.done(full ? `${MAX_HIDE}개 다 숨겼어! 옮기려면 끌어` : '다 숨겼어!'); return; }
     const k = Math.min(MAX_HIDE, this.targetCount() + (this.items[t] ? 0 : 1));
-    hand.show(t, { name: ITEMS[t]?.name || '', label: chain ? '꼭 숨겨야 해' : `숨길 물건 ${k}/${MAX_HIDE}`, hint: '어디든 콕 해서 숨겨!', count: chain ? '' : `${k}/${MAX_HIDE}`, big });
+    hand.show(t, { name: ITEMS[t]?.name || '', label: chain ? '꼭 숨겨야 해' : `숨길 물건 ${k}/${MAX_HIDE}`, hint: '어디든 터치해서 숨겨!', count: chain ? '' : `${k}/${MAX_HIDE}`, big });
   }
   renderHideCards() {
     const G = this.G, hid = this.H.hide;
@@ -829,7 +829,7 @@ export class MyHomeScene {
       }
       if (hit.kind === 'part' && !hit.part.lock) { this.openPart(hit.part, hit.part.t < .5); return; }
       if (hit.kind === 'part' && hit.part.lock) { G.audio.sfx('locked'); return; }
-      if (this.selItem) G.ui.toast('바닥이나 가구 위, 열어 둔 서랍 안을 콕 해서 숨겨', '');
+      if (this.selItem) G.ui.toast('바닥이나 가구 위, 열어 둔 서랍 안을 터치해서 숨겨', '');
       return;
     }
     if (hit.kind === 'part' && !hit.part.lock) this.openPart(hit.part, hit.part.t < .5);

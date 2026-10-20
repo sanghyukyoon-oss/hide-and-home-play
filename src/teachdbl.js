@@ -11,9 +11,9 @@ export const DBL_ON = typeof location === 'undefined' || !/[?&]dbl=0(&|$)/.test(
 export const TILT_ON = typeof location !== 'undefined' && /[?&]tilt=1(&|$)/.test(location.search);
 // (문구: 스토리 룸 10/19 — 동작 이름을 '톡톡'으로 붙여 게임의 '톡'과 한 식구로, 배지는 '기술을 얻었다'로 읽히게)
 export const DBL_TXT = {
-  tip: K('콕콕! 두 번 누르면 크게 보여', 'Tap-tap! Double-tap to zoom in.'),
-  more: K('같은 자리를 빠르게 콕콕', 'Same spot, two quick taps.'),
-  got: K('새로 얻었다! 콕콕 = 크게 보기 · 또 콕콕 = 원래대로', 'New move! Double-tap to zoom in · again to zoom out.'),
+  tip: K('두 번 터치하면 크게 보여!', 'Tap-tap! Double-tap to zoom in.'),
+  more: K('같은 자리를 빠르게 두 번 터치', 'Same spot, two quick taps.'),
+  got: K('새로 얻었다! 두 번 터치 = 크게 보기 · 또 두 번 터치 = 원래대로', 'New move! Double-tap to zoom in · again to zoom out.'),
 };
 
 export async function teachDbl(S) {

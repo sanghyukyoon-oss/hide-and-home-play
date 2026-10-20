@@ -1526,7 +1526,7 @@ export class StageScene {
       const P = this.toolPill; P.style.display = ''; P.classList.remove('need'); P.querySelector('.v').textContent = ITEMS[it.type].name; P.querySelector('img').src = G.thumbs['item_' + it.type];
       await G.ui.flyImg(G.thumbs['item_' + it.type], s.x, s.y, P, { size: 64 });
       P.classList.add('pop'); setTimeout(() => P.classList.remove('pop'), 300);
-      G.ui.toast(it.type === 'remote' ? '리모컨 획득! TV를 콕 눌러서 켜 보자' : `${ITEMS[it.type].name} 획득! 모래밭의 빨간 X를 콕!`, 'green');
+      G.ui.toast(it.type === 'remote' ? '리모컨 획득! TV를 터치해서 켜 보자' : `${ITEMS[it.type].name} 획득! 모래밭의 빨간 X를 터치!`, 'green');
       return;
     }
     if (this.obs && await obsClue(this, it, s)) return;   // R4: the note says where to look, not the answer
@@ -1710,7 +1710,7 @@ export class StageScene {
       key.vacHidden = false;
       const s2 = W.toScreen(this.worldCenter(key)); W.fx.burst(s2.x, s2.y, { n: 16, shape: 'star', colors: ['#ffe14d', '#ffffff'] }); G.audio.sfx('pop', 3);
       this.say(bot, '삐빅! 소파 밑에서 이런 게 나왔어요!', 1800);
-      G.ui.toast('청소기가 소파 밑에서 열쇠를 물고 나왔어! 콕 집어 봐', 'green');
+      G.ui.toast('청소기가 소파 밑에서 열쇠를 물고 나왔어! 터치해서 집어 봐', 'green');
       if (this.friendHidden) setTimeout(() => !this.dead && this.hideSay(['헉, 그 열쇠를 찾았어?!']), 1200);
     }
   }
@@ -2249,15 +2249,15 @@ export class StageScene {
     W.eBase = W.eMode = 'move';
     if (!await step('한 손가락으로 끌면 이동! 쓱 끌어 봐', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => pan > 160)) return;
     this.rotAccum = 0;
-    if (!await step('이번엔 돌려 보자! ↻ 회전을 누르거나, 끄는 중에 다른 손가락으로 콕!', 'tap', at(mt), () => W.eBase === 'turn' || this.rotAccum > .3, 30, mb)) return;
+    if (!await step('이번엔 돌려 보자! ↻ 회전을 누르거나, 끄는 중에 다른 손가락으로 터치!', 'tap', at(mt), () => W.eBase === 'turn' || this.rotAccum > .3, 30, mb)) return;
     if (W.eBase === 'turn' && !await step('이제 끌면 방이 빙글! 손을 떼도 회전 그대로야', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => this.rotAccum > 1.0)) return;
-    if (W.eBase === 'turn' && !await step('다시 움직이려면 ✥ 이동을 콕!', 'tap', at(mm), () => W.eBase === 'move', 12, mb)) return;
+    if (W.eBase === 'turn' && !await step('다시 움직이려면 ✥ 이동을 터치!', 'tap', at(mm), () => W.eBase === 'move', 12, mb)) return;
     const z0 = W.zoom, gauge = document.querySelector('.zgauge');
     if (!await step('두 손가락을 벌리면 확대! 오른쪽 막대로도 돼', 'tap', at(gauge), () => Math.abs(W.zoom / z0 - 1) > .15, 14, gauge)) return;
     W.onPan = null;
     if (this.result || this.dead) return;
     this.tutStep = 2;
-    const tip2 = h('div', { class: 'tip', style: top }, '좋아! 이제 숨은 물건을 찾아서 탭!');
+    const tip2 = h('div', { class: 'tip', style: top }, '좋아! 이제 숨은 물건을 찾아서 터치!');
     const hand2 = h('div', { class: 'hand tap', html: ICON.hand });
     ui.tut.append(tip2, hand2); this.tutEls = [tip2, hand2]; this.tutHand = hand2;
   }
@@ -2341,7 +2341,7 @@ export class StageScene {
     const G = this.G, ui = G.ui;
     this.tutStep = 1;
     if (G.world.scheme === 'E' && !G.world.joyOn) return this.tutorialE();
-    const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '끌면 이동! 끄는 중에 다른 손가락으로 콕 하면 회전으로 바뀌어!' : G.world.scheme === 'D' ? '한 손가락으로 끌면 방이 돌아가! (누른 곳을 중심으로)' : G.world.scheme === 'B' ? '콕 누르고 바로 끌면 방이 돌아가! (옆으로·위아래로)' : G.world.scheme === 'C' ? '오른쪽 아래 스위치가 ↻ 회전일 때 옆으로 끌면 방이 돌아가!' : '한 손가락으로 옆으로 끌어서 방을 돌려봐!');
+    const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '끌면 이동! 끄는 중에 다른 손가락으로 터치하면 회전으로 바뀌어!' : G.world.scheme === 'D' ? '한 손가락으로 끌면 방이 돌아가! (누른 곳을 중심으로)' : G.world.scheme === 'B' ? '터치하고 바로 끌면 방이 돌아가! (옆으로·위아래로)' : G.world.scheme === 'C' ? '오른쪽 아래 스위치가 ↻ 회전일 때 옆으로 끌면 방이 돌아가!' : '한 손가락으로 옆으로 끌어서 방을 돌려봐!');
     const hand = h('div', { class: 'hand swipe', html: ICON.hand, style: `left:${innerWidth / 2}px;top:${innerHeight * .58}px` });
     ui.tut.append(tip, hand);
     this.tutEls = [tip, hand];
@@ -2350,7 +2350,7 @@ export class StageScene {
     if (this.dead) return;
     G.audio.sfx('special');
     this.tutStep = 2;
-    const tip2 = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '숨은 물건을 찾아서 탭! (두 손가락 벌리면 확대)' : G.world.scheme === 'D' ? '숨은 물건을 찾아서 탭! (오른쪽 아래 패드로 이동 · 게이지나 두 손가락으로 확대)' : G.world.scheme === 'B' ? '숨은 물건을 찾아서 탭! (끌면 이동 · 콕 하고 끌면 회전 · 오른쪽 게이지로 확대)' : G.world.scheme === 'C' ? '숨은 물건을 찾아서 탭! (스위치로 회전↔이동 · 벌리거나 두 번 탭하면 확대)' : '숨은 물건을 찾아서 탭! (두 손가락으로 끌면 이동 · 벌리면 확대)');
+    const tip2 = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, G.world.scheme === 'E' ? '숨은 물건을 찾아서 터치! (두 손가락 벌리면 확대)' : G.world.scheme === 'D' ? '숨은 물건을 찾아서 터치! (오른쪽 아래 패드로 이동 · 게이지나 두 손가락으로 확대)' : G.world.scheme === 'B' ? '숨은 물건을 찾아서 터치! (끌면 이동 · 터치하고 끌면 회전 · 오른쪽 게이지로 확대)' : G.world.scheme === 'C' ? '숨은 물건을 찾아서 터치! (스위치로 회전↔이동 · 벌리거나 두 번 터치하면 확대)' : '숨은 물건을 찾아서 터치! (두 손가락으로 끌면 이동 · 벌리면 확대)');
     const hand2 = h('div', { class: 'hand tap', html: ICON.hand });
     ui.tut.append(tip2, hand2); this.tutEls = [tip2, hand2]; this.tutHand = hand2;
   }
@@ -2393,11 +2393,11 @@ export class StageScene {
     // the words name what the hand points at (검토 2차 1: it said 서랍 over 2판's curtain), and the lesson ends by itself
     // after 30 s or once that thing is found, so the loft's tilt lesson isn't kept waiting behind it (검토 2차 2)
     const part = g.spot.part, k = part.kind;
-    const say = k === 'drawer' ? DO.drawer : k === 'curtain' ? '커튼을 콕 해서 열기' : k === 'door' ? '문을 콕 해서 열기' : k === 'lid' ? '뚜껑을 콕 해서 열기' : '콕 해서 들춰 보기';
+    const say = k === 'drawer' ? DO.drawer : k === 'curtain' ? '커튼을 터치해서 열기' : k === 'door' ? '문을 터치해서 열기' : k === 'lid' ? '뚜껑을 터치해서 열기' : '터치해서 들춰 보기';
     // (the spot is looked for again now and then as the view moves; hidden from this view → the hand waits out of sight)
     let at0 = this.t;
     const at = () => { if (this.t - at0 > .25) { at0 = this.t; spot = tapSpot(part); if (this.tutHand) this.tutHand.style.visibility = spot ? '' : 'hidden'; } return spot; };
-    await this.teach(say, 'tap', at, () => this.partsOpened > 0 || part.t > .5 || g.found, k === 'drawer' ? DO.drawer2 : '닫힌 곳을 콕! 안에 물건이 숨어 있어', 30);
+    await this.teach(say, 'tap', at, () => this.partsOpened > 0 || part.t > .5 || g.found, k === 'drawer' ? DO.drawer2 : '닫힌 곳을 터치! 안에 물건이 숨어 있어', 30);
   }
   // 2판: tilting, moved here from 1판 (검토 H3) — only if the thing on the loft futon is still there a while later, once
   async teachTilt() {
@@ -2832,12 +2832,12 @@ export class StageScene {
       body: [h('div', { class: 'stars' }, ...starEls), ...(starBefore != null ? [starBar(G, starBefore)] : []),
         // 사건 판: what each star is for, so a missing one says how to get it (GPT QA 10/18: 보너스 0/2 → '다 찾았네', 별 2개)
         ...(this.v2 ? [h('div', { class: 'starwhy' }, ...v2StarWhy(this).map(([t, on]) => h('span', { class: on ? 'on' : '' }, t)))].concat(v2Stamp(this) || [])
-          : this.hiddenStage || this.model ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star))]   // 숨은그림 판: what each star is for
+          : this.hiddenStage || this.model ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛손질 ${this.missCount}` : TAP_TXT.star))]   // 숨은그림 판: what each star is for
           : this.incident ? [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 친구 찾기'), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), h('span', { class: (this.r1?.miss || 0) <= 1 ? 'on' : '' }, (this.r1?.miss || 0) === 0 ? '★ 명탐정 (헛짚기 0)' : `★ 헛짚기 ${this.r1?.miss || 0}번`))]
           : [h('div', { class: 'starwhy' }, h('span', { class: 'on' }, '★ 다 찾기'), ...(this.spec.timed
             ? [h('span', { class: this.time / this.timeMax >= .3 ? 'on' : '' }, STAR_TXT.time), h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이')]
             : [h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), this.story?.secret ? h('span', { class: this.secretFound ? 'on' : '' }, STAR_TXT.secret)
-              : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛탭 ${this.missCount}` : TAP_TXT.star)]))]),
+              : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛손질 ${this.missCount}` : TAP_TXT.star)]))]),
         // (10/20, user: "2판 끝나면 결과 팝업과 같이 조작법 요약" — in this panel, so it is one popup, not two)
         ...(this.spec.tut === 2 && !this.custom && !this.preview && G.world.scheme === 'F' ? [controlsBlock()] : []),
         // (each line with its speaker's face and, but for 몽글이's own, a small name — two friends can share the two lines)
@@ -2960,7 +2960,7 @@ export class StageScene {
       return el;
     };
     const snd = row('소리', () => G.audio.muted ? '꺼짐' : '켜짐', () => G.audio.setMuted(!G.audio.muted));
-    const ctrl = row('조작', () => S.ctrl === 'E' ? '콕 전환' : '돌림판', () => { S.ctrl = S.ctrl === 'E' ? 'F' : 'E'; G.world.scheme = S.ctrl; G.world.eMode = G.world.eBase = 'move'; G.persist(); });
+    const ctrl = row('조작', () => S.ctrl === 'E' ? '터치 전환' : '돌림판', () => { S.ctrl = S.ctrl === 'E' ? 'F' : 'E'; G.world.scheme = S.ctrl; G.world.eMode = G.world.eBase = 'move'; G.persist(); });
     // (10/20, user: "조작 도움말 화면에 1~10판까지 버튼으로 다시 볼 수 있게") — the help, and this panel again when it closes
     const help = row('조작 도움말', () => '›', () => { ui.closePanel(); openHelp(G, { onClose: () => { if (!this.dead && !this.result) this.pause(); } }); });
     const voice = row('목소리', () => G.audio.voiceOn ? '켜짐' : '꺼짐', () => G.audio.setVoice?.(!G.audio.voiceOn));   // (너굴이 옹알이 — 10/20)

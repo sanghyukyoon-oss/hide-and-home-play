@@ -258,7 +258,7 @@ export class Game {
   async findPhase() {
     const L = this.L, ui = L.ui;
     this.phase = 'find'; this.findT = 0; this.found = 0; this.setTrays(); this.refresh();
-    this.setHint('공이랑 자명종을 찾아서 콕!');
+    this.setHint('공이랑 자명종을 찾아서 터치!');
     await new Promise(res => { this._findDone = res; });
     if (this.dead) return;
     INTRO_SEEN = true;
@@ -542,9 +542,9 @@ export class Game {
       let t = '';
       if (first && edit) {
         if (this.drag) t = '빛나는 칸에 놓기';
-        else if (this.sel != null) t = '빛나는 칸을 콕!';
-        else if (!anyOut) t = this.tries ? '점선을 보고 다시 놓아 봐' : '아래 조각을 콕 골라 봐';
-        else t = this.tries ? '판을 콕 하면 방향이 바뀌어 · 시작!' : '점선이 공 길이야 · 준비되면 시작!';
+        else if (this.sel != null) t = '빛나는 칸을 터치!';
+        else if (!anyOut) t = this.tries ? '점선을 보고 다시 놓아 봐' : '아래 조각을 터치해서 골라 봐';
+        else t = this.tries ? '판을 터치하면 방향이 바뀌어 · 시작!' : '점선이 공 길이야 · 준비되면 시작!';
       }
       this.setHint(t);
       for (const s of this.slots) s.el.classList.toggle('wk-nudge', first && edit && !anyOut && this.sel == null && !this.drag);

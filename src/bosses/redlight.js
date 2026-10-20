@@ -132,7 +132,7 @@ export class Game {
     this.frEls = this.friends.map(f => { const im = h('img', { src: L.thumbs[`face_${f.kind}_normal`] }); const d = h('div', { class: 'rl-fr' }, im); d.img = im; return d; });
     col.append(h('div', { class: 'rl-row' }, h('div', { class: 'rl-hearts' }, ...this.heartEls), h('div', { class: 'rl-friends' }, ...this.frEls)));
     this.hint = h('div', { class: 'rl-hint ol' }, '꾹 누르면 달리기 · 손 떼면 얼음!'); col.append(this.hint);
-    this.tangEl = h('div', { class: 'rl-tang ol3', style: 'display:none' }, '콕! 땡!'); ui.wui.append(this.tangEl);
+    this.tangEl = h('div', { class: 'rl-tang ol3', style: 'display:none' }, '터치! 땡!'); ui.wui.append(this.tangEl);
     this.vig = h('div', { class: 'rl-vig' }); document.getElementById('app').append(this.vig);
   }
   gotCard(key) {
@@ -414,7 +414,7 @@ export class Game {
     if (H.st !== 'play') return;
     H.st = 'reach'; this.runAnim(H.ch, 0, 0); H.ch.pose = 'push'; H.ch.setFace('happy');
     this.tangEl.style.display = ''; L.audio.sfx('pop', 6);
-    this.hint.textContent = '등을 콕! 쳐서 땡! (돌아볼 땐 참기)'; this.hint.classList.remove('gone'); this.hint.classList.add('go');
+    this.hint.textContent = '등을 터치해서 땡! (돌아볼 땐 참기)'; this.hint.classList.remove('gone'); this.hint.classList.add('go');
   }
   tryTang() {
     const H = this.H;
@@ -522,7 +522,7 @@ export class Game {
     // the 땡 prompt rides over 너굴이's head
     if (this.tangEl.style.display !== 'none') {
       const p = W.toScreen(s.ch.root.position.clone().setY(s.ch.headTop() + .9)); this.tangEl.style.left = p.x + 'px'; this.tangEl.style.top = p.y + 'px';
-      const wait = s.st === 'look'; if (this.tangEl.classList.contains('wait') !== wait) { this.tangEl.classList.toggle('wait', wait); this.tangEl.textContent = wait ? '꾹 참아…' : '콕! 땡!'; }
+      const wait = s.st === 'look'; if (this.tangEl.classList.contains('wait') !== wait) { this.tangEl.classList.toggle('wait', wait); this.tangEl.textContent = wait ? '꾹 참아…' : '터치! 땡!'; }
     }
     if (this.result) { for (const f of this.friends) if (f.st === 'flee') this.stepFriend(f, dt); return; }
     if (this.phase === 'play') {

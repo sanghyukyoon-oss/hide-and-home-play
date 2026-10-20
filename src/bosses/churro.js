@@ -659,7 +659,7 @@ export class Game {
     const app = document.getElementById('app');
     this.vig = h('div', { class: 'cr-vig' }); this.flash = h('div', { class: 'cr-flash' }); app.append(this.vig, this.flash);
     this.chuBadge = h('div', { class: 'cr-chu', html: LOCK + '<span>츄르</span>' }); ui.wui.append(this.chuBadge);
-    this.aegyoBadge = h('div', { class: 'cr-aegyo' }, '♥ 콕! 애교'); ui.wui.append(this.aegyoBadge);
+    this.aegyoBadge = h('div', { class: 'cr-aegyo' }, '♥ 터치! 애교'); ui.wui.append(this.aegyoBadge);
     if (this.vac) { this.rideBadge = h('div', { class: 'cr-ride' }, '타기!'); ui.wui.append(this.rideBadge); }
     this.badges = [this.chuBadge, this.aegyoBadge, this.rideBadge].filter(Boolean);
   }
@@ -961,7 +961,7 @@ export class Game {
     const near = this.lastHitPt && this.t - this.lastHit < 5 && Math.hypot(this.lastHitPt.x - this.p.x, this.lastHitPt.z - this.p.z) < 1.6;
     const riding = this.vac && this.cs === this.vac.surf;
     this.after(.7, () => { if (this.result || o.s !== 'look') return; L.say(this.ownerTag, riding ? 'ㅋㅋ 또 탔네' : near ? '…너지?' : pick(['…추로?', '…아닌가?', '착하다 우리 추로~']), 1100, 'think'); if (near) me.setFace('sweat'); });
-    if (!this.aegyoGot) this.after(.85, () => { if (this.aegyoGot || this.result) return; this.aegyoGot = true; this.aegyo = 2; this.gotCard('애교', '주인이 쳐다볼 때 추로를 콕 · 한 밤에 두 번'); });
+    if (!this.aegyoGot) this.after(.85, () => { if (this.aegyoGot || this.result) return; this.aegyoGot = true; this.aegyo = 2; this.gotCard('애교', '주인이 쳐다볼 때 추로를 터치 · 한 밤에 두 번'); });
   }
   doAegyo() {
     const L = this.L, W = L.world, me = this.me, o = this.ow;
@@ -1249,7 +1249,7 @@ export class Game {
     const o = this.ow.s;
     if (this.stunT > 0) return ['들켰다! 잠깐 얼음…', true];
     if (o === 'hmm' || this.ow.noiseAt != null) return ['흠…? 손 떼면 얼음!', true];
-    if (o === 'turn' || o === 'look' || o === 'glare') return [this.aegyoUsable() ? '얼음! · 추로를 콕 하면 애교' : this.isActive() ? '보고 있어! 손 떼!' : '얼음… 세상 순한 척', true];
+    if (o === 'turn' || o === 'look' || o === 'glare') return [this.aegyoUsable() ? '얼음! · 추로를 터치하면 애교' : this.isActive() ? '보고 있어! 손 떼!' : '얼음… 세상 순한 척', true];
     if (o === 'melt') return ['애교 성공! 주인이 녹았다', false];
     if (this.swat) return ['콕… 콕… 툭!', false];
     if (this.paw) return [this.unlocked ? '드르륵… 조금만 더!' : '아직 잠겨 있다냥…', false];

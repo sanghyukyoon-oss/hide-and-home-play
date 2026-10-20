@@ -517,7 +517,7 @@ export class Game {
   giveLook() {
     this.gotLook = true; this.looks = 1; this.drawLook(); this.lookBtn.classList.add('rp-new');
     setTimeout(() => this.lookBtn?.classList.remove('rp-new'), 3000);
-    this.gotCard('새로 얻었다!', '"엄마! 저기 봐!"', '콕 하면 엄마가 딴 데를 봐요 · 한 번');
+    this.gotCard('새로 얻었다!', '"엄마! 저기 봐!"', '터치하면 엄마가 딴 데를 봐요 · 한 번');
   }
   // "엄마! 저기 봐!": she goes over to look for a few seconds, then picks up where she left off
   distract() {

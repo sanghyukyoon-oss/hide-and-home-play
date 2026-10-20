@@ -331,7 +331,7 @@ export async function kitIntro(S) {
     const lt0 = box.querySelector('.kb3-ltop').getBoundingClientRect(), cc0 = lay.getBoundingClientRect();
     const hx = lt0.left + lt0.width * .74 - cc0.left, hy = lt0.top + lt0.height * .55 - cc0.top;   // (beside the lid's picture, not over it)
     const hand = h('div', { class: 'hand tap kithand', html: ICON.hand, style: `left:${hx}px;top:${hy}px` });
-    const kok = h('div', { class: 'kitkok ol', style: `left:${hx}px;top:${lt0.top - cc0.top - 30}px` }, '콕!');
+    const kok = h('div', { class: 'kitkok ol', style: `left:${hx}px;top:${lt0.top - cc0.top - 30}px` }, '터치!');
     lay.append(hand, kok);
     G.audio.sfx('heart'); hb = setInterval(() => G.audio.sfx('heart'), 1900);
     await new Promise(res => { open = res; if (G.bot || S.botOn?.()) setTimeout(res, 700); setTimeout(res, 15000); });   // (a bot opens it; nobody for 15 s: it opens itself)

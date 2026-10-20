@@ -47,15 +47,15 @@ const LEVELS = [
   { name: '해 질 녘', place: 'alley', n: 6, count: 12, rocks: 3, hidden: 2, spin: 1, sleepy: 1, time: 95, dusk: true },
   // the campaign plays two in a row (user, 10/19: "한판은 좀 아쉬운데 한번 나올때 2판정도 총2번"; the 11~70판 level session:
   // 1:30 at most, the second one short (4×4, four friends, 30 s), one speech line between, no card): 43판 뒤 and 52판 뒤
-  { name: '놀이터 + 덤불', set: [0, { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 2, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 콕!' }],
+  { name: '놀이터 + 덤불', set: [0, { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 2, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 터치!' }],
     lines: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '이제 진짜 다 찾았다~'] },
   { name: '캠핑장 + 졸린 친구', set: [{ name: '캠핑장', place: 'camp', n: 5, count: 7, rocks: 3, hidden: 0, spin: 0, sleepy: 0, time: 60 },
-    { name: '텐트 앞 졸린 친구', place: 'camp', n: 4, count: 4, rocks: 1, hidden: 0, spin: 0, sleepy: 2, time: 30, hint: '자는 친구는 콕 해서 깨워요', sleeper: 'sleepy' }],
+    { name: '텐트 앞 졸린 친구', place: 'camp', n: 4, count: 4, rocks: 1, hidden: 0, spin: 0, sleepy: 2, time: 30, hint: '자는 친구는 터치해서 깨워요', sleeper: 'sleepy' }],
     lines: ['어? 텐트 앞에서 쿨쿨 소리가…', '이제 진짜 다 갔다~'] },
   // the first time it comes up, early in the campaign (user, 10/19: "무궁화보다 이게 더 재밌어", "9판째 이후면 좋겠다"):
   // two small ones a first-timer finishes inside a minute; the arrows that can go glow until the first friend is sent
   { name: '첫 놀이터 + 덤불', teach: true, set: [{ name: '놀이터', place: 'park', n: 4, count: 4, rocks: 0, hidden: 0, spin: 0, sleepy: 0, time: 40 },
-    { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 1, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 콕!' }],
+    { name: '덤불 속 친구', place: 'park', n: 4, count: 4, rocks: 0, hidden: 1, spin: 0, sleepy: 0, time: 30, hint: '흔들리는 덤불을 터치!' }],
     lines: ['어? 덤불이 흔들려… 아직 숨은 친구가 있다!', '이제 진짜 다 찾았다~'] },
 ];
 export { LEVELS };
@@ -307,14 +307,14 @@ export class Game {
     col.append(top);
     // everyone on the square as a little face; a tick when they're home
     col.append(this.chipsEl = h('div', { class: 'gh-friends' }));   // (filled by each round)
-    this.hint = h('div', { class: 'gh-hint' }, '앞길이 열린 친구부터 콕!'); col.append(this.hint);
+    this.hint = h('div', { class: 'gh-hint' }, '앞길이 열린 친구부터 터치!'); col.append(this.hint);
   }
   gotCard(kind) {
     const L = this.L, h = L.h;
     const C = {
-      bush: [L.thumbs.face_bunny_happy, this.place.hide === 'bush' ? '덤불 속 친구!' : '상자 뒤 친구!', '흔들리는 곳을 콕 하면 나와요'],
+      bush: [L.thumbs.face_bunny_happy, this.place.hide === 'bush' ? '덤불 속 친구!' : '상자 뒤 친구!', '흔들리는 곳을 터치하면 나와요'],
       spin: [L.thumbs.face_raccoon_happy, '빙글 너굴이!', '친구가 한 명 갈 때마다 화살표가 빙글 돌아요'],
-      sleepy: [L.thumbs.face_sleepy_normal, '졸린 친구들!', '한 번 콕 하면 깨고, 한 번 더 콕 하면 가요'],
+      sleepy: [L.thumbs.face_sleepy_normal, '졸린 친구들!', '한 번 터치하면 깨고, 한 번 더 터치하면 가요'],
     }[kind];
     const c = h('div', { class: 'gh-get' }, h('img', { src: C[0] }), h('div', {}, h('div', { class: 'gh-get-t ol' }, '새로 나왔다!'), h('div', { class: 'gh-get-s' }, C[1]), h('div', { class: 'gh-get-s' }, C[2])));
     document.getElementById('app').append(c); L.audio.sfx('gasp');

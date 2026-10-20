@@ -241,7 +241,7 @@ RUN.changer = async (S, part) => {
   await S.togglePart(part, true);
   const s = W.toScreen(f.slotParent.localToWorld(new THREE.Vector3(.285, -.58, .08)));
   W.fx.burst(s.x, s.y, { n: 12, colors: ['#ffc93c', '#fff3c4', '#ffffff'], speed: 160, up: 90 }); G.audio.sfx('coin', 2);
-  G.ui.toast(K('짤랑! 500원 동전이 나왔어! 콕 집어 봐', 'Clink! A 500-won coin! Tap to take it'), 'green');
+  G.ui.toast(K('짤랑! 500원 동전이 나왔어! 터치해서 집어 봐', 'Clink! A 500-won coin! Tap to take it'), 'green');
   S.cine = false; S.idle = 0;
 };
 // 39판: the coin runs the dryer — it shakes and tumbles, steam puffs, "딩!", the door pops open on whoever is inside

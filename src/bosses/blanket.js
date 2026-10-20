@@ -397,7 +397,7 @@ export class Game {
     this.scoreEl = h('div', { class: 'bk-score ol' }, '0');
     this.bar = h('div', { class: 'bk-bar' }, this.barI = h('i'), ...LV.stars.map((s, k) => h('span', { class: 'bk-mark', style: `left:${s / max * 100}%` }, '★'.repeat(k + 1))));
     col.append(h('div', { class: 'bk-head' }, this.scoreEl, this.bar));
-    this.hint = h('div', { class: 'bk-hint ol' }, '? 붙은 이불부터! 삐죽 나온 귀·꼬리를 보고 콕'); col.append(this.hint);
+    this.hint = h('div', { class: 'bk-hint ol' }, '? 붙은 이불부터! 삐죽 나온 귀·꼬리를 보고 터치'); col.append(this.hint);
     this.cardsEl = h('div', { class: 'bk-cards out' }); col.append(this.cardsEl);
     this.qEl = h('div', { class: 'bk-q ol3' }, '?'); this.qEl.style.display = 'none'; ui.wui.append(this.qEl);
     this.feverEl = h('div', { class: 'bk-fever' }); app.append(this.feverEl);

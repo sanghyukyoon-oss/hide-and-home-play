@@ -340,7 +340,7 @@ export class LobbyScene extends MyHomeScene {
     const G = this.G, el = this.cardsEl; if (!el) return;
     el.innerHTML = '';
     const box = this.H.friendBox || [];
-    if (!box.length) el.append(h('div', { style: 'padding:14px;font-size:16px;color:#8a6a9a' }, '친구 상자가 비었어요. 방에 앉은 친구를 콕 하면 상자에 넣을 수 있어요'));
+    if (!box.length) el.append(h('div', { style: 'padding:14px;font-size:16px;color:#8a6a9a' }, '친구 상자가 비었어요. 방에 앉은 친구를 터치하면 상자에 넣을 수 있어요'));
     for (const k of box) el.append(h('div', { class: 'card', onclick: () => this.placeFriend(k) }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, nameOf(k))));
   }
   placeFriend(k) {
@@ -403,7 +403,7 @@ export class LobbyScene extends MyHomeScene {
     if (mode === 'passage') {   // 판 끝 집으로 가져가기: no buttons, just "톡 하면 계속"
       const G = this.G, W = G.world; this.mode = 'passage'; this.sel = null; G.ui.clear(); if (this.room) this.fitCam();
       W.joyHidden = true; W.dragTurn = W.spinQuiet = false; W.autoSpin = 0;
-      const col = this.col = G.ui.col(), hint = h('div', { class: 'ol passhint', style: 'position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(42,26,61,.5);color:#fff;border-radius:999px;padding:8px 18px;font-size:16px;white-space:nowrap;pointer-events:auto' }, '콕 하면 계속');
+      const col = this.col = G.ui.col(), hint = h('div', { class: 'ol passhint', style: 'position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(42,26,61,.5);color:#fff;border-radius:999px;padding:8px 18px;font-size:16px;white-space:nowrap;pointer-events:auto' }, '터치하면 계속');
       hint.addEventListener('pointerup', e => { e.stopPropagation(); this.passageDone(); }); col.append(hint);
       this.showGhosts(); return;
     }
@@ -684,7 +684,7 @@ export class LobbyScene extends MyHomeScene {
       b.scale.setScalar(.01); b.position.set(at.x, 1.4, at.z); R.add(b); W.idsDirty = true; G.audio.sfx('pop', 3);
       await tw.run(.45, k => { b.scale.setScalar(s1 * Math.max(.01, Math.min(1, k * 1.6))); b.position.y = 1.4 * (1 - k) + Math.abs(Math.sin(k * Math.PI)) * .2; }, ease.outBounce); if (this.dead) return;
       m.faceTo(at.x, at.z);
-      const hint = this.col?.querySelector('.passhint'); if (hint) hint.textContent = tr('🎁 상자를 콕!');
+      const hint = this.col?.querySelector('.passhint'); if (hint) hint.textContent = tr('🎁 상자를 터치!');
       const wiggle = setInterval(() => { b.rotation.z = Math.sin(performance.now() / 90) * .08; }, 30);
       await new Promise(res => { this._boxTap = res; W.onTap = () => res(); });
       clearInterval(wiggle); this._boxTap = null; W.onTap = () => this.passageDone();
@@ -696,7 +696,7 @@ export class LobbyScene extends MyHomeScene {
       H.starBoxOpened = n + 1;
       if (t) { G.ui.toast(grantGift(G, t), 'green'); m.pose = 'cheer'; m.setFace?.('wow'); m.bump(.4); }
       G.persist();
-      if (hint) hint.textContent = tr('콕 하면 계속');
+      if (hint) hint.textContent = tr('터치하면 계속');
       await tw.wait(.9);
     }
   }

@@ -69,7 +69,7 @@ export class Trickster {
     this.shot = { target: new THREE.Vector3(startT.x, (startT.y || 0) + .4, startT.z), zoom: Math.max(W.zoom, 1.7) };
     W.flyTo(S.tw, { ...this.shot, dur: .45 });
     S.say(ch, '히히! 이건 내 거~', 1400);
-    G.ui.toast('앗! 말썽이가 나타났다! 콕 해서 잡아라!', 'red');
+    G.ui.toast('앗! 말썽이가 나타났다! 터치해서 잡아라!', 'red');
     if (!await this.walk(route)) return;
     // grab
     const it = v.it; if (it.found || this.gone()) return this.leave();

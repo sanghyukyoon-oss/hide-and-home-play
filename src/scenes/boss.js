@@ -118,7 +118,7 @@ export class BossScene {
       const { playDialog } = await import('../story.js');
       await playDialog(G, [
         { who: 'raccoon', text: '이번엔 보물 지키기야! 네가 제일 아끼는 보물 3개, 내가 다 찾으면 내 거~' },
-        { who: 'mong', text: '너굴이가 눈 감고 기다리는 동안 숨길 곳을 콕! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.' },
+        { who: 'mong', text: '너굴이가 눈 감고 기다리는 동안 숨길 곳을 터치! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.' },
         { who: 'mong', text: '찾기 시작하면 조이스틱으로 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!' },
         { who: 'raccoon', text: '시간 끝까지 하나라도 남으면 네 승리! 각오해~' },
       ], { title: '보스 · 보물 지키기' });
@@ -184,7 +184,7 @@ export class BossScene {
     const i = this.treasures.findIndex(t => !t.spot), n = this.treasures.length;
     if (i < 0) { this.hand.done('셋 다 숨겼어! 곧 너굴이가 찾아'); return; }
     const t = this.treasures[i];
-    this.hand.show(t.type, { name: t.name, label: `보물 ${i + 1}/${n}`, hint: '어디든 콕 해서 숨겨!', count: `${i + 1}/${n}` });
+    this.hand.show(t.type, { name: t.name, label: `보물 ${i + 1}/${n}`, hint: '어디든 터치해서 숨겨!', count: `${i + 1}/${n}` });
   }
   drawSlots() { this.treasures.forEach((t, i) => { const el = this.slots[i]; el.classList.toggle('hidden', !!t.spot && !t.lost); el.classList.toggle('lost', t.lost); el.classList.toggle('todo', !t.spot); el.classList.toggle('danger', !t.lost && !!t.spot && this.target === t.spot && this.phase === 'seek'); }); }
   say(ch, text, ms = 1200) {
@@ -239,7 +239,7 @@ export class BossScene {
     if (this.phase === 'count' && !(f && this.treasures.some(t => !t.spot))) return;   // (숨기는 동안 몽글이는 가만히: 바닥 콕은 아무 일 없음 — 10/20)
     if (f && this.phase === 'count' && this.treasures.some(t => !t.spot)) {
       const fs = (f.spots || []).filter(q => !q.bossTre).sort((a, b) => a.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point) - b.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point))[0] || null;
-      if (spot && !spot.tre) { this.hand?.drop(x, y); this.hideTreasure(spot, false, fs); setTimeout(() => this.nextHeld(), 650); } else if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 콕', '');
+      if (spot && !spot.tre) { this.hand?.drop(x, y); this.hideTreasure(spot, false, fs); setTimeout(() => this.nextHeld(), 650); } else if (spot) this.hideTreasure(spot, false, fs); else this.G.ui.toast('여기엔 숨길 데가 없어! 다른 가구를 터치', '');
       W.fx.ring(x, y, { r: 40, color: '#ff9ec2', width: 6, life: .4 }); return;
     }
     const p = spot ? spot.t : hit.point; this._ty = spot ? (spot.t.y || 0) : hit.point.y;
@@ -280,7 +280,7 @@ export class BossScene {
   hideTreasure(at = null, quiet = false, fs = undefined) {
     const G = this.G, s = at || this.spotNear(), t = this.treasures.find(x => !x.spot);
     if (!t || this.phase !== 'count') return;
-    if (!s) { G.ui.toast('숨길 가구를 콕 해 봐!', ''); return; }
+    if (!s) { G.ui.toast('숨길 가구를 터치해 봐!', ''); return; }
     if (s.tre) { G.ui.toast('여긴 벌써 숨겼어! 다른 곳에', ''); return; }
     t.spot = s; s.tre = t;
     if (fs === undefined) fs = (s.f.spots || []).filter(q => !q.bossTre)[Math.floor(Math.random() * Math.max(1, (s.f.spots || []).length))] || null;

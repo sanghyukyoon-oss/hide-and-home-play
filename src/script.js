@@ -681,7 +681,7 @@ const GAME = {
   // 먹물이 이야기("해가 져서 먼저 내려왔어", "다들 찾다가 집에 가. 해 지면")의 반대말, "내일 또 놀자"는 먹물이가 못 들어 본 말
   'gohome:8': { lead: [L('hamster', '웁웁! 벌써 해 졌어. 다 같이 집으로 가자!', "Mmf! The sun's already down. Everyone, home!"), L('mong', '…한 명도 안 빼고.', '…Nobody gets left behind.')],
     out: [L('bunny', '다 왔다! 이제 이웃이니까 내일 또 놀자!', "We made it! We're neighbors now, so let's play again tomorrow!")] },
-  'whack:0': { lead: [L('frog', '개굴! 수풀 놀이 할 사람?', 'Ribbit! Who wants to play in the bushes?'), L('frog', '고개 내밀 때 콕 하면 찾은 거야.', "Tap us when we pop up. That's a catch!"), L('raccoon', '나도 낄래~ 근데 나 누르면 하나 빼기다?', 'Count me in! Tap me, though, and you lose one.'), L('mong', '…누구야.', "…Who's that?")],
+  'whack:0': { lead: [L('frog', '개굴! 수풀 놀이 할 사람?', 'Ribbit! Who wants to play in the bushes?'), L('frog', '고개 내밀 때 터치하면 찾은 거야.', "Tap us when we pop up. That's a catch!"), L('raccoon', '나도 낄래~ 근데 나 누르면 하나 빼기다?', 'Count me in! Tap me, though, and you lose one.'), L('mong', '…누구야.', "…Who's that?")],
     out: [L('frog', '손 빠르다! 낚시터에서보다 더 빠르네, 개굴!', 'Fast hands! Even faster than at my fishing spot, ribbit!')] },
   // (1장 끝 → 2장: 토순이가 이사 짐 때문에 자러 온다 — 2장 시작 "우리 아파트로 이사 왔어!"로 이어짐. 6줄 → 4줄, 스토리 룸 10/20)
   'yasik:0': { lead: [L('bunny', '몽글아! 우리 집은 이삿짐 때문에 난리야. 오늘 너네 집에서 자도 돼?', "Mongle! My place is all moving boxes. Can I sleep over tonight?"), L('bunny', '꼬르륵… 냉장고에 컵케이크 있잖아…', 'Grumble… There are cupcakes in the fridge…'), L('mom', '얘들아~ 이제 자야지~', 'Kids! Bedtime!'), L('mong', '…이번엔 우리가 안 들킬 차례.', '…Our turn to stay out of sight.')],
@@ -710,7 +710,7 @@ const GAME = {
 // as a game rule (the way kids explain a game); how to touch the screen is on screen.
 const MINI = {
   // (10/19: 손전등은 15판 뒤 → 43판 뒤 공원으로 — 밖이라 '불 끄고' 대신 해가 진 걸로)
-  lamp: [L('hamster', '웁웁! 해 졌다! 손전등 술래 하자! 무섭지만… 재밌어!', "Mmf! The sun's down! Flashlight tag! Scary… but fun!"), L('hamster', '불빛에 비친 친구를 콕 하면 찾은 거야!', "Tap whoever's in the light. That's a catch!")],
+  lamp: [L('hamster', '웁웁! 해 졌다! 손전등 술래 하자! 무섭지만… 재밌어!', "Mmf! The sun's down! Flashlight tag! Scary… but fun!"), L('hamster', '불빛에 비친 친구를 터치하면 찾은 거야!', "Tap whoever's in the light. That's a catch!")],
   'lamp:boss': [L('nerd', '불 끄고 손전등 술래. 이번엔 여덟 명이야.', 'Lights off, flashlight tag. Eight of us this time.'), L('raccoon', '나도 숨는다~ 가짜도 섞어 놨지롱.', "I'm hiding too~ And I mixed in some fakes."), L('mong', '…다 찾을게.', "…I'll find all of you.")],
 };
 export const miniLead = (kind, boss) => MINI[kind + (boss ? ':boss' : '')] || null;
@@ -759,31 +759,33 @@ export const ENDING_CARD = K('숨는 건, 누가 찾아 주길 바라서야.', '
 // ── my home, the first time (after stage 2): 토순이 comes over and you hide one thing for her
 export const HOME_TUT = {
   hello: [L('bunny', '여기가 너네 집이구나!', 'So this is your place!'), L('bunny', '물건 하나 숨겨 봐. 난 눈 감고 있을게!', "Hide something. I'll keep my eyes closed!")],
-  both: K('아래에서 숨길 물건을 고르고, 숨길 곳을 콕', 'Pick an item, then tap a hiding spot'),
+  both: K('아래에서 숨길 물건을 고르고, 숨길 곳을 터치', 'Pick an item, then tap a hiding spot'),
   count: [L('bunny', '다 숨겼어? 그럼 찾는다!', 'All hidden? Here I come!')],
   found: [L('bunny', '찾았다! 헤헤, 다음엔 더 깊이 숨겨 봐.', 'Found it! Hehe. Hide it better next time.')],
   missed: [L('bunny', '으으, 어디 숨겼어?! …알려 주지 마!', "Ugh, where'd you put it?! …Don't tell me!")],
   bye: [L('bunny', '이렇게 숨겨 두면, 동네 애들이 찾으러 놀러 와.', 'Hide things like this, and kids in town come over to look.'), L('bunny', '오늘은 여기까지! 또 놀러 올게.', "That's it for today! I'll come over again.")],
+  // 친구 부르기 (경제 10/20): she doesn't sit — on her way out the door. Set up for ROOM_ARRIVE.bunny "내 자리는 몽글이 옆!"
+  callMe: L('bunny', '또 불러 줘! 다음엔 몽글이 옆자리 내 거야!', "Invite me again! Next time, the seat by Mongle is mine!"),
 };
 
 // ── on-screen instructions (▶): one action, stays until it's done, says more when you're stuck
 export const DO = {
-  donut: K('도넛을 콕', 'Tap the donut'), donut2: K('바닥의 도넛을 콕 눌러 봐', 'Tap the donut on the floor'),
-  turnBadge: K('↻ 회전을 콕', 'Tap ↻ Turn'), turnBadge2: K('오른쪽 아래 ↻ 회전 버튼을 콕', 'Tap ↻ Turn at the bottom right'),
+  donut: K('도넛을 터치', 'Tap the donut'), donut2: K('바닥의 도넛을 터치해 봐', 'Tap the donut on the floor'),
+  turnBadge: K('↻ 회전을 터치', 'Tap ↻ Turn'), turnBadge2: K('오른쪽 아래 ↻ 회전 버튼을 터치', 'Tap ↻ Turn at the bottom right'),
   turnDrag: K('옆으로 끌어서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 끌어 봐', 'Drag until the box faces you'),
   turnAny: K('방을 돌려서 상자 앞을 봐', 'Turn the room to face the box'),
   // 기본 조작 F (조작감 세션, 10/18): the turn dial bottom right — push it sideways to turn, up/down to tilt
   turnDial: K('돌림판을 밀어 봐', 'Slide the dial'),   // (짧게 — user 10/19 "힌트랑 손가락이 너무 많다"; the hand shows where and which way)
   tilt: K('돌림판을 위아래로 밀어 기울이기', 'Slide the dial up or down to tilt'), tilt2: K('돌림판을 위아래로 쭉 밀면 위에서 내려다볼 수 있어', 'Slide the dial up or down to look from above'),
   turnDial2: K('상자 앞이 보일 때까지 쭉', 'Keep going till the box faces you'),
-  box: K('상자를 콕', 'Tap the box'), box2: K('흔들리는 상자를 콕 눌러 봐', 'Tap the shaking box'),
-  drawer: K('서랍을 콕 해서 열기', 'Tap a drawer to open it'), drawer2: K('서랍이나 문을 콕! 안에 물건이 있어', 'Tap drawers and doors to look inside'),
+  box: K('상자를 터치', 'Tap the box'), box2: K('흔들리는 상자를 터치해 봐', 'Tap the shaking box'),
+  drawer: K('서랍을 터치해서 열기', 'Tap a drawer to open it'), drawer2: K('서랍이나 문을 터치! 안에 물건이 있어', 'Tap drawers and doors to look inside'),
   zoom: K('두 손가락을 벌려 크게 보기', 'Spread two fingers to zoom in'),
   move: K('끌어서 둘러봐', 'Drag to look around'),
   // 이동 중 톡 회전 수업 (user 10/19: 튜토리얼에 꼭, 더 이르게; 발동되면 십자 가운데가 중심이라고) — teachftap.js reads these
-  ftap: K('끌면서 다른 손가락으로 콕!', 'Drag, then tap with another finger!'),
+  ftap: K('끌면서 다른 손가락으로 터치!', 'Drag, then tap with another finger!'),
   ftapOn: K('십자 가운데를 중심으로 빙글', 'It spins around the cross'),
-  moveE: K('✥ 이동을 콕 하고, 끌어서 옆으로 가 봐', 'Tap ✥ Move, then drag'),
+  moveE: K('✥ 이동을 터치하고, 끌어서 옆으로 가 봐', 'Tap ✥ Move, then drag'),
 };
 // ── 엄마 몰래 야식, 첫째 밤: the practice the first time (bosses/yasik.js; GPT 안 10/18). The same rules: one action, over
 // only when it's done, a more exact line (…2) when you're stuck. Never "stand still and you're safe": in her eyes,
@@ -797,22 +799,22 @@ export const YASIK_DO = {
   phew: K('휴~ 안 들켰다!', 'Phew! Not spotted!'), now: K('지금이야! 엄마가 다시 TV 봐', "Now! Mom's watching TV again"),
   go: K('엄마가 TV 볼 때 냉장고 쪽으로', 'TV time! Sneak to the fridge'), edge: K('엄마가 돌아볼 때까지 여기서 기다리기', 'Wait here until Mom turns'),
   away: K('지금이야! 엄마가 딴 데 봐', "Now! Mom's looking away"),
-  open: K('냉장고를 콕 해서 열기', 'Tap the fridge to open it'), open2: K('냉장고 문을 손가락으로 한 번 콕!', 'Tap the fridge door once!'),
+  open: K('냉장고를 터치해서 열기', 'Tap the fridge to open it'), open2: K('냉장고 문을 손가락으로 한 번 터치!', 'Tap the fridge door once!'),
   grab: K('냉장고를 꾹 눌러 간식 꺼내기', 'Hold the fridge to grab a snack'), grab2: K('냉장고에서 손가락을 떼지 말고 꾹', 'Keep holding the fridge!'),
-  shut: K('불빛이 보여! 냉장고를 콕 해서 닫기', "Light's showing! Tap to close it"),
+  shut: K('불빛이 보여! 냉장고를 터치해서 닫기', "Light's showing! Tap to close it"),
   home: K('방문으로 돌아가기', 'Back to your room'),
   safeTag: K('안전', 'Safe'), seenTag: K('보여', 'Seen'),
 };
 // ── 🆕 cards: a new mechanic, gained the first time you run into it (메모리 teach-by-acquisition)
 const CARDS = {
-  pad: { t: K('열쇠 자물쇠', 'Key Lock'), s: [['🔒', K('자물쇠가 보이면', 'Spot a lock')], ['🔑', K('방에서 열쇠를 찾아서', 'Find the key')], ['👆', K('자물쇠를 콕', 'Tap the lock')]] },
-  code: { t: K('비밀번호 금고', 'Code Safe'), s: [['🔢', K('금고가 보이면', 'Spot a safe')], ['📝', K('숫자 쪽지를 찾아서', 'Find the code note')], ['👆', K('금고를 콕', 'Tap the safe')]] },
-  color: { t: K('색깔 자물쇠', 'Color Lock'), s: [['🎨', K('색깔 자물쇠가 보이면', 'Spot a color lock')], ['🃏', K('색깔 순서 카드를 찾아서', 'Find the color card')], ['👆', K('자물쇠를 콕', 'Tap the lock')]] },
-  lever: { t: K('쇠사슬', 'Chains'), s: [['⛓️', K('쇠사슬이 감겨 있으면', 'Spot chains')], ['🔴', K('벽의 빨간 레버를 찾아서', 'Find the red lever on a wall')], ['👆', K('레버를 콕', 'Tap the lever')]] },
-  treat: { t: K('버티는 친구', "Won't Budge"), s: [['😾', K('누가 길을 막고 있으면', 'Spot someone in the way')], ['🐟', K('좋아하는 간식을 찾아서', 'Find their favorite snack')], ['👆', K('그 친구를 콕', 'Tap them')]] },
+  pad: { t: K('열쇠 자물쇠', 'Key Lock'), s: [['🔒', K('자물쇠가 보이면', 'Spot a lock')], ['🔑', K('방에서 열쇠를 찾아서', 'Find the key')], ['👆', K('자물쇠를 터치', 'Tap the lock')]] },
+  code: { t: K('비밀번호 금고', 'Code Safe'), s: [['🔢', K('금고가 보이면', 'Spot a safe')], ['📝', K('숫자 쪽지를 찾아서', 'Find the code note')], ['👆', K('금고를 터치', 'Tap the safe')]] },
+  color: { t: K('색깔 자물쇠', 'Color Lock'), s: [['🎨', K('색깔 자물쇠가 보이면', 'Spot a color lock')], ['🃏', K('색깔 순서 카드를 찾아서', 'Find the color card')], ['👆', K('자물쇠를 터치', 'Tap the lock')]] },
+  lever: { t: K('쇠사슬', 'Chains'), s: [['⛓️', K('쇠사슬이 감겨 있으면', 'Spot chains')], ['🔴', K('벽의 빨간 레버를 찾아서', 'Find the red lever on a wall')], ['👆', K('레버를 터치', 'Tap the lever')]] },
+  treat: { t: K('버티는 친구', "Won't Budge"), s: [['😾', K('누가 길을 막고 있으면', 'Spot someone in the way')], ['🐟', K('좋아하는 간식을 찾아서', 'Find their favorite snack')], ['👆', K('그 친구를 터치', 'Tap them')]] },
   obs: { t: K('관찰 자물쇠', 'Look-Closely Lock'), s: [['🕰️', K('쪽지가 방 안 무언가를 가리키면', 'A note points at something in the room')], ['👀', K('그걸 찾아서 잘 봐', 'Find it and look closely')], ['👆', K('본 대로 자물쇠를 맞추기', 'Set the lock to what you saw')]] },
-  buddy: { t: K('같이 다니는 친구', 'Tag-Along Friend'), s: [['📖', K('도감에서 친구 카드를 콕', "Tap a friend's card in the book")], ['🤝', K("'같이 다니기'를 누르면", "Press 'Come along'")], ['👣', K('판에서 그 친구가 같이 다녀요', 'They walk with you in stages')]] },   // (경제·로비 세션 10/19, 스토리 룸 확인)
-  mongletv: { t: K('몽글 TV', 'Mongle TV'), s: [['📺', K('판 속 TV·모니터를 콕', 'Tap a TV or monitor in a stage')], ['🎮', K('채널을 골라 한 판', 'Pick a channel and play')], ['✋', K('이기면 손가락 +3, 한 판에 한 번', 'Win for +3 taps, once a stage')]] },   // (몽글 TV, 10/19)
+  buddy: { t: K('같이 다니는 친구', 'Tag-Along Friend'), s: [['📖', K('도감에서 친구 카드를 터치', "Tap a friend's card in the book")], ['🤝', K("'같이 다니기'를 누르면", "Press 'Come along'")], ['👣', K('판에서 그 친구가 같이 다녀요', 'They walk with you in stages')]] },   // (경제·로비 세션 10/19, 스토리 룸 확인)
+  mongletv: { t: K('몽글 TV', 'Mongle TV'), s: [['📺', K('판 속 TV·모니터를 터치', 'Tap a TV or monitor in a stage')], ['🎮', K('채널을 골라 한 판', 'Pick a channel and play')], ['✋', K('이기면 손가락 +3, 한 판에 한 번', 'Win for +3 taps, once a stage')]] },   // (몽글 TV, 10/19)
   chain: { t: K('연쇄 장치', 'Domino Gadgets'), s: [['🧩', K('하나를 풀면', 'Solve one thing')], ['⚙️', K('다음 장치가 움직여', 'The next one moves')], ['👀', K('방이 바뀌는 걸 잘 봐', 'Watch the room change')]] },
 };
 K('새로 얻었다!', 'New card!'); K('알겠어!', 'Got it!');
@@ -822,8 +824,8 @@ export const BUDDY_LINE = L('bunny', '몽글아, 다음 판엔 나도 따라가�
 // dials), the colors are the vases read smallest first. obslock.js calls obsCards() when it loads, so the cards (and 7판
 // 펭펭이's slip about the stopped clock) change only once that lock is really in the game.
 const CARDS_OBS = {
-  code: { t: K('비밀번호 금고', 'Code Safe'), s: [['📝', K('쪽지가 어디를 볼지 알려 줘', 'The note tells you where to look')], ['🕐', K('방 안 시계가 가리키는 시각이 비밀번호', 'The time on the clock is the code')], ['🔢', K('금고를 콕, 다이얼을 돌려 맞춰', 'Tap the safe and turn the dials')]] },
-  color: { t: K('색깔 자물쇠', 'Color Lock'), s: [['📝', K('쪽지가 어디를 볼지 알려 줘', 'The note tells you where to look')], ['🏺', K('꽃병 색을 작은 것부터 읽어', 'Read the vases, smallest first')], ['🎨', K('자물쇠를 콕, 색 버튼을 순서대로', 'Tap the lock, then the colors in order')]] },
+  code: { t: K('비밀번호 금고', 'Code Safe'), s: [['📝', K('쪽지가 어디를 볼지 알려 줘', 'The note tells you where to look')], ['🕐', K('방 안 시계가 가리키는 시각이 비밀번호', 'The time on the clock is the code')], ['🔢', K('금고를 터치하고 다이얼을 돌려 맞춰', 'Tap the safe and turn the dials')]] },
+  color: { t: K('색깔 자물쇠', 'Color Lock'), s: [['📝', K('쪽지가 어디를 볼지 알려 줘', 'The note tells you where to look')], ['🏺', K('꽃병 색을 작은 것부터 읽어', 'Read the vases, smallest first')], ['🎨', K('자물쇠를 터치하고 색 버튼을 순서대로', 'Tap the lock, then the colors in order')]] },
 };
 const CLOCK_SLIP = L('peng', '참, 다락 시계는 멈춰 있어. 멈춘 시각이… 앗, 이건 비밀!', "Oh, the attic clock is stopped. The time it stopped at… oops, that's a secret!");
 export function obsCards() {
@@ -937,7 +939,7 @@ export const STUCK = {
 };
 export const stuckLine = (host, kind) => STUCK[host]?.[kind] || null;
 // ── 2판 끝 조작법 요약 (조작감 세션이 띄움): what the first two stages taught, one line each, the 콕 / 끌기 words of DO
-export const CONTROLS_SUM = { title: K('조작법 정리', 'How to play'), rows: [K('콕: 열고 찾기', 'Tap: open and find'), K('끌기: 둘러보기', 'Drag: look around'), K('돌림판: 방 돌리기', 'Dial: turn the room'), K('콕콕: 크게 보기', 'Double tap: zoom in')] };
+export const CONTROLS_SUM = { title: K('조작법 정리', 'How to play'), rows: [K('터치: 열고 찾기', 'Tap: open and find'), K('끌기: 둘러보기', 'Drag: look around'), K('돌림판: 방 돌리기', 'Dial: turn the room'), K('두 번 터치: 크게 보기', 'Double tap: zoom in')] };
 export const replayHi = (host, secretIsOpen) => { const R = REPLAY[host]; return R ? (secretIsOpen ? R[0] : R[1]) : null; };
 // 몽글이 방의 빈 자리 (스토리 룸 10/20): 20판 "다음엔 우리 집에서 놀자. 그 애도 같이." 뒤, 엔딩 전까지 — 처음 볼 때 한 번
 export const INKY_SEAT = L('mong', '…그 애 자리. 비워 둘게.', "…That kid's seat. I'll keep it free.");
@@ -963,6 +965,14 @@ export const ROOM_ARRIVE = {
   dj: L('dj', '오, 여기 베이스 좋은데!', 'Ooh, the bass sounds great in here!'),
   // (after the ending only — walking in on a later visit; the 64판 promise "다음에 또 하자" coming back)
   inky: L('inky', '…또 놀러 왔어. 다음에 또 하자며.', '…I came over again. You said "next time."'),
+};
+// 친구 부르기 (경제 10/20): the result panel's one line the first time you meet a friend — no speaker, their face beside it.
+// callResult('skater', 440) → '이제 보드킹을 집에 부를 수 있어 · 440' / 'Now you can invite Board King over · 440'
+export const CALL_RESULT = K('이제 {f} 집에 부를 수 있어 · {c}', 'Now you can invite {f} over · {c}');
+const eulReul = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '을' : '를'); };
+export const callResult = (k, cost) => {
+  const ko = CHAR_DEFS[k]?.name || '친구', t = tr(CALL_RESULT);
+  return t === CALL_RESULT ? t.replace('{f}', eulReul(ko)).replace('{c}', cost) : t.replace('{f}', tr(ko)).replace('{c}', cost);
 };
 // whose stage it is (the friend who hides there, or 너굴이 on a timed one) — save.best is keyed by stage index
 export const stageHost = idx => (idx >= 0 ? bind().host[idx] || null : null);
@@ -1143,9 +1153,9 @@ export const isHidden = idx => bind().type[idx] === 'hidden';
 // 먹물이's name is known once the office 흑백판 (where it says it) is cleared, or after the ending (GPT QA ST-NAME 10/19):
 // before that the 도감 card reads ??? like the dialog label
 // (the 바꿔치기 놀이 is 너굴이's — its title says so — so its goal names him, not 먹물이; minis.js Spot.goal)
-export const SPOT_GOAL = K('너굴이가 바꿔 놓은 곳을 콕! (틀리면 3초, 다시 보기는 4초가 줄어)', 'Tap what Rocky changed! (A wrong tap costs 3s, a peek costs 4s)');
+export const SPOT_GOAL = K('너굴이가 바꿔 놓은 곳을 터치! (틀리면 3초, 다시 보기는 4초가 줄어)', 'Tap what Rocky changed! (A wrong tap costs 3s, a peek costs 4s)');
 // 두더지 숨바꼭질 아래 규칙 카드 (스토리 룸 10/19, 사용자 "아래쪽 공간에 너구리 안 되는 경고"): two words under pictures
-export const WHACK_CARD = { tap: K('콕!', 'Tap!'), skip: K('꾹 참기!', "Don't tap!") };
+export const WHACK_CARD = { tap: K('터치!', 'Tap!'), skip: K('꾹 참기!', "Don't tap!") };
 export const inkyNamed = save => { const e = Object.entries(bind().scene).find(([, x]) => x?.id === 'office'); return !e || (save?.stage || 0) > +e[0] || !!save?.ending; };
 export const hiddenIntro = (idx, host) => sceneAt(idx)?.intro || [L(host || bind().host[idx] || 'bunny', HID_ANY.intro)];
 // which: 'first' (the first find) · 'half' (found reaches half) · 'last' (exactly one left) — say it as the host's bubble
@@ -1183,8 +1193,8 @@ export const GAME_GIFT = {
 // {who} = 친구 이름(토순이·곰돌이·개굴이: 셋 다 '이'로 끝나 '가/는'), {n} {goal} {s} = 숫자. 진 줄 뒤엔 코드가 ' · ' + again을 붙여요
 export const MONITOR_TV = {
   ch: [K('어디 숨었게?', 'Which Box?'), K('이삿짐 쌓기', 'Box Stack'), K('몽글 점프', 'Mongle Jump'), K('상자 깨기', 'Box Breaker')],
-  start: K('화면을 콕 해서 시작!', 'Tap the screen to start!'),
-  again: K('화면을 콕 해서 다시', 'Tap the screen to try again'),
+  start: K('화면을 터치해서 시작!', 'Tap the screen to start!'),
+  again: K('화면을 터치해서 다시', 'Tap the screen to try again'),
   gain: K('이기면 손가락 +3', 'Win for +3 taps'),
   got: K('손가락 +{n}!', '+{n} taps!'),
   already: K('이번 판엔 이미 받았어', 'You already got it this stage'),
@@ -1193,32 +1203,32 @@ export const MONITOR_TV = {
     shellMid: K('세 번 중 두 번 맞히면 성공', 'Guess 2 of 3 right to win'),
     shellHard: K('세 번 다 맞혀야 성공', 'Guess all 3 right to win'),
     stack: K('{n}층 쌓으면 성공 · 삐져나온 만큼 잘려', 'Stack {n} high to win · overhangs get cut'),
-    run: K('{n}초 버티면 성공 · 콕 하면 점프', 'Last {n}s to win · tap to jump'),
+    run: K('{n}초 버티면 성공 · 터치하면 점프', 'Last {n}s to win · tap to jump'),
     brk: K('숨은 친구 셋을 찾으면 성공 · 공 {n}개', 'Find the 3 hidden friends to win · {n} balls'),
   },
   shell: {
     hide: K('{who}가 상자에 숨는다!', '{who} is hiding in a box!'),
     watch: K('잘 봐…', 'Watch closely…'),
-    pick: K('어디 숨었게? 콕!', 'Which box? Tap it!'),
+    pick: K('어디 숨었게? 터치!', 'Which box? Tap it!'),
     right: K('찾았다! {who} 들켰어!', 'Found you, {who}!'),
     wrong: K('거기 아니야~ {who}는 여기! 킥킥', 'Nope~ {who} was over here! Hee hee'),
     win: K('성공! {n}/3 맞혔다', 'You did it! {n}/3 right'),
     lose: K('아쉽다! {n}/3', 'So close! {n}/3'),
   },
   stack: {
-    go: K('콕 해서 상자를 내려놔!', 'Tap to drop the box!'),
+    go: K('터치해서 상자를 내려놔!', 'Tap to drop the box!'),
     count: K('{n} / {goal}층', '{n} / {goal} high'),
     perfect: K('딱 맞았다!', 'Perfect fit!'),
     lose: K('와르르! {n}층', 'Crash! {n} high'),
     win: K('성공! {n}층', 'You did it! {n} high'),
   },
   run: {
-    go: K('콕 하면 점프!', 'Tap to jump!'),
+    go: K('터치하면 점프!', 'Tap to jump!'),
     lose: K('쿵! {s}초', 'Bonk! {s}s'),
     win: K('성공! {s}초 버텼다', 'You did it! Lasted {s}s'),
   },
   brk: {
-    go: K('끌어서 베개를 움직이고, 콕 하면 공을 튕겨!', 'Drag to move the pillow, tap to launch!'),
+    go: K('끌어서 베개를 움직이고, 터치하면 공을 튕겨!', 'Drag to move the pillow, tap to launch!'),
     found: K('찾았다! {who}!', 'Found {who}!'),
     miss: K('앗, 놓쳤다! 남은 공 {n}', 'Oops! {n} balls left'),
     lose: K('아쉽다! 친구 {n}명 찾았어', 'So close! Found {n}'),
@@ -1332,4 +1342,4 @@ K('둠칫이가 또 왔어요… 이번엔 여섯 명!', "DJ Bop's back… six g
 for (let n = 1; n <= 12; n++) { K(`숨겨진 물건 ${n}개를 찾아 색을 되찾아라!`, `Find the ${n} hidden things to bring the colors back!`); K(`숨겨진 물건 ${n}개를 찾아라!`, `Find the ${n} hidden things!`); }
 K('억울해! 난 그냥 여기 숨어 있었다고!', 'Not fair! I was just hiding in here!'); K('진짜 도둑은 그 까만 애라니까~!', "The real thief is that inky kid, I'm telling you~!"); K('드디어 자유다~! 범인은 그 까만 애야!', "Free at last~! The culprit's that inky kid!");
 // 파자마 파티 순서 안내 (사용자 10/18) — bosses/blanket.js
-K('나 여기! 왼쪽부터 차례로~', "I'm here! Left to right~"); K('나 아직 차례 아니야~', "Not my turn yet~"); K('? 붙은 이불부터! 삐죽 나온 걸 보고 콕', 'Start with the ? lump. Look at what pokes out, then tap');
+K('나 여기! 왼쪽부터 차례로~', "I'm here! Left to right~"); K('나 아직 차례 아니야~', "Not my turn yet~"); K('? 붙은 이불부터! 삐죽 나온 걸 보고 터치', 'Start with the ? lump. Look at what pokes out, then tap');

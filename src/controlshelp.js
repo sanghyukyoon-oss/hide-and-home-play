@@ -16,7 +16,7 @@ const T = {
   title: K('조작 도움말', 'How to Play'), sum: K('조작 정리', 'Controls'), stages: K('판별로 다시 보기', 'Stage by stage'),
   none: K('이 판엔 새 조작이 없어. 지금까지 배운 걸로 충분해!', "Nothing new here. What you've learned is all you need!"),
   stageN: K('{n}판', 'Stage {n}'), back: K('조작 정리로', 'Back to controls'),
-  drag: K('끌기', 'Drag'), dial: K('돌림판', 'Dial'), ftap: K('끌다가 콕', 'Drag + tap'), dtap: K('콕콕', 'Double tap'),
+  drag: K('끌기', 'Drag'), dial: K('돌림판', 'Dial'), ftap: K('끌다가 터치', 'Drag + tap'), dtap: K('두 번 터치', 'Double tap'),
 };
 const GRAY_LINE = '색을 잃은 방! 찾을 때마다 색이 돌아와 — 큰 가구도 찾아 봐';   // (stage.js's own 흑백 line, already in English)
 
@@ -35,7 +35,7 @@ const STAGES = {
   3: () => [{ cls: 'dtap', line: DBL_TXT.tip }, { ico: '👆', line: TAP_TXT.body }, { ico: '🗄️', line: TAP_TXT.free }],
   4: () => [{ ico: '🎨', line: GRAY_LINE }],
   5: () => card('pad'),
-  7: () => [{ ico: '⚙️', line: K('돌아가는 장치는 콕 해서 돌려 봐. 뭐가 움직일지 몰라!', 'Tap anything that turns to give it a spin. Something might move!') }],   // (스토리 룸 10/20: 도르래를 처음 만지는 판)
+  7: () => [{ ico: '⚙️', line: K('돌아가는 장치는 터치해서 돌려 봐. 뭐가 움직일지 몰라!', 'Tap anything that turns to give it a spin. Something might move!') }],   // (스토리 룸 10/20: 도르래를 처음 만지는 판)
   8: () => [{ ico: '🤖', line: KIT_TALK.robot.hid }, { ico: '🔢', line: KIT_TALK.robot.wrong }],
 };
 
@@ -45,11 +45,11 @@ const row = r => h('div', { class: 'chrow' },
 
 // the summary tiles: the 스토리 룸's own lines (CONTROLS_SUM: 콕 · 끌기 · 돌림판 · 콕콕), and 끌다가 콕 (taught in 2판, on the
 // user's list) — two to a row, so the result panel stays short
-const FTAP_SUM = K('끌다가 콕: 십자 가운데로 빙글', 'Drag + tap: spin around the cross');   // (문구: 스토리 룸 10/20)
+const FTAP_SUM = K('끌다가 터치: 십자 가운데로 빙글', 'Drag + tap: spin around the cross');   // (문구: 스토리 룸 10/20)
 function sumTiles() {
   const rows = CONTROLS_SUM?.rows || [], pick = (pre, alt) => rows.find(r => r.startsWith(pre)) || alt;
-  const tiles = [{ cls: 'tap', text: pick('콕:', null) }, { cls: 'swipe', text: pick('끌기:', DO.move) }, { cls: 'dialr', text: pick('돌림판:', DO.turnDial) },
-    { cls: 'ftap', text: FTAP_SUM }, { cls: 'dtap', text: pick('콕콕:', DBL_TXT.tip) }].filter(x => x.text);
+  const tiles = [{ cls: 'tap', text: pick('터치:', null) }, { cls: 'swipe', text: pick('끌기:', DO.move) }, { cls: 'dialr', text: pick('돌림판:', DO.turnDial) },
+    { cls: 'ftap', text: FTAP_SUM }, { cls: 'dtap', text: pick('두 번 터치:', DBL_TXT.tip) }].filter(x => x.text);
   return h('div', { class: 'chgrid' }, ...tiles.map(x => h('div', { class: 'chtile' }, h('div', { class: 'chdemo sm' }, h('div', { class: 'hand ' + x.cls, html: ICON.hand })), h('span', {}, tr(x.text)))));
 }
 // 2판's result panel: the tiles under a small heading

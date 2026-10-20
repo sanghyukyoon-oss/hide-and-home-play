@@ -61,7 +61,7 @@ const LEVELS = [
     decor: [D('door', 'W', -1.0), D('catclock', 'N', -1.0), D('balconywin', 'W', 1.2), D('wallrack', 'N', 1.5)],
     furniture: [F('monstera', 0, 0), F('bookshelf', 1, 0, 0, { seed: 7 }), F('recordcab', 3, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0), F('bigfridge', 6, 0),
       F('sofa2', 2, 2), F('plant', 1, 2), F('monstera', 5, 3), F('tvlow', 2, 4, 2), F('floorlamp', 0, 4), F('diningset', 4, 4), F('plant', 6, 4)],
-    lures: [{ speaker: TW(1.1, 3.6), name: '자장가 스피커', line: '', lullaby: true, card: '콕 하면 자장가 · 엄마가 더 깊이 잠들어요' }],
+    lures: [{ speaker: TW(1.1, 3.6), name: '자장가 스피커', line: '', lullaby: true, card: '터치하면 자장가 · 엄마가 더 깊이 잠들어요' }],
     snacks: ['snack', 'candy', 'icecream'],
     route: [[-3.0, 1.0], [-2.85, -1.45], [-.6, -1.45], [1.0, -1.45], [3.0, -1.0]] },
 ];
@@ -531,7 +531,7 @@ export class Game {
   }
   gotCard(d) {
     const L = this.L, h = L.h;
-    const c = h('div', { class: 'ys-get' }, h('div', { class: 'ys-get-t ol' }, '새로 얻었다!'), h('div', { class: 'ys-get-n', style: 'word-break: keep-all' }, `${d.name} 리모컨`), h('div', { class: 'ys-get-s' }, d.card || `콕 하면 ${this.lv.guard && this.lv.guard !== 'mom' ? '술래가' : '엄마가'} 끄러 가요 · 한 번만`));
+    const c = h('div', { class: 'ys-get' }, h('div', { class: 'ys-get-t ol' }, '새로 얻었다!'), h('div', { class: 'ys-get-n', style: 'word-break: keep-all' }, `${d.name} 리모컨`), h('div', { class: 'ys-get-s' }, d.card || `터치하면 ${this.lv.guard && this.lv.guard !== 'mom' ? '술래가' : '엄마가'} 끄러 가요 · 한 번만`));
     document.getElementById('app').append(c); L.audio.sfx('special');
     setTimeout(() => { c.classList.add('out'); setTimeout(() => c.remove(), 400); }, 2600);
   }
@@ -772,7 +772,7 @@ export class Game {
     else if (this.dropped.length) this.setHint(this.scurry ? '후다닥 말고 살금살금!' : '떨어진 간식 위로 가면 주워요');
     else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '아래를 끌어서 살금살금' : '코 골 때 움직이면 안 들려');
     else if (n) this.setHint(this.scurry ? '후다닥하면 간식이 흔들려!' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
-    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 끌어서 살금살금' : live ? `${this.lures.find(d => !d.used).name}를 콕 하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
+    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 끌어서 살금살금' : live ? `${this.lures.find(d => !d.used).name}를 터치하면 엄마가 가요` : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
     { const at = nearFridge, busy = at && (this.grabbing || this.btnId != null); this.fbtn.classList.toggle('near', at && !busy); this.fbtn.classList.toggle('far', !at); this.fbtn.classList.toggle('busy', busy); }
     if (this.dog && !this.dog.awake && (this.zzT -= dt) <= 0) { this.zzT = 2.4; const d = this.dog.root.position, s = W.toScreen(new THREE.Vector3(d.x, this.dog.headTop() + .15, d.z)); L.ui.floatText(s.x + 10, s.y, 'Zz', ''); }

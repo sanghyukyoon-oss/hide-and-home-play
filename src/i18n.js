@@ -24,7 +24,7 @@ const obj = n => /^(the|a|an) /i.test(n) || /^[A-Z]/.test(n) ? n : 'the ' + n;  
 const PAT = [
   [/^(\d+)장에서 열려$/, n => `Opens in chapter ${n}`],   // (상점: 아직 안 열린 가구 — 스토리 룸 10/20)
   [/^([\d.]+)배$/, n => `×${n}`],                          // (배치 편집: 크기 1.2배)
-  [/^불 꺼진 층에서 친구 (\d+)명 찾기! 너굴이를 콕 하면 시간이 줄어$/, n => `Find ${n} friends on the dark floor! Tapping Rocky costs time`],
+  [/^불 꺼진 층에서 친구 (\d+)명 찾기! 너굴이를 터치하면 시간이 줄어$/, n => `Find ${n} friends on the dark floor! Tapping Rocky costs time`],
   [/^([\d · ]+)판 뒤( \(.+\))?$/, (a, b) => `after stage ${a.trim()}${b ? ' ' + tr(b.trim().slice(1, -1)).replace(/^/, '(') + ')' : ''}`],
   [/^(\d+)명 찾았어… 남은 친구들이 킥킥 웃고 있어$/, n => `Found ${n}… the rest are still giggling`],
   [/^(\d+)라운드 · 잘 봐!$/, n => `Round ${n} · watch closely!`],
@@ -114,7 +114,7 @@ const PAT = [
   [/^코인 (\d+)개 더 모으면 넓힐 수 있어$/, n => `${n} more coins and you can expand it`],
   [/^한 번에 (\d+)개까지 숨길 수 있어$/, n => `You can hide up to ${n} at a time`],
   [/^이제 (.+?)에 숨겨! 전에 숨긴 방은 저장해 뒀어$/, n => `Now hiding in ${obj(n)}! The old room is saved`],
-  [/^물건 고르고 숨길 곳 탭 · 최대 (\d+)개$/, n => `Pick a thing and tap where to hide it · up to ${n}`],
+  [/^물건 고르고 숨길 곳 터치 · 최대 (\d+)개$/, n => `Pick a thing and tap where to hide it · up to ${n}`],
   [/^스테이지에서 찾은 물건이 여기 모여요 \((\d+)종\)$/, n => `Things you found in stages gather here (${n} kinds)`],
   [/^(.+?) 잠금 풀기$/, n => `Unlock ${n}`],
   [/^(.+?) 잠그기$/, n => `Lock ${n}`],
@@ -147,7 +147,7 @@ const PAT = [
   [/^(\d+)개$/, n => `${n}`],
   [/^콤보 x(\d+)!$/, n => `Combo x${n}!`],
   [/^(.+?) 획득! (.+?)한테 갖다 주자$/, (a, b) => `Got ${obj(a)}! Take it to ${b}`],
-  [/^(.+?) 획득! 모래밭의 빨간 X를 콕!$/, a => `Got ${obj(a)}! Tap the red X in the sandbox!`],
+  [/^(.+?) 획득! 모래밭의 빨간 X를 터치!$/, a => `Got ${obj(a)}! Tap the red X in the sandbox!`],
   [/^색깔 순서: (.+)$/, s => `Color order: ${s}`],
   [/^쪽지 조각을 다 모았다! 비밀번호 (.+)$/, s => `All note scraps found! Password ${s}`],
   [/^쪽지 조각 (\d+)\/(\d+)! 나머지 조각도 어딘가에 있어$/, (a, b) => `Note scrap ${a}/${b}! The rest are somewhere around`],
@@ -224,11 +224,11 @@ const PAT = [
   // QA 10/18: English gaps found in the campaign (before the broad patterns at the end)
   [/^쉬어가기 성공! 코인 \+(\d+)$/, a => `Break cleared! Coins +${a}`],
   [/^★ 헛짚기 (\d+)번$/, a => `★ Wrong picks: ${a}`],
-  [/^헛탭 (\d+)$/, a => `Missed taps: ${a}`],
+  [/^헛손질 (\d+)$/, a => `Missed taps: ${a}`],
   [/^남은 물건 (\d+)개도 찾아 줘!$/, a => `Find the other ${a} things too!`],
   [/^(\d+)판$/, a => `Stage ${a}`],
-  [/^(.+?)[을를] 콕 하면 엄마가 가요$/, n => `Tap the ${n.charAt(0).toLowerCase() + n.slice(1)} and Mom goes to it`],
-  [/^콕 하면 (술래|엄마)가 끄러 가요 · 한 번만$/, w => `Tap it and ${w === 'Mom' ? 'Mom' : 'the seeker'} goes to turn it off · once`],
+  [/^(.+?)[을를] 터치하면 엄마가 가요$/, n => `Tap the ${n.charAt(0).toLowerCase() + n.slice(1)} and Mom goes to it`],
+  [/^터치하면 (술래|엄마)가 끄러 가요 · 한 번만$/, w => `Tap it and ${w === 'Mom' ? 'Mom' : 'the seeker'} goes to turn it off · once`],
   [/^꺼내는 중… (\d+)\/(\d+)$/, (a, b) => `Taking one out… ${a}/${b}`],
   [/^(.+) = (.+)$/, (a, b) => `${a} = ${b}`],   // 이불 속 누구게?: a miss names the clue
   [/^(\d+)점부터 성공! 이불 모양이랑 꼬리를 잘 봐$/, a => `Clear at ${a} pts! Watch the lump's shape and the tails`],
@@ -284,7 +284,7 @@ const PAT = [
 
 // QA 10/18: words that showed in Korean on English screens
 Object.assign(EN, {
-  '★ 명탐정 (헛짚기 0)': '★ Master detective (0 wrong picks)', '방탈출': 'Escape room', '돌림판': 'Turn dial', '콕 전환': 'Tap to switch',
+  '★ 명탐정 (헛짚기 0)': '★ Master detective (0 wrong picks)', '방탈출': 'Escape room', '돌림판': 'Turn dial', '터치 전환': 'Tap to switch',
   '토끼 귀 흉내 내는 너굴이!': 'Rocky in fake bunny ears!', '삐죽 나온 줄무늬 꼬리를 봐': 'Look for the striped tail poking out',
   '고양이 친구들이 왔다!': 'The cat friends are here!', '꼬리 색이랑 생선을 잘 봐': 'Watch the tail colors and the fish',
   '길쭉한 귀 모양': 'long ears', '까만 발이랑 동그란 귀': 'black paws and round ears', '조그만 이불': 'a tiny lump', '말린 꼬리': 'a curly tail',
