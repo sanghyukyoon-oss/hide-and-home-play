@@ -16,11 +16,11 @@ export const BGM = {
   // is the stages' song now, and the mini games play the same file, so it just goes on across
   map: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gain: 1 },   // 스테이지(맵) (Suno 'ingame' 1:02)
   // (10/21 user: "미니게임 노래는 다 좋네? 1, 3으로 돌려 쓰자") the mini games take turns between two Suno songs (gpts)
-  mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-map.mp4', gpts: ['audio/gpt/bgm-map.mp4'], gain: 1 },   // → ['audio/gpt/bgm-mini-1.mp4', 'audio/gpt/bgm-mini-3.mp4'] when the two Suno files are in
+  mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-mini-1.mp4', gpts: ['audio/gpt/bgm-mini-1.mp4', 'audio/gpt/bgm-mini-3.mp4'], gain: 1 },   // Suno minigame-v2 ① · minigame-v3 ③
   tv: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 몽글 TV (Suno 'hideandhome-tv-v1' 2:16)
   // (10/20 user: "티비게임에 나오는 노래도 정규 음악으로 넣어 줄래?") the TV song is the boss games' song too
   boss: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
-  king: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // (10/21 user: "4도 좋은데 어디 쓸 만한 데") 마지막 보스·결정전 — Suno minigame-v3 ④
+  king: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-king.mp4', gain: 1 },   // (10/21 user: "4도 좋은데 어디 쓸 만한 데") 마지막 보스·결정전 — Suno minigame-v3 ④
   tense: { gpt: null, gain: 1 },   // 다급할 때 (없으면 지금 곡을 1.07배로) → audio/gpt/bgm-tense.mp4
 };
 // 효과음 파일 (사운드 10/20, 사용자: "효과음 ㅇㅋ", "ASMR스럽고… 질감 같은 게 잘 느껴지고 디테일한 사운드"): 사내 AI Proxy →
