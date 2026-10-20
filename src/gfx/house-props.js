@@ -266,6 +266,9 @@ B.liftbasket = (f, T, o = {}) => {
   // key is drawn a little bigger: down on the wicker it hid behind the rim from the start view — design 10/20)
   if (o.hook) basket.add(mc('liftpad', ({ add }) => { add(G.box(.44, .05, .34, .02), '#f2dc9a', 0, .065, 0); for (const [x, z, r] of [[-.12, .08, .3], [.1, -.06, -.5], [.02, .1, .9]]) add(G.box(.16, .012, .018, .004), '#e2c26e', x, .093, z, 0, r, 0); }));
   f.spot('inside', basket, 0, o.hook ? .09 : .04, 0, { part: p, maxH: .26, label: '도르래 바구니 안', scale: o.hook ? .95 : .8 });
+  // (7판, user 10/21: "7 도르래는 손잡이 터치하게 해 줄래? 지금은 다 터치해도 돼서") the hook's pulley works from its crank only:
+  // stage.js takes a tap round the handle; a tap on the basket, rope or posts just nudges and points at the handle
+  if (o.hook) p.handle = crank;
   // (o.hook, 7판 — user 10/20: "열쇠가 도르래 맨 위에 딱 보이게 걸려 있고, 그냥 터치하면 안 눌림… 도르래를 누르면 바구니가 올라가면서
   // 맨 위 열쇠가 바구니에 탁 떨어짐"): a little hook under the top beam, beside the rope, where a thing hangs out of reach until
   // the basket comes up under it (stage.js hung things)

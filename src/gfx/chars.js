@@ -264,7 +264,7 @@ const FX = {
 const P = (lon, lat, ra, rb, rot = 0) => [lon, lat, ra, rb, rot];
 export const CHAR_DEFS = {
   mong: { name: '몽글이', body: '#fff6ee', ear: 'flop', earC: '#ffcfae', scale: .62 },
-  bunny: { name: '토순이', body: '#ffe6f0', ear: 'bunny', earC: '#ffb3cd', scale: .6 },
+  bunny: { name: '토순이', body: '#ffe6f0', ear: 'bunny', earC: '#ffb3cd', scale: .6, happyMouth: 'w' },   // (smiling: her own ω — a small open D alone in her wide face read odd, user 10/21 "토순이 웃을 때 좀 기괴함")
   bear: { name: '곰돌이', body: '#e9bf94', ear: 'bear', earC: '#c98a52', scale: .62 },
   cat: { name: '냥냥이', body: '#ffd9a3', ear: 'cat', earC: '#ffb26b', scale: .6 },
   peng: { name: '펭펭이', body: '#6f7fb3', ear: 'peng', earC: '#ffffff', scale: .62 },
@@ -875,6 +875,7 @@ export class Char {
     // mouth: the personality mouth while calm (a sleepy 'o' only while asleep); 펭펭이's beak is its resting mouth
     let m = X.mouth;
     if (this.mouthAlt && (L.mouth === 'o' ? this.sleeping : calm)) m = 'alt';
+    if (f === 'happy' && d.happyMouth) m = d.happyMouth;
     if (this.kind === 'peng' && m === 'w') m = null;
     for (const k in this.mouths) this.mouths[k].visible = k === m;
     this.mouthO.scale.set(1, 1, 1);

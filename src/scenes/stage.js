@@ -586,6 +586,7 @@ export class StageScene {
     const hit = this.pickAt(x, y);
     this.lastTapAt = { x, y }; this._lastMiss = null;   // (a double tap gives back only the tap right before it — QA 10/18)
     if (hit.kind === 'peek') return v2PeekTap(this);
+    { const hp = this.handlePartAt(x, y, hit); if (hp && !(hit.kind === 'item' && !hit.item.hang)) return this.onPart(hp, x, y); }   // (the crank, generously)
     if (hit.kind === 'item') {
       const it = hit.item;
       if (it.found) return;
@@ -607,6 +608,7 @@ export class StageScene {
     // 흑백판: a piece of furniture on the list is found by tapping any bit of it
     const ff = hit.kind === 'furn' ? hit.furn : hit.kind === 'part' ? hit.part.furn : null, ft = ff && this.grayTarget(ff);
     if (ft && !ft.found) return this.onFoundFurn(ft);
+    if (hit.kind === 'part' && hit.part.handle) return this.nudgeHandle(hit.part);   // (not its handle: point at the handle)
     if (hit.kind === 'part') return this.onPart(hit.part, x, y);
     if (hit.kind === 'char' && hit.char?._cameo) return cameoFound(this, hit.char._cameo);
     if (hit.kind === 'char' && this.trick?.ch && hit.char === this.trick.ch) return this.trick.caught();
@@ -625,6 +627,7 @@ export class StageScene {
     // (it used to wobble and spend a 톡; a finger meant for a drawer often landed on the body)
     // (QA3-fb5 10/19, user: "스테이지2에서 책상 서랍이 잘 안닫힘") — a drawer or door often shows only a sliver past its own
     // furniture (2판's desk drawer: ~16 px of front, open or shut); a tap on the body right by one works that one
+    if (hit.kind === 'furn') { const hp = hit.furn.parts?.find(p => p.handle); if (hp) return this.nudgeHandle(hp); }
     if (hit.kind === 'furn') { const np = this.partNear(hit.furn, x, y); if (np) return this.onPart(np, x, y); if (tvf) return this.openTv(); return; }
     this.addMiss(x, y, true);
   }
@@ -1834,7 +1837,28 @@ export class StageScene {
     }
     return best;
   }
-  partCenter(part) { const b = new THREE.Box3(); part.pivots.forEach(p => b.expandByObject(p)); return b.getCenter(new THREE.Vector3()); }
+  partCenter(part) { const b = new THREE.Box3(); (part.handle ? [part.handle] : part.pivots).forEach(p => b.expandByObject(p)); return b.getCenter(new THREE.Vector3()); }   // (a part worked by its handle: the handle — hints, the hand, the bots)
+  // a part worked only from its handle (7판's pulley crank): the one whose handle is within reach of the finger, the
+  // handle being small — a generous ring round it on the screen
+  handlePartAt(x, y, hit) {
+    const W = this.G.world, R = 44;
+    for (const p of this.room.parts) {
+      if (!p.handle || p.busy) continue;
+      if (hit?.kind === 'part' && hit.part === p) {   // on the thing itself: the handle yes, the basket or rope no (7판's basket starts right by it)
+        for (let o = hit.node; o; o = o.parent) if (o === p.handle) return p;
+        continue;
+      }
+      const s = W.toScreen(this.partCenter(p)); if (Math.hypot(s.x - x, s.y - y) < R) return p;   // near it, on the wall or floor
+    }
+    return null;
+  }
+  // a tap on the rest of it: a little shake and a twinkle at the handle — no wrong tap, no 톡 spent
+  nudgeHandle(part) {
+    const W = this.G.world, s = W.toScreen(this.partCenter(part));
+    this.G.audio.sfx('wobble'); this.wobble(part.pivots[0]);
+    W.fx.burst(s.x, s.y, { n: 8, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 110, gravity: -30, life: .6, size: 9 });
+    W.fx.ring(s.x, s.y, { r: 40, color: '#ffe14d', width: 5, life: .5 });
+  }
   async onPart(part, x, y) {
     const G = this.G, W = G.world;
     if (part.busy) return;
@@ -2106,7 +2130,7 @@ export class StageScene {
   async shutOpenParts(list = null) {
     const kinds = list ? ['door', 'drawer', 'lid', 'curtain'] : ['door', 'drawer', 'lid', 'curtain', 'lift', 'flip'];
     const W = this.G.world, open = (list || (this.room.rooms || [this.room]).flatMap(R => R.furns).flatMap(e => e.f.parts || []))
-      .filter(p => !p.busy && p.t > .05 && !p.isLever && !p.isGadget && !p.device && kinds.includes(p.kind) && !this.items.some(it => it.hang === p));
+      .filter(p => !p.busy && p.t > .05 && !p.isLever && !p.isGadget && !p.device && !p.handle && p.label !== '도르래 바구니' && kinds.includes(p.kind) && !this.items.some(it => it.hang === p));   // (the pulley stays up: it is the stage's machine, 10/21)
     if (!open.length) return;
     this.G.audio.sfx('close');
     const t0 = open.map(p => p.t);
@@ -2204,7 +2228,7 @@ export class StageScene {
     const W = this.G.world;
     const cand = [];
     const addItemGoal = (it, depth = 0) => {
-      if (it.hang && it.hang.t < .5) return cand.push({ kind: 'part', part: it.hang, obj: it.hang.pivots[0], pos: this.partCenter(it.hang) });   // (7판: the way to the hanging key is the pulley)
+      if (it.hang && it.hang.t < .5) return cand.push({ kind: 'part', part: it.hang, obj: it.hang.handle || it.hang.pivots[0], pos: this.partCenter(it.hang) });   // (7판: the way to the hanging key is the pulley)
       if (it.vacHidden) {   // still under the sofa: the way to it is the robot vacuum (and its remote)
         const vac = this.plan.showcase?.vac; if (!vac?.lock) return;
         if (this.gadgets.has(vac.lock.code)) return cand.push({ kind: 'part', part: vac, obj: vac.pivots[0], pos: this.partCenter(vac) });
@@ -2389,7 +2413,7 @@ export class StageScene {
     // from the opening view and the hand pointed at the loft). Nothing tappable from this view yet: look again as the view moves
     const W = this.G.world;
     const tapSpot = part => {
-      const b = new THREE.Box3(); part.pivots.forEach(o => b.expandByObject(o)); if (b.isEmpty()) return null;
+      const b = new THREE.Box3(); (part.handle ? [part.handle] : part.pivots).forEach(o => b.expandByObject(o)); if (b.isEmpty()) return null;
       const c = b.getCenter(new THREE.Vector3()), q = new THREE.Vector3();
       for (const [fx, fy, fz] of [[.5, .5, .5], [.5, .75, .5], [.5, .25, .5], [.25, .5, .5], [.75, .5, .5], [.5, .5, .25], [.5, .5, .75]]) {
         q.set(b.min.x + (b.max.x - b.min.x) * fx, b.min.y + (b.max.y - b.min.y) * fy, b.min.z + (b.max.z - b.min.z) * fz); if (fx === .5 && fy === .5 && fz === .5) q.copy(c);
