@@ -113,20 +113,21 @@ export function tvScreens(furns, { off = null } = {}) {
   for (const f of furns) {
     if (!f || !TV_TYPES.has(f.type) || list.has(f)) continue;
     let scr = null; f.group.traverse(o => { if (!scr && o.isMesh && /-screen$/.test(o.geometry?.name || '')) scr = o; });
-    const e = { f, scr, plane: null, wait: 1 + Math.random() * 1.6, k: -1, on: false, lvl: -1 };
+    const e = { f, scr, plane: null, mat0: null, wait: 1 + Math.random() * 1.6, k: -1, on: false, lvl: -1 };
     if (scr) {
       const geo = scr.geometry; if (!geo.boundingBox) geo.computeBoundingBox();
       const b = geo.boundingBox; b.getSize(sz); b.getCenter(ct);
       const pg = new THREE.PlaneGeometry(sz.x, sz.y); pg.translate(ct.x, ct.y, b.max.z + .002);
       const p = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: tex }));
       p.position.copy(scr.position); p.quaternion.copy(scr.quaternion); p.scale.copy(scr.scale); p.visible = false; p.userData.tvGlow = true;
-      scr.parent.add(p); e.plane = p;
+      scr.parent.add(p); e.plane = p; e.mat0 = p.material;
     }
     list.set(f, e);
   }
   const FLICK = [.3, 1, .55, 1], DARK = .06;   // (brightness: off, then the flicker steps)
   return {
     has: f => list.has(f),
+    each: fn => { for (const e of list.values()) fn(e.f, e.plane); },   // (the stage gives each one the pulley's shine — sweep.js sweepAddTv)
     update(dt) {
       for (const e of list.values()) {
         const p = e.plane; if (!p) continue;
@@ -147,7 +148,7 @@ export function tvScreens(furns, { off = null } = {}) {
       return x >= x0 - pad && x <= x1 + pad && y >= y0 - pad && y <= y1 + pad;
     },
     dispose() {
-      for (const e of list.values()) if (e.plane) { e.plane.parent?.remove(e.plane); e.plane.geometry.dispose(); e.plane.material.dispose(); if (e.scr) e.scr.visible = true; }
+      for (const e of list.values()) if (e.plane) { e.plane.parent?.remove(e.plane); e.plane.geometry.dispose(); e.plane.material.dispose(); if (e.mat0 !== e.plane.material) e.mat0.dispose(); if (e.scr) e.scr.visible = true; }
       list.clear(); tex.dispose(); c.width = c.height = 0;
     },
   };
@@ -237,14 +238,15 @@ export function openMongleTV(G, { level = 'mid', game = null, pay = null } = {})
   // ═══ 이삿짐 쌓기 (CH 2) — a box slides side to side; tap to drop it on the stack, what hangs over falls off
   const STACK = (() => {
     const LV = { mid: { goal: 14, v0: 80, dv: 8 }, hard: { goal: 16, v0: 92, dv: 9 } };   // (10/19 "좀 어렵게": the prototype's 'hard' is the start now)
-    const BH = 8, BASE = 104; let st, layers, cur, dir, cam, chips, perfect, winT = 0;
+    const BH = 8, BASE = 104; let runs = 0, st, layers, cur, dir, cam, chips, perfect, winT = 0;
     const topY = () => BASE - layers.length * BH;
     function next() { const L = layers[layers.length - 1]; cur = { x: dir > 0 ? 6 : W - 6 - L.w, w: L.w }; }
     return {
       qa: () => ({ st, cx: cur?.x, lx: layers[layers.length - 1].x, n: layers.length - 1 }),
       qaWin() { if (st !== 'play') this.start(); const L = layers[layers.length - 1]; while (layers.length < LV[lv].goal) layers.push({ x: L.x, w: L.w }); cur.x = L.x; this.down(); },
       reset() { st = 'title'; layers = [{ x: 60, w: 40 }]; cur = null; cam = 0; chips = []; sayStart(); },
-      start() { st = 'play'; layers = [{ x: 60, w: 40 }]; dir = 1; cam = 0; chips = []; perfect = 0; gain = null; next(); say(tr(T.stack.go) + ' ' + fill(T.stack.count, { n: 0, goal: LV[lv].goal })); },
+      cue: () => (st === 'title' || st === 'end' ? { id: st + runs, r: [0, 0, W, H] } : null),
+      start() { runs++; st = 'play'; layers = [{ x: 60, w: 40 }]; dir = 1; cam = 0; chips = []; perfect = 0; gain = null; next(); say(tr(T.stack.go) + ' ' + fill(T.stack.count, { n: 0, goal: LV[lv].goal })); },
       down() {
         if (st === 'title' || st === 'end') return this.start(); if (st !== 'play') return;
         const L = layers[layers.length - 1], a = Math.max(cur.x, L.x), b = Math.min(cur.x + cur.w, L.x + L.w), over = b - a;
@@ -276,12 +278,13 @@ export function openMongleTV(G, { level = 'mid', game = null, pay = null } = {})
   // ═══ 몽글 점프 (CH 3) — 몽글이 runs along the alley; tap to jump over boxes and pots, last till the bar fills
   const RUN = (() => {
     const LV = { mid: { secs: 25, v0: 82, dv: 3, gap: [55, 100] }, hard: { secs: 30, v0: 90, dv: 3.4, gap: [50, 92] } };
-    const GY = 100; let st, me, obs, tm, dist, nextAt, hills;
+    const GY = 100; let runs = 0, st, me, obs, tm, dist, nextAt, hills;
     return {
       qa: () => ({ st, tm, y: me.y, near: obs.filter(o => o.x > 20 && o.x < 70).map(o => o.x) }),
       qaWin() { if (st !== 'play') this.start(); obs = []; tm = LV[lv].secs - .001; },
       reset() { st = 'title'; me = { y: GY, vy: 0 }; obs = []; tm = 0; hills = Array.from({ length: 6 }, (_, i) => ({ x: i * 34, h: 10 + (i * 7) % 14 })); sayStart(); },
-      start() { st = 'play'; me = { y: GY, vy: 0 }; obs = []; tm = 0; dist = 0; nextAt = 60; gain = null; say(tr(T.run.go)); },
+      cue: () => (st === 'title' || st === 'end' ? { id: st + runs, r: [0, 0, W, H] } : null),
+      start() { runs++; st = 'play'; me = { y: GY, vy: 0 }; obs = []; tm = 0; dist = 0; nextAt = 60; gain = null; say(tr(T.run.go)); },
       down() { if (st === 'title' || st === 'end') return this.start(); if (st !== 'play') return; if (me.y >= GY - .5) { me.vy = -150; beep(520, .05); } },
       frame(t, now, dt) {
         night(t, GY + 2);
@@ -310,7 +313,7 @@ export function openMongleTV(G, { level = 'mid', game = null, pay = null } = {})
   const BREAK = (() => {
     const LV = { mid: { v: 98, lives: 2, pw: 24, peek: false }, hard: { v: 106, lives: 2, pw: 22, peek: false } };
     const COLS = 7, ROWS = 3, BW = 20, BHt = 9, X0 = 10, Y0 = 18, PY = 92, PW = LV[lv].pw;
-    let st, bricks, pad, ball, lives, found, pops, launched, gotWho, drag = false;
+    let runs = 0, st, bricks, pad, ball, lives, found, pops, launched, gotWho, drag = false;
     const WHO = ['bunny', 'bear', 'frog'];
     function build() {
       bricks = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) bricks.push({ x: X0 + c * BW, y: Y0 + r * (BHt + 1), alive: true, who: null });
@@ -323,7 +326,9 @@ export function openMongleTV(G, { level = 'mid', game = null, pay = null } = {})
       qa: () => ({ st, bx: ball?.x, by: ball?.y, vy: ball?.vy, found, lives }),
       qaWin() { if (st !== 'play') this.start(); found = 3; gotWho = WHO.slice(); },
       reset() { st = 'title'; build(); pad = { x: 80 }; ball = null; pops = []; found = 0; gotWho = []; sayStart(); },
-      start() { st = 'play'; build(); pad = { x: 80 }; lives = LV[lv].lives; found = 0; gotWho = []; pops = []; gain = null; serve(); say(tr(T.brk.go)); },
+      // (the screen while a tap starts it; the pillow while it holds the ball for the launch tap)
+      cue: () => (st === 'title' || st === 'end' ? { id: st + runs, r: [0, 0, W, H] } : st === 'play' && !launched ? { id: 'serve' + runs + '/' + lives, r: [pad.x - PW / 2 - 3, PY - 6, pad.x + PW / 2 + 3, PY + 14] } : null),
+      start() { runs++; st = 'play'; build(); pad = { x: 80 }; lives = LV[lv].lives; found = 0; gotWho = []; pops = []; gain = null; serve(); say(tr(T.brk.go)); },
       down(x) { if (st === 'title' || st === 'end') return this.start(); drag = true; padTo(x); if (st === 'play' && !launched) launch(); },
       move(x) { if (drag && st === 'play') padTo(x); },
       up() { drag = false; },
@@ -385,11 +390,44 @@ export function openMongleTV(G, { level = 'mid', game = null, pay = null } = {})
   // the TV's own music while it plays, the room's back when it closes (사운드 세션 10/19 — it used to turn the room's down)
   let musicBack = null;
   try { musicBack = A?.pushMusic?.('tv'); } catch {}
+  // ── 반짝 = 눌러 볼 수 있는 곳 (10/20, user: "티비게임 반짝이는 거, 도르래에도 들어간 그 반짝이 넣어 줘"): the stage's light
+  // sweep (sweep.js — 7판 pulley crank) drawn on the pixels: two ↘ bands, a broad one and a thin one trailing it, mixed
+  // toward warm white (.62 / .5), .6 s ease in-out, the band a fifth of the place's diagonal, three little stars as it
+  // crosses the middle. Where (GAME.cue): the screen while a tap starts the game, the pillow while it holds the ball. When:
+  // .8 s after that place starts waiting, once more if it's still waiting 8 s on — two at most, as on a stage.
+  const SW_DUR = .6, easeIO = k => (k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+  let cueId = null, cueT = 0, cueN = 0, shn = null;
+  const band = (T, w, a) => {   // the points whose (x + y)·√½ lies within w/2 of T
+    const c1 = (T - w / 2) / .7071, c2 = (T + w / 2) / .7071;
+    g.fillStyle = `rgba(255,246,217,${a})`;
+    g.beginPath(); g.moveTo(c1 + 10, -10); g.lineTo(c2 + 10, -10); g.lineTo(c2 - H - 10, H + 10); g.lineTo(c1 - H - 10, H + 10); g.closePath(); g.fill();
+  };
+  function shineStep(dt) {
+    const cue = GAME.cue?.();
+    if (!cue) { cueId = null; if (shn) { if (shn.k < .5) shn = null; else shn.k = 1; } }   // (tapped: the band goes, its stars finish)
+    else if (cue.id !== cueId) { cueId = cue.id; cueT = 0; cueN = 0; }
+    else if ((cueT += dt) >= (cueN ? 8.8 : .8) && cueN < 2 && !shn) { cueN++; shn = { k: 0, stars: null }; }
+    if (!shn) return;
+    if (cue && shn.k < 1) {
+      shn.k = Math.min(1, shn.k + dt / SW_DUR);
+      const [x0, y0, x1, y1] = cue.r, lo = (x0 + y0) * .7071, hi = (x1 + y1) * .7071, w = Math.max(2, (hi - lo) * .2);
+      const T = lo - 1.4 * w + (hi - lo + 2.8 * w) * easeIO(shn.k);
+      g.save(); g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
+      band(T, w, .62); band(T - 1.15 * w, .28 * w, .5);
+      g.restore();
+      if (!shn.stars && shn.k >= .5) shn.stars = [0, 1, 2].map(i => { const a = -Math.PI / 2 + (i - 1) * .9 + (Math.random() - .5) * .4; return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, vx: Math.cos(a) * 19, vy: Math.sin(a) * 19, t: 0, c: i % 2 ? '#ffffff' : '#fff6c0' }; });
+    }
+    if (shn.stars) for (const q of shn.stars) {
+      q.t += dt; q.vy -= 9.5 * dt; q.x += q.vx * dt; q.y += q.vy * dt; if (q.t >= .7) continue;
+      rect(q.x - 1, q.y, 3, 1, q.c); rect(q.x, q.y - 1, 1, 3, q.c);
+    }
+    if (shn.k >= 1 && (!shn.stars || shn.stars.every(q => q.t >= .7))) shn = null;
+  }
   let last = performance.now(), raf = 0;
   const loop = now => {
     if (!alive) return;
     const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
-    g = ctx; GAME.frame(now / 1000, now, dt);
+    g = ctx; GAME.frame(now / 1000, now, dt); shineStep(dt);
     raf = requestAnimationFrame(loop);
   };
   function close() {

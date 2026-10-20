@@ -1930,12 +1930,9 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .tpin.lost { filter: grayscale(1) opacity(.55); }
 .ftxt.pink { color: #ffb3d1; }   /* 친구가 막았다! (털기 친구 지킴이 10/20) */
 
-/* ── 방 넓히기 (UI 세션 10/20) ── not a wooden board on the wall: the next row lies on the floor as a dashed patch with arrows
-   (myhome.js growTick), and a round 🔨 button sits by it — grey till you can pay, green and shining then; a tap opens the 넓히기 card */
-#world-ui .growchip { position: absolute; translate: -50% -50%; pointer-events: auto; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #e4dcea; border: 2.5px solid var(--ink); box-shadow: 0 3px 0 var(--ink); font-size: 21px; line-height: 1; cursor: pointer; }
-#world-ui .growchip.short { filter: grayscale(.85); opacity: .9; }
-#world-ui .growchip.can { background: #4fbf6a; animation: growglow 1.4s ease-in-out infinite; }
-#world-ui .growchip.house { background: #ffe0a8; }
-@keyframes growglow { 0%, 100% { box-shadow: 0 3px 0 var(--ink), 0 0 0 0 rgba(120, 230, 120, .0); transform: scale(1); } 50% { box-shadow: 0 3px 0 var(--ink), 0 0 0 7px rgba(120, 230, 120, .45); transform: scale(1.06); } }
+/* ── 방 넓히기 (UI 세션 10/20) ── not a wooden board on the wall, and not on the floor all the time: in the shop's 방 크기 tab the
+   next size is looked at first — the room shows its new row on the floor (dashed, arrows; myhome.js growTick) and the bar
+   asks 넓히기 / 되돌리기 (shop.js growPeek) */
+.previewbar .btn.short { filter: grayscale(.7); opacity: .8; }
 /* 도감's number (cardbook.js bookBadge): the same red number as 꾸미기's, popping in once */
 .btn > .badge.bookn { top: -9px; right: -9px; min-width: 22px; height: 22px; font-size: 13px; animation: badgepop .6s cubic-bezier(.2, 1.8, .4, 1) .35s both; }

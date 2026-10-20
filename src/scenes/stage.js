@@ -30,7 +30,7 @@ import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { storyFor, playDialog, playCinematic, slidePuzzle, setFrameSolved } from '../story.js';
 import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
-import { sweepSetup, sweepUpdate, shinePart } from '../sweep.js';   // 빛 쓸기 (10/19)
+import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { closeUp, closeBack, clearParts, clearTurn } from '../closeup.js';
@@ -312,6 +312,7 @@ export class StageScene {
     // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
     this.tvGame = !this.custom && !this.preview && !this.model && !this.spec.timed && !(this.spec.tut <= 2) ? tvGameFor(this.idx) : null;
     if (!this.G.bot && this.tvGame) this.tvs = tvScreens((this.room.rooms || [this.room]).flatMap(R => R.furns).map(e => e.f).filter(f => f !== this.plan.tv?.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); } });
+    this.tvs?.each((f, p) => sweepAddTv(this, f, p));   // (the pulley's shine on it: a shine means you can press it — 10/20)
     if (this.v2) v2Prep(this);
     W.shadowDirty = true;
     // state
@@ -1767,6 +1768,7 @@ export class StageScene {
     const G = this.G;
     if (G.tv || this.paused || this.result || !this.running || G.ui.panelOpen || G.bot) return;
     this.paused = true; G.audio.sfx('click');
+    for (const sw of this.sweeps || []) if (sw.part.tv) sw.part.t = 1;   // (found it: no more shines on the TVs)
     const pay = this.tapsLeft == null ? null : {
       state: () => this._tvPaid ? 'already' : 'gain',
       win: () => this.tvReward(),

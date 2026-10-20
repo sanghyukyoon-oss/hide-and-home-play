@@ -102,14 +102,14 @@ export function clearance(spot) {
 // "신문지 밑에서 축구공이 솟아났네.. 매직인가"); a sheet gives 1 cm. Measured once per place, while it is shut.
 // (a soft one gives half its thickness, 6 cm at most: a 22 cm ball of yarn under a beanbag no)
 const GAP = new WeakMap(), RESTS = /(신문지|담요|쿠션|베개|방석|빈백|이불|러그|매트) ?밑/;   // (a cover that lies on what it hides — not a box's lid or a birdhouse roof)
-function coverGap(spot) {
+function coverGap(spot, box = false) {
   if (GAP.has(spot)) return GAP.get(spot);
   let v = null;
   const p = spot.part, a = spot.anchor;
   if (p?.pivots?.length && a && !(p.t > .05)) {
     const b = new THREE.Box3(), bb = new THREE.Box3();
     for (const pv of p.pivots) { pv.updateMatrixWorld(true); for (const m of meshesOf(pv)) { if (!m.geometry?.attributes?.position) continue; if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); b.union(bb.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld)); } }
-    if (!b.isEmpty()) { const y = a.getWorldPosition(new THREE.Vector3()).y, thick = b.max.y - b.min.y; v = Math.max(0, b.min.y - y) + (thick > .05 ? Math.min(.06, thick * .5) : .012); }
+    if (!b.isEmpty()) { const y = a.getWorldPosition(new THREE.Vector3()).y, thick = b.max.y - b.min.y; v = Math.max(0, b.min.y - y) + (box ? .01 : thick > .05 ? Math.min(.06, thick * .5) : .012); }
   }
   GAP.set(spot, v); return v;
 }
@@ -120,6 +120,9 @@ export function capScale(type, spot, role) {
   const nat = natSize(type), ss = spot.scale || 1;
   let cap = ITEMS[type].flat || spot.kind === 'in' ? Infinity : (spot.maxH + .02) / Math.max(.01, nat.y * ss);
   if (spot.part?.kind === 'lift' && !ITEMS[type].flat && RESTS.test(spot.label || '')) { const g = coverGap(spot); if (g != null) cap = Math.min(cap, g / Math.max(.005, nat.y * ss)); }
+  // (and in a box with a lid or a top that lifts — a toy chest, a cooler, a laundry basket, an art crate: no taller than the box is deep when shut; 2·5·7판's
+  // 34–40 cm things stood 7–12 cm out of the toy chest, 9판's duck 20 cm out of the basket — 레벨 기획안 E, 10/20)
+  else if ((spot.part?.kind === 'lid' || spot.part?.kind === 'lift') && spot.kind === 'inside' && !ITEMS[type].flat) { const g = coverGap(spot, true); if (g != null) cap = Math.min(cap, g / Math.max(.005, nat.y * ss)); }
   // the room round it (not for a wall frame, not sunk in a ball pit or a pond, where it is meant to be half in)
   // (not among leaves or reeds either: a thing nestled in a bush is meant to peek out between the stalks — 스토리 룸 원칙 3)
   if (ON && !spot.wallFace && spot.kind !== 'in' && !nestles(spot)) {

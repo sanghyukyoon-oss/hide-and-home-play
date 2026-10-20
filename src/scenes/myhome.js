@@ -135,10 +135,9 @@ export class MyHomeScene {
   growNext() { const z = this.zone, k = (z?.size || 0) + 1; return z && ZONE_TYPES[z.type]?.indoor !== false && k < ZONE_SIZES.length ? { k, S: ZONE_SIZES[k] } : null; }
   buildGrowSign() {
     const G = this.G, R = this.room, nx = this.growNext(), z = this.zone;
-    this.growSign?.chip?.remove();
-    // (the room at its biggest — 집 짓기 is next, in an update: the chip says so — 로드맵 예고 A, user 10/20 "제출판은 1단계 + 예고 A")
+    // (the room at its biggest: nothing on the floor — 집 짓기 is the 방 크기 tab's own card — 로드맵 예고 A)
     const house = !nx && !!z && ZONE_TYPES[z.type]?.indoor !== false && (z.size || 0) >= ZONE_SIZES.length - 1;
-    if ((!nx && !house) || !R) return null;
+    if (!nx || !R) return null;
     const C = G.save.coins || 0, can = !house && C >= nx.S.price;
     const g = new THREE.Group(), gx = house ? 0 : nx.S.w - R.w, gz = house ? 0 : nx.S.d - R.d, ax = gx > 0 ? 'x' : 'z', gw = Math.max(gx, gz, 0), len = ax === 'x' ? R.d : R.w;
     const chev = [];
@@ -164,44 +163,20 @@ export class MyHomeScene {
     }
     R.group.add(g);
     g.traverse(o => { o.userData.grow = true; });
-    // the chip: just a round 🔨 (🏠 at the biggest room) — green and shining once you can pay, grey till then; a tap opens the
-    // card with the size, the price and [넓히기] (user 10/20: "망치 아이콘만 있어도 알 듯? 클릭하면 넓히기 800 이런 식으로 인포")
-    const chip = h('div', { class: 'growchip' + (can ? ' can' : house ? ' house' : ' short'), role: 'button', 'aria-label': tr(house ? '집 짓기' : '방 넓히기') }, house ? '🏠' : '🔨');
-    chip.addEventListener('pointerdown', e => e.stopPropagation());
-    chip.addEventListener('pointerup', e => { e.stopPropagation(); if (house) this.houseCard(); else this.growCard(); });
-    G.ui.wui.append(chip);
-    return { g, can, house, chip, chev, ax, gw, t: 0 };
+    return { g, can, house, chev, ax, gw, t: 0 };
   }
-  // every frame: on the side of the room that faces you (the front walls are the folded ones), the arrows running out, the chip by it
+  // every frame: on the side of the room that faces you (the front walls are the folded ones), the arrows running out — only while
+  // the shop's 방 크기 card is being looked at (user 10/20: "벽·바닥으로 가야 저거 늘리는 UI 나오는 걸로 하자. 계속 저게 나오니..")
   growTick(dt) {
     const gs = this.growSign; if (!gs) return;
-    const R = this.room, Wl = R.walls || {}, on = ['view', 'edit', 'lobby'].includes(this.mode) && !this._growing;
-    gs.g.visible = on;
+    const R = this.room, Wl = R.walls || {};
+    gs.g.visible = !!this._growPeek && !this._growing;
+    if (!gs.g.visible) return;
     const sx = Wl.E?.down ? 1 : Wl.W?.down ? -1 : 1, sz = Wl.S?.down ? 1 : Wl.N?.down ? -1 : 1;
     if (gs.ax === 'x') { gs.g.position.set(sx * R.w / 2, 0, 0); gs.g.rotation.y = sx > 0 ? 0 : Math.PI; }
     else { gs.g.position.set(0, 0, sz * R.d / 2); gs.g.rotation.y = sz > 0 ? -Math.PI / 2 : Math.PI / 2; }
     gs.t += dt;
     gs.chev.forEach((m, i) => { const k = (gs.t * (gs.can ? .9 : .6) + i * .18) % 1; m.position.x = gs.gw / 2 - .16 + k * .32; m.material.opacity = .45 + .55 * Math.sin(k * Math.PI); });
-    const showChip = on && !this.G.ui.panelOpen && !this.busyTut;
-    gs.chip.style.display = showChip ? '' : 'none';
-    if (!showChip) return;
-    if (!gs.chip.isConnected) this.G.ui.wui.append(gs.chip);   // (a mode change clears the world layer)
-    // (the chip sits on the patch — its middle, or further along it where the turn dial isn't; at the biggest room, on the front
-    // corner — always inside the screen)
-    const W = this.G.world, cw = gs.chip.offsetWidth / 2, ch = gs.chip.offsetHeight / 2;
-    const d = W.turnDial?.isConnected && W.turnDial.offsetParent ? W.turnDial.getBoundingClientRect() : null;
-    const hitsDial = (x, y) => d && x + cw > d.left - 14 && x - cw < d.right + 14 && y + ch > d.top - 14 && y - ch < d.bottom + 14;   // (a thumb's width clear of the turn dial)
-    const L = gs.ax === 'x' ? R.d : R.w, spots = gs.house ? [R.group.localToWorld(new THREE.Vector3(sx * R.w / 2, .05, sz * R.d / 2))]
-      : [0, -L / 3, L / 3].map(zz => gs.g.localToWorld(new THREE.Vector3(gs.gw / 2, .05, zz)));
-    let x = 0, y = 0, ok = false;
-    for (const v of spots) {
-      const p = W.toScreen(v); if (p.x < -10 || p.x > innerWidth + 10 || p.y < 0 || p.y > innerHeight) continue;
-      x = clamp(p.x, 12 + cw, Math.max(12 + cw, innerWidth - 12 - cw)); y = p.y; ok = true;
-      if (!hitsDial(x, y)) break;
-    }
-    if (!ok) { gs.chip.style.display = 'none'; return; }   // (the lobby's close-up: the patch is off the screen, so is its chip)
-    if (hitsDial(x, y)) y = d.top - 16 - ch;
-    gs.chip.style.left = x + 'px'; gs.chip.style.top = y + 'px';
   }
   // 집 짓기 · 곧 열려요 (예고 A): what's next — a picture of the two-floor house (art/concepts H, cropped) and one line
   houseCard() {
@@ -211,7 +186,7 @@ export class MyHomeScene {
     ui.panel({ title: '집 짓기', color: 'orange', body: [img, h('div', { class: 'txt', style: 'text-align:center' }, h('b', {}, '방을 끝까지 넓혔어!')), h('div', { class: 'txt', style: 'text-align:center' }, '다음 업데이트에서 방이 여럿인 집을 지을 수 있어')],
       buttons: [ui.btn('기대할게', { color: 'green', cls: 'big', onClick: () => ui.closePanel() })] });
   }
-  growAt(x, y) { const s = this.growSign; return !!s && this.G.world.pick(x, y, [s.g]).length > 0; }
+  growAt() { return false; }   // (the floor row shows only in the shop's 방 크기 미리보기, and its bar asks — nothing to tap in the room)
   growCard() {
     const G = this.G, ui = G.ui, z = this.zone, nx = this.growNext(); if (!nx) return;
     const S0 = zoneSize(z), C = G.save.coins || 0, need = nx.S.price - C, seat = seatsOf({ size: nx.k }) > seatsOf(z);
@@ -434,8 +409,22 @@ export class MyHomeScene {
       if (kind === 'paint') { this.build(); this.fitCam(); this.setMode(this.mode); }
       if (kind === 'zone') { this.build(); this.setMode(this.mode); }   // (the new zone joins the map)
       if (kind === 'grow') { this.growShow(from); return; }   // (방 넓히기 from the shop: the same walls going out)
+      if (kind === 'growpeek') { this._growPeek = !!from; return; }   // (방 크기 미리보기: the new row on the floor)
       if (kind === 'furn' && this.mode === 'edit') this.renderInv();
-    }, onPreview: on => this.previewView(on), onClose: () => { if (this.mode !== 'edit') this.setMode(this.mode); } }, tab);
+    }, onPreview: on => this.previewView(on), onBought: b => this.bought(b), onClose: () => { if (this.mode !== 'edit') this.setMode(this.mode); } }, tab);
+  }
+  // 사면 방으로 (10/20, user: "테마든 벽이든 사기 누르면 다시 상점으로 나오는 게 아니고 방으로 가야 할 듯"): bought → 꾸미기 with it in
+  // the room — a piece set down where there is room (and picked, to move it), a wallpaper / floor / theme already on — and a
+  // short sparkle with the coin sound
+  bought({ kind, type }) {
+    const G = this.G, W = G.world;
+    if (kind === 'furn') this.invTab = 'furn';   // (the lobby's 꾸미기 shows the 가구 row)
+    if (this.mode !== 'edit') this.setMode('edit'); else if (kind === 'furn') this.renderInv();
+    let at = null;
+    if (kind === 'furn') { const i = this.H.inventory.lastIndexOf(type); if (i >= 0) { this.placeFromInv(i); const r = this.sel; if (r?.type === type) at = r.f.group.getWorldPosition(new THREE.Vector3()).setY(.6); } }
+    const s = at ? W.toScreen(at) : { x: innerWidth / 2, y: innerHeight * .4 };
+    W.fx.burst(s.x, s.y, { n: kind === 'furn' ? 14 : 22, shape: 'star', colors: ['#ffe14d', '#ffffff', '#ffb3c4'], speed: kind === 'furn' ? 160 : 240, gravity: -40 });
+    G.audio.sfx('coin');
   }
 
   // ── decorate

@@ -57,6 +57,12 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       grid.append(h('div', { class: 'card silc', 'aria-label': '???', onclick: () => { ui.toast(SIL_TXT.chToast, ''); G.audio.sfx('locked'); } }, sw, h('div', {}, '???'), h('div', { style: 'font-size:11px;color:#9b6cff' }, chOpens(p.ch))));
     }
   };
+  // a piece bought: into the 보관함 — and where the scene can (내 방), straight out into the room, the shop closed (10/20)
+  const bought = (t, name) => {
+    H.inventory.push(t); G.persist();
+    if (ctx.onBought) { ui.closePanel(true); ctx.onBought({ kind: 'furn', type: t }); return; }
+    ui.toast(`${name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn');
+  };
   const render = () => {
     tabsEl.innerHTML = '';
     for (const [k, label] of TABS) if ((k !== 'items' || G.econ) && (k !== 'special' || G.econ) && !(k === 'zone' && ECON)) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
@@ -87,7 +93,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       // on top (and they go in any room). (10/20: the chapter box gives a gift now, not these — 재QA ST75-CHAPTER-SHOP-COPY)
       const offered = G.econ ? (H.offered || []).filter(t => FURN_INFO[t]) : [];
       for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: PICK_ITEMS.has(t) ? '장을 끝내면 들어오는 기념품' : '판을 깨서 들어온 기념품', price: furnPrice(t) || KEEPSAKE_PRICE, tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
-        onBuy: () => { H.inventory.push(t); G.persist(); ui.toast(`${FURN_INFO[t].name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } })); }
+        onBuy: () => bought(t, FURN_INFO[t].name) })); }
       const later = [];
       for (const it of SHOP_FURN) {
         if (G.econ && offered.includes(it.type)) continue;   // (on top, as 기념품 — a chapter's pieces and the keepsakes, 10/20)
@@ -98,7 +104,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         if (boxed || (G.econ && ch > chapterNow(G.save) && !countOwned(H, it.type))) { later.push({ t: it.type, ch, boxed }); continue; }
         const owned = countOwned(H, it.type);
         grid.append(card(G, { img: G.thumbs['furn_' + it.type], name: inf.name, sub: `숨을 곳 ${spotCount(G, it.type)}`, price: furnPrice(it.type), tag: owned ? `보유 ${owned}` : null,
-          onBuy: () => { H.inventory.push(it.type); G.persist(); ui.toast(`${inf.name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } }));
+          onBuy: () => bought(it.type, inf.name) }));
       }
       if (later.length) {
         grid.append(h('div', { class: 'shopsep' }, SIL_TXT.head));
@@ -157,7 +163,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
           continue;
         }
         grid.append(card(G, { img: G.thumbs['furn_' + sp.t], name: inf.name, sub: sp.say, price: sp.price, tag: owned ? `보유 ${owned}` : SPECIAL_TXT.head,
-          onBuy: () => { H.inventory.push(sp.t); G.persist(); ui.toast(`${inf.name} 구입! 보관함에서 꺼내 놓자`, 'green'); ctx.onChange?.('furn'); } }));
+          onBuy: () => bought(sp.t, inf.name) }));
       }
     } else if (tab === 'style') {
       note.textContent = zone ? `${zone.name}의 분위기를 통째로 바꿔요. 바꾸면 벽지·바닥은 그 테마 것으로 돌아가요.` : '';
@@ -181,7 +187,8 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       ZONE_SIZES.forEach((S, k) => {
         const owned = k <= cur, next = k === cur + 1;
         grid.append(card(G, { swatch: swatch('#fff3e0', '#e8c49a', 'wood'), name: `${S.w} × ${S.d}`, sub: (k === 0 ? '기본 크기' : owned ? '넓힘' : next ? '다음 단계' : '앞 단계를 먼저') + (G.econ && !ECON && k >= 1 && k <= 3 ? ' · 친구 자리 +1' : ''), price: owned || !next ? null : S.price, tag: k === cur ? '지금 크기' : owned ? '보유' : null,
-          onBuy: owned || !next ? null : () => { if (!zone) return; const from = zone.size || 0; pinZoneFurniture(zone); zone.size = k; G.persist();
+          onUse: ECON && next ? () => growPeek(k, S) : null,   // (방 넓히기: 미리보기 first — the new row on the floor, then 넓히기 or 되돌리기)
+          onBuy: owned || !next || ECON ? null : () => { if (!zone) return; const from = zone.size || 0; pinZoneFurniture(zone); zone.size = k; G.persist();
             if (ECON) { ui.closePanel(); ctx.onClose?.(); ctx.onChange?.('grow', from); return; }   // (방 넓히기: the walls go out in the room, as from its sign)
             G.audio.sfx('win'); ui.toast(`${ga(zone.name)} ${S.w}×${S.d}로 넓어졌어!`, 'green'); ctx.onChange?.('paint'); render(); } }));
       });
@@ -195,6 +202,24 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       }
     }
   };
+  // 방 넓히기 미리보기 (UI 세션 10/20, user: "벽·바닥으로 가야 저거 늘리는 UI 나오는 걸로 하자"): the shop steps aside and the room shows
+  // its next row on the floor (dashed, arrows running out — myhome.js growTick); the bar asks 넓히기 (the coins, the walls go out)
+  // or 되돌리기 (back to this tab). Nothing is bought while you look.
+  function growPeek(k, S) {
+    if (!zone) return;
+    const A = ZONE_SIZES[zone.size || 0];
+    ui.closePanel(true); ctx.onPreview?.(true); ctx.onChange?.('growpeek', true); G.audio.sfx('place');
+    const done = () => { bar.remove(); ctx.onChange?.('growpeek', false); ctx.onPreview?.(false); };
+    const grow = ui.btn('넓히기', { color: 'green', icon: 'hammer', cls: 'sm', onClick: () => {
+      const need = S.price - (G.save.coins || 0);
+      if (need > 0) { ui.toast(`코인 ${need}개 더 모으면 넓힐 수 있어`, 'red'); G.audio.sfx('miss'); return; }
+      done(); const from = zone.size || 0; G.addCoins(-S.price); G.audio.sfx('buy'); pinZoneFurniture(zone); zone.size = k; G.persist(); ctx.onClose?.(); ctx.onChange?.('grow', from); } });
+    if ((G.save.coins || 0) < S.price) grow.classList.add('short');
+    const bar = h('div', { class: 'previewbar', style: 'position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffaf2;border:4px solid var(--ink,#3a2453);border-radius:20px;pointer-events:auto;z-index:30;white-space:nowrap' },
+      h('div', { style: 'display:flex;flex-direction:column;line-height:1.15' }, h('b', {}, `${A.w} × ${A.d}`, h('span', { style: 'font-family:system-ui,sans-serif;margin:0 5px' }, '→'), `${S.w} × ${S.d}`), h('span', { style: 'font-size:13px;color:#8a6a9a' }, h('span', { html: `${ICON.coin}`.replace('<svg', '<svg style="width:14px;height:14px;vertical-align:-2px"') + ' ' + S.price + ' · ' }), h('span', {}, `가구 놓을 칸 +${S.w * S.d - A.w * A.d}`))),
+      ui.btn('되돌리기', { color: 'blue', cls: 'sm', onClick: () => { done(); openShop(G, ctx, tab); } }), grow);
+    document.getElementById('app').append(bar);
+  }
   // 미리보기 (10/20): the shop steps aside, the room wears it, and a bar at the bottom asks — 사기 (the coins, and it stays) or
   // 되돌리기 (back as it was). Either way the shop comes back on the same tab. Nothing is saved while you look.
   // (style: a theme's id — the whole room's look tried on, its walls and floor back to the theme's own, as 바꾸기 does)
@@ -202,7 +227,8 @@ export function openShop(G, ctx = {}, tab = 'furn') {
     if (!zone) return;
     const was = zone.paint ? { ...zone.paint } : null, wasStyle = zone.style;
     ui.closePanel(true); ctx.onPreview?.(true); if (style) { zone.style = style; zone.paint = {}; } else zone.paint = { ...(zone.paint || {}), ...look }; ctx.onChange?.('paint'); ctx.onPreview?.(true); G.audio.sfx('place');   // (the view before the rebuild too: the lobby mustn't fly back to its close-up)
-    const done = keep => { bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); openShop(G, ctx, tab); };
+    // (10/20, user: "테마든 벽이든 사기 누르면 다시 상점으로 나오는 게 아니고 방으로 가야 할 듯": 사기 → the room, dressed in it; 되돌리기 → the shop's same tab)
+    const done = keep => { bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); if (keep && ctx.onBought) ctx.onBought({ kind: style ? 'style' : 'paint' }); else openShop(G, ctx, tab); };
     const buy = ui.btn('사기', { color: 'green', icon: 'coin', cls: 'sm', onClick: () => {
       if ((G.save.coins || 0) < price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
       G.addCoins(-price); own(); G.persist(); G.audio.sfx('buy'); ui.toast(`${name} 샀어!`, 'green'); done(true); } });

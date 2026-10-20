@@ -62,6 +62,19 @@ export function sweepSetup(S) {
   S._swT = 30;   // the first one only after half a minute (was 7 s: 10/19 evening "힌트가 너무 많다")
 }
 
+// 몽글 TV (10/20, user: "티비게임 반짝이는 거, 도르래에도 들어간 그 반짝이 넣어 줘"): a TV that plays takes the same shine as
+// the pulley — one rule, a shine means you can press it. Its body and the picture on its screen shine; the band is sized
+// on the body. It counts as worked (no more shines) once the TV has been opened (stage.js openTv sets part.t).
+export function sweepAddTv(S, f, screen) {
+  if (!ON || !S.sweeps || !f?.group) return;
+  const moving = new Set(); for (const q of f.parts || []) for (const pv of q.pivots || []) moving.add(pv);
+  const body = [];
+  const walk = o => { if (moving.has(o) || o === screen) return; if (o.isMesh && !o.userData.proxy && o.visible) body.push(o); for (const c of o.children) walk(c); };
+  walk(f.group);
+  const U = shine(screen ? [...body, screen] : body);
+  if (U) S.sweeps.push({ part: { t: 0, busy: false, spots: [], tv: f }, meshes: body, piv: body, U, used: false });
+}
+
 // one shine on this part now (7판: a tap on the key hanging out of reach shines the pulley's crank — stage.js tapHung)
 export function shinePart(S, part) { const sw = S.sweeps?.find(x => x.part === part); if (sw && !sw.run && !part.busy) play(S, sw); }
 
