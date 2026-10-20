@@ -689,6 +689,8 @@ export class Room {
   spotWorld(s) { const v = new THREE.Vector3(); s.anchor.getWorldPosition(v); return v; }
   update(dt) {
     const wd = this.world;
+    // a gift's own little motion (gift-props.js: f.idle turns its live groups)
+    this.liveT = (this.liveT || 0) + dt; for (const r of this.furns) r.f.idle?.(this.liveT);
     const c = new THREE.Vector3(Math.sin(wd.yaw), 0, Math.cos(wd.yaw));
     for (const k in this.walls) {
       const W = this.walls[k];

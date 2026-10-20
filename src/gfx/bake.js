@@ -27,9 +27,14 @@ export function bakeStatic(f, key = null, theme = null) {
   deFlush(f.group, f.parts, key && 'f:' + key, theme);
   if (MODE === 'off') return f;
   const moving = new Set(); for (const p of f.parts) for (const pv of p.pivots) moving.add(pv);
+  for (const pv of f.live || []) moving.add(pv);   // (groups that move on their own: the gifts' turning bits — gift-props.js)
   bakeUnder(f.group, moving, { furn: f });
   // each moving part is rigid too: merge inside every pivot (pivots that are themselves meshes stay as they are)
   if (MODE === 'all') for (const p of f.parts) for (const pv of p.pivots) if (!pv.isMesh) bakeUnder(pv, new Set([...moving].filter(x => x !== pv)), { furn: f, part: p });
+  if (MODE === 'all') for (const pv of f.live || []) {
+    const p = f.parts.find(q => q.pivots.some(x => { for (let o = pv; o; o = o.parent) if (o === x) return true; return false; }));
+    bakeUnder(pv, new Set([...moving].filter(x => x !== pv)), p ? { furn: f, part: p } : { furn: f });
+  }
   return f;
 }
 // an item is one outline shape: merge it (before its pick proxy is attached)

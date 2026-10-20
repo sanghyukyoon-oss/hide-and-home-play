@@ -16,6 +16,10 @@ import { GIFT_AT, takeGiftPick } from './econ.js';
 
 export const GIFT_THINGS = ['goldbone', 'console', 'snack', 'report'];
 export const GIFT_DECOR = ['easel', 'amphora', 'veiled', 'speaker', 'micstand', 'tacklebox', 'parasol', 'boardrack', 'fishsign', 'baitbucket', 'artcrate'];
+// 특별 선물 (gift-props.js 10/20, user: "여기서 만든 거 다 좋네? 선물 후보하고 남은 것들은 다 상점의 스페셜 코너로"): the piece
+// in a gift's three is one of these first, in this order (31판 → 트로피, 49판 → 몽글이 시계, 70판 → 회전목마 if a piece is picked
+// each time); the stage props above come after they are all yours. The other five candidates are in the shop's 스페셜 (specials.js).
+export const GIFT_SPECIAL = ['gf_trophy', 'gf_mongclock', 'gf_carousel'];
 
 const rankOf = (seed, t) => { let x = (seed + 1) * 2654435761 >>> 0; for (let i = 0; i < t.length; i++) x = Math.imul(x ^ t.charCodeAt(i), 16777619) >>> 0; return x; };
 const byRank = (seed, list) => list.slice().sort((a, b) => rankOf(seed, a) - rankOf(seed, b));
@@ -26,7 +30,7 @@ export function giftChoices(save, seed) {
   const out = [];
   if (locksOwned(save) < LOCK_MAX) out.push({ kind: 'lock' });
   const things = byRank(seed, GIFT_THINGS.filter(t => ITEMS[t] && !(save.collection || []).includes(t))).map(t => ({ kind: 'thing', t }));
-  const decor = byRank(seed + 7, GIFT_DECOR.filter(t => FURN_INFO[t] && !owns(save, t))).map(t => ({ kind: 'decor', t }));
+  const decor = [...GIFT_SPECIAL.filter(t => FURN_INFO[t] && !owns(save, t)).slice(0, 1), ...byRank(seed + 7, GIFT_DECOR.filter(t => FURN_INFO[t] && !owns(save, t)))].map(t => ({ kind: 'decor', t }));
   while (out.length < 3 && (things.length || decor.length)) {   // (a thing and a piece in turn)
     const pick = (out.filter(c => c.kind === 'thing').length <= out.filter(c => c.kind === 'decor').length ? things : decor).shift() || things.shift() || decor.shift();
     if (pick) out.push(pick);

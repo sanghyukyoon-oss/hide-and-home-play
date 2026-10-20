@@ -2,7 +2,7 @@
 // Every build() returns a Group with its origin at the bottom centre, roughly 0.3–0.45 wide.
 import * as THREE from 'three';
 import { bakeItem } from './bake.js';
-import { rbox, sph, cyl, tor, cone, cap, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, disc, plane, shade } from './kit.js';
+import { rbox, sph, hemi, cyl, tor, cone, cap, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, disc, plane, shade } from './kit.js';
 import { tr } from '../i18n.js';
 
 const GOLD = { metal: .55, rough: .28 };
@@ -256,6 +256,131 @@ export const ITEMS = {
   heart: { name: '하트', h: .26, build() {
     const g = grp();
     g.add(put(extrude('heart', heartShape(.13), .05, '#ff5d8a', { rough: .35 }), 0, .13, 0, 0, 0, 0));
+    return g;
+  } },
+  // ── 새 찾을 것 10종 (10/20, 1~20판 물건 반복 줄이기 — 레벨 세션 목록): each a few big pieces, one accent colour, held to
+  // its shape (height ÷ longest side) so it fits where it is hidden; the ink line comes from toonpost
+  // 토끼 귀 머리띠 (1·2판, 베개·이불 밑): the band lies flat, open toward you, two floppy ears at its crown
+  bunnyband: { name: '토끼 귀 머리띠', h: .04, flat: true, build() {
+    const g = grp(), pk = '#ff8fb8', R = .12, z0 = .04;
+    g.add(put(tor(R, .015, pk, GLOSS, Math.PI * 1.2, 8, 26), 0, .015, z0, -Math.PI / 2, 0, -Math.PI * .1));
+    for (const s of [-1, 1]) {
+      const a = Math.PI / 2 + s * .3, dx = Math.cos(a), dz = -Math.sin(a), ry = Math.atan2(dx, dz);
+      g.add(put(sph(.05, '#ffffff', null, 14, 8), dx * (R + .07), .018, z0 + dz * (R + .07), 0, ry, 0, [.62, .36, 1.6]));
+      g.add(put(sph(.05, '#ffc2d8', null, 12, 6), dx * (R + .075), .026, z0 + dz * (R + .075), 0, ry, 0, [.34, .26, 1.2]));
+    }
+    return g;
+  } },
+  // 스노우볼 (4·7판, 선반·책장 칸): a glass globe with a glint on a wide wooden plinth, a fir tree and a snowman in the snow inside
+  snowglobe: { name: '스노우볼', h: .24, build() {
+    const g = grp(), wood = '#b0703f';
+    g.add(put(cyl(.155, .18, .07, wood, null, 22), 0, .035, 0));
+    g.add(put(cyl(.16, .16, .014, '#ff5a6a', GLOSS, 22), 0, .062, 0));
+    g.add(put(sph(.09, '#ffffff', null, 14, 6), 0, .075, 0, 0, 0, 0, [1, .45, 1]));
+    g.add(put(cone(.042, .1, '#3fae6a', null, 10), -.028, .14, -.01));
+    g.add(put(sph(.026, '#ffffff', null, 10, 8), .04, .1, .025)); g.add(put(sph(.019, '#ffffff', null, 10, 8), .04, .135, .025));
+    for (const [x, y, z] of [[-.06, .18, .03], [.05, .2, -.02], [.0, .21, .05], [.07, .15, -.05]]) g.add(put(sph(.008, '#ffffff', null, 6, 4), x, y, z));
+    g.add(put(sph(.11, '#9fdcff', { opacity: .5, rough: .1 }, 20, 14), 0, .125, 0));
+    g.add(put(sph(.024, '#ffffff', { opacity: .85 }, 8, 6), -.05, .19, .06, 0, 0, .6, [1, 1.6, .5]));   // the glint that says glass
+    return g;
+  } },
+  // 꿀단지 (5·6판, 찬장·조리대): a squat brown pot, golden honey running over the lip, a dipper resting on the rim
+  honeypot: { name: '꿀단지', h: .26, build() {
+    const g = grp(), pot = '#d4864a', honey = '#ffbf1f';
+    g.add(put(sph(.15, pot, null, 18, 12), 0, .093, 0, 0, 0, 0, [1, .62, 1]));
+    g.add(put(cyl(.085, .1, .05, pot, null, 18), 0, .18, 0));
+    g.add(put(tor(.088, .016, shade(pot, -.12), null, Math.PI * 2, 6, 20), 0, .205, 0, Math.PI / 2));
+    g.add(put(cyl(.08, .08, .012, honey, GLOSS, 18), 0, .204, 0));
+    for (const a of [.5, 1.9, 3.3, 4.6]) g.add(put(sph(.017, honey, GLOSS, 8, 6), Math.cos(a) * .099, .18, Math.sin(a) * .099, 0, 0, 0, [1, 2.1, 1]));
+    g.add(put(cyl(.011, .011, .22, '#c99a5a', null, 8), .075, .205, 0, 0, 0, -1.27));
+    g.add(put(sph(.02, '#c99a5a', null, 10, 8), .182, .238, 0));
+    return g;
+  } },
+  // 비누 (9판, 욕조 가장자리·세면대): a lavender bar with a heart pressed in, three bubbles at its corner
+  soap: { name: '비누', h: .1, flat: true, build() {
+    const g = grp(), c = '#c3a6ff';
+    g.add(put(rbox(.3, .075, .19, c, .03), 0, .0375, 0));
+    const hg = geo('soapheart', () => new THREE.ExtrudeGeometry(heartShape(.05), { depth: .01, bevelEnabled: false, curveSegments: 5 }).center());   // (a plain stamp: the bevelled heart was 2k corners)
+    g.add(put(mesh(hg, mat(shade(c, .14))), -.03, .07, .01, -Math.PI / 2, 0, 0));
+    for (const [x, z, r] of [[.1, -.05, .026], [.128, -.012, .019], [.072, -.082, .016]]) g.add(put(sph(r, '#ffffff', GLOSS, 10, 8), x, .072, z));
+    return g;
+  } },
+  // 메달 (10판, 진열장·서랍): a gold medal lying flat, a star on its face, a red-and-white ribbon in a V
+  medal: { name: '메달', h: .04, flat: true, build() {
+    const g = grp(), gold = '#ffc93c', zc = .07;
+    g.add(put(cyl(.09, .09, .022, gold, GOLD, 24), 0, .011, zc));
+    g.add(put(cyl(.07, .07, .006, shade(gold, -.1), GOLD, 24), 0, .023, zc));
+    g.add(put(extrude('medalstar', starShape(.05, .022), .008, '#fff0a0', GOLD), 0, .03, zc, -Math.PI / 2, 0, 0));
+    for (const s of [-1, 1]) {
+      const ry = -s * .28, cx = s * Math.sin(.28) * .1, cz = -.1;
+      g.add(put(rbox(.056, .008, .2, '#ff4f5e', .003), cx, .005 + (s > 0 ? .002 : 0), cz, 0, ry, 0));
+      g.add(put(rbox(.016, .009, .2, '#ffffff', .002), cx, .006 + (s > 0 ? .002 : 0), cz, 0, ry, 0));
+    }
+    g.add(put(tor(.016, .006, gold, GOLD, Math.PI * 2, 6, 14), 0, .012, -.022, Math.PI / 2));
+    return g;
+  } },
+  // 방울 공 (11판, 캣타워·바구니): a see-through cat toy — three pink rings round a gold bell — and its pompom tail
+  bellball: { name: '방울 공', h: .2, build() {
+    const g = grp(), pk = '#ff6fae', R = .085, y = .098;
+    g.add(put(sph(.045, '#ffc93c', GOLD, 12, 10), 0, y, 0));
+    g.add(put(rbox(.05, .008, .012, '#5a3a1a', .003), 0, y - .012, .042));
+    for (const [rx, ry] of [[0, 0], [Math.PI / 2, 0], [0, Math.PI / 2]]) g.add(put(tor(R, .013, pk, GLOSS, Math.PI * 2, 6, 22), 0, y, 0, rx, ry, 0));
+    g.add(put(cyl(.006, .006, .11, pk, null, 6), .14, .008, .02, 0, -.2, Math.PI / 2));
+    g.add(put(sph(.036, '#ffc2dc', null, 10, 8), .205, .034, .033));
+    return g;
+  } },
+  // 경찰 모자 (14·21판, 책상·사물함): a navy peaked cap — dark band, gold cord and star badge, a shiny black visor
+  policecap: { name: '경찰 모자', h: .145, build() {
+    const g = grp(), navy = '#2f4fa0', dk = '#1f2a44', gold = '#ffc93c';
+    g.add(put(cyl(.115, .112, .065, dk, null, 22), 0, .0325, 0));
+    g.add(put(cyl(.16, .12, .05, navy, null, 22), 0, .088, -.01, -.12, 0, 0));
+    g.add(put(cyl(.115, .115, .012, '#1a1a24', GLOSS, 22), 0, .026, .072, .22, 0, 0, [1, 1, .75]));
+    g.add(put(tor(.118, .006, gold, GOLD, Math.PI * .6, 4, 12), 0, .05, 0, Math.PI / 2, 0, Math.PI * .2));
+    g.add(put(extrude('copstar', starShape(.036, .016), .01, gold, GOLD), 0, .082, .135, -.12, 0, 0));
+    return g;
+  } },
+  // 크레파스 상자 (16판, 책상 서랍·사물함): an open sky-blue box, a row of rainbow crayons lying inside
+  crayons: { name: '크레파스 상자', h: .08, flat: true, build() {
+    const g = grp(), box = '#3fb6ff';
+    g.add(put(rbox(.32, .05, .2, box, .012), 0, .025, 0));
+    g.add(put(rbox(.3, .012, .18, '#fff6dc', .004), 0, .046, 0));
+    g.add(put(rbox(.2, .026, .006, '#ffffff', .003), 0, .026, .1));
+    ['#ff4d5e', '#ff9a2a', '#ffd84a', '#6fd04a', '#2f7fe0', '#8b6cff', '#ff7eb6'].forEach((c, i) => {
+      const z = -.075 + i * .025;
+      g.add(put(cyl(.0115, .0115, .24, c, null, 8), -.012, .064, z, 0, 0, Math.PI / 2));
+      g.add(put(cone(.0115, .03, c, null, 8), .123, .064, z, 0, 0, -Math.PI / 2));
+    });
+    return g;
+  } },
+  // 소방관 헬멧 (19판, 선반·차 옆): a red dome on a brim that runs long at the back, a crest over the top, a gold shield
+  firehelmet: { name: '소방관 헬멧', h: .15, build() {
+    const g = grp(), red = '#ff4b4b', gold = '#ffc93c';
+    g.add(put(cyl(.15, .15, .016, red, GLOSS, 26), 0, .008, -.035, 0, 0, 0, [1, 1, 1.25]));
+    g.add(put(hemi(.11, red, GLOSS), 0, .012, -.01, 0, 0, 0, [1, 1.05, 1.15]));
+    g.add(put(tor(.111, .014, shade(red, -.14), GLOSS, Math.PI, 6, 16), 0, .012, -.01, 0, Math.PI / 2, 0, [1, 1.05, 1.15]));
+    g.add(put(rbox(.075, .085, .014, gold, .012, GOLD), 0, .085, .112, -.38, 0, 0));
+    g.add(put(sph(.018, red, GLOSS, 10, 8), 0, .089, .121, -.38, 0, 0, [1, 1, .45]));
+    return g;
+  } },
+  // 낚시 찌 (3판, 그물망·덤불): a bright float lying on its side — red over white (never the reel's junk), a yellow antenna, a dark keel stem
+  bobber: { name: '낚시 찌', h: .11, build() {
+    const g = grp(), y = .055;
+    g.add(put(sph(.055, '#ff3b46', GLOSS, 16, 10), .045, y, 0, 0, 0, 0, [1.6, 1, 1]));
+    g.add(put(sph(.055, '#ffffff', GLOSS, 16, 10), -.045, y, 0, 0, 0, 0, [1.6, 1, 1]));
+    g.add(put(tor(.048, .006, '#2a1d33', null, Math.PI * 2, 6, 20), 0, y, 0, 0, Math.PI / 2, 0));
+    g.add(put(cyl(.009, .009, .11, '#ffe14d', null, 8), .184, y, 0, 0, 0, Math.PI / 2));
+    g.add(put(sph(.013, '#ff4f5e', GLOSS, 8, 6), .24, y, 0));
+    g.add(put(cyl(.007, .007, .07, '#2a1d33', null, 6), -.165, y, 0, 0, 0, Math.PI / 2));
+    return g;
+  } },
+  // 밀짚모자 (3판 기차역, 벤치·짐 가방 — 레벨 세션 추가 부탁): a wide straw brim, a round crown, a red ribbon round it
+  strawhat: { name: '밀짚모자', h: .13, build() {
+    const g = grp(), straw = '#f2cf7a';
+    g.add(put(cyl(.17, .17, .014, straw, null, 28), 0, .018, 0, .06, 0, 0));
+    g.add(put(cyl(.09, .1, .07, straw, null, 22), 0, .045, 0));
+    g.add(put(sph(.09, straw, null, 18, 8), 0, .08, 0, 0, 0, 0, [1, .32, 1]));
+    g.add(put(cyl(.102, .102, .026, '#ff4f5e', null, 22), 0, .028, 0));
+    g.add(put(sph(.022, '#ff4f5e', null, 10, 8), .085, .03, .055, 0, 0, 0, [1, .8, .5]));
     return g;
   } },
   // ── treasures (my room)
