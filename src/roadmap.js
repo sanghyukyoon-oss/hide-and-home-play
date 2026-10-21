@@ -94,7 +94,18 @@ export function openRoadmap(G, { onClose } = {}) {
   back.addEventListener('pointerup', e => { e.stopPropagation(); G.audio.sfx('btn'); close(); });
   root.addEventListener('pointerdown', e => e.stopPropagation());
   document.getElementById('app').append(root);
-  // start scrolled to the current stage
-  requestAnimationFrame(() => { scroll.scrollTop = H - pos[cur].y - scroll.clientHeight * .6; });
+  // start scrolled to the current stage, in the middle of the screen — and kept there when the screen grows (full screen, the
+  // toolbar gone; ③ 10/21, user "지도가 중심이 좀 윗쪽에"), until you scroll it yourself
+  let mine = false, setting = false;
+  const centre = () => {
+    setting = true; scroll.scrollTop = H - pos[cur].y - scroll.clientHeight * .5;
+    const me = root.querySelector('.rm-me'), b = scroll.getBoundingClientRect();   // (몽글이 standing on the stage, itself in the middle)
+    if (me && b.height) { const r = me.getBoundingClientRect(); scroll.scrollTop += (r.top + r.bottom) / 2 - (b.top + b.height / 2); }
+    requestAnimationFrame(() => { setting = false; });
+  };
+  scroll.addEventListener('scroll', () => { if (!setting) mine = true; }, { passive: true });
+  const onSize = () => { if (!root.isConnected) { removeEventListener('resize', onSize); return; } if (!mine) centre(); };
+  addEventListener('resize', onSize);
+  requestAnimationFrame(centre);
   return { close };
 }

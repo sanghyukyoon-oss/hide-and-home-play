@@ -831,11 +831,12 @@ export const REGION_INTRO = {
 // 장마다 새 규칙 하나 (10/18 night, the same pass): 2장 비밀번호 · 3장 색깔 · 4장 흑백 · 5장 레버 · 6장 간식 · 7장 관찰 자물쇠, each on
 // the chapter's first stage (its 🆕 card comes with the first lock of the kind); 흑백 / 장치 / 미니게임 at most one a chapter,
 // 정전 (a light switch) from 6장, after the lever. Kinds as before, plus treat (the host sits on a box till fed).
-// (새 맵 1차 10/21 — ② 레벨: 20판 빌라 옥상 집들이 ★(장독대 도르래) · 38판 아파트 현관 너굴이 시간 놀이. 기차 여행 27~30판·35·37판은 2차)
+// (기차 여행 편 10/21 — 사용자 OK, 스토리 룸 기획안 v4; ② 레벨 배치): 20 빌라 옥상 ★(장독대 도르래) · 27 기차역 아침 · 28 기차 객실 ★(3장 시간 판은
+// 빠짐) · 29 호수 섬 흑백 · 30 바닷가 가게 ★ · 35 곰제과 · 37 도서관 흑백 · 38 아파트 현관 시간 놀이. 판 종류·자물쇠 자리는 그대로
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'duplex:timed', 'firestation', 'villaroof2:show', 'policefront:boss'],
-  alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'street:night', 'alley1:timed', 'skatepark:gray', 'alleyhouse:show', 'alleywide:boss'],
-  shop: ['konbini:gray', 'laundry', 'cafe', 'konbini', 'shopmap:night', 'cafe:gray', 'aptlobby2:timed', 'laundry:show', 'shopmap:boss'],
+  alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'station', 'traincar:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
+  shop: ['konbini:gray', 'laundry', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'aptlobby2:timed', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
   camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide:treat', 'camp2:gray', 'cabin:show', 'campwide:boss'],
   building: ['lobby', 'kpop', 'museum', 'officefloor:gray', 'rooftop:night', 'lobbymap:timed', 'officefloor:dark', 'kpop:show', 'lobby:gray', 'lobbymap:boss'],
@@ -870,8 +871,9 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // Stages missing here keep their rule-based time. Replace with real playtest numbers when there are some.
 // 폰 세로 시작 줌 (0-based; 10/20 레벨·디자인 기획안 D): the wide maps started with things at 17~25 px (19·22·26·27판) and 18·20판's
 // house small in the frame; 6판 at 1.3 cut the living room off the left — 1.2 shows both rooms
-// (20판 빌라 옥상 7×6은 줌 1 — aptmap의 1.2를 뺌; ② 레벨 10/21)
-const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 21: 1.2, 25: 1.25, 26: 1.2 };
+// (새 맵 10/21, ② 레벨 — 기차 여행 편 v4: 20판 빌라 옥상 7×6은 줌 1(aptmap의 1.2를 뺌), 27판 기차역 10×5는 1.0에서 9개 모두 첫 화면·중앙 30px
+// (골목 밤의 1.2를 뺌), 29판 호수 섬 1.15 중앙 35px, 30판 바닷가 1.2 중앙 35px, 35판 곰제과 두 칸 8×5는 1.45에서 23~38px)
+const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 21: 1.2, 25: 1.25, 28: 1.15, 29: 1.2, 34: 1.45 };
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 100, 8: 105, 9: 105, 10: 110, 11: 110 };
 // 흑백판: the room has lost its colour; what you find (things AND a few pieces of furniture) gets it back
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")
@@ -884,7 +886,7 @@ export const GRAY = new Set([3, 9, ...planAt('gray')]);
 // so, 8 (night bedroom, right before the pajama party) and 16 (classroom). Every other ordinary stage is a hidden-object stage
 // again, the owner standing by. Story + level sessions' plan: _handoff/stage-mix-plan-20261018.md, level-mix-shape-20261018.md.
 // ?mix=0 brings back the 10/17 rule (every ordinary stage a friend hunt) to compare.
-export const FRIEND_HIDE = new Set([11, 15, 19, 29, 38, 47, 50, 58, 67]);   // (1장: 1판 tutorial and the 12판 서재 only; 6장's opener is the 간식 stage, so 51판 camp1)
+export const FRIEND_HIDE = new Set([11, 15, 19, 27, 29, 38, 47, 50, 58, 67]);   // (27 = 28판 기차 객실 ★ — 너굴이가 터널 지나는 사이 숨음, 기차 여행 편 10/21)   // (1장: 1판 tutorial and the 12판 서재 only; 6장's opener is the 간식 stage, so 51판 camp1)
 // how many things beside the friend (0-based; else half the stage's count, 2~3): 16판 교실 4 — "물건들 좀 더 찾게 해 줄래? 쉽게
 // 느껴짐" (user 10/20, it was 친구+1)
 const FRIEND_BONUS = { 15: 4 };

@@ -25,7 +25,7 @@ const SWAP = {
   parkwide: { pond: 'sluicepond' },                         // 48판 큰 공원
   laundry: { 'washer3#2': 'dryergo', vendcoin: 'changergo' },   // 39판 빨래방: the washer next to the coin changer
   alleyhouse: { jangdok: 'pulleyjang' },                      // 30판 마당 2층집
-  villaroof2: { jangdok: 'pulleyjang' },                      // 20판 빌라 옥상 집들이 (같은 장독대 도르래 — 30판이 바닷가 가게가 되면 옥상만 남아요)
+  villaroof2: { jangdok: 'pulleyjang' },                      // 20판 빌라 옥상 집들이 (기차 여행 편 10/21: 30판이 바닷가 가게가 되며 도르래가 옥상 장독대로)
   kpop: { kpopstage: 'liftstage' },                           // 68판 K-pop 무대
   cabin: { 'drawers#1': 'starloft' },                         // 59판 통나무 오두막: the attic's chest of drawers
 };

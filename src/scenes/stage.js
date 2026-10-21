@@ -1137,7 +1137,12 @@ export class StageScene {
     // a few pieces of furniture join the list: big and easy, they set how hard the stage is
     const RS = this.room.rooms || [this.room], k = this.idx < 12 ? 2 : 3, used = new Set();
     const tall = e => new THREE.Box3().setFromObject(e.f.group).getSize(new THREE.Vector3()).y > .3;   // not a flat thing on the ground (a hopscotch, a manhole): hard to tap
-    const cands = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && tall(e) && G.hasThumb('furn_' + e.type)));
+    // (② 레벨 10/21: from 21판 no piece that opens — 29판 호수 섬의 아이스박스: a tap on it found its colour instead of opening it,
+    // then the thing on its lid took the tap, and the lid never opened; the bot tapped 15 times and lost the stage. Things move
+    // into pieces after this (fixBlindSpots), so 'opens' rather than 'holds something now'; such pieces only when nothing else is left)
+    const holds = e => e.f.parts.some(p => p.spots?.length);
+    const all = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && tall(e) && G.hasThumb('furn_' + e.type)));
+    const cands = this.idx < 20 ? all : [...all.filter(e => !holds(e)), ...all.filter(holds)];   // (pieces that open last, not out: the same draw, the same count — 53·58판 캠프는 다 열리는 것; 1~20판 as they are — 사용자 '1~20 유지')
     this.grayFurn = new Map();
     // what you find comes back alone (사용자 실폰 10/20, 14판 "의자를 찾으면 의자만 색이 돌아오는 게 나을 것 같아"): a found
     // piece doesn't colour the juice still to find on its seat, a thing left on it, or another piece of furniture standing on it

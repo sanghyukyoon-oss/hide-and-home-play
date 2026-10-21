@@ -765,11 +765,13 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .spine-sub { font-size: 16px; color: #fff; opacity: .92; }
 /* 보스 미니게임 (scenes/mini.js) */
 .mini-pad { position: absolute; inset: 0; z-index: 4; touch-action: none; }
-.mini-status { position: absolute; left: 50%; translate: -50% 0; top: calc(78px + var(--safeT)); padding: 6px 16px 8px; border-radius: 16px; background: rgba(42, 26, 61, .78); color: #fff; font-size: 20px; white-space: nowrap; pointer-events: none; transition: background .15s; }
+.mini-status { position: absolute; left: 50%; translate: -50% 0; top: calc(78px + var(--safeT)); padding: 6px 16px 8px; border-radius: 16px; background: rgba(42, 26, 61, .78); color: #fff; font-size: 20px; white-space: nowrap; max-width: calc(100vw - 24px); width: max-content; pointer-events: none; transition: background .15s; }
 .mini-status.green { background: rgba(47, 143, 27, .9); }
 .mini-status.yellow { background: rgba(230, 160, 20, .95); }
 .mini-status.red { background: rgba(214, 48, 72, .95); animation: need .5s infinite; }
 .mini-status:empty { display: none; }
+/* (③ 10/21) a long line (English, or 375 px) used to run off both sides of the screen: it wraps inside the screen instead */
+.mini-status { white-space: normal; text-wrap: balance; text-align: center; line-height: 1.25; }
 .mini-hearts { position: absolute; left: 14px; top: calc(122px + var(--safeT)); display: flex; gap: 3px; font-size: 24px; pointer-events: none; }
 .mini-hearts i { font-style: normal; color: #e7d9ee; -webkit-text-stroke: 2px var(--ink); }
 .mini-hearts i.on { color: #ff5f86; }
@@ -843,6 +845,11 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 #app[data-scene="bossgame"] #hud .topbar > * { pointer-events: auto; }
 .lab-title { font-family: var(--font-display); color: #fff; font-size: 20px; line-height: 1.05; display: flex; flex-direction: column; text-shadow: 0 2px 0 var(--ink); }
 .lab-title small { font-family: var(--font); font-size: 13px; opacity: .9; margin-top: 2px; }
+/* (③ 10/21, user: "글자 스트로크가 뭔가 짤려있음" — '추로야!!!' and every break game's title): the title clips (overflow: hidden, so a
+   long one is cut, not spilled), and the clip box was the glyphs' own — the outline (3 px stroke, 2 px drop) was cut at the top
+   and the ends. Room for the outline inside the box, given back outside it, so nothing moves */
+.lab-title { padding: 4px 3px 5px; margin: -4px -3px -5px; }
+.lab-title small { padding: 4px 2px 5px; margin: -2px -2px -5px; }
 #app[data-night="1"] { background: radial-gradient(120% 80% at 50% 30%, #4a4a86 0%, #2c2b55 50%, #17162e 100%); }
 #app[data-night="1"] #bg { display: none; }
 

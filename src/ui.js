@@ -110,6 +110,9 @@ export class UI {
       requestAnimationFrame(keepIn);
     };
     requestAnimationFrame(keepIn);
+    // (③ 10/21, user: "글자테두리는 다른곳에서도 간헐적으로 발견됨") a font that lands after a title was fitted makes it wider than
+    // its box: fit it again once fonts finish loading
+    document.fonts?.addEventListener?.('loadingdone', () => { for (const t of document.querySelectorAll('#hud .lab-title[data-fit]')) { t.style.fontSize = ''; delete t.dataset.fit; } });
   }
   clear() { this.hud.innerHTML = ''; this.wui.innerHTML = ''; this.tut.innerHTML = ''; this.closePanel(); this.overlay.querySelectorAll('.chooser, .endcard').forEach(e => e.remove()); }   // (a choice left from the last scene — QA 10/18)
   col() { const c = h('div', { class: 'col' }); this.hud.append(c); return c; }
@@ -277,10 +280,14 @@ export class UI {
   }
 }
 
-// full screen: where the browser allows it (not iPhone Safari), a button that toggles it; null when unsupported
+// full screen: a button that toggles it — on every web build (③ 10/21, user: "전체화면도 없어졌네? 전체화면은 버튼 살려줄래?");
+// where the browser can't (iPhone Safari, a frame that doesn't allow it) it says how: from the home screen it opens full
 export function fullscreenBtn(ui) {
   const el = document.documentElement, can = !!(el.requestFullscreen || el.webkitRequestFullscreen) && document.fullscreenEnabled !== false;
-  if (!can) return null;
+  if (!can) {
+    const solo = navigator.standalone || matchMedia?.('(display-mode: standalone), (display-mode: fullscreen)').matches;
+    return ui.btn('전체화면', { color: 'gray', cls: 'sm', onClick: () => ui.toast(solo ? '지금이 전체화면이에요' : /iPhone|iPad|iPod/.test(navigator.userAgent) ? '공유 → 홈 화면에 추가하면 전체화면으로 열려요' : '이 브라우저는 전체화면이 안 돼요 · 홈 화면에 추가해 보세요', '') });
+  }
   const on = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
   const lbl = () => on() ? '전체화면 끄기' : '전체화면';
   const b = ui.btn(lbl(), { color: 'gray', cls: 'sm', onClick: async () => {

@@ -917,7 +917,7 @@ export function openMore(G, extra = []) {
   // art preview (2026-10-15): the everyday apartment living room in the new look, outside the campaign
   const preview = room => G.go('stage', { idx: 2, preview: true, spec: { room, n: 6, inside: 3, behind: 1, time: 90, clutter: .7, tut: 0 } });
   const fs = IN_APP ? null : fullscreenBtn(ui);   // (the app is full screen already)
-  const layBtn = QA_TOOLS ? [ui.btn('배치 편집', { color: 'orange', cls: 'sm qa', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
+  const layBtn = [];   // (배치 편집: no button any more, ?qa=1 too — user 10/21 "배치 편집은 없애자"; ⑤ clears the tool itself)
   ui.panel({ title: '더보기', color: 'blue', cls: 'more', close: () => {}, body: [h('div', { class: 'row wrap' },
     // 놀이 모음 lists 'N판 뒤 · 안 쓰임' notes for the team: hidden in the submitted builds — the app's store build and the public
     // web page; it shows for the owner (localhost, ?owner, the artifact's owner) and in the app's Debug APK (user, 10/19)

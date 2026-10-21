@@ -541,7 +541,10 @@ export class LobbyScene extends MyHomeScene {
     // 있는 구도") the lobby's own view is 몽글이 big and dead centre; tapping 몽글이 opens out to the room (heroView). Friends
     // arriving, the room pass and the star box (extra points, or the passage mode) still frame the whole group.
     if (!extra.length && this.mode === 'lobby' && this._heroView !== 'room') {
-      const W = this.G.world, shot = this.closeShot(.2, .47); this._heroView = 'close';   // ("로비 캐릭터 너무 크게 잡히는 듯" — .3 → .2 of the screen)
+      // (③ 10/21, user on a phone in full screen: "아주 약간 위로 가는정도면 괜찮은데 이렇게 위로 많이 가잇으면 좀 이상한거같아"):
+      // 몽글이's middle a hair above the middle of the space between the top bar and the play button, measured each time
+      const W = this.G.world, tb = document.querySelector('#hud .tophud')?.getBoundingClientRect().bottom, pb = this.playBtn?.isConnected ? this.playBtn.getBoundingClientRect().top : 0;
+      const mid = tb && pb > tb + 100 ? (tb + pb) / 2 / W.H - .012 : .47, shot = this.closeShot(.2, mid); this._heroView = 'close';   // ("로비 캐릭터 너무 크게 잡히는 듯" — .3 → .2 of the screen)
       if (this._framed && dur > 0) W.flyTo(this.tw, { ...shot, dur }); else { W.target.copy(shot.target); W.zoom = shot.zoom; this._framed = true; }
       return;
     }
@@ -835,6 +838,9 @@ export class LobbyScene extends MyHomeScene {
   }
   update(dt) {
     super.update(dt);
+    // (③ 10/21, user: "전체화면 누르면 … 몽글이나 지도가 중심이 좀 윗쪽에 있는거같거든"): the screen grew (full screen, the toolbar
+    // gone) — the lobby's view is framed again for the new height, so 몽글이 stays in the middle
+    { const W = this.G.world; if (this._fH && this._fH !== W.H && this.mode === 'lobby' && !this.replaying && !W.flying) this.frameLobby(.3); this._fH = W.H; }
     // 몽글 TV: the screens in this room light up (again whenever the room is rebuilt or a TV is placed, moved or boxed)
     if (!this.G.bot) {
       const tvf = this.room.furns.filter(r => TV_TYPES.has(r.type)).map(r => r.f);

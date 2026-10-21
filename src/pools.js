@@ -6,7 +6,8 @@
 // each place's own new thing comes on its list every time (the rotation below could leave it out: 11·14·19판 did)
 // (11·19판 are kit stages now — the cat tower, the fire truck: the bell ball goes to 15판's one-room, the helmet to 16판's school)
 export const ROOM_FEATURE = { bunny: ['bunnyband'], fishing: ['bobber', 'strawhat'], peng: ['snowglobe'], house2f: ['snowglobe'], bear: ['honeypot'], bear2: ['honeypot'],
-  bunnybath: ['soap'], museum: ['medal'], cat: ['bellball'], oneroom: ['bellball'], police: ['policecap'], policefront: ['policecap'], school: ['crayons', 'firehelmet'], firestation: ['firehelmet'] };
+  bunnybath: ['soap'], museum: ['medal'], cat: ['bellball'], oneroom: ['bellball'], police: ['policecap'], policefront: ['policecap'], school: ['crayons', 'firehelmet'], firestation: ['firehelmet'],
+  station: ['bobber'], island2: ['bobber', 'strawhat'], seaside: ['fishsnack'], bearbakery: ['honeypot'], library: ['crayons'] };
 export const ROOM_POOLS = {
   bunny: ['donut', 'slipper', 'candy', 'cupcake', 'heart', 'bunnyband', 'teddy', 'gift'],
   bunnybath: ['rubberduck2', 'toothbrush', 'towel', 'tissue', 'slipper', 'donut', 'hairpin', 'soap'],
@@ -52,8 +53,14 @@ export const ROOM_POOLS = {
   camp2: ['teddy', 'milk', 'towel', 'slipper', 'candy', 'mandarin', 'cookie', 'tissue'],
   camp3: ['usb', 'remote', 'earphones', 'gamepad', 'console', 'keyring', 'idcard', 'stapler'],
   kpop: ['sunglasses', 'earphones', 'bubbletea', 'juicebox', 'postit', 'coffee', 'idcard', 'gamepad'],
-  // (새 맵 10/21 — ② 레벨: 그 집 물건, 얇은 것 없이)
+  // (새 맵 10/21 — ② 레벨: 그 집 물건, 얇은 것 없이 — 넓은 맵이라 작게 보여요)
   villaroof2: ['bubbletea', 'juicebox', 'sunglasses', 'snack', 'icecream', 'cupcake', 'gift', 'mandarin'],   // 20판 옥상 집들이
+  station: ['strawhat', 'bobber', 'kimbap', 'onigiri', 'juicebox', 'umbrella', 'map', 'bubbletea'],   // 27판 개굴이 낚시 가방
+  traincar: ['onigiri', 'kimbap', 'juicebox', 'bubbletea', 'map', 'umbrella', 'sunglasses', 'gimbap2'],   // 28판 기차 객실 간식·여행 짐
+  island2: ['bobber', 'strawhat', 'rubberduck2', 'juicebox', 'sunglasses', 'gimbap2', 'duck', 'ball2'],   // 29판 호수 섬
+  seaside: ['fishsnack', 'strawhat', 'icecream', 'sunglasses', 'bubbletea', 'coin', 'rubberduck2', 'juicebox'],   // 30판 바닷가 가게
+  bearbakery: ['donut', 'cupcake', 'cookie', 'milk', 'honeypot', 'apple', 'candy', 'sandwich'],   // 35판 곰제과
+  library: ['glasses', 'crayons', 'apple', 'milk', 'teddy', 'heart', 'star', 'coin'],   // 37판 도서관 (박사 "대출대에 누가 동전을")
   aptlobby2: ['umbrella', 'keyring', 'coffee', 'slipper', 'remote', 'gift', 'milk', 'ball2'],   // 38판 아파트 현관
 };
 // socks belong to the laundromat (user: "양말은 매번 찾고, 안 찾는 판에도 양말 나오고")
