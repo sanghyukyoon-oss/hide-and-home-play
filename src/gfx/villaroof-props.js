@@ -281,6 +281,9 @@ B.clothesline = (f, T) => {
   const p = f.part('lift', strips, t => curl(t), { label: '이불', sfx: 'flip', dur: .72 });
   f.quiltKeyAt = keyAt;
   f.spot('inside', null, QX, 0, 0, { part: p, maxH: .36, label: '이불 뒤', scale: .8 });
+  // (② 레벨 10/21, user "이불 들추면 열쇠가 차릉 아래로 떨어지게"): the hook inside the quilt — a stage's key hangs here (clueHang) and drops
+  // onto '이불 뒤' when the quilt lifts (stage.js dropHung)
+  f.spot('on', keyAt, 0, 0, 0, { maxH: .24, label: '이불 속', scale: .8 }).hang = p;
   f.spot('beside', null, .9, .22, 0, { maxH: .18, label: '빨래 기둥 깡통 위', scale: .55 });
 };
 

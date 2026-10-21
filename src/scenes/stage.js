@@ -786,7 +786,9 @@ export class StageScene {
     const G = this.G, W = G.world, spot = part.spots.find(s => s.kind === 'inside' && (!s.item || s.item === it));
     it.hang = null;
     if (!spot) return;
+    it.g.visible = true;
     const from = it.g.getWorldPosition(new THREE.Vector3()), qW = it.g.getWorldQuaternion(new THREE.Quaternion());
+    if (it.role === 'key' && (part.label === '이불' || part.label === '방화복')) G.audio.sfx('clink');   // (20판 이불·19판 방화복: the key drops — 차릉, user 10/21)
     moveItem(it, spot);
     // it falls the way it hung and turns once on the way down into how it lies in the basket, then bounces once (design 10/20)
     const g = it.g, to = g.position.clone(), f = g.parent.worldToLocal(from.clone()), qTo = g.quaternion.clone();
@@ -1903,6 +1905,11 @@ export class StageScene {
     W.fx.burst(s.x, s.y, { n: 8, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 110, gravity: -30, life: .6, size: 9 });
     W.fx.ring(s.x, s.y, { r: 40, color: '#ffe14d', width: 5, life: .5 });
   }
+  // (19판 10/21, 스토리 룸 lockSay: the host's hint the first time you're at a code lock — "비번은 출동 시각이야. 탁상시계를 잘 봐!")
+  lockSay(L) {
+    const ls = !this._lockSaid && L?.kind === 'code' && sceneAt(this.idx)?.lockSay;
+    if (ls) { this._lockSaid = true; setTimeout(() => !this.dead && !this.result && this.say(this.friend, tr(ls), 2600), 300); }
+  }
   async onPart(part, x, y) {
     const G = this.G, W = G.world;
     if (part.busy) return;
@@ -1961,9 +1968,10 @@ export class StageScene {
         if (part.lockMesh) { const m = part.lockMesh, y0 = m.position.y; this.tw.run(.3, k => { m.position.y = y0 + Math.sin(k * Math.PI) * .06; m.rotation.z = Math.sin(k * Math.PI * 4) * .3 * (1 - k); }, ease.linear).then(() => { m.position.y = y0; m.rotation.z = 0; }); }
         if (L.kind === 'pad') { G.ui.toast('잠겨 있어! 열쇠를 찾아봐', 'red'); this.keyPill.style.display = ''; this.keyPill.classList.add('need'); this.keyPill.set('?'); }
         else if (L.kind === 'color') { G.ui.toast('색깔 자물쇠야! 색깔 순서 카드를 찾아봐', 'red'); this.colorPill.style.display = ''; this.colorPill.classList.add('need'); this.colorPill.querySelector('.v').textContent = '? ? ?'; }
-        else { G.ui.toast(L.tv ? '비밀번호가 필요해! TV에 나올지도…?' : '비밀번호가 필요해! 쪽지를 찾아봐', 'red'); this.codePill.style.display = ''; this.codePill.classList.add('need'); this.codePill.set('? ? ?'); }
+        else { this.lockSay(L); G.ui.toast(L.tv ? '비밀번호가 필요해! TV에 나올지도…?' : '비밀번호가 필요해! 쪽지를 찾아봐', 'red'); this.codePill.style.display = ''; this.codePill.classList.add('need'); this.codePill.set('? ? ?'); }
         return;
       }
+      if (L.kind === 'code') this.lockSay(L);
       if ((L.kind === 'code' || L.kind === 'color') && !(await lockInput(this, part))) return;   // dial it in / tap the colours yourself (R4 and every other stage — ③ 10/21)
       part.busy = true;
       const lp = part.lockMesh ? W.toScreen(part.lockMesh.getWorldPosition(new THREE.Vector3())) : { x, y };

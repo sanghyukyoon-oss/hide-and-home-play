@@ -255,7 +255,7 @@ export function obsSetup(S) {
       if (p) { src = { kind: 'timetable', rows, star, code, g: p.g, spot: p.s }; L.code = code; L.part.lock.code = code; note.code = code; }
     } else if (L.kind === 'code') {
       // the code becomes a time: hour 1–9, minutes in fives (a clock read at a glance, not to the minute)
-      const n = +L.code || 0, H = 1 + n % 9, M = 5 * (Math.floor(n / 9) % 12), code = `${H}${String(M).padStart(2, '0')}`;
+      const n = +L.code || 0, [H, M] = S.spec.obsTime || [1 + n % 9, 5 * (Math.floor(n / 9) % 12)], code = `${H}${String(M).padStart(2, '0')}`;   // (obsTime: a stage's own time — 19판 출동 1:19)
       if (oneWall && !used.has('wall')) { used.add('wall'); src = { kind: 'clock', wall: true, H, M, g: wallClockDial(wallClocks[0], H, M) }; }
       else { const p = propSpot(S, L, () => alarmClock(H, M), .27, used, rand, t0) || groundSpot(S, L, () => alarmClock(H, M), used, rand, t0); if (p) src = { kind: 'clock', wall: false, H, M, g: p.g, spot: p.s }; }
       if (src) { L.code = code; L.part.lock.code = code; note.code = code; }

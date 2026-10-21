@@ -257,6 +257,9 @@ B.gearrack = f => {
   cv.add(mc('gearrack-coat', ({ add }) => { add(G.box(.46, .9, .14, .05), '#d9a441', 0, -.46, 0); for (const y of [-.72, -.52]) add(G.pbox(.47, .05, .145), '#f4f4ec', 0, y, 0); add(G.cyl(.02, .02, .1, 6), STEEL2, 0, .02, -.05, HP, 0, 0); }));
   const p = f.part('lift', cv, t => { cv.rotation.x = -1.2 * t; }, { label: '방화복', sfx: 'swish', dur: .3 });
   f.spot('inside', null, 0, .5, z0 + .04, { part: p, maxH: .4, label: '방화복 뒤', scale: .8 });
+  // (② 레벨 10/21, 19판 "인터렉션과 방탈출적인 요소"): the coat's pocket — a stage's key hangs here (clueHang) and drops behind it when
+  // the coat lifts (stage.js dropHung)
+  f.spot('on', cv, .12, -.62, .09, { maxH: .24, label: '방화복 주머니', scale: .8 }).hang = p;
   f.spot('on', null, .3, 1.77, z0 + .12, { maxH: .25, label: '헬멧 선반 위', scale: .6 });
   f.spot('behind', null, -.3, 0, z0 + .3, { maxH: .3, label: '장화 사이', scale: .7 });
 };

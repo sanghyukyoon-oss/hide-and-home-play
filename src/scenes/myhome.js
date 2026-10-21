@@ -867,9 +867,28 @@ export class MyHomeScene {
       ], buttons: [keepOn, G.ui.btn('다시 올리기', { color: 'green', onClick: () => { G.ui.closePanel(); this.publish(); } })] });
     }
   }
+  // a rug with furniture standing on it can't be lifted (it would roll through the legs): a little shake and a word instead
+  // (③ 10/21, user: "내방 러그 안 들어올려진다" — in your own room things get put on the rug; a stage's rug is always clear)
+  rugBlocked(part) {
+    if (part.furn?.type !== 'rug') return null;
+    const rb = new THREE.Box3().setFromObject(part.furn.group); rb.expandByScalar(-.08);
+    for (const r of this.room.furns) {
+      if (r.f === part.furn || r.f.wall || r.type === 'rug' || r.f.floor) continue;
+      const b = new THREE.Box3().setFromObject(r.f.group);
+      if (b.max.x > rb.min.x && b.min.x < rb.max.x && b.max.z > rb.min.z && b.min.z < rb.max.z) return r;
+    }
+    return null;
+  }
   async openPart(part, open) {
     const W = this.G.world;
     if (part.busy) return;
+    if (open && part.furn?.type === 'rug') {
+      const on = this.rugBlocked(part);
+      if (on) {
+        this.G.audio.sfx('locked'); this.G.ui.toast(`러그 위 ${on.f.name || '가구'}를 옮기면 들 수 있어`, '');
+        const P = part; await this.tw.run(.3, k => P.setOpen(Math.sin(k * Math.PI) * .08)); P.setOpen(0); return;
+      }
+    }
     part.busy = true;
     if (open) { part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = true; }); this.G.audio.sfxPart(part, part.sfx); }
     else this.G.audio.sfxPart(part, part.kind === 'drawer' ? 'drawerClose' : 'close');

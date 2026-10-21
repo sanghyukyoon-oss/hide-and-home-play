@@ -923,7 +923,8 @@ export function stageSpec(idx) {
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
   const s = baseSpec(idx);
   if (KIT_AT[idx]) s.kit = KIT_AT[idx];
-  if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; }   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
+  if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; s.obs = true; s.obsTime = [1, 19]; s.clueHang = { pad: 'gearrack' }; }   // (19판 user 10/21 "인터렉션과 방탈출적인 요소": the padlock's key in the 방화복 pocket, drops when it lifts; the locker's code = the clock, 출동 1시 19분 = 119 — plan-19to50)
+  if (s.room === 'villaroof2') s.clueHang = { pad: 'clothesline' };   // (20판: the padlock's key hangs inside the quilt, drops when it lifts — user 10/21)   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
   if (ZOOM_TUNE[idx]) s.zoom = ZOOM_TUNE[idx];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }

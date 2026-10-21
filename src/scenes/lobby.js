@@ -439,7 +439,7 @@ export class LobbyScene extends MyHomeScene {
   tap(x, y) {
     if (this.mode === 'passage') return this.passageDone();
     if (this.mode === 'lobby') {
-      const hit = this.pick(x, y); if (hit.kind === 'char' && hit.char === this.mong) { this.heroView(); this.reactChar(this.mong); return; }
+      const hit = this.pick(x, y); if (hit.kind === 'char' && hit.char === this.mong) { if (this.hopOffRug()) return; this.heroView(); this.reactChar(this.mong); return; }
       // 몽글 TV (10/19): the TV you bought plays too — just for fun here, no taps to win (its doors still open as before)
       if (hit.kind === 'furn' && TV_TYPES.has(hit.furn.type) && !this.busyTut && !this.G.bot && !this.G.ui.panelOpen) { this.G.audio.sfx('click'); openMongleTV(this.G, { level: tvLevel(this.G.save.stage || 0) }); return; }
     }
@@ -507,6 +507,36 @@ export class LobbyScene extends MyHomeScene {
     await this.tw.wait(1.4); if (this.dead) return;
     m.pose = 'idle'; m.setFace?.('happy'); m.faceTo(G.world.cam.position.x, G.world.cam.position.z);   // (then back to you)
     if (this.mode === 'lobby') this.frameLobby(.8);
+  }
+  // 몽글이 sitting on a rug that's down (③ 10/21, user: "내방 러그 안 들어올려진다" — a tap there was a tap on 몽글이): the
+  // first tap hops it off to a clear spot beside the rug and the rug rolls up; the next tap on 몽글이 is the close-up as ever.
+  // A rug with furniture on it, or no room beside it: the close-up as before. It isn't saved — next time it sits where it sat.
+  hopOffRug() {
+    const m = this.mong, R = this.room, W = this.G.world, p = m?.root.position; if (!p || m.hopping || !R?.parts) return false;
+    const rug = R.parts.find(q => q.furn?.type === 'rug' && !q.lock && !q.busy && q.t < .5 && (() => { const b = new THREE.Box3().setFromObject(q.furn.group); return p.x > b.min.x && p.x < b.max.x && p.z > b.min.z && p.z < b.max.z; })());
+    if (!rug || this.rugBlocked(rug)) return false;
+    const b = new THREE.Box3().setFromObject(rug.furn.group), cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2;
+    const off = (x, z) => Math.max(b.min.x - x, 0, x - b.max.x, b.min.z - z, 0, z - b.max.z) > .3, ox = R.group.position.x, oz = R.group.position.z;
+    R._solid = null;
+    let best = null;
+    for (let a = 0; a < 24; a++) for (const d of [.4, .6, .85]) {
+      const u = a * Math.PI / 12, hx = (b.max.x - b.min.x) / 2, hz = (b.max.z - b.min.z) / 2, s = Math.min(hx / Math.max(1e-3, Math.abs(Math.cos(u))), hz / Math.max(1e-3, Math.abs(Math.sin(u))));
+      const x = cx + Math.cos(u) * (s + d), z = cz + Math.sin(u) * (s + d);
+      if (Math.abs(x - ox) > R.w / 2 - .4 || Math.abs(z - oz) > R.d / 2 - .4 || !off(x, z) || !R.clearAt(x, z, .3) || this.seated?.some(f => Math.hypot(f.ch.root.position.x - x, f.ch.root.position.z - z) < .6)) continue;
+      // (on the screen first — in the close-up a spot behind the camera's edge hops 몽글이 half out of the picture)
+      const q = W.toScreen(new THREE.Vector3(x, .3, z)), seen = q.x > W.W * .2 && q.x < W.W * .8 && q.y > W.H * .25 && q.y < W.H * .72;
+      const dd = Math.hypot(x - p.x, z - p.z) + (seen ? 0 : 9); if (!best || dd < best.d) best = { x, z, d: dd };
+    }
+    if (!best) return false;
+    (async () => {
+      m.setFace?.('wow'); this.G.audio.sfx('hop');
+      await m.hopTo(this.tw, best.x, best.z, { height: .5, dur: .42 }); if (this.dead) return;
+      this.G.audio.sfx('land'); m.setFace?.('happy'); m.faceTo(cx, cz);
+      await this.tw.wait(.12); if (this.dead) return;
+      await this.openPart(rug, true); if (this.dead) return;
+      m.faceTo(W.cam.position.x, W.cam.position.z);
+    })();
+    return true;
   }
   // tap 몽글이 in the lobby: close up on it; again: the whole room; again: close up
   heroView() {

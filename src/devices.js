@@ -124,7 +124,7 @@ PLANS.dryer = (room, spec, story, planStage, dd) => {
 PLANS.pulley = (room, spec, story, planStage, big) => {
   const plan = planStage(room, { ...spec, lock: ['pad', 'color'], n: 4, avoid: blindFor(spec.room) }, story);
   if (!toolBehindPad(plan, room, spec, 'pulleyhandle', big)) return null;
-  nest(plan, 'pad', 'color');
+  if (!spec.clueHang?.pad) nest(plan, 'pad', 'color');   // (20판 옥상: the key's step is the quilt instead — it hangs in it until it lifts)
   const bl = { part: big, kind: 'gadget', code: 'pulleyhandle' };
   plan.locks.push(bl);
   big.needMsg = K('누름돌이 너무 무거워서 뚜껑이 안 열려! 도르래로 들면 될 텐데… 손잡이가 빠졌네', "The pressing stone is too heavy to lift! The pulley could hoist it… but its handle is missing");
