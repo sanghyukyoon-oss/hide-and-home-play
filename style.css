@@ -1988,3 +1988,6 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .raidend .xpn { flex: none; font-size: 14px; color: #6a4a90; }
 .raidend .xpup { position: absolute; right: 14px; margin-top: -40px; color: #ffd23f; font-size: 22px; animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
 .raidend .xpline.up .xplv { animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
+
+/* 장 카드 E (UI 세션 10/21): no faces under the card — the room's own 3D 몽글이 waves there, in a soft spotlight (story.js .hello) */
+.cine.hello { background: radial-gradient(ellipse 50% 28% at 50% 64%, rgba(255, 244, 228, 0) 0, rgba(255, 244, 228, 0) 55%, rgba(40, 26, 50, .5) 100%); }

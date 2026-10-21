@@ -1194,6 +1194,7 @@ export const EN = {
 "토순이 최고지?": "Bunbun's the best, right?",
 "꿀… 없어?": "Got any… honey?",
 "안녕! 곰돌이야": "Hi! I'm Bearie",
+"안녕!": "Hi!",
 "하아암~": "Yaaawn~",
 "냥냥!": "Meow meow!",
 "그릉그릉~": "Purr purr~",

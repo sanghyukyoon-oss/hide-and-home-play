@@ -344,7 +344,7 @@ export class StageScene {
     if (this.dead) return;
     if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
-    if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], region: REGIONS.find(r => r.id === this.spec.chapter)?.name }); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
+    if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], region: REGIONS.find(r => r.id === this.spec.chapter)?.name, hello: this.hero ? () => this.cineHello() : null }); if (this.dead) return; await this.cineBye(); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
@@ -2522,6 +2522,25 @@ export class StageScene {
     G.ui.toast(`비밀 아이템 발견! ${ITEMS[it.type].name}`, 'green');
   }
 
+  // 장 카드 E (UI 세션 10/21, user: "주인공만 3d로 나오는 안 … 인사하는 느낌으로" → "오 바뀐 거 좋네"): under the chapter card the
+  // camera comes down to the room's own 몽글이, who turns to you, hops and says hi; cineBye flies back to the stage's framing
+  async cineHello() {
+    const G = this.G, W = G.world, h = this.hero; if (!h) return;
+    const m = h.ch; h.on = false;
+    this._helloBack = { target: W.target.clone(), yaw: W.yaw, pitch: W.pitch, zoom: W.zoom };
+    const T = m.root.getWorldPosition(new THREE.Vector3()); T.y = 1;
+    W.flyTo(this.tw, { target: T, zoom: 2.5, pitch: Math.max(.36, W.minPitch || 0), dur: .6 });
+    await this.tw.wait(.65); if (this.dead || this.hero !== h) return;
+    const c = W.cam.position; m.faceTo(c.x, c.z); m.pose = 'wave'; m.setFace?.('happy'); m.bump(.45);
+    G.audio.sfx('pop', 2);
+    this.say(m, '안녕!', 2200);
+  }
+  async cineBye() {
+    const b = this._helloBack, h = this.hero; if (!b) return;
+    this._helloBack = null;
+    if (h) { h.ch.pose = 'idle'; h.ch.setFace?.('normal'); h.on = true; }
+    await this.G.world.flyTo(this.tw, { ...b, dur: .5 });
+  }
   frameCamera() {
     const W = this.G.world, R = this.room;
     const big = R.rooms ? R : null, rw = R.w, rd = R.d;

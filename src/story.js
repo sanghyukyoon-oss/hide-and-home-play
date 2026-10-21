@@ -172,7 +172,10 @@ export async function playCinematic(G, c) {
     // (장 카드 A '이야기책 라벨' — user 10/20 "챕터 디자인 맘에 안 드네" → A: a cream label with an ink edge, the chapter on an
     // orange tab, the region underneath; the cast hop in under it)
     h('div', { class: 'cine-card' }, h('div', { class: 'cine-ch' }, tr(`${c.chapter}장`)), h('div', { class: 'cine-title' }, c.title), c.region ? h('div', { class: 'cine-sub' }, tr(c.region)) : ''),
-    h('div', { class: 'cine-faces' }, ...(c.cast || []).map((k, i) => h('img', { src: G.thumbs['face_' + k], style: `animation-delay:${.35 + i * .2}s` }))));
+    // (장 카드 E — user 10/21 "오 바뀐 거 좋네": with c.hello the 2D faces stay out and the room's own 3D 몽글이 comes close and
+    // waves under the card — c.hello is the stage's; a soft spotlight where it stands)
+    c.hello ? '' : h('div', { class: 'cine-faces' }, ...(c.cast || []).map((k, i) => h('img', { src: G.thumbs['face_' + k], style: `animation-delay:${.35 + i * .2}s` }))));
+  if (c.hello) { root.classList.add('hello'); c.hello(); }
   document.getElementById('app').append(root);
   G.audio.sfx('whoosh');
   await new Promise(res => { const t = setTimeout(res, 1900); root.addEventListener('pointerdown', () => { clearTimeout(t); res(); }, { once: true }); });
