@@ -4,6 +4,7 @@ import { rbox, put, grp, mat, mesh, geo, canvasTex, shade, plane, sph } from './
 import { makeFurniture, FURN_INFO } from './gfx/furniture.js';
 import { clamp } from './util.js';
 import { houseRail, gableTop, timberFrame, entryNook } from './gfx/house-props.js';
+import { atticTop } from './gfx/bunnyattic-props.js';   // 2판 다락 (10/20)
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { hasWall, hasFloor, paint } from './patterns.js';   // 벽지·바닥 더하기 (10/20): the shop's newer patterns
 
@@ -35,7 +36,7 @@ function noiseGround(a, b, dots = 120, r0 = 3, r1 = 9) {
 }
 function floorTex(kind, a, b, T = null) {
   if (hasFloor(kind)) return canvasTex(512, 512, (c, W) => paint(c, W, kind, a, b, true));
-  if (['grass', 'sand', 'asphalt', 'brickpave', 'dirt'].includes(kind)) {
+  if (['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'water'].includes(kind)) {   // (water: a shallow strip of sea or lake on the map's own floor — 바닷가 가게)
     if (OUTDOOR?.groundTex) { try { return OUTDOOR.groundTex(kind, T || { floor: a, floor2: b }); } catch {} }
     return noiseGround(a, b, kind === 'grass' ? 160 : 90);
   }
@@ -190,9 +191,15 @@ export class Room {
   clearAt(x, z, r = .3, opts = null) {
     const lx = x - this.group.position.x, lz = z - this.group.position.z;
     if (this.isCut(Math.floor(lx + this.w / 2), Math.floor(lz + this.d / 2))) return false;   // no floor there
+    // no standing in the water (바닷가 가게 10/21: a friend stood in the shallows): a floor zone of kind 'water' is off limits
+    // to the body's middle half — the shore's edge stays a place to stand
+    for (const q of this.L?.floorZones || []) if (q.kind === 'water') {
+      const x0 = q.i - this.w / 2, z0 = q.j - this.d / 2, ex = Math.max(x0 - lx, 0, lx - (x0 + q.w)), ez = Math.max(z0 - lz, 0, lz - (z0 + q.d));
+      if (ex * ex + ez * ez < r * r * .25) return false;
+    }
     if (!this._solid) {
       this.group.updateMatrixWorld(true);
-      this._solid = [...this.furns, ...this.decors].filter(q => q.type !== 'rug' && !(q.y > 1)).map(q => new THREE.Box3().setFromObject(q.f.group, true))
+      this._solid = [...this.furns, ...this.decors].filter(q => q.type !== 'rug' && !(q.y > 1) && !q.f.noSolid).map(q => new THREE.Box3().setFromObject(q.f.group, true))
         .filter(b => !b.isEmpty() && b.max.y - b.min.y > .06 && b.min.y < this.group.position.y + .7)
         .concat((this.extraSolid || []).map(o => { const b = new THREE.Box3().setFromObject(o, true); b.raised = !!o.userData.raised; return b; }));
     }
@@ -209,7 +216,11 @@ export class Room {
     this._solid = null;
     const recs = [...this.furns, ...this.decors].filter(r => r.type !== 'rug');
     this.group.updateMatrixWorld(true);
-    const boxes = recs.map(r => { const b = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) b.expandByObject(o); }); return b.expandByScalar(-.025); });
+    const boxes = recs.map(r => {
+      // f.collideBox (a big tree: just its trunk) — local [x0, y0, z0, x1, y1, z1] in place of the box round every mesh (10/21)
+      if (r.f.collideBox) { const [a, b2, c, d2, e, g2] = r.f.collideBox; return new THREE.Box3(new THREE.Vector3(a, b2, c), new THREE.Vector3(d2, e, g2)).applyMatrix4(r.f.group.matrixWorld); }
+      const b = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) b.expandByObject(o); }); return b.expandByScalar(-.025);
+    });
     // a loft's floor, posts, rails and curtains too, piece by piece (1·2판: the wardrobe's door opened up into the loft bed)
     const loftBoxes = []; for (const l of this.lofts || []) l.group.traverse(o => { if (o.isMesh) { const b = new THREE.Box3().setFromObject(o).expandByScalar(-.02); if (!b.isEmpty()) loftBoxes.push(b); } });
     const v = new THREE.Vector3();
@@ -364,7 +375,11 @@ export class Room {
         const r0 = x0 + (x0 <= a0 + 1e-6 ? inL : 0), r1 = x1 - (x1 >= a1 - 1e-6 ? inR : 0);
         body.add(put(rbox(r1 - r0, .06, .05, T.trim || '#ffffff', .02), (r0 + r1) / 2, .86, .02));
         body.add(put(rbox(r1 - r0, .1, .05, T.trim || '#ffffff', .02), (r0 + r1) / 2, .05, .02));
+        // panelled wainscot (opt-in, the new maps 10/21 — "깔끔하고 디테일"): raised frames between the rail and the skirting
+        if (this.L.panels) { const n = Math.max(1, Math.round((r1 - r0) / .75)), pw = (r1 - r0) / n; for (let q = 0; q < n; q++) { const px = r0 + (q + .5) * pw; body.add(put(rbox(pw - .14, .56, .025, shade(T.wainscot || T.wall, .07), .015), px, .47, .015)); } }
       }
+      // a crown moulding under the top of a tall wall, and a picture rail (opt-in, same)
+      if (this.L.panels && y1 >= WH - .01 && WH > 2) { body.add(put(rbox(sl, .09, .06, T.trim || '#ffffff', .02), cx, WH - .1, .03)); body.add(put(rbox(sl, .025, .03, T.trim || '#ffffff', .01), cx, WH - .5, .015)); }
     };
     if (kind === 'door') {
       const u = this.L.doorAt?.[k] ?? 0, hw = .58, DH = 2.08;
@@ -382,6 +397,9 @@ export class Room {
     // the gable rides with the wall's hangings: gone while that wall is folded (squashed it read as a roof slab lying
     // across the rooms)
     if (this.L.gable === k) { const gb = gableTop(len, WH, T, { chimney: true }); gb.traverse(o => { if (o.isMesh) { o.userData.wall = k; o.castShadow = true; } }); decor.add(gb); }
+    // 다락 (L.attic, 2판 10/20): the wall's top slopes up toward the room's back corner like a roof seen from inside — hung with
+    // the wall's pieces, so it folds away with the wall (gfx/bunnyattic-props.js atticTop)
+    if (this.L.attic) { const at = atticTop(k, len, WH, w, d, T, baseTex, this.L.attic); at.traverse(o => { if (o.isMesh) o.userData.wall = k; if (o.userData.needs) (this.roofBits ||= []).push(o); }); decor.add(at); }
     this.group.add(wg);
     return { k, g: wg, body, decor, n: W.n, len, kk: 1, down: false, kind, tall: true };
   }
@@ -547,8 +565,48 @@ export class Room {
     zt.wrapS = zt.wrapT = THREE.RepeatWrapping; zt.repeat.set(z.w / zs, z.d / zs);
     const top = put(plane(z.w - .04, z.d - .04, mat('#ffffff', { map: zt, rough: .7, rim: .12 })), cx, h + .004, cz, -Math.PI / 2);
     top.receiveShadow = true; g.add(top);
-    // a little step in front so it reads as a platform you climb onto
-    if (z.step !== false) g.add(put(rbox(Math.min(1, z.w * .5), h * .5, .28, shade(edge, .08), .03), cx + (z.stepX ?? 0), h * .25, cz + z.d / 2 + .14));
+    // a little step in front so it reads as a platform you climb onto ('full': one step the whole width of its front)
+    if (z.step === 'full') g.add(put(rbox(z.w, h * .5, .26, shade(edge, .08), .02), cx, h * .25, cz + z.d / 2 + .13));
+    else if (z.step !== false && !z.stairs) g.add(put(rbox(Math.min(1, z.w * .5), h * .5, .28, shade(edge, .08), .03), cx + (z.stepX ?? 0), h * .25, cz + z.d / 2 + .14));
+    // (새 맵 10/21, 사용자 "단차 같은 거 신경 써서… 깔끔하고 디테일하게"): opt-in finish for a platform — a rounded nosing along its
+    // open edges (z.nose), a darker plinth at their foot (z.plinth), and real stairs (z.stairs: [{ side, at, w }]) down to the floor
+    const open = { N: z.j > 0, S: z.j + z.d < d, W: z.i > 0, E: z.i + z.w < w };
+    const along = (s, cb) => { if (!open[s]) return; const ns = s === 'N' || s === 'S', L = ns ? z.w : z.d, ex = s === 'E' ? z.w / 2 : s === 'W' ? -z.w / 2 : 0, ez = s === 'S' ? z.d / 2 : s === 'N' ? -z.d / 2 : 0; cb(ns, L, cx + ex, cz + ez); };
+    for (const s of ['N', 'S', 'W', 'E']) {
+      if (z.nose) along(s, (ns, L, x, zz) => g.add(put(rbox(ns ? L + .06 : .09, .07, ns ? .09 : L + .06, z.nose, .03), x, h + .01, zz)));
+      if (z.plinth) along(s, (ns, L, x, zz) => g.add(put(rbox(ns ? L : .05, .07, ns ? .05 : L, z.plinth, .015), x + (s === 'E' ? .005 : s === 'W' ? -.005 : 0), .035, zz + (s === 'S' ? .005 : s === 'N' ? -.005 : 0))));
+    }
+    for (const st of z.stairs || []) {
+      const n = Math.max(2, Math.round(h / .15)), td = .26, sw = st.w || 1, sx = st.side === 'E' ? 1 : st.side === 'W' ? -1 : 0, sz = st.side === 'S' ? 1 : st.side === 'N' ? -1 : 0;
+      const ox = sx ? cx + sx * z.w / 2 : cx + (st.at || 0), oz = sz ? cz + sz * z.d / 2 : cz + (st.at || 0);
+      for (let k = 1; k < n; k++) {
+        const hh = h * (n - k) / n, dx = sx * (k - .5) * td, dz = sz * (k - .5) * td;
+        g.add(put(rbox(sx ? td + .02 : sw, hh, sz ? td + .02 : sw, shade(edge, .06 * k), .025), ox + dx, hh / 2, oz + dz));
+        if (z.nose) g.add(put(rbox(sx ? .08 : sw + .04, .05, sz ? .08 : sw + .04, z.nose, .02), ox + dx + sx * (td / 2 - .03), hh + .005, oz + dz + sz * (td / 2 - .03)));
+      }
+    }
+    // a stone face on the open front and east sides (opt-in, z.stone: the platform's wall in the station picture) — blocks
+    // in courses, a darker joint behind them, ivy hanging down in a few places
+    if (z.stone) {
+      const sc = z.stone, rows = Math.max(1, Math.round(h / .14)), rh = h / rows;
+      for (const side of ['S', 'E']) { const L = side === 'S' ? z.w : z.d;
+        for (let r = 0; r < rows; r++) for (let u = -L / 2 + (r % 2 ? .18 : 0); u < L / 2 - .05; u += .36) { const bw = Math.min(.32, L / 2 - u - .02), bc = shade(sc, ((r * 7 + Math.round(u * 10)) % 3 - 1) * .04);
+          if (side === 'S') g.add(put(rbox(bw, rh * .84, .03, bc, .012), cx + u + bw / 2, rh * (r + .5), cz + z.d / 2 + .012));
+          else g.add(put(rbox(.03, rh * .84, bw, bc, .012), cx + z.w / 2 + .012, rh * (r + .5), cz + u + bw / 2)); }
+        if (z.ivy) for (let q = 0; q < 3; q++) { const u = -L / 2 + L * (.2 + q * .3), n = 3 + q % 2; for (let m = 0; m < n; m++) { const leaf = put(sph(.06, '#6cbf5a'), 0, 0, 0); leaf.scale.set(1.2, .8, .6);
+          if (side === 'S') leaf.position.set(cx + u + Math.sin(m) * .05, h - .03 - m * .09, cz + z.d / 2 + .04); else leaf.position.set(cx + z.w / 2 + .04, h - .03 - m * .09, cz + u + Math.sin(m) * .05); g.add(leaf); } } }
+    }
+    // a tactile strip along the front edge on top (opt-in, z.strip: the platform's yellow line)
+    if (z.strip) g.add(put(rbox(z.w - .1, .012, .14, z.strip, .004), cx, h + .012, cz + z.d / 2 - .2));
+    // trim (opt-in, the new maps 10/21 — user "단차 같은 거 좀 신경 써서… 깔끔하고 디테일해야"): a pale nosing along the open
+    // front and east edges, a shade line under it, so the level change reads clean and made
+    if (z.trim) {
+      const tc = z.trim, sc = shade(edge, -.18);
+      g.add(put(rbox(z.w + .04, .045, .07, tc, .015), cx, h + .012, cz + z.d / 2 + .005));
+      g.add(put(rbox(.07, .045, z.d + .04, tc, .015), cx + z.w / 2 + .005, h + .012, cz));
+      g.add(put(rbox(z.w, .02, .012, sc, .004), cx, h - .05, cz + z.d / 2 + .01));
+      g.add(put(rbox(.012, .02, z.d, sc, .004), cx + z.w / 2 + .01, h - .05, cz));
+    }
     g.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.userData.floor = true; } });
     g.userData.raised = true;   // a platform: solid to the friends, a step up for the boss runner (clearAt opts.raised)
     this.group.add(g); this.extraSolid.push(g);
@@ -709,6 +767,8 @@ export class Room {
       }
       W.down = W.kk < .5;
     }
+    // roof pieces that rest on two walls (다락 박공 L.attic.gable): shown only while both stand
+    if (this.roofBits) for (const b of this.roofBits) b.visible = b.userData.needs.every(q => !this.walls[q] || this.walls[q].kk > .65);
   }
 }
 

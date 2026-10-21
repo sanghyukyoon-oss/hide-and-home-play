@@ -872,7 +872,7 @@ export const EN = {
 "얇아서 틈새에 쏙 들어가요": "Thin enough to slip into gaps",
 "처음부터 내 방에 있던 물건": "Was in my room from the start",
 "판에서 찾아 모은 물건": "Found and collected in stages",
-"판에서 찾으면 모여요": "Find it in a stage to collect it",
+"판에서 찾으면 모여요": "Find it in a stage to collect it", "판을 처음 깨면 하나씩 내 것이 돼요": "Clear a stage for the first time to keep one", "찾아봤어! 상점 물건 탭에서 데려와요": "Found it! Get it in the shop's Things tab", "상점 물건 탭에서 살 수 있어요": "You can buy it in the shop's Things tab", "판에서 찾으면 상점에 나와요": "Find it in a stage and it shows up in the shop", "발견": "Found", "내 것": "Mine",
 "지금 내 캐릭터": "My character now",
 "내 캐릭터로 하기": "Play as this character",
 "같이 다니기": "Come along",

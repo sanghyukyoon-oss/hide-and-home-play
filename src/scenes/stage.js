@@ -126,7 +126,7 @@ const TAUNT = {
 export class StageScene {
   constructor(G) { this.G = G; this.name = 'stage'; }
 
-  async enter({ idx = 0, custom = null, spec = null, preview = false, model = null, retry = false, scout = false }) {
+  async enter({ idx = 0, custom = null, spec = null, preview = false, model = null, retry = false, seed = null, scout = false }) {
     const G = this.G, W = G.world;
     this.tw = new Tweens();
     this._tapClock = 0; this.clearTapTimers();
@@ -157,6 +157,9 @@ export class StageScene {
       // tutorials keep theirs — their script points at fixed places)
       const clears = G.save.clears?.[idx] || 0;
       if (clears && !retry && !spec && !(this.spec.tut <= 2)) this.spec.seed += 7919 * 13 * clears;
+      // (외부 QA 10/21 QA17-01) '다시 하기' keeps the deal it was on: a replay's moved deal came back as the first one (11판's key
+      // went from the bookcase to the wall shelf) — retryArgs carries the seed this run used; a new replay from home deals anew
+      if (retry && seed != null) this.spec.seed = seed;
       layout = layoutFor(this.spec.room);
       this.th = THEMES[this.spec.room] || layout.theme;   // a map without its own THEMES entry wears its first room's look
       if (this.spec.timed) this.th = { ...this.th, friend: 'raccoon' };   // 너굴이 hosts the timed hide-and-seek
@@ -2601,9 +2604,9 @@ export class StageScene {
     const c = big ? big.center : new THREE.Vector3(0, 0, 0), floors = big ? big.levels.length : 1;
     const span = (rw + rd) / Math.SQRT2 + .5;                       // iso width of the footprint
     // big maps: show most of it, pan for the rest · bleed rooms (floor running on past the walls): fill the screen
-    const bleed = !big && R.L?.bleed, fitW = bleed ? span * .6 : (R.L?.fitAll ? Math.min(span * .98, 11) : Math.min(span, 8.6)), tall = (floors - 1) * FLOOR_H;   // fitAll: a whole house in one look
+    const bleed = !big && R.L?.bleed, fitW = R.L?.fitW || (bleed ? span * .6 : R.L?.fitAll ? Math.min(span * .98, 11) : Math.min(span, 8.6)), tall = (floors - 1) * FLOOR_H;   // fitAll: a whole house in one look
     W.home.set(c.x, big ? (big.levels[0] * FLOOR_H + tall / 2 + .75) : .75, c.z); W.target.copy(W.home);
-    W.yaw = Math.PI / 4; W.pitch = floors > 1 ? .5 : .62; W.zoom = 1; W.vYaw = 0; W.autoSpin = 0;
+    W.yaw = R.L?.yaw ?? Math.PI / 4; W.pitch = floors > 1 ? .5 : .62; W.zoom = 1; W.vYaw = 0; W.autoSpin = 0;   // (L.yaw: a room seen from its own side — 28판 기차 객실 2차)
     // (레벨 세션 10/19) 폰 세로에서 넓은 맵(두 방·두세 층)은 물건이 앞 판의 절반 크기(21~34px)로 보였어요 — 그 판은 조금 당겨서 시작
     if (this.spec.zoom && W.H > W.W) W.zoom = this.spec.zoom;
     this.zoom0 = W.zoom;   // ('처음 시점' 버튼의 기준 줌: 판이 시작되기 전(제목·상자 연출)에도 당긴 줌을 '움직임'으로 보지 않게)
@@ -3072,7 +3075,7 @@ export class StageScene {
     logStage({ s: this.idx + 1, r, stars, secs: +((this.tEnd ?? this.t) - (this.tStart ?? 0)).toFixed(1), tmax: this.timeMax, left: Math.max(0, Math.round(this.time)),
       found: this.found, total: this.targets.length, locks: this.plan.locks.length, hints: this.hintsUsed, misses: this.missCount, cont: !!this.continued, v: 1 });
   }
-  retryArgs() { return this.model ? { model: this.model.kind } : this.custom ? { custom: this.custom } : this.preview ? { idx: this.idx, spec: this.spec, preview: true } : { idx: this.idx, retry: true }; }
+  retryArgs() { return this.model ? { model: this.model.kind } : this.custom ? { custom: this.custom } : this.preview ? { idx: this.idx, spec: this.spec, preview: true } : { idx: this.idx, retry: true, seed: this.spec.seed }; }
   continueRun(free) {
     const G = this.G;
     // 경제 B5 (10/19): from the 2nd on it takes a magnifier (a free one first), not coins; none → stays on the panel

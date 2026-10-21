@@ -38,6 +38,16 @@ export class Furn {
     this.spots.push(s);
     return s;
   }
+  // (새 맵 10/21, ② 측정: a cabinet's inside sat in its solid body — wide open, still nothing showed) a little shelf under the
+  // spot that slides out past the front as the piece opens, the thing on it coming out with it
+  // (o.up: a deep box or basket — the bottom rises up to its rim instead)
+  pullOut(p, s, frontZ, { w = .34, d = .24, color = '#efe3c8', up = 0 } = {}) {
+    const a = s.anchor, tr = new THREE.Group(); tr.position.copy(a.position); a.parent.add(tr); a.parent.remove(a); a.position.set(0, .012, 0); tr.add(a);
+    tr.add(put(rbox(w, .02, d, color, .006), 0, 0, 0));
+    const z0 = tr.position.z, y0 = tr.position.y, dz = up ? 0 : Math.max(.1, frontZ - z0 + d / 2 + .04), ap = p.apply;
+    p.apply = (t, ...b) => { ap(t, ...b); tr.position.z = z0 + dz * t; tr.position.y = y0 + up * t; };
+    return tr;
+  }
   finalize() {
     this.group.traverse(o => { if (o.isMesh) o.userData.furn = this; });
     for (const p of this.parts) p.pivots.forEach(pv => pv.traverse(o => { if (o.isMesh) o.userData.part = p; }));
@@ -46,7 +56,7 @@ export class Furn {
   }
   setLock(part, kind, code = null) {
     part.lock = { kind, code };
-    const L = this.lockAt; if (!L) return;
+    const L = part.lockAt || this.lockAt; if (!L) return;   // (part.lockAt: a piece with more than one lockable part — 10/21)
     const g = new THREE.Group();
     if (kind === 'pad') {
       g.add(put(tor(.05, .016, '#c9cfe0', { metal: .6, rough: .3 }, Math.PI, 8, 16), 0, .07, 0));

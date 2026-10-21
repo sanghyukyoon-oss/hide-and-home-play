@@ -19,6 +19,18 @@ export const BLIND = {
   peng: ['futon|이불 속|1|20,-20'],
   // school: the 8 '책상 서랍 속' spots left 10/18 — the desk cubby was a solid box; it's an open shelf now (town-props B.schooldesk)
   shopmap: ['washer3|세탁기 안|0|25,-20'],
+  // 새 맵 (10/21, ②레벨 측정: 물건을 두고 문을 연 채 줌 1.3·24시점 중 손가락이 잡는 시점 2 미만 — map-art d2ba0b7 배치)
+  station: ['platshelter|꽃상자 사이|2|-20,-20', 'treesakura|벚나무 뿌리 사이|0|5,-20'],
+  seaside: ['cafeumbrella|파라솔 테이블 밑|0|25,30', 'cafeumbrella|파라솔 테이블 밑|0|35,20', 'fishstall|좌판 밑|0|10,10', 'fishstall|좌판 밑|1|10,10', 'seadeck|데크 밑|1|-25,-25'],
+  bearbakery: ['bkfacade|창 화분 상자|0|25,-25', 'bkparasol|접이식 의자 위|2|35,0', 'bkparasol|파라솔 테이블 밑|0|35,0', 'bkparasol|파라솔 테이블 위|1|35,0', 'breadbasket|빵 바구니 안|0|25,10', 'floursacks|사과 상자 위|1|15,0'],
+  island: ['baitbucket|미끼통 뒤|1|-20,15', 'baitbucket|미끼통 안|0|-20,15', 'cooler|아이스박스 안|0|-30,15', 'cottage|창가 꽃상자|2|15,-20', 'lakedeck|챔피언 의자 밑|1|25,15', 'picnicset|그루터기 옆|2|5,10', 'rocks|바위 틈|0|30,-5', 'tacklebox|도구함 위|1|-20,5'],
+  island2: ['baitbucket|미끼통 뒤|1|-20,15', 'baitbucket|미끼통 안|0|-20,15', 'cooler|아이스박스 안|0|-30,15', 'cottage|창가 꽃상자|2|15,-20', 'lakedeck|챔피언 의자 밑|1|25,15', 'picnicset|그루터기 옆|2|5,10', 'rocks|바위 틈|0|30,-5', 'tacklebox|도구함 위|1|-20,5'],
+  library: ['readingnook|계단 밑|3|-25,-20', 'readingnook|다락 의자 위|1|-25,-20', 'libshelf|낮은 책장 칸|0|-20,10', 'libshelf|낮은 책장 칸|0|-10,10', 'libshelf|낮은 책장 칸|0|0,10'],
+  villaroof2: ['snacktable|상 밑|0|-10,-15'],
+  aptlobby: ['elevator|엘리베이터 안|0|-10,-30', 'movetruck|트럭 밑|0|30,-25'],
+  aptlobby2: ['elevator|엘리베이터 안|0|-10,-30', 'movetruck|트럭 밑|0|30,-25'],
+  bunnyattic: ['roundwin|동그란 창틀 위|0|-30,-5'],
+  bunnyattic1: ['roundwin|동그란 창틀 위|0|-30,-5'],
 };
 const P = new THREE.Vector3();
 export const spotKey = s => { s.furn?.group?.getWorldPosition(P); return `${s.furn?.type || '?'}|${s.label}|${s.idx ?? ''}|${Math.round(P.x * 10)},${Math.round(P.z * 10)}`; };

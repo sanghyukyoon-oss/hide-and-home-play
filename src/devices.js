@@ -25,6 +25,7 @@ const SWAP = {
   parkwide: { pond: 'sluicepond' },                         // 48판 큰 공원
   laundry: { 'washer3#2': 'dryergo', vendcoin: 'changergo' },   // 39판 빨래방: the washer next to the coin changer
   alleyhouse: { jangdok: 'pulleyjang' },                      // 30판 마당 2층집
+  villaroof2: { jangdok: 'pulleyjang' },                      // 20판 빌라 옥상 집들이 (같은 장독대 도르래 — 30판이 바닷가 가게가 되면 옥상만 남아요)
   kpop: { kpopstage: 'liftstage' },                           // 68판 K-pop 무대
   cabin: { 'drawers#1': 'starloft' },                         // 59판 통나무 오두막: the attic's chest of drawers
 };
@@ -440,3 +441,70 @@ export const DEVICE_FOUND = {
   lightstick: K('응원봉이다! 무대 조종판에 꽂아 보자', 'A light-stick! Put it in the stage console'),
   matches: K('성냥이다! 다락 밑 별 랜턴에 불을 켜 보자', 'Matches! Light the star lantern under the attic hatch'),
 };
+
+// ── 30판 냥냥이네 바닷가 가게 '깃발 신호' (10/21, 스토리 룸 기차 여행 편) ─────────────────────────────────────────────
+// colour card → colour lock → key → padlock → the 바람개비 → into its socket on the deck's flagpole: the wind spins it, the
+// signal flag runs up, the boat out on the water sees it and comes in to the deck, the cover jiggles and lifts → 냥냥이
+SWAP.seaside = { seadeck: 'flagdeck' };
+EN['바람개비'] ??= 'Pinwheel'; EN['보트 덮개'] ??= 'Boat cover'; EN['보트 덮개 밑'] ??= 'Under the boat cover'; EN['깃발 데크'] ??= 'Flag deck';
+PLANS.flagboat = (room, spec, story, planStage, cover) => {
+  const plan = planStage(room, { ...spec, lock: ['pad', 'color'], n: 4, avoid: blindFor(spec.room) }, story);
+  if (!toolBehindPad(plan, room, spec, 'pinwheel', cover)) return null;
+  nest(plan, 'pad', 'color');
+  const bl = { part: cover, kind: 'gadget', code: 'pinwheel' };
+  plan.locks.push(bl);
+  cover.needMsg = K('저 보트가 데크로 와야 덮개를 열 수 있는데… 깃대 꼭대기에 바람개비 꽂는 자리가 비어 있어!', "That boat has to come in to the deck before we can lift its cover… and the pinwheel socket on top of the flagpole is empty!");
+  cover.needItem = 'pinwheel';
+  plan.placements.push({ type: 'friendtoken', spot: cover.spots[0], role: 'target' });
+  plan.targets.unshift('friendtoken');
+  plan.incident = { part: cover, lock: bl };
+  plan.showcase = { kind: 'flagboat', cover };
+  return plan;
+};
+// the pinwheel in its socket: it spins in the wind, the flag runs up the pole and flies, the boat comes in, the cover pops
+RUN.flagboat = async (S, part) => {
+  const G = S.G, W = G.world, tw = S.tw, f = part.furn;
+  S.cine = true;
+  const top = f.group.localToWorld(f.poleTop.clone()), boat = f.boat, at = f.group.localToWorld(new THREE.Vector3(-.9, .8, 1.6)), zoom = Math.max(W.zoom, 1.5);
+  await W.flyTo(tw, { yaw: clearYaw(S, [f.pin.parent, boat], at, zoom), target: at, zoom, dur: .6 });
+  if (S.dead) return;
+  f.pin.visible = true; G.audio.sfx('pop', 3);
+  await tw.wait(.2);
+  G.audio.sfx('whoosh');
+  await tw.run(1.0, k => { f.pin.rotation.z = -k * k * Math.PI * 10; }, ease.linear);
+  if (S.dead) return;
+  // the flag runs up and flies
+  const fy0 = f.flag.position.y; let last = 0;
+  await tw.run(1.1, k => {
+    f.pin.rotation.z -= .5;
+    f.flag.position.y = fy0 + (f.flagUp - fy0) * k; f.flag.scale.set(.25 + .75 * k, .7 + .3 * k, 1); f.flag.rotation.y = Math.sin(k * 14) * .15 * k;
+    if (k - last > .14) { last = k; G.audio.sfx('tick'); }
+    W.shadowDirty = true;
+  }, ease.inOutSine);
+  const s = W.toScreen(top); W.fx.burst(s.x, s.y, { n: 10, shape: 'star', colors: ['#ffe14d', '#ffffff', '#e8414e'], speed: 140, life: .5, size: 9 });
+  G.audio.sfx('star');
+  if (S.friendHidden) S.hideSay([K('냥? 저 깃발… 데크로 오라는 신호다냥!', 'Mew? That flag… the signal to come in to the deck!')]);
+  // the boat comes in, bobbing
+  const z0 = boat.position.z;
+  await tw.run(1.5, k => { f.pin.rotation.z -= .35; f.flag.rotation.y = Math.sin(k * 20) * .15; boat.position.z = z0 + (f.boatIn - z0) * k; boat.position.y = Math.sin(k * Math.PI * 3) * .03; boat.rotation.z = Math.sin(k * Math.PI * 2) * .04; W.shadowDirty = true; }, ease.inOutSine);
+  boat.position.y = 0; boat.rotation.z = 0;
+  G.audio.sfx('thunk');
+  // the cover, three jiggles, then it lifts
+  const cv = part.pivots[0], cy = cv.position.y;
+  for (let i = 0; i < 3 && !S.dead; i++) { G.audio.sfx('tock', 3 + i); await tw.run(.16, k => { cv.position.y = cy + Math.sin(k * Math.PI) * .05; cv.rotation.z = Math.sin(k * Math.PI) * .08 * (i % 2 ? 1 : -1); }, ease.linear); }
+  cv.position.y = cy; cv.rotation.z = 0;
+  S.cine = false;
+  if (S.dead) return;
+  await S.togglePart(part, true);
+};
+// the boat's cover: a cat's tail pokes out and swishes, the cover shivers
+TELL.flagboat = (S, dev, line) => {
+  const f = dev.furn, W = S.G.world, tl = f.tail, cv = dev.pivots[0], r0 = cv.rotation.z;
+  tl.visible = true; W.shadowDirty = true;
+  S.tw.run(1.3, k => { tl.rotation.z = Math.sin(k * Math.PI * 6) * .5; tl.scale.setScalar(Math.min(1, k * 6, (1 - k) * 6)); cv.rotation.z = r0 + Math.sin(k * Math.PI * 6) * .03 * (1 - k); }, ease.linear)
+    .then(() => { tl.visible = false; tl.scale.setScalar(1); cv.rotation.z = r0; });
+  S.G.audio.sfx('wobble');
+  S.say({ root: { position: f.boat.getWorldPosition(new THREE.Vector3()) }, headTop: () => .5 }, line, 1300);
+  return true;
+};
+DEVICE_FOUND.pinwheel = K('바람개비다! 데크 깃대 꼭대기에 꽂아 보자', 'A pinwheel! Put it on top of the flagpole on the deck');

@@ -178,10 +178,10 @@ void main(){
 // 흑백판 RGB 분리 세기: CSS px at the screen corners while a stage is grey (0 = off; ?gsplit=N to try another)
 const GSQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsplit') : null;
 export const GRAY_SPLIT = GSQ != null && GSQ !== '' && !isNaN(+GSQ) ? +GSQ : 1.5;
-// and a plain side-to-side split over the whole screen, CSS px (10/21 사용자 "화면 전체는 1.5로" → "전체 좌우 .5로 원복"; ?gsplith=) — both numbers are
+// and a plain side-to-side split over the whole screen, CSS px (10/21 사용자 "화면 전체는 1.5로" → "전체 좌우 .5로 원복" → "채널 밀기, 전체 .8·가생이 1.5"; ?gsplith=) — both numbers are
 // the user's to tune: change them here
 const GHQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsplith') : null;
-export const GRAY_SPLIT_H = GHQ != null && GHQ !== '' && !isNaN(+GHQ) ? +GHQ : .5;
+export const GRAY_SPLIT_H = GHQ != null && GHQ !== '' && !isNaN(+GHQ) ? +GHQ : .8;
 // 흑백판 펜화 시험 (10/21, Hidden Folks 결 — 결정 전 비교만): ?grayline=1 — white paper and ink lines, the shade one pale grey step
 // with a little hatching in the darkest of it
 export const GRAY_LINE = typeof location !== 'undefined' && new URLSearchParams(location.search).get('grayline') === '1';
@@ -209,7 +209,7 @@ void main(){
 }`;
 const DOWN = `
 varying vec2 vUv;
-#define SPLIT_MAX ${typeof location !== 'undefined' && new URLSearchParams(location.search).get('gsmode') === 'rep' ? 'false' : 'true'}
+#define SPLIT_MAX ${typeof location !== 'undefined' && new URLSearchParams(location.search).get('gsmode') === 'max' ? 'true' : 'false'}
 uniform sampler2D tSrc, tBloom; uniform vec2 outRes, splitC; uniform float sharpen, split, splitH, splitFrom, grade, bloom;
 void main(){
   vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint

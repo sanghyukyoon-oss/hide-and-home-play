@@ -52,6 +52,9 @@ export const ROOM_POOLS = {
   camp2: ['teddy', 'milk', 'towel', 'slipper', 'candy', 'mandarin', 'cookie', 'tissue'],
   camp3: ['usb', 'remote', 'earphones', 'gamepad', 'console', 'keyring', 'idcard', 'stapler'],
   kpop: ['sunglasses', 'earphones', 'bubbletea', 'juicebox', 'postit', 'coffee', 'idcard', 'gamepad'],
+  // (새 맵 10/21 — ② 레벨: 그 집 물건, 얇은 것 없이)
+  villaroof2: ['bubbletea', 'juicebox', 'sunglasses', 'snack', 'icecream', 'cupcake', 'gift', 'mandarin'],   // 20판 옥상 집들이
+  aptlobby2: ['umbrella', 'keyring', 'coffee', 'slipper', 'remote', 'gift', 'milk', 'ball2'],   // 38판 아파트 현관
 };
 // socks belong to the laundromat (user: "양말은 매번 찾고, 안 찾는 판에도 양말 나오고")
 export const SOCKS = new Set(['sock', 'sockpair']);

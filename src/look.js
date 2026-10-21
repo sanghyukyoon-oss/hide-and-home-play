@@ -23,7 +23,7 @@ import { groundTex } from './gfx/outdoor.js';
 const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
 const RAW = QS.get('look');
 export const LOOK = new Set(RAW === '0' ? [] : (RAW && RAW !== '1' ? RAW : 'light,ring,fill,glow,items').split(','));
-const HP = Math.PI / 2;
+const HP = Math.PI / 2, PI = Math.PI;
 
 // ── recipes ─────────────────────────────────────────────────────────────────────────────────────────────────────
 // map coordinates: x across (W wall at -w/2), z deep (N wall at -d/2); the camera starts on the +x +z side
@@ -85,6 +85,59 @@ Object.assign(RECIPES, {
   bunny: {
     light: { ambColor: '#f4eef6', amb: 1.32, sunColor: '#fff0dc', sun: 2.5, shadow: .62 },
     sky: ['#ecc9c4', '#f3d9cf', '#dfb7aa'],
+  },
+  // 개굴이의 기차역 (새 3판, 10/20): a spring morning on a country platform — clear warm light, a soft blossom-pink sky
+  // over pale green (the cherry tree and the green train carry the colour; the backdrop stays mid and quiet)
+  station: {
+    // (27판 아침 10/21, 사용자 "27 당근 아침이지. 아침에 여행가는거니까"): a fresh morning — warm butter sunlight, a cool clear fill,
+    // a peach-to-sky backdrop; the sun stays where it was (no long shadows)
+    light: { ambColor: '#eef1f6', amb: 1.28, sunColor: '#ffe4b0', sun: 2.6, shadow: .56 },
+    sky: ['#fbe6cc', '#fdf1e2', '#d6e8f2'],
+    // (C안 10/20: a green island of land ringed with big mossy boulders, floating on a pale spring backdrop)
+    rim: { h: .7, earth: '#7a5a40', round: .9, big: true, stone: '#a8927a', stone2: '#937d66', moss: '#6cb84a', grass: '#7fc75a', fringe: 'bush', lowRow: false,
+      fringeSkip: [[-5, -.5, .7], [5, -.5, .7], [3.5, 2.5, .8], [3.5, -2.5, .8]],
+      flowers: [[-3.2, 1.8, 7], [-1.2, 2.6, 6], [1.0, 2.4, 6], [3.3, 2.0, 6], [3.3, -2.4, 5]] },
+  },
+  // 호수 섬 (새 4판, 10/20): the island stands a step up out of a clear lake that fades into a soft summer sky
+  island: {
+    light: { ambColor: '#f2f4f0', amb: 1.3, sunColor: '#fff4dc', sun: 2.6, shadow: .58 },
+    sky: ['#9fe0e6', '#c4eef0', '#7fd2dc'],
+    ground: { size: 34, fade: [4, 11], kind: 'water', y: -.3, T: { water: '#62cfd9' } },
+    // (C안: big grey boulders with moss, the lawn rolling over them, lilies and cattails round the shore, a path of stones
+    // from the cottage door to the deck)
+    rim: { h: .5, earth: '#a98060', round: 2.0, big: true, stone: '#c6c1cf', stone2: '#aaa4b8', lilies: 26, fringe: true,
+      fringeSkip: [[-3.3, -1.5, .7], [-3.3, .5, 1.1], [3.3, 1.5, .8]],
+      path: [[.7, -1.15], [.9, -.7], [1.1, -.25], [1.3, .2], [1.5, .62], [1.75, 1.0]],
+      flowers: [[-.3, .3, 7], [-2.2, -.6, 6], [.3, 1.9, 6], [2.2, -.4, 5], [-1.0, 1.6, 5]] },
+    itemSize: .38,
+  },
+  // 빌라 옥상 (10/21, 18판 시안): late sun — warm peach light, a pink-to-lilac sky; the villa's walls going down under it
+  villaroof: {
+    light: { ambColor: '#ffe9dc', amb: 1.25, sunColor: '#ffcf9a', sun: 2.6, shadow: .58 },
+    sky: ['#f7b7a0', '#fbd6c0', '#c9a7d6'],
+    block: { layers: [{ h: .1, color: '#f3eadc', out: .05 }, { h: .5, color: '#e9dfd0' }, { h: 1.1, color: '#e1d5c3', stones: true }] },
+    itemSize: .38,
+  },
+  // 동네 도서관 (10/21, 17판 시안): warm lamp-and-window light on a dusty-blue backdrop; a thin cream block under it
+  library: {
+    light: { ambColor: '#f6eee6', amb: 1.28, sunColor: '#fff0d6', sun: 2.5, shadow: .56 },
+    sky: ['#aec4e6', '#cbd9ef', '#9db5dd'],
+    block: { layers: [{ h: .12, color: '#f3e8d6', out: .03 }, { h: .22, color: '#d9c9ae' }] },
+    itemSize: .38,
+  },
+  // 아파트 현관 (10/21, 13판 시안): warm afternoon through the glass, a soft peach backdrop; a thin block under it (the picture)
+  aptlobby: {
+    light: { ambColor: '#f6f0ea', amb: 1.3, sunColor: '#fff0dc', sun: 2.5, shadow: .56 },
+    sky: ['#f6e4d6', '#fbefe6', '#ead2c0'],
+    block: { layers: [{ h: .1, color: '#efe6da', out: .03 }, { h: .22, color: '#d6cabb' }] },
+    itemSize: .38,
+  },
+  // 바닷가 가게 (10/20 밤): bright clean daylight, a pale sea-blue sky; the square stands on a thin stone block (the ref)
+  seaside: {
+    light: { ambColor: '#f4f6f8', amb: 1.32, sunColor: '#fff6e6', sun: 2.6, shadow: .56 },
+    sky: ['#d4ecf6', '#eef7fb', '#c4e2f0'],
+    block: { layers: [{ h: .07, color: '#e9e3da', out: .03 }, { h: .22, color: '#d8cfc0', stones: true }, { h: .3, color: '#c7a77c' }] },
+    itemSize: .38,
   },
   // 펭펭이네 다락방 (4판, 흑백): a cool attic, slate-lilac backdrop (the grey stage keeps its own colour game)
   peng: {
@@ -190,6 +243,18 @@ Object.assign(RECIPES, {
 // without 'items' keeps the old size.
 RECIPES.bear2 = { ...RECIPES.bear, itemSize: .38 };
 RECIPES.bunnybath.itemSize = .38;
+RECIPES.station.itemSize = .38;   // (a wide platform at zoom 1.2: things ≥ 28 px on the start view — 레벨)
+// 기차 여행 밤 (10/21, 27판 밤 자리): the station and the lake at night — a deep blue sky, cool moonlight, and warm pools under
+// the station lamp, the shelter's lanterns and the stopped train's windows, the crossing's red lamps; on the island the
+// lighthouse, the cottage window and the deck lantern
+RECIPES.station.night = { light: { ambColor: '#9fa8f0', amb: .92, sunColor: '#c4ccff', sun: .7, shadow: .5 }, sky: ['#141a46', '#262a68', '#3a3a7a'] };
+RECIPES.station.glows = [[2.5, -2.0, 1.3, '#ffd27a', .415], [-2.0, -1.7, 1.1, '#ffc46e', .415], [-3.0, .45, .8, '#ffe7a8'], [-1.5, .45, .8, '#ffe7a8'], [0, .45, .8, '#ffe7a8'],
+  [2.5, 1.0, .6, '#ff6a5a', .135], [4.5, -1.0, .6, '#ff6a5a']];
+RECIPES.island.night = { light: { ambColor: '#9fa8f0', amb: .92, sunColor: '#c4ccff', sun: .72, shadow: .5 }, sky: ['#121a44', '#1e2a62', '#2c3672'] };
+RECIPES.island.glows = [[1.3, -1.2, .9, '#ffd27a'], [2.6, 2.4, .7, '#ffc46e']];
+// 섬 3차 (10/21, 앞 버전은 island 그대로): a tidier shore — one row of low tufts with a hydrangea now and then, stones filling the
+// rounded corners
+RECIPES.island2 = { ...RECIPES.island, rim: { ...RECIPES.island.rim, fringe: 'tidy', cornerFill: true } };
 // the houses (7·8판) stand in a yard: lawn running on, hedges and a stepping-stone path to the door, trees round
 RECIPES.house2f.ground = { size: 26, fade: [4.5, 9], kind: 'grass', T: { grass: '#a6d784' } };
 RECIPES.house2f.ring = [
@@ -232,8 +297,25 @@ Object.assign(RECIPES, {
   firestation: { light: { ambColor: '#ece6f2', amb: 1.18, sunColor: '#ffdcb0', sun: 2.6, shadow: .62 }, sky: ['#a9d4ee', '#f6e4cf', '#dcc4ad'] },
 });
 RECIPES.aptmap = RECIPES.apt;
+// 2판 토순이 다락 놀이방 (10/20): late-morning light under the roof, a soft rose-lilac backdrop (1판's dusty rose, a step cooler)
+RECIPES.bunnyattic = { light: { ambColor: '#f4eef6', amb: 1.3, sunColor: '#fff0dc', sun: 2.5, shadow: .6 }, sky: ['#e3cbdc', '#efdde7', '#d4b8cb'], itemSize: .38 };
+// 6판 곰돌이 빵 굽는 부엌 (10/20): a warm baking afternoon, a butter-apricot backdrop
+RECIPES.bearbakery = { light: { ambColor: '#f4ece8', amb: 1.28, sunColor: '#ffe6c2', sun: 2.55, shadow: .6 }, sky: ['#ecd3b4', '#f4e3cc', '#dfc29e'], itemSize: .44 };
+// (다락·곰제과 v2, 10/21 — 사용자는 v1을 고름; 후보로 남겨 둠)
+RECIPES.bearbakery2 = { ...RECIPES.bearbakery, itemSize: .4 };
+RECIPES.bunnyattic1 = RECIPES.bunnyattic2 = RECIPES.bunnyattic;
 // (22·27판 골목 'street': waits for the user's art sign-off — 10/19 "22판 골목 룩 … 빼고"; sumbak-look keeps it)
 delete RECIPES.street;
+RECIPES.aptlobby2 = RECIPES.aptlobby;   // (현관 2차: the same light)
+// 28판 기차 객실 (10/21): bright seaside morning through the windows, a sky-blue backdrop; the car's underside as a block — cream
+// floor edge, the blue body band, the dark undercarriage
+RECIPES.traincar = { light: { ambColor: '#eef3f8', amb: 1.3, sunColor: '#fff2dc', sun: 2.5, shadow: .55 }, sky: ['#bfe1f7', '#e6f4fd', '#a9d5f2'],
+  block: { layers: [{ h: .1, color: '#f6ecd8', out: .06 }, { h: .22, color: '#5072b0', out: .06 }, { h: .08, color: '#f08a3c', out: .06 }, { h: .3, color: '#3a3f4c' }] }, itemSize: .38 };
+// (2차 10/21): the car floats over a sky of soft clouds, like the picture
+RECIPES.traincar2 = { ...RECIPES.traincar, clouds: true };
+// (20판 2차 10/21): the neighbours' rooftops printed very faint along the bottom of the backdrop — boxy villas, a yellow tank
+// here and there, an antenna, a little rooftop room
+RECIPES.villaroof2 = { ...RECIPES.villaroof, skyline: { ink: '#8a6a9a', tank: '#c79a6a' } };
 
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
@@ -245,7 +327,7 @@ export function lookRecipe(room, spec) {
 // end) goes back to the look's day, not the house light
 export function lookTheme(R, th) {
   if (!R || !LOOK.has('light')) return th;
-  return { ...th, light: R.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern ? Object.assign([...R.sky], { pattern: R.pattern }) : R.sky };
+  return { ...th, light: R.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern || R.skyline || R.clouds ? Object.assign([...R.sky], { pattern: R.pattern, skyline: R.skyline, clouds: R.clouds }) : R.sky };
 }
 // the colours a shop's room is built in (this stage only): a lone room takes the recipe's theme; a map whose recipe lists
 // rooms gives each of those rooms its own recipe's theme and remembers which (lookKey: the look's pieces go in by it)
@@ -285,6 +367,36 @@ function skyPattern(x, { icon, ink }) {
   for (let row = 0, y = 14; y < 530; row++, y += 38) for (let xx = row % 2 ? 0 : 22; xx < 280; xx += 44) draw(xx, y);
   x.restore();
 }
+// the neighbours' rooftops (20판 옥상): two rows of flat-roofed blocks across the bottom of the backdrop, the far row fainter;
+// on some a little tank, an antenna or a rooftop room — all one colour, only a shade off the sky
+function skyLine(x, { ink, tank }) {
+  let sd = 11; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (const [top, a, hv] of [[300, .13, 46], [350, .2, 60]]) {
+    x.globalAlpha = a; let px = -6;
+    while (px < 262) {
+      const w = 22 + R() * 34, y = top + R() * hv - hv / 2;
+      x.fillStyle = ink; x.fillRect(px, y, w + .5, 520 - y);
+      const r = R();
+      if (r < .3) { x.fillStyle = tank; x.beginPath(); x.ellipse(px + w * .6, y - 5, 5, 6, 0, 0, Math.PI * 2); x.fill(); x.fillStyle = ink; x.fillRect(px + w * .6 - 4, y - 2, 8, 2); }
+      else if (r < .52) x.fillRect(px + w * .15, y - 10, w * .4, 10);
+      else if (r < .68) { x.fillRect(px + w * .7, y - 16, 1.2, 16); x.fillRect(px + w * .7 - 4, y - 13, 9, 1.2); }
+      x.globalAlpha = a * .7; x.fillStyle = '#fff6ea';
+      for (let k = 0; k < 3; k++) if (R() < .5) x.fillRect(px + 4 + k * (w - 8) / 3, y + 8 + R() * 14, 3, 4);
+      x.globalAlpha = a; px += w + R() * 3;
+    }
+  }
+  x.globalAlpha = 1;
+}
+// soft white clouds over the backdrop, more of them low down (the 기차 객실 floats over them)
+function skyClouds(x) {
+  let sd = 7; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 16; i++) {
+    const cx = R() * 300 - 20, cy = 40 + Math.pow(R(), .6) * 470, s = 14 + R() * 22;
+    x.globalAlpha = .55 + R() * .35; x.fillStyle = '#ffffff';
+    for (let k = 0; k < 5; k++) { x.beginPath(); x.ellipse(cx + (k - 2) * s * .7, cy - (k % 2) * s * .35, s * (k === 2 ? 1 : .75), s * (k === 2 ? .8 : .6), 0, 0, Math.PI * 2); x.fill(); }
+  }
+  x.globalAlpha = 1;
+}
 let SKY_TEX = null;
 export function setSky(sky) {
   const app = document.getElementById('app'), W = typeof G !== 'undefined' ? G.world : null;
@@ -299,6 +411,8 @@ export function setSky(sky) {
     g.addColorStop(0, sky[0]); g.addColorStop(.42, sky[1]); g.addColorStop(1, sky[2]);
     x.fillStyle = g; x.fillRect(0, 0, 256, 512);
     if (sky.pattern) skyPattern(x, sky.pattern);
+    if (sky.skyline) skyLine(x, sky.skyline);
+    if (sky.clouds) skyClouds(x);
     // a soft vignette (the corners settle, the middle where the room stands stays open) and a faint paper grain
     const v = x.createRadialGradient(128, 230, 60, 128, 260, 330);
     v.addColorStop(0, 'rgba(40,20,50,0)'); v.addColorStop(1, 'rgba(40,20,50,.13)');
@@ -324,7 +438,9 @@ export class Look {
     this.T = th;
     const ring = LOOK.has('ring') && R.ground;
     if (ring) this.buildGround();
-    else if (LOOK.has('light') && R.sky) this.tintAprons();
+    if (R.rim) this.buildRim(R.rim);   // (with or without a lake round it)
+    if (R.block) this.buildBlock(R.block);
+    else if (!ring && LOOK.has('light') && R.sky) this.tintAprons();   // (as before for every older room: a ring of ground and no tint)
     // (not on a seamless meadow: the map is no island there, and the dark rim drew its square back — user 10/19 "저 경계 남는것도 짜증나는데")
     // the rooms the shop pieces go into: the room itself, or each room of a map that names its own recipe (상가 맵:
     // the konbini half and the laundry half, each in its own colours)
@@ -419,8 +535,9 @@ export class Look {
     // so no ink line is drawn round the map's square edge (user 10/19: "바닥에 네모 플래인이 좀 거슬리네… 쓸모없는 네모 선");
     // made large so its own edge never comes on screen
     const SS = G.seamless ? Math.max(S, 64) : S;
-    const base = this.fadePlane(walk, -SS / 2, SS / 2, -SS / 2, SS / 2, f0, f1, -.012, G.walk || G.kind ? [0, 0] : [-w / 2, d / 2], G.seamless ? 256 : 128);
+    const base = this.fadePlane(walk, -SS / 2, SS / 2, -SS / 2, SS / 2, f0, f1, G.y ?? -.012, G.walk || G.kind ? [0, 0] : [-w / 2, d / 2], G.seamless ? 256 : 128);
     if (G.seamless) { base.userData.floor = true; base.userData.inkLayer = true; }
+    this.groundPlane = base;
     if (this.stage.spec.night) base.material.color.set('#8d8aa6');   // at night the town round the corner sits in the dark
     this.group.add(base);
     const z0 = !this.isMap && room.L.floorZones?.[0], zo = z0 ? [-w / 2 + z0.i, -d / 2 + z0.j + z0.d] : [-w / 2, d / 2];
@@ -516,6 +633,154 @@ export class Look {
 
   // the cake slab room.js builds for a room that does not bleed, under a bleed room (whose camera fit stays as it was):
   // its fading floor goes, the room stands on a base in its own colour
+  // an island's edge (호수 섬, user refs 10/20: "바위나 흙 둘레가 두껍게 보이는 단면"): a band of earth under the floor's rim
+  // going down into the water, ringed by rounded stones of two greys — one merged mesh, outlined as one shape
+  buildRim(o) {
+    for (const ap of this.aprons()) ap.visible = false;   // (the see-through ground at y 0 was drawn over the boulders below it: pale blobs round the foot)
+    const r = this.room, w = r.w, d = r.d, p = r.group.position, H = o.h ?? .42, y0 = -H, rc = Math.min(o.round || 0, w / 2 - .5, d / 2 - .5);
+    const rng = n => ((Math.sin(n * 127.1) * 43758.5453) % 1 + 1) % 1, EARTH = o.earth || '#b98c5e';
+    const list = [], c = new THREE.Color(), push = (g, col, x, y, z, sx = 1, sy = 1, sz = 1, ry = 0) => {
+      g = g.index ? g.toNonIndexed() : g; g.scale(sx, sy, sz); g.rotateY(ry); g.translate(x, y, z);
+      // (faces turned down are darkened: the hemisphere light's bright ground colour lit the boulders' undersides as pale blobs
+      // round the island's foot — 10/21)
+      const n = g.attributes.position.count, a = new Float32Array(n * 3), nr = g.attributes.normal; c.set(col);
+      for (let i = 0; i < n; i++) { const k = 1 + (nr ? Math.min(0, nr.getY(i)) : 0) * .75; a[i * 3] = c.r * k; a[i * 3 + 1] = c.g * k; a[i * 3 + 2] = c.b * k; }
+      g.setAttribute('color', new THREE.BufferAttribute(a, 3)); for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'color'].includes(k)) g.deleteAttribute(k);
+      list.push(g);
+    };
+    // the shoreline: the map's rectangle with its corners rounded off (radius rc), a little outside the floor's edge
+    const hx = w / 2 + .04, hz = d / 2 + .04, path = [];
+    const corner = (cx, cz, a0) => { for (let k = 0; k <= 8; k++) { const a = a0 + k / 8 * HP; path.push([cx + Math.cos(a) * rc, cz + Math.sin(a) * rc]); } };
+    if (rc > 0) { corner(hx - rc, hz - rc, 0); corner(-hx + rc, hz - rc, HP); corner(-hx + rc, -hz + rc, PI); corner(hx - rc, -hz + rc, PI * 1.5); }
+    else path.push([hx, hz], [-hx, hz], [-hx, -hz], [hx, -hz]);
+    // the earth band under it, down into the water
+    const sh = new THREE.Shape(path.map(([x, z]) => new THREE.Vector2(x, z)));
+    const eg = new THREE.ExtrudeGeometry(sh, { depth: H, bevelEnabled: false, curveSegments: 4 }); eg.rotateX(HP); eg.computeVertexNormals();
+    push(eg, EARTH, p.x, -.004, p.z);
+    // big rounded boulders all round the shore (island C안: grey stones, some with moss on top), a lower half-sunk row
+    // outside them, a soft grass lip along the top so the lawn rolls over the edge instead of ending on a line
+    let k = 0;
+    const MOSS = o.moss || '#8fcf6a', GRASS = o.grass || '#97d872';
+    for (let i = 0; i < path.length; i++) {
+      const [x0, z0] = path[i], [x1, z1] = path[(i + 1) % path.length], L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / (o.big ? .62 : .42)));
+      for (let q = 0; q < n; q++, k++) {
+        const t = q / n, x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t, nl = Math.hypot(x, z) || 1;
+        const s = o.big ? .3 + rng(k) * .16 : .2 + rng(k) * .12, col = rng(k + 50) < .5 ? (o.stone || '#c9c2d8') : (o.stone2 || '#b1a9c4');
+        const sx = p.x + x + x / nl * (o.big ? .08 : 0), sz = p.z + z + z / nl * (o.big ? .08 : 0), sy = y0 + (o.big ? .3 : .14) + rng(k + 9) * .08;
+        push(new THREE.SphereGeometry(1, 9, 6), col, sx, sy, sz, s * 1.25, s * .95, s * 1.1, rng(k + 3) * 3);
+        if (o.big) push(new THREE.SphereGeometry(1, 8, 5), shade(col, .12), sx - s * .15, sy + s * .45, sz - s * .1, s * .7, s * .4, s * .65, rng(k + 3) * 3);   // (a lighter top: rounded stone, not a lump)
+        if (o.big && rng(k + 70) < .45) push(new THREE.SphereGeometry(1, 10, 6), MOSS, sx, sy + s * .62, sz, s * .85, s * .35, s * .8, rng(k + 5) * 3);
+        if (o.big && o.lowRow !== false && q % 2 === 0) { const ox = x / nl * .45, oz = z / nl * .45, s2 = .2 + rng(k + 11) * .12; push(new THREE.SphereGeometry(1, 10, 7), o.stone2 || '#b1a9c4', sx + ox, y0 + .02, sz + oz, s2 * 1.3, s2 * .8, s2 * 1.1, rng(k + 13) * 3); }
+        if (o.big) push(new THREE.SphereGeometry(1, 8, 6), rng(k + 21) < .5 ? GRASS : shade(GRASS, -.08), p.x + x * .985, .01, p.z + z * .985, .2 + rng(k + 17) * .08, .08, .2, 0);
+      }
+    }
+    // the fringe (the C·D안 density): hydrangea balls, white daisy mounds and ferns all along the shore just inside the
+    // stones — the picture's lush edge — skipping where something stands (o.fringeSkip: [x, z, r] in room coordinates)
+    if (o.fringe) {
+      const skip = o.fringeSkip || [], HY = ['#9fb3ff', '#c39bff', '#ffb3d6', '#8fd0ff'];
+      let q = 0;
+      for (let i = 0; i < path.length; i++) {
+        const [x0, z0] = path[i], [x1, z1] = path[(i + 1) % path.length], L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / .4));
+        for (let m = 0; m < n * 2; m++, q++) {
+          const row = m % 2, t = (Math.floor(m / 2) + row * .5) / n, ex = x0 + (x1 - x0) * t, ez = z0 + (z1 - z0) * t, nl = Math.hypot(ex, ez) || 1, ins = row ? .62 : .28, x = ex - ex / nl * ins, z = ez - ez / nl * ins;
+          if (row && q % 3 === 2) continue;   // (the inner row thinner)
+          if (skip.some(([sx, sz, sr]) => Math.hypot(x - sx, z - sz) < sr)) continue;
+          const kind = q % 3, bx = p.x + x, bz = p.z + z;
+          if (o.fringe === 'tidy') {   // (섬 3차 10/21, 확대하면 "지저분"): one row along the lawn's edge — low leafy tufts, a hydrangea
+            // only every fourth place, nothing piled on the stones
+            if (row) continue;
+            const r = .13 + (q % 3) * .02;
+            if (q % 8 === 0) { push(new THREE.SphereGeometry(1, 8, 6), '#5cb45a', bx, .1, bz, .24, .15, .24); const c = HY[(q >> 3) % HY.length];
+              for (let k = 0; k < 7; k++) { const a = k * 2.4, rr = k ? .09 : 0; push(new THREE.SphereGeometry(.08, 7, 5), k % 2 ? c : shade(c, .12), bx + Math.cos(a) * rr, .25 + (k ? 0 : .05), bz + Math.sin(a) * rr); } }
+            else if (q % 2 === 0) for (const [dx, dz, s, c] of [[0, 0, 1, '#6cbf5a'], [-.1, .05, .7, '#7fcf6a']]) push(new THREE.SphereGeometry(1, 10, 7), c, bx + dx, r * .6 * s, bz + dz, r * s * 1.1, r * s * .7, r * s);
+            continue;
+          }
+          if (o.fringe === 'bush') {   // (station 3차 10/21, user "덩어리가 겹쳐… 똥 싼 거 같다"): a tidy leafy tuft standing OUT on the shore
+            // stones, not on the floor — one outer row only, smooth, every second one, so nobody stands in it
+            if (row || q % 2) continue;
+            if (Math.abs(ex) < w / 2 - .02 && Math.abs(ez) < d / 2 - .02) continue;   // (a rounded corner runs inside the floor: no tuft where someone may stand)
+            const ox = p.x + ex + ex / nl * .02, oz = p.z + ez + ez / nl * .02, r = .17 + (q % 3) * .03;
+            for (const [dx, dz, s, c] of [[0, 0, 1, '#6cbf5a'], [-.12, .06, .75, '#7fcf6a'], [.12, -.05, .7, '#5aa84a']]) push(new THREE.SphereGeometry(1, 12, 9), c, ox + dx, r * .8 * s, oz + dz, r * s * 1.1, r * s * .85, r * s * 1.05);
+            if (q % 4 === 0) for (let k = 0; k < 3; k++) push(new THREE.SphereGeometry(.03, 6, 4), '#ffffff', ox + Math.cos(k * 2.1) * r * .6, r * 1.45, oz + Math.sin(k * 2.1) * r * .6);
+            continue;
+          }
+          if (kind === 0) {   // hydrangea: leaves, then a ball of little florets in one colour
+            push(new THREE.SphereGeometry(1, 8, 6), '#5cb45a', bx, .12, bz, .3, .18, .3); const c = HY[(q >> 1) % HY.length];
+            for (let k = 0; k < 9; k++) { const a = k * 2.4, r = k ? .11 : 0; push(new THREE.SphereGeometry(.095, 7, 5), k % 2 ? c : shade(c, .12), bx + Math.cos(a) * r, .3 + (k ? 0 : .06), bz + Math.sin(a) * r); }
+          } else if (kind === 1) {   // a daisy mound
+            push(new THREE.SphereGeometry(1, 8, 6), '#7fcf6a', bx, .1, bz, .28, .2, .28);
+            for (let k = 0; k < 7; k++) { const a = k * 1.3, r = .07 + (k % 2) * .09; push(new THREE.CylinderGeometry(.055, .055, .012, 8), '#ffffff', bx + Math.cos(a) * r, .26, bz + Math.sin(a) * r); push(new THREE.SphereGeometry(.022, 5, 4), '#ffd23f', bx + Math.cos(a) * r, .272, bz + Math.sin(a) * r); }
+          } else {   // a fern: a fan of long flat leaves
+            for (let k = 0; k < 7; k++) { const g = new THREE.ConeGeometry(.07, .55, 4); g.rotateZ(.85); g.rotateY(k * .9); push(g, k % 2 ? '#4fa64f' : '#6cbf5a', bx, .2, bz, 1, 1, 1); }
+          }
+        }
+      }
+    }
+    // (o.cornerFill, 섬 3차): a few more stones out round each rounded corner, low, so no lake shows between them at floor level
+    if (o.cornerFill && rc > 0) for (const [sx, sz] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) for (let m = 0; m < 5; m++) {
+      const a = (m + .5) / 5 * HP, ax = sx * (w / 2 - rc + Math.cos(a) * (rc + .28)), az = sz * (d / 2 - rc + Math.sin(a) * (rc + .28)), s = .26 + rng(m * 7 + sx * 3 + sz) * .1, col = m % 2 ? (o.stone || '#c9c2d8') : (o.stone2 || '#b1a9c4');
+      push(new THREE.SphereGeometry(1, 9, 6), col, p.x + ax, -.08 + rng(m + 2) * .06, p.z + az, s * 1.3, s * .8, s * 1.15, rng(m + sx) * 3);
+    }
+    // little clumps of white and yellow flowers on the lawn (o.flowers: [x, z, n])
+    for (const [x, z, n] of o.flowers || []) for (let m = 0; m < n; m++) { const a = m * 2.4, r = .08 + (m % 3) * .07; push(new THREE.SphereGeometry(.035, 6, 5), m % 3 ? '#ffffff' : '#ffe27a', p.x + x + Math.cos(a) * r, .045, p.z + z + Math.sin(a) * r); push(new THREE.SphereGeometry(.05, 6, 4), '#6cbf5a', p.x + x + Math.cos(a) * r, .02, p.z + z + Math.sin(a) * r, 1, .5, 1); }
+    // stepping stones across the lawn (o.path: [x, z] in the room's own coordinates)
+    for (const [x, z] of o.path || []) push(new THREE.CylinderGeometry(.17, .19, .04, 9), '#d6d0dc', p.x + x, .02, p.z + z, 1, 1, .8, rng(x * 7 + z) * 3);
+    // the lake's plants (o.lilies: how many clumps): lily pads, a few lotus flowers, cattails, scattered round the shore
+    for (let q = 0; q < (o.lilies || 0); q++) {
+      const a = rng(q * 3.1 + 1) * PI * 2, rr = Math.max(w, d) / 2 + .6 + rng(q * 5.3 + 2) * 2.2, cx = p.x + Math.cos(a) * rr * (w / Math.max(w, d)) * 1.05, cz = p.z + Math.sin(a) * rr * (d / Math.max(w, d)) * 1.05, wy = (this.R.ground?.y ?? -.3) + .012;
+      const kind = rng(q * 9.7 + 4);
+      if (kind < .62) { for (let m = 0; m < 3; m++) { const r = .17 + rng(q * 11 + m) * .1; push(new THREE.CylinderGeometry(r, r, .015, 14, 1, false, .3, PI * 1.8), m % 2 ? '#7fcf6a' : '#5cb45a', cx + (m - 1) * .3, wy, cz + ((m * 7) % 3 - 1) * .22, 1, 1, 1, rng(q + m) * 6); }
+        if (kind < .3) { for (let m = 0; m < 6; m++) { const aa = m / 6 * PI * 2; push(new THREE.SphereGeometry(.06, 8, 6), '#ffb3cf', cx + Math.cos(aa) * .06, wy + .07, cz + Math.sin(aa) * .06, .7, 1, 1.4, -aa); } push(new THREE.SphereGeometry(.045, 8, 6), '#ffe27a', cx, wy + .09, cz); } }
+      else for (let m = 0; m < 3; m++) { const ox = (m - 1) * .09, h = .5 + rng(q * 13 + m) * .3; push(new THREE.CylinderGeometry(.012, .016, h, 5), '#6aa85a', cx + ox, wy + h / 2, cz + m * .05); push(new THREE.CapsuleGeometry(.03, .12, 2, 6), '#8b5e3c', cx + ox, wy + h - .02, cz + m * .05); }
+    }
+    const g = mergeGeometries(list); list.forEach(q => q.dispose());
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .9 }));
+    m.userData.og = {}; m.receiveShadow = true; m.castShadow = false; this.group.add(m); this.own.push(g, m.material);
+    // the floor's square corners outside the rounded shore: covered with the lake itself (the ground plane's own material
+    // and texture coordinates, a hair above the floor), so the island reads round — user 10/20 "바닥에 네모가 싫은가봐"
+    const gp = this.groundPlane; if (!rc || !gp) return;
+    const GW = gp.geometry.parameters.width, GD = gp.geometry.parameters.height, gx0 = gp.position.x - GW / 2, gz1 = gp.position.z + GD / 2;
+    const pos = [], uv = [], put3 = (x, z) => { pos.push(p.x + x, .03, p.z + z); uv.push((p.x + x - gx0) / GW, (gz1 - (p.z + z)) / GD); };
+    for (const [sx, sz] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) {
+      const cx = sx * (w / 2), cz = sz * (d / 2), ax = sx * (w / 2 - rc), az = sz * (d / 2 - rc);
+      for (let q = 0; q < 8; q++) {
+        const a0 = q / 8 * HP, a1 = (q + 1) / 8 * HP;
+        put3(cx, cz); put3(ax + sx * Math.cos(a0) * rc, az + sz * Math.sin(a0) * rc); put3(ax + sx * Math.cos(a1) * rc, az + sz * Math.sin(a1) * rc);
+      }
+    }
+    const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); cg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); cg.computeVertexNormals();
+    const cm = new THREE.Mesh(cg, gp.material); cm.material.side = THREE.DoubleSide; cm.renderOrder = 2; cm.userData.noOcclude = true; cm.layers.set(2);
+    this.group.add(cm); this.own.push(cg);
+  }
+  // a diorama block (user refs 10/20: the pharmacy corner, the grocery — "네모로 넣을거면 이것도 참조"): the map stands on
+  // a thick block whose sides show its layers — a pale kerb lip, a band of stone, then earth — so the square reads as a
+  // little world cut out and set on the table, not a floor plane floating on the backdrop
+  buildBlock(o) {
+    for (const ap of this.aprons()) ap.visible = false;
+    const r = this.room, w = r.w, d = r.d, p = r.group.position, list = [], c = new THREE.Color();
+    const push = (g, col, x, y, z) => {
+      g = g.index ? g.toNonIndexed() : g; g.translate(x, y, z);
+      const n = g.attributes.position.count, a = new Float32Array(n * 3); c.set(col);
+      for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(a, 3)); for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'color'].includes(k)) g.deleteAttribute(k);
+      list.push(g);
+    };
+    let y = 0;
+    for (const L of o.layers) { push(new THREE.BoxGeometry(w + (L.out || 0) * 2, L.h, d + (L.out || 0) * 2), L.color, p.x, y - L.h / 2 - .002, p.z); y -= L.h; }
+    // stones set in the stone band, staggered, a shade darker — the band reads as masonry
+    const S = o.layers.find(L => L.stones); if (S) {
+      let yy = 0; for (const L of o.layers) { if (L === S) break; yy -= L.h; }
+      const rows = Math.max(1, Math.round(S.h / .12)), hh = S.h / rows, ox = w / 2 + (S.out || 0) + .004, oz = d / 2 + (S.out || 0) + .004;
+      for (let q = 0; q < rows; q++) {
+        const yc = yy - hh * (q + .5);
+        for (let x = -ox + (q % 2 ? .2 : 0); x < ox - .1; x += .4) { push(new THREE.BoxGeometry(Math.min(.34, ox - x - .02), hh * .78, .02), shade(S.color, -.07), p.x + x + .17, yc, p.z + oz); }
+        for (let z = -oz + (q % 2 ? .2 : 0); z < oz - .1; z += .4) { push(new THREE.BoxGeometry(.02, hh * .78, Math.min(.34, oz - z - .02)), shade(S.color, -.11), p.x + ox, yc, p.z + z + .17); }
+      }
+    }
+    const g = mergeGeometries(list); list.forEach(q => q.dispose());
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .9 }));
+    m.userData.og = {}; m.receiveShadow = true; m.castShadow = false; this.group.add(m); this.own.push(g, m.material);
+  }
   buildSlab() {
     for (const ap of this.aprons()) ap.visible = false;
     const RS = this.isMap ? this.room.rooms.filter(r => !r.level) : [this.room], b = new THREE.Box3(), v = new THREE.Vector3();
@@ -630,10 +895,10 @@ export class Look {
 
   buildGlows() {
     const tex = glowTex();
-    for (const [x, z, r, c] of this.R.glows || []) {
+    for (const [x, z, r, c, y = .014] of this.R.glows || []) {   // (y: a pool on a raised floor — the station's platform)
       const m = new THREE.MeshBasicMaterial({ color: c, map: tex, transparent: true, opacity: .78, blending: THREE.AdditiveBlending, depthWrite: false });
       const p = new THREE.Mesh(new THREE.PlaneGeometry(r * 2, r * 2), m);
-      p.rotation.x = -HP; p.position.set(x, .014, z); p.renderOrder = 3; p.userData.noOcclude = true; p.layers.set(2);
+      p.rotation.x = -HP; p.position.set(x, y, z); p.renderOrder = 3; p.userData.noOcclude = true; p.layers.set(2);
       this.room.group.add(p);
     }
   }

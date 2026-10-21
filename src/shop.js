@@ -281,7 +281,7 @@ function peekShop(G, ctx) {
   setTimeout(() => { if (p._peek) addEventListener('pointerdown', back, true); }, 80);
 }
 // the hiding things the shop sells from the start (① 맵·아트 10/21 후보 (가) — the starter donut·duck, kit parts and the plain ones left out)
-const SHOP_ITEMS = ['cookie', 'console', 'teddy', 'crown', 'gift', 'icecream', 'cupcake', 'heart', 'star', 'bunnyband', 'snowglobe', 'honeypot', 'medal', 'firehelmet', 'strawhat', 'yarn', 'slipper', 'bubbletea', 'onigiri', 'ramen', 'keyring', 'rubberduck2', 'hairpin', 'acorn', 'coin', 'sunglasses'];
+export const SHOP_ITEMS = ['cookie', 'console', 'teddy', 'crown', 'gift', 'icecream', 'cupcake', 'heart', 'star', 'bunnyband', 'snowglobe', 'honeypot', 'medal', 'firehelmet', 'strawhat', 'yarn', 'slipper', 'bubbletea', 'onigiri', 'ramen', 'keyring', 'rubberduck2', 'hairpin', 'acorn', 'coin', 'sunglasses'];
 const ITEM_NEW_PRICE = 80;   // (one you've met in a stage: 40)
 // 상점 빨리 열기 (③ 10/21, user on the phone: "상점 들어갈때 좀 느려 ㅋㅋ 갯수가 많아서 그런가"): the first open drew every furniture icon
 // it hadn't drawn yet (up to ~200 3D renders) and built every piece once to count its hiding spots — 2+ s before the panel

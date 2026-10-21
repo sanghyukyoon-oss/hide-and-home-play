@@ -1166,6 +1166,7 @@ const GROUND = {
     const cols = T.pave ? [0, .05, -.05, .09, -.08, .02].map(k => shade(T.pave, k)) : ['#e39a72', '#eab08a', '#d7c4ae', '#cfa489', '#dc8b6b', '#e8c2a2'], r = rng(9);
     c.fillStyle = '#b4a596'; c.fillRect(0, 0, S, S);
     for (let j = 0; j < 32; j++) for (let x = -(j % 2) * 16; x < S; x += 32) { c.fillStyle = r.pick(cols); roundRect(c, x + 1.2, j * 16 + 1.2, 29.6, 13.6, 2.5); c.fill(); if (x < 0) { roundRect(c, x + S + 1.2, j * 16 + 1.2, 29.6, 13.6, 2.5); c.fill(); } }
+    if (T.tactile === false) return;   // (기차역: the yellow strip is at the platform's edge, the train's own)
     const ty = Math.round(S * .62 / 16) * 16;
     for (let x = 0; x < S; x += 32) { c.fillStyle = '#b4a596'; c.fillRect(x, ty, 32, 32); c.fillStyle = '#ffd23f'; roundRect(c, x + 1.2, ty + 1.2, 29.6, 29.6, 3); c.fill(); c.fillStyle = '#e8b81f'; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) blob(c, x + 7 + a * 9, ty + 7 + b * 9, 2.4); }
   },
@@ -1185,6 +1186,16 @@ const GROUND = {
     for (let k = 0; k < 16; k++) { const y0 = k * S / 16; c.strokeStyle = k % 2 ? shade(base, .06) : shade(base, -.06); c.beginPath(); for (let x = 0; x <= S; x += 4) { const y = y0 + Math.sin(x / S * PI * 6 + k) * 5; x ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
     for (let i = 0; i < 1500; i++) { c.fillStyle = r() < .5 ? 'rgba(255,255,255,.35)' : 'rgba(150,100,40,.25)'; c.fillRect(r() * S, r() * S, 1.4, 1.4); }
     for (let i = 0; i < 8; i++) { const x = r() * S, y = r() * S; c.fillStyle = r() < .5 ? '#ffd9e6' : '#fff6e0'; c.beginPath(); c.ellipse(x, y, 4, 3, r() * 3, 0, PI * 2); c.fill(); }
+  },
+  // a lake round an island (호수 섬, 10/20): clear blue, soft lighter patches, short ripple strokes, a few glints
+  water(c, S, T) {
+    const base = (T && T.water) || '#7fd0ea', r = rng(18);
+    c.fillStyle = base; c.fillRect(0, 0, S, S);
+    for (let i = 0; i < 40; i++) { const x = r() * S, y = r() * S, rad = 30 + r() * 70, lt = r() < .6; wrap(S, x, y, rad, (X, Yy) => { c.fillStyle = lt ? shade(base, .025) : shade(base, -.018); blob(c, X, Yy, rad); }); }
+    c.lineCap = 'round';
+    // little ripple rings (round, so they never line up into streaks when the ground is seen at an angle)
+    for (let i = 0; i < 12; i++) { const x = r() * S, y = r() * S, w = 8 + r() * 14; c.strokeStyle = shade(base, .1); c.lineWidth = 2; wrap(S, x, y, w * 1.6, (X, Yy) => { for (const k of [1, 1.6]) { c.beginPath(); c.ellipse(X, Yy, w * k, w * k * .8, 0, 0, PI * 2); c.stroke(); } }); }
+    for (let i = 0; i < 24; i++) { const x = r() * S, y = r() * S; c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(x, y, 5, 1.6, 0, 0, PI * 2); c.fill(); }
   },
   dirt(c, S, T) {
     const base = col(T, 'dirt'), r = rng(16);

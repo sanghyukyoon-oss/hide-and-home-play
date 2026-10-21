@@ -14,7 +14,7 @@ const PUFF = new THREE.SphereGeometry(.05, 10, 8);
 
 export class Ambient {
   constructor(room) {
-    this.t = Math.random() * 10; this.sway = []; this.steam = []; this.flutter = []; this.swing = [];
+    this.t = Math.random() * 10; this.sway = []; this.steam = []; this.flutter = []; this.swing = []; this.ticks = [];
     const rooms = room.rooms || [room];
     for (const R of rooms) R.group.updateMatrixWorld(true);   // boxes below need the room's real placement
     // moving parts that hang: curtains flutter a little (open or shut), a hanging clock swings while it hangs closed
@@ -23,6 +23,7 @@ export class Ambient {
       else if (p.label === '고양이 시계') this.swing.push({ p, pv: p.pivots[0], ph: Math.random() * 6.3 });
     }
     for (const R of rooms) for (const r of R.furns) {
+      if (r.f.tick) this.ticks.push(r.f.tick);   // a piece's own little motion (a level crossing's lamps taking turns)
       const g = r.f.group, sw = SWAY.find(([re]) => re.test(r.type));
       if (sw) this.sway.push({ g, x0: g.rotation.x, z0: g.rotation.z, ...sw[1], ph: Math.random() * 6.3 });
       const st = STEAM[r.type];
@@ -44,6 +45,7 @@ export class Ambient {
       const w = Math.sin(t * s.f + s.ph), v = Math.sin(t * s.f * .73 + s.ph * 1.7);
       s.g.rotation.z = s.z0 + w * s.a; s.g.rotation.x = s.x0 + v * s.a * .6;
     }
+    for (const k of this.ticks) k(t);
     for (const c of this.flutter) c.pv.rotation.x = c.x0 + (Math.sin(t * 1.7 + c.ph) * .6 + Math.sin(t * 2.9 + c.ph * 2) * .4) * .045;
     for (const c of this.swing) if (c.p.t < .01 && !c.p.busy) c.pv.rotation.z = Math.sin(t * 2.1 + c.ph) * .06;
     for (const s of this.steam) for (const p of s.puffs) {

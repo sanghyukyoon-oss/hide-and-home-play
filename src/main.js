@@ -18,6 +18,14 @@ import { MAP_BUILDERS, MAP_INFO, MAP_THEMES } from './gfx/map-props.js';
 import { HOUSE_BUILDERS, HOUSE_INFO } from './gfx/house-props.js';
 import { ORGANIC_BUILDERS, ORGANIC_INFO } from './gfx/organic-props.js';   // 이어진 집: slide, ball pit (10/19)
 import { FISH_BUILDERS, FISH_INFO } from './gfx/fishing-props.js';
+import { STATION_BUILDERS, STATION_INFO } from './gfx/station-props.js';
+import { ISLAND_BUILDERS, ISLAND_INFO } from './gfx/island-props.js';
+import { SEASIDE_BUILDERS, SEASIDE_INFO } from './gfx/seaside-props.js';
+import { APTLOBBY_BUILDERS, APTLOBBY_INFO } from './gfx/aptlobby-props.js';
+import { LIBRARY_BUILDERS, LIBRARY_INFO } from './gfx/library-props.js';
+import { VILLAROOF_BUILDERS, VILLAROOF_INFO } from './gfx/villaroof-props.js';
+import { TRAINCAR_BUILDERS, TRAINCAR_INFO } from './gfx/traincar-props.js';
+import './i18n-maps.js';   // 새 맵 8개의 영어 (10/21)
 import { SKATE_BUILDERS, SKATE_INFO } from './gfx/skate-props.js';
 import { KPOP_BUILDERS, KPOP_INFO } from './gfx/kpop-props.js';
 import { MAZE_BUILDERS, MAZE_INFO } from './gfx/maze-props.js';
@@ -37,6 +45,8 @@ import { addHomeStyle } from './catalog.js';
 import { KIT_ITEMS, KIT_BUILDERS, KIT_INFO } from './gfx/modelkit-props.js';
 import { SPECIAL_BUILDERS, SPECIAL_INFO } from './gfx/special-props.js';   // 상점 스페셜 가구 13개 (10/20)
 import { GIFT_BUILDERS, GIFT_INFO } from './gfx/gift-props.js';   // 특별 선물 후보 (10/20)
+import { ATTIC_BUILDERS, ATTIC_INFO } from './gfx/bunnyattic-props.js';   // 2판 토순이 다락 놀이방 (10/20)
+import { BAKERY_BUILDERS, BAKERY_INFO } from './gfx/bearbakery-props.js';   // 6판 곰돌이 빵 굽는 부엌 (10/20)
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { THEMES, LAYOUTS, STAGE_COUNT } from './stages.js';
 import { HOME_ZONES, STARTER, STARTER_ITEMS, registerOutdoorShop, registerStoryShop } from './catalog.js';
@@ -70,7 +80,9 @@ Object.assign(ITEMS, STORY_ITEMS);
 // the everyday apartment set (art direction 2026-10-15): props, items, rooms with a warm afternoon light
 registerFurniture(APT_BUILDERS, APT_INFO);
 registerFurniture(HOUSE_BUILDERS, HOUSE_INFO); registerFurniture(ORGANIC_BUILDERS, ORGANIC_INFO);
-registerFurniture(FISH_BUILDERS, FISH_INFO);
+registerFurniture(ATTIC_BUILDERS, ATTIC_INFO);   // 2판 다락 (10/20)
+registerFurniture(BAKERY_BUILDERS, BAKERY_INFO);   // 6판 빵 부엌 (10/20)
+registerFurniture(FISH_BUILDERS, FISH_INFO); registerFurniture(STATION_BUILDERS, STATION_INFO); registerFurniture(ISLAND_BUILDERS, ISLAND_INFO); registerFurniture(SEASIDE_BUILDERS, SEASIDE_INFO); registerFurniture(APTLOBBY_BUILDERS, APTLOBBY_INFO); registerFurniture(LIBRARY_BUILDERS, LIBRARY_INFO); registerFurniture(VILLAROOF_BUILDERS, VILLAROOF_INFO); registerFurniture(TRAINCAR_BUILDERS, TRAINCAR_INFO);
 registerFurniture(SKATE_BUILDERS, SKATE_INFO);
 registerFurniture(KPOP_BUILDERS, KPOP_INFO);
 registerFurniture(MAZE_BUILDERS, MAZE_INFO);

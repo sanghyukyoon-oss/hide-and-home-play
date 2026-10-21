@@ -45,6 +45,20 @@ Object.assign(THEMES, {
   park2: OUT('다람이의 공원 벤치', 'squirrel', ['#eaf7ff', '#e4f3cf'], { ...PARK, grass: '#9ad66f', hedge: '#47ad57', flower: '#ffd23f' }),
   park3: OUT('햄찌의 소풍 마당', 'hamster', ['#fff6e2', '#e1f4d2'], { ...PARK, grass: '#a2da74', fence: '#ffe9c9' }),
   // 개굴이의 낚시터 (must-have theme, 10/17): an early outdoor stage so the first friends' stages aren't all rooms
+  // 개굴이의 기차역 (10/20, new 3판 — 레벨 plan-stages-1to20-v2): pale platform paving, the station's cream wall, spring green
+  station: OUT('개굴이의 기차역', 'frog', ['#eef3e2', '#dce8cc'], { ...PARK, grass: '#9ad672', base: '#a98060', tactile: false,
+    wall: '#fff4e2', wall2: '#f2e2c8', wainscot: '#6cc28e', trim: '#ffffff', wallEdge: '#fffaf0' }),
+  // 바닷가 가게 (10/20 밤, user ref "이것도 좋다"): grey cobbles, sand, a strip of shallow sea; the friend is a placeholder
+  // 빌라 옥상 정원 (18판 시안 — id villaroof, not 'rooftop': that is the building chapter's roof)
+  villaroof: { ...THEMES.my, friend: 'raccoon', name: '빌라 옥상 정원', bg: ['#fbd6c0', '#c9a7d6'], wallKind: 'plain', wall: '#f3eadc', wall2: '#e8dccb', wainscot: '#e8dccb', trim: '#ffffff', wallEdge: '#fbf6ee',
+    floorKind: 'tile', floor: '#93c4a0', floor2: '#86b893', base: '#e9dfd0' },
+  // 동네 도서관 (17판 흑백 판 시안 — story room: 토순이's)
+  library: { ...THEMES.my, friend: 'bunny', name: '동네 도서관', bg: ['#cbd9ef', '#9db5dd'], wallKind: 'plain', wall: '#fbf3e4', wall2: '#efe2c8', wainscot: '#5f7fae', trim: '#d9a466', wallEdge: '#fffaf0',
+    floorKind: 'planks', floor: '#e2a96a', floor2: '#c98f58', base: '#c9a47c', rug: '#8fa9d4', rug2: '#ffffff', wood: '#e9b884', woodD: '#c4905c' },
+  aptlobby: { ...THEMES.my, friend: 'nerd', name: '우리 아파트 현관', bg: ['#fbefe6', '#ead2c0'], wallKind: 'plain', wall: '#f3eadc', wall2: '#e8dccb', wainscot: '#d2c2ad', trim: '#ffffff', wallEdge: '#fbf6ee',
+    floorKind: 'tile', floor: '#e6ddd3', floor2: '#d9cfc4', base: '#d9cfc2', pave: '#cfd2da' },
+  seaside: OUT('냥냥이네 바닷가 가게', 'cat', ['#eef6fb', '#dceef6'], { floorKind: 'brickpave', base: '#d8cfc0', floor: '#dfe2e8', floor2: '#cdd1da', pave: '#d9dce4', tactile: false, water: '#7fd3e8', sand: '#efd9ae' }),
+  island: OUT('개굴이의 호수 섬', 'frog', ['#e2f2f8', '#d4ecf2'], { ...PARK, base: '#b98c5e', grass: '#97d872', sand: '#f2dca8' }),
   fishing: OUT('개굴이의 낚시터', 'frog', ['#e2f6ff', '#d4f1e2'], { ...PARK, grass: '#97d872', hedge: '#4cae5c', flower: '#ff9ec2', pool: ['rubberduck2', 'juicebox', 'acorn', 'sunglasses', 'ball2', 'bubbletea'] }),
   camp1: OUT('판다의 캠핑장', 'panda', ['#e9ecff', '#dcefe6'], { ...CAMP }),
   camp2: OUT('졸졸이의 텐트', 'sleepy', ['#ebe4ff', '#e2ecf2'], { ...CAMP, tent: '#7f9cff', tent2: '#ffd23f' }),
@@ -209,6 +223,91 @@ export const LAYOUTS = {
       F('reeds', 5, 3), F('reeds', 1, 4), F('parasol', 6, 2), F('cooler', 6, 4), F('campchair', 0, 2), F('bush', 0, 5), F('picnic', 3, 5), F('reeds', 5, 5)],
     // (10/19 back to the first 3판: the stream came out again — user, after the redrafts: "처음걸로 되돌리고 아주 약간만 다듬어줘")
     friendAt: [1.6, 1.2] },
+  // 개굴이의 기차역 (10/20 디자인, new 3판): the stopped train on its track along the back, the level crossing beside it; the
+  // ticket window, coin lockers, a vending machine and an umbrella stand against the station wall; a timetable, a bench
+  // under the cherry tree, 개굴이's burst fishing bag in the middle of the platform, the flower bed and the tap
+  station: { w: 10, d: 5, slab: 'none', walls: { N: 'none', W: 'none', S: 'none', E: 'none' },   // (the look's rim is its ground: no cake slab)
+    // (station C안 v5 10/20: long along the track like the picture — the stone platform along the back under the shelter
+    // and the huge cherry tree, the track down the middle with the train in, the crossing road near the east end with a
+    // barrier each side, flower fences and a garden along the front)
+    floorZones: [{ i: 0, j: 2, w: 10, d: 1, kind: 'asphalt', a: '#b0a596', b: '#a3988a' }, { i: 8, j: 0, w: 1, d: 5, kind: 'sand', a: '#ecd7ae', b: '#e0c99c' }],
+    // (수정 10/21, user "단차… 지저분하지 않게… 깔끔하고 디테일"): three levels — the stone platform with a pale nosing, the
+    // track bed, the garden a step up from it behind a continuous fence; the platform things gathered round the shelter
+    // (bags, can, 개굴이's bag), the strays (tap, umbrella stand) gone
+    raised: [{ i: 0, j: 0, w: 8, d: 2, h: .4, kind: 'tile', a: '#f3ede6', b: '#e8e0d6', edge: '#c9bfae', trim: '#fbf6f0', stone: '#c9bfae', strip: '#f2c94c', step: false },
+      { i: 0, j: 3, w: 8, d: 2, h: .12, kind: 'grass', a: '#9ad672', b: '#8fcf6a', edge: '#a98060', trim: '#d9c9a8', step: false }],
+    furniture: [F('planter', 0, 0), F('platshelter', 2, 0), F('suitcases', 4, 1), F('tripbag', 6, 0), F('coinlocker', 7, 1), F('treesakura', 5, 0, 0, { big: true }), F('streetlamp', 7, 0),
+      F('train', 1, 2, 0, { kerb: false }), F('crossing', 7, 3), F('crossing', 9, 1, 0, { flip: true }),
+      F('flowerfence', 0, 3), F('flowerfence', 1, 3), F('flowerfence', 2, 3), F('flowerfence', 3, 3), F('flowerfence', 4, 3), F('flowerfence', 5, 3), F('flowerfence', 6, 3), F('bush', 9, 4)],
+    // (개굴이 stands on the platform: 4,1 stays clear for it, story room 10/20)
+    friendAt: [-.5, -.9] },
+  // 개굴이의 호수 섬 (10/20 디자인, new 4판 — 3판 낚시터 다시): an island a step up out of the lake. The big tree in the
+  // middle-back, the deck running out east over the water with the champion chair at its end (under the tree's crown),
+  // the rod's platform on the north shore reaching out over the water, the rowboat pulled up on the south sand
+  island: { w: 7, d: 6, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
+    // (island C안 10/20: the big tree with its swing at the back left, the cottage at the back right, a path of stepping
+    // stones down to the deck at the front right with the boat tied to it; the reel's platform on the west shore. The four
+    // corner cells are lake — look.js rounds the shore)
+    // (C+D안 섞기 10/20, user: "역1, 섬 둘 다 괜찮은데 섞어도 괜찮을 듯": the lighthouse islet out over a rope bridge at the back
+    // left, a picnic blanket with a parasol in the middle)
+    // (수정 10/21): the tree on a grassy knoll a step up with a stone edge, the cottage on its stone plinth — two levels over
+    // the lawn; the fishing things (tackle, bait, cooler) together by the reel's platform; open lawn kept round the picnic
+    // (2차 10/21: the square tiers read boxy on a natural island — gone; the level change is the boulder shore itself)
+    furniture: [F('bigtree', 1, 0), F('cottage', 4, 0), F('islet', 0, 1), F('fishdock', 0, 2, 3), F('tacklebox', 1, 3), F('baitbucket', 1, 4), F('cooler', 0, 4),
+      F('picnicset', 3, 3), F('lakedeck', 5, 4), F('reeds', 4, 5), F('rocks', 6, 2)],
+    friendAt: [2.0, .9] },
+  // 빌라 옥상 정원 (10/21 디자인 시안, 18판 — 고른 그림 rooftop-a): sunset on a villa's roof. Low cream walls at the back,
+  // an ivy-hung parapet along the front and the east side; the pyeongsang with a snack table and string lights at the back
+  // left, the jars and the water tank at the back right, lettuce and chilli boxes in the middle, a drying rack and a tarp
+  villaroof: { w: 7, d: 6, walls: { N: 'wall', W: 'wall' }, wallH: .75, theme: THEMES.villaroof,
+    // (수정 10/21): the pyeongsang corner on a raised wooden deck with a nosing; the garden boxes on a low brick bed along the
+    // middle; the jars and tank together at the back right; loose pots cut to two
+    raised: [{ i: 0, j: 0, w: 3, d: 3, h: .2, kind: 'planks', a: '#d9a466', b: '#c99456', edge: '#a8733f', trim: '#e9c28e', step: 'full' },
+      { i: 3, j: 2, w: 3, d: 1, h: .16, kind: 'tile', a: '#c98a6a', b: '#b97a5a', edge: '#a86a4a', trim: '#e0a888', step: false }],
+    furniture: [F('lightline', 0, 0), F('pyeongsang', 0, 1), F('snacktable', 2, 1), F('jangdok', 3, 0), F('watertank', 5, 0), F('wcan', 6, 0),
+      F('foambox', 3, 2), F('foambox', 4, 2, 0, { kind: 'chili' }), F('foambox', 5, 2, 0, { kind: 'chili' }),
+      F('plantbig', 0, 4), F('dryrack', 3, 4), F('tarppile', 5, 4),
+      F('parapet', 0, 5, 0, { seed: 1 }), F('parapet', 2, 5, 0, { seed: 2 }), F('parapet', 4, 5, 0, { seed: 3 }), F('parapet', 6, 1, 1, { seed: 4 }), F('parapet', 6, 3, 1, { seed: 5 })],
+    friendAt: [-1.2, .2] },
+  // 동네 도서관 (10/21 디자인 시안, 17판 흑백 — 고른 그림 library-a): split level. The reading nook up a short stair at the
+  // back left under the arched window; tall shelves on the back wall, the librarian's desk and the book drop on the right;
+  // low shelves, the reading table and the book cart down in front
+  library: { w: 7, d: 7, walls: { N: 'wall', W: 'wall' }, wallH: 3.0, panels: true, theme: THEMES.library,
+    // (수정 10/21): three levels — the reading nook up its stair, the librarian's corner a step up with a pale nosing, the
+    // reading floor; the shelves along the walls and one line of low shelves; plants cut to three
+    raised: [{ i: 3, j: 0, w: 4, d: 3, h: .16, kind: 'planks', a: '#c98f58', b: '#b97f4c', edge: '#a8733f', trim: '#f0d3a8', step: 'full' }],
+    furniture: [F('readingnook', 0, 0), F('plant', 2, 0), F('bookshelf', 3, 0, 0, { seed: 41 }), F('bookshelf', 4, 0, 0, { seed: 43 }), F('bookshelf', 5, 0, 0, { seed: 47 }), F('bookshelf', 6, 0, 0, { seed: 53 }),
+      F('libladder', 5, 1), F('bookshelf', 0, 3, 1, { seed: 49 }), F('libdesk', 3, 2), F('bookdrop', 6, 2),
+      F('libshelf', 1, 4, 0, { seed: 2 }), F('libshelf', 2, 4, 0, { seed: 1 }), F('libshelf', 3, 4, 0, { seed: 4 }),
+      F('readtable', 2, 6), F('bookcart', 5, 5), F('plant', 6, 6)],
+    decor: [D('archwindow', 'W', -1.9), D('clock', 'N', -.4)], friendAt: [-.8, .4] },
+  // 아파트 1층 현관 (10/21 디자인 시안, 13판 — 고른 그림 aptlobby-a): moving day. Cream marble walls and floor; the elevator
+  // and a picture on the back wall, the mailboxes over a bench on the left; boxes, a padlocked box and a hand truck; the
+  // glass entrance down the east side with its door open, the moving truck's open back outside on the pavement; a low
+  // cream ledge along the front
+  aptlobby: { w: 8, d: 6, walls: { N: 'wall', W: 'wall' }, wallH: 3.0, panels: true, theme: THEMES.aptlobby,
+    // (수정 10/21, user "단차… 지저분하지 않게… 깔끔하고 디테일"): the lobby is a step up from the entry strip by the glass and
+    // the front ledge, with a pale nosing; the boxes in one heap in the front-left corner and one by the truck; the
+    // elevator between two plants; open floor kept in the middle
+    raised: [{ i: 0, j: 0, w: 5, d: 5, h: .18, kind: 'tile', a: '#f4efea', b: '#e7e0d8', edge: '#d6ccbf', trim: '#fbf8f4', step: 'full' }],
+    floorZones: [{ i: 6, j: 0, w: 2, d: 6, kind: 'brickpave', a: '#cfd2da', b: '#c2c6cf' }],
+    furniture: [F('plant', 1, 0), F('plant', 4, 0), F('bench', 0, 2, 1),
+      F('boxpile', 0, 4), F('lockbox', 1, 4), F('boxes', 1, 3),
+      F('dolly', 5, 3), F('glassentry', 6, 1), F('movetruck', 6, 0), F('boxstack', 7, 4), F('planter', 7, 2, 1), F('lowwall', 0, 5), F('lowwall', 2, 5)],
+    decor: [D('elevator', 'N', -1.0), D('picture', 'N', 1.4), D('mailboxes2', 'W', -.4)], friendAt: [-.6, .4] },
+  // 바닷가 가게 (10/20 밤 디자인 시안, user ref): the shallows and the deck on stilts at the back left with a boat in front of
+  // it, the white clapboard shop at the back middle, a sand strip down the middle, the cobbled square at the right and
+  // front with a seafood stall, barrels, parasol tables, the chalkboard, and the life-ring clock post by the deck
+  seaside: { w: 8, d: 7, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
+    floorZones: [{ i: 0, j: 0, w: 3, d: 5, kind: 'water', a: '#7fd3e8', b: '#6cc6de' }, { i: 0, j: 5, w: 3, d: 2, kind: 'sand', a: '#efd9ae', b: '#e6cd9c' }, { i: 3, j: 2, w: 1, d: 5, kind: 'sand', a: '#efd9ae', b: '#e6cd9c' }],
+    // (수정 10/21): the shop stands on a stone plinth a step up from the square with a pale nosing; the square's things
+    // gathered — the stall with its barrels, the two parasol tables together on the east side; one barrel group, not two
+    // (2차 10/21): the square is a quay a step above the sand, its edge a stone wall with ivy; the shop a step above that
+    raised: [{ i: 3, j: 0, w: 5, d: 2, h: .42, kind: 'tile', a: '#e9e6e2', b: '#dcd8d2', edge: '#bfb8ae', trim: '#f6f3ee', stone: '#c9c2b6', step: false },
+      { i: 4, j: 2, w: 4, d: 5, h: .26, kind: 'tile', a: '#dfe2e8', b: '#cfd3db', edge: '#b9b3a8', trim: '#eef0f4', stone: '#c9c2b6', step: false }],
+    furniture: [F('seadeck', 0, 0), F('seashop', 3, 0), F('chalksign', 7, 1), F('plantbig', 7, 0), F('ringpost', 3, 2), F('streetlamp', 7, 2),
+      F('fishstall', 4, 4), F('barrels', 6, 3), F('cafeumbrella', 6, 6), F('cafeumbrella', 7, 5), F('planter', 4, 6)],
+    friendAt: [1.0, 1.0] },
   // 원룸: a Korean one-room — loft bed over a desk, a mini kitchen, a washer by the door, a clothes rail
   oneroom: { w: 6, d: 5, bleed: {}, wallH: 2.9, walls: { N: 'wall', W: 'wall' },
     furniture: [F('loftbed', 0, 0), F('hanger', 2, 0), F('minikitchen', 3, 0), F('minifridge', 5, 0),
@@ -263,6 +362,98 @@ export const LAYOUTS = {
 // 0..w-1 / 0..d-1 as in LAYOUTS; `at` is the room centre in the map; friendAt is in map coordinates [x, z, level].
 const RM = (theme, w, d, extra) => ({ w, d, theme: THEMES[theme], ...extra });
 THEMES.bear2 = { ...THEMES.bear, name: '곰돌이네 집 (거실·부엌)' };
+// 2판 토순이 다락 놀이방 (10/20, GPT 컨셉 bunnyattic-a·b; 사용자 "그냥 보기에 ㅈㄴ 이쁘면 됨"): a playroom under the roof — the
+// walls' tops slope up to the back corner (attic), honey planks, blush stripes over a sage wainscot, pink · sage · carrot ·
+// lilac; the loft bed (the tilt lesson's curtain, tiers.js) along the back wall, a round window over a window seat with two
+// drawers (the drawer lesson), a teepee, a toy trunk, a cloud rug with a train, a dollhouse (gfx/bunnyattic-props.js)
+THEMES.bunnyattic = { ...THEMES.bunny, name: '토순이네 다락 놀이방', bg: ['#f6e6ee', '#ecd6e2'], base: '#e2b48a',
+  floorKind: 'planks', floor: '#e6b47c', floor2: '#c99059', wallKind: 'stripe', wall: '#fff4ee', wall2: '#fbe6e2', wainscot: '#cfe3c8', trim: '#ffffff', wallEdge: '#fffaf6',
+  wood: '#f2c48c', woodD: '#c98d55', beam: '#b97a48', body: '#fff8f1', accent: '#ff9fb0', accent2: '#9ed3b4', accent3: '#ffb347', knob: '#ffd84a',
+  fabric: '#ffc2cc', fabric2: '#ffe4e8', curtain: '#ffd0d6', rug: '#fff6ea', rug2: '#ffc2cc', lilac: '#c9b6f2', sage: '#a9cf9c', pillow: '#fff3d6', sheet: '#ffffff',
+  quilt: '#ff9fb0', duvet: '#ffc2cc' };
+// (10/21 사용자 "ㅇㅇ 괜춘": v1 under a real gable — ridge and rafters over the back; the plain sloped v1 stays as bunnyattic1)
+LAYOUTS.bunnyattic = { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 2.3, attic: { rise: 1.5, gable: true },
+  lofts: [{ i: 3, j: 0, w: 3, d: 2, y: 1.45, ladder: 'S', ladderAt: -.7, curtainColor: '#ffd0d6' }],
+  furniture: [LF('futon', 4, 0, 1, null, 1.45), F('dollhouse', 0, 0), F('plant', 1, 0), F('toybasket', 2, 0), F('cushionpile', 3, 0), F('toytrunk', 4, 0), F('lowshelf', 5, 0),
+    F('windowseat', 0, 1, 1), F('bookrack', 0, 3, 1), F('cloudrug', 1, 2), F('bunnytent', 5, 2), F('rockhorse', 4, 4, 3)],
+  decor: [D('roundwin', 'W', .5), D('bunnyframes', 'W', -1.0), D('bunting', 'N', -1.3)], friendAt: [1.0, 1.4],
+  sun: [{ from: [-3, -1.1, -3, .1], dir: [2.4, .9] }] };
+// 6판 곰돌이 빵 굽는 부엌 (10/20, GPT 컨셉 bearbakery-a·b): a little bakery kitchen bent round a peninsula — honey herringbone
+// in the dining corner, cream-and-sage tiles in the kitchen running round to the door (two floors, an L), cream walls over a
+// sage wainscot, red gingham, brick, bread; the brick dome oven is type 'stove' (6판's pancake smoke, script.js ifMap), the
+// bread cabinet locks (the key lesson) (gfx/bearbakery-props.js)
+THEMES.bearbakery = { ...THEMES.bear, name: '곰제과', bg: ['#f7ecd8', '#efdfc4'], base: '#d9b48a',
+  floorKind: 'herring', floor: '#e6b37c', floor2: '#cf9a62', wallKind: 'dots', wall: '#fff8ec', wall2: '#f6e8cf', wainscot: '#a9c9a0', trim: '#ffffff', wallEdge: '#fffbf3',
+  wood: '#efc07f', woodD: '#c4874d', body: '#fffaf0', sage: '#a9c9a0', sage2: '#8fb787', brick: '#d97a5c', brick2: '#b95f45', cloth: '#e8574a', top: '#f6dfb6',
+  accent: '#e8574a', accent2: '#a9c9a0', accent3: '#ffd25c', knob: '#e8b84a', fabric: '#e8574a', fabric2: '#fbd9cf', curtain: '#e8574a', rug: '#fff3dc', rug2: '#e8574a' };
+// 곰제과 앞마당 (10/20 밤, 사용자가 보낸 바닷가 가게 그림에서 예쁜 점만 — 흰 판자 · 줄무늬 차양 · 앞마당 좌판 · 파라솔): pale stone
+// paving in front of the shop's white clapboard face
+THEMES.bakeyard = { ...THEMES.bearbakery, name: '곰제과 앞마당', floorKind: 'hex', floor: '#ebe6dd', floor2: '#d3cbbd', base: '#cfc8bb',
+  wallKind: 'plain', wall: '#fbf8f2', wall2: '#fbf8f2', wainscot: '#fbf8f2', wallEdge: '#ffffff' };
+// 20판 토순이네 빌라 옥상 집들이 (10/21 스토리 룸 '기차 여행 편', 앞 버전은 villaroof 그대로): pennants under the string lights,
+// a cake and a present on the snack table, a bunch of balloons in the deck's back corner — the rest of the roof as it is
+// (20판 2차 10/21, 레퍼런스 보드 villaroof-refs-1021): the 옥탑방 in the back right corner with the yellow tank on its roof (the
+// blue tank and the watering can go — 한적함; the two parapets on the right move down a cell), red and black rubber tubs for the chilli
+// boxes, the quilt on a clothesline for the drying rack, the parasol and red chairs for the big pot; the jars stay (devices)
+LAYOUTS.villaroof2 = { ...LAYOUTS.villaroof, furniture: [F('lightline', 0, 0, 0, { party: true }), F('pyeongsang', 0, 1), F('snacktable', 2, 1, 0, { party: true }), F('balloons', 2, 0), F('jangdok', 3, 0),
+  F('oktap', 5, 0), F('foambox', 3, 2), F('rubbertub', 4, 2), F('rubbertub', 5, 2, 0, { kind: 'onion' }),
+  F('parasolset', 0, 4), F('clothesline', 3, 4), F('tarppile', 5, 4),
+  F('parapet', 0, 5, 0, { seed: 1 }), F('parapet', 2, 5, 0, { seed: 2 }), F('parapet', 4, 5, 0, { seed: 3 }), F('parapet', 6, 2, 1, { seed: 4 }), F('parapet', 6, 4, 1, { seed: 5 })] };
+THEMES.villaroof2 = THEMES.villaroof;
+// 현관 2차 (10/21, 앞 버전은 aptlobby 그대로): a little more of an apartment lobby's life on the walls —
+// the notice board by the bench, the red fire-hose cabinet in the corner, a clock by the elevator (a rug read as a living room)
+THEMES.aptlobby2 = THEMES.aptlobby;
+LAYOUTS.aptlobby2 = { ...LAYOUTS.aptlobby, decor: [...LAYOUTS.aptlobby.decor, D('noticeboard', 'W', 1.7), D('firebox', 'N', -3.5), D('clock', 'N', .25)] };
+// 28판 기차 객실 (10/21 기차 여행 편 ★장치판, 고른 그림 gpt-FINAL-B2+B1, 스토리 룸 장면 traincarInc): half a carriage — the
+// window wall (W) with three sea windows (one under a roll blind), the rail, handles, luggage net and fan over the benches; the
+// end wall (N) with the sliding door to the next car; navy benches down both sides (one with a drawer), a snack cart in the aisle
+THEMES.traincar = { ...THEMES.my, friend: 'raccoon', name: '기차 객실', bg: ['#cfe8fa', '#eaf5fd'], base: '#dfe6ee',
+  floorKind: 'tile', floor: '#efe4cc', floor2: '#e8dcc2', wallKind: 'plain', wall: '#f6ecd8', wall2: '#f6ecd8', wainscot: '#e9dcc0', trim: '#cfd3db', wallEdge: '#f9f2e4' };
+LAYOUTS.traincar = { w: 4, d: 8, walls: { N: 'wall', W: 'wall' }, wallH: 2.8, theme: THEMES.traincar,
+  furniture: [F('tbench', 0, 0, 1), F('tbench', 0, 2, 1, { stuff: true }), F('tbench', 0, 4, 1), F('tbench', 0, 6, 1),
+    F('tbench', 3, 2, 3), F('tbench', 3, 4, 3, { drawer: true }), F('tbench', 3, 6, 3), F('tcart', 1, 4)],
+  decor: [D('twindow', 'W', -2.6, { blind: true }), D('twindow', 'W', -.3), D('twindow', 'W', 2.0), D('trailrack', 'W', 0), D('tdoorend', 'N', .3)],
+  friendAt: [.2, 1.6] };
+// 28판 기차 객실 2차 (10/21 검토 "그림과 차이가 커서 2차" + 사용자 "디테일 … 지하철 광고도 좀 빼곡하게"): shorter and wider (5×7),
+// seen side-on like the picture (yaw: the window wall faces you, the door wall at the right back), cream floor; benches down
+// both long sides with the aisle clear, the car body's cut ends and wheels (tshell), the walls and the top busy with little
+// things (trailrack2), the floor empty
+THEMES.traincar2 = { ...THEMES.traincar, floorKind: 'carpet', floor: '#f3e9d2', floor2: '#ece0c6', wall: '#f8efdc', wall2: '#f8efdc', wainscot: '#ecdfc4' };
+LAYOUTS.traincar2 = { w: 5, d: 7, walls: { N: 'wall', W: 'wall' }, wallH: 3.0, yaw: 1.1, fitW: 7.8, theme: THEMES.traincar2,
+  furniture: [F('tbench2', 0, 1, 1, { stuff: 'paper' }), F('tbench2', 0, 3, 1), F('tbench2', 0, 5, 1, { stuff: 'bag' }),
+    F('tbench2', 4, 1, 3), F('tbench2', 4, 3, 3, { drawer: true }), F('tbench2', 4, 5, 3, { stuff: 'toy', priority: true }), F('tcart2', 2, 4)],
+  decor: [D('tshell', 'W', 0, { len: 7, width: 5 }), D('twindow2', 'W', -2.3, { blind: true }), D('twindow2', 'W', 0, { paw: true }), D('twindow2', 'W', 2.3),
+    D('trailrack2', 'W', 0), D('tdoorend2', 'N', 0)], friendAt: [.2, 1.6] };
+// 섬 3차 (10/21): the same island, a tidier shore (look.js RECIPES.island2) — island stays as the user saw it
+THEMES.island2 = THEMES.island;
+LAYOUTS.island2 = LAYOUTS.island;
+// 다락 v1 박공 없이 (10/20~21의 경사 벽 그대로 — 후보로 남겨 둠)
+THEMES.bunnyattic1 = THEMES.bunnyattic;
+LAYOUTS.bunnyattic1 = { ...LAYOUTS.bunnyattic, attic: { rise: 1.6 } };
+THEMES.bunnyattic2 = { ...THEMES.bunnyattic, wall: '#fff5ef', wall2: '#fbece7' };
+// 다락 v2 (10/21 단차·정리 — 사용자는 v1을 더 좋아함: "토순이도 앞버전이 더 낫다"; 후보로 남겨 둠)
+LAYOUTS.bunnyattic2 = { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 2.3, attic: { rise: 1.6 },
+  lofts: [{ i: 3, j: 0, w: 3, d: 2, y: 1.45, ladder: 'S', ladderAt: -.7, curtainColor: '#ffd0d6' }],
+  // (10/21 사용자 "단차 … 정리"): the window side a step up — a pale board platform with a nosing and two stairs
+  raised: [{ i: 0, j: 1, w: 1, d: 3, h: .3, kind: 'planks', a: '#f3d2a6', b: '#e2b884', edge: '#f6e6d6', nose: '#c98d55', plinth: '#a87452', stairs: [{ side: 'E', at: .4, w: .9 }] }],
+  furniture: [LF('futon', 4, 0, 1, null, 1.45), F('plant', 0, 0), F('toybasket', 1, 0), F('lowshelf', 3, 0), F('toytrunk', 4, 0), F('cushionpile', 5, 0),
+    F('windowseat', 0, 1, 1), F('bookrack', 0, 3, 1), F('atticswing', 2, 1), F('cloudrug', 1, 2), F('dollhouse', 5, 3)],
+  decor: [{ ...D('roundwin', 'W', .5, { cy: 2.06 }) }, D('bunnyframes', 'W', -1.0), D('bunting', 'N', -1.3)], friendAt: [1.0, 1.4],
+  sun: [{ from: [-3, -1.1, -3, .1], dir: [2.4, .9] }] };
+// 곰제과 v2 (10/21 — 사용자는 v1 맵을 더 좋아함: "이게 더 좋은데"; v2는 bearbakery2로 남겨 둠), 사용자 "단차 … 지저분하지 않게 정리 … 깔끔하고 디테일해야"; 기준 GPT bearbakery-c): one shop on three levels —
+// the kitchen up on a tiled platform at the back (oven, counter, sink, the locking bread cabinet; stairs down), a booth on a
+// lower wooden step at the right, the shop floor in front (the glass bread case, the register, bread racks on the wall), the
+// shop's low front window with its striped awning at the front edge, the 현관 a step down at the corner
+THEMES.bearbakery2 = { ...THEMES.bearbakery, name: '곰제과', floorKind: 'planks', floor: '#e2ad74', floor2: '#c99059', wallKind: 'plain' };
+LAYOUTS.bearbakery2 = { w: 7, d: 6, walls: { N: 'wall', W: 'wall' }, wallH: 2.9, cut: [{ i: 6, j: 5, w: 1, d: 1 }],
+  raised: [
+    { i: 0, j: 0, w: 5, d: 2, h: .45, kind: 'smalltile', a: '#fbf6ea', b: '#d7e6cc', edge: '#e6d6bb', nose: '#c4874d', plinth: '#9a7656', stairs: [{ side: 'S', at: -1.5, w: 1.1 }] },
+    { i: 5, j: 0, w: 2, d: 3, h: .25, kind: 'herring', a: '#e6b37c', b: '#cf9a62', edge: '#efe3cc', nose: '#c4874d', plinth: '#9a7656', stairs: [{ side: 'S', at: 0, w: 1 }] }],
+  furniture: [F('stove', 0, 0), F('bakecounter', 2, 0), F('bakesink', 3, 0), F('breadcab', 4, 0), F('bakeisland', 2, 1), F('floursacks', 4, 1),
+    F('bkbooth', 5, 0), F('plant', 6, 2),
+    F('bkrack', 0, 3, 1), F('bkrack', 0, 4, 1), F('bkcase', 2, 3), F('bkregister', 4, 3), F('bkfront', 0, 5)],
+  decor: [{ ...D('bakejars', 'N', -1.3), dy: .45 }, { ...D('potrail', 'N', .35), dy: .45 }, D('ginghamwin', 'W', .85)],
+  friendAt: [0, -.4], sun: [{ from: [-3.5, -1.5, -3.5, -.2], dir: [2.4, 1.0] }] };
 THEMES.bunny2 = { ...THEMES.bunny, name: '토순이네 침실과 놀이방' };
 THEMES.house2f = { ...THEMES.peng, name: '펭펭이네 2층집' };
 THEMES.alleywide = { ...THEMES.alley1, name: '골목 상가 거리' };
@@ -491,6 +682,20 @@ export const MAPS = {
   ] }),
 };
 
+// 6판 곰제과 (10/20): the kitchen (left, inside: herringbone + sage tiles, brick oven 'stove', the bread cabinet that locks) opens
+// through a doorway onto the shop's front yard (right, outside: the white clapboard front with striped awnings, a bread stall,
+// a parasol table, crates, flour sacks, a lamp post)
+MAPS.bearbakery = () => ({ theme: THEMES.bearbakery, friendAt: [-.84, -1.2], rooms: [
+  { at: [-1.5, 0], layout: RM('bearbakery', 5, 5, { walls: { N: 'wall', W: 'wall', E: 'door' }, doorAt: { E: 1.0 },
+    floorZones: [{ i: 1, j: 0, w: 4, d: 2, kind: 'smalltile', a: '#fbf6ea', b: '#d7e6cc' }],
+    furniture: [F('breadcab', 0, 0), F('bakesink', 1, 0), F('stove', 2, 0), F('bakecounter', 4, 0),
+      F('breadbasket', 0, 2, 0, { v: 0 }), F('bakeisland', 1, 2), F('breadcart', 0, 4, 1), F('plant', 4, 4)],
+    decor: [D('potrail', 'N', -1.5), D('bakejars', 'N', 1.5), D('ginghamwin', 'W', -.2), D('chalkmenu', 'W', -1.75)],
+    sun: [{ from: [-2.5, -.6, -2.5, .4], dir: [2.4, 1.0] }] }) },
+  { at: [2.5, 0], layout: RM('bakeyard', 3, 5, { walls: { N: 'wall', W: 'none', E: 'none', S: 'none' },
+    furniture: [F('bkstall', 1, 0), F('bklamp', 0, 1), F('floursacks', 0, 2), F('bkparasol', 2, 2), F('breadbasket', 1, 3, 0, { v: 1 }), F('bkcrates', 1, 4), F('bkplanter', 2, 4)],
+    decor: [D('bkfacade', 'N', 0)], sun: [] }) },
+] });
 // ── Stages: 4 regions, 50 stages. Region 1 is hand-tuned; the rest are generated from region rules so that
 // difficulty rises through more targets, deeper hiding places and new lock mechanics, not just smaller items or
 // shorter timers. Region rooms that are not built yet fall back to indoor rooms so the game always runs.
@@ -626,10 +831,11 @@ export const REGION_INTRO = {
 // 장마다 새 규칙 하나 (10/18 night, the same pass): 2장 비밀번호 · 3장 색깔 · 4장 흑백 · 5장 레버 · 6장 간식 · 7장 관찰 자물쇠, each on
 // the chapter's first stage (its 🆕 card comes with the first lock of the kind); 흑백 / 장치 / 미니게임 at most one a chapter,
 // 정전 (a light switch) from 6장, after the lever. Kinds as before, plus treat (the host sits on a box till fed).
+// (새 맵 1차 10/21 — ② 레벨: 20판 빌라 옥상 집들이 ★(장독대 도르래) · 38판 아파트 현관 너굴이 시간 놀이. 기차 여행 27~30판·35·37판은 2차)
 export const PLAN = {
-  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'duplex:timed', 'firestation', 'aptmap:show', 'policefront:boss'],
+  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'duplex:timed', 'firestation', 'villaroof2:show', 'policefront:boss'],
   alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'street:night', 'alley1:timed', 'skatepark:gray', 'alleyhouse:show', 'alleywide:boss'],
-  shop: ['konbini:gray', 'laundry', 'cafe', 'konbini', 'shopmap:night', 'cafe:gray', 'konbini:timed', 'laundry:show', 'shopmap:boss'],
+  shop: ['konbini:gray', 'laundry', 'cafe', 'konbini', 'shopmap:night', 'cafe:gray', 'aptlobby2:timed', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
   camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide:treat', 'camp2:gray', 'cabin:show', 'campwide:boss'],
   building: ['lobby', 'kpop', 'museum', 'officefloor:gray', 'rooftop:night', 'lobbymap:timed', 'officefloor:dark', 'kpop:show', 'lobby:gray', 'lobbymap:boss'],
@@ -664,7 +870,8 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // Stages missing here keep their rule-based time. Replace with real playtest numbers when there are some.
 // 폰 세로 시작 줌 (0-based; 10/20 레벨·디자인 기획안 D): the wide maps started with things at 17~25 px (19·22·26·27판) and 18·20판's
 // house small in the frame; 6판 at 1.3 cut the living room off the left — 1.2 shows both rooms
-const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 19: 1.2, 21: 1.2, 25: 1.25, 26: 1.2 };
+// (20판 빌라 옥상 7×6은 줌 1 — aptmap의 1.2를 뺌; ② 레벨 10/21)
+const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 21: 1.2, 25: 1.25, 26: 1.2 };
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 100, 8: 105, 9: 105, 10: 110, 11: 110 };
 // 흑백판: the room has lost its colour; what you find (things AND a few pieces of furniture) gets it back
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")

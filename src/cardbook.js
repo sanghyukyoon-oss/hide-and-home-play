@@ -11,6 +11,7 @@ import { renderThumbs, spinView } from './thumbs.js';
 import { diaryLine, learnedCards, BOOK, HABIT_LINE, diarySecret, secretOpen, SECRET_UI, inkyNamed } from './script.js';
 import { tr } from './i18n.js';
 import { ECON, ownedFriends } from './econ.js';
+import { SHOP_ITEMS } from './shop.js';   // (where a thing card really opens — 외부 QA17-03)
 
 const ART = {};
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };   // key → data URL, filled per tab
@@ -64,8 +65,16 @@ function friendCards(G) {
       line: charLine(k), hint: at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '판에서 만난 친구를 터치해 봐', build: () => buildCharArt(k), spin: () => spinChar(k) };
   });
 }
+// (외부 QA17-03 10/21): a thing found in a stage is only *seen* (save.seen) — the card opens when it is yours (save.collection:
+// the shop's 물건 tab sells what you've seen, 40, and its 새 물건, 80; a gift; without 경제 a stage's first clear gives one). So a
+// card says how it really opens, and a seen one shows its dark shape with '발견' — found, not yet yours
+function thingHint(G, k, seen) {
+  if (!G.econ) return '판을 처음 깨면 하나씩 내 것이 돼요';
+  if (seen) return '찾아봤어! 상점 물건 탭에서 데려와요';
+  return SHOP_ITEMS.includes(k) ? '상점 물건 탭에서 살 수 있어요' : '판에서 찾으면 상점에 나와요';
+}
 function itemCards(G) {
-  const own = new Set(G.save.collection || []);
+  const own = new Set(G.save.collection || []), seen = new Set(G.econ ? G.save.seen || [] : []);
   const keys = Object.keys(ITEMS).filter(k => !ITEMS[k].decoy && !ITEMS[k].kit && k !== 'key' && k !== 'note');   // (a model kit's pieces come back as the model)
   return keys.map((k, n) => {
     const it = ITEMS[k], starter = STARTER_ITEMS.includes(k);
@@ -73,14 +82,14 @@ function itemCards(G) {
     return { id: 'i:' + k, art: 'card_item_' + k, no: n + 1, of: keys.length, name: it.name, have: own.has(k),
       rar: starter ? 1 : STORY_ITEMS[k] ? 3 : 2, region: 'item', regionName: `크기 ${size}`,
       line: it.flat ? '얇아서 틈새에 쏙 들어가요' : starter ? '처음부터 내 방에 있던 물건' : '판에서 찾아 모은 물건',
-      hint: '판에서 찾으면 모여요', build: () => buildItem(k, { code: '★★★' }), item: true };
+      hint: thingHint(G, k, seen.has(k)), seen: !own.has(k) && seen.has(k), build: () => buildItem(k, { code: '★★★' }), item: true };
   });
 }
 function spinChar(k) { const c = new Char(k); c.setFace('happy'); c.pose = 'wave'; c.update(0); c.shadow.visible = false; return { root: c.root, tick: dt => c.update(dt) }; }   // (the big card's 3D: it keeps waving)
 function buildCharArt(k) { const c = new Char(k); c.setFace('happy'); c.pose = 'wave'; c.update(0); c.shadow.visible = false; return c.root; }
 
 function ensureArt(cards) {
-  const jobs = cards.filter(c => c.have && !ART[c.art]).map(c => c.item
+  const jobs = cards.filter(c => (c.have || c.seen) && !ART[c.art]).map(c => c.item
     ? { key: c.art, build: c.build, dir: [.45, .6, 1], fit: 1.05 }
     : { key: c.art, build: c.build, dir: [.32, .38, 1], fit: 1.02 });
   if (jobs.length) Object.assign(ART, renderThumbs(jobs, 300));
@@ -88,7 +97,10 @@ function ensureArt(cards) {
 
 function cardEl(c, G, { big = false } = {}) {
   const seen = G.save.cardSeen || (G.save.cardSeen = {});
-  if (!c.have) return h('div', { class: 'tcard back' + (big ? ' big' : '') }, h('div', { class: 'cb-q' }, '?'), h('div', { class: 'cb-hint' }, c.hint), h('div', { class: 'cb-no' }, `No.${String(c.no).padStart(3, '0')}`));
+  if (!c.have) return h('div', { class: 'tcard back' + (c.seen ? ' found' : '') + (big ? ' big' : '') },
+    c.seen ? h('div', { class: 'cb-found' }, '발견') : null,
+    c.seen && ART[c.art] ? h('div', { class: 'cb-q sil' }, h('img', { src: ART[c.art], alt: '' })) : h('div', { class: 'cb-q' }, '?'),
+    h('div', { class: 'cb-hint' }, c.hint), h('div', { class: 'cb-no' }, `No.${String(c.no).padStart(3, '0')}`));
   // 별 셋 = 비밀 한 줄 (스토리 룸 10/19, user "캐릭터 카드"): a friend whose secret is open has a holo card
   const sec = c.id.startsWith('c:') && secretOpen(G.save.best, c.id.slice(2)); if (sec) style();
   const el = h('div', { class: `tcard r${c.rar} reg-${c.region}` + (big ? ' big' : '') + (sec ? ' sec' : ''), role: 'button', tabindex: '0', 'aria-label': `${c.name} 카드` },
@@ -191,7 +203,9 @@ export function openCardBook(G, tab = 'friends') {
       G.ui.btn('물건', { color: tab === 'items' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'items' && openCardBook(G, 'items') }),
       G.ui.btn(tr(BOOK.learned), { color: tab === 'learned' ? 'pink' : 'gray', cls: 'sm', onClick: () => tab !== 'learned' && openCardBook(G, 'learned') }));
     const bar = h('div', { class: 'cb-prog' }, h('i', { style: `width:${Math.round(have / Math.max(1, total) * 100)}%` }));
+    const nSeen = tab === 'items' ? cards.filter(c => c.seen).length : 0;   // (found in a stage, not yet yours — QA17-03)
+    const legend = nSeen ? h('div', { class: 'cb-legend' }, h('span', {}, h('b', {}, '내 것'), ` ${have}`), h('span', { class: 'f' }, h('b', {}, '발견'), ` ${nSeen}`)) : null;
     // (one way out, as 상점 and 더보기: the ✕ at the corner — the cards get the room the 닫기 row took; 2D UI 정리 ⑬ 10/19)
-    G.ui.panel({ title: `도감 ${have}/${total}`, color: 'pink', cls: 'cardbook', body: [tabs, bar, grid], close: () => {} });
+    G.ui.panel({ title: `도감 ${have}/${total}`, color: 'pink', cls: 'cardbook', body: [tabs, bar, ...(legend ? [legend] : []), grid], close: () => {} });
   }, 30));
 }

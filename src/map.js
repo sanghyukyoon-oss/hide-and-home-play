@@ -38,7 +38,9 @@ export class MapRooms {
     this.group.updateMatrixWorld(true);
     const wallBoxes = R => Object.values(R.walls).flatMap(Wl => { const out = []; Wl.body.traverse(o => { if (o.isMesh) out.push(new THREE.Box3().setFromObject(o).expandByScalar(-.02)); }); return out; }).filter(b => !b.isEmpty());
     // and nothing of the next room in its way either (9판: the 거울 수납장's door swung into the bedroom's plant across the open side — 겹침 QA 10/19)
-    const furnBoxes = R => [...R.furns, ...R.decors].filter(r => r.type !== 'rug' && !r.hidden).map(r => { const bx = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) bx.expandByObject(o); }); return bx.expandByScalar(-.025); }).filter(bx => !bx.isEmpty());
+    const furnBoxes = R => [...R.furns, ...R.decors].filter(r => r.type !== 'rug' && !r.hidden).map(r => {
+      if (r.f.collideBox) { const [a, b, c, d, e, g] = r.f.collideBox; r.f.group.updateMatrixWorld(true); return new THREE.Box3(new THREE.Vector3(a, b, c), new THREE.Vector3(d, e, g)).applyMatrix4(r.f.group.matrixWorld); }   // (only what really stands in the way — 곰제과 가게 정면's eave over the kitchen next door, 10/21)
+      const bx = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) bx.expandByObject(o); }); return bx.expandByScalar(-.025); }).filter(bx => !bx.isEmpty());
     for (const R of this.rooms) { const nb = this.rooms.filter(q => q !== R && q.level === R.level); R.shellBoxes = nb.flatMap(wallBoxes); R.nearBoxes = nb.flatMap(furnBoxes); if (R.shellBoxes.length || R.nearBoxes.length) R.fitParts(); }
     // one cake slab per ground-level block of rooms (upper floors bring their own thin slab)
     const box = this.box = new THREE.Box3();

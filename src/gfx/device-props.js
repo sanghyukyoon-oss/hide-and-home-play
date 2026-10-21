@@ -25,6 +25,7 @@ import { HG as G, hmc as mc } from './house-props.js';
 import { SHOP_BUILDERS } from './shop-props.js';
 import { OUTDOOR_BUILDERS } from './outdoor.js';
 import { KPOP_BUILDERS } from './kpop-props.js';
+import { SEASIDE_BUILDERS } from './seaside-props.js';
 
 const PI = Math.PI, HP = PI / 2;
 const STONE = '#c9c2d8', STONE2 = '#b1a9c4', STONE3 = '#ddd7e8', WATER = '#7fd2ef', WATER2 = '#a9e4f6', SAND = '#dcc99a', SAND2 = '#c8b07c',
@@ -384,6 +385,57 @@ DEVICE_ITEMS.matches = { name: '성냥', h: .04, flat: true, noCollect: true, bu
   for (let k = 0; k < 3; k++) { g.add(put(cyl(.004, .004, .11, '#f0d9a8', null, 5), -.02 + k * .02, .045, .02, Math.PI / 2, 0, .3)); g.add(put(mesh(new THREE.SphereGeometry(.009, 6, 5), mat('#c8382f')), -.02 + k * .02 + .016, .045, .075)); }
   return g;
 } };
+DEVICE_ITEMS.pinwheel = { name: '바람개비', h: .08, flat: true, noCollect: true, build() {
+  const g = grp();
+  g.add(put(cyl(.008, .008, .26, '#ffffff', null, 6), 0, .016, 0, HP, 0, 0));
+  for (let k = 0; k < 4; k++) { const a = k * HP; g.add(put(rbox(.09, .006, .09, ['#ff8fb8', '#ffd86b', '#8fd3f4', '#9be38f'][k], .01), Math.cos(a) * .05, .03, -.13 + Math.sin(a) * .05, 0, a + PI / 4, 0)); }
+  return g;
+} };
+// ── 30판 냥냥이네 바닷가 가게 '깃발 신호' (10/21, 스토리 룸 기차 여행 편: 바람개비 → 깃발 → 보트가 데크로 → 덮개 밑 냥냥이) ──
+// flagdeck (3×2): the deck with a tall white flagpole at its front left — an empty socket on top where a 바람개비 goes, a
+// halyard, a red-and-white signal flag folded at its foot — and, out on the water, a little boat under a striped canvas
+// cover. The pinwheel in: the wind spins it, the flag runs up the pole and flies, the boat sees it and comes in to the
+// deck, the cover jiggles and lifts (p.device 'flagboat' — the cover is the part; the pole rides on it for taps).
+B.flagdeck = (f, T) => {
+  SEASIDE_BUILDERS.seadeck(f, T, { device: true });
+  const y = .4, PX = -1.32, PZ = .82, PH = 2.3, BX = -.5, BZ0 = 3.0, BZ1 = 1.72, HULL = '#c9844e';
+  const pole = grp(); f.add(pole);
+  pole.add(mc('flagdeck-pole', ({ add, tube }) => {
+    add(G.cyl(.035, .045, PH, 10), '#ffffff', PX, y + PH / 2, PZ); add(G.cyl(.09, .1, .08, 12), '#d8d3cc', PX, y + .04, PZ);
+    add(G.sph(.05, 10, 8), GOLD, PX, y + PH + .03, PZ); add(G.cyl(.03, .03, .1, 8), '#c9cfe0', PX, y + PH - .06, PZ + .05, HP, 0, 0);
+    tube([PX + .05, y + PH - .1, PZ], [PX + .05, y + .3, PZ], .005, '#e9d9b8', 3); add(G.box(.04, .08, .03, .01), '#c9cfe0', PX + .06, y + .5, PZ);
+  }));
+  // the signal flag on the halyard: folded at the foot, it runs up and flies
+  const flag = grp(); put(flag, PX + .06, y + .3, PZ); pole.add(flag);
+  flag.add(live(mc('flagdeck-flag', ({ add }) => {
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) add(G.box(.14, .14, .012, .004), (r + c) % 2 ? '#e8414e' : '#ffffff', .1 + c * .14, .21 - r * .14, 0);
+  })));
+  flag.scale.set(.25, .7, 1);
+  // the pinwheel, put in its socket once found
+  const pin = grp(); put(pin, PX, y + PH - .06, PZ + .12); pin.visible = false; pole.add(pin);
+  pin.add(live(mc('flagdeck-pin', ({ add }) => { for (let k = 0; k < 4; k++) { const a = k * HP; add(G.box(.12, .12, .01, .01), ['#ff8fb8', '#ffd86b', '#8fd3f4', '#9be38f'][k], Math.cos(a) * .07, Math.sin(a) * .07, 0, 0, 0, a + PI / 4, [1, .6, 1]); } add(G.sph(.025, 8, 6), '#ffffff', 0, 0, .01); })));
+  // the boat out on the water, under its canvas cover (the cover is the part; the boat glides in on the show)
+  const boat = grp(); put(boat, BX, 0, BZ0); f.add(boat);
+  boat.add(live(mc('flagdeck-boat', ({ add }) => {
+    const bowl = r => new THREE.SphereGeometry(r, 20, 8, 0, PI * 2, HP, HP);
+    add(bowl(.5), HULL, 0, .24, 0, 0, 0, 0, [1.7, .7, .6]); add(G.cyl(.46, .46, .03, 24), '#e8c49a', 0, .12, 0, 0, 0, 0, [1.6, 1, .53]);
+    add(G.tor(.5, .03, PI * 2, 6, 28), '#a86a3a', 0, .24, 0, HP, 0, 0, [1.7, .6, 1]); add(G.box(.08, .04, .5, .01), WOOD, .35, .19, 0);
+    for (let k = 0; k < 4; k++) add(G.sph(.04, 8, 6), '#ffffff', -.6 + k * .4, .26, .3, 0, 0, 0, [1, .5, .5]);
+  })));
+  const cover = grp(); put(cover, 0, .26, -.28); boat.add(cover);
+  cover.add(mc('flagdeck-cover', ({ add }) => {
+    for (let k = 0; k < 6; k++) add(G.box(.22, .05, .56, .02), k % 2 ? '#ffffff' : '#3f8fd0', -.55 + k * .22, .08 + Math.sin((k + .5) / 6 * PI) * .1, .28);
+    for (const s of [-1, 1]) add(G.box(1.32, .14, .02, .01), '#3f8fd0', 0, .02, .28 + s * .28);
+  }));
+  const p = f.part('lift', cover, (t, b) => { cover.rotation.x = -1.25 * t; cover.position.y = b.p.y + .08 * t; }, { label: '보트 덮개', sfx: 'lift', dur: .34 });
+  f.spot('inside', boat, -.1, .14, 0, { part: p, maxH: .36, label: '보트 덮개 밑', scale: .85 });
+  // a cat's tail that pokes out from under the cover for the tell
+  const tail = grp(); put(tail, .5, .3, .2); tail.visible = false; boat.add(tail);
+  tail.add(live(mc('flagdeck-tail', ({ add }) => { add(G.tor(.09, .035, PI * 1.3, 6, 14), '#f2d2a8', 0, .08, 0, 0, 0, -.5); add(G.sph(.04, 8, 6), '#ffffff', .07, .15, 0); })));
+  p.pivots.push(pole);   // (taps on the pole go to the boat)
+  p.device = 'flagboat';
+  Object.assign(f, { pin, flag, boat, tail, poleTop: new THREE.Vector3(PX, y + PH - .3, PZ), boatIn: BZ1, boatOut: BZ0, flagUp: y + PH - .42 });
+};
 export const DEVICE_BUILDERS = B;
 export const DEVICE_INFO = {
   sluicepond: { w: 3, d: 3, name: '수문 연못', price: 0, hidden: true },
@@ -392,4 +444,5 @@ export const DEVICE_INFO = {
   pulleyjang: { w: 2, d: 1, name: '도르래 장독대', price: 0, hidden: true },
   liftstage: { w: 3, d: 2, name: '리프트 무대', price: 0, hidden: true },
   starloft: { w: 1, d: 1, name: '다락 사다리', price: 0, hidden: true },
+  flagdeck: { w: 3, d: 2, name: '깃발 데크', price: 0, hidden: true },
 };
