@@ -324,7 +324,7 @@ export class StageScene {
     W.shadowDirty = true;
     // state
     Object.assign(this, { time: this.spec.time, timeMax: this.spec.time, timerOn: false, running: false, paused: false, combo: 0, bestCombo: 0, lastFind: -99, misses: [], dizzy: 0, keys: 0, codes: new Set(),
-      result: null, scraps: {}, t: 0, idle: 0, rotAccum: 0, found: 0, missCount: 0, continued: false, botT: 0, tutStep: 0, lastSec: 99, needKey: false, needCode: false, partsOpened: 0, twinkleT: 0 });
+      result: null, scraps: {}, t: 0, idle: 0, rotAccum: 0, found: 0, missCount: 0, continued: false, botT: 0, tutStep: 0, lastSec: 99, needKey: false, needCode: false, partsOpened: 0, twinkleT: 0, _autoHint: null, _lastSpark: false, _stSoft: false, _stHard: false, _swN: 0, _swDone: false });
     this.hints = 3; this.hintsUsed = 0;   // 3 magnifiers a stage (was 2; easier, user 10/17)
     if (G.econ) { this.hints = LENS_FREE; this.bagUsed = 0; }   // 경제 B5 (10/19): 2 free a stage, then the bag (lens.js)
     this.tail = null; this._dF = this._dE = false;   // (대본 bits that must not carry over from the last stage)
@@ -3114,8 +3114,8 @@ export class StageScene {
     if (this.jailed?.in && this.running && !this.result && (this._jT = (this._jT ?? 9) - dt) <= 0) { this._jT = 11 + Math.random() * 5; this.say(this.jailed.ch, JAIL_LINES[(this._jn = (this._jn || 0) + 1) % JAIL_LINES.length], 2000); }   // the one in the cell keeps pleading
     // (a hidden friend giggles once you've looked a while — 10 s, not from the start; every 7–10 s, not 4–9: 레벨 1~10 추천 10/19 —
     // the first stage's lesson keeps its old pace)
-    const gigWait = HINTS_OLD || this.spec.tut === 1 ? (!this.r1 || this.idle > 15) : this.idle > (this.r1 ? 15 : 10);
-    if (this.incident && this.friendHidden && this.running && !this.result && gigWait && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = HINTS_OLD || this.spec.tut === 1 ? (this.idle > 8 ? 4 : 6.5) + Math.random() * 3 : 7 + Math.random() * 3; this.giggle(); }
+    const gigWait = HINTS_OLD || this.spec.tut === 1 ? (!this.r1 || this.idle > 15) : this.idle > (this.r1 ? 30 : 20);   // (10/21: 10 → 20 s, every 14–20 s — "힌트가 너무 많아")
+    if (this.incident && this.friendHidden && this.running && !this.result && gigWait && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = HINTS_OLD || this.spec.tut === 1 ? (this.idle > 8 ? 4 : 6.5) + Math.random() * 3 : 14 + Math.random() * 6; this.giggle(); }
     if (this.spec.night && !this.result && (this._starT = (this._starT || 0) - dt) <= 0) {
       this._starT = .45 + Math.random() * .5;
       // in the sky only: a point over the room (its walls, its floor, a lamp) or the look's ground round it gets no star — they
@@ -3137,7 +3137,7 @@ export class StageScene {
       // F1: one thing left for 20 s → the owner looks at it; with one left the sparkle waits until 10 s after that look
       if (this.feelHelp) {
         const left = this.targets.filter(t => !t.found);
-        if (left.length === 1) { this._oneAt ??= this.t; if (this._gazeAt == null && this.t - this._oneAt >= 35) { this._gazeAt = this.t; if (HINTS_OLD || !sceneAt(this.idx)?.lastSmoke) this.gazeHint(left[0]); } }   // (6판: the pancake smoke is that stage's look — not both)
+        if (left.length === 1) { this._oneAt ??= this.t; if (this._gazeAt == null && !this._autoHint && this.t - this._oneAt >= 35) { this._gazeAt = this.t; this._autoHint = 'last'; if (HINTS_OLD || !sceneAt(this.idx)?.lastSmoke) this.gazeHint(left[0]); } }   // (6판: the pancake smoke is that stage's look — not both)
         else this._oneAt = this._gazeAt = null;
       }
       const waitGaze = this.feelHelp && this._oneAt != null && (this._gazeAt == null || this.t - this._gazeAt < 10);
@@ -3147,15 +3147,16 @@ export class StageScene {
       if (this.idx >= 1 && this.idx <= 4 && !this.incident && !this.custom && !this.preview && !this.tutEls && !this.talking) {
         const left = this.targets.filter(t => !t.found && !t.friend && !t.furnTarget);
         if (left.length >= 2) {
-          if (!this._stSoft && this.idle > 25) { this._stSoft = true; this.stuckHint('soft', left); }
-          else if (this._stSoft && !this._stHard && this.idle > 45) { this._stHard = true; this.stuckHint('hard', left); }
+          // (10/21, "힌트가 너무 많아" a fourth time: one help a stage that comes by itself — the soft one at 50 s, no hard one)
+          if (!this._stSoft && !this._autoHint && this.idle > 50) { this._stSoft = true; this._autoHint = 'stuck'; this.stuckHint('soft', left); }
         }
       }
       const lastOnly = HINTS_OLD || this.targets.filter(t => !t.found).length === 1;
-      if (this.idle > this.sparkAfter && !waitGaze && lastOnly) {
+      // (10/21: the last thing's sparkle comes once, 10 s after the owner's look — the stage's one automatic help, not every 10 s)
+      if (this.idle > this.sparkAfter && !waitGaze && lastOnly && (HINTS_OLD || (this._autoHint === 'last' && !this._lastSpark))) {
         this.twinkleT -= dt;
         if (this.twinkleT <= 0) {
-          this.twinkleT = 10;   // (4 → 6 → 10 s: "힌트가 너무 많다", 10/19 evening)
+          this.twinkleT = 10; this._lastSpark = true;   // (4 → 6 → 10 s: "힌트가 너무 많다", 10/19 evening)
           const vis = this.targets.filter(t => !t.found && !(t.spot.part && t.spot.part.t < .5) && !W.occluded(t.g, this.worldCenter(t), [this.room.group]));
           const pick = vis[Math.floor(Math.random() * vis.length)];
           if (pick) { const s = W.toScreen(this.worldCenter(pick)); W.fx.burst(s.x, s.y, { n: 5, shape: 'star', speed: 60, gravity: -30, life: .9, size: 9, colors: ['#ffffff', '#fff3a0'] }); }

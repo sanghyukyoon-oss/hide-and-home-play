@@ -15,7 +15,7 @@ const OLD = typeof location !== 'undefined' && /[?&]hints=old(&|$)/.test(locatio
 const MECH = new Set(['fishdock', 'liftbasket']);   // furniture whose moving part is a mechanism (levers, devices: by flag)
 const BODY = new Set(['liftbasket']);               // …and whose body shines with it (not the fishing dock: the whole deck would)
 const DIR = new THREE.Vector2(.7071, -.7071);       // ↘ on the screen, whichever way the room is turned
-const DUR = .6, GAP = 45, GAP_STUCK = 15, STUCK = 30;   // (10/19 evening, user again: "힌트가 너무 많다" — 25/8/15 → 45/15/30)
+const DUR = .6, GAP = 45, GAP_STUCK = 15, STUCK = 60;   // (10/21 — "힌트가 너무 많아" a fourth time: stuck 30 → 60 s, once a stage, and it is the stage's one automatic help: S._autoHint)   // (10/19 evening, user again: "힌트가 너무 많다" — 25/8/15 → 45/15/30)
 //   // (14 / 5.5 / 10 → 25 / 8 / 15: user 10/19 "힌트도 너무 많은 듯")
 
 function shine(meshes) {
@@ -88,10 +88,10 @@ export function sweepUpdate(S, dt) {
     // (10/19 evening, user a third time: "힌트가 너무 많다" — 레벨 1~10 추천): only when stuck — half a minute without a find —
     // once for that stretch, at most twice a stage; never on a clock
     if ((S.idle || 0) < STUCK) { S._swDone = false; return; }
-    if (S._swDone || (S._swN || 0) >= 2) return;
+    if (S._swDone || (S._swN || 0) >= 1 || S._autoHint) return;
     const list = S.sweeps.filter(sw => worth(sw) && !sw.run && !sw.part.busy);
     if (!list.length) return;
-    S._swDone = true; S._swN = (S._swN || 0) + 1;
+    S._swDone = true; S._swN = (S._swN || 0) + 1; S._autoHint = 'sweep';
     play(S, list[Math.floor(Math.random() * list.length)]); return;
   }
   if ((S._swT -= dt) > 0) return;
