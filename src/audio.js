@@ -19,7 +19,7 @@ export const BGM = {
   mini: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-mini-1.mp4', gpts: ['audio/gpt/bgm-mini-1.mp4', 'audio/gpt/bgm-mini-3.mp4'], gain: 1 },   // Suno minigame-v2 ① · minigame-v3 ③
   tv: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 몽글 TV (Suno 'hideandhome-tv-v1' 2:16)
   // (10/20 user: "티비게임에 나오는 노래도 정규 음악으로 넣어 줄래?") the TV song is the boss games' song too
-  boss: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-tv.mp4', gain: 1 },   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
+  boss: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-boss.mp4', gain: 1 },   // (10/21 user: Suno 'Treasure Hunt March' — "보스는 넘 평범" 뒤 새 곡)   // 방탈출 보스판·보스 놀이·엄마 습격    → audio/gpt/bgm-boss.mp4
   king: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-king.mp4', gain: 1 },   // (10/21 user: "4도 좋은데 어디 쓸 만한 데") 마지막 보스·결정전 — Suno minigame-v3 ④
   tense: { gpt: null, gain: 1 },   // 다급할 때 (없으면 지금 곡을 1.07배로) → audio/gpt/bgm-tense.mp4
 };

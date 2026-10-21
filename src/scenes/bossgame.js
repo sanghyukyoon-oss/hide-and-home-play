@@ -35,6 +35,11 @@ const LOAD = {
 };
 // a game whose stylesheet does not come with it: linked here for the game's time on screen
 const SHEETS = { flashlight: new URL('../bosses/flashlight.css', import.meta.url).href };
+// (QA10 10/21, user on an iPhone: 두더지 "셋" — a big 너굴이 face and a cut "0 ★" in the top-left for a few frames) these games add
+// their own stylesheet and build their HUD at once, without waiting: on a slow phone network the HUD showed unstyled — the
+// rule card's 너굴이 picture at its own size, the score bar — until the file came. It is fetched here first, under the
+// game's own id (the game sees it and adds no second one; its exit() takes it away as before), and the game waits for it
+const PRE_CSS = { whack: 'wh-css', blanket: 'bk-css', redlight: 'rl-css', picnic: 'tr-css', inky: 'ik-css' };
 export const BOSS_GAME_INFO = {
   yasik: { name: '엄마 몰래 야식' }, villa: { name: '몽글 빌라 방 배정' }, tag: { name: '다 잡았다! 술래잡기' },
   wakeup: { name: '아침 깨우기 장치' }, photo: { name: '찰칵! 동네 사진관' },
@@ -69,6 +74,7 @@ export class BossGameScene {
     // (외부 QA 10/20 ST-RESUME-REWARD-CARD) a won game left before its card: the same card comes back (nothing is paid again)
     if (resumeFinish && !G.playMode) { this.won = resumeWon; if (resumeWon && more.resumeCard) this.reward = { ...more.resumeCard }; this.talking = true; await Promise.resolve(); if (!this.dead) await this.finish(); return; }
     const app = document.getElementById('app'); for (const [k, v] of Object.entries(APP_FLAGS[this.kind] || {})) app.dataset[k] = v;
+    const css = this.preCss();   // (QA10: comes in while the lead-in plays; waited for before the game builds)
     // 아침 깨우기 opens with a little story and a find-the-ball-and-clock phase the first time only — remembered in the save
     // (the lab kept it per page)
     if (this.kind === 'wakeup' && more.intro == null) { const seen = G.save.bossIntro || (G.save.bossIntro = {}); more.intro = !seen.wakeup; if (!seen.wakeup) { seen.wakeup = true; G.persist(); } }
@@ -97,6 +103,7 @@ export class BossGameScene {
       LS?.dispose(); if (this.dead) return; said[this.kind + this.lv] = true; G.persist();
     }
     G.audio.music?.('play');   // the boss music (사운드 세션 10/19); a game that starts its own keeps it, one that stops it on exit still can
+    await css; if (this.dead) return;
     this.L = this.makeL();
     this.game = new mod.Game(this.L);
     await this.game.enter({ lv: this.lv, ...more });   // (more: a game's own extras, e.g. the hotel's night)
@@ -204,6 +211,11 @@ export class BossGameScene {
     clearFollowupFinish(G, this.after);
     G.go('stage', { idx: this.after + 1 });
   }
+  preCss() {
+    const id = PRE_CSS[this.kind]; if (!id || document.getElementById(id)) return Promise.resolve();
+    const l = document.createElement('link'); l.id = id; l.rel = 'stylesheet'; l.href = new URL(`../bosses/${this.kind}.css`, import.meta.url).href; document.head.append(l);
+    return new Promise(res => { l.onload = l.onerror = res; setTimeout(res, 8000); });
+  }
   menu() {
     const G = this.G; if (G.ui.panelOpen) return;
     this.menuOpen = true;
@@ -265,6 +277,7 @@ export class BossGameScene {
     this.dead = true; const W = this.G.world;
     removeEventListener('pointerdown', this._pd, true); removeEventListener('pointerup', this._pu, true); removeEventListener('pointercancel', this._pu, true);
     this.game?.exit?.();
+    if (!this.game && PRE_CSS[this.kind]) document.getElementById(PRE_CSS[this.kind])?.remove();   // (QA10: left before the game was built)
     this.sheet?.remove(); this.sheet = null;
     const app = document.getElementById('app'); delete app.dataset.night; delete app.dataset.morning; app.classList.remove('vl', 'party', 'ht', 'ht-night', 'wh', 'rl', 'ik', 'tr', 'bk', 'gh', 'fp');
     Object.assign(W, { scheme: this._was.scheme, joyOn: this._was.joyOn, joyHidden: this._was.joyHidden, gaugeOn: this._was.gauge, camLock: this._was.camLock });
