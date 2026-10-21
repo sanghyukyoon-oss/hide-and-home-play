@@ -76,6 +76,7 @@ import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.j
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
 import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS } from '../mongletv.js';   // 몽글 TV (10/19)
+import { songDrift } from '../songdrift.js';   // 오래 못 찾으면 노래가 빨라짐 (10/21)
 
 // 레벨 보고서 R1 '몰래 숨기' 시제품 (10/18) — only with ?hide=1 (the user compares it on the phone before anything changes):
 // you don't watch the friend hide ("눈 감아! 하나, 둘, 셋" and only the sounds), 2–3 big hideouts are candidates, a trail of
@@ -3125,6 +3126,7 @@ export class StageScene {
     }
     if (this.running && !this.result && !this.paused) {
       this.idle += dt;
+      songDrift(this, dt);
       sweepUpdate(this, dt);
       if (this.idx === DBL_AT && this.idle > 15 && !this._dbl) teachDbl(this);
       if (this.idle > 11) this.taunt('idle');

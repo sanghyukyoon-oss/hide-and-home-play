@@ -13,6 +13,9 @@ import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_MAX } from './raid.js';
 import { starBoxState } from './starbox.js';
 import { GIFT_AT, takeGiftPick } from './econ.js';
+import * as THREE from 'three';
+import { put, rbox, tor, sph } from './gfx/kit.js';
+import { renderThumbs } from './thumbs.js';
 
 export const GIFT_THINGS = ['goldbone', 'console', 'snack', 'report'];
 export const GIFT_DECOR = ['easel', 'amphora', 'veiled', 'speaker', 'micstand', 'tacklebox', 'parasol', 'boardrack', 'fishsign', 'baitbucket', 'artcrate'];
@@ -39,11 +42,30 @@ export function giftChoices(save, seed) {
   return out;
 }
 export const giftName = c => c.kind === 'lock' ? '자물쇠' : c.kind === 'thing' ? ITEMS[c.t]?.name || '' : c.kind === 'decor' ? FURN_INFO[c.t]?.name || '' : `코인 ${c.n}`;
-const giftTag = c => c.kind === 'lock' ? '서랍 잠그기' : c.kind === 'thing' ? '숨길 보물' : c.kind === 'decor' ? '상점에 없는 소품' : '코인';
+const giftTag = c => c.kind === 'lock' ? '서랍 잠그기' : c.kind === 'thing' ? '숨길 보물' : c.kind === 'decor' ? '특별 소품' : '코인';
 const giftImg = (G, c) => c.kind === 'thing' ? G.thumbs['item_' + c.t] : c.kind === 'decor' ? G.thumbs['furn_' + c.t] : null;
 
-const lootCard = (G, c) => { const img = giftImg(G, c), pic = img ? h('img', { src: img }) : h('div', { class: 'giftico', html: c.kind === 'lock' ? ICON.lock : ICON.coin, style: 'width:64px;height:64px;margin:6px auto;display:grid;place-items:center' });
-  return h('div', { class: 'lootcard new', role: 'button', tabindex: '0' }, pic, h('div', { class: 'lname' }, giftName(c)), h('div', { class: 'ltag' }, giftTag(c))); };
+// (③ 10/21, user on the gift cards: "ui랑 자물쇠 디자인 다시. 뭔가 왤케 정렬이 안되어보이네"): every card the same — a square picture
+// tile, the name on one line (made smaller to fit, never wrapped), the kind on one line; the padlock drawn in 3D like the others
+// (the stages' own padlock, made once)
+let LOCK_PIC = null;
+const GIFT_SHORT = { gf_trophy: '금빛 트로피', gf_mongclock: '몽글이 시계', gf_carousel: '회전목마' };   // (a card's one line)
+const lockPic = () => LOCK_PIC ||= renderThumbs([{ key: 'lock', dir: [.35, .25, 1], fit: 1.1, build: () => {
+  const g = new THREE.Group();
+  g.add(put(tor(.05, .016, '#c9cfe0', { metal: .6, rough: .3 }, Math.PI, 8, 16), 0, .07, 0));
+  g.add(put(rbox(.13, .11, .05, '#ffc93c', .025, { metal: .5, rough: .3 }), 0, 0, 0));
+  g.add(put(sph(.016, '#5a3d2e', null, 8, 6), 0, -.005, .028));
+  return g;
+} }], 160).lock;
+const giftPic = (G, c) => giftImg(G, c) || (c.kind === 'lock' ? lockPic() : null);
+const fitLine = el => requestAnimationFrame(() => { for (let fs = parseFloat(getComputedStyle(el).fontSize); el.scrollWidth > el.clientWidth + .5 && fs > 9.5; fs -= .5) el.style.fontSize = fs + 'px'; });
+const lootCard = (G, c) => {
+  const img = giftPic(G, c), pic = h('div', { class: 'lpic' }, img ? h('img', { src: img, alt: '' }) : h('div', { class: 'giftico', html: ICON.coin }));
+  const full = giftName(c), name = h('div', { class: 'lname', title: full }, GIFT_SHORT[c.t] || full);
+  const card = h('div', { class: 'lootcard new', role: 'button', tabindex: '0' }, pic, name, h('div', { class: 'ltag' }, giftTag(c)));
+  fitLine(name);
+  return card;
+};
 // one of three, picked on a card (like the old pick panel); resolves the chosen one
 export function giftPanel(G, choices, { title = '선물 상자!', line = '하나 골라!' } = {}) {
   G.needThumbs?.(choices.map(c => c.kind === 'thing' ? 'item_' + c.t : c.kind === 'decor' ? 'furn_' + c.t : null).filter(Boolean));

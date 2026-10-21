@@ -983,8 +983,9 @@ export const stuckLine = (host, kind) => STUCK[host]?.[kind] || null;
 // ── 2판 끝 조작법 요약 (조작감 세션이 띄움): what the first two stages taught, one line each, the 콕 / 끌기 words of DO
 export const CONTROLS_SUM = { title: K('조작법 정리', 'How to play'), rows: [K('터치: 열고 찾기', 'Tap: open and find'), K('드래그: 둘러보기', 'Drag: look around'), K('돌림판: 방 돌리기', 'Dial: turn the room'), K('두 번 터치: 크게 보기', 'Double tap: zoom in')] };
 export const replayHi = (host, secretIsOpen) => { const R = REPLAY[host]; return R ? (secretIsOpen ? R[0] : R[1]) : null; };
-// 몽글이 방의 빈 자리 (스토리 룸 10/20): 20판 "다음엔 우리 집에서 놀자. 그 애도 같이." 뒤, 엔딩 전까지 — 처음 볼 때 한 번
-export const INKY_SEAT = L('mong', '…그 애 자리. 비워 둘게.', "…That kid's seat. I'll keep it free.");
+// 몽글이 방의 크레용 발자국 (10/21 사용자 "먹물이면 걍 발자국만 있으면 되지않을까 … 근데 왜 먹물이가 있는겨?"): 방석 대신
+// 문에서 들어오다 끊기는 발자국 — 처음 볼 때 한 번. 누구인지(흑백판에서 색 가져간 애)와 왜 끊겼는지(들어오다 망설임)를 한 줄에. 엔딩에서 그 끝에 앉음
+export const INKY_SEAT = L('mong', '…색 가져간 그 까만 애 발자국이다. 들어오다 말았네.', "…Footprints from that inky kid who takes the colors. Came in, then stopped.");
 // ── 판 끝 집으로 가져가기 (검토 · 경제 10/19): the friend you just met comes in and sits — one word on the way in, why
 // they're here (a promise from their stage, their habit). One bubble, 1.5 s, once per friend (econ: lobby passage).
 export const ROOM_ARRIVE = {

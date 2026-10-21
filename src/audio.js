@@ -214,7 +214,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     if (SFX_FALLBACK[name] && !sfxBuf[name]) name = SFX_FALLBACK[name];   // (a newer file not in yet: the one it grew from)
     // (10/20 user: "무궁화는… 보이스 넣을 건데 디졸브 잘 넣거나 후처리 잘해서 어색하지 않게") the chant: the music steps back under it and comes up again
     if (name === 'mugunghwa') A.duck(4, .32);
-    if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); }   // the jingle over the music, not under it; the hurry is over
+    if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); if (A._drift !== 1) A.drift(0); }   // the jingle over the music, not under it; the hurry (and a drift) is over
     if (playFile(name, p)) return;
     switch (name) {
       case 'tap': tone({ type: 'triangle', f: 700, f2: 980, dur: .06, vol: .25 }); break;
@@ -379,6 +379,9 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   const T = A._trk = { el: null, gain: null, url: null, slot: null, want: null, goal: 0, pending: null, swapT: 0, stopT: 0, rate: 1 };
   function mkTrack() {
     const el = T.el = new Audio(); el.loop = true; el.preload = 'auto'; el.crossOrigin = 'anonymous'; el.setAttribute('playsinline', '');
+    // the pitch stays when the song speeds up (10/21 노래 빨라지기): said once here, before any src, and never again — writing it on
+    // a playing element is what cut the sound on iPhone (10/20); Safari reads the webkit one
+    el.preservesPitch = true; el.webkitPreservesPitch = true; el.mozPreservesPitch = true;
     try { const node = A.ctx.createMediaElementSource(el); T.gain = A.ctx.createGain(); T.gain.gain.value = 0; node.connect(T.gain).connect(A.musicBus); } catch { T.gain = null; }
     el.addEventListener('playing', () => { if (T.pending != null) { fade(T.pending, XF * .6); T.pending = null; } });
     el.addEventListener('error', () => {
@@ -437,7 +440,15 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   A.scene = (name, data = {}) => {
     A.playSlot = data.final || data.kind === 'finale' ? 'king' : SCENE_SLOT[name] || 'map';
     if (A.playSlot === 'mini') A._rot = (A._rot || 0) + 1;   // (the next mini game, the other song)
-    A._hurry = false; A._req = null; if (T.el && T.url) setRate(1);
+    A._hurry = false; A._drift = 1; A._req = null; if (T.el && T.url) setRate(1);
+  };
+  // 오래 못 찾으면 (songdrift.js): the stage song a notch faster — 0 as written … 4 = 1.20; only the map slot, never over a hurry
+  const DRIFT = [1, 1.05, 1.10, 1.15, 1.20];
+  A._drift = 1;
+  A.drift = n => {
+    A._drift = DRIFT[Math.max(0, Math.min(DRIFT.length - 1, n | 0))];
+    if (A._hurry || !A._req || A._req.slot !== 'map') return;
+    A._req.rate = A._drift; if (T.el && T.url && T.slot === 'map') setRate(A._drift);
   };
   // 막판 (the stage's last 10 seconds): the track playing hurries a little; off again on the next scene
   A.hurry = (on = true) => { A._hurry = !!on; if (A._req) A._req.rate = on ? HURRY : 1; if (T.el && T.url) setRate(on ? HURRY : 1); };
@@ -448,7 +459,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       return { slot: s, rate: s === now ? HURRY : 1 };
     }
     const slot = mood === 'home' ? 'lobby' : mood === 'play' ? A.playSlot : BGM[mood] ? mood : 'lobby';
-    return { slot, rate: A._hurry ? HURRY : 1 };
+    return { slot, rate: A._hurry ? HURRY : slot === 'map' ? A._drift : 1 };
   }
   // (a pushed slot — 몽글 TV — gives the music back to what was playing when it closes)
   A.pushMusic = slot => {

@@ -9,6 +9,7 @@ import { giftChoices, giftPanel, grantGift, openStarGifts } from '../gifts.js'; 
 import { HomeScene, playButton, openMore } from './home.js';
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { FURN_INFO } from '../gfx/furniture.js';
+import { put, rbox, sph } from '../gfx/kit.js';
 import { openRoadmap } from '../roadmap.js';
 import { openCardBook, bookBadge, cardCount } from '../cardbook.js';
 import { cardOpened } from '../specials.js';   // 도감으로 열리는 스페셜 (③ 10/21)
@@ -153,7 +154,7 @@ export class LobbyScene extends MyHomeScene {
     const sb = open ? starBoxState(S).pending : 0;
     const giftNow = async () => {
       if (!q.length) { await this.openStarBoxLobby(); return; }
-      const i = q[0], c = await giftPanel(G, giftChoices(G.save, 100 + i), { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 이 장 가구는 상점 기념품 칸에 있어' });   // (10/20: a gift — gifts.js)
+      const i = q[0], c = await giftPanel(G, giftChoices(G.save, 100 + i), { title: '선물 상자!', line: '하나 골라!' });   // (the title fits the ribbon; the shop line said nothing about this box — ③ 10/21)   // (10/20: a gift — gifts.js)
       ui.toast(grantGift(G, c), 'green'); takeGiftPick(G, i, c); this.setMode('lobby');
     };
     const news = unseen(S).length;
@@ -277,9 +278,13 @@ export class LobbyScene extends MyHomeScene {
     const G = this.G, S = G.save;
     if (this.inkySeat || !this.room?.group || (S.stage || 0) < 20 || S.ending || seatedAll(this.H).has('inky')) return;
     const p = this.freeSpot(null, this.zone?.friends || []); if (!p) return;   // (clear of friends still walking to their seats)
+    // (③ 10/21, user: "이건 뭐다냐. 내방에 갑자기 생긴듯" — a dark disc with three dots read as a bowling ball): a real floor cushion —
+    // a soft square in 먹물이's ink lilac, a tufted button in the middle, a crayon tassel at each corner (its footprints' colours)
     const M = inkMeshes(), g = new THREE.Group();
-    const c = new THREE.Mesh(M.cushion, M.cm); c.position.y = .035; g.add(c);
-    [[-.08, .05], [.07, -.04], [.02, .1]].forEach(([x, z], i) => { const d = new THREE.Mesh(M.dot, M.cols[i]); d.rotation.x = -Math.PI / 2; d.position.set(x, .072, z); g.add(d); });
+    g.add(put(rbox(.46, .09, .46, '#6c62a0', .04), 0, .045, 0));
+    g.add(put(rbox(.38, .02, .38, '#8f86c4', .02), 0, .09, 0));
+    g.add(put(sph(.028, '#f3efff', null, 10, 8), 0, .1, 0, 0, 0, 0, [1, .55, 1]));
+    ['#ff6fa8', '#5ab8ff', '#a77bff', '#4fcf86'].forEach((col, i) => { const a = Math.PI / 4 + i * Math.PI / 2; g.add(put(sph(.032, col, null, 10, 8), Math.cos(a) * .3, .06, Math.sin(a) * .3)); });
     g.position.set(p.x, 0, p.z); this.room.group.add(noPick(g));
     // the footprints: from the door to just short of the cushion, flat on the floor like paint (no outline)
     const dr = this.doorAt(), len = Math.hypot(p.x - dr.x, p.z - dr.z), ux = (p.x - dr.x) / (len || 1), uz = (p.z - dr.z) / (len || 1), rot = Math.atan2(ux, uz);
