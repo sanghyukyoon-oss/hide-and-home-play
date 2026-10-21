@@ -43,6 +43,7 @@ import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line, KIT_TALK, inkyNamed } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
+import { staging, stagingHide, stagingHidden } from '../staging.js';
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
   stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
@@ -128,7 +129,7 @@ export class StageScene {
 
   async enter({ idx = 0, custom = null, spec = null, preview = false, model = null, retry = false, seed = null, scout = false }) {
     const G = this.G, W = G.world;
-    this.tw = new Tweens();
+    this.tw = new Tweens(); this.retryRun = !!retry;
     this._tapClock = 0; this.clearTapTimers();
     // a model-kit stage (modelkit.js) plays like a preview too: outside the campaign, no progress, coins or logs
     this.model = model && MODEL_STAGES[model] ? { kind: model, ...MODEL_STAGES[model] } : null;
@@ -363,6 +364,8 @@ export class StageScene {
     await G.ui.banner(th.name, custom ? (this.raidRun ? raidGoal(this) : `숨겨 둔 물건 ${this.targets.length}개를 찾아라!`) : this.model ? this.model.goal : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
     if (this.dead) return;
     if (this.kit && !truckFirst) { await kitIntro(this); if (this.dead) return; }   // 프라모델: the box opens, the pieces scatter (~2.5 s, a tap skips)
+    // 판 시작 연출 (스토리 룸 19~34판 staging — staging.js): 3–6 s before the talk, a touch skips it
+    await staging(this, 'start'); if (this.dead) return;
     // 말 줄이기 (스토리 v2, 10/18 — user: "판 시작할 때마다 뭔가가 계속 말 거니까 되게 짜증"): a talk card only where it
     // carries something — the two tutorials, a chapter's first stage, a region boss, the first time you meet this friend;
     // otherwise the first line as the speaker's bubble and straight into play
@@ -965,12 +968,13 @@ export class StageScene {
     const full = !G.save.r1Counted;
     const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, full ? R1.close : '쉿…'), this.r1N = h('span', { class: 'ol' }, ''));
     document.getElementById('overlay').append(ov);
+    stagingHide(this, ov);
     f.root.visible = false;
     if (full) { for (const n of R1.nums) { if (this.dead) return; this.r1N.textContent = n; G.audio.sfx('tock'); await tw.wait(.6); } G.save.r1Counted = true; G.persist?.(); }
     else { await tw.wait(.35); if (this.dead) return; }
     G.audio.sfx('tap', 12); await tw.wait(.15); G.audio.sfx('tap', 14); await tw.wait(.2); G.audio.sfx(real.sfx || 'open'); await tw.wait(.35); G.audio.sfx('close');
     ov.classList.add('out'); setTimeout(() => ov.remove(), 300);
-    this.friendHidden = true; this.r1Trail();
+    this.friendHidden = true; this.r1Trail(); stagingHidden(this);
     // a word once it's done — from where they stood counting, not over the hiding place: a bubble on the hideout showed the
     // answer before anyone looked (GPT QA L03, 10/19); the crumbs and the hiding sounds are the clues
     const home = this.friendHome.clone();
@@ -2910,6 +2914,8 @@ export class StageScene {
     await (popDone ? Promise.race([popDone, this.tw.wait(2.6)]) : this.tw.wait(1.0));   // (the result panel waits for the pop, ~2 s)
     if (this.dead) return;
     await this.quipPair(); if (this.dead) return;   // (after the pop, before the result)
+    // 판 끝 연출 (staging.js): the train in, the sunset… before the closing words
+    await staging(this, 'end'); if (this.dead) return;
     let back = [], got = null;
     // one new thing to hide at home per stage, the first time it is cleared (not every find — that gave away too much)
     // (the first-clear thing is given before the progress is saved, above — 10/18 GPT QA: leaving during the 1 s wait lost it)

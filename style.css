@@ -2150,3 +2150,6 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .kitkok.truckcta { font-size: 30px; white-space: nowrap; transition: opacity .2s; }
 .kitkok.truckcta.gone { opacity: 0; }
 .kitfly.truckbox { width: 78px; height: 78px; margin: 0; z-index: 35; filter: drop-shadow(0 4px 0 rgba(40, 22, 70, .25)); }
+/* 판 시작·끝 연출 (staging.js): a touch anywhere skips it · 28판: the eyes-shut card is the tunnel's dark */
+.stg-skip { position: absolute; inset: 0; z-index: 29; pointer-events: auto; }
+.r1-eyes.tunnel { background: #07040c; }

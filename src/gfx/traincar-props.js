@@ -24,6 +24,9 @@ const viewTex = () => VIEW || (VIEW = canvasTex(256, 160, (c, W, H) => {
   c.fillStyle = '#f2e3c2'; c.fillRect(120, 98, 136, 4);
 }));
 
+// (staging.js 28판 '창밖이 흐른다': the one view texture every window shows — null until a window is built)
+export const trainView = () => VIEW;
+
 // 긴 벤치 (2×1): a long navy seat with a back against the wall, a grey base with a heater grille; o.drawer: the right half of
 // the base is a drawer (the one 너굴이 squeezes into); o.stuff: a newspaper and a cup of noodles on the seat
 B.tbench = (f, T, o = {}) => {

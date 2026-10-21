@@ -28,7 +28,10 @@ B.train = (f, T, o = {}) => {
     if (KERB) { add(G.pbox(len - 1, .012, .03), '#ffffff', xc - .5, .146, .52); add(G.pbox(len - 1, .012, .11), YEL, xc - .5, .146, .6);
       for (let x = x0 + .1; x < x1 - 1; x += .12) add(G.cyl(.016, .016, .01, 6), shade(YEL, .12), x, .155, .6); }
   }));
-  f.add(mc('train-car', ({ add }) => {
+  // (③ 10/21, 27판 끝 '기차 도착' — staging.js trainIn): the car and its two doors are their own groups (f.live: bake keeps them
+  // apart from the track), so the car can roll in along the track and a door slide open; f.car, f.doors
+  const car = grp(); f.add(car); (f.live ||= []).push(car); f.car = car;
+  car.add(mc('train-car', ({ add }) => {
     const xc = -.1;
     // body: green below the windows, cream above, a rounded roof
     add(G.box(L, .42, D, .08), GREEN, xc, y0 + .21, 0);
@@ -44,11 +47,8 @@ B.train = (f, T, o = {}) => {
     // windows on the platform side: rounded dark glass (no light streak — 10/21 "리플렉션 꼴보기 싫다"); two sliding doors
     const win = x => { add(G.box(.5, .4, .02, .05), GLASS, x, y0 + .86, zf + .005); };
     for (const x of [-2.05, -1.45, -.15, .45, 1.05]) win(x);
-    for (const x of [-.8, 1.65]) {
-      add(G.box(.52, 1.0, .02, .03), GREEND, x, y0 + .56, zf + .006);
-      for (const s of [-1, 1]) add(G.box(.18, .34, .01, .03), GLASS, x + s * .12, y0 + .82, zf + .018);
-      add(G.pbox(.012, .96, .012), DARK, x, y0 + .56, zf + .02);
-    }
+    // the doorways, dark inside (the doors themselves are their own groups, below)
+    for (const x of [-.8, 1.65]) add(G.pbox(.5, .98, .006), DARK, x, y0 + .56, zf + .003);
     // the cab nose at +x: a big windscreen, round headlights, a little bumper; a number plate
     const xn = xc + L / 2;
     add(G.box(.12, Hb - .1, D - .04, .06), CREAM, xn - .02, y0 + Hb / 2 + .02, 0);
@@ -65,6 +65,15 @@ B.train = (f, T, o = {}) => {
       for (const wx of [-.28, .28]) for (const z of [-.3, .26]) add(G.cyl(.13, .13, .06, 16), '#4a4256', bx + wx, .21, z, HP, 0, 0);
     }
   }));
+  f.doors = [-.8, 1.65].map(x => {
+    const d = grp(); put(d, x, y0 + .56, zf + .006); car.add(d); f.live.push(d);
+    d.add(mc('train-door', ({ add }) => {
+      add(G.box(.52, 1.0, .02, .03), GREEND, 0, 0, 0);
+      for (const s of [-1, 1]) add(G.box(.18, .34, .01, .03), GLASS, s * .12, .26, .012);
+      add(G.pbox(.012, .96, .012), DARK, 0, 0, .014);
+    }));
+    return d;
+  });
   // the overhead line: two masts at the ends of the platform, a wire over the track at the pantograph's height
   f.add(mc('train-catenary', ({ add }) => {
     for (const x of [-2.3, 6.1]) { add(G.cyl(.05, .06, 2.5, 10), '#9ea5b8', x, 1.25, -.62); add(G.box(.05, .05, .7, .01), '#9ea5b8', x, 2.32, -.3); }
@@ -73,7 +82,7 @@ B.train = (f, T, o = {}) => {
     for (let x = -2; x < 6; x += 1) add(G.cyl(.006, .006, .18, 4), DARK, x, 2.21, -.02);
   }));
   // a small black paw print on the window glass by the second door (먹물이 was here — no line, just a trace)
-  f.add(mc('train-paw', ({ add }) => {
+  car.add(mc('train-paw', ({ add }) => {
     const x = 1.05 - .1, y = .34 + .8, z = .43 + .02;
     add(G.cyl(.05, .05, .006, 12), '#2a2233', x, y, z, HP, 0, 0);
     for (const [dx, dy] of [[-.05, .055], [0, .075], [.05, .055]]) add(G.cyl(.02, .02, .006, 8), '#2a2233', x + dx, y + dy, z, HP, 0, 0);
