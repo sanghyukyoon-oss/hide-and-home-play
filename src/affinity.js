@@ -74,6 +74,7 @@ export function affinity(type, spot) {
   if (F_DISH.test(f)) return c === 'food' ? 'like' : 'never';                          // (6판: a teddy came out of the dish cabinet)
   if (c === 'food') return F_KITCHEN.test(f) ? 'like' : F_CLOTH.test(f) || F_BATH.test(f) || F_TRASH.test(f) ? 'never' : 'ok';
   if (c === 'cloth') return F_CLOTH.test(f) ? 'like' : F_KITCHEN.test(f) || F_BATH.test(f) ? 'never' : 'ok';
+  if (/^soap/.test(type)) return F_BATH.test(f) ? 'like' : 'never';                     // a bar of soap only in the bathroom (10/21 실폰 9판: it lay in the yarn basket)
   if (c === 'bath') return F_BATH.test(f) ? 'like' : F_KITCHEN.test(f) ? 'never' : 'ok';
   return F_TOY.test(f) ? 'like' : 'ok';                                                 // toys and odds and ends: a box is a fine place
 }

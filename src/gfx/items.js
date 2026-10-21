@@ -334,13 +334,15 @@ export const ITEMS = {
     g.add(put(sph(.02, '#c99a5a', null, 10, 8), .182, .238, 0));
     return g;
   } },
-  // 비누 (9판, 욕조 가장자리·세면대): a lavender bar with a heart pressed in, three bubbles at its corner
-  soap: { name: '비누', h: .1, flat: true, build() {
-    const g = grp(), c = '#c3a6ff';
-    g.add(put(rbox(.3, .075, .19, c, .03), 0, .0375, 0));
-    const hg = geo('soapheart', () => new THREE.ExtrudeGeometry(heartShape(.05), { depth: .01, bevelEnabled: false, curveSegments: 5 }).center());   // (a plain stamp: the bevelled heart was 2k corners)
-    g.add(put(mesh(hg, mat(shade(c, .14))), -.03, .07, .01, -Math.PI / 2, 0, 0));
-    for (const [x, z, r] of [[.1, -.05, .026], [.128, -.012, .019], [.072, -.082, .016]]) g.add(put(sph(r, '#ffffff', GLOSS, 10, 8), x, .072, z));
+  // 비누 (9판, 욕조 가장자리·세면대): a lavender bar with a heart pressed in, three bubbles at its corner. Modelled near a real
+  // soap's size: every thing is drawn up to ~34 cm on its longest side but at most 2.4× its own size, so this one stops short
+  // of the others the way a soap is smaller (user 10/21 실폰 9판: "비누 왜 이렇게 크냐?" — it was 30 cm, drawn 38–41 cm)
+  soap: { name: '비누', h: .04, flat: true, build() {
+    const g = grp(), c = '#c3a6ff', S = 1.36;   // (S 1.36: 12.5 cm here, ~30 cm drawn)
+    g.add(put(rbox(.092 * S, .024 * S, .058 * S, c, .009 * S), 0, .012 * S, 0));
+    const hg = geo('soapheart|' + S, () => new THREE.ExtrudeGeometry(heartShape(.016 * S), { depth: .004 * S, bevelEnabled: false, curveSegments: 5 }).center());   // (2 mm proud of the bar or more: closer, deFlush lifts it 6 mm)
+    g.add(put(mesh(hg, mat(shade(c, .14))), -.009 * S, .024 * S, .003 * S, -Math.PI / 2, 0, 0));
+    for (const [x, z, r] of [[.03, -.015, .008], [.039, -.004, .006], [.022, -.025, .005]]) g.add(put(sph(r * S, '#ffffff', GLOSS, 10, 8), x * S, .022 * S, z * S));
     return g;
   } },
   // 메달 (10판, 진열장·서랍): a gold medal lying flat, a star on its face, a red-and-white ribbon in a V
