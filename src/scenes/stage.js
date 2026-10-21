@@ -245,6 +245,7 @@ export class StageScene {
     }
     this.targets = this.items.filter(i => i.role === 'target');
     this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
+    if (G.world.post) G.world.post.bloomOn = !!(this.spec.night || this.spec.dark);   // 때깔 빛 번짐: night and power-cut stages only (10/21)
     this.hasBook = false; this.cine = false;
     if (this.plan.showcase?.shelf) { const S = this.plan.showcase; S.shelf.furn.spines.draw(S.order, S.missing); }
     else for (const e of (this.room.rooms || [this.room]).flatMap(R => R.furns)) e.f.spines?.draw([0, 1, 2, 3, 4], -1);   // 비밀 책장 outside its own stage: the rainbow, done
@@ -422,7 +423,7 @@ export class StageScene {
     if (this.raidRun && !this.result) { const c = settleOpen(G); if (c) setTimeout(() => G.ui.toast(`털다 나온 집 정산 · 코인 +${c}`, 'green'), 700); }   // (QA9 P2: leaving a raid half way kept nothing)
     G.tv?.close(); this.tvs?.dispose(); this.tvs = null;   // 몽글 TV
     G.world.onPan = null; G.world.onDoubleTap = null; this.tutEls?.forEach(e => e.remove()); this.trick?.dispose();
-    if (G.world.post) { G.world.post.u.gray.value = 0; G.world.post.u.grayR.value = -1; }
+    if (G.world.post) { G.world.post.u.gray.value = 0; G.world.post.u.grayR.value = -1; G.world.post.bloomOn = false; }
     document.getElementById('app').style.removeProperty('--joyB');
     G.world.root.remove(this.room.group); G.world.root.remove(this.friend.root); this.look?.dispose(); setSky(null);
     for (const n of this.npcs || []) { n.on = false; G.world.root.remove(n.ch.root); }

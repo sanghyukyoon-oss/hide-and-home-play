@@ -175,9 +175,28 @@ export const GRAY_SPLIT = GSQ != null && GSQ !== '' && !isNaN(+GSQ) ? +GSQ : 6;
 // where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
 const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
 export const GRAY_SPLIT_FROM = GFQ != null && GFQ !== '' && !isNaN(+GFQ) ? +GFQ : .33;
+const BRIGHT = `
+varying vec2 vUv;
+uniform sampler2D tSrc; uniform vec2 srcRes; uniform float th;
+void main(){
+  vec2 q = 1.5 / srcRes;
+  vec3 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)).rgb + texture2D(tSrc, vUv + vec2(q.x, -q.y)).rgb
+          + texture2D(tSrc, vUv + vec2(-q.x, q.y)).rgb + texture2D(tSrc, vUv + vec2(q.x, q.y)).rgb) * .25;
+  float l = max(c.r, max(c.g, c.b));
+  gl_FragColor = vec4(c * smoothstep(th, th + .35, l), 1.);
+}`;
+const GBLUR = `
+varying vec2 vUv;
+uniform sampler2D tSrc; uniform vec2 dir;
+void main(){
+  vec3 c = texture2D(tSrc, vUv).rgb * .227;
+  c += (texture2D(tSrc, vUv + dir * 1.385).rgb + texture2D(tSrc, vUv - dir * 1.385).rgb) * .316;
+  c += (texture2D(tSrc, vUv + dir * 3.231).rgb + texture2D(tSrc, vUv - dir * 3.231).rgb) * .07;
+  gl_FragColor = vec4(c, 1.);
+}`;
 const DOWN = `
 varying vec2 vUv;
-uniform sampler2D tSrc; uniform vec2 outRes; uniform float sharpen, split, splitFrom;
+uniform sampler2D tSrc, tBloom; uniform vec2 outRes; uniform float sharpen, split, splitFrom, grade, bloom;
 void main(){
   vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint
   vec4 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)) + texture2D(tSrc, vUv + vec2(q.x, -q.y))
@@ -198,6 +217,17 @@ void main(){
     vec4 b = (texture2D(tSrc, vUv + vec2(-r.x, 0.)) + texture2D(tSrc, vUv + vec2(r.x, 0.)) + texture2D(tSrc, vUv + vec2(0., -r.y)) + texture2D(tSrc, vUv + vec2(0., r.y))) * .25;
     c.rgb = max(c.rgb + (c.rgb - b.rgb) * sharpen, 0.);
   }
+  // 때깔 (10/21 사용자 "색보정이랑 빛번짐 ㄱ"): split tone — the light parts a touch warmer, the shade a touch cooler — and a little more colour in
+  // the middle tones; 0 = off (linear light here)
+  if (grade > .001) {
+    float l = dot(c.rgb, vec3(.2126, .7152, .0722));
+    float hi = smoothstep(.18, .75, l), lo = 1. - smoothstep(.02, .16, l);
+    c.rgb *= mix(vec3(1.), vec3(1.045, 1.005, .94), hi * grade) * mix(vec3(1.), vec3(.94, .975, 1.07), lo * grade);
+    float mid = 1. - abs(sqrt(l) * 2. - 1.);
+    c.rgb = max(mix(vec3(l), c.rgb, 1. + .2 * grade * mid), 0.);
+  }
+  // soft glow round bright lights (night stages only — see bloomOn): a quarter-size blurred bright pass added back
+  if (bloom > .001) c.rgb += texture2D(tBloom, vUv).rgb * bloom;
   gl_FragColor = linearToOutputTexel(c);
 }`;
 
@@ -242,7 +272,14 @@ export class ToonPost {
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
     this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
-    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 }, splitFrom: { value: GRAY_SPLIT_FROM } };
+    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 }, splitFrom: { value: GRAY_SPLIT_FROM },
+      grade: { value: 0 }, tBloom: { value: null }, bloom: { value: 0 } };
+    // 때깔 (10/21): the colour grade (gradeWant 0..1, held off while a 흑백판 is grey) and a night glow (bloomOn: set by the stage
+    // on night and power-cut stages only, stage.js; bloomStr)
+    this.gradeWant = 1; this.bloomOn = false; this.bloomStr = .8;
+    this.blA = rt({ depthBuffer: false }); this.blB = rt({ depthBuffer: false });
+    this.blu = { tSrc: { value: this.comp.texture }, srcRes: { value: new THREE.Vector2(1, 1) }, th: { value: .5 } };
+    this.gbu = { tSrc: { value: this.blA.texture }, dir: { value: new THREE.Vector2(1, 0) } };
     const quad = m => { const s = new THREE.Scene(); s.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m)); return s; };
     const sm = (uniforms, fragmentShader) => new THREE.ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader, depthTest: false, depthWrite: false, blending: THREE.NoBlending });
     this.aoScene = quad(sm(this.au, AO));
@@ -250,6 +287,7 @@ export class ToonPost {
     this.blurScene = quad(sm(this.bu, BLUR));
     this.edgeScene = quad(sm(this.u, EDGE));
     this.downScene = quad(sm(this.du, DOWN));
+    this.brightScene = quad(sm(this.blu, BRIGHT)); this.gblurScene = quad(sm(this.gbu, GBLUR));
     // the edge pass's block mask (opt.mask) and the redraw-only-what-changed path (render(…, rects))
     this.opt = { mask: false, inval: true, ...opt };
     const BLK = 8; this.blk = BLK;
@@ -294,6 +332,7 @@ export class ToonPost {
     const mw = Math.ceil(iw / this.blk), mh = Math.ceil(ih / this.blk);
     this.mask.setSize(mw, mh); this.maskD.setSize(mw, mh); this.mu.res.value.set(iw, ih); this.mdu.mres.value.set(mw, mh);
     this.u.res.value.set(iw, ih); this.au.res.value.set(aw, ah); this.bu.aoRes.value.set(aw, ah); this.du.outRes.value.set(w, h);
+    this.blA.setSize(Math.max(1, Math.round(w / 4)), Math.max(1, Math.round(h / 4))); this.blB.setSize(this.blA.width, this.blA.height); this.blu.srcRes.value.set(iw, ih);
     this.setLine(lineCss);
     const f = pixelArt ? THREE.NearestFilter : THREE.LinearFilter;
     this.comp.texture.minFilter = this.comp.texture.magFilter = f;
@@ -326,6 +365,7 @@ export class ToonPost {
   // of every buffer still holds the previous frame, which is the same picture there
   render(scene, cam, rects = null) {
     const r = this.r, s = this.shared;
+    if (this.bloomOn) rects = null;   // (the glow reaches past any box: a whole frame while it is on)
     this.syncPacking();
     s.near.value = cam.near; s.far.value = cam.far;
     s.fr.value.set(cam.left / cam.zoom, cam.right / cam.zoom, cam.bottom / cam.zoom, cam.top / cam.zoom);
@@ -390,6 +430,15 @@ export class ToonPost {
     // the grey stage's RGB split: only while the whole room is grey — off from the moment the colour starts coming back
     const sp = this.u.gray.value > .5 && this.u.grayR.value < 0 ? GRAY_SPLIT * r.getPixelRatio() : 0;
     this.du.split.value = sp;
+    this.du.grade.value = this.u.gray.value > .5 && this.u.grayR.value < 0 ? 0 : this.gradeWant;
+    if (this.bloomOn) {
+      const W4 = this.blA.width, H4 = this.blA.height;
+      r.setRenderTarget(this.blA); r.render(this.brightScene, this.qCam);
+      this.gbu.tSrc.value = this.blA.texture; this.gbu.dir.value.set(1 / W4, 0); r.setRenderTarget(this.blB); r.render(this.gblurScene, this.qCam);
+      this.gbu.tSrc.value = this.blB.texture; this.gbu.dir.value.set(0, 1 / H4); r.setRenderTarget(this.blA); r.render(this.gblurScene, this.qCam);
+      r.setRenderTarget(null);
+      this.du.tBloom.value = this.blA.texture; this.du.bloom.value = this.bloomStr;
+    } else this.du.bloom.value = 0;
     if (er) {
       // the canvas keeps its pixels (preserveDrawingBuffer): only the screen boxes these comp boxes reach are redone
       // (the down pass reads up to ~1.6 output px around a pixel). setScissor takes CSS px.
