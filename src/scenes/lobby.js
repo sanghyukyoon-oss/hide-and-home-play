@@ -9,7 +9,6 @@ import { giftChoices, giftPanel, grantGift, openStarGifts } from '../gifts.js'; 
 import { HomeScene, playButton, openMore } from './home.js';
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { FURN_INFO } from '../gfx/furniture.js';
-import { put, rbox, sph } from '../gfx/kit.js';
 import { openRoadmap } from '../roadmap.js';
 import { openCardBook, bookBadge, cardCount } from '../cardbook.js';
 import { cardOpened } from '../specials.js';   // 도감으로 열리는 스페셜 (③ 10/21)
@@ -58,7 +57,7 @@ const noPick = o => { o.traverse(c => { c.userData.noPick = true; c.raycast = ()
 let INK = null;
 const inkMeshes = () => INK ||= {
   cushion: new THREE.CylinderGeometry(.24, .26, .07, 20), cm: new THREE.MeshStandardMaterial({ color: '#3d3658', roughness: .9 }),
-  dot: new THREE.CircleGeometry(.035, 12), paw: new THREE.CircleGeometry(.06, 14),
+  dot: new THREE.CircleGeometry(.035, 12), paw: new THREE.CircleGeometry(.06, 14), toe: new THREE.CircleGeometry(.026, 10),
   cols: ['#ff6fa8', '#5ab8ff', '#a77bff', '#4fcf86'].map(color => new THREE.MeshBasicMaterial({ color, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })),
 };
 const qSprite = s => { const sp = new THREE.Sprite(qMat()); sp.scale.setScalar(s); return noPick(sp); };
@@ -123,7 +122,17 @@ export class LobbyScene extends MyHomeScene {
   lobbyHud() {
     const G = this.G, ui = G.ui, S = G.save, col = this.col, open = G.homeOpen();
     const lv = lvOf(S).lv, hero = 'mong';   // (the room's owner is always 몽글이; save.hero is the friend who walks along — 10/19)
-    const prof = h('div', { class: 'profile' }, h('div', { class: 'av' }, h('img', { src: G.thumbs['face_' + hero] || G.thumbs.face_mong })), h('div', {}, h('div', { class: 'nm ol' }, nameOf(hero) || '몽글이'), h('div', { class: 'lv' }, `Lv.${lv}`, h('span', { class: 'lvt' }, ' 숨바꼭질 탐정'))));
+    // 로비 위 바 (③ 10/21, user, the old bar gone: "이거 빠졌네? 흠.. 다시 디자인해서 잘 넣어줄래? 없어보인다 너무 ㅋㅋ"): one
+    // profile-and-money bar again — the face filling its tile (ears may go), name and Lv as one block with the way to the next Lv,
+    // ★ · coins · magnifiers as chips of one height with their numbers in the middle; a number that changes pops (main.js addCoins)
+    const L = lvOf(S), lens = S.lens ? (S.lens.bag ?? 0) : null;
+    const chip = (icon, v, cls = '') => h('div', { class: 'thchip ' + cls }, h('span', { class: 'ico', html: ICON[icon] || '' }), h('span', { class: 'v' }, String(v)));
+    const cp = chip('coin', S.coins, 'coin'), chips = h('div', { class: 'thchips' }, chip('star', S.stars || 0, 'star'), cp, ...(lens != null ? [chip('hint', lens, 'lens')] : []));
+    const pct = Math.round(L.into / L.need * 100);
+    const prof = h('div', { class: 'thprof', style: `--xp:${pct}%` }, h('div', { class: 'thav' }, h('img', { src: G.thumbs['face_' + hero] || G.thumbs.face_mong, alt: '' })),
+      h('div', { class: 'thid' }, h('div', { class: 'thname' }, h('span', { class: 'nm ol' }, nameOf(hero) || '몽글이'), h('span', { class: 'thlv' }, `Lv.${L.lv}`)),
+        h('div', { class: 'thxp' }, h('i', { style: `width:${Math.round(L.into / L.need * 100)}%` }))));
+    const top = h('div', { class: 'tophud f' }, prof, chips);
     let taps = [];   // review shortcut, as on the old home: the profile 5 times quickly → every stage open on the map
     prof.addEventListener('pointerup', () => {
       const now = performance.now(); taps = [...taps.filter(t => now - t < 2500), now];
@@ -133,12 +142,7 @@ export class LobbyScene extends MyHomeScene {
       ui.toast(st.review ? '리뷰 모드: 지도에서 모든 판이 열려요' : '리뷰 모드 꺼짐', 'green');
       if (st.review) openRoadmap(G);
     });
-    /* (③ 10/21 로비 정리: no profile — 몽글이 is big in the room) */
-    // (③ 10/21, user: "로비에서는 불필요한 ui … 다 필요 없어"): the coins only — the ★ total (nothing spends it) and the magnifier bag
-    // (shown in the stage and the shop) are gone from here
-    const pills = h('div', { class: 'pills lobbypills' }); const cp = ui.pill('coin', S.coins);
-    pills.append(cp);
-    col.append(pills); G.coinPills = [cp];
+    col.append(top); G.coinPills = [cp];
     // (③ 10/21 로비 정리: 소리 and 지도 inside 더보기 — the side keeps 도감 · 상점 · 더보기)
     const sndB = () => ui.btn(G.audio.muted ? '소리 켜기' : '소리 끄기', { color: 'blue', onClick: () => { G.audio.setMuted(!G.audio.muted); ui.closePanel(); } });
     const mapB = () => ui.btn('지도', { color: 'blue', onClick: () => { ui.closePanel(); setTimeout(() => openRoadmap(G), 200); } });
@@ -271,33 +275,45 @@ export class LobbyScene extends MyHomeScene {
     c.sort((a, b) => a.d - b.d);
     return c[0] || null;
   }
-  // 20판 뒤 엔딩 전까지 (스토리 룸 10/20 — 20판 "다음엔 우리 집에서 놀자. 그 애도 같이."): a cushion kept free for the inky kid,
-  // its crayon footprints coming in from the door. No friend sits there; in the ending 먹물이 walks in and sits on it.
-  // Not saved: it is placed fresh each visit on clear floor. The first time, 몽글이 says why (script.js INKY_SEAT).
+  // 20판 뒤 엔딩 전까지 (스토리 룸 10/20 — 20판 "다음엔 우리 집에서 놀자. 그 애도 같이."): the inky kid's crayon footprints come in from
+  // the door and stop short — someone was here and slipped away (③ 10/21, user: "뭔지 모르것어 먹물이면 걍 발자국만 있으면 되지않을까":
+  // no cushion any more). They come a little further in as the stages go by (20판 a little over half the way, 60판 on all the way); in the
+  // ending 먹물이 walks in and sits where they stop. Not saved: laid fresh each visit. The first time, 몽글이 says a line (script.js INKY_SEAT).
   placeInkySeat(quiet = false) {
     const G = this.G, S = G.save;
     if (this.inkySeat || !this.room?.group || (S.stage || 0) < 20 || S.ending || seatedAll(this.H).has('inky')) return;
-    const p = this.freeSpot(null, this.zone?.friends || []); if (!p) return;   // (clear of friends still walking to their seats)
-    // (③ 10/21, user: "이건 뭐다냐. 내방에 갑자기 생긴듯" — a dark disc with three dots read as a bowling ball): a real floor cushion —
-    // a soft square in 먹물이's ink lilac, a tufted button in the middle, a crayon tassel at each corner (its footprints' colours)
-    const M = inkMeshes(), g = new THREE.Group();
-    g.add(put(rbox(.46, .09, .46, '#6c62a0', .04), 0, .045, 0));
-    g.add(put(rbox(.38, .02, .38, '#8f86c4', .02), 0, .09, 0));
-    g.add(put(sph(.028, '#f3efff', null, 10, 8), 0, .1, 0, 0, 0, 0, [1, .55, 1]));
-    ['#ff6fa8', '#5ab8ff', '#a77bff', '#4fcf86'].forEach((col, i) => { const a = Math.PI / 4 + i * Math.PI / 2; g.add(put(sph(.032, col, null, 10, 8), Math.cos(a) * .3, .06, Math.sin(a) * .3)); });
-    g.position.set(p.x, 0, p.z); this.room.group.add(noPick(g));
-    // the footprints: from the door to just short of the cushion, flat on the floor like paint (no outline)
-    const dr = this.doorAt(), len = Math.hypot(p.x - dr.x, p.z - dr.z), ux = (p.x - dr.x) / (len || 1), uz = (p.z - dr.z) / (len || 1), rot = Math.atan2(ux, uz);
-    for (let k = 0, d = .5; d < len - .45 && k < 8; d += .3, k++) {
-      const s = k % 2 ? -1 : 1, m = new THREE.Mesh(M.paw, M.cols[k % 4]);
-      m.rotation.set(-Math.PI / 2, 0, -rot); m.scale.set(.75, 1.15, 1); m.position.set(dr.x + ux * d - uz * .08 * s, .012, dr.z + uz * d + ux * .08 * s);
-      m.userData.floor = true; this.room.group.add(noPick(m));
+    // the way they head: the clear floor furthest from the door (a long trail, so it can creep further in), clear of friends' seats
+    const R = this.room, dr0 = this.doorAt(), seats = this.zone?.friends || [];
+    let q = null, qd = 0;
+    for (let x = -R.w / 2 + .5; x <= R.w / 2 - .5; x += .25) for (let z = -R.d / 2 + .5; z <= R.d / 2 - .5; z += .25) {
+      const dd = Math.hypot(x - dr0.x, z - dr0.z); if (dd <= qd || !R.clearAt(x, z, .32) || seats.some(f => Math.hypot(f.x - x, f.z - z) < .6) || Math.hypot(this.mong.root.position.x - x, this.mong.root.position.z - z) < .6) continue;
+      q = { x, z }; qd = dd;
     }
+    q ||= this.freeSpot(null, seats); if (!q) return;
+    const M = inkMeshes(), g = new THREE.Group();
+    const dr = dr0, len = Math.hypot(q.x - dr.x, q.z - dr.z), ux = (q.x - dr.x) / (len || 1), uz = (q.z - dr.z) / (len || 1), rot = Math.atan2(ux, uz);
+    const far = Math.min(1, .55 + Math.max(0, (S.stage || 0) - 20) / 40 * .45), end = Math.max(Math.min(1.3, len - .3), (len - .3) * far);
+    let k = 0, d = .35;
+    for (; d <= end && k < 12; d += .3, k++) {
+      // (a paw: the pad and three toes ahead of it, so it reads as a footprint, not a dot)
+      const sd = k % 2 ? -1 : 1, mat = M.cols[k % 4], m = new THREE.Group();
+      const pad = new THREE.Mesh(M.paw, mat); pad.scale.set(1, .85, 1); m.add(pad);
+      for (const tx of [-.055, 0, .055]) { const t = new THREE.Mesh(M.toe, mat); t.position.set(tx, .075 - Math.abs(tx) * .4, 0); m.add(t); }
+      m.rotation.set(-Math.PI / 2, 0, -rot); m.scale.setScalar(1.1); m.position.set(dr.x + ux * d - uz * .09 * sd, .012, dr.z + uz * d + ux * .09 * sd);
+      m.traverse(o => { o.userData.floor = true; }); g.add(m);
+    }
+    this.room.group.add(noPick(g));
+    // where they stop is the inky kid's seat in the ending (the spot they head for if that bit of floor is taken)
+    const sx = dr.x + ux * (d + .1), sz = dr.z + uz * (d + .1), p = this.room.clearAt?.(sx, sz, .3) ? { x: sx, z: sz } : q;
     this.inkySeat = { p, g }; G.world.idsDirty = true;
-    if (!quiet && !this.H.inkySeatSeen && !G.bot) {
+    const L = SCRIPT.INKY_SEAT;
+    if (L && !quiet && !this.H.inkySeatSeen && !G.bot) {
       this.H.inkySeatSeen = 1; G.persist?.();
       let n = 0;   // (after any friend's hello — never on top of another bubble)
-      const tell = () => { if (this.dead || this.mode !== 'lobby') return; if (document.querySelector('.bubble.pop') && n++ < 5) return setTimeout(tell, 1200); this.say(this.mong, tr(SCRIPT.INKY_SEAT.text), 2400); };
+      // (스토리 룸 10/21: the line comes with the footprints in sight — the view opens out to the whole room first)
+      const tell = () => { if (this.dead || this.mode !== 'lobby') return; if (document.querySelector('.bubble.pop') && n++ < 5) return setTimeout(tell, 1200);
+        if (this._heroView !== 'room') { this._heroView = 'room'; this.G.world.flyTo(this.tw, { target: this.G.world.home.clone(), zoom: 1, dur: .6 }); }
+        setTimeout(() => !this.dead && this.mode === 'lobby' && this.say(this.mong, tr(L.text), 2600), 700); };
       setTimeout(tell, 2400);
     }
   }
@@ -833,6 +849,9 @@ export class LobbyScene extends MyHomeScene {
     for (const s of this.seated) s.ch.update(dt);
     this.guest?.update(dt);
     if (this.mode === 'lobby' && !this.busyTut && !this._growing) this.faceYou(dt);
+    // (③ 10/21) the footprints only when the room is seen whole — in the lobby's close-up on 몽글이 they came out as big crayon blots
+    // under the top bar (user's screenshot, by the 돋보기 chip)
+    if (this.inkySeat) { const v = this.mode !== 'lobby' || this._heroView === 'room'; if (this.inkySeat.g.visible !== v) { this.inkySeat.g.visible = v; this.G.world.idsDirty = true; } }
     if (this.ftool && this.fsel) {
       const p = this.G.world.toScreen(new THREE.Vector3(this.fsel.ch.root.position.x, this.fsel.ch.headTop() + .35, this.fsel.ch.root.position.z));
       this.ftool.style.left = p.x + 'px'; this.ftool.style.top = p.y + 'px';

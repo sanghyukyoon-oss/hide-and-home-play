@@ -2020,3 +2020,37 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .btn.sm { padding-top: .38em; padding-bottom: .54em; }
 .homeside .btn.sm { padding-top: .27em; padding-bottom: .43em; }
 @media (max-height: 700px) { .homebar .btn.big { padding-top: .31em; padding-bottom: .44em; } }
+/* 로비 위 바 (③ 10/21, user: "이거 빠졌네? … 다시 디자인해서 잘 넣어줄래? 없어보인다 너무"): the profile and the money in one row
+   */
+.tophud { position: absolute; left: 10px; right: 10px; top: calc(10px + var(--safeT)); display: flex; align-items: center; justify-content: space-between; gap: 6px; pointer-events: none; }
+.tophud > * { pointer-events: auto; }
+.thprof { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.thav { flex: none; width: 46px; height: 46px; border-radius: 13px; overflow: hidden; background: radial-gradient(#fff, #ffe2ec); border: 2.5px solid var(--ink); box-sizing: border-box; }
+.thav img { display: block; width: 168%; margin: -20% 0 0 -34%; }
+.thid { min-width: 0; }
+.thname { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.thname .nm { font-size: 16px; line-height: 1; color: var(--ink); padding-bottom: 2px; }
+.thlv { font-size: 12px; line-height: 1; color: #fff; background: #9b6cff; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 7px; }
+.thxp { margin-top: 5px; width: 84px; height: 9px; box-sizing: border-box; border-radius: 6px; background: #efe3f6; border: 2px solid var(--ink); overflow: hidden; }
+.thxp i { display: block; height: 100%; background: linear-gradient(#a6f26f, #4cc62e); border-radius: 0 4px 4px 0; }
+.thchips { display: flex; align-items: center; gap: 5px; flex: none; }
+.thchip { position: relative; height: 32px; box-sizing: border-box; display: flex; align-items: center; gap: 3px; padding: 0 10px 0 3px; border-radius: 999px; background: rgba(42, 26, 61, .62); border: 2.5px solid var(--ink); color: #fff; font-size: 16px; }
+.thchip .ico { flex: none; width: 26px; height: 26px; display: grid; place-items: center; }
+.thchip .ico svg { width: 100%; height: 100%; filter: drop-shadow(0 1.5px 0 var(--ink)); }
+.thchip .v { line-height: 1; padding-bottom: 1px; font-variant-numeric: tabular-nums; -webkit-text-stroke: .6px var(--ink); }
+.thchip.pop { animation: pillpop .3s; }
+/* F·G (③ 10/21, user, picking: "이게 젤 깔끔한데 정리약간 해줄래? 버튼은 얘 아니면 얘로"): the first bar's face tile and name, tidied —
+   the tile's edge as thick as the chips' and buttons' (3px), name and Lv flush left on two close lines, the tile and the chips on one
+   middle line, the chips evenly spaced, the same 12px from both screen edges — with A's dark chips (f) or D's cream ones (g) */
+.tophud.f { left: 12px; right: 12px; align-items: center; }
+.tophud.f .thav { width: 52px; height: 52px; border-radius: 16px; border: 3px solid var(--ink); border-bottom-width: 6px; background: radial-gradient(#fff, #ffe2ec); }
+.tophud.f .thav img { width: 120%; margin: -4% 0 0 -10%; }
+.tophud.f .thprof { gap: 8px; }
+.tophud.f .thname { flex-direction: column; align-items: flex-start; gap: 3px; }
+.tophud.f .thname .nm { font-size: 20px; line-height: 1; color: #fff; padding-bottom: 0; }
+.tophud.f .thlv { background: none; border: 0; padding: 0 0 0 1px; font-size: 14px; line-height: 1; color: #8a5a9a; }
+.tophud.f .thxp { display: none; }
+.tophud.f .thchips { gap: 6px; }
+.tophud.f .thchip { height: 32px; border-width: 3px; padding: 0 10px 0 3px; }
+.tophud.f ~ .homeside { top: calc(80px + var(--safeT)); }
+@media (max-width: 370px) { .tophud.f .thchip { padding-right: 8px; font-size: 15px; } .tophud.f .thchips { gap: 5px; } .tophud.f .thname .nm { font-size: 18px; } }
