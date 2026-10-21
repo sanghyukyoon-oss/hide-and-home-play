@@ -430,7 +430,9 @@ SCENES.push(
     // (결과창 두 줄 안에 펀치라인까지 — 다음은 햄찌의 "다 같이 집으로!")
     after: [LP('mong', '다 주웠는데… 볼은 왜 아직 빵빵해?', "All picked up… so why are your cheeks still full?"), LP('hamster', '…비상식량이야.', '…Emergency rations.')] },
   // 19판 미니 소방차 조립판 (kit 'firetruck', 프라모델 정식판 10/20): 체험의 날 선물. 끝은 20판 집들이로 그대로 이어져요
-  { id: 'firestationK', kit: 'firetruck', uses: 'firestationH', type: 'hidden', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'), goal: ['소방차 부품', 'fire truck parts'],
+  { id: 'firestationK', kit: 'firetruck', uses: 'firestationH',
+    // lockSay: 사물함 관찰 자물쇠(탁상시계 1:19)를 처음 볼 때 한 줄 (② 10/21 "대사에 출동 시각 힌트 한 줄") — 시각은 말하지 않음
+    lockSay: K('펭! 사물함 비번은 출동 시각이야. 탁상시계를 잘 봐!', 'Peng! The locker code is the dispatch time. Check the desk clock!'), type: 'hidden', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'), goal: ['소방차 부품', 'fire truck parts'],
     intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('peng', '선물로 받은 소방차 부품을 다 찾아 줘!', 'Help me find all the parts of my gift fire truck!')],
     say: { first: K('펭! 빠르다. 출동 속도 1등!', 'Peng! Fast. First-class response time!'), half: K('반이야. 사이렌 울려야 하나…', 'Halfway. Should I sound the siren…'), last: K('하나 남았어. 그것만 있으면 출동 준비 끝!', "One left. Then we're ready to roll!") },
     after: [LP('peng', '삐뽀삐뽀! 출동 성공! 비결 4번은 집들이 가서 생각해 올게.', "Nee-naw! Mission success! I'll think up tip four at the housewarming."), LP('mong', '…공책 하나 더 사야겠다.', "…I'll need another notebook.")] },   // (→ 20판 집들이)

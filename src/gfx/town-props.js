@@ -171,44 +171,64 @@ B.lockers = (f, T) => {
 };
 
 // ── 소방차 (3×2): along x, the cab at +x; two roll-up lockers on the +z side
+// (19판 4차 10/21, user: "경찰차 소방차 다시" — GPT 컨셉 시트 concept-firetruck-1021, 세 안의 공통 결): a toy SD fire engine — a big
+// rounded cab-over cab with a wide windscreen and a red beacon dome, a short body behind it with a white stripe, two big axles,
+// a thick grey bumper with round headlights, a cream hose on a red reel behind the cab, a silver ladder on top; the two
+// roll-up lockers (one padlocked) and the hiding spots stay
+const FRED = '#ef4a3f', FRED2 = '#c93a31', FGLASS = '#4d5f93', FBUMP = '#8a8fa3';
 B.firetruck = (f, T) => {
-  const L = 2.8, Wd = 1.3, zc = 0, zf = Wd / 2, bh = 1.25;
-  f.add(mc('firetruck', ({ add }) => {
-    // the body: solid at the back, two open lockers at the front (their shutters roll up)
-    add(G.box(1.9, bh - .25, .76, .06), RED, -.4, .3 + (bh - .25) / 2, -.27);
-    add(G.box(1.9, .32, .56, .04), RED, -.4, .46, .37); add(G.box(1.9, .18, .56, .04), RED, -.4, 1.21, .37);
-    for (const [x0, x1] of [[-1.35, -1.21], [-.59, -.46], [.16, .55]]) add(G.box(x1 - x0, .5, .56, .01), RED, (x0 + x1) / 2, .87, .37);
-    for (const x of [-.9, -.15]) { add(G.pbox(.62, .5, .02), '#3a3048', x, .87, .11); add(G.pbox(.62, .02, .54), '#5b5672', x, .63, .37); }
-    add(G.box(.86, 1.12, Wd, .1), RED, .92, .3 + .56, zc);                            // the cab
-    add(G.box(.06, .5, Wd - .2, .02), '#cdeefc', 1.36, 1.0, zc);                      // windscreen
-    for (const sz of [-1, 1]) add(G.box(.5, .38, .02, .02), '#cdeefc', .95, 1.0, sz * (zf + .005));
-    add(G.box(L, .06, Wd + .04, .02), WHITE, 0, .5, zc);                              // the white stripe
-    add(G.box(.1, .3, Wd - .1, .02), STEEL, 1.4, .45, zc);                            // grille
-    for (const sz of [-1, 1]) add(G.sph(.07, 10, 8), '#fff3b0', 1.38, .62, sz * .45);  // headlights
-    // light bar on the cab roof
-    add(G.box(.5, .1, .3, .03), DARK, .92, 1.47, zc); add(G.box(.2, .1, .28, .04), RED, .82, 1.53, zc); add(G.box(.2, .1, .28, .04), BLUE, 1.02, 1.53, zc);
-    // wheels
-    for (const x of [-1.05, -.45, .95]) for (const sz of [-1, 1]) { add(G.cyl(.28, .28, .2, 18), '#2a2a36', x, .28, sz * (zf - .08), HP, 0, 0); add(G.cyl(.13, .13, .21, 12), STEEL, x, .28, sz * (zf - .08), HP, 0, 0); }
-    // the ladder on top
-    for (const sz of [-.22, .22]) add(G.box(2.2, .05, .05, .015), STEEL, -.35, 1.42, sz);
-    for (let k = 0; k < 11; k++) add(G.cyl(.016, .016, .44, 6), STEEL2, -1.4 + k * .21, 1.42, 0, HP, 0, 0);
-    for (const sx of [-1.2, .5]) add(G.box(.08, .16, .5, .02), STEEL2, sx, 1.3, 0);
-    // a '119' on the cab door, a coiled hose at the back
-    add(G.box(.26, .12, .01, .01), WHITE, .95, .78, zf + .01);
-    add(G.tor(.18, .05, PI * 2, 6, 18), '#f4e6c8', -1.35, .78, zf - .25, 0, HP, 0);
+  // SD proportions (the sheet): 2.4 long in its 3×2 slot, tall — the cab roof at 1.7, wheels .72 across, the lockers up over them
+  const L = 2.4, Wd = 1.3, zc = 0, zf = Wd / 2, BY0 = .32, LF = .8, LT = 1.3, BT = 1.45, CX0 = .45, CX1 = 1.2, CY1 = 1.7, WR = .36;
+  const CC = (CX0 + CX1) / 2, CL = CX1 - CX0, CW = Wd - .06, BX0 = -1.2, LOCK = [-.85, -.2];
+  f.add(mc('firetruck5', ({ add, tube }) => {
+    // the body: solid at the back, two open lockers on the near side above the wheels (their shutters roll up); a light grey inside
+    add(G.box(CX0 - BX0, BT - BY0, .76, .08), FRED, (BX0 + CX0) / 2, (BY0 + BT) / 2, -.27);
+    add(G.box(CX0 - BX0, LF - BY0, .56, .06), FRED, (BX0 + CX0) / 2, (BY0 + LF) / 2, .37); add(G.box(CX0 - BX0, BT - LT, .56, .05), FRED, (BX0 + CX0) / 2, (LT + BT) / 2, .37);
+    const gaps = [BX0, LOCK[0] - .31, LOCK[0] + .31, LOCK[1] - .31, LOCK[1] + .31, CX0];
+    for (let k = 0; k < gaps.length; k += 2) add(G.box(gaps[k + 1] - gaps[k], LT - LF, .56, .01), FRED, (gaps[k] + gaps[k + 1]) / 2, (LF + LT) / 2, .37);
+    for (const x of LOCK) { add(G.pbox(.62, LT - LF, .02), '#8e8aa3', x, (LF + LT) / 2, .11); add(G.pbox(.62, .02, .54), '#a9a6bb', x, LF + .01, .37); add(G.pbox(.6, .02, .3), '#b9b6c8', x, LT - .08, .27); }
+    add(new THREE.SphereGeometry(.075, 14, 8, 0, PI * 2, 0, HP), '#ffcf3a', LOCK[1] - .18, LT - .07, .24); add(G.cyl(.1, .1, .015, 16), '#ffcf3a', LOCK[1] - .18, LT - .065, .25);
+    // the cab: one big rounded block — a red lower half, a deep band of dark glass, a red roof; the windscreen wide across the front
+    add(G.box(CL, 1.0 - BY0, CW, .18, 3), FRED, CC, (BY0 + 1.0) / 2, 0);
+    add(G.box(CL - .08, .42, CW - .1, .14), FGLASS, CC + .01, 1.18, 0);
+    add(G.box(CL - .06, .32, CW - .06, .14), FRED, CC - .01, CY1 - .16, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.1, .42, .1, .045), FRED, CC + sx * (CL / 2 - .08), 1.18, sz * (CW / 2 - .09));
+    for (const sz of [-1, 1]) add(G.box(.07, .42, .05, .02), FRED, CC - .12, 1.18, sz * (CW / 2 - .055));
+    // the white stripe round body and cab, the beacon dome, the mirrors
+    add(G.box(L - .04, .09, Wd + .02, .02), WHITE, 0, .62, zc);
+    add(G.cyl(.13, .15, .05, 18), FBUMP, CC + .1, CY1 + .02, 0); add(new THREE.SphereGeometry(.13, 16, 8, 0, PI * 2, 0, HP), '#ff5a4a', CC + .1, CY1 + .04, 0);
+    for (const sz of [-1, 1]) { tube([CX1 - .05, 1.05, sz * (CW / 2)], [CX1 + .02, 1.08, sz * (CW / 2 + .1)], .016, DARK, 5); add(G.box(.05, .15, .09, .025), DARK, CX1 + .04, 1.05, sz * (CW / 2 + .13)); }
+    // the front: a grey grille, big round headlights in rings, a thick grey bumper with orange lights
+    add(G.box(.04, .22, .5, .03), FBUMP, CX1 + .01, .66, 0); for (let k = 0; k < 3; k++) add(G.box(.02, .02, .44, .005), '#6b6f82', CX1 + .03, .59 + k * .065, 0);
+    for (const sz of [-1, 1]) { add(G.cyl(.12, .12, .04, 20), '#fff3c4', CX1 + .01, .74, sz * .43, 0, 0, HP); add(G.tor(.12, .022, PI * 2, 5, 20), STEEL2, CX1 + .03, .74, sz * .43, 0, HP, 0); }
+    add(G.box(.2, .2, Wd + .04, .08), FBUMP, CX1 + .06, .34, 0);
+    for (const sz of [-1, 1]) add(G.sph(.04, 8, 6), '#ff9a3c', CX1 + .16, .4, sz * .55);
+    add(G.box(.14, .18, Wd, .06), FBUMP, BX0 - .02, .36, 0); for (const sz of [-1, 1]) add(G.box(.03, .11, .17, .02), '#e2403a', BX0 - .005, .7, sz * .45);
+    // wheels: two big axles, dark tyres with grey hubs
+    for (const x of [-.72, .82]) for (const sz of [-1, 1]) { add(G.cyl(WR, WR, .26, 22), TYRE, x, WR, sz * (zf - .11), HP, 0, 0); add(G.cyl(.16, .16, .265, 14), HUBG, x, WR, sz * (zf - .11), HP, 0, 0); add(G.cyl(.055, .055, .27, 10), '#8a8fa3', x, WR, sz * (zf - .11), HP, 0, 0); }
+    // the ladder on top: two silver rails with rungs on two grey supports
+    for (const sz of [-.24, .24]) add(G.box(1.5, .06, .06, .02), STEEL, -.42, BT + .15, sz);
+    for (let k = 0; k < 8; k++) add(G.cyl(.018, .018, .48, 6), STEEL2, -1.1 + k * .195, BT + .15, 0, HP, 0, 0);
+    for (const sx of [-1.0, .2]) add(G.box(.1, .14, .56, .03), FBUMP, sx, BT + .05, 0);
+    // the hose reel behind the cab: a red drum, cream hose wound on it, a grey hub; the hose's brass nozzle hanging down
+    const RX = .29, RY = 1.02;
+    add(G.cyl(.19, .19, .05, 20), FRED2, RX, RY, zf + .05, HP, 0, 0); add(G.cyl(.19, .19, .05, 20), FRED2, RX, RY, zf - .09, HP, 0, 0);
+    for (let k = 0; k < 3; k++) add(G.tor(.14 - k * .014, .033, PI * 2, 6, 20), k % 2 ? '#efdcb4' : '#f6e8c8', RX, RY, zf - .02 + (k - 1) * .042);
+    add(G.cyl(.05, .05, .2, 12), FBUMP, RX, RY, zf - .02, HP, 0, 0);
+    tube([RX, RY - .15, zf + .02], [RX + .03, RY - .36, zf + .04], .03, '#f6e8c8', 6); add(G.cyl(.03, .02, .08, 10), BRASS, RX + .03, RY - .41, zf + .04);
   }));
   // two roll-up lockers on the near side
   const shutters = [];
-  for (const [k, x] of [[0, -.9], [1, -.15]]) {
-    const sv = grp(); put(sv, x, 1.12, zf + .012); f.add(sv);
-    sv.add(mc('firetruck-shutter', ({ add }) => { add(G.box(.62, .5, .02, .01), '#d9dee8', 0, -.25, 0); for (let i = 0; i < 6; i++) add(G.pbox(.6, .01, .006), STEEL2, 0, -.05 - i * .08, .012); add(G.box(.2, .03, .03, .01), DARK, 0, -.47, .02); }));
+  for (const [k, x] of [[0, LOCK[0]], [1, LOCK[1]]]) {
+    const sv = grp(); put(sv, x, LT, zf + .012); f.add(sv);
+    sv.add(mc('firetruck5-shutter', ({ add }) => { add(G.box(.62, LT - LF, .02, .01), '#d9dee8', 0, -(LT - LF) / 2, 0); for (let i = 0; i < 6; i++) add(G.pbox(.6, .01, .006), STEEL2, 0, -.05 - i * .08, .012); add(G.box(.2, .03, .03, .01), DARK, 0, -(LT - LF) + .03, .02); }));
     const p = f.part('curtain', sv, t => { sv.scale.y = 1 - .85 * t; }, { label: k ? '소방차 뒤 칸' : '소방차 앞 칸', sfx: 'swish', dur: .35 });
-    if (!k) { p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: -.45, z: .05, parent: sv }; }
-    f.spot('inside', null, x, .64, .42, { part: p, maxH: .36, label: '소방차 장비 칸', scale: .8 });
+    if (!k) { p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: -(LT - LF) + .05, z: .05, parent: sv }; }
+    f.spot('inside', null, x, LF + .02, .42, { part: p, maxH: .36, label: '소방차 장비 칸', scale: .8 });
     shutters.push(sv);
   }
-  f.spot('on', null, .92, 1.6, zc, { maxH: .3, label: '소방차 지붕 위', scale: .7 });
-  f.spot('under', null, -.4, .02, zc + .2, { maxH: .22, label: '소방차 밑', scale: .8 });
+  f.spot('on', null, CC - .18, CY1 + .005, zc, { maxH: .3, label: '소방차 지붕 위', scale: .7 });
+  f.spot('under', null, .05, .02, zc + .2, { maxH: .22, label: '소방차 밑', scale: .8 });
 };
 
 // ── 소방봉 (1×1)
@@ -298,55 +318,81 @@ B.policefront = f => {
   f.add(put(decal(1.25, .24, SIGN()), .2, H + .32, .07));
 };
 // ── 순찰차 (2×1): a small round police car along x, light bar on the roof, a door that opens (something left on the seat)
-// (21판 3차 10/21, user on the phone: "경찰차 디자인 다시" — it read as a white box with a door plate sticking out): a chunky,
-// rounded Korean patrol car — white body, a blue band with a thin yellow line under it all round, a rounded cabin with
-// light-blue windows and white pillars, a red-and-blue light bar across the roof, grey bumpers, round headlights and red
-// tail lights, fat tyres with white hubs. The door, its lock and the three hiding spots stay where they were.
-const PBLUE = '#2f6fdc', PYEL = '#ffd23f', GLASS = '#bfe4f6', GLASS2 = '#9fd2ee', BUMP = '#8a90a6', TYRE = '#2a2a36';
+// (21판 4차 10/21, user: "경찰차 소방차 다시" — 검토 세션 GPT 컨셉 시트 concept-policecar-1021, 세 안의 공통 결): a toy SD patrol car —
+// a big round cabin over most of the length, a short nose and a short tail, big wheels with grey hubs, a thick dark bumper with
+// a POLICE plate, big round headlights, a navy band with a yellow line along the sides and over the nose, a blue-white-red
+// light bar, round white mirrors; the tailgate lifts on a little boot (a cone in the corner). The door, its lock and the old
+// hiding spots stay where they were.
+const PNAVY = '#2b3a7c', PYEL = '#ffcf3a', PGLASS = '#4d5f93', PBUMP = '#4a4658', TYRE = '#2a2a36', HUBG = '#c9ccd8';
+const policePlate = () => tex('police-plate', 256, 64, (c, w, h) => {
+  c.fillStyle = '#ffffff'; roundRect(c, 3, 3, w - 6, h - 6, 12); c.fill(); c.strokeStyle = PNAVY; c.lineWidth = 5; roundRect(c, 6, 6, w - 12, h - 12, 10); c.stroke();
+  c.fillStyle = PNAVY; c.font = font(40); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('POLICE', w / 2, h / 2 + 2);
+});
 B.patrolcar = f => {
-  const L = 1.8, Wd = .9, zf = Wd / 2, BY0 = .18, BY1 = .56, CX = -.08, CL = 1.02, CY1 = 1.0, CW = Wd - .1;
-  f.add(mc('patrolcar3', ({ add }) => {
-    // the body: a rounded tub, a rounded hood and boot on it, the wheel arches dark
-    add(G.box(L, BY1 - BY0, Wd, .16, 2), WHITE, 0, (BY0 + BY1) / 2, 0);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.2, .2, .06, 18, false), '#4a4658', sx * .56, .19, sz * (zf - .028), HP, 0, 0);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-      add(G.cyl(.18, .18, .16, 18), TYRE, sx * .56, .18, sz * (zf - .07), HP, 0, 0);
-      add(G.cyl(.09, .09, .165, 14), '#eef0f6', sx * .56, .18, sz * (zf - .07), HP, 0, 0);
-      add(G.cyl(.035, .035, .17, 10), STEEL2, sx * .56, .18, sz * (zf - .07), HP, 0, 0);
+  // SD proportions (the sheet): 1.5 long in its 2×1 slot, tall — the roof at 1.12, wheels as tall as the belt is high
+  const L = 1.5, Wd = .9, zf = Wd / 2, BY0 = .2, BY1 = .62, CX0 = -.5, CX1 = .3, CY1 = 1.12, CW = Wd - .06, TX = -.75, TB = -.5, WR = .25;
+  const CL = CX1 - CX0, CC = (CX0 + CX1) / 2;
+  f.add(mc('patrolcar6', ({ add, tube }) => {
+    // the body: a chunky rounded block from the boot to the nose; the boot at the back a shell round a hollow (its lid lifts)
+    add(G.box(L / 2 - TB, BY1 - BY0, Wd, .16, 3), WHITE, (TB + L / 2) / 2, (BY0 + BY1) / 2, 0);
+    add(G.box(TB - TX + .04, .08, Wd, .04), WHITE, (TX + TB) / 2, BY0 + .04, 0);
+    for (const sz of [-1, 1]) add(G.box(TB - TX + .04, BY1 - BY0, .06, .03), WHITE, (TX + TB) / 2, (BY0 + BY1) / 2, sz * (zf - .03));
+    add(G.box(.06, BY1 - BY0, Wd, .03), WHITE, TX + .03, (BY0 + BY1) / 2, 0);
+    add(G.box(TB - TX - .06, .01, Wd - .12, .004), '#3a3346', (TX + TB) / 2, BY0 + .081, 0);
+    add(G.box(.01, BY1 - BY0 - .1, Wd - .12, .004), '#3a3346', TB - .004, (BY0 + BY1) / 2 + .03, 0);
+    // the cabin, toy-car style and tall: a white belt, a deep band of dark glass all round, a rounded white roof a little
+    // smaller than the belt; pillars at the corners and between the doors (the near front window is the door's)
+    add(G.box(CL + .04, .1, CW + .04, .05), WHITE, CC, BY1 + .03, 0);
+    add(G.box(CL - .06, .32, CW - .08, .13), PGLASS, CC - .01, .84, 0);
+    add(G.box(CL - .1, .2, CW - .1, .09), WHITE, CC - .02, CY1 - .1, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.08, .32, .08, .035), WHITE, CC - .01 + sx * (CL / 2 - .07), .84, sz * (CW / 2 - .08));
+    for (const sz of [-1, 1]) add(G.box(.06, .32, .04, .02), WHITE, -.17, .84, sz * (CW / 2 - .05));
+    // the navy band and the yellow line, along both sides and the boot, and two stripes over the nose
+    for (const sz of [-1, 1]) {
+      add(G.pbox(L - .14, .13, .012), PNAVY, 0, .44, sz * (zf + .004)); add(G.pbox(L - .14, .03, .012), PYEL, 0, .53, sz * (zf + .004));
+      add(G.box(.32, .012, .17, .006), PNAVY, CX1 + .22, BY1 + .004, sz * .24); add(G.box(.32, .012, .03, .004), PYEL, CX1 + .22, BY1 + .008, sz * .13);
     }
-    // the bands: blue with a thin yellow line under it, along both sides and across the nose and the tail
-    for (const sz of [-1, 1]) { add(G.pbox(L - .3, .1, .012), PBLUE, 0, .42, sz * (zf + .004)); add(G.pbox(L - .3, .035, .012), PYEL, 0, .345, sz * (zf + .004)); }
-    for (const sx of [-1, 1]) { add(G.pbox(.012, .1, Wd - .3), PBLUE, sx * (L / 2 + .004), .42, 0); add(G.pbox(.012, .035, Wd - .3), PYEL, sx * (L / 2 + .004), .345, 0); }
-    // bumpers, the grille, lights
-    for (const sx of [-1, 1]) add(G.box(.09, .09, Wd - .12, .04), BUMP, sx * (L / 2 - .015), .24, 0);
-    add(G.box(.02, .06, .3, .01), DARK, L / 2 + .005, .5, 0);
-    for (const sz of [-1, 1]) { add(G.cyl(.06, .06, .03, 14), '#fff6c8', L / 2 - .005, .47, sz * .3, 0, 0, HP); add(G.tor(.06, .012, PI * 2, 4, 14), STEEL, L / 2 + .008, .47, sz * .3, 0, HP, 0);
-      add(G.box(.02, .06, .14, .01), RED, -L / 2 - .002, .47, sz * .3); add(G.box(.02, .03, .06, .008), PYEL, -L / 2 - .002, .47, sz * .17); }
-    // the cabin: a rounded block with its windows set in — the windscreen and back glass sloped a little
-    add(G.box(CL, CY1 - BY1 + .04, CW, .14, 2), WHITE, CX, (BY1 + CY1) / 2 - .02, 0);
-    for (const sz of [-1, 1]) { if (sz < 0) add(G.box(.4, .24, .012, .01), GLASS, CX + .25, .8, sz * (CW / 2 + .003)); add(G.box(.36, .24, .012, .01), GLASS, CX - .24, .8, sz * (CW / 2 + .003)); }   // (on the near side the door carries the front window)
-    add(G.box(.012, .22, CW - .2, .01), GLASS2, CX + CL / 2 + .003, .8, 0); add(G.box(.012, .2, CW - .2, .01), GLASS2, CX - CL / 2 - .003, .8, 0);
-    for (const sz of [-1, 1]) add(G.box(.05, .06, .05, .02), WHITE, CX + CL / 2 - .06, .7, sz * (CW / 2 + .025));   // the mirrors
-    // the light bar across the roof: a dark base, red on the driver's side, blue on the other, a white light between
-    add(G.box(.18, .05, .62, .025), DARK, .22, CY1 + .025, 0);
-    add(G.box(.16, .08, .24, .035), RED, .22, CY1 + .085, -.16); add(G.box(.16, .08, .24, .035), PBLUE, .22, CY1 + .085, .16);
-    add(G.box(.12, .05, .06, .02), '#ffffff', .22, CY1 + .07, 0);
+    // wheels: big tyres with grey hubs, near the corners
+    for (const x of [.46, -.47]) for (const sz of [-1, 1]) {
+      add(G.cyl(WR, WR, .22, 22), TYRE, x, WR - .01, sz * (zf - .1), HP, 0, 0);
+      add(G.cyl(.11, .11, .225, 14), HUBG, x, WR - .01, sz * (zf - .1), HP, 0, 0);
+      add(G.cyl(.04, .04, .23, 10), '#8a8fa3', x, WR - .01, sz * (zf - .1), HP, 0, 0);
+    }
+    // the bumpers: thick, dark, round-edged; orange corner lights; red tail lights
+    add(G.box(.15, .15, Wd + .02, .065), PBUMP, L / 2 - .02, .26, 0); add(G.box(.15, .15, Wd + .02, .065), PBUMP, TX - .03, .26, 0);
+    for (const sz of [-1, 1]) { add(G.sph(.03, 8, 6), '#ff9a3c', L / 2 + .055, .3, sz * .38); add(G.box(.03, .09, .13, .015), '#e2403a', TX - .002, .5, sz * .33); }
+    // big round headlights in grey rings, a little grille between
+    for (const sz of [-1, 1]) { add(G.cyl(.09, .09, .03, 18), '#fff3c4', L / 2 + .005, .46, sz * .25, 0, 0, HP); add(G.tor(.09, .016, PI * 2, 5, 18), STEEL2, L / 2 + .015, .46, sz * .25, 0, HP, 0); }
+    add(G.box(.02, .05, .2, .01), PBUMP, L / 2 + .002, .46, 0);
+    // round white mirrors on short stalks; the light bar across the roof (blue · white · red)
+    for (const sz of [-1, 1]) { tube([CX1 - .04, .72, sz * (CW / 2)], [CX1 - .02, .75, sz * (CW / 2 + .08)], .012, WHITE, 5); add(G.sph(.06, 10, 8), WHITE, CX1 - .02, .77, sz * (CW / 2 + .1), 0, 0, 0, [.6, 1, 1]); }
+    add(G.box(.16, .05, .66, .025), PBUMP, .14, CY1 + .02, 0);
+    add(G.box(.14, .09, .22, .04), '#3f6fe8', .14, CY1 + .085, -.2); add(G.box(.14, .08, .16, .03), '#ffffff', .14, CY1 + .08, 0); add(G.box(.14, .09, .22, .04), '#e8433d', .14, CY1 + .085, .2);
+    // in the boot: a little traffic cone lying in the far corner
+    add(G.cone(.05, .14, 10), '#ff7a33', TX + .13, BY0 + .14, -.26, 0, 0, HP * .9); add(G.box(.11, .02, .11, .005), '#ff7a33', TX + .2, BY0 + .14, -.26, 0, 0, HP * .9);
   }));
-  // the door (front, +z side): white with the bands and its window; it swings out on its front edge
+  f.add(put(decal(.3, .075, policePlate()), L / 2 + .057, .26, 0, 0, HP, 0));
+  // the boot lid: hinged at the cabin's back, it lifts up toward the front
+  const tg = grp(); put(tg, TB + .01, BY1, 0); f.add(tg);
+  tg.add(mc('patrolcar6-lid', ({ add }) => {
+    add(G.box(TB - TX + .02, .05, Wd, .025), WHITE, -(TB - TX + .02) / 2, .02, 0);
+    add(G.box(.04, .02, .12, .008), PBUMP, -(TB - TX) + .03, .05, 0);
+  }));
+  const tp = f.part('lift', tg, t => { tg.rotation.z = -1.5 * t; }, { label: '순찰차 트렁크', sfx: 'open', dur: .35 });
+  f.spot('inside', null, TX + .14, BY0 + .085, .1, { part: tp, maxH: .3, label: '순찰차 트렁크 안', scale: .65 });
+  // the door (front, +z side): the lower panel on the body's face with the band, the window frame set back on the glass
   const dv = grp(); put(dv, .25, .3, zf + .005); f.add(dv);
-  dv.add(mc('patrolcar3-door', ({ add }) => {
-    // the lower panel on the body's face, the window frame set back on the cabin's (it no longer stands out as a plate)
-    add(G.box(.46, .3, .03, .02), WHITE, -.23, .11, 0);
-    add(G.pbox(.46, .1, .034), PBLUE, -.23, .12, 0); add(G.pbox(.46, .035, .034), PYEL, -.23, .045, 0);
-    add(G.box(.44, .05, .06, .015), WHITE, -.23, .27, -.02);
-    add(G.box(.42, .3, .02, .02), WHITE, -.23, .43, -.05); add(G.box(.34, .2, .024, .01), GLASS, -.22, .45, -.05);
-    add(G.box(.08, .03, .03, .01), STEEL2, -.38, .3, .02);
+  dv.add(mc('patrolcar6-door', ({ add }) => {
+    add(G.box(.42, .4, .03, .02), WHITE, -.21, .16, 0);
+    add(G.pbox(.42, .13, .034), PNAVY, -.21, .14, 0); add(G.pbox(.42, .03, .034), PYEL, -.21, .23, 0);
+    add(G.box(.4, .3, .02, .03), WHITE, -.21, .54, -.062); add(G.box(.32, .22, .024, .05), PGLASS, -.22, .55, -.056);
+    add(G.box(.08, .03, .03, .01), STEEL2, -.34, .3, .02);
   }));
   const p = f.part('door', dv, t => { dv.rotation.y = 1.1 * t; }, { label: '순찰차 문', sfx: 'door', dur: .35 });
-  p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: -.36, y: .26, z: .04, parent: dv };
+  p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: -.32, y: .26, z: .04, parent: dv };
   f.spot('inside', null, .05, .3, zf + .07, { part: p, maxH: .3, label: '순찰차 문턱', scale: .8 });   // at the open door (the body is solid: a seat inside it could never be seen)
-  f.spot('on', null, -.05, 1.0, -.2, { maxH: .2, label: '순찰차 지붕 위', scale: .6 });
-  f.spot('under', null, -.3, 0, 0, { maxH: .16, label: '순찰차 밑', scale: .7 });
+  f.spot('on', null, -.12, CY1, -.2, { maxH: .2, label: '순찰차 지붕 위', scale: .6 });
+  f.spot('under', null, 0, 0, 0, { maxH: .16, label: '순찰차 밑', scale: .7 });
 };
 
 export const TOWN_BUILDERS = B;
