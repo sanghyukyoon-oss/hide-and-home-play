@@ -969,9 +969,11 @@ export class StageScene {
     if (part.furn.parts.some(p => p.device) && deviceTell(this, part, say)) return;   // 장치판: bubbles from the pond…
     const pc = this.partCenter(part);
     this.hero?.react('event', pc, this.tw);
-    this.wobble(part.furn.group); this.G.audio.sfx('wobble');
+    this.wobble(part.furn.group);
     // (the words at most every 13 s, or when you've been still a while — 1판 had "킥…"/"삐죽… 쏙!" every 4-5 s; 검토 재검토 5)
-    if (line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10) { this._gigSayT = this.t; this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300); }
+    const talk = line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10;
+    this.G.audio.sfx(talk && this.th.friend === 'bunny' && /킥|푸|히|헤/.test(say) ? 'giggleBunny' : 'wobble');   // (토순이's own giggle with her "킥…" — 사운드 10/21)
+    if (talk) { this._gigSayT = this.t; this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300); }
   }
   // (10/19 evening, user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ" — a key in the 레코드장 칸 poked through its wall and the
   // records) a thing put in a cubby or on a shelf is measured against its own furniture: rays from its middle to the four
@@ -2148,7 +2150,9 @@ export class StageScene {
     if (opening) {
       part.spots.forEach(s => { if (s.itemGroup && s.item) s.itemGroup.visible = true; });
       const junk = part.reel ? reelCast(this, part) : false;   // 낚싯대 릴: this cast may bring up junk instead
-      if (this.v2?.cands.includes(part)) v2OpenSound(this, part); else G.audio.sfxPart(part, part.sfx);   // (in its material — 사운드 10/20)
+      if (this.v2?.cands.includes(part)) v2OpenSound(this, part);
+      else if (part.furn?.type === 'fishdock' && G.audio.reel) G.audio.reel(true, part.dur, junk ? part.reel.kind !== 'none' : part.spots.some(s => s.item && !s.item.found));   // 낚싯대 릴: its own winding (사운드 10/21)
+      else G.audio.sfxPart(part, part.sfx);   // (in its material — 사운드 10/20)
       this.partsOpened++;
       await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
       for (const it of this.items) if (it.hang === part && !it.found) this.dropHung(it, part);   // (7판: the basket came up under the hook)
@@ -2162,7 +2166,7 @@ export class StageScene {
       // 2판: a drawer of hers (with something in it, or only socks) — once each way
       else if (this.scene?.drawerFull && !this.incident && part.kind === 'drawer') { const full = part.spots.some(s => s.item && !s.item.found && s.item.role === 'target'), k = full ? '_dF' : '_dE'; if (!this[k]) { this[k] = true; this.say(this.friend, full ? this.scene.drawerFull : this.scene.drawerEmpty, 1400); } }
     } else {
-      G.audio.sfxPart(part, part.kind === 'drawer' ? 'drawerClose' : 'close');
+      if (part.furn?.type === 'fishdock' && G.audio.reel) G.audio.reel(false, part.dur); else G.audio.sfxPart(part, part.kind === 'drawer' ? 'drawerClose' : 'close');
       await this.tw.run(part.dur * .8, k => { part.setOpen(1 - k); W.shadowDirty = true; }, ease.inOutQuad);
       part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; });
       if (part.reel) reelClear(this, part);
@@ -2893,7 +2897,7 @@ export class StageScene {
       G.persist();
       passage = { items: Q.items.slice(), furns: Q.furns.slice(), friends: Q.friends.slice(), box: false };   // (no 별 상자 since 10/20)
     }
-    const homeNow = !this.custom && !this.preview && this.scene?.homeChoice && G.homeOpen?.() && !G.save.tut?.home;
+    const homeNow = false;   // (③ 10/21, user "모든 연락은 숫자 뱃지": 2판's result no longer offers '내 집에서 숨겨 보기' — 숨기기 in the room carries a 1)
     // (10/20: a star box opens right here — 🎁 상자 열기 — not in the room: no scene between the stages, gifts.js)
     const passOn = !!passage && !homeNow && PASSAGE_EVERY && !!(passage.items.length || passage.furns.length || passage.friends.length);
     // the first run doesn't offer the home after 1판: the home first shows after 2판, when 내 집 opens (기획안 7장)
@@ -2917,16 +2921,16 @@ export class StageScene {
         // (each line with its speaker's face and, but for 몽글이's own, a small name — two friends can share the two lines)
         ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, L.who !== 'mong' && CHAR_DEFS[L.who] ? h('b', { class: 'who' }, CHAR_DEFS[L.who].name) : '', tr(L.text)))))] : []),
         // 별 셋 = 비밀 한 줄: the line itself the moment it opens; short of three (once you know secrets exist), a grey 'one secret'
-        ...(secretNew ? [h('div', { class: 'memento secret' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost] }) : '', h('div', {}, h('b', {}, tr(SECRET_UI.got)), h('div', {}, tr(secret))))] : []),
-        ...(secretLock ? [h('div', { class: 'memento secret', style: 'opacity:.75' }, G.thumbs['face_' + sHost] ? h('img', { src: G.thumbs['face_' + sHost], style: 'filter:grayscale(1) brightness(.55)' }) : '', h('div', {}, h('b', {}, '🔒 ' + tr(SECRET_UI.lockT)), h('div', {}, tr(SECRET_UI.lock))))] : []),
+        // (③ 10/21, user: "야 개구리 대체 몇개여 … 중복아님?": one face on this panel, the talk's — the secret is a plain line, its holo
+        // card a number on 도감 (cardbook.js bookBadge), a friend you can call a number on 꾸미기)
+        ...(secretNew ? [h('div', { class: 'memento secret' }, h('div', {}, h('b', {}, tr(SECRET_UI.got).split(' · ')[0]), h('span', {}, tr(secret))))] : []),
+        ...(secretLock ? [h('div', { class: 'memento secret', style: 'opacity:.75' }, h('div', {}, h('b', {}, '🔒 ' + tr(SECRET_UI.lockT)), h('span', {}, tr(SECRET_UI.lock))))] : []),
         ...(this.kit ? [h('div', { class: 'memento tile gift' }, h('img', { src: G.thumbs['furn_' + kitFurn] }), h('div', {}, h('b', {}, kitNew ? kitShop ? '상점 기념품!' : '내 집에 가져가요!' : '또 완성!'), h('div', {}, kitNew ? `${FURN_NAME(kitFurn)} · ${kitShop ? '상점 기념품에 들어갔어' : passOn ? '내 방으로 가져가요' : '꾸미기 보관함에 들어갔어'}` : `${FURN_NAME(kitFurn)} · ${kitShop ? '상점 기념품 칸에 있어' : '이미 내 집에 있어요'}`)))] : []),
         ...(this.model ? [] : [h('div', { class: 'reward', html: ICON.coin }, cv)]),
         /* (no '걸린 시간 · 힌트 없이!' line: the star chips above already say hints, and the time isn't a goal — 2D UI 정리 10/19) */
         ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),   // (경제 B5: 안 쓴 돋보기는 가방에 쏙!)
         /* (no '마을 최고의 탐정' line on the last result — the ending says it — 검토 H6) */
         ...(newItem ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['item_' + newItem] }), h('div', {}, h('b', {}, '새 숨길 물건!'), h('div', {}, ITEMS[newItem].name)))] : []),
-        // 친구 부르기 (10/20): a friend met in this clear can be called home now — one line, its face and price (no scene)
-        ...(metBefore && G.homeOpen?.() ? callableFriends(G.save).filter(k => !metBefore.has(k)) : []).map(k => h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + k] }), h('div', {}, h('b', {}, '부를 수 있어!'), h('div', {}, SCRIPT_ALL.callResult ? SCRIPT_ALL.callResult(k, friendPrice(k)) : `${CHAR_DEFS[k]?.name || ''} · ${friendPrice(k)}`)))),
         /* (no '도감에 새로' and '내 방으로' rows: a number on 도감 and on 꾸미기 says it — user 10/20 "이거 필요없어. 도감이랑 내 방에 숫자 배지") */
         ...(newFriend ? [h('div', { class: 'memento tile' }, h('img', { src: G.thumbs['face_' + newFriend] }), h('div', {}, h('b', {}, '새 친구!'), h('div', {}, `${ga(CHAR_DEFS[newFriend]?.name || '')} 이제 동네에 놀러 와요`)))] : []),
         ...(back.length === 1 ? [h('div', { class: 'memento mine' }, h('img', { src: G.thumbs['item_' + back[0]] }), h('div', {}, h('b', {}, '되찾았다!'), h('div', {}, `${ITEMS[back[0]]?.name || ''} · 다시 내 집에 숨길 수 있어 (+20)`)))]
@@ -2952,7 +2956,6 @@ export class StageScene {
     if (!this.model) { await G.ui.countUp(cv, 0, paid - bonus, 700, v => { if (v % 10 === 0) G.audio.sfx('coin', 0); }); if (bonus > 0 && !this.dead) await this.tapCoins(cv, paid - bonus, over, bonus); }   // (a model kit pays in the model, not coins)
     // (QA 10/20: under the coin row, not inside it — in English the line ran off the panel's right edge)
     if (first?.repeat) (cv.parentElement || cv).after(h('div', { class: 'txt sm' }, '다시 찾은 방이라 보상이 1/3이에요'));
-    if (first?.unlockedHome) setTimeout(() => G.ui.toast('내 집이 열렸어! 방을 꾸미고 물건을 숨겨 봐', 'green'), 900);
     if (first?.allClear) { W.fx.confetti(220); setTimeout(() => !this.dead && W.fx.confetti(160), 900); }
     for (const z of first?.newZones || []) setTimeout(() => G.ui.toast(`내 집에 ${ga(z)} 생겼어!`, 'green'), 1700);
   }

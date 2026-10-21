@@ -103,14 +103,15 @@ export class LobbyScene extends MyHomeScene {
     if (G.homeOpen()) this.placeInkySeat();   // (after the arrivals: the friends' seats first, the inky kid's cushion on what is left)
     // 같이 다니는 친구 (10/19, user OK): after 12판, once — a 🆕 badge and a friend in the room asks to come along
     if (G.homeOpen() && (G.save.stage || 0) >= 12 && !G.save.cards?.buddy && !G.bot) setTimeout(() => !this.dead && this.mode === 'lobby' && !this.busyTut && this.buddyHint(), 5200);
-    // a new chapter's furniture is in the shop now (설계서 N3): one toast, once per chapter
+    // a new chapter's furniture is in the shop now (설계서 N3): once per chapter — a number on 상점 until it is opened
     const ch = chapterNow(G.save);
     if (G.homeOpen() && ch > (this.H.shopCh || 1)) {
       const n = SHOP_FURN.filter(it => chapterOfFurn(it.type) === ch).length; this.H.shopCh = ch; G.persist();
       const m = [...WALLPAPERS, ...FLOORS].filter(p => p.ch === ch).length;   // (the chapter's new wallpapers and floors too — 10/20)
       const msg = n && m ? `상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개, 벽지·바닥 ${m}개가 들어왔어!` : n ? `상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개가 들어왔어!` : m ? `상점에 새 벽지·바닥 ${m}개가 들어왔어!` : null;
-      if (msg) setTimeout(() => !this.dead && G.ui.toast(msg, 'green'), 3200);
+      if (msg) { this.H.shopNew = (this.H.shopNew || 0) + n + m; G.persist(); }   // (③ 10/21 "모든 연락은 숫자 뱃지": a number on 상점, not a toast)
     }
+    if (G.homeOpen() && this.H.shopNew && this.shopBtn && !this.shopBtn.querySelector('.badge')) this.shopBtn.append(h('div', { class: 'badge new shopn' }, String(this.H.shopNew)));
   }
 
   // ── the lobby's HUD: profile, ★ · coins · magnifiers, the side column, the play button and the three room buttons
@@ -143,7 +144,7 @@ export class LobbyScene extends MyHomeScene {
     const side = h('div', { class: 'homeside' }, snd,
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
       bookBadge(G, ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) })),
-      ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
+      this.shopBtn = ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
       ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G, [town]) }));
     col.append(side);
     this.playBtn = playButton(G);
@@ -157,7 +158,7 @@ export class LobbyScene extends MyHomeScene {
         this._callNow = call ? callableFriends(S).filter(k => (S.coins || 0) >= friendPrice(k)) : [];
         this._growNow = !!(nx && (S.coins || 0) >= nx.S.price);
         return b; })(),
-      lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater ? this.hideLesson() : this.setMode('hide')),
+      (() => { const b = this.hideBtn = lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater || S.tut?.hideNew ? this.hideLesson() : this.setMode('hide')); if (open && (S.tut?.hideLater || S.tut?.hideNew)) b.append(h('div', { class: 'badge new hiden' }, '1')); return b; })(),
       lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
     // 꾸미기's one number (user 10/20: "방꾸미기 숫자 배지", "도감이랑 내 방에 숫자 배지"): furniture you haven't seen there yet,
@@ -600,27 +601,12 @@ export class LobbyScene extends MyHomeScene {
   // opens with no gift to pick — its drawer is already there — and 토순이 drops in for the hide lesson, then goes: call her back
   // from 꾸미기's 친구 tab (the first friend you buy)
   async roomOpensCall() {
+    // (③ 10/21, user: "3스테이지가 끝나고 나가면 숨기라고 하는거같은데 그것도 안되게 해줘. 걍 모든 연락은 숫자 뱃지" · "숨기기하고 토순이 말
+    // 걸지 말라고해줘"): no banner, no 토순이 walking in, no hide mode thrown at you — the room is simply open, and 숨기기 carries
+    // a 1 until the first thing is hidden (hideNew)
     const G = this.G, tut = G.save.tut || (G.save.tut = {});
-    tut.home = true; delete this.H.giftDue; this.ensureDrawer(); G.persist();
-    if (G.bot || G.skipTalk) return;
-    this.busyTut = true;
-    await this.tw.wait(.5); if (this.dead) return;
-    await G.ui.banner('몽글이 방이 열렸어!', null, 1300); if (this.dead) return;
-    const meet = this.freeSpot({ x: this.mong.root.position.x - .9, z: this.mong.root.position.z - .2 }) || { x: 0, z: 0 };
-    const bun = new Char('bunny'), d = this.doorAt(); bun.root.position.set(d.x, 0, d.z); this.room.group.add(bun.root); this.guest = bun;
-    await bun.walkTo(this.tw, meet.x, meet.z); if (this.dead) return;
-    bun.faceTo(this.mong.root.position.x, this.mong.root.position.z); this.mong.faceTo(meet.x, meet.z);
-    this.say(bun, '와, 몽글이 방이다! 숨바꼭질 하자.', 2000);
-    await this.tw.wait(1.4); if (this.dead) return;
-    await this.hideLesson(); if (this.dead) return;
-    this.setMode('lobby');
-    const L = SCRIPT.HOME_TUT?.callMe; this.say(bun, L ? tr(L.text) : '또 불러 줘! 언제든 놀러 올게.', 2200);
-    await this.tw.wait(1.8); if (this.dead) return;
-    bun.faceTo(d.x, d.z); await bun.walkTo(this.tw, d.x, d.z); if (this.dead) return;
-    this.room.group.remove(bun.root); this.guest = null;
-    G.ui.toast('꾸미기 → 친구에서 토순이를 부를 수 있어', 'green');
-    this.busyTut = false; this.setMode('lobby');
-    this.playBtn?.classList.add('pulse');
+    tut.home = true; tut.hideNew = 1; delete this.H.giftDue; this.ensureDrawer(); G.persist();
+    if (this.hideBtn && !this.hideBtn.querySelector('.badge')) this.hideBtn.append(h('div', { class: 'badge new hiden' }, '1'));
   }
   // the hide lesson (HOME_TUT): hide one thing, 토순이 counts and looks for it. In the room's opening, or — when the room opened
   // on the way between stages (검토 P1) — the first time 숨기기 is pressed. Left without hiding anything: it waits for next time.
@@ -634,12 +620,7 @@ export class LobbyScene extends MyHomeScene {
     while (!this.dead && this.mode === 'hide' && this.targetCount() === n0) await this.tw.wait(.1);
     tip.remove(); this.col?.querySelectorAll('.hint').forEach(e => e.style.visibility = ''); if (this.dead) return;
     if (this.targetCount() === n0) { tut.hideLater = 1; G.persist(); return; }   // (left before hiding: the lesson waits for the next 숨기기)
-    delete tut.hideLater; G.persist();
-    await this.tw.wait(.6); if (this.dead) return;
-    const rec = this.H.hide.items[this.H.hide.items.length - 1], inside = !!(rec?.free?.part || (rec?.spot && this.spotByKey?.[rec.spot]?.part));
-    await playDialog(G, HOME_TUT.count); if (this.dead) return;
-    await this.tw.wait(.7); if (this.dead) return;
-    await playDialog(G, inside ? HOME_TUT.missed : HOME_TUT.found);
+    delete tut.hideLater; delete tut.hideNew; G.persist();   // (no 토순이 counting and looking any more — user 10/21 "토순이 말 걸지 말라고해줘")
   }
   // ── 엔딩 (스토리 룸 10/19, 사용자 "추천대로"): 마지막 야식 뒤, 다 같이 몽글이네 방. 그동안 만난 친구들이 와서 졸고 — 선물 가구가
   // 방에 있으면 그 친구는 자기 자리에 — 토순이만 깨어 있어요. "똑, 똑." 하면 먹물이가 문으로 들어와 남겨 둔 자리에 앉아요.

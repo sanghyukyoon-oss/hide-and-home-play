@@ -1212,7 +1212,7 @@ const REACTS = {
   ],
   bunny: [
     { line: '깡총깡총!', run: async (c, R) => { R.face('happy'); R.sfx('hop'); await all([R.jump(.32, .3), R.to('ear', .35, .15)]); R.sfx('hop', 3); await all([R.jump(.32, .3), R.to('ear', -.2, .3)]); await R.to('ear', 0, .2); } },
-    { line: '부끄러워…', run: async (c, R) => { R.pose('cover'); R.shy(true); R.sfx('giggle'); R.fx('heart', { y: .9, s: .8 }); await R.wobble(.12, .9, 2.5); } },
+    { line: '부끄러워…', run: async (c, R) => { R.pose('cover'); R.shy(true); R.sfx('giggleBunny'); R.fx('heart', { y: .9, s: .8 }); await R.wobble(.12, .9, 2.5); } },
     { line: '토순이 최고지?', run: async (c, R) => { R.pose('cheer'); R.face('happy'); R.sfx('pop', 5); R.fx('star', { x: -.35, y: .85 }); R.fx('star', { x: .38, y: .95, delay: .12 }); await R.jump(.28, .38); await R.wait(.5); } },
   ],
   bear: [

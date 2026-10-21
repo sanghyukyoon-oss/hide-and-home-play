@@ -133,9 +133,11 @@ function zoom(c, G) {
 
 // 도감's number (user 10/20: "도감이랑 내 방에 숫자 배지"): cards you have that came since the book was last opened; opening it
 // clears the number (the cards inside keep their own NEW until you look at each)
-const haveIds = G => [...friendCards(G), ...itemCards(G)].filter(c => c.have).map(c => c.id);
+// (③ 10/21: a card turned holo counts as new too — the result panel no longer says so)
+const haveIds = G => { const f = friendCards(G).filter(c => c.have); return [...f.map(c => c.id), ...itemCards(G).filter(c => c.have).map(c => c.id), ...f.filter(c => c.id.startsWith('c:') && secretOpen(G.save.best, c.id.slice(2))).map(c => 's:' + c.id)]; };
 export function bookBadge(G, btn) {
   const S = G.save; if (!S.bookOpened) { S.bookOpened = haveIds(G); G.persist(); }
+  if (!S.bookSec) { S.bookSec = 1; S.bookOpened = [...new Set([...S.bookOpened, ...haveIds(G).filter(id => id.startsWith('s:'))])]; G.persist(); }   // (holo cards from before 10/21: already seen)
   const was = new Set(S.bookOpened), n = haveIds(G).filter(id => !was.has(id)).length;
   if (n) btn.append(h('div', { class: 'badge new bookn' }, String(n)));
   return btn;

@@ -210,9 +210,10 @@ function css() {
 .gring { position: absolute; left: 0; top: 0; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; box-shadow: 0 0 0 3.5px #ffd23f; z-index: 29; pointer-events: none; opacity: 0; }
 .gring.go { animation: gringgo .45s ease-out; }
 @keyframes gringgo { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+.ftcap { text-wrap: balance; }
 .ftcap.ftnew { animation: ftcapin .25s ease-out; }
 @keyframes ftcapin { 0% { opacity: .2; scale: .94; } 100% { opacity: 1; scale: 1; } }
-.ftcap .ftm { font-weight: normal; padding: 0 5px; border-radius: 8px; color: #fff; }
+.ftcap .ftm { font-weight: normal; display: inline-block; line-height: 1; padding: .06em .28em .24em; vertical-align: .02em; border-radius: 8px; color: #fff; }
 .ftcap .ftm.move { background: #4dabf7; }
 .ftcap .ftm.spin { background: #ff6f91; }
 .ftkeep { position: absolute; left: 0; top: 0; z-index: 31; pointer-events: none; translate: -50% -100%; padding: 3px 11px; border-radius: 12px; background: #fff; color: #3b2a55; border: 2.5px solid #3b2a55; font-size: 15px; white-space: nowrap; opacity: 0; transition: opacity .15s; }

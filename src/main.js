@@ -317,6 +317,7 @@ const G = {
     G.stats.stageStart = gameTime;
     world.gaugeOn = name === 'stage' || name === 'boss';   // the zoom gauge only where you search (my home has its own cards and buttons)
     document.getElementById('app').dataset.scene = name;   // style.css shrinks the play HUD on stage/boss
+    document.getElementById('app').classList.remove('cine');   // (③ 10/21: a stage left mid-talk — the app's back button — kept its letterbox and hid the next scene's HUD)
     world.joyHidden = name === 'home' || name === 'visit';   // the home screen just sways and the visit list is a list: nothing to turn there
     const p = S.enter(data);
     purgeGeo();   // free cached shapes the last two scenes didn't use (memory on phones)

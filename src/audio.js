@@ -40,9 +40,12 @@ Object.assign(SFX_FILES, {
   coin: { src: 'audio/sfx/coin.mp4', vary: .06 }, hop: { src: 'audio/sfx/hop.mp4', vary: .08 },
   // (10/20 user: "회전 효과음은 예전 게 더 나은 것 같다") the camera turn's tick is the code sound again
   ratchet: null,
-  bloom: 'audio/sfx/bloom.mp4',   // 흑백판 끝 색이 번질 때 '뾰로롱' (사운드 v3 10/20, 종 없이)
+  bloom: 'audio/sfx/bloom.mp4',
+  // (10/21 user: "토순이 웃는소리도 좀 바꿔라..") 토순이's own giggle; ("낚시릴 소리 좀 좋게") the net coming up out of the pond with something in it
+  giggleBunny: 'audio/sfx/giggleBunny.mp4', reelSplash: 'audio/sfx/reelSplash.mp4',   // 흑백판 끝 색이 번질 때 '뾰로롱' (사운드 v3 10/20, 종 없이)
   mugunghwa: null,   // (10/21 user: "무궁화꽃이 음성 이상하다, 전에 거가 더 나음") back to 너굴이's voice, one syllable at a time; the TTS take is in _backup/sfx-mugunghwa-tts.mp4
 });
+const SFX_FALLBACK = { giggleBunny: 'giggle', reelSplash: 'blub' };
 // 가구 재질: 부분의 이름표(label)로 정한다 — 첫 번째로 맞는 줄. 없으면 나무(기본 소리).
 // (10/20 user, 1판: "쓸모없이 깡깡하는 이상한 소리" — the room's bins are plastic, but 휴지통 was listed as metal)
 const MAT = [
@@ -114,6 +117,40 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
     s.connect(fl).connect(g).connect(A._bus || A.sfxBus); s.start(t0);
   }
+  // 낚싯대 릴 (10/21 user: "여기서 낚시릴 소리 좀 좋게 만들어서 넣어줄려?" — it was a cloth swish): the reel's ratchet, a click a
+  // tooth on the handle's own turn (up: the part's outCubic tween, 4 turns — a fast 촤르르 slowing to 딸깍 딸깍; down: its
+  // inOutQuad, the spool running free, lighter), a hiss of line on the spool as loud as the turn is fast, and the water: the net
+  // comes out with a tug on the line and a splash when something is in it (drips when not), and goes back in with a blub
+  let reelNoise = null;
+  A.reel = (up, dur = .9, caught = false) => {
+    hapticFor(up ? 'swish' : 'close');
+    if (!ensure() || A.muted) return;
+    const c = A.ctx, bus = A.sfxBus, D = up ? dur : dur * .8, t0 = c.currentTime + .01, N = 40;   // (4 turns × 10 teeth)
+    const inv = up ? e => 1 - Math.cbrt(1 - e) : e => e < .5 ? Math.sqrt(e / 2) : 1 - Math.sqrt(2 * (1 - e)) / 2;   // the tween's ease, solved for the time
+    const spd = up ? u => (1 - u) ** 2 : u => u < .5 ? 2 * u : 2 * (1 - u);   // its speed, 0..1
+    if (!reelNoise) { const n = c.sampleRate | 0, b = c.createBuffer(1, n, n), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; reelNoise = b; }
+    for (let i = 1; i <= N; i++) {
+      const t = t0 + inv(i / N) * D, gap = (inv(i / N) - inv((i - 1) / N)) * D, fast = Math.min(1, .012 / gap);
+      const s = c.createBufferSource(); s.buffer = reelNoise;
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = (up ? 2500 : 3300) + 700 * fast + Math.random() * 200; f.Q.value = 4;
+      const g = c.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((up ? .55 : .3) * (1 - .5 * fast), t + .0008); g.gain.exponentialRampToValueAtTime(.0001, t + .014);
+      s.connect(f).connect(g).connect(bus); s.start(t, Math.random() * .9, .02);
+      if (up && fast < .5) {   // a slow click rings a little (the pawl on metal)
+        const o = c.createOscillator(), og = c.createGain(); o.frequency.value = 1750 + Math.random() * 120;
+        og.gain.setValueAtTime(.0001, t); og.gain.linearRampToValueAtTime(.05 * (1 - fast), t + .001); og.gain.exponentialRampToValueAtTime(.0001, t + .03);
+        o.connect(og).connect(bus); o.start(t); o.stop(t + .04);
+      }
+    }
+    const s = c.createBufferSource(); s.buffer = reelNoise; s.loop = true;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.3; f.frequency.setValueAtTime(700 + 1700 * spd(0), t0);
+    const g = c.createGain(); g.gain.setValueAtTime(0, t0);
+    for (let k = 1; k <= 16; k++) { const u = k / 16, sp = spd(u); g.gain.linearRampToValueAtTime((up ? .07 : .05) * sp, t0 + u * D); f.frequency.linearRampToValueAtTime(700 + 1700 * sp, t0 + u * D); }
+    s.connect(f).connect(g).connect(bus); s.start(t0); s.stop(t0 + D + .05);
+    if (up) {
+      if (caught) { tone({ type: 'sine', f: 150, f2: 85, dur: .14, vol: .22 }); tone({ type: 'triangle', f: 640, f2: 600, dur: .09, vol: .045, at: .01 }); }   // the tug, the line going taut
+      setTimeout(() => A.sfx(caught ? 'reelSplash' : 'blub', 0, false), caught ? 70 : 40);
+    } else setTimeout(() => A.sfx('blub', 0, false), Math.max(0, D * 1000 - 60));
+  };
   // a small bell: the note, its octave and a faint third partial dying faster
   const bell = (f, at = 0, vol = .2, dur = .5) => { tone({ f, dur, vol, at }); tone({ f: f * 2, dur: dur * .45, vol: vol * .3, at }); tone({ f: f * 3.01, dur: dur * .2, vol: vol * .1, at }); };
   const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28];
@@ -157,6 +194,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     if (buzz) { const b = name.split('_')[0]; hapticFor(b === 'drawerClose' ? 'close' : b); }   // 손맛 2: a tap's sound also buzzes (even with the sound off) — buzz false: it already did (QA3 10/19)
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
+    if (SFX_FALLBACK[name] && !sfxBuf[name]) name = SFX_FALLBACK[name];   // (a newer file not in yet: the one it grew from)
     // (10/20 user: "무궁화는… 보이스 넣을 건데 디졸브 잘 넣거나 후처리 잘해서 어색하지 않게") the chant: the music steps back under it and comes up again
     if (name === 'mugunghwa') A.duck(4, .32);
     if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); }   // the jingle over the music, not under it; the hurry is over

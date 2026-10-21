@@ -1806,7 +1806,9 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .panel.result > .memento.tile img { width: 44px; height: 44px; }
 .panel.result > .memento.tile b { display: block; font-size: 12px; line-height: 1.15; }
 .panel.result > .memento.tile b + div { display: none; }
-.panel.result > .memento.secret { padding: 6px 12px 7px; gap: 8px; }
+.panel.result > .memento.secret { padding: 6px 12px 7px; gap: 8px; text-align: left; }
+.panel.result > .memento.secret b { display: inline; margin-right: 6px; }
+.panel.result > .memento.secret span { font-size: 13px; line-height: 1.35; }
 .panel.result > .memento.secret img { width: 40px; height: 40px; }
 .panel.result > .memento.secret b { font-size: 14px; }
 .panel.result > .memento.secret b + div { font-size: 13px; line-height: 1.3; }
@@ -1993,3 +1995,13 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .cine.hello { background: radial-gradient(ellipse 50% 28% at 50% 64%, rgba(255, 244, 228, 0) 0, rgba(255, 244, 228, 0) 55%, rgba(40, 26, 50, .5) 100%); }
 /* (③ 10/21) under the hello the room shows through: the zoom bar, the dial, the list and the top line wait until the card has gone */
 #app:has(> .cine.hello) :is(#hud, .zgauge, .modebadge, .joy, .turndial) { opacity: 0; pointer-events: none; transition: opacity .3s var(--eo); }
+/* (③ 10/21, user: "Ui 별 위이 정렬해줘") the result's stars on one line under the ribbon: the middle one bigger, not lifted into it */
+.panel.result > .stars { margin: 4px 0 6px; align-items: center; }
+.panel.result > .stars .st:nth-child(2) { margin-top: 0; }
+/* (③ 10/21, user: "튜토에 이동에 네모 중앙정렬.. 이런거 전반적으로 좀 정렬좀"): the body font's Hangul sits 9% of its size under the
+   middle of its line (LatinRound sets the line, Ssurround draws the Hangul), so a label with even padding looks sunk —
+   measured with _t/inkaudit.js, each kind of button gets its label's ink back in the middle (within half a pixel) */
+.btn.big { padding-top: .42em; padding-bottom: .58em; }
+.btn.sm { padding-top: .38em; padding-bottom: .54em; }
+.homeside .btn.sm { padding-top: .27em; padding-bottom: .43em; }
+@media (max-height: 700px) { .homebar .btn.big { padding-top: .31em; padding-bottom: .44em; } }

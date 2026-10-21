@@ -185,7 +185,7 @@ const SCENES = [
     // (no item names here: what you find comes from the shared pool, so "내 머리핀!" fired on a star — 작가 검토 10/18)
     finds: [K('앗, 그거 내 거!', "Hey, that's mine!"), K('거기 있었어?!', 'It was in there?!'), K('그건 아끼는 건데!', 'I love that one!'), K('마지막 건 절대 못 찾아!', "You'll never find the last one!")],
     drawerFull: K('앗, 거긴…!', 'Hey, not in th—!'), drawerEmpty: K('거긴 양말 서랍인데…', "That's my sock drawer…"),
-    after: [L('bunny', '다 찾았어?! 커튼까지 쳤는데!', 'All of them?! I drew the curtains and everything!'), L('bunny', '이번엔 네가 숨겨 봐. 내가 찾을게!', "Your turn to hide something. I'll find it!")], homeChoice: true },
+    after: [L('bunny', '다 찾았어?! 커튼까지 쳤는데!', 'All of them?! I drew the curtains and everything!'), L('bunny', '아, 개굴이가 낚시터에서 너 기다린대!', "Oh, Froggy's waiting for you at the fishing spot!")], homeChoice: true },
   { id: 'museum', keep: true, type: 'gray', room: 'museum',
     intro: [L('bear', '으헤헤, 새 그림 걸었는데… 내가 좋아하는 색이 없어졌어.', 'Ehehe, I hung a new painting… and my favorite color is gone.'), LK('bunny', '또 그 까만 애야! 펭펭이네 다락에서도 그랬대!', "That inky kid again! Same thing happened in Pengpeng's attic!")],   // (10/19: 둘째 흑백 — 첫 흑백은 4판 펭펭이네)
     inky: K('또 너야? 이번엔 안 들킬 거야.', 'You again? Not getting caught this time.'),

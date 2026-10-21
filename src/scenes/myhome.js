@@ -409,6 +409,7 @@ export class MyHomeScene {
     if (due > 0) el.append(G.ui.btn(`보상 +${due * 30}`, { color: 'yellow', icon: 'coin', cls: 'sm', onClick: () => { H.claimedFails = s.fails; G.addCoins(due * 30); G.persist(); G.audio.sfx('coin'); this.renderRecord(); } }));
   }
   shop(tab = 'furn') {
+    if (this.H.shopNew) { delete this.H.shopNew; this.G.persist(); document.querySelectorAll('.badge.shopn').forEach(e => e.remove()); }   // (③ 10/21: the 상점 number, seen)
     openShop(this.G, { zone: this.zone, onChange: (kind, from) => {
       // (바르기 with the shop open: the room is rebuilt behind it and the shop stays — setMode's ui.clear closed it, so trying
       // several wallpapers meant opening it again each time, QA9 10/21; the HUD is redone when the shop closes)
