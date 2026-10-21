@@ -1,10 +1,10 @@
 // ① 털림 다시 보기 + 복수하러 가기 (내 집 지키기·털기 메타, 10/19 — Clash's defence replay; user: "클래시옵클랜처럼 숨기고
 // 공격하는걸… 딱 아 이거구나 싶게"). Back home, the news says who came; [다시 보기] plays it in my own room: the resident
 // sneaks in, sniffs where I hid things, opens drawers, rattles a padlock that holds ("자물쇠가 막았다!"), walks right past
-// things it never noticed ("안 들킴!"), and runs off with the one it took. Then the tally and [복수하러 가기] straight to
+// things it never noticed ("안 들킴!"), and runs off with the one it took. (Since ③ 10/21 the resident isn't drawn — only
+// their finger: swipes and taps.) Then the tally and [복수하러 가기] straight to
 // that resident's house (② 정찰). The raid is still raid.js raidOnce's dice; this only plays back its record (ev.rp).
 import * as THREE from 'three';
-import { Char } from './gfx/chars.js';
 import { buildItem, ITEMS } from './gfx/items.js';
 import { attachItem } from './room.js';
 import { resolveHost, makeFreeSpot, dropFreeSpot } from './freehide.js';
@@ -17,7 +17,6 @@ import { housePool } from './presets.js';
 
 const V = new THREE.Vector3();
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
-const pick = a => a[Math.floor(Math.random() * a.length)];
 const ago = t => { const m = Math.round((Date.now() - t) / 60e3); return m < 2 ? '방금' : m < 60 ? `${m}분 전` : `${Math.round(m / 60)}시간 전`; };
 
 // 문단속 (Clash's shield): robbed once, the door stays locked for eight hours — a chip on the 내 방 lobby counts it down
@@ -53,22 +52,19 @@ function tally(S, ev) {
   return { kept: kept.length, byLock: byLock.length, byFriend, left, total: rp.items.length };
 }
 
-// 친구 지킴이 (10/20): the friend sitting at home hops over to the thief, "안 돼! 몽글이 거야!", the thief backs off; back to the seat
-async function friendBlock(S, k, thief, g, tw, live, floatAt) {
-  const G = S.G, fr = (S.seated || []).find(s => s.k === k), tp = thief.root.position;
+// 친구 지킴이 (10/20): the friend sitting at home hops over to the thing and back — "친구가 막았다!" (no words: ③ 10/21, the
+// replay shows only what the resident did with their finger, user "말풍선 나오는것좀 제거해줘. 상대방이 나오지 않아도 되고")
+async function friendBlock(S, k, g, tw, live, floatAt) {
+  const G = S.G, fr = (S.seated || []).find(s => s.k === k);
   floatAt(g, '친구가 막았다!', 'pink big');
-  if (!fr) { S.say(thief, '앗! 친구가 지키고 있었어?', 1200); await tw.wait(1.2); return; }
-  const c = fr.ch, p = c.root.position, home = p.clone(), a = Math.atan2(p.x - tp.x, p.z - tp.z);
-  const to = { x: tp.x + Math.sin(a) * .62, z: tp.z + Math.cos(a) * .62 };
+  if (!fr) { await tw.wait(1.1); return; }
+  const c = fr.ch, p = c.root.position, home = p.clone(), tp = S.room.group.worldToLocal(g.getWorldPosition(V.set(0, 0, 0)).clone()), a = Math.atan2(p.x - tp.x, p.z - tp.z);
+  const to = { x: tp.x + Math.sin(a) * .5, z: tp.z + Math.cos(a) * .5 };
   G.audio.sfx('pop', 4);
   await tw.run(.4, k2 => { p.x = home.x + (to.x - home.x) * k2; p.z = home.z + (to.z - home.z) * k2; p.y = home.y + Math.sin(k2 * Math.PI) * .5; });
   if (!live()) { p.copy(home); return; }
-  c.faceTo(tp.x, tp.z); c.setFace?.('angry'); c.bump?.(.4); S.say(c, '안 돼! 몽글이 거야!', 1200);
-  thief.setFace('sad'); thief.bump?.(.35);
-  const t0 = tp.clone(), back = { x: tp.x - Math.sin(a) * .35, z: tp.z - Math.cos(a) * .35 };
-  await tw.run(.3, k2 => { tp.x = t0.x + (back.x - t0.x) * k2; tp.z = t0.z + (back.z - t0.z) * k2; });
-  S.say(thief, '앗!', 700);
-  await tw.wait(.9);
+  c.faceTo(tp.x, tp.z); c.setFace?.('angry'); c.bump?.(.4);
+  await tw.wait(.8);
   c.setFace?.('happy');
   await tw.run(.4, k2 => { p.x = to.x + (home.x - to.x) * k2; p.z = to.z + (home.z - to.z) * k2; p.y = home.y + Math.sin(k2 * Math.PI) * .4; });
   p.copy(home);
@@ -115,91 +111,89 @@ export async function playRaidReplay(S, ev) {
   const seq = [...misses.filter(v => v.locked).slice(0, 1), ...misses.filter(v => !v.locked)].slice(0, Math.max(1, (taken ? 3 : 4) - guarded.length));
   seq.push(...guarded.sort(() => Math.random() - .5));
   if (taken) seq.push(taken);
-  // the resident
-  const ch = new Char(ev.face), room = S.room;
-  const door = room.doorDecor ? room.frontOf(room.doorDecor.f) : null, [ex, ez] = door ? [door.x, door.z] : [-1.9, 2.1];
-  ch.root.position.set(ex, 0, ez); ch.root.scale.setScalar(.01); ch.pose = 'search'; ch.setFace('sus');
-  room.group.add(ch.root); W.idsDirty = true;
-  S.update = dt => { Object.getPrototypeOf(S).update.call(S, dt); ch.update(dt); };   // (this scene's own update, plus the resident)
-  const live = () => !S.dead && !skip;
-  const local = g => room.group.worldToLocal(g.getWorldPosition(V.set(0, 0, 0)).clone());
-  const stand = v => {
-    const f = v.it.spot.furn;
-    if (f?.rec && f.group) { const p = room.frontOf(f); return [p.x, p.z]; }
-    const p = local(v.it.g), k = .55 / Math.max(.01, Math.hypot(p.x, p.z));
-    return [p.x - p.x * k, p.z - p.z * k];
+  // (③ 10/21, user: "내방 털리는거 다시보는데 이런 말풍선 나오는것좀 제거해줘. 상대방이 나오지 않아도 되고. 조작하는것만 보이면 될거같아.
+  // 터치하는거나 이동하는거"): no resident and no words — only their finger: a swipe that turns the view (a short trail), a tap
+  // where they opened or looked (a ring spreading). The big result words stay, a little above the tap so the finger shows
+  const live = () => !S.dead && !skip, wait = s => tw.wait(s);
+  const wpos = g => g.getWorldPosition(new THREE.Vector3());
+  const floatAt = (g, text, cls) => { const s = W.toScreen(wpos(g)), m = Math.min(120, innerWidth / 3); G.ui.floatText(Math.max(m, Math.min(innerWidth - m, s.x)), Math.max(150, s.y - 120), text, cls); };   // (kept on screen, clear of the finger)
+  const fing = h('div', { class: 'hand rpfinger', html: ICON.hand, style: `left:${innerWidth * .5}px;top:${innerHeight * .7}px` });
+  G.ui.wui.append(fing);
+  const outs = [fing];
+  let fx = innerWidth * .5, fy = innerHeight * .7;
+  const fingerTo = (x, y, ms) => { const a = fing.animate([{ left: fx + 'px', top: fy + 'px' }, { left: x + 'px', top: y + 'px' }], { duration: ms, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }); fx = x; fy = y; return a.finished.catch(() => {}); };
+  const press = () => fing.animate([{ scale: '1' }, { scale: '.84', offset: .4 }, { scale: '1' }], { duration: 220, easing: 'ease-out' });
+  const tapAt = async (x, y, sfx = true) => {
+    await fingerTo(x, y, 360); if (!live()) return;
+    press(); if (sfx) G.audio.sfx('tap', 4);
+    const r = h('i', { class: 'rpripple', style: `left:${x}px;top:${y}px` }); G.ui.wui.append(r); outs.push(r);
+    r.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: .95 }, { transform: 'translate(-50%,-50%) scale(1.6)', opacity: 0 }], { duration: 520, easing: 'ease-out', fill: 'forwards' });
+    await wait(.28);
   };
-  const walk = async (x, z, fast = false) => {
-    const c = ch.root.position, route = S.visitors?.route(c.x, c.z, x, z) || [[x, z]];
-    let ax = c.x, az = c.z;
-    for (const [bx, bz] of route) {
-      const n = Math.max(1, Math.round(Math.hypot(bx - ax, bz - az) / .42));
-      for (let i = 1; i <= n && live(); i++) await ch.hopTo(tw, ax + (bx - ax) * i / n, az + (bz - az) * i / n, { height: .18, dur: fast ? .16 : .25 });
-      ax = bx; az = bz;
-    }
+  const tapOn = g => { const s = W.toScreen(wpos(g)); return tapAt(Math.max(40, Math.min(innerWidth - 40, s.x)), Math.max(120, Math.min(innerHeight - 120, s.y))); };
+  // a swipe sideways: the view turns with the finger (towards the next thing, the way that brings it nearest the middle)
+  const onScreen = g => { const s = W.toScreen(wpos(g)); return Math.hypot(s.x - innerWidth / 2, (s.y - innerHeight * .5) * .7); };
+  const swipe = async g => {
+    const y0 = W.yaw; let dir = 1;
+    if (g) { const d = []; for (const sg of [1, -1]) { W.yaw = y0 - sg * .4; W.updateCam(); d.push(onScreen(g)); } W.yaw = y0; W.updateCam(); dir = d[0] <= d[1] ? 1 : -1; }
+    const y = innerHeight * .58, xa = innerWidth * (dir > 0 ? .3 : .7), xb = innerWidth * (dir > 0 ? .7 : .3);
+    await fingerTo(xa, y, 300); if (!live()) return;
+    const tr = h('i', { class: 'rptrail', style: `left:${Math.min(xa, xb)}px;top:${y}px;width:${Math.abs(xb - xa)}px;transform-origin:${dir > 0 ? 'left' : 'right'} center` }); G.ui.wui.append(tr); outs.push(tr);
+    tr.animate([{ transform: 'translateY(-50%) scaleX(0)', opacity: .9 }, { transform: 'translateY(-50%) scaleX(1)', opacity: .9, offset: .6 }, { transform: 'translateY(-50%) scaleX(1)', opacity: 0 }], { duration: 760, easing: 'ease-out', fill: 'forwards' });
+    G.audio.sfx('swish');
+    await Promise.all([fingerTo(xb, y, 440), W.flyTo(tw, { yaw: y0 - dir * .4, dur: .44, e: x => x })]);
+    await wait(.15);
   };
-  const floatAt = (g, text, cls) => { const s = W.toScreen(g.getWorldPosition(new THREE.Vector3())), m = Math.min(120, innerWidth / 3); G.ui.floatText(Math.max(m, Math.min(innerWidth - m, s.x)), s.y - 40, text, cls); };   // (kept on screen: a thing by the edge)
-  G.audio.sfx('pop', 6);
-  await tw.run(.3, k => ch.root.scale.setScalar(Math.max(.01, k)));
-  if (S.dead) return;
-  S.say(ch, ev.revenge ? '복수하러 왔지롱!' : '쉿… 아무도 없지?', 1400);
-  await tw.wait(1.2);
-  let carry = null;
+  const yaw0 = W.yaw;
+  await wait(.5); if (S.dead) return;
   for (const v of seq) {
     if (!live()) break;
-    const [sx, sz] = stand(v);
-    await walk(sx, sz);
-    if (!live()) break;
-    const p = local(v.it.g); ch.faceTo(p.x, p.z); ch.pose = 'search'; ch.setFace('sus');
-    S.say(ch, pick(['킁킁…', '여기 수상한데?', '어디 보자…']), 1000);
-    await tw.wait(.95); if (!live()) break;
-    if (v.locked && v === taken) {   // a padlock that didn't hold (the dice: rare, never zero) — picked, then opened
-      G.audio.sfx('locked'); ch.setFace('sus'); S.say(ch, '어디 보자… 딸깍!', 1200);
-      await tw.wait(1.2); if (!live()) break;
-      G.audio.sfx('unlock'); floatAt(v.it.g, '자물쇠를 땄어!', 'red big');
-      await tw.wait(.5); if (!live()) break;
+    await swipe(v.it.g); if (!live()) break;
+    if (onScreen(v.it.g) > Math.min(innerWidth, innerHeight) * .42) { await swipe(v.it.g); if (!live()) break; }   // (still far off: once more)
+    if (v.locked && v === taken) {   // a padlock that didn't hold (the dice: rare, never zero) — tapped at, then open
+      await tapOn(v.it.g); G.audio.sfx('locked'); await wait(.35); if (!live()) break;
+      await tapOn(v.it.g); G.audio.sfx('unlock'); floatAt(v.it.g, '자물쇠를 땄어!', 'red big');
+      await wait(.5); if (!live()) break;
     } else if (v.locked) {   // a padlock that holds
+      await tapOn(v.it.g); if (!live()) break;
       G.audio.sfx('locked'); const fg = v.part.furn.group, x0 = fg.position.x;
+      floatAt(v.it.g, '자물쇠가 막았다!', 'green big');
       await tw.run(.45, k => { fg.position.x = x0 + Math.sin(k * Math.PI * 8) * .03 * (1 - k); }); fg.position.x = x0;
-      ch.setFace('angry'); S.say(ch, '잠겼잖아!', 1200); floatAt(v.it.g, '자물쇠가 막았다!', 'green big');
-      await tw.wait(1.2); continue;
+      await wait(.9); continue;
     }
-    if (v.part && v.part.t < .5) { await S.openPart(v.part, true); shut.add(v.part); v.it.g.visible = true; }
+    if (v.part && v.part.t < .5) { await tapOn(v.it.g); if (!live()) break; await S.openPart(v.part, true); shut.add(v.part); v.it.g.visible = true; }
     if (!live()) break;
-    if (v === taken) {   // found: up it comes, and off they go with it
-      ch.setFace('wow'); ch.pose = 'cheer'; S.say(ch, '찾았다!', 1000); G.audio.sfx('found', 3);
-      const g = v.it.g, s0 = g.scale.x;
-      await tw.run(.35, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .5)));
-      g.visible = false; if (!temps.includes(v.it)) hiddenReal.push(g);
-      carry = buildItem(v.e.item, { code: S.H.hide.code || '000' }); carry.position.set(0, ch.headTop() * .5, .3); carry.scale.setScalar(1.3); ch.root.add(carry);   // (held out in front: a bubble over the head would hide it)
-      ch.setFace('happy'); S.say(ch, '헤헤, 이건 내 거~', 1200);
-      await tw.wait(1.1);
+    if (v === taken) {   // found: tapped, up it comes and off it goes
+      await tapOn(v.it.g); if (!live()) break;
+      G.audio.sfx('found', 3);
+      const g = v.it.g, s0 = g.scale.x, p0 = g.position.clone();
+      await tw.run(.3, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .5)));
+      floatAt(g, '가져갔다!', 'red big'); G.audio.sfx('whoosh');
+      await tw.run(.45, k => { g.position.y = p0.y + k * k * 1.6; g.scale.setScalar(s0 * (1 - k * .8)); });
+      g.visible = false; g.position.copy(p0); g.scale.setScalar(s0); if (!temps.includes(v.it)) hiddenReal.push(g);
+      await wait(.4);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
     } else if (v.e.by) {   // found — and a friend at home jumps in (친구 지킴이)
-      ch.setFace('wow'); S.say(ch, '찾았다!', 800); G.audio.sfx('found', 2);
-      await tw.wait(.6); if (!live()) break;
-      await friendBlock(S, v.e.by, ch, v.it.g, tw, live, floatAt);
+      await tapOn(v.it.g); if (!live()) break;
+      G.audio.sfx('found', 2);
+      await friendBlock(S, v.e.by, v.it.g, tw, live, floatAt);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
-    } else {   // right there, and never noticed
-      ch.setFace('sad'); S.say(ch, v.part ? '없네?' : '여긴 없네~', 1000); floatAt(v.it.g, '안 들킴!', 'green');
-      await tw.wait(1.0);
+    } else {   // right there, and never noticed: the finger taps beside it and moves on
+      const s = W.toScreen(wpos(v.it.g)); await tapAt(Math.max(40, Math.min(innerWidth - 40, s.x + 46)), Math.max(120, Math.min(innerHeight - 120, s.y + 30))); if (!live()) break;
+      floatAt(v.it.g, '안 들킴!', 'green');
+      await wait(.8);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }   // (털린 흔적: left open)
     }
   }
-  if (live()) {
-    if (!taken) { ch.setFace('angry'); ch.pose = 'flail'; S.say(ch, '하나도 없잖아! 흥!', 1400); await tw.wait(1.4); }
-    ch.pose = 'idle';
-    if (live()) await walk(ex, ez, !!taken);
-    if (live()) await tw.run(.25, k => ch.root.scale.setScalar(Math.max(.01, 1 - k)));
-  }
+  fing.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: 'forwards' });
+  if (!S.dead) await W.flyTo(tw, { yaw: yaw0, target: look, zoom: 1.1, dur: .45 });
+  outs.forEach(o => o.remove());
   if (S.dead) return;
   // everything back as it is now
   for (const part of shut) if (!messed.has(part)) { part.setOpen(0); part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = false; }); }
   for (const part of messed) { part.setOpen(1); part.spots.forEach(s => { if (s.itemGroup) s.itemGroup.visible = true; }); }   // (as the resident left them)
   for (const it of temps) { it.g.parent?.remove(it.g); it.spot.item = null; it.spot.itemGroup = null; if (it.spot.free) dropFreeSpot(it.spot); }
   for (const g of hiddenReal) g.visible = true;
-  ch.root.parent?.remove(ch.root);
-  delete S.update;
   for (const c of away) c.root.visible = true;
   S.busyTut = false; W.joyHidden = joy0; W.shadowDirty = true; W.idsDirty = true;
   bar.remove();

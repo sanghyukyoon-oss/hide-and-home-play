@@ -1741,6 +1741,10 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 /* ① 털림 다시 보기 (10/19): the bar over the replay, the tally card */
 .rpbar { position: absolute; left: 12px; right: 12px; top: calc(12px + var(--safeT)); display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 20px; background: rgba(255, 250, 242, .94); border: 3px solid var(--ink); pointer-events: auto; }
 .rpbar img { width: 40px; height: 40px; flex: none; }
+/* 털림 다시 보기: the resident's finger (③ 10/21) — a tap's ring, a swipe's trail */
+.hand.rpfinger { width: 76px; height: 76px; z-index: 6; }
+.rpripple { position: absolute; width: 64px; height: 64px; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 0 0 2.5px rgba(58, 36, 83, .55), inset 0 0 0 2.5px rgba(58, 36, 83, .35); pointer-events: none; z-index: 5; }
+.rptrail { position: absolute; height: 12px; border-radius: 6px; background: linear-gradient(90deg, rgba(255, 255, 255, .15), rgba(255, 255, 255, .95)); box-shadow: 0 0 0 2px rgba(58, 36, 83, .35); pointer-events: none; z-index: 5; }
 .rpbar .rpt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; color: var(--ink); }
 .rpbar .rpt b { font-size: 17px; color: var(--r2); }
 .rpbar .rpt span { font-size: 13px; color: #8a7a9c; }

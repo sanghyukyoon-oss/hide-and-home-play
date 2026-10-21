@@ -284,7 +284,9 @@ const SCENES = [
   { id: 'bunnyatticGray', type: 'gray', room: 'bunnyattic', host: 'bunny', inky: K('…다락은 조용해서 좋았어.', '…I liked the attic. It was quiet.'), caught: K('…상자 속에 숨을걸.', "…Should've hidden in a box.") },
   { id: 'aptkitchenGray', type: 'gray', room: 'aptkitchen', inky: K('…새 집 냄새 나는 색은 처음이었는데.', "…I'd never had new-house colors before."), caught: K('…이삿짐 속에 숨을걸.', '…Should\'ve hidden in a moving box.'),
     // (결과창 = 다음 예고: 18판 햄찌네 복층에서 너굴이 시간 대결)
-    after: [LP('bunny', '색 돌아왔다! …근데 너굴이가 햄찌네서 시합하재.', "Colors are back! …But Rocky wants a match at Hammy's."), LP('mong', '…또 너굴이.', '…Rocky again.')] },
+    after: [LP('bunny', '색 돌아왔다! …근데 너굴이가 햄찌네서 시합하재.', "Colors are back! …But Rocky wants a match at Hammy's."), LP('mong', '…또 너굴이.', '…Rocky again.')],
+    // (18판이 너굴이네 비 오는 밤 오덕 복층이면 — 사용자 "18판 ㄱ" 10/21, ifMap: 그 방이 캠페인에 있을 때만)
+    ifMap: { otakuloft: { after: [LP('bunny', '색 돌아왔다! …근데 너굴이가 자기 집에서 시합하재. 비 오니까.', "Colors are back! …But Rocky wants a match at his place. Since it's raining."), LP('mong', '…또 너굴이.', '…Rocky again.')] } } },
   // ── 기차 여행 편 (10/21 사용자 OK: "27 28 29 30 여기를 새 맵들 활용해서 기차 - 여행 테마로", "다락 말고 그 빌라 옥상으로",
   // "30판까지 여행테마 확장", "27 당근 아침", "기차안 객실맵 만들어줘", "28 30 장치 만들어야지"): 20 빌라 옥상 집들이 →
   // 26 "발자국이 역 쪽으로" → 27 아침 기차역 → 28 기차 객실(★, 너굴이 숨음) → 29 호수 섬(흑백) → 30 냥냥이네 바닷가 가게(★) →
@@ -1017,9 +1019,12 @@ const QUIP_REPLY = {
 QUIP_REPLY.catH = QUIP_REPLY.catK;
 // quipAt(idx): 이 판에 한 쌍을 붙이나 — quipLine(idx, item, place, cold): item·place는 한국어 이름(물건 이름, 자리 이름), cold는
 // 차가운 물건인지(affinity.js isCold). 돌려주는 값은 지금 언어로 다 만든 말풍선 두 줄 [{who:'mong', text}, {who, text}], 대상이 아니면 null
-export const quipAt = idx => !!QUIP_REPLY[bind().scene[idx]?.id];
+// (a timed stage has no scene — its pair hangs on the room: 18판 너굴이네 오덕 복층)
+const QUIP_ROOM = { otakuloft: { who: 'raccoon', any: K('…그건 한정판이라 거기 둔 거야. 건드리지 마.', "…That's a limited edition. That's why it's there. Don't touch.") } };
+const quipOf = idx => QUIP_REPLY[bind().scene[idx]?.id] || QUIP_ROOM[bind().room[idx]] || null;
+export const quipAt = idx => !!quipOf(idx);
 export const quipLine = (idx, item, place, cold) => {
-  const q = QUIP_REPLY[bind().scene[idx]?.id]; if (!q || !item || !place) return null;
+  const q = quipOf(idx); if (!q || !item || !place) return null;
   const m = tr(QUIP_MONG), ko = m === QUIP_MONG, en = (w, d) => { const t = tr(w); return /[가-힣]/.test(t) ? d : t; };   // (an untranslated name in English → a plain word)
   const it = ko ? item : en(item, 'That'), pl = ko ? place : en(place, 'Here');
   return [{ who: 'mong', text: m.replace('{place}', pl).replace('{item}', it) }, { who: q.who, text: tr((cold && q.cold) || q.any) }];
@@ -1253,6 +1258,8 @@ const ROCKY_ROOM = {
   aptlobby: L('raccoon', '장 본 게 현관에 다 쏟아졌네? 엘리베이터 내려오기 전에 다 주워 봐!', 'Groceries all over the lobby? Pick it all up before the elevator comes down!'),
 };
 ROCKY_ROOM.aptlobby2 = ROCKY_ROOM.aptlobby;   // (현관 2차 맵 키)
+// 18판 너굴이네 비 오는 밤 오덕 복층 (사용자 "18판 ㄱ" 10/21): 자기 방이라 더 우쭐
+ROCKY_ROOM.otakuloft = L('raccoon', '어서 와, 내 비밀 기지야. 비 오는 밤엔 숨바꼭질이지!', 'Welcome to my secret base. Rainy nights are for hide-and-seek!');
 // (the last timed stage always gets the last line — "마지막 승부다!" — however many timed stages the campaign has)
 const rockyAt = (idx, n) => { const t = bind().timed[idx] || 0; return t >= bind().timedN - 1 ? n - 1 : Math.min(n - 2, t); };
 export const timedIntro = idx => { const r = ROCKY_ROOM[bind().room[idx]], l = ROCKY[rockyAt(idx, ROCKY.length)]; return r ? [r, ...l] : l; };
