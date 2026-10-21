@@ -376,7 +376,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
 
   // mood → slot: 'home' the lobby, 'play' this scene's own (A.scene), 'tense' the tense file or the playing track hurried;
   // a slot's name works as a mood too ('boss', 'king', 'tv' …)
-  const SCENE_SLOT = { stage: 'map', mini: 'mini', boss: 'boss', bossgame: 'boss' };
+  const SCENE_SLOT = { stage: 'map', mini: 'mini', boss: 'boss', bossgame: 'mini' };
+  // (10/21 user: "미니게임 두더지 같은 거 좀 빠르고 신나는 걸로") the plays between stages (두더지·무궁화·이불·야식·집으로) take the bright mini songs; the TV song stays on 몽글 TV and the escape-room boss
   A.playSlot = 'map'; A._hurry = false; A._req = null;
   A.scene = (name, data = {}) => {
     A.playSlot = data.final || data.kind === 'finale' ? 'king' : SCENE_SLOT[name] || 'map';
