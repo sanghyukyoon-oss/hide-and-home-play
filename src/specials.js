@@ -19,6 +19,7 @@ export function feats(save) {
     stars3: Object.values(save.best || {}).filter(s => s >= 3).length,
     raids: Math.max(F.raids || 0, cleared),
     keeps: Math.max(F.keeps || 0, keptLog),
+    cards: 0,   // (도감 cards: the caller fills it in from cardbook.js cardCount — the book isn't known here)
   };
 }
 
@@ -30,8 +31,20 @@ export function feats(save) {
 // rising with it (200 → 800). Conditions: 판 깨기 12 (5 … 70) · 별 셋 6 (5 … 40) · 친구네 털기 6 (2 … 10) · 털림 막기 3 (2 · 4 · 6).
 // gf_: the special-gift session's models that weren't picked as a boss gift (user: "선물 후보하고 남은 것들은 다 상점의 스페셜 코너로")
 export const SPECIALS = [
-  { t: 'sp_neonlamp', price: 200, need: ['stage', 5], say: K('5판 깨기', 'Clear stage 5') },
-  { t: 'sp_skate', price: 220, need: ['stars3', 5], say: K('별 셋 5판', '3 stars on 5 stages') },
+  // 도감으로 열리는 열 개 (③ 10/21, user: "카드는 모으면 뭔가 리워드가 있어야하지않을까? … 상점 물건 하나 공짜로 주지말고 좀 돈좀 쓰게
+  // 설계해주는게 낫겠어. 스페셜에 물건이나 가구 살수있게 풀어지는게 어때? 보상창 안떠도 되고 뱃지 넘버만 올라가는것 동의"): every ten 도감 cards
+  // (friends met + things collected, 121 in all) opens one for buying — no gift, no window, a number on 상점. Prices 300 → 900:
+  // a stage pays ~130 coins, so each is a few stages of saving (1~20판 ≈ 2,300 · 1~70판 ≈ 9,200)
+  { t: 'sp_neonlamp', price: 300, need: ['cards', 10], say: K('도감 10장이면 열려요', 'Opens at 10 cards in the book') },
+  { t: 'sp_guitar', price: 360, need: ['cards', 20], say: K('도감 20장이면 열려요', 'Opens at 20 cards in the book') },
+  { t: 'sp_jukebox', price: 420, need: ['cards', 30], say: K('도감 30장이면 열려요', 'Opens at 30 cards in the book') },
+  { t: 'sp_rocket', price: 480, need: ['cards', 40], say: K('도감 40장이면 열려요', 'Opens at 40 cards in the book') },
+  { t: 'sp_arcade', price: 540, need: ['cards', 50], say: K('도감 50장이면 열려요', 'Opens at 50 cards in the book') },
+  { t: 'sp_scope', price: 600, need: ['cards', 60], say: K('도감 60장이면 열려요', 'Opens at 60 cards in the book') },
+  { t: 'sp_hammock', price: 660, need: ['cards', 70], say: K('도감 70장이면 열려요', 'Opens at 70 cards in the book') },
+  { t: 'sp_piano', price: 720, need: ['cards', 80], say: K('도감 80장이면 열려요', 'Opens at 80 cards in the book') },
+  { t: 'sp_moto', price: 800, need: ['cards', 90], say: K('도감 90장이면 열려요', 'Opens at 90 cards in the book') },
+  { t: 'sp_dino', price: 900, need: ['cards', 100], say: K('도감 100장이면 열려요', 'Opens at 100 cards in the book') },
   { t: 'grindrail', price: 220, need: ['raids', 2], say: K('친구네 털기 2번', "Raid friends' homes 2 times") },
   { t: 'schooldesk', price: 240, need: ['stage', 10], say: K('10판 깨기', 'Clear stage 10') },
   { t: 'gf_musicbox', price: 260, need: ['stage', 12], say: K('12판 깨기', 'Clear stage 12') },
@@ -40,23 +53,12 @@ export const SPECIALS = [
   { t: 'photoheart', price: 280, need: ['stage', 15], say: K('15판 깨기', 'Clear stage 15') },
   { t: 'donutart', price: 300, need: ['keeps', 2], say: K('털림 막기 2번', 'Keep your treasure safe from 2 raids') },
   { t: 'gf_photoframe', price: 300, need: ['raids', 4], say: K('친구네 털기 4번', "Raid friends' homes 4 times") },
-  { t: 'sp_guitar', price: 320, need: ['stage', 20], say: K('20판 깨기', 'Clear stage 20') },
   { t: 'gf_terrarium', price: 340, need: ['stars3', 15], say: K('별 셋 15판', '3 stars on 15 stages') },
   { t: 'quarterpipe', price: 340, need: ['raids', 5], say: K('친구네 털기 5번', "Raid friends' homes 5 times") },
-  { t: 'sp_bmx', price: 380, need: ['stage', 25], say: K('25판 깨기', 'Clear stage 25') },
   { t: 'gf_starlamp', price: 380, need: ['keeps', 4], say: K('털림 막기 4번', 'Keep your treasure safe from 4 raids') },
   { t: 'graffitiwall', price: 400, need: ['stage', 30], say: K('30판 깨기', 'Clear stage 30') },
-  { t: 'sp_jukebox', price: 420, need: ['stars3', 20], say: K('별 셋 20판', '3 stars on 20 stages') },
-  { t: 'sp_arcade', price: 420, need: ['raids', 7], say: K('친구네 털기 7번', "Raid friends' homes 7 times") },
   { t: 'gf_train', price: 440, need: ['stage', 35], say: K('35판 깨기', 'Clear stage 35') },
   { t: 'thinker', price: 460, need: ['stars3', 25], say: K('별 셋 25판', '3 stars on 25 stages') },
-  { t: 'sp_rocket', price: 460, need: ['keeps', 6], say: K('털림 막기 6번', 'Keep your treasure safe from 6 raids') },
-  { t: 'sp_scope', price: 480, need: ['stage', 40], say: K('40판 깨기', 'Clear stage 40') },
-  { t: 'sp_drums', price: 520, need: ['raids', 10], say: K('친구네 털기 10번', "Raid friends' homes 10 times") },
-  { t: 'sp_hammock', price: 560, need: ['stage', 50], say: K('50판 깨기', 'Clear stage 50') },
-  { t: 'sp_piano', price: 600, need: ['stars3', 40], say: K('별 셋 40판', '3 stars on 40 stages') },
-  { t: 'sp_moto', price: 700, need: ['stage', 60], say: K('60판 깨기', 'Clear stage 60') },
-  { t: 'sp_dino', price: 800, need: ['stage', 70], say: K('70판 깨기', 'Clear stage 70') },
 ];
 // where one stands: open, and how far along (have / n)
 export function specialState(save, sp, f = feats(save)) {
@@ -68,3 +70,5 @@ export const SPECIAL_TXT = {
   note: K('맵에서 거의 못 보는 특별한 가구예요. 조건을 채우면 열려요.', 'Rare pieces you hardly see in the stages. Meet the condition to open one.'),
   locked: K('아직 잠겨 있어! 조건을 채우면 열려', 'Still locked! Meet the condition to open it'),
 };
+// how many card-opened specials there are now (the lobby turns a new one into a number on 상점 — ③ 10/21)
+export const cardOpened = (cards, has = () => true) => SPECIALS.filter(sp => sp.need[0] === 'cards' && cards >= sp.need[1] && has(sp.t)).length;

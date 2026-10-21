@@ -9,7 +9,8 @@ import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON, KEEPSAKE_PRICE } from './e
 import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_PRICE, LOCK_MAX, holderOf } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
 import { EN } from './i18n-en-dict.js';
-import { SPECIALS, SPECIAL_TXT, specialState, feats } from './specials.js';   // 스페셜 칸 (10/20)
+import { SPECIALS, SPECIAL_TXT, specialState, feats } from './specials.js';
+import { cardCount } from './cardbook.js';   // 스페셜 칸 (10/20)
 import { hasWall, hasFloor, patternThumb } from './patterns.js';   // 벽지·바닥 더하기 (10/20)
 
 // furniture not open yet (10/19 night, user: "아직 오픈하지 못한 가구들은 실루엣만 보여주고"): a later chapter's piece, or a chapter
@@ -85,7 +86,16 @@ export function openShop(G, ctx = {}, tab = 'furn') {
           onBuy: () => { G.collect(t); ui.toast(`${ITEMS[t].name} · 이제 내 집에 숨길 수 있어`, 'green'); render(); },
           onUse: took.has(t) ? () => { ui.closePanel(); G.go('visit', { force: holderOf(G.save, t) }); } : null }));
       }
-      if (!(G.save.seen || []).some(t => ITEMS[t] && !G.save.collection.includes(t))) grid.append(h('div', { class: 'txt', style: 'font-size:14px;padding:8px' }, '판에서 찾은 물건이 도감에 모이면 여기서 가져올 수 있어요'));
+      // (③ 10/21, user: "상점에서 물건들도 살수있게 해줘. 물건 종류도 많고 이쁜것들 위주로"): the pretty ones (① 맵·아트's list) for sale from the
+      // start, a little dearer than one you've already met in a stage — each is a new card in the 도감 too (ten open a 스페셜)
+      const seenSet = new Set(G.save.seen || []);
+      const fresh = SHOP_ITEMS.filter(t => ITEMS[t] && !G.save.collection.includes(t) && !seenSet.has(t) && !took.has(t));
+      if (fresh.length) {
+        G.needThumbs?.(fresh.map(t => 'item_' + t));
+        grid.append(h('div', { class: 'shopsep' }, '새 물건'));
+        for (const t of fresh) grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: '숨길 물건 · 도감 +1', price: ITEM_NEW_PRICE,
+          onBuy: () => { G.collect(t); ui.toast(`${ITEMS[t].name} · 이제 내 집에 숨길 수 있어`, 'green'); render(); } }));
+      }
     } else if (tab === 'furn') {
       note.textContent = zone ? `${zone.name}에 놓을 수 있는 가구예요. 숨을 곳이 많을수록 찾기 어려워져요.` : '';
       G.needThumbs?.(SHOP_FURN.map(it => 'furn_' + it.type));   // the grid's icons in one batch, not one by one
@@ -151,7 +161,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
     } else if (tab === 'special') {
       // 스페셜 (10/20): open ones at their price; locked ones dark, with their condition and how far along
       note.textContent = SPECIAL_TXT.note;
-      const f = feats(G.save);
+      const f = feats(G.save); f.cards = cardCount(G);   // (도감으로 열리는 스페셜 — ③ 10/21)
       G.needThumbs?.(SPECIALS.map(sp => 'furn_' + sp.t));
       for (const sp of SPECIALS) {
         const inf = FURN_INFO[sp.t]; if (!inf) continue;
@@ -259,6 +269,9 @@ function peekShop(G, ctx) {
   const t = setTimeout(back, 1600);
   setTimeout(() => { if (p._peek) addEventListener('pointerdown', back, true); }, 80);
 }
+// the hiding things the shop sells from the start (① 맵·아트 10/21 후보 (가) — the starter donut·duck, kit parts and the plain ones left out)
+const SHOP_ITEMS = ['cookie', 'console', 'teddy', 'crown', 'gift', 'icecream', 'cupcake', 'heart', 'star', 'bunnyband', 'snowglobe', 'honeypot', 'medal', 'firehelmet', 'strawhat', 'yarn', 'slipper', 'bubbletea', 'onigiri', 'ramen', 'keyring', 'rubberduck2', 'hairpin', 'acorn', 'coin', 'sunglasses'];
+const ITEM_NEW_PRICE = 80;   // (one you've met in a stage: 40)
 let buyAt = 0;   // (QA3 10/19) one purchase per 0.45 s: a double tap bought twice
 function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse, blocked = null }) {
   const c = h('div', { class: 'card' },

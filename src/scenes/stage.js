@@ -33,6 +33,7 @@ import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
+import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
 import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
 import { closeUp, closeBack, clearParts, clearTurn, covered } from '../closeup.js';
 import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
@@ -1930,8 +1931,9 @@ export class StageScene {
       if (L.kind === 'pad') {
         if (!this.custom && !this.v2) this.keys--;   // a player's room has one master key for all its padlocks (v2: the key comes back too)
         this.keyPill.set(String(this.keys));
-        await G.ui.flyImg(G.thumbs.item_key, this.keyPill.getBoundingClientRect().left + 20, this.keyPill.getBoundingClientRect().top + 16, { getBoundingClientRect: () => ({ left: lp.x - 1, top: lp.y - 1, width: 2, height: 2 }) }, { size: 56, dur: 420 });
+        await G.ui.flyImg(G.thumbs.item_key, this.keyPill.getBoundingClientRect().left + 20, this.keyPill.getBoundingClientRect().top + 16, { getBoundingClientRect: () => ({ left: lp.x - 1, top: lp.y - 1, width: 2, height: 2 }) }, { size: 56, dur: 300 });
         if (this.keys <= 0) this.keyPill.style.display = 'none';
+        if (part.lockMesh) { await keyOpen(this, part, lp); if (this.dead) return; part.lockMesh = null; part.lock = null; part.busy = false; await this.togglePart(part); return; }
       } else if (L.kind === 'color') {
         const digits = L.code.split('');
         for (let i = 0; i < digits.length; i++) { const sk = part.sockets?.[i]; if (sk) { sk.material = sk.material.clone(); sk.material.color.set(LOCK_COLORS[+digits[i]][0]); sk.scale.setScalar(1.4); this.tw.run(.2, k => sk.scale.setScalar(1.4 - .4 * k), ease.outBack); } G.audio.sfx('pop', 3 + i * 2); await this.tw.wait(.16); }

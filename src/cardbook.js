@@ -7,7 +7,7 @@ import { ITEMS, buildItem } from './gfx/items.js';
 import { THEMES, stageSpec, STAGE_COUNT, CHAR_UNLOCK, REGIONS } from './stages.js';
 import { STARTER_ITEMS } from './catalog.js';
 import { STORY_ITEMS } from './gfx/story-props.js';
-import { renderThumbs } from './thumbs.js';
+import { renderThumbs, spinView } from './thumbs.js';
 import { diaryLine, learnedCards, BOOK, HABIT_LINE, diarySecret, secretOpen, SECRET_UI, inkyNamed } from './script.js';
 import { tr } from './i18n.js';
 import { ECON, ownedFriends } from './econ.js';
@@ -61,7 +61,7 @@ function friendCards(G) {
     const at = first[k], reg = at != null ? regionOf(at) : null;
     return { id: 'c:' + k, art: 'card_' + k, no: n + 1, of: keys.length, name: k === 'inky' && !inkyNamed(S) ? '???' : CHAR_DEFS[k].name, have: met.has(k),   // (먹물이: ??? until it says its name, 64판 — GPT QA ST-NAME)
       rar: SPECIAL.has(k) ? 3 : hosts.has(k) ? 2 : 1, region: reg?.id || 'home', regionName: reg?.name || '동네',
-      line: charLine(k), hint: at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '판에서 만난 친구를 터치해 봐', build: () => buildCharArt(k) };
+      line: charLine(k), hint: at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '판에서 만난 친구를 터치해 봐', build: () => buildCharArt(k), spin: () => spinChar(k) };
   });
 }
 function itemCards(G) {
@@ -76,6 +76,7 @@ function itemCards(G) {
       hint: '판에서 찾으면 모여요', build: () => buildItem(k, { code: '★★★' }), item: true };
   });
 }
+function spinChar(k) { const c = new Char(k); c.setFace('happy'); c.pose = 'wave'; c.update(0); c.shadow.visible = false; return { root: c.root, tick: dt => c.update(dt) }; }   // (the big card's 3D: it keeps waving)
 function buildCharArt(k) { const c = new Char(k); c.setFace('happy'); c.pose = 'wave'; c.update(0); c.shadow.visible = false; return c.root; }
 
 function ensureArt(cards) {
@@ -121,6 +122,25 @@ function zoom(c, G) {
   const sec = kind && diarySecret(kind), secEl = sec ? h('div', { class: 'cb-habit' }, h('b', {}, tr(SECRET_UI.book)), h('span', {}, secretOpen(G.save.best, kind) ? tr(sec) : tr(SECRET_UI.bookLock))) : null;
   const diary = line || habitEl || secEl ? h('div', { class: 'cb-diary' }, ...(line ? [h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))] : []), ...(habitEl ? [habitEl] : []), ...(secEl ? [secEl] : [])) : null;
   if (diary) style();
+  // 도감 3D (③ 10/21): the picture turns into the friend or the thing itself, turning slowly; a drag across it turns it by hand
+  const art = c.have && card.querySelector('.cb-art'), sv = art && spinView({ build: c.spin || c.build, dir: c.item ? [.45, .6, 1] : [.32, .38, 1], fit: c.item ? 1.05 : 1.02 }, 300);
+  let spinCv = null, ang = -.35, drag = null;
+  if (sv) {
+    spinCv = h('canvas', { class: 'cb-3d', width: 300, height: 300 }); const ctx = spinCv.getContext('2d');
+    sv.draw(ang, ctx); art.querySelector('img')?.replaceWith(spinCv);
+    let last = performance.now(), acc = 0;
+    const up = () => { drag = null; }; addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    const loop = now => {
+      if (!spinCv.isConnected) { sv.dispose(); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); return; }
+      const dt = Math.min(.1, (now - last) / 1000); last = now; acc += dt;
+      if (!drag) ang += dt * .9;
+      if (acc >= 1 / 30) { sv.draw(ang, ctx, acc); acc = 0; }   // (30 a second: the phone stays cool)
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(t => { last = t; requestAnimationFrame(loop); });
+    spinCv.addEventListener('pointerdown', e => { drag = { x: e.clientX, a: ang }; });
+    spinCv.addEventListener('pointermove', e => { if (drag) ang = drag.a + (e.clientX - drag.x) * .02; });
+  }
   const layer = h('div', { class: 'cb-zoom' }, card, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
   const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = (x - r.left) / r.width - .5, ny = (y - r.top) / r.height - .5;
     card.style.transform = `rotateY(${nx * 24}deg) rotateX(${-ny * 24}deg)`; card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`); };
@@ -134,6 +154,8 @@ function zoom(c, G) {
 // 도감's number (user 10/20: "도감이랑 내 방에 숫자 배지"): cards you have that came since the book was last opened; opening it
 // clears the number (the cards inside keep their own NEW until you look at each)
 // (③ 10/21: a card turned holo counts as new too — the result panel no longer says so)
+// 도감 cards you have (friends met + things collected) — 상점 스페셜 opens one every ten (specials.js)
+export const cardCount = G => [...friendCards(G), ...itemCards(G)].filter(c => c.have).length;
 const haveIds = G => { const f = friendCards(G).filter(c => c.have); return [...f.map(c => c.id), ...itemCards(G).filter(c => c.have).map(c => c.id), ...f.filter(c => c.id.startsWith('c:') && secretOpen(G.save.best, c.id.slice(2))).map(c => 's:' + c.id)]; };
 export function bookBadge(G, btn) {
   const S = G.save; if (!S.bookOpened) { S.bookOpened = haveIds(G); G.persist(); }

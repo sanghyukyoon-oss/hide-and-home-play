@@ -60,6 +60,32 @@ export function thumbCtx(size = 160) {
   };
   return { one, done() {} };   // the renderer stays for the next batch
 }
+// 도감 3D (③ 10/21, user: "카드안에서 캐릭 돌려보는게 더 낫지않을까" → 검토 '격자는 2D, 터치한 카드 하나만 3D'): one model turning
+// inside the big card, drawn a frame at a time by the icons' own renderer — no new WebGL context, no texture kept. The model
+// is in the shared scene only while its frame is drawn (a background icon batch in between never sees it); dispose() frees it.
+export function spinView(job, size = 300) {
+  const S = shared(), made = job.build(), obj = made.isObject3D ? made : made.root, tick = made.tick || null;
+  obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj, true), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+  const pivot = new THREE.Group(); pivot.position.copy(c); obj.position.sub(c); pivot.add(obj);
+  // (turning: the widest it gets is the footprint's diagonal)
+  const rad = Math.max(Math.hypot(sz.x, sz.z) * .5, sz.y * .5) * (job.fit || 1) * (S.toon ? 1.08 : 1);
+  const dir = new THREE.Vector3(...(job.dir || [.32, .38, 1])).normalize(), dist = rad * 8, half = rad * 1.12;
+  return {
+    draw(angle, ctx, dt = 0) {
+      S.size(size);
+      pivot.rotation.y = angle; if (tick) tick(dt);
+      const cam = S.cam; cam.position.copy(c).addScaledVector(dir, dist); cam.lookAt(c);
+      cam.left = -half; cam.right = half; cam.top = half; cam.bottom = -half; cam.near = Math.max(.01, dist - rad * 4); cam.far = dist + rad * 4; cam.updateProjectionMatrix();
+      S.scene.add(pivot); pivot.updateMatrixWorld(true);
+      if (S.post) { sortLayers(S.scene); S.post.assignIds(S.scene); S.post.render(S.scene, cam); } else S.r.render(S.scene, cam);
+      S.scene.remove(pivot);
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.drawImage(S.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    },
+    dispose() { disposeTree(pivot); },
+    info: () => ({ ...S.r.info.memory, programs: S.r.info.programs?.length }),
+  };
+}
 export function renderThumbs(jobs, size = 160) {
   const C = thumbCtx(size), out = {};
   for (const job of jobs) out[job.key] = C.one(job);

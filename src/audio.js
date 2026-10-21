@@ -40,9 +40,11 @@ Object.assign(SFX_FILES, {
   coin: { src: 'audio/sfx/coin.mp4', vary: .06 }, hop: { src: 'audio/sfx/hop.mp4', vary: .08 },
   // (10/20 user: "회전 효과음은 예전 게 더 나은 것 같다") the camera turn's tick is the code sound again
   ratchet: null,
-  bloom: 'audio/sfx/bloom.mp4',
+  bloom: 'audio/sfx/bloom.mp4',   // 흑백판 끝 색이 번질 때 '뾰로롱' (사운드 v3 10/20, 종 없이)
   // (10/21 user: "토순이 웃는소리도 좀 바꿔라..") 토순이's own giggle; ("낚시릴 소리 좀 좋게") the net coming up out of the pond with something in it
-  giggleBunny: 'audio/sfx/giggleBunny.mp4', reelSplash: 'audio/sfx/reelSplash.mp4',   // 흑백판 끝 색이 번질 때 '뾰로롱' (사운드 v3 10/20, 종 없이)
+  giggleBunny: 'audio/sfx/giggleBunny.mp4', reelSplash: 'audio/sfx/reelSplash.mp4',
+  // (10/21 user, 듣기 페이지에서 "낚시 새b") the recorded reel: winding the net up, the line running out
+  reelWind: 'audio/sfx/reelWind.mp4', reelOut: 'audio/sfx/reelOut.mp4',
   mugunghwa: null,   // (10/21 user: "무궁화꽃이 음성 이상하다, 전에 거가 더 나음") back to 너굴이's voice, one syllable at a time; the TTS take is in _backup/sfx-mugunghwa-tts.mp4
 });
 const SFX_FALLBACK = { giggleBunny: 'giggle', reelSplash: 'blub' };
@@ -122,7 +124,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // inOutQuad, the spool running free, lighter), a hiss of line on the spool as loud as the turn is fast, and the water: the net
   // comes out with a tug on the line and a splash when something is in it (drips when not), and goes back in with a blub
   let reelNoise = null;
-  A.reel = (up, dur = .9, caught = false) => {
+  const reelMade = (up, dur = .9, caught = false) => {
     hapticFor(up ? 'swish' : 'close');
     if (!ensure() || A.muted) return;
     const c = A.ctx, bus = A.sfxBus, D = up ? dur : dur * .8, t0 = c.currentTime + .01, N = 40;   // (4 turns × 10 teeth)
@@ -146,10 +148,25 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     const g = c.createGain(); g.gain.setValueAtTime(0, t0);
     for (let k = 1; k <= 16; k++) { const u = k / 16, sp = spd(u); g.gain.linearRampToValueAtTime((up ? .07 : .05) * sp, t0 + u * D); f.frequency.linearRampToValueAtTime(700 + 1700 * sp, t0 + u * D); }
     s.connect(f).connect(g).connect(bus); s.start(t0); s.stop(t0 + D + .05);
+    reelWater(up, D, caught, true);
+  };
+  // the water, for either: out of the pond with a tug and a splash when something is in the net (drips when not), back in with a blub
+  function reelWater(up, D, caught, taut) {
     if (up) {
-      if (caught) { tone({ type: 'sine', f: 150, f2: 85, dur: .14, vol: .22 }); tone({ type: 'triangle', f: 640, f2: 600, dur: .09, vol: .045, at: .01 }); }   // the tug, the line going taut
+      if (caught) { tone({ type: 'sine', f: 150, f2: 85, dur: .14, vol: .22 }); if (taut) tone({ type: 'triangle', f: 640, f2: 600, dur: .09, vol: .045, at: .01 }); }   // the tug, the line going taut
       setTimeout(() => A.sfx(caught ? 'reelSplash' : 'blub', 0, false), caught ? 70 : 40);
     } else setTimeout(() => A.sfx('blub', 0, false), Math.max(0, D * 1000 - 60));
+  }
+  // (10/21 user picked 새 B, the recorded reel, over the made one above — which stays for while the two files aren't in yet):
+  // the take fitted to the handle's tween (up the part's dur, down 0.8 of it), so it starts and stops with the turning
+  A.reel = (up, dur = .9, caught = false) => {
+    const b = sfxBuf[up ? 'reelWind' : 'reelOut'];
+    if (!b) return reelMade(up, dur, caught);
+    hapticFor(up ? 'swish' : 'close');
+    if (!ensure() || A.muted) return;
+    const D = up ? dur : dur * .8, s = A.ctx.createBufferSource();
+    s.buffer = b; s.playbackRate.value = b.duration / D; s.connect(A.sfxBus); s.start();
+    reelWater(up, D, caught, false);
   };
   // a small bell: the note, its octave and a faint third partial dying faster
   const bell = (f, at = 0, vol = .2, dur = .5) => { tone({ f, dur, vol, at }); tone({ f: f * 2, dur: dur * .45, vol: vol * .3, at }); tone({ f: f * 3.01, dur: dur * .2, vol: vol * .1, at }); };

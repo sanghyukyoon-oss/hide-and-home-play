@@ -10,7 +10,8 @@ import { HomeScene, playButton, openMore } from './home.js';
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { FURN_INFO } from '../gfx/furniture.js';
 import { openRoadmap } from '../roadmap.js';
-import { openCardBook, bookBadge } from '../cardbook.js';
+import { openCardBook, bookBadge, cardCount } from '../cardbook.js';
+import { cardOpened } from '../specials.js';   // 도감으로 열리는 스페셜 (③ 10/21)
 import { runRaids, unseen } from '../raid.js';
 import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/19)
 import { playDialog } from '../story.js';
@@ -112,6 +113,8 @@ export class LobbyScene extends MyHomeScene {
       const msg = n && m ? `상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개, 벽지·바닥 ${m}개가 들어왔어!` : n ? `상점에 '${REGION_NAME(REGIONS_AT(ch))}' 가구 ${n}개가 들어왔어!` : m ? `상점에 새 벽지·바닥 ${m}개가 들어왔어!` : null;
       if (msg) { this.H.shopNew = (this.H.shopNew || 0) + n + m; G.persist(); }   // (③ 10/21 "모든 연락은 숫자 뱃지": a number on 상점, not a toast)
     }
+    // (③ 10/21 카드 모음: every ten 도감 cards open a 스페셜 for buying — no window, the 상점 number goes up; an old save starts counted)
+    if (G.homeOpen()) { const nOpen = cardOpened(cardCount(G), t => !!FURN_INFO[t]); if (this.H.spOpenN == null) this.H.spOpenN = nOpen; else if (nOpen > this.H.spOpenN) { this.H.shopNew = (this.H.shopNew || 0) + nOpen - this.H.spOpenN; this.H.spOpenN = nOpen; } G.persist(); }
     if (G.homeOpen() && this.H.shopNew && this.shopBtn && !this.shopBtn.querySelector('.badge')) this.shopBtn.append(h('div', { class: 'badge new shopn' }, String(this.H.shopNew)));
   }
 

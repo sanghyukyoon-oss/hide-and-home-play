@@ -171,10 +171,13 @@ void main(){
 }`;
 // 흑백판 RGB 분리 세기: CSS px at the screen corners while a stage is grey (0 = off; ?gsplit=N to try another)
 const GSQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsplit') : null;
-export const GRAY_SPLIT = GSQ != null && GSQ !== '' && !isNaN(+GSQ) ? +GSQ : 1.5;
+export const GRAY_SPLIT = GSQ != null && GSQ !== '' && !isNaN(+GSQ) ? +GSQ : 6;
+// where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
+const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
+export const GRAY_SPLIT_FROM = GFQ != null && GFQ !== '' && !isNaN(+GFQ) ? +GFQ : .33;
 const DOWN = `
 varying vec2 vUv;
-uniform sampler2D tSrc; uniform vec2 outRes; uniform float sharpen, split;
+uniform sampler2D tSrc; uniform vec2 outRes; uniform float sharpen, split, splitFrom;
 void main(){
   vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint
   vec4 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)) + texture2D(tSrc, vUv + vec2(q.x, -q.y))
@@ -183,7 +186,7 @@ void main(){
   // edges (split = output px at the corners); nothing in the middle. Two more taps; off (0) everywhere else.
   if (split > .001) {
     vec2 dv = (vUv - .5) * vec2(outRes.x / outRes.y, 1.);
-    float k = smoothstep(.05, .5, dot(dv, dv) * 2.);
+    float k = smoothstep(splitFrom, 1., length(dv) / length(vec2(.5 * outRes.x / outRes.y, .5)));
     vec2 off = normalize(dv + 1e-5) * split * k / outRes.y;
     off.x *= outRes.y / outRes.x;
     c.r += (texture2D(tSrc, vUv + off).r - c.r) * k;
@@ -239,7 +242,7 @@ export class ToonPost {
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
     this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
-    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 } };
+    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 }, splitFrom: { value: GRAY_SPLIT_FROM } };
     const quad = m => { const s = new THREE.Scene(); s.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m)); return s; };
     const sm = (uniforms, fragmentShader) => new THREE.ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader, depthTest: false, depthWrite: false, blending: THREE.NoBlending });
     this.aoScene = quad(sm(this.au, AO));

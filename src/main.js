@@ -35,6 +35,7 @@ import { ONEROOM_BUILDERS, ONEROOM_INFO, ONEROOM_THEMES, ONEROOM_ITEMS } from '.
 import { PLAYGROUND_BUILDERS, PLAYGROUND_INFO, PLAYGROUND_THEMES, PLAYGROUND_ITEMS } from './gfx/playground-props.js';
 import { addHomeStyle } from './catalog.js';
 import { KIT_ITEMS, KIT_BUILDERS, KIT_INFO } from './gfx/modelkit-props.js';
+import { SPECIAL_BUILDERS, SPECIAL_INFO } from './gfx/special-props.js';   // 상점 스페셜 가구 13개 (10/20)
 import { GIFT_BUILDERS, GIFT_INFO } from './gfx/gift-props.js';   // 특별 선물 후보 (10/20)
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { THEMES, LAYOUTS, STAGE_COUNT } from './stages.js';
@@ -79,6 +80,7 @@ registerFurniture(DEVICE_BUILDERS, DEVICE_INFO); Object.assign(ITEMS, DEVICE_ITE
 registerFurniture(TOWN_BUILDERS, TOWN_INFO);
 // 프라모델 조립판 (modelkit.js): the kit's pieces are things to find; the finished model is furniture you get, not one you buy
 registerFurniture(KIT_BUILDERS, KIT_INFO); Object.assign(ITEMS, KIT_ITEMS);
+registerFurniture(SPECIAL_BUILDERS, SPECIAL_INFO);   // 상점 '스페셜' 칸 (specials.js SPECIALS): not in the furniture tab
 registerFurniture(GIFT_BUILDERS, GIFT_INFO);
 Object.assign(ITEMS, APT_ITEMS);
 const WARM = { ambColor: '#ffeedd', amb: 1.5, sunColor: '#fff4e0', sun: 2.3 };
