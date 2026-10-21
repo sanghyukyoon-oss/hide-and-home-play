@@ -30,14 +30,19 @@ const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 
 // a little 3D picture of each home style (its stage set, or the plain zone with the starter furniture), made once
 const STYLE_ART = {};
 const fakeWorld = { shadowDirty: false, yaw: Math.PI / 4 };
-function styleArt(list) {
-  const jobs = list.filter(st => !STYLE_ART[st.id]).map(st => ({ key: st.id, dir: [.9, .95, 1], fit: .92, build: () => {
+// one theme's picture, drawn later (the 테마 tab: each room picture is a whole room — ~1 s for the lot at once)
+function stylePic(st) {
+  if (STYLE_ART[st.id]) return h('img', { src: STYLE_ART[st.id], alt: '', draggable: 'false' });
+  const im = h('img', { class: 'lazy', alt: '', draggable: 'false', src: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' });
+  LAZY.push({ el: im, fn: () => { try { Object.assign(STYLE_ART, renderThumbs([styleJob(st)], 220)); } catch {} if (STYLE_ART[st.id]) im.src = STYLE_ART[st.id]; im.classList.remove('lazy'); } });
+  return im;
+}
+function styleJob(st) {
+  return { key: st.id, dir: [.9, .95, 1], fit: .92, build: () => {
     const lay = st.theme && LAYOUTS[st.theme] ? { ...layoutFor(st.theme), bleed: null } : { ...zoneLayout({ type: st.indoor ? 'room' : 'yard', style: st.id, furniture: STARTER[st.indoor ? 'room1' : 'yard'] }), bleed: null };
     lay.walls = { ...(lay.walls || {}), S: 'none', E: 'none' };   // the picture looks in from the open front
     return new Room(fakeWorld, lay).group;
-  } }));
-  if (jobs.length) try { Object.assign(STYLE_ART, renderThumbs(jobs, 220)); } catch {}
-  return STYLE_ART;
+  } };
 }
 
 const TABS = [['items', '물건'], ['furn', '가구'], ['special', '스페셜'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
@@ -98,11 +103,10 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       }
     } else if (tab === 'furn') {
       note.textContent = zone ? `${zone.name}에 놓을 수 있는 가구예요. 숨을 곳이 많을수록 찾기 어려워져요.` : '';
-      G.needThumbs?.(SHOP_FURN.map(it => 'furn_' + it.type));   // the grid's icons in one batch, not one by one
       // 경제·로비 on: a chapter's pieces stay out until its last stage is cleared; then they're here as 기념품, at their price,
       // on top (and they go in any room). (10/20: the chapter box gives a gift now, not these — 재QA ST75-CHAPTER-SHOP-COPY)
       const offered = G.econ ? (H.offered || []).filter(t => FURN_INFO[t]) : [];
-      for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: G.thumbs['furn_' + t], name: FURN_INFO[t].name, sub: PICK_ITEMS.has(t) ? '장을 끝내면 들어오는 기념품' : '판을 깨서 들어온 기념품', price: furnPrice(t) || KEEPSAKE_PRICE, tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
+      for (const t of offered) { const owned = countOwned(H, t); grid.append(card(G, { img: pic(G, 'furn_' + t), name: FURN_INFO[t].name, sub: PICK_ITEMS.has(t) ? '장을 끝내면 들어오는 기념품' : '판을 깨서 들어온 기념품', price: furnPrice(t) || KEEPSAKE_PRICE, tag: owned ? `기념품 · 보유 ${owned}` : '기념품',
         onBuy: () => bought(t, FURN_INFO[t].name) })); }
       const later = [];
       for (const it of SHOP_FURN) {
@@ -113,7 +117,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         const boxed = G.econ && PICK_ITEMS.has(it.type) && !countOwned(H, it.type), ch = chapterOfFurn(it.type);
         if (boxed || (G.econ && ch > chapterNow(G.save) && !countOwned(H, it.type))) { later.push({ t: it.type, ch, boxed }); continue; }
         const owned = countOwned(H, it.type);
-        grid.append(card(G, { img: G.thumbs['furn_' + it.type], name: inf.name, sub: `숨을 곳 ${spotCount(G, it.type)}`, price: furnPrice(it.type), tag: owned ? `보유 ${owned}` : null,
+        grid.append(card(G, { img: pic(G, 'furn_' + it.type), name: inf.name, sub: spotLater(G, it.type), price: furnPrice(it.type), tag: owned ? `보유 ${owned}` : null,
           onBuy: () => bought(it.type, inf.name) }));
       }
       if (later.length) {
@@ -162,26 +166,25 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       // 스페셜 (10/20): open ones at their price; locked ones dark, with their condition and how far along
       note.textContent = SPECIAL_TXT.note;
       const f = feats(G.save); f.cards = cardCount(G);   // (도감으로 열리는 스페셜 — ③ 10/21)
-      G.needThumbs?.(SPECIALS.map(sp => 'furn_' + sp.t));
       for (const sp of SPECIALS) {
         const inf = FURN_INFO[sp.t]; if (!inf) continue;
         const st = specialState(G.save, sp, f), owned = countOwned(H, sp.t);
         if (!st.open) {
           grid.append(h('div', { class: 'card silc', onclick: () => { ui.toast(`${SPECIAL_TXT.locked} · ${sp.say}`, ''); G.audio.sfx('locked'); } },
-            G.thumbs['furn_' + sp.t] ? h('img', { src: G.thumbs['furn_' + sp.t], alt: '', draggable: 'false' }) : h('div', { class: 'swatch' }),
+            pic(G, 'furn_' + sp.t),
             h('div', {}, '🔒 ' + sp.say), h('div', { style: 'font-size:11px;color:#9b6cff' }, `${st.have}/${st.n}`)));
           continue;
         }
-        grid.append(card(G, { img: G.thumbs['furn_' + sp.t], name: inf.name, sub: sp.say, price: sp.price, tag: owned ? `보유 ${owned}` : SPECIAL_TXT.head,
+        grid.append(card(G, { img: pic(G, 'furn_' + sp.t), name: inf.name, sub: sp.say, price: sp.price, tag: owned ? `보유 ${owned}` : SPECIAL_TXT.head,
           onBuy: () => bought(sp.t, inf.name) }));
       }
     } else if (tab === 'style') {
       note.textContent = zone ? `${zone.name}의 분위기를 통째로 바꿔요. 바꾸면 벽지·바닥은 그 테마 것으로 돌아가요.` : '';
       H.owned.style = H.owned.style || [];
-      const shown = HOME_STYLES.filter(st => !ztype || st.indoor === ztype.indoor), art = styleArt(shown);
+      const shown = HOME_STYLES.filter(st => !ztype || st.indoor === ztype.indoor);
       for (const st of shown) {
         const owned = st.price === 0 || H.owned.style.includes(st.id), on = (zone?.style || (st.price === 0 ? st.id : null)) === st.id && (zone?.style ? true : st.price === 0);
-        grid.append(card(G, { img: art[st.id], swatch: swatch(st.sw[0], st.sw[1], st.indoor ? 'wood' : 'dots'), name: st.name, price: owned ? null : st.price, tag: on ? '사용 중' : owned ? '보유' : null,
+        grid.append(card(G, { img: stylePic(st), swatch: swatch(st.sw[0], st.sw[1], st.indoor ? 'wood' : 'dots'), name: st.name, price: owned ? null : st.price, tag: on ? '사용 중' : owned ? '보유' : null,
           action: owned ? '바꾸기' : null,
           onBuy: null,   // (user 10/20: "테마도 미리보기 가능하게" — one you don't own goes on the room first: 사기 or 되돌리기)
           onUse: () => owned ? apply() : zone && preview(st.name, st.price, null, () => H.owned.style.push(st.id), st.id) }));
@@ -211,6 +214,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
           onBuy: open ? null : () => { H.bought.push(z.id); G.ensureZone(z.id); G.persist(); ui.toast(`${ga(z.name)} 열렸어!`, 'green'); ctx.onChange?.('zone'); } }));
       }
     }
+    runLater(grid);   // (the icons and spot counts left for later: the cards in view first, a little each frame)
   };
   // 방 넓히기 미리보기 (UI 세션 10/20, user: "벽·바닥으로 가야 저거 늘리는 UI 나오는 걸로 하자"): the shop steps aside and the room shows
   // its next row on the floor (dashed, arrows running out — myhome.js growTick); the bar asks 넓히기 (the coins, the walls go out)
@@ -272,11 +276,39 @@ function peekShop(G, ctx) {
 // the hiding things the shop sells from the start (① 맵·아트 10/21 후보 (가) — the starter donut·duck, kit parts and the plain ones left out)
 const SHOP_ITEMS = ['cookie', 'console', 'teddy', 'crown', 'gift', 'icecream', 'cupcake', 'heart', 'star', 'bunnyband', 'snowglobe', 'honeypot', 'medal', 'firehelmet', 'strawhat', 'yarn', 'slipper', 'bubbletea', 'onigiri', 'ramen', 'keyring', 'rubberduck2', 'hairpin', 'acorn', 'coin', 'sunglasses'];
 const ITEM_NEW_PRICE = 80;   // (one you've met in a stage: 40)
+// 상점 빨리 열기 (③ 10/21, user on the phone: "상점 들어갈때 좀 느려 ㅋㅋ 갯수가 많아서 그런가"): the first open drew every furniture icon
+// it hadn't drawn yet (up to ~200 3D renders) and built every piece once to count its hiding spots — 2+ s before the panel
+// showed. Now the panel opens at once: a missing icon is a soft placeholder and a spot count '…', filled in afterwards in page
+// order (the cards in view first), 12 ms of it a frame. A drawn icon stays for the session (G.thumbStore — data URLs drawn by
+// the one shared icon renderer: no new WebGL context, no texture kept)
+let LAZY = [];
+function runLater(root) {
+  const q = LAZY; LAZY = []; let i = 0;
+  const step = () => {
+    if (!root.isConnected) return;
+    const t0 = performance.now();
+    while (i < q.length && performance.now() - t0 < 12) { const it = q[i++]; if (it.el.isConnected) it.fn(); }
+    if (i < q.length) requestAnimationFrame(step);
+  };
+  if (q.length) requestAnimationFrame(step);
+}
+function pic(G, key) {
+  const src = G.thumbStore?.[key]; if (src) return h('img', { src, alt: '', draggable: 'false' });
+  const im = h('img', { class: 'lazy', alt: '', draggable: 'false', src: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' });
+  LAZY.push({ el: im, fn: () => { G.needThumbs?.([key]); const u = G.thumbStore?.[key]; if (u) im.src = u; im.classList.remove('lazy'); } });   // (no icon to draw: the placeholder goes all the same)
+  return im;
+}
+function spotLater(G, t) {
+  if (_sc[t] != null) return `숨을 곳 ${_sc[t]}`;
+  const el = h('span', {}, '숨을 곳 …');
+  LAZY.push({ el, fn: () => { el.textContent = `숨을 곳 ${spotCount(G, t)}`; } });
+  return el;
+}
 let buyAt = 0;   // (QA3 10/19) one purchase per 0.45 s: a double tap bought twice
 function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse, blocked = null }) {
   const c = h('div', { class: 'card' },
     tag ? h('div', { class: 'tag' }, tag) : null,
-    img ? h('img', { src: img }) : sw,
+    img instanceof Element ? img : img ? h('img', { src: img }) : sw,
     h('div', {}, name),
     sub ? h('div', { style: 'font-size:11px;color:#9b6cff' }, sub) : null,
     price != null ? h('div', { class: 'pr', html: ICON.coin + price }) : h('div', { class: 'pr', style: 'color:#2f8f1b' }, action || ''));
@@ -293,7 +325,7 @@ function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse,
 // a piece not open yet: its icon as a dark silhouette, '???', and when it opens
 function silCard(G, { t, ch, boxed }) {
   return h('div', { class: 'card silc', 'aria-label': '???', onclick: () => { G.ui.toast(boxed ? SIL_TXT.boxToast : SIL_TXT.chToast, ''); G.audio.sfx('locked'); } },
-    G.thumbs['furn_' + t] ? h('img', { src: G.thumbs['furn_' + t], alt: '', draggable: 'false' }) : h('div', { class: 'swatch' }),
+    pic(G, 'furn_' + t),
     h('div', {}, '???'),
     h('div', { style: 'font-size:11px;color:#9b6cff' }, boxed ? SIL_TXT.box : chOpens(ch)));
 }

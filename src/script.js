@@ -290,7 +290,7 @@ const SCENES = [
   // 26 "발자국이 역 쪽으로" → 27 아침 기차역 → 28 기차 객실(★, 너굴이 숨음) → 29 호수 섬(흑백) → 30 냥냥이네 바닷가 가게(★) →
   // 31 골목 아지트 보스(돌아옴). 35 곰제과·37 도서관·38 현관은 상가 장 되풀이 자리. 맵이 없으면 어느 판에도 안 붙어요.
   // 20판: 2장 마지막 집들이를 토순이네 빌라 옥상에서 — aptmap 장면의 클라이맥스("그 까만 애")를 그대로 옮김
-  { id: 'villaroofInc', type: 'incident', room: 'villaroof', host: 'bear', trace: true, uses: 'aptmap', hide: K('으헤헤, 햇볕 드는 데가 좋아~', 'Ehehe, somewhere nice and sunny~'),
+  { id: 'villaroofInc', type: 'incident', room: 'villaroof', alt: ['villaroof2'], host: 'bear', trace: true, uses: 'aptmap', hide: K('으헤헤, 햇볕 드는 데가 좋아~', 'Ehehe, somewhere nice and sunny~'),
     intro: [L('bunny', '우리 빌라 옥상에서 집들이야! 곰돌이도 왔어, 숨바꼭질 하재.', 'Housewarming on our rooftop! Bearie came too. Wants to play hide-and-seek.')],
     reveal: [L('bear', '어… 벌써 찾았어? 햇볕이 따뜻해서 그만.', 'Huh… found me already? The sun was just so warm.'), L('bunny', '이제 다 모였다! 집들이 대성공!', "Everyone's here! Best housewarming ever!"),
       L('mong', '…한 명 빠졌어. 그 까만 애.', '…One is missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
@@ -305,7 +305,7 @@ const SCENES = [
     intro: [L('frog', '개굴! 객실이다. 섬까지 세 정거장!', 'Ribbit! Our car. Three stops to the island!'), L('raccoon', '나도 탔지롱. 터널 나가기 전에 날 찾아 봐!', "I'm on board too. Find me before we're out of the tunnel!")],
     reveal: [L('raccoon', '…선반 위는 반칙 아니거든?!', "…The luggage rack is NOT cheating!"), L('frog', '다음 역, 호수 섬! 내리자!', 'Next stop, the lake island! Off we go!'), L('mong', '…창문에 까만 손자국.', '…A little inky handprint on the window.')] },
   // 29판 호수 섬 흑백 (섬 3차): 먹물이가 따라온 여행 — "같이 타도 돼?"가 엔딩의 '같이'로
-  { id: 'islandGray', type: 'gray', room: 'island', host: 'frog', inky: K('호수 색은 처음 봤어. 한 번 가져 보고 싶었어.', "I'd never seen lake colors before. I wanted to hold them once."), caught: K('…다음엔 기차, 같이 타도 돼?', '…Next time, can I ride the train with you?'),
+  { id: 'islandGray', type: 'gray', room: 'island', alt: ['island2', 'island3'], host: 'frog', inky: K('호수 색은 처음 봤어. 한 번 가져 보고 싶었어.', "I'd never seen lake colors before. I wanted to hold them once."), caught: K('…다음엔 기차, 같이 타도 돼?', '…Next time, can I ride the train with you?'),
     after: [LP('frog', '호수가 다시 파래졌다! 바닷가 가게 들렀다 가자, 개굴.', "The lake's blue again! Let's stop by the seaside shop. Ribbit."), LP('mong', '…그 애, 우리 따라 기차 탔나 봐.', '…That kid must have followed us onto the train.')] },
   // 30판 냥냥이네 바닷가 가게 ★ (사건): 돌아가는 기차 전, 냥냥이가 숨음 → 끝은 집으로(31 골목 보스)
   { id: 'seasideInc', type: 'incident', room: 'seaside', host: 'cat', hide: K('…찾든가 말든가다냥.', "…Find me or don't, meow."),

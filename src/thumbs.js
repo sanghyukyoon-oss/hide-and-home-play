@@ -1,7 +1,7 @@
 // Renders 3D icons (items, furniture, character faces) to data URLs once at boot, so the HUD matches the 3D look.
 // In the cartoon style the icons go through the same ink-outline post as the game.
 import * as THREE from 'three';
-import { STYLE, disposeTree } from './gfx/kit.js';
+import { STYLE, disposeTree, blobShadow } from './gfx/kit.js';
 import { ToonPost } from './gfx/toonpost.js';
 import { ART, applyArt, sortLayers } from './gfx/style.js';
 
@@ -68,6 +68,9 @@ export function spinView(job, size = 300) {
   obj.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(obj, true), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
   const pivot = new THREE.Group(); pivot.position.copy(c); obj.position.sub(c); pivot.add(obj); pivot.rotation.order = 'YXZ';
+  // (③ 10/21, user: "캐릭 밑에 동그란 그림자 하나"): the game's own soft blob under its feet — added after the framing is measured, and it
+  // leans with the model
+  if (job.shadow) { const sh = blobShadow(Math.max(sz.x, sz.z) * .5, .5); sh.position.set(0, box.min.y - c.y + .004, 0); pivot.add(sh); }
   // (it only leans a little now, never turns its back — ③ 10/21: framed on its front, `zoom` filling the card; ears may go)
   const rad = Math.max(sz.x, sz.y) * .5 * (job.fit || 1) * (S.toon ? 1.08 : 1);
   const dir = new THREE.Vector3(...(job.dir || [.32, .38, 1])).normalize(), dist = rad * 8, half = rad * 1.12 / (job.zoom || 1);

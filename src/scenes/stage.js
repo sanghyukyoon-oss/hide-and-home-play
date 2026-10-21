@@ -339,6 +339,7 @@ export class StageScene {
     W.onRotate = d => { this.rotAccum += Math.abs(d); };
     W.onDragStart = null;
     W.onPress = (x, y) => this.pressAt(x, y);   // 손맛 7
+    G.audio.mapSong?.(this.spec);   // (this stage's own map song — 맵 곡 나눠 쓰기 10/21)
     G.audio.music(this.spec.boss ? 'boss' : 'play');   // (방탈출 보스판: the boss music — 사운드 세션 10/19)
     this.bubble = h('div', { class: 'bubble count' }, ''); G.ui.wui.append(this.bubble);
     if (this.plan.light) this.goDark();

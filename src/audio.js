@@ -23,6 +23,29 @@ export const BGM = {
   king: { tmp: 'audio/bgm-home-v01.mp4', gpt: 'audio/gpt/bgm-king.mp4', gain: 1 },   // (10/21 user: "4도 좋은데 어디 쓸 만한 데") 마지막 보스·결정전 — Suno minigame-v3 ④
   tense: { gpt: null, gain: 1 },   // 다급할 때 (없으면 지금 곡을 1.07배로) → audio/gpt/bgm-tense.mp4
 };
+// 맵 곡 나눠 쓰기 (10/21, user: "맵곡은 우리 다운받은거 충분히 써 주고"): the stages take the Suno songs already downloaded in
+// turn instead of one 62 s song for all 70 — each chapter its own pair, one stage the one, the next the other (a chapter's
+// first song is never the one the chapter before ended on), night stages the main song, the 기차 여행 편 (27~30판) the bright
+// mini song ③ with take 2. Bosses, the plays and TV keep their own slots. Table: audio/README-sound.md 2절
+export const MAP_SONGS = {
+  ingame: 'audio/gpt/bgm-map.mp4',      // Suno 'ingame' 1:02 (the stage song till now)
+  take2: 'audio/gpt/bgm-map-2.mp4',     // Suno 'ingame' second take 0:51
+  lobbyTake: 'audio/gpt/bgm-map-3.mp4', // Suno 'lobby' 0:43 (the stage song before 10/20)
+  main: 'audio/bgm-home-v01.mp4',       // 「햇살 사이 숨은 친구」 — the lobby's, so from home it just goes on
+  trip: 'audio/gpt/bgm-mini-3.mp4',     // Suno minigame ③ (also a between-stage play's)
+};
+const CH_SONGS = { home: ['ingame', 'take2'], apt: ['lobbyTake', 'take2'], alley: ['ingame', 'lobbyTake'], shop: ['ingame', 'take2'],
+  park: ['lobbyTake', 'ingame'], camp: ['take2', 'lobbyTake'], building: ['ingame', 'take2'] };
+const CH_FROM = { home: 0, apt: 12, alley: 21, shop: 31, park: 40, camp: 49, building: 60 };   // (stages.js REGIONS from)
+export function mapSongFor(spec) {
+  const i = spec?.idx | 0;
+  if (!spec) return 'ingame';
+  if (i >= 26 && i <= 29) return (i - 26) % 2 ? 'take2' : 'trip';   // 기차 여행 편 first (27판 leaves in the morning, whatever its old night flag says)
+  if (spec.night) return 'main';
+  if (spec.endless) return ['ingame', 'take2', 'lobbyTake'][i % 3];
+  const pair = CH_SONGS[spec.region] || CH_SONGS.home;
+  return pair[Math.max(0, i - (CH_FROM[spec.region] ?? 0)) % 2];
+}
 // 효과음 파일 (사운드 10/20, 사용자: "효과음 ㅇㅋ", "ASMR스럽고… 질감 같은 게 잘 느껴지고 디테일한 사운드"): 사내 AI Proxy →
 // ElevenLabs sound-generation 으로 만든 audio/sfx/<이름>.mp4 (모노 AAC, 0.1~1.2초, 코드 소리 크기에 맞춤). 파일이 아직 안 왔거나
 // 못 읽으면 코드로 만든 소리가 대신 난다. <이름>_<재질>(open_metal …)은 그 재질의 가구에서만 난다(sfxPart, 아래 MAT).
@@ -374,7 +397,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // same file, so it just goes on. A gpt file that can't be read is dropped (the lobby song again).
   const XF = .8, TRACK_GAIN = .55, HURRY = 1.07;
   const lobbyOnly = /[?&]bgm=(lobby|tmp)\b/.test(location.search), failed = new Set();
-  const own = slot => { const b = BGM[slot]; if (!b) return null; const g = b.gpts ? b.gpts[(A._rot || 0) % b.gpts.length] : b.gpt; const url = (g && !lobbyOnly && !failed.has(g) && g) || b.tmp; return url ? { url, gain: b.gain ?? 1 } : null; };
+  const own = slot => { const b = BGM[slot]; if (!b) return null; const m = slot === 'map' && A._mapKey && MAP_SONGS[A._mapKey]; const g = m && !failed.has(m) ? m : b.gpts ? b.gpts[(A._rot || 0) % b.gpts.length] : b.gpt; const url = (g && !lobbyOnly && !failed.has(g) && g) || b.tmp; return url ? { url, gain: b.gain ?? 1 } : null; };   // (a stage's own song, MAP_SONGS — one that can't be read: the slot's own)
   const fileOf = slot => own(slot) || own('lobby');
   const T = A._trk = { el: null, gain: null, url: null, slot: null, want: null, goal: 0, pending: null, swapT: 0, stopT: 0, rate: 1 };
   function mkTrack() {
@@ -385,7 +408,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     try { const node = A.ctx.createMediaElementSource(el); T.gain = A.ctx.createGain(); T.gain.gain.value = 0; node.connect(T.gain).connect(A.musicBus); } catch { T.gain = null; }
     el.addEventListener('playing', () => { if (T.pending != null) { fade(T.pending, XF * .6); T.pending = null; } });
     el.addEventListener('error', () => {
-      if (!T.url || !Object.values(BGM).some(b => b.gpt === T.url || b.gpts?.includes(T.url))) return;
+      if (!T.url || (!Object.values(BGM).some(b => b.gpt === T.url || b.gpts?.includes(T.url)) && !Object.values(MAP_SONGS).includes(T.url))) return;
       console.warn('bgm file', T.url, 'could not be read — playing the lobby song');
       failed.add(T.url); T.url = null; A._req = null; goMusic();
     });
@@ -440,8 +463,10 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   A.scene = (name, data = {}) => {
     A.playSlot = data.final || data.kind === 'finale' ? 'king' : SCENE_SLOT[name] || 'map';
     if (A.playSlot === 'mini') A._rot = (A._rot || 0) + 1;   // (the next mini game, the other song)
-    A._hurry = false; A._drift = 1; A._req = null; if (T.el && T.url) setRate(1);
+    A._hurry = false; A._drift = 1; A._req = null; A._mapKey = null; if (T.el && T.url) setRate(1);
   };
+  // the stage says which of the map songs is its own (stage.js, before its music starts)
+  A.mapSong = spec => { A._mapKey = mapSongFor(spec); };
   // 오래 못 찾으면 (songdrift.js): the stage song a notch faster — 0 as written … 4 = 1.20; only the map slot, never over a hurry
   const DRIFT = [1, 1.05, 1.10, 1.15, 1.20];
   A._drift = 1;

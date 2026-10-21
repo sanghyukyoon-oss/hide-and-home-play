@@ -2054,3 +2054,6 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .tophud.f .thchip { height: 32px; border-width: 3px; padding: 0 10px 0 3px; }
 .tophud.f ~ .homeside { top: calc(80px + var(--safeT)); }
 @media (max-width: 370px) { .tophud.f .thchip { padding-right: 8px; font-size: 15px; } .tophud.f .thchips { gap: 5px; } .tophud.f .thname .nm { font-size: 18px; } }
+/* (③ 10/21) a shop icon still being drawn: a soft round placeholder where it will be */
+.panel.shop .card img.lazy { background: radial-gradient(circle at 50% 55%, rgba(155, 108, 255, .14) 0 36%, transparent 38%); animation: lazypulse 1s ease-in-out infinite alternate; }
+@keyframes lazypulse { to { opacity: .55; } }
