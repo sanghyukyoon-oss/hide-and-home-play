@@ -20,13 +20,15 @@ export const FTAP_ON = typeof location === 'undefined' || !/[?&]ftapteach=0(&|$)
 // the words (스토리 룸 10/20 밤): three beats, the tag, and the badge
 export const FTAP_CAP = {
   move: K('드래그하면 이동', 'Drag to move'),
-  spin: K('드래그한 채 터치! 손 뗄 때까지 회전', 'Tap while dragging: spin until you let go'),   // (user 10/20: "드래그하던 손을 떼기 전까지 회전으로 바뀌어요라는 의미가 있었으면")
-  back: K('손 떼면 다시 이동', 'Let go: back to moving'),
+  // (user 10/21 튜토 개선: three short beats — "드래그하면 이동" / "드래그하면서, 다른 손으로 톡 터치! → 회전" / "끌던 손을 떼면 다시 이동",
+  // the last one's words left to ③: "손을 떼면 다시 이동")
+  spin: K('드래그하면서 다른 손으로 터치! → 회전', 'Drag + tap another finger → turn'),
+  back: K('손을 떼면 다시 이동', 'Let go → move again'),
   keep: K('떼지 마!', 'Keep holding!'),
 };
 export const FTAP_CARD = { top: K('새로 얻었다!', 'New move!'), big: K('빙글 돌리기', 'Spin'), small: K('드래그 중 터치', 'Drag + tap') };
 // the mode word in each line, coloured: 이동 sky blue, 회전 pink (스토리 룸: "잠깐 바뀌었다 돌아온다"가 글을 다 안 읽어도 보이게)
-const MODE = [['회전', 'spin'], ['spin', 'spin'], ['이동', 'move'], ['moving', 'move'], ['move', 'move']];
+const MODE = [['회전', 'spin'], ['turn', 'spin'], ['spin', 'spin'], ['이동', 'move'], ['moving', 'move'], ['move', 'move'], ['Drag', 'move']];
 
 // a drag that a second-finger touch turned into a turn (not the dial, not the 회전 badge of the E controls)
 const fturning = W => W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;

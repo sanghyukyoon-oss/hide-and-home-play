@@ -187,8 +187,11 @@ export class BossScene {
     this.cardsEl.innerHTML = '';
     if (this.phase !== 'count') { this.cardsEl.parentElement.style.display = 'none'; return; }
     for (const t of this.treasures) {
-      const c = h('div', { class: 'card' + (t.spot ? ' done' : '') + (this.held?.t === t ? ' sel' : '') }, t.spot ? h('div', { class: 'tag' }, '숨김') : null, h('img', { src: G.thumbs['item_' + t.type] }), h('div', {}, t.name));
-      c.addEventListener('click', () => { if (t.spot) { G.ui.toast(`${t.name}은(는) 벌써 숨겼어`, ''); return; } G.audio.sfx('click'); this.holdStart(t); });
+      // (③ 10/21, user: "숨기기 … 방 배치 물건숨기기랑 … 아예 똑같이 이질감 없게"): as at home — a hidden one shows where, and a tap
+      // picks it up again to move it
+      const c = h('div', { class: 'card' + (t.spot ? ' done' : '') + (this.held?.t === t ? ' sel' : '') }, t.spot ? h('div', { class: 'tag' }, '숨김') : null, h('img', { src: G.thumbs['item_' + t.type] }), h('div', {}, t.name),
+        h('div', { style: 'font-size:11px;color:#9b6cff' }, t.spot ? (t.fs?.label || t.spot.name) : ''));
+      c.addEventListener('click', () => { G.audio.sfx('click'); if (t.spot) this.unhide(t); this.holdStart(t); });
       this.cardsEl.append(c);
     }
     this.tlEl.textContent = this.treasures.every(t => t.spot) ? '셋 다 숨겼어! 곧 너굴이가 찾아' : '보물을 골라, 드래그해서 숨겨!';
@@ -197,7 +200,7 @@ export class BossScene {
     const G = this.G, W = G.world;
     this.holdEnd();
     const g = buildItem(t.type); g.scale.setScalar(.85); W.root.add(g);
-    const ring = new THREE.Mesh(new THREE.RingGeometry(.24, .34, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthTest: false }));
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.2, .3, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthTest: false }));
     ring.rotation.x = -Math.PI / 2; ring.renderOrder = 10; W.root.add(ring);
     const ui = G.ui, tool = h('div', { class: 'ftool holdtool' },
       ui.btn(null, { color: 'blue', icon: 'rotate', onClick: () => { const H = this.held; if (H) { H.ry += Math.PI / 4; H.g.rotation.y = H.ry; G.audio.sfx('click'); } } }),
@@ -205,39 +208,63 @@ export class BossScene {
       ui.btn(null, { color: 'gray', icon: 'close', onClick: () => { this.holdEnd(); this.nextHeld(); } }));
     const label = h('div', { class: 'holdlabel' }); ui.wui.append(tool, label);
     tool.querySelectorAll('.btn').forEach(b => b.style.pointerEvents = 'auto');
-    this.held = { t, g, ring, tool, label, ry: Math.random() * Math.PI * 2, spot: null };
+    this.held = { t, g, ring, tool, label, ry: (Math.random() - .5) * 1.2, spot: null, fs: null, opened: null };
     const p = W.screenToGround(innerWidth / 2, innerHeight * .5, 0) || this.hero.root.position.clone();
     this.holdTo(null, p);
     G.audio.sfx('pop', 4); this.nextHeld();
   }
-  // a hiding place (snapped, green, its name) or just where the finger is on the floor
-  holdTo(spot, p) {
+  // where a held treasure can go, as at home (hidehold.js): each piece's own hiding places — in a drawer, behind a door, on a
+  // shelf — or, for a piece with none, tucked beside it; never one taken
+  hidePlaces() {
+    const out = [], V = new THREE.Vector3(), h0 = ITEMS[this.held?.t.type]?.h || .2;
+    for (const s of this.spots) {
+      if (s.tre) continue;
+      const fl = (s.f.spots || []).filter(q => !q.bossTre && !q.item && q.anchor && h0 * .85 * (q.scale || 1) <= (q.maxH ?? 9) + .001);
+      if (fl.length) for (const fs of fl) out.push({ s, fs, p: fs.anchor.getWorldPosition(V.clone()), label: fs.label || s.name });
+      else out.push({ s, fs: null, p: s.c.clone().setY(Math.max(s.c.y, (s.t.y || 0) + .35)), label: s.name });
+    }
+    return out;
+  }
+  // a hiding place (snapped, green, its name; a shut drawer opens to show it, the one it left shuts) or the floor under the finger
+  holdTo(c, p) {
     const H = this.held; if (!H) return;
-    const at = spot ? spot.c.clone().setY(Math.max(spot.c.y, (spot.t.y || 0) + .35)) : p;
+    const part = c?.fs?.part || null;
+    if (H.opened && H.opened !== part) { const P = H.opened; H.opened = null; if (P.t > .5) this.tw.run(.18, k => P.setOpen(1 - k)); }
+    if (part && part.t < .5) { H.opened = part; this.tw.run(.18, k => part.setOpen(k)); }
+    const at = c ? c.p : p;
     H.g.position.copy(at); H.g.rotation.set(0, H.ry, 0);
-    H.ring.position.set(at.x, (spot ? (spot.t.y || 0) : (p.y || 0)) + .02, at.z);
-    H.ring.material.color.set(spot ? '#5be37a' : '#ffffff');
-    H.label.textContent = spot ? spot.name : '숨을 곳으로 드래그'; H.label.classList.toggle('snap', !!spot);
-    if (spot && H.spot !== spot) this.G.audio.sfx('tap', 12);
-    H.spot = spot; this.G.world.shadowDirty = true;
+    H.ring.position.set(at.x, (c ? c.p.y : (p.y || 0)) + .015, at.z);
+    H.ring.material.color.set(c ? '#5be37a' : '#ffffff');
+    H.label.textContent = c ? c.label : '숨을 곳으로 드래그'; H.label.classList.toggle('snap', !!c);
+    if (c && (H.spot !== c.s || H.fs !== c.fs)) this.G.audio.sfx('tap', 12);
+    H.spot = c?.s || null; H.fs = c?.fs || null; this.G.world.shadowDirty = true;
   }
   holdDrag(x, y) {
     const H = this.held, W = this.G.world; if (!H || this.phase !== 'count') return null;
-    const p = W.toScreen(H.g.getWorldPosition(new THREE.Vector3())); if (Math.hypot(p.x - x, p.y - y) > 80) return null;
+    const p = W.toScreen(H.g.getWorldPosition(new THREE.Vector3())); if (Math.hypot(p.x - x, p.y - y) > 70) return null;   // (only the held thing drags — anything else is the camera's, as at home)
     return {
       move: (mx, my) => {
-        let best = null, bd = 80;
-        for (const s of this.spots) { if (s.tre) continue; const q = W.toScreen(s.c); const d = Math.hypot(q.x - mx, q.y - my); if (d < bd) { bd = d; best = s; } }
-        if (best) this.holdTo(best); else { const g = W.screenToGround(mx, my, H.g.position.y > .6 ? 0 : 0); if (g) this.holdTo(null, g); }
+        let best = null, bd = 64;   // (hidehold.js SNAP_PX)
+        for (const c of this.hidePlaces()) { const q = W.toScreen(c.p); const d = Math.hypot(q.x - mx, q.y - my); if (d < bd) { bd = d; best = c; } }
+        if (best) { if (H.spot !== best.s || H.fs !== best.fs) this.holdTo(best); } else { const g = W.screenToGround(mx, my, 0); if (g) this.holdTo(null, g); }
       },
       end: () => {}, cancel: () => {},
     };
   }
+  // a hidden treasure back in the hand (its card tapped again) — the place it was is free again
+  unhide(t) {
+    if (!t.spot || this.phase !== 'count') return;
+    t.g?.parent?.remove(t.g); t.g = null;
+    if (t.fs) { t.fs.bossTre = null; t.fs = null; }
+    t.spot.tre = null; t.spot = null;
+    t.pin?.remove(); t.pin = null;
+    this._startAt = null; this.goBtn?.classList.remove('pulse');
+    this.G.world.idsDirty = true; this.G.world.shadowDirty = true; this.drawSlots();
+  }
   holdConfirm() {
     const H = this.held, G = this.G; if (!H) return;
     if (!H.spot) { G.ui.toast('숨을 곳(가구) 가까이로 드래그해 봐!', ''); G.audio.sfx('miss'); return; }
-    const { t, spot, ry } = H; this.holdEnd(true);
-    const fs = (spot.f.spots || []).filter(q => !q.bossTre)[0] || null;
+    const { t, spot, ry } = H, fs = H.fs; if (H.opened) { H.opened.setOpen(0); H.opened = null; } this.holdEnd(true);
     const was = this.treasures.find(x => !x.spot); if (was !== t) { const i = this.treasures.indexOf(t), j = this.treasures.indexOf(was); [this.treasures[i], this.treasures[j]] = [this.treasures[j], this.treasures[i]]; }   // (hideTreasure takes the first not hidden)
     this.hideTreasure(spot, false, fs);
     if (t.g) t.g.rotation.y = ry;
@@ -246,6 +273,7 @@ export class BossScene {
   holdEnd(quiet = false) {
     const H = this.held; if (!H) return; this.held = null;
     H.g.parent?.remove(H.g); H.ring.parent?.remove(H.ring); H.ring.geometry.dispose(); H.ring.material.dispose(); H.tool.remove(); H.label.remove();
+    if (H.opened && H.opened.t > .5) { const P = H.opened; this.tw.run(.18, k => P.setOpen(1 - k)); }
     if (!quiet) this.G.audio.sfx('pop', 1);
   }
   holdTick() {
@@ -363,8 +391,9 @@ export class BossScene {
     }
     this.G.world.idsDirty = true; this.G.world.shadowDirty = true;
     this.addPin(t);   // 숨긴 자리 위 초록 핀 (계속 떠 있음 — 10/20)
-    if (!quiet) { G.audio.sfx('pop', 3 + this.treasures.filter(x => x.spot).length); setTimeout(() => !this.dead && G.audio.sfx('star', this.treasures.filter(x => x.spot).length - 1), 180); this.say(this.hero, `${fs?.label || s.name}에 ${t.name} 쏙!`, 1000);
-      { const p = this.G.world.toScreen(this.pinAt(t)); G.ui.floatText(p.x, p.y - 20, '✓ 숨겼다!', 'green big'); } const s0 = g.scale.x; this.tw.run(.25, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .3))); }
+    // (as at home: hearts and the place's name, no words from 몽글이 — ③ 10/21)
+    if (!quiet) { G.audio.sfx('pop', 3 + this.treasures.filter(x => x.spot).length); setTimeout(() => !this.dead && G.audio.sfx('star', this.treasures.filter(x => x.spot).length - 1), 180); 
+      { const p = this.G.world.toScreen(this.pinAt(t)); G.world.fx.burst(p.x, p.y + 30, { n: 10, shape: 'heart', colors: ['#ff6fa6', '#ffb3d1', '#ffffff'], speed: 140 }); G.ui.floatText(p.x, p.y - 20, fs?.label || s.name, ''); } const s0 = g.scale.x; this.tw.run(.25, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .3))); }
     this.drawSlots();
     if (this.treasures.every(x => x.spot)) { this.goBtn.classList.add('pulse'); if (this._startAt == null) this._startAt = this.t + 2; }   // (셋 다: 2초 뒤 너굴이가 찾기 시작)
   }

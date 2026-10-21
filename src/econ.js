@@ -14,7 +14,7 @@ export const ECON = (() => {
     if (q === '1') localStorage.setItem('sbk-econ', '1');
     if (q === '0') localStorage.setItem('sbk-econ', '0');
     return q === '1' || (q !== '0' && localStorage.getItem('sbk-econ') !== '0');
-  } catch { return q === '1'; }
+  } catch { return q !== '0'; }   // (storage blocked — in-app browsers: the default, on; it used to fall back to the old home here, ⑤ 10/21)
 })();
 
 // 선물은 아주 가끔 (10/20, user: "선물 50판에 한 세 개면 될 듯? 로봇 포함 10판째는 하나 주자."): the free things in 1~50판 are three —

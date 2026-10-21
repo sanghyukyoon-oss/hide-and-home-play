@@ -2395,15 +2395,20 @@ export class StageScene {
     // ① 이동 먼저 (user 10/19: "이동하는 방법 알려 줘야 함, 회전 방법 전에"): a hand drags across the room, done once the view has
     // moved a little. It is the move lesson (tut.move — 6판's teachMove reminder then stays away); the first time only
     if (W.scheme === 'F' && !G.save.tut?.move) {
+      // (user 10/21, 튜토 개선: "화면을 실제로 움직인 명확한 드래그 한 번이면 이동 안내를 완료") one drag that clearly moved the view —
+      // let go after ~40 px — is enough; no adding up to a total while the view has plainly moved
       let pan = 0, live = true; const prev = W.onPan;
       W.onPan = d => { prev?.(d); if (live) pan += Math.abs(d) || 0; };
-      const ok = await this.teach(DO.move, 'swipe', mid, () => pan > 140);
+      const ok = await this.teach(DO.move, 'swipe', mid, () => (pan > 40 && !W.ptrs?.size) || pan > 140);
       live = false;
       if (!ok) return;
       (G.save.tut || (G.save.tut = {})).move = 1; G.persist?.();
     }
     // ② the box shook, but that's its back: turn the room until its front shows
-    if (!front() && !this.friendItem?.found) {
+    // (user 10/21: "처음부터 회전하는 목적을 알려준다 — 상자 앞쪽을 보자!", one hand on the dial showing the way; done when the box's
+    // front really shows; skipped once the box is open or the friend found)
+    const turnDone = () => front() || !!this.friendItem?.found || box.t > .5;
+    if (!turnDone()) {
       // 기본 조작 F (조작감 세션 10/18): one finger always moves; the turn dial bottom right turns the room (or a two-finger twist)
       const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
       if (W.scheme === 'F' && dial) {
@@ -2411,14 +2416,14 @@ export class StageScene {
         // box's front soonest (measured 10/19: today's box needs 60° one way, 155° the other) — pushing right turns the view
         // to a smaller yaw (dialr), pushing left to a larger one (diall)
         const way = s => { const c = this.tail.front; for (let d = 5; d <= 180; d += 5) { const y = W.yaw + s * d / 57.3; if (Math.sin(y) * c.x + Math.cos(y) * c.z > .35) return d; } return 999; };
-        if (!await this.teach(DO.turnDial, way(-1) <= way(1) ? 'dialr' : 'diall', () => at(dial), front, DO.turnDial2)) return;
+        if (!await this.teach(DO.turnFront, way(-1) <= way(1) ? 'dialr' : 'diall', () => at(dial), turnDone, DO.turnDial2)) return;
         // (tilting is taught in 2판 now, at the thing on the loft — 검토 H3; the dial's ‹ › ˄ ˅ arrows still hint it)
       }
       else if (W.scheme === 'E' && !W.joyOn) {
         const mt = W.modeBadge?.querySelector('.mt');
         if (W.eBase !== 'turn' && !await this.teach(DO.turnBadge, 'tap', () => at(mt), () => W.eBase === 'turn' || front(), DO.turnBadge2)) return;
         if (!front() && !await this.teach(DO.turnDrag, 'swipe', mid, front, DO.turnDrag2)) return;
-      } else if (!await this.teach(DO.turnAny, 'swipe', mid, front, DO.turnDrag2)) return;
+      } else if (!await this.teach(DO.turnFront, 'swipe', mid, turnDone, DO.turnDrag2)) return;
     }
     if (this.friendHidden && sc.peek) { this.giggle(sc.peek); this._hsT = this.t; this.gigT = 6; }
     // ③ tap the box (the same tap as the donut)

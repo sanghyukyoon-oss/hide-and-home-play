@@ -304,7 +304,7 @@ const SCENES = [
     after: [LP('frog', '기차 왔다! 같이 타자, 개굴!', "Here's the train! Hop on with me. Ribbit!"), LP('mong', '…발자국도 기차에 탔네.', '…The footprints got on the train too.')] },
   // 28판 기차 객실 ★ (사건, 새 맵 — 방 id는 ①이 정함: traincar/train/cabin 어느 것이든 붙음): 터널을 지나는 사이 너굴이가 숨음.
   // 3장에서 너굴이 시간 판이 빠진 대신, 동네 숨기 1등이 기차에서 숨어요
-  { id: 'traincarInc', type: 'incident', room: 'traincar', alt: ['train', 'cabin'], host: 'raccoon', hide: K('터널 지나는 동안 숨는다! 1등은 기차에서도 1등!', "Hiding while we're in the tunnel! Number one on the train too!"),
+  { id: 'traincarInc', type: 'incident', room: 'traincar', alt: ['traincar2', 'train', 'cabin'], host: 'raccoon', hide: K('터널 지나는 동안 숨는다! 1등은 기차에서도 1등!', "Hiding while we're in the tunnel! Number one on the train too!"),
     intro: [L('frog', '개굴! 객실이다. 섬까지 세 정거장!', 'Ribbit! Our car. Three stops to the island!'), L('raccoon', '나도 탔지롱. 터널 나가기 전에 날 찾아 봐!', "I'm on board too. Find me before we're out of the tunnel!")],
     reveal: [L('raccoon', '…선반 위는 반칙 아니거든?!', "…The luggage rack is NOT cheating!"), L('frog', '다음 역, 호수 섬! 내리자!', 'Next stop, the lake island! Off we go!'), L('mong', '…창문에 까만 손자국.', '…A little inky handprint on the window.')] },
   // 29판 호수 섬 흑백 (섬 3차): 먹물이가 따라온 여행 — "같이 타도 돼?"가 엔딩의 '같이'로
@@ -754,6 +754,10 @@ const GAME = {
   'yasik:1': { lead: [L('sundae', '간식은 챙겼고… 문제는 집에 가져가는 거.', 'Snacks: packed. Problem: getting them home.'), L('mong', '…엄마.', '…Mom.')], out: [L('mong', '…엄마 발소리에 맞춰 걸었어.', "…I matched my steps to Mom's.")] },
   'wakeup:1': { lead: [L('frog', '개굴! 졸졸이가 벤치에서 또 잠들었어!', 'Ribbit! Dozy fell asleep on the bench again!'), L('mong', '…소풍 끝났는데.', "…The picnic's over."), L('frog', '깨워야 집에 가지, 개굴!', 'Gotta wake Dozy up to go home, ribbit!')],
     out: [L('sleepy', '음냐… 벌써 저녁이야? 별 보러 가야지…', 'Mmh… evening already? Time to go see the stars…')] },
+  // 70판 엔딩 뒤 덤 '추로야!!!' 첫째 밤 (② 10/21): 다 같이 잠든 그날 밤, 몽글이는 일기 마감 — 추로(사용자네 고양이)가 물건을 툭툭
+  // 떨어뜨려 츄르 서랍을 열게 만드는 놀이. 일기장(도감) 모티프로 '마감'을 받아요
+  'churro:0': { lead: [L('mong', '…그날 밤. 다들 잠들고, 나는 일기 마감.', "…That night. Everyone's asleep, and I'm finishing my diary."), L('churro', '…냥.', '…Mrrp.'), L('mong', '추로야, 지금은 안 돼. 츄르는 아침에.', 'Churro, not now. Treats in the morning.')],
+    out: [L('mong', '…알았어, 알았어. 딱 하나만이야.', '…Okay, okay. Just one.'), L('churro', '…냥!', '…Mrrow!')] },
   'wakeup:2': { lead: [L('panda', '졸졸이 또 안 일어나.', "Dozy's out cold. Again."), L('mong', '…약속했으니까. 깨워서 같이 내려가자.', "…I promised. Let's wake Dozy and walk down together.")], out: [L('sleepy', '음냐… 응. 같이.', 'Mmh… yeah. Together.')] },
   // 쉬어가기 (10/18 정본 배치: 두더지 3·27·58, 이불 8·46, 무궁화 24·63) — 너굴이 rivalry runs through them
   'whack:1': { lead: [L('raccoon', '변장 완벽! 너굴이는 여기 없다~', "Perfect disguise! Rocky's not here~"), L('mong', '…방금 이름 말했어.', '…You just said your name.')] },
@@ -836,8 +840,9 @@ export const DO = {
   turnDial: K('돌림판을 밀어 봐', 'Slide the dial'),   // (짧게 — user 10/19 "힌트랑 손가락이 너무 많다"; the hand shows where and which way)
   tilt: K('돌림판을 위아래로 밀어 기울이기', 'Slide the dial up or down to tilt'), tilt2: K('돌림판을 위아래로 쭉 밀면 위에서 내려다볼 수 있어', 'Slide the dial up or down to look from above'),
   turnDial2: K('상자 앞이 보일 때까지 쭉', 'Keep going till the box faces you'),
+  turnFront: K('상자 앞쪽을 보자!', "Let's see the front of the box!"),   // (1판 회전, 처음부터 왜 돌리는지 — 사용자 10/21 튜토 개선)
   box: K('상자를 터치', 'Tap the box'), box2: K('흔들리는 상자를 터치해 봐', 'Tap the shaking box'),
-  drawer: K('서랍을 터치해서 열기', 'Tap a drawer to open it'), drawer2: K('서랍이나 문을 터치! 안에 물건이 있어', 'Tap drawers and doors to look inside'),
+  drawer: K('서랍을 터치해서 열어봐', 'Tap the drawer to open it'), drawer2: K('서랍이나 문을 터치! 안에 물건이 있어', 'Tap drawers and doors to look inside'),
   zoom: K('두 손가락을 벌려 크게 보기', 'Spread two fingers to zoom in'),
   move: K('드래그해서 둘러봐', 'Drag to look around'),
   // 이동 중 톡 회전 수업 (user 10/19: 튜토리얼에 꼭, 더 이르게; 발동되면 십자 가운데가 중심이라고) — teachftap.js reads these
