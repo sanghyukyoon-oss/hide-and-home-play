@@ -92,4 +92,10 @@ export const EN_APP = {
   // 추로 (사용자네 고양이): it calls itself 추로님 — "the great Churro" (스토리 룸 10/20, user: "추로를 누르면 이름이 들어간 말")
   '이건 추로님의 책상이다.': "This desk belongs to the great Churro.", '추로님이 왔다. 쓰다듬어도 좋다.': 'The great Churro is here. You may pet.',
   '…마우스 위는 추로님 자리다.': "…The mouse is the great Churro's seat.", '추로님한테 츄르 줄 거야?': 'A treat for the great Churro?',
+  // (외부 QA 10/21 #08) what English still showed in Korean: the controls setting, the gift cards' short names and kinds, the
+  // shop's new-things shelf, the keepsake result tile
+  '조작: 기본 (드래그하면 이동 · 돌림판 = 회전 · 드래그 중 다른 손 터치 = 그동안 회전)': 'Controls: Standard (drag to move · dial = turn · tap with another finger while dragging = turn meanwhile)',
+  '조작: 터치 (드래그하면 이동 · 다른 손 터치 = 회전)': 'Controls: Touch (drag to move · tap with another finger = turn)',
+  '금빛 트로피': 'Golden Trophy', '회전목마': 'Carousel', '몽글이 시계': 'Mongle Clock', '특별 소품': 'Special decor',
+  '새 물건': 'New things', '숨길 물건 · 도감 +1': 'A thing to hide · Card book +1', '상점 기념품!': 'New in the shop!',
 };

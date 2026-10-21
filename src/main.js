@@ -285,7 +285,10 @@ const G = {
     const key = room.practice ? room.id : room.owner;
     const prev = save.visits[key];
     const firstWin = ok && !prev?.ok;
-    save.visits[key] = { ok: ok || !!prev?.ok, at: Date.now(), n: found };   // (n: how many were found — raidrun.js recentRaid)
+    // (n: how many were found; raidAt: the last visit that took something — raidrun.js recentRaid. 외부 QA 10/21 #04: a visit that
+    // found nothing used to overwrite n with 0, so stopping at once wiped the ⅓ rule for the next 12 hours)
+    const now = Date.now(), raidAt = found > 0 ? now : (prev?.raidAt ?? ((prev?.n ?? 1) > 0 ? prev?.at : undefined));
+    save.visits[key] = { ok: ok || !!prev?.ok, at: now, n: found, ...(raidAt ? { raidAt } : {}) };
     const awarded = exact ? coins : ok ? (firstWin ? coins : Math.round(coins / 3)) : 0;
     save.coins += awarded;
     G.persist();

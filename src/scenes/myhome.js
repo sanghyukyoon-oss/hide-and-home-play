@@ -309,6 +309,7 @@ export class MyHomeScene {
     this.items = {};
     const hid = this.H.hide;
     if (hid.zoneId === this.zoneId) {
+      let partFix = false;
       for (const e of hid.items.slice()) {
         if (e.free) {
           const host = resolveHost(this.room, e.free.host, this.partByKey, e.free.part);
@@ -318,8 +319,10 @@ export class MyHomeScene {
         }
         const s = this.spotByKey[e.spot];
         if (!s || s.item) { hid.items = hid.items.filter(x => x !== e); continue; }
+        if (s.part?.key && e.part !== s.part.key) { e.part = s.part.key; partFix = true; }   // (an older save: the drawer it is in, for raid.js hidePart)
         this.putItem(e.item, s);
       }
+      if (partFix) G.persist();
       for (const pk in hid.locks) { const p = this.partByKey[pk]; if (p) p.furn.setLock(p, hid.locks[pk], hid.code); else delete hid.locks[pk]; }
     }
     messOpen(this);   // 털린 흔적: what a resident opened stays open until you shut it
@@ -794,7 +797,7 @@ export class MyHomeScene {
     if (spot.item && spot.item.type !== t) this.removeItem(spot.item.type);
     if (this.items[t]) this.removeItem(t);
     const it = this.putItem(t, spot); if (ry != null) it.g.rotation.y = ry;
-    hid.items.push({ item: t, spot: spot.key });
+    hid.items.push({ item: t, spot: spot.key, ...(spot.part?.key ? { part: spot.part.key } : {}) });   // (part: raid.js hidePart)
     G.persist(); G.audio.sfx('place');
     const sp = G.world.toScreen(this.room.spotWorld(spot));
     G.world.fx.burst(sp.x, sp.y, { n: 10, shape: 'heart', colors: ['#ff6fa6', '#ffb3d1', '#ffffff'], speed: 140 });

@@ -415,7 +415,9 @@ export class Game {
     for (const p of this.live()) if (p.spin && p !== q) { this.turn(p); const w = this.cellW(p.x, p.y), s = W.toScreen(new THREE.Vector3(w.x, 1.1, w.z)); L.ui.floatText(s.x, s.y, '빙글~', ''); }
     this.unstick();
     if (this.home >= 2 && !this._hint2) { this._hint2 = true; if (!this.turned) this.hint.textContent = '화면을 드래그하면 돌려 볼 수 있어요'; else this.hint.classList.add('gone'); setTimeout(() => !this.dead && this.hint.classList.add('gone'), 2600); }
-    if (this.homeR >= this.pieces.length) setTimeout(() => { if (this.dead || this.result) return; if (this.ri < this.rounds.length - 1) this.nextRound(); else this.finish(true); }, 650);
+    // (외부 QA 10/21 #03) the last friend sent in time ends the round right here: the sun stops now ('clear' is not 'play', so
+    // update() no longer counts down), the 650 ms is only for the run home — a send with .5 s left used to lose to the clock
+    if (this.homeR >= this.pieces.length) { this.phase = 'clear'; setTimeout(() => { if (this.dead || this.result) return; if (this.ri < this.rounds.length - 1) this.nextRound(); else this.finish(true); }, 650); }
   }
   // (외부 QA 10/20 LEVEL-20261020-02) the square is solvable at the start, but sending friends in some orders turned 빙글 너굴이
   // into a dead end (놀이 모음 lv3 seed 5, lv5 seed 2: nobody's way clear, and he turns on a tap only when alone). After each

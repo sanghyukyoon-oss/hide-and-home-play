@@ -22,6 +22,11 @@ const P = s => tr(s);                       // translate a captured piece
 const obj = n => /^(the|a|an) /i.test(n) || /^[A-Z]/.test(n) ? n : 'the ' + n;   // "the remote", but "Bunbun"
 // [pattern, english(...captures)] — captures arrive already translated
 const PAT = [
+  // (외부 QA 10/21 #08) the result tiles' "name · where it went" lines, the shop's "name · now you can hide it"
+  [/^(.+) · 상점 기념품에 들어갔어$/, n => `${n} · now in the shop's Keepsakes`],
+  [/^(.+) · 꾸미기 보관함에 들어갔어$/, n => `${n} · now in your decorating box`],
+  [/^(.+) · 내 방으로 가져가요$/, n => `${n} · taking it home`],
+  [/^(.+) · 이제 내 집에 숨길 수 있어$/, n => `${n} · you can hide it at home now`],
   [/^(\d+)장에서 열려$/, n => `Opens in chapter ${n}`],
   [/^(\d+)장$/, n => `Chapter ${n}`],   // (장 카드 — UI 세션 10/20)   // (상점: 아직 안 열린 가구 — 스토리 룸 10/20)
   [/^([\d.]+)배$/, n => `×${n}`],                          // (배치 편집: 크기 1.2배)

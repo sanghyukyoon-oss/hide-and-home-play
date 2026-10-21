@@ -65,6 +65,10 @@ export function runRaids(G, { now = Date.now(), force = 0 } = {}) {
   return out;
 }
 
+// which drawer or lid a hidden thing is in, for every kind of record (외부 QA 10/21 #05: only free.part counted, so a thing on a
+// fixed snap spot inside a drawer — the default way to hide — got neither the drawer's nor its lock's protection): a fixed spot
+// keeps its part key (myhome.js placeTreasure, filled in for older saves on load), a free place has free.part, or a free host 'p:…'
+export const hidePart = e => e.part || e.free?.part || (typeof e.free?.host === 'string' && e.free.host.startsWith('p:') ? e.free.host.slice(2) : null);
 function raidOnce(G, now) {
   const save = G.save, R = raidOf(save), H = save.home, hid = hiddenTargets(save);
   if (!hid.length) return null;
@@ -76,8 +80,9 @@ function raidOnce(G, now) {
   const found = [];
   for (const e of hid) {
     let p = .5 + (NOSE[who.face] || 0) - Math.min(.2, nLocks * .1);
-    if (e.free?.part) p -= .18;                       // inside a drawer or a lid
-    if (e.free?.part && locks[e.free.part]) p -= .2;  // …and that one is locked
+    const part = hidePart(e);
+    if (part) p -= .18;                  // inside a drawer or a lid
+    if (part && locks[part]) p -= .2;    // …and that one is locked
     if (Math.random() < Math.max(.08, Math.min(.85, p))) found.push(e.item);
   }
   const ev = { at: now, who: id, nick: who.nick, face: who.face, revenge, seen: false };

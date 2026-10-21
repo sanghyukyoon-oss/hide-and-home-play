@@ -18,7 +18,8 @@ const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 
 const ownerOf = S => S.custom.nick || S.custom.ownerName || '주인';
 const val = (S, v) => Math.max(1, Math.round(v * S.raidRun.rate));
 const REPEAT_MS = 12 * 3600e3;
-export function recentRaid(save, key) { const v = save.visits?.[key]; return !!v && Date.now() - (v.at || 0) < REPEAT_MS && (v.n ?? 1) > 0; }
+// the ⅓ rule: a visit that took something in the last 12 hours (raidAt — main.js onVisitResult; older saves: at + n)
+export function recentRaid(save, key) { const v = save.visits?.[key]; if (!v) return false; const t = v.raidAt ?? ((v.n ?? 1) > 0 ? v.at : 0); return !!t && Date.now() - t < REPEAT_MS; }
 const roomKey = C => C.practice ? C.id : C.owner;
 // a raid under way: what was found so far, in the save (raid.open) until the end panel takes it
 function noteFind(S, it) {

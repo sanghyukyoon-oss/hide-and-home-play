@@ -390,7 +390,9 @@ export class BossScene {
     const W = this.G.world, p = this.hero.root.position, Y = W.yaw, st = this.T.run * v * dt;
     const mx = dir[0] * Math.cos(Y) + dir[1] * Math.sin(Y), mz = -dir[0] * Math.sin(Y) + dir[1] * Math.cos(Y);
     this.hpath = null;
-    const sp = this.seek.root.position, ok = (x, z) => this.canStand(x, z) && Math.hypot(x - sp.x, z - sp.z) >= SEP;
+    // (외부 QA 10/21 #06) canStep, not just canStand: a step across a room edge has to go through the doorway (crossOK) — the pad
+    // used to slide 몽글이 through the closed wall beside the door
+    const sp = this.seek.root.position, ok = (x, z) => this.canStep(p.x, p.z, x, z) && Math.hypot(x - sp.x, z - sp.z) >= SEP;
     const tryAt = (x, z) => { if (!ok(x, z)) return false; p.x = x; p.z = z; return true; };
     tryAt(p.x + mx * st, p.z + mz * st) || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st);
     const a = Math.atan2(mx, mz), r = this.hero.root.rotation.y; this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 12);
@@ -432,7 +434,7 @@ export class BossScene {
       const hp = this.hero.root.position, nx = d <= st ? t.x : p.x + dx / d * st, nz = d <= st ? t.z : p.z + dz / d * st;
       if (Math.hypot(nx - hp.x, nz - hp.z) < SEP) {
         const dd = Math.max(d, 1e-4), px = -dz / dd, pz = dx / dd, side = ((hp.x - p.x) * px + (hp.z - p.z) * pz) > 0 ? -1 : 1, sx = p.x + px * side * st, sz = p.z + pz * side * st;
-        if (Math.hypot(sx - hp.x, sz - hp.z) >= Math.min(SEP, Math.hypot(p.x - hp.x, p.z - hp.z)) && this.roomAt(sx, sz)) { p.x = sx; p.z = sz; }
+        if (Math.hypot(sx - hp.x, sz - hp.z) >= Math.min(SEP, Math.hypot(p.x - hp.x, p.z - hp.z)) && this.canStep(p.x, p.z, sx, sz)) { p.x = sx; p.z = sz; }
         this.blockT = (this.blockT || 0) + dt;
         if (this.blockT > 1) { this.blockT = 0; this.nudgeHero(); }
         return false;
@@ -452,7 +454,7 @@ export class BossScene {
     const p = this.hero.root.position, sp = this.seek.root.position, a = Math.atan2(p.x - sp.x, p.z - sp.z);
     for (const da of [Math.PI / 2, -Math.PI / 2, Math.PI / 4, -Math.PI / 4, 0, Math.PI * .75, -Math.PI * .75]) {
       const x = sp.x + Math.sin(a + da) * (SEP + .35), z = sp.z + Math.cos(a + da) * (SEP + .35);
-      if (!this.canStand(x, z)) continue;
+      if (!this.canStep(p.x, p.z, x, z)) continue;   // (the hop sideways stays on this side of a wall too — #06)
       this.say(this.seek, '비켜~', 700); this.hpath = null;
       const x0 = p.x, z0 = p.z; this.tw.run(.25, k => { p.x = x0 + (x - x0) * k; p.z = z0 + (z - z0) * k; this.hero.lift = Math.sin(k * Math.PI) * .25; });
       return;
