@@ -519,12 +519,9 @@ const atlas = () => tex('shop-atlas', 1024, 1024, c => {
 const atlasMat = () => mat('#ffffff', { map: atlas() });
 const signMat = () => mat('#ffffff', { map: atlas(), emissive: '#ffffff', ei: .2 });
 const screenMat = () => mat('#ffffff', { map: atlas(), emissive: '#ffffff', ei: .14 });
-// glass: a pale tint with two soft white streaks printed in (no separate glint slivers, so no stray ink lines)
-const glassTex = () => tex('shop-glass', 128, 128, (c, w, h) => {
+// glass: a pale tint only (10/21, user: "유리에 이 네모 리플렉션 진짜 꼴보기 싫다" — no printed white streaks on any glass)
+const glassTex = () => tex('shop-glass2', 128, 128, (c, w, h) => {
   c.fillStyle = '#d3eff9'; c.fillRect(0, 0, w, h);
-  c.fillStyle = '#ffffff';
-  c.save(); c.translate(w * .32, h * .5); c.rotate(.6); c.fillRect(-3.5, -46, 7, 92); c.fillRect(7, -30, 2.6, 60); c.restore();
-  c.save(); c.translate(w * .8, h * .3); c.rotate(.6); c.fillRect(-1.6, -14, 3.2, 28); c.restore();
 });
 const glassMat = (op = .3) => mat('#ffffff', { map: glassTex(), opacity: op, side: DS });
 const litMat = () => mat('#fffdf6', { emissive: '#fff4dc', ei: .45 });
@@ -872,7 +869,6 @@ B.counter2 = (f, T) => {
       add(G.sph(.055, 12, 8), c, SX + dx, TY + .075 + .03, SZ + dz, 0, 0, 0, [1, .66, 1]);
       add(G.sph(.012, 6, 4), c === '#ffd27a' ? '#c97a3a' : (c === '#f2d0b0' ? '#8a4a3a' : '#e8a456'), SX + dx, TY + .075 + .065, SZ + dz, 0, 0, 0, [1, .5, 1]);
     }
-    for (const sx of [-1, 1]) add(G.pbox(.02, .16, .004), WHITE, SX + sx * (SW / 2 + .004), TY + .2, SZ, 0, HP, -.5);
   }));
   f.add(mg('counter2-top|' + wood, mat('#ffffff', { map: woodTex(wood) }), ({ addM }) => addM(planarUV(ni(G.box(2 * HW + .04, .05, D + .06, .012)).translate(0, CH + .025, z0 + .02), .5), I4)));
   f.add(mg('counter2-front', mat('#ffffff', { map: counterTex() }), ({ add }) => add(new THREE.PlaneGeometry(1.2, .8), (-HW + BX) / 2, .47, fz + .006)));

@@ -688,7 +688,7 @@ B.wardrobe = (f, T) => {
       add(G.ext(heartShape(.06), .01, 0, 8), CREAM, cx, .52, .025 + .002);
       add(G.cyl(.028, .028, .01, 14), shade(knob, -.12), sx * (W / 2 - .07), -.02, .03, HP, 0, 0);
       add(G.sph(.034, 12, 10), knob, sx * (W / 2 - .07), -.02, .052);
-      if (k === 'L') { add(G.box(.24, .52, .01, .004), '#d8eef8', cx, .3, -.036); add(G.pbox(.03, .3, .004), WHITE, cx - .05, .36, -.043, 0, 0, -.5); }
+      if (k === 'L') { add(G.box(.24, .52, .01, .004), '#d8eef8', cx, .3, -.036); }
     }));
     f.add(pv);
   }
@@ -1444,7 +1444,6 @@ B.window = (f, T) => {
     add(G.ext(ring, .07, 0, 4), frameC, 0, 0, -.01);
     add(G.box(.035, .8, .03, .006), frameC, 0, y, .03);
     add(G.box(.92, .035, .03, .006), frameC, 0, y, .03);
-    for (const [x, w] of [[-.3, .04], [-.23, .02], [.2, .04], [.27, .02]]) add(G.pbox(w, .3, .004), '#f2fbff', x, y + .18, .02, 0, 0, -.55);
     add(G.box(1.24, .06, .26, .015), frameC, 0, y - .5, .1);
     add(G.box(1.0, .05, .03, .01), shade(frameC, -.04), 0, y - .555, .015);
     // a potted daisy on the sill

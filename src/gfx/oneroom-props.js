@@ -363,14 +363,12 @@ const rugTex = (c1, c2) => tex('or-rug|' + c1 + c2, 256, 256, (c, w, h) => {
   c.fillStyle = tint(c2); for (let i = 0; i < 16; i++) { const a = i / 16 * PI * 2; blob(c, w / 2 + Math.cos(a) * 116, h / 2 + Math.sin(a) * 116, 4); }
   daisy(c, w / 2, h / 2, 8, '#ffffff', tint(MUSTARD));
 });
-// the drum washer's door glass: dark blue with tumbling laundry and a glint
-const washGlassTex = () => tex('or-washglass', 128, 128, (c, w, h) => {
+// the drum washer's door glass: dark blue with tumbling laundry (no glint — 10/21 "리플렉션 꼴보기 싫다")
+const washGlassTex = () => tex('or-washglass2', 128, 128, (c, w, h) => {
   const g = c.createRadialGradient(w * .45, h * .45, 4, w / 2, h / 2, w / 2); g.addColorStop(0, '#6f86b8'); g.addColorStop(1, '#2f3b5e');
   c.fillStyle = g; c.fillRect(0, 0, w, h);
   for (const [x, y, r, cc] of [[22, 46, 9, '#ffab4c'], [40, 44, 8, '#ffffff'], [30, 34, 7, '#8fd3f4'], [44, 30, 6, '#ff9fb5']]) { c.globalAlpha = .55; c.fillStyle = cc; c.beginPath(); c.ellipse(x, y, r, r * .7, x * .1, 0, PI * 2); c.fill(); }
-  c.globalAlpha = .7; c.strokeStyle = '#ffffff'; c.lineWidth = 3.4; c.beginPath(); c.arc(w / 2, h / 2, 23, PI * 1.08, PI * 1.42); c.stroke();
-  c.lineWidth = 1.8; c.beginPath(); c.arc(w / 2, h / 2, 17, PI * 1.12, PI * 1.3); c.stroke(); c.globalAlpha = 1;
-  c.fillStyle = 'rgba(255,255,255,.6)'; for (const [x, y, r] of [[40, 18, 2], [46, 24, 1.3], [18, 28, 1.6]]) blob(c, x, y, r);
+  c.globalAlpha = 1;
 });
 // the full-length mirror: a pale reflection with glints and a faint window
 const mirrorTex = () => tex('or-mirror', 128, 256, (c, w, h) => {
@@ -1439,7 +1437,6 @@ B.curtainwin = (f, T) => {
     add(sash(-WX, .04), frame, 0, 0, .062);
     add(sash(-.04, WX), frame, 0, 0, .022);
     add(G.box(.02, .1, .02, .006), STEEL2, .015, 1.45, .102);
-    for (const [x, z, w] of [[-.5, .04, .035], [-.4, .04, .018], [.45, .04, .03]]) add(G.pbox(w, .38, .004), '#f2fbff', x, 1.55, z, 0, 0, -.55);
     // rod, brackets, the tied-back left curtain's band
     tube([-.97, ROD, CZ], [.97, ROD, CZ], .016, woodD, 8);
     for (const sx of [-1, 1]) { add(G.sph(.03, 10, 8), woodD, sx * .97, ROD, CZ); add(G.box(.03, .03, CZ, .008), woodD, sx * .9, ROD, CZ / 2); }

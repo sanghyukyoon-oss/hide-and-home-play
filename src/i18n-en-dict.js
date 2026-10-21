@@ -613,7 +613,7 @@ export const EN = {
 "돋보기": "Magnifier",
 "가득": "Full",
 "도감에서 본 것": "Seen in the card book",
-"아이템": "Items", "숨긴 것": "Hidden", "음식": "Food", "반짝이": "Shiny", "작은 것": "Small", "뒤로": "Back", "판에서 힌트": "A hint in a stage", "판과 내 집에서 쓰는 도구": "Tools for stages and your home", "도감 +1": "Card book +1",
+"아이템": "Items", "커튼을 터치해서 열어봐": "Tap the curtain to open it", "문을 터치해서 열어봐": "Tap the door to open it", "뚜껑을 터치해서 열어봐": "Tap the lid to open it", "터치해서 들춰 봐": "Tap to look under it", "숨긴 것": "Hidden", "음식": "Food", "반짝이": "Shiny", "작은 것": "Small", "뒤로": "Back", "판에서 힌트": "A hint in a stage", "판과 내 집에서 쓰는 도구": "Tools for stages and your home", "도감 +1": "Card book +1",
 "판을 돋보기 없이 깨거나 놀이를 이기면 +1": "+1 when you clear a stage without one or win a game",
 "자리가 꽉 찼어": "No seats left",
 "방을 넓히면 자리가 늘어": "a bigger room has more seats",

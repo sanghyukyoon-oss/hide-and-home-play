@@ -2487,7 +2487,7 @@ export class StageScene {
     // the words name what the hand points at (검토 2차 1: it said 서랍 over 2판's curtain), and the lesson ends by itself
     // after 30 s or once that thing is found, so the loft's tilt lesson isn't kept waiting behind it (검토 2차 2)
     const part = g.spot.part, k = part.kind;
-    const say = k === 'drawer' ? DO.drawer : k === 'curtain' ? '커튼을 터치해서 열기' : k === 'door' ? '문을 터치해서 열기' : k === 'lid' ? '뚜껑을 터치해서 열기' : '터치해서 들춰 보기';
+    const say = k === 'drawer' ? DO.drawer : k === 'curtain' ? '커튼을 터치해서 열어봐' : k === 'door' ? '문을 터치해서 열어봐' : k === 'lid' ? '뚜껑을 터치해서 열어봐' : '터치해서 들춰 봐';   // (the user's 말투, 10/21 튜토 개선 — ⑤)
     // (the spot is looked for again now and then as the view moves; hidden from this view → the hand waits out of sight)
     let at0 = this.t;
     const at = () => { if (this.t - at0 > .25) { at0 = this.t; spot = tapSpot(part); if (this.tutHand) this.tutHand.style.visibility = spot ? '' : 'hidden'; } return spot; };

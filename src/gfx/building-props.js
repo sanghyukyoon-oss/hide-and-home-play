@@ -652,7 +652,6 @@ B.elevator = (f, T) => {
     for (const sx of [-1, 1]) add(G.pbox(.012, OH - CF, ZB - ZM), '#d3dae6', sx * (OW - .006), (OH + CF) / 2, (ZB + ZM) / 2);
     add(G.pbox(2 * OW - .024, .9 - CF, ZM - .004), '#b9c3d4', 0, (.9 + CF) / 2, (ZM + .004) / 2);
     add(G.pbox(2 * OW - .024, OH - .9, ZM - .004), '#e6f3fa', 0, (OH + .9) / 2, (ZM + .004) / 2);
-    for (const [x, w] of [[-.2, .05], [-.12, .025], [.18, .04]]) add(G.pbox(w, .5, .004), WHITE, x, 1.32, ZM + .008, 0, 0, -.5);
     tube([-.38, .92, .085], [.38, .92, .085], .016, woodD, 8);
     for (const sx of [-1, 1]) tube([sx * .33, .92, ZM], [sx * .33, .92, .085], .009, STEEL2, 6);
     add(G.box(.02, .4, .11, .005), '#5d6478', OW - .012 - .01, 1.05, .41);
@@ -1403,7 +1402,6 @@ B.rooftopdoor = (f, T) => {
     for (const sy of [-1, 1]) add(G.pbox(ww, .02, .012), shade(rd, -.18), wx, wy + sy * (wh / 2 + .01), .006);
     for (let k = 1; k < 4; k++) add(G.pbox(.003, wh, .003), '#8fb3c9', wx - ww / 2 + k * ww / 4, wy, .0075);
     for (let k = 1; k < 3; k++) add(G.pbox(ww, .003, .003), '#8fb3c9', wx, wy - wh / 2 + k * wh / 3, .0075);
-    add(G.pbox(.03, .18, .004), WHITE, wx - .05, wy + .01, .0075, 0, 0, -.5);
     add(G.cyl(.032, .032, .012, 14), STEEL, DW - .07, -.02, .006, HP, 0, 0);
     add(G.box(.12, .022, .022, .008), STEEL, DW - .12, -.02, .03);
     add(G.cyl(.006, .006, .004, 8), INK, DW - .07, -.06, .002, HP, 0, 0);

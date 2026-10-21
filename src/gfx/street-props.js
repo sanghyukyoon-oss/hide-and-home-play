@@ -450,8 +450,6 @@ B.konbini = (f, T) => {
     add(G.box(W + .04, .3, .12, .02), WHITE, 0, gt + .1 + .15, .2);
     for (const sx of [-1, 1]) for (const [y, h, c] of [[1.993, .042, '#ff9a3c'], [1.9455, .023, '#ff5a4a'], [1.8975, .042, '#3f9be0']]) add(G.pbox(.006, h, .1), c, sx * (W / 2 + .02 + .003), y, .2);
     add(G.box(W + .06, .06, .78, .02), acc, 0, gt + .4 + .03, -.115);
-    // glints on the glass
-    for (const [x, y, l] of [[-.72, 1.2, .5], [-.62, 1.12, .3], [.84, 1.3, .36]]) add(G.pbox(.035, l, .004), WHITE, x, y, .185 + .006, 0, 0, -.55);
     // inside, left: a gondola of snacks, cup noodles and bottles
     const sx0 = -.88, sx1 = -.1, gz = -.28;
     for (const x of [sx0, sx1]) add(G.box(.02, 1.45, .28, .006), WHITE, x, fl + .725, gz);
@@ -539,7 +537,6 @@ B.konbini = (f, T) => {
     add(G.box(DW, .1, .03, .01), ALU, 0, .05, 0);
     add(G.box(.024, .42, .024, .008), STEEL2, -DW / 2 + .09, .85, .03);
     for (const y of [.66, 1.04]) add(G.box(.02, .02, .03, .005), STEEL2, -DW / 2 + .09, y, .016);
-    add(G.pbox(.03, .36, .004), WHITE, .14, 1.22, .006, 0, 0, -.55);
   }));
   dv.add(transparent(mg('konbini-doorglass', glassMat(), ({ add }) => add(new THREE.PlaneGeometry(DW - .09, DH - .15), 0, .1 + (DH - .15) / 2, 0))));
   dv.add(mg('konbini-poster', atlasMat(), ({ add }) => add(quadGeo(.46, .5, RG.poster), 0, .55, .006)));
@@ -1003,8 +1000,6 @@ B.bench2 = (f, T) => {
       add(G.box(.05, .03, .3, .01), STEEL2, x, SY - .035, -.16);
       add(G.box(.07, .02, .26, .006), STEEL2, x, .01, -.16);
     }
-    add(G.pbox(.04, .5, .004), WHITE, -.7, 1.3, bz + .006, 0, 0, -.55);
-    add(G.pbox(.025, .3, .004), WHITE, -.6, 1.2, bz + .006, 0, 0, -.55);
   }));
   f.add(transparent(mg('bench2-glass', glassMat(), ({ add }) => add(new THREE.PlaneGeometry(.88, 1.4), -.48, 1.225, bz))));
   f.add(mg('bench2-ad', signMat(), ({ add }) => add(quadGeo(.82, 1.23, RG.ad), .47, 1.225, bz + .07 + .005)));

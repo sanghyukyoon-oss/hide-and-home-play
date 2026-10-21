@@ -14,8 +14,6 @@ const B = {};
 B.glassentry = (f, T) => {
   const x = -.46, H = 2.6;
   f.add(mc('glassentry', ({ add }) => {
-    // (the panes themselves are see-through, below; here only a white glint on each)
-    for (const [z0, z1] of [[-2.0, -.9], [-.9, .2]]) { const zc = (z0 + z1) / 2, L = z1 - z0; add(G.box(.02, .6, .05, .01), '#ffffff', x + .03, H * .7, zc - L * .2, .3, 0, 0); }
     for (const z of [-2.0, -.9, .2, 1.4]) add(G.box(.1, H, .1, .02), STEEL2, x, H / 2, z);
     add(G.box(.12, .1, 3.5, .02), STEEL2, x, H, -.3); add(G.box(.12, .08, 3.5, .02), STEEL2, x, .04, -.3);
     add(G.box(.08, .06, 2.2, .01), STEEL, x, H * .78, -.9);

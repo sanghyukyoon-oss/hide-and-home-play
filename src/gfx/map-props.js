@@ -484,7 +484,6 @@ B.mirrorcab = (f, T) => {
     const s = rrShape(0, -H / 2 + .01, W, H - .02, .05); s.holes.push(rrShape(.05, -H / 2 + .06, W - .1, H - .12, .03));
     add(G.ext(s, .03, 0, 5), frame, 0, 0, 0);
     add(G.ext(rrShape(.04, -H / 2 + .05, W - .08, H - .1, .035), .012, 0, 5), '#d3eef9', 0, 0, .008);
-    for (const [dx, dy, w] of [[-.06, .05, .05], [.05, .11, .025]]) add(G.pbox(w, .26, .004), WHITE, W / 2 + dx, dy, .022, 0, 0, -.6);
     add(G.sph(.022, 8, 6), knob, W - .03, -.05, .035);
   }));
   f.add(dv);
@@ -942,7 +941,6 @@ B.washer = (f, T) => {
     const cx = -hx;
     add(G.tor(Ro + .02, .04, PI * 2, 8, 28), '#e9eef6', cx, 0, .02);
     add(G.cyl(Ro + .005, Ro + .005, .02, 24), '#cfeefc', cx, 0, .02, HP, 0, 0);
-    for (const [dx, dy, w] of [[-.05, .05, .04], [.04, .1, .02]]) add(G.pbox(w, .17, .004), WHITE, cx + dx, dy, .033, 0, 0, -.6);
     add(G.box(.05, .1, .04, .015), STEEL2, cx + Ro + .045, 0, .03);
     add(G.box(.05, .08, .04, .015), STEEL2, 0, 0, 0);
   }));

@@ -762,8 +762,6 @@ B.recordcab = (f, T) => {
     add(G.box(PW + .012, .015, PD + .012, .006), lidC, 0, LH - .0075, PD / 2 + .006);
     for (const sx of [-1, 1]) add(G.box(.012, LH, PD + .012, .004), lidC, sx * (PW / 2), LH / 2, PD / 2 + .006);
     for (const zz of [.006, PD + .006]) add(G.box(PW + .012, LH, .012, .004), lidC, 0, LH / 2, zz);
-    add(G.pbox(.04, .16, .004), WHITE, -.12, LH * .55, PD + .006 + .01, 0, 0, -.6);
-    add(G.pbox(.02, .1, .004), WHITE, -.07, LH * .6, PD + .006 + .01, 0, 0, -.6);
   }));
   put(lid, PX, topY + PH, z0 - PD / 2 - .006); f.add(lid);
   const p = f.part('lid', lid, t => { lid.rotation.x = -1.35 * t; }, { label: '턴테이블 뚜껑', sfx: 'open' });
@@ -995,7 +993,6 @@ B.balconywin = (f, T) => {
     add(sash(-.04, .88), frame, 0, 0, .022);
     add(G.box(.02, .14, .02, .006), STEEL2, .015, 1.2, .102);
     add(G.box(.02, .14, .02, .006), STEEL2, -.015, 1.2, .062);
-    for (const [x, z, w] of [[-.5, .085, .035], [-.4, .085, .018], [.42, .045, .035], [.52, .045, .018]]) add(G.pbox(w, .42, .004), '#f2fbff', x, 1.45, z, 0, 0, -.55);
     // curtain rod + the tied-back left curtain
     tube([-1.0, ROD, CZ], [1.0, ROD, CZ], .016, woodD, 8);
     for (const sx of [-1, 1]) { add(G.sph(.03, 10, 8), woodD, sx * 1.01, ROD, CZ); add(G.box(.03, .03, .2, .008), woodD, sx * .93, ROD, .1); }
@@ -1224,9 +1221,7 @@ export function tvPuzzle(f) {
   if (f.type !== 'tvlow') return null;
   const g = new THREE.Group(); g.position.set(0, .94, -.284); f.add(g);
   const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.07, .605), new THREE.MeshBasicMaterial({ color: '#262a3d' }));
-  const glint = new THREE.Mesh(new THREE.PlaneGeometry(.46, .045), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .2 }));
-  glint.position.set(-.2, .15, .002); glint.rotation.z = .5;
-  g.add(scr, glint);
+  g.add(scr);   // (no white glint across the dark screen — 10/21 "리플렉션 꼴보기 싫다")
   return {
     f, group: g, done: false,
     on(code) {
@@ -1239,7 +1234,7 @@ export function tvPuzzle(f) {
       x.font = `bold 128px ${font}`; x.lineWidth = 14; x.strokeStyle = '#ffffff'; x.lineJoin = 'round';
       const t = code ? code.split('').join(' ') : '♪ ♫'; x.strokeText(t, 256, 200); x.fillStyle = '#ff5a7a'; x.fillText(t, 256, 200);
       const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-      scr.material = new THREE.MeshBasicMaterial({ map: tex }); glint.visible = false; this.done = true;
+      scr.material = new THREE.MeshBasicMaterial({ map: tex }); this.done = true;
     },
   };
 }

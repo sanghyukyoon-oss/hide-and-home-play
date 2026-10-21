@@ -134,6 +134,12 @@ export class BossScene {
     const all = walkGrid(this.rooms, .24, this.T.climb ? { raised: true } : null), seen = new Set(); let best = [];
     for (const t of all) { if (seen.has(t)) continue; const comp = [], q = [t]; seen.add(t); while (q.length) { const u = q.pop(); comp.push(u); for (const v of u.nb) if (!seen.has(v)) { seen.add(v); q.push(v); } } if (comp.length > best.length) best = comp; }
     this.tiles = best;
+    // 몽글이's own floor (③ 10/21, user: "몽실이 계단을 못오른다 ㅋㅋ"): every walkable tile, raised ones too, joined up stairs and
+    // across floors — the part 너굴이's floor is in. The pad walks it tile to tile, so a step onto the stairs goes up them
+    { const allH = walkGrid(this.rooms, .24, { raised: true }), set = new Set(best), seenH = new Set(); let pick = best;
+      for (const t of allH) { if (seenH.has(t)) continue; const comp = [], q = [t]; seenH.add(t); while (q.length) { const u = q.pop(); comp.push(u); for (const v of u.nb) if (!seenH.has(v)) { seenH.add(v); q.push(v); } }
+        if (comp.some(u => best.some(b => Math.hypot(b.x - u.x, b.z - u.z) < .05 && Math.abs((b.y || 0) - (u.y || 0)) < .1)) && comp.length >= pick.length) pick = comp; }
+      this.htiles = pick.length ? pick : best; }
     // hiding places: the walkable point right beside each piece something can be tucked under, inside or behind
     this.spots = [];
     for (const R of this.rooms) for (const r of R.furns) {
@@ -342,7 +348,7 @@ export class BossScene {
     this.walkTo(p.x, p.z); this._ty = null; W.fx.ring(x, y, { r: 30, color: '#ffffff', width: 5, life: .35 });
   }
   walkTo(x, z, then = null) {
-    const hp = this.hero.root.position, a = near3(this.tiles, hp.x, hp.y, hp.z), b = near3(this.tiles, x, this._ty ?? hp.y, z);
+    const T = this.htiles || this.tiles, hp = this.hero.root.position, a = near3(T, hp.x, hp.y, hp.z), b = near3(T, x, this._ty ?? hp.y, z);
     this.hpath = a && b ? (gridPath(a, b) || []) : []; this.hthen = then;
     if (!this.hpath.length && then) { this.hthen = null; then(); }
   }
@@ -421,12 +427,30 @@ export class BossScene {
     this.hpath = null;
     // (외부 QA 10/21 #06) canStep, not just canStand: a step across a room edge has to go through the doorway (crossOK) — the pad
     // used to slide 몽글이 through the closed wall beside the door
-    const sp = this.seek.root.position, ok = (x, z) => this.canStep(p.x, p.z, x, z) && Math.hypot(x - sp.x, z - sp.z) >= SEP;
-    const tryAt = (x, z) => { if (!ok(x, z)) return false; p.x = x; p.z = z; return true; };
+    // (③ 10/21: "몽실이 계단을 못오른다") the pad follows 몽글이's walk grid — a point is reachable when it lies by the tile 몽글이 is on
+    // or one joined to it; the grid joins the stairs' steps and the floors, so pushing onto the stairs climbs them (a free slide
+    // checked against the room under you only ever knew the ground floor)
+    const T = this.htiles || this.tiles, sp = this.seek.root.position;
+    let cur = this._ht; if (!cur || Math.hypot(cur.x - p.x, cur.z - p.z) > .3 || Math.abs((cur.y || 0) - p.y) > .6) cur = this._ht = near3(T, p.x, p.y, p.z);
+    const tryAt = (x, z) => {
+      if (Math.hypot(x - sp.x, z - sp.z) < SEP) return false;
+      if (!cur) return false;
+      // on the way from this tile to a joined one (stair steps sit far apart): near that line is walkable
+      let best = null, bd = .17;
+      for (const t of [cur, ...(cur.nb || [])]) {
+        const ex = t.x - cur.x, ez = t.z - cur.z, L = ex * ex + ez * ez, k = L ? Math.max(0, Math.min(1, ((x - cur.x) * ex + (z - cur.z) * ez) / L)) : 0;
+        const d = Math.hypot(cur.x + ex * k - x, cur.z + ez * k - z); if (d < bd) { bd = d; best = k > .5 ? t : cur; }
+      }
+      if (!best) {   // (on the ground floor the old free slide still goes: it reaches a little closer to furniture than the grid's tiles)
+        if ((cur.y || 0) > .1 || !this.canStep(p.x, p.z, x, z)) return false;
+        p.x = x; p.z = z; this._ht = null; return true;
+      }
+      p.x = x; p.z = z; this._ht = best; return true;
+    };
     tryAt(p.x + mx * st, p.z + mz * st) || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st);
     const a = Math.atan2(mx, mz), r = this.hero.root.rotation.y; this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 12);
     this.hero.lift = Math.abs(Math.sin(this.t * 14)) * .06;
-    const R = this.roomAt(p.x, p.z); if (R) { const t = near3(this.tiles, p.x, p.y, p.z); if (t) p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10); }
+    { const t = this._ht || near3(T, p.x, p.y, p.z); if (t) p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10); }
   }
   // whatever is still in your hands when it stops counting goes somewhere at random
   hideRest() {

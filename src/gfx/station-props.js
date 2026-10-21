@@ -41,8 +41,8 @@ B.train = (f, T, o = {}) => {
     // pantograph
     add(G.box(.04, .3, .04, .01), DARK, xc - 1.2, y0 + Hb + .3, 0, 0, 0, .5); add(G.box(.04, .3, .04, .01), DARK, xc - 1.2, y0 + Hb + .3, 0, 0, 0, -.5);
     add(G.box(.6, .03, .05, .01), DARK, xc - 1.2, y0 + Hb + .38, 0);
-    // windows on the platform side: rounded dark glass with a light streak; two sliding doors
-    const win = x => { add(G.box(.5, .4, .02, .05), GLASS, x, y0 + .86, zf + .005); add(G.box(.08, .3, .01, .02), GLASS2, x - .12, y0 + .88, zf + .017, 0, 0, -.35); };
+    // windows on the platform side: rounded dark glass (no light streak — 10/21 "리플렉션 꼴보기 싫다"); two sliding doors
+    const win = x => { add(G.box(.5, .4, .02, .05), GLASS, x, y0 + .86, zf + .005); };
     for (const x of [-2.05, -1.45, -.15, .45, 1.05]) win(x);
     for (const x of [-.8, 1.65]) {
       add(G.box(.52, 1.0, .02, .03), GREEND, x, y0 + .56, zf + .006);
@@ -53,7 +53,6 @@ B.train = (f, T, o = {}) => {
     const xn = xc + L / 2;
     add(G.box(.12, Hb - .1, D - .04, .06), CREAM, xn - .02, y0 + Hb / 2 + .02, 0);
     add(G.box(.04, .46, D - .22, .06), GLASS, xn + .045, y0 + .92, 0);
-    add(G.box(.02, .1, .18, .02), GLASS2, xn + .07, y0 + 1.0, -.16, .5, 0, 0);
     for (const s of [-1, 1]) add(G.sph(.065, 12, 9), '#fff3b0', xn + .05, y0 + .3, s * .26);
     add(G.box(.06, .1, D - .1, .03), DARK, xn + .05, y0 + .08, 0);
     add(G.box(.03, .16, .3, .02), '#ffffff', xn + .06, y0 + .55, 0);
@@ -172,7 +171,6 @@ B.ticketwin = (f, T) => {
     // the window: frame, glass, the rounded speaking opening at its foot
     add(G.box(1.3, .8, .04, .03), WOODD, 0, 1.32, zf + .01);
     add(G.box(1.2, .7, .02, .02), GLASS, 0, 1.32, zf + .03);
-    add(G.box(.12, .5, .01, .02), GLASS2, -.38, 1.38, zf + .042, 0, 0, -.3);
     add(G.cyl(.16, .16, .03, 16, false), '#2b2438', 0, .98, zf + .03, HP, 0, 0);
     // the counter ledge
     add(G.box(1.4, .05, .3, .015), WOOD, 0, .9, zf + .14);

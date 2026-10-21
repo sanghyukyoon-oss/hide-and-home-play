@@ -199,7 +199,6 @@ B.breadcab = (f, T) => {
       for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) {
         const px = cx + (c - .5) * (w / 2 - .02), py = (r - 1) * (DH / 3 - .02);
         add(G.pbox(w / 2 - .07, DH / 3 - .1, .012), '#cfe6ef', px, py, .028);
-        add(G.pbox(.018, DH / 3 - .2, .004), WHITE, px - .03, py + .02, .036, 0, 0, .5);
       }
       add(G.cap(.012, .1, 2, 6), BRASS, dir * (w - .05), -.05, .05);
     }));
@@ -571,7 +570,6 @@ B.bkfacade = (f, T) => {
     for (const x of [-.22, .22]) add(G.box(.04, .98, .04, .01), WHITE, WX + x, 1.45, .085);
     add(G.box(1.28, .04, .1, .01), wood, WX, 1.12, .1);
     bread(add, 'loaf', WX - .4, 1.14, .1, 0, .7); bread(add, 'baguette', WX, 1.14, .1, .2, .7); bread(add, 'bun', WX + .38, 1.14, .1, 0, 1); bread(add, 'croissant', WX + .48, 1.14, .1, .4, .9);
-    add(G.pbox(.2, .7, .004), WHITE, WX - .45, 1.55, .078, 0, 0, .6); add(G.pbox(.1, .5, .004), WHITE, WX + .3, 1.6, .078, 0, 0, .6);
     awning(add, WX, 2.2, 1.56, .62, NAVY, WHITE, .08);
     add(G.box(1.3, .18, .2, .02), woodD, WX, .8, .14);
     for (let i = 0; i < 9; i++) { const x = WX - .55 + i * .14; add(G.sph(.07, 8, 6), i % 2 ? LEAF : LEAF3, x, .93, .15); add(G.sph(.03, 6, 5), [JAM, WHITE, HONEY][i % 3], x + .03, .99, .2); }
@@ -707,7 +705,6 @@ B.bkcase = (f, T) => {
     for (let k = 0; k < 4; k++) {
       const x = -.69 + k * .46;
       add(G.pbox(.42, GH, .01), '#e4f3fa', x, H + GH / 2 + .02, D / 2 - .14, -.35, 0, 0);
-      add(G.pbox(.03, GH - .1, .004), WHITE, x - .1, H + GH / 2 + .04, D / 2 - .13, -.35, 0, .4);
     }
     for (let k = 0; k <= 4; k++) add(G.box(.035, GH + .02, .035, .01), wood, -.92 + k * .46, H + GH / 2 + .02, D / 2 - .14, -.35, 0, 0);
     add(G.box(W + .02, .04, .3, .015), wood, 0, H + GH + .04, -.05);
@@ -840,7 +837,6 @@ B.bkfront = (f, T) => {
     add(G.pbox(.98, .5, TH + .07), '#f6e7c8', -.3, .78, z0);
     for (const x of [-.6, -.3, 0]) bread(add, x === -.3 ? 'loaf' : 'bun', x, .53, z0, 0, x === -.3 ? .7 : 1);
     add(G.pbox(.98, .5, .008), '#e4f3fa', -.3, .78, z0 + TH / 2 + .04);
-    add(G.pbox(.03, .36, .004), WHITE, -.55, .8, z0 + TH / 2 + .046, 0, 0, .5);
     add(G.box(.04, .5, .03, .01), wood, -.3, .78, z0 + TH / 2 + .05);
     // the awning, low over the window, and the flower box below it
     awning(add, -.3, 1.2, 1.3, .38, sage, WHITE, z0 + TH / 2);

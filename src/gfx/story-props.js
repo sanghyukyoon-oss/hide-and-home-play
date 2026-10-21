@@ -497,7 +497,6 @@ B.dishcab = (f, T) => {
       add(G.ext(s, .025, 0, 5), frame, 0, 0, 0);
       add(G.ext(arch(new THREE.Shape(), .01), .006, 0, 6), pane, 0, 0, .008);
       add(G.pbox(hw + .02, .03, .02), frame, ax, -.05, .015);
-      for (const [dx, dy, w] of [[-.03, .1, .045], [.04, .17, .022]]) add(G.pbox(w, .2, .004), WHITE, ax + dx, dy, .017, 0, 0, -.5);
       add(G.sph(.022, 6, 5), knob, X(leafW - .045), -.06, .035);
     }));
     f.add(pv); return pv;
