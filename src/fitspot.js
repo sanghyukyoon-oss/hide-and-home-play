@@ -212,7 +212,7 @@ export function drawnScale(type, spot, role = 'target', want = .34) {
 }
 export const spotFits = (type, spot, role) => drawnScale(type, spot, role) > 0;
 // drawn at (nearly) the full size wanted — ~34 cm on its longest side: not held down by a low headroom (1장's place preference)
-export const fullSize = (type, spot) => { const n = natSize(type), d = drawnScale(type, spot, 'target'); return d > 0 && d * (spot.scale || 1) * Math.max(n.x, n.y, n.z) >= .29; };
+export const fullSize = (type, spot, min = .29) => { const n = natSize(type), d = drawnScale(type, spot, 'target'); return d > 0 && d * (spot.scale || 1) * Math.max(n.x, n.y, n.z) >= min; };   // (min: 19판부터 .33 — #94 10/21)
 // the place a planner or a tidy has picked, tried with the thing's own shape the way the drawing's fitClear measures it, so the
 // drawing doesn't shrink it again (겹침 QA 10/19: 52 places went down to 57%): true when it keeps 80% of the wanted size. Only
 // for the place picked (a dozen a stage), not every candidate — every candidate cost 100–300 ms a stage.

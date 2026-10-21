@@ -41,7 +41,7 @@ export const PICK_AT = [11, 20, 30, 39, 48, 59, 69];
 // a new save with it on: the fields below from the start (so econMigrate leaves it alone)
 export function econSaveFields(s) {
   if (!ECON) return s;
-  Object.assign(s, { mig: 4, lens: { bag: 3 }, seen: s.collection.slice() });
+  Object.assign(s, { mig: 4, lens: { bag: 1 }, seen: s.collection.slice() });   // (#90 10/21: one in the bag to start — 3 was too many with 2 free a stage)
   Object.assign(s.home, { offered: [], picks: {}, boxQ: [], friendBox: [], friendKnown: [], starBoxCap: 0, starBoxOpened: 0 });
   for (const z of Object.values(s.home.zones)) z.friends = z.friends || [];
   return s;
@@ -51,7 +51,7 @@ export function econSaveFields(s) {
 export function econMigrate(s) {
   if (!ECON) return s;
   if ((s.mig || 0) >= 1) { if (s.mig < 2) oneRoom(s); if (s.mig < 3) starFreeze(s); if (s.mig < 4) seatsKeep(s); return s; }
-  s.lens = s.lens || { bag: 5 };   // the update's gift: a full bag
+  s.lens = s.lens || { bag: 2 };   // the update's gift: a full bag (2 since #90 10/21)
   s.seen = [...new Set([...(s.seen || []), ...(s.collection || [])])];
   const H = s.home;
   for (const z of Object.values(H.zones)) z.friends = z.friends || [];

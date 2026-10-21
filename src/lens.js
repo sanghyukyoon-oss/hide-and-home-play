@@ -5,8 +5,10 @@
 // the bag's ones it took. With G.econ off none of this runs (the old 3 free + 60 coins path).
 import { h } from './ui.js';
 
-export const LENS_MAX = 5, LENS_FREE = 2;
-export const bagOf = G => G.save.lens?.bag ?? 0;
+// (#90 10/21, user "힌트 여전히 너무 많고" — 판 안 배지가 7개(공짜 2 + 가방 5)였어요; 앞서 "힌트는 1~2개만 처음에"): a stage gives 1, the bag
+// holds 2 — never more than 3 on the button; a save with more is cut down to 2 the first time it's read
+export const LENS_MAX = 2, LENS_FREE = 1;
+export const bagOf = G => { const L = G.save.lens; if (L && L.bag > LENS_MAX) { L.bag = LENS_MAX; G.persist?.(); } return L?.bag ?? 0; };
 // n in (or out, n < 0), kept in 0..LENS_MAX; returns how many actually went in (0 when it was full)
 export function addBag(G, n) {
   const L = G.save.lens || (G.save.lens = { bag: 0 }), was = L.bag ?? 0;

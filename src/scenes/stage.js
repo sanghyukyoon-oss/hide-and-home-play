@@ -8,7 +8,7 @@ import { Companion, walkGrid, seenAt, wallSides, offWall } from '../companion.js
 import { BOSS_AFTER } from './boss.js';
 import { MINI_AFTER, MINI_INFO, BOSS_GAMES } from '../minis.js';
 import { BOSS_GAME_INFO } from './bossgame.js';
-import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, capDecoys, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO, REGIONS, regionOf } from '../stages.js';
+import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, capDecoys, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO, REGIONS, regionOf, sized } from '../stages.js';
 import { spinePuzzle } from '../showcase.js';
 import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js';
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
@@ -16,6 +16,7 @@ import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, l
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
 import { homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
+import { fixSmall } from '../smallfix.js';   // 작은 물건 안전망 (#94, ② 레벨 10/21)
 import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
@@ -234,7 +235,7 @@ export class StageScene {
       // (the size: wantScale/drawnScale in fitspot.js — ~34 cm on the longest side, at least 1.25×, up to 2.4×; held to the
       // place's box: its headroom and the room round it, so nothing pokes through a cubby wall or a basket — 10/19 user)
       // (a lock's thing that had to take a tight place: as big as the place lets it, never under .6)
-      const want = LOOK.has('items') && this.lookR?.itemSize || .34;
+      const want = this.itemWant = this.spec.itemSize || LOOK.has('items') && this.lookR?.itemSize || .34;   // (spec.itemSize: a wide map's own — stages.js ITEM_TUNE, ② 레벨 10/21)
       const sc = drawnScale(p.type, p.spot, p.role, want) || Math.max(.6, Math.min(wantScale(p.type, p.spot, p.role, want), capScale(p.type, p.spot)));
       // (and it looks out of its place — 3판 "고무오리 얼굴이 바구니 쪽에 있음", user 10/19: a little either side of that)
       const jit = (r() - .5) * .7; g.userData.jit = jit;
@@ -335,6 +336,7 @@ export class StageScene {
     // the start — 1~30 밸런스 10/20, user "쉽게 느껴짐")
     const many = this.incident && this.idx >= 12 && this.targets.filter(t => !t.friend).length >= 3;
     if (!this.custom && !this.preview && (!this.incident || many) && this.idx >= 1 && (this.idx <= 10 || this.hunt || many)) this.tiers = tierPass(this);
+    if (!this.custom && !this.preview && sized(this.idx)) this.smallFixed = fixSmall(this);   // (#94: nothing on the list under 28 px on the start view — smallfix.js)
     this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
     // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
@@ -347,7 +349,7 @@ export class StageScene {
     // state
     Object.assign(this, { time: this.spec.time, timeMax: this.spec.time, timerOn: false, running: false, paused: false, combo: 0, bestCombo: 0, lastFind: -99, misses: [], dizzy: 0, keys: 0, codes: new Set(),
       result: null, scraps: {}, t: 0, idle: 0, rotAccum: 0, found: 0, missCount: 0, continued: false, botT: 0, tutStep: 0, lastSec: 99, needKey: false, needCode: false, partsOpened: 0, twinkleT: 0, _autoHint: null, _lastSpark: false, _stSoft: false, _stHard: false, _swN: 0, _swDone: false });
-    this.hints = 3; this.hintsUsed = 0;   // 3 magnifiers a stage (was 2; easier, user 10/17)
+    this.hints = 2; this.hintsUsed = 0;   // 2 magnifiers a stage (3 → 2: #90 10/21, user "힌트 여전히 너무 많고"; with 새 경제 1 + the bag, lens.js)
     if (G.econ) { this.hints = LENS_FREE; this.bagUsed = 0; }   // 경제 B5 (10/19): 2 free a stage, then the bag (lens.js)
     this.tail = null; this._dF = this._dE = false;   // (대본 bits that must not carry over from the last stage)
     this.buildHud();
@@ -1167,7 +1169,12 @@ export class StageScene {
     // into pieces after this (fixBlindSpots), so 'opens' rather than 'holds something now'; such pieces only when nothing else is left)
     const holds = e => e.f.parts.some(p => p.spots?.length);
     const all = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && tall(e) && G.hasThumb('furn_' + e.type)));
-    const cands = this.idx < 20 ? all : [...all.filter(e => !holds(e)), ...all.filter(holds)];   // (pieces that open last, not out: the same draw, the same count — 53·58판 캠프는 다 열리는 것; 1~20판 as they are — 사용자 '1~20 유지')
+    // (⑤ QA 10/21, 42판: the 그네 is a frame — a tap on its middle hits the ground; 16% of its box answered, the bot ran out of
+    // taps 26 times): open frames after the solid pieces too, before the ones that open (② 10/22, 24판: the grind rail and the board
+    // rack too — a tap on the rail's middle went to the floor or to a thing under it, the bot lost 14 taps there twice)
+    const FRAME = new Set(['swings2', 'swings', 'slidetower', 'slide', 'seesaw2', 'seesaw', 'springrider', 'pole', 'clothesline', 'dryrack', 'lightline', 'bikeshelter', 'stanchion', 'easel', 'firepole', 'parasol', 'cafeumbrella', 'bkparasol', 'streetlamp', 'streetlamp2', 'hosereel', 'ladder', 'libladder', 'pavilion', 'pavilion2', 'grindrail', 'boardrack']);
+    const solid = e => !holds(e) && !FRAME.has(e.type);
+    const cands = this.idx < 20 ? all : !sized(this.idx) ? [...all.filter(e => !holds(e)), ...all.filter(holds)] : [...all.filter(solid), ...all.filter(e => !holds(e) && FRAME.has(e.type)), ...all.filter(holds)];   // (pieces that open last, not out: the same draw, the same count — 53·58판 캠프는 다 열리는 것; 1~20판 as they are — 사용자 '1~20 유지')
     this.grayFurn = new Map();
     // what you find comes back alone (사용자 실폰 10/20, 14판 "의자를 찾으면 의자만 색이 돌아오는 게 나을 것 같아"): a found
     // piece doesn't colour the juice still to find on its seat, a thing left on it, or another piece of furniture standing on it

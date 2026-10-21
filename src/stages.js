@@ -11,7 +11,7 @@ import { digPatch } from './gfx/outdoor.js';
 import { tvPuzzle } from './gfx/apt-props.js';
 import { applyEdit } from './layedits.js';
 import { planDevice } from './devices.js';
-import { ROOM_POOLS, ROOM_FEATURE, SOCKS, SOCK_ROOMS } from './pools.js';
+import { ROOM_POOLS, ROOM_FEATURE, SOCKS, SOCK_ROOMS, STAGE_ITEMS } from './pools.js';
 
 export const THEMES = {
   bunny: { name: '토순이네 침실', friend: 'bunny', bg: ['#fff4ea', '#ffe6d4'], base: '#e8b98c', floorKind: 'planks', floor: '#d9a066', floor2: '#a96c3c', wallKind: 'heart', wall: '#fff7ef', wall2: '#ffb3a3', wainscot: '#bfe3d3', trim: '#ffffff', wallEdge: '#fffaf4',
@@ -881,7 +881,14 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // house small in the frame; 6판 at 1.3 cut the living room off the left — 1.2 shows both rooms
 // (새 맵 10/21, ② 레벨 — 기차 여행 편 v4: 20판 빌라 옥상 7×6은 줌 1(aptmap의 1.2를 뺌), 27판 기차역 10×5는 1.0에서 9개 모두 첫 화면·중앙 30px
 // (골목 밤의 1.2를 뺌), 29판 호수 섬 1.15 중앙 35px, 30판 바닷가 1.2 중앙 35px, 35판 곰제과 두 칸 8×5는 1.45에서 23~38px)
-const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 21: 1.2, 25: 1.25, 28: 1.15, 29: 1.2, 34: 1.45 };
+// (#94 19~70 10/21~22 — 사용자 "스테이지 19 이후로 이거 엄청 작게": 시작 화면에서 찾을 것이 28px 미만인 판은 줌을 올리고(상한 1.5),
+// 넘치면 그 판 물건 크기도 ITEM_TUNE으로 — 측정은 메쉬 크기, 폰 세로 390×844)
+const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.4, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.5, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
+// 그 판 물건 크기(기본 .34 = 34cm 기준; 룩이 있는 방은 룩 값): 넓은 맵만 크게
+export const ITEM_TUNE = { 25: 0.48, 30: 0.46, 33: 0.44, 34: 0.46, 35: 0.44, 39: 0.5, 45: 0.42, 47: 0.5, 48: 0.5, 53: 0.47, 56: 0.42, 58: 0.42, 59: 0.42, 65: 0.4, 69: 0.45 };
+// #94 크기 규칙(목록·자리·자물쇠 칸·작은 물건 안전망 smallfix.js)이 닿는 판: 19판부터 이 판까지 — 장 단위로 늘려 감(30 → 40 → 50 → 70)
+export const SIZE_TO = 70;
+export const sized = i => i >= 18 && i < SIZE_TO;
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 100, 8: 105, 9: 105, 10: 110, 11: 110 };
 // 흑백판: the room has lost its colour; what you find (things AND a few pieces of furniture) gets it back
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")
@@ -903,17 +910,18 @@ const FRIEND_BONUS = { 15: 4 };
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
 // really see on that map, chains ≤ the map's lockable pieces; 32·33·35·61·65 count the spots added 10/18)
 const HO_SHAPE = {
+  // (19~70 다시 짜기 10/21 — 스토리 룸·② 레벨: 판마다 목록이 8가지라 숨은그림 판은 8개 이하 — 25·26·27·36·43·44·45 → 8; 51~70 숨은그림은 기획대로 6)
   // (1~10판 밸런스 10/19 밤 — 사용자 실폰 30~35분 "막 다시 하고 싶진 않다": 4~11판이 거의 다 7~8개라 판마다 같은 일이었어요.
   // 5판(열쇠를 처음 배우는 판) 7 → 6, 7판(2층집) 8 → 7: 6 · 6 · 7 · 7 · 6 · 7 · 8로 오르고 8판 조립판에서 한숨)
   2: [4, 0], 3: [6, 0], 5: [6, 1], 6: [7, 1], 7: [7, 1], 8: [6, 1],   // (8판 프라모델: 부품 6개, 하나는 자물쇠 뒤)
   9: [7, 1], 11: [7, 1],   // (11판 8 → 7: 1~20판에서 가장 길었어요 — 사람 속도 봇 74초, 앞뒤 판보다 18초; 11~20판 레벨 점검 10/20)
   13: [8, 1], 14: [4, 1], 15: [8, 1], 19: [7, 2],   // (1~30 밸런스 10/20 — user "게임이 전반적으로 쉽다": 2장이 1장 끝보다 가벼웠어요(봇 42~55초 < 52~70초); 14판 흑백 물건 3 → 4, 15판 7 → 8)   // (13판's count is its kit card's — KITS.moving, 7 since 10/20; 19판 8 → 7: the big outdoor map with 24 px things, half of them behind doors, and now 말썽이's first stage — 1~20 한 줄 점검 10/20)
-  22: [8, 1], 23: [8, 1], 25: [9, 1], 26: [10, 2], 27: [10, 1],   // (26판 11 → 10: 11개가 다 28px 밑, 사람 속도 봇 84초 — 27판(82초)과 둘이 1~30에서 가장 무거웠어요, 1~30 밸런스 10/20)
-  33: [7, 1], 34: [9, 0], 35: [8, 1], 36: [11, 1],   // (35판 곰제과 9 → 8: 사람 속도 봇 77~79초, 1~40판에서 가장 길었어요 — ② 레벨 10/21)
+  22: [8, 1], 23: [8, 1], 25: [8, 1], 26: [8, 2], 27: [8, 1],   // (26판 11 → 10: 11개가 다 28px 밑, 사람 속도 봇 84초 — 27판(82초)과 둘이 1~30에서 가장 무거웠어요, 1~30 밸런스 10/20)
+  33: [7, 1], 34: [9, 0], 35: [8, 1], 36: [8, 1],   // (35판 곰제과 9 → 8: 사람 속도 봇 77~79초, 1~40판에서 가장 길었어요 — ② 레벨 10/21)
     // (36: the sock puzzle is its second chain — D3)
-  41: [8, 1], 43: [10, 1], 44: [9, 2], 45: [10, 1],
-  50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 1], 57: [12, 2],   // (57: the snack box is its third chain — D3)
-  61: [7, 1], 62: [11, 1], 63: [11, 2], 65: [7, 1], 67: [12, 2],
+  41: [8, 1], 43: [8, 1], 44: [8, 2], 45: [8, 1],
+  50: [8, 0], 52: [6, 1], 54: [6, 2], 55: [6, 1], 57: [6, 2],   // (57: the snack box is its third chain — D3)
+  61: [6, 1], 62: [6, 1], 63: [6, 2], 65: [6, 1], 67: [6, 2],
 };
 const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(location.search);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
 // 이삿짐 풀기·파르페 쌓기 (10/19, user picked the story room's ideas ① ②): the same hunt on the kit card (modelkit.js), on
@@ -924,8 +932,10 @@ export function stageSpec(idx) {
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
   const s = baseSpec(idx);
   if (KIT_AT[idx]) s.kit = KIT_AT[idx];
-  if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; s.obs = true; s.obsTime = [1, 19]; s.clueHang = { pad: 'gearrack' }; }   // (19판 user 10/21 "인터렉션과 방탈출적인 요소": the padlock's key in the 방화복 pocket, drops when it lifts; the locker's code = the clock, 출동 1시 19분 = 119 — plan-19to50)
+  if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; s.obs = true; s.obsTime = [1, 19]; s.clueHang = { pad: 'gearrack' }; s.lockOn = { code: ['lockers'] }; }   // (19판 user 10/21 "인터렉션과 방탈출적인 요소": the padlock's key in the 방화복 pocket, drops when it lifts; the locker's code = the clock, 출동 1시 19분 = 119 — plan-19to50)
   if (s.room === 'villaroof2') s.clueHang = { pad: 'roofline' };   // (20판: the padlock's key hangs inside the quilt, drops when it lifts — user 10/21)   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
+  if (STAGE_ITEMS[idx + 1]) s.items = STAGE_ITEMS[idx + 1];   // (19~70 다시 짜기: the stage's own list)
+  if (ITEM_TUNE[idx]) s.itemSize = ITEM_TUNE[idx];
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
   if (ZOOM_TUNE[idx]) s.zoom = ZOOM_TUNE[idx];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }
@@ -954,6 +964,9 @@ export function stageSpec(idx) {
       Math.round((s.n || 6) * (ch <= 1 ? .3 : .4));
     s.ho = true; s.inside = Math.max(1, open - chains); if (ch === 0) s.inside = Math.min(2, s.inside);
   }
+  // (#94 10/22: a stage with its own list finds no more than the list — 58·64·69판 흑백, 66판 시간, 59·68판 ★ asked one to three
+  // more from the common pool, the ones the story room's lists keep from the stages before)
+  if (s.items && sized(idx) && s.n > s.items.length) s.n = s.items.length;
   return s;
 }
 // After stage 50: endless mode, every region in turn, new seed every time, a 4-lock boss every 10th
@@ -1091,8 +1104,12 @@ export function planStage(room, spec, story = null) {
     const likePool = placingTarget && type ? roomyPool.filter(s => placeLike(type, s)) : [];
     // (1장: a place where the thing is drawn at its full size first — 검토 10/20: under 28 px went from 16% to 32% of 1~10판's
     // things; not shrinking, but low places and small place scales — fitspot.js fullSize)
-    const bigPool = placingTarget && type && !likePool.length && (spec.idx ?? 99) < 12 ? (roomyPool.length ? roomyPool : pool).filter(s => fullSize(type, s)) : [];
-    const c = r.shuffle(likePool.length ? likePool : bigPool.length ? bigPool : roomyPool.length ? roomyPool : pool);
+    // (19판부터 10/21, 사용자 "스테이지 19 이후로 이거 엄청 작게 여기저기 나오는데" — #94: the full-size rule for every stage from 19판, the
+    // story room's own place too: a shelf gap or a box that would draw it at half size only when nothing else is left)
+    const late = sized(spec.idx);
+    const bigPool = placingTarget && type && (late || !likePool.length && (spec.idx ?? 99) < 12) ? (roomyPool.length ? roomyPool : pool).filter(s => fullSize(type, s, late ? .33 : .29)) : [];
+    const likeBig = late && likePool.length ? likePool.filter(s => fullSize(type, s, .33)) : likePool;
+    const c = r.shuffle(likeBig.length ? likeBig : bigPool.length ? bigPool : roomyPool.length ? roomyPool : pool);
     if (!c.length) return null;
     // (the one picked tried with the thing's own shape — fitspot.js shapeFits; the next one if it would be drawn too small)
     const pick = !type || relaxFit ? c[0] : c.find(s => shapeFits(type, s)) || null;
@@ -1104,9 +1121,11 @@ export function planStage(room, spec, story = null) {
   const own = (ROOM_POOLS[spec.room] || room.T?.pool || []).filter(t => ITEMS[t] && (!SOCKS.has(t) || SOCK_ROOMS.has(spec.room)));
   const ownN = Math.min(own.length, Math.max(1, (spec.n || 1) - (spec.n > 7 ? 2 : 1)));
   // the first stages only ask for things with a readable shape (a thin pencil under a loft was hard even with a hint)
+  // (19~70 다시 짜기 10/21: the stages SIZE_TO covers too, not 1~20 only — 31·49판 bosses still drew 이어폰·영수증·머리핀 at 15~19 px)
   const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard', 'toothbrush'];   // (+ toothbrush: 17 px on 9판, 10/19)
+  const SMALL_MODEL = ['keyring', 'lottery', 'coin'];   // (19판부터 #94 10/21: 열쇠고리 손톱만 하게 — 17~20 px on 21·31판; 1~18판 as they are)
   // (짝 양말 판: no pair of socks on the list either — it would read as the puzzle's sock, and the odd ones lying about say "무늬가 달라")
-  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && spec.idx < 20 && THIN.includes(t))   /* (1~20판: no pencil or USB on the list — 19 px on a phone, user 10/19 "너무 작게 하지 마"; 11~20판 too, 10/20: 11판 연필, 13판 칫솔) */
+  const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && (spec.idx < 20 || sized(spec.idx)) && THIN.includes(t)) || (sized(spec.idx) && SMALL_MODEL.includes(t))   /* (1~20판: no pencil or USB on the list — 19 px on a phone, user 10/19 "너무 작게 하지 마"; 11~20판 too, 10/20: 11판 연필, 13판 칫솔) */
     || (spec.showcase && DEVICE_LOOKALIKE[spec.room]?.includes(t)) || (spec.treat && t === spec.treat.item);   // a stage's tool is never a target or a decoy (간식: 50·55판 listed a 도토리 beside the 도토리 that moves the host)
   // the common things rotate through the stages (a window that moves on 5 places a stage) so the same milk carton
   // doesn't turn up stage after stage (user, 10/17: "계속 찾는것만 찾게"); the place's own things come first
@@ -1122,6 +1141,10 @@ export function planStage(room, spec, story = null) {
   const feat = (ROOM_FEATURE[spec.room] || []).filter(t => ITEMS[t] && !tool(t) && own.includes(t));
   const ownT = [...feat, ...fresh(ownTurn).filter(t => !feat.includes(t))], turnT = fresh(turn);
   const targets = [...r.shuffle(ownT.slice(0, ownN)), ...r.shuffle(turnT.slice(0, Math.max(6, spec.n))), ...turnT.slice(Math.max(6, spec.n))].slice(0, spec.n);
+  // (19~50 다시 짜기 10/21): a stage with its own list takes only from it (socks still only at the laundromat), the common pool
+  // only if the list runs short
+  const fixed = spec.items && spec.items.filter(t => ITEMS[t] && !tool(t) && (!SOCKS.has(t) || SOCK_ROOMS.has(spec.room)));
+  if (fixed?.length) { const f = r.shuffle(fixed.slice()); targets.length = 0; targets.push(...f.slice(0, spec.n)); for (const t of turnT) if (targets.length < spec.n && !targets.includes(t)) targets.push(t); }
   if (spec.force) { targets.unshift(...spec.force); targets.length = Math.min(targets.length, spec.n); }   // 사건 판: the hidden friend's marker comes first, so the first lock guards it
   const placements = [];   // { type, spot, role: 'target'|'key'|'note'|'decoy', code }
   const locks = [];        // { part, kind, code }
@@ -1172,6 +1195,9 @@ export function planStage(room, spec, story = null) {
     const all0 = room.parts.filter(p => p.lockable && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p));
     const okWall = p => !p.wallFacing && !p.lockWallFacing, holds = p => p.spots.some(s => targets.slice(ti).some(t => fits(t, s) && affOk(t, s)));
     let free = all0.filter(p => okWall(p) && holds(p));
+    // (#94 10/22: not a piece where nothing on the list keeps its size — a 우편함, a 돈통, a 종이 수거함 drew it at 14~24 px; the story's
+    // own pieces (spec.lockOn, never taken by another lock) and the hidden friend's hideout stay as they were)
+    if (sized(spec.idx) && !spec.lockOn?.[lk] && !(spec.hideout && lk === lockKinds[0])) { const theirs = Object.values(spec.lockOn || {}).flat(), roomy = free.filter(p => !theirs.includes(p.furn.type) && p.spots.some(x => targets.slice(ti).some(t => fits(t, x) && affOk(t, x) && fullSize(t, x, .29)))); if (roomy.length) free = roomy; }
     if (!free.length) free = all0.filter(holds);
     if (!free.length) free = all0.filter(okWall);
     if (!free.length) free = all0;
@@ -1213,6 +1239,10 @@ export function planStage(room, spec, story = null) {
     const L = locks[li];
     if (L.chain) continue;
     let s = null;
+    // (#94: the thing that keeps its size in there first — never the hidden friend's marker, which goes first into its hideout;
+    // the pieces stay the ones the stage always picked — 19판 사물함·28판 간식 카트 are the story's; smallfix.js sees to the size)
+    const big = sized(spec.idx) && targets[ti] !== 'friendtoken';
+    if (big) for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part && fullSize(targets[k], x, .33), targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]];
     for (let k = ti; k < targets.length && !s; k++) if ((s = take(x => x.part === L.part, targets[k]))) [targets[ti], targets[k]] = [targets[k], targets[ti]];
     // (then a little tight but where it makes sense, then anything: 43·45판's recycling bins, 50판's shrine box — 10/19)
     for (const [fit, aff] of [[true, false], [true, true]]) {
@@ -1325,7 +1355,7 @@ export function planStage(room, spec, story = null) {
   placingTarget = false;
   // decoys: clutter in plain sight + red herrings inside containers
   // (함정, 10/18: the place's own unused things + DECOY_POOL only — never the common pool, never another stage's answers)
-  const decoyTypes = DECOY_POOL.concat(own.filter(t => !targets.includes(t))).filter(t => !tool(t));
+  const decoyTypes = DECOY_POOL.concat(own.filter(t => !targets.includes(t))).filter(t => !tool(t) && !(spec.items && targets.includes(t)));   // (a 머그컵 to find and 머그컵 decoys beside it read as one — 19~50 lists have mugs, books, blocks)
   const fill = (pred, frac) => {
     const c = r.shuffle(all.filter(s => !used.has(s) && pred(s)));
     const n = Math.round(c.length * frac);

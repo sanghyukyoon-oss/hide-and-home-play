@@ -2,6 +2,7 @@
 import { EN } from './i18n-en-dict.js';
 import { MINI_AFTER, BOSS_GAMES } from './minis.js';
 import { BOSS_AFTER } from './scenes/boss.js';
+import { LENS_MAX } from './lens.js';
 
 EN['놀이 이어하기'] = 'Continue activity';
 export const followupLabel = f => f.scene === 'boss' ? '보물 지키기' : ({ yasik: '엄마 몰래 야식', hotel: '몽글 호텔 X박 X일', wakeup: '아침 깨우기 장치', whack: '두더지 숨바꼭질', redlight: '무궁화 꽃이 피었습니다', blanket: '이불 속 누구게?', spot: '너굴이의 바꿔치기', lamp: '손전등 술래' }[f.kind] || '놀이');
@@ -52,7 +53,7 @@ export function settleFollowup(G, f, { coins = 0, won = false, replayWin = false
   const awarded = first ? coins : won && replayWin ? Math.round(coins / 3) : 0;
   if (first || (won && replayWin)) {
     s.coins = Math.max(0, (s.coins || 0) + awarded);
-    if (won && G.econ) { const bag = s.lens || (s.lens = { bag: 0 }); const before = bag.bag || 0; bag.bag = Math.min(5, before + 1); lens = bag.bag > before; }
+    if (won && G.econ) { const bag = s.lens || (s.lens = { bag: 0 }); const before = bag.bag || 0; bag.bag = Math.min(LENS_MAX, before + 1); lens = bag.bag > before; }
     done[c.key] = true;
     if (needsFinish(c)) s.followupFinish = { ...c, won };
   }

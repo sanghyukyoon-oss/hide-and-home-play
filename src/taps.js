@@ -36,6 +36,9 @@ export function tapBudget(S) {
   const area = (S.room.rooms || [S.room]).reduce((a, R) => a + (R.w || 5) * (R.d || 5), 0);
   const big = area > 40 ? 4 : 0;
   const mul = ((sp.idx ?? S.idx) === FIRST_TAP_STAGE ? FIRST_MUL : PER_CHAPTER[ch]) * (sp.timed ? TIMED_MUL : 1);
+  // (#91 10/21, user "터치횟수도 넘 많은 듯" — 22판 화면에 17·14가 남아 있었어요): from 4판 the wasted taps are the things to find,
+  // one per lock and 4 to spare (6 on a big map), a little more against a clock or on a boss; 3판 (the first with taps) as it was
+  if ((sp.idx ?? S.idx) > FIRST_TAP_STAGE) return Math.max(6, Math.round((n + L + 4 + (big ? 2 : 0)) * (sp.timed ? 1.15 : 1) * (sp.boss ? 1.15 : 1)));
   return Math.max(8, Math.round((6 + n + 2 * L + big) * mul * (sp.boss ? 1.2 : 1)));
 }
 
