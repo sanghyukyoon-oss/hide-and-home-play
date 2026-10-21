@@ -427,8 +427,9 @@ LAYOUTS.traincar = { w: 4, d: 8, walls: { N: 'wall', W: 'wall' }, wallH: 2.8, th
 // things (trailrack2), the floor empty
 THEMES.traincar2 = { ...THEMES.traincar, floorKind: 'carpet', floor: '#f3e9d2', floor2: '#ece0c6', wall: '#f8efdc', wall2: '#f8efdc', wainscot: '#ecdfc4' };
 LAYOUTS.traincar2 = { w: 5, d: 7, walls: { N: 'wall', W: 'wall' }, wallH: 3.0, yaw: 1.1, fitW: 7.8, theme: THEMES.traincar2,
-  furniture: [F('tbench2', 0, 1, 1, { stuff: 'paper' }), F('tbench2', 0, 3, 1), F('tbench2', 0, 5, 1, { stuff: 'bag' }),
-    F('tbench2', 4, 1, 3), F('tbench2', 4, 3, 3, { drawer: true }), F('tbench2', 4, 5, 3, { stuff: 'toy', priority: true }), F('tcart2', 2, 4)],
+  // (② 10/21: the drawer bench faces the start view now — on the far side its drawer showed only from behind the car)
+  furniture: [F('tbench2', 0, 1, 1, { stuff: 'paper' }), F('tbench2', 0, 3, 1, { drawer: true }), F('tbench2', 0, 5, 1, { stuff: 'bag' }),
+    F('tbench2', 4, 1, 3), F('tbench2', 4, 3, 3), F('tbench2', 4, 5, 3, { stuff: 'toy', priority: true }), F('tcart2', 2, 4)],
   decor: [D('tshell', 'W', 0, { len: 7, width: 5 }), D('twindow2', 'W', -2.3, { blind: true }), D('twindow2', 'W', 0, { paw: true }), D('twindow2', 'W', 2.3),
     D('trailrack2', 'W', 0), D('tdoorend2', 'N', 0)], friendAt: [.2, 1.6] };
 // 섬 3차 (10/21): the same island, a tidier shore (look.js RECIPES.island2) — island stays as the user saw it

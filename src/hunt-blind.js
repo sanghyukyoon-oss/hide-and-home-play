@@ -21,7 +21,8 @@ export const BLIND = {
   shopmap: ['washer3|세탁기 안|0|25,-20'],
   // 새 맵 (10/21, ②레벨 측정: 물건을 두고 문을 연 채 줌 1.3·24시점 중 손가락이 잡는 시점 2 미만 — map-art d2ba0b7 배치)
   station: ['platshelter|꽃상자 사이|2|-20,-20', 'treesakura|벚나무 뿌리 사이|0|5,-20'],
-  seaside: ['cafeumbrella|파라솔 테이블 밑|0|25,30', 'cafeumbrella|파라솔 테이블 밑|0|35,20', 'fishstall|좌판 밑|0|10,10', 'fishstall|좌판 밑|1|10,10', 'seadeck|데크 밑|1|-25,-25'],
+  seaside: ['cafeumbrella|파라솔 테이블 밑|0|25,30', 'cafeumbrella|파라솔 테이블 밑|0|35,20', 'fishstall|좌판 밑|0|10,10', 'fishstall|좌판 밑|1|10,10', 'seadeck|데크 밑|1|-25,-25',
+    'flagdeck|데크 밑|1|-25,-25', 'chalksign|칠판 뒤|0|35,-20'],   // (② 10/21: 30판 ★ — the deck is the flag deck there, and the chalkboard's back)
   bearbakery: ['bkfacade|창 화분 상자|0|25,-25', 'bkparasol|접이식 의자 위|2|35,0', 'bkparasol|파라솔 테이블 밑|0|35,0', 'bkparasol|파라솔 테이블 위|1|35,0', 'breadbasket|빵 바구니 안|0|25,10', 'floursacks|사과 상자 위|1|15,0'],
   island: ['baitbucket|미끼통 뒤|1|-20,15', 'baitbucket|미끼통 안|0|-20,15', 'cooler|아이스박스 안|0|-30,15', 'cottage|창가 꽃상자|2|15,-20', 'lakedeck|챔피언 의자 밑|1|25,15', 'picnicset|그루터기 옆|2|5,10', 'rocks|바위 틈|0|30,-5', 'tacklebox|도구함 위|1|-20,5'],
   island2: ['baitbucket|미끼통 뒤|1|-20,15', 'baitbucket|미끼통 안|0|-20,15', 'cooler|아이스박스 안|0|-30,15', 'cottage|창가 꽃상자|2|15,-20', 'lakedeck|챔피언 의자 밑|1|25,15', 'picnicset|그루터기 옆|2|5,10', 'rocks|바위 틈|0|30,-5', 'tacklebox|도구함 위|1|-20,5'],

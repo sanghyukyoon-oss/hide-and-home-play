@@ -43,7 +43,7 @@ import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line, KIT_TALK, inkyNamed } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
-import { staging, stagingHide, stagingHidden } from '../staging.js';
+import { staging, stagingHide, stagingHidden, stagingCrossing, stagingPrep } from '../staging.js';
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
   stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
@@ -370,6 +370,7 @@ export class StageScene {
     while (G.booting && !this.dead) await new Promise(r => setTimeout(r, 100));
     if (this.dead) return;
     if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
+    stagingPrep(this);
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
     // 13판 이삿짐 (10/21, user: "트럭 먼저 나오고 상자 날아가고 그다음에 집 배경으로 챕터 나오면 될거같은데 순서"): the truck and
     // the pile first, then the chapter card over the room itself (its 3D hello, not the comic panel), then the talk
@@ -1937,6 +1938,7 @@ export class StageScene {
     if (part.busy) return;
     this.idle = Math.max(0, this.idle - 4);
     if (part.isLever) return this.pullLever(part);
+    if (part.crossing) return stagingCrossing(this, part);
     if (part.dig && part.t > .5) return;   // dug out: nothing to fill back in
     // stuck on the same lock twice: 척척 로봇 offers to do it for coins (for players who'd rather not puzzle)
     if (part.stuck) { this.wobble(part.furn.group); G.audio.sfx('wobble'); return; }

@@ -8,9 +8,12 @@ import { h } from './ui.js';
 import { sceneAt } from './script.js';
 import { ease } from './util.js';
 import { trainView } from './gfx/traincar-props.js';
+import { Char } from './gfx/chars.js';
+import { closeBack } from './closeup.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
-const keyOf = (S, phase) => !S.custom && !S.preview && !S.model && !S.G.bot ? sceneAt(S.idx)?.stage?.[phase] || null : null;
+// (21·31판 bosses: the key sits on the boss's story object — script.js BOSSES → story.js storyFor)
+const keyOf = (S, phase) => !S.custom && !S.preview && !S.model && !S.G.bot ? sceneAt(S.idx)?.stage?.[phase] || S.story?.stage?.[phase] || null : null;
 // the zoom that shows a box about `frac` of the screen wide (measured, like closeShot: the fit depends on the room)
 function fitZoom(W, box, frac = .8) {
   const t0 = W.target.clone(), z0 = W.zoom, c = box.getCenter(V(0, 0, 0));
@@ -29,8 +32,11 @@ export async function staging(S, phase) {
   const c = { skipped: false, wait: s => Promise.race([S.tw.wait(s), skipped]) };
   const ov = h('div', { class: 'stg-skip' }); ov.addEventListener('pointerdown', e => { e.stopPropagation(); c.skipped = true; skip(); });
   document.getElementById('overlay').append(ov);
-  try { await Promise.race([fx(S, c), skipped.then(() => S.tw.wait(.05))]); } catch (e) { console.warn('staging', k, e); }
-  ov.remove();
+  // (the stage left mid-scene — pause → home: its tweens stop, so nothing above would ever finish and the touch layer
+  // would stay over the next scene)
+  let iv = 0; const gone = new Promise(r => { iv = setInterval(() => { if (S.dead || G.scene !== S) r(); }, 150); });
+  try { await Promise.race([fx(S, c), skipped.then(() => S.tw.wait(.05)), gone]); } catch (e) { console.warn('staging', k, e); }
+  clearInterval(iv); ov.remove();
   if (c.skipped) c.finish?.();
   if (S.dead) return;
   // (back to where the stage is played from)
@@ -101,12 +107,14 @@ function prints(R, x, y, z, ax, n = 3) {
 const trainIn = {
   async end(S, c) {
     const G = S.G, W = G.world, F = furnOf(S, 'train'); if (!F?.r.f.car) return;
-    const { R, r } = F, car = r.f.car, x0 = car.position.x, f = S.friend;
+    const { R, r } = F, car = r.f.car, x0 = S.stgCarAway ? car.position.x + 40 : car.position.x, f = S.friend;
+    S.stgCarAway = false;
     const doors = r.f.doors || [];
     const fp = f?.root.getWorldPosition(V(0, 0, 0));
     const door = doors.map(d => ({ d, p: d.getWorldPosition(V(0, 0, 0)) })).sort((a, b) => (fp ? a.p.distanceTo(fp) - b.p.distanceTo(fp) : 0))[0];
     c.finish = () => { car.position.x = x0; if (door) door.d.position.x = door.d.userData.x0 ?? door.d.position.x; };
     // the track, then the train comes in from the far end and slows to a stop
+    car.position.x = x0; car.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(car), cp = box.getCenter(V(0, 0, 0));
     W.flyTo(S.tw, { target: cp, zoom: fitZoom(W, box, .95), dur: .5 });
     car.position.x = x0 - 9; G.audio.sfx('trainArrive');
@@ -132,7 +140,7 @@ const trainIn = {
     }
     // the black footprints at the door: they got on too
     S.stgPrints = prints(R, lp.x - .05, gy + .012, lp.z + .62, -1);
-    await W.flyTo(S.tw, { target: V(dp.x, dp.y - .3, dp.z + .5), zoom: W.zoom * 2, dur: .6 });
+    await W.flyTo(S.tw, { target: V(dp.x, dp.y - .3, dp.z + .5), zoom: Math.min(4.5, Math.max(2.4, W.zoom * 2)), dur: .6 });
     await c.wait(.9);
   },
 };
@@ -310,5 +318,358 @@ const capOn = {
   },
 };
 
-const FX = { tunnel, trainIn, sunsetTrain, partsDispatch, pengShake, jarHide, inkyTraceLook, smokeCat, sniffPoint, boardStop, whistleTest, capOn };
+// ── 21·23·25·31~34판
+const toon = c => new THREE.MeshToonMaterial({ color: c });
+const roomOf = S => S.room.rooms ? S.room.rooms[0] : S.room;
+const findF = (S, re) => { for (const R of S.room.rooms || [S.room]) for (const r of R.furns) if (re.test(r.type)) return r; return null; };
+const topOf = r => { const b = new THREE.Box3().setFromObject(r.f.group); return V((b.min.x + b.max.x) / 2, b.max.y, (b.min.z + b.max.z) / 2); };
+// a prop put down at a world point — in the room's group, so it goes with the room when the stage ends (moves later: in
+// that group's frame, which is the world's unless the room was moved)
+const place = (S, obj, p) => { const R = roomOf(S); R.group.updateMatrixWorld(true); obj.position.copy(R.group.worldToLocal(p.clone())); R.group.add(obj); S.G.world.idsDirty = true; (S.stgProps ||= []).push(obj); return obj; };
+// a clear spot on the floor near p (none: p itself)
+function clearNear(S, p, min = .45, max = 1.2) {
+  const R = roomOf(S);
+  for (let r = min; r <= max; r += .2) for (let a = 0; a < 12; a++) {
+    const x = p.x + Math.cos(a * Math.PI / 6 + .3) * r, z = p.z + Math.sin(a * Math.PI / 6 + .3) * r;
+    if (R.clearAt?.(x, z, .25) !== false) return V(x, 0, z);
+  }
+  return p.clone();
+}
+function stoolMesh(col = '#e2403a') {
+  const g = new THREE.Group();
+  const seat = new THREE.Mesh(new THREE.CylinderGeometry(.16, .15, .05, 18), toon(col)); seat.position.y = .4; g.add(seat);
+  for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + .78, l = new THREE.Mesh(new THREE.CylinderGeometry(.018, .024, .4, 6), toon(col)); l.position.set(Math.cos(a) * .1, .2, Math.sin(a) * .1); l.rotation.set(Math.sin(a) * .12, 0, -Math.cos(a) * .12); g.add(l); }
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+function bagMesh(col = '#7fc4e8') {
+  const g = new THREE.Group();
+  const b = new THREE.Mesh(new THREE.BoxGeometry(.26, .22, .14), toon(col)); b.position.y = .11; g.add(b);
+  const h = new THREE.Mesh(new THREE.TorusGeometry(.07, .013, 6, 14, Math.PI), toon(col)); h.position.y = .22; g.add(h);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+// 의자 두 개: the map's own chairs or stools, or (none in this alley yet) two little red plastic stools beside 삐딱이
+function twoSeats(S) {
+  if (S.stgSeats) return S.stgSeats;
+  const own = []; for (const R of S.room.rooms || [S.room]) for (const r of R.furns) if (/chair|stool/.test(r.type) && own.length < 2) own.push(topOf(r));
+  if (own.length === 2) return (S.stgSeats = own);
+  const f = chOf(S), p = f ? f.root.getWorldPosition(V(0, 0, 0)) : V(0, 0, 0), a = clearNear(S, p, .6), b = clearNear(S, a, .45, .8);
+  place(S, stoolMesh('#e2403a'), a); place(S, stoolMesh('#f08a3c'), b);
+  return (S.stgSeats = [a.clone().setY(.43), b.clone().setY(.43)]);
+}
+const twoChairs = {
+  async start(S, c) {
+    const W = S.G.world, f = chOf(S), [a, b] = twoSeats(S), mid = a.clone().add(b).multiplyScalar(.5);
+    await W.flyTo(S.tw, { target: mid, zoom: Math.min(6, W.zoom * 1.8), dur: .7 });
+    if (f && !c.skipped) { f.faceTo(W.cam.position.x, W.cam.position.z); f.setFace?.('sus'); f.pose = 'idle'; S.G.audio.sfx('hmm'); await S.tw.run(.4, k => { f.rx.rx = -.15 * Math.sin(k * Math.PI / 2); }); }
+    await c.wait(1.4); if (f) f.rx.rx = 0;
+  },
+};
+const bagOnChair = {
+  async end(S, c) {
+    const G = S.G, W = G.world, f = chOf(S), [, b] = twoSeats(S);
+    await W.flyTo(S.tw, { target: b, zoom: Math.min(6, W.zoom * 1.6), dur: .6 });
+    const bag = place(S, bagMesh(S.idx === 24 ? '#ffb3c6' : '#7fc4e8'), b.clone().setY(b.y + .6));
+    await S.tw.run(.35, k => { bag.position.y = b.y + .6 * (1 - k * k); }, ease.linear);
+    G.audio.sfx(S.idx === 24 ? 'pop' : 'thump'); W.shadowDirty = true;
+    if (f) { f.faceTo(b.x, b.z); f.setFace?.('happy'); }
+    await c.wait(1.2);
+  },
+};
+const bagBurst = {
+  async start(S, c) {
+    const G = S.G, W = G.world, f = chOf(S); if (!f) return;
+    await lookAt(S, f, 1.6);
+    const bag = bagMesh('#ffb3c6'); bag.position.set(.22, f.headTop() * .25, .12); f.root.add(bag); S.stgBag = bag;
+    await c.wait(.5); if (c.skipped) return;
+    // the strap goes 툭 — everything in it all over the alley
+    G.audio.sfx('pop', 3); G.hitstop(.05);
+    const s = scr(W, f, .35);
+    W.fx.burst(s.x + 30, s.y, { n: 26, colors: ['#ff6b57', '#ffd23f', '#7fc4e8', '#9be38f', '#ffffff'], shape: 'dot', speed: 360, size: 13, gravity: 620, up: 260, life: 1 });
+    f.setFace?.('wow'); f._fx?.(S.tw, 'excl', { y: 1 });
+    await S.tw.run(.3, k => { bag.rotation.z = -.5 * k; bag.scale.y = 1 - .45 * k; });
+    await c.wait(1.3);
+  },
+};
+// 경광등: red and blue light sweeping over the screen
+const policeLights = {
+  async start(S, c) {
+    const G = S.G, f = chOf(S), car = findF(S, /patrolcar/);
+    if (car) await S.G.world.flyTo(S.tw, { target: topOf(car), zoom: Math.min(6, S.G.world.zoom * 1.5), dur: .6 });
+    G.audio.sfx('sirenPolice');
+    const sw = h('div', { class: 'stg-siren' }); document.getElementById('overlay').append(sw); c.finish = () => sw.remove();
+    await c.wait(1.8); sw.remove();
+    if (f && !c.skipped) { await lookAt(S, f, 1.4, .45); await salute(S, f); }
+    await c.wait(.9);
+  },
+};
+function crayonBoxMesh() {
+  const g = new THREE.Group();
+  const b = new THREE.Mesh(new THREE.BoxGeometry(.24, .14, .06), toon('#f5e6c8')); g.add(b); g.scale.setScalar(1.6);
+  const cols = ['#ff5a5a', '#ffb13d', '#ffe14d', '#6fd16f', '#5aa6ff', '#a87bff'];
+  cols.forEach((col, i) => { const k = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .08, 6), toon(col)); k.position.set(-.1 + i * .04, .09, 0); g.add(k); });
+  return g;
+}
+const crayonBox = {
+  async end(S, c) {
+    const G = S.G, W = G.world, m = S.hero?.ch; if (!m) return;
+    await lookAt(S, m, 1.6);
+    const box = crayonBoxMesh(); box.position.set(.22, m.headTop() * .18, .32); box.rotation.set(-.3, -.4, 0); m.root.add(box); S.stgCrayon = box;
+    box.scale.setScalar(.01);
+    await S.tw.run(.35, k => box.scale.setScalar(.01 + .99 * k), ease.outBack);
+    G.audio.sfx('pop', 2); m.setFace?.('wow'); m._fx?.(S.tw, 'ques', { x: .3, y: .9 });
+    await c.wait(1.5);
+  },
+};
+// 31 귀가: the friends walk in one after another from the alley's mouth (Char.walkTo), the train fading far off
+const comeHome = {
+  async start(S, c) {
+    const G = S.G, W = G.world, R = roomOf(S), f = chOf(S);
+    // 몽글이 and two of the trip's friends with their bags (개굴이's fishing bag, 너굴이's straw hat); they stay by the alley's
+    // mouth for the stage (S.npcs: still, and gone with the stage)
+    const walkers = [];
+    if (S.hero?.ch) walkers.push({ ch: S.hero.ch, to: S.hero.ch.root.position.clone() });
+    const ex = R.group.localToWorld(V(-R.w / 2 + .3, 0, R.d / 4)), y0 = 0;
+    for (const [k, prop] of [['frog', 'bag'], ['raccoon', 'hat']]) {
+      if (S.th?.friend === k || !Char) continue;
+      const ch = new Char(k); W.root.add(ch.root); (S.npcs ||= []).push({ ch, on: false });
+      if (prop === 'bag') { const b = bagMesh('#5fae5a'); b.scale.setScalar(.8); b.position.set(.2, ch.headTop() * .2, .1); ch.root.add(b); }
+      else { const hat = hatMesh(); hat.position.y = ch.headTop() - .04; ch.root.add(hat); }
+      walkers.push({ ch, to: clearNear(S, ex.clone().add(V(1.2 + walkers.length * .5, 0, 0)), .2, 1) });
+    }
+    G.audio.sfx('trainAway'); const stop = G.audio.loopSfx?.('footsteps', .5);
+    c.finish = () => { stop?.(); for (const w of walkers) w.ch.root.position.set(w.to.x, w.to.y ?? y0, w.to.z); };
+    walkers.forEach((w, i) => { w.ch.root.position.set(ex.x - .6 - i * .6, w.to.y ?? y0, ex.z + (i % 2 ? .2 : -.2)); });
+    await W.flyTo(S.tw, { target: ex.clone().add(V(.8, 0, 0)).setY(W.target.y), zoom: Math.min(6, Math.max(2.4, W.zoom * 2.2)), dur: .5 });
+    const runs = walkers.map((w, i) => S.tw.wait(i * .4).then(() => w.ch.walkTo?.(S.tw, w.to.x, w.to.z)));
+    const fp = f ? f.root.getWorldPosition(V(0, 0, 0)) : ex;
+    S.tw.wait(1.2).then(() => !S.dead && !c.skipped && W.flyTo(S.tw, { target: fp.clone().setY(W.target.y), dur: 2.2 }));
+    await Promise.race([Promise.all(runs), c.wait(4)]);
+    stop?.();
+    for (const w of walkers) w.ch.faceTo(fp.x, fp.z);
+    if (f && !c.skipped) { f.faceTo(W.cam.position.x, W.cam.position.z); f.setFace?.('sus'); }
+    await c.wait(.9);
+  },
+};
+function doodleTex() {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 160; const x = cv.getContext('2d');
+  x.lineCap = 'round'; x.lineJoin = 'round';
+  const line = (col, w, pts) => { x.strokeStyle = col; x.lineWidth = w; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
+  // a house, three friends, a wavy sky
+  line('#ff6b57', 11, [[30, 120], [60, 60], [90, 120], [30, 120]]);
+  line('#ffb13d', 11, [[40, 120], [40, 140], [80, 140], [80, 120]]);
+  for (const [cx, col] of [[140, '#6fd16f'], [180, '#5aa6ff'], [215, '#ffd23f']]) { x.strokeStyle = col; x.lineWidth = 11; x.beginPath(); x.arc(cx, 105, 16, 0, 7); x.stroke(); line(col, 11, [[cx, 121], [cx, 145]]); }
+  line('#a87bff', 9, [[20, 30], [60, 20], [100, 34], [140, 18], [180, 30], [230, 22]]);
+  // the one friend left uncoloured — drawn in nothing but the dark outline it should have had
+  x.setLineDash([6, 8]); line('#8f86a0', 6, [[110, 125], [110, 100], [124, 92], [110, 100]]); x.setLineDash([]);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const crayonWall = {
+  async end(S, c) {
+    const G = S.G, W = G.world, R = roomOf(S), f = chOf(S);
+    // (from the view the stage is played in, not the win close-up: what is seen is judged from there)
+    await closeBack(S); if (S.dead) return;
+    // on the back wall (the one away from the camera), near 삐딱이
+    const fp = f ? R.group.worldToLocal(f.root.getWorldPosition(V(0, 0, 0))) : V(0, 0, 0);
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1), new THREE.MeshBasicMaterial({ map: doodleTex(), alphaTest: .4 }));
+    // a bare stretch of the back wall (N, else W) — rays from the room's middle reach the wall itself, not a piece in front,
+    // across the picture's whole width — nearest 삐딱이
+    R.group.updateMatrixWorld(true);
+    const rc = new THREE.Raycaster(), solid = [R.group], hitsWall = (o, d) => { rc.set(R.group.localToWorld(o), d); const h = rc.intersectObjects(solid, true)[0]; let f = null; for (let q = h?.object; q && !f; q = q.parent) f = q.userData?.furn; return h && !f ? h : null; };
+    // (and seen: nothing between it and the camera — 31판's stairs run along a bare-looking wall)
+    const cd = W.cam.getWorldDirection(V(0, 0, 0)).negate(), seen = lp => { rc.set(R.group.localToWorld(lp.clone()).addScaledVector(cd, .05), cd); return !rc.intersectObjects(solid, true).length; };
+    const okAt = (lp, ax) => [-.5, 0, .5].flatMap(d => [-.15, .3].map(dy => seen(lp.clone().add(ax === 'x' ? V(d, dy, 0) : V(0, dy, d))))).filter(Boolean).length >= 5;
+    const cands = [];
+    for (let x = -R.w / 2 + .9; x <= R.w / 2 - .9; x += .25) {
+      const hs = [hitsWall(V(x, .95, -R.d / 2 + .6), V(0, 0, -1))];
+      const lp = hs[0] && R.group.worldToLocal(hs[0].point.clone()).add(V(0, 0, .03)); if (lp && okAt(lp, 'x')) cands.push({ p: lp, ry: 0 });
+    }
+    for (let z = -R.d / 2 + .9; z <= R.d / 2 - .9; z += .25) {
+      const hs = [hitsWall(V(-R.w / 2 + .6, .95, z), V(-1, 0, 0))];
+      const lp = hs[0] && R.group.worldToLocal(hs[0].point.clone()).add(V(.03, 0, 0)); if (lp && okAt(lp, 'z')) cands.push({ p: lp, ry: Math.PI / 2 });
+    }
+    const fl = fp;
+    const at = cands.sort((a, b) => a.p.distanceTo(fl) - b.p.distanceTo(fl))[0] || { p: V(Math.max(-R.w / 2 + 1, Math.min(R.w / 2 - 1, fl.x)), .95, -R.d / 2 + .06), ry: 0 };
+    pl.position.copy(at.p); pl.rotation.y = at.ry; R.group.add(pl); (S.stgProps ||= []).push(pl);
+    W.idsDirty = true;
+    await W.flyTo(S.tw, { target: pl.getWorldPosition(V(0, 0, 0)), zoom: Math.min(7, W.zoom * 3.2), dur: .8 });
+    await c.wait(1.6); if (c.skipped) return;
+    G.audio.sfx('hmm');
+    const m = S.hero?.ch; if (!m) return;
+    await lookAt(S, m, 1.6);
+    const box = crayonBoxMesh(); box.position.set(.22, m.headTop() * .18, .32); box.rotation.set(-.3, -.4, 0); m.root.add(box); S.stgCrayon = box;
+    m.setFace?.('sus'); m._fx?.(S.tw, 'ques', { x: .3, y: .9 });
+    await c.wait(1.3);
+  },
+};
+function ticketMesh() {
+  const cv = document.createElement('canvas'); cv.width = 96; cv.height = 48; const x = cv.getContext('2d');
+  x.fillStyle = '#fff3d6'; x.fillRect(0, 0, 96, 48); x.fillStyle = '#e8724f'; x.fillRect(0, 0, 96, 9);
+  x.fillStyle = '#3a2453'; x.font = 'bold 15px sans-serif'; x.fillText('호수섬 →', 8, 32);
+  x.fillStyle = '#ffffff'; for (let y = 4; y < 48; y += 8) { x.beginPath(); x.arc(96, y, 3, 0, 7); x.fill(); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(.2, .1), new THREE.MeshBasicMaterial({ map: t })); m.rotation.x = -Math.PI / 2; m.rotation.z = .3;
+  return m;
+}
+const konbiniTicket = {
+  async start(S, c) {
+    const G = S.G, W = G.world, R = roomOf(S), ctr = findF(S, /^counter2$|counter/);
+    G.audio.sfx('doorBell');
+    await c.wait(.5); if (!ctr) return;
+    const top = topOf(ctr);
+    await W.flyTo(S.tw, { target: top, zoom: Math.min(6, W.zoom * 1.7), dur: .7 });
+    // a black shadow darts across in front of the counter, and leaves half a ticket on it
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(.18, 12, 8), new THREE.MeshBasicMaterial({ color: '#1e1626' })); sh.scale.set(1.4, .8, 1);
+    const a = top.clone().add(V(-1.6, -.5, .6)), b = top.clone().add(V(1.6, -.5, .6));
+    place(S, sh, a); G.audio.sfx('whoosh');
+    await S.tw.run(.45, k => { sh.position.lerpVectors(a, b, k); sh.position.y = a.y + Math.sin(k * Math.PI) * .2; });
+    sh.visible = false;
+    S.stgTicket = place(S, ticketMesh(), top.clone().add(V(.08, .012, .05)));
+    await c.wait(1.2);
+  },
+};
+const ticketGone = {
+  async end(S, c) {
+    const G = S.G, W = G.world, t = S.stgTicket; if (!t?.visible) return;
+    await W.flyTo(S.tw, { target: t.getWorldPosition(V(0, 0, 0)), zoom: Math.min(6, W.zoom * 1.8), dur: .6 });
+    await c.wait(.5);
+    const s = W.toScreen(t.getWorldPosition(V(0, 0, 0))); W.fx.burst(s.x, s.y, { n: 10, colors: ['#3a2453', '#6b5a7a'], shape: 'dot', speed: 120, size: 8, gravity: -40 });
+    G.audio.sfx('pop', -2); t.visible = false;
+    await c.wait(1.1);
+  },
+};
+function sockMesh() { const g = new THREE.Group(); const a = new THREE.Mesh(new THREE.CapsuleGeometry(.04, .12, 4, 8), toon('#ff7eb6')); g.add(a); const b = new THREE.Mesh(new THREE.CapsuleGeometry(.035, .05, 4, 8), toon('#ff7eb6')); b.rotation.z = Math.PI / 2; b.position.set(.04, -.07, 0); g.add(b); return g; }
+const washerSock = {
+  async start(S, c) {
+    const G = S.G, W = G.world, w = findF(S, /washer/); if (!w) return;
+    const top = topOf(w), g = w.f.group, x0 = g.position.x, z0 = g.position.z;
+    await W.flyTo(S.tw, { target: top.clone().add(V(0, -.3, 0)), zoom: Math.min(6, W.zoom * 1.7), dur: .6 });
+    G.audio.sfx('washerSlam'); await c.wait(.3);
+    const stop = G.audio.loopSfx?.('washerRumble', .6); c.finish = () => { stop?.(); g.position.x = x0; g.position.z = z0; };
+    await Promise.race([S.tw.run(1.4, k => { g.position.x = x0 + Math.sin(k * 70) * .012; g.position.z = z0 + Math.cos(k * 53) * .01; W.shadowDirty = true; }), c.wait(1.4)]);
+    g.position.x = x0; g.position.z = z0;
+    // one sock flies out and is gone
+    const sock = place(S, sockMesh(), top.clone()), d = V(1.8, 0, .6);
+    G.audio.sfx('whoosh');
+    await S.tw.run(.6, k => { sock.position.set(top.x + d.x * k, top.y + Math.sin(k * Math.PI) * .9, top.z + d.z * k); sock.rotation.z = k * 9; });
+    sock.visible = false; stop?.();
+    await c.wait(.6);
+  },
+};
+const sandShake = {
+  async end(S, c) {
+    const G = S.G, W = G.world, bk = findF(S, /laundrybasket/), f = chOf(S);
+    if (bk) {
+      const p = topOf(bk); await W.flyTo(S.tw, { target: p, zoom: Math.min(6, W.zoom * 1.7), dur: .6 });
+      const s = W.toScreen(p); G.audio.sfx('swish');
+      for (let i = 0; i < 4; i++) S.tw.wait(i * .15).then(() => !S.dead && W.fx.burst(s.x + (i - 1.5) * 14, s.y - 10, { n: 10, colors: ['#ecd7ae', '#e0c99c', '#f6e8c8'], shape: 'dot', speed: 110, size: 5, gravity: 380, life: .9 }));
+      await c.wait(1.1); if (c.skipped) return;
+    }
+    if (f) { await lookAt(S, f, 1.3, .45); f.setFace?.('sus'); const R = roomOf(S), door = R.group.localToWorld(V(R.w / 2, 0, R.d / 2)); f.faceTo(door.x, door.z); await S.tw.run(.3, k => { f.rx.rx = -.2 * Math.sin(k * Math.PI); }); f.rx.rx = 0; }
+    await c.wait(1);
+  },
+};
+const parfaitSpill = {
+  async start(S, c) {
+    const G = S.G, W = G.world, f = chOf(S); if (!f) return;
+    await lookAt(S, f, 1.4);
+    const s = scr(W, f, .7); G.audio.sfx('pop', 1); G.hitstop(.04);
+    W.fx.burst(s.x + 20, s.y, { n: 24, colors: ['#ff8fb8', '#8fd3ff', '#ffe14d', '#ffffff', '#b98a5a'], shape: 'dot', speed: 340, size: 11, gravity: 600, up: 240, life: .9 });
+    f.setFace?.('wow'); f._fx?.(S.tw, 'excl', { y: 1 });
+    await c.wait(1.4);
+  },
+};
+function flagMesh() {
+  const g = new THREE.Group();
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .3, 6), toon('#d9a466')); st.position.y = .15; g.add(st);
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 40; const x = cv.getContext('2d');
+  for (let i = 0; i < 5; i++) { x.fillStyle = i % 2 ? '#ffffff' : '#2f7fd8'; x.fillRect(0, i * 8, 64, 8); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(.12, .075), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide })); fl.position.set(.06, .26, 0); g.add(fl);
+  return g;
+}
+const flagPick = {
+  async end(S, c) {
+    const G = S.G, W = G.world, P = S.kitParfait?.g; if (!P) return;
+    // the top of what is stacked (the layers shown), over the cup's middle
+    const b = new THREE.Box3(); P.updateMatrixWorld(true); P.traverseVisible(o => { if (o.isMesh) b.expandByObject(o); });
+    const c0 = new THREE.Box3().setFromObject(P).getCenter(V(0, 0, 0)), top = V(c0.x, b.max.y, c0.z);
+    await W.flyTo(S.tw, { target: top, zoom: Math.min(6, W.zoom * 1.8), dur: .6 });
+    const fl = place(S, flagMesh(), top.clone().add(V(0, .5, 0))); fl.scale.setScalar(1.8); fl.rotation.y = Math.atan2(W.cam.position.x - top.x, W.cam.position.z - top.z);
+    await S.tw.run(.3, k => { fl.position.y = top.y + .5 * (1 - k) - .05 * k; }, ease.inQuad);
+    G.audio.sfx('pop', 3); const s = W.toScreen(top); W.fx.burst(s.x, s.y - 20, { n: 10, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 160, size: 9, gravity: 200 });
+    const m = S.hero?.ch; if (m) { m.faceTo(top.x, top.z); m.setFace?.('happy'); m.hopTo?.(S.tw, m.root.position.x, m.root.position.z, { height: .3, dur: .35 }); }
+    await c.wait(1.4);
+  },
+};
+
+// ── 27판: 시작 (가방 펑, 기차는 아직 안 옴) · 판 안 건널목 (버튼 → 차단기 → 화물 기차 휙 → 지붕 위 밀짚모자 빙글) · 끝은 trainIn
+// set up before the stage is shown (a retry too): the train isn't in yet (it pulls in at the end — trainIn), and a straw
+// hat lies on the shelter roof (the crossing's train blows it down)
+const PREP = {
+  bagPop(S) {
+    const F = furnOf(S, 'train'); if (F?.r.f.car && !S.stgCarAway) { F.r.f.car.position.x -= 40; S.stgCarAway = true; }
+    const sh = findF(S, /platshelter/);
+    if (sh && !S.stgRoofHat) { const t = topOf(sh); S.stgRoofHat = place(S, hatMesh(), t.clone().add(V(-.3, .02, 0))); S.stgRoofHat.rotation.set(.15, .6, .1); }
+  },
+};
+export function stagingPrep(S) { const k = keyOf(S, 'start'); try { PREP[k]?.(S); } catch (e) { console.warn('staging prep', k, e); } }
+const bagPop = {
+  async start(S, c) {
+    const G = S.G, W = G.world, f = chOf(S), F = furnOf(S, 'train');
+    G.audio.sfx('crossingFar');
+    if (!f) return;
+    await lookAt(S, f, 1.5); if (c.skipped) return;
+    f.setFace?.('happy'); G.audio.sfx('hop');
+    await S.tw.run(.4, k => { f.rx.y = hopK(.4, k); }); f.rx.y = 0; f.squash = .3;
+    const bag = findF(S, /tripbag/), s = bag ? W.toScreen(topOf(bag)) : scr(W, f, .3);
+    G.audio.sfx('pop', 3); G.hitstop(.04);
+    W.fx.burst(s.x, s.y, { n: 24, colors: ['#5fae5a', '#ffd23f', '#7fc4e8', '#ff8a4c', '#ffffff'], shape: 'dot', speed: 360, size: 11, gravity: 600, up: 260, life: 1 });
+    f.setFace?.('wow'); f._fx?.(S.tw, 'excl', { y: 1 });
+    await c.wait(1.2);
+  },
+};
+function freightMesh() {
+  const g = new THREE.Group(), add = (w, h, d, col, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), toon(col)); m.position.set(x, y, 0); m.castShadow = true; g.add(m); return m; };
+  // the engine and its cab, three wagons behind, wheels
+  add(1.3, .9, .8, '#3d6fb3', 0, .8); add(1.32, .12, .82, '#2b4f82', 0, 1.3); add(.5, .5, .78, '#3d6fb3', -.55, 1.45);
+  for (let i = 0; i < 3; i++) { const x = -1.45 - i * 1.5; add(1.4, .85, .78, ['#b0613f', '#8a7a5c', '#b0613f'][i], x, .78); add(1.42, .06, .8, '#5a3e2e', x, 1.22); }
+  for (let x = .4; x > -5.6; x -= .7) for (const z of [-.3, .3]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .06, 12), toon('#3a3048')); w.rotation.x = Math.PI / 2; w.position.set(x, .22, z); g.add(w); }
+  return g;
+}
+export async function stagingCrossing(S, part) {
+  const G = S.G, W = G.world;
+  if (S._crossRun) return; S._crossRun = true;
+  const xs = []; for (const R of S.room.rooms || [S.room]) for (const r of R.furns) if (r.type === 'crossing') xs.push(r.f);
+  try {
+    G.audio.sfx('crossingNear'); xs.forEach(f => { f.ringing = true; });
+    await S.tw.run(.55, k => xs.forEach(f => f.arm?.setOpen(k)), ease.outCubic); if (S.dead) return;
+    await S.tw.wait(.35);
+    // the freight train along the track (in the track's own frame: the platform train's), fast, right through the crossing
+    const F = furnOf(S, 'train');
+    if (F) {
+      const tr = freightMesh(); F.r.f.group.add(tr); W.idsDirty = true;
+      const x0 = -7, x1 = 13; tr.position.set(x0, .1, -.02);
+      G.audio.sfx('trainPass'); S.ambient?.gust?.(1.2);
+      const hat = S.stgRoofHat, fall = hat && !S.stgHatDown && keyOf(S, 'moment') === 'crossing';
+      const pass = S.tw.run(3, k => { tr.position.x = x0 + (x1 - x0) * k; W.shadowDirty = true; });
+      if (fall) {
+        S.stgHatDown = true;
+        await S.tw.wait(.7); if (S.dead) return;
+        // the wind of it: the hat spins off the roof and down onto the platform
+        const R = roomOf(S), h0 = hat.position.clone(), h1 = h0.clone().add(V(.7, 0, .35)), gy = R.group.worldToLocal(furnOf(S, 'platshelter')?.r.f.group.getWorldPosition(V(0, 0, 0)) || V(0, 0, 0)).y + .02;
+        h1.y = gy; G.audio.sfx('whoosh');
+        await S.tw.run(1.1, k => { hat.position.lerpVectors(h0, h1, k); hat.position.y = h0.y + (gy - h0.y) * k * k + Math.sin(k * Math.PI) * .35; hat.rotation.y = .6 + k * 9; hat.rotation.z = Math.sin(k * 12) * .4 * (1 - k); W.shadowDirty = true; });
+        hat.rotation.set(0, hat.rotation.y, 0); G.audio.sfx('pop', 2);
+      }
+      await pass; tr.parent?.remove(tr); tr.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+    }
+    await S.tw.wait(.3); if (S.dead) return;
+    await S.tw.run(.5, k => xs.forEach(f => f.arm?.setOpen(1 - k)), ease.inOutQuad);
+  } finally { xs.forEach(f => { f.ringing = false; }); S._crossRun = false; }
+}
+
+const FX = { bagPop, tunnel, trainIn, sunsetTrain, partsDispatch, pengShake, jarHide, inkyTraceLook, smokeCat, sniffPoint, boardStop, whistleTest, capOn,
+  twoChairs, bagOnChair, bagBurst, policeLights, crayonBox, comeHome, crayonWall, konbiniTicket, ticketGone, washerSock, sandShake, parfaitSpill, flagPick };
 export const STAGING_KEYS = Object.keys(FX);

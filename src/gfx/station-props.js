@@ -114,13 +114,18 @@ B.crossing = (f, T, o = {}) => {
     return m;
   });
   const ON = new THREE.Color('#ff3b4a'), OFF = new THREE.Color('#7a2a33');
+  // (③ 10/21, 27판 '건널목' — staging.js crossing): the lamps take turns only while it rings (f.ringing), the arm stands up
+  // until the button is pressed; then it comes down, a freight train goes by, and it goes back up
   let last = -1;
-  f.tick = t => { const k = Math.floor(t * 1.6) % 2; if (k === last) return; last = k; lens[0].color.copy(k ? ON : OFF); lens[1].color.copy(k ? OFF : ON); };
-  // the arm, lowered east across the road
-  f.add(mc('crossing-arm' + (FL < 0 ? '-w' : ''), ({ add }) => {
-    const y = .86, L = 1.3;   // (across the crossing road, east of the post)
-    for (let i = 0; i < 6; i++) add(G.box(L / 6, .07, .05, .015), i % 2 ? '#ffffff' : RED, px + FL * (.12 + (i + .5) * L / 6), y, pz + .26);
+  f.tick = t => { const k = f.ringing ? Math.floor(t * 3.2) % 2 : -1; if (k === last) return; last = k; lens[0].color.copy(k === 1 ? ON : OFF); lens[1].color.copy(k === 0 ? ON : OFF); };
+  // the arm, on a hinge at the post: up (t 0) or lowered across the road (t 1)
+  const arm = grp(); put(arm, px + FL * .12, .86, pz + .26); f.add(arm);
+  arm.add(mc('crossing-arm2' + (FL < 0 ? '-w' : ''), ({ add }) => {
+    const L = 1.3;
+    for (let i = 0; i < 6; i++) add(G.box(L / 6, .07, .05, .015), i % 2 ? '#ffffff' : RED, FL * (i + .5) * L / 6, 0, 0);
   }));
+  const ap = f.part('lift', arm, t => { arm.rotation.z = FL * (Math.PI / 2 - .08) * (1 - t); }, { label: '건널목 차단기', sfx: 'tock', dur: .5 });
+  ap.setOpen(0); ap.crossing = true; f.arm = ap;
   f.spot('beside', null, -.08 * FL, 0, .32, { maxH: .3, label: '차단기 아래', scale: .8 });
 };
 

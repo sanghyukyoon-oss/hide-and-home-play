@@ -231,10 +231,12 @@ B.tbench2 = (f, T, o = {}) => {
   f.spot('under', null, -.5, .01, z0 + D / 2 + .08, { maxH: .22, label: '벤치 밑', scale: .8 });
   f.spot('on', null, st === 'bag' ? .1 : -.2, SH + .05, z0 + .08, { maxH: .35, label: '벤치 위', scale: .9 });
   if (o.drawer) {
-    const dv = grp(); put(dv, .48, .18, z0 + D / 2 - .07); f.add(dv);
-    dv.add(mc('tbench2-drawer', ({ add }) => {
-      add(G.box(.76, .22, .03, .01), CREAM, 0, 0, .015); add(G.box(.74, .02, .46, .005), CREAM2, 0, -.1, -.21); for (const sx of [-1, 1]) add(G.box(.02, .2, .46, .005), CREAM2, sx * .36, 0, -.21);
-      add(G.cyl(.04, .04, .03, 12), ORANGE, 0, 0, .04, HP, 0, 0);
+    // (② 10/21: shut, it sat 4 cm behind the seat's front lip — from most sides a tap on it took the bench; now its front stands
+    // proud of the seat, a little taller)
+    const dv = grp(); put(dv, .48, .19, z0 + D / 2 - .01); f.add(dv);
+    dv.add(mc('tbench2-drawer2', ({ add }) => {
+      add(G.box(.8, .26, .035, .01), CREAM, 0, 0, .017); add(G.box(.74, .02, .46, .005), CREAM2, 0, -.1, -.21); for (const sx of [-1, 1]) add(G.box(.02, .2, .46, .005), CREAM2, sx * .36, 0, -.21);
+      add(G.cyl(.045, .045, .035, 12), ORANGE, 0, 0, .045, HP, 0, 0);
     }));
     const p = f.part('drawer', dv, (t, b) => { dv.position.z = b.p.z + .44 * t; }, { label: '벤치 서랍', sfx: 'drawer', dur: .26 });
     p.lockable = true; p.lockKind = 'pad'; p.lockAt = { x: .24, y: 0, z: .06, parent: dv };
@@ -255,12 +257,15 @@ B.twindow2 = (f, T, o = {}) => {
     if (o.paw) { add(G.sph(.03, 8, 6), '#2a1d33', -.2, cy - .2, .045, 0, 0, 0, [1, 1.1, .2]); for (let k = 0; k < 3; k++) add(G.sph(.012, 6, 5), '#2a1d33', -.2 + (k - 1) * .028, cy - .16, .045, 0, 0, 0, [1, 1, .2]); }
   }));
   const gl = mesh(new THREE.PlaneGeometry(W, H), basic(viewTex2()), { cast: false }); put(gl, 0, cy, .025); f.add(gl);
-  f.spot('on', null, .5, cy - H / 2 - .06, .16, { maxH: .22, label: '창턱', scale: .75 });
+  if (!o.blind) f.spot('on', null, .5, cy - H / 2 - .06, .16, { maxH: .22, label: '창턱', scale: .75 });   // (behind the blind the sill is the blind's — ② 10/21: 0 of 24)
   if (o.blind) {
-    f.add(mc('twindow2-roll', ({ add }) => { add(G.cyl(.065, .065, W + .1, 14), YEL2, 0, cy + H / 2 + .1, .18, 0, 0, HP); for (const s of [-1, 1]) add(G.box(.04, .15, .11, .01), STEEL, s * (W / 2 + .07), cy + H / 2 + .1, .13); }));
-    const bl = grp(); put(bl, 0, cy + H / 2 + .1, .19); f.add(bl);
-    bl.add(mc('twindow2-blind', ({ add, tube }) => {
-      add(G.box(W, 1, .012, .004), YEL, 0, -.5, 0); add(G.box(W + .02, .04, .03, .01), YEL2, 0, -1, 0);
+    // (② 10/21: hung behind the sill's front edge and inside the frame it was hard to tap from most sides — it hangs in front of
+    // both now, wider than the frame)
+    const BZ = .29, BW = W + .14;
+    f.add(mc('twindow2-roll2', ({ add }) => { add(G.cyl(.065, .065, BW + .06, 14), YEL2, 0, cy + H / 2 + .1, BZ - .01, 0, 0, HP); for (const s of [-1, 1]) add(G.box(.04, .15, BZ - .02, .01), STEEL, s * (BW / 2 + .05), cy + H / 2 + .1, (BZ - .02) / 2 + .02); }));
+    const bl = grp(); put(bl, 0, cy + H / 2 + .1, BZ); f.add(bl);
+    bl.add(mc('twindow2-blind2', ({ add, tube }) => {
+      add(G.box(BW, 1, .012, .004), YEL, 0, -.5, 0); add(G.box(BW + .02, .04, .03, .01), YEL2, 0, -1, 0);
       tube([0, -1, .01], [0, -1.08, .02], .006, '#e0d6c0', 4); add(G.tor(.04, .011, PI * 2, 6, 14), '#ffffff', 0, -1.12, .02);
     }));
     bl.scale.y = H / 1.0 * .55;
