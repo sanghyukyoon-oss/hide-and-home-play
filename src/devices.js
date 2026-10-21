@@ -169,7 +169,11 @@ PLANS.starloft = (room, spec, story, planStage, hatch) => {
 };
 export function planDevice(room, spec, story, planStage) {
   const part = room.parts.find(p => p.device && PLANS[p.device]);
-  return part ? PLANS[part.device](room, spec, story, planStage, part) : null;
+  if (!part) return null;
+  // (② 레벨 10/21: the device's own place is the friend's — kept out of the planner's reach, or a 수건 went under 30판's boat
+  // cover with 냥냥이 and could not be taken once the boat came in)
+  const keep = part.spots.map(x => [x, x.reserved]); for (const x of part.spots) x.reserved = true;
+  try { return PLANS[part.device](room, spec, story, planStage, part); } finally { for (const [x, r] of keep) x.reserved = r; }
 }
 
 // ── play

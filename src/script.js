@@ -252,7 +252,7 @@ const SCENES = [
   // 동네 골목
   { id: 'alley1', type: 'incident', room: 'alley1',
     reveal: [L('grumpy', '…진짜 찾았네.', '…You actually found me.'), L('mong', '…의자가 두 개네.', '…There are two chairs.'), L('grumpy', '하, 하나는 가방 놓는 거야.', "O-one's for my bag.")] },
-  { id: 'skatepark', keep: true, type: 'gray', room: 'skatepark',
+  { id: 'skatepark', stage: { start: 'boardStop', end: 'inkyPerch' }, keep: true, type: 'gray', room: 'skatepark',
     after: [L('inky', '…색 돌려놓는 거, 잘하네.', "…You're good at putting colors back."), L('mong', '…다 돌려놓으니까 예쁘지?', '…Looks nicer with the colors back, right?')] },
   { id: 'skatepark2', type: 'gray', room: 'skatepark', caught: K('…보드보다 빠른 줄 알았는데.', '…I thought I was faster than the board.'), after: [L('skater', '색 찾아 줘서 고마워! 바퀴도 다시 알록달록!', 'Thanks for the colors! My wheels are rainbow again!')] },
   { id: 'alley3', type: 'incident', room: 'alley3',
@@ -293,25 +293,25 @@ const SCENES = [
   // 31 골목 아지트 보스(돌아옴). 35 곰제과·37 도서관·38 현관은 상가 장 되풀이 자리. 맵이 없으면 어느 판에도 안 붙어요.
   // 20판: 2장 마지막 집들이를 토순이네 빌라 옥상에서 — aptmap 장면의 클라이맥스("그 까만 애")를 그대로 옮김.
   // 곰돌이는 장독대 큰 항아리(누름돌 뚜껑, 장독대 도르래 장치) 안에서 잠듦 (② 10/21)
-  { id: 'villaroofInc', type: 'incident', room: 'villaroof', alt: ['villaroof2'], host: 'bear', trace: true, uses: 'aptmap', hide: K('으헤헤, 항아리 속은 시원하고 깜깜해~', 'Ehehe, it’s cool and dark in the jar~'),
+  { id: 'villaroofInc', stage: { start: 'jarHide', end: 'inkyTraceLook' }, type: 'incident', room: 'villaroof', alt: ['villaroof2'], host: 'bear', trace: true, uses: 'aptmap', hide: K('으헤헤, 항아리 속은 시원하고 깜깜해~', 'Ehehe, it’s cool and dark in the jar~'),
     intro: [L('bunny', '우리 빌라 옥상에서 집들이야! 곰돌이도 왔어, 숨바꼭질 하재.', 'Housewarming on our rooftop! Bearie came too. Wants to play hide-and-seek.')],
     reveal: [L('bear', '어… 벌써 찾았어? 항아리 안이 시원하고 깜깜해서 그만…', 'Huh… found me already? It was so cool and dark in the jar…'), L('bunny', '이제 다 모였다! 집들이 대성공!', "Everyone's here! Best housewarming ever!"),
       L('mong', '…한 명 빠졌어. 그 까만 애.', '…One is missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
   // 27판 아침 기차역: 개굴이는 숨지 않고 플랫폼에 서 있어요. 26판 발자국이 역까지 이어짐(trace)
-  { id: 'stationH', type: 'hidden', room: 'station', host: 'frog', trace: true, uses: 'streetH', goal: ['개굴이 낚시 가방 물건', "Froggy's fishing bag things"],
+  { id: 'stationH', stage: { start: 'bagPop', moment: 'crossing', end: 'trainIn' }, type: 'hidden', room: 'station', host: 'frog', trace: true, uses: 'streetH', goal: ['개굴이 낚시 가방 물건', "Froggy's fishing bag things"],
     intro: [L('frog', '개굴! 발자국 따라왔어? 난 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! Followed the footprints? I'm taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')],
     say: { first: K('개굴! 하나 찾았다! 기차는 아직이야.', "Ribbit! Got one! The train's not here yet."), half: K('반이야! 저 멀리 땡땡 소리 들려.', 'Halfway! I can hear the crossing bell.'), last: K('하나 남았어! 기차 오기 전에!', 'One left! Before the train comes!') },
     after: [LP('frog', '기차 왔다! 같이 타자, 개굴!', "Here's the train! Hop on with me. Ribbit!"), LP('mong', '…발자국도 기차에 탔네.', '…The footprints got on the train too.')] },
   // 28판 기차 객실 ★ (사건, 새 맵 — 방 id는 ①이 정함: traincar/train/cabin 어느 것이든 붙음): 터널을 지나는 사이 너굴이가 숨음.
   // 3장에서 너굴이 시간 판이 빠진 대신, 동네 숨기 1등이 기차에서 숨어요
-  { id: 'traincarInc', type: 'incident', room: 'traincar', alt: ['traincar2', 'train', 'cabin'], host: 'raccoon', hide: K('터널 지나는 동안 숨는다! 1등은 기차에서도 1등!', "Hiding while we're in the tunnel! Number one on the train too!"),
+  { id: 'traincarInc', stage: { start: 'tunnel', end: 'islandView' }, type: 'incident', room: 'traincar', alt: ['traincar2', 'train', 'cabin'], host: 'raccoon', hide: K('터널 지나는 동안 숨는다! 1등은 기차에서도 1등!', "Hiding while we're in the tunnel! Number one on the train too!"),
     intro: [L('frog', '개굴! 객실이다. 섬까지 세 정거장!', 'Ribbit! Our car. Three stops to the island!'), L('raccoon', '나도 탔지롱. 터널 나가기 전에 날 찾아 봐!', "I'm on board too. Find me before we're out of the tunnel!")],
     reveal: [L('raccoon', '…선반 위는 반칙 아니거든?!', "…The luggage rack is NOT cheating!"), L('frog', '다음 역, 호수 섬! 내리자!', 'Next stop, the lake island! Off we go!'), L('mong', '…창문에 까만 손자국.', '…A little inky handprint on the window.')] },
   // 29판 호수 섬 흑백 (섬 3차): 먹물이가 따라온 여행 — "같이 타도 돼?"가 엔딩의 '같이'로
-  { id: 'islandGray', type: 'gray', room: 'island', alt: ['island2', 'island3'], host: 'frog', inky: K('호수 색은 처음 봤어. 한 번 가져 보고 싶었어.', "I'd never seen lake colors before. I wanted to hold them once."), caught: K('…다음엔 기차, 같이 타도 돼?', '…Next time, can I ride the train with you?'),
+  { id: 'islandGray', stage: { start: 'grayArrive', end: 'inkyTree' }, type: 'gray', room: 'island', alt: ['island2', 'island3'], host: 'frog', inky: K('호수 색은 처음 봤어. 한 번 가져 보고 싶었어.', "I'd never seen lake colors before. I wanted to hold them once."), caught: K('…다음엔 기차, 같이 타도 돼?', '…Next time, can I ride the train with you?'),
     after: [LP('frog', '호수가 다시 파래졌다! 바닷가 가게 들렀다 가자, 개굴.', "The lake's blue again! Let's stop by the seaside shop. Ribbit."), LP('mong', '…그 애, 우리 따라 기차 탔나 봐.', '…That kid must have followed us onto the train.')] },
   // 30판 냥냥이네 바닷가 가게 ★ (사건): 돌아가는 기차 전, 냥냥이가 숨음 → 끝은 집으로(31 골목 보스)
-  { id: 'seasideInc', type: 'incident', room: 'seaside', host: 'cat', hide: K('…찾든가 말든가다냥.', "…Find me or don't, meow."),
+  { id: 'seasideInc', stage: { start: 'awningWave', end: 'sunsetTrain' }, type: 'incident', room: 'seaside', host: 'cat', hide: K('…찾든가 말든가다냥.', "…Find me or don't, meow."),
     intro: [L('cat', '…여행 왔냥? 마침 가게 정리 중이다냥.', "…On a trip, meow? I'm just tidying the shop."), L('cat', '숨바꼭질? …딱히 하고 싶은 건 아니다냥.', "Hide-and-seek? …Not that I want to, meow.")],
     reveal: [L('cat', '…찾았냥. 거기가 시원해서 그런 거다냥.', "…Found me, meow. It was just cool in there."), L('cat', '…돌아가는 기차, 놓치지 마라냥.', "…Don't miss your train home, meow."), L('mong', '…집에 가자.', "…Let's go home.")] },
   // 35판 곰제과 (상가 장 — 편의점 2회차 자리): 곰돌이 버릇(손님 몫 숨기고 까먹음) + 편의점 판의 간식 순찰 줄을 이어받음
@@ -323,7 +323,7 @@ const SCENES = [
   { id: 'libraryGray', type: 'gray', room: 'library', host: 'nerd', uses: 'cafe', inky: K('책 색은… 빌려 가도 되는 줄 알았어.', '…I thought book colors were for borrowing.'), caught: K('…동전, 두고 갈게.', "…I'll leave a coin."),
     after: [L('nerd', '…대출대에 누가 동전을 두고 갔군. 크레파스 그림이랑. 도서관은 공짜인데.', '…Someone left a coin at the checkout desk. With a crayon drawing. The library is free.'), L('mong', '…숨바꼭질 그림이다. 구석에 까만 동그라미.', "…It's a hide-and-seek drawing. A little black circle in the corner."), L('mong', '나쁜 애는 아니야.', "It's not a bad kid.")] },
   // 32판 편의점: "계산은 나중에" → 37판 카페 계산대에 동전을 두고 감
-  { id: 'konbiniGray', type: 'gray', room: 'konbini', inky: K('편의점 색은 반짝반짝해서. 하나쯤은 괜찮잖아.', "Shop colors are so shiny. One won't hurt."), caught: K('…계산은 나중에 할게.', "…I'll pay later.") },
+  { id: 'konbiniGray', stage: { start: 'konbiniTicket', end: 'ticketGone' }, type: 'gray', room: 'konbini', inky: K('편의점 색은 반짝반짝해서. 하나쯤은 괜찮잖아.', "Shop colors are so shiny. One won't hurt."), caught: K('…계산은 나중에 할게.', "…I'll pay later.") },
   { id: 'pengGray', type: 'gray', room: 'peng', caught: K('…앗.', '…Oops.'),
     intro: [L('peng', '펭! 네가 토순이 한 번에 찾은 애야? 난 동네 숨기 2등 펭펭이!', "Peng! You're the one who found Bunbun on the first try? I'm Pengpeng, second-best hider in town!"), L('peng', '근데 큰일이야. 다락 색이 다 없어졌어! 까만 게 휙 지나갔어!', "But we've got trouble. My attic lost all its colors! Something inky zipped by!")],
     firstColor: K('찾으니까 색이 돌아왔어!', 'Found one, and the color came back!'),
@@ -429,8 +429,9 @@ SCENES.push(
     say: { first: K('웁! 그거 내 거야!', "Mmf! That's mine!"), half: K('반 찾았어! 볼이 다시 빵빵해질 거야.', 'Half found! My cheeks will be full again.'), last: K('하나 남았어. …볼에 넣은 건 아니야. 진짜로.', "One left. …It's not in my cheeks. Really.") },
     // (결과창 두 줄 안에 펀치라인까지 — 다음은 햄찌의 "다 같이 집으로!")
     after: [LP('mong', '다 주웠는데… 볼은 왜 아직 빵빵해?', "All picked up… so why are your cheeks still full?"), LP('hamster', '…비상식량이야.', '…Emergency rations.')] },
+  // 판 안 연출 키 (스토리 룸 10/21 밤, 19~34판 연출표 _handoff/plan-19to50.json staging): ③ stage.js가 키 → 연출 함수 표로 판 시작·끝 3~6초, 터치하면 넘어감. 함수가 없는 키는 건너뜀
   // 19판 미니 소방차 조립판 (kit 'firetruck', 프라모델 정식판 10/20): 체험의 날 선물. 끝은 20판 집들이로 그대로 이어져요
-  { id: 'firestationK', kit: 'firetruck', uses: 'firestationH',
+  { id: 'firestationK', stage: { start: 'partsDispatch', end: 'pengShake' }, kit: 'firetruck', uses: 'firestationH',
     // lockSay: 사물함 관찰 자물쇠(탁상시계 1:19)를 처음 볼 때 한 줄 (② 10/21 "대사에 출동 시각 힌트 한 줄") — 시각은 말하지 않음
     lockSay: K('펭! 사물함 비번은 출동 시각이야. 탁상시계를 잘 봐!', 'Peng! The locker code is the dispatch time. Check the desk clock!'), type: 'hidden', room: 'firestation', host: 'peng', name: K('동네 119 안전센터', 'The Neighborhood Fire Station'), goal: ['소방차 부품', 'fire truck parts'],
     intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('peng', '선물로 받은 소방차 부품을 다 찾아 줘!', 'Help me find all the parts of my gift fire truck!')],
@@ -440,15 +441,15 @@ SCENES.push(
     intro: [L('peng', '펭! 오늘은 소방서 체험의 날. 나는 소방관 2등!', "Peng! It's fire station day. I'm the second-best firefighter!"), L('mong', '1등은?', "Who's first?"), L('peng', '…아직 안 정해졌어. 오늘 미션은 내가 숨긴 거 다 찾기!', "…Not decided yet. Today's mission: find everything I hid!")],
     say: { first: K('펭! 빠르다. 출동 속도 1등!', 'Peng! Fast. First-class response time!'), half: K('반이야. 사이렌 울려야 하나…', 'Halfway. Should I sound the siren…'), last: K('마지막 건 비결 4번으로 숨겼어!', 'I hid the last one with tip number four!') },
     after: [LP('peng', '비결 4번은 아직이야! 토순이네 집들이 가서 생각해 올게.', "Tip four isn't ready yet! I'll think it up at Bunbun's housewarming."), LP('mong', '…공책 하나 더 사야겠다.', "…I'll need another notebook.")] },   // (→ 20판 집들이)
-  { id: 'alley1H', keep: true, type: 'hidden', room: 'alley1', goal: ['흩어진 물건', 'scattered things'],
+  { id: 'alley1H', stage: { start: 'twoChairs', end: 'bagOnChair' }, keep: true, type: 'hidden', room: 'alley1', goal: ['흩어진 물건', 'scattered things'],
     intro: [L('grumpy', '…뭐야. 내 골목에서 뭐 해.', '…What. What are you doing in my alley.'), L('shiba', '킁. 삐딱이 물건이 골목에 흩어졌다는 신고야.', "Sniff. We got a report that Grumpy's stuff is all over the alley."), L('grumpy', '…찾든가 말든가. 망가뜨리지만 마.', "…Find it or don't. Just don't break anything.")],
     say: { first: K('…그거 내 거 아니야. …내 거야.', "…That's not mine. …Okay, it's mine."), half: K('…그것까지 찾았네. 잃어버린 줄 알았는데.', '…You found that too. I thought it was gone.'), last: K('…하나 남았어. 별로 안 궁금하지만.', '…One left. Not that I care.') },
     after: [L('grumpy', '…다 찾았네. 거기 놔 줘. 내가 담을게.', "…You found it all. Leave it there. I'll pack it up."), L('mong', '…의자가 두 개네.', '…There are two chairs.'), L('grumpy', '하, 하나는 가방 놓는 거야.', "O-one's for my bag.")] },
-  { id: 'alley3H', type: 'hidden', room: 'alley3', host: 'grumpy', name: K('동네 슈퍼', 'Corner Store'), goal: ['쏟아진 물건', 'spilled things'],
+  { id: 'alley3H', stage: { start: 'bagBurst', end: 'bagOnChair' }, type: 'hidden', room: 'alley3', host: 'grumpy', name: K('동네 슈퍼', 'Corner Store'), goal: ['쏟아진 물건', 'spilled things'],
     intro: [L('grumpy', '…장 보다가 가방이 터졌어.', '…My bag split open while I was shopping.'), L('grumpy', '…줍는 거 도와주든가. 말든가.', "…Help me pick it up. Or don't."), L('mong', '…도와줄게.', "…I'll help.")],
     say: { first: K('…그거 내 거 맞아. 고마운 건 아니고.', "…Yeah, that's mine. Not that I'm grateful."), half: K('…반. 생각보다 빠르네.', '…Half. Faster than I thought.'), last: K('…하나 남았어. 그건 꼭 찾아야 돼.', '…One left. That one I really need.') },
     after: [L('grumpy', '…다 찾았네. 가방은 새로 사야겠다.', '…You found it all. Guess I need a new bag.'), LP('mong', '…가방 놓을 의자는 있어?', '…Got a chair for the bag?'), LP('grumpy', '…있어. 두 개.', '…Yeah. Two.')] },   // 의자 두 개 사슬 23 → 25 → 31 → 내 집 (검토 세션 10/19)
-  { id: 'alleyhouseH', type: 'hidden', room: 'alleyhouse',
+  { id: 'alleyhouseH', stage: { start: 'whistleTest', end: 'capOn' }, type: 'hidden', room: 'alleyhouse',
     intro: [L('shiba', '여긴 우리 집! 마당이랑 집 곳곳에 보물을 숨겨 뒀거든.', "This is my place! I've stashed treasures all over the yard and the house."), L('shiba', '순경 눈썰미 시험이야. 다 찾으면 명예 순경!', "It's an officer's eye test. Find them all and you're an honorary officer!"), L('mong', '…해 볼게.', "…I'll try.")],
     say: { first: K('킁! 그거 내가 아끼는 거!', "Sniff! That's one of my favorites!"), half: K('반이나! 시험 점수 벌써 50점!', 'Half! Fifty points already!'), last: K('하나 남았어. 이건 순경도 못 찾는 데야.', "One left. Even officers can't find this spot.") },
     after: [L('shiba', '합격! 오늘부터 명예 순경이야.', "You pass! From today, you're an honorary officer."), L('shiba', '코 대신 눈으로 찾는 순경도 있어야지!', 'Every squad needs one who finds things by eye instead of nose!')],
@@ -456,7 +457,7 @@ SCENES.push(
     ifMap: { station: { after: [L('shiba', '합격! 오늘부터 명예 순경이야.', "You pass! From today, you're an honorary officer."), LP('shiba', '첫 임무! 까만 발자국이 역 쪽으로 났대. 따라가 보자!', "First mission! Inky footprints lead to the station. Let's follow them!")] } } },
   // 22판 (3장 첫 판, D1 10/19: 친구 숨기 → 숨은그림): 순찰 약속은 장 영상이 갚고, 판은 순찰 첫 임무 = 골목 분실물 찾기.
   // 끝에서 다음 코스(23판 삐딱이네 골목, "삐딱이 물건이 흩어졌다는 신고")로 이어져요. 멍뭉이가 숨는 판은 30판 ★에 남아 있어요
-  { id: 'streetDayH', type: 'hidden', room: 'street', night: false, host: 'shiba', goal: ['골목 분실물', 'things lost in the alley'],
+  { id: 'streetDayH', stage: { start: 'smokeCat', end: 'sniffPoint' }, type: 'hidden', room: 'street', night: false, host: 'shiba', goal: ['골목 분실물', 'things lost in the alley'],
     intro: [L('shiba', '순찰 첫 임무! 골목에 떨어진 분실물을 다 찾아라!', 'First patrol mission! Find everything lost in the alley!')],
     say: { first: K('킁! 하나 확보!', 'Sniff! One secured!'), half: K('반 찾았다! 꼬리가 안 멈춰.', "Halfway! My tail won't stop."), last: K('하나 남았어. 킁킁… 냄새는 분명 여긴데!', "One left. Sniff sniff… it definitely smells like it's here!") },
     after: [L('shiba', '임무 완료! 몇 개는 삐딱이 거 같은데. 킁.', "Mission complete! Some of these smell like Grumpy's. Sniff."), L('shiba', '다음 순찰 코스는 삐딱이네 골목. 같이 가자!', "Next stop on the patrol: Grumpy's alley. Let's go together!")] },
@@ -468,7 +469,7 @@ SCENES.push(
     intro: [L('shiba', '킁! 간식 사기 전에 미션. 내가 가게에 숨긴 거 다 찾기!', 'Sniff! A mission before snacks. Find everything I hid in the shop!'), LK('mong', '…토순이는 도넛, 곰돌이는 꿀, 냥냥이는 생선. 너는 간식 전부.', '…Bunbun likes donuts, Bearie honey, Nyannyan fish. You like every snack.')],
     say: { first: K('킁! 눈썰미 합격!', 'Sniff! Sharp eyes. Pass!'), half: K('반! 네 배에서 또 소리 난다.', "Half! Your stomach's at it again."), last: K('하나 남았어! 찾으면 간식 산다!', 'One left! Find it and we buy snacks!') },
     after: [L('shiba', '다 찾았다! 간식은 내가 쏜다.', 'All found! Snacks are on me.'), L('grumpy', '…나도 하나. 배고파서야.', "…One for me too. 'Cause I'm hungry.")] },
-  { id: 'laundryH', type: 'hidden', room: 'laundry', host: 'grumpy', goal: ['빨래방 분실물', 'things lost in the laundromat'],
+  { id: 'laundryH', stage: { start: 'washerSock', end: 'sandShake' }, type: 'hidden', room: 'laundry', host: 'grumpy', goal: ['빨래방 분실물', 'things lost in the laundromat'],
     intro: [L('grumpy', '세탁기만 돌리면 꼭 한 짝이 없어져.', 'Every time I run the washer, one sock goes missing.'), L('mong', '…양말도 숨바꼭질 하나 봐.', '…Guess socks play hide-and-seek too.'), L('grumpy', '…재미없어. 주머니에 넣어 둔 것도 다 없어졌어.', '…Not funny. Everything in my pockets is gone too.')],
     say: { first: K('…그거 내 거야. 냄새 맡지 마.', "…That's mine. Don't sniff it."), half: K('…반. 양말 짝 맞추는 거 원래 잘해?', '…Half. Are you always this good at matching socks?'), last: K('…하나 남았어. 양말은 원래 하나씩 사라진대.', '…One left. They say socks always vanish one at a time.') },
     after: [L('grumpy', '…다 찾았네. 짝 맞춰 준 건… 고맙다고 해 두지.', '…You found them all. Matching the pairs… fine. Thanks.'), L('grumpy', '…옆 카페 디저트 맛있대. 같이 가든가.', "…Heard the café next door has good desserts. Come along, or don't.")] },
@@ -577,7 +578,7 @@ SCENES.push(
     after: [L('skater', '완벽! 바퀴가 쌩쌩 돈다!', 'Perfect! The wheels are spinning!')] },
   // 34판: 파르페 first; 37판 the coins and the drawing (after the first 흑백판 at 32)
   // 34판 파르페 쌓기 (kit 'parfait', 사용자 10/19 새 아이디어 ②): 찾은 토핑이 큰 파르페에 하나씩, 마지막은 체리
-  { id: 'cafeK', kit: 'parfait', type: 'hidden', room: 'cafe', goal: ['파르페 토핑', 'parfait toppings'],
+  { id: 'cafeK', stage: { start: 'parfaitSpill', end: 'flagPick' }, kit: 'parfait', type: 'hidden', room: 'cafe', goal: ['파르페 토핑', 'parfait toppings'],
     intro: [L('sundae', '어서 와! 난 파르페. 이 카페 주인이야.', "Welcome! I'm Parfait. I run this café."), L('sundae', '토핑을 몽땅 엎질렀어. 녹기 전에 찾아서 쌓아 줘!', 'I spilled all my toppings. Find them and stack them before they melt!')],
     say: { first: K('하나 찾았다! 아직 안 녹았어!', 'One found! Not melted yet!'), half: K('반 쌓았다! 땀 나… 녹을 것 같아.', "Half stacked! I'm sweating… I might melt."), last: K('하나 남았어. 체리는 아니겠지…?', 'One left. Not the cherry… right?') },
     after: [L('sundae', '완성! 체리까지 딱 올라갔어.', 'Done! Cherry right on top.'), L('sundae', '첫 숟가락은 너 거야. 찾아 준 상!', "First spoonful's yours. Finder's prize!")] },
@@ -682,14 +683,14 @@ const BOSS = [
       L('mong', '…맨 뒷장에 까만 발자국. 누가 또 봤네.', '…Little inky footprints on the last page. Someone else read it.'),
       L('cat', '그 까만 애? 졸졸이가 알 거다냥. 밤새 창밖만 보거든.', 'The inky kid? Ask Dozy. Dozy watches the window all night.')],
     reward: { furn: 'cattower', coins: 200 } },
-  { id: 'apt-boss', room: 'policefront', title: K('분실물 보관함', 'The Lost-and-Found'), cast: 'shiba',
+  { id: 'apt-boss', stage: { start: 'policeLights', end: 'crayonBox' }, room: 'policefront', title: K('분실물 보관함', 'The Lost-and-Found'), cast: 'shiba',
     // (스토리 룸 10/20: 20판 "한 명 빠졌어. 그 까만 애." 바로 뒤 — 집들이 발자국 신고로 시작, 3줄 → 2줄)
     intro: [L('shiba', '멍! 집들이 발자국 신고 접수! 순찰 전에 분실물부터 돌려주자.', "Woof! Footprints reported at the housewarming! But first, let's return the lost things."), L('shiba', '근데 보관함을 너무 꼼꼼히 잠갔어. 열쇠랑 번호가 필요해… 킁.', 'Except I locked the lost-and-found a little too well. We need a key and the code… sniff.')],
     secret: 'goldbone',
     lines: { tap: [K('킁킁, 거의 다 왔어!', "Sniff sniff, we're close!"), K('그건 우산 주인 거야.', "That one's the umbrella owner's."), K('붕붕붕!', 'Wag wag wag!')] },
     outro: [L('shiba', '다 돌려줬다! …하나 남았네. 이름 없는 크레파스 상자.', 'All returned! …Except one. A crayon box with no name.'), L('mong', '…바닥에 까만 손자국. 누군지 알 것 같아.', '…A little inky handprint on the bottom. I think I know whose.'), L('shiba', '그럼 네가 갖고 있어. 주인 만나면 전해 줘.', 'Then you hold onto it. Give it back when you find the owner.'), L('mong', '응. 만나면 꼭 돌려줄게.', "Okay. I'll give it back when I meet them."), L('bunny', '이 코타츠, 너네 집에 둘래. 겨울엔 내 자리야!', "This kotatsu's going to your place. In winter, that's my spot!")],
     reward: { furn: 'kotatsu', coins: 250 } },
-  { id: 'alley-boss', room: 'alleywide', title: K('삐딱이의 비밀 아지트', "Grumpy's Secret Hideout"), cast: 'grumpy',
+  { id: 'alley-boss', stage: { start: 'comeHome', end: 'crayonWall' }, room: 'alleywide', title: K('삐딱이의 비밀 아지트', "Grumpy's Secret Hideout"), cast: 'grumpy',
     intro: [L('grumpy', '…또 왔네. 한 판만이야. …시간은 많지만.', "…You're back. One game. …I've got time, though."), L('grumpy', '자물쇠 세 개 걸어 놨어. 열 수 있으면 열어 봐.', 'I put three locks on it. Open them if you can.')],
     secret: 'pawprint',
     lines: { tap: [K('흥.', 'Hmph.'), K('…거기 말고.', '…Not there.'), K('찾든 말든 상관없거든!', "I don't care if you find it!")] },
@@ -762,11 +763,14 @@ const GAME = {
     out: [L('mong', '…알았어, 알았어. 딱 하나만이야.', '…Okay, okay. Just one.'), L('churro', '…냥!', '…Mrrow!')] },
   'wakeup:2': { lead: [L('panda', '졸졸이 또 안 일어나.', "Dozy's out cold. Again."), L('mong', '…약속했으니까. 깨워서 같이 내려가자.', "…I promised. Let's wake Dozy and walk down together.")], out: [L('sleepy', '음냐… 응. 같이.', 'Mmh… yeah. Together.')] },
   // 쉬어가기 (10/18 정본 배치: 두더지 3·27·58, 이불 8·46, 무궁화 24·63) — 너굴이 rivalry runs through them
-  'whack:1': { lead: [L('raccoon', '변장 완벽! 너굴이는 여기 없다~', "Perfect disguise! Rocky's not here~"), L('mong', '…방금 이름 말했어.', '…You just said your name.')] },
+  // 29판 뒤(호수 섬, ② 10/21 밤 24판 뒤에서 옮김)
+  'whack:1': { lead: [L('frog', '개굴! 섬 수풀에서 한 판 하고 가자!', "Ribbit! One round in the island bushes before we go!"), L('raccoon', '변장 완벽! 너굴이는 여기 없다~', "Perfect disguise! Rocky's not here~"), L('mong', '…방금 이름 말했어.', '…You just said your name.')] },
   'whack:2': { lead: [L('frog', '개굴! 수풀 피버 타임! 다들 엄청 빨라.', "Ribbit! Speed round! Everyone's super fast.")] },
   'blanket:1': { lead: [L('bunny', '소풍 끝나고 낮잠 파티! 근데… 이불 하나가 수상해.', 'Post-picnic nap party! But… one blanket looks suspicious.'), L('raccoon', '쉿. 나는 그냥 이불이야.', "Shh. I'm just a blanket.")] },
   'redlight:0': { lead: [L('raccoon', '운동장에선 이거지. 무궁화 꽃이 피었습니다!', 'Schoolyard rules: Red light, green light!'), L('mong', '…또 너굴이.', '…Rocky again.')] },
   'redlight:1': { lead: [L('raccoon', '마지막 무궁화 승부다! 이번엔 안 봐줘.', 'Final red light, green light! No going easy this time.')] },
+  // 23판 뒤 무궁화 lv2 (② 10/21 밤: 술래가 두 번 돌아봄, 사용자 "19 26 미니게임 하나없이 갑갑"): 3장 순찰 쉬는 시간
+  'redlight:2': { lead: [L('shiba', '킁! 순찰 쉬는 시간. 골목에서 무궁화 한 판!', 'Sniff! Patrol break. Red light, green light in the alley!'), L('raccoon', '이번엔 두 번 돌아본다? 한 번 보고 끝인 줄 알면 걸린다~', "This time I look back twice! Think it's over after one look and you're caught~"), L('mong', '…두 번.', '…Twice.')] },
   'yasik:2': { lead: [L('bunny', '약속했지! 마지막은 다 같이 너네 집!', 'You promised! Last of all, everyone at your place!'), L('shiba', '쿨… 쿨… 붕붕…', 'Zzz… zzz… wag wag…'), L('mong', '…멍뭉이는 뛰면 깨. 살금살금.', '…Woofy wakes up if we run. Tiptoe.')], ending: true },
 };
 // the small games run by scenes/mini.js: their talk in place of the one in minis.js — the old 손전등 intro was 판다's

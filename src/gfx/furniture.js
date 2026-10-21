@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeStatic } from './bake.js';
-import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, roundRect, shade, STYLE, SHADOW } from './kit.js';
+import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, plane, roundRect, shade, STYLE, SHADOW } from './kit.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
 
@@ -1554,17 +1554,57 @@ B.lever = (f, T) => {
   p.isLever = true;
 };
 
+// the hallway behind a 방문 (⑥ 10/21 #101, user: "문 열었는데 벽인 경우… 최악이다" — opened, the door showed one flat lilac
+// panel, in 32·33·34·36·39·40·61·66·69·70판): painted in perspective in the room's own colours, a step darker than the room —
+// the side walls running back, a plank floor with a runner, the far wall with a sunny window, a ceiling lamp, a picture on
+// the left wall, another room's door on the right and a pot plant at the far end. Painted, so nothing reaches through the
+// wall into a room beside it.
+const hallTex = T => {
+  const wl = T.wall || '#f3e6d6', fl = T.floor || '#e9c9a0', ac = T.accent || '#ff8fb8', dc = T.door || ac;
+  return tex('fu-hall|' + [wl, fl, ac, dc].join(','), 256, 512, (c, w, h) => {
+    const vx = w / 2, vy = h * .44, fx0 = w * .32, fx1 = w * .68, fy0 = h * .3, fy1 = h * .6, FW = fx1 - fx0, FH = fy1 - fy0;
+    const quad = (pts, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]); c.closePath(); c.fill(); };
+    quad([0, 0, w, 0, fx1, fy0, fx0, fy0], shade(wl, -.04));
+    quad([0, 0, fx0, fy0, fx0, fy1, 0, h], shade(wl, -.22));
+    quad([w, 0, fx1, fy0, fx1, fy1, w, h], shade(wl, -.14));
+    quad([0, h, fx0, fy1, fx1, fy1, w, h], shade(fl, -.2));
+    c.strokeStyle = shade(fl, -.32); c.lineWidth = 1.4;
+    for (let k = 1; k < 6; k++) { const x = k / 6 * w; c.beginPath(); c.moveTo(x, h); c.lineTo(fx0 + FW * k / 6, fy1); c.stroke(); }
+    quad([w * .28, h, fx0 + FW * .34, fy1, fx0 + FW * .66, fy1, w * .72, h], shade(ac, -.12));
+    quad([w * .34, h, fx0 + FW * .39, fy1, fx0 + FW * .61, fy1, w * .66, h], shade(ac, .05));
+    c.fillStyle = shade(wl, -.1); c.fillRect(fx0, fy0, FW, FH);
+    c.fillStyle = shade(wl, -.28); c.fillRect(fx0, fy1 - 5, FW, 5);
+    const wx = fx0 + FW * .18, ww = FW * .64, wy = fy0 + FH * .12, wh = FH * .5;
+    c.fillStyle = '#ffffff'; c.fillRect(wx - 3, wy - 3, ww + 6, wh + 6);
+    const g = c.createLinearGradient(0, wy, 0, wy + wh); g.addColorStop(0, '#9fd3ff'); g.addColorStop(1, '#fff0c4'); c.fillStyle = g; c.fillRect(wx, wy, ww, wh);
+    c.fillStyle = '#ffffff'; c.fillRect(wx + ww / 2 - 1.5, wy, 3, wh); c.fillRect(wx, wy + wh / 2 - 1.5, ww, 3);
+    quad([wx, wy + wh + 3, wx + ww, wy + wh + 3, w * .74, h * .97, w * .26, h * .97], 'rgba(255,240,190,.16)');
+    quad([w * .8, h * .14, w * .93, h * .06, w * .93, h * .74, w * .8, h * .66], shade(dc, -.08));
+    quad([w * .82, h * .17, w * .91, h * .11, w * .91, h * .7, w * .82, h * .64], shade(dc, .06));
+    c.fillStyle = '#e8b84a'; blob(c, w * .835, h * .42, 4);
+    quad([w * .05, h * .2, w * .19, h * .26, w * .19, h * .4, w * .05, h * .42], shade(wl, -.4));
+    quad([w * .07, h * .225, w * .17, h * .27, w * .17, h * .385, w * .07, h * .4], shade(ac, .2));
+    const px = fx0 + 12, py = fy1 + 2;
+    c.fillStyle = '#d98b5f'; c.beginPath(); c.moveTo(px - 7, py - 16); c.lineTo(px + 7, py - 16); c.lineTo(px + 5, py); c.lineTo(px - 5, py); c.closePath(); c.fill();
+    c.fillStyle = '#5fb35d'; for (const [dx, dy, r] of [[-5, -23, 7], [5, -26, 7], [0, -33, 6], [-8, -31, 5], [8, -19, 5]]) blob(c, px + dx, py + dy, r);
+    c.fillStyle = '#fff3c4'; c.beginPath(); c.ellipse(vx, fy0 * .5, 18, 5, 0, 0, PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,240,190,.3)'; c.beginPath(); c.ellipse(vx, fy0 * .5 + 8, 40, 15, 0, 0, PI * 2); c.fill();
+    const v = c.createRadialGradient(vx, vy, h * .16, vx, vy, h * .6); v.addColorStop(0, 'rgba(40,30,60,0)'); v.addColorStop(1, 'rgba(40,30,60,.38)'); c.fillStyle = v; c.fillRect(0, 0, w, h);
+  });
+};
 // 문: a white door frame around a panelled door in the theme's door colour — raised panels, a cream heart, a brass knob
-// on a rosette and a brass kick plate; a soft hallway shows behind it when it opens.
+// on a rosette and a brass kick plate; the hallway (hallTex) shows behind it when it opens, over a wooden sill.
 B.door = (f, T) => {
   const trim = T.trim || WHITE, dc = T.door || T.accent, knob = T.knob || GOLD, tk = [trim, dc, knob].join(',');
   f.add(mc('door|' + tk, ({ add }) => {
     for (const sx of [-1, 1]) add(G.box(.07, 1.82, .1, .015), trim, sx * .475, .91, 0);
     add(G.box(1.02, .07, .1, .015), trim, 0, 1.785, 0);
-    add(G.pbox(.87, 1.745, .01), '#e2d6ea', 0, .8725, .005);
     for (const dy of [-.55, .55]) add(G.cyl(.018, .018, .12, 10), BRASS, -.437, .86 + dy, .06);
-    add(G.pbox(.862, .3, .012), '#d4c6e0', 0, .15, .012);
+    add(G.box(.9, .03, .1, .01), shade(T.woodD || '#c98f58', -.05), 0, .015, .01);
   }));
+  // (at the frame's front face: the wall's rail and skirting stand .045 out and ran across the doorway; shut, the door's slab
+  // covers it)
+  f.add(put(plane(.87, 1.745, mat('#ffffff', { map: hallTex(T), rough: .95, rim: .05 })), 0, .03 + 1.745 / 2, .049));
   const pv = new THREE.Group(); put(pv, -.43, .86, .06);
   pv.add(mc('door-slab|' + tk, ({ add }) => {
     const mold = shade(dc, -.16);

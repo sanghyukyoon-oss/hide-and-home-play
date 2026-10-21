@@ -2957,7 +2957,10 @@ export class StageScene {
     const passOn = !!passage && !homeNow && PASSAGE_EVERY && !!(passage.items.length || passage.furns.length || passage.friends.length);
     // the first run doesn't offer the home after 1판: the home first shows after 2판, when 내 집 opens (기획안 7장)
     const noHome = G.firstRun && this.idx === 0 && !this.custom && !this.preview && !this.model;
-    const bossNext = BOSS_AFTER.includes(this.idx) && !G.save.bossDone?.[this.idx], gameNext = !bossNext && !!BOSS_GAMES[this.idx] && !G.save.bossDone?.['g' + this.idx], miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && !G.save.bossDone?.['m' + this.idx];
+    // (② 레벨 10/21, 사용자 "19 26 미니게임 하나없이 달려서 갑갑": a stage played again still has its play after it — the save's
+    // 'done' only pays it a third now (settleFollowup replayWin); 70판's last night only before the ending)
+    const replayPlay = k => !G.save.bossDone?.[k] || (G.save.stage || 0) > this.idx + 1 && !(this.idx === STAGE_COUNT - 1);
+    const bossNext = BOSS_AFTER.includes(this.idx) && replayPlay(this.idx), gameNext = !bossNext && !!BOSS_GAMES[this.idx] && replayPlay('g' + this.idx), miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && replayPlay('m' + this.idx);
     const starEls = [0, 1, 2].map(() => h('div', { class: 'st', html: ICON.star }));
     const cv = h('span', {}, '0');
     const p = G.ui.panel({
