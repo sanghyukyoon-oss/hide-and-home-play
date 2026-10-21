@@ -1623,6 +1623,31 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 /* a kit whose lid shows the finished thing (파르페): the picture whole on a pink burst */
 .kb3.lid-pic .kb3-ltop { background: radial-gradient(circle at 50% 50%, #fff3f8 0 22%, #ffc2d9 60%, #ff9cc2 100%); }
 .kb3.lid-pic .kb3-ltop img { object-fit: contain; object-position: 50% 50%; padding: 6%; box-sizing: border-box; }
+/* 13판's moving truck (10/20, user: "오프닝은 뭔가 트럭에서 눌러서 박스 내리는?"): the box is the cargo — white with a blue band,
+   its roof the lid that flies — and a blue cab at its right end with a windscreen and lamps; round black wheels under it */
+.kb3.truck { --w: 230px; --h: 116px; --d: 128px; --lh: 22px; --cw: 82px; --ch: 92px; --tb: #3d7bff; }
+.kb3.truck.big { --w: 236px; --h: 118px; --d: 132px; }
+.kb3.truck .kb3-front { background: linear-gradient(180deg, #ffffff 0 58%, var(--tb) 58% 74%, #ffffff 74% 100%); align-items: center; padding-bottom: 0; }
+.kb3.truck .kb3-right, .kb3.truck .kb3-left, .kb3.truck .kb3-back { background: linear-gradient(180deg, #e9eef9 0 58%, #2c62d6 58% 74%, #e9eef9 74% 100%); }
+.kb3.truck .kb3-ltop { background: #f4f7ff; }
+.kb3.truck :is(.kb3-lfront, .kb3-lback) { background: #dfe6f6; }
+.kb3.truck :is(.kb3-lright, .kb3-lleft) { background: #cfd8ee; }
+.kb3.truck .kb3-name { font-size: 15px; -webkit-text-stroke: 4px var(--ink); }
+.kb3.truck .kb3-count { position: absolute; left: 12px; top: 14px; }
+.kb3-cab { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d;
+  transform: translate3d(calc(var(--w) / 2 + var(--cw) / 2), calc(var(--h) / 2 - var(--ch) / 2), 0); }
+.kb3-cfront { width: var(--cw); height: var(--ch); left: calc(var(--cw) / -2); top: calc(var(--ch) / -2); transform: translateZ(calc(var(--d) / 2)); background: var(--tb); border-radius: 0 16px 0 0; }
+.kb3-cright { width: var(--d); height: var(--ch); left: calc(var(--d) / -2); top: calc(var(--ch) / -2); transform: rotateY(90deg) translateZ(calc(var(--cw) / 2)); background: #2c62d6; }
+.kb3-ctop { width: var(--cw); height: var(--d); left: calc(var(--cw) / -2); top: calc(var(--d) / -2); transform: rotateX(90deg) translateZ(calc(var(--ch) / 2)); background: #5b8fff; }
+.kb3-cwin { position: absolute; right: 8px; top: 10px; width: 42%; height: 34%; border-radius: 4px 10px 4px 4px; background: #bfeeff; box-shadow: inset 0 0 0 2.5px var(--ink); }
+.kb3-shield { position: absolute; left: 12%; right: 12%; top: 10px; height: 36%; border-radius: 6px; background: #bfeeff; box-shadow: inset 0 0 0 2.5px var(--ink); }
+.kb3-lamp { position: absolute; bottom: 14px; width: 16px; height: 16px; border-radius: 50%; background: #ffe14d; box-shadow: inset 0 0 0 2.5px var(--ink); }
+.kb3-lamp.l { left: 12%; } .kb3-lamp.r { right: 12%; }
+.kb3-wheel { position: absolute; bottom: -20px; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle, #ffd23c 0 26%, #3a3348 28% 100%); box-shadow: 0 0 0 3px var(--ink); }
+.kb3-wheel.a { left: 20px; } .kb3-wheel.b { left: 74px; } .kb3-wheel.c { left: 22px; }
+.kitrun-q { display: none; }
+.kitrun-cell.mystery:not(.found) .kitrun-ghost { opacity: 0; }
+.kitrun-cell.mystery:not(.found) .kitrun-q { display: flex; position: absolute; inset: 0; z-index: 2; align-items: center; justify-content: center; font-size: 24px; color: #fff; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; font-style: normal; }
 .kitflash { position: absolute; inset: -10%; background: #fff; pointer-events: none; z-index: 33; opacity: 0; }
 /* the comic burst at the pop: a spiky star, ink round a pale yellow one */
 .kitbang { position: absolute; width: 300px; height: 300px; z-index: 32; pointer-events: none;
@@ -2090,3 +2115,7 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
   background: linear-gradient(90deg, rgba(255, 250, 220, 0), rgba(255, 236, 140, .8) 45%, #fff6c8 85%, #fff); filter: drop-shadow(0 0 6px rgba(255, 186, 40, .95)); }
 .kitwipe { position: absolute; top: -20%; height: 140%; width: 110px; margin-left: -55px; z-index: 40; pointer-events: none; rotate: 17deg;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 252, 230, .95) 35%, #fff 50%, rgba(255, 252, 230, .95) 65%, rgba(255, 255, 255, 0)); filter: drop-shadow(0 0 18px rgba(255, 236, 160, .9)); }
+/* 13판 이삿짐 트럭 연타 (10/21): the CTA over the truck, the boxes that fly out of it */
+.kitkok.truckcta { font-size: 30px; white-space: nowrap; transition: opacity .2s; }
+.kitkok.truckcta.gone { opacity: 0; }
+.kitfly.truckbox { width: 78px; height: 78px; margin: 0; z-index: 35; filter: drop-shadow(0 4px 0 rgba(40, 22, 70, .25)); }

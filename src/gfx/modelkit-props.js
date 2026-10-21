@@ -187,7 +187,8 @@ export const KITS = {
 // together at the end like the robot, topping by topping in its order (the moving things have nothing to build: its end stays)
 // — and 13판's card its own (10/20, user: "이삿짐 풀기 UI는 왜 또 프라모델로 한 거야?"): 'labels' little labelled moving boxes
 // that get a 완료 stamp, or 'list' a kraft checklist that gets ticked (the user picks; ?kitskin= shows either)
-KITS.moving = { id: 'moving', type: 'place', skin: 'labels', intro: 'box', lid: 'kraft', countWord: '짐', numbers: false, name: '이삿짐 풀기', furn: 'kitmovebox',
+KITS.moving = { id: 'moving', type: 'place', skin: 'labels', intro: 'truck', pile: { item: 'duck', cols: 3, rows: 2 },   // (10/20: the truck and the pile — modelkit.js buildPile)
+  lid: 'kraft', countWord: '짐', numbers: false, name: '이삿짐 풀기', furn: 'kitmovebox',
   short: { teddy: '곰인형', slipper: '슬리퍼', remote: '리모컨', glasses: '안경', console: '게임기', duck: '오리', umbrella: '우산' },   // (the checklist's words: short, one line each)
   frame: { areas: ['teddy slipper slipper remote umbrella', 'teddy glasses console duck umbrella'], cols: [1.5, 1, 1, .8, .7] },
   order: ['teddy', 'slipper', 'remote', 'glasses', 'console', 'duck', 'umbrella'], locked: 'teddy', runner: '#e8c28a', color: '#c98a4b' };   // (8 → 7, no toothbrush: 22 px on a phone, and the first code lock comes on this stage too — 11~20판 레벨 점검 10/20)
@@ -286,9 +287,14 @@ export function buildMoveBox(seed = 0) {
   const g = grp(), w = .34 + (seed % 3) * .03, hh = .24 + (seed % 2) * .05, d = .3;
   g.add(put(rbox(w, hh, d, KRAFT, .018), 0, hh / 2, 0));
   g.add(put(rbox(w + .004, .006, .004, KRAFT2, .002), 0, hh - .002, 0));            // the seam of the flaps
-  g.add(put(rbox(.07, .008, d + .006, TAPE, .003), 0, hh + .001, 0));               // tape over it
-  g.add(put(rbox(.07, .09, .006, TAPE, .003), 0, hh - .045, d / 2 + .002));          // …down the front
+  const tp = [TAPE, TAPE, '#8fd3f4', TAPE, '#ffb3c4', TAPE, '#9be38f', '#ffd86b'][seed % 8];   // (13판's big pile: the tape in a few colours)
+  g.add(put(rbox(.07, .008, d + .006, tp, .003), 0, hh + .001, 0));               // tape over it
+  g.add(put(rbox(.07, .09, .006, tp, .003), 0, hh - .045, d / 2 + .002));          // …down the front
   if (seed % 2) g.add(put(extrude('kitheart', heartShape(.032), .006, '#ff8fa8'), w * .28, hh * .45, d / 2 + .004));   // a sticker
+  // (13판 2차 10/21, a big pile: no two alike) a white label with marker lines, a handle slot, a coloured corner sticker
+  if (seed % 3 === 2) { g.add(put(rbox(.1, .06, .004, '#fbf8f0', .004), -w * .26, hh * .55, d / 2 + .004)); for (let k = 0; k < 2; k++) g.add(put(rbox(.07 - k * .02, .006, .003, '#4a4258', .002), -w * .26 - k * .01, hh * .6 - k * .022, d / 2 + .007)); }
+  if (seed >= 4) g.add(put(rbox(.004, .03, .1, '#8a6a46', .004), w / 2 + .001, hh * .7, 0));
+  if (seed >= 6) g.add(put(rbox(.05, .05, .004, ['#7fd6c0', '#8fd3f4'][seed % 2], .006), w * .34, hh * .22, d / 2 + .004));
   return g;
 }
 function heartShape(r) {

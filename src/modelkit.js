@@ -131,7 +131,8 @@ export function kitRunner(S) {
       h('i', { class: 'kitrun-gate l' }), h('i', { class: 'kitrun-gate r' }), h('i', { class: 'kitrun-box' }),
       h('img', { class: 'kitrun-ghost', src, alt: '' }), h('img', { class: 'kitrun-pc', src, alt: '' }),
       h('span', { class: 'kitrun-no' }, String(i + 1)), h('span', { class: 'kitrun-nm' }, K.short?.[p] || (skin === 'list' ? ITEMS[kitItem(kit, p)]?.name || '' : '')),
-      h('i', { class: 'kitrun-chk' }), h('b', { class: 'kitrun-stamp' }, '완료'));   // (a checklist's tick box, a label's stamp)
+      h('i', { class: 'kitrun-chk' }), h('b', { class: 'kitrun-stamp' }, '완료'), h('i', { class: 'kitrun-q' }, '?'));   // (a checklist's tick box, a label's stamp, the '?' of the one under the pile)
+    if (K.pile?.item === p) c.classList.add('mystery');   // ("다 찾으면 하나 더" — 레벨 세션)
     c.dataset.p = p; if (framed) c.style.gridArea = p; row.append(c); cells[p] = c;
   });
   // (a frame's windows aren't square: each picture is trimmed to its piece, so a thin arm fills its thin window; a list's or a
@@ -154,6 +155,7 @@ export function kitSetup(S) {
   const near = S.bodies ? S.bodies() : [];
   const tiles = (S.freeTiles || []).filter(t => (!t.R?.clearAt || t.R.clearAt(t.x, t.z, .3)) && !near.some(p => Math.hypot(p.x - t.x, p.z - t.z) < .7));
   const at = (t, o) => { const P = new THREE.Vector3(t.x, t.y || 0, t.z); o.position.copy(S.room.group.worldToLocal(P)); S.room.group.add(o); };
+  if (K.type === 'place' && K.pile) { buildPile(S, K, tiles, near); return; }
   if (K.type === 'place') {
     // a box for every thing, on free floor (the ones nearest the walls first: the middle stays clear to walk)
     const far = tiles.slice().sort((a, b) => Math.hypot(b.x - (S.room.center?.x || 0), b.z - (S.room.center?.z || 0)) - Math.hypot(a.x - (S.room.center?.x || 0), a.z - (S.room.center?.z || 0)));
@@ -178,12 +180,137 @@ export function kitSetup(S) {
   }
 }
 
+// ── 13판 이삿짐 (10/20, user: "박스를 어디 눈에 보이는 곳에 적재하듯 몇 층으로 쌓아 놓고 하나 찾을 때마다 없어지게 하고, 다 없어지면
+// 숨겨진 거 찾을 수 있게"; 레벨 세션: 6 boxes = the 6 to find first, the 7th under the pile): one tidy pile of moving boxes, 3
+// across and 2 high, on two free floor tiles the start view sees — away from anything that opens (0.8 m), off where anyone
+// stands, no decoy on it or beside it. The 7th thing waits under it, out of sight (and out of the hints and the bot) till
+// the last box goes. The truck's opening drops the boxes onto it one by one.
+function buildPile(S, K, tiles, near) {
+  const G = S.G, W = G.world, R = S.room, P0 = K.pile;
+  const side = new THREE.Vector3(Math.cos(W.yaw), 0, -Math.sin(W.yaw)), toCam = new THREE.Vector3(Math.sin(W.yaw), 0, Math.cos(W.yaw));
+  const opens = (R.parts || []).map(p => { try { return S.partCenter(p); } catch { return null; } }).filter(Boolean);
+  const free = new Set(tiles), key = t => `${Math.round(t.x * 2)},${Math.round(t.z * 2)}`, byKey = new Map(tiles.map(t => [key(t), t]));
+  const seen = q => { const sc = W.toScreen(q); const hit = W.pick(sc.x, sc.y, [R.group]).find(x => !x.object.userData.proxy); return !hit || hit.distance > W.raycaster.ray.origin.distanceTo(q) - .15; };
+  const rc = R.center || new THREE.Vector3(), look = W.cam.getWorldDirection(new THREE.Vector3());   // (an orthographic view: every sight line runs this way)
+  // (13판 2차 10/21, user: "상자 쌓인게 지금보다 훨씬 높게 많이 쌓여서 티가 확 나게 … 넓고 많게"): a big pile now — on 2×2 free
+  // tiles if there are (4 across, 3 deep), else 3 in a row (6 across, 2 deep), else 2 (4 across, 2 deep); stacks up to 5 high at the back, lower to the front
+  // (it steps down towards you, so its own front never hides its back), every stack its own height. Where it goes: the start
+  // view sees it, and it hides none of the things to find from the start view (a ray to each one past the pile's box)
+  const others = (S.targets || []).filter(t => t.g && !(P0 && t.type === kitItem(K.id, P0.item)));
+  const blocks = (c, ax, fw, fd, hgt) => {
+    const hx = fw / 2, hz = fd / 2, ex = Math.abs(ax[0]) * hx + Math.abs(ax[1]) * hz, ez = Math.abs(ax[1]) * hx + Math.abs(ax[0]) * hz;
+    const box = new THREE.Box3(new THREE.Vector3(c.x - ex, c.y, c.z - ez), new THREE.Vector3(c.x + ex, c.y + hgt, c.z + ez));
+    let n = 0; const ray = new THREE.Ray(), hit = new THREE.Vector3();
+    const hides = q => { const o = q.clone().addScaledVector(look, -40); ray.set(o, look); return ray.intersectBox(box, hit) && hit.distanceTo(o) < 39.95; };
+    for (const t of others) { const q = t.g.getWorldPosition(new THREE.Vector3()); if (box.containsPoint(q) || hides(q)) n++; }
+    if (S.friend?.root && hides(S.friend.root.getWorldPosition(new THREE.Vector3()).setY(c.y + .4))) n += .5;
+    return n;
+  };
+  let best = null;
+  // (user 10/21 "이삿짐박스는 ㅈㄴ 높게 넓게"): the widest place wins — 3×2, 2×2, then a row of 6 down to 2 along the edge —
+  // as long as it hides next to nothing from the start view; out by the room's edge rather than in the middle
+  for (const [fw, fd] of [[3, 2], [2, 2], [6, 1], [5, 1], [4, 1], [3, 1], [2, 1]]) {
+    const big = fw * fd > 2;
+    for (const t of tiles) for (const ax of [[1, 0], [0, 1]]) {
+      const pr = [ax[1], ax[0]], at = (u, v) => byKey.get(key({ x: t.x + ax[0] * u + pr[0] * v, z: t.z + ax[1] * u + pr[1] * v }));
+      const set = []; for (let u = 0; u < fw; u++) for (let v = 0; v < fd; v++) set.push(at(u, v));
+      if (set.some(q => !q || !free.has(q))) continue;
+      const c = new THREE.Vector3(set.reduce((s, q) => s + q.x, 0) / set.length, t.y || 0, set.reduce((s, q) => s + q.z, 0) / set.length);
+      if (near.some(p => set.some(q => Math.hypot(p.x - q.x, p.z - q.z) < .75))) continue;
+      if (opens.some(o => set.some(q => Math.hypot(o.x - q.x, o.z - q.z) < .8))) continue;
+      if (![[0, .2], [0, .7], [-.5, .4], [.5, .4]].every(([k, y]) => seen(c.clone().add(new THREE.Vector3(ax[0] * k, y, ax[1] * k))))) continue;
+      const hid = blocks(c, ax, fw, fd, 2.3);
+      if (hid > 1) continue;
+      const frontal = Math.abs(ax[0] * side.x + ax[1] * side.z);   // (the long side to the view)
+      const score = fw * fd * 1.4 + Math.hypot(c.x - rc.x, c.z - rc.z) * .5 + frontal * 1.2 - hid * 4;
+      if (!best || score > best.score) best = { c, ax, set, big, fw, fd, score, hid };
+    }
+  }
+  if (!best) { const t = tiles[0]; if (!t) return; best = { c: new THREE.Vector3(t.x, t.y || 0, t.z), ax: [1, 0], set: [t], big: false, fw: 1, fd: 1 }; }
+  best.set.forEach(q => S.blockTile?.(q));
+  // the pile: its boxes' fronts to the view, the long way along the tiles
+  const g = new THREE.Group(); g.position.copy(R.group.worldToLocal(best.c.clone()));
+  const along = Math.atan2(-best.ax[1], best.ax[0]); g.rotation.y = along;
+  const fwd = new THREE.Vector3(Math.sin(along), 0, Math.cos(along)); if (fwd.dot(toCam) < 0) g.rotation.y += Math.PI;
+  R.group.add(g);
+  // big boxes at the bottom, smaller going up; the back rows tallest (it steps down to you); the top one of a stack often
+  // askew; every stack its own height
+  const r = rng(K.id.length * 977 + 13), boxes = [], cols = Math.max(2, Math.round(best.fw * 2)), deep = best.fd > 1 ? 4 : 2, px = best.fw / cols, pz = best.fd > 1 ? .48 : .48;
+  for (let d = 0; d < deep; d++) for (let c = 0; c < cols; c++) {
+    const back = deep - 1 - d, n = Math.max(2, Math.min(7, 3 + back * (best.fd > 1 ? 1 : 2) + (r() < .55 ? 1 : 0) - (r() < .3 ? 1 : 0) - (c === 0 || c === cols - 1 ? (r() < .6 ? 1 : 0) : 0)));
+    let y = .002;
+    for (let k = 0; k < n; k++) {
+      const seed = Math.floor(r() * 8), b = buildMoveBox(seed), top = k === n - 1 && k > 0;
+      b.scale.setScalar(Math.max(.92, 1.42 - k * .1 - r() * .06));
+      b.position.set((c - (cols - 1) / 2) * px + (r() - .5) * .07 * k, y + (top ? .03 : 0), ((deep - 1) / 2 - d) * -pz + (r() - .5) * .05);
+      b.rotation.y = (r() - .5) * (.2 + k * .08);
+      if (top && r() < .6) { b.rotation.z = (r() - .5) * .34; b.rotation.x = (r() - .5) * .2; }   // (삐죽)
+      b.userData.home = b.position.clone();
+      y += (.24 + (seed % 2) * .05) * b.scale.y; g.add(b); boxes.push(b);
+    }
+  }
+  boxes.sort((u, v) => u.position.y - v.position.y);   // (the top ones go first as things are found)
+  S.kitPile = { g, boxes, at: best.c.clone(), hidden: null, said: false };
+  if (K.intro === 'truck') boxes.forEach(b => { b.visible = false; });   // (they come off the truck — kitIntro drops them)
+  // the thing that waits under it: out of sight, out of the hints, the bot and the start-view tidying (vacHidden does all that)
+  const it = S.targets.find(t => t.type === kitItem(K.id, P0.item) && t.g);   // (by its type: the card, which marks kitPart, comes later)
+  if (it) {
+    const g0 = it.g; R.group.attach(g0); g0.position.copy(R.group.worldToLocal(best.c.clone())); g0.position.y = R.group.worldToLocal(best.c.clone()).y + .01;
+    g0.visible = false; it.vacHidden = true; it.pileHidden = true;
+    if (it.spot?.item === it) it.spot.item = null;
+    it.spot = { kind: 'on', label: '상자 더미 밑', part: null, furn: null, item: it, maxH: 1 };
+    S.kitPile.hidden = it;
+  }
+  // no decoy on the pile or right by it (레벨 세션)
+  for (const d of S.items || []) if (d.role === 'decoy' && d.g && !d.found) { const q = d.g.getWorldPosition(new THREE.Vector3()); if (Math.hypot(q.x - best.c.x, q.z - best.c.z) < 1.3) { d.g.parent?.remove(d.g); d.gone = true; } }
+  // a tap on the pile: free, a wobble, and the friend once — "there's still stuff left" (레벨 세션)
+  S.kitPileTap = (x, y) => {
+    const Pl = S.kitPile; if (!Pl?.boxes.length) return false;
+    const hit = W.pick(x, y, [Pl.g])[0]; if (!hit) return false;
+    let b = hit.object; while (b && b.parent !== Pl.g) b = b.parent;
+    if (b) S.wobble?.(b);
+    G.audio.sfx('thump'); haptic('tick');
+    if (!Pl.said) { Pl.said = true; S.say?.(S.friend, S.kit.pile || '아직 짐이 남았어! 하나씩 찾아서 풀자.', 1800); }
+    return true;
+  };
+  W.idsDirty = true; W.shadowDirty = true;
+}
+// a thing found → the top box of the pile goes (퐁); the last one gone → the thing under it shows
+function popPile(S) {
+  const G = S.G, W = G.world, Pl = S.kitPile; if (!Pl?.boxes.length) return;
+  // (a big pile, 13판 2차): as many off the top as keep pace with the things left to find — the last find takes the rest
+  const left = (S.targets || []).filter(t => !t.found && !t.pileHidden && t.role !== 'decoy').length;
+  const n = left ? Math.ceil(Pl.boxes.length / (left + 1)) : Pl.boxes.length;
+  for (let i = 0; i < n && Pl.boxes.length; i++) {
+    const b = Pl.boxes.pop(), s0 = b.scale.clone();
+    setTimeout(() => {
+      if (S.dead) return;
+      const p = W.toScreen(b.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, .15, 0)));
+      G.audio.sfx('pop', 3 + (i % 6)); W.fx.burst(p.x, p.y, { n: 10, shape: 'circle', colors: ['#f3dfb4', '#e2b77c', '#ffffff'], speed: 160, up: 60, size: 8, life: .45 });
+      S.tw.run(.3, k => b.scale.copy(s0).multiplyScalar(k < .35 ? 1 + .25 * (k / .35) : Math.max(.001, 1.25 * (1 - (k - .35) / .65))), ease.linear).then(() => { b.parent?.remove(b); W.idsDirty = true; W.shadowDirty = true; });
+    }, i * 90);
+  }
+  if (Pl.boxes.length) return;
+  // …and under the last box: the one that waited there
+  const it = Pl.hidden; if (!it || it.found) return;
+  setTimeout(() => {
+    if (S.dead) return;
+    it.g.visible = true; it.vacHidden = false; W.idsDirty = true;
+    const q = W.toScreen(Pl.at.clone().setY(Pl.at.y + .12));
+    W.fx.burst(q.x, q.y, { n: 24, shape: 'star', colors: ['#ffe14d', '#ffffff', '#ffb3cc'], speed: 240, life: .6, size: 10 }); W.fx.ring(q.x, q.y, { r: 80, color: '#ffffff', width: 7 });
+    G.audio.sfx('special');
+    S.kitCells?.[it.kitPart]?.classList.remove('mystery');
+    S.say?.(S.friend, S.kit.under || '어? 상자 밑에 하나 더 있었네!', 1800);
+  }, 320 + n * 90);
+}
+
 // ── a thing found (stage.js, once its picture has landed in its cell): a model kit's click; 이삿짐: the box nearest the
 // find folds flat and goes; 파르페: that topping onto the big parfait, its layer popping in (the cherry waits for last)
 export function kitFound(S, it) {
   const G = S.G, W = G.world, K = KITS[S.kit.kit];
   G.audio.sfx('latch');
-  if (K.type === 'place' && S.kitBoxes?.length) {
+  if (K.type === 'place' && S.kitPile) { if (!it?.pileHidden) popPile(S); }
+  else if (K.type === 'place' && S.kitBoxes?.length) {
     const c = it?.g ? it.g.getWorldPosition(new THREE.Vector3()) : null;
     const wp = b => b.getWorldPosition(new THREE.Vector3());
     const b = c ? S.kitBoxes.slice().sort((u, v) => wp(u).distanceTo(c) - wp(v).distanceTo(c))[0] : S.kitBoxes[0];
@@ -229,6 +356,29 @@ const BURST = {
   parfait: ['#fff1f7', '#ffc8dd', '#ff99bf', '#f36c9f', '#d54b83', 'rgba(255,240,248,.5)', 'rgba(130,20,70,.2)', 'rgba(130,20,70,.26)', 'rgba(130,20,70,.36)'],
 };
 const burstVars = id => (BURST[id] || []).map((c, i) => `--${['k1', 'k2', 'k3', 'k4', 'k5', 'kl', 'kd', 'kdot', 'kbolt'][i]}:${c}`).join(';');
+// a moving box's picture (the truck's boxes flying out), drawn once
+function boxPic(G) {
+  if (!G.thumbStore.kitmovebox_pic) Object.assign(G.thumbStore, renderThumbs([{ key: 'kitmovebox_pic', build: () => buildMoveBox(0), dir: [.35, .3, 1] }], 120));
+  return G.thumbStore.kitmovebox_pic;
+}
+// the pile going up in the room: each box drops from above onto its place, bottom row first — 쿵 쿵 쿵, a puff each
+async function dropPile(S) {
+  const G = S.G, W = G.world, Pl = S.kitPile, jobs = [];
+  Pl.boxes.forEach((b, i) => {
+    jobs.push(new Promise(res => setTimeout(() => {
+      if (S.dead) return res();
+      const home = b.userData.home; b.visible = true; W.idsDirty = true;
+      S.tw.run(.26, k => { b.position.set(home.x, home.y + 1.4 * (1 - k * k), home.z); }, ease.linear).then(() => {
+        b.position.copy(home); W.shadowDirty = true;
+        const q = W.toScreen(b.getWorldPosition(new THREE.Vector3()));
+        W.fx.burst(q.x, q.y, { n: 8, shape: 'circle', colors: ['#ffffff', '#f3e6d6'], speed: 130, up: 20, size: 7, life: .35 });
+        if (i % 3 === 0) { G.audio.sfx('thunk'); G.audio.sfx('land'); haptic('tick'); } res();
+      });
+    }, i * (Pl.boxes.length > 10 ? 55 : 140))));
+  });
+  await Promise.all(jobs);
+  await new Promise(r => setTimeout(r, 200));
+}
 // the box seen from above its front-right corner; the lid sits on the body's top (its transform moves it from there)
 const KB3_VIEW = 'rotateX(-28deg) rotateY(-34deg)', KB3_LID = 'translate3d(0,0,0)', KB3_PEEK = 'translate3d(0,-46px,0) rotateX(10deg)';
 // the comic panel's zigzag bolts round the edges, pointing in (like the user's green zoom-burst reference)
@@ -252,9 +402,12 @@ export function kitCover(S) {
   S.G.world.camLock = true;   // (no turning the hidden room meanwhile; the zoom gauge and the dial stay away — kitIntro lets go)
   return S.kitCover = el;
 }
+// 13판's moving truck: its opening comes before the chapter card (stage.js)
+export const kitTruck = S => KITS[S.kit?.kit]?.intro === 'truck';
 export async function kitIntro(S) {
   const G = S.G, W = G.world, K = KITS[S.kit.kit], card = S.tray, col = S.col, f = S.friend;
   if (!card || !col) { if (S.kitCover) { S.kitCover.remove(); S.kitCover = null; W.camLock = false; } return; }
+  if (K.intro === 'truck') return truckIntro(S);
   if (K.intro !== 'box') return kitPop(S);
   let seen = G.save.kitIntro; if (!seen || typeof seen !== 'object') seen = G.save.kitIntro = {};   // (was a count of any kit's box)
   const quick = !!seen[K.id] || S.kitRetry;
@@ -479,6 +632,134 @@ export async function kitIntro(S) {
   lay.removeEventListener('pointerdown', tapped); card.removeEventListener('pointerdown', tapped);
   lay.classList.add('out'); setTimeout(() => lay.remove(), 260);
   if (S.kit.hid && !S.dead) S.say(f, S.kit.hid, 2600);   // "어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!"
+}
+
+// ── 13판 이삿짐 트럭 (10/21, user: "트럭 터치하세요 cta하고 한번터치할때마다 상자 하나씩 날라게 가능? 다 날리면 트랜지션 후 아파트
+// 나오면 됨"): on the comic panel the truck rolls in and stops with a bounce; '트럭을 터치!' and a hand. Every tap: the truck
+// gives under the finger and a box pops out of its back and shoots off the screen on a light tail (the 펑 of ui49), the
+// count on its side goes down; the first tap blows its roof off. Nobody tapping for a while: the hand comes back; nobody at
+// all for 15 s (or a bot): the rest go by themselves. The last one out — the truck drives off, a bright band wipes, and it
+// is the room, the boxes coming down onto their pile 쿵쿵쿵. The chapter card comes after (stage.js), over the room.
+async function truckIntro(S) {
+  const G = S.G, W = G.world, K = KITS[S.kit.kit], card = S.tray, col = S.col;
+  let seen = G.save.kitIntro; if (!seen || typeof seen !== 'object') seen = G.save.kitIntro = {};
+  const quick = !!seen[K.id] || S.kitRetry;
+  if (!G.playMode) { seen[K.id] = (seen[K.id] || 0) + 1; G.persist?.(); }
+  const anims = new Set(), outs = [];
+  const A = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); return a.finished.catch(() => {}); };
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const NB = Math.max(4, Math.min(8, (S.targets || []).filter(t => !t.pileHidden && t.role !== 'decoy').length || 6));   // (as many taps as things to find)
+  const F = (c, ...k) => h('div', { class: 'kb3-face kb3-' + c }, ...k);
+  const count = h('span', { class: 'kb3-count' }, `이삿짐 ${NB}`);
+  const box = h('div', { class: 'kb3 big truck', style: `--box:${K.color};transform:translateX(120vw)` },
+    h('div', { class: 'kb3-glow' }),
+    h('div', { class: 'kb3-cube' },
+      h('div', { class: 'kb3-floor' }),
+      F('ifloor'), F('iback'), F('ileft'), F('back'), F('left'), F('bottom'), F('right'),
+      F('front', count, h('i', { class: 'kb3-wheel a' }), h('i', { class: 'kb3-wheel b' })),
+      h('div', { class: 'kb3-cab' }, F('cfront', h('i', { class: 'kb3-cwin' }), h('i', { class: 'kb3-wheel c' })), F('cright', h('i', { class: 'kb3-shield' }), h('i', { class: 'kb3-lamp l' }), h('i', { class: 'kb3-lamp r' })), F('ctop')),
+      h('div', { class: 'kb3-lid' }, F('lback'), F('lleft'), F('lright'), F('lfront', h('b', { class: 'kb3-name' }, K.name)), F('ltop', h('i', { class: 'kb3-ltape' })))));
+  const lay = h('div', { class: 'kitintro comic', style: 'opacity:0;' + burstVars(K.id) },
+    h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box);
+  (document.getElementById('hud') || col).append(lay);
+  const covered = !!S.kitCover;
+  if (covered) { lay.style.opacity = '1'; lay.style.animation = 'none'; const cv = S.kitCover; S.kitCover = null; requestAnimationFrame(() => requestAnimationFrame(() => cv.remove())); }
+  const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
+  cube.style.transform = KB3_VIEW; lid.style.transform = KB3_LID;
+  card.style.zIndex = 31; card.style.visibility = 'hidden';
+  const cells = Object.values(S.kitCells);
+  W.camLock = true;
+  let phase = 'pre', left = NB, idleT = 0, autoT = 0, hand = null, kok = null, beat = null, done = null, lastTap = 0;
+  const allOut = new Promise(r => { done = r; });
+  const showHand = () => {
+    if (hand || phase !== 'prompt') return;
+    const lr = lay.getBoundingClientRect(), fr = front.getBoundingClientRect();
+    hand = h('div', { class: 'hand tap kithand', html: ICON.hand, style: `left:${fr.left + fr.width * .55 - lr.left}px;top:${fr.top + fr.height * .35 - lr.top}px` }); lay.append(hand);
+  };
+  const idle = () => { clearTimeout(idleT); idleT = setTimeout(showHand, 2200); };
+  const launch = i => {
+    const lr = lay.getBoundingClientRect(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top };
+    G.audio.sfx('pop', 2 + (i % 5)); haptic('tick');
+    A(box, [{ transform: 'none' }, { transform: 'scale(1.1, .84)', offset: .4 }, { transform: 'scale(.95, 1.08) translateY(-5px)', offset: .75 }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
+    if (i === 0) {   // the first one blows the roof off
+      G.audio.sfx('thump'); G.audio.sfx('special');
+      A(lid, [{ transform: KB3_LID }, { transform: 'translate3d(-10px,-150px,0) rotateX(30deg) rotateZ(-70deg)', offset: .3 }, { transform: 'translate3d(300px,-900px,0) rotateX(250deg) rotateZ(-560deg)' }], { duration: 640, easing: 'cubic-bezier(.25,.1,.6,1)' });
+      box.classList.add('open'); A(glowEl, [{ opacity: .4, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.6)' }], { duration: 320, easing: 'ease-out' });
+      const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .8 }, { opacity: 0 }], { duration: 220, easing: 'ease-out' });
+      A(lay, [{ translate: '0 0', scale: '1' }, { translate: '-8px 5px', scale: '1.04' }, { translate: '6px -5px', scale: '1.02' }, { translate: '0 0', scale: '1' }], { duration: 260, easing: 'linear' });
+    }
+    for (let k = 0; k < 4; k++) {   // a puff at the mouth
+      const a = (k / 4) * Math.PI * 2 + i, pf = h('i', { class: 'kitpuff', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(pf); outs.push(pf);
+      A(pf, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: .9 }, { transform: `translate(calc(-50% + ${Math.cos(a) * 46}px), calc(-50% + ${Math.sin(a) * 30 - 16}px)) scale(1.2)`, opacity: 0 }], { duration: 420, easing: 'cubic-bezier(.2,.8,.4,1)' });
+    }
+    // the box: up out of the truck, a beat at the top, then off on a light tail — up and left, up, up and right in turn
+    const far = Math.hypot(lr.width, lr.height), ang = (-90 + [-38, 26, -62, 48, -14, 64, -50, 10][i % 8]) * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
+    const hx = ca * 40, hy = -104, ex = hx + ca * far, ey = hy + sa * far, UP = 170, HANG = 110, FLY = 340, D = UP + HANG + FLY;
+    const img = h('img', { class: 'kitfly truckbox', src: boxPic(G), style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(img); outs.push(img);
+    const at = (x, y, sc, r) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`, spin = (i % 2 ? 1 : -1) * 220;
+    A(img, [{ transform: at(0, 0, .5, 0), opacity: 0, easing: 'cubic-bezier(.15,.85,.3,1)' }, { transform: at(hx, hy, 1.35, spin * .1), opacity: 1, offset: UP / D, easing: 'ease-in-out' },
+      { transform: at(hx * 1.05, hy - 8, 1.42, spin * .16), opacity: 1, offset: (UP + HANG) / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, 1, spin), opacity: 1 }], { duration: D });
+    const tail = h('i', { class: 'kittrail', style: `left:${mouth.x + hx * 1.05}px;top:${mouth.y + hy - 8}px;width:${far}px` }); lay.append(tail); outs.push(tail);
+    A(tail, [{ transform: `rotate(${ang}rad) scaleX(0)`, opacity: 1, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: `rotate(${ang}rad) scaleX(1)`, opacity: 1, offset: FLY / (FLY + 300), easing: 'ease-out' },
+      { transform: `rotate(${ang}rad) scale(1, .3)`, opacity: 0 }], { duration: FLY + 300, delay: UP + HANG });
+    const k = Math.min(ca > 0 ? (lr.width - 16 - mouth.x - hx) / ca : ca < 0 ? (16 - mouth.x - hx) / ca : 1e9, (16 - mouth.y - hy) / sa);
+    const sp = h('i', { class: 'kitspark', style: `left:${mouth.x + hx + ca * k}px;top:${mouth.y + hy + sa * k}px;z-index:34` }); lay.append(sp); outs.push(sp);
+    A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.2) rotate(45deg)', offset: .35 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 420, delay: UP + HANG + FLY * .8, easing: 'ease-out' });
+    setTimeout(() => G.audio.sfx('swish'), UP + HANG);
+    count.textContent = `이삿짐 ${left}`;
+    A(count, [{ transform: 'scale(1)' }, { transform: 'scale(1.35)', offset: .4 }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+  };
+  const tapped = () => {
+    if (phase !== 'prompt' || left <= 0) return;
+    const now = performance.now(); if (now - lastTap < 70) return; lastTap = now;   // (a double-fired pointer counts once)
+    hand?.remove(); hand = null; kok?.classList.add('gone');
+    left--; launch(NB - 1 - left); idle();
+    if (!left) { phase = 'out'; clearTimeout(idleT); clearTimeout(autoT); setTimeout(done, 640); }
+  };
+  lay.addEventListener('pointerdown', tapped);
+  try {
+    if (!covered) { G.audio.sfx('swish'); await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.9,.3,1)' }); }
+    // 부릉: in from the right, a little overshoot, a bounce on its wheels, dust
+    G.audio.sfx('whoosh');
+    await A(box, [{ transform: 'translateX(120vw)' }, { transform: 'translateX(-14px)', offset: .78 }, { transform: 'translateX(0) scale(1.05,.92)', offset: .88 }, { transform: 'none' }], { duration: quick ? 420 : 620, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    G.audio.sfx('land'); haptic('tick');
+    { const r = front.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.bottom - 6, { n: 14, shape: 'circle', colors: ['#ffffff', '#f3e6d6', '#e9d6c0'], speed: 200, up: 20, gravity: 300, size: 10, life: .5 }); }
+    if (S.dead) throw 0;
+    phase = 'prompt';
+    beat = cube.animate([{ transform: KB3_VIEW }, { transform: KB3_VIEW + ' scale3d(1.05,1.05,1.05)', offset: .18 }, { transform: KB3_VIEW, offset: .36 }], { duration: 900, iterations: Infinity });
+    const lr = lay.getBoundingClientRect(), fr = box.getBoundingClientRect();
+    kok = h('div', { class: 'kitkok ol truckcta', style: `left:${fr.left + fr.width / 2 - lr.left}px;top:${fr.top - lr.top - 18}px` }, '트럭을 터치!'); lay.append(kok);
+    showHand();
+    G.audio.sfx('heart');
+    const auto = () => { if (phase !== 'prompt') return; tapped(); if (left) autoT = setTimeout(auto, 160); };
+    autoT = setTimeout(auto, G.bot || S.botOn?.() ? 500 : 15000);
+    await allOut; if (S.dead) throw 0;
+    beat.cancel(); kok?.remove(); hand?.remove();
+    // the last one gone: the truck drives off, a bright band wipes across, and behind it is the room
+    G.audio.sfx('whoosh');
+    A(box, [{ transform: 'none' }, { transform: 'translateX(-140vw)' }], { duration: 520, easing: 'cubic-bezier(.5,0,.8,.4)' });
+    await wait(220);
+    card.style.transform = 'translateX(-50%) translateY(140%)'; card.style.visibility = '';
+    G.audio.sfx('star');
+    const band = h('div', { class: 'kitwipe' }); (lay.parentElement || lay).append(band); outs.push(band);
+    const WIPE = 440, poly = p => `polygon(${p}% 0, 130% 0, 130% 100%, ${p - 30}% 100%)`;
+    A(band, [{ left: '-30%' }, { left: '130%' }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
+    await A(lay, [{ clipPath: poly(-10) }, { clipPath: poly(160) }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
+    lay.classList.add('clear');
+    if (S.kitPile && !S.dead) await dropPile(S);   // 쿵쿵쿵: the pile goes up
+    G.audio.sfx('swish');
+    await A(card, [{ transform: 'translateX(-50%) translateY(140%)' }, { transform: 'translateX(-50%) translateY(-6px)', offset: .75 }, { transform: 'translateX(-50%)' }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
+  } catch {}
+  clearTimeout(idleT); clearTimeout(autoT); beat?.cancel();
+  box.style.visibility = 'hidden';
+  for (const a of anims) { try { a.cancel(); } catch {} }
+  outs.forEach(o => o.remove());
+  for (const b of S.kitPile?.boxes || []) { b.visible = true; b.position.copy(b.userData.home); }
+  W.idsDirty = true; W.shadowDirty = true; W.camLock = false;
+  cells.forEach(c => c.classList.remove('full', 'pop'));
+  card.style.visibility = ''; card.style.zIndex = ''; card.style.transform = '';
+  lay.removeEventListener('pointerdown', tapped);
+  lay.classList.add('out'); setTimeout(() => lay.remove(), 260);
 }
 
 // ── where it's built: an open tile the view sees whole (feet, middle, head and both sides), with room either side for the

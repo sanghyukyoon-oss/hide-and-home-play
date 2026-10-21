@@ -7,7 +7,7 @@
 // Used by 숨기기 at home (scenes/myhome.js); the scene gives: room, spotByKey, items, H, tw, G, placeTreasure(spot), freePlace(s, type, moving, ry).
 import * as THREE from 'three';
 import { buildItem, ITEMS } from './gfx/items.js';
-import { pickSurface } from './freehide.js';
+import { pickSurface, resolveHost } from './freehide.js';
 import { h, ICON } from './ui.js';
 
 const SNAP_PX = 64;   // a hiding place this near the finger on the screen takes the thing
@@ -30,6 +30,9 @@ export function holdStart(S, type, opts = {}) {
   let at = hid.items.findIndex(e => e.item === type), prev = at >= 0 ? hid.items[at] : null;
   if (prev) S.removeItem(type);
   else if (opts.prev) { prev = opts.prev; at = opts.prevAt ?? -1; }   // (QA9 P2: a refused place used to forget where it had been)
+  // (외부 QA 10/21 P2-02) its old place rides in the save while it is held: any save meanwhile (locking another drawer) and a
+  // reload put it back there (main.js) — it used to be lost
+  if (prev) hid.heldPrev = { rec: prev, at }; else delete hid.heldPrev;
   const g = buildItem(type, { code: hid.code || '000' }); g.traverse(o => { if (o.isMesh) o.userData.held = true; });
   S.room.group.add(g);
   const ring = new THREE.Mesh(new THREE.RingGeometry(.2, .3, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthTest: false }));
@@ -48,6 +51,7 @@ export function holdStart(S, type, opts = {}) {
   const ok0 = s => s && !s.side && (!s.part || s.part.t > .5);
   let first = null;
   if (prev?.spot && S.spotByKey?.[prev.spot]) first = { fixed: S.spotByKey[prev.spot] };
+  else if (prev?.free && (first = freeAt(S, prev.free))) S.held.ry = prev.free.ry ?? S.held.ry;   // (외부 QA 10/21 P3-07: a thing hidden on a surface jumped to the middle)
   else if (opts.x != null) { const s = pickSurface(W, S.room, opts.x, opts.y, g); if (ok0(s)) first = { free: s }; }
   if (!first) {
     let at0 = null;
@@ -60,6 +64,12 @@ export function holdStart(S, type, opts = {}) {
   S.onHold?.(type);
 }
 
+// where a thing hidden on a surface sits (its saved host and spot on it), as a surface target
+function freeAt(S, fr) {
+  const host = resolveHost(S.room, fr.host, S.partByKey, fr.part); if (!host || !Array.isArray(fr.p)) return null;
+  host.node.updateWorldMatrix(true, false);
+  return { free: { ...host, point: host.node.localToWorld(new THREE.Vector3(...fr.p)) } };
+}
 // put the held thing at a target: a hiding place ({ fixed: spot }) or a surface ({ free: pickSurface result })
 function holdTo(S, t) {
   const H = S.held; if (!H) return;
@@ -118,7 +128,7 @@ export async function holdConfirm(S) {
 // ✕ (or another pick): the held thing goes back — to its old place if it had one
 export function holdCancel(S, quiet = false, keepPrev = false) {
   const H = S.held; if (!H) return;
-  S.held = null;
+  S.held = null; delete S.H.hide.heldPrev;
   H.g.parent?.remove(H.g); H.ring.parent?.remove(H.ring); H.ring.geometry.dispose(); H.ring.material.dispose();
   H.tool.remove(); H.label.remove();
   if (H.opened && H.opened.t > .5 && !H.opened.busy) S.openPart(H.opened, false);

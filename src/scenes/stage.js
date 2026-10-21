@@ -71,7 +71,7 @@ import { retrieve, canGrab, grab } from '../raid.js';
 import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout, settleOpen } from '../raidrun.js';   // 타이머 털기 (10/19)
 // 프라모델 조립판 (정식판 10/19): the things to find are a model kit's pieces — the box opens first, a runner card holds them,
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
-import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitFinish, kitReward, kitCover } from '../modelkit.js';
+import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitTruck, kitFinish, kitReward, kitCover } from '../modelkit.js';
 import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
@@ -348,13 +348,17 @@ export class StageScene {
     if (this.dead) return;
     if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
+    // 13판 이삿짐 (10/21, user: "트럭 먼저 나오고 상자 날아가고 그다음에 집 배경으로 챕터 나오면 될거같은데 순서"): the truck and
+    // the pile first, then the chapter card over the room itself (its 3D hello, not the comic panel), then the talk
+    const truckFirst = !!(this.kit && kitTruck(this));
+    if (truckFirst) { await kitIntro(this); if (this.dead) return; }
     if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], region: REGIONS.find(r => r.id === this.spec.chapter)?.name, hello: this.hero && !this.kitCover ? () => this.cineHello() : null, noFaces: !!this.kitCover }); if (this.dead) return; await this.cineBye(); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
     await G.ui.banner(th.name, custom ? (this.raidRun ? raidGoal(this) : `숨겨 둔 물건 ${this.targets.length}개를 찾아라!`) : this.model ? this.model.goal : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
     if (this.dead) return;
-    if (this.kit) { await kitIntro(this); if (this.dead) return; }   // 프라모델: the box opens, the pieces scatter (~2.5 s, a tap skips)
+    if (this.kit && !truckFirst) { await kitIntro(this); if (this.dead) return; }   // 프라모델: the box opens, the pieces scatter (~2.5 s, a tap skips)
     // 말 줄이기 (스토리 v2, 10/18 — user: "판 시작할 때마다 뭔가가 계속 말 거니까 되게 짜증"): a talk card only where it
     // carries something — the two tutorials, a chapter's first stage, a region boss, the first time you meet this friend;
     // otherwise the first line as the speaker's bubble and straight into play
@@ -635,6 +639,7 @@ export class StageScene {
     // furniture (2판's desk drawer: ~16 px of front, open or shut); a tap on the body right by one works that one
     if (hit.kind === 'furn') { const hp = hit.furn.parts?.find(p => p.handle); if (hp) return this.nudgeHandle(hp); }
     if (hit.kind === 'furn') { const np = this.partNear(hit.furn, x, y); if (np) return this.onPart(np, x, y); if (tvf) return this.openTv(); return; }
+    if (this.kitPileTap?.(x, y)) return;   // 13판's pile of boxes: free, like a piece of furniture's body (레벨 세션 10/20)
     this.addMiss(x, y, true);
   }
   // R7 (level report): every target left is behind something from this side. Try turning ±45°, ±90° and 180° (camera
@@ -1490,7 +1495,7 @@ export class StageScene {
     if (this.hiddenStage && left > 0) {   // the owner's three bubbles: first find · half · one left (each once; one left wins a tie)
       const n = this.targets.length, said = this._hs ||= new Set();
       const which = left === 1 ? 'last' : sceneAt(this.idx)?.sayAll ? (this.found === 1 ? 'first' : this.found === Math.ceil(n / 2) ? 'half' : null) : null;   // (말 줄이기: only "one left"; a scene with sayAll — 54판 판다's memory — keeps all three)
-      const line = which && !said.has(which) && hiddenSay(this.idx, this.th.friend, which);
+      const line = which && !said.has(which) && !(which === 'last' && this.kitPile) && hiddenSay(this.idx, this.th.friend, which);   // (13판's pile: at one left the last box goes and its own line says it — modelkit.js popPile)
       if (line) { said.add(which); setTimeout(() => !this.dead && !this.result && this.say(this.friend, line, 1600), 350); }
       // 6판 — only after 20 s still looking for the last one (user 10/19: "1" — hints felt too many, same wait as the sparkle)
       if (left === 1 && sceneAt(this.idx)?.lastSmoke && !this._smoke) { this._smoke = true; const at = sceneAt(this.idx).lastSmoke; this.tw.wait(35).then(() => { if (!this.dead && !this.result && this.targets.some(t => !t.found)) this.smokeTo(at); }); }   // (20 → 35 s with the other helps)

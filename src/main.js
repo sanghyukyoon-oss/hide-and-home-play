@@ -204,6 +204,8 @@ let save = econMigrate(migrate(stored));   // (경제·로비: new fields only, 
 save.fresh = FRESH_ONCE;   // (QA9: this game is from after the fresh start — the #s= copy carries it)
 // (QA9) a wallpaper / floor / theme still being tried on when the app closed (shop.js preview): the room's own look comes back
 for (const z of Object.values(save.home?.zones || {})) if (z?._pv) { z.paint = z._pv.paint; if (z._pv.style !== undefined) z.style = z._pv.style; delete z._pv; }
+// (외부 QA 10/21 P2-02) a hidden thing still held (숨기기, hidehold.js) when the app closed: back in its old place
+{ const hd = save.home?.hide, hp = hd?.heldPrev; if (hp) { if (hp.rec?.item && Array.isArray(hd.items) && !hd.items.some(e => e.item === hp.rec.item)) hd.items.splice(Math.max(0, Math.min(hd.items.length, hp.at ?? hd.items.length)), 0, hp.rec); delete hd.heldPrev; } }
 // 처음 하는 사람 (기획안 7장 '처음 20분', 사용자 10/18 밤 승인): 저장이 하나도 없으면 타이틀 다음 바로 1판으로 간다. 홈은
 // 2판 뒤 '내 집 열림'과 함께 처음 본다. (주소의 #s= 저장도 stored에 들어 있으니, 그걸로 이어 하는 사람은 처음이 아니다)
 normalizeFollowup(save);

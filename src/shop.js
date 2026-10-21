@@ -258,7 +258,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
     const done = keep => { G._pvUndo = null; delete zone._pv; bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); if (keep && ctx.onBought) ctx.onBought({ kind: style ? 'style' : 'paint' }); else openShop(G, ctx, tab); };
     const buy = ui.btn('사기', { color: 'green', icon: 'coin', cls: 'sm', onClick: () => {
       if ((G.save.coins || 0) < price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
-      G.addCoins(-price); own(); G.persist(); G.audio.sfx('buy'); ui.toast(`${name} 샀어!`, 'green'); done(true); } });
+      G.addCoins(-price); own(); delete zone._pv; G._pvUndo = null; G.persist(); G.audio.sfx('buy'); ui.toast(`${name} 샀어!`, 'green'); done(true); } });   // (외부 QA 10/21 P2-01: _pv was still in the save, so a reload took the bought look back off)
     const bar = h('div', { class: 'previewbar', style: 'position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffaf2;border:4px solid var(--ink,#3a2453);border-radius:20px;pointer-events:auto;z-index:30;white-space:nowrap' },
       h('div', { style: 'display:flex;flex-direction:column;line-height:1.15' }, h('b', {}, name), h('span', { style: 'font-size:13px;color:#8a6a9a', html: `${ICON.coin}`.replace('<svg', '<svg style="width:14px;height:14px;vertical-align:-2px"') + ' ' + price })),
       ui.btn('되돌리기', { color: 'blue', cls: 'sm', onClick: () => done(false) }), buy);
