@@ -374,10 +374,45 @@ async function dropPile(S) {
         W.fx.burst(q.x, q.y, { n: 8, shape: 'circle', colors: ['#ffffff', '#f3e6d6'], speed: 130, up: 20, size: 7, life: .35 });
         if (i % 3 === 0) { G.audio.sfx('thunk'); G.audio.sfx('land'); haptic('tick'); } res();
       });
-    }, i * (Pl.boxes.length > 10 ? 55 : 140))));
+    }, i * (Pl.boxes.length > 10 ? Math.min(55, 1500 / Pl.boxes.length) : 140))));   // (a big pile in ~2 s — 검토 10/21)
   });
   await Promise.all(jobs);
   await new Promise(r => setTimeout(r, 200));
+}
+// the pile, the first time it is seen (③ 10/21, user: "상자보고 이삿짐이 좀 많네? 놀라는 이런거"): the view looks up to its top and
+// comes back, 몽글이 and the host wide-eyed (then a bead of sweat), a word each — 스토리 룸's PILE_WOW (script.js); a tap goes on
+async function pileWow(S) {
+  const G = S.G, W = G.world, tw = S.tw, bx = S.kitPile?.boxes; if (!bx?.length) return;
+  const top = new THREE.Vector3(), q = new THREE.Vector3(); let ty = -1e9;
+  for (const b of bx) { b.getWorldPosition(q); if (q.y > ty) { ty = q.y; top.copy(q); } }
+  const SC = await import('./script.js').catch(() => ({}));
+  const lines = SC.PILE_WOW || [{ who: 'mong', text: '…이삿짐 좀 많은데?' }, { who: S.th?.friend || 'bunny', text: '헤헤… 다 내 거야!' }];
+  const chs = [...new Set(lines.map(L => S.charFor?.(L.who) || null).filter(Boolean))];
+  const v0 = { target: W.target.clone(), zoom: W.zoom, yaw: W.yaw, pitch: W.pitch };
+  // (검토 10/21: about 3 s in all) — a quick look up and back, then the two of them close up together, each line ~1.2 s
+  let look = top;   // (where they look: up at the pile, then at you — held every frame: the host wanders, and turned her back)
+  const hold = () => { if (S.dead || !look) return; for (const c of chs) c.faceTo?.(look.x, look.z); requestAnimationFrame(hold); };
+  for (const c of chs) { c.setFace('wow'); c._fx(tw, 'excl', { y: 1 }); }
+  hold();
+  G.audio.sfx('gasp'); haptic('tick');
+  await W.flyTo(tw, { target: top.clone().setY(top.y + .3), zoom: v0.zoom * 1.3, dur: .45 }); if (S.dead) return;   // (up to the top of it)
+  await tw.wait(.12); if (S.dead) return;
+  const CU = await import('./closeup.js').catch(() => ({})), lock = W.camLock; W.camLock = false;
+  look = W.cam.position;
+  for (const c of chs) c.setFace('sweat');
+  if (!S._closeBack) S._closeBack = { ...v0, target: v0.target.clone() };   // (back from the close-up to the view before the look up)
+  CU.closeUp?.(S, chs, { portrait: true });
+  for (const L of lines) {
+    const ch = S.charFor?.(L.who); if (!ch) continue;
+    const ms = 1250, b = S.say(ch, L.text, ms);
+    await new Promise(res => { const go = () => { clearTimeout(t); removeEventListener('pointerdown', go, true); res(); }, t = setTimeout(go, ms); addEventListener('pointerdown', go, true); });
+    b?.kill?.(); if (S.dead) { look = null; return; }
+  }
+  for (const c of chs) c.setFace('happy');
+  look = null;
+  const wasUp = Math.abs(W.zoom - v0.zoom * 1.3) < 1e-3;   // (no close-up was taken: still up at the pile)
+  await CU.closeBack?.(S); W.camLock = lock;
+  if (wasUp) { S._closeBack = null; await W.flyTo(tw, { target: v0.target, zoom: v0.zoom, dur: .35 }); }
 }
 // the box seen from above its front-right corner; the lid sits on the body's top (its transform moves it from there)
 const KB3_VIEW = 'rotateX(-28deg) rotateY(-34deg)', KB3_LID = 'translate3d(0,0,0)', KB3_PEEK = 'translate3d(0,-46px,0) rotateX(10deg)';
@@ -640,6 +675,10 @@ export async function kitIntro(S) {
 // count on its side goes down; the first tap blows its roof off. Nobody tapping for a while: the hand comes back; nobody at
 // all for 15 s (or a bot): the rest go by themselves. The last one out — the truck drives off, a bright band wipes, and it
 // is the room, the boxes coming down onto their pile 쿵쿵쿵. The chapter card comes after (stage.js), over the room.
+// (③ 10/21, user: "한번 트럭 누르면 계속 박스 나오는걸로 사방팔방으로 바꿔줘. 지금 클릭 유도하는데 클릭하는것도 귀찮다 … 상자보고 이삿짐이
+// 좀 많네? 놀라는 이런거"): one tap now — the roof blows off and boxes pour out, dozens of them for ~1.5 s, every way (up, either
+// side, slantwise), spinning on light tails, 퐁퐁 in a rhythm; no more '터치' after the first. In the room, the first time, the
+// pile gets a beat of its own: the view looks up it and back, 몽글이 and the host wide-eyed, a word each (pileWow)
 async function truckIntro(S) {
   const G = S.G, W = G.world, K = KITS[S.kit.kit], card = S.tray, col = S.col;
   let seen = G.save.kitIntro; if (!seen || typeof seen !== 'object') seen = G.save.kitIntro = {};
@@ -648,7 +687,7 @@ async function truckIntro(S) {
   const anims = new Set(), outs = [];
   const A = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); return a.finished.catch(() => {}); };
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const NB = Math.max(4, Math.min(8, (S.targets || []).filter(t => !t.pileHidden && t.role !== 'decoy').length || 6));   // (as many taps as things to find)
+  const NB = 30, GAP = 50;   // (boxes pouring out, one every 50 ms)
   const F = (c, ...k) => h('div', { class: 'kb3-face kb3-' + c }, ...k);
   const count = h('span', { class: 'kb3-count' }, `이삿짐 ${NB}`);
   const box = h('div', { class: 'kb3 big truck', style: `--box:${K.color};transform:translateX(120vw)` },
@@ -669,18 +708,19 @@ async function truckIntro(S) {
   card.style.zIndex = 31; card.style.visibility = 'hidden';
   const cells = Object.values(S.kitCells);
   W.camLock = true;
-  let phase = 'pre', left = NB, idleT = 0, autoT = 0, hand = null, kok = null, beat = null, done = null, lastTap = 0;
+  let phase = 'pre', autoT = 0, hand = null, kok = null, beat = null, done = null;
   const allOut = new Promise(r => { done = r; });
   const showHand = () => {
     if (hand || phase !== 'prompt') return;
     const lr = lay.getBoundingClientRect(), fr = front.getBoundingClientRect();
     hand = h('div', { class: 'hand tap kithand', html: ICON.hand, style: `left:${fr.left + fr.width * .55 - lr.left}px;top:${fr.top + fr.height * .35 - lr.top}px` }); lay.append(hand);
   };
-  const idle = () => { clearTimeout(idleT); idleT = setTimeout(showHand, 2200); };
+  let mouth = null;   // (measured once, before the roof flies: the lid's face is how it's found)
   const launch = i => {
-    const lr = lay.getBoundingClientRect(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top };
-    G.audio.sfx('pop', 2 + (i % 5)); haptic('tick');
-    A(box, [{ transform: 'none' }, { transform: 'scale(1.1, .84)', offset: .4 }, { transform: 'scale(.95, 1.08) translateY(-5px)', offset: .75 }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
+    const lr = lay.getBoundingClientRect();
+    if (!mouth) { const lt = box.querySelector('.kb3-ltop').getBoundingClientRect(); mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top }; }
+    G.audio.sfx('pop', [2, 4, 3, 5, 4, 6][i % 6]); if (i % 4 === 0) haptic('tick');   // (퐁퐁 in a little tune)
+    if (i % 3 === 0) A(box, [{ transform: 'none' }, { transform: 'scale(1.08, .88)', offset: .4 }, { transform: 'scale(.96, 1.06) translateY(-4px)', offset: .75 }, { transform: 'none' }], { duration: 150, easing: 'ease-out' });
     if (i === 0) {   // the first one blows the roof off
       G.audio.sfx('thump'); G.audio.sfx('special');
       A(lid, [{ transform: KB3_LID }, { transform: 'translate3d(-10px,-150px,0) rotateX(30deg) rotateZ(-70deg)', offset: .3 }, { transform: 'translate3d(300px,-900px,0) rotateX(250deg) rotateZ(-560deg)' }], { duration: 640, easing: 'cubic-bezier(.25,.1,.6,1)' });
@@ -688,33 +728,32 @@ async function truckIntro(S) {
       const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .8 }, { opacity: 0 }], { duration: 220, easing: 'ease-out' });
       A(lay, [{ translate: '0 0', scale: '1' }, { translate: '-8px 5px', scale: '1.04' }, { translate: '6px -5px', scale: '1.02' }, { translate: '0 0', scale: '1' }], { duration: 260, easing: 'linear' });
     }
-    for (let k = 0; k < 4; k++) {   // a puff at the mouth
+    for (let k = 0; k < (i % 4 ? 0 : 3); k++) {   // a puff at the mouth, now and then
       const a = (k / 4) * Math.PI * 2 + i, pf = h('i', { class: 'kitpuff', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(pf); outs.push(pf);
       A(pf, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: .9 }, { transform: `translate(calc(-50% + ${Math.cos(a) * 46}px), calc(-50% + ${Math.sin(a) * 30 - 16}px)) scale(1.2)`, opacity: 0 }], { duration: 420, easing: 'cubic-bezier(.2,.8,.4,1)' });
     }
-    // the box: up out of the truck, a beat at the top, then off on a light tail — up and left, up, up and right in turn
-    const far = Math.hypot(lr.width, lr.height), ang = (-90 + [-38, 26, -62, 48, -14, 64, -50, 10][i % 8]) * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
-    const hx = ca * 40, hy = -104, ex = hx + ca * far, ey = hy + sa * far, UP = 170, HANG = 110, FLY = 340, D = UP + HANG + FLY;
+    // the box: up out of the truck, a moment at the top, then off on a light tail — every way, here then there (golden steps)
+    const far = Math.hypot(lr.width, lr.height), ang = (-205 + ((i * .618) % 1) * 230) * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
+    const hx = ca * 74, hy = -88 - (i % 3) * 16 + sa * 30, ex = hx + ca * far, ey = hy + sa * far, UP = 120, HANG = 30, FLY = 330, D = UP + HANG + FLY, sc = .85 + (i % 4) * .14;
     const img = h('img', { class: 'kitfly truckbox', src: boxPic(G), style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(img); outs.push(img);
     const at = (x, y, sc, r) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`, spin = (i % 2 ? 1 : -1) * 220;
-    A(img, [{ transform: at(0, 0, .5, 0), opacity: 0, easing: 'cubic-bezier(.15,.85,.3,1)' }, { transform: at(hx, hy, 1.35, spin * .1), opacity: 1, offset: UP / D, easing: 'ease-in-out' },
-      { transform: at(hx * 1.05, hy - 8, 1.42, spin * .16), opacity: 1, offset: (UP + HANG) / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, 1, spin), opacity: 1 }], { duration: D });
+    A(img, [{ transform: at(0, 0, .5, 0), opacity: 0, easing: 'cubic-bezier(.15,.85,.3,1)' }, { transform: at(hx, hy, 1.35 * sc, spin * .1), opacity: 1, offset: UP / D, easing: 'ease-in-out' },
+      { transform: at(hx * 1.05, hy - 8, 1.42 * sc, spin * .16), opacity: 1, offset: (UP + HANG) / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, sc, spin * 2), opacity: 1 }], { duration: D });
     const tail = h('i', { class: 'kittrail', style: `left:${mouth.x + hx * 1.05}px;top:${mouth.y + hy - 8}px;width:${far}px` }); lay.append(tail); outs.push(tail);
     A(tail, [{ transform: `rotate(${ang}rad) scaleX(0)`, opacity: 1, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: `rotate(${ang}rad) scaleX(1)`, opacity: 1, offset: FLY / (FLY + 300), easing: 'ease-out' },
       { transform: `rotate(${ang}rad) scale(1, .3)`, opacity: 0 }], { duration: FLY + 300, delay: UP + HANG });
-    const k = Math.min(ca > 0 ? (lr.width - 16 - mouth.x - hx) / ca : ca < 0 ? (16 - mouth.x - hx) / ca : 1e9, (16 - mouth.y - hy) / sa);
-    const sp = h('i', { class: 'kitspark', style: `left:${mouth.x + hx + ca * k}px;top:${mouth.y + hy + sa * k}px;z-index:34` }); lay.append(sp); outs.push(sp);
-    A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.2) rotate(45deg)', offset: .35 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 420, delay: UP + HANG + FLY * .8, easing: 'ease-out' });
-    setTimeout(() => G.audio.sfx('swish'), UP + HANG);
-    count.textContent = `이삿짐 ${left}`;
+    const k = Math.min(ca > 0 ? (lr.width - 16 - mouth.x - hx) / ca : ca < 0 ? (16 - mouth.x - hx) / ca : 1e9, sa > 0 ? (lr.height - 16 - mouth.y - hy) / sa : sa < 0 ? (16 - mouth.y - hy) / sa : 1e9);
+    if (i % 2) { const sp = h('i', { class: 'kitspark', style: `left:${mouth.x + hx + ca * k}px;top:${mouth.y + hy + sa * k}px;z-index:34` }); lay.append(sp); outs.push(sp);
+    A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.2) rotate(45deg)', offset: .35 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 420, delay: UP + HANG + FLY * .8, easing: 'ease-out' }); }
+    if (i % 3 === 0) setTimeout(() => G.audio.sfx('swish'), UP + HANG);
+    count.textContent = `이삿짐 ${NB - 1 - i}`;
     A(count, [{ transform: 'scale(1)' }, { transform: 'scale(1.35)', offset: .4 }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
   };
-  const tapped = () => {
-    if (phase !== 'prompt' || left <= 0) return;
-    const now = performance.now(); if (now - lastTap < 70) return; lastTap = now;   // (a double-fired pointer counts once)
-    hand?.remove(); hand = null; kok?.classList.add('gone');
-    left--; launch(NB - 1 - left); idle();
-    if (!left) { phase = 'out'; clearTimeout(idleT); clearTimeout(autoT); setTimeout(done, 640); }
+  const tapped = () => {   // one tap: they all pour out
+    if (phase !== 'prompt') return;
+    phase = 'out'; clearTimeout(autoT); hand?.remove(); hand = null; kok?.classList.add('gone');
+    for (let i = 0; i < NB; i++) setTimeout(() => { if (!S.dead) launch(i); }, i * GAP);
+    setTimeout(done, (NB - 1) * GAP + 380);
   };
   lay.addEventListener('pointerdown', tapped);
   try {
@@ -731,8 +770,7 @@ async function truckIntro(S) {
     kok = h('div', { class: 'kitkok ol truckcta', style: `left:${fr.left + fr.width / 2 - lr.left}px;top:${fr.top - lr.top - 18}px` }, '트럭을 터치!'); lay.append(kok);
     showHand();
     G.audio.sfx('heart');
-    const auto = () => { if (phase !== 'prompt') return; tapped(); if (left) autoT = setTimeout(auto, 160); };
-    autoT = setTimeout(auto, G.bot || S.botOn?.() ? 500 : 15000);
+    autoT = setTimeout(tapped, G.bot || S.botOn?.() ? 500 : 15000);   // (a bot, or nobody for 15 s: it pours by itself)
     await allOut; if (S.dead) throw 0;
     beat.cancel(); kok?.remove(); hand?.remove();
     // the last one gone: the truck drives off, a bright band wipes across, and behind it is the room
@@ -746,11 +784,11 @@ async function truckIntro(S) {
     A(band, [{ left: '-30%' }, { left: '130%' }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
     await A(lay, [{ clipPath: poly(-10) }, { clipPath: poly(160) }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
     lay.classList.add('clear');
-    if (S.kitPile && !S.dead) await dropPile(S);   // 쿵쿵쿵: the pile goes up
+    if (S.kitPile && !S.dead) { await dropPile(S); if (!quick && !G.bot && !S.dead) await pileWow(S); }   // 쿵쿵쿵: the pile goes up — and, the first time, whoa
     G.audio.sfx('swish');
     await A(card, [{ transform: 'translateX(-50%) translateY(140%)' }, { transform: 'translateX(-50%) translateY(-6px)', offset: .75 }, { transform: 'translateX(-50%)' }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
   } catch {}
-  clearTimeout(idleT); clearTimeout(autoT); beat?.cancel();
+  clearTimeout(autoT); beat?.cancel();
   box.style.visibility = 'hidden';
   for (const a of anims) { try { a.cancel(); } catch {} }
   outs.forEach(o => o.remove());

@@ -1614,15 +1614,17 @@ export class StageScene {
       this.pointAt(it.forPart);
     }
   }
-  // 사건 판: a clue shows where it goes — the camera glances at the lock it opens (when that is off screen), the lock
-  // hops, and if it is the hideout the friend inside panics. Each step of the chain points at the next.
+  // 사건 판: a clue shows where it goes — the lock it opens hops with a little sparkle, and if it is the hideout the friend
+  // inside panics. Each step of the chain points at the next. (The camera used to glance at the lock when it was off screen —
+  // user 10/21 on the phone: "열쇠랑 쪽지 찾으면 카메라 이동되면서 여기다 하라 보여주잖아 그거 좀 없애자. 너무 과친절이야" — now only
+  // 1판's lesson does, once)
   async pointAt(part) {
     if (!this.incident || !part?.lock || this.dead) return;
     if (this.v2?.cands.includes(part)) return v2PointAll(this);   // v2: the key fits all three
     const G = this.G, W = G.world, tw = this.tw, pc = this.partCenter(part), sc = W.toScreen(pc);
     const off = !(sc.x > 30 && sc.x < W.W - 30 && sc.y > 90 && sc.y < W.H - 170);
     const keep = { target: W.target.clone(), zoom: W.zoom };
-    const moved = off && !this.botOn() && !this.talking;
+    const moved = off && this.spec.tut === 1 && !this._pointedOnce && !this.botOn() && !this.talking; if (moved) this._pointedOnce = true;
     if (moved) { await tw.wait(.25); await W.flyTo(tw, { target: pc.clone().setY(W.target.y), dur: .5 }); }
     if (this.dead) return;
     const lm = part.lockMesh;
