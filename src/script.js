@@ -1329,11 +1329,11 @@ export const KIT_TALK = {
     hid: K('어? 부품이 다 숨어 버렸네. 설계도 보고 같이 찾자!', "Huh? The parts all ran off and hid. Let's check the blueprint and find them!"),
     go: K('다 모았다! 이번엔 끝까지 맞추자.', "All here! Let's finish it this time."), wrong: K('으헤헤, 순서가 있나 봐.', "Ehehe, guess there's an order.") },
   moving: { who: 'bunny', go: K('다 찾았다! 이제 제자리에 놓자.', "All found! Now let's put everything where it goes."), wrong: K('거긴 그 자리가 아니야~', "Nope, that's not its spot~"),
-    // 13판 이사 트럭·상자 더미 시안 (프라모델 10/20, 사용자 OK 전): 하나 찾을 때마다 맨 위 상자가 사라지고, 다 찾으면 더미 밑에서 하나 더.
+    // 13판 이사 트럭·상자 더미 (1.0.143~): 트럭을 누르면 상자가 쏟아져 48개 더미가 되고, 하나 찾을 때마다 더미가 8개씩 줄어요(48→0). 다 찾으면 더미 밑에서 하나 더. (QA17-02 10/21)
     // pile = 더미를 처음 터치했을 때, under = 마지막 상자가 사라지고 밑에서 나올 때('하나 남음'과 같은 순간이라 그때는 under만)
     // wow = 상자 산(48개)을 처음 볼 때 한 쌍 (10/21 사용자 "상자보고 이삿짐이 좀 많네? 놀라는 이런거") — pile과 말이 겹치지 않게
     wow: [L('mong', '…이거 다 토순이 거야?', '…Is all of this yours?'), L('bunny', '헤헤… 반은 인형이야!', 'Hehe… half of it is stuffed animals!')],
-    pile: K('짐이 산더미야! 하나 찾을 때마다 상자 하나씩 치우자.', 'Boxes everywhere! Every find clears one box.'),
+    pile: K('짐이 산더미야! 하나 찾을 때마다 상자가 줄어들어.', 'Boxes everywhere! Every find shrinks the pile.'),
     under: K('어? 상자 밑에 하나 더 있었네!', 'Huh? There was one more under the boxes!') },
   // 11판 캣타워 · 19판 미니 소방차 (프라모델 정식판 10/20): open = 상자가 쿵 + 컷인, hid = 터치해서 부품이 흩어진 뒤
   cattower: { who: 'cat', open: K('흥. 네가 몽글이냐냥. …이 상자, 혼자서도 조립할 수 있거든냥.', "Hmph. So you're Mongle, meow. …I can build this by myself, you know."),
