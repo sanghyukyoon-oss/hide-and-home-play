@@ -75,6 +75,13 @@ Object.assign(SFX_FILES, {
   // (10/21 #89) cloth lifted / laid back: S a handkerchief or cushion, M a curtain or tablecloth, L a big blanket or tarp
   clothOpenS: 'audio/sfx/clothOpenS.mp4', clothOpenM: 'audio/sfx/clothOpenM.mp4', clothOpenL: 'audio/sfx/clothOpenL.mp4',
   clothCloseS: 'audio/sfx/clothCloseS.mp4', clothCloseM: 'audio/sfx/clothCloseM.mp4', clothCloseL: 'audio/sfx/clothCloseL.mp4',
+  // (스토리 룸 19~34판 연출 10/21 — 기차 여행 27~31: 건널목·화물 기차·도착·문·객실·터널·안내음·기적·떠나는 기차, 29·30 물가: 물결·갈매기·
+  // 파도·보트, 19·21 사이렌, 22 호루라기, 24 보드 멈춤, 26 팡파르, 31 발소리, 32 편의점 문, 33 세탁기) — the loops (trainRumble·waterLap·
+  // footsteps·washerRumble) go through A.loopSfx
+  crossingFar: 'audio/sfx/crossingFar.mp4', crossingNear: 'audio/sfx/crossingNear.mp4', trainPass: 'audio/sfx/trainPass.mp4', trainArrive: 'audio/sfx/trainArrive.mp4', trainDoor: 'audio/sfx/trainDoor.mp4', trainRumble: 'audio/sfx/trainRumble.mp4',
+  tunnel: 'audio/sfx/tunnel.mp4', stationChime: 'audio/sfx/stationChime.mp4', trainHorn: 'audio/sfx/trainHorn.mp4', trainAway: 'audio/sfx/trainAway.mp4', waterLap: 'audio/sfx/waterLap.mp4', gulls: 'audio/sfx/gulls.mp4',
+  wave: 'audio/sfx/wave.mp4', boat: 'audio/sfx/boat.mp4', sirenFire: 'audio/sfx/sirenFire.mp4', sirenPolice: 'audio/sfx/sirenPolice.mp4', boardStop: 'audio/sfx/boardStop.mp4', fanfare: 'audio/sfx/fanfare.mp4',
+  whistle: 'audio/sfx/whistle.mp4', footsteps: 'audio/sfx/footsteps.mp4', doorBell: 'audio/sfx/doorBell.mp4', washerSlam: 'audio/sfx/washerSlam.mp4', washerRumble: 'audio/sfx/washerRumble.mp4',
   // (10/21 user, 듣기 페이지에서 "낚시 새b") the recorded reel: winding the net up, the line running out
   reelWind: 'audio/sfx/reelWind.mp4', reelOut: 'audio/sfx/reelOut.mp4',
   mugunghwa: null,   // (10/21 user: "무궁화꽃이 음성 이상하다, 전에 거가 더 나음") back to 너굴이's voice, one syllable at a time; the TTS take is in _backup/sfx-mugunghwa-tts.mp4
@@ -267,6 +274,24 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   }
   // a furniture part's own sound in its material (a metal cupboard, a cardboard box …) when that file is in; else the plain one
   // a character's laugh: 토순이 has her own (giggleBunny), everyone else the shared one
+  // a short bed under a scene (객실 덜컹·물결·발소리·세탁기): loops a sound file softly until the stop it returns is called —
+  // and stops by itself on the next scene
+  const loops = new Set();
+  A.loopSfx = (name, gain = 1, fadeIn = .4) => {
+    const b = ensure() && sfxBuf[name];
+    if (!b) return () => {};
+    const c = A.ctx, s = c.createBufferSource(), g = c.createGain(), t = c.currentTime;
+    s.buffer = b; s.loop = true; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + fadeIn);
+    s.connect(g).connect(A.sfxBus); s.start(t, Math.random() * b.duration);
+    const stop = (sec = .5) => {
+      if (!loops.delete(stop)) return;
+      const t2 = c.currentTime; g.gain.cancelScheduledValues(t2); g.gain.setValueAtTime(g.gain.value, t2); g.gain.linearRampToValueAtTime(0, t2 + sec);
+      try { s.stop(t2 + sec + .05); } catch {}
+    };
+    loops.add(stop);
+    return stop;
+  };
+  A.stopLoops = (sec = .4) => { for (const s of [...loops]) s(sec); };
   A.laugh = (who, p = 0) => A.sfx(who === 'bunny' ? 'giggleBunny' : 'giggle', p);
   A.sfxPart = (part, name) => {
     const l = String(part?.label || ''), m = matOf(l);
@@ -536,6 +561,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     A.playSlot = data.final || data.kind === 'finale' ? 'king' : SCENE_SLOT[name] || 'map';
     if (A.playSlot === 'mini') A._rot = (A._rot || 0) + 1;   // (the next mini game, the other song)
     A._hurry = false; A._drift = 1; A._req = null; A._mapKey = null; if (T.el && T.url) setRate(1);
+    A.stopLoops?.();   // (a scene's loops end with it)
     A.stopAmbience?.();   // (a map's rain stops with it)
   };
   // the stage says which of the map songs is its own (stage.js, before its music starts)
