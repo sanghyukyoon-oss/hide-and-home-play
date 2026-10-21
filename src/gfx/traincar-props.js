@@ -156,7 +156,7 @@ B.tcart = (f, T) => {
   lid.add(mc('tcart-lid', ({ add }) => { add(G.box(W + .04, .04, D + .04, .02), YEL2, 0, .02, D / 2); add(G.box(.12, .03, .03, .01), ORANGE, 0, .04, D + .02); }));
   const p = f.part('lid', lid, (t, b) => { lid.rotation.x = -1.6 * t; }, { label: '간식 카트 뚜껑', sfx: 'open', dur: .3 });
   p.lockable = true; p.lockKind = 'code'; f.lockAt = { x: 0, y: TY + .09, z: D / 2 + .03 };
-  f.pullOut(p, f.spot('inside', null, -.05, TY + .1, .04, { part: p, maxH: .2, label: '간식 카트 안', scale: .8 }), 0, { w: .22, d: .18, up: .16, color: '#fff3c8' });   // (a little tray rises over the bottles — ② 10/21)
+  f.pullOut(p, f.spot('inside', null, -.05, TY + .1, .04, { part: p, maxH: .2, label: '간식 카트 안', scale: .8 }), 0, { w: .22, d: .18, up: .3, color: '#fff3c8' });   // (a little tray rises over the bottles — ② 10/21; up .3: clear of the eggs and the tall bottles too, 10/22)
   f.spot('on', null, -.12, .275, -.06, { maxH: .3, label: '카트 아래 칸', scale: .8 });
 };
 
@@ -372,8 +372,9 @@ B.tshell = (f, T, o = {}) => {
 // 간식 카트 2 (1×1): the same trolley, bigger, so it reads at once
 B.tcart2 = (f, T) => {
   B.tcart(f, T);
-  for (const c of f.group.children) { c.position.multiplyScalar(1.3); c.scale.multiplyScalar(1.3); }   // (the spots' anchors too)
-  for (const p of f.parts) p.pivots.forEach(pv => { pv.userData.base = { p: pv.position.clone(), r: pv.rotation.clone(), s: pv.scale.clone() }; });
+  // (scaled as one group, not child by child: the tray that rises from inside kept its unscaled height and stayed down in the
+  // cart when the lid opened — ② 10/22, the bot never once saw the note in it)
+  const rg = grp(); [...f.group.children].forEach(c => rg.add(c)); rg.scale.setScalar(1.3); f.add(rg);
   if (f.lockAt) f.lockAt = { x: f.lockAt.x * 1.3, y: f.lockAt.y * 1.3, z: f.lockAt.z * 1.3 };
 };
 

@@ -2236,6 +2236,7 @@ export class StageScene {
       this.partsOpened++;
       await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
       for (const it of this.items) if (it.hang === part && !it.found) this.dropHung(it, part);   // (7판: the basket came up under the hook)
+      if (part._hadLock && !part._popped && !junk) { part._popped = true; await this.popOut(part); if (this.dead) return; }
       if (junk) reelSay(this, part);
       else for (const s of part.spots) if (s.item && !s.item.found) { const p = W.toScreen(this.worldCenter(s.item)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 }); }
       if (this.jailed?.in && part === this.jailed.door) this.freeJailed();
@@ -2252,6 +2253,40 @@ export class StageScene {
       if (part.reel) reelClear(this, part);
     }
     part.busy = false;
+  }
+
+  // 툭 (③ 10/22, ② 측정: a locked compartment's thing was 14 px across behind its door — 40판 돈통·세탁기, 65판 계단실, 31 실외기
+  // 속, 45·49 수거함, 67 캐비닛, 70 우편함): the first time it opens, each small thing in it hops forward to the mouth of the
+  // compartment (toward you, just past the piece's own body) so it sits half out and is seen. Big things stay where they are.
+  async popOut(part) {
+    const W = this.G.world, f = part.furn; if (!f) return;
+    const its = part.spots.map(s => s.item).filter(it => it && !it.found && !it.friend && it.g);
+    if (!its.length) return;
+    // the piece's body without its moving parts (an open door would make the box far bigger than the compartment)
+    const moving = new Set(); for (const q of f.parts) for (const pv of q.pivots) moving.add(pv);
+    const body = new THREE.Box3(), under = o => { for (let x = o; x; x = x.parent) if (moving.has(x)) return true; return false; };
+    f.group.updateMatrixWorld(true); f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !under(o)) body.expandByObject(o); });
+    if (body.isEmpty()) return;
+    const cam = W.cam.position, runs = [];
+    for (const it of its) {
+      const b = new THREE.Box3().setFromObject(it.g), c = b.getCenter(new THREE.Vector3());
+      const a = W.toScreen(b.min), z = W.toScreen(b.max), px = Math.hypot(a.x - z.x, a.y - z.y);
+      if (px > 40) continue;
+      const d = new THREE.Vector3(cam.x - c.x, 0, cam.z - c.z); if (d.lengthSq() < 1e-6) continue; d.normalize();
+      // how far until the body's box is left behind along d (the item's own half-size past it, so it rests on the lip)
+      let t = Infinity;
+      for (const ax of ['x', 'z']) if (Math.abs(d[ax]) > 1e-4) t = Math.min(t, ((d[ax] > 0 ? body.max[ax] : body.min[ax]) - c[ax]) / d[ax]);
+      if (!isFinite(t) || t < 0) continue;
+      const half = Math.max(b.max.x - b.min.x, b.max.z - b.min.z) * .35, dist = Math.min(.32, Math.max(.05, t + half - .02));
+      const g = it.g, par = g.parent; if (!par) continue;
+      const w0 = g.getWorldPosition(new THREE.Vector3()), w1 = w0.clone().addScaledVector(d, dist);
+      const l0 = g.position.clone(), l1 = par.worldToLocal(w1.clone()), up = par.worldToLocal(w0.clone().add(new THREE.Vector3(0, .1, 0))).sub(par.worldToLocal(w0.clone())), r0 = g.rotation.z;
+      runs.push(this.tw.run(.34, k => { g.position.lerpVectors(l0, l1, k).addScaledVector(up, Math.sin(k * Math.PI)); g.rotation.z = r0 + Math.sin(k * Math.PI) * .25; W.shadowDirty = true; }, ease.outCubic).then(() => { g.rotation.z = r0; }));
+    }
+    if (!runs.length) return;
+    this.G.audio.sfx('pop', 4);
+    await Promise.all(runs);
+    W.idsDirty = true;
   }
 
   // ── hints
