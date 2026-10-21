@@ -249,7 +249,19 @@ export class StageScene {
     }
     this.targets = this.items.filter(i => i.role === 'target');
     this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
-    if (G.world.post) G.world.post.bloomOn = !!(this.spec.night || this.spec.dark);   // 때깔 빛 번짐: night and power-cut stages only (10/21)
+    if (G.world.post) {
+      const P = G.world.post, nightGlow = !!(this.spec.night || this.spec.dark);   // 때깔 빛 번짐: night and power-cut stages only (10/21)
+      // 낮 글로우 시험 (10/21 사용자: "기차나 몇몇 판은 글로우 살짝 넣을까? 테스트"): ?glow=0.3 (세기) [&glowth=0.82 (밝은 곳 기준)] turns a
+      // soft glow on for a day stage too; ?glowst=27,28,29,30 limits it to those stages. Off unless asked for
+      const q = new URLSearchParams(location.search), gq = q.get('glow'), only = (q.get('glowst') || '').split(',').filter(Boolean).map(Number);
+      const dayGlow = !nightGlow && gq != null && gq !== '' && !isNaN(+gq) && (!only.length || only.includes(this.idx + 1));
+      // ?diffuse=0.3: 뽀샤시 — a soft blurred copy of nearly the whole picture screened on top (same blur as the glow, low threshold)
+      const dq = q.get('diffuse'), dif = dq != null && dq !== '' && !isNaN(+dq) && (!only.length || only.includes(this.idx + 1)) ? +dq : 0;
+      P.bloomOn = nightGlow || dayGlow || dif > 0;
+      P.bloomStr = dayGlow ? +gq : nightGlow ? .8 : 0;
+      if (P.du?.diffuse) P.du.diffuse.value = dif;
+      if (P.blu?.th) P.blu.th.value = dif > 0 ? .2 : dayGlow ? (isNaN(+q.get('glowth')) || q.get('glowth') == null ? .82 : +q.get('glowth')) : .5;
+    }
     this.hasBook = false; this.cine = false;
     if (this.plan.showcase?.shelf) { const S = this.plan.showcase; S.shelf.furn.spines.draw(S.order, S.missing); }
     else for (const e of (this.room.rooms || [this.room]).flatMap(R => R.furns)) e.f.spines?.draw([0, 1, 2, 3, 4], -1);   // 비밀 책장 outside its own stage: the rainbow, done

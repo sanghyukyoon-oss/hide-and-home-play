@@ -185,6 +185,10 @@ export const GRAY_SPLIT_H = GHQ != null && GHQ !== '' && !isNaN(+GHQ) ? +GHQ : .
 // 흑백판 펜화 시험 (10/21, Hidden Folks 결 — 결정 전 비교만): ?grayline=1 — white paper and ink lines, the shade one pale grey step
 // with a little hatching in the darkest of it
 export const GRAY_LINE = typeof location !== 'undefined' && new URLSearchParams(location.search).get('grayline') === '1';
+// 샤픈 시험 (10/21 사용자: "샤픈도 추가 가능? 테스트 먼저"): a second, finer sharpen on top of the unsharp mask — a 3×3 edge
+// boost about half a pixel wide that crisps the ink lines without the unsharp mask's wider halo. Off by default; ?sharp=0.3 to try
+const SHQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('sharp') : null;
+export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : 0;
 // where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
 const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
 export const GRAY_SPLIT_FROM = GFQ != null && GFQ !== '' && !isNaN(+GFQ) ? +GFQ : .33;
@@ -210,7 +214,7 @@ void main(){
 const DOWN = `
 varying vec2 vUv;
 #define SPLIT_MAX ${typeof location !== 'undefined' && new URLSearchParams(location.search).get('gsmode') === 'max' ? 'true' : 'false'}
-uniform sampler2D tSrc, tBloom; uniform vec2 outRes, splitC; uniform float sharpen, split, splitH, splitFrom, grade, bloom;
+uniform sampler2D tSrc, tBloom; uniform vec2 outRes, splitC; uniform float sharpen, sharp2, diffuse, split, splitH, splitFrom, grade, bloom;
 void main(){
   vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint
   vec4 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)) + texture2D(tSrc, vUv + vec2(q.x, -q.y))
@@ -220,18 +224,41 @@ void main(){
   // the middle of the screen (splitC — the visible screen's centre in this target's uv) growing to split px at the corners.
   // Only red and blue move, and only lighten what is there (a screen-like blend): grey stays clean, the lines get thin
   // red/blue rims. Two more taps; off (0) everywhere else.
-  if (split > .001 || splitH > .001) {
+  vec2 off = vec2(0.);
+  bool spl = split > .001 || splitH > .001;
+  if (spl) {
     vec2 dv = (vUv - splitC) * vec2(outRes.x / outRes.y, 1.);
     float k = smoothstep(splitFrom, 1., length(dv) / length(vec2(.5 * outRes.x / outRes.y, .5)));
-    vec2 off = (vec2(splitH, 0.) + normalize(dv + 1e-5) * split * k * vec2(1., 1.)) / outRes;
+    off = (vec2(splitH, 0.) + normalize(dv + 1e-5) * split * k * vec2(1., 1.)) / outRes;
     float sr = texture2D(tSrc, vUv + off).r, sb = texture2D(tSrc, vUv - off).b;
     c.r = SPLIT_MAX ? max(c.r, sr) : sr; c.b = SPLIT_MAX ? max(c.b, sb) : sb;
+  }
+  if (diffuse > .001) {
+    // 뽀샤시 시험 (10/21 사용자: "디퓨즈? 같이 약간 뽀샤시하게 보이는 느낌"): a soft blurred copy of almost the whole picture screened
+    // on top — light, hazy, dreamy — before the sharpening, so the ink lines still come out crisp over it
+    vec3 bl = texture2D(tBloom, vUv).rgb * diffuse;
+    c.rgb = 1. - (1. - c.rgb) * (1. - bl);
   }
   if (sharpen > .001) {
     // unsharp mask: a blur about one output pixel wide, the difference added back
     vec2 r = 1.1 / outRes;
     vec4 b = (texture2D(tSrc, vUv + vec2(-r.x, 0.)) + texture2D(tSrc, vUv + vec2(r.x, 0.)) + texture2D(tSrc, vUv + vec2(0., -r.y)) + texture2D(tSrc, vUv + vec2(0., r.y))) * .25;
+    // (10/21 사용자: "언샵 마스크가 색수차보다 레이어가 위에 있어야 돼") on a grey stage the blur is taken from the split picture
+    // too — red from the left-shifted taps, blue from the right — so the sharpening sits on top of the colour rims
+    if (spl) {
+      float br = (texture2D(tSrc, vUv + off + vec2(-r.x, 0.)).r + texture2D(tSrc, vUv + off + vec2(r.x, 0.)).r + texture2D(tSrc, vUv + off + vec2(0., -r.y)).r + texture2D(tSrc, vUv + off + vec2(0., r.y)).r) * .25;
+      float bb = (texture2D(tSrc, vUv - off + vec2(-r.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(r.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(0., -r.y)).b + texture2D(tSrc, vUv - off + vec2(0., r.y)).b) * .25;
+      b.r = SPLIT_MAX ? max(b.r, br) : br; b.b = SPLIT_MAX ? max(b.b, bb) : bb;
+    }
     c.rgb = max(c.rgb + (c.rgb - b.rgb) * sharpen, 0.);
+  }
+  if (sharp2 > .001) {
+    // fine sharpen: the centre against its 4 nearest neighbours half an output pixel away (on the split picture when grey)
+    vec2 h = .5 / outRes;
+    vec3 n = (texture2D(tSrc, vUv + vec2(-h.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(h.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(0., -h.y)).rgb + texture2D(tSrc, vUv + vec2(0., h.y)).rgb) * .25;
+    if (spl) { n.r = (texture2D(tSrc, vUv + off + vec2(-h.x, 0.)).r + texture2D(tSrc, vUv + off + vec2(h.x, 0.)).r + texture2D(tSrc, vUv + off + vec2(0., -h.y)).r + texture2D(tSrc, vUv + off + vec2(0., h.y)).r) * .25;
+      n.b = (texture2D(tSrc, vUv - off + vec2(-h.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(h.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(0., -h.y)).b + texture2D(tSrc, vUv - off + vec2(0., h.y)).b) * .25; }
+    c.rgb = max(c.rgb + (c.rgb - n) * sharp2 * 2., 0.);
   }
   // 때깔 (10/21 사용자 "색보정이랑 빛번짐 ㄱ"): split tone — the light parts a touch warmer, the shade a touch cooler — and a little more colour in
   // the middle tones; 0 = off (linear light here)
@@ -288,7 +315,7 @@ export class ToonPost {
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
     this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
-    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 }, splitH: { value: 0 }, splitC: { value: new THREE.Vector2(.5, .5) }, splitFrom: { value: GRAY_SPLIT_FROM },
+    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, sharp2: { value: FINE_SHARP }, diffuse: { value: 0 }, split: { value: 0 }, splitH: { value: 0 }, splitC: { value: new THREE.Vector2(.5, .5) }, splitFrom: { value: GRAY_SPLIT_FROM },
       grade: { value: 0 }, tBloom: { value: null }, bloom: { value: 0 } };
     // 때깔 (10/21): the colour grade (gradeWant 0..1, held off while a 흑백판 is grey) and a night glow (bloomOn: set by the stage
     // on night and power-cut stages only, stage.js; bloomStr)
