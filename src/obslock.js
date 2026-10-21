@@ -33,6 +33,15 @@ const T = {
   hands: K('짧은 바늘은 시, 긴 바늘은 분', 'Short hand = hour, long hand = minutes'),
   vases: K('작은 것부터 순서대로!', 'Smallest first!'), ok: K('알겠어!', 'Got it!'),
   lookClock: K('시계', 'Clock'), lookVase: K('꽃병 세 개', 'Three vases'),
+  // (③ 10/21, 19~50 다시 짜기 — 스토리 룸: 19판 '119' 포스터, 27판 기차 시간표) two more pictures to read the code off
+  notePoster: K('쪽지: "벽 포스터를 봐! 불나면 몇 번?"', 'Note: "Look at the poster! Fire — which number?"'),
+  noteTimetable: K('쪽지: "시간표를 봐! 별표 기차는 몇 시?"', 'Note: "Check the timetable! When is the ★ train?"'),
+  paperPoster: K('포스터를 봐!', 'Check the poster!'), paperTimetable: K('시간표를 봐!', 'Check the timetable!'),
+  paperNumber: K('몇 번?', 'Which number?'), paperStar: K('별표 기차', 'The ★ train'),
+  hintPoster: K('포스터에 적힌 번호', 'The number on the poster'), hintTimetable: K('별표 기차 시각 (네 자리)', 'The ★ train\'s time (four digits)'),
+  lookPoster: K('불조심 포스터', 'Fire safety poster'), lookTimetable: K('기차 시간표', 'Train timetable'),
+  d1: K('바다', 'Sea'), d2: K('산', 'Hills'), d3: K('시내', 'Town'), d4: K('공항', 'Airport'),
+  poster1: K('불나면!', 'Fire!'), poster2: K('바로 신고', 'Call right away'), tt: K('기차 시간표', 'Train timetable'), ttMine: K('우리 기차', 'Our train'),
 };
 
 // ── what the room shows
@@ -105,8 +114,52 @@ function drawVases(c, w, hgt, code, order) {
     c.fillStyle = '#ffffff'; c.beginPath(); c.arc(cx, base - vh - 10, 11, 0, 7); c.fill(); c.stroke();
   });
 }
+// 119 포스터: red frame, a little fire truck, the number big
+function drawPoster(c, w, hgt) {
+  c.fillStyle = '#fffaf0'; c.fillRect(0, 0, w, hgt);
+  c.strokeStyle = '#ff4f66'; c.lineWidth = w * .06; c.strokeRect(w * .03, w * .03, w - w * .06, hgt - w * .06);
+  c.fillStyle = '#3b2a55'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `bold ${Math.round(w * .13)}px Ssurround, Jua, sans-serif`;
+  c.fillText(tr(T.poster1), w / 2, hgt * .17);
+  const tx = w * .22, ty = hgt * .27, tw = w * .56, th = hgt * .18;   // a little fire truck
+  c.fillStyle = '#ff4f66'; c.strokeStyle = '#3b2a55'; c.lineWidth = w * .02;
+  c.beginPath(); c.rect(tx, ty + th * .2, tw * .7, th * .6); c.fill(); c.stroke(); c.beginPath(); c.rect(tx + tw * .7, ty + th * .38, tw * .3, th * .42); c.fill(); c.stroke();
+  c.fillStyle = '#9fd6ff'; c.fillRect(tx + tw * .76, ty + th * .44, tw * .16, th * .16);
+  c.fillStyle = '#3b2a55'; for (const fx of [.18, .58, .86]) { c.beginPath(); c.arc(tx + tw * fx, ty + th * .86, th * .14, 0, 7); c.fill(); }
+  c.fillStyle = '#ffc93c'; c.fillRect(tx + tw * .08, ty + th * .08, tw * .16, th * .14);
+  c.fillStyle = '#ff4f66'; c.font = `bold ${Math.round(w * .36)}px Ssurround, Jua, sans-serif`; c.fillText('119', w / 2, hgt * .66);
+  c.fillStyle = '#3b2a55'; c.font = `bold ${Math.round(w * .1)}px Ssurround, Jua, sans-serif`; c.fillText(tr(T.poster2), w / 2, hgt * .88);
+}
+// 기차 시간표: four trains, ours starred (its time is the code)
+function drawTimetable(c, w, hgt, rows, star) {
+  c.fillStyle = '#23405f'; c.fillRect(0, 0, w, hgt);
+  c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `bold ${Math.round(w * .1)}px Ssurround, Jua, sans-serif`; c.fillText(tr(T.tt), w / 2, hgt * .12);
+  rows.forEach(([H, M, dest], i) => {
+    const y = hgt * (.3 + i * .18), mine = i === star;
+    c.fillStyle = mine ? '#ffd23f' : 'rgba(255,255,255,.12)'; c.fillRect(w * .06, y - hgt * .07, w * .88, hgt * .14);
+    c.fillStyle = mine ? '#23405f' : '#ffffff'; c.font = `bold ${Math.round(w * .11)}px Ssurround, Jua, sans-serif`;
+    c.textAlign = 'left'; c.fillText(`${H}:${String(M).padStart(2, '0')}`, w * .1, y);
+    c.textAlign = 'right'; c.font = `bold ${Math.round(w * .075)}px Ssurround, Jua, sans-serif`; c.fillText(mine ? '★ ' + tr(T.ttMine) : dest, w * .9, y);
+  });
+}
+// a picture on a little stand (a poster frame / a timetable board), facing front (+z), about 45 cm tall
+function standBoard(draw, cw, ch, bw, bh, frame) {
+  const g = grp(), m = new THREE.MeshBasicMaterial({ map: canvasTex(cw, ch, draw) });
+  g.add(put(rbox(bw + .04, bh + .04, .025, frame, .008), 0, .06 + bh / 2, 0));
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), m); p.castShadow = false; g.add(put(p, 0, .06 + bh / 2, .014));
+  g.add(put(rbox(.03, .08, .03, frame, .008), -bw * .3, .03, -.03), put(rbox(.03, .08, .03, frame, .008), bw * .3, .03, -.03));
+  return g;
+}
+const posterProp = () => standBoard((c, w, hgt) => drawPoster(c, w, hgt), 192, 256, .27, .36, '#ff8fb0');
+const timetableProp = (rows, star) => standBoard((c, w, hgt) => drawTimetable(c, w, hgt, rows, star), 256, 224, .34, .3, '#3a5f8a');
 // the note itself no longer carries the answer, only where to look
 function paperMat(kind) {
+  if (kind === 'poster' || kind === 'timetable') return new THREE.MeshBasicMaterial({ map: canvasTex(256, 200, (c, w, hgt) => {
+    c.fillStyle = '#fff7d6'; c.fillRect(0, 0, w, hgt);
+    c.fillStyle = '#ff6f91'; c.font = 'bold 32px Ssurround, Jua, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(tr(kind === 'poster' ? T.paperPoster : T.paperTimetable), w / 2, 40);
+    c.fillStyle = kind === 'poster' ? '#ff4f66' : '#23405f'; c.font = 'bold 54px Ssurround, Jua, sans-serif'; c.fillText(kind === 'poster' ? '? ? ?' : '★ ?:??', w / 2, 108);
+    c.fillStyle = '#3b2a55'; c.font = 'bold 24px Ssurround, Jua, sans-serif'; c.fillText(tr(kind === 'poster' ? T.paperNumber : T.paperStar), w / 2, 176);
+  }) });
   return new THREE.MeshBasicMaterial({ map: canvasTex(256, 200, (c, w, hgt) => {
     c.fillStyle = kind === 'clock' ? '#fff7d6' : '#eef6ff'; c.fillRect(0, 0, w, hgt);
     c.fillStyle = '#ff6f91'; c.font = 'bold 32px Ssurround, Jua, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -177,7 +230,7 @@ function groundSpot(S, L, build, used, rand, t0) {
 }
 export function obsSetup(S) {
   // (from chapter 7 only — 1장 덜어내기 10/18: the code / colour locks of chapters 2-6 are plain notes again)
-  if (!OBS || S.custom || S.spec.boss || S.spec.endless || S.idx < 60) return null;
+  if (!OBS || S.custom || S.spec.boss || S.spec.endless || (S.idx < 60 && !S.spec.obs && !S.spec.obsKind)) return null;   // (19~50 다시 짜기: a stage the plan gives a picture clue — spec.obs / spec.obsKind 'poster' | 'timetable')
   const locks = (S.plan.locks || []).filter(L => (L.kind === 'code' || L.kind === 'color') && L.part?.lock);
   if (!locks.length) return null;
   const O = { src: new Map(), wrong: new Map(), free: new Set() }, used = new Set(), t0 = performance.now(), rand = rng(1 + S.idx * 7919 + locks.length);
@@ -188,7 +241,19 @@ export function obsSetup(S) {
     const note = S.items.find(i => (i.role === 'note' || i.role === 'color') && i.forPart === L.part && i.piece == null && !i.found);
     if (!note) continue;
     let src = null;
-    if (L.kind === 'code') {
+    if (L.kind === 'code' && S.spec.obsKind === 'poster') {
+      const p = propSpot(S, L, posterProp, .4, used, rand, t0) || groundSpot(S, L, posterProp, used, rand, t0);
+      if (p) { src = { kind: 'poster', code: '119', g: p.g, spot: p.s }; L.code = '119'; L.part.lock.code = '119'; note.code = '119'; }
+    } else if (L.kind === 'code' && S.spec.obsKind === 'timetable') {
+      // four trains from 10 to 12 o'clock, minutes in fives; ours (a 4-digit code) is starred
+      const rows = [], dests = [T.d1, T.d2, T.d3, T.d4].map(tr);
+      for (let i = 0; i < 4; i++) rows.push([10 + Math.floor(i * .75), 5 * (1 + Math.floor(rand() * 11)), dests[i]]);
+      rows.sort((a, b) => a[0] * 60 + a[1] - b[0] * 60 - b[1]);
+      const star = Math.floor(rand() * 4), code = `${rows[star][0]}${String(rows[star][1]).padStart(2, '0')}`;
+      const build = () => timetableProp(rows, star);
+      const p = propSpot(S, L, build, .35, used, rand, t0) || groundSpot(S, L, build, used, rand, t0);
+      if (p) { src = { kind: 'timetable', rows, star, code, g: p.g, spot: p.s }; L.code = code; L.part.lock.code = code; note.code = code; }
+    } else if (L.kind === 'code') {
       // the code becomes a time: hour 1–9, minutes in fives (a clock read at a glance, not to the minute)
       const n = +L.code || 0, H = 1 + n % 9, M = 5 * (Math.floor(n / 9) % 12), code = `${H}${String(M).padStart(2, '0')}`;
       if (oneWall && !used.has('wall')) { used.add('wall'); src = { kind: 'clock', wall: true, H, M, g: wallClockDial(wallClocks[0], H, M) }; }
@@ -219,7 +284,12 @@ export function obsSetup(S) {
 export async function obsClue(S, it, s) {
   const src = S.obs?.src.get(it.forPart); if (!src || it.piece != null || src.note !== it) return false;
   const G = S.G;
-  if (src.kind === 'clock') {
+  if (src.kind === 'poster' || src.kind === 'timetable') {
+    S.codes.add(it.code);
+    const P = S.codePill; P.style.display = ''; P.classList.remove('need'); P.set(src.kind === 'poster' ? '📋 ? ? ?' : '🚆 ?:??');
+    await G.ui.flyImg(G.thumbs.item_note, s.x, s.y, P, { size: 64 });
+    G.ui.toast(tr(src.kind === 'poster' ? T.notePoster : T.noteTimetable), 'green');
+  } else if (src.kind === 'clock') {
     S.codes.add(it.code);
     const P = S.codePill; P.style.display = ''; P.classList.remove('need'); P.set('🕐 ?:??');
     await G.ui.flyImg(G.thumbs.item_note, s.x, s.y, P, { size: 64 });
@@ -283,8 +353,8 @@ function dialPanel(S, part, src) {
     const clock = src?.kind === 'clock';
     const dial = h('div', { class: 'obs-dial' }, wheel(0), clock ? h('div', { class: 'obs-colon' }, ':') : null, ...v.slice(1).map((_, i) => wheel(i + 1)));
     const lab = clock ? h('div', { class: 'obs-lab' }, h('span', {}, tr(T.hour)), h('span', { style: 'width:14px' }), h('span', { class: 'w2' }, tr(T.min))) : null;
-    const hint = clock ? (src.wall ? T.hintWall : T.hintAlarm) : S.codes.has(L.code) ? T.hintCode : T.hintNoCode;
-    const hintEl = h('div', { class: 'obs-hint' }, (clock ? '🕐 ' : '🔢 ') + tr(hint));
+    const hint = clock ? (src.wall ? T.hintWall : T.hintAlarm) : src?.kind === 'poster' ? T.hintPoster : src?.kind === 'timetable' ? T.hintTimetable : S.codes.has(L.code) ? T.hintCode : T.hintNoCode;
+    const hintEl = h('div', { class: 'obs-hint' }, (clock ? '🕐 ' : src?.kind === 'poster' ? '📋 ' : src?.kind === 'timetable' ? '🚆 ' : '🔢 ') + tr(hint));
     const go = () => {
       if (v.join('') === L.code) { G.ui.closePanel(); if (clock) S.codePill.set(`🕐 ${L.code[0]}:${L.code.slice(1)}`); res(true); return; }
       wrongTry(S, part, dial, res, hintEl);
@@ -342,10 +412,12 @@ export function obsLook(S, it) {
   const cv = document.createElement('canvas'); cv.className = 'obs-big';
   let sub;
   if (src.kind === 'clock') { cv.width = cv.height = 360; drawClock(cv.getContext('2d'), 360, src.H, src.M); sub = T.hands; }
+  else if (src.kind === 'poster') { cv.width = 270; cv.height = 360; drawPoster(cv.getContext('2d'), 270, 360); sub = T.hintPoster; }
+  else if (src.kind === 'timetable') { cv.width = 360; cv.height = 315; drawTimetable(cv.getContext('2d'), 360, 315, src.rows, src.star); sub = T.hintTimetable; }
   else { cv.width = 360; cv.height = 260; drawVases(cv.getContext('2d'), 360, 260, src.code, src.order); sub = T.vases; }
   G.audio.sfx('pop');
   S.paused = true;
   const close = () => { S.paused = false; };
-  G.ui.panel({ title: tr(src.kind === 'clock' ? T.lookClock : T.lookVase), color: 'blue', close, body: [cv, h('div', { class: 'obs-hint' }, tr(sub))],
+  G.ui.panel({ title: tr(src.kind === 'clock' ? T.lookClock : src.kind === 'poster' ? T.lookPoster : src.kind === 'timetable' ? T.lookTimetable : T.lookVase), color: 'blue', close, body: [cv, h('div', { class: 'obs-hint' }, tr(sub))],
     buttons: [G.ui.btn(tr(T.ok), { color: 'green', onClick: () => { G.ui.closePanel(); close(); } })] });
 }

@@ -294,7 +294,8 @@ Object.assign(RECIPES, {
   // 햄찌네 복층 원룸 (18판, 너굴이 술래): warm sand
   duplex: { light: { ambColor: '#f2ecf0', amb: 1.24, sunColor: '#ffe2bc', sun: 2.6, shadow: .62 }, sky: ['#e6d6c0', '#efe4d4', '#d8c5ab'] },
   // 동네 119 안전센터 (19판): out on the street — the houses' late-afternoon sky
-  firestation: { light: { ambColor: '#ece6f2', amb: 1.18, sunColor: '#ffdcb0', sun: 2.6, shadow: .62 }, sky: ['#a9d4ee', '#f6e4cf', '#dcc4ad'] },
+  // (19판 3차 10/21, user on the phone: "좀 어둡고 우울함"): a bright warm afternoon — warm white light, a clear blue sky down to cream
+  firestation: { light: { ambColor: '#fff4ea', amb: 1.38, sunColor: '#fff0d6', sun: 2.55, shadow: .54 }, sky: ['#a6d9f4', '#fff3e2', '#ffe6c8'] },
 });
 RECIPES.aptmap = RECIPES.apt;
 // 2판 토순이 다락 놀이방 (10/20): late-morning light under the roof, a soft rose-lilac backdrop (1판's dusty rose, a step cooler)
@@ -315,7 +316,11 @@ RECIPES.traincar = { light: { ambColor: '#eef3f8', amb: 1.3, sunColor: '#fff2dc'
 RECIPES.traincar2 = { ...RECIPES.traincar, clouds: true };
 // (20판 2차 10/21): the neighbours' rooftops printed very faint along the bottom of the backdrop — boxy villas, a yellow tank
 // here and there, an antenna, a little rooftop room
-RECIPES.villaroof2 = { ...RECIPES.villaroof, skyline: { ink: '#8a6a9a', tank: '#c79a6a' } };
+// (20판 3차 10/21, user on the phone: "20도 어둡고 우울"): a bright, warm afternoon instead of the sunset — a clear blue sky
+// going down to warm cream, warm white light; the faint neighbours' roofs in a pale blue-grey. (the sun stays where it was:
+// no long shadows — the mood is in the light's colour and the sky)
+RECIPES.villaroof2 = { ...RECIPES.villaroof, light: { ambColor: '#fff6ec', amb: 1.4, sunColor: '#fff2dc', sun: 2.55, shadow: .52 },
+  sky: ['#9fd4f2', '#fff3e2', '#ffe4c2'], skyline: { ink: '#9fb6cc', tank: '#efc75e' } };
 
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;

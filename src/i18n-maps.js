@@ -91,4 +91,7 @@ addI18n({
   '등불 기둥': 'Lamp post', '등불 기둥 뒤': 'Behind the lamp post', '오늘의 빵 메뉴판': "Today's bread menu", '창가 부스': 'Window booth',
   '부스 의자 위': 'On the booth seat', '부스 테이블 밑': 'Under the booth table', '부스 테이블 위': 'On the booth table',
   '카페 식탁': 'Café table', '왼쪽 의자 위': 'On the left chair', '오른쪽 의자 위': 'On the right chair', '접이식 의자 위': 'On the folding chair',
+  // 20판 옥상 3차 (⑥ 10/21)
+  '고추 말리기': 'Drying chillies', '소쿠리': 'Basket', '소쿠리 밑': 'Under the basket', '고추 돗자리 앞': 'In front of the chilli mat',
+  '옥상 수도': 'Rooftop tap', '파란 양동이 안': 'In the blue bucket', '수도 옆': 'Beside the tap', '데크 화분 줄': 'Deck pots', '화분 줄 앞': 'In front of the pots',
 });

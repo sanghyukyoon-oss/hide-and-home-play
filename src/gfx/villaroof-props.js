@@ -14,21 +14,33 @@ const B = {};
 // on top
 B.parapet = (f, T, o = {}) => {
   const s = o.seed || 1, rnd = k => ((Math.sin((k + s * 13) * 91.7) * 43758.5) % 1 + 1) % 1;
-  f.add(mc('parapet2|' + s, ({ add }) => {
-    add(G.box(2.0, .62, .26, .04), CREAM, 0, .31, .37);
-    add(G.box(2.04, .06, .3, .02), shade(CREAM, -.06), 0, .64, .37);
+  // (20판 3차 10/21, user: "옥상은 테두리 더 좀 이상함.. 식물 막 벽 뚫고"): the parapet IS the roof's edge now (20판 has no S / E
+  // wall behind it), so its outer face is the building's face and the ivy hangs down outside it. extL / extR stretch a stretch
+  // past its cells (negative: stop short) so the runs meet at the corners — the front run reaches the side run's inner face,
+  // the side run reaches the 옥탑방 — and the cap is exactly as long as the body: two caps never lie on top of each other
+  // The body and its cap are sharp-ended so runs butt together flush; a rounded post stands at the start of each run (and at
+  // its far end with o.postR), so every join and corner is a finished pillar, not a notch
+  const eL = o.extL || 0, eR = o.extR || 0, L = 2 + eL + eR, X0 = (eR - eL) / 2, PW = .3;
+  f.add(mc('parapet4|' + s + '|' + eL + '|' + eR + '|' + (o.postR ? 1 : 0), ({ add }) => {
+    add(G.pbox(L, .62, .26), CREAM, X0, .31, .37);
+    add(G.pbox(L, .06, .3), shade(CREAM, -.06), X0, .64, .37);
+    for (const end of o.postR ? [-1, 1] : [-1]) {
+      const px = end < 0 ? -1 - eL + PW / 2 : 1 + eR - PW / 2;
+      add(G.box(PW, .7, .3, .03), shade(CREAM, -.02), px, .35, .37);
+      add(G.box(PW + .04, .06, .34, .02), shade(CREAM, -.08), px, .73, .37);
+    }
     // (옥상 3차 10/21, 확대하면 "이상해" — dots and coins): ivy that grows — three or four leafy clumps along the top, strands of
-    // flat leaves hanging down the outside face on a thin stem, a few small flowers
-    const n = 3 + (s % 2);
+    // flat leaves hanging down the outside face on a thin stem (clear of the cap's lip), a few small flowers
+    const n = 3 + (s % 2) + (L > 2.4 ? 1 : 0);
     for (let c = 0; c < n; c++) {
-      const cx = -.8 + (c + .5) * 1.6 / n + (rnd(c) - .5) * .2;
+      const cx = X0 - L / 2 + PW + .12 + (c + .5) * (L - 2 * PW - .24) / n + (rnd(c) - .5) * .12;
       for (let k = 0; k < 7; k++) { const a = k * 2.3 + rnd(c * 9 + k) * .8, r = .05 + (k % 3) * .04;
         add(G.sph(.075, 8, 6), k % 2 ? LEAF : LEAF2, cx + Math.cos(a) * r, .68 + (k % 2) * .03, .39 + Math.sin(a) * r * .8, rnd(k) * .6, a, 0, [1.25, .4, .9]); }
       for (let t = 0; t < 2; t++) {
         const sx = cx + (t ? .12 : -.08), len = 3 + Math.floor(rnd(c * 5 + t) * 4);
-        add(G.cyl(.008, .008, len * .09 + .05, 5), '#4f8f45', sx, .64 - (len * .09) / 2, .515);
+        add(G.cyl(.008, .008, len * .09 + .05, 5), '#4f8f45', sx, .64 - (len * .09) / 2, .535);
         for (let k = 0; k < len; k++) { const yy = .6 - k * .09, side = k % 2 ? 1 : -1;
-          add(G.sph(.06 - k * .004, 8, 6), (k + t) % 2 ? LEAF : LEAF2, sx + side * .035, yy, .52, 0, 0, side * .5, [1.1, .85, .32]); }
+          add(G.sph(.06 - k * .004, 8, 6), (k + t) % 2 ? LEAF : LEAF2, sx + side * .035, yy, .54, 0, 0, side * .5, [1.1, .85, .32]); }
       }
       if (rnd(c * 3) < .7) for (let k = 0; k < 2; k++) add(G.sph(.028, 6, 5), k ? '#ffffff' : '#ffb3cf', cx + (k - .5) * .1, .74, .42 + k * .04);
     }
@@ -92,22 +104,28 @@ B.lightline = (f, T, o = {}) => {
 };
 
 // 상 위 간식 (1×1, small): a low round table with a jug of juice, a plate of tangerines, a plate of rice cakes, two cushions
+// (집들이 3차 10/21, user: "탁자 위 케이크·컵·귤·선물이 서로 파묻혀 겹쳐"): every dish has its own place round the table, none
+// touching — the party table drops the rice cakes for the cake in the middle and the present
 B.snacktable = (f, T, o = {}) => {
-  // (o.party, 집들이): a little round cake with a candle and a ribboned present on the table
-  if (o.party) f.add(mc('snacktable-party', ({ add }) => {
-    add(G.cyl(.09, .09, .08, 16), '#fff4e8', .02, .37, -.05); add(G.cyl(.092, .092, .02, 16), '#ff9fb8', .02, .41, -.05);
-    for (let k = 0; k < 6; k++) add(G.sph(.016, 6, 5), '#e8414e', .02 + Math.cos(k) * .06, .425, -.05 + Math.sin(k) * .06);
-    add(G.cyl(.008, .008, .06, 6), '#9fdcc8', .02, .45, -.05); add(G.sph(.014, 6, 5), '#ffcf4a', .02, .49, -.05);
-    add(G.box(.12, .1, .12, .02), '#9fc8ff', -.2, .36, .12); add(G.pbox(.13, .102, .025), '#ff9fb8', -.2, .36, .12); add(G.pbox(.025, .102, .13), '#ff9fb8', -.2, .36, .12);
-    add(G.sph(.03, 6, 5), '#ff9fb8', -.2, .42, .12, 0, 0, 0, [1.4, .6, .8]);
+  const party = !!o.party;
+  // [x, z] of each thing on the top (table radius .32, a doily of .2 under the middle)
+  const JUG = party ? [-.2, -.09] : [-.1, -.08], TAN = party ? [.17, .13] : [.1, .08], CUPA = party ? [.19, -.15] : [.14, -.12], CUPB = party ? [-.03, .23] : [-.17, -.02];
+  if (party) f.add(mc('snacktable-party2', ({ add }) => {
+    add(G.cyl(.09, .09, .08, 16), '#fff4e8', 0, .37, -.03); add(G.cyl(.092, .092, .02, 16), '#ff9fb8', 0, .41, -.03);
+    for (let k = 0; k < 6; k++) add(G.sph(.016, 6, 5), '#e8414e', Math.cos(k) * .06, .425, -.03 + Math.sin(k) * .06);
+    add(G.cyl(.008, .008, .06, 6), '#9fdcc8', 0, .45, -.03); add(G.sph(.014, 6, 5), '#ffcf4a', 0, .49, -.03);
+    const PX = -.17, PZ = .14;
+    add(G.box(.11, .09, .11, .02), '#9fc8ff', PX, .355, PZ, 0, .3, 0); add(G.pbox(.12, .092, .022), '#ff9fb8', PX, .355, PZ, 0, .3, 0); add(G.pbox(.022, .092, .12), '#ff9fb8', PX, .355, PZ, 0, .3, 0);
+    add(G.sph(.028, 6, 5), '#ff9fb8', PX, .41, PZ, 0, .3, 0, [1.4, .6, .8]);
   }));
-  f.add(mc('snacktable', ({ add }) => {
+  f.add(mc(party ? 'snacktable-p2' : 'snacktable', ({ add }) => {
     add(G.cyl(.32, .32, .05, 18), WOOD, 0, .28, 0); for (const a of [.6, 2.2, 3.8, 5.3]) add(G.box(.04, .26, .04, .01), WOODD, Math.cos(a) * .2, .13, Math.sin(a) * .2);
-    add(G.cyl(.06, .07, .16, 12), '#ffd27a', -.1, .39, -.08); add(G.tor(.04, .01, PI, 4, 8), '#ffd27a', -.03, .42, -.08);
-    add(G.cyl(.11, .11, .015, 14), '#ffffff', .1, .31, .08); for (let k = 0; k < 4; k++) add(G.sph(.035, 8, 6), '#ff9b3a', .1 + Math.cos(k * 1.6) * .045, .34, .08 + Math.sin(k * 1.6) * .045);
-    add(G.cyl(.09, .09, .015, 14), '#ffffff', -.12, .31, .14); for (let k = 0; k < 3; k++) add(G.box(.06, .03, .03, .01), '#f3dce6', -.12 + (k - 1) * .04, .33, .14);
+    add(G.cyl(.06, .07, .16, 12), '#ffd27a', JUG[0], .39, JUG[1]); add(G.tor(.04, .01, PI, 4, 8), '#ffd27a', JUG[0] - .07, .42, JUG[1], 0, PI, 0);
+    add(G.cyl(.1, .1, .015, 14), '#ffffff', TAN[0], .31, TAN[1]); for (let k = 0; k < 4; k++) add(G.sph(.032, 8, 6), '#ff9b3a', TAN[0] + Math.cos(k * 1.6) * .045, .34, TAN[1] + Math.sin(k * 1.6) * .045);
+    if (!party) { add(G.cyl(.09, .09, .015, 14), '#ffffff', -.12, .31, .14); for (let k = 0; k < 3; k++) add(G.box(.06, .03, .03, .01), '#f3dce6', -.12 + (k - 1) * .04, .33, .14); }
     for (const [x, z, c] of [[-.48, -.15, '#bfe0b8'], [.45, .3, '#ffb3c4']]) { add(G.box(.32, .07, .32, .05), c, x, .035, z); for (let k = 0; k < 3; k++) add(G.pbox(.32, .004, .02), '#ffffff', x, .072, z - .1 + k * .1); }
-    add(G.cyl(.2, .2, .012, 18), '#fff4e2', 0, .31, 0); add(G.cyl(.035, .03, .07, 10), '#9fd6c8', .14, .345, -.12); add(G.cyl(.035, .03, .07, 10), '#ffb3c4', -.17, .345, -.02);
+    add(G.cyl(party ? .13 : .2, party ? .13 : .2, .012, 18), '#fff4e2', 0, .31, party ? -.03 : 0);
+    add(G.cyl(.035, .03, .07, 10), '#9fd6c8', CUPA[0], .345, CUPA[1]); add(G.cyl(.035, .03, .07, 10), '#ffb3c4', CUPB[0], .345, CUPB[1]);
   }));
   f.spot('under', null, 0, 0, 0, { maxH: .22, label: '상 밑', scale: .6 });
 };
@@ -130,7 +148,7 @@ B.balloons = (f, T) => {
 // on the side, and the yellow water tank up on its roof. The room behind the door is shallow: what is in it shows from the door.
 const BRICK = '#c06c55', BRICK2 = '#ad5f4a', MORTAR = '#e6cdb8', SLAB = '#ddd5c8', STEELG = '#8a93a3', TANKY = '#f4c23e';
 B.oktap = (f, T) => {
-  const X0 = -.95, X1 = .6, Z0 = -.98, Z1 = .42, H = 1.72, TW = .08, DX = -.48, DW = .58, DH = 1.28;
+  const X0 = -.95, X1 = .6, Z0 = -.94, Z1 = .42, H = 1.72, TW = .08, DX = -.48, DW = .58, DH = 1.28;
   f.add(mc('oktap', ({ add, tube }) => {
     // walls: back, two sides, the front around the door; the floor and a dim inside
     add(G.pbox(X1 - X0, H, TW), BRICK, 0, H / 2, Z0 + TW / 2);
@@ -227,16 +245,41 @@ B.clothesline = (f, T) => {
     for (const [x, c] of [[.22, '#ffd86b'], [.3, '#9fc8ff']]) { add(G.box(.06, .18, .015, .01), c, x, LY - .1, 0); add(G.box(.09, .05, .015, .01), c, x + .02, LY - .18, 0); }
     for (const x of [.24, .3, .45, .71]) add(G.pbox(.014, .05, .02), '#d9a466', x, LY + .01, .005);
   }));
-  // the front half of the quilt: flips up over the line
-  const qv = grp(); put(qv, QX, LY, .03); f.add(qv);
-  qv.add(mc('clothesline-quilt', ({ add }) => {
-    add(G.box(QW, .96, .03, .015), QUILT, 0, -.48, .01);
-    for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) { const x = -.42 + k * .28 + (r % 2) * .14, y = -.14 - r * .22;
-      if (x > .5) continue; for (let m = 0; m < 5; m++) add(G.sph(.026, 6, 4), '#ffffff', x + Math.cos(m * 1.26) * .03, y + Math.sin(m * 1.26) * .03, .03, 0, 0, 0, [1, 1, .3]);
-      add(G.sph(.016, 6, 4), '#ffd86b', x, y, .034, 0, 0, 0, [1, 1, .3]); }
-    add(G.pbox(QW, .03, .035), '#ffffff', 0, -.95, .012);
-  }));
-  const p = f.part('lift', qv, t => { qv.rotation.x = -2.2 * t; }, { label: '이불', sfx: 'swish', dur: .36 });
+  // the front half of the quilt (20판 3차 10/21, user: "이불 올라가는 것도 카펫처럼 벤딩. 약간 페이지턴처럼 말려서 살짝 올라가는
+  // 정도"): six strips hinged one under the other, so it bends like cloth — lifted, the bottom edge curls up and back first and
+  // the curl climbs, a page being turned, the top staying on the line. keyAt: a hook on the inside of the bottom strip where
+  // something can hang until the quilt lifts (② 레벨: the key that drops — f.quiltKeyAt, parent the key to it)
+  const NS = 6, SH = .96 / NS, strips = [];
+  let parent = grp(); put(parent, QX, LY, .03); f.add(parent);
+  const root = parent;
+  for (let k = 0; k < NS; k++) {
+    const sg = k ? grp() : root;
+    if (k) { put(sg, 0, -SH, 0); parent.add(sg); }
+    const y0 = -k * SH;   // this strip's top, in the quilt's own frame
+    sg.add(mc('clothesline-quilt3|' + k, ({ add }) => {
+      add(G.box(QW, SH + .004, .03, .006), QUILT, 0, -SH / 2, .01);
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+        const x = -.42 + c * .28 + (r % 2) * .14, y = -.14 - r * .22;
+        if (x > .5 || y > y0 || y <= y0 - SH) continue;
+        for (let m = 0; m < 5; m++) add(G.sph(.026, 6, 4), '#ffffff', x + Math.cos(m * 1.26) * .03, y - y0 + Math.sin(m * 1.26) * .03, .03, 0, 0, 0, [1, 1, .3]);
+        add(G.sph(.016, 6, 4), '#ffd86b', x, y - y0, .034, 0, 0, 0, [1, 1, .3]);
+      }
+      if (k === NS - 1) add(G.pbox(QW, .03, .035), '#ffffff', 0, -SH + .015, .012);
+    }));
+    strips.push(sg); parent = sg;
+  }
+  const keyAt = grp(); put(keyAt, .22, -SH + .1, -.01); strips[NS - 1].add(keyAt);
+  // each hinge bends more the lower it is and starts later the higher it is: the bottom curls first, then the curl climbs
+  // (③ 10/21, "페이지턴처럼": a page being turned — the corner lifts quick and light, the curl rolls up the cloth one strip after
+  // another with a soft give at the end (a little past, then back), the top strip only tipping as the weight comes onto the line;
+  // the page-turn sound, a touch longer so the roll is seen)
+  const ss = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+  const curl = t => strips.forEach((sg, k) => {
+    const w = k / (NS - 1), d = (1 - w) * .42, u = ss((t - d) / (1 - d * .85)), give = 1 + .1 * Math.sin(Math.min(1, u) * Math.PI) * w;
+    sg.rotation.x = k ? -(.12 + .6 * w * w) * u * give : -.2 * ss(t * 1.2 - .2);
+  });
+  const p = f.part('lift', strips, t => curl(t), { label: '이불', sfx: 'flip', dur: .72 });
+  f.quiltKeyAt = keyAt;
   f.spot('inside', null, QX, 0, 0, { part: p, maxH: .36, label: '이불 뒤', scale: .8 });
   f.spot('beside', null, .9, .22, 0, { maxH: .18, label: '빨래 기둥 깡통 위', scale: .55 });
 };
@@ -271,8 +314,82 @@ B.parasolset = (f, T) => {
   f.spot('on', null, .82, .45, .18, { maxH: .2, label: '빨간 의자 더미 위', scale: .6 });
 };
 
+// ── 20판 옥상 3차 (10/21, user on the phone: "대체 저 파란 건 대체 뭘까 … 디테일 잡자") — the blue tarp goes; things a Korean
+// rooftop really has, each reading at a glance: chillies drying on a straw mat, the rooftop tap with its hose, pots on the deck
+// 고추 말리기 (1×1): a straw mat with rows of red chillies drying in the sun, two green plastic 소쿠리 stacked upside down on its
+// corner (the top one lifts — a part), pink rubber gloves on the edge
+const STRAW = '#ecd59a', STRAW2 = '#d9bd78', CHILI = '#e2392f', CHILI2 = '#c92d25', SOKURI = '#5cc08a', SOKURI2 = '#45a875';
+B.chilimat = (f, T) => {
+  f.add(mc('chilimat', ({ add }) => {
+    add(G.box(.86, .02, .8, .01), STRAW, 0, .01, 0);
+    for (let k = 0; k < 9; k++) add(G.pbox(.86, .004, .012), STRAW2, 0, .021, -.36 + k * .09);
+    add(G.pbox(.88, .012, .03), '#5a8fd0', 0, .016, .4); add(G.pbox(.88, .012, .03), '#5a8fd0', 0, .016, -.4);
+    let n = 0;
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 6; c++) {
+      const x = -.34 + c * .12 + (r % 2) * .05, z = -.3 + r * .1;
+      if (x > .08 && z < -.02) continue;   // (the baskets' corner)
+      const a = ((n++ * 2.39) % 1) * .9 - .45;
+      add(G.cap(.017, .07, 2, 5), n % 3 ? CHILI : CHILI2, x, .036, z, HP, a, 0);
+      add(G.cyl(.006, .008, .025, 4), '#4f9a3f', x + Math.sin(a) * .055, .036, z + Math.cos(a) * .055, HP, a, 0);
+    }
+    add(G.cyl(.21, .17, .13, 16, true), SOKURI, .22, .065, -.2); add(G.cyl(.17, .17, .01, 16), SOKURI2, .22, .13, -.2);
+    add(G.tor(.205, .014, PI * 2, 4, 20), SOKURI2, .22, .005, -.2, HP, 0, 0);
+    for (let k = 0; k < 2; k++) add(G.box(.11, .022, .2, .01), '#ff9fb8', -.24 + k * .06, .03, .33, 0, .3 + k * .25, 0);
+  }));
+  const sk = grp(); put(sk, .22, .13, -.2); f.add(sk);
+  sk.add(mc('chilimat-sokuri', ({ add }) => {
+    add(G.cyl(.205, .165, .13, 16, true), SOKURI, 0, .065, 0); add(G.cyl(.165, .165, .01, 16), SOKURI2, 0, .13, 0);
+    add(G.tor(.2, .014, PI * 2, 4, 20), SOKURI2, 0, .005, 0, HP, 0, 0);
+    for (let k = 0; k < 12; k++) { const a = k / 12 * PI * 2; add(G.cyl(.012, .012, .006, 5), '#2f7a52', Math.cos(a) * .185, .07, Math.sin(a) * .185, 0, 0, 0); }
+    for (let k = 0; k < 6; k++) { const a = k / 6 * PI * 2; add(G.cyl(.014, .014, .012, 6), '#2f7a52', Math.cos(a) * .08, .136, Math.sin(a) * .08); }
+  }));
+  const p = f.part('lift', sk, (t, b) => { sk.position.y = b.p.y + .28 * t; sk.rotation.x = -.5 * t; sk.rotation.z = .2 * t; }, { label: '소쿠리', sfx: 'lift', dur: .28 });
+  f.spot('inside', null, .22, .14, -.2, { part: p, maxH: .12, label: '소쿠리 밑', scale: .5 });
+  f.spot('beside', null, -.3, 0, .38, { maxH: .2, label: '고추 돗자리 앞', scale: .6 });
+};
+
+// 옥상 수도 (1×1): the rooftop tap on its standing pipe, a green hose coiled on the floor, a blue bucket under the tap with a
+// scrubber, a broom and dustpan leaning on the pipe
+B.rooftap = (f, T) => {
+  const PX = -.28, PZ = -.25;
+  f.add(mc('rooftap', ({ add, tube }) => {
+    add(G.box(.2, .06, .2, .02), '#d9d2c4', PX, .03, PZ);
+    tube([PX, .05, PZ], [PX, .66, PZ], .03, '#9aa3b2', 8);
+    tube([PX, .62, PZ], [PX + .1, .62, PZ], .024, '#9aa3b2', 8); add(G.cone(.03, .07, 8), '#9aa3b2', PX + .12, .585, PZ, PI, 0, 0);
+    add(G.cyl(.012, .012, .06, 6), '#e2403a', PX + .06, .68, PZ); add(G.box(.08, .016, .02, .006), '#e2403a', PX + .06, .71, PZ);
+    for (let k = 0; k < 4; k++) add(G.tor(.17 - k * .04, .022, PI * 2, 5, 18), k % 2 ? '#4fb06a' : '#5cc278', .12, .022 + (k % 2) * .012, .14, HP, 0, 0);
+    tube([PX + .12, .56, PZ], [PX + .2, .1, PZ + .2], .02, '#5cc278', 6); tube([PX + .2, .1, PZ + .2], [.0, .03, .14], .02, '#5cc278', 6);
+    add(G.cyl(.15, .12, .26, 16, true), '#4a8fe0', PX + .13, .13, PZ + .12); add(G.cyl(.12, .12, .01, 16), '#3a78c8', PX + .13, .012, PZ + .12);
+    add(G.tor(.15, .012, PI * 2, 4, 18), '#3a78c8', PX + .13, .26, PZ + .12, HP, 0, 0);
+    add(G.box(.09, .04, .06, .015), '#ffd86b', PX + .1, .27, PZ + .2, .3, 0, 0);
+    tube([PX - .1, 0, PZ + .14], [PX - .02, .92, PZ + .02], .014, '#c99a62', 5);
+    add(G.cone(.08, .22, 8), '#e9c47a', PX - .11, .1, PZ + .16, -.09, 0, .09, [1, 1, .45]);
+    add(G.box(.2, .02, .16, .01), '#e2403a', PX - .02, .12, PZ - .1, -1.25, 0, 0); tube([PX - .02, .2, PZ - .16], [PX - .02, .4, PZ - .2], .01, '#e2403a', 5);
+  }));
+  f.spot('inside', null, PX + .13, .02, PZ + .12, { maxH: .18, label: '파란 양동이 안', scale: .5 });
+  f.spot('beside', null, .25, 0, -.25, { maxH: .26, label: '수도 옆', scale: .6 });
+};
+
+// 데크 화분 줄 (2×1): a line of pots along the deck's edge — a big lettuce pot, a tomato on a stick with red cherries, a jade
+// plant, marigolds in a long planter, a little watering can
+B.potrow = (f, T) => {
+  f.add(mc('potrow', ({ add, tube }) => {
+    add(G.cyl(.15, .12, .2, 14), '#d98b5f', -.66, .1, 0); for (let m = 0; m < 6; m++) { const b = m * 1.05; add(G.sph(.07, 8, 5), m % 2 ? '#8fd46a' : LEAF, -.66 + Math.cos(b) * .06, .23 + (m % 2) * .03, Math.sin(b) * .06, 0, b, .5, [1.2, .55, .9]); }
+    add(G.cyl(.12, .1, .18, 14), '#f1ece2', -.3, .09, -.05); tube([-.3, .18, -.05], [-.3, .66, -.05], .008, '#c99a62', 4);
+    for (let m = 0; m < 6; m++) add(G.sph(.06, 7, 5), m % 2 ? LEAF : LEAF2, -.3 + Math.cos(m * 2.1) * .07, .26 + m * .065, -.05 + Math.sin(m * 2.1) * .06, 0, 0, 0, [1.2, .7, 1]);
+    for (const [x, y, z] of [[-.24, .36, .02], [-.36, .45, .0], [-.25, .55, -.1], [-.33, .3, .03]]) add(G.sph(.026, 7, 5), '#e8414e', x, y, z);
+    add(G.box(.62, .16, .2, .03), '#9a6a4a', .2, .08, 0);
+    for (let k = 0; k < 6; k++) { const x = -.04 + k * .1; add(G.sph(.05, 7, 5), LEAF2, x, .2, (k % 2 - .5) * .05, 0, 0, 0, [1.2, .6, 1]); add(G.sph(.04, 7, 5), k % 2 ? '#ffb43a' : '#ff8a2a', x + .01, .25, (k % 2 - .5) * .05); }
+    add(G.cyl(.08, .07, .1, 12), '#3b6fd6', .64, .05, .04); for (let k = 0; k < 4; k++) add(G.cap(.025, .07, 2, 6), '#7cc46a', .64 + Math.cos(k * 1.6) * .03, .14, .04 + Math.sin(k * 1.6) * .03, (k - 1.5) * .25, 0, 0);
+  }));
+  f.spot('beside', null, .5, 0, .2, { maxH: .2, label: '화분 줄 앞', scale: .6 });
+};
+
 export const VILLAROOF_INFO = {
   oktap: { w: 2, d: 2, name: '옥탑방', hidden: true },
+  chilimat: { w: 1, d: 1, name: '고추 말리기', hidden: true },
+  rooftap: { w: 1, d: 1, name: '옥상 수도', hidden: true },
+  potrow: { w: 2, d: 1, name: '데크 화분 줄', hidden: true },
   rubbertub: { w: 1, d: 1, name: '고무 대야 텃밭', hidden: true },
   clothesline: { w: 2, d: 1, name: '빨랫줄', hidden: true },
   parasolset: { w: 2, d: 1, name: '파라솔 자리', hidden: true },

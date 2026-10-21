@@ -1,6 +1,6 @@
 // Idle life in a room: only what would naturally move on its own — plants sway from the pot, clothes on a rail sway,
 // curtains flutter, the hanging cat clock swings,
-// warm things (tea on the kotatsu, a pot on the stove, the rice cooker) send up a little steam. Hidden things are never
+// warm things (tea on the kotatsu, a pot on the stove, the rice cooker, the street stall's pan and broth) send up a little steam. Hidden things are never
 // animated on their own (a moving target would be easy to spot); they only ride along with their host's gentle sway.
 // Nothing here marks the shadow map dirty: the motion is small, so the cast shadows stay as they were (no extra pass).
 import * as THREE from 'three';
@@ -9,7 +9,12 @@ const SWAY = [
   [/^(plant|monstera|plantbig|bush|tree|pine|pine2|flower|garden|planter|cactus|sprout)/, { a: .028, f: 1.15 }],
   [/^(hanger|clothesline|laundryline|dryrack)$/, { a: .018, f: .9 }],
 ];
-const STEAM = { kotatsu: { up: .02 }, ricecooker: { up: .02 }, counter: { up: .05, only: o => o?.variant === 'stove' } };
+const STEAM = { kotatsu: { up: .02 }, ricecooker: { up: .02 }, counter: { up: .05, only: o => o?.variant === 'stove' },
+  // (22판 실폰 10/21, user: "음식에 연기가 멈추어 있다..") — street food: pts are spouts in the piece's own frame (several per piece),
+  // s the puff size, rise how high it climbs. The stall's frozen white balls are gone; its steam rises and thins like the rest.
+  tteokstall: { pts: [[-.52, .98, -.08], [.02, 1.1, -.1]], s: 1.25, rise: .42 },   // the tteokbokki pan, the 어묵 broth
+  counter2: { pts: [[.56, 1.27, -.1]], s: .9 },                                      // the konbini's 호빵 steamer
+};
 const PUFF = new THREE.SphereGeometry(.05, 10, 8);
 
 export class Ambient {
@@ -29,13 +34,15 @@ export class Ambient {
       const st = STEAM[r.type];
       if (st && (!st.only || st.only(r.opts))) {
         const b = new THREE.Box3().setFromObject(g), c = b.getCenter(new THREE.Vector3());
-        const src = R.group.worldToLocal(new THREE.Vector3(c.x, b.max.y + st.up, c.z));
-        const puffs = [0, 1, 2].map(i => {
-          const m = new THREE.Mesh(PUFF, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false }));
-          m.userData.noOcclude = true; m.renderOrder = 3; m.layers.set(2); R.group.add(m);
-          return { m, k: i / 3 };
+        const srcs = st.pts ? st.pts.map(q => R.group.worldToLocal(g.localToWorld(new THREE.Vector3(...q)))) : [R.group.worldToLocal(new THREE.Vector3(c.x, b.max.y + st.up, c.z))];
+        srcs.forEach((src, j) => {
+          const puffs = [0, 1, 2].map(i => {
+            const m = new THREE.Mesh(PUFF, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false }));
+            m.userData.noOcclude = true; m.renderOrder = 3; m.layers.set(2); R.group.add(m);
+            return { m, k: (i + j * .5) / 3 % 1 };
+          });
+          this.steam.push({ src, puffs, s: st.s || 1, rise: st.rise || .32 });
         });
-        this.steam.push({ src, puffs });
       }
     }
   }
@@ -51,8 +58,8 @@ export class Ambient {
     for (const s of this.steam) for (const p of s.puffs) {
       p.k = (p.k + dt / 2.4) % 1;
       const k = p.k, sz = .5 + k * 1.3;
-      p.m.position.set(s.src.x + Math.sin(k * 6 + p.k * 3) * .04, s.src.y + k * .32, s.src.z);
-      p.m.scale.setScalar(sz * .8); p.m.material.opacity = Math.pow(1 - k, 1.3) * Math.min(1, k * 8) * .6;   // thick at the spout, thinning as it rises
+      p.m.position.set(s.src.x + Math.sin(k * 6 + p.k * 3) * .04 * s.s, s.src.y + k * s.rise, s.src.z);
+      p.m.scale.setScalar(sz * .8 * s.s); p.m.material.opacity = Math.pow(1 - k, 1.3) * Math.min(1, k * 8) * .6;   // thick at the spout, thinning as it rises
     }
   }
   dispose() { for (const s of this.steam) for (const p of s.puffs) { p.m.parent?.remove(p.m); p.m.material.dispose(); } }

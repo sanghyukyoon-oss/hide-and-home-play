@@ -175,6 +175,7 @@ B.dryergo = (f, T) => {
 B.pulleyjang = (f, T) => {
   OUTDOOR_BUILDERS.jangdok(f, T);
   const big = f.parts[0], JX = -.52, JZ = -.06, LID = 1.0;   // the big jar (jangdok: x -.52, platform .2 + height .8)
+  const WR = .09, WX = JX + WR, WY = 1.8;   // the pulley wheel: its left rim right over the jar (and the stone's hook)
   big.spots.forEach(s => { s.reserved = true; });
   const wood = (T && T.wood) || '#d9a466', woodD = (T && T.woodD) || '#a8733f';
   const pg = grp(); f.add(pg);
@@ -182,11 +183,16 @@ B.pulleyjang = (f, T) => {
   pg.add(mc('pulleyjang-frame|' + wood, ({ add }) => {
     for (const x of [-.94, -.1]) { add(G.box(.09, 2.0, .09, .02), woodD, x, 1.0, -.36); add(G.box(.18, .05, .18, .015), woodD, x, .225, -.36); }
     add(G.box(.96, .09, .1, .02), wood, -.52, 1.98, -.36);
-    add(G.box(.08, .08, .4, .02), wood, JX, 1.94, -.2);
-    add(G.cyl(.09, .09, .04, 18), '#c9cfe0', JX, 1.84, JZ, 0, 0, HP);
-    add(G.tor(.09, .014, PI * 2, 5, 18), woodD, JX, 1.84, JZ, 0, HP, 0);
+    // (20판 3차 10/21, user: "도르래 틀과 줄·고리·사선 줄이 떨어져 떠 있어"): the arm runs out from the beam to over the wheel; the
+    // wheel turns in the ropes' plane (x–y), held under the arm by a steel fork; the hanging rope leaves its left rim right over
+    // the stone's hook, the crank's rope its right rim, both touching the wheel
+    add(G.box(.08, .08, .44, .02), wood, WX, 1.94, -.19);
+    for (const sz of [-1, 1]) add(G.box(.03, .14, .012, .004), '#9aa3b2', WX, 1.84, JZ + sz * .035);
+    add(G.cyl(.012, .012, .1, 8), '#9aa3b2', WX, WY, JZ, HP, 0, 0);
+    add(G.cyl(WR, WR, .04, 18), '#c9cfe0', WX, WY, JZ, HP, 0, 0);
+    add(G.tor(WR, .014, PI * 2, 5, 18), woodD, WX, WY, JZ);
     add(G.box(.16, .2, .12, .03), '#c9cfe0', -.1, 1.05, -.27);
-    tube3(add, [JX + .09, 1.84, JZ], [-.1, 1.12, -.25], .008, '#e8d8b8');
+    tube3(add, [WX + WR, WY, JZ], [-.1, 1.15, -.24], .009, '#e8d8b8');
   }));
   // the crank, put in once found; the rope from the wheel to the stone (it shortens as the stone comes up)
   const crank = grp(); put(crank, -.1, 1.05, -.2); crank.visible = false; pg.add(crank);
@@ -199,7 +205,7 @@ B.pulleyjang = (f, T) => {
     add(G.tor(.03, .008, PI * 2, 4, 10), '#a9b2c8', 0, .2, 0);                                                    // the hook
   })));
   const rope = live(mesh(new THREE.CylinderGeometry(.009, .009, 1, 6), mat('#e8d8b8'))); pg.add(rope);
-  const setRope = () => { const y0 = 1.84 - .09, y1 = stone.position.y + .21, L = Math.max(.02, y0 - y1); rope.scale.y = L; rope.position.set(JX, y1 + L / 2, JZ); };
+  const setRope = () => { const y0 = WY, y1 = stone.position.y + .21, L = Math.max(.02, y0 - y1); rope.scale.y = L; rope.position.set(JX, y1 + L / 2, JZ); };
   setRope();
   // a curly 시바 tail that pokes out from under the lid for the tell
   const tail = grp(); put(tail, JX + .16, LID - .04, JZ + .26); tail.rotation.y = PI / 4; tail.visible = false; f.add(tail);

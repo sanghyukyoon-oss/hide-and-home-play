@@ -378,10 +378,14 @@ B.pole = (f, T) => {
   f.add(put(cyl(.137, .141, .5, '#ffffff', { map: hazardTex() }, 18), px, .27, pz));
   f.add(put(mg('pole-arm', '#8c939e', ({ add }) => { add(G.box(.96, .08, .08, .02), 0, 0, 0); add(G.box(.12, .12, .14, .02), 0, 0, 0); add(G.box(.1, .1, .3, .02), 0, -.52, -.16); }), px, 2.62, pz));
   f.add(put(mg('pole-tr', '#a3adb8', ({ add }) => { add(G.cyl(.15, .15, .42, 18), 0, 0, 0); add(G.cyl(.16, .16, .05, 18), 0, .22, 0); add(G.cyl(.03, .03, .12, 8), .06, .29, 0); }), px, 2.08, pz - .3));
-  const flyer = (kind, a, y) => { const r = rr(y) + .008; return put(rbox(.26, .34, .012, '#ffffff', .004, { map: flyerTex(kind) }), px + Math.sin(a) * r, y, pz + Math.cos(a) * r, 0, a, 0); };
-  f.add(flyer('tutor', -.9, 1.5)); f.add(flyer('room', .95, .98));
+  // the flyers (22판 실폰 10/21, user: "오브젝트 겹치지 않게 해줘" — flat cards wider than the pole stuck through it and each
+  // other): each one is a curved sheet wrapped round the pole at its own height — the tutor ad high on the left, the lost dog
+  // in front (it lifts), the room ad low on the right — none of them touching
+  const sheet = (kind, r, w = .26, h = .34) => mesh(geo('pole-flyer|' + kind + '|' + r.toFixed(3), () => new THREE.CylinderGeometry(r, r, h, 16, 1, true, -w / r / 2, w / r)), mat('#ffffff', { map: flyerTex(kind), side: DS }));
+  const flyer = (kind, a, y) => put(sheet(kind, rr(y) + .008), px, y, pz, 0, a, 0);
+  f.add(flyer('tutor', -1.25, 1.62)); f.add(flyer('room', 1.3, .8));
   const fy = 1.17, fr = rr(fy) + .012, pv = new THREE.Group(); put(pv, px, fy + .17, pz + fr);
-  pv.add(put(rbox(.27, .35, .012, '#ffffff', .004, { map: flyerTex('dog') }), 0, -.175, 0));
+  pv.add(put(sheet('dog', fr - .002, .27, .35), 0, -.175, -fr + .002));
   pv.add(put(rbox(.09, .03, .014, '#fff8c4', .004), 0, -.01, .004));
   f.add(pv);
   const p = f.part('flip', pv, t => { pv.rotation.x = -1.25 * t; }, { label: '전단지', sfx: 'swish' });

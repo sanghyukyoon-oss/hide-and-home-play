@@ -413,7 +413,6 @@ const signMat = () => mat('#ffffff', { map: atlas(), emissive: '#ffffff', ei: .1
 const mirrorMat = () => mat('#ffffff', { map: atlas(), emissive: '#ffffff', ei: .22 });
 const glassMat = () => mat('#cdeffa', { opacity: .2 });
 const litMat = () => mat('#fffdf6', { emissive: '#fff4dc', ei: .45 });
-const steamMat = () => mat('#ffffff', { opacity: .6 });
 const bulbMat = () => mat('#fff3c4', { emissive: '#ffcf6b', ei: .9 });
 // chunky bricks for the gate post (world-sized through planarUV)
 const brickTex = c1 => tex('st-brick|' + c1, 128, 128, (c, w, h) => {
@@ -500,19 +499,28 @@ B.konbini = (f, T) => {
     // roof: a planter and a sleepy cat
     add(G.box(.7, .14, .22, .03), wood, -.5, gt + .43 + .07, -.3);
     for (let k = 0; k < 6; k++) add(G.sph(.075, 10, 8), k % 2 ? LEAF : LEAF2, -.78 + k * .11, gt + .58 + (k % 2) * .03, -.3 + (k % 3 - 1) * .04);
-    // a ginger cat curled up asleep on the roof, its face toward the street
-    const cx = .4, cz = -.22, cy = gt + .46, k = 1.45, cat = ORANGE, catD = shade(ORANGE, -.1);
-    add(G.sph(.11 * k, 14, 10), cat, cx, cy + .06 * k, cz, 0, -.5, 0, [1.3, .62, 1]);
-    for (const d of [-.05, .02, .09]) add(G.box(.03 * k, .02, .16 * k, .01), catD, cx + d * k * .8, cy + .118 * k, cz - d * k * .5, 0, -.5, 0);
-    const hx = cx + .12 * k, hz = cz + .11 * k, hy = cy + .085 * k;
-    add(G.sph(.072 * k, 14, 10), cat, hx, hy, hz, 0, 0, 0, [1.12, .9, 1]);
-    for (const s of [-1, 1]) {
-      add(G.cone(.03 * k, .06 * k, 4), cat, hx + s * .048 * k, hy + .062 * k, hz - .012, 0, PI / 4, -s * .3);
-      add(G.tor(.014 * k, .0045 * k, PI, 3, 8), INK, hx + s * .028 * k, hy + .004, hz + .066 * k, 0, 0, PI);
+    // a ginger cat curled up asleep on the roof, its face toward the street (22판 실폰 10/21, user: "아 고양이 왜 이래 ㅠ" — it read
+    // as two flat discs and sticks): one round loaf of a body, soft stripes on its back, the head tucked down on its front paws,
+    // eyes shut, the tail wrapped round the front to its chin — the same soft round toy look as the characters' cats
+    const cx = .4, cz = -.22, cy = gt + .46, k = 1.45, cat = ORANGE, catD = shade(ORANGE, -.2), P = (x, y, z) => [cx + x * k, cy + y * k, cz + z * k];
+    add(G.sph(.1 * k, 18, 12), cat, ...P(0, .072, 0), 0, 0, 0, [1.3, .82, 1.1]);
+    for (const [x, rz] of [[-.07, .45], [-.02, .12], [.03, -.2]]) add(G.sph(.032 * k, 10, 6), catD, ...P(x, .146 - Math.abs(x) * .3, -.01), 0, 0, rz, [.55, .22, 1.9]);
+    // the front paws, the head resting on them
+    for (const x of [.05, .13]) { add(G.sph(.028 * k, 10, 8), cat, ...P(x, .022, .12), 0, 0, 0, [1, .8, 1.3]); add(G.sph(.016 * k, 8, 6), WHITE, ...P(x, .016, .148), 0, 0, 0, [1.3, .8, 1]); }
+    const HD = P(.1, .1, .08), hk = .082 * k;
+    add(G.sph(hk, 16, 12), cat, ...HD, 0, 0, 0, [1.12, .92, 1]);
+    for (const s2 of [-1, 1]) {
+      const ex = HD[0] + s2 * .05 * k, ey = HD[1] + .078 * k, ez = HD[2] - .008;
+      add(G.cone(.034 * k, .065 * k, 8), cat, ex, ey, ez, -.1, 0, -s2 * .32);
+      add(G.cone(.018 * k, .036 * k, 6), CORAL, ex - s2 * .002, ey - .006, ez + .016, -.1, 0, -s2 * .32);
+      add(G.tor(.015 * k, .005 * k, PI, 3, 8), INK, HD[0] + s2 * .031 * k, HD[1] + .006, HD[2] + .074 * k, 0, 0, PI);
     }
-    add(G.sph(.034 * k, 8, 6), WHITE, hx, hy - .028 * k, hz + .05 * k, 0, 0, 0, [1.25, .7, .6]);
-    add(G.sph(.009 * k, 6, 4), CORAL, hx, hy - .012 * k, hz + .072 * k);
-    add(G.tor(.11 * k, .024 * k, PI * .9, 5, 14), catD, cx - .01, cy + .025, cz + .01, HP, 0, .3);
+    add(G.sph(.037 * k, 10, 8), WHITE, HD[0], HD[1] - .028 * k, HD[2] + .06 * k, 0, 0, 0, [1.25, .7, .6]);
+    add(G.sph(.01 * k, 6, 4), CORAL, HD[0], HD[1] - .01 * k, HD[2] + .083 * k);
+    for (const s2 of [-1, 1]) add(G.sph(.014 * k, 8, 6), BLUSH, HD[0] + s2 * .05 * k, HD[1] - .018 * k, HD[2] + .06 * k, 0, 0, 0, [1, .6, .4]);
+    // the tail: from the back round the left side to the chin, a thick soft tube, the tip a shade darker
+    const T0 = [[-.1, .02, -.08], [-.135, .02, -.01], [-.12, .02, .07], [-.06, .02, .115], [.01, .02, .128]].map(q => P(...q));
+    for (let n = 0; n < T0.length - 1; n++) { tube(T0[n], T0[n + 1], .018 * k, n < T0.length - 2 ? cat : catD, 8); add(G.sph(.018 * k, 10, 8), n < T0.length - 2 ? cat : catD, ...T0[n + 1]); }
   }));
   // the lit back walls inside (a 24h store glows)
   f.add(mg('konbini-lit', litMat(), ({ add }) => {
@@ -621,10 +629,7 @@ B.tteokstall = (f, T) => {
     addM(quadGeo(.26, .48, RG.menu), M1.clone().multiply(xf(0, -.01, .0125 + .005)));
   }));
   f.add(mg('tteokstall-bulbs', bulbMat(), ({ add }) => { for (const x of [-.75, -.25, .25, .75]) add(new THREE.SphereGeometry(.036, 12, 8), x, 1.675, .38); }));
-  f.add(transparent(mg('tteokstall-steam', steamMat(), ({ add }) => {
-    for (const [x, y, z, r] of [[-.6, 1.0, -.1, .06], [-.5, 1.08, -.05, .05], [-.6, 1.16, -.08, .042], [-.42, .98, -.12, .04], [-.03, 1.2, -.12, .05], [.05, 1.28, -.08, .04], [-.06, 1.34, -.1, .032]])
-      add(new THREE.SphereGeometry(r, 10, 8), x, y, z);
-  })));
+  // (the steam over the pan and the broth is ambient.js STEAM: it rises and thins — no frozen white balls, 10/21)
   const lid = new THREE.Group(); lid.position.set(KX, KB + KH + .004, KZ);
   lid.add(mc('tteokstall-lid', ({ add }) => {
     add(G.dome(KR + .018, 22, 5), ALU, 0, 0, 0, 0, 0, 0, [1, .32, 1]);

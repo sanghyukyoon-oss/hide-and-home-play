@@ -397,10 +397,15 @@ THEMES.bakeyard = { ...THEMES.bearbakery, name: '곰제과 앞마당', floorKind
 // (20판 2차 10/21, 레퍼런스 보드 villaroof-refs-1021): the 옥탑방 in the back right corner with the yellow tank on its roof (the
 // blue tank and the watering can go — 한적함; the two parapets on the right move down a cell), red and black rubber tubs for the chilli
 // boxes, the quilt on a clothesline for the drying rack, the parasol and red chairs for the big pot; the jars stay (devices)
-LAYOUTS.villaroof2 = { ...LAYOUTS.villaroof, furniture: [F('lightline', 0, 0, 0, { party: true }), F('pyeongsang', 0, 1), F('snacktable', 2, 1, 0, { party: true }), F('balloons', 2, 0), F('jangdok', 3, 0),
+LAYOUTS.villaroof2 = { ...LAYOUTS.villaroof, walls: { N: 'wall', W: 'wall', S: 'none', E: 'none' }, furniture: [F('lightline', 0, 0, 0, { party: true }), F('pyeongsang', 0, 1), F('snacktable', 2, 1, 0, { party: true }), F('balloons', 2, 0), F('jangdok', 3, 0),
   F('oktap', 5, 0), F('foambox', 3, 2), F('rubbertub', 4, 2), F('rubbertub', 5, 2, 0, { kind: 'onion' }),
-  F('parasolset', 0, 4), F('clothesline', 3, 4), F('tarppile', 5, 4),
-  F('parapet', 0, 5, 0, { seed: 1 }), F('parapet', 2, 5, 0, { seed: 2 }), F('parapet', 4, 5, 0, { seed: 3 }), F('parapet', 6, 2, 1, { seed: 4 }), F('parapet', 6, 4, 1, { seed: 5 })] };
+  F('parasolset', 0, 4), F('clothesline', 3, 4), F('chilimat', 5, 4), F('potrow', 0, 2), F('rooftap', 3, 1),
+  F('parapet', 0, 5, 0, { seed: 1, extL: -.07 }), F('parapet', 2, 5, 0, { seed: 2 }), F('parapet', 4, 5, 0, { seed: 3, extR: .74 }), F('parapet', 6, 2, 1, { seed: 4, extR: .55, postR: true }), F('parapet', 6, 4, 1, { seed: 5 })] };
+// (20판 3차 2판 10/21, user: "옥상은 테두리 더 좀 이상함.. 식물 막 벽 뚫고"): no S / E wall — the ivy parapet itself is the roof's
+// front and side edge (a low wall stood behind it and the ivy grew through it); the runs meet at the front-right corner and
+// the side run reaches the 옥탑방, so the edge is closed all round
+// (20판 3차 10/21, user: "대체 저 파란 건 대체 뭘까 … 디테일 잡자"): the blue tarp pile gives way to chillies drying on a straw mat;
+// pots along the deck's edge and the rooftop tap with its hose and bucket in front of the jars — the middle of the roof stays open
 THEMES.villaroof2 = THEMES.villaroof;
 // 현관 2차 (10/21, 앞 버전은 aptlobby 그대로): a little more of an apartment lobby's life on the walls —
 // the notice board by the bench, the red fire-hose cabinet in the corner, a clock by the elevator (a rug read as a living room)
@@ -469,7 +474,7 @@ THEMES.school = { ...THEMES.my, name: '토순이네 교실', friend: 'bunny', bg
 THEMES.fire = { ...THEMES.my, name: '곰돌이 소방서', friend: 'bear', bg: ['#fff1ea', '#f6e2d8'], floorKind: 'checker', floor: '#d4d7de', floor2: '#c2c5ce', base: '#b9bcc6',
   wallKind: 'stripe', wall: '#fff6f0', wall2: '#f6d6c8', wainscot: '#e8433d', trim: '#ffffff', wallEdge: '#fffaf6', accent: '#e8433d', accent2: '#ffd23f', accent3: '#8fd3f4', locker: '#e86a5d' };
 // outside: the fire station's apron and the police box's front (user, 10/18: "소방서는 실외로… 경찰서도 실외", "경찰서는 실내 실외 다 쓰자")
-THEMES.firestation = OUT('곰돌이네 119 안전센터', 'bear', ['#fff1ea', '#f1e6e0'], { ...ALLEY, wallKind: 'brick', wall: '#e8806f', wall2: '#c9584b', wainscot: '#8a8f9e', trim: '#f4f4ec', wallEdge: '#f6d6c8', plaster: '#f1e4e8' });
+THEMES.firestation = OUT('곰돌이네 119 안전센터', 'bear', ['#fff1ea', '#f1e6e0'], { ...ALLEY, wallKind: 'brick', wall: '#f09a84', wall2: '#de7c69', wainscot: '#c9ccd8', trim: '#f4f4ec', wallEdge: '#f6d6c8', plaster: '#f6ecef' });   // (19판 3차 10/21 "어둡고 우울": lighter, warmer brick, a pale plinth)
 THEMES.policefront = OUT('멍뭉이 순경의 파출소 앞', 'shiba', ['#eef3fb', '#e3e8f2'], { ...ALLEY, wallKind: 'tile', wall: '#f4f7fd', wall2: '#cfdcf3', wainscot: '#3f6fd8', trim: '#ffffff', wallEdge: '#fafcff', plaster: '#eef1f8' });
 THEMES.alleyhouse = { ...THEMES.alley3, name: '멍뭉이네 마당 2층집', friend: 'shiba', bg: ['#fff3dc', '#f2e6cc'] };
 THEMES.parkwide = { ...THEMES.park1, name: '큰 놀이터' };
