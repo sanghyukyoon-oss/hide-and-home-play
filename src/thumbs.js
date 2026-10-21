@@ -67,14 +67,15 @@ export function spinView(job, size = 300) {
   const S = shared(), made = job.build(), obj = made.isObject3D ? made : made.root, tick = made.tick || null;
   obj.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(obj, true), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
-  const pivot = new THREE.Group(); pivot.position.copy(c); obj.position.sub(c); pivot.add(obj);
-  // (turning: the widest it gets is the footprint's diagonal)
-  const rad = Math.max(Math.hypot(sz.x, sz.z) * .5, sz.y * .5) * (job.fit || 1) * (S.toon ? 1.08 : 1);
-  const dir = new THREE.Vector3(...(job.dir || [.32, .38, 1])).normalize(), dist = rad * 8, half = rad * 1.12;
+  const pivot = new THREE.Group(); pivot.position.copy(c); obj.position.sub(c); pivot.add(obj); pivot.rotation.order = 'YXZ';
+  // (it only leans a little now, never turns its back — ③ 10/21: framed on its front, `zoom` filling the card; ears may go)
+  const rad = Math.max(sz.x, sz.y) * .5 * (job.fit || 1) * (S.toon ? 1.08 : 1);
+  const dir = new THREE.Vector3(...(job.dir || [.32, .38, 1])).normalize(), dist = rad * 8, half = rad * 1.12 / (job.zoom || 1);
   return {
-    draw(angle, ctx, dt = 0) {
+    facing: Math.atan2(dir.x, dir.z),   // (the turn that looks straight at the camera)
+    draw(angle, ctx, dt = 0, pitch = 0) {
       S.size(size);
-      pivot.rotation.y = angle; if (tick) tick(dt);
+      pivot.rotation.y = angle; pivot.rotation.x = pitch; if (tick) tick(dt);
       const cam = S.cam; cam.position.copy(c).addScaledVector(dir, dist); cam.lookAt(c);
       cam.left = -half; cam.right = half; cam.top = half; cam.bottom = -half; cam.near = Math.max(.01, dist - rad * 4); cam.far = dist + rad * 4; cam.updateProjectionMatrix();
       S.scene.add(pivot); pivot.updateMatrixWorld(true);

@@ -122,29 +122,34 @@ function zoom(c, G) {
   const sec = kind && diarySecret(kind), secEl = sec ? h('div', { class: 'cb-habit' }, h('b', {}, tr(SECRET_UI.book)), h('span', {}, secretOpen(G.save.best, kind) ? tr(sec) : tr(SECRET_UI.bookLock))) : null;
   const diary = line || habitEl || secEl ? h('div', { class: 'cb-diary' }, ...(line ? [h('b', {}, tr(BOOK.diary)), h('span', {}, tr(line))] : []), ...(habitEl ? [habitEl] : []), ...(secEl ? [secEl] : [])) : null;
   if (diary) style();
-  // 도감 3D (③ 10/21): the picture turns into the friend or the thing itself, turning slowly; a drag across it turns it by hand
-  const art = c.have && card.querySelector('.cb-art'), sv = art && spinView({ build: c.spin || c.build, dir: c.item ? [.45, .6, 1] : [.32, .38, 1], fit: c.item ? 1.05 : 1.02 }, 300);
-  let spinCv = null, ang = -.35, drag = null;
+  // 도감 3D (③ 10/21, user: "캐릭터가 정면에 있다가 … 퍼스펙티브 꺾이면 약간 각도 변경되고 그런 인터렉션 … 캐릭터 더 크게"): the picture
+  // turns into the friend or the thing itself, big in its tile and facing you (a friend keeps waving); rub the card and as it tilts
+  // the friend turns with it (the card's ±30° → ±38°, up and down ±20° — user 10/21 "기울기 각 살짝 더") and looks up or down a little; let go and it eases back to face you.
+  // No spinning round any more, no device tilt (that asks for a permission) — the finger only
+  const art = c.have && card.querySelector('.cb-art'), sv = art && spinView({ build: c.spin || c.build, dir: c.item ? [.45, .6, 1] : [.32, .38, 1], fit: c.item ? 1.05 : 1.02, zoom: c.item ? .94 : 1.22 }, 300);
+  let spinCv = null, want = { y: 0, p: 0 };
   if (sv) {
     spinCv = h('canvas', { class: 'cb-3d', width: 300, height: 300 }); const ctx = spinCv.getContext('2d');
-    sv.draw(ang, ctx); art.querySelector('img')?.replaceWith(spinCv);
+    const y0 = sv.facing, cur = { y: 0, p: 0 };
+    sv.draw(y0, ctx); art.querySelector('img')?.replaceWith(spinCv);
     let last = performance.now(), acc = 0;
-    const up = () => { drag = null; }; addEventListener('pointerup', up); addEventListener('pointercancel', up);
     const loop = now => {
-      if (!spinCv.isConnected) { sv.dispose(); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); return; }
+      if (!spinCv.isConnected) { sv.dispose(); return; }
       const dt = Math.min(.1, (now - last) / 1000); last = now; acc += dt;
-      if (!drag) ang += dt * .9;
-      if (acc >= 1 / 30) { sv.draw(ang, ctx, acc); acc = 0; }   // (30 a second: the phone stays cool)
+      const k = 1 - Math.exp(-dt * 9), moving = Math.abs(want.y - cur.y) + Math.abs(want.p - cur.p) > .002;
+      cur.y += (want.y - cur.y) * k; cur.p += (want.p - cur.p) * k;
+      if (acc >= 1 / 30 && (moving || !c.item)) { sv.draw(y0 + cur.y, ctx, acc, cur.p); acc = 0; }   // (30 a second at most; a thing stands still unless it moves)
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(t => { last = t; requestAnimationFrame(loop); });
-    spinCv.addEventListener('pointerdown', e => { drag = { x: e.clientX, a: ang }; });
-    spinCv.addEventListener('pointermove', e => { if (drag) ang = drag.a + (e.clientX - drag.x) * .02; });
   }
   const layer = h('div', { class: 'cb-zoom' }, card, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
-  const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = (x - r.left) / r.width - .5, ny = (y - r.top) / r.height - .5;
-    card.style.transform = `rotateY(${nx * 24}deg) rotateX(${-ny * 24}deg)`; card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`); };
-  layer.addEventListener('pointermove', e => tilt(e.clientX, e.clientY));
+  const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = Math.max(-.5, Math.min(.5, (x - r.left) / r.width - .5)), ny = Math.max(-.5, Math.min(.5, (y - r.top) / r.height - .5));
+    card.style.transition = ''; card.style.transform = `rotateY(${nx * 30}deg) rotateX(${-ny * 30}deg)`; card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`);
+    want = { y: nx * 2 * .66, p: ny * 2 * .35 }; };
+  const settle = () => { want = { y: 0, p: 0 }; card.style.transition = 'transform .35s cubic-bezier(.2, 1.4, .4, 1)'; card.style.transform = ''; };   // (let go: card and friend back to face you)
+  layer.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) tilt(e.clientX, e.clientY); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) layer.addEventListener(ev, settle);
   layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target) || diary?.contains(e.target)) return; if (!card.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });
   for (const ev of ['pointerup', 'wheel']) layer.addEventListener(ev, e => e.stopPropagation());
   G.audio.sfx('flip');   // (a card picked up — paper flip, 사운드 10/20)
