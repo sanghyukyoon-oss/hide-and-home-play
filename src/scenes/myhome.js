@@ -247,6 +247,7 @@ export class MyHomeScene {
     if (!dx && !dz) return { x: 0, z: 0 };
     for (const f of z.furniture || []) if (f.x != null) { f.x -= dx; f.z -= dz; }
     for (const f of z.friends || []) { f.x -= dx; f.z -= dz; }
+    if (z.mong) { z.mong.x -= dx; z.mong.z -= dz; }   // (몽글이's own spot too — ③ 10/21)
     const hid = this.H.hide; if (hid?.zoneId === this.zoneId) for (const e of hid.items || []) if (e.free?.host === 'room' && Array.isArray(e.free.p)) { e.free.p[0] -= dx; e.free.p[2] -= dz; }
     this.G.persist();
     return { x: dx, z: dz };
@@ -302,7 +303,9 @@ export class MyHomeScene {
     }
     messOpen(this);   // 털린 흔적: what a resident opened stays open until you shut it
     this.mong = new Char('mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8;   // (the room's owner is always 몽글이 — the 도감 pick is a friend who walks along, 10/19; comment no longer swallows the placing)
-    if (this.lobby) { const R = this.room, [mx, mz] = [[.7, 1.1], [.3, 1.5], [1.1, .5], [0, .6], [1.5, 1.5]].find(([x, z]) => R.clearAt(x, z, .34)) || [1.9, 1.9]; this.mong.root.position.set(mx, 0, mz); }   // (the lobby: in the middle of things, the camera on it)
+    if (this.lobby) { const R = this.room, [mx, mz] = [[.7, 1.1], [.3, 1.5], [1.1, .5], [0, .6], [1.5, 1.5]].find(([x, z]) => R.clearAt(x, z, .34)) || [1.9, 1.9]; this.mong.root.position.set(mx, 0, mz); }
+    // (③ 10/21, user: "내방배치에 몽글이도 배치 변경 가능해야됨"): where you put 몽글이 in 꾸미기, while it is still free
+    const ms = this.lobby && this.zone?.mong; if (ms && this.room.clearAt(ms.x, ms.z, .3)) { this.mong.root.position.set(ms.x, 0, ms.z); if (ms.a != null) this.mong.root.rotation.y = ms.a; }   // (the lobby: in the middle of things, the camera on it)
     this.room.group.add(this.mong.root);
     if (this.lobby) this.seatFriends();   // the friends sitting in this room (lobby.js)
     W.idsDirty = true;

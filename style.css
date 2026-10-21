@@ -1993,8 +1993,12 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 
 /* 장 카드 E (UI 세션 10/21): no faces under the card — the room's own 3D 몽글이 waves there, in a soft spotlight (story.js .hello) */
 .cine.hello { background: radial-gradient(ellipse 50% 28% at 50% 64%, rgba(255, 244, 228, 0) 0, rgba(255, 244, 228, 0) 55%, rgba(40, 26, 50, .5) 100%); }
-/* (③ 10/21) under the hello the room shows through: the zoom bar, the dial, the list and the top line wait until the card has gone */
-#app:has(> .cine.hello) :is(#hud, .zgauge, .modebadge, .joy, .turndial) { opacity: 0; pointer-events: none; transition: opacity .3s var(--eo); }
+/* (③ 10/21) under a chapter card (the hello, or the faces where nobody walks along — QA 41판) the room shows through: the zoom bar, the dial, the list and the top line wait until the card has gone */
+#app:has(> .cine) :is(#hud > :not(.kitintro), .zgauge, .modebadge, .joy, .turndial) { opacity: 0; pointer-events: none; transition: opacity .3s var(--eo); }
+/* (③ 10/21) 바르기 대 보기: the shop steps down for a moment, the room shows its new walls (shop.js peekShop) */
+#overlay > .panel.shop { transition: top .32s var(--eo); top: 0; }
+#overlay.shoppeek { background: transparent; }
+#overlay.shoppeek > .panel.shop { top: 130vh; }
 /* (③ 10/21, user: "Ui 별 위이 정렬해줘") the result's stars on one line under the ribbon: the middle one bigger, not lifted into it */
 .panel.result > .stars { margin: 4px 0 6px; align-items: center; }
 .panel.result > .stars .st:nth-child(2) { margin-top: 0; }

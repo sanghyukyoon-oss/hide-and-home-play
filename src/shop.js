@@ -126,7 +126,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         function apply() {
           if (!zone || !ztype.indoor) { ui.toast('실내에서만 바를 수 있어', 'red'); G.persist(); render(); return; }
           zone.paint = { ...(zone.paint || {}), ...look };
-          G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render();
+          G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render(); peekShop(G, ctx);
         }
       }
       laterPats(laterP, false);
@@ -144,7 +144,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         function apply() {
           if (!zone) return;
           zone.paint = { ...(zone.paint || {}), ...look };
-          G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render();
+          G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render(); peekShop(G, ctx);
         }
       }
       laterPats(laterP, true);
@@ -178,7 +178,7 @@ export function openShop(G, ctx = {}, tab = 'furn') {
         function apply() {
           if (!zone) return;
           zone.style = st.id; zone.paint = {};
-          G.persist(); G.audio.sfx('place'); ui.toast(`${ga(zone.name)} '${st.name}' 테마로 바뀌었어!`, 'green'); ctx.onChange?.('paint'); render();
+          G.persist(); G.audio.sfx('place'); ui.toast(`${ga(zone.name)} '${st.name}' 테마로 바뀌었어!`, 'green'); ctx.onChange?.('paint'); render(); peekShop(G, ctx);
         }
       }
     } else if (tab === 'size') {
@@ -249,6 +249,16 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   ui.panel({ title: '상점', color: 'orange', cls: 'shop', body: [h('div', { class: 'shophead' }, coinPill), tabsEl, note, grid], close: () => ctx.onClose?.() });
 }
 
+// 바르기 대 보기 (③ 10/21): with the shop open the new walls went on behind it and showed only once it was shut —
+// the shop steps down out of the way for a moment so the room shows them, then comes back on the same tab (a touch brings it back at once)
+const PEEK = typeof location === 'undefined' || !/[?&]shoppeek=0(&|$)/.test(location.search);   // (on: 검토 10/21 '기본은 넣는 쪽'; ?shoppeek=0 for the old way)
+function peekShop(G, ctx) {
+  const ui = G.ui, p = ui.panelOpen; if (!PEEK || !p || p._peek) return;
+  p._peek = true; ctx.onPreview?.(true); ui.overlay.classList.add('shoppeek');
+  const back = () => { if (!p._peek) return; p._peek = false; clearTimeout(t); removeEventListener('pointerdown', back, true); ui.overlay.classList.remove('shoppeek'); ctx.onPreview?.(false); };
+  const t = setTimeout(back, 1600);
+  setTimeout(() => { if (p._peek) addEventListener('pointerdown', back, true); }, 80);
+}
 let buyAt = 0;   // (QA3 10/19) one purchase per 0.45 s: a double tap bought twice
 function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse, blocked = null }) {
   const c = h('div', { class: 'card' },

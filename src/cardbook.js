@@ -138,13 +138,14 @@ const haveIds = G => { const f = friendCards(G).filter(c => c.have); return [...
 export function bookBadge(G, btn) {
   const S = G.save; if (!S.bookOpened) { S.bookOpened = haveIds(G); G.persist(); }
   if (!S.bookSec) { S.bookSec = 1; S.bookOpened = [...new Set([...S.bookOpened, ...haveIds(G).filter(id => id.startsWith('s:'))])]; G.persist(); }   // (holo cards from before 10/21: already seen)
-  const was = new Set(S.bookOpened), n = haveIds(G).filter(id => !was.has(id)).length;
+  const was = new Set(S.bookOpened), n = haveIds(G).filter(id => !was.has(id)).length + (S.bookExtra || 0);   // (bookExtra: a page in '배운 것' that just opened — 같이 다니는 친구, ③ 10/21)
   if (n) btn.append(h('div', { class: 'badge new bookn' }, String(n)));
   return btn;
 }
 export function openCardBook(G, tab = 'friends') {
   { const S = G.save, b = haveIds(G); if ((S.bookOpened || []).length !== b.length || b.some(id => !S.bookOpened.includes(id))) { S.bookOpened = b; G.persist(); } }
   document.querySelectorAll('.badge.bookn').forEach(e => e.remove());
+  if (G.save.bookExtra) { delete G.save.bookExtra; G.persist(); }
   G.audio?.sfx?.('flip');   // (the book opens / a tab turns — 사운드 10/20)
   const cards = tab === 'learned' ? [] : tab === 'items' ? itemCards(G) : friendCards(G);
   if (cards.some(c => c.have && !ART[c.art])) G.ui.toast('카드 인쇄 중…', '');

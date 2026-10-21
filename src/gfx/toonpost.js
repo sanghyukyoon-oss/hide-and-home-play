@@ -169,13 +169,26 @@ void main(){
   for (int y = -R; y <= R; y++) for (int x = -R; x <= R; x++) f = max(f, texelFetch(tM, clamp(c + ivec2(x, y), ivec2(0), mx), 0).r);
   gl_FragColor = vec4(f, 0., 0., 1.);
 }`;
+// 흑백판 RGB 분리 세기: CSS px at the screen corners while a stage is grey (0 = off; ?gsplit=N to try another)
+const GSQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsplit') : null;
+export const GRAY_SPLIT = GSQ != null && GSQ !== '' && !isNaN(+GSQ) ? +GSQ : 1.5;
 const DOWN = `
 varying vec2 vUv;
-uniform sampler2D tSrc; uniform vec2 outRes; uniform float sharpen;
+uniform sampler2D tSrc; uniform vec2 outRes; uniform float sharpen, split;
 void main(){
   vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint
   vec4 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)) + texture2D(tSrc, vUv + vec2(q.x, -q.y))
          + texture2D(tSrc, vUv + vec2(-q.x, q.y)) + texture2D(tSrc, vUv + vec2(q.x, q.y))) * .25;
+  // 흑백판 RGB 분리 (10/21 사용자 "아주 약하게"): red out and blue in along the line from the screen's middle, growing toward the
+  // edges (split = output px at the corners); nothing in the middle. Two more taps; off (0) everywhere else.
+  if (split > .001) {
+    vec2 dv = (vUv - .5) * vec2(outRes.x / outRes.y, 1.);
+    float k = smoothstep(.05, .5, dot(dv, dv) * 2.);
+    vec2 off = normalize(dv + 1e-5) * split * k / outRes.y;
+    off.x *= outRes.y / outRes.x;
+    c.r += (texture2D(tSrc, vUv + off).r - c.r) * k;
+    c.b += (texture2D(tSrc, vUv - off).b - c.b) * k;
+  }
   if (sharpen > .001) {
     // unsharp mask: a blur about one output pixel wide, the difference added back
     vec2 r = 1.1 / outRes;
@@ -226,7 +239,7 @@ export class ToonPost {
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
     this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
-    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 } };
+    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 } };
     const quad = m => { const s = new THREE.Scene(); s.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m)); return s; };
     const sm = (uniforms, fragmentShader) => new THREE.ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader, depthTest: false, depthWrite: false, blending: THREE.NoBlending });
     this.aoScene = quad(sm(this.au, AO));
@@ -371,13 +384,16 @@ export class ToonPost {
     const er = rects && rects.map(b => [Math.max(0, b[0] - reach), Math.max(0, b[1] - reach), Math.min(W, b[2] + reach), Math.min(H, b[3] + reach)]);
     scene3(this.comp, er, () => { r.clear(); r.render(this.edgeScene, this.qCam); });
     r.setRenderTarget(null);
+    // the grey stage's RGB split: only while the whole room is grey — off from the moment the colour starts coming back
+    const sp = this.u.gray.value > .5 && this.u.grayR.value < 0 ? GRAY_SPLIT * r.getPixelRatio() : 0;
+    this.du.split.value = sp;
     if (er) {
       // the canvas keeps its pixels (preserveDrawingBuffer): only the screen boxes these comp boxes reach are redone
       // (the down pass reads up to ~1.6 output px around a pixel). setScissor takes CSS px.
       const k = 1 / this.ss, pr = r.getPixelRatio(), cw = this.w, ch = this.h;
       r.setScissorTest(true);
       for (const b of er) {
-        const x0 = Math.max(0, Math.floor(b[0] * k) - 3), y0 = Math.max(0, Math.floor(b[1] * k) - 3), x1 = Math.min(cw, Math.ceil(b[2] * k) + 3), y1 = Math.min(ch, Math.ceil(b[3] * k) + 3);
+        const m = 3 + Math.ceil(sp), x0 = Math.max(0, Math.floor(b[0] * k) - m), y0 = Math.max(0, Math.floor(b[1] * k) - m), x1 = Math.min(cw, Math.ceil(b[2] * k) + m), y1 = Math.min(ch, Math.ceil(b[3] * k) + m);
         r.setScissor(Math.floor(x0 / pr), Math.floor(y0 / pr), Math.ceil((x1 - x0) / pr) + 1, Math.ceil((y1 - y0) / pr) + 1);
         r.clear(); r.render(this.downScene, this.qCam);
       }

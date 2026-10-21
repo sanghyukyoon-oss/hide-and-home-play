@@ -11,7 +11,7 @@ import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { FURN_INFO } from '../gfx/furniture.js';
 import { openRoadmap } from '../roadmap.js';
 import { openCardBook, bookBadge } from '../cardbook.js';
-import { runRaids } from '../raid.js';
+import { runRaids, unseen } from '../raid.js';
 import { shieldChip } from '../raidreplay.js';   // 문단속 (털기 메타 10/19)
 import { playDialog } from '../story.js';
 import { clearFollowupFinish } from '../followup.js';
@@ -78,7 +78,7 @@ export class LobbyScene extends MyHomeScene {
   constructor(G) { super(G); this.name = 'home'; this.lobby = true; this.seated = []; }
   async enter(o = {}) {
     const G = this.G;
-    { const c = settleOpen(G); if (c) setTimeout(() => G.ui.toast(`지난번 털다 만 집 정산 · 코인 +${c}`, 'green'), 900); }   // (QA9 P2: the app closed mid-raid)
+    settleOpen(G);   // (③ 10/21 로비 정리: the coins come in without a toast)   // (QA9 P2: the app closed mid-raid)
     if (!o.ending) runRaids(G);   // residents who sneaked in while you were away (coins land before the pills show them)
     // 판 끝 집으로 가져가기 (10/19): on the way to the next stage, the room for under 3 s (the room's first opening plays instead)
     // (검토 P1 10/19: after 2판's '계속 찾기' the room's first opening is on the way too — 3 s, the gift set down, no pick; the
@@ -94,7 +94,7 @@ export class LobbyScene extends MyHomeScene {
     // things gathered for the room that never passed through it (the 홈 button instead of '다음'): set down now, quietly
     const Q = this.H.homeQ; if (Q?.furns?.length && G.homeOpen()) { for (const f of Q.furns) { const i = this.H.inventory.lastIndexOf(f); if (i >= 0) { this.placeFromInv(i); this.select(null); } } }
     this.H.homeQ = { friends: [], furns: [], items: [] };
-    this.tw.wait(.8).then(() => !this.dead && HomeScene.prototype.raidNews.call(this));
+    // (③ 10/21 "모든 연락은 숫자 뱃지": who came while you were away is a number on 놀러 가기 — its news open from there)
     const tut = G.save.tut || (G.save.tut = {});
     if (G.homeOpen() && !tut.home) await this.roomOpens();
     else if (G.homeOpen() && this.H.giftDue && !ECON) { const t = await this.giftCards(GIFTS); if (this.dead) return; this.giveGift(t); this.frameLobby(); this.arrivals(); }   // (left before picking)
@@ -102,7 +102,8 @@ export class LobbyScene extends MyHomeScene {
     else if (G.homeOpen()) this.arrivals();
     if (G.homeOpen()) this.placeInkySeat();   // (after the arrivals: the friends' seats first, the inky kid's cushion on what is left)
     // 같이 다니는 친구 (10/19, user OK): after 12판, once — a 🆕 badge and a friend in the room asks to come along
-    if (G.homeOpen() && (G.save.stage || 0) >= 12 && !G.save.cards?.buddy && !G.bot) setTimeout(() => !this.dead && this.mode === 'lobby' && !this.busyTut && this.buddyHint(), 5200);
+    // (③ 10/21: no friend's bubble and card any more — the 같이 다니는 친구 page waits in 도감, a number on it says so)
+    if (G.homeOpen() && (G.save.stage || 0) >= 12 && !G.save.cards?.buddy && !G.bot) { (G.save.cards || (G.save.cards = {})).buddy = true; G.save.bookExtra = (G.save.bookExtra || 0) + 1; G.persist(); if (this.bookBtn) { this.bookBtn.querySelector('.bookn')?.remove(); bookBadge(G, this.bookBtn); } }
     // a new chapter's furniture is in the shop now (설계서 N3): once per chapter — a number on 상점 until it is opened
     const ch = chapterNow(G.save);
     if (G.homeOpen() && ch > (this.H.shopCh || 1)) {
@@ -128,29 +129,34 @@ export class LobbyScene extends MyHomeScene {
       ui.toast(st.review ? '리뷰 모드: 지도에서 모든 판이 열려요' : '리뷰 모드 꺼짐', 'green');
       if (st.review) openRoadmap(G);
     });
-    col.append(prof);
-    const pills = h('div', { class: 'pills lobbypills' }); const sp = ui.pill('star', S.stars || 0), cp = ui.pill('coin', S.coins);
-    pills.append(sp, cp);
-    if (S.lens) {   // the magnifier bag (설계서 5장): how many are waiting for the stages
-      const lp = ui.pill('hint', `${S.lens.bag ?? 0}`, 'lens');
-      lp.style.pointerEvents = 'auto';
-      lp.addEventListener('click', () => ui.toast(`돋보기 가방 ${S.lens.bag ?? 0}/5 · 판을 돋보기 없이 깨거나 놀이를 이기면 +1`, ''));
-      pills.append(lp);
-    }
+    /* (③ 10/21 로비 정리: no profile — 몽글이 is big in the room) */
+    // (③ 10/21, user: "로비에서는 불필요한 ui … 다 필요 없어"): the coins only — the ★ total (nothing spends it) and the magnifier bag
+    // (shown in the stage and the shop) are gone from here
+    const pills = h('div', { class: 'pills lobbypills' }); const cp = ui.pill('coin', S.coins);
+    pills.append(cp);
     col.append(pills); G.coinPills = [cp];
-    const snd = ui.ibtn(G.audio.muted ? 'mute' : 'sound', 'purple', () => { G.audio.setMuted(!G.audio.muted); snd.innerHTML = ''; snd.insertAdjacentHTML('beforeend', ICON[G.audio.muted ? 'mute' : 'sound']); });
-    snd.style.cssText += 'width:44px;height:44px';
+    // (③ 10/21 로비 정리: 소리 and 지도 inside 더보기 — the side keeps 도감 · 상점 · 더보기)
+    const sndB = () => ui.btn(G.audio.muted ? '소리 켜기' : '소리 끄기', { color: 'blue', onClick: () => { G.audio.setMuted(!G.audio.muted); ui.closePanel(); } });
+    const mapB = () => ui.btn('지도', { color: 'blue', onClick: () => { ui.closePanel(); setTimeout(() => openRoadmap(G), 200); } });
     const town = ui.btn('동네 구경', { color: 'orange', onClick: () => { ui.closePanel(); G.go('town'); } });
-    const side = h('div', { class: 'homeside' }, snd,
-      ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
-      bookBadge(G, ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) })),
+    const side = h('div', { class: 'homeside' },
+      this.bookBtn = bookBadge(G, ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) })),
       this.shopBtn = ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
-      ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G, [town]) }));
+      ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G, [town, mapB(), sndB()]) }));
     col.append(side);
-    this.playBtn = playButton(G);
+    this.playBtn = playButton(G); this.playBtn.querySelector('.sub')?.remove(); this.playBtn.classList.remove('stack');   // (③ 10/21: no '동네 골목 10/10 · 방탈출' line — the button says the stage)
+    // the boxes of chapters you'd already finished before this update (설계서 8장) and a 별 상자 waiting: a number on 꾸미기, opened from it
+    const q = (this.H.boxQ || []).filter(i => PICKS[i] && !(i in (this.H.picks || {})));
+    const sb = open ? starBoxState(S).pending : 0;
+    const giftNow = async () => {
+      if (!q.length) { await this.openStarBoxLobby(); return; }
+      const i = q[0], c = await giftPanel(G, giftChoices(G.save, 100 + i), { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 이 장 가구는 상점 기념품 칸에 있어' });   // (10/20: a gift — gifts.js)
+      ui.toast(grantGift(G, c), 'green'); takeGiftPick(G, i, c); this.setMode('lobby');
+    };
+    const news = unseen(S).length;
     const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : go() });
     const row = h('div', { class: 'row2 three' },
-      (() => { const b = lock('꾸미기', 'orange', 'paint', () => { if (call) this.invTab = 'friends'; this.setMode('edit'); }), nx = open && this.growNext?.();   // (👋: straight to the 친구 tab)
+      (() => { const b = lock('꾸미기', 'orange', 'paint', () => { if (open && (q.length || sb)) return giftNow(); if (call) this.invTab = 'friends'; this.setMode('edit'); }), nx = open && this.growNext?.();   // (👋: straight to the 친구 tab)
           // (방 넓히기: the room can grow now → a 🔨 on 꾸미기; the lobby's close-up doesn't show its sign)
         // (친구 부르기 10/20: a friend you can call now — the coins and a free seat — comes first: 👋)
         const z = this.zone, call = open && ECON && (z?.friends?.length || 0) < seatsOf(z) && callableFriends(S).some(k => (S.coins || 0) >= friendPrice(k));
@@ -159,28 +165,15 @@ export class LobbyScene extends MyHomeScene {
         this._growNow = !!(nx && (S.coins || 0) >= nx.S.price);
         return b; })(),
       (() => { const b = this.hideBtn = lock('숨기기', 'purple', 'hide', () => S.tut?.hideLater || S.tut?.hideNew ? this.hideLesson() : this.setMode('hide')); if (open && (S.tut?.hideLater || S.tut?.hideNew)) b.append(h('div', { class: 'badge new hiden' }, '1')); return b; })(),
-      lock('놀러 가기', 'pink', 'play', () => G.go('visit')));
+      (() => { const b = lock('놀러 가기', 'pink', 'play', () => unseen(S).length ? HomeScene.prototype.raidNews.call(this) : G.go('visit')); if (open && news) b.append(h('div', { class: 'badge new newsn' }, String(news))); return b; })());
     col.append(h('div', { class: 'homebar' }, this.playBtn, row));
     // 꾸미기's one number (user 10/20: "방꾸미기 숫자 배지", "도감이랑 내 방에 숫자 배지"): furniture you haven't seen there yet,
     // a friend you can call now that you haven't seen there, and the room once it can grow — popping in when it grows;
     // opening 꾸미기 counts them all as seen (🎁 is the 별 상자's own sign, so none here)
     const HH = this.H; if (!HH.seenFurn) HH.seenFurn = [...new Set(HH.inventory)];
-    const nNew = open ? HH.inventory.filter(t => !HH.seenFurn.includes(t)).length + this._callNow.filter(k => !(HH.seenCall || []).includes(k)).length + (this._growNow && HH.seenGrow !== (this.zone?.size || 0) ? 1 : 0) : 0;
+    const nNew = open ? HH.inventory.filter(t => !HH.seenFurn.includes(t)).length + this._callNow.filter(k => !(HH.seenCall || []).includes(k)).length + (this._growNow && HH.seenGrow !== (this.zone?.size || 0) ? 1 : 0) + q.length + (sb ? 1 : 0) : 0;
     if (nNew) { const grew = nNew > (HH.giftPopN || 0); row.firstChild.append(h('div', { class: 'badge' + (grew ? ' new' : '') }, String(nNew))); if (grew) { HH.giftPopN = nNew; G.persist(); } }
-    // the boxes of chapters you'd already finished before this update (설계서 8장): one 🎁 each, opened here
-    const q = (this.H.boxQ || []).filter(i => PICKS[i] && !(i in (this.H.picks || {})));
-    const sb = open ? starBoxState(S).pending : 0;   // 별 상자 waiting (the room wasn't passed since it came)
-    if ((q.length || sb) && open) {
-      const gift = ui.btn(q.length ? `🎁 지난 장 선물 ${q.length}` : `🎁 별 상자${sb > 1 ? ' ' + sb : ''}`, { color: 'yellow', cls: 'sm pulse', onClick: async () => {
-        if (!q.length) { gift.remove(); await this.openStarBoxLobby(); return; }
-        const i = q[0], c = await giftPanel(G, giftChoices(G.save, 100 + i), { title: `${REGION_NAME(i)} 선물 상자!`, line: '하나 골라! 이 장 가구는 상점 기념품 칸에 있어' });   // (10/20: a gift — gifts.js)
-        ui.toast(grantGift(G, c), 'green'); takeGiftPick(G, i, c); this.setMode('lobby');
-      } });
-      gift.style.cssText += 'position:absolute;left:12px;top:calc(76px + var(--safeT));pointer-events:auto';
-      col.append(gift);
-    }
-    // 문단속 (털기 메타 10/19): robbed, the door stays locked a while — a chip under the profile counts it down
-    const sh = shieldChip(G, q.length && open ? 124 : 76); if (sh) col.append(sh);
+    /* (③ 10/21 로비 정리: no 문단속 chip — the shield still works, its line shows in the news) */
   }
 
   // ── friends in the room
@@ -407,12 +400,17 @@ export class LobbyScene extends MyHomeScene {
     this.select(null);
     this.ftool = h('div', { class: 'ftool' },
       ui.btn(null, { color: 'blue', icon: 'rotate', onClick: () => { s.rec.a = ((s.rec.a ?? 0) + Math.PI / 4) % (Math.PI * 2); s.ch.root.rotation.y = s.rec.a; G.audio.sfx('swish'); G.persist(); } }),
-      ui.btn(null, { color: 'red', icon: 'box', onClick: () => { this.room.group.remove(s.ch.root); this.seated = this.seated.filter(x => x !== s); this.toBox(s.k); this.fsel = null; G.audio.sfx('pop', 2); G.persist(); this.setMode('edit'); } }));
+      s.k === 'mong' ? '' : ui.btn(null, { color: 'red', icon: 'box', onClick: () => { this.room.group.remove(s.ch.root); this.seated = this.seated.filter(x => x !== s); this.toBox(s.k); this.fsel = null; G.audio.sfx('pop', 2); G.persist(); this.setMode('edit'); } }));
     ui.wui.append(this.ftool);
     this.ftool.querySelectorAll('.btn').forEach(b => b.style.pointerEvents = 'auto');
     s.ch.bump(.3); G.audio.sfx('click');
   }
-  seatedHit(x, y) { const hit = this.pick(x, y); return hit.kind === 'char' ? this.seated.find(s => s.ch === hit.char) || null : null; }
+  seatedHit(x, y) {
+    const hit = this.pick(x, y); if (hit.kind !== 'char') return null;
+    // (③ 10/21, user: "내방배치에 몽글이도 배치 변경 가능해야됨"): 몽글이 moves and turns like a seated friend — its spot is zone.mong
+    if (hit.char === this.mong && this.zone) { const p = this.mong.root.position; if (this._mongSeat?.ch !== this.mong) this._mongSeat = { k: 'mong', ch: this.mong, rec: this.zone.mong || { x: +p.x.toFixed(2), z: +p.z.toFixed(2), a: this.mong.root.rotation.y } }; this.zone.mong = this._mongSeat.rec; return this._mongSeat; }
+    return this.seated.find(s => s.ch === hit.char) || null;
+  }
   tap(x, y) {
     if (this.mode === 'passage') return this.passageDone();
     if (this.mode === 'lobby') {

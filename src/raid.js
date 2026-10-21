@@ -106,7 +106,7 @@ function raidOnce(G, now) {
 }
 
 export const unseen = save => raidOf(save).log.filter(e => !e.seen);
-export function markSeen(G) { for (const e of raidOf(G.save).log) e.seen = true; G.persist(); }
+export function markSeen(G) { for (const e of raidOf(G.save).log) e.seen = true; G.persist(); if (typeof document !== 'undefined') document.querySelectorAll('.badge.newsn').forEach(e => e.remove()); }   // (the lobby's number on 놀러 가기 — ③ 10/21)
 export function newsLine(e) {
   const fr = (e.blocked || []).map(k => CHAR_DEFS[k]?.name).filter(Boolean);
   if (e.kind === 'steal') return `${ga(e.nick)} ${e.revenge ? '복수하러 와서 ' : ''}${eul(ITEMS[e.item]?.name || '물건')} 털어 갔어!` + (fr.length ? ` (친구가 ${fr.length}개 막아 줌)` : e.coins ? ` (못 찾은 물건 덕에 +${e.coins})` : '');
