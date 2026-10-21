@@ -8,7 +8,7 @@ import { setStyle } from './kit.js';
 export const ART = {
   lineW: 1.5, overlap: .25, innerStr: 0, innerRatio: .7, innerSens: .3, lineAlpha: 1,
   ink: '#1f1a22', tint: 0, tintDark: .9,
-  ao: .69, aoR: .15, shadowStr: .63, sharpen: .45, shadeTint: 0,
+  ao: .69, aoR: .15, shadowStr: .63, sharpen: .55, shadeTint: 0,
   sun: 2.45, amb: 1.55, ambColor: '#fff0e2', sunColor: '#fff3e0', shade: .6, mid: .84,
 };
 // live multipliers set from the 세팅 panel (src/tune.js); 1 = as above

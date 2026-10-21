@@ -174,7 +174,7 @@ export async function playCinematic(G, c) {
     h('div', { class: 'cine-card' }, h('div', { class: 'cine-ch' }, tr(`${c.chapter}장`)), h('div', { class: 'cine-title' }, c.title), c.region ? h('div', { class: 'cine-sub' }, tr(c.region)) : ''),
     // (장 카드 E — user 10/21 "오 바뀐 거 좋네": with c.hello the 2D faces stay out and the room's own 3D 몽글이 comes close and
     // waves under the card — c.hello is the stage's; a soft spotlight where it stands)
-    c.hello ? '' : h('div', { class: 'cine-faces' }, ...(c.cast || []).map((k, i) => h('img', { src: G.thumbs['face_' + k], style: `animation-delay:${.35 + i * .2}s` }))));
+    c.hello || c.noFaces ? '' : h('div', { class: 'cine-faces' }, ...(c.cast || []).map((k, i) => h('img', { src: G.thumbs['face_' + k], style: `animation-delay:${.35 + i * .2}s` }))));
   if (c.hello) { root.classList.add('hello'); c.hello(); }
   document.getElementById('app').append(root);
   G.audio.sfx('whoosh');

@@ -39,7 +39,7 @@ function headOf(chs) {
 // how much of a character something stands in front of, as the camera is now: a 5×3 grid over it on the screen; a
 // point counts only where the ray reaches the character and something else (a wall, the floor's front edge, another
 // floor, furniture, someone else) comes first — points beside its outline don't count
-function covered(W, c, parts = null) {
+export function covered(W, c, parts = null) {
   // (the box from the feet and the head's height, about as wide as tall: a character's whole box takes in the flat shadow
   // disc at its feet, far wider than it is)
   const p = posOf(c), h = c.headTop?.() ?? .5, right = new THREE.Vector3(1, 0, 0).applyQuaternion(W.cam.quaternion); right.y = 0; right.normalize();

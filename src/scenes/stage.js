@@ -34,7 +34,7 @@ import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
-import { closeUp, closeBack, clearParts, clearTurn } from '../closeup.js';
+import { closeUp, closeBack, clearParts, clearTurn, covered } from '../closeup.js';
 import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
 import { armFtap } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
@@ -344,7 +344,7 @@ export class StageScene {
     if (this.dead) return;
     if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
-    if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], region: REGIONS.find(r => r.id === this.spec.chapter)?.name, hello: this.hero ? () => this.cineHello() : null }); if (this.dead) return; await this.cineBye(); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
+    if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], region: REGIONS.find(r => r.id === this.spec.chapter)?.name, hello: this.hero && !this.kitCover ? () => this.cineHello() : null, noFaces: !!this.kitCover }); if (this.dead) return; await this.cineBye(); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
@@ -2527,17 +2527,35 @@ export class StageScene {
   async cineHello() {
     const G = this.G, W = G.world, h = this.hero; if (!h) return;
     const m = h.ch; h.on = false;
-    this._helloBack = { target: W.target.clone(), yaw: W.yaw, pitch: W.pitch, zoom: W.zoom };
-    const T = m.root.getWorldPosition(new THREE.Vector3()); T.y = 1;
-    W.flyTo(this.tw, { target: T, zoom: 2.5, pitch: Math.max(.36, W.minPitch || 0), dur: .6 });
-    await this.tw.wait(.65); if (this.dead || this.hero !== h) return;
+    const back = this._helloBack = { target: W.target.clone(), yaw: W.yaw, pitch: W.pitch, zoom: W.zoom };
+    const T = m.root.getWorldPosition(new THREE.Vector3()); T.y += 1;
+    W.flyTo(this.tw, { target: T, zoom: 2.5, ...this.helloView(m, T, back), dur: .6 });
+    await this.tw.wait(.65); if (this.dead || this.hero !== h || this._helloBack !== back) return;   // (tapped through the card already: cineBye has the camera)
     const c = W.cam.position; m.faceTo(c.x, c.z); m.pose = 'wave'; m.setFace?.('happy'); m.bump(.45);
     G.audio.sfx('pop', 2);
-    this.say(m, '안녕!', 2200);
+    this._helloSay = this.say(m, '안녕!', 2200);
+  }
+  // the turn and tilt the hello sees 몽글이 best from (③ 10/21: 32판's counter hid all but its ears, 50·61판 a lamp post and a
+  // monitor half its face): the start turn first, a higher tilt, then the turns beside it — closeup.js covered()
+  helloView(m, T, back) {
+    const W = this.G.world, R = this.room, p0 = Math.max(.36, W.minPitch || 0);
+    let best = null;
+    for (const d of [0, Math.PI / 8, -Math.PI / 8, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2, Math.PI]) {
+      for (const pitch of [p0, .55]) {
+        W.yaw = back.yaw + d; W.pitch = pitch; W.zoom = 2.5; W.target.copy(T); W.updateCam(); R?.update?.(1); W.root.updateMatrixWorld(true);
+        const n = covered(W, m);
+        if (!best || n < best.n) best = { yaw: W.yaw, pitch, n };
+        if (!n) break;
+      }
+      if (!best.n) break;
+    }
+    W.yaw = back.yaw; W.pitch = back.pitch; W.zoom = back.zoom; W.target.copy(back.target); W.updateCam(); R?.update?.(1);
+    return { yaw: best.yaw, pitch: best.pitch };
   }
   async cineBye() {
     const b = this._helloBack, h = this.hero; if (!b) return;
     this._helloBack = null;
+    this._helloSay?.kill(); this._helloSay = null;   // (the bubble is placed once: left up, it hung in mid-air as the camera flew back)
     if (h) { h.ch.pose = 'idle'; h.ch.setFace?.('normal'); h.on = true; }
     await this.G.world.flyTo(this.tw, { ...b, dur: .5 });
   }

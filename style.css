@@ -1991,3 +1991,5 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 
 /* 장 카드 E (UI 세션 10/21): no faces under the card — the room's own 3D 몽글이 waves there, in a soft spotlight (story.js .hello) */
 .cine.hello { background: radial-gradient(ellipse 50% 28% at 50% 64%, rgba(255, 244, 228, 0) 0, rgba(255, 244, 228, 0) 55%, rgba(40, 26, 50, .5) 100%); }
+/* (③ 10/21) under the hello the room shows through: the zoom bar, the dial, the list and the top line wait until the card has gone */
+#app:has(> .cine.hello) :is(#hud, .zgauge, .modebadge, .joy, .turndial) { opacity: 0; pointer-events: none; transition: opacity .3s var(--eo); }
