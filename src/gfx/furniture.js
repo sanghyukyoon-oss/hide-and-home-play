@@ -13,6 +13,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeStatic } from './bake.js';
 import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, plane, roundRect, shade, STYLE, SHADOW } from './kit.js';
+import { clothBend } from './clothbend.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
 
@@ -604,7 +605,8 @@ B.bed = (f, T) => {
     add(G.cyl(.026, .026, .926, 12), sheet, 0, .03, -.52, 0, 0, HP);
     add(G.pbox(.926, .008, .024), acc2, 0, .05, -.41);
   }));
-  const bp = f.part('lift', bl, (t, b) => { bl.position.y = b.p.y + .55 * t; bl.position.z = b.p.z + .06 * t; bl.scale.z = 1 - .45 * t; bl.rotation.x = .2 * t; }, { label: '이불', sfx: 'lift' });
+  // (③ #97 10/21, user "이불도 벤딩으로": the cloth bends and curls back from its free edge — gfx/clothbend.js)
+  const bp = f.part('lift', bl, clothBend(f, bl, { hinge: [0, 0, -.3], along: [0, 0, 1], toward: [0, 1, 0], len: .86, turn: 2.3, rise: .1, flaps: true }), { label: '이불', sfx: 'lift', dur: .6 });
   f.spot('inside', null, 0, .54, .36, { part: bp, maxH: .3, label: '이불 속' });
   f.spot('under', null, .3, 0, .35, { maxH: .19, label: '침대 밑', scale: .85 });
 };
@@ -632,7 +634,8 @@ B.futon = (f, T) => {
     for (const sx of [-1, 1]) box(.016, .08, 1.0, sx * .436, -.03, 0, { r: .006 });
   }));
   bl.add(mc('futon-fold|' + tk, ({ add }) => { add(G.cyl(.024, .024, .88, 12), sheet, 0, .03, -.5, 0, 0, HP); }));
-  const bp = f.part('lift', bl, (t, b) => { bl.position.y = b.p.y + .45 * t; bl.position.z = b.p.z + .05 * t; bl.scale.z = 1 - .45 * t; bl.rotation.x = .2 * t; }, { label: '이불', sfx: 'lift' });
+  // (③ #97 10/21, user "이불도 벤딩으로": the cloth bends and curls back from its free edge — gfx/clothbend.js)
+  const bp = f.part('lift', bl, clothBend(f, bl, { hinge: [0, 0, .42], along: [0, 0, -1], toward: [0, 1, 0], len: .95, turn: 2.3, rise: .1, flaps: true }), { label: '이불', sfx: 'lift', dur: .6 });
   f.spot('inside', null, 0, .1, .2, { part: bp, maxH: .26, label: '이불 속' });
   f.spot('on', bl, .12, .026, .12, { maxH: .3, label: '이불 위', scale: .8 });   // (on a loft only seen tilting down — 2판's tilt lesson, 10/18)
 };

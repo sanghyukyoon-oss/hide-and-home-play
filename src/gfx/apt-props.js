@@ -17,6 +17,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, heartShape, starShape, STYLE } from './kit.js';
+import { clothBend } from './clothbend.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2, DS = THREE.DoubleSide;
@@ -421,7 +422,8 @@ B.kotatsu = (f, T) => {
   const pv = new THREE.Group(); put(pv, 0, TY, ti); f.add(pv);
   pv.add(mg('kotatsu-flap|' + q, qm, ({ addM }) => addM(panel(0).translate(0, -TY, -ti), new THREE.Matrix4())));
   pv.add(mc('kotatsu-flaphem|' + q, ({ addM }) => addM(G.box(2 * bo - .06, .05, .044, .016), hemL, hem)));
-  const p = f.part('lift', pv, (t, b) => { pv.rotation.x = -2.5 * t; pv.position.y = b.p.y + .07 * t; }, { label: '코타츠 이불', sfx: 'swish', dur: .32 });
+  // (③ #97 10/21, user "이불도 벤딩으로": the cloth bends and curls back from its free edge — gfx/clothbend.js)
+  const p = f.part('lift', pv, clothBend(f, pv, { along: [0, -H, s], toward: [0, s, H], len: Math.hypot(H, s), turn: 1.7, tip: 1.1, lag: .3, rise: .07, up: [0, 1, 0] }), { label: '코타츠 이불', sfx: 'swish', dur: .5 });
   f.spot('inside', null, .12, .006, .2, { part: p, maxH: .32, label: '코타츠 이불 속', scale: .9 });
   f.spot('on', null, .12, BT, .16, { maxH: .45, label: '코타츠 위', scale: .8 });
 };

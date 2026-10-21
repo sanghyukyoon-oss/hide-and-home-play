@@ -20,6 +20,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, heartShape, starShape, STYLE } from './kit.js';
+import { clothBend } from './clothbend.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2, BS = THREE.BackSide;
@@ -701,7 +702,8 @@ B.loftbed = (f, T) => {
   const pv = new THREE.Group(); put(pv, .21, MT, 0); f.add(pv);
   pv.add(pm('loftbed-duvet|' + duv, mat('#ffffff', { map: ginghamTex(duv) }), .22, ({ box }) => box(1.26, .09, .7, 0, .045, 0, { r: .04 })));
   pv.add(mc('loftbed-fold', ({ add }) => add(G.cyl(.048, .048, .72, 14), WHITE, -.6, .07, 0, HP, 0, 0)));
-  const p = f.part('lift', pv, (t, b) => { pv.position.y = b.p.y + .38 * t; pv.rotation.x = .3 * t; }, { label: '로프트 이불', sfx: 'lift', dur: .32 });
+  // (③ #97 10/21, user "이불도 벤딩으로": the cloth bends and curls back from its free edge — gfx/clothbend.js)
+  const p = f.part('lift', pv, clothBend(f, pv, { hinge: [-.45, .045, 0], along: [1, 0, 0], toward: [0, 1, 0], len: 1.08, turn: 2.5, rise: .06 }), { label: '로프트 이불', sfx: 'lift', dur: .6 });
   f.spot('inside', null, .3, MT, .02, { part: p, maxH: .26, label: '로프트 침대 이불 속', scale: .9 });
   f.spot('on', null, -.12, DT, .12, { maxH: .45, label: '로프트 아래 책상', scale: .85 });
   f.spot('on', null, .62, .66, -.13, { maxH: .45, label: '수납함 위', scale: .8 });

@@ -9,6 +9,7 @@
 // vertex-coloured mesh per piece (hmc), every moving part its own mesh. Nothing here is sold (hidden: true).
 import * as THREE from 'three';
 import { put, mat, mesh, canvasTex, texCache, shade, extrude, starShape, heartShape } from './kit.js';
+import { clothBend } from './clothbend.js';
 import { HG as G, hxf as xf, hmc as mc, hleaves as leaves } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -388,7 +389,8 @@ B.toybasket = (f, T) => {
     for (let k = 0; k < 5; k++) add(G.box(.43, .012, .02, .006), WHITE, 0, .045, -.12 + k * .06, .1, .3, 0);
   }));
   f.add(bl);
-  const p = f.part('lift', bl, (t, b) => { bl.position.y = b.p.y + .25 * t; bl.position.z = b.p.z + .1 * t; bl.rotation.x = .5 * t; }, { label: '바구니 담요', sfx: 'lift' });
+  // (③ #97 10/21, user "이불도 벤딩으로": the cloth bends and curls back from its free edge — gfx/clothbend.js)
+  const p = f.part('lift', bl, clothBend(f, bl, { hinge: [0, .02, -.15], along: [0, 0, 1], toward: [0, 1, 0], len: .32, turn: 2.4, tip: .3, rise: .12 }), { label: '바구니 담요', sfx: 'lift', dur: .5 });
   f.spot('inside', null, .02, .07, .06, { part: p, maxH: .28, label: '장난감 바구니 안', scale: .85 });
 };
 

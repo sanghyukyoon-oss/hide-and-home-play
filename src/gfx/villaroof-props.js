@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { put, grp, shade } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
+import { clothBend } from './clothbend.js';
 
 const PI = Math.PI, HP = PI / 2;
 const CREAM = '#f3eadc', LEAF = '#6cbf5a', LEAF2 = '#4fa64f', WOOD = '#c99a62', WOODD = '#8f6440', FOAM = '#f4f4f0', DARK = '#3a3048';
@@ -246,39 +247,24 @@ B.clothesline = (f, T) => {
     for (const x of [.24, .3, .45, .71]) add(G.pbox(.014, .05, .02), '#d9a466', x, LY + .01, .005);
   }));
   // the front half of the quilt (20판 3차 10/21, user: "이불 올라가는 것도 카펫처럼 벤딩. 약간 페이지턴처럼 말려서 살짝 올라가는
-  // 정도"): six strips hinged one under the other, so it bends like cloth — lifted, the bottom edge curls up and back first and
-  // the curl climbs, a page being turned, the top staying on the line. keyAt: a hook on the inside of the bottom strip where
-  // something can hang until the quilt lifts (② 레벨: the key that drops — f.quiltKeyAt, parent the key to it)
-  const NS = 6, SH = .96 / NS, strips = [];
-  let parent = grp(); put(parent, QX, LY, .03); f.add(parent);
-  const root = parent;
-  for (let k = 0; k < NS; k++) {
-    const sg = k ? grp() : root;
-    if (k) { put(sg, 0, -SH, 0); parent.add(sg); }
-    const y0 = -k * SH;   // this strip's top, in the quilt's own frame
-    sg.add(mc('clothesline-quilt3|' + k, ({ add }) => {
-      add(G.box(QW, SH + .004, .03, .006), QUILT, 0, -SH / 2, .01);
-      for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-        const x = -.42 + c * .28 + (r % 2) * .14, y = -.14 - r * .22;
-        if (x > .5 || y > y0 || y <= y0 - SH) continue;
-        for (let m = 0; m < 5; m++) add(G.sph(.026, 6, 4), '#ffffff', x + Math.cos(m * 1.26) * .03, y - y0 + Math.sin(m * 1.26) * .03, .03, 0, 0, 0, [1, 1, .3]);
-        add(G.sph(.016, 6, 4), '#ffd86b', x, y - y0, .034, 0, 0, 0, [1, 1, .3]);
-      }
-      if (k === NS - 1) add(G.pbox(QW, .03, .035), '#ffffff', 0, -SH + .015, .012);
-    }));
-    strips.push(sg); parent = sg;
-  }
-  const keyAt = grp(); put(keyAt, .22, -SH + .1, -.01); strips[NS - 1].add(keyAt);
-  // each hinge bends more the lower it is and starts later the higher it is: the bottom curls first, then the curl climbs
-  // (③ 10/21, "페이지턴처럼": a page being turned — the corner lifts quick and light, the curl rolls up the cloth one strip after
-  // another with a soft give at the end (a little past, then back), the top strip only tipping as the weight comes onto the line;
-  // the page-turn sound, a touch longer so the roll is seen)
-  const ss = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
-  const curl = t => strips.forEach((sg, k) => {
-    const w = k / (NS - 1), d = (1 - w) * .42, u = ss((t - d) / (1 - d * .85)), give = 1 + .1 * Math.sin(Math.min(1, u) * Math.PI) * w;
-    sg.rotation.x = k ? -(.12 + .6 * w * w) * u * give : -.2 * ss(t * 1.2 - .2);
-  });
-  const p = f.part('lift', strips, t => curl(t), { label: '이불', sfx: 'flip', dur: .72 });
+  // 정도"; ③ #97 "25 이불도 벤딩으로": the six stiff strips still read as boards — now one cloth that bends, gfx/clothbend.js):
+  // lifted, the bottom edge curls up and back first and the curl climbs, the top staying on the line. keyAt: a hook on the
+  // inside near the bottom where something can hang until the quilt lifts (② 레벨: f.quiltKeyAt, parent the key to it)
+  const QH = .96, root = grp(); put(root, QX, LY, .03); f.add(root);
+  root.add(mc('clothesline-quilt4', ({ add }) => {
+    add(G.box(QW, QH, .03, .006), QUILT, 0, -QH / 2, .01);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      const x = -.42 + c * .28 + (r % 2) * .14, y = -.14 - r * .22;
+      if (x > .5) continue;
+      for (let m = 0; m < 5; m++) add(G.sph(.026, 6, 4), '#ffffff', x + Math.cos(m * 1.26) * .03, y + Math.sin(m * 1.26) * .03, .03, 0, 0, 0, [1, 1, .3]);
+      add(G.sph(.016, 6, 4), '#ffd86b', x, y, .034, 0, 0, 0, [1, 1, .3]);
+    }
+    add(G.pbox(QW, .03, .035), '#ffffff', 0, -QH + .015, .012);
+  }));
+  const keyAt = grp(); put(keyAt, .22, -QH + .1, -.01); root.add(keyAt);
+  // the bend: the bottom curls first, the curl climbs; a little past at the end, then back (③ ui69 timing — the page-turn
+  // sound, a touch longer so the roll is seen)
+  const p = f.part('lift', root, clothBend(f, root, { along: [0, -1, 0], toward: [0, 0, 1], len: QH, turn: 4.4, bias: 3, tip: .15, follow: [keyAt] }), { label: '이불', sfx: 'flip', dur: .72 });
   f.quiltKeyAt = keyAt;
   f.spot('inside', null, QX, 0, 0, { part: p, maxH: .36, label: '이불 뒤', scale: .8 });
   // (② 레벨 10/21, user "이불 들추면 열쇠가 차릉 아래로 떨어지게"): the hook inside the quilt — a stage's key hangs here (clueHang) and drops

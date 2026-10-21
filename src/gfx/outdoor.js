@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rbox, sph, hemi, cyl, tor, cone, cap, disc, plane, put, grp, mat, mesh, geo, extrude, canvasTex, texCache, roundRect, shade } from './kit.js';
+import { clothBend } from './clothbend.js';
 import { Furn } from './furniture.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
@@ -937,7 +938,8 @@ B.campchair = (f, T) => {
   f.add(put(rbox(.52, .46, .035, seat, .015), 0, sy + .27, -.26, -.22, 0, 0));
   const bl = grp(put(rbox(.46, .035, .38, '#ffffff', .01, { map: plaidTex() }), 0, .03, 0), put(rbox(.46, .24, .03, '#ffffff', .01, { map: plaidTex() }), 0, -.08, .2, .15, 0, 0));
   put(bl, 0, sy, .01); f.add(bl);
-  const p = f.part('lift', bl, (t, b) => { bl.position.y = b.p.y + .32 * t; bl.position.z = b.p.z + .08 * t; bl.rotation.x = -.35 * t; }, { label: '담요', sfx: 'lift' });
+  // (③ #97 10/21, user "이불도 벤딩으로": the cloth bends and curls back from its free edge — gfx/clothbend.js)
+  const p = f.part('lift', bl, clothBend(f, bl, { hinge: [0, .03, -.17], along: [0, 0, 1], toward: [0, 1, 0], len: .4, turn: 2.4, tip: .25, rise: .08 }), { label: '담요', sfx: 'lift', dur: .5 });
   f.spot('inside', null, 0, sy + .02, -.02, { part: p, maxH: .3, label: '담요 밑', scale: .85 });
   f.spot('under', null, 0, 0, -.02, { maxH: .3, label: '의자 밑', scale: .85 });
 };

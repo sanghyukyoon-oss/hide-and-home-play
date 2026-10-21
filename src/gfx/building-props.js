@@ -20,6 +20,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, starShape, STYLE } from './kit.js';
+import { clothBend } from './clothbend.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -1223,7 +1224,7 @@ B.laundryline = (f, T) => {
   const bl = col(T, 'blanket'), a2 = col(T, 'accent2'), a3 = col(T, 'accent3'), acc = col(T, 'accent'), tk = [bl, a2, a3, acc].join(',');
   const PX = .84, LY = 1.5, FZL = .12, BZL = -.12, steel = '#9fa9bd', bucket = '#3f8fd8';
   const BX0 = -.74, BX1 = .02, bw = BX1 - BX0, bcx = (BX0 + BX1) / 2;
-  f.add(mc('laundryline|' + tk, ({ add, tube, addM }) => {
+  f.add(mc('laundryline2|' + tk, ({ add, tube, addM }) => {
     for (const sx of [-1, 1]) {
       const x = sx * PX;
       add(G.cyl(.13, .11, .24, 18), bucket, x, .12, 0);
@@ -1235,8 +1236,7 @@ B.laundryline = (f, T) => {
     }
     tube([-PX, LY, FZL], [PX, LY, FZL], .006, WHITE, 5);
     tube([-PX, LY, BZL], [PX, LY, BZL], .006, '#ffcf5c', 5);
-    // the blanket's satin hem, pins along the lines
-    add(G.box(bw + .01, .04, .03, .008), GOLD, bcx, LY - .93, FZL + .016);
+    // pins along the lines (the blanket's satin hem is on the blanket: it lifts)
     for (const x of [BX0 + .08, bcx, BX1 - .08]) add(G.box(.016, .05, .05, .004), [MINT, TOMATO, SKY][Math.round((x - BX0) * 3) % 3], x, LY + .01, FZL);
     for (const x of [.1, .4, .7]) add(G.box(.016, .05, .03, .004), [CORAL, MINT, MUSTARD][Math.round(x * 3) % 3], x, LY - .005, BZL);
     // a T-shirt and two socks on the front line
@@ -1263,11 +1263,16 @@ B.laundryline = (f, T) => {
     for (const dz of [-.05, .05]) add(G.pbox(.262, .005, .02), WHITE, kx + .01, .2225, kz + dz, 0, -.06, 0);
   }));
   f.add(mg('laundryline-blanket|' + bl, mat('#ffffff', { map: blanketTex(bl) }), ({ addM, P }) => {
-    P(bw, .95, .016, bcx, LY - .475, FZL + .016, .55);
     P(bw, .8, .016, bcx, LY - .4, FZL - .016, .55);
     addM(planarUV(ni(G.cyl(.024, .024, bw, 12)).rotateZ(HP).translate(bcx, LY, FZL), .55), I4);
   }));
   f.add(mg('laundryline-sheet|' + a2, mat('#ffffff', { map: stripeTex(WHITE, a2, 4) }), ({ P }) => P(.68, .86, .012, .4, LY - .44, BZL, .34)));
+  // the front half of the blanket ("이불건조대에 이불 밴딩", ③ #97 10/21): its own cloth that curls up from the hem when
+  // touched (gfx/clothbend.js); what's behind it stays where it was (not a part's spot: seen from behind as before)
+  const fv = grp(); put(fv, bcx, LY, FZL + .016); f.add(fv);
+  fv.add(mg('laundryline-front|' + bl, mat('#ffffff', { map: blanketTex(bl) }), ({ P }) => P(bw, .95, .016, 0, -.475, 0, .55)));
+  fv.add(mc('laundryline-hem', ({ add }) => add(G.box(bw + .01, .04, .03, .008), GOLD, 0, -.93, 0)));
+  f.part('lift', fv, clothBend(f, fv, { along: [0, -1, 0], toward: [0, 0, 1], len: .95, turn: 4.4, bias: 3, tip: .15 }), { label: '이불', sfx: 'flip', dur: .72 });
   f.spot('behind', null, -.4, 0, -.24, { maxH: .45, label: '이불 뒤', scale: .85 });
   f.spot('on', null, .58, .22, .3, { maxH: .4, label: '빨래 바구니 위', scale: .65 });
 };

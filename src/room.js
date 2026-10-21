@@ -259,8 +259,11 @@ export class Room {
       for (const p of r.f.parts) {
         const t0 = p.t;
         let fit = .35;
-        for (const reach of [1, .9, .8, .7, .6, .5, .42]) {
-          p.reach = reach; p.setOpen(1); p.pivots.forEach(pv => pv.updateMatrixWorld(true));
+        // a bending cloth (gfx/clothbend.js) touching something already when shut (4판's loft futon on the loft's boards: every
+        // reach "hit", so it only ever opened a third): what it touches at rest isn't what opening runs into — open it fully
+        const tries = p.apply.cloth ? [0, 1, .9, .8, .7, .6, .5, .42] : [1, .9, .8, .7, .6, .5, .42];
+        for (const reach of tries) {
+          p.reach = reach || 1; p.setOpen(reach ? 1 : 0); p.pivots.forEach(pv => pv.updateMatrixWorld(true));
           let hit = false;
           // only what the opened piece can reach (its box), then its corners and — for thin pieces (a curtain, a rod) whose
           // corners are all outside what they pass through — its edges (10/19 겹침 QA: 9판 창 커튼이 열리면 욕실장 속 19 cm)
@@ -284,6 +287,7 @@ export class Room {
               if (near.some(through)) hit = true;
             }
           });
+          if (!reach) { if (hit) { fit = 1; break; } continue; }
           if (!hit) { fit = reach; break; }
         }
         p.reach = fit; p.setOpen(t0);
