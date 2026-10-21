@@ -417,7 +417,7 @@ export class Char {
       for (const sx of [-1, 1]) { const f = put(sph(.11, footC, { rough: .62 }), sx * .19, .035, .2, 0, 0, 0, [1, .5, 1.15]); this.inner.add(f); this.feet.push(f); }
       this.earObjs = [];
       this.ears(kind, d);
-      this.sweat = put(sph(.062, '#8fd3ff', { rough: .2, opacity: .9, rim: 0 }), .38, .55, .3, 0, 0, -.4, [.8, 1.3, .8]); this.sweat.visible = false; this.inner.add(this.sweat);
+      this.sweat = put(sph(.062, '#ffffff', { rough: .2, opacity: .9, rim: 0 }), .38, .55, .3, 0, 0, -.4, [.8, 1.3, .8]); this.sweat.visible = false; this.inner.add(this.sweat); sweatInk(this.sweat);
     }
     // effects float above the head, outside the squash (hearts don't wobble with the body)
     this.fxRoot = new THREE.Group(); this.body.add(this.fxRoot);
@@ -678,7 +678,7 @@ export class Char {
     const fs = d.faceS || (sh === 'cone' ? 1 : 1.08);
     this._slot = (x, y, lift = 0) => { const { p, n } = fp(x + dx, fy + y); const h = frameAt(new THREE.Group(), p.addScaledVector(n, lift + .006), n); this.inner.add(h); return h; };
     this.buildFace({ ex, my: -.1 * fs, by: .118, bx: ex + .1 * fs, bly: -.07 * fs, s: fs });
-    this.sweat = put(sph(.06, '#8fd3ff', { rough: .2, opacity: .9, rim: 0 }), .36, this.sweatY, .3, 0, 0, -.4, [.8, 1.3, .8]); this.sweat.visible = false; this.inner.add(this.sweat);
+    this.sweat = put(sph(.06, '#ffffff', { rough: .2, opacity: .9, rim: 0 }), .36, this.sweatY, .3, 0, 0, -.4, [.8, 1.3, .8]); this.sweat.visible = false; this.inner.add(this.sweat); sweatInk(this.sweat);
     this.earObjs = [];
   }
   // object parts that move: lid, steam, antenna bulb, screen, cherry
@@ -1181,6 +1181,8 @@ export class Char {
   headTop() { return this.S * (this.top + this.lift); }
   faceTo(x, z) { this.root.rotation.y = Math.atan2(x - this.root.position.x, z - this.root.position.z); }
 }
+// (user 10/21: "땀방울은 흰색으로") the drop is white, with an ink line round it so it reads on a pale face — a back-face shell
+function sweatInk(m) { const ol = new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({ color: '#3a2453', side: THREE.BackSide })); ol.scale.setScalar(1.22); m.add(ol); }
 Char.camera = null;   // optional: set to the scene camera so reaction effects always face it
 
 // ── reactions: short, non-blocking, cancel-safe. R.t / R.wait throw CANCEL once a newer tap has taken over.

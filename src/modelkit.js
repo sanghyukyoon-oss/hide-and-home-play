@@ -570,10 +570,12 @@ export async function kitIntro(S) {
     // floating over the box, before they shoot away
     G.audio.sfx('thump'); G.audio.sfx('special'); G.audio.sfx('pop', 6); G.audio.sfx('rustle'); haptic('ok');
     const lr = lay.getBoundingClientRect(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top };
-    const OUT = 110, HANG = 130, slow = [];   // (the leap out, the hang; what slows down for the hang)
+    const OUT = 200, HANG = 130, slow = [];   // (the leap out, the hang; what slows down for the hang)
     // (user 10/21: "상자 먼저 열리고 그다음 빤짝하고 가운데에서 상자에서 약간 위에서 저렇게 퍼지면 될듯"): the box opens first; a beat on,
     // a twinkle in the middle of the screen a little over the box, and the orbs come out of that one point
-    const BEAT = 230, cen = { x: lr.width / 2, y: lt.top - lr.top - 14 };
+    // (user 10/21, again: "그 상자에서 나오게 수정해줄래?") — the twinkle is in the open box's mouth and the orbs well up out of
+    // it, glowing, to their ring over it; then off every way
+    const BEAT = 230, cen = { x: lr.width / 2, y: lt.top - lr.top - 14 }, inX = mouth.x - cen.x, inY = mouth.y - cen.y + 12;   // (the mouth, a little inside)
     const S2 = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); slow.push(a); return a; };
     {
       const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .9 }, { opacity: 0 }], { duration: 240, easing: 'ease-out' });
@@ -609,7 +611,7 @@ export async function kitIntro(S) {
     const n = K.order.length, gap = 34, FLY = 340, FADE = 320, far = Math.hypot(lr.width, lr.height);
     const launch = K.order.map((_, i) => i).sort((a, b) => (a * .618) % 1 - (b * .618) % 1);   // (not round the ring in turn: here, there)
     {   // 반짝: the point they come out of
-      const tw = h('i', { class: 'kitspark big', style: `left:${cen.x}px;top:${cen.y}px;z-index:35` }); lay.append(tw); outs.push(tw);
+      const tw = h('i', { class: 'kitspark big', style: `left:${mouth.x}px;top:${mouth.y + 6}px;z-index:35` }); lay.append(tw); outs.push(tw);
       A(tw, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(2.3) rotate(45deg)', offset: .4 }, { transform: 'translate(-50%,-50%) scale(0) rotate(100deg)' }], { duration: 420, delay: BEAT - 60, easing: 'ease-out' });
       setTimeout(() => !skipped && G.audio.sfx('star', 2), BEAT - 60);
     }
@@ -619,7 +621,7 @@ export async function kitIntro(S) {
       const a = (-215 + 250 * (n > 1 ? i / (n - 1) : .5) + (i % 2 ? 7 : -7)) * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
       const hx = ca * 112, hy = sa * 62 - 20, ex = hx + ca * far, ey = hy + sa * far;   // (the ring over the box; and out past the edge)
       const t0 = OUT + HANG + launch.indexOf(i) * gap, D = t0 + FLY, at = (x, y, sc) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc})`;
-      A(orb, [{ transform: at(0, 0, .2), opacity: 0, easing: 'cubic-bezier(.15,.85,.3,1)' }, { transform: at(hx, hy, 1), opacity: 1, offset: OUT / D, easing: 'ease-in-out' },
+      A(orb, [{ transform: at(inX, inY, .25), opacity: 0, easing: 'cubic-bezier(.2,.75,.3,1)' }, { transform: at(inX + hx * .15, inY - 30, .6), opacity: 1, offset: OUT * .35 / D, easing: 'cubic-bezier(.2,.7,.4,1)' }, { transform: at(hx, hy, 1), opacity: 1, offset: OUT / D, easing: 'ease-in-out' },
         { transform: at(hx * 1.04, hy - 5, 1.12), offset: t0 / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, .8), opacity: 1 }], { duration: D, delay: BEAT });
       // the tail: from the ring to the orb, growing with it (same curve), then fading thin where it hung
       const tail = h('i', { class: 'kittrail', style: `left:${cen.x + hx * 1.04}px;top:${cen.y + hy - 5}px;width:${far}px` }); lay.append(tail); outs.push(tail);
@@ -734,10 +736,11 @@ async function truckIntro(S) {
     }
     // the box: up out of the truck, a moment at the top, then off on a light tail — every way, here then there (golden steps)
     const far = Math.hypot(lr.width, lr.height), ang = (-205 + ((i * .618) % 1) * 230) * Math.PI / 180, ca = Math.cos(ang), sa = Math.sin(ang);
-    const hx = ca * 74, hy = -88 - (i % 3) * 16 + sa * 30, ex = hx + ca * far, ey = hy + sa * far, UP = 120, HANG = 30, FLY = 330, D = UP + HANG + FLY, sc = .85 + (i % 4) * .14;
+    const hx = ca * (i < 4 ? 40 : 74), hy = (i < 4 ? -46 : -88) - (i % 3) * 16 + sa * 30, ex = hx + ca * far, ey = hy + sa * far, UP = 120, HANG = 30, FLY = 330, D = UP + HANG + FLY, sc = .85 + (i % 4) * .14;
     const img = h('img', { class: 'kitfly truckbox', src: boxPic(G), style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(img); outs.push(img);
     const at = (x, y, sc, r) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`, spin = (i % 2 ? 1 : -1) * 220;
-    A(img, [{ transform: at(0, 0, .5, 0), opacity: 0, easing: 'cubic-bezier(.15,.85,.3,1)' }, { transform: at(hx, hy, 1.35 * sc, spin * .1), opacity: 1, offset: UP / D, easing: 'ease-in-out' },
+    // (out of the open cargo bed itself: seen from the start, just inside it — user 10/21 "트럭에서 나오게")
+    A(img, [{ transform: at(0, 14, .5 * sc, 0), opacity: 1, easing: 'cubic-bezier(.15,.85,.3,1)' },  { transform: at(hx, hy, 1.35 * sc, spin * .1), opacity: 1, offset: UP / D, easing: 'ease-in-out' },
       { transform: at(hx * 1.05, hy - 8, 1.42 * sc, spin * .16), opacity: 1, offset: (UP + HANG) / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, sc, spin * 2), opacity: 1 }], { duration: D });
     const tail = h('i', { class: 'kittrail', style: `left:${mouth.x + hx * 1.05}px;top:${mouth.y + hy - 8}px;width:${far}px` }); lay.append(tail); outs.push(tail);
     A(tail, [{ transform: `rotate(${ang}rad) scaleX(0)`, opacity: 1, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: `rotate(${ang}rad) scaleX(1)`, opacity: 1, offset: FLY / (FLY + 300), easing: 'ease-out' },
