@@ -1831,6 +1831,15 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .panel.more .row.wrap::after { content: ''; order: 3; flex-basis: 100%; height: 0; }   /* (a line break: the reset gets a line of its own) */
 .panel.more .row.wrap > .btn.reset { order: 4; margin-top: 6px; }
 .panel.more .row.wrap > .credits { order: 5; }
+/* (③ 10/21, 더보기 trimmed — user "쓸데없는것들 지우장"): a true two-column grid, every button the same width; an odd one out
+   spans both; the team's buttons (?qa=1), the reset and the credits each on full lines below */
+.panel.more .row.wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.panel.more .row.wrap::after { display: none; }
+.panel.more .row.wrap > .btn { min-width: 0; margin: 0; }
+.panel.more .row.wrap > .btn.wide, .panel.more .row.wrap > .btn.reset, .panel.more .row.wrap > .credits { grid-column: 1 / -1; }
+.panel.more .row.wrap > .btn.reset { justify-self: center; margin-top: 8px; }
+.panel.more .row.wrap { margin-top: 7px; }   /* (the gap under the ribbon = the sides, 21 px) */
+.panel.more .credits.thanks { margin-bottom: -4px; }
 /* ── 2D UI 정리 ⑩ 홈·로비·지도 (10/19 밤, "UI를 잘 해 줘 봐 좀") ── the side menu is one column of the same width (지도 51 · 더보기
    65 px, English 'Map' 52 · 'Collection' 104 px read as four loose buttons); the sound button keeps its square on the right */
 .homeside { align-items: stretch; }

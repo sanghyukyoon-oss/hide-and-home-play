@@ -910,17 +910,18 @@ export function playButton(G) {
     ? ui.btn('보스 등장!', { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: `${STAGE_COUNT}판 · 셋째 밤`, onClick: () => G.go('bossgame', { kind: fin.kind, lv: fin.lv, after: STAGE_COUNT - 1 }) })
     : ui.btn(`스테이지 ${idx + 1}`, { color: 'green', icon: 'play', cls: 'big playbtn stack pulse', sub: (endless ? `무한 모드 ${idx - STAGE_COUNT + 1} · ${(REGIONS.find(r => r.id === sp.region) || reg).name}` : `${reg.name} ${idx - reg.from + 1}/${reg.to - reg.from}`) + (sp.boss ? ' · 방탈출' : sp.hard ? ' · 하드' : ''), onClick: () => G.go('stage', { idx }) });
 }
-// 더보기: 놀이 모음, 세팅, 언어, 판 방식, 배치 편집 (owner), credits — and, with 경제·로비 on, 동네 구경 (the old home)
+// 더보기: 세팅, 조작 도움말, 언어, (with 경제·로비 on: 동네 구경, 지도, 소리), 전체화면, 처음부터 새로, credits — and with ?qa=1 or the
+// Debug APK (QA_TOOLS) the team's 놀이 모음, 새 아트, 판 방식, 배치 편집, 새 경제 (③ 10/21: "쓸데없는것들 지우장")
 export function openMore(G, extra = []) {
   const ui = G.ui;
   // art preview (2026-10-15): the everyday apartment living room in the new look, outside the campaign
   const preview = room => G.go('stage', { idx: 2, preview: true, spec: { room, n: 6, inside: 3, behind: 1, time: 90, clutter: .7, tut: 0 } });
   const fs = IN_APP ? null : fullscreenBtn(ui);   // (the app is full screen already)
-  const layBtn = G.owner ? [ui.btn('배치 편집', { color: 'orange', cls: 'sm qa', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
+  const layBtn = QA_TOOLS ? [ui.btn('배치 편집', { color: 'orange', cls: 'sm qa', onClick: () => { ui.closePanel(); G.go('layedit', { idx: Math.min(G.save.stage || 0, 69) }); } })] : [];
   ui.panel({ title: '더보기', color: 'blue', cls: 'more', close: () => {}, body: [h('div', { class: 'row wrap' },
     // 놀이 모음 lists 'N판 뒤 · 안 쓰임' notes for the team: hidden in the submitted builds — the app's store build and the public
     // web page; it shows for the owner (localhost, ?owner, the artifact's owner) and in the app's Debug APK (user, 10/19)
-    (IN_APP ? QA_TOOLS : G.owner) && ui.btn('놀이 모음', { color: 'green', cls: 'sm qa', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
+    QA_TOOLS && ui.btn('놀이 모음', { color: 'green', cls: 'sm qa', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
     ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
     ui.btn('조작 도움말', { color: 'blue', onClick: () => { ui.closePanel(); setTimeout(() => openHelp(G), 200); } }),   // (10/20: the controls and 1판~10판 again)
     // (10/19 user: "옵션에 리셋(아예 처음 시작하는 것처럼) 기존 진행사항 지우고 새로 하는 버튼") — asks once, then reloads with ?reset
@@ -941,7 +942,8 @@ export function openMore(G, extra = []) {
     h('div', { class: 'credits thanks' }, '감사합니다')],
     // (one way out: the ✕ at the corner — the gray 닫기 under the credits said it twice; 2D UI 정리 ⑫ 10/19)
     buttons: [] });
-  if (!G.owner) G.ownerP.then(o => { if (o && ui.panelOpen) { ui.closePanel(); openMore(G, extra); } });
+  { const g = document.querySelector('.panel.more .row.wrap'), main = g ? [...g.children].filter(b => b.classList?.contains('btn') && !b.classList.contains('qa') && !b.classList.contains('reset')) : [];
+    if (main.length % 2) main[main.length - 1].classList.add('wide'); }   // (an odd one out spans the two columns — ③ 10/21)
 }
 
 const HOME_LIGHT = { ambColor: '#fff0e0', amb: 1.5, sunColor: '#fff6e6', sun: 2.3 };

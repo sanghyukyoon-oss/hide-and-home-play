@@ -143,11 +143,12 @@ export class LobbyScene extends MyHomeScene {
       if (st.review) openRoadmap(G);
     });
     col.append(top); G.coinPills = [cp];
-    // (③ 10/21 로비 정리: 소리 and 지도 inside 더보기 — the side keeps 도감 · 상점 · 더보기)
+    // (③ 10/21 로비 정리: 소리 and 지도 inside 더보기 — the side keeps 도감 · 상점 · 더보기; then user "여기에도 지도 해주고": 지도 on top of the side too)
     const sndB = () => ui.btn(G.audio.muted ? '소리 켜기' : '소리 끄기', { color: 'blue', onClick: () => { G.audio.setMuted(!G.audio.muted); ui.closePanel(); } });
     const mapB = () => ui.btn('지도', { color: 'blue', onClick: () => { ui.closePanel(); setTimeout(() => openRoadmap(G), 200); } });
     const town = ui.btn('동네 구경', { color: 'orange', onClick: () => { ui.closePanel(); G.go('town'); } });
     const side = h('div', { class: 'homeside' },
+      ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
       this.bookBtn = bookBadge(G, ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) })),
       this.shopBtn = ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
       ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G, [town, mapB(), sndB()]) }));

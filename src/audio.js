@@ -27,6 +27,12 @@ export const BGM = {
 // turn instead of one 62 s song for all 70 — each chapter its own pair, one stage the one, the next the other (a chapter's
 // first song is never the one the chapter before ended on), night stages the main song, the 기차 여행 편 (27~30판) the bright
 // mini song ③ with take 2. Bosses, the plays and TV keep their own slots. Table: audio/README-sound.md 2절
+// 맵 환경음 (10/21, 18판 '너굴이네 비 오는 오타쿠 복층' otakuloft): a map's own quiet beds under its song, by room key —
+// gain is the bed's level (the music sits at about 0.16 of a file). Made for this game with the in-house AI Proxy (ElevenLabs
+// sound-generation, README-sound.md 5절); ?amb=0 turns them off
+export const AMB = {
+  otakuloft: [{ src: 'audio/sfx/amb-rain.mp4', gain: .1 }, { src: 'audio/sfx/amb-arcade.mp4', gain: .03 }],   // the rain on the window, the arcade cabinets idling (very low)
+};
 export const MAP_SONGS = {
   ingame: 'audio/gpt/bgm-map.mp4',      // Suno 'ingame' 1:02 (the stage song till now)
   take2: 'audio/gpt/bgm-map-2.mp4',     // Suno 'ingame' second take 0:51
@@ -191,6 +197,36 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     s.buffer = b; s.playbackRate.value = b.duration / D; s.connect(A.sfxBus); s.start();
     reelWater(up, D, caught, false);
   };
+  // ── 맵 환경음 (AMB above): decoded and looped in WebAudio, not a second <audio> (iPhone starts an element only from its own
+  // tap); faded in over 1.5 s from a random point, faded out on the next scene; the buffers are let go then (a 20 s bed is ~4 MB)
+  const ambBuf = {}, AMB_OFF = /[?&]amb=0(&|$)/.test(location.search);
+  let ambNow = null;
+  A.ambience = key => {
+    A.stopAmbience();
+    const set = AMB[key]; if (!set || AMB_OFF || !ensure()) return;
+    const tok = ambNow = { nodes: [] }, c = A.ctx;
+    if (!A.ambBus) { A.ambBus = c.createGain(); A.ambBus.connect(A.master); }
+    for (const e of set) {
+      const go = b => {
+        if (ambNow !== tok || !b) return;
+        const s = c.createBufferSource(), g = c.createGain(), t = c.currentTime;
+        s.buffer = b; s.loop = true; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(e.gain, t + 1.5);
+        s.connect(g).connect(A.ambBus); s.start(t, Math.random() * b.duration); tok.nodes.push({ s, g });
+      };
+      if (ambBuf[e.src]) { go(ambBuf[e.src]); continue; }
+      fetch(e.src).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status)))
+        .then(ab => new Promise((res, rej) => c.decodeAudioData(ab, res, rej)))
+        .then(b => { if (ambNow === tok) ambBuf[e.src] = b; go(b); }, err => console.warn('amb file', e.src, err?.message || err));
+    }
+  };
+  A.stopAmbience = (sec = .6) => {
+    const tok = ambNow; ambNow = null;
+    for (const k in ambBuf) delete ambBuf[k];
+    if (!tok || !A.ctx) return;
+    const t = A.ctx.currentTime;
+    for (const { s, g } of tok.nodes) { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + sec); try { s.stop(t + sec + .05); } catch {} }
+  };
+
   // a small bell: the note, its octave and a faint third partial dying faster
   const bell = (f, at = 0, vol = .2, dur = .5) => { tone({ f, dur, vol, at }); tone({ f: f * 2, dur: dur * .45, vol: vol * .3, at }); tone({ f: f * 3.01, dur: dur * .2, vol: vol * .1, at }); };
   const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28];
@@ -468,6 +504,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     A.playSlot = data.final || data.kind === 'finale' ? 'king' : SCENE_SLOT[name] || 'map';
     if (A.playSlot === 'mini') A._rot = (A._rot || 0) + 1;   // (the next mini game, the other song)
     A._hurry = false; A._drift = 1; A._req = null; A._mapKey = null; if (T.el && T.url) setRate(1);
+    A.stopAmbience?.();   // (a map's rain stops with it)
   };
   // the stage says which of the map songs is its own (stage.js, before its music starts)
   A.mapSong = spec => { A._mapKey = mapSongFor(spec); };
