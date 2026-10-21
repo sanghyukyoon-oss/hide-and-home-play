@@ -383,6 +383,9 @@ export async function kitIntro(S) {
     G.audio.sfx('thump'); G.audio.sfx('special'); G.audio.sfx('pop', 6); G.audio.sfx('rustle'); haptic('ok');
     const lr = lay.getBoundingClientRect(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top };
     const OUT = 110, HANG = 130, slow = [];   // (the leap out, the hang; what slows down for the hang)
+    // (user 10/21: "상자 먼저 열리고 그다음 빤짝하고 가운데에서 상자에서 약간 위에서 저렇게 퍼지면 될듯"): the box opens first; a beat on,
+    // a twinkle in the middle of the screen a little over the box, and the orbs come out of that one point
+    const BEAT = 230, cen = { x: lr.width / 2, y: lt.top - lr.top - 14 };
     const S2 = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); slow.push(a); return a; };
     {
       const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .9 }, { opacity: 0 }], { duration: 240, easing: 'ease-out' });
@@ -408,8 +411,8 @@ export async function kitIntro(S) {
     box.classList.add('open');   // (light inside)
     A(glowEl, [{ opacity: .9, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.7)' }], { duration: 360, easing: 'ease-out' });
     // the slow-motion beat: everything above slows to a crawl for HANG ms, then runs on (the pieces' own float is in their keyframes)
-    setTimeout(() => { for (const a of slow) a.updatePlaybackRate(.22); }, OUT);
-    setTimeout(() => { if (skipped) return; for (const a of slow) a.updatePlaybackRate(1); G.audio.sfx('whoosh'); }, OUT + HANG);
+    setTimeout(() => { for (const a of slow) a.updatePlaybackRate(.22); }, BEAT + OUT);
+    setTimeout(() => { if (skipped) return; for (const a of slow) a.updatePlaybackRate(1); G.audio.sfx('whoosh'); }, BEAT + OUT + HANG);
     // 촤차작 (user 10/21: "물건들은 실루엣 처리 … 바닥에 떨어지는게 아니라 … 드래곤볼 촤차작 퍼지는 느낌"): the pieces come out as
     // glowing orbs, each with only its shadow inside (what it is, the room tells), in a ring over the box — a beat — then
     // they shoot off every way, up, sideways, slantwise, long light tails behind them, and off the screen; the tails hang in
@@ -417,31 +420,36 @@ export async function kitIntro(S) {
     // each piece already where it hides (user 10/20: "흩어질 때는 그 배경 위에서 부품이 흩어지고 → 반짝 트랜지션 → 그 뒤에 집 장면")
     const n = K.order.length, gap = 34, FLY = 340, FADE = 320, far = Math.hypot(lr.width, lr.height);
     const launch = K.order.map((_, i) => i).sort((a, b) => (a * .618) % 1 - (b * .618) % 1);   // (not round the ring in turn: here, there)
+    {   // 반짝: the point they come out of
+      const tw = h('i', { class: 'kitspark big', style: `left:${cen.x}px;top:${cen.y}px;z-index:35` }); lay.append(tw); outs.push(tw);
+      A(tw, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(2.3) rotate(45deg)', offset: .4 }, { transform: 'translate(-50%,-50%) scale(0) rotate(100deg)' }], { duration: 420, delay: BEAT - 60, easing: 'ease-out' });
+      setTimeout(() => !skipped && G.audio.sfx('star', 2), BEAT - 60);
+    }
     K.order.forEach((p, i) => {
-      const orb = h('div', { class: 'kitorb', style: `left:${mouth.x}px;top:${mouth.y}px` }, h('img', { src: S.kitCells[p]?.querySelector('.kitrun-pc')?.src || '', alt: '' }));
+      const orb = h('div', { class: 'kitorb', style: `left:${cen.x}px;top:${cen.y}px` }, h('img', { src: S.kitCells[p]?.querySelector('.kitrun-pc')?.src || '', alt: '' }));
       lay.append(orb); outs.push(orb);
       const a = (-215 + 250 * (n > 1 ? i / (n - 1) : .5) + (i % 2 ? 7 : -7)) * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
-      const hx = ca * 112, hy = sa * 74 - 128, ex = hx + ca * far, ey = hy + sa * far;   // (the ring over the box; and out past the edge)
+      const hx = ca * 112, hy = sa * 62 - 20, ex = hx + ca * far, ey = hy + sa * far;   // (the ring over the box; and out past the edge)
       const t0 = OUT + HANG + launch.indexOf(i) * gap, D = t0 + FLY, at = (x, y, sc) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc})`;
       A(orb, [{ transform: at(0, 0, .2), opacity: 0, easing: 'cubic-bezier(.15,.85,.3,1)' }, { transform: at(hx, hy, 1), opacity: 1, offset: OUT / D, easing: 'ease-in-out' },
-        { transform: at(hx * 1.04, hy - 5, 1.12), offset: t0 / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, .8), opacity: 1 }], { duration: D });
+        { transform: at(hx * 1.04, hy - 5, 1.12), offset: t0 / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, .8), opacity: 1 }], { duration: D, delay: BEAT });
       // the tail: from the ring to the orb, growing with it (same curve), then fading thin where it hung
-      const tail = h('i', { class: 'kittrail', style: `left:${mouth.x + hx * 1.04}px;top:${mouth.y + hy - 5}px;width:${far}px` }); lay.append(tail); outs.push(tail);
+      const tail = h('i', { class: 'kittrail', style: `left:${cen.x + hx * 1.04}px;top:${cen.y + hy - 5}px;width:${far}px` }); lay.append(tail); outs.push(tail);
       A(tail, [{ transform: `rotate(${a}rad) scaleX(0)`, opacity: 1, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: `rotate(${a}rad) scaleX(1)`, opacity: 1, offset: FLY / (FLY + FADE), easing: 'ease-out' },
-        { transform: `rotate(${a}rad) scale(1, .3)`, opacity: 0 }], { duration: FLY + FADE, delay: t0 });
+        { transform: `rotate(${a}rad) scale(1, .3)`, opacity: 0 }], { duration: FLY + FADE, delay: BEAT + t0 });
       // a twinkle where it went over the edge (just inside it)
-      const k = Math.min(...[ca > 0 ? (lr.width - 16 - mouth.x - hx) / ca : ca < 0 ? (16 - mouth.x - hx) / ca : 1e9, sa > 0 ? (lr.height - 16 - mouth.y - hy) / sa : sa < 0 ? (16 - mouth.y - hy) / sa : 1e9]);
-      const sp = h('i', { class: 'kitspark', style: `left:${mouth.x + hx + ca * k}px;top:${mouth.y + hy + sa * k}px;z-index:34` }); lay.append(sp); outs.push(sp);
-      A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.2) rotate(45deg)', offset: .35 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 420, delay: t0 + FLY * .8, easing: 'ease-out' });
-      setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), i * 16);
-      setTimeout(() => !skipped && G.audio.sfx('swish'), t0);   // (슈슈슉)
+      const k = Math.min(...[ca > 0 ? (lr.width - 16 - cen.x - hx) / ca : ca < 0 ? (16 - cen.x - hx) / ca : 1e9, sa > 0 ? (lr.height - 16 - cen.y - hy) / sa : sa < 0 ? (16 - cen.y - hy) / sa : 1e9]);
+      const sp = h('i', { class: 'kitspark', style: `left:${cen.x + hx + ca * k}px;top:${cen.y + hy + sa * k}px;z-index:34` }); lay.append(sp); outs.push(sp);
+      A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.2) rotate(45deg)', offset: .35 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 420, delay: BEAT + t0 + FLY * .8, easing: 'ease-out' });
+      setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), BEAT + i * 16);
+      setTimeout(() => !skipped && G.audio.sfx('swish'), BEAT + t0);   // (슈슈슉)
     });
     setTimeout(() => {   // the launch: a jolt and a buzz; the sky dims so the tails shine
       if (skipped) return; haptic('tick');
       const dim = h('div', { class: 'kitdim' }); lay.append(dim); outs.push(dim); A(dim, [{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
       A(lay, [{ translate: '0 0' }, { translate: '0 -7px' }, { translate: '0 4px' }, { translate: '0 0' }], { duration: 200, easing: 'ease-out' });
-    }, OUT + HANG);
-    await wait(OUT + HANG + (n - 1) * gap + FLY * .9); if (skipped) throw 0;
+    }, BEAT + OUT + HANG);
+    await wait(BEAT + OUT + HANG + (n - 1) * gap + FLY * .9); if (skipped) throw 0;
     // 반짝: a bright slanted band sweeps across; behind it the panel is gone and the room is there (the pieces in their places)
     its.forEach(t => { t.g.visible = vis0.get(t); }); W.idsDirty = true;
     card.style.transform = 'translateX(-50%) translateY(140%)'; card.style.visibility = '';   // (below the screen till it rises: never seen in place first)

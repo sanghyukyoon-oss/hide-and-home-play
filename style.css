@@ -2082,6 +2082,7 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 .kitbit.star { width: 22px; height: 22px; border-radius: 0; box-shadow: none; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 .kitbit.peanut { width: 18px; height: 11px; border-radius: 7px / 6px; background: #f8eed4; box-shadow: 0 0 0 1.5px rgba(58, 36, 83, .45), inset -3px -2px 0 rgba(214, 186, 136, .55); }
 .kitdim { position: absolute; inset: -10%; z-index: 32; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, rgba(40, 22, 70, .18), rgba(40, 22, 70, .5)); }
+.kitspark.big { width: 70px; height: 70px; background: #fffbe0; filter: drop-shadow(0 0 10px #ffd84a); }
 .kitorb { position: absolute; width: 58px; height: 58px; border-radius: 50%; z-index: 34; pointer-events: none; display: grid; place-items: center;
   background: radial-gradient(circle at 38% 34%, #fff 0 14%, #fff6c4 30%, #ffd84a 62%, #ffab2e 100%); box-shadow: 0 0 0 2.5px #3a2453, 0 0 18px 6px rgba(255, 214, 90, .85); }
 .kitorb img { width: 40px; height: 40px; object-fit: contain; filter: brightness(0); opacity: .62; }
