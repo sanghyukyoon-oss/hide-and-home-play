@@ -1,4 +1,32 @@
 // DOM UI kit: Supercell-style chunky buttons, ribbon panels, pills, toasts, world-anchored bubbles, fly-to animations.
+// a strip of cards the finger drags sideways itself (③ 10/21, user: "숨기기에서 물건 스크롤이 안됨"): on the phone the page's
+// touch-action:none (html, body) reached the list too — so it follows the finger here, glides on after a flick, a drag is
+// never a tap, and a soft fade with an arrow shows on a side with more (on `mark`, the strip's frame)
+export function dragScroll(el, mark = el) {
+  let id = null, x0 = 0, s0 = 0, lx = 0, lt = 0, v = 0, moved = false, raf = 0;
+  const edge = () => { mark.classList.toggle('moreL', el.scrollLeft > 2); mark.classList.toggle('moreR', el.scrollLeft < el.scrollWidth - el.clientWidth - 2); };
+  el.style.touchAction = 'none';
+  el.addEventListener('pointerdown', e => { if (e.button) return; cancelAnimationFrame(raf); id = e.pointerId; x0 = lx = e.clientX; s0 = el.scrollLeft; lt = performance.now(); v = 0; moved = false; });
+  el.addEventListener('pointermove', e => {
+    if (e.pointerId !== id) return;
+    const dx = e.clientX - x0; if (!moved && Math.abs(dx) > 8) { moved = true; try { el.setPointerCapture(id); } catch {} }
+    if (!moved) return;
+    const t = performance.now(); v = v * .6 + (lx - e.clientX) / Math.max(8, t - lt) * .4; lx = e.clientX; lt = t;
+    el.scrollLeft = s0 - dx; edge();
+  });
+  const up = e => {
+    if (e.pointerId !== id) return; id = null; if (!moved) return;
+    let vv = performance.now() - lt > 90 ? 0 : v * 16;   // (px a frame; a finger that stopped before lifting doesn't glide)
+    const glide = () => { if (Math.abs(vv) < .4) return; el.scrollLeft += vv; vv *= .93; edge(); raf = requestAnimationFrame(glide); };
+    raf = requestAnimationFrame(glide);
+  };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  el.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  el.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { el.scrollLeft += e.deltaY; e.preventDefault(); } edge(); }, { passive: false });
+  el.addEventListener('scroll', edge, { passive: true });
+  requestAnimationFrame(edge);
+  return edge;
+}
 export const ICON = {
   // 방 넓히기 (UI 세션 10/20, user: "망치 아이콘이 ㅈㄴ 못생김" — the 🔨 emoji): drawn like the others, a chunky ink-lined mallet
   hammer: '<svg viewBox="0 0 40 40"><g transform="rotate(-38 20 21)"><rect x="17" y="16" width="6.5" height="21" rx="3.2" fill="#d9924e" stroke="#3a2453" stroke-width="3"/><path d="M19.4 20v13" stroke="#f3c08a" stroke-width="2" stroke-linecap="round"/><rect x="7" y="5.5" width="26.5" height="12.5" rx="4" fill="#8f9bd0" stroke="#3a2453" stroke-width="3"/><path d="M10.5 9.6h16" stroke="#dfe5ff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 11.5h-1.5M33.5 11.5H35" stroke="#3a2453" stroke-width="3" stroke-linecap="round"/></g></svg>',
@@ -21,6 +49,7 @@ export const ICON = {
   hide: '<svg viewBox="0 0 40 40"><path d="M4 20s6-10 16-10 16 10 16 10-6 10-16 10S4 20 4 20z" fill="#fff"/><circle cx="20" cy="20" r="6" fill="#9b6cff"/><path d="M8 33L32 7" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>',
   paint: '<svg viewBox="0 0 40 40"><path d="M8 26c0-4 3-5 5-5s3 2 3 4-2 6-8 6c2-1 0-3 0-5z" fill="#fff"/><path d="M15 21L31 5l4 4-16 16" fill="#fff" opacity=".9"/></svg>',
   share: '<svg viewBox="0 0 40 40"><circle cx="11" cy="20" r="5" fill="#fff"/><circle cx="29" cy="10" r="5" fill="#fff"/><circle cx="29" cy="30" r="5" fill="#fff"/><path d="M11 20L29 10M11 20l18 10" stroke="#fff" stroke-width="3.5"/></svg>',
+  back: '<svg viewBox="0 0 40 40"><path d="M31 20H12M20 11l-9 9 9 9" stroke="#fff" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   close: '<svg viewBox="0 0 40 40"><path d="M12 12l16 16M28 12L12 28" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/></svg>',
   hand: '<svg viewBox="0 0 64 64"><path d="M22 34V12a5 5 0 0 1 10 0v15l2-1a5 5 0 0 1 6 2l1 1a5 5 0 0 1 6 2 5 5 0 0 1 6 3v10c0 9-6 16-16 16h-4c-6 0-10-3-13-8l-8-12a4.5 4.5 0 0 1 7-5z" fill="#fff" stroke="#3a2453" stroke-width="3.5" stroke-linejoin="round"/><path d="M33 33v6M41 34v5M48 36v4" stroke="#3a2453" stroke-width="3" stroke-linecap="round"/></svg>',
   mom: '<svg viewBox="0 0 40 40"><circle cx="20" cy="22" r="14" fill="#f9cfe2" stroke="#3a2453" stroke-width="3"/><path d="M7 19a13 11 0 0 1 26 0c-4-4-9-5-13-5s-9 1-13 5z" fill="#7a5240"/><circle cx="20" cy="6" r="5" fill="#7a5240" stroke="#3a2453" stroke-width="2"/><circle cx="15" cy="23" r="2" fill="#3a2453"/><circle cx="25" cy="23" r="2" fill="#3a2453"/></svg>',

@@ -11,6 +11,9 @@ import { locksOwned, LOCK_PRICE, LOCK_MAX, holderOf } from './raid.js';   // 자
 import { EN } from './i18n-en-dict.js';
 import { SPECIALS, SPECIAL_TXT, specialState, feats } from './specials.js';
 import { cardCount } from './cardbook.js';   // 스페셜 칸 (10/20)
+import { lockPic } from './gifts.js';   // (the padlock in 3D, made once)
+import * as THREE from 'three';
+import { put, rbox, tor, sph, cyl } from './gfx/kit.js';
 import { hasWall, hasFloor, patternThumb } from './patterns.js';   // 벽지·바닥 더하기 (10/20)
 
 // furniture not open yet (10/19 night, user: "아직 오픈하지 못한 가구들은 실루엣만 보여주고"): a later chapter's piece, or a chapter
@@ -45,7 +48,7 @@ function styleJob(st) {
   } };
 }
 
-const TABS = [['items', '물건'], ['furn', '가구'], ['special', '스페셜'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
+const TABS = [['tools', '아이템'], ['items', '물건'], ['furn', '가구'], ['special', '스페셜'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
 
 // ctx: { G, zone (current zone object or null), onChange() }
 export function openShop(G, ctx = {}, tab = 'furn') {
@@ -71,23 +74,27 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   };
   const render = () => {
     tabsEl.innerHTML = '';
-    for (const [k, label] of TABS) if ((k !== 'items' || G.econ) && (k !== 'special' || G.econ) && !(k === 'zone' && ECON)) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
+    for (const [k, label] of TABS) if ((k !== 'items' && k !== 'tools' || G.econ) && (k !== 'special' || G.econ) && !(k === 'zone' && ECON)) tabsEl.append(h('button', { class: 'shoptab' + (k === tab ? ' on' : ''), onclick: () => { tab = k; G.audio.sfx('click'); render(); } }, label));
     grid.innerHTML = '';
     note.textContent = '';
-    if (tab === 'items') {
-      // 경제·로비 on (설계서 3-2 · 4-1): a magnifier for the bag (60, up to 5), and a thing you've found in a stage (도감) to hide
-      // at home (40). Something a resident took isn't for sale: go and get it back.
-      const L = G.save.lens || (G.save.lens = { bag: 0 }), full = (L.bag || 0) >= 5;
-      note.textContent = `돋보기 가방 ${L.bag || 0}/5 · 판에서 무료 2개를 다 쓰면 가방에서 꺼내 써요`;
-      grid.append(card(G, { img: G.thumbs.item_magnifier || null, swatch: h('div', { class: 'swatch', style: 'display:grid;place-items:center;font-size:34px' }, '🔍'), name: '돋보기', sub: full ? '가방이 꽉 찼어' : '가방에 1개', price: full ? null : 60, action: full ? '가득' : '',
+    if (tab === 'tools') {
+      // 아이템 (③ 10/21, user on the 물건 tab: "이건 뭐지 .. 아이템으로 따로 빼야될거같은데? 디자인도"): the things you use — a
+      // magnifier for the bag (60, up to 5; 경제 설계서 3-2), a padlock for a drawer at home (털기 메타 10/19: keys aren't sold,
+      // they'd skip the lock puzzles) — on a tab of their own, away from the things you hide; drawn in 3D like every other card,
+      // how many you have on a badge
+      const L = G.save.lens || (G.save.lens = { bag: 0 }), bag = L.bag || 0, full = bag >= 5;
+      note.textContent = '판과 내 집에서 쓰는 도구';
+      grid.append(card(G, { img: lensPic(), name: '돋보기', sub: '판에서 힌트', price: 60, badge: full ? '가득' : `${bag}/5`, badgeOn: full, blocked: full ? '가방이 꽉 찼어' : null, one: true,
         onBuy: () => { L.bag = Math.min(5, (L.bag || 0) + 1); G.persist(); ui.toast(`돋보기 가방 ${L.bag}/5`, 'green'); render(); } }));
-      // 자물쇠 (털기 메타 10/19): a padlock for a drawer at home — keys aren't sold (they'd skip the lock puzzles)
       const lk = locksOwned(G.save), lkFull = lk >= LOCK_MAX;
-      grid.append(card(G, { swatch: h('div', { class: 'swatch lockswatch', html: ICON.lock }), name: '자물쇠', sub: lkFull ? `${LOCK_MAX}개 다 있어` : `가진 것 ${lk}개 · 서랍을 잠가 지켜`, price: lkFull ? null : LOCK_PRICE, action: lkFull ? '가득' : '',
+      grid.append(card(G, { img: lockPic(), name: '자물쇠', sub: '서랍 잠그기', price: LOCK_PRICE, badge: lkFull ? '가득' : `${lk}/${LOCK_MAX}`, badgeOn: lkFull, blocked: lkFull ? `${LOCK_MAX}개 다 있어` : null, one: true,
         onBuy: () => { G.save.raid.locksOwned = lk + 1; G.persist(); ui.toast(`자물쇠 ${lk + 1}개째! 숨기기에서 서랍을 잠가 봐`, 'green'); render(); } }));
+    } else if (tab === 'items') {
+      // 경제·로비 on (설계서 4-1): a thing you've found in a stage (도감) to hide at home (40). Something a resident took isn't for
+      // sale: go and get it back. (The tools went to 아이템.)
       const took = new Set(Object.values(G.save.raid?.stolen || {}).flat());   // (raid.js: room id → the things taken from you)
       for (const t of (G.save.seen || []).filter(t => ITEMS[t] && !G.save.collection.includes(t))) {
-        grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: took.has(t) ? '털려 갔어 · 되찾으러 가기' : '도감에서 본 것', price: took.has(t) ? null : 40, action: took.has(t) ? '되찾기' : '',
+        grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: took.has(t) ? '털려 갔어' : '도감에서 본 것', price: took.has(t) ? null : 40, action: took.has(t) ? '되찾기' : '', one: true,
           onBuy: () => { G.collect(t); ui.toast(`${ITEMS[t].name} · 이제 내 집에 숨길 수 있어`, 'green'); render(); },
           onUse: took.has(t) ? () => { ui.closePanel(); G.go('visit', { force: holderOf(G.save, t) }); } : null }));
       }
@@ -97,8 +104,8 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       const fresh = SHOP_ITEMS.filter(t => ITEMS[t] && !G.save.collection.includes(t) && !seenSet.has(t) && !took.has(t));
       if (fresh.length) {
         G.needThumbs?.(fresh.map(t => 'item_' + t));
-        grid.append(h('div', { class: 'shopsep' }, '새 물건'));
-        for (const t of fresh) grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: '숨길 물건 · 도감 +1', price: ITEM_NEW_PRICE,
+        grid.append(h('div', { class: 'shopsep' + (grid.children.length ? '' : ' first') }, '새 물건'));
+        for (const t of fresh) grid.append(card(G, { img: G.thumbs['item_' + t], name: ITEMS[t].name, sub: '도감 +1', price: ITEM_NEW_PRICE, one: true,
           onBuy: () => { G.collect(t); ui.toast(`${ITEMS[t].name} · 이제 내 집에 숨길 수 있어`, 'green'); render(); } }));
       }
     } else if (tab === 'furn') {
@@ -304,13 +311,24 @@ function spotLater(G, t) {
   LAZY.push({ el, fn: () => { el.textContent = `숨을 곳 ${spotCount(G, t)}`; } });
   return el;
 }
+let LENS_PIC = null;
+const lensPic = () => LENS_PIC ||= renderThumbs([{ key: 'lens', dir: [.2, .3, 1], fit: 1.05, build: () => {
+  const g = new THREE.Group(), o = { metal: .4, rough: .35 };
+  g.add(put(tor(.07, .017, '#ff7a45', o, Math.PI * 2, 10, 28), 0, .03, 0));                       // the rim
+  g.add(put(cyl(.068, .068, .008, '#bfe9ff', { rough: .1 }, 28), 0, .03, 0, Math.PI / 2, 0, 0));   // the glass
+  g.add(put(sph(.016, '#ffffff', null, 10, 8), -.028, .058, .006));                                  // a glint
+  g.add(put(rbox(.032, .11, .032, '#8a5a3a', .014), .062, -.07, 0, 0, 0, Math.PI / 5));          // the handle
+  g.add(put(rbox(.04, .022, .04, '#ffb23a', .01, o), .042, -.042, 0, 0, 0, Math.PI / 5));        // its collar
+  return g;
+} }], 160).lens;
 let buyAt = 0;   // (QA3 10/19) one purchase per 0.45 s: a double tap bought twice
-function card(G, { img, swatch: sw, name, sub, price, tag, action, onBuy, onUse, blocked = null }) {
-  const c = h('div', { class: 'card' },
+function card(G, { img, swatch: sw, name, sub, price, tag, badge, badgeOn, action, onBuy, onUse, blocked = null, one = false }) {
+  const c = h('div', { class: 'card' + (one ? ' one' : '') + (blocked && price != null ? ' maxed' : '') },
     tag ? h('div', { class: 'tag' }, tag) : null,
+    badge ? h('div', { class: 'cnt' + (badgeOn ? ' on' : '') }, badge) : null,
     img instanceof Element ? img : img ? h('img', { src: img }) : sw,
     h('div', {}, name),
-    sub ? h('div', { style: 'font-size:11px;color:#9b6cff' }, sub) : null,
+    sub ? h('div', { class: 'sub', style: 'font-size:11px;color:#9b6cff' }, sub) : null,
     price != null ? h('div', { class: 'pr', html: ICON.coin + price }) : h('div', { class: 'pr', style: 'color:#2f8f1b' }, action || ''));
   c.addEventListener('click', () => {
     if (price != null && onBuy) {

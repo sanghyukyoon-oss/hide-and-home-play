@@ -107,7 +107,7 @@ const hasFine = e => !!(e.s && e.s !== 1 || e.ry || e.dx || e.dz || e.dy);
 // 가구 위에 올리기 (10/20, user: "로봇은 가구 위에 못 올리나 근데?"): in my home (layout.stack) a small piece may stand on a piece
 // with a flat top — dragged over it, it sits on that top (the height of the top's '…위' hiding spot). A piece with something on
 // it stays put until that is taken off (myhome).
-export const STACK_SMALL = new Set(['kitrobot', 'kitparfait', 'kitmovebox', 'lamp', 'plant', 'monstera', 'amphora', 'tacklebox', 'baitbucket', 'speaker', 'yarnbasket', 'sp_neonlamp', 'sp_rocket', 'sp_skate']);   // (sp_: 스페셜 models to come)
+export const STACK_SMALL = new Set(['kitrobot', 'kitparfait', 'kitmovebox', 'lamp', 'plant', 'monstera', 'amphora', 'tacklebox', 'baitbucket', 'speaker', 'yarnbasket', 'sp_neonlamp', 'sp_rocket', 'sp_skate', 'sp2_radio']);   // (sp_: 스페셜 models to come)
 export const STACK_TOP = { drawers: 1.01, desk: .81, table: .69, counter: .94, safe: .94, stool: .55, guidedesk: .85, kitchentable: .77, merchtable: .71, schooldesk: .68, kitmovebox: .47 };
 
 export class Room {

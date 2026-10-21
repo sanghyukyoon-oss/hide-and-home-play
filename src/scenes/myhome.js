@@ -9,7 +9,8 @@ import { FURN_INFO } from '../gfx/furniture.js';
 import { Char } from '../gfx/chars.js';
 import { pickSurface, resolveHost, makeFreeSpot, dropFreeSpot, toLocal, viewsOf } from '../freehide.js';
 import { Visitors } from '../visitors.js';
-import { h, ICON } from '../ui.js';
+import { h, ICON, dragScroll } from '../ui.js';
+import { itemKind } from '../affinity.js';
 import { ease, clamp, Tweens } from '../util.js';
 import { HOME_ZONES, ZONE_TYPES, zoneLayout, zoneSize, SHOP_FURN, ZONE_SIZES, pinZoneFurniture } from '../catalog.js';
 import { playDialog } from '../story.js';
@@ -40,6 +41,26 @@ function homePlan(G, H) {
   row(inside, S => (S.d - dIn) / 2);
   row(outside, S => dIn / 2 + GAP + S.d / 2);
   return at;
+}
+
+// 숨기기 목록의 칩 (③ 10/21): kinds read off the thing's name (affinity.js's food table) and its size
+const HIDE_TAGS = [['all', '전체'], ['hid', '숨긴 것'], ['food', '음식'], ['toy', '장난감'], ['shiny', '반짝이'], ['small', '작은 것']];
+const TOY = /(teddy|duck|ball|console|block|yarn|doll|robot|toy|puzzle|kite|dice|car|plane|train|crayon|bunnyband|figure|bear|marble|balloon|yoyo|whistle|drum|rattle|puppet|top$)/;
+const SHINY = /(star|crown|medal|gem|jewel|ring|trophy|gold|coin|heart|snowglobe|diamond|pearl|necklace|gift|tiara|bell)/;
+function hideTagOf(t, def, placed) {
+  const k = new Set(), kind = itemKind(t);
+  if (placed.has(t)) k.add('hid');
+  if (kind === 'food' || kind === 'cold') k.add('food');
+  if (TOY.test(t)) k.add('toy');
+  if (SHINY.test(t)) k.add('shiny');
+  if (def && (def.flat || def.h <= .1)) k.add('small');
+  return k;
+}
+// the list in its frame: the finger drags it, and the side with more fades with an arrow
+function cardsWrap(el) {
+  const wrap = h('div', { class: 'cardswrap' }, el, h('i', { class: 'more l', html: ICON.back }), h('i', { class: 'more r', html: ICON.back }));
+  el.edge = dragScroll(el, wrap);
+  return wrap;
 }
 
 export class MyHomeScene {
@@ -443,7 +464,7 @@ export class MyHomeScene {
     this.col.append(h('div', { class: 'hint' }, h('span', {}, '가구를 터치해서 고르고, 드래그해서 옮겨요')));
     const bar = h('div', { class: 'modebar' });
     this.cardsEl = h('div', { class: 'cards' });
-    bar.append(this.cardsEl);
+    bar.append(cardsWrap(this.cardsEl));
     bar.append(h('div', { class: 'btnrow' },
       ui.btn('상점', { color: 'orange', icon: 'shop', onClick: () => this.shop('furn') }),
       ui.btn('벽·바닥', { color: 'pink', icon: 'paint', onClick: () => this.shop(ZONE_TYPES[this.zone.type].indoor ? 'wall' : 'floor') }),
@@ -648,13 +669,19 @@ export class MyHomeScene {
     const tut = G.save.tut || (G.save.tut = {});
     if (!tut.raidTip && !this.busyTut) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', ''), 900); }   // (not during the lobby's first hide: it sat on the hide tip — 2D UI 정리 ③)
     const bar = h('div', { class: 'modebar' });
+    // (③ 10/21, user: "숨기기에서 물건 스크롤이 안됨. 이것도 태그별로 소팅 되게 … 내가풀어보기 방올리기 옆에 뒤로가기 버튼"): chips over
+    // the list to show one kind, the list follows the finger, and a back button beside the two
+    this.hideTag = 'all';
+    this.tagsEl = h('div', { class: 'hidetags' });
     this.cardsEl = h('div', { class: 'cards' });
-    bar.append(this.cardsEl);
+    bar.append(this.tagsEl, cardsWrap(this.cardsEl));
     this.lockRow = h('div', { class: 'btnrow' });
     bar.append(this.lockRow);
     this.pubBtn = ui.btn('방 올리기', { color: 'green', icon: 'share', onClick: dis => dis ? this.whyNot() : this.publish() });
     this.testBtn = ui.btn('내가 풀어보기', { color: 'blue', onClick: () => this.selfTest() });
-    bar.append(h('div', { class: 'btnrow' }, this.testBtn, this.pubBtn));
+    const backB = ui.btn(null, { color: 'purple', icon: ICON.back, cls: 'backb', onClick: () => this.setMode(this.lobby ? 'lobby' : 'view') });
+    backB.setAttribute('aria-label', '뒤로');
+    bar.append(h('div', { class: 'btnrow' }, backB, this.testBtn, this.pubBtn));
     this.col.append(bar);
     this.selItem = null;
     this.renderHideCards();
@@ -672,17 +699,25 @@ export class MyHomeScene {
   }
   renderHideCards() {
     const G = this.G, hid = this.H.hide;
+    const sl = this.cardsEl.scrollLeft;   // (a pick re-draws the list: it stays where the finger left it)
     this.cardsEl.innerHTML = '';
     const coll = G.save.collection;
     const placed = new Set(hid.items.map(e => e.item));
     const list = [...this.chainNeeded(), ...coll];
     if (!this.selItem) this.selItem = list.find(t => !placed.has(t));
-    for (const t of list) {
+    // the chips: every kind that has something (전체 always); the key and the note show under every chip — they must be hidden
+    const kinds = HIDE_TAGS.filter(([k]) => k === 'all' || coll.some(t => hideTagOf(t, ITEMS[t], placed).has(k)));
+    if (!kinds.some(([k]) => k === this.hideTag)) this.hideTag = 'all';
+    this.tagsEl.innerHTML = '';
+    for (const [k, label] of kinds) this.tagsEl.append(h('button', { class: 'hidetag' + (k === this.hideTag ? ' on' : ''), onclick: () => { if (this.hideTag === k) return; this.hideTag = k; G.audio.sfx('click'); this.cardsEl.scrollLeft = 0; this.renderHideCards(); this.cardsEl.scrollLeft = 0; } }, label));
+    const shown = list.filter(t => t === 'key' || t === 'note' || this.hideTag === 'all' || hideTagOf(t, ITEMS[t], placed).has(this.hideTag));
+    for (const t of shown) {
       const e = hid.items.find(x => x.item === t), s = e && this.items[t]?.spot;   // fixed spots and free places alike
       this.cardsEl.append(h('div', { class: 'card' + (this.selItem === t ? ' sel' : '') + (s ? ' done' : ''), onclick: () => { this.selItem = t; G.audio.sfx('click'); holdStart(this, t); this.renderHideCards(); } },
         s ? h('div', { class: 'tag' }, '숨김') : null, h('img', { src: G.thumbs['item_' + t] }), h('div', {}, ITEMS[t].name), h('div', { style: 'font-size:11px;color:#9b6cff' }, s ? s.label : (t === 'key' || t === 'note') ? '꼭 숨겨야 해요' : '')));
     }
-    this.cardsEl.append(h('div', { class: 'card lockedc', style: 'display:flex;align-items:center;justify-content:center;font-size:12px;min-height:110px' }, `스테이지에서 찾은 물건이 여기 모여요 (${coll.length}종)`));
+    if (this.hideTag === 'all') this.cardsEl.append(h('div', { class: 'card lockedc', style: 'display:flex;align-items:center;justify-content:center;font-size:12px;min-height:110px' }, `스테이지에서 찾은 물건이 여기 모여요 (${coll.length}종)`));
+    this.cardsEl.scrollLeft = sl; this.cardsEl.edge?.();
     this.lockRow.innerHTML = '';
     const lockables = this.room.parts.filter(p => p.lockable && p.spots.some(s => s.item && this.items[s.item.type] === s.item && s.item.type !== 'key' && s.item.type !== 'note'));
     if (lockables.length) this.lockRow.append(h('span', { class: 'lockcount' }, `자물쇠 ${locksUsed(G.save)}/${locksOwned(G.save)}`));

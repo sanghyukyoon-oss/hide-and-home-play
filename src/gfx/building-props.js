@@ -117,6 +117,23 @@ function planarUV(g, s) {
   g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   return g;
 }
+// The same box mapping chosen per triangle (by its face normal, not each corner's): on a rounded edge or a rolled arm a
+// triangle never mixes two projections, so a print keeps its size and direction there too — no smeared stripes along the
+// bevels (로비 소파 누빔, user 10/21: "쇼파만 uv 박스나 그냥 큐브다 좀 제대로 나오게"). Needs a non-indexed geometry (ni).
+const FA = new THREE.Vector3(), FB = new THREE.Vector3(), FC = new THREE.Vector3();
+function faceUV(g, s) {
+  const p = g.attributes.position, uv = new Float32Array(p.count * 2);
+  for (let i = 0; i + 2 < p.count; i += 3) {
+    FA.fromBufferAttribute(p, i); FB.fromBufferAttribute(p, i + 1).sub(FA); FC.fromBufferAttribute(p, i + 2).sub(FA); FB.cross(FC);
+    const ax = Math.abs(FB.x), ay = Math.abs(FB.y), az = Math.abs(FB.z);
+    for (let k = i; k < i + 3; k++) {
+      const [u, v] = ay >= ax && ay >= az ? [p.getX(k), p.getZ(k)] : ax >= az ? [p.getZ(k), p.getY(k)] : [p.getX(k), p.getY(k)];
+      uv[k * 2] = u / s; uv[k * 2 + 1] = v / s;
+    }
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return g;
+}
 // Remap a geometry's 0..1 uvs into an atlas rect [u0, v0, u1, v1].
 function cellUV(g, c) {
   const uv = g.attributes.uv;
@@ -751,14 +768,16 @@ B.lobbysofa = (f, T) => {
   const sofa = col(T, 'sofa'), woodD = col(T, 'woodD'), a3 = col(T, 'accent3'), tk = [sofa, woodD, a3].join(','), sofaD = shade(sofa, -.07), btn = shade(sofa, -.2);
   const seat = .43, cz = .13;
   const pm = xf(-.55, seat + .15, -.06, -.28, .15, 0);
-  f.add(mg('lobbysofa-tuft|' + sofa, mat('#ffffff', { map: tuftTex(sofa) }), ({ addM, P }) => {
-    P(1.64, .52, .2, 0, .56, -.24, .52, .08);
+  // the tufting: box-mapped per triangle in world units after placing (faceUV), one size on the back, the arms and the rolls
+  const TU = .54;
+  f.add(mg('lobbysofa-tuft2|' + sofa, mat('#ffffff', { map: tuftTex(sofa) }), ({ addM }) => {
+    addM(faceUV(ni(G.box(1.64, .52, .2, .08)).translate(0, .56, -.24), TU), I4);
     for (const sx of [-1, 1]) {
-      P(.2, .32, .78, sx * .8, .46, .04, .56, .05);
-      addM(planarUV(ni(G.cyl(.07, .07, .78, 16)).applyMatrix4(xf(sx * .8, .6, .04, HP, 0, 0, [1.05, 1, .75])), .56), I4);
+      addM(faceUV(ni(G.box(.2, .32, .78, .05)).translate(sx * .8, .46, .04), TU), I4);
+      addM(faceUV(ni(G.cyl(.07, .07, .78, 16)).applyMatrix4(xf(sx * .8, .6, .04, HP, 0, 0, [1.05, 1, .75])), TU), I4);
     }
   }));
-  f.add(mg('lobbysofa-pillow|' + a3, mat('#ffffff', { map: stripeTex(CREAM, a3, 3) }), ({ addM }) => addM(planarUV(ni(G.box(.32, .3, .1, .045, 2)).applyMatrix4(pm), .3), I4)));
+  f.add(mg('lobbysofa-pillow2|' + a3, mat('#ffffff', { map: stripeTex(CREAM, a3, 3) }), ({ addM }) => addM(faceUV(ni(G.box(.32, .3, .1, .045, 2)).applyMatrix4(pm), .3), I4)));
   f.add(mc('lobbysofa|' + tk, ({ add }) => {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.032, .02, .1, 10), woodD, sx * .8, .05, .04 + sz * .27);
     add(G.box(1.8, .2, .72, .05), sofaD, 0, .2, .04);

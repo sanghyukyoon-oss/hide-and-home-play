@@ -59,6 +59,33 @@ export const SPECIALS = [
   { t: 'graffitiwall', price: 400, need: ['stage', 30], say: K('30판 깨기', 'Clear stage 30') },
   { t: 'gf_train', price: 440, need: ['stage', 35], say: K('35판 깨기', 'Clear stage 35') },
   { t: 'thinker', price: 460, need: ['stars3', 25], say: K('별 셋 25판', '3 stars on 25 stages') },
+  // 스페셜 2차 25개 (⑥ 스페셜 물건 10/21, user: "스페셜 물건도 잔뜩 해줘" → "다 조아 ㄱㄱ"): 판 깨기 11 (5 … 60) · 별 셋 6 (3 … 30) ·
+  // 친구네 털기 3 (1 · 6 · 8) · 털림 막기 3 (1 · 3 · 5) · 도감 110·120장 (관람차·범퍼카: 도감 줄의 끝). 값 300 → 950, 열리는 순서대로 오름
+  { t: 'sp2_radio', price: 300, need: ['stage', 5], say: K('5판 깨기', 'Clear stage 5') },
+  { t: 'sp2_mushlamp', price: 320, need: ['stars3', 3], say: K('별 셋 3판', '3 stars on 3 stages') },
+  { t: 'sp2_neonheart', price: 340, need: ['stage', 8], say: K('8판 깨기', 'Clear stage 8') },
+  { t: 'sp2_teepee', price: 340, need: ['raids', 1], say: K('친구네 털기 1번', "Raid friends' homes 1 time") },
+  { t: 'sp2_bigbear', price: 360, need: ['stars3', 8], say: K('별 셋 8판', '3 stars on 8 stages') },
+  { t: 'sp2_globe', price: 380, need: ['stage', 18], say: K('18판 깨기', 'Clear stage 18') },
+  { t: 'sp2_cotton', price: 400, need: ['keeps', 1], say: K('털림 막기 1번', 'Keep your treasure safe from 1 raid') },
+  { t: 'sp2_turntable', price: 420, need: ['stage', 22], say: K('22판 깨기', 'Clear stage 22') },
+  { t: 'sp2_eggchair', price: 440, need: ['stars3', 12], say: K('별 셋 12판', '3 stars on 12 stages') },
+  { t: 'sp2_planet', price: 460, need: ['stage', 25], say: K('25판 깨기', 'Clear stage 25') },
+  { t: 'sp2_pizza', price: 480, need: ['raids', 6], say: K('친구네 털기 6번', "Raid friends' homes 6 times") },
+  { t: 'sp2_fountain', price: 500, need: ['stage', 28], say: K('28판 깨기', 'Clear stage 28') },
+  { t: 'sp2_greenhouse', price: 520, need: ['stars3', 18], say: K('별 셋 18판', '3 stars on 18 stages') },
+  { t: 'sp2_lighthouse', price: 540, need: ['stage', 33], say: K('33판 깨기', 'Clear stage 33') },
+  { t: 'sp2_helmet', price: 560, need: ['keeps', 3], say: K('털림 막기 3번', 'Keep your treasure safe from 3 raids') },
+  { t: 'sp2_trampoline', price: 580, need: ['stage', 40], say: K('40판 깨기', 'Clear stage 40') },
+  { t: 'sp2_pinball', price: 600, need: ['stars3', 20], say: K('별 셋 20판', '3 stars on 20 stages') },
+  { t: 'sp2_flowercart', price: 620, need: ['stage', 45], say: K('45판 깨기', 'Clear stage 45') },
+  { t: 'sp2_cloudsofa', price: 650, need: ['raids', 8], say: K('친구네 털기 8번', "Raid friends' homes 8 times") },
+  { t: 'sp2_aquarium', price: 680, need: ['stage', 50], say: K('50판 깨기', 'Clear stage 50') },
+  { t: 'sp2_claw', price: 700, need: ['stars3', 30], say: K('별 셋 30판', '3 stars on 30 stages') },
+  { t: 'sp2_dj', price: 740, need: ['stage', 60], say: K('60판 깨기', 'Clear stage 60') },
+  { t: 'sp2_phonebox', price: 780, need: ['keeps', 5], say: K('털림 막기 5번', 'Keep your treasure safe from 5 raids') },
+  { t: 'sp2_ferris', price: 850, need: ['cards', 110], say: K('도감 110장이면 열려요', 'Opens at 110 cards in the book') },
+  { t: 'sp2_bumper', price: 950, need: ['cards', 120], say: K('도감 120장이면 열려요', 'Opens at 120 cards in the book') },
 ];
 // where one stands: open, and how far along (have / n)
 export function specialState(save, sp, f = feats(save)) {

@@ -25,6 +25,7 @@ const F_TRASH = /(trash|bin|recycle)/;          // nothing to eat comes out of t
 
 const furnOf = s => s.furn?.type || s.part?.furn?.type || '';
 const cat = type => COLD.test(type) ? 'cold' : FOOD.test(type) ? 'food' : CLOTH.test(type) ? 'cloth' : BATH.test(type) ? 'bath' : 'other';
+export const itemKind = cat;   // (숨기기 목록의 '음식' 칩 — ③ 10/21)
 
 // 한 판의 자리표 (스토리 룸 10/19, 사용자 3판 실폰: "축구공.. (작은 새집 안) 어떻게 의자 밑에서 오리가 나오니 ㅠ 스토리랑 상의해서
 // 다시 숨겨 줄래"): for a place the story room has gone through thing by thing — every kind of place, not only inside;

@@ -50,7 +50,7 @@ const giftImg = (G, c) => c.kind === 'thing' ? G.thumbs['item_' + c.t] : c.kind 
 // (the stages' own padlock, made once)
 let LOCK_PIC = null;
 const GIFT_SHORT = { gf_trophy: '금빛 트로피', gf_mongclock: '몽글이 시계', gf_carousel: '회전목마' };   // (a card's one line)
-const lockPic = () => LOCK_PIC ||= renderThumbs([{ key: 'lock', dir: [.35, .25, 1], fit: 1.1, build: () => {
+export const lockPic = () => LOCK_PIC ||= renderThumbs([{ key: 'lock', dir: [.35, .25, 1], fit: 1.1, build: () => {
   const g = new THREE.Group();
   g.add(put(tor(.05, .016, '#c9cfe0', { metal: .6, rough: .3 }, Math.PI, 8, 16), 0, .07, 0));
   g.add(put(rbox(.13, .11, .05, '#ffc93c', .025, { metal: .5, rough: .3 }), 0, 0, 0));

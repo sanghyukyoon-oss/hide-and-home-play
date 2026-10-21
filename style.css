@@ -252,7 +252,25 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .card.done { border-color: #78cf55; background: #e9fbe0; }
 .card .tag { position: absolute; left: 4px; top: 4px; font-size: 11px; background: var(--g2); color: #fff; border-radius: 8px; padding: 1px 5px; }
 .card.lockedc { opacity: .55; }
+.card .cnt { position: absolute; right: 4px; top: 4px; z-index: 1; font-size: 12px; line-height: 1; padding: 3px 6px 4px; border-radius: 10px; background: #fff; color: var(--ink); border: 2px solid var(--ink); }
+.card .cnt.on { background: #78cf55; color: #fff; }
+.card.one .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.maxed .pr { opacity: .4; }
 .btnrow { display: flex; gap: 10px; justify-content: center; }
+.btnrow .btn.backb { flex: 0 0 auto; padding-left: .55em; padding-right: .55em; }
+.btnrow .btn.backb svg { width: 26px; height: 26px; }
+/* 숨기기·꾸미기 목록 (③ 10/21): the strip in a frame that shows a side with more */
+.cardswrap { position: relative; pointer-events: auto; }
+.cardswrap .more { position: absolute; top: 3.5px; bottom: 9.5px; width: 38px; display: grid; place-items: center; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 2; }
+.cardswrap .more.l { left: 3.5px; border-radius: 19px 0 0 19px; background: linear-gradient(90deg, #fff3e2 30%, rgba(255, 243, 226, 0)); }
+.cardswrap .more.r { right: 3.5px; border-radius: 0 19px 19px 0; background: linear-gradient(270deg, #fff3e2 30%, rgba(255, 243, 226, 0)); }
+.cardswrap .more svg { width: 20px; height: 20px; filter: drop-shadow(0 0 0 var(--ink)); }
+.cardswrap .more svg path { stroke: var(--ink); stroke-width: 6; }
+.cardswrap .more.r svg { transform: scaleX(-1); }
+.cardswrap.moreL .more.l, .cardswrap.moreR .more.r { opacity: 1; }
+.hidetags { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; pointer-events: auto; margin-bottom: -4px; }
+.hidetag { font-family: var(--font); font-size: 13px; padding: 4px 9px 6px; border-radius: 12px; border: 2.5px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; }
+.hidetag.on { background: linear-gradient(var(--p1), var(--p2)); color: #fff; text-shadow: 0 2px 0 var(--ink); }
 .btnrow .btn { flex: 1; max-width: 220px; }
 .ftool { position: absolute; transform: translate(-50%, -100%); display: flex; gap: 8px; pointer-events: auto; z-index: 12; }
 .ftool .btn { padding: .35em .6em .45em; font-size: 16px; }
@@ -275,6 +293,7 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 .shopgrid .card { flex: none; }
 /* furniture not open yet (10/19 night): the same icon as a dark silhouette, under a little divider */
 .shopgrid .shopsep { grid-column: 1 / -1; margin: 8px 2px 0; padding-top: 8px; border-top: 3px dashed #e9cfae; font-size: 14px; color: #8a6a9a; text-align: left; }
+.shopgrid .shopsep.first { margin-top: 0; padding-top: 0; border-top: 0; }
 .card.silc { background: #f7efe4; cursor: default; }
 .card.silc img { filter: brightness(0); opacity: .74; }
 .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; }
@@ -309,8 +328,8 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 /* shop */
 .panel.shop { width: min(94vw, 460px); }
 .shophead { position: absolute; left: 16px; top: 16px; }
-.shoptabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; }
-.shoptab { font-family: var(--font); font-size: 15px; padding: 6px 11px 8px; border-radius: 12px; border: 2.5px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; }
+.shoptabs { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; }
+.shoptab { font-family: var(--font); font-size: 14.5px; padding: 6px 8px 8px; border-radius: 12px; border: 2.5px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; }
 .shoptab.on { background: linear-gradient(var(--o1), var(--o2)); color: #fff; text-shadow: 0 2px 0 var(--ink); box-shadow: none; }
 .swatch { width: 100%; aspect-ratio: 1; border-radius: 12px; border: 2px solid #e6d3c0; }
 .cdot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; margin: 0 1px; vertical-align: middle; }
