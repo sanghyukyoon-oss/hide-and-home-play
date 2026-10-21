@@ -612,7 +612,7 @@ export class Game {
       this.popElsewhere(kind);
     }
     // the asked lump giggles…
-    l.shake = 1.2; this.sayL(l, l.trap && kind === l.trap ? '킥킥… 속았지?' : '킥킥', 700); L.audio.sfx('giggle');
+    l.shake = 1.2; this.sayL(l, l.trap && kind === l.trap ? '킥킥… 속았지?' : '킥킥', 700); L.audio.laugh(l.c?.kind);
     await this.tw.wait(.8); if (this.dead) return;
     // …then shows itself
     const done = this.reveal(l, 1);
@@ -801,7 +801,7 @@ export class Game {
     // 딸깍
     L.audio.sfx('click'); W.setLight(DARK); this.nightEl.classList.add('on'); mom.setFace('happy');
     await this.tw.wait(.35); if (this.dead) return;
-    this.lumps.forEach((l, i) => setTimeout(() => { if (this.dead) return; l.shake = 1.2; this.sayL(l, ['킥킥…', '쉿!', '키득키득'][i % 3], 700); L.audio.sfx('giggle'); }, i * 260));
+    this.lumps.forEach((l, i) => setTimeout(() => { if (this.dead) return; l.shake = 1.2; this.sayL(l, ['킥킥…', '쉿!', '키득키득'][i % 3], 700); L.audio.laugh(l.c?.kind); }, i * 260));
     await this.tw.wait(1.1); if (this.dead) return;
     // 베개 싸움!
     W.setLight(COZY); this.nightEl.classList.remove('on'); L.audio.sfx('special');

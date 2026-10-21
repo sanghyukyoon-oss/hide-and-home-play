@@ -591,7 +591,7 @@ export class Game {
     Fr.tellOn = LV.tellDur; S.goal = S.peek; Fr.eyesOn = true; this.st[line ? 'peeks' : 'tells']++;
     const txt = line || pick(Fr.P.tell);
     if (this.bubbles < 3) this.sayAt(S.c.x, S.top + .12, S.c.z, txt, Math.min(1400, LV.tellDur * 1000), 'think fl-tell');
-    if ((this._gig = (this._gig || 0)) <= 0) { this.sfx(Fr.k === 'sleepy' ? 'hmm' : 'giggle'); this._gig = .5; }
+    if ((this._gig = (this._gig || 0)) <= 0) { this.sfx(Fr.k === 'sleepy' ? 'hmm' : Fr.k === 'bunny' ? 'giggleBunny' : 'giggle'); this._gig = .5; }
     // two floors: the first giveaway you can't reach from where you stand points you at the stairs
     if (this.posts.length > 1 && !this._stairHint && !this.reach(S.c.x, S.c.z, S.f, this.spotH(S), S.rec)) { this._stairHint = true; this.showHint(S.f > this.cur ? '위층에서 소리가! ⬆ 계단을 터치' : '아래층에서 소리가! ⬇ 계단을 터치', 4200); }
   }

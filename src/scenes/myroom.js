@@ -390,7 +390,7 @@ export class MyRoomScene {
     const G = this.G;
     const hit = this.pick(x, y);
     if (this.mode === 'raid') return;
-    if (hit.kind === 'char') { hit.char.bump(.4); G.audio.sfx('giggle'); return; }
+    if (hit.kind === 'char') { hit.char.bump(.4); G.audio.laugh(hit.char.kind); return; }
     if (this.mode === 'edit') {
       if (hit.kind === 'furn' && !hit.furn.wall) this.select(hit.furn.rec);
       else this.select(null);

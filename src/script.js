@@ -289,10 +289,11 @@ const SCENES = [
   // "30판까지 여행테마 확장", "27 당근 아침", "기차안 객실맵 만들어줘", "28 30 장치 만들어야지"): 20 빌라 옥상 집들이 →
   // 26 "발자국이 역 쪽으로" → 27 아침 기차역 → 28 기차 객실(★, 너굴이 숨음) → 29 호수 섬(흑백) → 30 냥냥이네 바닷가 가게(★) →
   // 31 골목 아지트 보스(돌아옴). 35 곰제과·37 도서관·38 현관은 상가 장 되풀이 자리. 맵이 없으면 어느 판에도 안 붙어요.
-  // 20판: 2장 마지막 집들이를 토순이네 빌라 옥상에서 — aptmap 장면의 클라이맥스("그 까만 애")를 그대로 옮김
-  { id: 'villaroofInc', type: 'incident', room: 'villaroof', alt: ['villaroof2'], host: 'bear', trace: true, uses: 'aptmap', hide: K('으헤헤, 햇볕 드는 데가 좋아~', 'Ehehe, somewhere nice and sunny~'),
+  // 20판: 2장 마지막 집들이를 토순이네 빌라 옥상에서 — aptmap 장면의 클라이맥스("그 까만 애")를 그대로 옮김.
+  // 곰돌이는 장독대 큰 항아리(누름돌 뚜껑, 장독대 도르래 장치) 안에서 잠듦 (② 10/21)
+  { id: 'villaroofInc', type: 'incident', room: 'villaroof', alt: ['villaroof2'], host: 'bear', trace: true, uses: 'aptmap', hide: K('으헤헤, 항아리 속은 시원하고 깜깜해~', 'Ehehe, it’s cool and dark in the jar~'),
     intro: [L('bunny', '우리 빌라 옥상에서 집들이야! 곰돌이도 왔어, 숨바꼭질 하재.', 'Housewarming on our rooftop! Bearie came too. Wants to play hide-and-seek.')],
-    reveal: [L('bear', '어… 벌써 찾았어? 햇볕이 따뜻해서 그만.', 'Huh… found me already? The sun was just so warm.'), L('bunny', '이제 다 모였다! 집들이 대성공!', "Everyone's here! Best housewarming ever!"),
+    reveal: [L('bear', '어… 벌써 찾았어? 항아리 안이 시원하고 깜깜해서 그만…', 'Huh… found me already? It was so cool and dark in the jar…'), L('bunny', '이제 다 모였다! 집들이 대성공!', "Everyone's here! Best housewarming ever!"),
       L('mong', '…한 명 빠졌어. 그 까만 애.', '…One is missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
   // 27판 아침 기차역: 개굴이는 숨지 않고 플랫폼에 서 있어요. 26판 발자국이 역까지 이어짐(trace)
   { id: 'stationH', type: 'hidden', room: 'station', host: 'frog', trace: true, uses: 'streetH', goal: ['개굴이 낚시 가방 물건', "Froggy's fishing bag things"],
@@ -1251,6 +1252,7 @@ export function hiddenGoal(idx, n) {
 const ROCKY_ROOM = {
   aptlobby: L('raccoon', '장 본 게 현관에 다 쏟아졌네? 엘리베이터 내려오기 전에 다 주워 봐!', 'Groceries all over the lobby? Pick it all up before the elevator comes down!'),
 };
+ROCKY_ROOM.aptlobby2 = ROCKY_ROOM.aptlobby;   // (현관 2차 맵 키)
 // (the last timed stage always gets the last line — "마지막 승부다!" — however many timed stages the campaign has)
 const rockyAt = (idx, n) => { const t = bind().timed[idx] || 0; return t >= bind().timedN - 1 ? n - 1 : Math.min(n - 2, t); };
 export const timedIntro = idx => { const r = ROCKY_ROOM[bind().room[idx]], l = ROCKY[rockyAt(idx, ROCKY.length)]; return r ? [r, ...l] : l; };
@@ -1329,6 +1331,8 @@ export const KIT_TALK = {
   moving: { who: 'bunny', go: K('다 찾았다! 이제 제자리에 놓자.', "All found! Now let's put everything where it goes."), wrong: K('거긴 그 자리가 아니야~', "Nope, that's not its spot~"),
     // 13판 이사 트럭·상자 더미 시안 (프라모델 10/20, 사용자 OK 전): 하나 찾을 때마다 맨 위 상자가 사라지고, 다 찾으면 더미 밑에서 하나 더.
     // pile = 더미를 처음 터치했을 때, under = 마지막 상자가 사라지고 밑에서 나올 때('하나 남음'과 같은 순간이라 그때는 under만)
+    // wow = 상자 산(48개)을 처음 볼 때 한 쌍 (10/21 사용자 "상자보고 이삿짐이 좀 많네? 놀라는 이런거") — pile과 말이 겹치지 않게
+    wow: [L('mong', '…이거 다 토순이 거야?', '…Is all of this yours?'), L('bunny', '헤헤… 반은 인형이야!', 'Hehe… half of it is stuffed animals!')],
     pile: K('짐이 산더미야! 하나 찾을 때마다 상자 하나씩 치우자.', 'Boxes everywhere! Every find clears one box.'),
     under: K('어? 상자 밑에 하나 더 있었네!', 'Huh? There was one more under the boxes!') },
   // 11판 캣타워 · 19판 미니 소방차 (프라모델 정식판 10/20): open = 상자가 쿵 + 컷인, hid = 터치해서 부품이 흩어진 뒤
@@ -1342,6 +1346,7 @@ export const KIT_TALK = {
     wrong: K('펭! 그건 아직이야. 번호 순서대로!', 'Peng! Not that yet. Go by the numbers!') },
   parfait: { who: 'sundae', go: K('다 찾았다! 녹기 전에 쌓자!', 'All found! Stack it before it melts!'), wrong: K('앗, 무거운 게 아래야!', 'Whoa, heavy stuff on the bottom!') },
 };
+export const PILE_WOW = KIT_TALK.moving.wow;   // (③이 읽는 이름 — 13판 이삿짐 산을 처음 볼 때)
 
 // ── 1판: a fixed little scene instead of a random room (GPT 첫판 안): 토순이 hides in the toy box, drops her donut on the way;
 // the box stands with its front away from you, so turning the room is how you see her tail sticking out.

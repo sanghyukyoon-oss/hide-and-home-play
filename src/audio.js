@@ -224,6 +224,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     return true;
   }
   // a furniture part's own sound in its material (a metal cupboard, a cardboard box …) when that file is in; else the plain one
+  // a character's laugh: 토순이 has her own (giggleBunny), everyone else the shared one
+  A.laugh = (who, p = 0) => A.sfx(who === 'bunny' ? 'giggleBunny' : 'giggle', p);
   A.sfxPart = (part, name) => {
     const m = matOf(part?.label), v = m && name + '_' + m;
     A.sfx(v && sfxBuf[v] ? v : name);
@@ -235,6 +237,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     if (!ensure() || A.muted) return;
     p = Math.min(p, 12);
     if (SFX_FALLBACK[name] && !sfxBuf[name]) name = SFX_FALLBACK[name];   // (a newer file not in yet: the one it grew from)
+    // one laugh at a time (10/21 실폰 1.0.141, user: "토순이 웃음소리랑 옛날 웃음소리 계속 나온다"): a second within 0.6 s is dropped
+    if (name === 'giggle' || name === 'giggleBunny') { const t = A.ctx.currentTime; if (t - (A._laughT ?? -9) < .6) return; A._laughT = t; }
     // (10/20 user: "무궁화는… 보이스 넣을 건데 디졸브 잘 넣거나 후처리 잘해서 어색하지 않게") the chant: the music steps back under it and comes up again
     if (name === 'mugunghwa') A.duck(4, .32);
     if (name === 'win' || name === 'lose') { A.duck(name === 'win' ? 2.6 : 2); if (A._hurry) A.hurry(false); if (A._drift !== 1) A.drift(0); }   // the jingle over the music, not under it; the hurry (and a drift) is over

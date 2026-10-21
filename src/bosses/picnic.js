@@ -384,7 +384,7 @@ export class Game {
     } else {
       this.rivalN++; this.rivalPts += sl.golden ? 3 : 1; this.rivalN_.textContent = String(this.rivalPts);
       this.rivalEl.classList.remove('pop'); void this.rivalEl.offsetWidth; this.rivalEl.classList.add('pop');
-      L.say(a.ch, sl.golden ? '황금 쪽지다~ 헤헤!' : pick(RIVAL_GOT), 1000, 'red'); L.audio.sfx('giggle');
+      L.say(a.ch, sl.golden ? '황금 쪽지다~ 헤헤!' : pick(RIVAL_GOT), 1000, 'red'); L.audio.laugh(a.ch?.kind);
       a.ch.pose = 'wave';
       W.fx.burst(scr.x, scr.y, { n: 8, shape: 'circle', colors: ['#b8b2c6', '#4a4458', '#ffffff'], size: 7 });
       if (this.streak > 0) { this.streak = 0; this.updStreak(); }

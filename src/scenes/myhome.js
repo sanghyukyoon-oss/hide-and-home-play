@@ -949,7 +949,7 @@ export class MyHomeScene {
   reactChar(ch) {
     const G = this.G;
     if (ch.react) { const r = ch.react(this.tw, (n, p) => G.audio.sfx(n, p)); if (r.line) this.say(ch, r.line); return; }
-    ch.bump(.4); G.audio.sfx('giggle');
+    ch.bump(.4); G.audio.laugh(ch.kind);
   }
   say(ch, text, ms = 1300) {
     // a long line (English) wraps instead of running off the screen, and the bubble stays inside the screen

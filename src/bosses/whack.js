@@ -287,7 +287,7 @@ export class Game {
       const y1 = o.top - .32; this.tw.run(.2, k => { c.root.position.y = -1.2 + (y1 + 1.2) * k; }, ease.outBack, i * .06);
     }
     L.world.idsDirty = true;
-    setTimeout(() => { if (!this.dead) { const o = this.holes[4]; if (o.who) L.say(o.who.chs[0], '여기 있지롱~', 1200); L.audio.sfx('giggle'); } }, 500);
+    setTimeout(() => { if (!this.dead) { const o = this.holes[4]; if (o.who) L.say(o.who.chs[0], '여기 있지롱~', 1200); L.audio.laugh(o.who?.chs[0]?.kind); } }, 500);
     L.log({ result: this.result, lv: this.lvIdx, score: this.score, stars, best: this.best, line: `${this.score}점 · 친구 ${this.found}명 찾음 · 최고 ${this.best}연속` });
     if (win) { L.audio.sfx('win'); L.world.fx.confetti(80); this.me.setFace('happy'); this.me.pose = 'cheer'; } else L.audio.sfx('lose');
     await this.tw.wait(1.4); if (this.dead) return;

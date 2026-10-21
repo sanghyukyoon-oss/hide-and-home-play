@@ -50,7 +50,7 @@ const SND = {
 };
 const sndOf = part => SND[part.furn.type] || (part.kind === 'drawer' ? SND.tvlow : part.kind === 'door' ? SND.wardrobe : SND.chest);
 // what the friend's tell sounds like from inside
-const TELL_SND = { bear: 'snore', frog: 'blub' };
+const TELL_SND = { bear: 'snore', frog: 'blub', bunny: 'giggleBunny' };
 // where a friend could curl up, best first (a lid, door or drawer before a lift: a padlock on a blanket looks odd)
 const PREF = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'closet', 'lockers', 'recordcab', 'dishcab', 'cooler', 'picnic', 'tacklebox', 'toybox', 'laundrybasket', 'minifridge', 'washer3', 'tvlow', 'drawers', 'dresser', 'shoerack', 'kotatsu', 'bush', 'campchair', 'tentsmall', 'tent'];
 const CHAIN = new Set(['key', 'note', 'color', 'treat', 'tool', 'sock', 'book', 'gadget']);

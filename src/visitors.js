@@ -109,7 +109,7 @@ export class Visitors {
     ch.faceTo(mp.x, mp.z); mong.faceTo?.(ch.root.position.x, ch.root.position.z);
     const name = CHAR_DEFS[kind]?.name || '친구';
     const first = seat ? seat.say : BY_KIND[kind] ? pick(BY_KIND[kind]) : pick(this.o.indoorRoom ? [...SMALLTALK, ...ROOMTALK] : SMALLTALK);
-    ch.pose = seat ? 'idle' : 'wave'; this.o.say(ch, first, seat ? 2800 : 2200); G.audio.sfx('giggle');
+    ch.pose = seat ? 'idle' : 'wave'; this.o.say(ch, first, seat ? 2800 : 2200); G.audio.laugh(kind);
     if (seat) { const s = G.world.toScreen(ch.root.getWorldPosition(new THREE.Vector3()).setY(ch.root.position.y + ch.headTop() + .1)); G.world.fx.burst(s.x, s.y, { n: 10, shape: 'heart', colors: ['#ff7aa8', '#ffd1e0'], speed: 120, gravity: -60 }); }
     await tw.wait(seat ? 2.9 : 2.3); if (!alive()) return;
     ch.pose = 'idle'; mong.bump?.(.35); this.o.say(mong, seat ? seat.mong : pick(REPLY), seat ? 1900 : 1500);

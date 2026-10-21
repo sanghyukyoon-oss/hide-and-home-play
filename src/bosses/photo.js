@@ -331,7 +331,7 @@ class Dizzy extends Moment {
     if (t < T) {
       const ang = TAU * (.6 * t + .95 * t * t); rx.ry = ang; rx.y = Math.abs(Math.sin(ang)) * .07; rx.wag = 1; fc(c, 'happy'); rx.rz = 0;
       const rev = Math.floor(ang / TAU); if (rev > (this.flags.rev ?? -1)) { this.flags.rev = rev; G.sfx('hop', 2 + rev * 2); }
-      if (!this.flags.cue) { this.flags.cue = 1; c._fx(G.tw, 'heart', { x: .4, y: .9, dur: .7 }); G.sfx('giggle'); }
+      if (!this.flags.cue) { this.flags.cue = 1; c._fx(G.tw, 'heart', { x: .4, y: .9, dur: .7 }); G.sfx(c.kind === 'bunny' ? 'giggleBunny' : 'giggle'); }
       this.ry0 = ang;
     } else if (t < T + P) {
       const u = (t - T) / P; if (this.ry1 == null || this.flags.pk == null) { this.flags.pk = 1; this.ry1 = Math.ceil(this.ry0 / TAU + .15) * TAU; }

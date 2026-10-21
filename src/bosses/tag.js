@@ -225,7 +225,7 @@ export class Game {
         F.tellT = rnd(2.2, 3.6); F.wigT = .7;
         const far = Math.hypot(S.c.x - me.x, S.c.z - me.z);
         if (far < 9 && this.bubbles < 2) this.sayAt(S.c.x, S.top + .15, S.c.z, P.hid, 900);
-        if (far < 6.5) L.audio.sfx('giggle');
+        if (far < 6.5) L.audio.laugh(F.k);
       }
       const w = F.wigT > 0 ? .05 + Math.abs(Math.sin(this.t * 22)) * .07 : 0;
       for (const pt of S.parts) pt.setOpen(w);
@@ -248,7 +248,7 @@ export class Game {
         }
       } else {
         F.t -= dt;
-        if (pdist < P.sense + 3 && pdist > P.sense + .6 && Math.random() < dt * .25) { this.sayCh(F, P.taunt, 900); L.audio.sfx('giggle'); ch.faceTo(me.x, me.z); }
+        if (pdist < P.sense + 3 && pdist > P.sense + .6 && Math.random() < dt * .25) { this.sayCh(F, P.taunt, 900); L.audio.laugh(F.k); ch.faceTo(me.x, me.z); }
         if (F.t <= 0) this.decide(F);
       }
       return;
