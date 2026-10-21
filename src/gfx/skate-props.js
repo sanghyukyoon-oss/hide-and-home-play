@@ -3,8 +3,8 @@
 // thing: a board parked on the quarter-pipe deck — tap it and it rolls down the ramp and away, and whatever it was
 // hiding on the deck shows. Shared toy kit, one merged mesh per piece.
 import * as THREE from 'three';
-import { put, grp, shade } from './kit.js';
-import { HG as G, hmc as mc } from './house-props.js';
+import { put, grp, shade, starShape } from './kit.js';
+import { HG as G, hmc as mc, hxf } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
 const CONC = '#d9d4e3', CONC2 = '#bfb8cf', STEEL = '#c9cfe0', STEEL2 = '#8f97b2', WOOD = '#e2b27a', INK = '#2a1d33';
@@ -84,16 +84,49 @@ B.graffitiwall = f => {
 };
 
 // 보드 거치대 (1×1): a rack of three boards and a helmet hook
+// (24판 실폰 10/21, user: "보드 보관대 너무 ㅋㅋ 별로야.. 제대로 해줘 제대로" — a frame, a cloth and a ball): a low skate-shop rack
+// that reads at a glance, colour or grey — four boards standing up in a notched wooden base, leaning back on a steel rail, their
+// undersides to the front so every deck's picture (star, flame, checks, smiley), its two trucks and four fat wheels show; a
+// little shelf on top with a helmet on its post, a crate of spare wheels at its foot. The two hiding spots stay where they were.
+const DECK = [['#ff7eb6', 'star'], ['#3b3556', 'flame'], ['#f6f3ee', 'check'], ['#ffd23f', 'smile']];
 B.boardrack = f => {
-  f.add(mc('boardrack', ({ add }) => {
-    add(G.box(.7, .08, .3, .02), WOOD, 0, .04, -.1);
-    for (const sx of [-1, 1]) add(G.box(.06, .9, .06, .015), shade(WOOD, -.15), sx * .32, .45, -.2);
-    add(G.box(.7, .06, .06, .015), shade(WOOD, -.15), 0, .9, -.2);
-    [['#6fb8e8', -.18], ['#ffcf3c', 0], ['#7fd6c0', .18]].forEach(([c, x]) => { add(G.box(.18, .62, .03, .015), c, x, .42, -.12, -.25, 0, 0); });
-    add(G.sph(.12, 14, 10), '#ff6a8a', .28, .82, -.08, 0, 0, 0, [1, .8, 1]);
+  const BZ = -.2, LEAN = -.22, DL = .7, DW = .15;
+  f.add(mc('boardrack2', ({ add, addM }) => {
+    // a frame to build a tilted board in (its own x, y, z, then the same add)
+    const inn = (x, y, z, rx, ry, rz) => { const M = hxf(x, y, z, rx, ry, rz); return { add: (src, c, a, b, d, e, g, h, sc) => addM(src, M.clone().multiply(hxf(a, b, d, e, g, h, sc)), c) }; };
+    // the rack: a notched base plank, two posts, the steel rail the boards lean on, a little shelf on top
+    add(G.box(.86, .08, .34, .025), WOOD, 0, .04, BZ);
+    for (let k = 0; k < 5; k++) add(G.box(.04, .07, .3, .01), shade(WOOD, -.18), -.36 + k * .18, .1, BZ + .01);
+    for (const sx of [-1, 1]) add(G.box(.07, .96, .07, .02), shade(WOOD, -.18), sx * .4, .48, BZ - .06);
+    add(G.cyl(.025, .025, .82, 10), STEEL2, 0, .62, BZ - .035, 0, 0, HP);
+    add(G.box(.88, .04, .22, .015), WOOD, 0, .94, BZ - .08);
+    // the boards: each its own frame — up the deck is +y, its underside (the picture, the trucks) faces +z
+    DECK.forEach(([col, pic], k) => {
+      const d = inn(-.3 + k * .2, .1 + DL / 2 * Math.cos(LEAN), BZ + .02 - DL / 2 * Math.sin(LEAN) * .4, LEAN, 0, 0);
+      d.add(G.box(DW, DL - .1, .028, .012), col, 0, 0, 0);
+      for (const e of [-1, 1]) d.add(G.box(DW, .09, .028, .012), col, 0, e * (DL / 2 - .04), -.012, e * -.25, 0, 0);   // the kicktails, bent back
+      d.add(G.box(DW + .004, DL - .08, .006, .003), '#3a3346', 0, 0, -.016);   // the grip tape (against the wall)
+      const Z = .016;
+      if (pic === 'star') d.add(G.ext(starShape(.06, .028), .006, 0), '#ffe26a', 0, .06, Z);
+      if (pic === 'flame') for (const [x, y, r, c] of [[0, -.08, .05, '#ff7a2a'], [-.03, .02, .035, '#ffb03a'], [.03, .05, .03, '#ffd86b'], [0, .12, .022, '#fff1b0']]) d.add(G.sph(r, 10, 6), c, x, y, Z, 0, 0, 0, [1, 1.6, .2]);
+      if (pic === 'check') for (let r = 0; r < 7; r++) for (let q = 0; q < 3; q++) if ((r + q) % 2) d.add(G.pbox(.045, .045, .006), '#2c2744', -.048 + q * .048, -.15 + r * .05, Z);
+      if (pic === 'smile') { for (const sx of [-1, 1]) d.add(G.sph(.014, 8, 6), '#2c2744', sx * .035, .05, Z, 0, 0, 0, [1, 1.3, .3]); d.add(G.tor(.045, .01, PI, 4, 12), '#2c2744', 0, .02, Z, 0, 0, PI); }
+      // trucks and wheels, near each end
+      for (const e of [-1, 1]) {
+        const y = e * (DL / 2 - .14);
+        d.add(G.box(.06, .035, .035, .01), STEEL2, 0, y, Z + .016);
+        d.add(G.box(DW - .02, .022, .022, .008), STEEL, 0, y, Z + .04);
+        for (const sx of [-1, 1]) d.add(G.cyl(.03, .03, .032, 14), ['#fff4e2', '#9fe0d0', '#ffd0e0', '#fff4e2'][k], sx * (DW / 2 - .025), y, Z + .05, 0, 0, HP);
+      }
+    });
+    // the helmet on the left post, a crate of spare wheels at the right foot
+    add(new THREE.SphereGeometry(.12, 16, 8, 0, PI * 2, 0, HP), '#7fd6c0', -.36, .96, BZ - .08, 0, 0, 0, [1, .9, 1.1]);
+    add(G.box(.2, .02, .06, .01), '#5fbfa8', -.36, .95, BZ + .04, -.4, 0, 0);
+    add(G.box(.2, .1, .16, .02), '#e2403a', .32, .05, .28);
+    for (const [x, z, c] of [[.27, .26, '#fff4e2'], [.36, .3, '#ffd0e0'], [.3, .32, '#9fe0d0']]) add(G.cyl(.035, .035, .03, 12), c, x, .11, z, HP, 0, 0);
   }));
   f.spot('under', null, 0, 0, .1, { maxH: .28, label: '거치대 밑', scale: .7 });
-  f.spot('on', null, -.22, .94, -.2, { maxH: .2, label: '거치대 꼭대기', scale: .5 });
+  f.spot('on', null, -.22, .96, -.32, { maxH: .2, label: '거치대 꼭대기', scale: .5 });
 };
 
 export const SKATE_BUILDERS = B;

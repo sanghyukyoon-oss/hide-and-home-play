@@ -72,24 +72,30 @@ Object.assign(SFX_FILES, {
   bloom: 'audio/sfx/bloom.mp4',   // 흑백판 끝 색이 번질 때 '뾰로롱' (사운드 v3 10/20, 종 없이)
   // (10/21 user: "토순이 웃는소리도 좀 바꿔라..") 토순이's own giggle; ("낚시릴 소리 좀 좋게") the net coming up out of the pond with something in it
   giggleBunny: 'audio/sfx/giggleBunny.mp4', reelSplash: 'audio/sfx/reelSplash.mp4',
+  // (10/21 #89) cloth lifted / laid back: S a handkerchief or cushion, M a curtain or tablecloth, L a big blanket or tarp
+  clothOpenS: 'audio/sfx/clothOpenS.mp4', clothOpenM: 'audio/sfx/clothOpenM.mp4', clothOpenL: 'audio/sfx/clothOpenL.mp4',
+  clothCloseS: 'audio/sfx/clothCloseS.mp4', clothCloseM: 'audio/sfx/clothCloseM.mp4', clothCloseL: 'audio/sfx/clothCloseL.mp4',
   // (10/21 user, 듣기 페이지에서 "낚시 새b") the recorded reel: winding the net up, the line running out
   reelWind: 'audio/sfx/reelWind.mp4', reelOut: 'audio/sfx/reelOut.mp4',
   mugunghwa: null,   // (10/21 user: "무궁화꽃이 음성 이상하다, 전에 거가 더 나음") back to 너굴이's voice, one syllable at a time; the TTS take is in _backup/sfx-mugunghwa-tts.mp4
 });
-const SFX_FALLBACK = { giggleBunny: 'giggle', reelSplash: 'blub' };
+const SFX_FALLBACK = { giggleBunny: 'giggle', reelSplash: 'blub', clothOpenS: 'swish', clothOpenM: 'swish', clothOpenL: 'swish', clothCloseS: 'swish', clothCloseM: 'swish', clothCloseL: 'swish' };
 // 가구 재질: 부분의 이름표(label)로 정한다 — 첫 번째로 맞는 줄. 없으면 나무(기본 소리).
 // (10/20 user, 1판: "쓸모없이 깡깡하는 이상한 소리" — the room's bins are plastic, but 휴지통 was listed as metal)
 const MAT = [
   ['fabric', /수건|담요/],
-  ['plastic', /김치냉장고|장난감|아이스박스|복합기|턴테이블|라바콘|러버콘|트렁크|양동이|바가지|미끄럼틀|꺼내는 곳|어항|쓰레기 봉투|방수포|BINS|휴지통/],
+  ['plastic', /김치냉장고|장난감|아이스박스|복합기|턴테이블|라바콘|러버콘|트렁크|양동이|바가지|미끄럼틀|꺼내는 곳|어항|쓰레기 봉투|BINS|휴지통/],
   ['metal', /금고|냉장고|냉동|자판기|동전|우편함|우체통|실외기|보일러|세탁기|공구함|도구함|캐비닛|맨홀|밥솥|코펠|냄비|솥|그릴|셔터|유치장|순찰차|대문|옥상|돈통|정수기|찜기|분필|우유 투입함|에어컨|엘리베이터/],
   ['paper', /택배|작품 상자|소원 상자|짐칸 상자|장식 상자|^상자|포스터|전단지|차트|신문지/],
   ['wicker', /바구니/],
   ['ceramic', /단지|화분|변기/],
   ['stone', /돌|바위/],
   ['leaves', /덤불|가지|버섯/],
-  ['fabric', /방석|이불|쿠션|담요|러그|베개|빈백|빨래|수건|천|식탁보|상보|매트|방화복|커튼/],
+  ['fabric', /방석|이불|쿠션|담요|러그|베개|빈백|빨래|수건|천|식탁보|상보|매트|방화복|커튼|덮개|방수포|테이블보|텐트|보자기|침낭/],   // (덮개·방수포·테이블보·텐트 10/21 #89 — 복합기 덮개 stays plastic, its line comes first)
 ];
+// 천 (10/21 #89, user: "천 들추는 소리 좀 이상함"): a fabric part lifts and lays back with a cloth sound of its own size — it
+// opened with a cotton swish, a cushion puff or (20판's blanket) a page flip, and every one of them closed like a wooden cupboard door
+const clothSize = l => /손수건|수건|방석|쿠션|베개|좌판|바구니 천/.test(l) ? (/큰 /.test(l) ? 'M' : 'S') : /이불|담요|텐트|천막|러그|매트|빈백|방화복|침낭|코타츠|빨래|방수포/.test(l) ? 'L' : 'M';
 const matOf = label => { const l = String(label || ''); for (const [m, re] of MAT) if (re.test(l)) return m; return null; };
 
 export function createAudio({ storageKey = 'sbk.mute' } = {}) {
@@ -263,7 +269,9 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   // a character's laugh: 토순이 has her own (giggleBunny), everyone else the shared one
   A.laugh = (who, p = 0) => A.sfx(who === 'bunny' ? 'giggleBunny' : 'giggle', p);
   A.sfxPart = (part, name) => {
-    const m = matOf(part?.label), v = m && name + '_' + m;
+    const l = String(part?.label || ''), m = matOf(l);
+    if (m === 'fabric') { const shut = name === 'close' || name === 'drawerClose'; hapticFor(shut ? 'close' : 'lift'); return A.sfx((shut ? 'clothClose' : 'clothOpen') + clothSize(l), 0, false); }   // 천
+    const v = m && name + '_' + m;
     A.sfx(v && sfxBuf[v] ? v : name);
   };
 
