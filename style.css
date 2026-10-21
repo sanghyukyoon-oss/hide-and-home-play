@@ -2057,3 +2057,9 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 /* (③ 10/21) a shop icon still being drawn: a soft round placeholder where it will be */
 .panel.shop .card img.lazy { background: radial-gradient(circle at 50% 55%, rgba(155, 108, 255, .14) 0 36%, transparent 38%); animation: lazypulse 1s ease-in-out infinite alternate; }
 @keyframes lazypulse { to { opacity: .55; } }
+/* (③ 10/21) the box's burst: smoke puffs, stars and paper bits, and the bright band that wipes the panel away (modelkit.js) */
+.kitpuff { position: absolute; width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle at 40% 38%, #fff 0 45%, #f1ebf5 70%, rgba(241, 235, 245, 0) 72%); z-index: 33; pointer-events: none; }
+.kitbit { position: absolute; width: 14px; height: 8px; border-radius: 1.5px; z-index: 33; pointer-events: none; box-shadow: 0 0 0 1.5px rgba(58, 36, 83, .5); }
+.kitbit.star { width: 22px; height: 22px; border-radius: 0; box-shadow: none; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.kitwipe { position: absolute; top: -20%; height: 140%; width: 110px; margin-left: -55px; z-index: 40; pointer-events: none; rotate: 17deg;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 252, 230, .95) 35%, #fff 50%, rgba(255, 252, 230, .95) 65%, rgba(255, 255, 255, 0)); filter: drop-shadow(0 0 18px rgba(255, 236, 160, .9)); }

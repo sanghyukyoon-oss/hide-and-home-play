@@ -369,46 +369,67 @@ export async function kitIntro(S) {
     phase = 'burst';
     hand.remove(); kok.remove(); beat.cancel(); shine.cancel(); glowEl.style.opacity = '.9';
     if (S.dead) throw 0;
-    // 펑! the lid bursts off (a white flash, a comic burst), light pours out
+    // (③ 10/21, user: "상자 … 누르고 흩어질 때 효과, 애니메이션 수정") the box gives under the finger and springs back — then 펑
+    G.audio.sfx('pop', 2); haptic('tick');
+    await A(box, [{ transform: 'none' }, { transform: 'scale(1.14, .8)', offset: .45 }, { transform: 'scale(.92, 1.12)', offset: .8 }, { transform: 'none' }], { duration: 190, easing: 'ease-out' });
+    if (skipped) throw 0;
+    // 펑! the lid bursts off (a white flash, a comic burst), light pours out; the screen jolts, a puff of smoke, stars and
+    // paper bits fly
     G.audio.sfx('special'); G.audio.sfx('pop', 6); haptic('ok');
     const lr = lay.getBoundingClientRect(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top };
     {
       const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .85 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' });
       const bang = h('div', { class: 'kitbang', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(bang); outs.push(bang);
-      A(bang, [{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(12deg)', opacity: 1, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(16deg)', opacity: 0 }], { duration: 520, easing: 'ease-out' });
+      A(bang, [{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(12deg)', opacity: 1, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(16deg)', opacity: 0 }], { duration: 420, easing: 'ease-out' });
+      A(lay, [{ translate: '0 0' }, { translate: '-8px 5px' }, { translate: '7px -6px' }, { translate: '-5px 3px' }, { translate: '2px -1px' }, { translate: '0 0' }], { duration: 280, easing: 'linear' });
+      for (let i = 0; i < 9; i++) {   // the smoke: soft white balls rolling out of the mouth and thinning away
+        const a = (i / 9) * Math.PI * 2 + .3, d = 70 + (i % 3) * 22, pf = h('i', { class: 'kitpuff', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(pf); outs.push(pf);
+        A(pf, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: .95 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d * .7 - 18}px)) scale(1.5)`, opacity: 0 }], { duration: 560, easing: 'cubic-bezier(.2,.8,.4,1)' });
+      }
+      const cols = ['#ffe14d', '#ff8fb8', '#8fd3f4', '#9be38f', '#ffffff', '#ffb23a'];
+      for (let i = 0; i < 16; i++) {   // stars and paper bits up and over, falling with a flutter
+        const star = i % 3 === 0, el = h('i', { class: star ? 'kitbit star' : 'kitbit', style: `left:${mouth.x}px;top:${mouth.y}px;background:${cols[i % cols.length]}` }); lay.append(el); outs.push(el);
+        const dx = (Math.random() - .5) * lr.width * .9, up = 120 + Math.random() * 140, fall = 160 + Math.random() * 160, rot = (Math.random() - .5) * 900;
+        A(el, [{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx * .55}px), calc(-50% - ${up}px)) rotate(${rot * .5}deg)`, opacity: 1, offset: .38, easing: 'ease-in' },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${fall - up}px)) rotate(${rot}deg)`, opacity: 0 }], { duration: 900 + Math.random() * 300, easing: 'cubic-bezier(.2,.7,.4,1)' });
+      }
     }
     // (the lid flies up and off the screen — no fading: a 3D group fading flattens into a plane)
     A(lid, [{ transform: KB3_LID }, { transform: 'translate3d(0,-120px,0) rotateX(16deg) rotateZ(-8deg)', offset: .35 }, { transform: 'translate3d(240px,-760px,0) rotateX(40deg) rotateZ(-44deg)' }], { duration: 520, easing: 'cubic-bezier(.3,.1,.6,1)' });
     box.classList.add('open');   // (light inside)
     A(glowEl, [{ opacity: .9, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.6)' }], { duration: 320, easing: 'ease-out' });
-    // 팍: every piece out of the box at once, fanning up and out over the panel, spinning — then a shine fills the screen,
-    // and as it clears it's the room, each piece already where it hides (user 10/20: "흩어질 때는 그 배경 위에서 부품이
+    // 팍: the pieces leap out one after another on arcs over the panel, land, bounce twice and settle — then a bright band
+    // wipes across and behind it is the room, each piece already where it hides (user 10/20: "흩어질 때는 그 배경 위에서 부품이
     // 흩어지고 → 반짝 트랜지션 → 그 뒤에 집 장면")
-    const n = K.order.length, R0 = Math.min(lr.width, lr.height) * .34;
+    const n = K.order.length, gap = 70;
     K.order.forEach((p, i) => {
       const img = h('img', { class: 'kitfly', src: S.kitCells[p]?.querySelector('.kitrun-pc')?.src || '', style: `left:${mouth.x - 30}px;top:${mouth.y - 30}px` });
       lay.append(img); outs.push(img);
-      const a = -Math.PI / 2 + (i / Math.max(1, n - 1) - .5) * Math.PI * 1.3, r = R0 * (.8 + (i % 2) * .3);   // a fan over the box, left round to right
-      const tx = Math.cos(a) * r, ty = Math.sin(a) * r, spin = (i % 2 ? 1 : -1) * (200 + i * 35);
-      A(img, [{ transform: 'translate(0,0) scale(.3) rotate(0)', opacity: 0 }, { transform: `translate(${tx * .8}px,${ty * .8 - 30}px) scale(1.55) rotate(${spin * .5}deg)`, opacity: 1, offset: .4 },
-        { transform: `translate(${tx}px,${ty}px) scale(1.4) rotate(${spin * .8}deg)`, opacity: 1, offset: .7 }, { transform: `translate(${tx * 1.7}px,${ty * 1.7}px) scale(1.25) rotate(${spin}deg)`, opacity: 1 }],
-        { duration: 1100, delay: i * 35, easing: 'cubic-bezier(.2,.8,.4,1)' });
-      setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), i * 35);
+      const u = n > 1 ? i / (n - 1) - .5 : 0, side = i % 2 ? 1 : -1;
+      const tx = u * lr.width * .8 + side * 12, ly = lr.height * (-.17 + (i % 3) * .07) + Math.abs(u) * 50, peak = Math.min(ly, 0) - 150 - (1 - Math.abs(u)) * 60, spin = side * (300 + i * 40);   // (they land round the box, above and beside it)
+      const at = (x, y, sc, r) => `translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`;
+      A(img, [{ transform: at(0, 0, .3, 0), opacity: 0, easing: 'cubic-bezier(.2,.7,.5,1)' }, { transform: at(tx * .55, peak, 1.45, spin * .55), opacity: 1, offset: .36, easing: 'cubic-bezier(.5,0,.8,.6)' },
+        { transform: at(tx, ly, 1.3, spin * .92), offset: .66, easing: 'ease-out' }, { transform: at(tx, ly - 30, 1.3, spin * .97), offset: .76, easing: 'ease-in' },
+        { transform: at(tx, ly, 1.3, spin), offset: .86, easing: 'ease-out' }, { transform: at(tx, ly - 9, 1.3, spin), offset: .93, easing: 'ease-in' }, { transform: at(tx, ly, 1.3, spin), opacity: 1 }],
+        { duration: 860, delay: i * gap, fill: 'both' });
+      setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), i * gap);
+      setTimeout(() => !skipped && G.audio.sfx('tap', 2 + i), i * gap + 570);   // (the landing tick)
     });
     G.audio.sfx('whoosh');
-    await wait(quick ? 520 : 680); if (skipped) throw 0;
-    // 반짝: white, with a few stars, over everything — under it the panel goes and the pieces are in their places
-    const wash = h('div', { class: 'kitshine' }); lay.append(wash); outs.push(wash);
-    G.audio.sfx('star');
-    await A(wash, [{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-in' }); if (skipped) throw 0;
-    lay.classList.add('clear');
+    await wait((quick ? 460 : 580) + (n - 1) * gap * .8); if (skipped) throw 0;
+    // 반짝: a bright slanted band sweeps across; behind it the panel is gone and the room is there (the pieces in their places)
     its.forEach(t => { t.g.visible = vis0.get(t); }); W.idsDirty = true;
     card.style.transform = 'translateX(-50%) translateY(140%)'; card.style.visibility = '';   // (below the screen till it rises: never seen in place first)
-    for (let i = 0; i < 8; i++) {
-      const sp = h('i', { class: 'kitspark', style: `left:${8 + ((i * 37) % 84)}%;top:${14 + ((i * 53) % 68)}%` }); wash.append(sp);
-      A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.25) rotate(45deg)', offset: .4 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 620, delay: i * 45, easing: 'ease-out' });
+    G.audio.sfx('star');
+    const band = h('div', { class: 'kitwipe' }); (lay.parentElement || lay).append(band); outs.push(band);
+    const WIPE = 520, poly = p => `polygon(${p}% 0, 130% 0, 130% 100%, ${p - 30}% 100%)`;
+    A(band, [{ left: '-30%' }, { left: '130%' }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
+    await A(lay, [{ clipPath: poly(-10) }, { clipPath: poly(160) }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' }); if (skipped) throw 0;
+    lay.classList.add('clear');
+    for (let i = 0; i < 6; i++) {
+      const sp = h('i', { class: 'kitspark', style: `left:${10 + ((i * 37) % 80)}%;top:${16 + ((i * 53) % 64)}%;z-index:41` }); (lay.parentElement || lay).append(sp); outs.push(sp);
+      A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.1) rotate(45deg)', offset: .4 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 520, delay: i * 40, easing: 'ease-out' });
     }
-    await A(wash, [{ opacity: 1 }, { opacity: 0 }], { duration: 560, easing: 'ease-out' }); if (skipped) throw 0;
     // the card comes up into its place, empty: its shapes waiting
     G.audio.sfx('swish');
     await A(card, [{ transform: 'translateX(-50%) translateY(140%)' }, { transform: 'translateX(-50%) translateY(-6px)', offset: .75 }, { transform: 'translateX(-50%)' }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
