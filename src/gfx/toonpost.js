@@ -78,7 +78,7 @@ const EDGE = `
 varying vec2 vUv;
 uniform sampler2D tColor, tAOb;
 uniform vec2 res; uniform float thick, innerRatio, overlap, nLo, nHi, innerStr, lineAlpha, tint, tintDark, levels, aoStr, useAO;
-uniform vec3 ink, aoTint; uniform float dbg, gray;
+uniform vec3 ink, aoTint; uniform float dbg, gray, grayLine;
 uniform vec2 grayC; uniform float grayR;
 uniform sampler2D tMask; uniform float useMask, blk;
 ${COMMON}
@@ -130,13 +130,19 @@ void main(){
   // 흑백판: everything drained of colour except what has been found (IDs from 40000 up, see assignIds)
   // (흑백판 끝: with grayR ≥ 0 the colour comes back inside a growing circle round grayC — screen uv, height = 1)
   if (gray > 0. && id0 < 39999.5) { float gk = gray; if (grayR >= 0.) gk *= smoothstep(grayR - .05, grayR + .05, length((vUv - grayC) * vec2(res.x / res.y, 1.)));
-    float l = dot(col, vec3(.299, .587, .114)); col = mix(col, vec3(l * 1.04 + .02), gk); }
+    float l = dot(col, vec3(.299, .587, .114)); vec3 gc = vec3(l * 1.04 + .02);
+    if (grayLine > .5) {   // 펜화: paper, one pale step of shade, hatching only in the darkest
+      float sh = 1. - smoothstep(.2, .3, l), dk = 1. - smoothstep(.07, .12, l);
+      float hatch = step(fract((gl_FragCoord.x + gl_FragCoord.y) / 7.), .22) * dk;
+      gc = vec3(mix(.975, .86, sh) * (1. - .55 * hatch));
+    }
+    col = mix(col, gc, gk); }
   if (levels > 0.) col = floor(col * levels + .5) / levels;
   // colour-trace line: a darker, slightly richer version of the object's own colour, mixed with the picked ink.
   // darkened in display (gamma) space so 'tintDark' reads as perceived brightness: .5 = half as bright as the object
   vec3 obj = sqrt(max(col, 0.)) * tintDark; obj *= obj;
   obj = max(mix(vec3(dot(obj, vec3(.299, .587, .114))), obj, 1.25), 0.);
-  vec3 line = mix(ink, obj, tint);
+  vec3 line = mix(ink, obj, tint * (1. - grayLine * gray));   // (펜화: plain ink lines)
   gl_FragColor = vec4(col * (1. - e) + line * e, c.a * (1. - e) + e);
   if (dbg > .5) gl_FragColor = vec4(eo, fract(id0 * .137), dist > 1e4 ? 0. : 1., 1.);
 }`;
@@ -172,6 +178,13 @@ void main(){
 // 흑백판 RGB 분리 세기: CSS px at the screen corners while a stage is grey (0 = off; ?gsplit=N to try another)
 const GSQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsplit') : null;
 export const GRAY_SPLIT = GSQ != null && GSQ !== '' && !isNaN(+GSQ) ? +GSQ : 1.5;
+// and a plain side-to-side split over the whole screen, CSS px (10/21 사용자 "화면 전체는 1.5로"; ?gsplith=) — both numbers are
+// the user's to tune: change them here
+const GHQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsplith') : null;
+export const GRAY_SPLIT_H = GHQ != null && GHQ !== '' && !isNaN(+GHQ) ? +GHQ : 1.5;
+// 흑백판 펜화 시험 (10/21, Hidden Folks 결 — 결정 전 비교만): ?grayline=1 — white paper and ink lines, the shade one pale grey step
+// with a little hatching in the darkest of it
+export const GRAY_LINE = typeof location !== 'undefined' && new URLSearchParams(location.search).get('grayline') === '1';
 // where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
 const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
 export const GRAY_SPLIT_FROM = GFQ != null && GFQ !== '' && !isNaN(+GFQ) ? +GFQ : .33;
@@ -196,20 +209,23 @@ void main(){
 }`;
 const DOWN = `
 varying vec2 vUv;
-uniform sampler2D tSrc, tBloom; uniform vec2 outRes; uniform float sharpen, split, splitFrom, grade, bloom;
+#define SPLIT_MAX ${typeof location !== 'undefined' && new URLSearchParams(location.search).get('gsmode') === 'rep' ? 'false' : 'true'}
+uniform sampler2D tSrc, tBloom; uniform vec2 outRes, splitC; uniform float sharpen, split, splitH, splitFrom, grade, bloom;
 void main(){
   vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint
   vec4 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)) + texture2D(tSrc, vUv + vec2(q.x, -q.y))
          + texture2D(tSrc, vUv + vec2(-q.x, q.y)) + texture2D(tSrc, vUv + vec2(q.x, q.y))) * .25;
-  // 흑백판 RGB 분리 (10/21 사용자 "아주 약하게"): red out and blue in along the line from the screen's middle, growing toward the
-  // edges (split = output px at the corners); nothing in the middle. Two more taps; off (0) everywhere else.
-  if (split > .001) {
-    vec2 dv = (vUv - .5) * vec2(outRes.x / outRes.y, 1.);
+  // 흑백판 RGB 분리 (10/21 사용자: "일괄로 좌우로 약간 … 블루, 레드로, 블루레드만 스크린으로 합성 … 중심점을 화면 가운데로 … 가생이로
+  // 갈수록 색수차 범위 커지게"): red to the left and blue to the right by splitH px everywhere, plus a little more outward from
+  // the middle of the screen (splitC — the visible screen's centre in this target's uv) growing to split px at the corners.
+  // Only red and blue move, and only lighten what is there (a screen-like blend): grey stays clean, the lines get thin
+  // red/blue rims. Two more taps; off (0) everywhere else.
+  if (split > .001 || splitH > .001) {
+    vec2 dv = (vUv - splitC) * vec2(outRes.x / outRes.y, 1.);
     float k = smoothstep(splitFrom, 1., length(dv) / length(vec2(.5 * outRes.x / outRes.y, .5)));
-    vec2 off = normalize(dv + 1e-5) * split * k / outRes.y;
-    off.x *= outRes.y / outRes.x;
-    c.r += (texture2D(tSrc, vUv + off).r - c.r) * k;
-    c.b += (texture2D(tSrc, vUv - off).b - c.b) * k;
+    vec2 off = (vec2(splitH, 0.) + normalize(dv + 1e-5) * split * k * vec2(1., 1.)) / outRes;
+    float sr = texture2D(tSrc, vUv + off).r, sb = texture2D(tSrc, vUv - off).b;
+    c.r = SPLIT_MAX ? max(c.r, sr) : sr; c.b = SPLIT_MAX ? max(c.b, sb) : sb;
   }
   if (sharpen > .001) {
     // unsharp mask: a blur about one output pixel wide, the difference added back
@@ -267,12 +283,12 @@ export class ToonPost {
       res: { value: new THREE.Vector2(1, 1) }, thick: { value: 2 }, innerRatio: { value: .6 }, overlap: { value: .25 },
       nLo: { value: .3 }, nHi: { value: .48 }, innerStr: { value: 0 }, lineAlpha: { value: 1 },
       ink: { value: new THREE.Color('#3d2233') }, tint: { value: .35 }, tintDark: { value: .45 }, levels: { value: 0 },
-      aoStr: { value: .5 }, useAO: { value: 1 }, dbg: { value: 0 }, aoTint: { value: new THREE.Color('#6e5a8f') }, gray: { value: 0 }, grayC: { value: new THREE.Vector2(.5, .5) }, grayR: { value: -1 },
+      aoStr: { value: .5 }, useAO: { value: 1 }, dbg: { value: 0 }, aoTint: { value: new THREE.Color('#6e5a8f') }, gray: { value: 0 }, grayLine: { value: GRAY_LINE ? 1 : 0 }, grayC: { value: new THREE.Vector2(.5, .5) }, grayR: { value: -1 },
       tMask: { value: null }, useMask: { value: 0 }, blk: { value: 8 },
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
     this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
-    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 }, splitFrom: { value: GRAY_SPLIT_FROM },
+    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, split: { value: 0 }, splitH: { value: 0 }, splitC: { value: new THREE.Vector2(.5, .5) }, splitFrom: { value: GRAY_SPLIT_FROM },
       grade: { value: 0 }, tBloom: { value: null }, bloom: { value: 0 } };
     // 때깔 (10/21): the colour grade (gradeWant 0..1, held off while a 흑백판 is grey) and a night glow (bloomOn: set by the stage
     // on night and power-cut stages only, stage.js; bloomStr)
@@ -428,8 +444,12 @@ export class ToonPost {
     scene3(this.comp, er, () => { r.clear(); r.render(this.edgeScene, this.qCam); });
     r.setRenderTarget(null);
     // the grey stage's RGB split: only while the whole room is grey — off from the moment the colour starts coming back
-    const sp = this.u.gray.value > .5 && this.u.grayR.value < 0 ? GRAY_SPLIT * r.getPixelRatio() : 0;
-    this.du.split.value = sp;
+    const gon = this.u.gray.value > .5 && this.u.grayR.value < 0, pr = r.getPixelRatio();
+    this.du.split.value = gon ? GRAY_SPLIT * pr : 0; this.du.splitH.value = gon ? GRAY_SPLIT_H * pr : 0;
+    if (gon) {   // (the middle of what you see: the canvas can reach past the screen, so not simply the target's middle)
+      const cv = r.domElement, b = cv.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) this.du.splitC.value.set((innerWidth / 2 - b.left) / b.width, 1 - (innerHeight / 2 - b.top) / b.height);
+    }
     this.du.grade.value = this.u.gray.value > .5 && this.u.grayR.value < 0 ? 0 : this.gradeWant;
     if (this.bloomOn) {
       const W4 = this.blA.width, H4 = this.blA.height;
@@ -445,7 +465,7 @@ export class ToonPost {
       const k = 1 / this.ss, pr = r.getPixelRatio(), cw = this.w, ch = this.h;
       r.setScissorTest(true);
       for (const b of er) {
-        const m = 3 + Math.ceil(sp), x0 = Math.max(0, Math.floor(b[0] * k) - m), y0 = Math.max(0, Math.floor(b[1] * k) - m), x1 = Math.min(cw, Math.ceil(b[2] * k) + m), y1 = Math.min(ch, Math.ceil(b[3] * k) + m);
+        const m = 3 + Math.ceil(this.du.split.value + this.du.splitH.value), x0 = Math.max(0, Math.floor(b[0] * k) - m), y0 = Math.max(0, Math.floor(b[1] * k) - m), x1 = Math.min(cw, Math.ceil(b[2] * k) + m), y1 = Math.min(ch, Math.ceil(b[3] * k) + m);
         r.setScissor(Math.floor(x0 / pr), Math.floor(y0 / pr), Math.ceil((x1 - x0) / pr) + 1, Math.ceil((y1 - y0) / pr) + 1);
         r.clear(); r.render(this.downScene, this.qCam);
       }
