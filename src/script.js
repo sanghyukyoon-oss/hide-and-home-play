@@ -999,6 +999,30 @@ export const replayHi = (host, secretIsOpen) => { const R = REPLAY[host]; return
 // 몽글이 방의 크레용 발자국 (10/21 사용자 "먹물이면 걍 발자국만 있으면 되지않을까 … 근데 왜 먹물이가 있는겨?"): 방석 대신
 // 문에서 들어오다 끊기는 발자국 — 처음 볼 때 한 번. 누구인지(흑백판에서 색 가져간 애)와 왜 끊겼는지(들어오다 망설임)를 한 줄에. 엔딩에서 그 끝에 앉음
 export const INKY_SEAT = L('mong', '…색 가져간 그 까만 애 발자국이다. 들어오다 말았네.', "…Footprints from that inky kid who takes the colors. Came in, then stopped.");
+// ── 엉뚱한 자리 한 쌍 (10/21 사용자 "박사님은 왜 아이스크림을 서재에 두신담?", "시계 뒤에 게임기를 놔뒀다냐" → 안 OK "ㅇㅋ"):
+// 판 끝 결과창 직전 말풍선 둘, 판마다 최대 한 쌍. 찾은 물건 중 자리가 가장 엉뚱한 하나를 stage.js가 골라 넘겨요(차가운 것 >
+// 먹을 것 > 그 밖, 엉뚱한 게 없으면 안 부름). 몽글이 줄은 실제 물건·자리로 채우고, 주인은 물건이 아니라 자기 버릇으로 받아쳐요.
+// 대상 판 = 그 판 장면 id(5 bearH · 7 house2fH · 9 bunnybathH · 11 catK/catH · 12 study · 13 aptK · 15 oneroomH)
+const QUIP_MONG = K('…{place}에 {item}?', '…{item}? {place}?');
+const QUIP_REPLY = {
+  bearH: { who: 'bear', any: K('으헤헤… 거기 두면 안 까먹을 줄 알았지.', "Ehehe… I thought I wouldn't forget it there.") },
+  house2fH: { who: 'peng', any: K('펭! 그것도 비결이야. 몇 번인지는 비밀.', "Peng! That's a tip too. Which number? Secret.") },
+  bunnybathH: { who: 'bunny', any: K('웃음 참으면서 숨기느라 아무 데나 넣었어!', 'I was trying not to giggle, so I just stuck it anywhere!') },
+  catK: { who: 'cat', any: K('…거기가 제일 시원하다냥. 딱히 이유는 없다냥.', "…It's the coolest spot, meow. No other reason.") },
+  study: { who: 'nerd', cold: K('…녹는 속도를 연구 중이었지. 크흠.', '…I was timing how fast it melts. Ahem.'), any: K('…실험이야. 크흠. 결과는 비밀이고.', "…It's an experiment. Ahem. Results are classified.") },
+  aptK: { who: 'bunny', any: K('이사할 때 제일 안전한 데잖아! …아마.', 'Safest spot in a move! …Probably.') },
+  oneroomH: { who: 'hamster', any: K('웁… 거기가 비상식량 보관소야.', "Mmf… that's my emergency stash.") },
+};
+QUIP_REPLY.catH = QUIP_REPLY.catK;
+// quipAt(idx): 이 판에 한 쌍을 붙이나 — quipLine(idx, item, place, cold): item·place는 한국어 이름(물건 이름, 자리 이름), cold는
+// 차가운 물건인지(affinity.js isCold). 돌려주는 값은 지금 언어로 다 만든 말풍선 두 줄 [{who:'mong', text}, {who, text}], 대상이 아니면 null
+export const quipAt = idx => !!QUIP_REPLY[bind().scene[idx]?.id];
+export const quipLine = (idx, item, place, cold) => {
+  const q = QUIP_REPLY[bind().scene[idx]?.id]; if (!q || !item || !place) return null;
+  const m = tr(QUIP_MONG), ko = m === QUIP_MONG, en = (w, d) => { const t = tr(w); return /[가-힣]/.test(t) ? d : t; };   // (an untranslated name in English → a plain word)
+  const it = ko ? item : en(item, 'That'), pl = ko ? place : en(place, 'Here');
+  return [{ who: 'mong', text: m.replace('{place}', pl).replace('{item}', it) }, { who: q.who, text: tr((cold && q.cold) || q.any) }];
+};
 // ── 판 끝 집으로 가져가기 (검토 · 경제 10/19): the friend you just met comes in and sits — one word on the way in, why
 // they're here (a promise from their stage, their habit). One bubble, 1.5 s, once per friend (econ: lobby passage).
 export const ROOM_ARRIVE = {

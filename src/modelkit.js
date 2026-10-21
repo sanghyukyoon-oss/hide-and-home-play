@@ -310,7 +310,7 @@ export async function kitIntro(S) {
   its.forEach(t => { t.g.visible = false; }); W.idsDirty = true;
   const v0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom, target: W.target.clone() };
   W.camLock = true;
-  let hb = 0;
+  let hb = 0, hb0 = 0;
   try {
     try {
       // the comic panel slams in over the room
@@ -363,66 +363,91 @@ export async function kitIntro(S) {
     const hand = h('div', { class: 'hand tap kithand', html: ICON.hand, style: `left:${hx}px;top:${hy}px` });
     const kok = h('div', { class: 'kitkok ol', style: `left:${hx}px;top:${lt0.top - cc0.top - 30}px` }, '터치!');
     lay.append(hand, kok);
-    G.audio.sfx('heart'); hb = setInterval(() => G.audio.sfx('heart'), 1900);
+    // (③ 10/21, user: "날아갈때 연출 좀더 멋지고 재밌게") every 1.6 s it twitches — 덜컹덜컹, something wants out
+    const wig = box.animate([{ transform: 'none' }, { transform: 'none', offset: .3 }, { transform: 'translateY(-12px) rotate(-7deg)', offset: .36 }, { transform: 'translateY(0) rotate(6deg) scale(1.04, .96)', offset: .42 },
+      { transform: 'translateY(-6px) rotate(-4deg)', offset: .48 }, { transform: 'rotate(2deg)', offset: .54 }, { transform: 'none', offset: .6 }, { transform: 'none' }], { duration: 1600, iterations: Infinity });
+    G.audio.sfx('heart'); hb0 = setTimeout(() => { G.audio.sfx('thunk'); hb = setInterval(() => G.audio.sfx('thunk'), 1600); }, 480);
     await new Promise(res => { open = res; if (G.bot || S.botOn?.()) setTimeout(res, 700); setTimeout(res, 15000); });   // (a bot opens it; nobody for 15 s: it opens itself)
-    open = null; clearInterval(hb); hb = 0;
+    open = null; clearInterval(hb); hb = 0; clearTimeout(hb0); wig.cancel();
     phase = 'burst';
     hand.remove(); kok.remove(); beat.cancel(); shine.cancel(); glowEl.style.opacity = '.9';
     if (S.dead) throw 0;
-    // (③ 10/21, user: "상자 … 누르고 흩어질 때 효과, 애니메이션 수정") the box gives under the finger and springs back — then 펑
+    // (③ 10/21, user: "상자 … 누르고 흩어질 때 효과, 애니메이션 수정" → "날아갈때 연출 좀더 멋지고 재밌게 퀄업") the box gives under
+    // the finger, squashed flat, and springs up — then 펑
     G.audio.sfx('pop', 2); haptic('tick');
-    await A(box, [{ transform: 'none' }, { transform: 'scale(1.14, .8)', offset: .45 }, { transform: 'scale(.92, 1.12)', offset: .8 }, { transform: 'none' }], { duration: 190, easing: 'ease-out' });
+    await A(box, [{ transform: 'none' }, { transform: 'scale(1.2, .74)', offset: .5 }, { transform: 'scale(.9, 1.16) translateY(-6px)', offset: .82 }, { transform: 'none' }], { duration: 200, easing: 'ease-out' });
     if (skipped) throw 0;
-    // 펑! the lid bursts off (a white flash, a comic burst), light pours out; the screen jolts, a puff of smoke, stars and
-    // paper bits fly
-    G.audio.sfx('special'); G.audio.sfx('pop', 6); haptic('ok');
+    // 펑! the lid bursts off spinning (a white flash, a comic burst), light pours out; the screen jolts and punches in, smoke
+    // puffs, stars, confetti and packing peanuts fly — and for a beat everything hangs in slow motion, the pieces
+    // floating over the box, before they shoot away
+    G.audio.sfx('thump'); G.audio.sfx('special'); G.audio.sfx('pop', 6); G.audio.sfx('rustle'); haptic('ok');
     const lr = lay.getBoundingClientRect(), lt = box.querySelector('.kb3-ltop').getBoundingClientRect(), mouth = { x: lt.left + lt.width / 2 - lr.left, y: lt.top + lt.height / 2 - lr.top };
+    const OUT = 110, HANG = 130, slow = [];   // (the leap out, the hang; what slows down for the hang)
+    const S2 = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); slow.push(a); return a; };
     {
-      const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .85 }, { opacity: 0 }], { duration: 260, easing: 'ease-out' });
+      const fl = h('div', { class: 'kitflash' }); lay.append(fl); outs.push(fl); A(fl, [{ opacity: .9 }, { opacity: 0 }], { duration: 240, easing: 'ease-out' });
       const bang = h('div', { class: 'kitbang', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(bang); outs.push(bang);
-      A(bang, [{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(12deg)', opacity: 1, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(16deg)', opacity: 0 }], { duration: 420, easing: 'ease-out' });
-      A(lay, [{ translate: '0 0' }, { translate: '-8px 5px' }, { translate: '7px -6px' }, { translate: '-5px 3px' }, { translate: '2px -1px' }, { translate: '0 0' }], { duration: 280, easing: 'linear' });
-      for (let i = 0; i < 9; i++) {   // the smoke: soft white balls rolling out of the mouth and thinning away
-        const a = (i / 9) * Math.PI * 2 + .3, d = 70 + (i % 3) * 22, pf = h('i', { class: 'kitpuff', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(pf); outs.push(pf);
-        A(pf, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: .95 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d * .7 - 18}px)) scale(1.5)`, opacity: 0 }], { duration: 560, easing: 'cubic-bezier(.2,.8,.4,1)' });
+      A(bang, [{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(12deg)', opacity: 1, offset: .5 }, { transform: 'translate(-50%,-50%) scale(1.3) rotate(16deg)', opacity: 0 }], { duration: 460, easing: 'ease-out' });
+      A(lay, [{ translate: '0 0', scale: '1' }, { translate: '-10px 6px', scale: '1.05' }, { translate: '8px -7px', scale: '1.035' }, { translate: '-6px 4px', scale: '1.02' }, { translate: '3px -2px', scale: '1.01' }, { translate: '0 0', scale: '1' }], { duration: 320, easing: 'linear' });
+      for (let i = 0; i < 10; i++) {   // the smoke: soft white balls rolling out of the mouth and thinning away
+        const a = (i / 10) * Math.PI * 2 + .3, d = 80 + (i % 3) * 26, pf = h('i', { class: 'kitpuff', style: `left:${mouth.x}px;top:${mouth.y}px` }); lay.append(pf); outs.push(pf);
+        S2(pf, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: .95 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d * .6}px), calc(-50% + ${Math.sin(a) * d * .42 - 14}px)) scale(1.25)`, opacity: .9, offset: .3 },
+          { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d * .7 - 22}px)) scale(1.6)`, opacity: 0 }], { duration: 640, easing: 'cubic-bezier(.2,.8,.4,1)' });
       }
+      // stars, confetti and packing peanuts (cream, the box's stuffing) up and over, falling with a flutter
       const cols = ['#ffe14d', '#ff8fb8', '#8fd3f4', '#9be38f', '#ffffff', '#ffb23a'];
-      for (let i = 0; i < 16; i++) {   // stars and paper bits up and over, falling with a flutter
-        const star = i % 3 === 0, el = h('i', { class: star ? 'kitbit star' : 'kitbit', style: `left:${mouth.x}px;top:${mouth.y}px;background:${cols[i % cols.length]}` }); lay.append(el); outs.push(el);
-        const dx = (Math.random() - .5) * lr.width * .9, up = 120 + Math.random() * 140, fall = 160 + Math.random() * 160, rot = (Math.random() - .5) * 900;
-        A(el, [{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx * .55}px), calc(-50% - ${up}px)) rotate(${rot * .5}deg)`, opacity: 1, offset: .38, easing: 'ease-in' },
-          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${fall - up}px)) rotate(${rot}deg)`, opacity: 0 }], { duration: 900 + Math.random() * 300, easing: 'cubic-bezier(.2,.7,.4,1)' });
+      for (let i = 0; i < 26; i++) {
+        const kind = i % 4 === 0 ? 'star' : i % 4 === 2 ? 'peanut' : '', el = h('i', { class: 'kitbit ' + kind, style: `left:${mouth.x}px;top:${mouth.y}px` + (kind === 'peanut' ? '' : `;background:${cols[i % cols.length]}`) }); lay.append(el); outs.push(el);
+        const dx = (Math.random() - .5) * lr.width * (kind === 'peanut' ? .7 : 1), up = 130 + Math.random() * 170, fall = 180 + Math.random() * 180, rot = (Math.random() - .5) * 1000;
+        S2(el, [{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 }, { transform: `translate(calc(-50% + ${dx * .55}px), calc(-50% - ${up}px)) rotate(${rot * .5}deg)`, opacity: 1, offset: .38, easing: 'ease-in' },
+          { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${fall - up}px)) rotate(${rot}deg)`, opacity: 0 }], { duration: 950 + Math.random() * 300, easing: 'cubic-bezier(.2,.7,.4,1)' });
       }
     }
-    // (the lid flies up and off the screen — no fading: a 3D group fading flattens into a plane)
-    A(lid, [{ transform: KB3_LID }, { transform: 'translate3d(0,-120px,0) rotateX(16deg) rotateZ(-8deg)', offset: .35 }, { transform: 'translate3d(240px,-760px,0) rotateX(40deg) rotateZ(-44deg)' }], { duration: 520, easing: 'cubic-bezier(.3,.1,.6,1)' });
+    // (the lid flies up spinning and off the screen — no fading: a 3D group fading flattens into a plane)
+    S2(lid, [{ transform: KB3_LID }, { transform: 'translate3d(-10px,-150px,0) rotateX(30deg) rotateZ(-70deg)', offset: .3 }, { transform: 'translate3d(300px,-900px,0) rotateX(250deg) rotateZ(-560deg)' }], { duration: 640, easing: 'cubic-bezier(.25,.1,.6,1)' });
     box.classList.add('open');   // (light inside)
-    A(glowEl, [{ opacity: .9, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.6)' }], { duration: 320, easing: 'ease-out' });
-    // 팍: the pieces leap out one after another on arcs over the panel, land, bounce twice and settle — then a bright band
-    // wipes across and behind it is the room, each piece already where it hides (user 10/20: "흩어질 때는 그 배경 위에서 부품이
-    // 흩어지고 → 반짝 트랜지션 → 그 뒤에 집 장면")
-    const n = K.order.length, gap = 70;
+    A(glowEl, [{ opacity: .9, transform: 'scale(1)' }, { opacity: 1, transform: 'scale(1.7)' }], { duration: 360, easing: 'ease-out' });
+    // the slow-motion beat: everything above slows to a crawl for HANG ms, then runs on (the pieces' own float is in their keyframes)
+    setTimeout(() => { for (const a of slow) a.updatePlaybackRate(.22); }, OUT);
+    setTimeout(() => { if (skipped) return; for (const a of slow) a.updatePlaybackRate(1); G.audio.sfx('whoosh'); }, OUT + HANG);
+    // 촤차작 (user 10/21: "물건들은 실루엣 처리 … 바닥에 떨어지는게 아니라 … 드래곤볼 촤차작 퍼지는 느낌"): the pieces come out as
+    // glowing orbs, each with only its shadow inside (what it is, the room tells), in a ring over the box — a beat — then
+    // they shoot off every way, up, sideways, slantwise, long light tails behind them, and off the screen; the tails hang in
+    // the sky a moment, a twinkle where each went over the edge. Then a bright band wipes across and behind it is the room,
+    // each piece already where it hides (user 10/20: "흩어질 때는 그 배경 위에서 부품이 흩어지고 → 반짝 트랜지션 → 그 뒤에 집 장면")
+    const n = K.order.length, gap = 34, FLY = 340, FADE = 320, far = Math.hypot(lr.width, lr.height);
+    const launch = K.order.map((_, i) => i).sort((a, b) => (a * .618) % 1 - (b * .618) % 1);   // (not round the ring in turn: here, there)
     K.order.forEach((p, i) => {
-      const img = h('img', { class: 'kitfly', src: S.kitCells[p]?.querySelector('.kitrun-pc')?.src || '', style: `left:${mouth.x - 30}px;top:${mouth.y - 30}px` });
-      lay.append(img); outs.push(img);
-      const u = n > 1 ? i / (n - 1) - .5 : 0, side = i % 2 ? 1 : -1;
-      const tx = u * lr.width * .8 + side * 12, ly = lr.height * (-.17 + (i % 3) * .07) + Math.abs(u) * 50, peak = Math.min(ly, 0) - 150 - (1 - Math.abs(u)) * 60, spin = side * (300 + i * 40);   // (they land round the box, above and beside it)
-      const at = (x, y, sc, r) => `translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`;
-      A(img, [{ transform: at(0, 0, .3, 0), opacity: 0, easing: 'cubic-bezier(.2,.7,.5,1)' }, { transform: at(tx * .55, peak, 1.45, spin * .55), opacity: 1, offset: .36, easing: 'cubic-bezier(.5,0,.8,.6)' },
-        { transform: at(tx, ly, 1.3, spin * .92), offset: .66, easing: 'ease-out' }, { transform: at(tx, ly - 30, 1.3, spin * .97), offset: .76, easing: 'ease-in' },
-        { transform: at(tx, ly, 1.3, spin), offset: .86, easing: 'ease-out' }, { transform: at(tx, ly - 9, 1.3, spin), offset: .93, easing: 'ease-in' }, { transform: at(tx, ly, 1.3, spin), opacity: 1 }],
-        { duration: 860, delay: i * gap, fill: 'both' });
-      setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), i * gap);
-      setTimeout(() => !skipped && G.audio.sfx('tap', 2 + i), i * gap + 570);   // (the landing tick)
+      const orb = h('div', { class: 'kitorb', style: `left:${mouth.x}px;top:${mouth.y}px` }, h('img', { src: S.kitCells[p]?.querySelector('.kitrun-pc')?.src || '', alt: '' }));
+      lay.append(orb); outs.push(orb);
+      const a = (-215 + 250 * (n > 1 ? i / (n - 1) : .5) + (i % 2 ? 7 : -7)) * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+      const hx = ca * 112, hy = sa * 74 - 128, ex = hx + ca * far, ey = hy + sa * far;   // (the ring over the box; and out past the edge)
+      const t0 = OUT + HANG + launch.indexOf(i) * gap, D = t0 + FLY, at = (x, y, sc) => `translate(-50%,-50%) translate(${x}px,${y}px) scale(${sc})`;
+      A(orb, [{ transform: at(0, 0, .2), opacity: 0, easing: 'cubic-bezier(.15,.85,.3,1)' }, { transform: at(hx, hy, 1), opacity: 1, offset: OUT / D, easing: 'ease-in-out' },
+        { transform: at(hx * 1.04, hy - 5, 1.12), offset: t0 / D, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: at(ex, ey, .8), opacity: 1 }], { duration: D });
+      // the tail: from the ring to the orb, growing with it (same curve), then fading thin where it hung
+      const tail = h('i', { class: 'kittrail', style: `left:${mouth.x + hx * 1.04}px;top:${mouth.y + hy - 5}px;width:${far}px` }); lay.append(tail); outs.push(tail);
+      A(tail, [{ transform: `rotate(${a}rad) scaleX(0)`, opacity: 1, easing: 'cubic-bezier(.35,0,.75,.55)' }, { transform: `rotate(${a}rad) scaleX(1)`, opacity: 1, offset: FLY / (FLY + FADE), easing: 'ease-out' },
+        { transform: `rotate(${a}rad) scale(1, .3)`, opacity: 0 }], { duration: FLY + FADE, delay: t0 });
+      // a twinkle where it went over the edge (just inside it)
+      const k = Math.min(...[ca > 0 ? (lr.width - 16 - mouth.x - hx) / ca : ca < 0 ? (16 - mouth.x - hx) / ca : 1e9, sa > 0 ? (lr.height - 16 - mouth.y - hy) / sa : sa < 0 ? (16 - mouth.y - hy) / sa : 1e9]);
+      const sp = h('i', { class: 'kitspark', style: `left:${mouth.x + hx + ca * k}px;top:${mouth.y + hy + sa * k}px;z-index:34` }); lay.append(sp); outs.push(sp);
+      A(sp, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-50%) scale(1.2) rotate(45deg)', offset: .35 }, { transform: 'translate(-50%,-50%) scale(0) rotate(90deg)' }], { duration: 420, delay: t0 + FLY * .8, easing: 'ease-out' });
+      setTimeout(() => !skipped && G.audio.sfx('pop', 4 + i), i * 16);
+      setTimeout(() => !skipped && G.audio.sfx('swish'), t0);   // (슈슈슉)
     });
-    G.audio.sfx('whoosh');
-    await wait((quick ? 460 : 580) + (n - 1) * gap * .8); if (skipped) throw 0;
+    setTimeout(() => {   // the launch: a jolt and a buzz; the sky dims so the tails shine
+      if (skipped) return; haptic('tick');
+      const dim = h('div', { class: 'kitdim' }); lay.append(dim); outs.push(dim); A(dim, [{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' });
+      A(lay, [{ translate: '0 0' }, { translate: '0 -7px' }, { translate: '0 4px' }, { translate: '0 0' }], { duration: 200, easing: 'ease-out' });
+    }, OUT + HANG);
+    await wait(OUT + HANG + (n - 1) * gap + FLY * .9); if (skipped) throw 0;
     // 반짝: a bright slanted band sweeps across; behind it the panel is gone and the room is there (the pieces in their places)
     its.forEach(t => { t.g.visible = vis0.get(t); }); W.idsDirty = true;
     card.style.transform = 'translateX(-50%) translateY(140%)'; card.style.visibility = '';   // (below the screen till it rises: never seen in place first)
     G.audio.sfx('star');
     const band = h('div', { class: 'kitwipe' }); (lay.parentElement || lay).append(band); outs.push(band);
-    const WIPE = 520, poly = p => `polygon(${p}% 0, 130% 0, 130% 100%, ${p - 30}% 100%)`;
+    const WIPE = 440, poly = p => `polygon(${p}% 0, 130% 0, 130% 100%, ${p - 30}% 100%)`;
     A(band, [{ left: '-30%' }, { left: '130%' }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
     await A(lay, [{ clipPath: poly(-10) }, { clipPath: poly(160) }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' }); if (skipped) throw 0;
     lay.classList.add('clear');
@@ -434,7 +459,7 @@ export async function kitIntro(S) {
     G.audio.sfx('swish');
     await A(card, [{ transform: 'translateX(-50%) translateY(140%)' }, { transform: 'translateX(-50%) translateY(-6px)', offset: .75 }, { transform: 'translateX(-50%)' }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
   } catch {}
-  if (hb) clearInterval(hb);
+  if (hb) clearInterval(hb); clearTimeout(hb0);
   box.style.visibility = 'hidden';   // (before the cancels: cancelling its fade-out would flash it back)
   for (const a of anims) { try { a.cancel(); } catch {} }
   outs.forEach(o => o.remove());
