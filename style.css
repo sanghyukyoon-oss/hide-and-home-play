@@ -2153,8 +2153,3 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
 /* 판 시작·끝 연출 (staging.js): a touch anywhere skips it · 28판: the eyes-shut card is the tunnel's dark */
 .stg-skip { position: absolute; inset: 0; z-index: 29; pointer-events: auto; }
 .r1-eyes.tunnel { background: #07040c; }
-/* 21판 시작 경광등 (staging.js policeLights): red and blue light sweeping over the screen */
-.stg-siren { position: absolute; inset: 0; z-index: 28; pointer-events: none; mix-blend-mode: screen; opacity: .55;
-  background: linear-gradient(100deg, transparent 20%, rgba(255, 50, 60, .8) 35%, transparent 50%, rgba(60, 120, 255, .8) 65%, transparent 80%);
-  background-size: 250% 100%; animation: stgSiren .6s linear infinite; }
-@keyframes stgSiren { from { background-position: 0 0; } to { background-position: -250% 0; } }
