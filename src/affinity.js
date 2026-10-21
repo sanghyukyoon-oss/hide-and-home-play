@@ -82,6 +82,17 @@ export function affinity(type, spot) {
 export const affOk = (type, spot) => affinity(type, spot) !== 'never';
 export const affLike = (type, spot) => affinity(type, spot) === 'like';
 export const isCold = type => COLD.test(type || '');
+// how odd a place is for a thing (엉뚱한 자리 한 쌍, 스토리 룸 10/21 → ③): 3 a cold thing out of the fridge, 2 a thing to eat away
+// from the kitchen, 1 clothes out of the wardrobe or a bath thing out of the bathroom (or anywhere it should never be), 0 not odd
+export function oddness(type, spot) {
+  if (!spot || affinity(type, spot) === 'like') return 0;
+  const f = furnOf(spot), k = cat(type);
+  if (k === 'cold') return F_COLD.test(f) ? 0 : 3;
+  if (k === 'food') return F_KITCHEN.test(f) || F_COLD.test(f) ? 0 : 2;
+  if (k === 'cloth') return F_CLOTH.test(f) ? 0 : 1;
+  if (k === 'bath') return F_BATH.test(f) ? 0 : 1;
+  return affinity(type, spot) === 'never' ? 1 : 0;
+}
 
 // 버릇 자리 (검토 세션 10/19 P0-1, 사용자 승인: "대사가 버릇을 약속하는데 판이 안 지켜요"): the host's habit place — a furniture
 // name from its habit list (hunt.js HABIT, or the stage's own list); with habitHigh (7판 펭펭이 "비결 2번: 높은 데 숨기기!")

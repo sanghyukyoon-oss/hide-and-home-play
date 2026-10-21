@@ -20,7 +20,7 @@ import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
 import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
-import { setPlace } from '../affinity.js';
+import { setPlace, oddness, isCold } from '../affinity.js';
 const HINTS_OLD = typeof location !== 'undefined' && /[?&]hints=old(&|$)/.test(location.search);   // (the v157 automatic help, to compare)
 // 톡톡 두 번 확대 수업: 3판 (was 2판 — 2판 teaches turning while you drag now, one hand a stage: 1~10판 밸런스 10/19, 조작감 세션과 맞춤; ?dbl2=1 → 2판)
 const DBL_AT = typeof location !== 'undefined' && /[?&]dbl2=1(&|$)/.test(location.search) ? 1 : 2;
@@ -848,6 +848,26 @@ export class StageScene {
   }
   // talk over the room as it is: no cinematic camera (user, 10/18: "시네마틱 카메라 폐기할께. 너무 느려진다") — the speaker
   // just turns to face you while the dialog box runs
+  // 엉뚱한 자리 한 쌍 (스토리 룸 10/21, 사용자 "ㅇㅋ"): after the win (and the host's 깜짝 한 방), before the result — 몽글이 asks
+  // about the oddest place a thing was found this stage (a cold thing out of the fridge > a thing to eat away from the kitchen >
+  // the rest), the host answers with their own habit (script.js quipLine). Two bubbles, the camera on whoever speaks, a tap
+  // goes on. Nothing odd: nothing said. Not for a bot, a visit, a preview, a model
+  async quipPair() {
+    const G = this.G;
+    if (this.custom || this.preview || this.model || G.bot || G.skipTalk || this.spec.gray || !SCRIPT_ALL.quipAt?.(this.idx)) return;   // (which stages: the script's — 5·7·9·11·12·13·15)
+    let best = null, top = 0;
+    for (const t of this.targets) { if (t.inky || t.friend || t.kitPart || !t.found) continue; const o = oddness(t.type, t.spot); if (o > top) { top = o; best = t; } }
+    if (!best) return;
+    const lines = SCRIPT_ALL.quipLine(this.idx, ITEMS[best.type]?.name, best.spot?.label, isCold(best.type)); if (!lines) return;
+    G.ui.wui?.querySelectorAll('.bubble').forEach(b => b.remove());   // (the pop's bubble, if it is still up: one thing said at a time)
+    for (const L of lines) {
+      const ch = this.charFor(L.who); if (!ch) continue;
+      closeUp(this, ch, { portrait: true }); ch.faceTo?.(G.world.cam.position.x, G.world.cam.position.z);
+      const ms = Math.max(1700, Math.min(3600, 900 + String(L.text).length * 55)), b = this.say(ch, L.text, ms);
+      await new Promise(res => { const done = () => { clearTimeout(t); removeEventListener('pointerdown', done, true); res(); }, t = setTimeout(done, ms); addEventListener('pointerdown', done, true); });
+      b?.kill?.(); if (this.dead) return;
+    }
+  }
   async talk(lines, opts = {}) {
     const G = this.G, W = G.world, app = document.getElementById('app');
     this.talking = true; app.classList.add('cine');   // (the HUD steps aside for the dialog box, as before)
@@ -2860,6 +2880,7 @@ export class StageScene {
     this.setMong('happy', 'hop');
     await (popDone ? Promise.race([popDone, this.tw.wait(2.6)]) : this.tw.wait(1.0));   // (the result panel waits for the pop, ~2 s)
     if (this.dead) return;
+    await this.quipPair(); if (this.dead) return;   // (after the pop, before the result)
     let back = [], got = null;
     // one new thing to hide at home per stage, the first time it is cleared (not every find — that gave away too much)
     // (the first-clear thing is given before the progress is saved, above — 10/18 GPT QA: leaving during the 1 s wait lost it)
