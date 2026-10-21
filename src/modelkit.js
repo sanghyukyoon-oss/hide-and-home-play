@@ -240,9 +240,21 @@ const BOLTS_SVG = '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill
 // at once, each to where it hides, as the panel clears; the card comes up empty, its shapes waiting. A tap before the box
 // waits only hurries on to it. (The box is made off-screen, where its drop starts: it never shows at rest first — the user
 // saw it "다른 위치에서 탁 튐".)
+// the box before the stage (10/21, user: "상자 나오는 것들 스테이지 먼저 나오고 상자 나오던데, 상자 먼저 나오고 스테이지로 진입하게
+// 해 줘"): a kit stage opens on the comic panel itself — put up while the stage is set up, before the iris opens, so the room
+// is never seen first; the banner shows over it, then kitIntro's box drops onto it, and the room comes only after the shine
+export function kitCover(S) {
+  const K = KITS[S.kit?.kit];
+  if (!K || (K.intro !== 'box' && K.intro !== 'truck')) return null;
+  const el = h('div', { class: 'kitintro comic kitcover', style: burstVars(K.id) },
+    h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }));
+  (document.getElementById('hud') || S.col)?.append(el);
+  S.G.world.camLock = true;   // (no turning the hidden room meanwhile; the zoom gauge and the dial stay away — kitIntro lets go)
+  return S.kitCover = el;
+}
 export async function kitIntro(S) {
   const G = S.G, W = G.world, K = KITS[S.kit.kit], card = S.tray, col = S.col, f = S.friend;
-  if (!card || !col) return;
+  if (!card || !col) { if (S.kitCover) { S.kitCover.remove(); S.kitCover = null; W.camLock = false; } return; }
   if (K.intro !== 'box') return kitPop(S);
   let seen = G.save.kitIntro; if (!seen || typeof seen !== 'object') seen = G.save.kitIntro = {};   // (was a count of any kit's box)
   const quick = !!seen[K.id] || S.kitRetry;
@@ -276,6 +288,11 @@ export async function kitIntro(S) {
   // (over the whole screen — the HUD, not its middle column, which stops at 560 px: on a wide screen or a PC window the room
   // showed either side, user 10/20 "기종에 따라서 배경이 이럴 수도 있겠어")
   (document.getElementById('hud') || col).append(lay);
+  const covered = !!S.kitCover;   // (the panel already up since the stage was set up: no slam, it's simply there)
+  if (covered) {   // (no fade-in for it; the cover goes once it has drawn, two frames on — or the room flickered through)
+    lay.style.opacity = '1'; lay.style.animation = 'none';
+    const cv = S.kitCover; S.kitCover = null; requestAnimationFrame(() => requestAnimationFrame(() => cv.remove()));
+  }
   const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
   cube.style.transform = KB3_VIEW; lid.style.transform = KB3_LID;
   // a tap: before the box waits, hurry on to it; while it waits, open it; once it's open, skip to the end
@@ -297,9 +314,11 @@ export async function kitIntro(S) {
   try {
     try {
       // the comic panel slams in over the room
-      G.audio.sfx('swish');
-      await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: quick ? 200 : 300, easing: 'cubic-bezier(.2,.9,.3,1)' });
-      H();
+      if (!covered) {
+        G.audio.sfx('swish');
+        await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: quick ? 200 : 300, easing: 'cubic-bezier(.2,.9,.3,1)' });
+        H();
+      }
       // it drops in — 쿵 — and settles (a puff of dust)
       G.audio.sfx('whoosh');
       await A(box, [{ transform: DROP0 }, { transform: 'translateY(0) rotate(0)', offset: .7 }, { transform: 'translateY(0) scale(1.1, .84)', offset: .82 }, { transform: 'translateY(-6px) scale(.97, 1.04)', offset: .92 }, { transform: 'none' }], { duration: quick ? 420 : 560, easing: 'cubic-bezier(.45,.05,.7,1)' });

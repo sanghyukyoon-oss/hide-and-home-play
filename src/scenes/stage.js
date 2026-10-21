@@ -33,6 +33,7 @@ import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
+import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
 import { closeUp, closeBack, clearParts, clearTurn } from '../closeup.js';
 import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
 import { armFtap } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
@@ -69,7 +70,7 @@ import { retrieve, canGrab, grab } from '../raid.js';
 import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout, settleOpen } from '../raidrun.js';   // 타이머 털기 (10/19)
 // 프라모델 조립판 (정식판 10/19): the things to find are a model kit's pieces — the box opens first, a runner card holds them,
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
-import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitFinish, kitReward } from '../modelkit.js';
+import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitFinish, kitReward, kitCover } from '../modelkit.js';
 import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
@@ -325,6 +326,7 @@ export class StageScene {
     if (G.econ) { this.hints = LENS_FREE; this.bagUsed = 0; }   // 경제 B5 (10/19): 2 free a stage, then the bag (lens.js)
     this.tail = null; this._dF = this._dE = false;   // (대본 bits that must not carry over from the last stage)
     this.buildHud();
+    if (this.kit) kitCover(this);   // 조립판: the box comes first — its comic panel covers the room from the iris on (modelkit.js)
     raidSetup(this);   // 타이머 털기: someone else's room — the 보물, the loot bag, the owner's count
     if (this.plan.first) this.tnum.textContent = '';   // 1판: only 토순이 to find, no bonus count
     W.onTap = (x, y) => this.tap(x, y);
@@ -2710,14 +2712,12 @@ export class StageScene {
     const G = this.G, W = G.world, u = W.post.u, v = this.view0 || { yaw: Math.PI / 4, pitch: .62, zoom: 1 };
     await W.flyTo(this.tw, { zoom: v.zoom || 1, target: W.home, yaw: v.yaw, pitch: v.pitch, dur: .55 });
     if (this.dead) return;
-    const it = this._lastIt, s = W.toScreen(it?.g ? this.worldCenter(it) : W.home.clone()), C = u.grayC.value.set(s.x / W.W, 1 - s.y / W.H);
-    const asp = W.W / W.H, far = Math.max(...[[0, 0], [1, 0], [0, 1], [1, 1]].map(([x, y]) => Math.hypot((x - C.x) * asp, y - C.y))) + .08;
-    u.grayR.value = 0;
-    G.audio.sfx('bloom');
-    W.fx.burst(s.x, s.y, { n: 18, shape: 'star', colors: ['#ffe14d', '#ff8fb8', '#8fd3f4', '#9be38f', '#ffffff'], speed: 260, gravity: 0, life: .9 });
-    W.fx.ring(s.x, s.y, { r: 160, color: '#ffffff', width: 10, life: .7 });
+    const it = this._lastIt, from = it?.g ? this.worldCenter(it) : W.home.clone(), s = W.toScreen(from);
+    W.fx.ring(s.x, s.y, { r: 120, color: '#ffffff', width: 8, life: .5 });
     if (this.lookR?.gray && LOOK.has('light')) W.setLight(this.th.light);   // (the day light with the colour)
-    await this.tw.run(1.1, k => { u.grayR.value = far * k; W.dirty?.invalidate(); }, ease.inOutQuad);
+    // (10/21, user: "물건 가구마다 샤샥 돌아오는 게 … 효과 이펙트가 좀") one piece at a time out of the last thing found, then the
+    // walls and floor — colorpop.js
+    await popColors(this, from);
     u.gray.value = 0; u.grayR.value = -1; W.dirty?.invalidate();
     await this.tw.wait(.6);
   }
