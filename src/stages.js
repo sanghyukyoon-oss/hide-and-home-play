@@ -399,7 +399,7 @@ THEMES.bakeyard = { ...THEMES.bearbakery, name: '곰제과 앞마당', floorKind
 // boxes, the quilt on a clothesline for the drying rack, the parasol and red chairs for the big pot; the jars stay (devices)
 LAYOUTS.villaroof2 = { ...LAYOUTS.villaroof, walls: { N: 'wall', W: 'wall', S: 'none', E: 'none' }, furniture: [F('lightline', 0, 0, 0, { party: true }), F('pyeongsang', 0, 1), F('snacktable', 2, 1, 0, { party: true }), F('balloons', 2, 0), F('jangdok', 3, 0),
   F('oktap', 5, 0), F('foambox', 3, 2), F('rubbertub', 4, 2), F('rubbertub', 5, 2, 0, { kind: 'onion' }),
-  F('parasolset', 0, 4), F('clothesline', 3, 4), F('chilimat', 5, 4), F('potrow', 0, 2), F('rooftap', 3, 1),
+  F('parasolset', 0, 4), F('roofline', 3, 4), F('chilimat', 5, 4), F('potrow', 0, 2), F('rooftap', 3, 1),
   F('parapet', 0, 5, 0, { seed: 1, extL: -.07 }), F('parapet', 2, 5, 0, { seed: 2 }), F('parapet', 4, 5, 0, { seed: 3, extR: .74 }), F('parapet', 6, 2, 1, { seed: 4, extR: .55, postR: true }), F('parapet', 6, 4, 1, { seed: 5 })] };
 // (20판 3차 2판 10/21, user: "옥상은 테두리 더 좀 이상함.. 식물 막 벽 뚫고"): no S / E wall — the ivy parapet itself is the roof's
 // front and side edge (a low wall stood behind it and the ivy grew through it); the runs meet at the front-right corner and
@@ -924,7 +924,7 @@ export function stageSpec(idx) {
   const s = baseSpec(idx);
   if (KIT_AT[idx]) s.kit = KIT_AT[idx];
   if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; s.obs = true; s.obsTime = [1, 19]; s.clueHang = { pad: 'gearrack' }; }   // (19판 user 10/21 "인터렉션과 방탈출적인 요소": the padlock's key in the 방화복 pocket, drops when it lifts; the locker's code = the clock, 출동 1시 19분 = 119 — plan-19to50)
-  if (s.room === 'villaroof2') s.clueHang = { pad: 'clothesline' };   // (20판: the padlock's key hangs inside the quilt, drops when it lifts — user 10/21)   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
+  if (s.room === 'villaroof2') s.clueHang = { pad: 'roofline' };   // (20판: the padlock's key hangs inside the quilt, drops when it lifts — user 10/21)   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
   if (ZOOM_TUNE[idx]) s.zoom = ZOOM_TUNE[idx];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }

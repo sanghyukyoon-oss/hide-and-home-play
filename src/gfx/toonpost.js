@@ -186,9 +186,9 @@ export const GRAY_SPLIT_H = GHQ != null && GHQ !== '' && !isNaN(+GHQ) ? +GHQ : .
 // with a little hatching in the darkest of it
 export const GRAY_LINE = typeof location !== 'undefined' && new URLSearchParams(location.search).get('grayline') === '1';
 // 샤픈 시험 (10/21 사용자: "샤픈도 추가 가능? 테스트 먼저"): a second, finer sharpen on top of the unsharp mask — a 3×3 edge
-// boost about half a pixel wide that crisps the ink lines without the unsharp mask's wider halo. Off by default; ?sharp=0.3 to try
+// boost about half a pixel wide that crisps the ink lines without the unsharp mask's wider halo. Off (10/21 사용자: 언샵만); ?sharp=N to try
 const SHQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('sharp') : null;
-export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : 0;
+export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : 0;   // 10/21 사용자 "샤픈 삭제하고 언샵 다시": off; ?sharp=N to try
 // where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
 const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
 export const GRAY_SPLIT_FROM = GFQ != null && GFQ !== '' && !isNaN(+GFQ) ? +GFQ : .33;

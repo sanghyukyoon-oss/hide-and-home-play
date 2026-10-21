@@ -250,17 +250,23 @@ export class StageScene {
     this.targets = this.items.filter(i => i.role === 'target');
     this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
     if (G.world.post) {
-      const P = G.world.post, nightGlow = !!(this.spec.night || this.spec.dark);   // 때깔 빛 번짐: night and power-cut stages only (10/21)
-      // 낮 글로우 시험 (10/21 사용자: "기차나 몇몇 판은 글로우 살짝 넣을까? 테스트"): ?glow=0.3 (세기) [&glowth=0.82 (밝은 곳 기준)] turns a
-      // soft glow on for a day stage too; ?glowst=27,28,29,30 limits it to those stages. Off unless asked for
-      const q = new URLSearchParams(location.search), gq = q.get('glow'), only = (q.get('glowst') || '').split(',').filter(Boolean).map(Number);
-      const dayGlow = !nightGlow && gq != null && gq !== '' && !isNaN(+gq) && (!only.length || only.includes(this.idx + 1));
-      // ?diffuse=0.3: 뽀샤시 — a soft blurred copy of nearly the whole picture screened on top (same blur as the glow, low threshold)
-      const dq = q.get('diffuse'), dif = dq != null && dq !== '' && !isNaN(+dq) && (!only.length || only.includes(this.idx + 1)) ? +dq : 0;
-      P.bloomOn = nightGlow || dayGlow || dif > 0;
-      P.bloomStr = dayGlow ? +gq : nightGlow ? .8 : 0;
-      if (P.du?.diffuse) P.du.diffuse.value = dif;
-      if (P.blu?.th) P.blu.th.value = dif > 0 ? .2 : dayGlow ? (isNaN(+q.get('glowth')) || q.get('glowth') == null ? .82 : +q.get('glowth')) : .5;
+      const P = G.world.post, nightGlow = !!(this.spec.night || this.spec.dark);   // 때깔 빛 번짐: night and power-cut stages (10/21)
+      // 낮 빛 (10/21 사용자 "글로우 .12 뽀샤시 .12(→.2), 동시에 넣지 말고 기차랑 골목씬에"): the train trip gets a soft glow on its brightest
+      // spots, the alleys a 뽀샤시 (a soft blurred copy of the whole picture screened on top) — one or the other, never both.
+      // Same cost either way (one quarter-size bright pass + two blurs). ?glow=0.3 [&glowth=0.82] / ?diffuse=0.3 still try any stage
+      // (?glowst=27,28 limits the try to those stages); ?glow=0 / ?diffuse=0 turn a stage's own off
+      const DAY = { station: ['glow', .12], traincar: ['glow', .12], seaside: ['glow', .12], street: ['diffuse', .2], alley1: ['diffuse', .2], alley3: ['diffuse', .2], alleyhouse: ['diffuse', .2], alleywide: ['diffuse', .2] };
+      const q = new URLSearchParams(location.search), only = (q.get('glowst') || '').split(',').filter(Boolean).map(Number);
+      const num = k => { const v = q.get(k); return v != null && v !== '' && !isNaN(+v) && (!only.length || only.includes(this.idx + 1)) ? +v : null; };
+      const own = !nightGlow && !this.spec.gray && DAY[this.spec.room], gq = num('glow'), dq = num('diffuse');
+      let glow = own && own[0] === 'glow' ? own[1] : 0, dif = own && own[0] === 'diffuse' ? own[1] : 0;
+      if (gq != null) { glow = nightGlow ? 0 : gq; if (gq > 0) dif = 0; }
+      if (dq != null) { dif = dq; if (dq > 0) glow = 0; }
+      P.bloomOn = nightGlow || glow > 0 || dif > 0;
+      P.bloomStr = nightGlow ? .8 : glow;
+      if (P.du?.diffuse) P.du.diffuse.value = nightGlow ? 0 : dif;
+      const gth = q.get('glowth');
+      if (P.blu?.th) P.blu.th.value = nightGlow ? .5 : dif > 0 ? .2 : gth != null && gth !== '' && !isNaN(+gth) ? +gth : .82;
     }
     this.hasBook = false; this.cine = false;
     if (this.plan.showcase?.shelf) { const S = this.plan.showcase; S.shelf.furn.spines.draw(S.order, S.missing); }

@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 const SWAY = [
   [/^(plant|monstera|plantbig|bush|tree|pine|pine2|flower|garden|planter|cactus|sprout)/, { a: .028, f: 1.15 }],
-  [/^(hanger|clothesline|laundryline|dryrack)$/, { a: .018, f: .9 }],
+  [/^(hanger|clothesline|roofline|laundryline|dryrack)$/, { a: .018, f: .9 }],
 ];
 const STEAM = { kotatsu: { up: .02 }, ricecooker: { up: .02 }, counter: { up: .05, only: o => o?.variant === 'stove' },
   // (22판 실폰 10/21, user: "음식에 연기가 멈추어 있다..") — street food: pts are spouts in the piece's own frame (several per piece),

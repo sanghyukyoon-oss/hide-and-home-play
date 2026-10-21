@@ -234,7 +234,9 @@ B.rubbertub = (f, T, o = {}) => {
 // 빨랫줄과 이불 (2×1): two steel posts set in cement-filled paint pails, a line between them; a pink flowered quilt folded over
 // the line (its front half flips up — a part), a towel and two socks pegged at the end
 const QUILT = '#ffb3c4', QUILT2 = '#f7a0b4';
-B.clothesline = (f, T) => {
+// (① 10/21: 'roofline', not 'clothesline' — that name is outdoor.js's alley clothesline, and this one, registered later,
+// took its place in every alley and yard stage from 1.0.147)
+B.roofline = (f, T) => {
   const LY = 1.38, QX = -.25, QW = 1.12;
   f.add(mc('clothesline', ({ add, tube }) => {
     for (const x of [-.9, .9]) { add(G.cyl(.13, .11, .22, 14), '#e9e4d8', x, .11, 0); add(G.cyl(.12, .12, .01, 14), '#a9a49a', x, .215, 0); tube([x, .2, 0], [x, LY + .06, 0], .02, STEELG, 6); add(G.sph(.03, 6, 5), STEELG, x, LY + .07, 0); }
@@ -380,7 +382,7 @@ export const VILLAROOF_INFO = {
   rooftap: { w: 1, d: 1, name: '옥상 수도', hidden: true },
   potrow: { w: 2, d: 1, name: '데크 화분 줄', hidden: true },
   rubbertub: { w: 1, d: 1, name: '고무 대야 텃밭', hidden: true },
-  clothesline: { w: 2, d: 1, name: '빨랫줄', hidden: true },
+  roofline: { w: 2, d: 1, name: '빨랫줄', hidden: true },
   parasolset: { w: 2, d: 1, name: '파라솔 자리', hidden: true },
   balloons: { w: 1, d: 1, name: '풍선', hidden: true },
   parapet: { w: 2, d: 1, name: '덩굴 난간', price: 140, region: 'apt' },

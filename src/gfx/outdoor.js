@@ -647,7 +647,8 @@ B.trashbags = (f, T) => {
   f.add(put(rbox(.36, .25, .025, '#ffffff', .01, { map: noDumpTex() }), .4, .72, -.4, 0, .35, 0));
 };
 
-// 빨랫줄: a flowery 이불 slides along the line, uncovering the laundry basket behind it
+// 빨랫줄: a flowery 이불 on the line — touched, it curls up from its hem (③ #97 10/21, one way for every 이불: gfx/clothbend.js;
+// it used to slide along the line), uncovering the laundry basket behind it
 B.clothesline = (f, T) => {
   const lz = -.04;
   f.add(mg('cl-poles', '#8f99a6', ({ add }) => { for (const x of [-.86, .86]) { add(G.cyl(.035, .04, 1.6, 12), x, .8, lz); add(G.box(.05, .05, .26, .012), x, 1.57, lz); } }));
@@ -657,7 +658,7 @@ B.clothesline = (f, T) => {
   pv.add(put(rbox(.84, 1.34, .035, '#ffffff', .015, { map: flowerTex() }), 0, -.69, 0));
   pv.add(put(cyl(.035, .035, .86, '#ff5f8f', null, 12), 0, -.01, 0, 0, 0, HP));
   f.add(pv);
-  const p = f.part('curtain', pv, (t, b) => { pv.position.x = b.p.x - .3 * t; pv.scale.x = 1 - .6 * t; }, { label: '이불', sfx: 'swish', dur: .32 });
+  const p = f.part('lift', pv, clothBend(f, pv, { along: [0, -1, 0], toward: [0, 0, 1], len: 1.36, turn: 4.4, bias: 3, tip: .15 }), { label: '이불', sfx: 'flip', dur: .72 });
   f.add(put(extrude('tee', teeShape(), .03, T.accent3 || '#ffd23f'), .6, 1.33, lz));
   f.add(mg('cl-socks', '#ff7eb6', ({ add }) => { add(G.cap(.035, .14), .18, 1.4, lz); add(G.cap(.03, .06), .21, 1.3, lz, 0, 0, HP); add(G.cap(.035, .14), .3, 1.4, lz); add(G.cap(.03, .06), .33, 1.3, lz, 0, 0, HP); }));
   const bx = -.32, bz = -.3;
