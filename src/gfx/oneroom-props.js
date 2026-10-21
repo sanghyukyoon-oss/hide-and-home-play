@@ -1572,18 +1572,30 @@ export const ONEROOM_THEMES = {
 // Same shape as items.js ITEMS: { name, h, flat?, build() } → Group, origin bottom centre.
 //   Object.assign(ITEMS, ONEROOM_ITEMS)   (and push the keys into TARGET_POOL to make them stage targets)
 export const ONEROOM_ITEMS = {
-  // 무선 이어폰: a white pebble case (a seam, a mint light, a sky cat sticker) with one earbud out beside it
-  earphones: { name: '무선 이어폰', h: .07, flat: true, build() {
+  // 무선 이어폰 (23판 실폰 10/21, user: "야..이게 무슨 무선 이어폰이여" — a white box and a spoon): a round pill-shaped case with
+  // its lid lifted a little on the back hinge, two white earbuds sitting in it (round heads, stems down into the case), a mint
+  // light on the front — what everyone knows as wireless earphones
+  earphones: { name: '무선 이어폰', h: .09, flat: true, build() {
     const g = grp();
-    g.add(mc('it-or-earphones', ({ add }) => {
-      add(G.box(.13, .032, .095, .03), '#f2f4f8', 0, .016, 0);
-      add(G.box(.13, .026, .095, .03), WHITE, 0, .045, 0);
-      add(G.sph(.006, 6, 4), MINT, 0, .028, .0475 + .002, 0, 0, 0, [1, 1, .5]);
-      add(G.cyl(.024, .024, .004, 16), SKY, -.025, .062, .005);
-      for (const s of [-1, 1]) { add(G.cone(.009, .014, 5), SKY, -.025 + s * .014, .062, -.016, -HP, 0, 0, [1, 1, .3]); add(G.sph(.0035, 5, 4), INK, -.025 + s * .008, .065, .008); }
-      add(G.sph(.021, 12, 8), WHITE, .1, .021, .01);
-      add(G.cap(.008, .045, 2, 6).rotateX(HP), WHITE, .1, .01, .05);
-      add(G.cyl(.01, .01, .004, 10), '#5b5672', .1, .021, -.012, HP, 0, 0);
+    const R = .036, LEN = .05, B0 = .042, OPEN = .72, HZ = -R;
+    // the lid's frame: hinged on the back top edge, lifted OPEN rad (its front edge up)
+    const lid = (x, y, z) => { const c = Math.cos(-OPEN), sn = Math.sin(-OPEN); return [x, B0 + y * c - z * sn, HZ + y * sn + z * c]; };
+    g.add(mc('it-or-earphones3', ({ add }) => {
+      // the case: a capsule lying along x, pressed flat — a pill from above
+      add(G.cap(R, LEN, 4, 16), WHITE, 0, B0 / 2, 0, 0, 0, HP, [B0 / 2 / R, 1, 1]);
+      add(G.sph(R * .82, 16, 8), '#aab2c2', 0, B0 - .003, .002, 0, 0, 0, [1.55, .14, .86]);           // the tray inside
+      add(G.sph(.0055, 8, 6), MINT, 0, B0 * .45, R - .0015, 0, 0, 0, [1, 1, .4]);                    // the light
+      // the lid: the same pill, thinner, its inside grey
+      add(G.cap(R, LEN, 4, 16), WHITE, ...lid(0, .013, R), -OPEN, 0, HP, [.013 / R, 1, 1]);
+      add(G.sph(R * .8, 16, 8), '#e2e6ee', ...lid(0, .002, R), -OPEN, 0, 0, [1.55, .12, .84]);
+      // the two earbuds sitting in their wells: round white heads, a dark grille dot, a grey tip, the stem going in
+      for (const sx of [-1, 1]) {
+        const x = sx * .027;
+        add(G.sph(.019, 14, 10), WHITE, x, B0 + .012, .006, 0, 0, 0, [1, .9, 1]);
+        add(G.sph(.009, 8, 6), '#9aa3b4', x + sx * .012, B0 + .017, .014);
+        add(G.sph(.0045, 6, 4), '#4a4f5e', x - sx * .005, B0 + .026, .0);
+        add(G.cap(.006, .02, 2, 6), WHITE, x, B0 + .004, .02, HP - .3, 0, 0);
+      }
     }));
     return g;
   } },

@@ -1261,6 +1261,24 @@ async function truckGo(S, R, pcs, glow) {
   f.pose = 'cheer'; f.setFace?.('happy'); f.bump?.(.5);
   const x0 = R.position.clone(), fwd = new THREE.Vector3(Math.cos(R.rotation.y), 0, -Math.sin(R.rotation.y)), wheels = [pcs.wheelsF?.pv, pcs.wheelsB?.pv].filter(Boolean);
   const nozzle = () => W.toScreen(R.localToWorld(new THREE.Vector3(-.19, .29, -.065)));
+  // (③ 10/21, user on the phone: "소방차 조립 완료하고 움직이면 펭귄 몸 뚫음"): before it rolls, whoever stands in its way — on the
+  // strip it sweeps, with 0.55 m kept body to body — hops aside (the side with room; else back), and stays there
+  { const box = new THREE.Box3().setFromObject(R), side = new THREE.Vector3(-fwd.z, 0, fwd.x), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+    const hl = Math.abs(sz.x * fwd.x) + Math.abs(sz.z * fwd.z), hw = Math.abs(sz.x * side.x) + Math.abs(sz.z * side.z), CL = .3;   // (half a body (~.25) + a little: 0.55 between bodies)
+    const who = [f, S.hero?.ch, ...(S.npcs || []).map(n => n.ch)].filter(ch => ch?.root?.visible);
+    const room = (x, z) => { const Rm = S.room?.rooms?.find?.(q => { const o = q.group.position; return Math.abs(x - o.x) <= q.w / 2 && Math.abs(z - o.z) <= q.d / 2; }) || S.room; return Rm?.clearAt ? Rm.clearAt(x, z, .2) : true; };
+    const hops = [];
+    for (const ch of who) {
+      const p = ch.root.position, rx = p.x - c.x, rz = p.z - c.z, a = rx * fwd.x + rz * fwd.z, sd = rx * side.x + rz * side.z;
+      if (a < -hl / 2 - CL || a > hl / 2 + .22 + CL || Math.abs(sd) > hw / 2 + CL) continue;
+      const out = hw / 2 + CL + .1, sg = sd >= 0 ? 1 : -1;
+      const cands = [[sg, out], [-sg, out]].map(([g, o]) => p.clone().addScaledVector(side, g * o - sd)).concat([p.clone().addScaledVector(fwd, -hl / 2 - CL - .1 - a)]);
+      const to = cands.find(q => room(q.x, q.z)) || cands[0];
+      const p0 = p.clone(); hops.push(tw.run(.35, k => { p.x = p0.x + (to.x - p0.x) * k; p.z = p0.z + (to.z - p0.z) * k; ch.lift = Math.sin(k * Math.PI) * .25; }, ease.outQuad).then(() => { ch.lift = 0; ch.faceTo?.(R.position.x, R.position.z); }));
+      G.audio.sfx('hop');
+    }
+    if (hops.length) { await Promise.all(hops); if (S.dead) return; }
+  }
   let blink = 0, spray = 0;
   await tw.run(2, k => {
     const u = k * 2; W.lastActive = performance.now();

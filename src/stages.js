@@ -138,7 +138,9 @@ export const LAYOUTS = {
   // the everyday look (concept F): a Korean apartment living room with a kotatsu, a kimchi fridge and an American fridge,
   // filling the screen — the floor runs on past the walls (bleed) and the walls stand taller
   apt: { w: 7, d: 6, bleed: {}, wallH: 3.0, walls: { N: 'wall', W: 'wall' },
-    floorZones: [{ i: 4, j: 0, w: 3, d: 2, kind: 'checker', a: '#fffaf0', b: '#cfe8d6' }],   // the kitchen corner
+    // the kitchen corner: one step up (10/21 사용자 "아파트도 이런 부분은 단차가 있어야할거같아" — the tiles only changed colour, the
+    // floor ran on flat), a low tiled platform with a rounded wooden nosing and a darker plinth at its foot
+    raised: [{ i: 4, j: 0, w: 3, d: 2, h: .1, kind: 'checker', a: '#fffaf0', b: '#cfe8d6', edge: '#d9c6a8', trim: '#ffffff', nose: '#c98d55', plinth: '#a87452', step: false }],
     // (the 베란다 창 on the W wall reaches .3 into the room — sill, curtain — and the monstera's leaves and the drying rack's
     // feet stood in it, 81 cm of leaf through the curtain: they stand a little off the wall, the TV stand with them; 겹침 QA 10/19)
     furniture: [{ ...F('monstera', 0, 0), dx: .24 }, { ...F('tvlow', 1, 0), dx: .2 }, F('floorlamp', 3, 0), F('bigfridge', 4, 0), F('kimchifridge', 5, 0), F('snackcart', 6, 0),
@@ -551,7 +553,7 @@ export const MAPS = {
   // 우리 아파트 투룸: 거실 + 주방, 문 없는 벽으로 이어진 한 집 (the floor runs on past the walls, no cake slab)
   aptmap: () => ({ theme: THEMES.apt, friendAt: [1.6, 1.0], nBonus: 3, bleed: true, rooms: [
     // the living room without its kitchen corner: the kitchen next door has the fridges and the table
-    { at: [-3.0, 0], layout: { ...LAYOUTS.apt, theme: THEMES.apt, bleed: null, walls: { N: 'wall', W: 'wall', E: 'door' }, doorAt: { E: 1.2 }, floorZones: [],
+    { at: [-3.0, 0], layout: { ...LAYOUTS.apt, theme: THEMES.apt, bleed: null, walls: { N: 'wall', W: 'wall', E: 'door' }, doorAt: { E: 1.2 }, floorZones: [], raised: [],
       // (장치판 '로봇청소기 대소동': the robot vacuum that drives, and a 천장 빨래건조대 in place of the floor rack)
       furniture: [...LAYOUTS.apt.furniture.filter(f => !['bigfridge', 'kimchifridge', 'snackcart', 'diningset'].includes(f.type)).map(f => f.type === 'robovac' ? { ...f, type: 'robovacgo' } : f.type === 'dryrack' ? { ...f, type: 'ceilrack' } : f), F('bookshelf', 5, 0, 0, { seed: 7 })] } },
     { at: [3.0, 0], layout: { w: 5, d: 6, theme: THEMES.aptkitchen, bleed: null, wallH: 3.0, walls: { N: 'wall', W: 'none', E: 'wall' },
@@ -901,7 +903,8 @@ const HO_SHAPE = {
   9: [7, 1], 11: [7, 1],   // (11판 8 → 7: 1~20판에서 가장 길었어요 — 사람 속도 봇 74초, 앞뒤 판보다 18초; 11~20판 레벨 점검 10/20)
   13: [8, 1], 14: [4, 1], 15: [8, 1], 19: [7, 2],   // (1~30 밸런스 10/20 — user "게임이 전반적으로 쉽다": 2장이 1장 끝보다 가벼웠어요(봇 42~55초 < 52~70초); 14판 흑백 물건 3 → 4, 15판 7 → 8)   // (13판's count is its kit card's — KITS.moving, 7 since 10/20; 19판 8 → 7: the big outdoor map with 24 px things, half of them behind doors, and now 말썽이's first stage — 1~20 한 줄 점검 10/20)
   22: [8, 1], 23: [8, 1], 25: [9, 1], 26: [10, 2], 27: [10, 1],   // (26판 11 → 10: 11개가 다 28px 밑, 사람 속도 봇 84초 — 27판(82초)과 둘이 1~30에서 가장 무거웠어요, 1~30 밸런스 10/20)
-  33: [7, 1], 34: [9, 0], 35: [9, 1], 36: [11, 1],   // (36: the sock puzzle is its second chain — D3)
+  33: [7, 1], 34: [9, 0], 35: [8, 1], 36: [11, 1],   // (35판 곰제과 9 → 8: 사람 속도 봇 77~79초, 1~40판에서 가장 길었어요 — ② 레벨 10/21)
+    // (36: the sock puzzle is its second chain — D3)
   41: [8, 1], 43: [10, 1], 44: [9, 2], 45: [10, 1],
   50: [8, 0], 52: [10, 1], 54: [12, 2], 55: [9, 1], 57: [12, 2],   // (57: the snack box is its third chain — D3)
   61: [7, 1], 62: [11, 1], 63: [11, 2], 65: [7, 1], 67: [12, 2],

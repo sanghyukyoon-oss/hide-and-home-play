@@ -58,7 +58,7 @@ import { blindFor } from '../hunt-blind.js';
 import { PICKS, GIFT_AT, FREE_KITS, pickPanel, takePick, metFriends, callableFriends, friendPrice, keepsake, toShop } from '../econ.js';
 import * as SCRIPT_ALL from '../script.js';   // (callResult: the stage result's '이제 ○○를 집에 부를 수 있어 · 120' — 스토리 룸)   // 경제·로비 (10/19)
 import { isHunt, huntExtras, chainToView, fixBlindSpots, placeCameo, cameoFound, habitOf, coveredFrac, cameoKind, moveItem } from '../hunt.js';
-import { obsSetup, obsClue, obsInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
+import { obsSetup, obsClue, lockInput, obsLook } from '../obslock.js';   // R4 관찰 자물쇠
 // R2: stages where the story has the friend break their habit (1판 the toy box, 30판 "이번엔 냄새 나는 데 안 가", 41판 "오늘은 물 없는 데!")
 const HABIT_BREAK = new Set([0, 29]);   // (41판 is 다람이's lever stage since v96 — no habit-breaking line there)
 import { v2Wanted, v2Setup, v2Prep, v2Hide, v2Tell, v2PointAll, v2KeyToast, v2OpenSound, v2Wrong, v2Hint, v2AfterFound, v2Stars, v2StarWhy, v2Stamp, v2Title, v2Update, v2PeekTap } from '../r1v2.js';
@@ -1964,7 +1964,7 @@ export class StageScene {
         else { G.ui.toast(L.tv ? '비밀번호가 필요해! TV에 나올지도…?' : '비밀번호가 필요해! 쪽지를 찾아봐', 'red'); this.codePill.style.display = ''; this.codePill.classList.add('need'); this.codePill.set('? ? ?'); }
         return;
       }
-      if (this.obs && (L.kind === 'code' || L.kind === 'color') && !(await obsInput(this, part))) return;   // R4: dial it in / tap the colours
+      if ((L.kind === 'code' || L.kind === 'color') && !(await lockInput(this, part))) return;   // dial it in / tap the colours yourself (R4 and every other stage — ③ 10/21)
       part.busy = true;
       const lp = part.lockMesh ? W.toScreen(part.lockMesh.getWorldPosition(new THREE.Vector3())) : { x, y };
       if (L.kind === 'pad') {

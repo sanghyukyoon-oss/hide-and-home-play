@@ -61,8 +61,11 @@ function faceJob(k, f, key) {
 
 export class BossGameScene {
   constructor(G) { this.G = G; this.name = 'bossgame'; }
-  async enter({ kind = 'yasik', after = 4, lv = 0, interlude = false, resumeFinish = false, resumeWon = false, ...more } = {}) {
+  async enter({ kind = 'yasik', after = 4, lv = 0, interlude = false, resumeFinish = false, resumeWon = false, epilogue = false, ...more } = {}) {
     const G = this.G, W = G.world;
+    // epilogue: 추로야!!! after the ending (사용자 10/21 "추로야! 미니게임 70판 깨면 넣어줘" — ② 레벨): a bonus, not a followup;
+    // 'home' or 'next' — the ending's last choice, already made: where to go once it's over
+    this.epilogue = epilogue;
     // interlude: a 쉬어가기 between stages, not a boss — a loss still goes on (smaller reward), marked done as 'm'+after
     this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this._out = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
@@ -135,7 +138,7 @@ export class BossGameScene {
       // the lab restarts a game with a level: here a won boss goes on with the campaign, anything else replays the boss
       go(d = {}) {
         if ((S.won || S.passed) && (d.lv == null || d.lv !== S.lv)) return S.finish();
-        return G.go('bossgame', { ...d, kind: S.kind, after: S.after, lv: d.lv ?? S.lv, interlude: S.interlude });
+        return G.go('bossgame', { ...d, kind: S.kind, after: S.after, lv: d.lv ?? S.lv, interlude: S.interlude, epilogue: S.epilogue });
       },
       homeBtn: () => G.ui.btn(null, { color: 'purple', icon: 'pause', cls: 'ibtn', onClick: () => S.menu() }),
       setGame() {}, leave() {},
@@ -152,6 +155,12 @@ export class BossGameScene {
   win(e) {
     if (this.dead || this.won || this.passed) return;
     const G = this.G; this.won = true;
+    if (this.epilogue) {   // (the bonus night: 100 coins the first win, the 70판 boss's own reward stays its own)
+      const d = G.save.bossDone || (G.save.bossDone = {});
+      if (!d.c70won && !G.playMode) { d.c70won = true; G.save.coins = (G.save.coins || 0) + 100; G.ui.toast('추로야!!! 클리어! 코인 +100', 'green'); G.persist(); }
+      G.stats.log.push({ bossgame: this.kind, result: 'win', epilogue: true });
+      return;
+    }
     const st = e.max ? Math.round(3 * (e.stars || 0) / e.max) : Math.max(0, Math.min(3, e.stars || 0));   // (GPT QA 10/18 P2: hotel reported 45 of 48)
     const reward = settleFollowup(G, followupAt(this.after), { coins: this.interlude ? 40 + st * 15 : 150 + st * 30, won: true, replayWin: true });
     const coins = reward.coins, lens = reward.lens;   // 경제 B5 (10/19): a won 놀이 / boss → a magnifier into the bag (not in practice)
@@ -182,6 +191,15 @@ export class BossGameScene {
     const G = this.G;
     if (this.finishing) return; this.finishing = true;
     G.ui.closePanel(true);
+    if (this.epilogue) {   // 추로야!!! after the ending: won, lost or skipped, then where the ending's last choice said
+      const d = G.save.bossDone || (G.save.bossDone = {}); d.c70 = true; G.persist();
+      // (the game's own line after a win — 스토리 룸 GAME['churro:0'].out: "…알았어, 알았어. 딱 하나만이야.")
+      const GLo = gameLines(this.kind, this.lv), saidO = G.save.gameTalk || (G.save.gameTalk = {});
+      if (this.won && GLo?.out && !saidO['o' + this.kind + this.lv] && !G.bot && !G.skipTalk) { this.talking = true; await playDialog(G, GLo.out); if (this.dead) return; saidO['o' + this.kind + this.lv] = true; G.persist(); }
+      if (G.playMode) return G.go('home');
+      if (this.epilogue === 'home') return G.go(G.econ ? 'home' : 'myhome');
+      return G.go('stage', { idx: this.after + 1 });
+    }
     if (!this.won && !this.passed && !G.playMode) settleFollowup(G, followupAt(this.after));   // (the game's result panel went on taking taps under the ending — QA 10/18)
     // 대본: a word after the first win; after the last 야식, the ending (once) and "hide something at home / keep playing"
     // (the ending comes after the last 야식 even when it was skipped from the pause menu — 검토 H6)
@@ -196,7 +214,13 @@ export class BossGameScene {
         await playDialog(G, ENDING); await endCard(G);
         G.save.ending = true; G.persist();   // (saved once seen: a reload mid-ending shows it again — QA 10/18)
         clearFollowupFinish(G, this.after);
-        if (await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0) return G.go('myhome');
+        const stayE = await choose(G, [SUI.homeHideEnd, SUI.keepPlaying]) === 0;
+        // then 추로야!!! (첫째 밤 — the easiest, a bonus the first time), after the 70판 reward card so its gift isn't lost
+        if (!G.save.bossDone?.c70) {
+          if (this.won && this.reward) { const R = this.reward; this.reward = null; await giftCard(G, { key: giftKey(this.kind, this.lv), title: '보스 클리어!', ...R, retry: false, after: this.after }); if (this.dead) return; }
+          return G.go('bossgame', { kind: 'churro', after: this.after, lv: 0, epilogue: stayE ? 'home' : 'next' });
+        }
+        if (stayE) return G.go('myhome');
       }
     }
     // the reward card: who gives it and why (the first win only), the stars, the coins, the magnifier — then the next stage

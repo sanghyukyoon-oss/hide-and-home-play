@@ -260,16 +260,16 @@ function style() {
 }
 const tapEl = (el, fn) => { el.addEventListener('pointerdown', e => e.stopPropagation()); el.addEventListener('pointerup', e => { e.stopPropagation(); fn(e); }); return el; };
 function wrongTry(S, part, box, res, hintEl) {
-  const G = S.G, n = (S.obs.wrong.get(part) || 0) + 1; S.obs.wrong.set(part, n);
+  const W8 = S.obs?.wrong || (S._lockWrong ||= new Map()), G = S.G, n = (W8.get(part) || 0) + 1; W8.set(part, n);
   G.audio.sfx('locked'); box.classList.remove('obs-shake'); void box.offsetWidth; box.classList.add('obs-shake');
   // said in the panel itself (a toast sat dimmed behind it)
   if (hintEl) { hintEl._t ??= hintEl.textContent; hintEl.textContent = '❌ ' + tr(T.wrong); hintEl.classList.add('bad'); clearTimeout(hintEl._to); hintEl._to = setTimeout(() => { hintEl.textContent = hintEl._t; hintEl.classList.remove('bad'); }, 1300); }
-  if (n === 3) setTimeout(() => { G.ui.closePanel(); res(false); setTimeout(() => !S.dead && !S.result && part.lock && S.offerRobot(part), 400); }, 500);
+  if (n === 3 && S.obs && S.offerRobot) setTimeout(() => { G.ui.closePanel(); res(false); setTimeout(() => !S.dead && !S.result && part.lock && S.offerRobot(part), 400); }, 500);   // (R4's 척척 로봇; a plain lock just starts over)
 }
 function dialPanel(S, part, src) {
   style();
   return new Promise(res => {
-    const G = S.G, L = part.lock, v = [0, 0, 0], nums = [];
+    const G = S.G, L = part.lock, v = [...L.code].map(() => 0), nums = [];   // (as many wheels as the code has digits)
     const close = () => res(false);
     const wheel = i => {
       const n = h('div', { class: 'obs-n' }, '0'); nums.push(n);
@@ -281,7 +281,7 @@ function dialPanel(S, part, src) {
       return h('div', { class: 'obs-w' }, tapEl(h('div', { class: 'obs-a' }, h('span', {}, '▲')), () => set(1)), n, tapEl(h('div', { class: 'obs-a dn' }, h('span', {}, '▲')), () => set(-1)));   // (the game font has no ▼: the ▲ turned over)
     };
     const clock = src?.kind === 'clock';
-    const dial = h('div', { class: 'obs-dial' }, wheel(0), clock ? h('div', { class: 'obs-colon' }, ':') : null, wheel(1), wheel(2));
+    const dial = h('div', { class: 'obs-dial' }, wheel(0), clock ? h('div', { class: 'obs-colon' }, ':') : null, ...v.slice(1).map((_, i) => wheel(i + 1)));
     const lab = clock ? h('div', { class: 'obs-lab' }, h('span', {}, tr(T.hour)), h('span', { style: 'width:14px' }), h('span', { class: 'w2' }, tr(T.min))) : null;
     const hint = clock ? (src.wall ? T.hintWall : T.hintAlarm) : S.codes.has(L.code) ? T.hintCode : T.hintNoCode;
     const hintEl = h('div', { class: 'obs-hint' }, (clock ? '🕐 ' : '🔢 ') + tr(hint));
@@ -296,13 +296,13 @@ function dialPanel(S, part, src) {
 function colorPanel(S, part, src) {
   style();
   return new Promise(res => {
-    const G = S.G, L = part.lock, picked = [];
-    const slots = [0, 1, 2].map(() => h('div', { class: 'obs-slot' })), row = h('div', { class: 'obs-slots' }, ...slots);
+    const G = S.G, L = part.lock, picked = [], N = L.code.length;
+    const slots = [...L.code].map(() => h('div', { class: 'obs-slot' })), row = h('div', { class: 'obs-slots' }, ...slots);
     const paint = () => slots.forEach((el, i) => { const d = picked[i]; el.classList.toggle('on', d != null); el.style.background = d != null ? LOCK_COLORS[d][0] : ''; });
     const pick = d => {
-      if (picked.length >= 3) return;
+      if (picked.length >= N) return;
       picked.push(d); paint(); G.audio.sfx('pop', 3 + picked.length * 2);
-      if (picked.length < 3) return;
+      if (picked.length < N) return;
       if (picked.join('') === L.code) { setTimeout(() => { G.ui.closePanel(); if (src?.kind === 'vase') S.colorPill.querySelector('.v').innerHTML = '🏺 ' + picked.map(d => `<i class="cdot" style="background:${LOCK_COLORS[d][0]}"></i>`).join(''); res(true); }, 220); return; }
       wrongTry(S, part, row, res, hintEl); setTimeout(() => { picked.length = 0; paint(); }, 420);
     };
@@ -311,6 +311,19 @@ function colorPanel(S, part, src) {
     G.ui.panel({ title: tr(T.colorTitle), color: 'blue', close: () => res(false), cls: 'obs-panel', body: [hintEl, row, pal],
       buttons: [G.ui.btn(tr(T.clear), { color: 'gray', onClick: () => { picked.length = 0; paint(); } })] });
   });
+}
+// every code / colour lock, not only R4's (③ 10/21, user on 22판: "이런 색깔 순서는 직접 넣게 해줄려? 뭔가 너무 다 자동이라"): once
+// you know the code (the note, the colour card — the HUD keeps it as a hint), tapping the lock opens the same dial / colour
+// buttons and you put it in yourself — wrong: 덜컹 and start over; right: 철컥. A bot just opens it
+export async function lockInput(S, part) {
+  if (S.obs) return obsInput(S, part);
+  const G = S.G, L = part.lock;
+  if (G.bot || S.botOn?.()) { await S.tw.wait(.3); return !S.dead; }
+  S.paused = true;
+  await newCard(G, L.kind);
+  const ok = S.dead ? false : await (L.kind === 'code' ? dialPanel(S, part, null) : colorPanel(S, part, null));
+  S.paused = false;
+  return ok && !S.dead;
 }
 // stage.js asks this when a code / colour lock it could open is tapped: true = the right answer went in
 export async function obsInput(S, part) {

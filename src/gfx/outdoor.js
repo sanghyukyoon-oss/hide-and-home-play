@@ -429,6 +429,29 @@ B.gate = (f, T) => {
     pv.add(put(tor(.045, .013, '#ffd23f', { metal: .5, rough: .3 }), -sx * (W / 2 - .1), -.04, .035));
     f.add(pv); return pv;
   };
+  // behind the leaves (23판 실폰 10/21, user: "문 열고 막혀 있는데 ㅋㅋㅋ 이게 뭐여" — opened, it was a bare wall): the house's front
+  // step — a tiled floor, a raised doorstep, the 현관문 itself in the back wall (a wooden door with two panels, a little window,
+  // a brass handle, a lamp and the house number over it), a small mailbox on the wall, a pot plant and slippers in the corners.
+  // The two '대문 안쪽' spots (x ±W/4, the middle of the floor) stay clear.
+  const FY = .07, DW2 = .28, DH2 = 1.22;
+  f.add(mg('gate-in-floor', '#d9d0c2', ({ add }) => { add(G.box(W - .02, .012, D - .02, .004), 0, FY + .006, D / 2); add(G.box(W - .06, .07, .12, .02), 0, FY + .035, .065); }));
+  f.add(mg('gate-in-floorline', '#c4b9a8', ({ add }) => { for (const x of [-W / 4, 0, W / 4]) add(G.box(.008, .004, D - .14, .002), x, FY + .013, D / 2 + .06); add(G.box(W - .04, .004, .008, .002), 0, FY + .013, .24); }));
+  f.add(mg('gate-in-frame', '#efe8dc', ({ add }) => {
+    for (const sx of [-1, 1]) add(G.box(.06, DH2 + .06, .04, .01), sx * (DW2 + .03), FY + .07 + (DH2 + .06) / 2, .02);
+    add(G.box(DW2 * 2 + .12, .06, .045, .01), 0, FY + .07 + DH2 + .06, .022);
+  }));
+  f.add(mg('gate-in-door', '#9a6a45', ({ add }) => { add(G.box(DW2 * 2, DH2, .03, .012), 0, FY + .07 + DH2 / 2, .016); }));
+  f.add(mg('gate-in-doorpanel', '#b9844f', ({ add }) => { for (const y of [.35, .75]) add(G.box(DW2 * 2 - .14, .3, .01, .006), 0, FY + .07 + y, .034); }));
+  f.add(mg('gate-in-window', '#cfe9f5', ({ add }) => { add(G.box(.34, .16, .01, .006), 0, FY + .07 + 1.05, .034); }));
+  f.add(mg('gate-in-brass', '#e8b84a', ({ add }) => { add(G.box(.035, .1, .025, .008), DW2 - .07, FY + .07 + .62, .045); add(G.box(.12, .05, .012, .006), 0, FY + .07 + DH2 + .16, .03); }));
+  f.add(mg('gate-in-lamp', '#fff3c4', ({ add }) => { add(G.sph(.05, 12, 10), -DW2 - .14, FY + .07 + DH2 - .05, .07); }, { emissive: '#ffe08a', ei: .5 }));
+  f.add(mg('gate-in-lampcap', '#5b5672', ({ add }) => { add(G.cyl(.04, .055, .04, 12), -DW2 - .14, FY + .07 + DH2 + .0, .07); add(G.box(.03, .03, .06, .008), -DW2 - .14, FY + .07 + DH2 + .02, .03); }));
+  f.add(mg('gate-in-mail', '#e2403a', ({ add }) => { add(G.box(.16, .2, .09, .02), DW2 + .23, FY + .07 + .78, .05); }));
+  f.add(mg('gate-in-mailslot', '#3b3556', ({ add }) => { add(G.box(.1, .015, .01, .004), DW2 + .23, FY + .07 + .84, .096); }));
+  f.add(mg('gate-in-pot', '#d98b5f', ({ add }) => { add(G.cyl(.07, .055, .12, 12), -W / 2 + .1, FY + .06, D - .1); }));
+  f.add(mg('gate-in-leaf', '#6cc46a', ({ add }) => { for (let k = 0; k < 5; k++) add(G.sph(.055, 8, 6), -W / 2 + .1 + Math.cos(k * 1.3) * .04, FY + .16 + (k % 2) * .05, D - .1 + Math.sin(k * 1.3) * .03, 0, 0, 0, [1, 1.3, 1]); }));
+  f.add(mg('gate-in-slipper', '#5f8fe0', ({ add }) => { for (const dx of [-.045, .045]) add(G.box(.075, .025, .17, .03), W / 2 - .14 + dx, FY + .07 + .013, .07, 0, dx * 3, 0); }));
+  f.add(mg('gate-in-slipperband', '#ffffff', ({ add }) => { for (const dx of [-.045, .045]) add(G.box(.08, .02, .04, .008), W / 2 - .14 + dx, FY + .07 + .03, .1, 0, dx * 3, 0); }));
   const L = leaf(-1), R = leaf(1);
   const pl = f.part('door', L, t => { L.rotation.y = -1.45 * t; }, { label: '대문 왼쪽', sfx: 'door' });
   const pr = f.part('door', R, t => { R.rotation.y = 1.45 * t; }, { label: '대문 오른쪽', sfx: 'door' });

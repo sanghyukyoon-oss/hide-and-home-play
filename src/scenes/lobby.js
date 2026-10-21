@@ -687,6 +687,8 @@ export class LobbyScene extends MyHomeScene {
     // 먹물이 keeps the seat left for it when the room has one free (else it comes in later, like any friend — arrivals)
     const z = this.zone, keep = inky && !seatedAll(this.H).has('inky') && (z.friends ||= []).length < seatsOf(z) ? inky : null;
     if (keep) { keep.ch.root.visible = true; keep.rec.a = keep.ch.root.rotation.y; z.friends.push(keep.rec); if (this.H.friendKnown) this.H.friendKnown = [...new Set([...this.H.friendKnown, 'inky'])]; G.persist(); }
+    // then 추로야!!! (사용자 10/21 "추로야! 미니게임 70판 깨면 넣어줘" — ② 레벨): the first time, a bonus night, then where you chose
+    if (!G.save.bossDone?.c70 && !G.playMode) return G.go('bossgame', { kind: 'churro', after, lv: 0, epilogue: stay ? 'home' : 'next' });
     if (!stay) return G.go('stage', { idx: after + 1 });
     for (const s of temp) { if (s === keep) continue; this.room.group.remove(s.ch.root); this.seated = this.seated.filter(x => x !== s); }
     this.setMode('lobby');

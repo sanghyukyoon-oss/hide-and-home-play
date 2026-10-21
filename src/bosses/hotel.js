@@ -21,7 +21,7 @@ import { disposeTree, rbox, sph, cyl, put, mat, fadeDisc } from '../gfx/kit.js';
 const Fu = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const De = (type, wall, u, opts) => ({ type, wall, u, opts });
 
-const C = 2, RW = 3, RD = 3, WALL_H = 2.2, FH = WALL_H + .5;   // guest rooms: 3×3 tiles, two per floor
+const C = 2, RW = 3, RD = 3, WALL_H = 2.2, FH = WALL_H + .5;   // guest rooms: 3×3 tiles, two per floor (texRes 512: plank floors at half size — ⑤ 10/21 #71, 21판 → 호텔 white screen)
 const LOBBY_H = 1.9, LFH = LOBBY_H + .5;                        // the lobby is a little lower
 const CS = 1.65, STAND = [.15, .5], DRAG_Z = RD / 2 + .9, LIFT_PX = 26, PITCH = .26;
 const EVENING = { ambColor: '#dccfff', amb: 1.3, sunColor: '#ffdcb8', sun: 1.8 };
@@ -132,7 +132,7 @@ export class Game {
     const VB = '#e3c4a6', w = C * RW;
     // the lobby: reception desk with a bell, 몽글이 behind it, a sofa, a big plant, the way in on the left
     const lobT = { ...THEMES.lobby, base: VB };
-    const lobby = this.lobby = new MapRooms(W, { theme: lobT, bleed: false, rooms: [{ at: [0, 0], level: 0, layout: { w, d: RD, theme: lobT, wallH: LOBBY_H, tidy: true,
+    const lobby = this.lobby = new MapRooms(W, { theme: lobT, bleed: false, rooms: [{ at: [0, 0], level: 0, layout: { w, d: RD, theme: lobT, wallH: LOBBY_H, tidy: true, texRes: 512,
       walls: { N: 'wall', S: 'none', W: 'door', E: 'wall' }, doorAt: { W: .2 },
       furniture: [Fu('reception', 0, 1), Fu('plantbig', 0, 0), Fu('lobbysofa', 4, 0), Fu('rug', 2, 1)], decor: [] } }] });
     g.add(lobby.group);
@@ -150,7 +150,7 @@ export class Game {
       for (let c = 0; c < C; c++) {
         const idx = f * C + c, R = ROOMS[(idx * 5 + this.lvIdx * 2) % ROOMS.length];
         const theme = { ...THEMES[R.th], base: VB };
-        defs.push({ at: [this.colX(c), 0], level: 0, layout: { w: RW, d: RD, theme, wallH: WALL_H, tidy: true,
+        defs.push({ at: [this.colX(c), 0], level: 0, layout: { w: RW, d: RD, theme, wallH: WALL_H, tidy: true, texRes: 512,
           walls: { N: 'wall', S: 'none', W: c === 0 ? 'wall' : 'none', E: 'wall' }, furniture: R.furn, decor: [De('door', 'N', c === 0 ? .55 : -.55)] } });
       }
       const map = new MapRooms(W, { theme: defs[0].layout.theme, bleed: false, rooms: defs });
@@ -289,7 +289,7 @@ export class Game {
   // ── one night
   async startNight(n) {
     const L = this.L, TR = this.trip, NT = this.nt = TR.nights[n], ui = L.ui;
-    this.n = n; this.ev = NT.ev || {}; this.budget = NT.budget; this.movesUsed = 0; this.phase = 'arrive'; this.btn.style.visibility = 'hidden';
+    this.n = n; this.ev = NT.ev || {}; this.budget = NT.budget; this.movesUsed = 0; this._left = null; this.phase = 'arrive'; this.btn.style.visibility = 'hidden';
     this.subEl.textContent = `${TR.name} · ${NIGHT_NAME[n]}`;
     this.app.classList.remove('ht-night', 'ht-morning'); L.world.setLight(EVENING);
     for (const G of this.guests) { if (G.starEl) { G.starEl.remove(); G.starEl = null; } G.party = false; }
@@ -331,6 +331,8 @@ export class Game {
     this.say(this.mong, n === 0 ? '어서 오세요, 몽글 호텔입니다!' : '어서 오세요~', 1300);
     this.mong.pose = 'wave'; this.tw.wait(1.2).then(() => { if (!this.dead) this.mong.pose = 'idle'; });
     this.phase = 'checkin'; this.evalT = .6; this.btn.style.visibility = '';
+    // the first night: once, what the chip is (③ 10/21) — the chip glows while it's said
+    if (!this._movesTold && this.budget > 0 && !this.L.bot) { this._movesTold = true; this.L.ui.toast(`방을 바꿀 수 있어요 ×${this.budget}`, 'green'); this.movesEl.classList.add('tell'); setTimeout(() => this.movesEl?.classList.remove('tell'), 2600); }
     this.setBtn();
     this.introLines(news);
     if (this.lvIdx === 0 && n === 0 && !this.L.bot) this.tw.wait(1).then(() => { if (!this.dead && this.phase === 'checkin' && !this.touched) this.showHand(); });
@@ -361,10 +363,18 @@ export class Game {
     W.idsDirty = true;
     return G;
   }
-  // a guest checking out: down to the lobby, out through the door
+  // a guest checking out (③ 10/21, user: "손님들 건물 나갈 때 벽 뚫고 바닥 뚫고 나간다. 어케 자연스럽게 잘 사라지게"): from where
+  // they stand, a little hop and 퐁 — a puff of smoke and a sparkle — gone; no flight through the walls and floors to the door
   leave(G) {
-    const ch = G.ch, from = ch.root.position.clone(), door = new THREE.Vector3(-RW * C / 2 - .9, 0, .9);
-    this.hideBubble(ch); G.mode = 'hop'; G.hop = { from, to: door, t: 0, dur: .9, h: .8 + from.y * .1, s0: CS, s1: CS * .7, room: null, gone: true };
+    const ch = G.ch, W = this.L.world, s0 = ch.root.scale.x, y0 = ch.root.position.y;
+    this.hideBubble(ch); G.mode = 'out'; G.lobbyAt = undefined; G.hop = null;
+    this.tw.run(.32, k => { ch.root.position.y = y0 + Math.sin(k * Math.PI) * .25; ch.root.scale.setScalar(s0 * (1 + .12 * Math.sin(k * Math.PI)) * (k < .7 ? 1 : 1 - (k - .7) / .3 * .85)); }).then(() => {
+      const p = W.toScreen(ch.root.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, .35, 0)));
+      W.fx.burst(p.x, p.y, { n: 12, shape: 'circle', colors: ['#ffffff', '#f1ebf5', '#e6def0'], speed: 150, up: 40, gravity: -40, size: 13, life: .5 });
+      W.fx.burst(p.x, p.y - 10, { n: 7, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 190, size: 8, life: .55 });
+      this.L.audio.sfx('pop', 6);
+      ch.root.visible = false; ch.root.scale.setScalar(s0); ch.root.position.y = y0; W.idsDirty = true;
+    });
   }
   partyRoom(r) {
     const W = this.L.world, g = new THREE.Group(), x = this.colX(this.rc(r)), y = this.floorY(this.rf(r));
@@ -590,10 +600,17 @@ export class Game {
     const wait = this.guests.filter(G => this.pos[G.i] === -1).length, lbl = this.btn.querySelector('.lbl');
     if (this.phase === 'checkin') { lbl.textContent = wait ? `손님 ${wait}명 남음` : '불 끄기'; this.btn.classList.toggle('disabled', wait > 0); this.btn.classList.toggle('ready', !wait); }
   }
+  // (③ 10/21, user: "남은 방바꾸기 횟수 잘 표현 해줘야할듯? 잘 안 보이고 뭔가 있는지도 몰랐어"): a bigger chip, a '-1' that flies off
+  // when one is spent, grey at 0
   updMoves() {
     const left = Math.max(0, (this.budget || 0) - this.movesUsed);
+    if (this._left != null && left < this._left && this.movesEl.isConnected) {
+      this.movesEl.classList.remove('bump'); void this.movesEl.offsetWidth; this.movesEl.classList.add('bump');
+      const m = this.L.h('div', { class: 'ht-minus ol' }, '-1'); this.movesEl.append(m); setTimeout(() => m.remove(), 800);
+    }
+    this._left = left;
     this.movesN.textContent = String(left);
-    this.movesEl.classList.toggle('low', left === 0 && this.phase === 'checkin');
+    this.movesEl.classList.toggle('low', left === 0);
     this.starN.textContent = String(this.stars);
   }
   badFace(G, m) { return (G.key === 'cat' && m.why === 'low') || m.why === 'alone' || m.why === 'party' || m.why === 'shut' ? 'sad' : 'angry'; }

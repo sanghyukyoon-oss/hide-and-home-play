@@ -495,6 +495,30 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   }
   function pauseDecks() { T.el?.pause(); }
 
+  // ── 끊기면 다시 (10/21, user on an iPhone, 1.0.150: "음악이 끊길 때가 많아"): once a second, while the song should be playing
+  // (wanted, the page shown, no swap or stop under way), put it back when it stopped on its own — the audio context left
+  // 'running' (a call, Siri, another app's sound: iOS says 'interrupted'), the element paused or ended without us, or its time
+  // standing still for 3 s while it says it plays. What it did goes to A._musicLog (the last 40) for QA.
+  const MLOG = A._musicLog = [];
+  const mlog = s => { MLOG.push(`${(performance.now() / 1000).toFixed(1)}s ${s} · ${(T.url || '').split('/').pop()}`); if (MLOG.length > 40) MLOG.shift(); };
+  const G_ = { ct: -1, still: 0, kicks: 0, said: '' };
+  const once = s => { if (G_.said !== s) { G_.said = s; mlog(s); } };
+  function guard() {
+    const el = T.el, c = A.ctx;
+    if (!el || !c || c.state === 'closed' || document.hidden || !A._wantMusic || !T.url || T.swapT || T.stopT) { G_.still = 0; G_.ct = -1; return; }
+    if (c.state !== 'running') { once('context ' + c.state + ' → resume'); c.resume()?.then?.(() => { mlog('context back'); goMusic(); }, () => {}); return; }
+    if (el.ended) { mlog('ended → from the top'); try { el.currentTime = 0; } catch {} }
+    if (el.paused) { once('paused by itself → play'); G_.kicks++; el.play()?.catch?.(() => {}); G_.still = 0; return; }
+    G_.said = '';
+    if (el.readyState >= 3 && G_.ct >= 0 && Math.abs(el.currentTime - G_.ct) < .02) {
+      if (++G_.still >= 3) { mlog(`stuck at ${el.currentTime.toFixed(1)} → nudge`); G_.kicks++; G_.still = 0; try { el.currentTime = el.currentTime + .05; } catch {} el.play()?.catch?.(() => {}); }
+    } else G_.still = 0;
+    G_.ct = el.currentTime;
+  }
+  setInterval(guard, 1000);
+  // (back from the background, a bfcache return, the window focused again: the context and the song, at once rather than on the next tap)
+  for (const [tgt, ev] of [[window, 'pageshow'], [window, 'focus']]) tgt.addEventListener(ev, () => { const c = A.ctx; if (!c || c.state === 'closed' || document.hidden) return; if (c.state !== 'running') c.resume()?.then?.(goMusic, () => {}); else goMusic(); });
+
   // mood → slot: 'home' the lobby, 'play' this scene's own (A.scene), 'tense' the tense file or the playing track hurried;
   // a slot's name works as a mood too ('boss', 'king', 'tv' …)
   const SCENE_SLOT = { stage: 'map', mini: 'mini', boss: 'boss', bossgame: 'mini' };

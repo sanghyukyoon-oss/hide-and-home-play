@@ -34,7 +34,21 @@ function noiseGround(a, b, dots = 120, r0 = 3, r1 = 9) {
     c.globalAlpha = 1;
   });
 }
-function floorTex(kind, a, b, T = null) {
+// (⑤ 10/21 #71, user on a phone: "경찰차 끝나고 한번 하얗게 변하고 뻗음") rooms built together — the hotel's lobby and its eight
+// rooms, a wide map's cells — each drew its own floor (1024²) and wall (512²) picture even when the paint was the same: 21판 →
+// 호텔 put about 60 MB of new textures up at once. Same paint, same picture now: every room still gets its own Texture (its own
+// repeat and offset), but they share one image, which three uploads once. The pictures are only remembered while a build runs.
+const TEXMEMO = new Map(); let memoT = 0;
+const memo = (key, make) => {
+  let base = TEXMEMO.get(key);
+  if (!base) { base = make(); TEXMEMO.set(key, base); clearTimeout(memoT); memoT = setTimeout(() => TEXMEMO.clear(), 3000); }
+  return base.clone();
+};
+const GROUND = ['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'water'];
+// res: the plank floor's picture size — 1024 (512 px a tile); the hotel's nine little rooms, seen whole from far out, ask for 512
+function floorTex(kind, a, b, T = null, res = 1024) { return GROUND.includes(kind) ? floorTex0(kind, a, b, T) : memo(`f|${kind}|${a}|${b}|${res}`, () => floorTex0(kind, a, b, T, res)); }
+function wallTex(kind, a, b) { return memo(`w|${kind}|${a}|${b}`, () => wallTex0(kind, a, b)); }
+function floorTex0(kind, a, b, T = null, res = 1024) {
   if (hasFloor(kind)) return canvasTex(512, 512, (c, W) => paint(c, W, kind, a, b, true));
   if (['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'water'].includes(kind)) {   // (water: a shallow strip of sea or lake on the map's own floor — 바닷가 가게)
     if (OUTDOOR?.groundTex) { try { return OUTDOOR.groundTex(kind, T || { floor: a, floor2: b }); } catch {} }
@@ -48,8 +62,8 @@ function floorTex(kind, a, b, T = null) {
     c.fillStyle = a; c.fillRect(0, 0, w, h); c.fillStyle = b;
     for (let y = 16; y < h; y += 32) for (let x = (y / 32 % 2) * 16 + 16; x < w; x += 32) { c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); }
   });
-  return canvasTex(1024, 1024, (c, W, H) => {
-    c.scale(2, 2); const w = W / 2, h = H / 2;
+  return canvasTex(res, res, (c, W, H) => {
+    c.scale(W / 512, H / 512); const w = 512, h = 512;
     c.fillStyle = a; c.fillRect(0, 0, w, h);
     const rows = 8, rh = h / rows;
     for (let r = 0; r < rows; r++) {
@@ -66,7 +80,7 @@ function floorTex(kind, a, b, T = null) {
     }
   });
 }
-function wallTex(kind, a, b) {
+function wallTex0(kind, a, b) {
   if (hasWall(kind)) return canvasTex(512, 512, (c, W) => paint(c, W, kind, a, b, false), { repeat: [1, 1] });
   return canvasTex(512, 512, (c, W, H) => {
     c.scale(2, 2); const w = W / 2, h = H / 2;
@@ -304,7 +318,7 @@ export class Room {
     else if (entry && sk === 'cake') { g.add(put(holedSlab(w, d, this.L.cut, T.base, ENTRY_DROP), 0, -.38, 0)); g.children.at(-1).userData.og = slab; }
     else if (sk !== 'none') { g.add(put(rbox(w + .5, .36, d + .5, T.base, .16), 0, -.2, 0)); g.children.at(-1).userData.og = slab; }
     if (sk === 'cake') { g.add(put(rbox(w + .62, .2, d + .62, shade(T.base, -.08), .1), 0, -.4, 0)); g.children.at(-1).userData.og = slab; }
-    const ft = floorTex(T.floorKind || 'planks', T.floor, T.floor2, T);
+    const ft = floorTex(T.floorKind || 'planks', T.floor, T.floor2, T, this.L.texRes || 1024);
     const span = ft.userData?.span || 2;
     ft.wrapS = ft.wrapT = THREE.RepeatWrapping;
     let fl;

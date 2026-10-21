@@ -13,6 +13,16 @@
 .ht-pill .ico { position: absolute; left: -8px; top: 50%; translate: 0 -50%; width: 36px; height: 36px; filter: drop-shadow(0 2px 0 #3a2453); }
 .ht-pill .ico svg { width: 100%; height: 100%; }
 .ht-pill.low { background: rgba(214, 40, 70, .82); }
+/* 방 바꾸기, easy to see (③ 10/21): a bigger white chip, its number big; a '-1' flies off when one is spent; grey at 0 */
+.ht-pill.ht-moves { height: 38px; padding: 0 13px 0 38px; background: #fff; color: #3a2453; font-size: 13px; border-width: 3px; border-bottom-width: 5px; }
+.ht-pill.ht-moves b { font-size: 25px; color: #6a3fd1; }
+.ht-pill.ht-moves .ico { width: 42px; height: 42px; left: -10px; }
+.ht-pill.ht-moves.low { background: #ddd6e6; color: #8a7a9c; filter: grayscale(1); }
+.ht-pill.ht-moves.low b { color: #8a7a9c; }
+.ht-pill.ht-moves.tell { animation: htTell .8s ease-in-out 3; box-shadow: 0 0 0 4px #ffd23f; }
+@keyframes htTell { 50% { transform: scale(1.12); } }
+.ht-minus { position: absolute; right: -4px; top: -6px; font-family: var(--font-display); font-size: 22px; color: #ff6f91; pointer-events: none; animation: htMinus .8s ease-out forwards; }
+@keyframes htMinus { 0% { transform: translateY(0) scale(.6); opacity: 0; } 25% { transform: translateY(-6px) scale(1.15); opacity: 1; } 100% { transform: translateY(-30px) scale(1); opacity: 0; } }
 .ht-pill.bump { animation: htBump .35s; }
 @keyframes htBump { 40% { transform: scale(1.2); } }
 
