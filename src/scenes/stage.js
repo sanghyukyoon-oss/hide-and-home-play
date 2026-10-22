@@ -1,4 +1,5 @@
 // Core loop: a friend counts down while you rotate their 3D room and find what they hid.
+import { applyFxOverrides } from '../fxpanel.js';
 import * as THREE from 'three';
 import { Room, attachItem } from '../room.js';
 import { MapRooms, FLOOR_H } from '../map.js';
@@ -256,6 +257,8 @@ export class StageScene {
       // spots, the alleys a 뽀샤시 (a soft blurred copy of the whole picture screened on top) — one or the other, never both.
       // Same cost either way (one quarter-size bright pass + two blurs). ?glow=0.3 [&glowth=0.82] / ?diffuse=0.3 still try any stage
       // (?glowst=27,28 limits the try to those stages); ?glow=0 / ?diffuse=0 turn a stage's own off
+      // 밤 빛 번짐은 판마다 따로 (10/22 사용자, 18판 너굴이네 복층: "너무 뿌옇다. 글로우 좀 줄여", "절반 줄여") — 없으면 .8
+      const NIGHT_GLOW = { otakuloft: .4 };
       const DAY = { station: ['glow', .12], traincar: ['glow', .12], seaside: ['glow', .12], street: ['diffuse', .2], alley1: ['diffuse', .2], alley3: ['diffuse', .2], alleyhouse: ['diffuse', .2], alleywide: ['diffuse', .2] };
       const q = new URLSearchParams(location.search), only = (q.get('glowst') || '').split(',').filter(Boolean).map(Number);
       const num = k => { const v = q.get(k); return v != null && v !== '' && !isNaN(+v) && (!only.length || only.includes(this.idx + 1)) ? +v : null; };
@@ -264,10 +267,14 @@ export class StageScene {
       if (gq != null) { glow = nightGlow ? 0 : gq; if (gq > 0) dif = 0; }
       if (dq != null) { dif = dq; if (dq > 0) glow = 0; }
       P.bloomOn = nightGlow || glow > 0 || dif > 0;
-      P.bloomStr = nightGlow ? .8 : glow;
+      P.bloomStr = nightGlow ? (NIGHT_GLOW[this.spec.room] ?? .8) : glow;
       if (P.du?.diffuse) P.du.diffuse.value = nightGlow ? 0 : dif;
+      const tl = num('tilt');   // 후보정 시험: 위·아래 흐림은 흐린 사본이 필요해서 빛 번짐 흐림을 문턱 없이 씀(이때 글로우·뽀샤시는 끔)
+      if (tl > 0) { P.bloomOn = true; P.bloomStr = 0; if (P.du?.diffuse) P.du.diffuse.value = 0; }
+      if (P.du?.tilt) P.du.tilt.value = tl > 0 ? tl : 0;
       const gth = q.get('glowth');
-      if (P.blu?.th) P.blu.th.value = nightGlow ? .5 : dif > 0 ? .2 : gth != null && gth !== '' && !isNaN(+gth) ? +gth : .82;
+      if (P.blu?.th) P.blu.th.value = tl > 0 ? -1 : nightGlow ? .5 : dif > 0 ? .2 : gth != null && gth !== '' && !isNaN(+gth) ? +gth : .82;
+      applyFxOverrides(P);   // 후보정 조절판에서 움직인 값이 판의 값 위에 (fxpanel.js)
     }
     this.hasBook = false; this.cine = false;
     if (this.plan.showcase?.shelf) { const S = this.plan.showcase; S.shelf.furn.spines.draw(S.order, S.missing); }
@@ -2240,6 +2247,7 @@ export class StageScene {
       if (junk) reelSay(this, part);
       else for (const s of part.spots) if (s.item && !s.item.found) { const p = W.toScreen(this.worldCenter(s.item)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 }); }
       if (this.jailed?.in && part === this.jailed.door) this.freeJailed();
+      if (part.afterOpen) part.afterOpen(this);   // (a piece that sets off another once open — 18판 서랍 계단·만화책)
       const fi = part.spots.map(s => s.item).find(it => it?.friend && !it.found); if (fi) this.revealFriend(fi);
       else if (this.v2 && this.friendHidden && this.v2.cands.includes(part) && !this.r1.told.has(part)) v2Wrong(this, part);
       else if (this.r1 && this.friendHidden && this.r1.cands.includes(part) && !this.r1.told.has(part)) this.r1Wrong(part);
@@ -2691,6 +2699,7 @@ export class StageScene {
     // big maps: show most of it, pan for the rest · bleed rooms (floor running on past the walls): fill the screen
     const bleed = !big && R.L?.bleed, fitW = R.L?.fitW || (bleed ? span * .6 : R.L?.fitAll ? Math.min(span * .98, 11) : Math.min(span, 8.6)), tall = (floors - 1) * FLOOR_H;   // fitAll: a whole house in one look
     W.home.set(c.x, big ? (big.levels[0] * FLOOR_H + tall / 2 + .75) : .75, c.z); W.target.copy(W.home);
+    if (R.L?.homeShift) { W.home.x += R.L.homeShift[0]; W.home.z += R.L.homeShift[1]; W.target.copy(W.home); }   // (a room whose key pieces sit to one side — 18판 너굴이네 오락기)
     W.yaw = R.L?.yaw ?? Math.PI / 4; W.pitch = floors > 1 ? .5 : .62; W.zoom = 1; W.vYaw = 0; W.autoSpin = 0;   // (L.yaw: a room seen from its own side — 28판 기차 객실 2차)
     // (레벨 세션 10/19) 폰 세로에서 넓은 맵(두 방·두세 층)은 물건이 앞 판의 절반 크기(21~34px)로 보였어요 — 그 판은 조금 당겨서 시작
     if (this.spec.zoom && W.H > W.W) W.zoom = this.spec.zoom;

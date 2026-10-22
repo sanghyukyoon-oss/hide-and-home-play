@@ -188,6 +188,10 @@ export const GRAY_LINE = typeof location !== 'undefined' && new URLSearchParams(
 // 샤픈 시험 (10/21 사용자: "샤픈도 추가 가능? 테스트 먼저"): a second, finer sharpen on top of the unsharp mask — a 3×3 edge
 // boost about half a pixel wide that crisps the ink lines without the unsharp mask's wider halo. Off (10/21 사용자: 언샵만); ?sharp=N to try
 const SHQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('sharp') : null;
+// 후보정 시험 값 (10/22): ?tilt=0.8 ?vign=0.3 ?warm=0.5 ?sat=0.15 — 주소에 있을 때만
+const PQ = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+const PNUM = k => { const v = PQ?.get(k); return v != null && v !== '' && !isNaN(+v) ? +v : 0; };
+export const POST_TRY = { tilt: PNUM('tilt'), vign: PNUM('vign'), warm: PNUM('warm'), sat: PNUM('sat') };
 export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : 0;   // 10/21 사용자 "샤픈 삭제하고 언샵 다시": off; ?sharp=N to try
 // where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
 const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
@@ -214,7 +218,7 @@ void main(){
 const DOWN = `
 varying vec2 vUv;
 #define SPLIT_MAX ${typeof location !== 'undefined' && new URLSearchParams(location.search).get('gsmode') === 'max' ? 'true' : 'false'}
-uniform sampler2D tSrc, tBloom; uniform vec2 outRes, splitC; uniform float sharpen, sharp2, diffuse, split, splitH, splitFrom, grade, bloom;
+uniform sampler2D tSrc, tBloom; uniform vec2 outRes, splitC; uniform float sharpen, sharp2, diffuse, split, splitH, splitFrom, grade, bloom, vign, tilt, warm, sat;
 void main(){
   vec2 q = .25 / outRes;   // 4 bilinear taps = box filter over the ~2x2 supersampled footprint
   vec4 c = (texture2D(tSrc, vUv + vec2(-q.x, -q.y)) + texture2D(tSrc, vUv + vec2(q.x, -q.y))
@@ -271,6 +275,11 @@ void main(){
   }
   // soft glow round bright lights (night stages only — see bloomOn): a quarter-size blurred bright pass added back
   if (bloom > .001) c.rgb += texture2D(tBloom, vUv).rgb * bloom;
+  // 후보정 시험 (10/22 사용자 "다른 후보정"): ?tilt= 위·아래 흐림(미니어처) · ?vign= 가장자리 어둡게 · ?warm= 색온도(+ 따뜻 / − 차갑게) · ?sat= 채도. 기본 0 = 꺼짐
+  if (tilt > .001) { float d = abs(vUv.y - .5) * 2.; c.rgb = mix(c.rgb, texture2D(tBloom, vUv).rgb, smoothstep(.3, .95, d) * tilt); }
+  if (abs(warm) > .001) c.rgb *= vec3(1. + .07 * warm, 1. + .012 * warm, 1. - .07 * warm);
+  if (abs(sat) > .001) { float g = dot(c.rgb, vec3(.2126, .7152, .0722)); c.rgb = max(mix(vec3(g), c.rgb, 1. + sat), 0.); }
+  if (vign > .001) { vec2 v = (vUv - .5) * vec2(outRes.x / outRes.y, 1.) * 1.6; c.rgb *= 1. - vign * smoothstep(.35, 1.05, length(v)); }
   gl_FragColor = linearToOutputTexel(c);
 }`;
 
@@ -315,7 +324,7 @@ export class ToonPost {
     };
     this.au = { ...shared, res: { value: new THREE.Vector2(1, 1) }, radius: { value: .4 }, bias: { value: .015 } };
     this.bu = { tAO: { value: this.ao.texture }, aoRes: { value: new THREE.Vector2(1, 1) } };
-    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, sharp2: { value: FINE_SHARP }, diffuse: { value: 0 }, split: { value: 0 }, splitH: { value: 0 }, splitC: { value: new THREE.Vector2(.5, .5) }, splitFrom: { value: GRAY_SPLIT_FROM },
+    this.du = { tSrc: { value: this.comp.texture }, outRes: { value: new THREE.Vector2(1, 1) }, sharpen: { value: .45 }, sharp2: { value: FINE_SHARP }, vign: { value: POST_TRY.vign }, tilt: { value: POST_TRY.tilt }, warm: { value: POST_TRY.warm }, sat: { value: POST_TRY.sat }, diffuse: { value: 0 }, split: { value: 0 }, splitH: { value: 0 }, splitC: { value: new THREE.Vector2(.5, .5) }, splitFrom: { value: GRAY_SPLIT_FROM },
       grade: { value: 0 }, tBloom: { value: null }, bloom: { value: 0 } };
     // 때깔 (10/21): the colour grade (gradeWant 0..1, held off while a 흑백판 is grey) and a night glow (bloomOn: set by the stage
     // on night and power-cut stages only, stage.js; bloomStr)

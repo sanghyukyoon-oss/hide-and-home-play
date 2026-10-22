@@ -332,7 +332,7 @@ export function lookRecipe(room, spec) {
 // end) goes back to the look's day, not the house light
 export function lookTheme(R, th) {
   if (!R || !LOOK.has('light')) return th;
-  return { ...th, light: R.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern || R.skyline || R.clouds ? Object.assign([...R.sky], { pattern: R.pattern, skyline: R.skyline, clouds: R.clouds }) : R.sky };
+  return { ...th, light: R.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern || R.skyline || R.clouds || R.rain ? Object.assign([...R.sky], { pattern: R.pattern, skyline: R.skyline, clouds: R.clouds, rain: R.rain }) : R.sky };
 }
 // the colours a shop's room is built in (this stage only): a lone room takes the recipe's theme; a map whose recipe lists
 // rooms gives each of those rooms its own recipe's theme and remembers which (lookKey: the look's pieces go in by it)
@@ -402,6 +402,13 @@ function skyClouds(x) {
   }
   x.globalAlpha = 1;
 }
+// rain falling over a night backdrop: thin slanted streaks, a few brighter, drawn once (no animation — 실폰 발열)
+function skyRain(x) {
+  let sd = 13; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  x.save(); x.lineCap = 'round';
+  for (let i = 0; i < 260; i++) { const px = R() * 280 - 12, py = R() * 520, L = 10 + R() * 16; x.strokeStyle = R() < .15 ? 'rgba(220,235,255,.45)' : 'rgba(180,200,240,.22)'; x.lineWidth = R() < .2 ? 1.2 : .8; x.beginPath(); x.moveTo(px, py); x.lineTo(px - L * .18, py + L); x.stroke(); }
+  x.restore();
+}
 let SKY_TEX = null;
 export function setSky(sky) {
   const app = document.getElementById('app'), W = typeof G !== 'undefined' ? G.world : null;
@@ -418,6 +425,7 @@ export function setSky(sky) {
     if (sky.pattern) skyPattern(x, sky.pattern);
     if (sky.skyline) skyLine(x, sky.skyline);
     if (sky.clouds) skyClouds(x);
+    if (sky.rain) skyRain(x);
     // a soft vignette (the corners settle, the middle where the room stands stays open) and a faint paper grain
     const v = x.createRadialGradient(128, 230, 60, 128, 260, 330);
     v.addColorStop(0, 'rgba(40,20,50,0)'); v.addColorStop(1, 'rgba(40,20,50,.13)');
@@ -1081,3 +1089,8 @@ let GLOW = null;
 function glowTex() {
   return GLOW ||= fadeDisc(128, '#ffffff', r => r < .35 ? 1 - .45 * r / .35 : .55 * (1 - (r - .35) / .65));
 }
+// 18판 너굴이네 복층 (10/21): a rainy night outside, warm inside — the arcade screens, the CRT, the desk lamp and the fairy
+// lights; no long shadows (the light colour and level only). The backdrop is the night sky with rain falling over it.
+RECIPES.otakuloft = { light: { ambColor: '#efe9f6', amb: 1.2, sunColor: '#ffe8c8', sun: 2.0, shadow: .55 }, sky: ['#1a2036', '#252f4c', '#141a2c'], rain: true, itemSize: .38,
+  night: { light: { ambColor: '#e9e4f6', amb: 1.15, sunColor: '#ffe2bc', sun: 1.8, shadow: .5 }, sky: Object.assign(['#141a2e', '#1f2842', '#10142a'], { rain: true }) },
+  glows: [[.5, -2.0, 1.1, '#7cf0ff'], [1.5, -2.0, 1.1, '#ff6fb8'], [2.5, -2.0, 1.1, '#ffd27a'], [-2.6, -.6, 1.0, '#9fd8ff'], [-2.0, -2.6, .8, '#ffd98a', 1.66], [-1.6, -1.8, .9, '#ffd98a', 1.66], [-.6, .6, 1.2, '#ffcf8a']] };

@@ -28,6 +28,7 @@ export const BLIND = {
   island2: ['baitbucket|미끼통 뒤|1|-20,15', 'baitbucket|미끼통 안|0|-20,15', 'cooler|아이스박스 안|0|-30,15', 'cottage|창가 꽃상자|2|15,-20', 'lakedeck|챔피언 의자 밑|1|25,15', 'picnicset|그루터기 옆|2|5,10', 'rocks|바위 틈|0|30,-5', 'tacklebox|도구함 위|1|-20,5'],
   library: ['readingnook|계단 밑|3|-25,-20', 'readingnook|다락 의자 위|1|-25,-20', 'libshelf|낮은 책장 칸|0|-20,10', 'libshelf|낮은 책장 칸|0|-10,10', 'libshelf|낮은 책장 칸|0|0,10'],
   villaroof2: ['snacktable|상 밑|0|-10,-15'],
+  otakuloft: ['mangashelf|만화책장 위|0|-20,-25', 'mangashelf|만화책장 위|0|0,-25', 'crtset|TV 뒤|1|-30,0', 'beanbag|빈백 밑|0|-20,5'],
   aptlobby: ['elevator|엘리베이터 안|0|-10,-30', 'movetruck|트럭 밑|0|30,-25'],
   aptlobby2: ['elevator|엘리베이터 안|0|-10,-30', 'movetruck|트럭 밑|0|30,-25'],
   bunnyattic: ['roundwin|동그란 창틀 위|0|-30,-5'],

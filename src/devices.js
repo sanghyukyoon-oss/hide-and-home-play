@@ -512,3 +512,54 @@ TELL.flagboat = (S, dev, line) => {
   return true;
 };
 DEVICE_FOUND.pinwheel = K('바람개비다! 데크 깃대 꼭대기에 꽂아 보자', 'A pinwheel! Put it on top of the flagpole on the deck');
+
+// ── 18판 너굴이네 복층 '경품 오락기' (10/21): the password note → the code lock → the arcade token → into the red arcade: its
+// screen flashes, a jingle, the prize chute's flap pops — the key for the padlock → 너굴이 behind it. (The drawer stairs'
+// cubby and the comic shelf's niche open by themselves — gfx/otaku-props.js afterOpen; their places stay out of plans.)
+SWAP.otakuloft = {};
+EN['경품 나오는 곳'] ??= 'Prize chute';
+PLANS.arcadeprize = (room, spec, story, planStage, flap) => {
+  const plan = planStage(room, { ...spec, lock: ['pad', 'code'], n: 4, avoid: blindFor(spec.room) }, story);
+  const P = plan.locks.find(l => l.kind === 'pad'), C = plan.locks.find(l => l.kind === 'code');
+  if (!P || !C) return null;
+  const used = new Set(plan.placements.map(p => p.spot));
+  // the coin waits behind the code lock (in place of the thing that was there)
+  const ct = plan.placements.find(p => p.role === 'target' && p.spot.part === C.part);
+  if (ct) { plan.targets.splice(plan.targets.indexOf(ct.type), 1); Object.assign(ct, { type: 'gametoken', role: 'gadget', code: 'gametoken', forPart: flap }); }
+  else { const s = C.part.spots.find(x => !x.reserved && !used.has(x)); if (!s) return null; plan.placements.push({ type: 'gametoken', spot: s, role: 'gadget', code: 'gametoken', forPart: flap }); }
+  // the padlock's key comes out of the prize chute
+  const kp = plan.placements.find(p => p.role === 'key' && p.forPart === P.part);
+  const ps = flap.spots[0];
+  if (kp && ps) { ps.reserved = false; kp.spot = ps; }
+  // 너굴이 behind the padlock
+  const tp = plan.placements.find(p => p.role === 'target' && p.spot.part === P.part);
+  if (tp) { plan.targets.splice(plan.targets.indexOf(tp.type), 1); Object.assign(tp, { type: 'friendtoken' }); plan.targets.unshift('friendtoken'); }
+  else { const s = P.part.spots.find(x => !x.reserved && !used.has(x)); if (!s) return null; plan.placements.push({ type: 'friendtoken', spot: s, role: 'target' }); plan.targets.unshift('friendtoken'); }
+  const gl = { part: flap, kind: 'gadget', code: 'gametoken' };
+  plan.locks.push(gl);
+  flap.needMsg = K('경품 오락기야! 동전을 넣으면 뭔가 나올지도… 오락실 코인이 필요해', 'A prize arcade! Put a token in and something might come out… you need an arcade token');
+  flap.needItem = 'gametoken';
+  plan.incident = { part: P.part, lock: P };
+  plan.showcase = { kind: 'arcadeprize', flap };
+  return plan;
+};
+RUN.arcadeprize = async (S, part) => {
+  const G = S.G, W = G.world, tw = S.tw, f = part.furn;
+  S.cine = true;
+  const at = f.group.localToWorld(f.prizeAt.clone().setY(.9)), zoom = Math.max(W.zoom, 1.9);
+  await W.flyTo(tw, { yaw: clearYaw(S, [part.pivots[0]], at, zoom), target: at, zoom, dur: .6 });
+  if (S.dead) return;
+  G.audio.sfx('pop', 4); await tw.wait(.25);
+  // the screen flashes, a little jingle
+  const scr = f.screen, notes = [0, 2, 4, 7];
+  for (let i = 0; i < 8 && !S.dead; i++) { if (scr) scr.visible = i % 2 === 0; if (i < notes.length) G.audio.sfx('star', notes[i]); await tw.wait(.12); }
+  if (scr) scr.visible = true;
+  const s = W.toScreen(f.group.localToWorld(f.prizeAt.clone()));
+  W.fx.burst(s.x, s.y, { n: 14, shape: 'star', colors: ['#ffe14d', '#ffffff', '#ff6fb8'], speed: 160, life: .6, size: 10 });
+  G.audio.sfx('special');
+  if (S.friendHidden) S.hideSay([K('띠링! 경품 나왔다~ …앗 그거 열쇠잖아?!', 'Ding! A prize~ …wait, that\'s the key?!')]);
+  S.cine = false;
+  if (S.dead) return;
+  await S.togglePart(part, true);
+};
+DEVICE_FOUND.gametoken = K('오락실 코인이다! 빨간 경품 오락기에 넣어 보자', 'An arcade token! Try it in the red prize arcade');

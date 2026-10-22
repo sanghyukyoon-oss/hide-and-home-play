@@ -24,6 +24,7 @@ import { SEASIDE_BUILDERS, SEASIDE_INFO } from './gfx/seaside-props.js';
 import { APTLOBBY_BUILDERS, APTLOBBY_INFO } from './gfx/aptlobby-props.js';
 import { LIBRARY_BUILDERS, LIBRARY_INFO } from './gfx/library-props.js';
 import { VILLAROOF_BUILDERS, VILLAROOF_INFO } from './gfx/villaroof-props.js';
+import { OTAKU_BUILDERS, OTAKU_INFO, OTAKU_ITEMS } from './gfx/otaku-props.js';
 import { TRAINCAR_BUILDERS, TRAINCAR_INFO } from './gfx/traincar-props.js';
 import './i18n-maps.js';   // 새 맵 8개의 영어 (10/21)
 import { SKATE_BUILDERS, SKATE_INFO } from './gfx/skate-props.js';
@@ -82,7 +83,7 @@ registerFurniture(APT_BUILDERS, APT_INFO);
 registerFurniture(HOUSE_BUILDERS, HOUSE_INFO); registerFurniture(ORGANIC_BUILDERS, ORGANIC_INFO);
 registerFurniture(ATTIC_BUILDERS, ATTIC_INFO);   // 2판 다락 (10/20)
 registerFurniture(BAKERY_BUILDERS, BAKERY_INFO);   // 6판 빵 부엌 (10/20)
-registerFurniture(FISH_BUILDERS, FISH_INFO); registerFurniture(STATION_BUILDERS, STATION_INFO); registerFurniture(ISLAND_BUILDERS, ISLAND_INFO); registerFurniture(SEASIDE_BUILDERS, SEASIDE_INFO); registerFurniture(APTLOBBY_BUILDERS, APTLOBBY_INFO); registerFurniture(LIBRARY_BUILDERS, LIBRARY_INFO); registerFurniture(VILLAROOF_BUILDERS, VILLAROOF_INFO); registerFurniture(TRAINCAR_BUILDERS, TRAINCAR_INFO);
+registerFurniture(OTAKU_BUILDERS, OTAKU_INFO); Object.assign(ITEMS, OTAKU_ITEMS); registerFurniture(FISH_BUILDERS, FISH_INFO); registerFurniture(STATION_BUILDERS, STATION_INFO); registerFurniture(ISLAND_BUILDERS, ISLAND_INFO); registerFurniture(SEASIDE_BUILDERS, SEASIDE_INFO); registerFurniture(APTLOBBY_BUILDERS, APTLOBBY_INFO); registerFurniture(LIBRARY_BUILDERS, LIBRARY_INFO); registerFurniture(VILLAROOF_BUILDERS, VILLAROOF_INFO); registerFurniture(TRAINCAR_BUILDERS, TRAINCAR_INFO);
 registerFurniture(SKATE_BUILDERS, SKATE_INFO);
 registerFurniture(KPOP_BUILDERS, KPOP_INFO);
 registerFurniture(MAZE_BUILDERS, MAZE_INFO);
@@ -130,6 +131,8 @@ registerStoryShop(BUILDING_INFO);
 registerFurniture(ONEROOM_BUILDERS, ONEROOM_INFO);
 Object.assign(ITEMS, ONEROOM_ITEMS);
 for (const k in ONEROOM_THEMES) THEMES[k] = { ...THEMES.my, ...ONEROOM_THEMES[k], friend: 'hamster', light: WARM, pool: ['earphones', 'ramen', 'keyring', 'toothbrush', 'coin', 'remote', 'slipper', 'mandarin'] };
+// 18판 너굴이네 복층 (otakuloft): the one-room's make, a greige paper wall with a fine stripe, dark oak floor, warm wood
+THEMES.otakuloft = { ...THEMES.oneroom, friend: 'raccoon', name: '너굴이네 복층', wallKind: 'stripe', wall: '#ece3d5', wall2: '#e3d9c8', wainscot: '#d6c8b2', wallEdge: '#f1eadf', floor: '#c9a27a', floor2: '#b08860', base: '#a88f73', wood: '#d9a46a', woodD: '#9c6a42', door: '#c9d6e6', rug: '#3f5f8f', rug2: '#ffd98a', bean: '#ff8f3a', fridge: '#6a86c9' };   // (18판 구조 시안 10/21: 원룸의 결)
 registerStoryShop(ONEROOM_INFO);
 addHomeStyle({ id: 'st-oneroom', name: '나의 원룸', indoor: true, theme: 'oneroom', price: 350, bleed: true, sw: ['#e9e2d6', '#f4c58e'] });
 // 단지 놀이터 (concept I, region 5)
@@ -243,6 +246,7 @@ if (!hasWebGL2()) {
 }
 const world = new World(document.getElementById('gl'), document.getElementById('fx'));
 world.ratchet = ratchetFx; world.switchFx = m => audio.sfx(m === 'turn' ? 'gearUp' : 'gearDown');
+import('./fxpanel.js').then(m => m.installFxPanel(world)).catch(e => console.error(e));   // 후보정 조절판 (10/22, 시험용 — 출품 전 정리)
 if (window.SBK_PERF_TEST || qs.get('hud') === '1') import('./perfhud.js').then(m => m.installPerfHud(world)).catch(e => console.error(e));
 // weaker phones (few cores or little memory) start a couple of steps down the quality ladder; it adapts from there
 // (Safari under-reports CPU cores, so only a reported small memory counts — that is Android Chrome on a low-end phone)

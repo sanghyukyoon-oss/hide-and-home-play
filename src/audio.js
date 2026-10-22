@@ -47,7 +47,7 @@ export function mapSongFor(spec) {
   const i = spec?.idx | 0;
   if (!spec) return 'ingame';
   if (i >= 26 && i <= 29) return (i - 26) % 2 ? 'take2' : 'trip';   // 기차 여행 편 first (27판 leaves in the morning, whatever its old night flag says)
-  if (spec.night) return 'main';
+  if (spec.night && spec.room !== 'otakuloft') return 'main';   // (18판 너굴이네 복층: 비 오는 밤이어도 그 장의 곡 그대로 — 검토 10/22)
   if (spec.endless) return ['ingame', 'take2', 'lobbyTake'][i % 3];
   const pair = CH_SONGS[spec.region] || CH_SONGS.home;
   return pair[Math.max(0, i - (CH_FROM[spec.region] ?? 0)) % 2];

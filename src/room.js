@@ -650,7 +650,7 @@ export class Room {
     const rail = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az); if (L < .1) return; const ang = Math.atan2(bz - az, bx - ax);
       add(put(rbox(L, .07, .07, wood, .02), (ax + bx) / 2, y + .55, (az + bz) / 2, 0, -ang, 0));
       for (let t = .5; t < L; t += .32) add(put(rbox(.05, .5, .05, wood, .015), ax + (bx - ax) * t / L, y + .28, az + (bz - az) * t / L)); };
-    if (lad === 'S') { const gx = cx + gap; rail(x0, z1, gx - .35, z1); rail(gx + .35, z1, x1, z1); } else rail(x0, z1, x1, z1);
+    if (lad === 'S' || lad === 'stairs') { const gx = cx + gap, gw = lad === 'stairs' ? .45 : .35; rail(x0, z1, gx - gw, z1); rail(gx + gw, z1, x1, z1); } else rail(x0, z1, x1, z1);
     if (lad === 'E') { const gz = cz + gap; rail(x1, z0, x1, gz - .35); rail(x1, gz + .35, x1, z1); } else rail(x1, z0, x1, z1);
     // a curtain round the open sides (2판 only — tiers.js tiltLayout): the loft becomes a nook you see into only from above,
     // the tilt lesson's place (검토 재검토 1: through the railing the quilt star showed from the first view)
@@ -677,6 +677,8 @@ export class Room {
       // (hung a hand outside the railing: the folds' hollows went behind it and the baluster tops showed through the cloth)
       panel(x0, z1 + .1, x1 + .1, z1 + .1); panel(x1 + .1, z0, x1 + .1, z1 + .1);
     }
+    // (lf.ladder 'stairs': the gap in the rail only — a stairs piece of furniture comes up to it, 18판 너굴이네 서랍 계단)
+    if (lad === 'stairs') { this.lofts = this.lofts || []; this.lofts.push({ ...lf, y, group: g }); this.group.add(g); this.extraSolid.push(...postMeshes); return; }
     // ladder leaning against the open side
     const lx = lad === 'S' ? cx + gap : x1 + .45, lz = lad === 'S' ? z1 + .45 : cz + gap, ry = lad === 'S' ? 0 : Math.PI / 2;
     const ladder = new THREE.Group(); ladder.position.set(lx, 0, lz); ladder.rotation.y = ry;

@@ -35,6 +35,7 @@ export const ROOM_POOLS = {
   skatepark: ['sunglasses', 'juicebox', 'bubbletea', 'ball2', 'earphones', 'gamepad', 'keyring', 'snack'],
   oneroom: ['earphones', 'ramen', 'keyring', 'toothbrush', 'coin', 'remote', 'slipper', 'bellball'],
   duplex: ['gamepad', 'console', 'bubbletea', 'coin', 'gift', 'sunglasses', 'umbrella', 'ramen'],   // (복층 ≠ 원룸 — 15·18판이 같은 목록이었어요, 10/20)
+  otakuloft: ['gamepad', 'console', 'snack', 'ramen', 'sunglasses', 'gift', 'teddy', 'bubbletea'],   // 18판 너굴이네 복층 (오타쿠 방: 게임·간식 — 작은 모델 없이)
   park3: ['kimbap', 'onigiri', 'juicebox', 'candy', 'cookie', 'snack', 'keyring', 'coin'],
   konbini: ['receipt', 'sandwich', 'coffee', 'lottery', 'onigiri', 'bubbletea', 'kimbap', 'ramen'],
   shopmap: ['receipt', 'sandwich', 'coffee', 'lottery', 'onigiri', 'bubbletea', 'kimbap', 'ramen'],

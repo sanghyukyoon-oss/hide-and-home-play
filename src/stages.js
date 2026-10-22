@@ -310,6 +310,26 @@ export const LAYOUTS = {
     furniture: [F('seadeck', 0, 0), F('seashop', 3, 0), F('chalksign', 7, 1), F('plantbig', 7, 0), F('ringpost', 3, 2), F('streetlamp', 7, 2),
       F('fishstall', 4, 4), F('barrels', 6, 3), F('cafeumbrella', 6, 6), F('cafeumbrella', 7, 5), F('planter', 4, 6)],
     friendAt: [1.0, 1.0] },
+  // 18판 너굴이네 복층 (otakuloft, 10/21 — 시안 A + 서랍 계단; 사용자 "현실적인 복층 … 원룸같이 디테일한 방", 15판 원룸이 통과 기준): a
+  // real duplex studio on a rainy night. A mezzanine on posts over the back left (futon between comic shelves, the PC desk,
+  // the drying rack, a reading nest), drawer stairs up to it, a basket pulley at its rail; under it the clear plastic drawers, the game
+  // shelf, the little fridge and the parcels; three retro arcade cabinets along the back right (the red one gives prizes);
+  // along the west wall the CRT and its consoles under a rainy window, the shoe cabinet and the door; the comic shelf with the
+  // red volume up on the mezzanine; the figure case and the trash on the east; rug, beanbag and floor table with noodles in front; the middle clear
+  otakuloft: { w: 7, d: 6, bleed: {}, wallH: 3.3, walls: { N: 'wall', W: 'wall' }, homeShift: [.5, -.5],
+    lofts: [{ i: 0, j: 0, w: 4, d: 2, y: 1.65, ladder: 'stairs', ladderAt: 1.5 }],
+    furniture: [LF('otakufuton', 0, 0, 0, null, 1.65), LF('mangashelf', 1, 0, 0, { h: 1.45, seed: 4, secret: true }, 1.65), LF('pcdesk', 2, 0, 0, null, 1.65), LF('figurecase', 3, 0, 0, { h: 1.35 }, 1.65),
+      LF('dryrack', 2, 1, 0, null, 1.65), LF('loftnest', 1, 1, 0, null, 1.65),
+      F('pdrawers', 0, 0), F('gamerack', 1, 0), F('boxstack', 2, 0), F('mangashelf', 3, 0, 0, { h: 1.2, seed: 11 }), F('laundrybasket', 0, 1),
+      F('drawerstairs', 3, 2), F('loftpulley', 2, 2),
+      F('arcade3', 4, 0, 0, { kind: 0, prize: true, tilt: -.22 }), F('arcade3', 5, 0, 0, { kind: 1, tilt: -.22 }), F('arcade3', 6, 0, 0, { kind: 2, tilt: -.22, gap: false }),
+      F('crtset', 0, 2, 1), F('shoerack', 0, 4, 1),
+      F('rug', 1, 2), F('beanbag', 1, 3), F('foldtable', 2, 3), F('floormess', 2, 4, 0, { kind: 1 }),
+      F('gamerack', 6, 2), F('minifridge', 6, 3), F('plant', 6, 4), F('trash', 5, 5), F('parcel', 4, 5)],
+    decor: [D('rainwin', 'W', -1.0, { y: .45 }), D('rainwin', 'W', .6, { y: .45 }), D('otakuposter', 'N', -2.6, { kind: 0, y: 2.55 }), D('otakuposter', 'N', -.9, { kind: 1, y: 2.55 }),
+      D('otakuposter', 'N', 2.9, { kind: 2, y: 2.45 }), D('fairylights', 'N', 2.0, { len: 3, y: 2.95 }), D('fairylights', 'W', -1.5, { len: 3, y: 3.05 }), D('door', 'W', -2.5), D('aircon2', 'N', .9),
+      D('otakushelf', 'W', 2.2, { y: 2.4 }), D('otakuframes', 'N', 1.9, { y: 2.3 })],
+    friendAt: [1.4, .6] },
   // 원룸: a Korean one-room — loft bed over a desk, a mini kitchen, a washer by the door, a clothes rail
   oneroom: { w: 6, d: 5, bleed: {}, wallH: 2.9, walls: { N: 'wall', W: 'wall' },
     furniture: [F('loftbed', 0, 0), F('hanger', 2, 0), F('minikitchen', 3, 0), F('minifridge', 5, 0),
@@ -842,7 +862,7 @@ export const REGION_INTRO = {
 // (기차 여행 편 10/21 — 사용자 OK, 스토리 룸 기획안 v4; ② 레벨 배치): 20 빌라 옥상 ★(장독대 도르래) · 27 기차역 아침 · 28 기차 객실 ★(3장 시간 판은
 // 빠짐) · 29 호수 섬 흑백 · 30 바닷가 가게 ★ · 35 곰제과 · 37 도서관 흑백 · 38 아파트 현관 시간 놀이. 판 종류·자물쇠 자리는 그대로
 export const PLAN = {
-  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'duplex:timed', 'firestation', 'villaroof2:show', 'policefront:boss'],
+  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation', 'villaroof2:show', 'policefront:boss'],
   alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'station', 'traincar:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
   shop: ['konbini:gray', 'laundry', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'aptlobby2:timed', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
@@ -939,6 +959,10 @@ export function stageSpec(idx) {
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
   if (ZOOM_TUNE[idx]) s.zoom = ZOOM_TUNE[idx];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }
+  // (18판 너굴이네 복층 10/22 — 사용자 "현실적인 복층, 방구조 약간 특이하고 장치도 좀", ① otakuloft A안): 비 오는 밤, 너굴이 시간 놀이에
+  // 장치 둘 — 다락↔1층 바구니 도르래에 걸린 열쇠가 내려와 경품 오락기 받침(자물쇠)을 열고, 서랍 계단 옆 숨은 칸은 비밀번호;
+  // 시작 줌 1.35(1.2에서 오락기 받침 26px·택배상자 27px — #94 28px 기준)
+  if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
   if (s.boss && s.sock) s.n = Math.max(5, (s.n || 8) - 1);   // (the 상가 boss's fourth lock, the sock: one thing fewer to find)
   if (GRAY.has(idx) && !s.timed && !s.boss) { s.gray = true; s.night = false; if (Array.isArray(s.lock)) s.lock = s.lock.filter(k => k !== 'color'); }   // a colour lock can't be read in grey
   // 사건 판 (10/17 pivot): from stage 3 on, every ordinary stage is a small incident — the owner hides behind a lock and
