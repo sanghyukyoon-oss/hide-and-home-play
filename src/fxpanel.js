@@ -24,9 +24,14 @@ const SLIDERS = [
   ['hl', '빛면 하이라이트 (1 = 끔)', 1, 1.6, .05],
   ['rim', '림라이트 세기 (어두운 쪽 테두리)', 0, 1.2, .05],
   ['rimW', '림라이트 두께', .05, .6, .01],
+  ['shineM', '반짝 점 합성 (0 보통·1 더하기·2 스크린·3 오버레이)', 0, 3, 1],
+  ['rimM', '림라이트 합성 (0 보통·1 더하기·2 스크린·3 오버레이)', 0, 3, 1],
 ];
+// colours (user 10/22: "림라이트랑 하이라이트 색깔도 변경 가능?")
+const COLORS = [['shineC', '반짝 점 색'], ['rimC', '림라이트 색']];
 // the shading's own start values (not the stage's — they are the same on every stage)
-const SH0 = { shine: SHADE.u.shineA.value, shineS: (.995 - SHADE.u.shineT.value) / .06, hl: SHADE.hl, rim: SHADE.u.rimA.value, rimW: SHADE.u.rimW.value };
+const SH0 = { shine: SHADE.u.shineA.value, shineS: (.995 - SHADE.u.shineT.value) / .06, hl: SHADE.hl, rim: SHADE.u.rimA.value, rimW: SHADE.u.rimW.value,
+  shineM: SHADE.u.shineM.value, rimM: SHADE.u.rimM.value, shineC: '#' + SHADE.u.shineC.value.getHexString(), rimC: '#' + SHADE.u.rimC.value.getHexString() };
 let over = {};
 try { over = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { over = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(over)); } catch { /* storage blocked: this visit only */ } };
@@ -53,7 +58,7 @@ function put(P) {
   P.bloomStr = v.tilt > 0 ? 0 : v.glow;   // (틸트시프트의 흐림은 그림 전체라, 그대로 더하면 화면이 하얗게 뜸)
   // one blur feeds all three: 틸트시프트 needs the whole picture (no threshold), 뽀샤시 nearly all of it, the glow only the bright parts
   if (P.blu?.th) P.blu.th.value = v.tilt > 0 ? -1 : v.diffuse > 0 ? .2 : v.glowth;
-  SHADE.set({ shineA: v.shine, shineT: .995 - v.shineS * .06, hl: v.hl, rimA: v.rim, rimW: v.rimW });
+  SHADE.set({ shineA: v.shine, shineT: .995 - v.shineS * .06, hl: v.hl, rimA: v.rim, rimW: v.rimW, shineM: v.shineM, rimM: v.rimM, shineC: v.shineC, rimC: v.rimC });
 }
 
 export function installFxPanel(world) {
@@ -94,12 +99,19 @@ export function installFxPanel(world) {
       r.addEventListener('input', () => { over[k] = +r.value; num.textContent = (+r.value).toFixed(2); num.className = 'moved'; save(); put(P()); redraw(); });
       row.append(lab, r); pan.append(row);
     }
+    for (const [k, label] of COLORS) {
+      const row = document.createElement('div'); row.className = 'row lab';
+      const name = document.createElement('span'); name.textContent = label; if (k in over) name.style.color = '#c2410c';
+      const c = document.createElement('input'); c.type = 'color'; c.value = v[k]; c.style.cssText = 'width:64px;height:28px;border:2px solid #3a2a1e;border-radius:8px;padding:0';
+      c.addEventListener('input', () => { over[k] = c.value; name.style.color = '#c2410c'; save(); put(P()); redraw(); });
+      row.append(name, c); pan.append(row);
+    }
     const btns = document.createElement('div'); btns.className = 'btns';
     const reset = document.createElement('button'); reset.textContent = '기본값';
     reset.onclick = () => { over = {}; save(); put(P()); redraw(); render(); };
     const copy = document.createElement('button'); copy.textContent = '값 복사';
     copy.onclick = () => {
-      const t = SLIDERS.map(([k, label]) => `${label.split(' (')[0]} ${(+({ ...base, ...over })[k]).toFixed(2)}${k in over ? ' *' : ''}`).join(', ');
+      const vv = { ...base, ...over }, t = [...SLIDERS.map(([k, label]) => `${label.split(' (')[0]} ${(+vv[k]).toFixed(2)}${k in over ? ' *' : ''}`), ...COLORS.map(([k, label]) => `${label} ${vv[k]}${k in over ? ' *' : ''}`)].join(', ');
       (navigator.clipboard?.writeText(t) || Promise.reject()).then(() => { copy.textContent = '복사됨!'; }, () => { window.prompt('값', t); });
       setTimeout(() => { copy.textContent = '값 복사'; }, 1400);
     };

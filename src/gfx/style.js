@@ -39,9 +39,11 @@ const qn = (k, d) => HLQ.has(k) && HLQ.get(k) !== '' && !isNaN(+HLQ.get(k)) ? +H
 export const SHADE = {
   hl: qn('hl', 1), hlw: Math.max(1, Math.min(5, qn('hlw', 2))),
   u: { shineA: { value: qn('shine', .35) }, shineT: { value: Math.min(.999, Math.max(.9, qn('shinet', .97))) },
-    rimA: { value: qn('rim', 0) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .22))) }, rimC: { value: new THREE.Color('#fff4dc') } },
+    rimA: { value: qn('rim', 0) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .22))) }, rimC: { value: new THREE.Color('#fff4dc') },
+    shineC: { value: new THREE.Color('#ffffff') }, shineM: { value: 0 }, rimM: { value: 1 } },   // (색·합성: 0 보통 · 1 더하기 · 2 스크린 · 3 오버레이 — user 10/22 "색깔도 변경 가능? 합성 모드도")
   set(o) {
-    for (const k of ['shineA', 'shineT', 'rimA', 'rimW']) if (o[k] != null) this.u[k].value = o[k];
+    for (const k of ['shineA', 'shineT', 'rimA', 'rimW', 'shineM', 'rimM']) if (o[k] != null) this.u[k].value = o[k];
+    for (const k of ['shineC', 'rimC']) if (o[k]) this.u[k].value.set(o[k]);
     if (o.hl != null || o.hlw != null) { if (o.hl != null) this.hl = o.hl; if (o.hlw != null) this.hlw = o.hlw; const g = STYLE.grad; if (g) { g.image.data.set(toonSteps()); g.needsUpdate = true; } }
   },
 };
@@ -53,8 +55,13 @@ function shadePatch() {
   if (THREE.MeshToonMaterial.prototype.__shade) return;
   THREE.MeshToonMaterial.prototype.__shade = true;
   THREE.MeshToonMaterial.prototype.onBeforeCompile = function (sh) {
-    Object.assign(sh.uniforms, { uShineA: SHADE.u.shineA, uShineT: SHADE.u.shineT, uRimA: SHADE.u.rimA, uRimW: SHADE.u.rimW, uRimC: SHADE.u.rimC });
-    sh.fragmentShader = 'uniform float uShineA, uShineT, uRimA, uRimW; uniform vec3 uRimC;\n' + sh.fragmentShader.replace('#include <opaque_fragment>', `
+    Object.assign(sh.uniforms, { uShineA: SHADE.u.shineA, uShineT: SHADE.u.shineT, uRimA: SHADE.u.rimA, uRimW: SHADE.u.rimW, uRimC: SHADE.u.rimC, uShineC: SHADE.u.shineC, uShineM: SHADE.u.shineM, uRimM: SHADE.u.rimM });
+    sh.fragmentShader = `uniform float uShineA, uShineT, uRimA, uRimW, uShineM, uRimM; uniform vec3 uRimC, uShineC;
+  vec3 sbBlend( vec3 b, vec3 c, float a, float m ) {
+    vec3 r = m < 0.5 ? c : m < 1.5 ? b + c : m < 2.5 ? 1.0 - ( 1.0 - b ) * ( 1.0 - c ) : mix( 2.0 * b * c, 1.0 - 2.0 * ( 1.0 - b ) * ( 1.0 - c ), step( 0.5, b ) );
+    return mix( b, r, a );
+  }
+` + sh.fragmentShader.replace('#include <opaque_fragment>', `
   #if NUM_DIR_LIGHTS > 0
   { vec3 sd = directionalLights[ 0 ].direction, hv = normalize( sd + geometryViewDir );
     float ndl = dot( normal, sd );
@@ -62,10 +69,10 @@ function shadePatch() {
     // on some maps (user 10/22: "타는 듯한 느낌이 드는 맵도") — so the dot needs the normal to bend across the pixel
     float curv = smoothstep( 0.002, 0.012, length( fwidth( normal ) ) );
     float k = smoothstep( uShineT, uShineT + 0.004, dot( normal, hv ) ) * step( 0.0, ndl ) * curv;
-    outgoingLight = mix( outgoingLight, vec3( 1.0 ), k * uShineA );
+    outgoingLight = sbBlend( outgoingLight, uShineC, k * uShineA, uShineM );
     float fr = 1.0 - max( dot( normal, geometryViewDir ), 0.0 );
     float r = smoothstep( 1.0 - uRimW, 1.0 - uRimW + 0.03, fr ) * ( 1.0 - smoothstep( -0.05, 0.3, ndl ) ) * curv;
-    outgoingLight += uRimC * r * uRimA; }
+    outgoingLight = sbBlend( outgoingLight, uRimC, r * uRimA, uRimM ); }
   #endif
   #include <opaque_fragment>`);
   };
