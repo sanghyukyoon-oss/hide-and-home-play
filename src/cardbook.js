@@ -12,6 +12,8 @@ import { diaryLine, learnedCards, BOOK, HABIT_LINE, diarySecret, secretOpen, SEC
 import { tr } from './i18n.js';
 import { ECON, ownedFriends } from './econ.js';
 import { SHOP_ITEMS } from './shop.js';   // (where a thing card really opens — 외부 QA17-03)
+// 카드 속 배경 · 패럴랙스 (③ 10/21, user OK 10/22 "ㄱ 좋네")
+import { cardScene } from './cardscene.js';
 
 const ART = {};
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };   // key → data URL, filled per tab
@@ -62,7 +64,7 @@ function friendCards(G) {
     const at = first[k], reg = at != null ? regionOf(at) : null;
     return { id: 'c:' + k, art: 'card_' + k, no: n + 1, of: keys.length, name: k === 'inky' && !inkyNamed(S) ? '???' : CHAR_DEFS[k].name, have: met.has(k),   // (먹물이: ??? until it says its name, 64판 — GPT QA ST-NAME)
       rar: SPECIAL.has(k) ? 3 : hosts.has(k) ? 2 : 1, region: reg?.id || 'home', regionName: reg?.name || '동네',
-      line: charLine(k), hint: at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '판에서 만난 친구를 터치해 봐', build: () => buildCharArt(k), spin: () => spinChar(k) };
+      theme: Object.values(THEMES).find(T => T.friend === k) || null, line: charLine(k), hint: at != null ? `스테이지 ${at + 1}에서 만날 수 있어` : '판에서 만난 친구를 터치해 봐', build: () => buildCharArt(k), spin: () => spinChar(k) };
   });
 }
 // (외부 QA17-03 10/21): a thing found in a stage is only *seen* (save.seen) — the card opens when it is yours (save.collection:
@@ -139,11 +141,14 @@ function zoom(c, G) {
   // the friend turns the other way, as if it stood inside the card (the card's ±30° → ±20°, up and down ±10° — user 10/21 "반대방향으로 … 각 범위는 약간 좁혀"), a soft shadow under it and looks up or down a little; let go and it eases back to face you.
   // No spinning round any more, no device tilt (that asks for a permission) — the finger only
   const art = c.have && card.querySelector('.cb-art'), sv = art && spinView({ build: c.spin || c.build, dir: c.item ? [.45, .6, 1] : [.32, .38, 1], fit: c.item ? 1.05 : 1.02, zoom: c.item ? .8 : 1.02, shadow: true }, 300);
-  let spinCv = null, want = { y: 0, p: 0 };
+  let spinCv = null, want = { y: 0, p: 0 }, scene = null;
   if (sv) {
     spinCv = h('canvas', { class: 'cb-3d', width: 300, height: 300 }); const ctx = spinCv.getContext('2d');
     const y0 = sv.facing, cur = { y: 0, p: 0 };
     sv.draw(y0, ctx); art.querySelector('img')?.replaceWith(spinCv);
+    // (③ 10/21, user: "도감카드 안에 배경도 만들어주고 패럴랙스로"): the place behind the friend (far, middle) and a few things in
+    // front (near), each sliding its own amount with the tilt
+    scene = cardScene(c.region, { theme: c.theme }); art.classList.add('scened'); art.prepend(scene.back); art.append(scene.front);
     let last = performance.now(), acc = 0;
     const loop = now => {
       if (!spinCv.isConnected) { sv.dispose(); return; }
@@ -155,17 +160,24 @@ function zoom(c, G) {
     };
     requestAnimationFrame(t => { last = t; requestAnimationFrame(loop); });
   }
-  const layer = h('div', { class: 'cb-zoom' }, card, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
+  // the card has a thickness (③ 10/21 시안): thin slices behind it, a shade darker — the edge shows as it tilts
+  // (~10 px: 3% of the card's width)
+  const slices = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(z => h('div', { class: 'cb-slice', style: `transform: translateZ(${-z * 1.1}px)` }));
+  const wrap = h('div', { class: 'cb-wrap' }, ...slices, card); card.style.transform = 'translateZ(0)';
+  const layer = h('div', { class: 'cb-zoom' }, wrap, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
   const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = Math.max(-.5, Math.min(.5, (x - r.left) / r.width - .5)), ny = Math.max(-.5, Math.min(.5, (y - r.top) / r.height - .5));
-    card.style.transition = ''; card.style.transform = `rotateY(${nx * 30}deg) rotateX(${-ny * 30}deg)`; card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`);
+    // (user 10/21 "카드 각 더 꺾을 수 있게": ±15° more)
+    wrap.style.transition = ''; wrap.style.transform = `rotateY(${nx * 44}deg) rotateX(${-ny * 40}deg)`; scene?.move(nx, ny); card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`);
     want = { y: -nx * 2 * .35, p: -ny * 2 * .175 }; };
-  const settle = () => { want = { y: 0, p: 0 }; card.style.transition = 'transform .35s cubic-bezier(.2, 1.4, .4, 1)'; card.style.transform = ''; };   // (let go: card and friend back to face you)
+  const settle = () => { want = { y: 0, p: 0 }; wrap.style.transition = 'transform .35s cubic-bezier(.2, 1.4, .4, 1)'; wrap.style.transform = ''; scene?.move(0, 0, true); };   // (let go: card and friend back to face you)
   layer.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) tilt(e.clientX, e.clientY); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) layer.addEventListener(ev, settle);
-  layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target) || diary?.contains(e.target)) return; if (!card.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });
+  layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target) || diary?.contains(e.target)) return; if (!wrap.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });
   for (const ev of ['pointerup', 'wheel']) layer.addEventListener(ev, e => e.stopPropagation());
   G.audio.sfx('flip');   // (a card picked up — paper flip, 사운드 10/20)
   document.getElementById('app').append(layer);
+  // (the edge: the card's colour, a shade darker)
+  { const f2 = getComputedStyle(card).getPropertyValue('--f2').trim() || '#ff9fc4'; wrap.style.setProperty('--edge', `color-mix(in srgb, ${f2} 62%, #3a2453)`); }
 }
 
 // 도감's number (user 10/20: "도감이랑 내 방에 숫자 배지"): cards you have that came since the book was last opened; opening it

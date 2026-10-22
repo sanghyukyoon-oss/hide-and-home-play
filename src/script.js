@@ -304,7 +304,7 @@ const SCENES = [
     after: [LP('frog', '기차 왔다! 같이 타자, 개굴!', "Here's the train! Hop on with me. Ribbit!"), LP('mong', '…발자국도 기차에 탔네.', '…The footprints got on the train too.')] },
   // 28판 기차 객실 ★ (사건, 새 맵 — 방 id는 ①이 정함: traincar/train/cabin 어느 것이든 붙음): 터널을 지나는 사이 너굴이가 숨음.
   // 3장에서 너굴이 시간 판이 빠진 대신, 동네 숨기 1등이 기차에서 숨어요
-  { id: 'traincarInc', stage: { start: 'tunnel', end: 'islandView' }, type: 'incident', room: 'traincar', alt: ['traincar2', 'train', 'cabin'], host: 'raccoon', hide: K('터널 지나는 동안 숨는다! 1등은 기차에서도 1등!', "Hiding while we're in the tunnel! Number one on the train too!"),
+  { id: 'traincarInc', stage: { start: 'tunnel', end: 'islandView' }, type: 'incident', room: 'traincar', alt: ['traincar2', 'traincar3', 'train', 'cabin'], host: 'raccoon', hide: K('터널 지나는 동안 숨는다! 1등은 기차에서도 1등!', "Hiding while we're in the tunnel! Number one on the train too!"),
     intro: [L('frog', '개굴! 객실이다. 섬까지 세 정거장!', 'Ribbit! Our car. Three stops to the island!'), L('raccoon', '나도 탔지롱. 터널 나가기 전에 날 찾아 봐!', "I'm on board too. Find me before we're out of the tunnel!")],
     reveal: [L('raccoon', '…선반 위는 반칙 아니거든?!', "…The luggage rack is NOT cheating!"), L('frog', '다음 역, 호수 섬! 내리자!', 'Next stop, the lake island! Off we go!'), L('mong', '…창문에 까만 손자국.', '…A little inky handprint on the window.')] },
   // 29판 호수 섬 흑백 (섬 3차): 먹물이가 따라온 여행 — "같이 타도 돼?"가 엔딩의 '같이'로
