@@ -75,7 +75,7 @@ import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout
 // 프라모델 조립판 (정식판 10/19): the things to find are a model kit's pieces — the box opens first, a runner card holds them,
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
 import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitTruck, kitFinish, kitReward, kitCover } from '../modelkit.js';
-import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
+import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK, COZY_NIGHT, COZY_DARK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
 import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS } from '../mongletv.js';   // 몽글 TV (10/19)
@@ -187,7 +187,8 @@ export class StageScene {
     const nightL = this.lookR && LOOK.has('light') && this.lookR.night;
     if (this.spec.night && !this.plan?.light) {
       if (nightL) { G.setBg([nightL.sky[1], nightL.sky[2]]); setSky(nightL.sky); W.setLight(nightL.light); }
-      else { G.setBg(['#2b3270', '#4a3f86']); W.setLight({ ambColor: '#a3adff', amb: 1.0, sunColor: '#cfd7ff', sun: .8 }); }
+      // (포근한 밤 G2 10/21·10/22: a starry sky, the moon and a warmer light — no glow, the user's 10/22 call: NO_GLOW)
+      else { G.setBg([COZY_NIGHT.sky[1], COZY_NIGHT.sky[2]]); setSky(COZY_NIGHT.sky); W.setLight(COZY_NIGHT.light); }
     }
     // 흑백판: the look's grey-stage light, if it has one (look.js — 14·17판), till the colour comes back
     const grayL = this.lookR && LOOK.has('light') && this.lookR.gray;
@@ -2186,7 +2187,8 @@ export class StageScene {
   goDark() {
     const W = this.G.world;
     this.dark = true;
-    W.setLight({ ambColor: '#6f6aa8', amb: .55, sunColor: '#9fa0ff', sun: .35 });
+    // (포근한 밤 G2 10/21: a moonlit power cut — the same starry night a step darker, not black-violet; still dim enough to want the switch)
+    W.setLight(COZY_DARK.light); this.G.setBg([COZY_DARK.sky[1], COZY_DARK.sky[2]]); setSky(COZY_DARK.sky);
     setTimeout(() => !this.dead && this.dark && this.G.ui.toast('앗, 불이 꺼져 있어! 벽에 있는 전등 스위치를 찾아봐', 'red'), 1800);
   }
   async lightsOn() {
@@ -2194,6 +2196,7 @@ export class StageScene {
     this.dark = false;
     G.audio.sfx('unlock'); G.hitstop(.05);
     const to = this.th.light || null, from = { amb: W.hemi.intensity, sun: W.sun.intensity };
+    G.setBg(this.th.bg); setSky(this.th.sky || null);
     await this.tw.run(.5, k => { W.setLight(to); W.hemi.intensity = from.amb + (W.hemi.intensity - from.amb) * k; W.sun.intensity = from.sun + (W.sun.intensity - from.sun) * k; });
     W.setLight(to);
     W.fx.confetti(30);

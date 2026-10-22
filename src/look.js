@@ -23,6 +23,15 @@ import { groundTex } from './gfx/outdoor.js';
 const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
 const RAW = QS.get('look');
 export const LOOK = new Set(RAW === '0' ? [] : (RAW && RAW !== '1' ? RAW : 'light,ring,fill,glow,items').split(','));
+// 포근한 밤 (G2, ⑥ 아트 진단 10/21 — 밤 판이 1~17판의 37~67% 밝기라 "어둡고 우울"): one night for every night stage — a deep blue
+// sky going down to a soft violet, small stars and a moon, a gentle bluish fill bright enough to read every corner, and a cream
+// moon instead of a cold one; the lamps (look.js nightLights / glows) make the warm pools. 정전 (a power cut) is the same night
+// a step darker until the switch — moonlit blue, never black-violet.
+export const COZY_NIGHT = { light: { ambColor: '#c8cff6', amb: 1.24, sunColor: '#fff0dc', sun: 1.55, shadow: .48 },
+  sky: Object.assign(['#1f2b72', '#3a4ea6', '#8f8bd0'], { stars: true }) };
+export const COZY_DARK = { light: { ambColor: '#aab6ee', amb: .86, sunColor: '#d6defc', sun: .8, shadow: .45 },
+  sky: Object.assign(['#18225e', '#2c3c88', '#6a68b0'], { stars: true }) };
+const cozyNight = (sky, extra = {}) => ({ light: COZY_NIGHT.light, sky: Object.assign([...sky], { stars: true, ...extra }) });
 const HP = Math.PI / 2, PI = Math.PI;
 
 // ── recipes ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -33,7 +42,7 @@ const RECIPES = {
     light: { ambColor: '#ece6f2', amb: 1.12, sunColor: '#ffdcb0', sun: 2.6, shadow: .62 },
     sky: ['#a9d4ee', '#ffe3c4', '#e9c3a8'],
     // night (27판 street:night): moonlight as before, a deep sky, the lamps doing the rest
-    night: { light: { ambColor: '#9fa8f0', amb: .9, sunColor: '#c4ccff', sun: .7, shadow: .5 }, sky: ['#141a46', '#2c2f6e', '#3d3a78'] },
+    night: cozyNight(['#1f2b72', '#3a4ea6', '#8f8bd0']),
     // the ground past the edges: sidewalk everywhere, the front road running on to the east, a cross street to the south
     ground: { size: 26, fade: [5.5, 9.5], walk: ['#e7e1d8', '#d6cdc1'],
       roads: [{ x0: 4, x1: 14, z0: 1.5, z1: 3.5 }, { x0: 2, x1: 4, z0: 3.5, z1: 14 }],
@@ -181,8 +190,9 @@ Object.assign(RECIPES, {
 Object.assign(RECIPES, {
   konbini: {
     light: { ambColor: '#f2f5f8', amb: 1.3, sunColor: '#fff9ee', sun: 2.45, shadow: .62 },
-    sky: ['#3a3f4f', '#2e3240', '#252833'],
-    pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.07)' },
+    // (G2 10/21: the backdrop was charcoal — 32판 흑백 and 40판 at 61% of 1~17판's brightness; now a warm shop-floor cream, the same print)
+    sky: ['#f3e7d6', '#f8efe3', '#e8d8c4'],
+    pattern: { icon: 'onigiri', ink: 'rgba(150,110,70,.08)' },
     theme: { floorKind: 'planks', floor: '#f1c890', floor2: '#dba56a', base: '#e0a564' },
     slab: true,   // a shop stands on its own slab, like a toy shop on a shelf (both refs), not on a floor fading out
     band: { stripes: ['#4fc28a', '#fff8e8', '#ffb14a', '#fff8e8', '#ff7a6b', '#fff8e8', '#ffd84a', '#fff8e8'], h: .3, trim: '#4fc28a' },
@@ -230,10 +240,10 @@ Object.assign(RECIPES, {
   // 상가 맵 (36판 밤·40판 보스): the konbini and the laundry side by side, each half in its own recipe's colours and things
   shopmap: {
     light: { ambColor: '#f2f5f8', amb: 1.3, sunColor: '#fff9ee', sun: 2.45, shadow: .62 },
-    sky: ['#3a3f4f', '#2e3240', '#252833'],
-    pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.07)' },
-    night: { light: { ambColor: '#9fa8f0', amb: .9, sunColor: '#c4ccff', sun: .7, shadow: .5 },
-      sky: Object.assign(['#141a3e', '#1b2150', '#22285c'], { pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.05)' } }) },
+    // (G2 10/21: the backdrop was charcoal — 32판 흑백 and 40판 at 61% of 1~17판's brightness; now a warm shop-floor cream, the same print)
+    sky: ['#f3e7d6', '#f8efe3', '#e8d8c4'],
+    pattern: { icon: 'onigiri', ink: 'rgba(150,110,70,.08)' },
+    night: cozyNight(['#1f2b72', '#33449a', '#7f7cc4'], { pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.06)' } }),
     slab: true,
     rooms: ['konbini', 'laundry'],
   },
@@ -241,6 +251,33 @@ Object.assign(RECIPES, {
 // 6~9판 show a whole house at once: their things were 7–15 px on a phone at the start view (rooms 1–5: 15–30 px),
 // so things on these maps are drawn to ~38 cm instead of ~28 (still only as big as the spot has room for). ?look=…
 // without 'items' keeps the old size.
+// ── G1 블록 디오라마 (⑥ 아트 진단 10/21; user taste 10/20 "떠 있는 얇은 네모 바닥 X" — the station's island, the seaside's stone block
+// and the villa roof's brick block were the ones liked): the outdoor maps no longer run their floor out into a white fog — each
+// stands on a block whose sides show its layers (a kerb or grass lip, a band of stone, then earth), over a quiet pastel sky.
+// Light stays the map theme's own (lookTheme falls back to it). Night / 정전 stages on these maps take the 포근한 밤.
+const KERB = (lip = '#e6e0d8', stone = '#cdc5ba', earth = '#b98f68') => ({ layers: [{ h: .08, color: lip, out: .04 }, { h: .24, color: stone, stones: true }, { h: .32, color: earth }] });
+const GRASS = (lip = '#86c868', soil = '#a57c56', earth = '#8a6648') => ({ layers: [{ h: .08, color: lip, out: .04 }, { h: .2, color: soil }, { h: .26, color: '#b8ad9c', stones: true }, { h: .2, color: earth }] });
+const DIRT = (lip = '#dcae74', rock = '#b9a99a', earth = '#8a6648') => ({ layers: [{ h: .07, color: lip, out: .04 }, { h: .26, color: rock, stones: true }, { h: .3, color: earth }] });
+const SKY_ALLEY = ['#f2d6c0', '#f8e8da', '#e6cbb4'], SKY_PARK = ['#bfe3f2', '#e8f5ee', '#bfe0c8'], SKY_CAMP = ['#cfe3f2', '#f4ecdc', '#e2c9a6'];
+Object.assign(RECIPES, {
+  alley1: { sky: SKY_ALLEY, block: KERB() },
+  alley3: { sky: SKY_ALLEY, block: KERB() },
+  alleywide: { sky: SKY_ALLEY, block: KERB() },
+  policefront: { sky: ['#cfe0f0', '#eaf2f8', '#c4d6e8'], block: KERB('#e8e6e2', '#cfcbc6', '#a98a6a') },
+  skatepark: { sky: ['#dfe3ea', '#eef1f5', '#d2d7e0'], block: KERB('#e2e2e0', '#c9c8c4', '#9f8a72') },
+  kpop: { sky: ['#f2d4e4', '#fbebf3', '#e6c4d8'], block: KERB('#f3e2e8', '#e0cbd3', '#b998a6') },
+  playground: { sky: ['#f4dfc4', '#fbf0e2', '#e9d0b0'], block: KERB('#ece0cf', '#d6c8b4', '#b08c66') },
+  playgroundwide: { sky: ['#f4dfc4', '#fbf0e2', '#e9d0b0'], block: KERB('#ece0cf', '#d6c8b4', '#b08c66') },
+  park1: { sky: SKY_PARK, block: GRASS() },
+  park2: { sky: SKY_PARK, block: GRASS() },
+  park3: { sky: SKY_PARK, block: GRASS() },
+  parkwide: { sky: SKY_PARK, block: GRASS() },
+  trail: { sky: SKY_CAMP, block: GRASS('#7fbf5c', '#9a7450', '#7d5c40') },
+  camp1: { sky: SKY_CAMP, block: DIRT() },
+  camp2: { sky: SKY_CAMP, block: DIRT() },
+  camp3: { sky: SKY_CAMP, block: DIRT() },
+  campwide: { sky: SKY_CAMP, block: DIRT() },
+});
 RECIPES.bear2 = { ...RECIPES.bear, itemSize: .38 };
 RECIPES.bunnybath.itemSize = .38;
 RECIPES.station.itemSize = .38;   // (a wide platform at zoom 1.2: things ≥ 28 px on the start view — 레벨)
@@ -308,6 +345,10 @@ RECIPES.bunnyattic1 = RECIPES.bunnyattic2 = RECIPES.bunnyattic;
 // (22·27판 골목 'street': waits for the user's art sign-off — 10/19 "22판 골목 룩 … 빼고"; sumbak-look keeps it)
 delete RECIPES.street;
 RECIPES.aptlobby2 = RECIPES.aptlobby;   // (현관 2차: the same light)
+// (G1 10/21) the street (22판, its old look still waits on the user — deleted above) and the fire station (19판) stand on the
+// kerb block too: the street gets only a sky and the block, the fire station keeps its light and sky
+RECIPES.street = { sky: ['#f4dcc4', '#faeadc', '#e9cfb6'], block: KERB() };
+RECIPES.firestation = { ...RECIPES.firestation, block: KERB('#e8e6e2', '#cfcbc6', '#a98a6a') };
 // 28판 기차 객실 (10/21): bright seaside morning through the windows, a sky-blue backdrop; the car's underside as a block — cream
 // floor edge, the blue body band, the dark undercarriage
 RECIPES.traincar = { light: { ambColor: '#eef3f8', amb: 1.3, sunColor: '#fff2dc', sun: 2.5, shadow: .55 }, sky: ['#bfe1f7', '#e6f4fd', '#a9d5f2'],
@@ -335,7 +376,7 @@ export function lookRecipe(room, spec) {
 // end) goes back to the look's day, not the house light
 export function lookTheme(R, th) {
   if (!R || !LOOK.has('light')) return th;
-  return { ...th, light: R.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern || R.skyline || R.clouds || R.rain ? Object.assign([...R.sky], { pattern: R.pattern, skyline: R.skyline, clouds: R.clouds, rain: R.rain }) : R.sky };
+  return { ...th, light: R.light || th.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern || R.skyline || R.clouds || R.rain ? Object.assign([...R.sky], { pattern: R.pattern, skyline: R.skyline, clouds: R.clouds, rain: R.rain }) : R.sky };
 }
 // the colours a shop's room is built in (this stage only): a lone room takes the recipe's theme; a map whose recipe lists
 // rooms gives each of those rooms its own recipe's theme and remembers which (lookKey: the look's pieces go in by it)
@@ -396,6 +437,15 @@ function skyLine(x, { ink, tank }) {
   x.globalAlpha = 1;
 }
 // soft white clouds over the backdrop, more of them low down (the 기차 객실 floats over them)
+// a night sky (포근한 밤): small soft stars over the top half, a few brighter twinkles, a round cream moon high on the left
+function skyStars(x) {
+  let sd = 11; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 70; i++) { const px = R() * 256, py = R() * 250, r = R() < .15 ? 1.6 : .9; x.fillStyle = `rgba(255,248,226,${.45 + R() * .5})`; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill(); }
+  for (let i = 0; i < 6; i++) { const px = 20 + R() * 216, py = 18 + R() * 190, s = 3 + R() * 2; x.strokeStyle = 'rgba(255,246,214,.85)'; x.lineWidth = 1; x.beginPath(); x.moveTo(px - s, py); x.lineTo(px + s, py); x.moveTo(px, py - s); x.lineTo(px, py + s); x.stroke(); }
+  const g = x.createRadialGradient(58, 70, 4, 58, 70, 46); g.addColorStop(0, 'rgba(255,240,200,.45)'); g.addColorStop(1, 'rgba(255,240,200,0)'); x.fillStyle = g; x.fillRect(0, 0, 140, 140);
+  x.fillStyle = '#fff3d2'; x.beginPath(); x.arc(58, 70, 15, 0, 7); x.fill();
+  x.fillStyle = 'rgba(232,214,170,.55)'; for (const [dx, dy, r] of [[-5, -3, 3], [4, 4, 2.2], [3, -6, 1.6]]) { x.beginPath(); x.arc(58 + dx, 70 + dy, r, 0, 7); x.fill(); }
+}
 function skyClouds(x) {
   let sd = 7; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   for (let i = 0; i < 16; i++) {
@@ -428,6 +478,7 @@ export function setSky(sky) {
     if (sky.pattern) skyPattern(x, sky.pattern);
     if (sky.skyline) skyLine(x, sky.skyline);
     if (sky.clouds) skyClouds(x);
+    if (sky.stars) skyStars(x);
     if (sky.rain) skyRain(x);
     // a soft vignette (the corners settle, the middle where the room stands stays open) and a faint paper grain
     const v = x.createRadialGradient(128, 230, 60, 128, 260, 330);
@@ -773,7 +824,14 @@ export class Look {
   // little world cut out and set on the table, not a floor plane floating on the backdrop
   buildBlock(o) {
     for (const ap of this.aprons()) ap.visible = false;
-    const r = this.room, w = r.w, d = r.d, p = r.group.position, list = [], c = new THREE.Color();
+    // (G1 10/21: a map of several rooms stands on one block round all its ground-floor rooms, like buildSlab)
+    let w, d, p;
+    if (this.isMap) {
+      const b = new THREE.Box3(), v = new THREE.Vector3();
+      for (const q of this.room.rooms.filter(q => !q.level)) { const qp = q.group.position; b.expandByPoint(v.set(qp.x - q.w / 2, 0, qp.z - q.d / 2)); b.expandByPoint(v.set(qp.x + q.w / 2, 0, qp.z + q.d / 2)); }
+      w = b.max.x - b.min.x; d = b.max.z - b.min.z; p = { x: (b.min.x + b.max.x) / 2 - this.group.position.x, z: (b.min.z + b.max.z) / 2 - this.group.position.z };
+    } else { w = this.room.w; d = this.room.d; p = this.room.group.position; }
+    const list = [], c = new THREE.Color();
     const push = (g, col, x, y, z) => {
       g = g.index ? g.toNonIndexed() : g; g.translate(x, y, z);
       const n = g.attributes.position.count, a = new Float32Array(n * 3); c.set(col);

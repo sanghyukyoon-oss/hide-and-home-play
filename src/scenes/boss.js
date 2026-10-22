@@ -146,7 +146,11 @@ export class BossScene {
       if (r.type === 'rug') continue;
       const name = HIDE[r.type] || `${r.f.name || '가구'} 뒤`;
       const b = new THREE.Box3().setFromObject(r.f.group), c = b.getCenter(new THREE.Vector3());
-      const fy = r.f.group.getWorldPosition(new THREE.Vector3()).y, t = near3(this.tiles, c.x, fy, c.z); if (!t || Math.hypot(t.x - c.x, t.z - c.z) > 1.4 || Math.abs((t.y || 0) - fy) > .6) continue;
+      // (③ 10/22, user: "장독대나 이런 데 자유롭게 숨기지는 못하나 봐?"): near enough by the piece's own edge, not its middle — a long
+      // row of jars, a bike along a wall were out because their middles were 1.4 m from where you stand
+      const fy = r.f.group.getWorldPosition(new THREE.Vector3()).y, t = near3(this.tiles, c.x, fy, c.z);
+      const edge = t ? Math.hypot(Math.max(b.min.x - t.x, 0, t.x - b.max.x), Math.max(b.min.z - t.z, 0, t.z - b.max.z)) : 9;
+      if (!t || edge > .8 || Math.abs((t.y || 0) - fy) > .6) continue;
       this.spots.push({ t, name, c, f: r.f });
     }
   }
@@ -215,6 +219,7 @@ export class BossScene {
     const label = h('div', { class: 'holdlabel' }); ui.wui.append(tool, label);
     tool.querySelectorAll('.btn').forEach(b => b.style.pointerEvents = 'auto');
     this.held = { t, g, ring, tool, label, ry: (Math.random() - .5) * 1.2, spot: null, fs: null, opened: null };
+    this.showPlaces(true);
     const p = W.screenToGround(innerWidth / 2, innerHeight * .5, 0) || this.hero.root.position.clone();
     this.holdTo(null, p);
     G.audio.sfx('pop', 4); this.nextHeld();
@@ -275,9 +280,23 @@ export class BossScene {
     this.hideTreasure(spot, false, fs);
     if (t.g) t.g.rotation.y = ry;
     this.drawSlots(); this.nextHeld();
+    // (user: "하나 숨기면 다음 아이템으로 바로 넘어가도 좋고"): the next one still in your hands comes up by itself
+    const nx = this.treasures.find(x => !x.spot); if (nx && !G.bot) this.holdStart(nx);
+  }
+  // (③ 10/22, user "숨길 수 있는 곳이 적게 느껴져"): while a treasure is in your hand every place it can go shows — a small soft
+  // glowing dot, pulsing (one instanced mesh, gone when the hand is empty)
+  showPlaces(on) {
+    const W = this.G.world;
+    if (this._dots) { this._dots.parent?.remove(this._dots); this._dots.geometry.dispose(); this._dots.material.dispose(); this._dots = null; }
+    if (!on || !this.held) return;
+    const ps = this.hidePlaces(); if (!ps.length) return;
+    const m = new THREE.InstancedMesh(new THREE.RingGeometry(.045, .1, 20), new THREE.MeshBasicMaterial({ color: '#ffb300', transparent: true, opacity: .9, depthTest: false }), ps.length);
+    const M = new THREE.Matrix4(), Q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)), S1 = new THREE.Vector3(1, 1, 1);
+    ps.forEach((c, i) => { M.compose(c.p.clone().setY(c.p.y + .03), Q, S1); m.setMatrixAt(i, M); });
+    m.renderOrder = 9; m.frustumCulled = false; m.layers.set(2); W.root.add(m); this._dots = m;
   }
   holdEnd(quiet = false) {
-    const H = this.held; if (!H) return; this.held = null;
+    const H = this.held; if (!H) return; this.held = null; this.showPlaces(false);
     H.g.parent?.remove(H.g); H.ring.parent?.remove(H.ring); H.ring.geometry.dispose(); H.ring.material.dispose(); H.tool.remove(); H.label.remove();
     if (H.opened && H.opened.t > .5) { const P = H.opened; this.tw.run(.18, k => P.setOpen(1 - k)); }
     if (!quiet) this.G.audio.sfx('pop', 1);
@@ -288,6 +307,7 @@ export class BossScene {
     const tw = H.tool.offsetWidth || 220; H.tool.style.left = Math.max(tw / 2 + 8, Math.min(innerWidth - tw / 2 - 8, top.x)) + 'px'; H.tool.style.top = Math.max(110, top.y) + 'px';
     const r = W.toScreen(H.ring.position); H.label.style.left = r.x + 'px'; H.label.style.top = (r.y + 18) + 'px';
     H.ring.scale.setScalar(1 + Math.sin((this.t || 0) * 6) * .12);
+    if (this._dots) this._dots.material.opacity = .7 + Math.sin((this.t || 0) * 5) * .25;
   }
   drawSlots() { this.treasures.forEach((t, i) => { const el = this.slots[i]; el.classList.toggle('hidden', !!t.spot && !t.lost); el.classList.toggle('lost', t.lost); el.classList.toggle('todo', !t.spot); el.classList.toggle('danger', !t.lost && !!t.spot && this.target === t.spot && this.phase === 'seek'); }); }
   say(ch, text, ms = 1200) {
@@ -481,26 +501,66 @@ export class BossScene {
   }
   stepSeeker(dt, k) {
     const S = this.seek, p = S.root.position, speed = this.T.walk * k;
+    if (this.hopping) return false;
     if (this.route?.length) {
       const t = this.route[0], dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz), st = speed * dt;
-      // 몽글이 몸은 뚫지 않아요(SEP): 옆으로 비켜 돌아가고, 좁은 길을 1초 넘게 막고 있으면 "비켜~" 하고 몽글이가 옆으로 폴짝
+      // 몽글이 몸은 뚫지 않아요(SEP). 막히면 (③ 10/22, user 실폰 보스2 "숨기기 판 계단 막으면 너구리가 못 내려감" — 막기는 재밌지만
+      // 영영 갇히면 안 됨): 한쪽으로만 비켜 보고(옆이 없으면 제자리 — 떨지 않게), .5초 넘으면 발 동동 화남, 1.2초면 "비켜~" 하고
+      // 몽글이를 옆으로 폴짝 밀고, 그게 안 되면(계단·좁은 길) 2.4초에 몽글이를 뛰어넘어 가던 길로
       const hp = this.hero.root.position, nx = d <= st ? t.x : p.x + dx / d * st, nz = d <= st ? t.z : p.z + dz / d * st;
       if (Math.hypot(nx - hp.x, nz - hp.z) < SEP) {
-        const dd = Math.max(d, 1e-4), px = -dz / dd, pz = dx / dd, side = ((hp.x - p.x) * px + (hp.z - p.z) * pz) > 0 ? -1 : 1, sx = p.x + px * side * st, sz = p.z + pz * side * st;
+        const dd = Math.max(d, 1e-4), px = -dz / dd, pz = dx / dd;
+        if (!this.blockT) this.blockSide = ((hp.x - p.x) * px + (hp.z - p.z) * pz) > 0 ? -1 : 1;
+        const side = this.blockSide, sx = p.x + px * side * st, sz = p.z + pz * side * st;
         if (Math.hypot(sx - hp.x, sz - hp.z) >= Math.min(SEP, Math.hypot(p.x - hp.x, p.z - hp.z)) && this.canStep(p.x, p.z, sx, sz)) { p.x = sx; p.z = sz; }
-        this.blockT = (this.blockT || 0) + dt;
-        if (this.blockT > 1) { this.blockT = 0; this.nudgeHero(); }
+        this.blockT = (this.blockT || 0) + dt; this.prog = null;
+        if (this.blockT > .5) {
+          if (!this._mad) { this._mad = true; S.setFace?.('angry'); this.say(S, '비켜!!', 800); this.G.audio.sfx('thump', -2); }
+          // 발 동동
+          S.lift = Math.abs(Math.sin(this.t * 22)) * .05;
+        } else S.lift = 0;
+        // (on the stairs there is no side to push you to — and pushed aside you came straight back: then over you it goes)
+        const onStair = (this.htiles || []).some(u => u.stair && Math.hypot(u.x - hp.x, u.z - hp.z) < .45 && Math.abs((u.y || 0) - hp.y) < .5);
+        if (this.blockT > 1.2 && !this._nudged) { this._nudged = true; if (onStair || this.t - (this._nudgeAt ?? -9) < 4) this.hopOver(); else if (this.nudgeHero()) { this._nudgeAt = this.t; this.blockT = 0; this._mad = false; S.setFace?.('normal'); } }
+        if (this.blockT > 2.4) this.hopOver();
         return false;
       }
-      this.blockT = 0;
+      if (this.blockT) { this.blockT = 0; this._nudged = false; if (this._mad) { this._mad = false; S.setFace?.('normal'); } }
+      // (③ 10/22, user: "너구리 어디 갇혀서 ㄷㄷㄷㄷ 떨림"): no headway on the next step for 1.5 s — skip to the one after it; 3.5 s
+      // on the same one — 퐁, it is there (a puff, never stuck for good)
+      const pr = this.prog;
+      if (!pr || pr.t !== t) this.prog = { t, d, at: this.t, t0: this.t };
+      else if (d < pr.d - .05) { pr.d = d; pr.at = this.t; }
+      else if (this.t - pr.t0 > 3.5) { this.poof(t.x, t.y || 0, t.z); this.route.shift(); this.prog = null; return false; }
+      else if (this.t - pr.at > 1.5 && this.route.length > 1) { this.route.shift(); this.prog = null; return false; }
       if (d <= st) { p.x = t.x; p.z = t.z; this.route.shift(); }
       else { p.x += dx / d * st; p.z += dz / d * st; }
       p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10);
-      const a = Math.atan2(dx, dz), r = S.root.rotation.y; S.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 10);
-      S.lift = Math.abs(Math.sin(this.t * 11)) * .05 * k;
+      if (d > .02) { const a = Math.atan2(dx, dz), r = S.root.rotation.y; S.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 10); }
+      S.lift = d > .02 ? Math.abs(Math.sin(this.t * 11)) * .05 * k : 0;
       return false;
     }
+    S.lift = 0;
     return true;
+  }
+  // over 몽글이's head and down on the far side, on its own way (the first step of its route past you) — else a new place to look
+  hopOver() {
+    const S = this.seek, p = S.root.position, hp = this.hero.root.position;
+    this.blockT = 0; this._nudged = false; this._mad = false;
+    const i = (this.route || []).findIndex(t => Math.hypot(t.x - hp.x, t.z - hp.z) > SEP + .15 && Math.hypot(t.x - p.x, t.z - p.z) > Math.hypot(hp.x - p.x, hp.z - p.z));
+    if (i < 0) { this.route = null; this.target = null; return; }
+    const to = this.route[i], x0 = p.x, y0 = p.y, z0 = p.z; this.route.splice(0, i + 1); this.hopping = true;
+    S.setFace?.('happy'); this.say(S, '영차!', 700); this.G.audio.sfx('hop');
+    this.tw.run(.5, k => { p.x = x0 + (to.x - x0) * k; p.z = z0 + (to.z - z0) * k; p.y = y0 + ((to.y || 0) - y0) * k + Math.sin(k * Math.PI) * .75; S.root.rotation.y = Math.atan2(to.x - x0, to.z - z0); })
+      .then(() => { this.hopping = false; S.squash = .3; this.G.audio.sfx('land'); S.setFace?.('normal'); });
+  }
+  // stuck against something: a puff, and it is at the next step
+  poof(x, y, z) {
+    const S = this.seek, W = this.G.world, p = S.root.position, a = W.toScreen(p.clone().setY(p.y + .4));
+    W.fx.burst(a.x, a.y, { n: 10, colors: ['#ffffff', '#e8e2f2'], shape: 'dot', speed: 120, size: 12, gravity: -30, life: .5 });
+    p.set(x, y, z); const b = W.toScreen(p.clone().setY(p.y + .4));
+    W.fx.burst(b.x, b.y, { n: 10, colors: ['#ffffff', '#e8e2f2'], shape: 'dot', speed: 120, size: 12, gravity: -30, life: .5 });
+    this.G.audio.sfx('pop', 2); this.stuckN = (this.stuckN || 0) + 1;
   }
   // 너굴이 길을 막고 서 있으면: "비켜~" 하고 몽글이가 옆 빈자리로 폴짝 (몸으로 막기는 없음 — user 10/18)
   nudgeHero() {
@@ -510,8 +570,9 @@ export class BossScene {
       if (!this.canStep(p.x, p.z, x, z)) continue;   // (the hop sideways stays on this side of a wall too — #06)
       this.say(this.seek, '비켜~', 700); this.hpath = null;
       const x0 = p.x, z0 = p.z; this.tw.run(.25, k => { p.x = x0 + (x - x0) * k; p.z = z0 + (z - z0) * k; this.hero.lift = Math.sin(k * Math.PI) * .25; });
-      return;
+      return true;
     }
+    return false;
   }
   async peekAt(s) {
     this.sState = 'peek'; const S = this.seek; S.faceTo?.(s.c.x, s.c.z);
@@ -546,10 +607,11 @@ export class BossScene {
     this.tw.update(dt);
     this.t = (this.t || 0) + dt;
     this.room.update(dt); this.ambient?.update(dt); this.hero.update(dt); this.seek.update(dt);
-    // follow 몽글이 only while 너굴이 searches, and not for 2.5 s after you dragged, turned or pinched the view yourself
+    // while 너굴이 searches the view follows 너굴이 (③ 10/22, user: "너구리 찾을 땐 카메라 너구리 팔로우해 줘"), not for 2.5 s after you
+    // dragged, turned or pinched it yourself; while you hide it is all yours
     if (W.drag?.moved || W.ptrs?.size > 1) this.lookT = this.t;
     if (this.phase === 'seek' && !this.result && this.t - (this.lookT ?? -99) > 2.5) {
-      const hp = this.hero.root.position;
+      const hp = this.seek.root.position;
       W.target.x += (hp.x - W.target.x) * (1 - Math.exp(-dt * 5)); W.target.z += (hp.z - W.target.z) * (1 - Math.exp(-dt * 5)); W.target.y += (hp.y + .6 - W.target.y) * (1 - Math.exp(-dt * 4));
     }
     if (!this.result && this.phase !== 'intro') this.stepHero(dt);

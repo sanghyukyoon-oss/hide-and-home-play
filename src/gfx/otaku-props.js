@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { put, grp, mat, mesh, canvasTex, shade } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
+import { clothBend } from './clothbend.js';
 
 const PI = Math.PI, HP = PI / 2;
 const INK = '#2a1d33', WHITE = '#ffffff', CREAM = '#fff4e2', WOOD = '#d9a46a', WOODD = '#9c6a42', WALNUT = '#8a5f42', STEEL = '#c9cfd8', STEEL2 = '#a9b2c8',
@@ -398,7 +399,8 @@ B.otakufuton = (f, T) => {
     add(G.box(.13, .012, .2, .004), '#3a7bd5', -.12, .08, .12, 0, .3, -.35); add(G.box(.13, .012, .2, .004), '#3a7bd5', -.01, .08, .16, 0, .3, .35);
     add(G.box(.2, .04, .26, .03), '#ff4f6a', .22, .08, .22, 0, -.5, 0); add(G.box(.1, .005, .12, .005), '#ffe14d', .22, .103, .22, 0, -.5, 0);
   }));
-  const bp = f.part('lift', bl, (t, b) => { bl.position.y = b.p.y + .16 * t; bl.position.z = b.p.z + .08 * t; bl.scale.z = 1 - .4 * t; bl.rotation.x = .15 * t; }, { label: '이불', sfx: 'lift' });
+  // (③ 10/22: the duvet bends and curls back from its foot like every 이불 — gfx/clothbend.js; the pillow end stays)
+  const bp = f.part('lift', bl, clothBend(f, bl, { hinge: [0, 0, -.4], along: [0, 0, 1], toward: [0, 1, 0], len: .9, turn: 2.3, rise: .08, flaps: true }), { label: '이불', sfx: 'lift', dur: .6 });
   f.spot('under', null, 0, .17, .0, { part: bp, maxH: .12, label: '이불 속' });   // (a hollow under the duvet's tent — not a box: its height is the cap)
   f.spot('behind', null, .16, .16, .58, { maxH: .26, label: '너굴이 인형 뒤', scale: .75 });   // (between the duvet's edge and the plush: it peeks past the plush's side)
   f.spot('behind', null, -.3, .16, .56, { maxH: .22, label: '만화책 더미 뒤', scale: .7 });
