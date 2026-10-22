@@ -146,7 +146,7 @@ const PAT = [
   [/^(.+?) 구입! 보관함에서 꺼내 놓자$/, n => `Bought ${n}! Take it out of storage`],
   [/^보유 (\d+)$/, n => `Owned ${n}`],
   // 경제·로비 (10/19)
-  [/^돋보기 가방 (\d+)\/5$/, n => `Magnifier bag ${n}/5`],
+  [/^돋보기 가방 (\d+)\/(\d+)$/, (n, m) => `Magnifier bag ${n}/${m}`],
   [/^친구 (\d+)명이 놀러 왔어!$/, n => `${n} friends came over!`],
   [/^(.+?)(?:이|가) 놀러 왔어!$/, n => `${n} came over!`],
   [/^친구 (\d+)\/(\d+)$/, (a, b) => `Friends ${a}/${b}`],

@@ -549,7 +549,8 @@ export const MAPS = {
         furniture: [F('stairsup', 0, 3), F('plant', 0, 0), F('bookshelf', 1, 0, 0, { seed: 13 }), F('lamp', 2, 0), F('fridge', 3, 0), F('counter', 4, 0, 0, { variant: 'stove' }), F('counter', 5, 0),
           // 이어진 집 (10/19): the kitchen pulley rides up through the balcony's hatch, a slide comes down from the balcony
           // into a ball pit, the dining table moved to the window side
-          F('sofa', 1, 2), F('liftbasket', 5, 2, 0, { up: true, crank: 'left', hook: true }), F('rug', 1, 3), F('table', 2, 4), F('tubeslide', 3, 3), F('diningset', 4, 3),
+          // (소파 0.4칸 동쪽: 계단과 소파 사이로 부엌 줄까지 길 — ③ 10/22, 보물 지키기 보스1에서 너굴이가 못 지나감)
+          { ...F('sofa', 1, 2), dx: .4 }, F('liftbasket', 5, 2, 0, { up: true, crank: 'left', hook: true }), F('rug', 1, 3), F('table', 2, 4), F('tubeslide', 3, 3), F('diningset', 4, 3),
           F('ballpit', 3, 5), F('laundrybasket', 2, 6), F('plant', 5, 5), F('stool', 5, 6)],
         decor: [D('window', 'W', 2.0), D('picture', 'W', -1.8), D('window', 'E', 1.6)] } },   // nothing hung on the back wall under the balcony: it is in shadow and out of sight
       // (the balcony's front-right tile is a hatch: the kitchen pulley comes up through it, 10/19)
@@ -923,6 +924,8 @@ export const ITEM_TUNE = { 25: 0.48, 30: 0.46, 33: 0.44, 34: 0.46, 35: 0.44, 39:
 // #94 크기 규칙(목록·자리·자물쇠 칸·작은 물건 안전망 smallfix.js)이 닿는 판: 19판부터 이 판까지 — 장 단위로 늘려 감(30 → 40 → 50 → 70)
 export const SIZE_TO = 70;
 export const sized = i => i >= 18 && i < SIZE_TO;
+// 관찰 자물쇠 판 (판 번호는 1부터): kind 'poster'·'timetable' = 그 그림에서 비밀번호, 없으면 비밀번호는 시계·색깔은 꽃병 세 개
+const OBS_AT = { 19: { kind: 'poster' }, 22: {}, 23: { lock: ['code'] }, 25: {}, 26: { lock: ['code', 'color'] }, 27: { kind: 'timetable' } };
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 100, 8: 105, 9: 105, 10: 110, 11: 110 };
 // 흑백판: the room has lost its colour; what you find (things AND a few pieces of furniture) gets it back
 // (user, 10/17: "흑백인판이 있어서 찾은거는 색칠되게", "가구들같이 큰것들도 찾게 — 난이도 조절용")
@@ -966,8 +969,12 @@ export function stageSpec(idx) {
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
   const s = baseSpec(idx);
   if (KIT_AT[idx]) s.kit = KIT_AT[idx];
-  if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; s.obs = true; s.obsTime = [1, 19]; s.clueHang = { pad: 'gearrack' }; s.lockOn = { code: ['lockers'] }; }   // (19판 user 10/21 "인터렉션과 방탈출적인 요소": the padlock's key in the 방화복 pocket, drops when it lifts; the locker's code = the clock, 출동 1시 19분 = 119 — plan-19to50)
+  if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; s.clueHang = { pad: 'gearrack' }; s.lockOn = { code: ['lockers'] }; }   // (19판 user 10/21 "인터렉션과 방탈출적인 요소": the padlock's key in the 방화복 pocket, drops when it lifts; the locker's code = the clock, 출동 1시 19분 = 119 — plan-19to50)
   if (s.room === 'villaroof2') s.clueHang = { pad: 'roofline' };   // (20판: the padlock's key hangs inside the quilt, drops when it lifts — user 10/21)   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
+  // 관찰 자물쇠 (사용자 10/22 시트 '먼저 정할 것' 2·5 "추천대로": 직접 입력 자물쇠는 방 안을 보고 맞히기 — 3장 22판 처음, 23·25·26·27 다시;
+  // 시계만 되풀이되지 않게 19판 '119' 포스터, 27판 기차 시간표 — obslock.js). lock: 그 판 자물쇠 종류(기획: 23 알람시계, 26 금고 시계 + 개집 꽃병)
+  const ob = OBS_AT[idx + 1];
+  if (ob) { s.obs = true; if (ob.kind) s.obsKind = ob.kind; if (ob.lock) s.lock = ob.lock.slice(); }
   if (STAGE_ITEMS[idx + 1]) s.items = STAGE_ITEMS[idx + 1];   // (19~70 다시 짜기: the stage's own list)
   if (ITEM_TUNE[idx]) s.itemSize = ITEM_TUNE[idx];
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
@@ -1161,7 +1168,7 @@ export function planStage(room, spec, story = null) {
   // the first stages only ask for things with a readable shape (a thin pencil under a loft was hard even with a hint)
   // (19~70 다시 짜기 10/21: the stages SIZE_TO covers too, not 1~20 only — 31·49판 bosses still drew 이어폰·영수증·머리핀 at 15~19 px)
   const THIN = ['pencil', 'usb', 'earphones', 'receipt', 'postit', 'hairpin', 'idcard', 'toothbrush'];   // (+ toothbrush: 17 px on 9판, 10/19)
-  const SMALL_MODEL = ['keyring', 'lottery', 'coin'];   // (19판부터 #94 10/21: 열쇠고리 손톱만 하게 — 17~20 px on 21·31판; 1~18판 as they are)
+  const SMALL_MODEL = ['keyring', 'lottery', 'coin', 'soap'];   // (19판부터 #94 10/21: 열쇠고리 손톱만 하게 — 17~20 px on 21·31판; 1~18판 as they are; 비누: 시트 3번 12종 10/22)
   // (짝 양말 판: no pair of socks on the list either — it would read as the puzzle's sock, and the odd ones lying about say "무늬가 달라")
   const tool = t => (dig && t === 'shovel') || (tv && t === 'remote') || (spec.sock && SOCKS.has(t)) || (spec.idx >= 0 && (spec.idx < 20 || sized(spec.idx)) && THIN.includes(t)) || (sized(spec.idx) && SMALL_MODEL.includes(t))   /* (1~20판: no pencil or USB on the list — 19 px on a phone, user 10/19 "너무 작게 하지 마"; 11~20판 too, 10/20: 11판 연필, 13판 칫솔) */
     || (spec.showcase && DEVICE_LOOKALIKE[spec.room]?.includes(t)) || (spec.treat && t === spec.treat.item);   // a stage's tool is never a target or a decoy (간식: 50·55판 listed a 도토리 beside the 도토리 that moves the host)

@@ -14,6 +14,7 @@ import { OUTDOOR_BUILDERS, OUTDOOR_INFO, groundTex, boundary } from './gfx/outdo
 import { setOutdoorKit } from './room.js';
 import { ensureStoryItems } from './story.js';
 import { STORY_BUILDERS, STORY_INFO, STORY_ITEMS } from './gfx/story-props.js';
+import { MORE_ITEMS } from './gfx/more-items.js';
 import { MAP_BUILDERS, MAP_INFO, MAP_THEMES } from './gfx/map-props.js';
 import { HOUSE_BUILDERS, HOUSE_INFO } from './gfx/house-props.js';
 import { ORGANIC_BUILDERS, ORGANIC_INFO } from './gfx/organic-props.js';   // 이어진 집: slide, ball pit (10/19)
@@ -65,6 +66,7 @@ import { BossGameScene } from './scenes/bossgame.js';
 import { LayEditScene } from './scenes/layedit.js';
 import { LobbyScene } from './scenes/lobby.js';
 import { ECON, econMigrate, econSaveFields } from './econ.js';
+import { DEF_BUILDERS, DEF_INFO } from './defense.js';   // 지키기 도구 (② 10/22)
 import { bumpFeat } from './specials.js';   // 스페셜 칸의 해금 조건 (10/20)
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
 import { openGallery, playGame } from './gallery.js';
@@ -80,9 +82,12 @@ registerFurniture(MAP_BUILDERS, MAP_INFO);
 for (const k in MAP_THEMES) THEMES[k] = { ...THEMES.my, ...MAP_THEMES[k] };
 registerStoryShop(Object.fromEntries(Object.entries(MAP_INFO).filter(([k]) => k !== 'stairsup')));
 Object.assign(ITEMS, STORY_ITEMS);
+// 찾을 물건 10종 더 (10/21 #94: 19~70판 목록용 — 랜턴·마시멜로 꼬치·침낭 베개·별자리 지도·마이크·응원봉·헤드폰·트로피·액자·비커)
+Object.assign(ITEMS, MORE_ITEMS);
 // the everyday apartment set (art direction 2026-10-15): props, items, rooms with a warm afternoon light
 registerFurniture(APT_BUILDERS, APT_INFO);
 registerFurniture(HOUSE_BUILDERS, HOUSE_INFO); registerFurniture(ORGANIC_BUILDERS, ORGANIC_INFO);
+registerFurniture(DEF_BUILDERS, DEF_INFO);   // 지키기 도구: 바나나 껍질·미끼 상자 (② 10/22)
 registerFurniture(ATTIC_BUILDERS, ATTIC_INFO);   // 2판 다락 (10/20)
 registerFurniture(BAKERY_BUILDERS, BAKERY_INFO);   // 6판 빵 부엌 (10/20)
 registerFurniture(OTAKU_BUILDERS, OTAKU_INFO); Object.assign(ITEMS, OTAKU_ITEMS); registerFurniture(FISH_BUILDERS, FISH_INFO); registerFurniture(STATION_BUILDERS, STATION_INFO); registerFurniture(ISLAND_BUILDERS, ISLAND_INFO); registerFurniture(SEASIDE_BUILDERS, SEASIDE_INFO); registerFurniture(APTLOBBY_BUILDERS, APTLOBBY_INFO); registerFurniture(LIBRARY_BUILDERS, LIBRARY_INFO); registerFurniture(VILLAROOF_BUILDERS, VILLAROOF_INFO); registerFurniture(TRAINCAR_BUILDERS, TRAINCAR_INFO);

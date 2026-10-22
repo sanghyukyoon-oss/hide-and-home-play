@@ -48,7 +48,7 @@ function tally(S, ev) {
   const rp = ev.rp, partOf = e => e.free ? e.free.part || (e.free.host?.startsWith?.('p:') ? e.free.host.slice(2) : null) : S.spotByKey[e.spot]?.part?.key;
   const kept = rp.items.filter(e => !e.found), byLock = kept.filter(e => { const k = partOf(e); return k && rp.locks[k]; });
   const left = rp.items.filter(e => e.found && !e.by && e.item !== (ev.item || ev.got)).length;   // found, but a raid takes one thing
-  const byFriend = rp.items.filter(e => e.by).length;   // 친구 지킴이 (10/20)
+  const byFriend = rp.items.filter(e => e.by && !e.by.startsWith('tool:')).length;   // 친구 지킴이 (10/20)
   return { kept: kept.length, byLock: byLock.length, byFriend, left, total: rp.items.length };
 }
 
@@ -180,10 +180,22 @@ export async function playRaidReplay(S, ev) {
       g.visible = false; g.position.copy(p0); g.scale.setScalar(s0); if (!temps.includes(v.it)) hiddenReal.push(g);
       await wait(.4);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
-    } else if (v.e.by) {   // found — and a friend at home jumps in (친구 지킴이)
+    } else if (v.e.by?.startsWith('tool:')) {   // found — and a 지키기 도구 stops them (② 10/22): only the finger and the words
       await tapOn(v.it.g); if (!live()) break;
       G.audio.sfx('found', 2);
-      await friendBlock(S, v.e.by, v.it.g, tw, live, floatAt);
+      const k = v.e.by.slice(5);
+      if (k === 'bell') {
+        G.audio.sfx('doorBell'); floatAt(v.it.g, '따르르릉!', 'red big');
+        const ring = v.part?.bellRing; if (ring) await tw.run(1.4, q => ring(q * 1.4)); else await wait(1.2);
+      } else if (k === 'banana') {
+        G.audio.sfx('slide'); floatAt(v.it.g, '미끄덩!', 'gold big');
+        await fing.animate([{ rotate: '0deg' }, { rotate: '540deg', offset: .7 }, { rotate: '720deg' }], { duration: 700, easing: 'ease-out' }).finished.catch(() => {});
+      } else {
+        G.audio.sfx('whoosh'); floatAt(v.it.g, '위잉~ 로봇청소기!', 'green big'); await wait(1);
+      }
+      if (!live()) break;
+      await fingerTo(fx + (fx < innerWidth / 2 ? -1 : 1) * innerWidth * .6, fy, 420);   // (off it runs)
+      fingerTo(innerWidth * .5, innerHeight * .7, 10);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
     } else {   // right there, and never noticed: the finger taps beside it and moves on
       const s = W.toScreen(wpos(v.it.g)); await tapAt(Math.max(40, Math.min(innerWidth - 40, s.x + 46)), Math.max(120, Math.min(innerHeight - 120, s.y + 30))); if (!live()) break;
@@ -191,6 +203,9 @@ export async function playRaidReplay(S, ev) {
       await wait(.8);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }   // (털린 흔적: left open)
     }
+  }
+  if (ev.decoy && live()) {   // 미끼 상자 (② 10/22): what they carried off was the box — 몽글이 on a spring, '메롱!'
+    G.audio.sfx('giggle'); G.ui.floatText(innerWidth / 2, innerHeight * .42, '미끼 상자를 들고 갔다! 메롱~', 'gold big'); await wait(1.4);
   }
   fing.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: 'forwards' });
   if (!S.dead) await W.flyTo(tw, { yaw: yaw0, target: look, zoom: 1.1, dur: .45 });
@@ -217,6 +232,7 @@ function replayCard(S, ev) {
   const rows = [row('안 들킴', `${t.kept}개`, 'good')];
   if (t.byLock) rows.push(row('자물쇠가 막음', `${t.byLock}개`, 'good'));
   if (t.byFriend) rows.push(row('친구가 막음', `${t.byFriend}개`, 'good'));
+  if (ev.tool) rows.push(row('지키기 도구', { decoy: '미끼 상자', bell: '경보 벨', banana: '바나나 껍질', robovac: '로봇청소기' }[ev.tool] || '', 'good'));
   if (t.left) rows.push(row('들켰지만 두고 감', `${t.left}개`));
   if (stole) rows.push(row('털림', ev.lost ? `코인 ${ev.lost}개` : ITEMS[ev.item]?.name || '물건', 'bad'));
   G.ui.panel({

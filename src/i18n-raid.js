@@ -45,7 +45,27 @@ addI18n({
   '자물쇠': 'Padlock', '서랍을 잠가 지켜': 'lock a drawer to guard it',
   // 자주 털리게 (② 10/22): the coin purse, the padlock button on '내가 없는 동안…'
   '자물쇠 걸기': 'Hang a padlock', '자물쇠 사기': 'Buy a padlock', '더 꽁꽁': 'Hide better', '자물쇠를 걸면 덜 털려!': 'Padlocks keep raiders out!',
+  // 지키기 도구 (② 10/22)
+  '미끼 상자': 'Decoy Box', '바나나 껍질': 'Banana Peel', '경보 벨': 'Alarm Bell', '순찰 로봇청소기': 'Patrol Robot Vacuum', '로봇청소기': 'Robot Vacuum',
+  '털이범이 들고 감': 'a raider takes it instead', '미끄덩 한 번': 'one slip', '서랍에 달기': 'hang on a drawer', '털이범을 쫓아내': 'chases raiders out', '이미 있어': 'You have one', '있어': 'Owned',
+  '미끼 상자! 꾸미기에서 방에 놓아 봐': 'Decoy Box! Place it in Decorate', '바나나 껍질! 꾸미기에서 방에 놓아 봐': 'Banana Peel! Place it in Decorate',
+  '경보 벨! 숨기기에서 서랍에 달아 봐': 'Alarm Bell! Hang it on a drawer in Hide', '로봇청소기! 꾸미기에서 방에 놓아 봐': 'Robot Vacuum! Place it in Decorate',
+  '벨을 다 달았어 · 상점 아이템에서 하나 더': 'All your bells are up · get another in the shop', '벨을 달았어! 이 서랍을 열면 따르릉': 'Bell hung! Open this drawer and it rings',
+  '따르르릉!': 'Brrring!', '미끄덩!': 'Whoops!', '위잉~ 로봇청소기!': 'Vroom~ Robot vacuum!', '미끼 상자를 들고 갔다! 메롱~': 'They took the decoy box! Nyah~', '지키기 도구': 'Guard tool',
 }, [
+  // (② 10/22) 지키기 도구: the news lines and the hide row
+  [/^([^·]+?)[이가] 미끼 상자를 들고 갔어! 속았지롱 \+(\d+)$/, (n, c) => `${n} ran off with the decoy box! Fooled! +${c}`],
+  [/^([^·]+?)[이가] 경보 벨에 놀라서 도망갔어! \+(\d+)$/, (n, c) => `${n} fled from the alarm bell! +${c}`],
+  [/^([^·]+?)[이가] 바나나 껍질에 미끄러져서 빈손으로 갔어! \+(\d+)$/, (n, c) => `${n} slipped on a banana peel and left empty-handed! +${c}`],
+  [/^([^·]+?)[이가] 로봇청소기한테 쫓겨났어! \+(\d+)$/, (n, c) => `${n} got chased out by the robot vacuum! +${c}`],
+  [/^벨 (\d+)\/(\d+)$/, (a, b) => `Bells ${a}/${b}`],
+  [/^(.+) 벨 달기$/, l => `Bell on ${l}`],
+  [/^(.+) 벨 떼기$/, l => `Bell off ${l}`],
+  [/^(\d+)판부터$/, n => `From stage ${n}`],
+  [/^미끄덩! -(\d+)초$/, n => `Whoops! -${n}s`],
+  [/^메롱! 미끼였다 -(\d+)초$/, n => `Nyah! A decoy -${n}s`],
+  [/^따르르릉! -(\d+)초$/, n => `Brrring! -${n}s`],
+  [/^(.+), 우리 집에도 놓을 수 있어! \(상점 아이템\)$/, t => `${t.split('·').map(x => tr(x)).join(' & ')} — you can put it in your home too! (Shop · Items)`],
   // (② 10/22) a coin purse taken, or a gift's thing found and left: before the plain news lines
   [/^([^·]+?)[이가] (복수하러 와서 )?코인 (\d+)개를 털어 갔어! -(\d+)$/, (n, rv, c) => `${n} ${rv ? 'came for revenge and ' : ''}took ${c} coins! -${c}`],
   [/^([^·]+?)[이가] 왔다가 빈손으로 갔어!$/, n => `${n} came and left empty-handed!`],

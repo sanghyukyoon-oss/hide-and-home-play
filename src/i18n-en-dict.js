@@ -3766,5 +3766,7 @@ export const EN = {
 "별자리 무드등": "Constellation Night Light", "무드등 서랍": "night light drawer", "무드등 서랍 안": "in the night light drawer",
 "친구들 사진 액자": "Friends Photo Frame", "액자 수납장": "frame cabinet", "액자 수납장 안": "in the frame cabinet",
 "나무 기차 세트": "Wooden Train Set", "기차역 지붕": "station roof", "기차역 안": "inside the station",
+"랜턴": "Lantern", "마시멜로 꼬치": "Marshmallow skewers", "침낭 베개": "Sleeping bag pillow", "별자리 지도": "Star map", "마이크": "Microphone",
+"응원봉": "Light stick", "헤드폰": "Headphones", "트로피": "Trophy", "비커": "Beaker",
 "무지개 벽화 계단": "Rainbow Mural Stairs",
 };

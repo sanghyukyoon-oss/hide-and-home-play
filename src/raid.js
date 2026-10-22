@@ -13,6 +13,7 @@ import { bumpFeat } from './specials.js';   // 스페셜 칸 '털림 막기 N번
 import { CHAR_DEFS } from './gfx/chars.js';
 import { HOUSES } from './houses.js';   // 털 집 찾기 (10/20): the neighbourhood's (made-up) players come round too
 import { GIFT_THINGS } from './gifts.js';   // 선물로 받은 보물은 안 가져감 (② 10/22)
+import { TOOL_ODDS, toolsAt, useUp } from './defense.js';   // 지키기 도구 (② 10/22)
 
 const FIRST_DELAY = 3 * 60e3;        // the first raid comes soon after you first hide something
 const EVERY = 4 * 3600e3;            // then about every four hours you are away
@@ -102,18 +103,32 @@ function raidOnce(G, now) {
   const who = back || pool[Math.floor(Math.random() * pool.length)], id = who.id, revenge = !!back;
   const locks = H.hide.locks || {};
   // one roll: did they find anything? Then which — the easier to see, the likelier (open 4 · in a drawer 2 · padlocked 1)
-  const found = [];
+  const found = [], T = toolsAt(H), ev = { at: now, who: id, nick: who.nick, face: who.face, revenge, seen: false };
   if (Math.random() < findOdds(hid, locks, who.face)) {
-    const w = e => ({ open: 4, inside: 2, locked: 1 })[keptBy(e, locks)];
-    let r = Math.random() * hid.reduce((a, e) => a + w(e), 0);
-    found.push((hid.find(e => (r -= w(e)) < 0) || hid[hid.length - 1]).item);
+    // (지키기 도구 10/22: a 미끼 상자 in the room is picked like a thing left out — then they take the box, not mine)
+    const w = e => ({ open: 4, inside: 2, locked: 1 })[keptBy(e, locks)], dw = T.decoys.length * TOOL_ODDS.decoyWeight;
+    let r = Math.random() * (hid.reduce((a, e) => a + w(e), 0) + dw);
+    if (r < dw) { const d = T.decoys[Math.floor(r / TOOL_ODDS.decoyWeight)]; ev.decoy = d.id || true; ev.tool = 'decoy'; useUp(H, d); }
+    else { r -= dw; found.push((hid.find(e => (r -= w(e)) < 0) || hid[hid.length - 1]).item); }
   }
-  const ev = { at: now, who: id, nick: who.nick, face: who.face, revenge, seen: false };
-  // 친구 지킴이: each friend at home may stop the find (ODDS.guard each, up to FRIEND_BLOCK_MAX friends)
+  // what stops a find: a bell on that drawer, a banana peel, the robot vacuum, each friend at home (ODDS.guard, up to
+  // FRIEND_BLOCK_MAX) — one roll for them together, at most TOOL_ODDS.cap, then which of them it was by their odds
   const guards = [...seatedAll(H)].filter(k => CHAR_DEFS[k]).slice(0, FRIEND_BLOCK_MAX), blockedBy = {};
-  for (const it of found) { const k = guards.find(() => Math.random() < ODDS.guard); if (k) blockedBy[it] = k; }
+  for (const it of found) {
+    const e = hid.find(x => x.item === it), st = [];
+    if (T.bells[hidePart(e)]) st.push(['tool:bell', TOOL_ODDS.bell]);
+    if (T.peels.length) st.push(['tool:banana', TOOL_ODDS.banana]);
+    if (T.robovac) st.push(['tool:robovac', TOOL_ODDS.robovac]);
+    for (const k of guards) st.push([k, ODDS.guard]);
+    const pAll = Math.min(TOOL_ODDS.cap, 1 - st.reduce((a, [, q]) => a * (1 - q), 1));
+    if (!st.length || Math.random() >= pAll) continue;
+    let q = Math.random() * st.reduce((a, [, x]) => a + x, 0); const k = (st.find(([, x]) => (q -= x) < 0) || st[st.length - 1])[0];
+    blockedBy[it] = k;
+    if (k === 'tool:banana') useUp(H, T.peels[0]);   // (the peel that tripped them is gone)
+    if (k.startsWith('tool:')) ev.tool = k.slice(5);
+  }
   const taken = found.filter(it => !blockedBy[it]);
-  if (Object.keys(blockedBy).length) ev.blocked = Object.values(blockedBy);
+  if (Object.values(blockedBy).some(k => !k.startsWith('tool:'))) ev.blocked = Object.values(blockedBy).filter(k => !k.startsWith('tool:'));
   // ① 털림 다시 보기 (10/19): what was hidden where and what this resident found — raidreplay.js plays it back in my room
   ev.rp = { zone: H.hide.zoneId, locks: { ...locks }, items: hid.map(e => ({ item: e.item, ...(e.free ? { free: e.free } : { spot: e.spot }), found: found.includes(e.item), ...(blockedBy[e.item] ? { by: blockedBy[e.item] } : {}) })) };
   if (taken.length) {
@@ -133,7 +148,7 @@ function raidOnce(G, now) {
       if (!st.includes(item)) st.push(item);
     }
     if (ev.kind === 'steal') { R.shield = ev.shield = now + SHIELD; R.next = Math.max(R.next || 0, R.shield); }   // 문단속
-  } else { ev.kind = 'fail'; ev.coins = keepPay(hid.length); bumpFeat(save, 'keeps'); }
+  } else { ev.kind = 'fail'; ev.coins = ev.decoy ? TOOL_ODDS.decoyPay : keepPay(hid.length); bumpFeat(save, 'keeps'); }
   if (ev.coins) save.coins += ev.coins;
   R.log.push(ev); R.log = R.log.slice(-20);
   return ev;
@@ -146,6 +161,10 @@ export function newsLine(e) {
   if (e.kind === 'steal' && e.lost) return `${ga(e.nick)} ${e.revenge ? '복수하러 와서 ' : ''}코인 ${e.lost}개를 털어 갔어! -${e.lost}`;
   if (e.kind === 'steal') return `${ga(e.nick)} ${e.revenge ? '복수하러 와서 ' : ''}${eul(ITEMS[e.item]?.name || '물건')} 털어 갔어!` + (fr.length ? ` (친구가 ${fr.length}개 막아 줌)` : e.coins ? ` (못 찾은 물건 덕에 +${e.coins})` : '');
   if (e.empty) return `${ga(e.nick)} 왔다가 빈손으로 갔어!`;
+  if (e.tool === 'decoy') return `${ga(e.nick)} 미끼 상자를 들고 갔어! 속았지롱 +${e.coins}`;
+  if (e.tool === 'bell') return `${ga(e.nick)} 경보 벨에 놀라서 도망갔어! +${e.coins}`;
+  if (e.tool === 'banana') return `${ga(e.nick)} 바나나 껍질에 미끄러져서 빈손으로 갔어! +${e.coins}`;
+  if (e.tool === 'robovac') return `${ga(e.nick)} 로봇청소기한테 쫓겨났어! +${e.coins}`;
   if (fr.length) return `${ga(e.nick)} 왔다가 ${fr.join('·')}한테 막혀서 하나도 못 가져갔어! +${e.coins}`;
   return `${ga(e.nick)} ${e.revenge ? '복수하러 왔다가' : '몰래 왔다가'} 하나도 못 찾고 갔어! +${e.coins}`;
 }

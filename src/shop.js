@@ -8,6 +8,9 @@ import { renderThumbs } from './thumbs.js';
 import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON, KEEPSAKE_PRICE } from './econ.js';
 import { ITEMS } from './gfx/items.js';
 import { locksOwned, LOCK_PRICE, LOCK_MAX, holderOf } from './raid.js';   // 자물쇠 사기 (털기 메타 10/19)
+import { LENS_MAX } from './lens.js';   // (돋보기 가방 상한 — #90 10/21에 5 → 2, 상점도 같이: ② 10/22)
+import { TOOLS, bellsOwned } from './defense.js';   // 지키기 도구 (② 10/22)
+import { alarmBell } from './gfx/defense-props.js';
 import { EN } from './i18n-en-dict.js';
 import { SPECIALS, SPECIAL_TXT, specialState, feats } from './specials.js';
 import { cardCount } from './cardbook.js';   // 스페셜 칸 (10/20)
@@ -82,13 +85,26 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       // magnifier for the bag (60, up to 5; 경제 설계서 3-2), a padlock for a drawer at home (털기 메타 10/19: keys aren't sold,
       // they'd skip the lock puzzles) — on a tab of their own, away from the things you hide; drawn in 3D like every other card,
       // how many you have on a badge
-      const L = G.save.lens || (G.save.lens = { bag: 0 }), bag = L.bag || 0, full = bag >= 5;
+      const L = G.save.lens || (G.save.lens = { bag: 0 }), bag = L.bag || 0, full = bag >= LENS_MAX;
       note.textContent = '판과 내 집에서 쓰는 도구';
-      grid.append(card(G, { img: lensPic(), name: '돋보기', sub: '판에서 힌트', price: 60, badge: full ? '가득' : `${bag}/5`, badgeOn: full, blocked: full ? '가방이 꽉 찼어' : null, one: true,
-        onBuy: () => { L.bag = Math.min(5, (L.bag || 0) + 1); G.persist(); ui.toast(`돋보기 가방 ${L.bag}/5`, 'green'); render(); } }));
+      grid.append(card(G, { img: lensPic(), name: '돋보기', sub: '판에서 힌트', price: 60, badge: full ? '가득' : `${bag}/${LENS_MAX}`, badgeOn: full, blocked: full ? '가방이 꽉 찼어' : null, one: true,
+        onBuy: () => { L.bag = Math.min(LENS_MAX, (L.bag || 0) + 1); G.persist(); ui.toast(`돋보기 가방 ${L.bag}/${LENS_MAX}`, 'green'); render(); } }));
       const lk = locksOwned(G.save), lkFull = lk >= LOCK_MAX;
       grid.append(card(G, { img: lockPic(), name: '자물쇠', sub: '서랍 잠그기', price: LOCK_PRICE, badge: lkFull ? '가득' : `${lk}/${LOCK_MAX}`, badgeOn: lkFull, blocked: lkFull ? `${LOCK_MAX}개 다 있어` : null, one: true,
         onBuy: () => { G.save.raid.locksOwned = lk + 1; G.persist(); ui.toast(`자물쇠 ${lk + 1}개째! 숨기기에서 서랍을 잠가 봐`, 'green'); render(); } }));
+      // 지키기 도구 (② 10/22, 기획 _handoff/defense-items-plan-1022.md): 털이범을 속이거나 쫓는 것 — 판을 깨면 하나씩 열려요
+      const H = G.save.home, st = G.save.stage || 0, have = t => H.inventory.filter(x => x === t).length + Object.values(H.zones).reduce((a, z) => a + (z.furniture || []).filter(f => f.type === t).length, 0);
+      const seen = G.save.raid?.toolSeen || {}, gate = k => st >= TOOLS[k].from || seen[k] ? null : `${TOOLS[k].from}판부터`;   // (이웃 집에서 먼저 당해 봤으면 바로)
+      const piece = (k, name, sub) => { const t = TOOLS[k].furn, n = have(t); grid.append(card(G, { img: G.thumbs['furn_' + t], name, sub, price: TOOLS[k].price, badge: n ? `${n}개` : null, blocked: gate(k), one: true,
+        onBuy: () => { H.inventory.push(t); G.persist(); ui.toast(`${name}! 꾸미기에서 방에 놓아 봐`, 'green'); render(); } })); };
+      piece('decoy', '미끼 상자', '털이범이 들고 감');
+      piece('banana', '바나나 껍질', '미끄덩 한 번');
+      const bo = bellsOwned(G.save), bFull = bo >= TOOLS.bell.max;
+      grid.append(card(G, { img: bellPic(), name: '경보 벨', sub: '서랍에 달기', price: TOOLS.bell.price, badge: bFull ? '가득' : `${bo}/${TOOLS.bell.max}`, badgeOn: bFull, blocked: gate('bell') || (bFull ? `${TOOLS.bell.max}개 다 있어` : null), one: true,
+        onBuy: () => { const R = G.save.raid || (G.save.raid = {}); R.bellsOwned = bo + 1; G.persist(); ui.toast('경보 벨! 숨기기에서 서랍에 달아 봐', 'green'); render(); } }));
+      const rv = have('robovac') + have('robovacgo'), rvPrice = FURN_INFO.robovac?.price || 240;
+      grid.append(card(G, { img: G.thumbs.furn_robovac, name: '순찰 로봇청소기', sub: '털이범을 쫓아내', price: rv ? null : rvPrice, badge: rv ? '있어' : null, badgeOn: !!rv, blocked: gate('robovac') || (rv ? '이미 있어' : null), one: true,
+        onBuy: () => { H.inventory.push('robovac'); G.persist(); ui.toast('로봇청소기! 꾸미기에서 방에 놓아 봐', 'green'); render(); } }));
     } else if (tab === 'items') {
       // 경제·로비 on (설계서 4-1): a thing you've found in a stage (도감) to hide at home (40). Something a resident took isn't for
       // sale: go and get it back. (The tools went to 아이템.)
@@ -311,6 +327,8 @@ function spotLater(G, t) {
   LAZY.push({ el, fn: () => { el.textContent = `숨을 곳 ${spotCount(G, t)}`; } });
   return el;
 }
+let BELL_PIC = null;
+const bellPic = () => BELL_PIC ||= renderThumbs([{ key: 'bell', dir: [.3, .2, 1], fit: 1.1, build: () => alarmBell().g }], 160).bell;
 let LENS_PIC = null;
 const lensPic = () => LENS_PIC ||= renderThumbs([{ key: 'lens', dir: [.2, .3, 1], fit: 1.05, build: () => {
   const g = new THREE.Group(), o = { metal: .4, rough: .35 };

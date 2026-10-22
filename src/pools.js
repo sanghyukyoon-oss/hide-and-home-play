@@ -69,6 +69,8 @@ export const ROOM_POOLS = {
 };
 // 판별 찾을 것 목록 (19~70 다시 짜기 10/21 — 스토리 룸 plan-19to50·51to70.json itemKeys, ② 레벨이 넣음; 판 번호는 1부터): 이 판은 이 목록에서만
 // 골라요(그 집 주인다운 것, 앞 3판과 겹침 0). 함정은 같은 종류를 빼요(planStage decoyTypes)
+// (10/22 시트 7번 "추천대로": 6·7장에 큰 새 물건 10종 — ⑥ more-items.js — 캠핑 51~60 랜턴·침낭 베개·별자리 지도·마시멜로 꼬치, 빌딩 61~70 마이크·
+// 응원봉·헤드폰·트로피·액자·비커; 하나에 두 판씩(랜턴 세 판), 앞 3판과 안 겹치게. 작은 휴지·하트·방울 공 자리를 비켜 줌)
 export const STAGE_ITEMS = {
   20: ['gift', 'cupcake', 'mandarin', 'snack', 'icecream', 'honeypot'],
   22: ['policecap', 'umbrella', 'fishcake', 'glasses', 'slipper', 'mug', 'sunglasses', 'towel'],
@@ -97,23 +99,23 @@ export const STAGE_ITEMS = {
   48: ['bobber', 'strawhat', 'map', 'fishcake', 'mug', 'heart', 'icecream', 'star'],
   50: ['towel', 'whistle', 'mandarin', 'sandwich', 'umbrella', 'block', 'gift', 'teddy'],
   51: ['crown', 'medal', 'bellball', 'snowglobe'],
-  52: ['milk', 'slipper', 'tissue', 'yarn', 'bunnyband', 'duck'],
-  53: ['gamepad', 'console', 'stapler', 'ball', 'star'],
-  54: ['map', 'books', 'honeypot', 'pot', 'mug', 'heart'],
+  52: ['milk', 'slipper', 'sleeppillow', 'yarn', 'camplantern', 'duck'],
+  53: ['gamepad', 'console', 'starmap', 'ball', 'star'],
+  54: ['map', 'books', 'honeypot', 'pot', 'mug', 'smores'],
   55: ['acorn', 'strawhat', 'snack', 'towel', 'sockpair', 'block'],
-  56: ['umbrella', 'mandarin', 'apple', 'fishcake', 'teddy', 'gift'],
-  57: ['bobber', 'rubberduck2', 'crown', 'medal', 'bellball', 'snowglobe'],
-  58: ['candy', 'cookie', 'slipper', 'milk', 'tissue'],
+  56: ['umbrella', 'mandarin', 'apple', 'camplantern', 'teddy', 'gift'],
+  57: ['bobber', 'rubberduck2', 'crown', 'medal', 'sleeppillow', 'starmap'],
+  58: ['candy', 'cookie', 'slipper', 'milk', 'smores'],
   59: ['star', 'duck', 'ball', 'books', 'pot'],
-  61: ['mug', 'glasses', 'policecap', 'heart', 'block', 'towel'],
-  62: ['sunglasses', 'bunnyband', 'gamepad', 'console', 'teddy', 'gift'],
-  63: ['medal', 'crown', 'snowglobe', 'bellball', 'books', 'pot'],
+  61: ['mug', 'glasses', 'policecap', 'picframe', 'trophy', 'towel'],
+  62: ['sunglasses', 'mic', 'gamepad', 'console', 'headphones', 'cheerstick'],
+  63: ['medal', 'crown', 'snowglobe', 'beaker', 'books', 'pot'],
   64: ['stapler', 'crayons', 'apple', 'star', 'duck'],
-  65: ['ball', 'rubberduck2', 'umbrella', 'block', 'heart', 'mug'],
-  66: ['cupcake', 'donut', 'cookie', 'slipper', 'fishcake', 'gift'],
-  67: ['tissue', 'glasses', 'yarn', 'towel', 'books', 'teddy'],
-  68: ['sunglasses', 'bunnyband', 'gamepad', 'console', 'bellball'],
-  69: ['pot', 'snowglobe', 'crown', 'medal', 'crayons'],
+  65: ['ball', 'rubberduck2', 'umbrella', 'block', 'camplantern', 'mug'],
+  66: ['cupcake', 'donut', 'cookie', 'slipper', 'fishcake', 'trophy'],
+  67: ['beaker', 'glasses', 'picframe', 'towel', 'books', 'teddy'],
+  68: ['sunglasses', 'mic', 'gamepad', 'console', 'cheerstick'],
+  69: ['pot', 'snowglobe', 'crown', 'medal', 'headphones'],
 };
 // socks belong to the laundromat (user: "양말은 매번 찾고, 안 찾는 판에도 양말 나오고")
 export const SOCKS = new Set(['sock', 'sockpair']);

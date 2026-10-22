@@ -9,6 +9,7 @@ import { ITEMS } from './gfx/items.js';
 import { retrieve, canGrab, raidOf } from './raid.js';
 import { lensClear } from './lens.js';
 import { raidXp, addRaidXp, lvOf } from './level.js';   // 털면 Lv이 올라요 (10/20)
+import { raidTools, newToolsMet, TOOL_NAME } from './defense.js';   // 이웃 집 지키기 도구 (② 10/22)
 
 // what a raid pays (a room raided before pays a third). A full clear of 5 things is about what the old win paid (40+15n+…).
 export const RAID = { find: 15, treasure: 40, star: 15, back: 20 };
@@ -67,6 +68,7 @@ export const raidGoal = S => `${ga(ownerOf(S))} ${Math.ceil(S.spec.time)} 셀 �
 export function raidStart(S) {
   if (!S.raidRun) return;
   S.timerOn = true;
+  raidTools(S);   // 이웃 집에도 바나나 껍질·미끼 상자·경보 벨 (집 등급 2부터 — defense.js)
   if (S.custom.brag && !S.scouted) setTimeout(() => !S.dead && !S.result && S.say(S.friend, S.custom.brag, 1800), 300);
 }
 
@@ -134,6 +136,7 @@ export async function raidSettle(S, why) {
   const total = R.bag + starCoins + back.length * RAID.back + (got?.coins || 0);
   const cv = h('span', {}, '0');
   const left = S.custom.stolen?.filter(t => !back.includes(t)) || [];
+  const met = newToolsMet(S);   // (처음 당한 지키기 도구: 우리 집에도 — 상점 아이템에 열림)
   const p = G.ui.panel({
     title: all ? '몽땅 털었다!' : '털기 끝!', color: all ? 'green' : 'orange', cls: 'raidend',
     body: [h('div', { class: 'stars' }, ...starEls),
@@ -146,7 +149,8 @@ export async function raidSettle(S, why) {
       ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),
       ...(left.length ? [h('div', { class: 'txt' }, `아직 ${ga(ownerOf(S))} 내 물건 ${left.length}개를 갖고 있어. 다시 털러 오자!`)] : []),
       ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, ITEMS[got.item]?.name || '')))] : []),
-      ...(got && S.custom.resident ? [h('div', { class: 'txt' }, `${ga(S.custom.nick)} 복수하러 올지도!`)] : [])],
+      ...(got && S.custom.resident ? [h('div', { class: 'txt' }, `${ga(S.custom.nick)} 복수하러 올지도!`)] : []),
+      ...(met.length ? [h('div', { class: 'txt toolmet' }, `${met.map(k => TOOL_NAME[k]).join('·')}, 우리 집에도 놓을 수 있어! (상점 아이템)`)] : [])],
     buttons: [G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') }),
       S.nextBtn = G.ui.btn('다른 집', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })],
   });

@@ -21,6 +21,8 @@ import { net, initNet, publishRoom, roomStats } from '../net.js';
 import { seatedAll, ECON, seatsOf } from '../econ.js';
 import { messOpen, messShut, askBuyLock } from '../raidreplay.js';   // 털린 흔적 · 자물쇠 사기 (털기 메타 10/19)
 import { locksOwned, locksUsed } from '../raid.js';
+import { attachBell } from '../gfx/defense-props.js';   // 경보 벨 (지키기 도구 ② 10/22)
+import { bellsOwned, bellsUsed } from '../defense.js';
 import { Hand } from '../handhold.js';
 import { holdStart, holdDrag, holdCancel, holdTick } from '../hidehold.js';   // 숨기기 = 가구 놓기처럼 (10/20)   // 손에 든 물건: 하나씩 크게 → 손 → 콕 → 쏙 (보물 지키기와 같은 손맛, 10/20)
 
@@ -324,6 +326,7 @@ export class MyHomeScene {
       }
       if (partFix) G.persist();
       for (const pk in hid.locks) { const p = this.partByKey[pk]; if (p) p.furn.setLock(p, hid.locks[pk], hid.code); else delete hid.locks[pk]; }
+      for (const pk in hid.bells || {}) { const p = this.partByKey[pk]; if (p) this.hangBell(p); else delete hid.bells[pk]; }   // 경보 벨 (② 10/22)
     }
     messOpen(this);   // 털린 흔적: what a resident opened stays open until you shut it
     this.mong = new Char('mong'); this.mong.root.position.set(1.9, 0, 1.9); this.mong.root.rotation.y = .8;   // (the room's owner is always 몽글이 — the 도감 pick is a friend who walks along, 10/19; comment no longer swallows the placing)
@@ -550,7 +553,7 @@ export class MyHomeScene {
     const r = this.sel; if (!r || this.stackHeld(r)) return;
     for (const s of r.f.spots) if (s.item) this.removeItem(s.item.type);
     for (const t in this.items) { let on = false; for (let o = this.items[t].spot.anchor; o; o = o.parent) if (o === r.f.group) on = true; if (on) this.removeItem(t); }
-    for (const p of r.f.parts) if (p.key) delete this.H.hide.locks[p.key];
+    for (const p of r.f.parts) if (p.key) { delete this.H.hide.locks[p.key]; if (this.H.hide.bells) delete this.H.hide.bells[p.key]; }
     this.room.removeFurniture(r); this.room.fitParts();
     this.zone.furniture = this.zone.furniture.filter(f => f.id !== r.id);
     this.H.inventory.push(r.type);
@@ -728,6 +731,11 @@ export class MyHomeScene {
       const on = !!hid.locks[p.key];
       this.lockRow.append(G.ui.btn(on ? `${p.label} 잠금 풀기` : `${p.label} 잠그기`, { color: on ? 'gray' : 'yellow', icon: 'lock', cls: 'sm', onClick: () => this.toggleLock(p) }));
     }
+    // 경보 벨 (지키기 도구 ② 10/22): bought in the shop's 아이템 tab, hung where a padlock goes — both on one drawer is fine
+    if (lockables.length && bellsOwned(G.save)) {
+      this.lockRow.append(h('span', { class: 'lockcount' }, `벨 ${bellsUsed(G.save)}/${bellsOwned(G.save)}`));
+      for (const p of lockables) { const on = !!hid.bells?.[p.key]; this.lockRow.append(G.ui.btn(on ? `${p.label} 벨 떼기` : `${p.label} 벨 달기`, { color: on ? 'gray' : 'orange', cls: 'sm', onClick: () => this.toggleBell(p) })); }
+    }
     const r = this.ready();
     this.pubBtn.classList.toggle('disabled', !r.ok); this.pubBtn.classList.toggle('pulse', r.ok);
   }
@@ -758,6 +766,17 @@ export class MyHomeScene {
     return hid.items.filter(e => { const l = lockOf(e); return l && !open.has(l); });
   }
   whyNot() { this.G.ui.toast(this.ready().why, 'red'); }
+  // 경보 벨 (② 10/22): a raider who finds something in this drawer may flee (raid.js, TOOL_ODDS.bell)
+  hangBell(p) { if (p.bellMesh) return; const b = attachBell(p.furn, p); if (b) p.bellRing = b.ring; }
+  toggleBell(p) {
+    const G = this.G, hid = this.H.hide; hid.bells = hid.bells || {};
+    if (hid.bells[p.key]) { delete hid.bells[p.key]; p.bellMesh?.parent?.remove(p.bellMesh); p.bellMesh = null; p.bellRing = null; }
+    else {
+      if (bellsUsed(G.save) >= bellsOwned(G.save)) { G.ui.toast('벨을 다 달았어 · 상점 아이템에서 하나 더', 'red'); G.audio.sfx('miss'); return; }
+      hid.bells[p.key] = 1; this.hangBell(p); G.audio.sfx('unlock'); G.ui.toast('벨을 달았어! 이 서랍을 열면 따르릉', 'green');
+    }
+    G.world.idsDirty = true; G.persist(); this.renderHideCards();
+  }
   toggleLock(p) {
     const G = this.G, hid = this.H.hide;
     if (hid.locks[p.key]) {
