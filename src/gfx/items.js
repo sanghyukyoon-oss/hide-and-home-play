@@ -416,9 +416,10 @@ export const ITEMS = {
     g.add(put(sph(.055, '#ff3b46', GLOSS, 16, 10), .045, y, 0, 0, 0, 0, [1.6, 1, 1]));
     g.add(put(sph(.055, '#ffffff', GLOSS, 16, 10), -.045, y, 0, 0, 0, 0, [1.6, 1, 1]));
     g.add(put(tor(.048, .006, '#2a1d33', null, Math.PI * 2, 6, 20), 0, y, 0, 0, Math.PI / 2, 0));
-    g.add(put(cyl(.009, .009, .11, '#ffe14d', null, 8), .184, y, 0, 0, 0, Math.PI / 2));
-    g.add(put(sph(.013, '#ff4f5e', GLOSS, 8, 6), .24, y, 0));
-    g.add(put(cyl(.007, .007, .07, '#2a1d33', null, 6), -.165, y, 0, 0, 0, Math.PI / 2));
+    // (① 모델 품질 10/22: the antenna and tail were half its length and the float a speck — both shorter, thicker)
+    g.add(put(cyl(.011, .011, .06, '#ffe14d', null, 8), .158, y, 0, 0, 0, Math.PI / 2));
+    g.add(put(sph(.016, '#ff4f5e', GLOSS, 8, 6), .19, y, 0));
+    g.add(put(cyl(.009, .009, .04, '#2a1d33', null, 6), -.148, y, 0, 0, 0, Math.PI / 2));
     return g;
   } },
   // 밀짚모자 (3판 기차역, 벤치·짐 가방 — 레벨 세션 추가 부탁): a wide straw brim, a round crown, a red ribbon round it

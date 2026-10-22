@@ -1704,7 +1704,7 @@ export const SHOP_ITEMS = {
   receipt: { name: '영수증', h: .04, flat: true, build() {
     const g = grp();
     g.add(mg('it-receipt', mat('#ffffff', { map: atlas(), side: DS }), ({ addM }) => {
-      const pg = cellUV(new THREE.PlaneGeometry(.13, .34, 1, 12), RG.receipt), p = pg.attributes.position;
+      const pg = cellUV(new THREE.PlaneGeometry(.155, .34, 1, 12), RG.receipt), p = pg.attributes.position;   // (a little wider — ① 10/21)
       for (let i = 0; i < p.count; i++) { const yy = p.getY(i) / .17; p.setZ(i, .028 * Math.pow(Math.abs(yy), 3) + (yy > 0 ? .01 * yy * yy : 0)); }
       pg.computeVertexNormals();
       addM(pg, xf(0, .004, 0, -HP, 0, .25));

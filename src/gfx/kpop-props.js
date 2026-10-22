@@ -3,7 +3,7 @@
 // over a raised floor; the front curtain is the lock (a colour lock: the fans' light-stick colours in order) and
 // backstage is what it hides. Speakers, a mic stand, a merch table, a photo-zone heart and rows of fan stools.
 import * as THREE from 'three';
-import { put, grp } from './kit.js';
+import { put, grp, heartShape } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -99,11 +99,17 @@ B.photoheart = f => {
 
 // 팬 스툴 (1×1): a little stool row seat with a light-stick left on it
 B.fanstool = f => {
-  f.add(mc('fanstool', ({ add, tube }) => {
-    add(G.cyl(.18, .18, .05, 14), LILAC, 0, .38, 0);
+  // (① 모델 품질 10/22: the light stick the note promised was never there — a bare disc on legs; now a padded seat, a foot ring
+  // and the fan's heart light stick leaning on a leg)
+  f.add(mc('fanstool2', ({ add, tube }) => {
+    add(G.cyl(.18, .17, .05, 14), LILAC, 0, .38, 0); add(G.cyl(.16, .16, .022, 14), '#e2d4ff', 0, .414, 0);
     for (let k = 0; k < 3; k++) { const a = k / 3 * PI * 2; tube([Math.cos(a) * .14, 0, Math.sin(a) * .14], [Math.cos(a) * .1, .36, Math.sin(a) * .1], .015, STEEL, 4); }
+    add(G.tor(.125, .012, PI * 2, 4, 18), STEEL, 0, .15, 0, HP, 0, 0);
+    tube([.34, .01, .17], [.255, .4, .115], .016, '#f4f4f8', 6);
+    add(G.ext(heartShape(.07), .032, .008, 3), PINK, .245, .4, .095, 0, -.6, .2);
+    add(G.sph(.018, 6, 5), '#ffd6ea', .25, .45, .13);
   }));
-  f.spot('on', null, 0, .41, 0, { maxH: .3, label: '팬 의자 위', scale: .7 });
+  f.spot('on', null, 0, .425, 0, { maxH: .3, label: '팬 의자 위', scale: .7 });
   f.spot('under', null, 0, 0, 0, { maxH: .25, label: '팬 의자 밑', scale: .65 });
 };
 

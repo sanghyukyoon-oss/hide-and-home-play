@@ -1244,7 +1244,8 @@ B.counter = (f, T, o = {}) => {
   const dcx = W / 2 - .02;
   pv.add(mc('counter-door|' + tk, ({ add }) => {
     add(G.box(W - .04, .76, .05, .016), acc, dcx, 0, 0);
-    frameBars(add, dcx, 0, W - .06, .74, .075, .012, .025, shade(acc, -.07));
+    frameBars(add, dcx, 0, W - .06, .74, .075, .012, .025, shade(acc, -.16));   // (① 모델 품질 10/21: the frame a step darker and a cream heart up top —
+    add(G.ext(heartShape(.07), .006, 0, 6), CREAM, dcx - .06, .2, .028);             // one plain panel read as a cardboard box in the icon)
     for (const dy of [.08, .28]) add(G.cyl(.011, .011, .035, 8), STEEL2, W - .14, dy, .045, HP, 0, 0);
     add(G.cap(.013, .2, 2, 8), STEEL, W - .14, .18, .062);
   }));
@@ -1253,6 +1254,13 @@ B.counter = (f, T, o = {}) => {
     geo(G.cyl(.018, .018, .13, 10), xf(W - .14, .18, .075, 0, 0, HP));
   }));
   f.add(pv);
+  // on the worktop's back left corner: a crock of spatulas and ladles, a little sugar pot (the two places on it stay clear)
+  f.add(mc('counter-crock|' + tk, ({ add }) => {
+    add(G.cyl(.05, .045, .13, 12), acc2, -.4, .935 + .065, z0 - .2); add(G.tor(.05, .008, PI * 2, 4, 14), shade(acc2, -.15), -.4, 1.065, z0 - .2, HP, 0, 0);
+    for (const [dx, dz, a, c] of [[-.015, 0, -.15, woodD], [.015, .01, .12, STEEL2], [0, -.015, .02, woodD]]) { add(G.cyl(.006, .006, .2, 5), c, -.4 + dx, 1.12, z0 - .2 + dz, 0, 0, a); }
+    add(G.box(.05, .012, .035, .006), woodD, -.415 - .03, 1.22, z0 - .2, 0, 0, -.15); add(G.sph(.026, 8, 6), STEEL2, -.385 + .025, 1.215, z0 - .19, 0, 0, 0, [1, .55, 1]);
+    add(G.cyl(.035, .035, .06, 10), WHITE, -.32, .935 + .03, z0 - .27); add(G.sph(.036, 8, 5), acc, -.32, .935 + .065, z0 - .27, 0, 0, 0, [1, .4, 1]);
+  }));
   const p = f.part('door', pv, (t) => { pv.rotation.y = -1.8 * t; }, { label: '찬장', sfx: 'open' });
   f.spot('inside', null, 0, .08, z0 + .12, { part: p, maxH: .34, label: '찬장 아래칸' });   // near the door: from above, the back of the low shelf can't be seen (bot stuck on a milk carton there, 10/18)
   f.spot('inside', null, 0, .46, z0 + .12, { part: p, maxH: .36, label: '찬장 위칸', scale: .9 });
@@ -1524,9 +1532,11 @@ B.wallshelf = (f, T) => {
   f.add(wd('wallshelf', wood, ({ box }) => box(.96, .05, .26, 0, 1.42, .13, { r: .012 })));
   f.add(mc('wallshelf|' + tk, ({ add, tube }) => {
     for (const sx of [-1, 1]) add(G.ext(bracketShape(.2, .15), .035, 0, 6), woodD, sx * .34 + .0175, 1.395, 0, 0, -HP, 0);
-    const flag = new THREE.Shape(); flag.moveTo(-.04, 0); flag.lineTo(.04, 0); flag.lineTo(0, -.075); flag.lineTo(-.04, 0);
-    tube([-.46, 1.4, .268], [.46, 1.4, .268], .003, '#8a7a6a', 4);
-    [acc, acc2, acc3, MINT, acc, acc2, acc3, CORAL, acc2].forEach((c, k) => add(G.ext(flag, .006, 0, 1), c, -.4 + k * .1, 1.4, .266));
+    // (10/21 ① 모델 품질: a row of paper flags hung off its front edge read as teeth) on it: three books leaning at the left end,
+    // a little framed photo at the right, the potted sprout in the middle; the two places between stay clear for things
+    for (let k = 0; k < 3; k++) add(G.box(.032, .2 - k * .02, .15, .006), [acc, acc2, acc3][k], -.43 + k * .036, 1.445 + (.2 - k * .02) / 2, .12, 0, 0, k === 2 ? -.18 : 0);
+    add(G.box(.12, .15, .02, .008), woodD, .41, 1.445 + .075, .1, -.18, 0, 0); add(G.box(.09, .11, .006, .003), SKY2, .41, 1.445 + .077, .112, -.18, 0, 0);
+    add(G.sph(.02, 8, 6), MUSTARD, .39, 1.445 + .09, .118, 0, 0, 0, [1, 1, .3]);
     add(G.cyl(.035, .03, .06, 12), acc2, 0, 1.445 + .03, .07);
     add(G.cap(.022, .04, 2, 8), LEAF2, 0, 1.445 + .09, .07);
     add(G.sph(.01, 6, 5), BLUSH, 0, 1.445 + .13, .07);

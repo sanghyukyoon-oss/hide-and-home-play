@@ -748,6 +748,14 @@ B.streetlamp = (f, T) => {
     add(G.sph(.022, 8, 6), lamp, 0, hy - .1 - LH - .05, hz);
   }));
   f.add(mg('streetlamp-bulb', bulbMat(), ({ add }) => add(new THREE.CylinderGeometry(.086, .066, LH, 6), 0, hy - .1 - LH / 2, hz, 0, PI / 6, 0)));
+  // (① 모델 품질 10/21: a thin post in the icon) a hanging flower basket on a little arm halfway up, toward the street
+  f.add(mc('streetlamp-flowers', ({ add, tube }) => {
+    const by = 1.42, bx = .26;
+    tube([0, by + .26, pz], [bx, by + .26, pz], .012, '#5b5672', 6); tube([bx, by + .26, pz], [bx, by + .1, pz], .006, '#5b5672', 4);
+    add(G.sph(.13, 12, 8), '#b07a4a', bx, by + .06, pz, 0, 0, 0, [1, .7, 1]); add(G.tor(.13, .014, PI * 2, 4, 16), '#8a5a34', bx, by + .08, pz, HP, 0, 0);
+    for (let k = 0; k < 9; k++) { const a = k * 2.4, r = .03 + (k % 3) * .035; add(G.sph(.035, 6, 5), ['#ff6f91', '#ffd23c', '#ffffff', '#ff8f3a'][k % 4], bx + Math.cos(a) * r, by + .13 + (k % 2) * .02, pz + Math.sin(a) * r); }
+    for (let k = 0; k < 5; k++) { const a = k * 1.3 + .4; add(G.sph(.04, 6, 5), k % 2 ? '#4ea85a' : '#6cc46a', bx + Math.cos(a) * .11, by + .02 - (k % 2) * .05, pz + Math.sin(a) * .11, 0, 0, 0, [.8, 1.4, .8]); }
+  }));
   f.spot('on', null, 0, .16, .14, { maxH: .45, label: '가로등 받침 위', scale: .65 });
 };
 
@@ -1103,16 +1111,17 @@ export const STREET_ITEMS = {
       for (const [u, v, w, h, c] of [[0, .012, .024, .012, '#ffd84a'], [-.015, -.006, .012, .016, '#ff9a3c'], [.015, -.004, .012, .016, '#4ea85a'], [0, -.016, .02, .01, '#ff9fb5'], [-.014, .012, .01, .01, '#ffe066']])
         if (axis === 'x') add(G.box(.006, h, w, .002), c, cx, cy + v, cz + u); else add(G.box(w, .006, h, .002), c, cx + u, cy, cz - v);
     };
-    g.add(mc('it-kimbap', ({ add }) => {
-      add(G.box(.36, .006, .22, .002), '#e3e7ee', 0, .003, 0);
-      add(G.cyl(.042, .042, .2, 22), NORI, -.06, .048, -.04, 0, 0, HP);
-      add(G.cyl(.036, .036, .006, 20), RICE, .043, .048, -.04, 0, 0, HP);
-      fill(add, .048, .048, -.04, 'x');
-      for (let k = 0; k < 7; k++) add(G.sph(.004, 5, 4), RICE, -.14 + k * .022, .089, -.04 + (k % 2 ? .01 : -.01));
-      for (const [x, z] of [[.0, .065], [.1, .045]]) {
-        add(G.cyl(.042, .042, .026, 22), NORI, x, .006 + .013, z);
-        add(G.cyl(.036, .036, .006, 20), RICE, x, .032 + .003, z);
-        fill(add, x, .038 + .003, z, 'y');
+    // (① 모델 품질 10/21: the dark roll took most of it and read as a stick — now the slices themselves, the colourful cut faces
+    // up, a row of five leaning on each other on the foil tray)
+    g.add(mc('it-kimbap3', ({ add }) => {
+      add(G.box(.36, .006, .2, .002), '#e3e7ee', 0, .003, 0);
+      for (let k = 0; k < 5; k++) {
+        const x = -.11 + k * .055, z = (k % 2 ? .014 : -.014), tilt = -.35;
+        const yy = .028 + Math.sin(-tilt) * .02;
+        add(G.cyl(.048, .048, .026, 10), NORI, x, yy, z, 0, 0, tilt);
+        add(G.cyl(.041, .041, .006, 8), RICE, x - Math.sin(tilt) * .013, yy + Math.cos(tilt) * .013, z, 0, 0, tilt);
+        for (const [u, v, w, h, c] of [[0, .012, .026, .013, '#ffd84a'], [-.016, -.008, .013, .018, '#ff9a3c'], [.016, -.006, .013, .018, '#4ea85a']])
+          add(G.box(w, .006, h, .002), c, x - Math.sin(tilt) * .017 + u * Math.cos(tilt), yy + Math.cos(tilt) * .017 + u * Math.sin(tilt), z - v, 0, 0, tilt);
       }
     }));
     return g;
@@ -1128,14 +1137,19 @@ export const STREET_ITEMS = {
     g.add(mg('it-onigiri-label', atlasMat(), ({ add }) => add(quadGeo(.07, .035, RG.oni), 0, .045, .043 + .005)));
     return g;
   } },
-  // 어묵 꼬치: a folded fish-cake ribbon on a wooden skewer, lying down
+  // 어묵 꼬치 (10/21 다시, user "오뎅도.. 다시 만들어"): the fish-cake sheet folded back and forth on a wooden skewer, drawn as
+  // five rounded folds side by side — light and toasted in turn, leaning one way and the other like an accordion, so the
+  // ruffle reads even small; a zig-zag of yellow mustard over the top and broth glints on the high folds
   fishcake: { name: '어묵 꼬치', h: .09, flat: true, build() {
-    const g = grp(), fc = '#f2bd72';
-    g.add(mc('it-fishcake', ({ add }) => {
-      add(G.cyl(.01, .01, .34, 6), '#e6c48e', -.02, .04, 0, 0, 0, HP);
-      add(G.cone(.01, .03, 6), '#e6c48e', .16, .04, 0, 0, 0, -HP);
-      for (let k = 0; k < 5; k++) add(G.box(.06, .03, .17, .012), k % 2 ? shade(fc, -.08) : fc, -.13 + k * .055, .05, 0, 0, 0, k % 2 ? -.6 : .6);   // folded like a ribbon
-      for (let k = 0; k < 5; k++) add(G.box(.06, .006, .17, .003), shade(fc, -.22), -.13 + k * .055, .066, 0, 0, 0, k % 2 ? -.6 : .6);   // browned edges
+    const g = grp(), FC = '#efcb93', FC2 = '#cf8f4d', NF = 5, DX = .046, X0 = -(NF - 1) * DX / 2;
+    g.add(mc('it-fishcake5', ({ add, tube }) => {
+      for (let k = 0; k < NF; k++) {
+        const hi = k % 2 === 0, x = X0 + k * DX;
+        add(G.sph(.06, 7, 5), hi ? FC : FC2, x, hi ? .05 : .042, 0, 0, 0, hi ? .32 : -.32, [.52, .48, 1.58]);
+      }
+      add(G.cyl(.0085, .0085, .37, 6), '#e8c690', -.045, .046, 0, 0, 0, HP); add(G.cone(.0085, .03, 6), '#e8c690', .155, .046, 0, 0, 0, -HP);
+      let prev = null; for (let k = 0; k < NF; k++) { const x = X0 + k * DX, p = [x, (k % 2 === 0 ? .05 : .042) + .027, k % 2 ? -.045 : .045]; if (prev) tube(prev, p, .008, '#ffd21f', 4); prev = p; }
+      for (let k = 0; k < NF; k += 2) add(G.box(.012, .004, .03, .002), '#fffaf0', X0 + k * DX - .008, .079, -.032, 0, 0, .32);
     }));
     return g;
   } },
@@ -1146,15 +1160,19 @@ export const STREET_ITEMS = {
     const g = grp(), uc = '#ffc93a', y = .045, X = .04;
     const P = [[0, -.158], [.014, -.155], [.03, -.13], [.043, -.09], [.041, -.02], [.033, .05], [.021, .11], [.008, .145], [0, .147]];
     const rAt = ly => { for (let i = 1; i < P.length; i++) if (ly <= P[i][1]) { const [r0, y0] = P[i - 1], [r1, y1] = P[i]; return r0 + (r1 - r0) * (ly - y0) / (y1 - y0); } return 0; };
-    g.add(mc('it-umbrella2', ({ add, addM }) => {
-      add(G.lathe(P, 8), uc, X, y, 0, 0, 0, -HP);
-      for (const [x, a] of [[-.06, .5], [.0, -1.2], [.06, 1.1], [.11, -.3]]) { const r = rAt(x - X) * .93; add(G.sph(.012, 5, 3), WHITE, x, y + Math.cos(a) * r, Math.sin(a) * r); }
-      add(G.tor(.04, .007, PI * 2, 4, 10), shade(uc, -.2), .02, y, 0, 0, HP, 0);
-      add(G.cone(.008, .055, 6), STEEL, .215, y, 0, 0, 0, -HP);
-      add(G.cyl(.008, .008, .057, 8), STEEL, -.1465, y, 0, 0, 0, HP);
-      add(G.cyl(.016, .016, .04, 8), BROWN, -.19, y, 0, 0, 0, HP);
-      addM(G.tor(.04, .016, PI, 4, 8), new THREE.Matrix4().makeTranslation(-.205, y, -.04).multiply(new THREE.Matrix4().makeRotationY(-HP)).multiply(new THREE.Matrix4().makeRotationX(HP)), BROWN);
-      add(G.sph(.016, 6, 4), BROWN, -.205, y, -.08);
+    // (10/21 2차, ① 모델 품질: a stroke at the start view — the folded canopy now lies a little squashed, half again as wide
+    // as it is tall, and the crook is thicker; the height (flat, .09) is the same)
+    const SZ = 1.45;
+    g.add(mc('it-umbrella3', ({ add, addM }) => {
+      add(G.lathe(P, 8), uc, X, y, 0, 0, 0, -HP, [1, 1, SZ]);
+      for (const [x, a] of [[-.06, .5], [.0, -1.2], [.06, 1.1], [.11, -.3], [-.03, 2.4], [.08, 2.9]]) { const r = rAt(x - X) * .93; add(G.sph(.013, 5, 3), WHITE, x, y + Math.cos(a) * r, Math.sin(a) * r * SZ); }
+      add(G.tor(.04, .008, PI * 2, 4, 12), shade(uc, -.22), .02, y, 0, 0, HP, 0, [1, 1, SZ]);
+      add(G.box(.02, .012, .02, .004), '#ffffff', .02, y + .042, 0);
+      add(G.cone(.009, .055, 6), STEEL, .215, y, 0, 0, 0, -HP);
+      add(G.cyl(.009, .009, .057, 8), STEEL, -.1465, y, 0, 0, 0, HP);
+      add(G.cyl(.02, .02, .045, 8), BROWN, -.195, y, 0, 0, 0, HP);
+      addM(G.tor(.05, .02, PI, 4, 9), new THREE.Matrix4().makeTranslation(-.215, y, -.05).multiply(new THREE.Matrix4().makeRotationY(-HP)).multiply(new THREE.Matrix4().makeRotationX(HP)), BROWN);
+      add(G.sph(.02, 6, 4), BROWN, -.215, y, -.1);
     }));
     return g;
   } },

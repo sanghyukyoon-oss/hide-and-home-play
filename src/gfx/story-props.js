@@ -550,7 +550,7 @@ B.catbowls = (f, T) => {
     add(G.sph(.024, 8, 6), INK, -.29, .03, zc + .07, 0, 0, 0, [1, .4, 1.15]);
     add(G.sph(.009, 5, 4), WHITE, -.297, .039, zc + .063);
     add(G.tor(.07, .01, PI * .9, 3, 10), WHITE, -.18, .03, zc, -HP, 0, -PI * .45);
-    for (const [x, z] of [[.05, .12], [.1, -.08], [-.02, -.16]]) add(G.cyl(.022, .022, .006, 10), shade(matC, .1), x, .03, zc + z);
+    for (const [x, z] of [[.05, .12], [.1, -.08], [-.02, -.16]]) add(G.cyl(.022, .022, .006, 10), shade(matC, .1), x, .033, zc + z);
     bowl(add, -.19, zc - .1, bowlA, '#c98a4b');
     for (const [x, z, y] of [[-.21, -.11, .09], [-.17, -.08, .095], [-.19, -.13, .1], [-.15, -.12, .09], [-.22, -.07, .09], [-.19, -.095, .108]]) add(G.sph(.021, 6, 4), '#b8763c', x, y, zc + z, 0, x * 20, 0, [1, .75, 1]);
     bowl(add, .02, zc + .03, WHITE, '#7fd0f8');
@@ -569,7 +569,7 @@ B.catbowls = (f, T) => {
   tail.add(mc('catbowls-tail', ({ add }) => {
     const s = new THREE.Shape(); s.moveTo(-.04, .07); s.lineTo(.28, .22); s.quadraticCurveTo(.2, 0, .28, -.22); s.lineTo(-.04, -.07); s.quadraticCurveTo(-.06, 0, -.04, .07);
     add(G.ext(s, .016, .006, 6), shade(matC, -.04), 0, 0, 0, -HP, 0, 0);
-    for (const k of [-1, 1]) add(G.pbox(.16, .006, .014), WHITE, .12, .025, k * .06, 0, -k * .35, 0);
+    for (const k of [-1, 1]) add(G.pbox(.16, .006, .014), WHITE, .12, .029, k * .06, 0, -k * .35, 0);   // (a hair above the tail's top: they flickered on it — ① 10/21)
   }));
   f.add(tail);
   const p = f.part('lift', tail, t => { tail.rotation.z = 1.25 * t; }, { label: '매트 꼬리', sfx: 'lift' });

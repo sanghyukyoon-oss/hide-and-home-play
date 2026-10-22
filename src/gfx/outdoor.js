@@ -378,6 +378,8 @@ B.pole = (f, T) => {
   f.add(put(cyl(.095, .13, Hh, conc, null, 18), px, Hh / 2, pz));
   f.add(put(cyl(.137, .141, .5, '#ffffff', { map: hazardTex() }, 18), px, .27, pz));
   f.add(put(mg('pole-arm', '#8c939e', ({ add }) => { add(G.box(.96, .08, .08, .02), 0, 0, 0); add(G.box(.12, .12, .14, .02), 0, 0, 0); add(G.box(.1, .1, .3, .02), 0, -.52, -.16); }), px, 2.62, pz));
+  // (① 모델 품질 10/21: just a post in the icon) white insulators on the cross arm (no wire stubs: they would end in the air)
+  f.add(put(mg('pole-insul', '#f4f1ea', ({ add }) => { for (const x of [-.4, -.14, .4]) { add(G.cyl(.03, .036, .05, 10), x, .065, 0); add(G.cyl(.024, .03, .04, 10), x, .11, 0); add(G.sph(.02, 8, 6), x, .14, 0); } }), px, 2.62, pz));
   f.add(put(mg('pole-tr', '#a3adb8', ({ add }) => { add(G.cyl(.15, .15, .42, 18), 0, 0, 0); add(G.cyl(.16, .16, .05, 18), 0, .22, 0); add(G.cyl(.03, .03, .12, 8), .06, .29, 0); }), px, 2.08, pz - .3));
   // the flyers (22판 실폰 10/21, user: "오브젝트 겹치지 않게 해줘" — flat cards wider than the pole stuck through it and each
   // other): each one is a curved sheet wrapped round the pole at its own height — the tutor ad high on the left, the lost dog
@@ -596,23 +598,66 @@ B.aircon = (f, T) => {
 
 // 장바구니 자전거: wicker basket with a cloth bag (and the obligatory 대파), a lidded box on the rear rack
 B.bike = (f, T) => {
-  const fc = T.bike || '#3fc7b4', R = [-.52, .3, 0], F = [.56, .3, 0], BB = [-.04, .26, 0], HT = [.42, .8, 0];
-  f.add(mg('bike-tires', '#3a3346', ({ add }) => { for (const p of [R, F]) add(new THREE.TorusGeometry(.25, .045, 10, 28), ...p); }));
-  f.add(mg('bike-discs', '#eef3f7', ({ add }) => { for (const p of [R, F]) add(G.cyl(.21, .21, .03, 24), p[0], p[1], p[2], HP); }));
-  f.add(mg('bike-frame', fc, ({ add, tube }) => {
-    const r = .032;
-    tube(R, BB, r); tube(R, [-.22, .66, 0], r); tube(BB, [-.22, .72, 0], r);
-    tube(BB, [.14, .33, 0], r * 1.15); tube([.14, .33, 0], HT, r * 1.15);
-    tube(HT, F, r); tube(HT, [.4, .97, 0], r);
-    add(G.cap(.026, .36), .39, .98, 0, HP);
-    tube([-.22, .64, 0], [-.8, .64, 0], .026); tube([-.8, .64, 0], R, .02);
-    for (const p of [R, F]) add(G.sph(.055, 12, 8), ...p);
-    tube(BB, [-.3, .015, .16], .022);
-    add(G.box(.1, .03, .06, .01), .04, .14, .1); add(G.box(.1, .03, .06, .01), -.12, .36, -.1);
-    tube([.66, .64, 0], F, .02); tube([.48, .7, 0], [.66, .7, 0], .02);
+  // 동네 자전거 (10/21 다시 — user "자전거도 다시": a pink lid floated behind, a pedal lay on the ground away from the frame, the
+  // rear box hung empty in the air). A step-through town bike standing on its centre stand: spoked wheels under fenders, the
+  // chainring, cranks and pedals on the frame with the chain to the rear cog, a saddle on its post, swept city bars with a
+  // bell; the wicker basket in front (leeks and the shopping bag), a lidded box strapped onto a real rear rack.
+  const fc = T.bike || '#3fc7b4', R = [-.5, .3, 0], F = [.55, .3, 0], BB = [-.03, .27, 0], RK = .64;
+  const rim = '#c9d0dc', dark = '#3a3346';
+  f.add(mg('bike2-tires', dark, ({ add }) => { for (const p of [R, F]) add(new THREE.TorusGeometry(.265, .038, 8, 26), ...p); }));
+  f.add(mg('bike2-rims', rim, ({ add, tube }) => {
+    for (const p of [R, F]) {
+      add(new THREE.TorusGeometry(.222, .012, 4, 26), ...p); add(G.cyl(.04, .04, .1, 10), p[0], p[1], p[2], HP);
+      for (let k = 0; k < 6; k++) { const a = k * PI / 6, dx = Math.cos(a) * .22, dy = Math.sin(a) * .22; tube([p[0] - dx, p[1] - dy, 0], [p[0] + dx, p[1] + dy, 0], .0045, 4); }
+    }
+    // the centre stand (two legs from the rear axle to the ground, a foot across) and the bell
+    for (const sz of [-1, 1]) tube([R[0], R[1], sz * .055], [R[0] - .1, .012, sz * .13], .013, 6);
+    tube([R[0] - .1, .012, -.13], [R[0] - .1, .012, .13], .012, 6);
+    add(G.cyl(.028, .032, .03, 12), .31, .965, -.2); add(G.sph(.012, 6, 4), .31, .985, -.2);
   }));
-  f.add(put(cap(.055, .12, '#6b4a3a'), -.22, .78, 0, 0, 0, HP));
-  const bx = .66, by = .7;
+  f.add(mg('bike2-frame', fc, ({ add, tube }) => {
+    const r = .03;
+    // step-through: the down tube sweeps low from the head tube to the bottom bracket
+    tube([.39, .62, 0], [.24, .4, 0], r * 1.1); tube([.24, .4, 0], [.1, .29, 0], r * 1.1); tube([.1, .29, 0], BB, r * 1.1);
+    tube(BB, [-.17, .7, 0], r);                                                            // seat tube
+    tube([.39, .62, 0], [.36, .8, 0], r * 1.25);                                           // head tube
+    tube([.39, .62, 0], [.5, .42, 0], r * .8); tube([.5, .42, 0], F, r * .8);             // fork
+    for (const sz of [-1, 1]) {
+      tube([BB[0], BB[1], sz * .04], [R[0], R[1], sz * .05], .016);                        // chain stays
+      tube([-.16, .64, sz * .03], [R[0], R[1], sz * .05], .015);                            // seat stays
+    }
+    add(G.sph(.042, 10, 8), ...BB);
+    // fenders over both wheels (a strip bent round the tyre's top half)
+    for (const p of [R, F]) add(new THREE.TorusGeometry(.315, .02, 4, 16, PI * .95), p[0], p[1], 0, 0, 0, .1, [1, 1, 2.2]);
+    // the rear rack: a flat grid over the rear wheel, struts down to the axle and forward to the seat stays
+    for (const sz of [-1, 1]) { tube([-.76, RK, sz * .1], [-.26, RK, sz * .1], .011, 6); tube([-.76, RK, sz * .1], [R[0], R[1], sz * .055], .011, 6); tube([-.26, RK, sz * .1], [-.17, .62, sz * .03], .011, 6); }
+    for (const x of [-.74, -.6, -.46, -.32]) tube([x, RK, -.1], [x, RK, .1], .009, 5);
+  }));
+  // the drive side (+z, toward the room): chainring, cranks and pedals on the bottom bracket, the chain back to the cog
+  f.add(mg('bike2-drive', '#7d8696', ({ add, tube }) => {
+    add(new THREE.TorusGeometry(.085, .013, 4, 18), BB[0], BB[1], .075); add(G.cyl(.06, .06, .01, 12), BB[0], BB[1], .075, HP);
+    add(G.cyl(.045, .045, .012, 10), R[0], R[1], .075, HP);
+    add(G.cyl(.016, .016, .2, 8), BB[0], BB[1], 0, HP);   // the axle the cranks turn on
+    for (const [a, sz] of [[-1.05, .085], [-1.05 + PI, -.085]]) {
+      const ex = BB[0] + Math.cos(a) * .17, ey = BB[1] + Math.sin(a) * .17;
+      tube([BB[0], BB[1], sz], [ex, ey, sz], .014, 6);
+    }
+  }));
+  f.add(mg('bike2-chain', dark, ({ add, tube }) => {
+    tube([BB[0], BB[1] + .088, .075], [R[0], R[1] + .047, .075], .0065, 4); tube([BB[0], BB[1] - .088, .075], [R[0], R[1] - .047, .075], .0065, 4);
+    for (const [a, sz] of [[-1.05, .12], [-1.05 + PI, -.12]]) add(G.box(.1, .025, .06, .008), BB[0] + Math.cos(a) * .17, BB[1] + Math.sin(a) * .17, sz);   // pedals
+    // grips, the saddle's dark parts
+    for (const sz of [-1, 1]) add(G.cap(.022, .08), .27, .96, sz * .26, HP);
+  }));
+  f.add(mg('bike2-bars', rim, ({ tube }) => {
+    tube([.36, .8, 0], [.36, .93, 0], .018, 6);                                              // stem
+    for (const sz of [-1, 1]) { tube([.36, .93, 0], [.33, .95, sz * .14], .015, 6); tube([.33, .95, sz * .14], [.27, .96, sz * .23], .015, 6); }
+    tube([-.17, .7, 0], [-.19, .83, 0], .016, 6);                                            // seat post
+  }));
+  f.add(put(rbox(.27, .06, .15, '#6b4a3a', .028), -.2, .86, 0, 0, 0, .05));                  // saddle
+  // front basket on its bracket
+  const bx = .64, by = .7;
+  f.add(mg('bike2-bracket', dark, ({ tube }) => { tube([.37, .78, 0], [bx - .12, by + .02, 0], .012, 5); tube([.5, .42, 0], [bx + .02, by, 0], .01, 5); }));
   f.add(mg('bike-basket', '#ffffff', ({ add }) => hollowBox(add, .32, .24, .36, .022, bx, by, 0), { map: wickerTex() }));
   const bag = grp(put(sph(.15, '#ff8fb8'), 0, 0, 0, 0, 0, 0, [1, .55, 1.1]), put(tor(.06, .012, '#ff6f91'), 0, .07, 0, 0, HP, 0));
   put(bag, bx, by + .12, .05); f.add(bag);
@@ -620,11 +665,17 @@ B.bike = (f, T) => {
   f.spot('inside', null, bx, by + .022, .04, { part: bp, maxH: .24, label: '자전거 바구니', scale: .7 });
   f.add(mg('bike-pa-w', '#ffffff', ({ add }) => { add(G.cap(.024, .2), bx - .02, by + .2, -.12, 0, 0, -.45); add(G.cap(.024, .2), bx + .02, by + .2, -.09, 0, 0, -.5); }));
   f.add(mg('bike-pa-g', '#5fc45a', ({ add }) => { add(G.cap(.022, .22), bx + .1, by + .4, -.12, 0, 0, -.45); add(G.cap(.022, .22), bx + .15, by + .38, -.09, 0, 0, -.5); }));
-  const rx = -.58, ry = .665;
-  f.add(mg('bike-rbox', T.accent2 || '#4fb8ff', ({ add }) => hollowBox(add, .34, .22, .3, .022, rx, ry, 0)));
-  const lid = grp(put(rbox(.37, .04, .33, T.accent3 || '#ffd23f', .015), 0, .02, .165)); put(lid, rx, ry + .22, -.165); f.add(lid);
-  const lp = f.part('lid', lid, t => { lid.rotation.x = -1.7 * t; }, { label: '짐칸 상자', sfx: 'open', dur: .26 });
-  lp.lockable = true; lp.lockKind = 'pad'; f.lockAt = { x: 0, y: -.04, z: .35, parent: lid };
+  // the rear box, sitting on the rack, two black straps round it; its lid hinges on a pin along the back edge
+  const rx = -.51, ry = RK + .012, bw = .36, bh = .22, bd = .3, boxC = T.accent2 || '#4fb8ff';
+  f.add(mg('bike2-rbox', boxC, ({ add }) => hollowBox(add, bw, bh, bd, .022, rx, ry, 0)));
+  f.add(mg('bike2-rbox-trim', dark, ({ add }) => {
+    for (const x of [rx - .1, rx + .1]) { add(G.box(.03, .006, bd + .012, .003), x, ry - .002, 0); add(G.box(.03, bh, .006, .003), x, ry + bh / 2, bd / 2 + .004); add(G.box(.03, bh, .006, .003), x, ry + bh / 2, -bd / 2 - .004); }
+    add(G.cyl(.012, .012, bw - .02, 8), rx, ry + bh + .006, -bd / 2 - .006, 0, 0, HP);      // the hinge pin
+  }));
+  const lid = grp(put(rbox(bw + .02, .035, bd + .02, T.accent3 || '#ffd23f', .014), 0, .018, (bd + .02) / 2), put(rbox(.06, .03, .02, dark, .008), 0, .0, bd + .025));
+  put(lid, rx, ry + bh, -bd / 2 - .006); f.add(lid);
+  const lp = f.part('lid', lid, t => { lid.rotation.x = -1.6 * t; }, { label: '짐칸 상자', sfx: 'open', dur: .26 });
+  lp.lockable = true; lp.lockKind = 'pad'; f.lockAt = { x: 0, y: -.05, z: bd + .04, parent: lid };
   f.spot('inside', null, rx, ry + .022, 0, { part: lp, maxH: .19, label: '짐칸 상자', scale: .65 });
 };
 
@@ -812,7 +863,7 @@ B.tree = (f, T) => {
   f.add(put(sph(.12, '#3b2a33'), 0, .12, .17, 0, 0, 0, [1, 1.25, .38]));
   f.spot('behind', null, 0, 0, .33, { maxH: .25, label: '나무 밑동', scale: .7 });
   f.add(mg('tree-canopy', leaf, ({ add }) => { for (const [x, y, z, r] of [[0, 1.66, 0, .56], [-.36, 1.46, .08, .38], [.37, 1.5, -.04, .4], [.04, 2.05, -.06, .38], [.1, 1.52, .32, .33], [-.12, 1.6, -.32, .36]]) add(G.sph(r, 18, 12), x, y, z); }));
-  f.add(mg('tree-canopy2', col(T, 'leaf2'), ({ add }) => { for (const [x, y, z, r] of [[-.2, 1.92, .28, .16], [.3, 1.8, .3, .14], [-.42, 1.62, .3, .12]]) add(G.sph(r, 12, 9), x, y, z); }));
+  f.add(mg('tree-canopy2b', col(T, 'leaf2'), ({ add }) => { for (const [x, y, z, r] of [[-.2, 1.92, .28, .16], [.3, 1.8, .3, .14], [-.42, 1.62, .3, .12], [.1, 2.3, .1, .14], [.44, 1.62, .2, .11], [-.05, 1.62, .55, .12], [-.38, 1.95, -.05, .12]]) add(G.sph(r, 12, 9), x, y, z); }));   // (more light tufts: the crown read as one green ball — ① 10/21)
   const hx = 0, hy = .66, hz = .27;
   // the front is a wide window (low lip + header) so whatever sits inside can be seen once the roof is up
   f.add(mg('birdhouse', '#ffcf5c', ({ add }) => {

@@ -220,7 +220,8 @@ B.firetruck = (f, T) => {
     add(G.cyl(.13, .15, .06, 18), FINK, CC + .12, CY1 + .03, 0); add(new THREE.SphereGeometry(.14, 18, 10, 0, PI * 2, 0, HP), '#ff4a3a', CC + .12, CY1 + .06, 0);
     for (const sz of [-1, 1]) { tube([CX1 - .06, 1.12, sz * (CW / 2)], [CX1 + .05, 1.18, sz * (CW / 2 + .12)], .018, FINK, 5); add(G.box(.06, .2, .11, .03), FINK, CX1 + .07, 1.12, sz * (CW / 2 + .15)); }
     // the white stripe along body and cab
-    for (const sz of [-1, 1]) add(G.pbox(L - .1, .1, .012), WHITE, 0, .63, sz * (zf + .004));
+    const ARCH = [{ x: -.72, y: WR, r: WR + .08 }, { x: .82, y: WR, r: WR + .08 }];
+    for (const sz of [-1, 1]) stripeAround(add, WHITE, -L / 2 + .05, L / 2 - .05, .63, .1, sz * (zf + .004), ARCH);
     add(G.pbox(.012, .1, CW - .3), WHITE, CX1 + .004, .63, 0);
     // the front: a grey grille with dark slots, big round headlights in rings, a thick grey bumper with orange lights
     add(G.box(.05, .26, .5, .04), FBUMP, CX1 + .01, .68, 0); for (let k = 0; k < 4; k++) add(G.box(.02, .025, .4, .008), '#6b6f82', CX1 + .035, .59 + k * .06, 0);
@@ -231,7 +232,7 @@ B.firetruck = (f, T) => {
     // wheels: two big axles, fat tyres with cream hub caps, dark wells behind them
     for (const x of [-.72, .82]) for (const sz of [-1, 1]) {
       toyWheel(add, x, WR, sz * (zf - .1), WR, .3, sz, FCAP);
-      add(G.cyl(WR + .05, WR + .05, .006, 24), FINK, x, WR, sz * (zf + .006), HP, 0, 0);
+      wheelArch(add, x, WR, sz * (zf + .024), WR + .08, FRED, '#8e2a26', FINK);
     }
     // the ladder on top: two round silver rails with rungs on two black posts
     for (const sz of [-.24, .24]) add(G.box(1.5, .07, .07, .03), STEEL, -.42, BT + .17, sz);
@@ -369,6 +370,21 @@ const policePlate = () => tex('police-plate', 256, 64, (c, w, h) => {
 });
 // clear glass you can see through: one merged mesh, one see-through tint (no shine stripes — #74)
 const glassOf = (key, color, fn) => { const m = mc(key, fn); m.material = mat(color, { opacity: .55, rough: .1, rim: .05 }); m.castShadow = false; return m; };
+// a side stripe broken where it meets a wheel arch (each arch: its middle x, its middle y and radius) — the stripe stops at
+// the arch instead of running over the wheel (19판 10/22, user: "소방차는 바퀴 뚫는 것만 좀 처리해 줘. 휀다를 넣던가")
+const stripeAround = (add, color, x0, x1, y, h, z, arches) => {
+  const cuts = arches.map(a => { const dy = Math.max(0, y - h / 2 - a.y); const hw = dy < a.r ? Math.sqrt(a.r * a.r - dy * dy) : 0; return [a.x - hw, a.x + hw]; }).filter(c => c[1] > c[0]).sort((p, q) => p[0] - q[0]);
+  let at = x0;
+  for (const [c0, c1] of cuts) { if (c0 > at + .02) add(G.pbox(c0 - at, h, .012), color, (at + c0) / 2, y, z); at = Math.max(at, c1); }
+  if (x1 > at + .02) add(G.pbox(x1 - at, h, .012), color, (at + x1) / 2, y, z);
+};
+// a wheel arch: the dark well over the wheel (in front of the body's face and its stripes) and a fender lip round its top in
+// the body's colour with a darker edge inside
+const wheelArch = (add, x, y, z, R, body, edge, well) => {
+  add(G.cyl(R, R, .006, 26), well, x, y, z, HP, 0, 0);
+  add(G.tor(R + .012, .036, PI, 6, 22), body, x, y, z + Math.sign(z) * .004, 0, 0, 0, [1, 1, .9]);
+  add(G.tor(R - .012, .014, PI, 4, 22), edge, x, y, z + Math.sign(z) * .028);
+};
 // a fat toy wheel facing ±z: a round tyre, a grey disc, a domed hub cap and its dark middle
 const toyWheel = (add, x, y, z, R, W, sz, cap = HUBG) => {
   add(G.tor(R - W * .45, W * .45, PI * 2, 10, 26), TYRE, x, y, z, 0, 0, 0, [1, 1, 1.25]);
@@ -381,7 +397,7 @@ const roundSlab = (shape, width, b) => { const g = new THREE.ExtrudeGeometry(sha
 const outline = (pts, Sh = THREE.Shape) => { const sh = new Sh(); sh.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) p.length === 2 ? sh.lineTo(p[0], p[1]) : sh.quadraticCurveTo(p[0], p[1], p[2], p[3]); return sh; };
 B.patrolcar = f => {
   // SD proportions (the sheet): 1.5 long in its 2×1 slot, tall — the roof at 1.12, wheels as tall as the belt is high
-  const L = 1.5, Wd = .9, zf = Wd / 2, BY0 = .2, BY1 = .62, CX0 = -.5, CX1 = .3, CY1 = 1.12, CW = Wd - .06, TX = -.8, TB = -.5, WR = .26;
+  const L = 1.5, Wd = .9, zf = Wd / 2, BY0 = .2, BY1 = .62, CX0 = -.5, CX1 = .3, CY1 = 1.12, CW = Wd - .06, TX = -.8, TB = -.5, WR = .23;
   const CL = CX1 - CX0, CC = (CX0 + CX1) / 2, GY0 = BY1 + .05, GY1 = CY1 - .13, GM = (GY0 + GY1) / 2, GH = GY1 - GY0, WZ = zf - .085, b = .09;
   // the body from the boot's front to the nose (drawn inset by the bevel b, which rounds it back out): a flat belt, the hood
   // easing down and over the round nose
@@ -433,14 +449,14 @@ B.patrolcar = f => {
     tube([CX1 - .16, BY1 + .12, -.19], [CX1 - .21, BY1 + .18, -.19], .012, LINE, 5);
     // the navy band and the yellow line along both sides; a navy patch over the nose edged in yellow
     for (const sz of [-1, 1]) {
-      add(G.pbox(L / 2 - TX - .18, .14, .012), PNAVY, (L / 2 + TX) / 2 - .01, .42, sz * (zf + .004)); add(G.pbox(L / 2 - TX - .18, .032, .012), PYEL, (L / 2 + TX) / 2 - .01, .51, sz * (zf + .004));
+      add(G.pbox(L / 2 - TX - .24, .12, .012), PNAVY, (L / 2 + TX) / 2 - .04, .5, sz * (zf + .004)); add(G.pbox(L / 2 - TX - .3, .026, .012), PYEL, (L / 2 + TX) / 2 - .07, .58, sz * (zf + .006));
     }
     add(G.box(.15, .016, Wd - .26, .006), PNAVY, CX1 + .2, BY1 - .022, 0, 0, 0, -.22);
     for (const dx of [-.085, .085]) add(G.box(.026, .018, Wd - .26, .006), PYEL, CX1 + .2 + dx, BY1 - .022 - dx * .22, 0, 0, 0, -.22);
     // fat wheels near the corners, dark arches over them
     for (const x of [.47, -.47]) for (const sz of [-1, 1]) {
       toyWheel(add, x, WR - .02, sz * WZ, WR, .22, sz);
-      add(G.cyl(WR + .035, WR + .035, .006, 24), LINE, x, WR - .02, sz * (zf + .005), HP, 0, 0);
+      wheelArch(add, x, WR - .02, sz * (zf + .014), WR + .04, WHITE, '#9a9cb0', LINE);
     }
     // the bumpers: thick, dark, round-edged; orange corner lights; round red tail lights
     add(G.box(.17, .17, Wd + .04, .075, 3), PBUMP, L / 2 + .005, .27, 0); add(G.box(.17, .17, Wd + .04, .075, 3), PBUMP, TX - .03, .27, 0);
@@ -476,8 +492,8 @@ B.patrolcar = f => {
   // the door (front, +z side): the lower panel on the body's face with the band, its window set back in line with the glass
   const dv = grp(); put(dv, .25, .3, zf + .005); f.add(dv);
   dv.add(mc('patrolcar8-door', ({ add }) => {
-    add(G.box(.42, .4, .035, .02), WHITE, -.21, .16, 0);
-    add(G.pbox(.42, .14, .039), PNAVY, -.21, .13, 0); add(G.pbox(.42, .032, .039), PYEL, -.21, .22, 0);
+    add(G.box(.35, .4, .035, .02), WHITE, -.245, .16, 0);
+    add(G.pbox(.35, .12, .039), PNAVY, -.245, .2, 0); add(G.pbox(.35, .026, .043), PYEL, -.245, .28, 0);
     add(G.box(.09, .03, .03, .012), STEEL2, -.34, .3, .025);
   }));
   dv.add(glassOf('patrolcar8-doorglass', PGLASS, ({ addM }) => addM(pane(HF), new THREE.Matrix4().makeTranslation(-.25, -.3, -(zf + .005)).multiply(sideM(1)), '#ffffff')));

@@ -85,8 +85,12 @@ function planFlush(root, meshes, parts, perMesh = false) {
     const find = i => { while (up[i] !== i) { up[i] = up[up[i]]; i = up[i]; } return i; };
     const join = (a, b) => { a = find(a); b = find(b); if (a !== b) up[a] = b; };
     const at = new Map();
+    // (only the same colour: two shapes of different colours whose points meet — a pail and the cement in it, both caps' centre
+    // points on the axis — are still two pieces; joined, their flush tops were never lifted apart and flickered. ① 10/21 user
+    // "여기는 면 겹치나 보다. 지글거림")
     for (let i = 0; i < nv; i++) {
-      const k = ((Math.round(pos.getX(i) * 1000) + 8192) * 16384 + (Math.round(pos.getY(i) * 1000) + 8192)) * 16384 + (Math.round(pos.getZ(i) * 1000) + 8192);
+      let k = ((Math.round(pos.getX(i) * 1000) + 8192) * 16384 + (Math.round(pos.getY(i) * 1000) + 8192)) * 16384 + (Math.round(pos.getZ(i) * 1000) + 8192);
+      if (col) k = k + ':' + Math.round(col.getX(i) * 255) + '.' + Math.round(col.getY(i) * 255) + '.' + Math.round(col.getZ(i) * 255);
       const j = at.get(k); if (j === undefined) at.set(k, i); else join(i, j);
     }
     const I = idx ? idx.array : null;
@@ -131,7 +135,7 @@ function planFlush(root, meshes, parts, perMesh = false) {
         if (T[i * 15 + 1] * T[j * 15 + 1] + T[i * 15 + 2] * T[j * 15 + 2] + T[i * 15 + 3] * T[j * 15 + 3] < .995) return;
         const pk = (pa < pb ? pa * 1e6 + pb : pb * 1e6 + pa) + ':' + bk; if (done.has(pk)) return;
         if (!A.box.intersectsBox(C.box)) return;
-        if (overlap2(load(ta, i), load(tb, j)) < 1e-4) return;
+        if (overlap2(load(ta, i), load(tb, j)) < 1e-6) return;   // (any same-way overlap flickers: a curved piece's small triangles each overlap less than a cm² — ① 10/21)
         done.add(pk);
         const mover = A.vol <= C.vol ? A : C, base = mover === A ? C : A;
         stack.push([mover, base, ta.n.clone()]);

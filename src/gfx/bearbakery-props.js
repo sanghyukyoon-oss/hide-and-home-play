@@ -551,7 +551,7 @@ B.bkfacade = (f, T) => {
     for (const sx of [-1, 1]) add(G.box(.09, H, .06, .01), WHITE, sx * (W / 2 - .045), H / 2, .04);
     // the navy eave and its tiles, a gutter
     add(G.box(W + .3, .06, .62, .02), NAVY, 0, H + .12, .2, .32, 0, 0);
-    for (let k = 0; k < 4; k++) add(G.box(W + .3, .025, .03, .008), NAVY2, 0, H + .2 - k * .06, .02 + k * .17, .32, 0, 0);
+    for (let k = 0; k < 4; k++) add(G.box(W + .3, .025, .03, .008), NAVY2, 0, H + .2 - k * .06 + .024, .02 + k * .17 + .008, .32, 0, 0);   // (on the eave, not sunk flush in it — ① 10/21 겹친 면)
     add(G.cyl(.035, .035, W + .32, 10), '#d9dee8', 0, H - .02, .5, 0, 0, HP);
     // the signboard
     add(G.box(1.5, .4, .05, .015), woodD, .2, 2.62, .07);
@@ -567,14 +567,14 @@ B.bkfacade = (f, T) => {
     // the shop window: a honey frame, three panes, a bread shelf behind the glass, the awning, a flower box
     add(G.box(1.4, 1.1, .06, .015), WHITE, WX, 1.45, .05);
     add(G.pbox(1.28, .98, .01), '#dff1fa', WX, 1.45, .07);
-    for (const x of [-.22, .22]) add(G.box(.04, .98, .04, .01), WHITE, WX + x, 1.45, .085);
+    for (const x of [-.22, .22]) add(G.box(.04, 1.0, .04, .01), WHITE, WX + x, 1.45, .085);
     add(G.box(1.28, .04, .1, .01), wood, WX, 1.12, .1);
     bread(add, 'loaf', WX - .4, 1.14, .1, 0, .7); bread(add, 'baguette', WX, 1.14, .1, .2, .7); bread(add, 'bun', WX + .38, 1.14, .1, 0, 1); bread(add, 'croissant', WX + .48, 1.14, .1, .4, .9);
     awning(add, WX, 2.2, 1.56, .62, NAVY, WHITE, .08);
     add(G.box(1.3, .18, .2, .02), woodD, WX, .8, .14);
     for (let i = 0; i < 9; i++) { const x = WX - .55 + i * .14; add(G.sph(.07, 8, 6), i % 2 ? LEAF : LEAF3, x, .93, .15); add(G.sph(.03, 6, 5), [JAM, WHITE, HONEY][i % 3], x + .03, .99, .2); }
     // a wall lantern by the door, a round clock up on the boards
-    add(G.box(.04, .2, .12, .01), IRON, DX + .55, 1.9, .07); add(G.box(.14, .2, .14, .03), IRON, DX + .55, 1.82, .18); add(G.box(.1, .15, .1, .02), '#fff3c6', DX + .55, 1.82, .18);
+    add(G.box(.04, .2, .12, .01), IRON, DX + .55, 1.9, .07); add(G.box(.14, .2, .14, .03), IRON, DX + .55, 1.82, .18);   // (its glass is the glowing box below — drawn twice it flickered)
     add(G.cyl(.15, .15, .05, 20), WHITE, 1.25, 2.64, .07, HP, 0, 0); add(G.tor(.15, .02, PI * 2, 4, 20), NAVY, 1.25, 2.64, .1);
     add(G.box(.015, .1, .01, .004), INK, 1.25, 2.68, .1); add(G.box(.07, .015, .01, .004), INK, 1.28, 2.64, .1);
   }));

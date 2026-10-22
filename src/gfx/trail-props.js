@@ -1079,7 +1079,7 @@ B.tentsmall = (f, T) => {
     add(G.cap(.055, .26, 3, 10), MUSTARD, .1, .06, BZ + .16, 0, 0, HP, 1, .3);
   }));
   f.add(mc('tentsmall-deco|' + tk, ({ add, tube }) => {
-    for (const sx of [-1, 1]) add(G.pbox(.03, SL + .02, .006), tent2, sx * BW / 2, AY / 2, FZ + .05 + .003, 0, 0, sx * tA);
+    for (const sx of [-1, 1]) add(G.pbox(.03, SL + .02, .006), tent2, sx * BW / 2, AY / 2, FZ + .05 + .009, 0, 0, sx * tA);   // (clear of the fly's front edge — ① 10/21 겹친 면)
     for (const z of [FZ + .05, BZ - .05]) add(G.sph(.026, 10, 8), tent2, 0, AY + .012, z);
     tube([0, AY, FZ + .05], [0, AY + .2, FZ + .05], .006, '#8a5a34', 5);
     add(G.pbox(.1, .055, .004), TOMATO, .05, AY + .17, FZ + .05, 0, 0, -.05);
@@ -1253,30 +1253,38 @@ export const TRAIL_ITEMS = {
   } },
   // 등산 손수건: a blue paisley bandana folded in half corner to corner, the top flap a triangle, a little mountain print
   towel: { name: '등산 손수건', h: .04, flat: true, build() {
-    // a folded hiking handkerchief: folded in half (a rounded fold at the back), blue with white stripes and a little
-    // mountain patch (10/20 "야매한 것들": a flat square with a printed triangle read as a book)
-    const g = grp(), BL = '#3f86e0', S = .2;
-    g.add(mc('it-towel2', ({ add }) => {
-      add(G.box(S, .012, S, .004), BL, 0, .006, 0);
-      add(G.box(S, .012, S * .62, .004), shade(BL, .06), 0, .02, -S * .19);
-      add(G.cyl(.016, .016, S, 10), shade(BL, .03), 0, .016, -S / 2 + .004, 0, 0, HP);
-      for (const z of [.055, .078]) add(G.pbox(S - .004, .004, .01), WHITE, 0, .012, z);
-      add(G.pbox(S - .004, .004, .01), WHITE, 0, .026, .008);
-      add(G.cyl(.028, .028, .004, 14), WHITE, .045, .027, -.04);
-      add(G.cone(.022, .022, 4), LEAF2, .045, .034, -.04, 0, .3, 0, [1, .5, 1]);
+    // (10/21 다시 — still read as a book) a hiker's bandana folded into a triangle the way it's tied: red with white dots and
+    // a white border, soft — the folded edge rolled, the two side points curling up a little, the inner layer peeking out
+    const g = grp(), RD = '#e8414e', L = .27, HT = L * .5, Z0 = -.06;
+    const tri = (w, h) => { const t = new THREE.Shape(); t.moveTo(-w / 2, 0); t.lineTo(0, -h); t.lineTo(w / 2, 0); t.closePath(); return t; };   // (the shape's −y turns to +z when it is laid down)
+    const at = (u, v) => [(u - .5) * L * (1 - v), Z0 + v * HT];   // a point on the bandana: u across, v from the fold to the point
+    g.add(mc('it-towel3', ({ add }) => {
+      // (the shapes lie flat: x across, the point toward +z, thickness up)
+      add(G.ext(tri(L, HT), .008, .004, 1), RD, 0, .004, Z0, -HP, 0, 0);
+      add(G.ext(tri(L * .76, HT * .76), .006, .003, 1), shade(RD, -.12), .01, .016, Z0 + .004, -HP, 0, .02);
+      add(G.cyl(.015, .015, L + .012, 10), RD, 0, .016, Z0, 0, 0, HP);                                    // the rolled fold
+      for (const sx of [-1, 1]) add(G.ext(tri(.07, .05), .006, .002, 1), shade(RD, .05), sx * (L / 2 - .025), .02, Z0 + .004, -HP + .4, 0, sx * -.5);   // the curled points
+      add(G.box(L * .62, .004, .01, .002), WHITE, 0, .021, Z0 + .03);                                    // a white border line
+      for (const [u, v] of [[.22, .3], [.5, .26], [.78, .3], [.36, .52], [.64, .52], [.5, .74]]) { const [x, z] = at(u, v); add(G.sph(.016, 6, 3), WHITE, x, .021, z, 0, 0, 0, [1, .3, 1]); add(G.sph(.007, 4, 2), RD, x, .024, z, 0, 0, 0, [1, .3, 1]); }
+      // the two ends tied in a knot at the left, their tails out (it was worn round a neck)
+      add(G.sph(.026, 8, 6), shade(RD, -.06), -L / 2 - .01, .022, Z0 + .005, 0, 0, 0, [1.2, .8, 1]);
+      for (const [a, l] of [[2.4, .06], [3.6, .055]]) add(G.box(l, .008, .03, .004), RD, -L / 2 - .01 + Math.cos(a) * l * .55, .012, Z0 + .005 - Math.sin(a) * l * .55, 0, a, 0);
     }));
     return g;
   } },
   // 호루라기: an orange safety whistle lying on its side, a ring and a green lanyard loop
   whistle: { name: '호루라기', h: .065, flat: true, build() {
     const g = grp(), OR = '#ff7a2f';
-    g.add(mc('it-whistle', ({ add }) => {
-      add(G.cyl(.032, .032, .05, 20), OR, .02, .033, 0, HP, 0, 0);
-      add(G.box(.09, .032, .05, .012), OR, -.04, .036, 0);
-      add(G.box(.03, .006, .036, .002), CHAR, .005, .066, 0);
-      add(G.box(.012, .02, .036, .003), shade(OR, -.15), -.084, .036, 0);
-      add(G.tor(.018, .005, PI * 2, 4, 12), STEEL, .06, .03, 0, HP, 0, 0);
-      add(G.tor(.07, .008, PI * 2, 4, 26), '#3fae6a', .14, .008, 0, HP, 0, 0, [1, .55, 1]);
+    // (① 모델 품질 10/21: the lanyard loop was the long side and the whistle a speck at its end — the whistle a third bigger, the
+    // loop smaller and closer)
+    g.add(mc('it-whistle2', ({ add }) => {
+      add(G.cyl(.036, .036, .068, 20), OR, .025, .037, 0, HP, 0, 0);
+      add(G.box(.12, .036, .068, .014), OR, -.045, .04, 0);
+      add(G.box(.04, .008, .048, .003), CHAR, .005, .074, 0);
+      add(G.box(.016, .024, .048, .004), shade(OR, -.15), -.103, .04, 0);
+      add(G.box(.05, .005, .05, .002), '#ffffff', .035, .072, 0, 0, 0, .1);
+      add(G.tor(.022, .006, PI * 2, 4, 12), STEEL, .075, .035, 0, HP, 0, 0);
+      add(G.tor(.05, .008, PI * 2, 4, 22), '#3fae6a', .14, .008, 0, HP, 0, 0, [1, .6, 1]);
     }));
     return g;
   } },

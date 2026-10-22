@@ -1636,11 +1636,12 @@ export const PLAYGROUND_ITEMS = {
     const g = grp(), RD = '#ff4f5e';
     g.add(mc('it-shovel', ({ add }) => {
       const s = new THREE.Shape(); s.moveTo(-.055, -.05); s.lineTo(.03, -.058); s.quadraticCurveTo(.1, -.045, .115, 0); s.quadraticCurveTo(.1, .045, .03, .058); s.lineTo(-.055, .05); s.closePath();
-      add(G.ext(s, .012, .004, 6), RD, .07, .004, 0, -HP, 0, 0);
-      add(G.cyl(.02, .016, .06, 12), RD, -.005, .022, 0, 0, 0, HP);
-      add(G.cyl(.012, .012, .18, 10), '#e9b47e', -.12, .022, 0, 0, 0, HP);
-      add(G.cyl(.016, .016, .09, 12), YELLOW, -.215, .022, 0, HP, 0, 0);
-      for (const s2 of [-1, 1]) add(G.sph(.017, 8, 6), YELLOW, -.215, .022, s2 * .045);
+      // (① 모델 품질 10/22: a thin stick with a red tip — a kid's sand shovel now: a big blade, a short thick yellow handle)
+      add(G.ext(s, .012, .004, 6), RD, .07, .004, 0, -HP, 0, 0, [1.35, 1.35, 1]);
+      add(G.cyl(.022, .018, .06, 12), RD, -.02, .022, 0, 0, 0, HP);
+      add(G.cyl(.017, .017, .12, 10), YELLOW, -.105, .022, 0, 0, 0, HP);
+      add(G.cyl(.019, .019, .1, 12), YELLOW, -.17, .022, 0, HP, 0, 0);
+      for (const s2 of [-1, 1]) add(G.sph(.021, 8, 6), YELLOW, -.17, .022, s2 * .05);
     }));
     return g;
   } },

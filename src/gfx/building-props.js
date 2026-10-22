@@ -1469,12 +1469,14 @@ export const BUILDING_ITEMS = {
   // 사원증: an ID card (a mochi photo, name, barcode) with its navy lanyard coiled beside it and a steel clip
   idcard: { name: '사원증', h: .03, flat: true, build() {
     const g = grp();
-    g.add(mc('it-idcard', ({ add }) => {
-      add(G.box(.12, .008, .16, .004), WHITE, -.065, .004, 0);
-      add(G.tor(.06, .009, PI * 2, 4, 24), '#34508a', .075, .0045, 0, HP, 0, 0, [1, 1.15, .5]);
-      add(G.box(.035, .012, .02, .004), STEEL, .012, .009, -.04);
+    // (① 모델 품질 10/22: the lanyard loop was as big as the card — the card bigger, in a blue holder edge, the strap loop small)
+    g.add(mc('it-idcard2', ({ add }) => {
+      add(G.box(.15, .008, .2, .004), '#3f7fe0', -.03, .004, 0);
+      add(G.box(.138, .006, .188, .003), WHITE, -.03, .009, 0);
+      add(G.tor(.04, .01, PI * 2, 4, 20), '#34508a', .095, .005, -.055, HP, 0, 0, [1, 1.2, .5]);
+      add(G.box(.035, .012, .022, .004), STEEL, .05, .01, -.07);
     }));
-    g.add(mg('it-idcard-print', atlasMat(), ({ add }) => add(quadGeo(.112, .154, RG.card), -.065, .008 + .006, 0, -HP, 0, 0)));
+    g.add(mg('it-idcard-print2', atlasMat(), ({ add }) => add(quadGeo(.134, .184, RG.card), -.03, .012 + .002, 0, -HP, 0, 0)));
     return g;
   } },
   // USB 메모리: a chunky mint stick with a steel plug, a white label and a star charm on a ring
@@ -1495,13 +1497,14 @@ export const BUILDING_ITEMS = {
     // a desk stapler, a little open: a dark base with a silver anvil, a chunky red arm with a white top strip and a rounded
     // nose, a silver hinge at the back (10/20 "야매한 것들": it read as a red bar on a grey one)
     const g = grp();
-    g.add(mc('it-stapler2', ({ add }) => {
-      add(G.box(.24, .022, .07, .01), CHAR, 0, .011, 0);
-      add(G.pbox(.05, .004, .05), STEEL, .08, .024, 0);
-      add(G.cyl(.02, .02, .074, 12), STEEL2, -.1, .03, 0, HP, 0, 0);
-      add(G.box(.22, .036, .062, .016), RED, .005, .052, 0, 0, 0, .1);
-      add(G.cyl(.018, .018, .062, 12), RED, .114, .063, 0, HP, 0, 0);
-      add(G.pbox(.15, .006, .034), WHITE, -.01, .0715, 0, 0, 0, .1);
+    // (① 모델 품질 10/22: a chunkier arm opened wider, so the jaw — what says "stapler" — shows)
+    g.add(mc('it-stapler3', ({ add }) => {
+      add(G.box(.24, .022, .074, .01), CHAR, 0, .011, 0);
+      add(G.pbox(.05, .004, .054), STEEL, .08, .024, 0);
+      add(G.cyl(.022, .022, .078, 12), STEEL2, -.1, .032, 0, HP, 0, 0);
+      add(G.box(.22, .044, .068, .018), RED, .01, .062, 0, 0, 0, .2);
+      add(G.cyl(.022, .022, .068, 12), RED, .114, .085, 0, HP, 0, 0);
+      add(G.pbox(.15, .006, .036), WHITE, -.005, .086, 0, 0, 0, .2);
     }));
     return g;
   } },
