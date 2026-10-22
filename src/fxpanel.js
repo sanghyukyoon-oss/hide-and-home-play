@@ -3,6 +3,7 @@
 // value on every stage until 기본값 (kept on this device, localStorage 'sbk-fx'); 값 복사 copies the numbers to send back.
 // Not in the Android app build. Test tool — goes before the store build (출품 전 정리).
 import { IN_APP } from './build.js';
+import { SHADE } from './gfx/style.js';
 
 const KEY = 'sbk-fx';
 // [key, label, min, max, step]
@@ -17,7 +18,15 @@ const SLIDERS = [
   ['diffuse', '뽀샤시', 0, .6, .02],
   ['tilt', '틸트시프트 (위·아래 흐림)', 0, 1, .05],
   ['vign', '비네트 (가장자리 어둡게)', 0, .8, .02],
+  // 셰이딩 (10/22 사용자: "하이라이트도 수치 후보정에서 편집 가능할까? 크기나 강도", "림라이트 어두운 쪽에") — style.js SHADE, every stage
+  ['shine', '반짝 점 세기', 0, 1, .05],
+  ['shineS', '반짝 점 크기', 0, 1, .05],
+  ['hl', '빛면 하이라이트 (1 = 끔)', 1, 1.6, .05],
+  ['rim', '림라이트 세기 (어두운 쪽 테두리)', 0, 1.2, .05],
+  ['rimW', '림라이트 두께', .05, .6, .01],
 ];
+// the shading's own start values (not the stage's — they are the same on every stage)
+const SH0 = { shine: SHADE.u.shineA.value, shineS: (.995 - SHADE.u.shineT.value) / .06, hl: SHADE.hl, rim: SHADE.u.rimA.value, rimW: SHADE.u.rimW.value };
 let over = {};
 try { over = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { over = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(over)); } catch { /* storage blocked: this visit only */ } };
@@ -25,7 +34,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(over)); } ca
 // what the post pass has now (the stage's own values, before the sliders)
 function current(P) {
   return { sharpen: P.du.sharpen.value, sharp2: P.du.sharp2?.value || 0, grade: P.gradeWant, warm: P.du.warm?.value || 0, sat: P.du.sat?.value || 0,
-    glow: P.bloomOn ? P.bloomStr : 0, glowth: P.blu?.th?.value > 0 ? P.blu.th.value : .82, diffuse: P.du.diffuse?.value || 0, tilt: P.du.tilt?.value || 0, vign: P.du.vign?.value || 0 };
+    glow: P.bloomOn ? P.bloomStr : 0, glowth: P.blu?.th?.value > 0 ? P.blu.th.value : .82, diffuse: P.du.diffuse?.value || 0, tilt: P.du.tilt?.value || 0, vign: P.du.vign?.value || 0, ...SH0 };
 }
 let base = null;   // the stage's own values, remembered at each stage start (기본값 goes back to these)
 // stage.js calls this after setting a stage's own look: the moved sliders go on top
@@ -44,6 +53,7 @@ function put(P) {
   P.bloomStr = v.tilt > 0 ? 0 : v.glow;   // (틸트시프트의 흐림은 그림 전체라, 그대로 더하면 화면이 하얗게 뜸)
   // one blur feeds all three: 틸트시프트 needs the whole picture (no threshold), 뽀샤시 nearly all of it, the glow only the bright parts
   if (P.blu?.th) P.blu.th.value = v.tilt > 0 ? -1 : v.diffuse > 0 ? .2 : v.glowth;
+  SHADE.set({ shineA: v.shine, shineT: .995 - v.shineS * .06, hl: v.hl, rimA: v.rim, rimW: v.rimW });
 }
 
 export function installFxPanel(world) {

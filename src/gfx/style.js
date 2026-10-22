@@ -3,7 +3,7 @@
 // 2026-10-18 the user turned AO on in 세팅 and fixed it ("ao키니까 확실히 좋긴하다"): ao .69, aoR .15, shadowStr .63.
 // AO is the first thing a slow phone gives up (World._aoWatch / setLevel). Change values here, not in scenes.
 import * as THREE from 'three';
-import { setStyle } from './kit.js';
+import { setStyle, STYLE } from './kit.js';
 
 export const ART = {
   lineW: 1.5, overlap: .25, innerStr: 0, innerRatio: .7, innerSens: .3, lineAlpha: 1,
@@ -24,33 +24,53 @@ export function vivid(hex) {
   return '#' + c.getHexString();
 }
 
-// 빛 받는 곳 하이라이트 시험 (10/22 사용자: "밝은 곳 하이라이트 — 리플렉션 말고 빛 받는 곳 포인트 — 하얗게 밝게"): ?hl=1.25[&hlw=2]
-// adds a fourth band on the faces turned most to the sun (the top hlw of 12 slices, about N·L > .67), hl times brighter;
-// the three bands below keep their places. Off unless asked.
+// 셰이딩 더하기 (10/22 사용자): live values the 후보정 panel can move (fxpanel.js) — SHADE.set({ ... })
+//  · 빛면 하이라이트 hl ("밝은 곳 하이라이트 — 빛 받는 곳 포인트 — 하얗게"): a fourth band on the faces turned most to the sun (the
+//    top hlw of 12 slices, about N·L > .67), hl times brighter; the three bands below keep their places. 1 = off (default)
+//  · 만화 반짝 점 shine/shineT ("빛 받는 면에 동그랗게 페이크 하이라이트, 만화처럼"; then "약간 더 키워 주고 .35 약하게"): a hard-edged
+//    white dot where a round surface faces between the sun and the camera (Blinn half-vector, cut at shineT) — balls, pots,
+//    lamps, the friends' heads; flat faces (the camera is orthographic) get none
+//  · 림라이트 rim/rimW ("스트로크 유지하고 림라이트 어두운 쪽에" — a reference with cartoon heroes): a thin bright edge on the
+//    silhouette of the side turned away from the sun, inside the ink line. 0 = off (default until the user picks a value)
+// Patched into every toon material (also the baked furniture) through the prototype, with shared uniforms, so a slider move
+// shows at once with no rebuild. ?hl= ?hlw= ?shine= ?shinet= ?rim= ?rimw= still set the start values.
 const HLQ = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
-const HL = +HLQ.get('hl') || 0, HLW = Math.max(1, Math.min(5, +HLQ.get('hlw') || 2));
+const qn = (k, d) => HLQ.has(k) && HLQ.get(k) !== '' && !isNaN(+HLQ.get(k)) ? +HLQ.get(k) : d;
+export const SHADE = {
+  hl: qn('hl', 1), hlw: Math.max(1, Math.min(5, qn('hlw', 2))),
+  u: { shineA: { value: qn('shine', .35) }, shineT: { value: Math.min(.999, Math.max(.9, qn('shinet', .97))) },
+    rimA: { value: qn('rim', 0) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .22))) }, rimC: { value: new THREE.Color('#fff4dc') } },
+  set(o) {
+    for (const k of ['shineA', 'shineT', 'rimA', 'rimW']) if (o[k] != null) this.u[k].value = o[k];
+    if (o.hl != null || o.hlw != null) { if (o.hl != null) this.hl = o.hl; if (o.hlw != null) this.hlw = o.hlw; const g = STYLE.grad; if (g) { g.image.data.set(toonSteps()); g.needsUpdate = true; } }
+  },
+};
 function toonSteps() {
   const base = [ART.shade, ART.mid, 1];
-  if (!(HL > 1)) return base;
-  return Array.from({ length: 12 }, (_, i) => i >= 12 - HLW ? HL : base[Math.floor(i / 4)]);
+  return Array.from({ length: 12 }, (_, i) => i >= 12 - SHADE.hlw && SHADE.hl > 1 ? SHADE.hl : base[Math.floor(i / 4)]);
 }
-// 만화 반짝 점 (10/22 사용자: "빛 받는 면에 동그랗게 페이크 하이라이트? 만화처럼"): ?shine=.6[&shinet=.985]
-// a hard-edged white dot where a round surface faces between the sun and the camera (Blinn half-vector, cut at shinet) —
-// on balls, pots, lamps and the friends' heads it reads as a cartoon shine; flat faces (the camera is orthographic) get none.
-// Patched into every toon material at start-up (also the baked furniture), so it must run before any of them compiles.
-const SHINE = HLQ.has('shine') ? +HLQ.get('shine') || 0 : .35, SHINE_T = Math.min(.999, Math.max(.9, +HLQ.get('shinet') || .97));   // (기본 켬 10/22 사용자: "약간 더 키워 주고 .35 약하게"; ?shine=0 끔)
-function shinePatch() {
-  if (!(SHINE > 0) || THREE.ShaderLib.toon.fragmentShader.includes('cartoon shine')) return;
-  THREE.ShaderLib.toon.fragmentShader = THREE.ShaderLib.toon.fragmentShader.replace('#include <opaque_fragment>', `
-  // cartoon shine
+function shadePatch() {
+  if (THREE.MeshToonMaterial.prototype.__shade) return;
+  THREE.MeshToonMaterial.prototype.__shade = true;
+  THREE.MeshToonMaterial.prototype.onBeforeCompile = function (sh) {
+    Object.assign(sh.uniforms, { uShineA: SHADE.u.shineA, uShineT: SHADE.u.shineT, uRimA: SHADE.u.rimA, uRimW: SHADE.u.rimW, uRimC: SHADE.u.rimC });
+    sh.fragmentShader = 'uniform float uShineA, uShineT, uRimA, uRimW; uniform vec3 uRimC;\n' + sh.fragmentShader.replace('#include <opaque_fragment>', `
   #if NUM_DIR_LIGHTS > 0
   { vec3 sd = directionalLights[ 0 ].direction, hv = normalize( sd + geometryViewDir );
-    float k = smoothstep( ${SHINE_T.toFixed(4)}, ${(SHINE_T + .004).toFixed(4)}, dot( normal, hv ) ) * step( 0.0, dot( normal, sd ) );
-    outgoingLight = mix( outgoingLight, vec3( 1.0 ), k * ${SHINE.toFixed(3)} ); }
+    float ndl = dot( normal, sd );
+    // only on curved surfaces: a flat face (one normal across it) facing the half-vector lit up whole — floors went white
+    // on some maps (user 10/22: "타는 듯한 느낌이 드는 맵도") — so the dot needs the normal to bend across the pixel
+    float curv = smoothstep( 0.002, 0.012, length( fwidth( normal ) ) );
+    float k = smoothstep( uShineT, uShineT + 0.004, dot( normal, hv ) ) * step( 0.0, ndl ) * curv;
+    outgoingLight = mix( outgoingLight, vec3( 1.0 ), k * uShineA );
+    float fr = 1.0 - max( dot( normal, geometryViewDir ), 0.0 );
+    float r = smoothstep( 1.0 - uRimW, 1.0 - uRimW + 0.03, fr ) * ( 1.0 - smoothstep( -0.05, 0.3, ndl ) ) * curv;
+    outgoingLight += uRimC * r * uRimA; }
   #endif
   #include <opaque_fragment>`);
+  };
 }
-export function useCartoonStyle() { shinePatch(); setStyle('toon', { remap: vivid, steps: toonSteps() }); }
+export function useCartoonStyle() { shadePatch(); setStyle('toon', { remap: vivid, steps: toonSteps() }); }
 
 export function applyArt(post) {
   const u = post.u;
