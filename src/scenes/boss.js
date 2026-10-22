@@ -404,7 +404,10 @@ export class BossScene {
   stepHero(dt) {
     const t = this.hpath?.[0]; if (!t) return;
     const p = this.hero.root.position, dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz), st = this.T.run * dt;
-    { const sp = this.seek.root.position, nx = d <= st ? t.x : p.x + dx / d * st, nz = d <= st ? t.z : p.z + dz / d * st; if (Math.hypot(nx - sp.x, nz - sp.z) < SEP && Math.hypot(nx - sp.x, nz - sp.z) < Math.hypot(p.x - sp.x, p.z - sp.z)) return; }   // (너굴이 몸 앞에선 멈춤)
+    // (⑤ 10/22: walking to a tap, 몽글이 stopped for good in front of 너굴이 in a narrow way — .6 s against it, it squeezes past)
+    { const sp = this.seek.root.position, nx = d <= st ? t.x : p.x + dx / d * st, nz = d <= st ? t.z : p.z + dz / d * st; if ((this._walkPushT || 0) < .6 && Math.hypot(nx - sp.x, nz - sp.z) < SEP && Math.hypot(nx - sp.x, nz - sp.z) < Math.hypot(p.x - sp.x, p.z - sp.z)) { this._walkPushT = (this._walkPushT || 0) + dt; return; } }
+    // (너굴이 몸 앞에선 멈춤 — the squeeze above aside)
+    if (Math.hypot(p.x - this.seek.root.position.x, p.z - this.seek.root.position.z) >= SEP) this._walkPushT = 0;
     if (d <= st) { p.x = t.x; p.z = t.z; this.hpath.shift(); if (!this.hpath.length && this.hthen) { const f = this.hthen; this.hthen = null; f(); } }
     else { p.x += dx / d * st; p.z += dz / d * st; }
     p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10);
@@ -481,8 +484,10 @@ export class BossScene {
     // checked against the room under you only ever knew the ground floor)
     const T = this.htiles || this.tiles, sp = this.seek.root.position;
     let cur = this._ht; if (!cur || Math.hypot(cur.x - p.x, cur.z - p.z) > .3 || Math.abs((cur.y || 0) - p.y) > .6) cur = this._ht = near3(T, p.x, p.y, p.z);
+    // (⑤ 10/22: in a narrow way 몽글이 could never get past 너굴이 either) — pushing into 너굴이 for .6 s, 몽글이 squeezes past
+    const squeeze = (this._pushT || 0) > .6;
     const tryAt = (x, z) => {
-      if (Math.hypot(x - sp.x, z - sp.z) < SEP) return false;
+      if (!squeeze && Math.hypot(x - sp.x, z - sp.z) < SEP && Math.hypot(x - sp.x, z - sp.z) < Math.hypot(p.x - sp.x, p.z - sp.z)) { this._pushT = (this._pushT || 0) + dt; return false; }
       if (!cur) return false;
       // on the way from this tile to a joined one (stair steps sit far apart): near that line is walkable
       let best = null, bd = .17;
@@ -496,7 +501,7 @@ export class BossScene {
       }
       p.x = x; p.z = z; this._ht = best; return true;
     };
-    tryAt(p.x + mx * st, p.z + mz * st) || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st);
+    if (tryAt(p.x + mx * st, p.z + mz * st) || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st)) { if (Math.hypot(p.x - sp.x, p.z - sp.z) >= SEP) this._pushT = 0; }
     const a = Math.atan2(mx, mz), r = this.hero.root.rotation.y; this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 12);
     this.hero.lift = Math.abs(Math.sin(this.t * 14)) * .06;
     { const t = this._ht || near3(T, p.x, p.y, p.z); if (t) p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10); }
@@ -550,8 +555,10 @@ export class BossScene {
         } else S.lift = 0;
         // (on the stairs there is no side to push you to — and pushed aside you came straight back: then over you it goes)
         const onStair = (this.htiles || []).some(u => u.stair && Math.hypot(u.x - hp.x, u.z - hp.z) < .45 && Math.abs((u.y || 0) - hp.y) < .5);
-        if (this.blockT > 1.2 && !this._nudged) { this._nudged = true; if (onStair || this.t - (this._nudgeAt ?? -9) < 4) this.hopOver(); else if (this.nudgeHero()) { this._nudgeAt = this.t; this.blockT = 0; this._mad = false; S.setFace?.('normal'); } }
-        if (this.blockT > 2.4) this.hopOver();
+        // (⑤ GPT 맵 QA 10/22: in a narrow way the push aside had nowhere to go and it shuffled on the spot) — .6 s blocked: push
+        // you aside if there's room and it hasn't just done so, else over you it goes at once
+        if (this.blockT > .6 && !this._nudged) { this._nudged = true; if (onStair || this.t - (this._nudgeAt ?? -9) < 4 || !this.nudgeHero()) this.hopOver(); else { this._nudgeAt = this.t; this.blockT = 0; this._mad = false; S.setFace?.('normal'); } }
+        if (this.blockT > 1.4) this.hopOver();
         return false;
       }
       if (this.blockT) { this.blockT = 0; this._nudged = false; if (this._mad) { this._mad = false; S.setFace?.('normal'); } }
