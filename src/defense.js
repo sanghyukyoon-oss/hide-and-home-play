@@ -32,7 +32,7 @@ export const bellsOwned = save => save.raid?.bellsOwned || 0;
 export const bellsUsed = save => Object.keys(save.home?.hide?.bells || {}).length;
 
 // the furniture: the peel (①) and the decoy — the 택배상자 with the spring face folded in it
-export const DEF_BUILDERS = { ...DEFENSE_BUILDERS, decoybox: (f, T) => { APT_BUILDERS.parcel(f, T); f.springFace = attachSpringFace(f); } };
+export const DEF_BUILDERS = { ...DEFENSE_BUILDERS, decoybox: (f, T) => { APT_BUILDERS.parcel(f, T); f.springFace = attachSpringFace(f); (f.live ||= []).push(f.springFace.spring, f.springFace.head); } };
 export const DEF_INFO = {
   bananapeel: { ...DEFENSE_INFO.bananapeel, hidden: false },   // (a picture for 꾸미기's inventory: hidden would skip it)
   decoybox: { w: 1, d: 1, name: '미끼 상자', small: true },

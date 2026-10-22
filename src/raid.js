@@ -108,7 +108,7 @@ function raidOnce(G, now) {
     // (지키기 도구 10/22: a 미끼 상자 in the room is picked like a thing left out — then they take the box, not mine)
     const w = e => ({ open: 4, inside: 2, locked: 1 })[keptBy(e, locks)], dw = T.decoys.length * TOOL_ODDS.decoyWeight;
     let r = Math.random() * (hid.reduce((a, e) => a + w(e), 0) + dw);
-    if (r < dw) { const d = T.decoys[Math.floor(r / TOOL_ODDS.decoyWeight)]; ev.decoy = d.id || true; ev.tool = 'decoy'; useUp(H, d); }
+    if (r < dw) { const d = T.decoys[Math.floor(r / TOOL_ODDS.decoyWeight)]; ev.decoy = d.id || true; ev.decoyAt = d.i != null ? { i: d.i, j: d.j } : d.x != null ? { x: d.x, z: d.z } : null; ev.tool = 'decoy'; useUp(H, d); }
     else { r -= dw; found.push((hid.find(e => (r -= w(e)) < 0) || hid[hid.length - 1]).item); }
   }
   // what stops a find: a bell on that drawer, a banana peel, the robot vacuum, each friend at home (ODDS.guard, up to

@@ -326,6 +326,8 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       // a drawer: the runners roll (grain), then it knocks against its stop
       case 'drawer': noise({ dur: .24, vol: .19, f: 800, f2: 1700, q: 1.8, attack: .03, grain: 34 }); tone({ type: 'sine', f: 190, f2: 120, dur: .08, vol: .22, at: .2 }); noise({ dur: .04, vol: .1, type: 'lowpass', f: 900, at: .2 }); break;
       case 'close': tone({ type: 'sine', f: 200, f2: 92, dur: .11, vol: .3 }); noise({ dur: .06, vol: .12, type: 'lowpass', f: 700 }); tone({ type: 'triangle', f: 1400, dur: .025, vol: .035, at: .01 }); break;
+      // 경보 벨 (③ 10/22, 지키기 도구 다시 보기): 따르르릉 — a hammer on a small bell, fast, two notes, for a second
+      case 'bellRing': for (let i = 0; i < 18; i++) bell(i % 2 ? 2350 : 2800, i * .065, .11, .16); break;
       case 'lift': tone({ type: 'sine', f: 380, f2: 760, dur: .14, vol: .22 }); noise({ dur: .12, vol: .08, f: 2500 }); break;
       // a find: two little bells a fifth apart, rising with the count (p), and a breath of sparkle (사운드 세션 10/19)
       case 'found': {

@@ -14,6 +14,8 @@ import { stolenBy, residentId, shieldLeft, locksOwned, locksUsed, LOCK_PRICE, LO
 import { setScoutList } from './raidrun.js';
 import { makePractice } from './scenes/visit.js';
 import { housePool } from './presets.js';
+import { bananaPeel } from './gfx/defense-props.js';
+import { makeFurniture } from './gfx/furniture.js';
 
 const V = new THREE.Vector3();
 const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'); };
@@ -184,17 +186,48 @@ export async function playRaidReplay(S, ev) {
       await tapOn(v.it.g); if (!live()) break;
       G.audio.sfx('found', 2);
       const k = v.e.by.slice(5);
+      // (③ 10/22, ② 인수 'HANDOFF-DEFENSE-1022': each stop a funny little cut, not only words — the finger is the raider; the
+      // camera comes in on it first, the room is too small from afar for a peel or a bell)
+      const back0 = { target: W.target.clone(), zoom: W.zoom };
+      await W.flyTo(tw, { target: wpos(v.it.g).setY(.45), zoom: Math.max(2.2, W.zoom * 1.9), dur: .4 }); if (!live()) break;
+      { const q = W.toScreen(wpos(v.it.g)); await fingerTo(Math.max(40, Math.min(innerWidth - 40, q.x)), Math.max(120, Math.min(innerHeight - 120, q.y)), 200); }
       if (k === 'bell') {
-        G.audio.sfx('doorBell'); floatAt(v.it.g, '따르르릉!', 'red big');
-        const ring = v.part?.bellRing; if (ring) await tw.run(1.4, q => ring(q * 1.4)); else await wait(1.2);
+        // 따르르릉: the bell on that drawer shakes hard, the finger jumps back and shivers
+        G.audio.sfx('bellRing'); floatAt(v.it.g, '따르르릉!', 'red big');
+        const ring = v.part?.bellRing, x0 = fx, y0 = fy;
+        fing.animate([{ translate: '0 0' }, { translate: '0 -46px', offset: .18 }, { translate: '-5px -40px', offset: .3 }, { translate: '5px -42px', offset: .42 }, { translate: '-5px -40px', offset: .54 }, { translate: '0 -44px' }], { duration: 900, easing: 'ease-out', fill: 'forwards' });
+        if (ring) await tw.run(1.4, q => ring(q * 1.4)); else await wait(1.2);
+        fing.getAnimations().forEach(a => { if (a.effect?.getKeyframes?.()[1]?.translate) a.cancel(); }); void x0; void y0;
       } else if (k === 'banana') {
+        // 미끄덩: a peel on the floor in front of it, the finger steps on it and spins off in an arc, the peel skids away
+        const R = S.room.rooms ? S.room.rooms[0] : S.room, gp = wpos(v.it.g), peel = bananaPeel();
+        const cd = new THREE.Vector3(W.cam.position.x - gp.x, 0, W.cam.position.z - gp.z).normalize();
+        peel.position.copy(R.group.worldToLocal(gp.clone().addScaledVector(cd, .55).setY(R.group.position.y))); peel.scale.setScalar(2.2); R.group.add(peel); outs.push({ remove: () => peel.parent?.remove(peel) });
+        W.idsDirty = true; W.shadowDirty = true;
+        const ps = W.toScreen(peel.getWorldPosition(new THREE.Vector3()));
+        await fingerTo(ps.x, ps.y - 10, 300); if (!live()) break;
         G.audio.sfx('slide'); floatAt(v.it.g, '미끄덩!', 'gold big');
-        await fing.animate([{ rotate: '0deg' }, { rotate: '540deg', offset: .7 }, { rotate: '720deg' }], { duration: 700, easing: 'ease-out' }).finished.catch(() => {});
+        const away = fx < innerWidth / 2 ? 1 : -1, p0 = peel.position.clone();
+        tw.run(.5, q => { peel.position.x = p0.x - away * q * .6; peel.position.z = p0.z + q * .3; peel.rotation.y = q * 6; W.shadowDirty = true; });
+        await fing.animate([{ left: fx + 'px', top: fy + 'px', rotate: '0deg' }, { left: (fx + away * 90) + 'px', top: (fy - 120) + 'px', rotate: away * 400 + 'deg', offset: .55 }, { left: (fx + away * 170) + 'px', top: (fy + 40) + 'px', rotate: away * 720 + 'deg' }], { duration: 750, easing: 'ease-out', fill: 'forwards' }).finished.catch(() => {});
+        fx += away * 170; fy += 40; G.audio.sfx('thump');
+        fing.animate([{ rotate: '0deg' }, { rotate: '0deg' }], { duration: 1, fill: 'forwards' });
       } else {
-        G.audio.sfx('whoosh'); floatAt(v.it.g, '위잉~ 로봇청소기!', 'green big'); await wait(1);
+        // 위잉: the robot vacuum of this room charges at the finger; it runs
+        const R = S.room.rooms ? S.room.rooms[0] : S.room, rv = R.furns?.find(r => /robovac/.test(r.type));
+        G.audio.sfx('whoosh'); floatAt(v.it.g, '위잉~ 로봇청소기!', 'green big');
+        if (rv) {
+          const g = rv.f.group, p0 = g.position.clone(), to = R.group.worldToLocal(wpos(v.it.g).setY(R.group.position.y)), r0 = g.rotation.y;
+          g.rotation.y = Math.atan2(to.x - p0.x, to.z - p0.z);
+          await tw.run(.6, q => { g.position.lerpVectors(p0, to, q * .8); g.position.x += Math.sin(q * 30) * .01; W.shadowDirty = true; });
+          const away = fx < innerWidth / 2 ? -1 : 1;
+          await fing.animate([{ translate: '0 0' }, { translate: `${away * 14}px -18px`, offset: .3 }, { translate: `${away * 60}px 0` }], { duration: 380, easing: 'ease-in', fill: 'forwards' }).finished.catch(() => {});
+          tw.run(.6, q => { g.position.lerpVectors(to, p0, q); W.shadowDirty = true; }).then(() => { g.position.copy(p0); g.rotation.y = r0; });
+        } else await wait(1);
       }
       if (!live()) break;
       await fingerTo(fx + (fx < innerWidth / 2 ? -1 : 1) * innerWidth * .6, fy, 420);   // (off it runs)
+      W.flyTo(tw, { ...back0, dur: .4 });
       fingerTo(innerWidth * .5, innerHeight * .7, 10);
       if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
     } else {   // right there, and never noticed: the finger taps beside it and moves on
@@ -205,7 +238,24 @@ export async function playRaidReplay(S, ev) {
     }
   }
   if (ev.decoy && live()) {   // 미끼 상자 (② 10/22): what they carried off was the box — 몽글이 on a spring, '메롱!'
-    G.audio.sfx('giggle'); G.ui.floatText(innerWidth / 2, innerHeight * .42, '미끼 상자를 들고 갔다! 메롱~', 'gold big'); await wait(1.4);
+    // (③ 10/22: the box comes back for a moment where it stood, the finger lifts its flaps, 몽글이 springs out with its tongue
+    // out, the finger jumps back — then off the box goes with them)
+    const R = S.room.rooms ? S.room.rooms[0] : S.room, at = ev.decoyAt;
+    let box = null; try { box = makeFurniture('decoybox', R.T || {}); } catch {}
+    if (box?.springFace) {
+      const p = at?.x != null ? at : at ? R.tileToWorld(at.i, at.j, 1, 1) : { x: 0, z: R.d / 4 };
+      box.group.position.set(p.x, 0, p.z); box.group.rotation.y = Math.atan2(W.cam.position.x - p.x, W.cam.position.z - p.z); R.group.add(box.group); outs.push({ remove: () => box.group.parent?.remove(box.group) });
+      W.idsDirty = true; W.shadowDirty = true;
+      await W.flyTo(tw, { target: box.group.getWorldPosition(new THREE.Vector3()).setY(.45), zoom: 3.6, pitch: .55, dur: .45 }); box.springFace.g.scale.setScalar(1.9); if (!live()) { box.group.parent?.remove(box.group); }
+      await tapOn(box.group);
+      const lid = box.parts?.[0]; if (lid) await tw.run(.18, q => lid.setOpen(q));
+      G.audio.sfx('pop', 4); G.audio.sfx('giggle'); floatAt(box.group, '메롱~!', 'gold big');
+      await Promise.all([tw.run(.7, q => { box.springFace.pop(q); W.shadowDirty = true; }), fing.animate([{ translate: '0 0' }, { translate: '30px -70px', rotate: '20deg', offset: .3 }, { translate: '40px -60px', rotate: '10deg' }], { duration: 500, easing: 'ease-out', fill: 'forwards' }).finished.catch(() => {})]);
+      await wait(.6);
+      G.ui.floatText(innerWidth / 2, innerHeight * .3, '미끼 상자를 들고 갔다!', 'gold big'); G.audio.sfx('whoosh');
+      const p0 = box.group.position.clone(); await tw.run(.45, q => { box.group.position.y = p0.y + q * q * 1.6; box.group.scale.setScalar(1 - q * .8); W.shadowDirty = true; });
+      box.group.parent?.remove(box.group);
+    } else { G.audio.sfx('giggle'); G.ui.floatText(innerWidth / 2, innerHeight * .42, '미끼 상자를 들고 갔다! 메롱~', 'gold big'); await wait(1.4); }
   }
   fing.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: 'forwards' });
   if (!S.dead) await W.flyTo(tw, { yaw: yaw0, target: look, zoom: 1.1, dur: .45 });
