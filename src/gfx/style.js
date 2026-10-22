@@ -34,7 +34,23 @@ function toonSteps() {
   if (!(HL > 1)) return base;
   return Array.from({ length: 12 }, (_, i) => i >= 12 - HLW ? HL : base[Math.floor(i / 4)]);
 }
-export function useCartoonStyle() { setStyle('toon', { remap: vivid, steps: toonSteps() }); }
+// 만화 반짝 점 (10/22 사용자: "빛 받는 면에 동그랗게 페이크 하이라이트? 만화처럼"): ?shine=.6[&shinet=.985]
+// a hard-edged white dot where a round surface faces between the sun and the camera (Blinn half-vector, cut at shinet) —
+// on balls, pots, lamps and the friends' heads it reads as a cartoon shine; flat faces (the camera is orthographic) get none.
+// Patched into every toon material at start-up (also the baked furniture), so it must run before any of them compiles.
+const SHINE = HLQ.has('shine') ? +HLQ.get('shine') || 0 : .35, SHINE_T = Math.min(.999, Math.max(.9, +HLQ.get('shinet') || .97));   // (기본 켬 10/22 사용자: "약간 더 키워 주고 .35 약하게"; ?shine=0 끔)
+function shinePatch() {
+  if (!(SHINE > 0) || THREE.ShaderLib.toon.fragmentShader.includes('cartoon shine')) return;
+  THREE.ShaderLib.toon.fragmentShader = THREE.ShaderLib.toon.fragmentShader.replace('#include <opaque_fragment>', `
+  // cartoon shine
+  #if NUM_DIR_LIGHTS > 0
+  { vec3 sd = directionalLights[ 0 ].direction, hv = normalize( sd + geometryViewDir );
+    float k = smoothstep( ${SHINE_T.toFixed(4)}, ${(SHINE_T + .004).toFixed(4)}, dot( normal, hv ) ) * step( 0.0, dot( normal, sd ) );
+    outgoingLight = mix( outgoingLight, vec3( 1.0 ), k * ${SHINE.toFixed(3)} ); }
+  #endif
+  #include <opaque_fragment>`);
+}
+export function useCartoonStyle() { shinePatch(); setStyle('toon', { remap: vivid, steps: toonSteps() }); }
 
 export function applyArt(post) {
   const u = post.u;
