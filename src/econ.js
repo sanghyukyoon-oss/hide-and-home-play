@@ -21,7 +21,7 @@ export const ECON = (() => {
 // 8판's robot (the model kit you built), then a special gift (one of three: a padlock, a thing to hide, a piece the shop doesn't
 // sell) on the win card of the boss after 31판 and after 49판, and one more after 70판 (about one in 17 past 50). No 별 상자, no
 // chapter box: a chapter's furniture goes into the shop's 기념품 when its last stage is cleared (stage.js).
-export const GIFT_AT = [30, 48, 69];   // (0-based stage before the boss: 31판 → 깨우기, 49판 → 보물 지키기, 70판 → 야식)
+export const GIFT_AT = [32, 48, 69];   // (0-based stage before the boss: 33판 → 깨우기, 49판 → 보물 지키기, 70판 → 야식 — 골목 보스 31 → 33판, 10/22)
 export const FREE_KITS = ['robot'];    // (the kits whose model comes home free; the rest go to the shop's 기념품)
 // 11판's cat tower, the stories' keepsakes and the other kits' models go to the shop's 기념품 — yours to buy — not free into the
 // 보관함. true gives them all free again (one switch). Old saves keep theirs.
@@ -35,8 +35,8 @@ export function keepsake(G, t) {
   H.offered = [...new Set([...(H.offered || []), t])]; return true;
 }
 
-// the stages whose clear opens a chapter's box (0-based: 12·21·31·40·49·60·70판) — 설계서 4-2
-export const PICK_AT = [11, 20, 30, 39, 48, 59, 69];
+// the stages whose clear opens a chapter's box (0-based: 12·21·33·40·49·60·70판) — 설계서 4-2
+export const PICK_AT = [11, 20, 32, 39, 48, 59, 69];
 
 // a new save with it on: the fields below from the start (so econMigrate leaves it alone)
 export function econSaveFields(s) {

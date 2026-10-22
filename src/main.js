@@ -52,6 +52,7 @@ import { ATTIC_BUILDERS, ATTIC_INFO } from './gfx/bunnyattic-props.js';   // 2�
 import { LOFT_BUILDERS, LOFT_INFO } from './gfx/loft-props.js';
 import { GPT_LOFT_BUILDERS, GPT_LOFT_INFO } from './gfx/gpt-loft-props.js';
 import { GPT_BUILDING_BUILDERS, GPT_BUILDING_INFO } from './gfx/gpt-building-props.js';
+import { GPT_HERO_BUILDERS, GPT_HERO_INFO } from './gpt-heroes.js';
 import { BAKERY_BUILDERS, BAKERY_INFO } from './gfx/bearbakery-props.js';   // 6판 곰돌이 빵 굽는 부엌 (10/20)
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { THEMES, LAYOUTS, STAGE_COUNT } from './stages.js';
@@ -76,6 +77,7 @@ import { queueFollowup, normalizeFollowup, routeFollowup } from './followup.js';
 import { VERSION_LABEL } from './build.js';
 import { installAppBack } from './appback.js';
 installI18n();   // English players see English everywhere (see i18n.js)
+registerFurniture(GPT_HERO_BUILDERS, GPT_HERO_INFO);
 
 // outdoor props (alley / park / camp) join the furniture registry, the room shell and the shop
 registerFurniture(OUTDOOR_BUILDERS, OUTDOOR_INFO);

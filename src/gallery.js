@@ -16,9 +16,9 @@ export const GALLERY = [
   ] },
   { sec: '보스', items: [
     { id: 'yasik', type: 'bossgame', name: '엄마 몰래 야식', desc: '엄마가 안 볼 때 간식을 몰래 챙겨 와요. 들키면 끝!', slots: '12 · 40 · 70판 뒤', lvs: L('첫째 밤', '둘째 밤', '셋째 밤') },
-    { id: 'wakeup', type: 'bossgame', name: '아침 깨우기 장치', desc: '장난감을 이어 붙인 연쇄 장치로 졸졸이를 깨워요', slots: '31 · 46 · 60판 뒤', lvs: L('첫째 아침', '둘째 아침', '셋째 아침') },
+    { id: 'wakeup', type: 'bossgame', name: '아침 깨우기 장치', desc: '장난감을 이어 붙인 연쇄 장치로 졸졸이를 깨워요', slots: '33 · 46 · 60판 뒤', lvs: L('첫째 아침', '둘째 아침', '셋째 아침') },
     { id: 'hotel', type: 'bossgame', name: '몽글 호텔 X박 X일', desc: '손님 방을 정해 모두 꿀잠 재우기. 밤마다 사건 카드', slots: '21판 뒤 (3박 4일)', lvs: L('1박 2일', '2박 3일', '3박 4일') },
-    { id: 'treasure', type: 'boss', name: '보물 지키기', desc: '보물을 숨기고 휘슬로 너굴이를 따돌려요', slots: '18 · 27 · 37 · 49 · 55판 뒤', lvs: [{ label: '2층집', after: 17 }, { label: '골목 마당 2층집', after: 26 }, { label: '편의점·빨래방', after: 36 }, { label: '공원', after: 48 }, { label: '오두막·캠핑장', after: 54 }] },
+    { id: 'treasure', type: 'boss', name: '보물 지키기', desc: '보물을 숨기고 휘슬로 너굴이를 따돌려요', slots: '18 · 27 · 38 · 49 · 55판 뒤', lvs: [{ label: '2층집', after: 17 }, { label: '골목 마당 2층집', after: 26 }, { label: '편의점·빨래방', after: 37 }, { label: '공원', after: 48 }, { label: '오두막·캠핑장', after: 54 }] },
   ] },
   { sec: '쉬어가기', items: [
     { id: 'whack', type: 'bossgame', interlude: true, name: '두더지 숨바꼭질', desc: '수풀에서 쏙 나온 친구를 터치! 너굴이는 꾹 참기', slots: '3 · 24 · 58판 뒤', lvs: L('공원 수풀', '변장한 너굴이', '피버 수풀') },
@@ -29,7 +29,7 @@ export const GALLERY = [
     { id: 'gohome', type: 'bossgame', interlude: true, name: '다 같이 집으로!', desc: '앞길이 열린 친구부터 터치! 해 지기 전에 모두 집으로', slots: '15 · 52판 뒤', lvs: L('놀이터', '골목길', '덤불 숨바꼭질', '빙글 너굴이', '졸린 친구들', '해 질 녘', '놀이터 + 덤불', '캠핑장 + 졸린 친구', '첫 놀이터 + 덤불') },
     { id: 'tracks', type: 'bossgame', interlude: true, name: '발자국 따라 찾기', desc: '눈 위 발자국을 따라가 숨은 친구 찾기', slots: '캠페인 밖', lvs: L('첫눈 캠핑장', '엉킨 발자국', '눈이 펑펑') },
     { id: 'lamp', type: 'mini', name: '손전등 술래', desc: '어두운 방을 손전등으로 비춰 친구 찾기', slots: '43판 뒤 · 66판 뒤 보스', lvs: [{ label: '원룸', after: 14, p: { map: 'oneroom', time: 45 } }, { label: '공원', after: 42, p: { map: 'park1', time: 45 } }, { label: '보스: 불 꺼진 사무실', after: 65 }] },
-    { id: 'spot', type: 'mini', name: '너굴이의 바꿔치기 (지금 판)', desc: '잠깐 사이 바뀐 곳 찾기', slots: '34판 뒤', lvs: [{ label: '편의점', after: 33 }, { label: '캠핑장', after: 51 }] },
+    { id: 'spot', type: 'mini', name: '너굴이의 바꿔치기 (지금 판)', desc: '잠깐 사이 바뀐 곳 찾기', slots: '35판 뒤', lvs: [{ label: '편의점', after: 34 }, { label: '캠핑장', after: 51 }] },
   ] },
   { sec: '캠페인 밖', items: [
     { id: 'flashlight', type: 'bossgame', name: '손전등 숨바꼭질', desc: '정전된 밤, 손전등으로 숨은 친구를 비춰 찾아요', slots: '안 쓰임 (10/18 뺌)', lvs: L('토순이네 침실', '곰돌이네 거실', '말썽이네 집', '펭펭이네 2층집') },

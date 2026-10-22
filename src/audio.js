@@ -1,6 +1,7 @@
 // WebAudio-synthesized SFX + streamed background music per scene slot (every slot without its own file plays the lobby song).
 import { store } from './util.js';
 import { hapticFor } from './feel.js';
+import { asRoom } from './roomalias.js';
 
 // ── 소리 파일 자리 (사운드 세션 10/19, user: "지피티가 효과음 만든 것도 있거든? 비지엠이랑. 이거 받아다가 적용도 해 줘")
 // Suno·Google로 만든 곡은 audio/gpt/ 에 넣고, 아래 그 칸의 gpt: null 을 그 파일 경로로 바꾼다 (웹은 폴더를 못 읽어서 이 표가 목록).
@@ -42,12 +43,12 @@ export const MAP_SONGS = {
 };
 const CH_SONGS = { home: ['ingame', 'take2'], apt: ['lobbyTake', 'take2'], alley: ['ingame', 'lobbyTake'], shop: ['ingame', 'take2'],
   park: ['lobbyTake', 'ingame'], camp: ['take2', 'lobbyTake'], building: ['ingame', 'take2'] };
-const CH_FROM = { home: 0, apt: 12, alley: 21, shop: 31, park: 40, camp: 49, building: 60 };   // (stages.js REGIONS from)
+const CH_FROM = { home: 0, apt: 12, alley: 21, shop: 33, park: 40, camp: 49, building: 60 };   // (stages.js REGIONS from)
 export function mapSongFor(spec) {
   const i = spec?.idx | 0;
   if (!spec) return 'ingame';
   if (i >= 26 && i <= 29) return (i - 26) % 2 ? 'take2' : 'trip';   // 기차 여행 편 first (27판 leaves in the morning, whatever its old night flag says)
-  if (spec.night && spec.room !== 'otakuloft') return 'main';   // (18판 너굴이네 복층: 비 오는 밤이어도 그 장의 곡 그대로 — 검토 10/22)
+  if (spec.night && asRoom(spec.room) !== 'otakuloft') return 'main';   // (18판 너굴이네 복층: 비 오는 밤이어도 그 장의 곡 그대로 — 검토 10/22)
   if (spec.endless) return ['ingame', 'take2', 'lobbyTake'][i % 3];
   const pair = CH_SONGS[spec.region] || CH_SONGS.home;
   return pair[Math.max(0, i - (CH_FROM[spec.region] ?? 0)) % 2];
@@ -216,7 +217,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   let ambNow = null;
   A.ambience = key => {
     A.stopAmbience();
-    const set = AMB[key]; if (!set || AMB_OFF || !ensure()) return;
+    const set = AMB[key] || AMB[asRoom(key)]; if (!set || AMB_OFF || !ensure()) return;   // (a GPT map under a new key: its old map's beds — roomalias.js)
     const tok = ambNow = { nodes: [] }, c = A.ctx;
     if (!A.ambBus) { A.ambBus = c.createGain(); A.ambBus.connect(A.master); }
     for (const e of set) {

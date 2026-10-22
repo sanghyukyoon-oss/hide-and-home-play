@@ -82,12 +82,12 @@ export const STAGE_ITEMS = {
   28: ['console', 'mug', 'sunglasses', 'slipper', 'bunnyband'],
   29: ['duck', 'acorn', 'pot', 'honeypot', 'heart'],
   30: ['fishsnack', 'snowglobe', 'crown', 'star', 'towel', 'bellball'],
-  32: ['sandwich', 'ramen', 'onigiri', 'kimbap'],
-  33: ['sockpair', 'teddy', 'block', 'tissue', 'gift', 'slipper', 'bunnyband'],
-  35: ['cupcake', 'donut', 'cookie', 'honeypot', 'milk', 'apple', 'icecream', 'heart'],
-  36: ['umbrella', 'remote', 'glasses', 'mug', 'whistle', 'books', 'sunglasses', 'crown'],
-  37: ['crayons', 'star', 'stapler', 'snowglobe', 'yarn', 'towel'],
-  38: ['ramen', 'mandarin', 'kimbap', 'sandwich', 'juicebox', 'tissue'],
+  31: ['mandarin', 'juicebox', 'cookie', 'tissue', 'books', 'glasses'],   // (긴 객실 너굴이 시간 판 — 판 자리 다시 짜기 10/22: 기차 간식·읽을거리, 앞뒤 3판과 안 겹침)
+  32: ['policecap', 'gift', 'map', 'candy', 'ball', 'teddy', 'umbrella', 'milk'],   // (벚꽃역 귀갓길 — 멍뭉이 마중 '명예 순경', 여행 선물·지도)
+  34: ['sandwich', 'ramen', 'onigiri', 'kimbap'],
+  36: ['cupcake', 'donut', 'cookie', 'honeypot', 'milk', 'apple', 'icecream', 'heart'],
+  37: ['umbrella', 'remote', 'glasses', 'mug', 'whistle', 'books', 'sunglasses', 'crown'],
+  38: ['crayons', 'star', 'stapler', 'snowglobe', 'yarn', 'towel'],
   39: ['duck', 'rubberduck2', 'bellball', 'teddy', 'medal', 'sockpair', 'block'],
   41: ['acorn', 'cookie', 'snack', 'donut', 'apple', 'honeypot', 'candy', 'strawhat'],
   42: ['ball', 'bobber', 'whistle', 'umbrella'],

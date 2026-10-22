@@ -1682,9 +1682,12 @@ B.findshelf = (f, T) => {
 export function makeFurniture(type, theme, opts = {}) {
   const info = FURN_INFO[type];
   const f = new Furn(type, info.w || 1, info.d || 1, !!info.wall);
-  B[type](f, theme, opts);
+  // A stage can select a new art builder while retaining its original gameplay identity and footprint.
+  const builder = opts?.gptHero && B[opts.gptHero] ? opts.gptHero : type;   // (opts may be null — 1.0.183 sweep: 1·2·8·18판 crashed)
+  B[builder](f, theme, opts);
+  if (builder !== type) f.heroKey = builder;
   f.name = info.name;
-  return bakeStatic(f.finalize(), type + '|' + JSON.stringify(opts), theme);
+  return bakeStatic(f.finalize(), builder + '|' + JSON.stringify(opts), theme);
 }
 
 // Freestanding lever for outdoor stages that have no tall wall to mount one on: a steel post with hazard bands on a dark

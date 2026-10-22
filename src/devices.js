@@ -10,6 +10,8 @@ import { EN } from './i18n-en-dict.js';
 import { ITEMS } from './gfx/items.js';
 import { rng, ease } from './util.js';
 import { blindFor } from './hunt-blind.js';
+import { asRoom } from './roomalias.js';
+import { runChain } from './gpt-chains.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
 for (const [ko, en] of [['수문 손잡이', 'Sluice handle'], ['수문 연못', 'Sluice pond'], ['수문 바퀴', 'Sluice wheel'], ['보물상자', 'Treasure chest'], ['보물상자 안', 'In the treasure chest'],
@@ -30,7 +32,7 @@ const SWAP = {
   cabin: { 'drawers#1': 'starloft' },                         // 59판 통나무 오두막: the attic's chest of drawers
 };
 export function deviceLayout(key, L) {
-  const m = SWAP[key]; if (!m) return L;
+  const m = SWAP[key] ?? SWAP[asRoom(key)]; if (!m) return L;   // (a GPT map rebuilt under a new key: its old map's swap — roomalias.js)
   const seen = {};
   const sw = lay => ({ ...lay, furniture: (lay.furniture || []).map(f => { const n = seen[f.type] = (seen[f.type] ?? -1) + 1, to = m[f.type + '#' + n] || m[f.type]; return to ? { ...f, type: to } : f; }) });
   return L.rooms ? { ...L, rooms: L.rooms.map(r => ({ ...r, layout: sw(r.layout) })) } : sw(L);
@@ -563,3 +565,6 @@ RUN.arcadeprize = async (S, part) => {
   await S.togglePart(part, true);
 };
 DEVICE_FOUND.gametoken = K('오락실 코인이다! 빨간 경품 오락기에 넣어 보자', 'An arcade token! Try it in the red prize arcade');
+
+// ── 36·43~70판 GPT 맵 연쇄 장치 (②b 10/22, gpt-chains.js): the tool in, the machine runs, the next one goes by itself
+RUN.chain = (S, part) => runChain(S, part, clearYaw);

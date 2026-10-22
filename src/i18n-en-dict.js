@@ -3769,4 +3769,8 @@ export const EN = {
 "랜턴": "Lantern", "마시멜로 꼬치": "Marshmallow skewers", "침낭 베개": "Sleeping bag pillow", "별자리 지도": "Star map", "마이크": "Microphone",
 "응원봉": "Light stick", "헤드폰": "Headphones", "트로피": "Trophy", "비커": "Beaker",
 "무지개 벽화 계단": "Rainbow Mural Stairs",
+"가게 선반 바구니": "shop shelf basket", "벽화 계단 방수포": "tarp under the mural stairs", "셔터와 선반 바구니": "shutter and shelf basket",
+"시계 다이얼 냉동고": "Dial-Clock Freezer", "파르페 회전 진열장": "Parfait Carousel Case", "무지개 비밀 서가": "Rainbow Secret Shelf",
+"보드킹의 보드 정비 거치대": "Board King's Board Care Rack", "해바라기 고래 무지개 계단": "Sunflower Whale Rainbow Stairs", "행복슈퍼 선반 바구니 도르래": "Happy Mart Basket Pulley",
+"보드 정비": "Board Care", "타고 · 고치고 · 또 타고": "Ride · Repair · Repeat", "과일 · 생활용품 · 1988년부터": "Fruit · Daily Goods · Since 1988", "카페": "Cafe",
 };

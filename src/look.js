@@ -18,6 +18,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { makeFurniture, FURN_INFO } from './gfx/furniture.js';
 import { HOUSE_KIT } from './scenes/home.js';
 import { THEMES } from './stages.js';
+import { asRoom } from './roomalias.js';
 import { groundTex } from './gfx/outdoor.js';
 
 const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
@@ -368,8 +369,11 @@ RECIPES.villaroof2 = { ...RECIPES.villaroof, light: { ambColor: '#fff6ec', amb: 
 
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
-  return RECIPES[room] || null;
+  return RECIPES[room] || RECIPES[asRoom(room)] || null;   // (a GPT map under a new key: its old map's light — roomalias.js)
 }
+// a GPT map's own mood where the old one's backdrop doesn't suit it (LOOK 10/22 "each map its own backdrop", ⑥): 44판 모래 언덕 —
+// a clear summer blue over the park's grass block
+RECIPES.gptplayhamster = { ...RECIPES.park3, sky: ['#5fb2e6', '#c2e5f4', '#dcf0e6'] };
 
 // ── light and sky (stage.enter, before the room is built) ──────────────────────────────────────────────────────
 // returns the theme with the look's light and background, so every later light change (lights on at a night stage's

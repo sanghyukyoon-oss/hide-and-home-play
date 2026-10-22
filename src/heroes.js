@@ -1,13 +1,12 @@
 // 판마다 대표 소품 (G3, ⑥ 10/22 — user "G3 대표 소품 ㄱ"): a stage whose map comes back gets one hero piece of its own
 // (gfx/hero-props.js) in place of an everyday piece of the same size — the k-th piece of that type, counted through the map's
 // rooms in order. Same footprint, so paths and the room the planner sees stay put; the hero brings its own hiding spot(s).
-// stage number (1-based) → { type, k, to }
-export const HEROES = {
-  // 골목 보스: 무지개 벽화 계단 (10/22 the user kept this one; the other stages' heroes go to the GPT workshop)
-  31: { type: 'stairs', to: 'muralstairs' },
-};
-export function heroLayout(n, L) {
-  const h = HEROES[n]; if (!h || !L) return L;
+// map key → { type, k, to } (10/22 ② RENUM: by the map, not the stage number)
+// (10/22 저녁 사용자 "클로드가 한 거는 쨍하고 이쁜데 지피티는 뭔가 RGB가 아닌 듯", 18시 시트 '채택': 골목 보스 맵(33판)의 계단은
+// 다시 ⑥ 벽화 계단 — GPT 무지개 계단 gpt_hero_rainbowstairs는 키로 남음)
+export const HEROES = { alleywide: { type: 'stairs', to: 'muralstairs' } };
+export function heroLayout(room, L) {
+  const h = HEROES[room]; if (!h || !L) return L;
   let seen = 0, done = false;
   const sw = lay => ({ ...lay, furniture: (lay.furniture || []).map(f => {
     if (done || f.type !== h.type) return f;

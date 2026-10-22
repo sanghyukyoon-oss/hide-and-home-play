@@ -124,23 +124,19 @@ const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(
 // draw something at (x, y) and at its wrapped copies so the texture tiles seamlessly
 const wrap = (S, x, y, m, fn) => { for (const dx of [-S, 0, S]) for (const dy of [-S, 0, S]) { const X = x + dx, Y2 = y + dy; if (X > -m && X < S + m && Y2 > -m && Y2 < S + m) fn(X, Y2); } };
 
-const jogakboTex = () => tex('jogakbo', 256, 256, (c, w, h) => {
-  const cols = ['#ff6b6b', '#ffd23f', '#4fb8ff', '#7bd96a', '#ff9ec2', '#ffffff', '#b48cff', '#ff9f43'], r = rng(11);
-  c.fillStyle = '#fff7ea'; c.fillRect(0, 0, w, h);
-  const split = (x, y, W, H, d) => {
-    if (d > 3 || W < 26 || H < 26) { c.fillStyle = r.pick(cols); c.fillRect(x + 1.5, y + 1.5, W - 3, H - 3); return; }
-    if (W > H ? r() < .85 : r() < .15) { const s = W * (.35 + r() * .3); split(x, y, s, H, d + 1); split(x + s, y, W - s, H, d + 1); }
-    else { const s = H * (.35 + r() * .3); split(x, y, W, s, d + 1); split(x, y + s, W, H - s, d + 1); }
-  };
-  split(0, 0, w, h, 0);
-});
+// (10/22 밤 사용자 "돗자리 줄무늬도 과함": a straw mat in fine faint weave with one soft green edge — the thick green and red
+// double border is gone)
 const dotjariTex = () => tex('dotjari', 256, 160, (c, w, h) => {
-  c.fillStyle = '#f2d987'; c.fillRect(0, 0, w, h);
-  c.strokeStyle = 'rgba(170,125,40,.35)'; c.lineWidth = 1.4;
-  for (let x = 3; x < w; x += 5) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
-  c.strokeStyle = '#3fae7a'; c.lineWidth = 9; c.strokeRect(5, 5, w - 10, h - 10);
-  c.strokeStyle = '#ff6b6b'; c.lineWidth = 3; c.strokeRect(14, 14, w - 28, h - 28);
+  c.fillStyle = '#f1dca0'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(170,125,40,.16)'; c.lineWidth = 1;
+  for (let x = 4; x < w; x += 7) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+  c.strokeStyle = '#86c9a2'; c.lineWidth = 4; c.strokeRect(5, 5, w - 10, h - 10);
 });
+// a plastic mesh food cover (망사 상보): pink with a fine white lattice, tiled round the dome
+const meshCoverTex = () => tex('meshcover', 128, 128, (c, w, h) => {
+  c.fillStyle = '#ff9fbd'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#ffe6ef'; for (let i = 0; i < w; i += 8) { c.fillRect(i, 0, 2, h); c.fillRect(0, i, w, 2); }
+}, { repeat: [5, 2] });
 const slipperTex = () => tex('slipper', 64, 64, (c, w, h) => { c.fillStyle = '#2f6fe0'; c.fillRect(0, 0, w, h); c.fillStyle = '#ffffff'; for (let i = 0; i < 3; i++) c.fillRect(0, 4 + i * 9, w, 4.5); });
 const washboardTex = () => tex('washboard', 96, 160, (c, w, h) => {
   c.fillStyle = '#e8b67c'; c.fillRect(0, 0, w, h);
@@ -241,15 +237,22 @@ const wickerTex = () => tex('wicker', 256, 256, (c, w, h) => {
   c.fillStyle = '#d9a35e'; c.fillRect(0, 0, w, h);
   for (let y = 0; y < h; y += 12) for (let x = 0; x < w; x += 16) { c.fillStyle = (x / 16 + y / 12) % 2 ? '#e8bd7c' : '#c98c48'; roundRect(c, x + 1, y + 1, 14, 10, 4); c.fill(); }
 });
-const bagTex = () => tex('bag', 512, 256, (c, w, h) => {
-  c.fillStyle = '#f7f4ec'; c.fillRect(0, 0, w, h);
-  c.fillStyle = '#ff8a3c'; c.fillRect(0, h * .42, w, h * .2);
-  for (const u of [.25, .75]) txt(c, '종량제', w * u, h * .52, 15, '#ffffff');
-  c.fillStyle = 'rgba(160,150,140,.25)'; for (let i = 0; i < 6; i++) c.fillRect(i * 43, 0, 2, h);
+// (10/22 밤 사용자 "띠 글자 '량제'·'종량'처럼 잘림": the word on its own flat label on the bag's front, never round a curve)
+const bagLabelTex = () => tex('baglabel', 256, 112, (c, w, h) => {
+  c.fillStyle = '#ff8a3c'; roundRect(c, 2, 2, w - 4, h - 4, 9); c.fill();
+  c.fillStyle = '#ffffff'; roundRect(c, 8, h - 17, w - 16, 11, 4); c.fill();
+  txt(c, '종량제', w / 2, h * .38, 25, '#ffffff', { stroke: '#e0601a', sw: 3 });
+  txt(c, '일반 쓰레기 20L', w / 2, h - 11.5, 8, '#e0601a');
 }, { text: true });
+// the bag's plastic: soft grey creases running up to the neck and a long shine, round the lathe
+const bagSkinTex = () => tex('bagskin', 256, 128, (c, w, h) => {
+  c.fillStyle = '#f7f6f2'; c.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9; i++) { const x = (i + .3 * Math.sin(i * 2.7)) * w / 9; const g = c.createLinearGradient(x - 6, 0, x + 6, 0); g.addColorStop(0, 'rgba(150,152,170,0)'); g.addColorStop(.5, 'rgba(150,152,170,.32)'); g.addColorStop(1, 'rgba(150,152,170,0)'); c.fillStyle = g; c.beginPath(); c.moveTo(x - 6, h); c.lineTo(x + 6, h); c.lineTo(x + 2, 0); c.lineTo(x - 2, 0); c.fill(); }
+  c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(w * .18, h * .25, 5, h * .5);
+});
 const noDumpTex = () => tex('nodump', 320, 224, (c, w, h) => {
-  c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.strokeStyle = '#ff3b4e'; c.lineWidth = 8; c.strokeRect(4, 4, w - 8, h - 8);
-  txt(c, '쓰레기', w / 2, 30, 22, '#3b2a55'); txt(c, '무단투기', w / 2, 58, 24, '#ff3b4e'); txt(c, '금지!', w / 2, 86, 24, '#ff3b4e');
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.strokeStyle = '#ff3b4e'; c.lineWidth = 4; c.strokeRect(5, 5, w - 10, h - 10);
+  txt(c, '쓰레기', w / 2, h * .25, 22, '#3b2a55'); txt(c, '무단투기', w / 2, h * .53, 30, '#ff3b4e'); txt(c, '금지!', w / 2, h * .8, 26, '#ff3b4e');
 }, { text: true });
 const flowerTex = () => tex('ibul', 256, 384, (c, w, h) => {
   c.fillStyle = '#ff5f8f'; c.fillRect(0, 0, w, h);
@@ -326,7 +329,8 @@ B.daeya = (f, T) => {
   f.spot('inside', null, .33, 0, .33, { part: dp, maxH: .22, label: '바가지 밑', scale: .72 });
 };
 
-// 평상: slatted platform, 돗자리, 방석, 소반 with a patchwork 상보, 삼선 슬리퍼
+// 평상: slatted platform, 돗자리, 방석, 소반 with a plate of watermelon, two cups of barley tea and a pink mesh food cover (망사 상보 —
+// 10/22 밤 사용자 "줄무늬 돔 + 빨간 소반: 뭔지 안 읽힘": the patchwork dome read as nothing), 삼선 슬리퍼
 B.pyeongsang = (f, T) => {
   const wood = T.wood || '#ecc08a', woodD = T.woodD || '#c98f58', top = .42, zc = -.07, D = .8;
   f.add(mg('pys-top', wood, ({ add }) => { for (let i = 0; i < 5; i++) add(G.box(1.88, .06, D / 5 - .018, .02), 0, top - .03, zc - D / 2 + D / 10 + i * D / 5); }));
@@ -339,13 +343,27 @@ B.pyeongsang = (f, T) => {
   put(cu, -.56, top + .06, zc + .08, 0, .2, 0); f.add(cu);
   const cp = f.part('lift', cu, (t, b) => { cu.position.y = b.p.y + .34 * t; cu.rotation.x = -.45 * t; cu.rotation.z = .15 * t; }, { label: '방석', sfx: 'lift' });
   f.spot('inside', null, -.56, top + .02, zc + .08, { part: cp, maxH: .3, label: '방석 밑' });
-  const sx = .46, sz = zc - .02;
-  f.add(put(cyl(.27, .27, .04, '#c0573e', null, 28), sx, top + .2, sz));
-  f.add(put(mg('soban-legs', '#8f3d2a', ({ add }) => { for (const [x, z] of [[-.16, -.16], [.16, -.16], [-.16, .16], [.16, .16]]) add(G.box(.04, .19, .04, .012), x, .095, z); }), sx, top, sz));
-  const cv = grp(put(hemi(.22, '#ffffff', { map: jogakboTex() }), 0, 0, 0, 0, 0, 0, [1, .62, 1]), put(sph(.032, '#ff6f91'), 0, .14, 0));
-  put(cv, sx, top + .22, sz); f.add(cv);
-  const vp = f.part('lift', cv, (t, b) => { cv.position.y = b.p.y + .3 * t; cv.position.x = b.p.x + .1 * t; cv.rotation.z = -.45 * t; }, { label: '상보', sfx: 'lift' });
-  f.spot('inside', null, sx, top + .22, sz, { part: vp, maxH: .26, label: '상보 밑', scale: .72 });
+  const sx = .44, sz = zc - .02, st = top + .22;
+  f.add(put(cyl(.3, .3, .04, '#c96f45', null, 28), sx, top + .2, sz));
+  f.add(put(tor(.3, .012, '#a5512f', null, PI * 2, 8, 40), sx, st, sz, HP, 0, 0));
+  f.add(put(mg('soban-legs', '#8f3d2a', ({ add }) => { for (const [x, z] of [[-.18, -.18], [.18, -.18], [-.18, .18], [.18, .18]]) add(G.box(.04, .19, .04, .012), x, .095, z); }), sx, top, sz));
+  // the front half: a white plate of three watermelon slices (red flesh, green rind, black seeds) and two cups of barley tea
+  const px = sx + .13, pz = sz + .15;
+  f.add(put(cyl(.11, .09, .018, '#ffffff', null, 22), px, st + .009, pz));
+  const slice = (r, th) => new THREE.CylinderGeometry(r, r, th, 10, 1, false, 0, .95);
+  f.add(put(mg('wm-rind', '#3fa65a', ({ add }) => { for (let k = 0; k < 3; k++) add(slice(.092, .026), Math.sin(k * 2.1 + .47) * .012, 0, Math.cos(k * 2.1 + .47) * .012, 0, k * 2.1, 0); }), px, st + .031, pz));
+  f.add(put(mg('wm-flesh', '#ff5a64', ({ add }) => { for (let k = 0; k < 3; k++) add(slice(.08, .03), Math.sin(k * 2.1 + .47) * .012, .004, Math.cos(k * 2.1 + .47) * .012, 0, k * 2.1, 0); }), px, st + .031, pz));
+  f.add(put(mg('wm-seeds', '#2a1d22', ({ add }) => { for (let k = 0; k < 3; k++) for (const [rr, da] of [[.035, .3], [.055, .62], [.05, .18]]) { const a = k * 2.1 + da; add(G.sph(.007, 6, 4), Math.sin(a) * rr, .02, Math.cos(a) * rr, 0, 0, 0, [1, .5, 1.5]); } }), px, st + .031, pz));
+  f.add(mg('tea-cups', '#ffffff', ({ add }) => { for (const [x, z] of [[sx - .16, sz + .14], [sx - .05, sz + .21]]) add(G.cyl(.032, .026, .055, 14), x, st + .028, z); }));
+  f.add(mg('tea-tops', '#d39a52', ({ add }) => { for (const [x, z] of [[sx - .16, sz + .14], [sx - .05, sz + .21]]) add(G.cyl(.027, .027, .004, 14), x, st + .054, z); }));
+  // the back half: the mesh food cover over a little side dish — lifts off, and the spot under it
+  const cx = sx - .05, cz = sz - .11;
+  const cv = grp(put(hemi(.17, '#ffffff', { map: meshCoverTex() }), 0, 0, 0, 0, 0, 0, [1, .72, 1]),
+    put(mg('cover-ribs', '#f0708f', ({ add }) => { for (let k = 0; k < 4; k++) add(G.tor(.17, .006, PI), 0, 0, 0, 0, k * PI / 4, 0, [1, .72, 1]); add(G.tor(.17, .008), 0, .004, 0, HP, 0, 0); }), 0, 0, 0),
+    put(sph(.028, '#f0708f'), 0, .13, 0));
+  put(cv, cx, st, cz); f.add(cv);
+  const vp = f.part('lift', cv, (t, b) => { cv.position.y = b.p.y + .3 * t; cv.position.x = b.p.x - .08 * t; cv.rotation.z = .45 * t; }, { label: '상보', sfx: 'lift' });
+  f.spot('inside', null, cx, st, cz, { part: vp, maxH: .2, label: '상보 밑', scale: .72 });
   f.add(mg('slipper-soles', '#2a58c0', ({ add }) => { add(G.box(.13, .03, .23, .014), .1, .015, .38, 0, .15, 0); add(G.box(.13, .03, .23, .014), .27, .015, .39, 0, -.1, 0); }));
   f.add(mg('slipper-straps', '#ffffff', ({ add }) => { add(G.box(.14, .055, .1, .02), .095, .045, .42, 0, .15, 0); add(G.box(.14, .055, .1, .02), .274, .045, .43, 0, -.1, 0); }, { map: slipperTex() }));
   f.spot('on', null, -.02, top + .02, zc - .16, { maxH: .45, label: '평상 위', scale: .9 });
@@ -679,12 +697,31 @@ B.bike = (f, T) => {
   f.spot('inside', null, rx, ry + .022, 0, { part: lp, maxH: .19, label: '짐칸 상자', scale: .65 });
 };
 
-// 쓰레기 봉투 더미: 종량제 봉투 (one rolls aside), a taped box, the 무단투기 금지 sign
+// 쓰레기 봉투 더미: 종량제 봉투 (one rolls aside), a taped box, the 무단투기 금지 sign — 10/22 밤 사용자 "양파 같은 덩어리, 띠 글자
+// 잘림, 팻말 판자가 얇고 납작": bags that bulge and crease round a twisted neck with two tied ears, the word on a flat label,
+// the sign a real board (thickness, a red frame, bolts) on a square wooden post
+function bagGeo(s) {
+  return geo('bagbody|' + s, () => {
+    const pts = [[0, 0], [.13, .01], [.21, .05], [.25, .12], [.25, .2], [.21, .29], [.14, .36], [.07, .41], [.035, .44]].map(([r, y]) => new THREE.Vector2(r * s, y * s));
+    const g = new THREE.LatheGeometry(pts, 30), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x), t = y / (.44 * s);
+      const k = 1 + (.07 * Math.sin(7 * a + t * 5) + .035 * Math.sin(13 * a - t * 3)) * Math.sin(PI * Math.min(1, t * 1.15));
+      p.setXYZ(i, x * k, y, z * k);
+    }
+    g.computeVertexNormals();
+    return g;
+  });
+}
 B.trashbags = (f, T) => {
-  const knot = mg('bag-knot', '#fbf8f0', ({ add }) => { add(G.sph(.05, 10, 8), 0, .02, 0); add(G.sph(.045, 10, 8), -.05, .07, 0, 0, 0, .6, [1.5, .6, .8]); add(G.sph(.045, 10, 8), .05, .07, 0, 0, 0, -.6, [1.5, .6, .8]); });
-  const bag = (r, sq) => grp(put(sph(r, '#ffffff', { map: bagTex() }, 22, 16), 0, 0, 0, 0, 0, 0, [1, sq, .95]), put(knot.clone(), 0, r * sq - .02, 0));
-  const A = bag(.25, .88); put(A, .2, .22, -.18, 0, -.5, .08); f.add(A);
-  const Bg = bag(.21, .85); put(Bg, -.12, .18, .22, 0, .4, 0); f.add(Bg);
+  const knot = mg('bag-knot2', '#f6f3ec', ({ add }) => {
+    add(G.cyl(.024, .032, .05, 10), 0, 0, 0); add(G.sph(.032, 10, 8), 0, .03, 0);
+    add(G.cone(.036, .11, 10), -.045, .075, 0, 0, 0, .8, [1, 1, .45]); add(G.cone(.036, .11, 10), .045, .075, 0, 0, 0, -.8, [1, 1, .45]);
+  });
+  const bag = s => grp(mesh(bagGeo(s), mat('#ffffff', { map: bagSkinTex() })), put(plane(.21 * s, .092 * s, mat('#ffffff', { map: bagLabelTex() })), 0, .19 * s, .275 * s, -.06, 0, 0),
+    put(knot.clone(), 0, .44 * s - .012, 0));
+  const A = bag(1); put(A, .2, 0, -.18, 0, .5, .04); f.add(A);
+  const Bg = bag(.84); put(Bg, -.12, 0, .22, 0, .9, 0); f.add(Bg);
   const p = f.part('lift', Bg, (t, b) => { Bg.position.x = b.p.x + .26 * t; Bg.position.y = b.p.y + .06 * Math.sin(t * PI) + .02 * t; Bg.rotation.z = -1.1 * t; }, { label: '쓰레기 봉투', sfx: 'swish' });
   f.spot('inside', null, -.12, 0, .22, { part: p, maxH: .3, label: '봉투 밑', scale: .8 });
   const bxX = -.24, bxZ = -.22, W = .42, Hb = .34, Db = .4;
@@ -694,37 +731,62 @@ B.trashbags = (f, T) => {
   put(fL, bxX - W / 2, Hb + .01, bxZ); put(fR, bxX + W / 2, Hb + .01, bxZ); f.add(fL); f.add(fR);
   const bp = f.part('lid', [fL, fR], t => { fL.rotation.z = 2.2 * t; fR.rotation.z = -2.2 * t; }, { label: '상자', sfx: 'open' });
   f.spot('inside', null, bxX, .12, bxZ, { part: bp, maxH: .3, label: '상자 안', scale: .8 });
-  f.add(put(cyl(.022, .022, .82, '#8c939e', null, 8), .4, .41, -.42));
-  f.add(put(rbox(.36, .25, .025, '#ffffff', .01, { map: noDumpTex() }), .4, .72, -.4, 0, .35, 0));
+  const sign = grp(mg('nd-post', '#8a5a3a', ({ add }) => { add(G.box(.06, .9, .06, .012), 0, .45, 0); add(G.box(.14, .05, .14, .015), 0, .025, 0); }),
+    put(rbox(.42, .3, .04, '#e8454f', .012), 0, .72, .035), put(rbox(.38, .26, .046, '#ffffff', .01), 0, .72, .036),
+    put(plane(.36, .24, mat('#ffffff', { map: noDumpTex() })), 0, .72, .06),
+    mg('nd-bolts', '#8c939e', ({ add }) => { for (const x of [-.15, .15]) add(G.sph(.012, 8, 6), x, .83, .061); }));
+  put(sign, .4, 0, -.46, 0, .35, 0); f.add(sign);
 };
 
 // 빨랫줄: a flowery 이불 on the line — touched, it curls up from its hem (③ #97 10/21, one way for every 이불: gfx/clothbend.js;
-// it used to slide along the line), uncovering the laundry basket behind it
+// it used to slide along the line), uncovering the laundry basket behind it. (10/22 밤 사용자 "이불이 판자처럼 빳빳, 티도 납작,
+// 회색 쇠기둥": the quilt hangs folded over a sagging line, soft folds deepening to the hem, held by pegs; the T-shirt and socks
+// are cloth too and sway a little on their pegs; wooden posts)
+// a hanging cloth: a thin slab cut fine and waved — folds that deepen toward the hem, a slight lean out at the bottom
+function clothGeo(w, h, folds = 3, amp = .03, d = .024) {
+  return geo(`cloth|${w}|${h}|${folds}|${amp}|${d}`, () => {
+    const g = new THREE.BoxGeometry(w, h, d, 16, 18, 1), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), t = (h / 2 - y) / h;
+      p.setZ(i, p.getZ(i) + amp * (.3 + .7 * t) * Math.sin((x / w + .5) * folds * PI * 2) + .025 * t * t);
+      p.setX(i, x * (1 - .04 * t));
+    }
+    g.translate(0, -h / 2, 0); g.computeVertexNormals();
+    return g;
+  });
+}
 B.clothesline = (f, T) => {
-  const lz = -.04;
-  f.add(mg('cl-poles', '#8f99a6', ({ add }) => { for (const x of [-.86, .86]) { add(G.cyl(.035, .04, 1.6, 12), x, .8, lz); add(G.box(.05, .05, .26, .012), x, 1.57, lz); } }));
+  const lz = -.04, lineY = x => { const t = (x + .86) / 1.72; return 1.52 - .24 * t * (1 - t); };
+  f.add(mg('cl-poles2', T.woodD || '#b9814f', ({ add }) => { for (const x of [-.86, .86]) { add(G.box(.07, 1.6, .07, .015), x, .8, lz); add(G.box(.07, .06, .3, .015), x, 1.56, lz); } }));
   f.add(mg('cl-bases', '#d6d0c6', ({ add }) => { for (const x of [-.86, .86]) add(G.box(.24, .12, .24, .03), x, .06, lz); }));
-  f.add(put(cyl(.014, .014, 1.72, '#ffffff', null, 6), 0, 1.52, lz, 0, 0, HP));
-  const pv = new THREE.Group(); put(pv, -.3, 1.52, lz);
-  pv.add(put(rbox(.84, 1.34, .035, '#ffffff', .015, { map: flowerTex() }), 0, -.69, 0));
-  pv.add(put(cyl(.035, .035, .86, '#ff5f8f', null, 12), 0, -.01, 0, 0, 0, HP));
+  const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-.86, 1.52, lz), new THREE.Vector3(0, 1.4, lz), new THREE.Vector3(.86, 1.52, lz));
+  f.add(mesh(geo('cl-line-sag', () => new THREE.TubeGeometry(curve, 24, .011, 6, false)), mat('#ffffff')));
+  const qx = -.3, qy = lineY(qx), cloth = mat('#ffffff', { map: flowerTex() });
+  const pv = new THREE.Group(); put(pv, qx, qy, lz);
+  pv.add(put(mesh(clothGeo(.84, 1.3, 3, .05), cloth), 0, -.02, .03));
+  pv.add(put(mesh(clothGeo(.84, .34, 3, .018), cloth), 0, -.02, -.024));
+  pv.add(put(cyl(.03, .03, .86, '#ff5f8f', null, 12), 0, -.006, 0, 0, 0, HP));
   f.add(pv);
   const p = f.part('lift', pv, clothBend(f, pv, { along: [0, -1, 0], toward: [0, 0, 1], len: 1.36, turn: 4.4, bias: 3, tip: .15 }), { label: '이불', sfx: 'flip', dur: .72 });
-  f.add(put(extrude('tee', teeShape(), .03, T.accent3 || '#ffd23f'), .6, 1.33, lz));
-  f.add(mg('cl-socks', '#ff7eb6', ({ add }) => { add(G.cap(.035, .14), .18, 1.4, lz); add(G.cap(.03, .06), .21, 1.3, lz, 0, 0, HP); add(G.cap(.035, .14), .3, 1.4, lz); add(G.cap(.03, .06), .33, 1.3, lz, 0, 0, HP); }));
+  // pegs on the line: three for the quilt, two for the shirt, one for each sock
+  const pegs = [qx - .36, qx, qx + .36, .51, .69, .18, .3];
+  f.add(mg('cl-pegs', '#5fb8ff', ({ add }) => { for (const x of pegs) add(G.box(.022, .06, .03, .006), x, lineY(x) - .01, lz + .03); }));
+  const shirt = new THREE.Group(), tc = T.accent3 || '#ffd23f', sy = lineY(.6);
+  shirt.add(put(mesh(clothGeo(.26, .3, 2, .014, .022), mat(tc)), 0, -.03, 0));
+  for (const s of [-1, 1]) shirt.add(put(mesh(clothGeo(.1, .11, 1, .008, .02), mat(tc)), s * .15, -.03, 0, 0, 0, s * .95));
+  shirt.add(put(tor(.045, .01, shade(tc, -.12), null, PI, 6, 12), 0, -.03, .012, 0, 0, PI));
+  put(shirt, .6, sy, lz + .006); f.add(shirt);
+  const socks = new THREE.Group();
+  socks.add(mg('cl-socks2', '#ff7eb6', ({ add }) => { for (const x of [.18, .3]) { add(G.cap(.032, .13), x, lineY(x) - .1, 0); add(G.cap(.03, .05), x + .03, lineY(x) - .19, .015, HP * .9, 0, 0); } }));
+  put(socks, 0, 0, lz + .006); f.add(socks);
+  f.live = [...(f.live || []), shirt, socks];
+  f.tick = t => { shirt.rotation.x = Math.sin(t * 1.3) * .06; socks.rotation.x = Math.sin(t * 1.5 + 1) * .04; };
   const bx = -.32, bz = -.3;
   f.add(mg('cl-basket', '#ffffff', ({ add }) => hollowBox(add, .52, .26, .3, .025, bx, 0, bz), { map: basketTex() }));
   f.add(mg('cl-clothes', '#9fd8ff', ({ add }) => { add(G.box(.46, .12, .24, .03), bx, .08, bz); for (const [x, z] of [[-.12, -.04], [.1, .05], [0, -.06]]) add(G.sph(.08, 10, 8), bx + x, .16, bz + z, 0, x * 7, 0, [1.3, .5, .9]); }));
   f.spot('inside', null, bx, .17, bz, { part: p, maxH: .35, label: '빨래 바구니', scale: .8 });
   f.spot('on', null, -.86, .12, lz, { maxH: .4, label: '빨랫대 받침', scale: .75 });
 };
-function teeShape() {
-  const s = new THREE.Shape();
-  s.moveTo(-.09, .17); s.lineTo(-.2, .12); s.lineTo(-.26, .02); s.lineTo(-.18, -.03); s.lineTo(-.13, .03); s.lineTo(-.13, -.17);
-  s.lineTo(.13, -.17); s.lineTo(.13, .03); s.lineTo(.18, -.03); s.lineTo(.26, .02); s.lineTo(.2, .12); s.lineTo(.09, .17);
-  s.quadraticCurveTo(0, .1, -.09, .17);
-  return s;
-}
 
 // 계단: concrete steps to a 2nd floor; a blue tarp under the stairs hides things, a 싸리비 leans on the pillar
 B.stairs = (f, T) => {

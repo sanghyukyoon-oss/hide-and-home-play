@@ -12,6 +12,8 @@ import { BOSS_GAME_INFO } from './bossgame.js';
 import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, capDecoys, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO, REGIONS, regionOf, sized } from '../stages.js';
 import { spinePuzzle } from '../showcase.js';
 import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js';
+import { chainPrep, chainPlan } from '../gpt-chains.js';
+import { heroLayout as gptHeroLayout } from '../gpt-heroes.js';
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
 import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, lensClear } from '../lens.js';   // 돋보기 가방 (경제 B5, G.econ only, 10/19)
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
@@ -47,7 +49,7 @@ import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line, KIT_TALK, inkyNamed } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
-import { staging, stagingHide, stagingHidden, stagingCrossing, stagingPrep } from '../staging.js';
+import { staging, stagingHide, stagingHidden, stagingCrossing, stagingPrep, hatKeyHide } from '../staging.js';
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
   stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
@@ -177,7 +179,7 @@ export class StageScene {
       if (this.spec.tut === 2) layout = tiltLayout(layout);   // 2판: the loft curtained — the tilt lesson's place (tiers.js)
       if (this.spec.showcase) layout = deviceLayout(this.spec.room, layout);   // R6 장치판: the map's device piece, this stage only
       // 판마다 대표 소품 (G3 10/22): this stage's own hero piece in place of an everyday one of the same size (heroes.js)
-      layout = heroLayout(idx + 1, layout);
+      layout = heroLayout(this.spec.room, layout);
     }
     if (custom) this.scene = null;
     // 프라모델 조립판: 놀이 모음's kit stage, or a campaign stage whose spec names a kit (8판 꼬마 로봇) — the hunt as always,
@@ -187,6 +189,7 @@ export class StageScene {
     this.kitRetry = !!retry;
     this.lookR = lookRecipe(this.spec.room, this.spec); if (this.lookR) this.th = lookTheme(this.lookR, this.th);
     layout = lookLayout(this.lookR, layout);   // a shop's look builds its room(s) in the look's own colours, this stage only
+    if (!custom && !this.model) layout = gptHeroLayout(this.spec.room, layout, { enabled: !/[?&]heroes=0(&|$)/.test(location.search) });
     const th = this.th;
     G.setBg(th.bg); W.setLight(th.light); setSky(th.sky || null);
     // 밤 판: moonlight — dimmer and bluer, but every corner still reads (no torch, no silhouettes)
@@ -216,7 +219,9 @@ export class StageScene {
     // what the last three stages played asked for: this one picks other things first (stages.js planStage, 10/20)
     const recentT = G.save.recentT || [];
     if (!custom && !this.preview) this.spec = { ...this.spec, recentTypes: recentT.filter(e => e.i !== this.idx).flatMap(e => e.t) };
+    const chainP = custom || this.preview || this.kit ? null : chainPrep(this.room, this.spec);   // (②b 10/22: a GPT map's chained device — gpt-chains.js)
     this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : this.kit ? planModel(this.room, this.spec, this.story) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, { ...this.spec, habit: HABIT_BREAK.has(this.idx) ? null : habitOf(th.friend) }, this.story)) || planStage(this.room, this.spec, this.story);
+    if (chainP) this.plan = chainPlan(this, this.plan, chainP);
     if (this.incident && !this.plan.incident) this.incident = false;
     if (!custom && !this.model && !this.preview) this.decoysCut = capDecoys(this.plan, this.spec);   // 함정 상한 (stages.js)
     if (!custom && !this.preview && !G.bot) { G.save.recentT = [{ i: this.idx, t: this.plan.targets.filter(t => t !== 'friendtoken') }, ...recentT.filter(e => e.i !== this.idx)].slice(0, 3); G.persist?.(); }
@@ -256,6 +261,7 @@ export class StageScene {
       g.userData.item = it; p.spot.item = it;
       this.items.push(it);
     }
+    if (this.spec.hatKey) hatKeyHide(this);   // (27판: the locker key in the straw hat on the platform roof — the crossing's train blows it down)
     this.targets = this.items.filter(i => i.role === 'target');
     this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
     if (G.world.post) {
@@ -1612,7 +1618,7 @@ export class StageScene {
       const P = this.toolPill; P.style.display = ''; P.classList.remove('need'); P.querySelector('.v').textContent = ITEMS[it.type].name; P.querySelector('img').src = G.thumbs['item_' + it.type];
       await G.ui.flyImg(G.thumbs['item_' + it.type], s.x, s.y, P, { size: 64 });
       P.classList.add('pop'); setTimeout(() => P.classList.remove('pop'), 300);
-      G.ui.toast(DEVICE_FOUND[it.type] || (it.code === 'vacremote' ? '청소기 리모컨이다! 로봇청소기를 깨워 볼까?' : '건조대 손잡이 찾았다! 벽의 손잡이 구멍에 끼워 보자'), 'green');
+      G.ui.toast(this.plan.chainFound?.[it.type] || DEVICE_FOUND[it.type] || (it.code === 'vacremote' ? '청소기 리모컨이다! 로봇청소기를 깨워 볼까?' : '건조대 손잡이 찾았다! 벽의 손잡이 구멍에 끼워 보자'), 'green');
       this.pointAt(it.forPart);
       return;
     }
@@ -1972,6 +1978,7 @@ export class StageScene {
   }
   async onPart(part, x, y) {
     const G = this.G, W = G.world;
+    if (part.busy && part._stepRun) { const tw = this.tw.list.find(q => q.tag === part); if (tw) { tw.t = tw.dur; part._skip = true; } return; }   // (a device running its steps: a second tap plays it to the end — 장치 설계서 원칙 2)
     if (part.busy) return;
     this.idle = Math.max(0, this.idle - 4);
     if (part.isLever) return this.pullLever(part);
@@ -2258,15 +2265,22 @@ export class StageScene {
     const G = this.G, W = G.world;
     if (part.busy) return;
     const opening = open ?? part.t < .5;
+    if (part.steps && !opening) return;   // (a device stays done: a tap on it once it has run does nothing)
     part.busy = true;
     if (opening) {
       part.spots.forEach(s => { if (s.itemGroup && s.item) s.itemGroup.visible = true; });
       const junk = part.reel ? reelCast(this, part) : false;   // 낚싯대 릴: this cast may bring up junk instead
       if (this.v2?.cands.includes(part)) v2OpenSound(this, part);
       else if (part.furn?.type === 'fishdock' && G.audio.reel) G.audio.reel(true, part.dur, junk ? part.reel.kind !== 'none' : part.spots.some(s => s.item && !s.item.found));   // 낚싯대 릴: its own winding (사운드 10/21)
-      else G.audio.sfxPart(part, part.sfx);   // (in its material — 사운드 10/20)
+      else if (!part.steps) G.audio.sfxPart(part, part.sfx);   // (in its material — 사운드 10/20)
       this.partsOpened++;
-      await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
+      // a device piece (GPT 새 맵, ② 10/22): its steps play in time over one even run — [[at, sound], …], at 0..1 along the
+      // run — and a second tap skips to the end
+      if (part.steps) {
+        let n = 0; part._stepRun = true;
+        await this.tw.run(part.dur, k => { if (part._skip) n = Math.max(n, part.steps.length - 1); while (n < part.steps.length && k >= part.steps[n][0]) G.audio.sfx(part.steps[n++][1]); part.setOpen(k); W.shadowDirty = true; }, ease.linear, 0, part);
+        part._stepRun = part._skip = false;   // (skipped: only the last sound, not all of them at once)
+      } else await this.tw.run(part.dur, k => { part.setOpen(k); W.shadowDirty = true; }, part.kind === 'drawer' ? ease.outBack : ease.outCubic);
       for (const it of this.items) if (it.hang === part && !it.found) this.dropHung(it, part);   // (7판: the basket came up under the hook)
       if (part._hadLock && !part._popped && !junk) { part._popped = true; await this.popOut(part); if (this.dead) return; }
       if (junk) reelSay(this, part);
@@ -2295,26 +2309,34 @@ export class StageScene {
     const W = this.G.world, f = part.furn; if (!f) return;
     const its = part.spots.map(s => s.item).filter(it => it && !it.found && !it.friend && it.g);
     if (!its.length) return;
-    // the piece's body without its moving parts (an open door would make the box far bigger than the compartment)
+    // the piece's body without its moving parts (an open door would make the box far bigger than the compartment), in the
+    // piece's own frame — its front is +z
     const moving = new Set(); for (const q of f.parts) for (const pv of q.pivots) moving.add(pv);
-    const body = new THREE.Box3(), under = o => { for (let x = o; x; x = x.parent) if (moving.has(x)) return true; return false; };
-    f.group.updateMatrixWorld(true); f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !under(o)) body.expandByObject(o); });
+    const under = o => { for (let x = o; x; x = x.parent) if (moving.has(x)) return true; return false; };
+    f.group.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(f.group.matrixWorld).invert(), body = new THREE.Box3();
+    f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !under(o) && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); body.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld).applyMatrix4(inv)); } });
     if (body.isEmpty()) return;
-    const cam = W.cam.position, runs = [];
+    // (5판 실폰 10/22, user: "열쇠로 상자 땄는데 상자 밖으로 꿀단지 막 튀어나온다, 경계 지고"): it slid toward the camera —
+    // through the toy box's front wall. Only a piece that opens at its front (a door, a drawer) lets it come out, and only
+    // straight out of that front onto the lip; a lid or a flap opens upward — the thing hops where it lies, inside
+    const front = ['door', 'drawer', 'slide', 'shutter', 'curtain'].includes(part.kind);
+    const fwd = new THREE.Vector3(0, 0, 1).transformDirection(f.group.matrixWorld).setY(0), cam = W.cam.position, runs = [];
+    if (fwd.lengthSq() < 1e-6) return; fwd.normalize();
     for (const it of its) {
       const b = new THREE.Box3().setFromObject(it.g), c = b.getCenter(new THREE.Vector3());
       const a = W.toScreen(b.min), z = W.toScreen(b.max), px = Math.hypot(a.x - z.x, a.y - z.y);
       if (px > 40) continue;
-      const d = new THREE.Vector3(cam.x - c.x, 0, cam.z - c.z); if (d.lengthSq() < 1e-6) continue; d.normalize();
-      // how far until the body's box is left behind along d (the item's own half-size past it, so it rests on the lip)
-      let t = Infinity;
-      for (const ax of ['x', 'z']) if (Math.abs(d[ax]) > 1e-4) t = Math.min(t, ((d[ax] > 0 ? body.max[ax] : body.min[ax]) - c[ax]) / d[ax]);
-      if (!isFinite(t) || t < 0) continue;
-      const half = Math.max(b.max.x - b.min.x, b.max.z - b.min.z) * .35, dist = Math.min(.32, Math.max(.05, t + half - .02));
       const g = it.g, par = g.parent; if (!par) continue;
-      const w0 = g.getWorldPosition(new THREE.Vector3()), w1 = w0.clone().addScaledVector(d, dist);
-      const l0 = g.position.clone(), l1 = par.worldToLocal(w1.clone()), up = par.worldToLocal(w0.clone().add(new THREE.Vector3(0, .1, 0))).sub(par.worldToLocal(w0.clone())), r0 = g.rotation.z;
-      runs.push(this.tw.run(.34, k => { g.position.lerpVectors(l0, l1, k).addScaledVector(up, Math.sin(k * Math.PI)); g.rotation.z = r0 + Math.sin(k * Math.PI) * .25; W.shadowDirty = true; }, ease.outCubic).then(() => { g.rotation.z = r0; }));
+      const w0 = g.getWorldPosition(new THREE.Vector3()), l0 = g.position.clone(), r0 = g.rotation.z;
+      const up = par.worldToLocal(w0.clone().add(new THREE.Vector3(0, .1, 0))).sub(par.worldToLocal(w0.clone()));
+      let l1 = l0.clone();
+      if (front && fwd.dot(new THREE.Vector3(cam.x - c.x, 0, cam.z - c.z)) > 0) {
+        const cl = c.clone().applyMatrix4(inv), bl = b.clone().applyMatrix4(inv), t = body.max.z - cl.z;   // (t < 0: already out — a drawer brought it)
+        const half = (bl.max.z - bl.min.z) * .35, dist = Math.min(.32, Math.max(.05, t + half - .02));
+        if (t > 0) l1 = par.worldToLocal(w0.clone().addScaledVector(fwd, dist));
+      }
+      runs.push(this.tw.run(.34, k => { g.position.lerpVectors(l0, l1, k).addScaledVector(up, Math.sin(k * Math.PI) * (front ? 1 : .8)); g.rotation.z = r0 + Math.sin(k * Math.PI) * .25; W.shadowDirty = true; }, ease.outCubic).then(() => { g.position.copy(l1); g.rotation.z = r0; }));
     }
     if (!runs.length) return;
     this.G.audio.sfx('pop', 4);
@@ -2383,13 +2405,14 @@ export class StageScene {
     const cand = [];
     const addItemGoal = (it, depth = 0) => {
       if (it.hang && it.hang.t < .5) return cand.push({ kind: 'part', part: it.hang, obj: it.hang.handle || it.hang.pivots[0], pos: this.partCenter(it.hang) });   // (7판: the way to the hanging key is the pulley)
+      if (it.under) return cand.push({ kind: 'part', part: it.under, obj: it.under.handle || it.under.pivots?.[0] || it.under.furn.group, pos: this.partCenter(it.under) });   // (27판: the key in the roof hat — the way to it is the crossing)
       if (it.vacHidden) {   // still under the sofa: the way to it is the robot vacuum (and its remote)
         const vac = this.plan.showcase?.vac; if (!vac?.lock) return;
         if (this.gadgets.has(vac.lock.code)) return cand.push({ kind: 'part', part: vac, obj: vac.pivots[0], pos: this.partCenter(vac) });
         const rc = this.items.find(c => !c.found && c.forPart === vac);
         return rc && depth < 5 ? addItemGoal(rc, depth + 1) : undefined;
       }
-      const part = it.spot.part;
+      const part = (it.spot.part?.t < .5 && it.spot.part.chainVia) || it.spot.part;   // (②b: a piece the chain moves by itself — the way in is its machine)
       if (part && part.t < .5) {
         if (part.lock) {
           if (part.lock.kind === 'lever') { const lv = part.leverPart; if (lv && lv.t < .5) return cand.push({ kind: 'part', part: lv, obj: lv.furn.group, pos: this.partCenter(lv) }); return; }
@@ -2404,6 +2427,7 @@ export class StageScene {
           if (have) return cand.push({ kind: 'part', part, obj: part.pivots[0], pos: this.partCenter(part) });   // aim at the door itself, not the body
           const chain = this.items.find(c => !c.found && c.forPart === part);
           if (chain && depth < 5) return addItemGoal(chain, depth + 1);
+          const cv = part.clueVia; if (cv && cv.t < .5) { const g = cv.lock && !this.canOpen(cv) && this.items.find(c => !c.found && c.forPart === cv); return g && depth < 5 ? addItemGoal(g, depth + 1) : cand.push({ kind: 'part', part: cv, obj: cv.pivots[0], pos: this.partCenter(cv) }); }   // (②b: the code shows when that switch is on — 36판 가로등 그림자)
           return;
         }
         return cand.push({ kind: 'part', part, obj: part.pivots[0], pos: this.partCenter(part) });

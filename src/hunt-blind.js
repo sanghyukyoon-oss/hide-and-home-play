@@ -6,6 +6,7 @@
 // where the piece stands (×10, rounded) — so a room changed in 배치 편집 simply has no entries until it is measured
 // again. The 숨은그림찾기 stages never put anything here (stages.js planStage avoid).
 import * as THREE from 'three';
+import { asRoom } from './roomalias.js';
 export const BLIND = {
   alley3: ['gate|대문 안쪽|0|15,-25'],
   alleyhouse: ['bookshelf|책장 1층|2|40,-30', 'bookshelf|책장 2층|1|40,-30', 'counter|찬장 위칸|1|0,-30', 'counter|찬장 위칸|1|10,-30', 'dishcab|찬장 서랍|2|20,-30', 'dishcab|찬장 선반 위|4|20,-30', 'dishcab|찬장 아래칸|1|20,-30', 'dishcab|찬장 위칸|0|20,-30', 'fridge|냉동실|2|30,-30', 'fridge|냉장고 아래칸|0|30,-30', 'fridge|냉장고 위칸|1|30,-30', 'garden|무 뽑은 자리|0|-25,-30', 'gate|대문 안쪽|0|-25,-35', 'gate|대문 안쪽|1|-25,-35', 'wardrobe|옷장 아래칸|1|0,-30'],
@@ -37,6 +38,7 @@ export const BLIND = {
 const P = new THREE.Vector3();
 export const spotKey = s => { s.furn?.group?.getWorldPosition(P); return `${s.furn?.type || '?'}|${s.label}|${s.idx ?? ''}|${Math.round(P.x * 10)},${Math.round(P.z * 10)}`; };
 export function blindFor(room) {
-  const set = BLIND[room] && new Set(BLIND[room]); if (!set) return null;
+  const B = BLIND[room] || BLIND[asRoom(room)];   // (a GPT map under a new key: its old map's entries — roomalias.js; a piece that isn't there simply never matches)
+  const set = B && new Set(B); if (!set) return null;
   return s => set.has(spotKey(s));
 }

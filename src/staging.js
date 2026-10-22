@@ -10,6 +10,9 @@ import { ease } from './util.js';
 import { trainView } from './gfx/traincar-props.js';
 import { Char } from './gfx/chars.js';
 import { closeBack } from './closeup.js';
+import { moveItem } from './hunt.js';
+import { ITEMS } from './gfx/items.js';
+import { spotFits } from './fitspot.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // (21·31판 bosses: the key sits on the boss's story object — script.js BOSSES → story.js storyFor)
@@ -607,14 +610,52 @@ const flagPick = {
 // ── 27판: 시작 (가방 펑, 기차는 아직 안 옴) · 판 안 건널목 (버튼 → 차단기 → 화물 기차 휙 → 지붕 위 밀짚모자 빙글) · 끝은 trainIn
 // set up before the stage is shown (a retry too): the train isn't in yet (it pulls in at the end — trainIn), and a straw
 // hat lies on the shelter roof (the crossing's train blows it down)
+function roofHat(S) {
+  const sh = findF(S, /platshelter|platformroof/);
+  if (sh && !S.stgRoofHat) { const t = topOf(sh); S.stgRoofHat = place(S, hatMesh(), t.clone().add(V(-.3, .02, 0))); S.stgRoofHat.rotation.set(.15, .6, .1); }
+  // (27판 방탈출: the gold tip of the locker key peeps out from under the brim — what the crossing's train is for)
+  if (S.stgRoofHat && S.spec.hatKey && !S.stgHatTip) {
+    const m = new THREE.MeshToonMaterial({ color: '#f2c94c' }), tip = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(.03, .011, 6, 14), m); ring.position.set(.2, .012, 0); ring.rotation.x = Math.PI / 2; tip.add(ring);
+    const bit = new THREE.Mesh(new THREE.BoxGeometry(.07, .014, .016), m); bit.position.set(.15, .012, 0); tip.add(bit);
+    S.stgRoofHat.add(tip); S.stgHatTip = tip;
+  }
+}
 const PREP = {
   bagPop(S) {
     const F = furnOf(S, 'train'); if (F?.r.f.car && !S.stgCarAway) { F.r.f.car.position.x -= 40; S.stgCarAway = true; }
-    const sh = findF(S, /platshelter/);
-    if (sh && !S.stgRoofHat) { const t = topOf(sh); S.stgRoofHat = place(S, hatMesh(), t.clone().add(V(-.3, .02, 0))); S.stgRoofHat.rotation.set(.15, .6, .1); }
+    roofHat(S);
   },
 };
-export function stagingPrep(S) { const k = keyOf(S, 'start'); try { PREP[k]?.(S); } catch (e) { console.warn('staging prep', k, e); } }
+export function stagingPrep(S) {
+  const k = keyOf(S, 'start'); try { PREP[k]?.(S); } catch (e) { console.warn('staging prep', k, e); }
+  if (S.spec.hatKey) try { roofHat(S); } catch (e) { console.warn('staging prep hat', e); }
+}
+// 27판 방탈출 (② 레벨 10/22, user: "인터렉션 및 방탈출적인 요소"): the coin locker's key is in the straw hat on the platform
+// roof — out of sight and out of the hints, the bot and the start-view tidying (vacHidden) — with the way to it the crossing
+// (it.under: nextGoal points there). It waits on the luggage, where the hat lands when the freight train blows it down.
+const HAT_LAND = /suitcases|luggagecart|stationluggage|tripbag/;
+export function hatKeyHide(S) {
+  const key = S.items.find(i => i.role === 'key' && !i.found), cross = S.room.parts.find(p => p.crossing);
+  if (!key || !cross) return;
+  const fitsH = (type, s) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && spotFits(type, s);
+  const near = s => HAT_LAND.test(s.furn?.type || '') && !s.reserved && !s.hang && !s.part && ['on', 'floor', 'beside'].includes(s.kind) && fitsH('key', s);
+  const land = S.room.spots.find(s => near(s) && !s.item);
+  if (land) moveItem(key, land);
+  else {   // (the luggage's places taken: swap with a thing to find there that fits where the key was)
+    const o = S.items.find(i => i.role === 'target' && !i.friend && !i.found && i.spot && near(i.spot) && fitsH(i.type, key.spot));
+    if (o) { const ks = key.spot, os = o.spot; ks.item = null; os.item = null; moveItem(key, os); moveItem(o, ks); }
+  }
+  key.under = cross; key.vacHidden = true; key.g.visible = false; S.G.world.idsDirty = true;
+}
+function hatKeyShow(S, it) {
+  const G = S.G, W = G.world;
+  it.under = null; it.vacHidden = false; it.g.visible = true; W.idsDirty = true;
+  const g = it.g, y0 = g.position.y;
+  S.tw.run(.35, k => { if (!S.dead) g.position.y = y0 + Math.sin(k * Math.PI) * .12; }).then(() => { if (!S.dead) g.position.y = y0; });
+  G.audio.sfx('clink');
+  const p = W.toScreen(S.worldCenter(it)); W.fx.burst(p.x, p.y - 10, { n: 14, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 140, gravity: -30, life: .7, size: 9 });
+}
 const bagPop = {
   async start(S, c) {
     const G = S.G, W = G.world, f = chOf(S), F = furnOf(S, 'train');
@@ -652,19 +693,27 @@ export async function stagingCrossing(S, part) {
       const tr = freightMesh(); F.r.f.group.add(tr); W.idsDirty = true;
       const x0 = -7, x1 = 13; tr.position.set(x0, .1, -.02);
       G.audio.sfx('trainPass'); S.ambient?.gust?.(1.2);
-      const hat = S.stgRoofHat, fall = hat && !S.stgHatDown && keyOf(S, 'moment') === 'crossing';
+      const hid = (S.items || []).filter(i => i.under?.crossing && !i.found);
+      const hat = S.stgRoofHat, fall = hat && !S.stgHatDown && (keyOf(S, 'moment') === 'crossing' || hid.length > 0);
       const pass = S.tw.run(3, k => { tr.position.x = x0 + (x1 - x0) * k; W.shadowDirty = true; });
       if (fall) {
         S.stgHatDown = true;
         await S.tw.wait(.7); if (S.dead) return;
         // the wind of it: the hat spins off the roof and down onto the platform
         const R = roomOf(S), h0 = hat.position.clone(), h1 = h0.clone().add(V(.7, 0, .35)), gy = R.group.worldToLocal(furnOf(S, 'platshelter')?.r.f.group.getWorldPosition(V(0, 0, 0)) || V(0, 0, 0)).y + .02;
-        h1.y = gy; G.audio.sfx('whoosh');
+        h1.y = gy;
+        // (27판: onto the luggage where the key waits, a hand's width beside it so the key shows)
+        if (hid[0]) { R.group.updateMatrixWorld(true); const kp = R.group.worldToLocal(hid[0].g.getWorldPosition(V(0, 0, 0))); h1.set(kp.x - .2, kp.y, kp.z + .06); }
+        G.audio.sfx('whoosh');
         await S.tw.run(1.1, k => { hat.position.lerpVectors(h0, h1, k); hat.position.y = h0.y + (gy - h0.y) * k * k + Math.sin(k * Math.PI) * .35; hat.rotation.y = .6 + k * 9; hat.rotation.z = Math.sin(k * 12) * .4 * (1 - k); W.shadowDirty = true; });
         hat.rotation.set(0, hat.rotation.y, 0); G.audio.sfx('pop', 2);
+        if (S.stgHatTip) { S.stgHatTip.parent?.remove(S.stgHatTip); S.stgHatTip = null; }
+        for (const it of hid) hatKeyShow(S, it);
       }
       await pass; tr.parent?.remove(tr); tr.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
     }
+    // (no hat to blow down — a bot, a retry without the start: the key still comes out when the train has gone)
+    for (const it of (S.items || []).filter(i => i.under?.crossing && !i.found)) hatKeyShow(S, it);
     await S.tw.wait(.3); if (S.dead) return;
     await S.tw.run(.5, k => xs.forEach(f => f.arm?.setOpen(1 - k)), ease.inOutQuad);
   } finally { xs.forEach(f => { f.ringing = false; }); S._crossRun = false; }
