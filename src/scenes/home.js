@@ -12,8 +12,8 @@ import { makeFurniture } from '../gfx/furniture.js';
 import { groundTex } from '../gfx/outdoor.js';
 import { openTune } from '../tune.js';
 import { openCardBook, bookBadge } from '../cardbook.js';
-import { runRaids, unseen, markSeen, newsLine, holderOf } from '../raid.js';
-import { canReplay, playRaidReplay, shieldTxt } from '../raidreplay.js';   // ① 털림 다시 보기 · 문단속 (10/19)
+import { runRaids, unseen, markSeen, newsLine, holderOf, locksOwned, locksUsed, LOCK_MAX } from '../raid.js';
+import { canReplay, playRaidReplay, shieldTxt, askBuyLock } from '../raidreplay.js';   // ① 털림 다시 보기 · 문단속 (10/19)
 import { shieldLeft } from '../raid.js';
 import { Visitors } from '../visitors.js';
 import { storyFor } from '../story.js';
@@ -1028,18 +1028,25 @@ export class HomeScene {
     if (G.ui.panelOpen || G.pending) { if (tries < 20) this.tw.wait(1.5).then(() => this.raidNews(tries + 1)); return; }
     const took = list.filter(e => e.kind === 'steal');
     const rows = list.slice(-4).map(e => h('div', { class: 'raidrow' + (e.kind === 'steal' ? ' bad' : ' good') }, h('img', { src: G.thumbs['face_' + e.face] || G.thumbs.face_mong }),
-      h('div', {}, newsLine(e)), ...(e.item ? [h('img', { class: 'ri', src: G.thumbs['item_' + e.item] })] : [])));
+      h('div', {}, newsLine(e)), ...(e.item ? [h('img', { class: 'ri', src: G.thumbs['item_' + e.item] })] : e.lost ? [h('img', { class: 'ri', src: 'data:image/svg+xml;utf8,' + encodeURIComponent(ICON.coin.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')) })] : [])));
     const close = () => { markSeen(G); G.ui.closePanel(); };
     // ① 털림 다시 보기: in my room (the 내 방 lobby, 내 집), the newest raid with a record plays back; a row plays its own
     const last = [...list].reverse().find(e => canReplay(this, e));
     const replay = e => { markSeen(G); G.ui.closePanel(); playRaidReplay(this, e); };
     if (last) rows.forEach((r, i) => { const e = list.slice(-4)[i]; if (canReplay(this, e)) { r.classList.add('tap'); r.addEventListener('click', () => replay(e)); } });
     G.audio.sfx(took.length ? 'miss' : 'coin');
+    // (② 10/22, user "좀 개털려야 돈을 쓰지"): robbed, the next thing to do is right here — a padlock: hang a spare one, or buy one
+    const goHide = () => { markSeen(G); G.ui.closePanel(); if (this.setMode) this.setMode('hide'); else G.go('myhome', { mode: 'hide' }); };
+    const owned = locksOwned(G.save), spare = owned > locksUsed(G.save);
+    const lockBtn = !took.length ? null : spare || owned >= LOCK_MAX ? G.ui.btn(spare ? '자물쇠 걸기' : '더 꽁꽁', { color: 'orange', icon: 'lock', cls: 'sm', onClick: goHide })
+      : G.ui.btn('자물쇠 사기', { color: 'orange', icon: 'lock', cls: 'sm', onClick: () => { markSeen(G); G.ui.closePanel(); askBuyLock(G, goHide); } });
+    const tookThing = took.some(e => e.item);
     G.ui.panel({ title: '내가 없는 동안…', color: took.length ? 'red' : 'green',
-      body: [...rows, h('div', { class: 'txt' }, took.length ? '털어 간 친구 방에 가서 다 찾으면 되찾을 수 있어!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자'),
+      body: [...rows, h('div', { class: 'txt' }, tookThing ? '털어 간 친구 방에 가서 다 찾으면 되찾을 수 있어!' : took.length ? '자물쇠를 걸면 덜 털려!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자'),
         ...(took.length && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : [])],
-      buttons: last ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => replay(last) })]
-        : took.length ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), G.ui.btn('되찾으러 가기', { color: 'orange', cls: 'big', onClick: () => { markSeen(G); G.go('visit', { force: holderOf(G.save) }); } })]
+      buttons: last ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), ...(lockBtn ? [lockBtn] : []), G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => replay(last) })]
+        : tookThing ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), lockBtn, G.ui.btn('되찾으러 가기', { color: 'green', cls: 'big', onClick: () => { markSeen(G); G.go('visit', { force: holderOf(G.save) }); } })]
+        : took.length ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), lockBtn]
         : [G.ui.btn('좋아!', { color: 'green', onClick: close })] });
   }
   // Portrait: 몽글이 big and centred just above the play button, its house filling the screen behind it, the roof

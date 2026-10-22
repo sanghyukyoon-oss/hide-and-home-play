@@ -1120,9 +1120,9 @@ export const STREET_ITEMS = {
   // 삼각김밥: a triangle onigiri in its konbini wrapper — nori band, red tear strip, a ツナマヨ label
   onigiri: { name: '삼각김밥', h: .17, build() {
     const g = grp();
-    g.add(mc('it-onigiri', ({ add }) => {
-      add(G.ext(triShape(.17, .155, .035, .006), .06, .006, 4), RICE, 0, 0, -.03);
-      add(G.box(.085, .075, .086, .01), NORI, 0, .0375, 0);
+    g.add(mc('it-onigiri2', ({ add }) => {   // (10/22 28판 실폰 "작고 납작": half again as thick, its front where it was — the label stays on it)
+      add(G.ext(triShape(.19, .158, .04, .006), .09, .008, 4), RICE, 0, 0, -.06);
+      add(G.box(.09, .078, .12, .012), NORI, 0, .039, -.018); add(G.box(.092, .008, .122, .003), shade(NORI, .25), 0, .074, -.018);   // (its front 6 mm behind the label)
       add(G.pbox(.016, .085, .004), TOMATO, 0, .118, .036 + .004);
     }));
     g.add(mg('it-onigiri-label', atlasMat(), ({ add }) => add(quadGeo(.07, .035, RG.oni), 0, .045, .043 + .005)));

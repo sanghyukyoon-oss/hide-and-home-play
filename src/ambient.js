@@ -53,6 +53,7 @@ export class Ambient {
       const P = this.petals = { m, R, canopies, ground, list: [], gust: 0, M: new THREE.Matrix4(), Q: new THREE.Quaternion(), E: new THREE.Euler(), V: new THREE.Vector3(), S: new THREE.Vector3() };
       for (let i = 0; i < n; i++) { const q = { i }; this.spawn(q, Math.random()); P.list.push(q); }
     }
+    for (const R of rooms) for (const r of R.decors || []) if (r.f.tick) this.ticks.push(r.f.tick);   // (a wall piece's own motion too: the train's windows, the rack's fan — 10/22)
     for (const R of rooms) for (const r of R.furns) {
       if (r.f.tick) this.ticks.push(r.f.tick);   // a piece's own little motion (a level crossing's lamps taking turns)
       const g = r.f.group, sw = SWAY.find(([re]) => re.test(r.type));

@@ -192,7 +192,7 @@ const SHQ = typeof location !== 'undefined' ? new URLSearchParams(location.searc
 const PQ = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
 const PNUM = k => { const v = PQ?.get(k); return v != null && v !== '' && !isNaN(+v) ? +v : 0; };
 export const POST_TRY = { tilt: PNUM('tilt'), vign: PNUM('vign'), warm: PNUM('warm'), sat: PNUM('sat') };
-export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : 0;   // 10/21 사용자 "샤픈 삭제하고 언샵 다시": off; ?sharp=N to try
+export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : .2;   // 10/22 사용자 후보정 결정: 언샵 .9 + 세밀 샤픈 .2 (둘 다 맨 위 층); ?sharp=N to try
 // where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
 const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
 export const GRAY_SPLIT_FROM = GFQ != null && GFQ !== '' && !isNaN(+GFQ) ? +GFQ : .33;
@@ -237,12 +237,9 @@ void main(){
     float sr = texture2D(tSrc, vUv + off).r, sb = texture2D(tSrc, vUv - off).b;
     c.r = SPLIT_MAX ? max(c.r, sr) : sr; c.b = SPLIT_MAX ? max(c.b, sb) : sb;
   }
-  if (diffuse > .001) {
-    // 뽀샤시 시험 (10/21 사용자: "디퓨즈? 같이 약간 뽀샤시하게 보이는 느낌"): a soft blurred copy of almost the whole picture screened
-    // on top — light, hazy, dreamy — before the sharpening, so the ink lines still come out crisp over it
-    vec3 bl = texture2D(tBloom, vUv).rgb * diffuse;
-    c.rgb = 1. - (1. - c.rgb) * (1. - bl);
-  }
+  // 언샵·세밀 샤픈은 맨 위 층 (10/22 사용자: "제일 마지막에 언샵, 샤픈 올리면 됨. 레이어상 제일 위"): the detail (the picture minus its
+  // blur) is measured here on the drawn picture and added back after every other step (뽀샤시·색보정·빛 번짐·후보정)
+  vec3 det = vec3(0.);
   if (sharpen > .001) {
     // unsharp mask: a blur about one output pixel wide, the difference added back
     vec2 r = 1.1 / outRes;
@@ -254,7 +251,7 @@ void main(){
       float bb = (texture2D(tSrc, vUv - off + vec2(-r.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(r.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(0., -r.y)).b + texture2D(tSrc, vUv - off + vec2(0., r.y)).b) * .25;
       b.r = SPLIT_MAX ? max(b.r, br) : br; b.b = SPLIT_MAX ? max(b.b, bb) : bb;
     }
-    c.rgb = max(c.rgb + (c.rgb - b.rgb) * sharpen, 0.);
+    det += (c.rgb - b.rgb) * sharpen;
   }
   if (sharp2 > .001) {
     // fine sharpen: the centre against its 4 nearest neighbours half an output pixel away (on the split picture when grey)
@@ -262,7 +259,13 @@ void main(){
     vec3 n = (texture2D(tSrc, vUv + vec2(-h.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(h.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(0., -h.y)).rgb + texture2D(tSrc, vUv + vec2(0., h.y)).rgb) * .25;
     if (spl) { n.r = (texture2D(tSrc, vUv + off + vec2(-h.x, 0.)).r + texture2D(tSrc, vUv + off + vec2(h.x, 0.)).r + texture2D(tSrc, vUv + off + vec2(0., -h.y)).r + texture2D(tSrc, vUv + off + vec2(0., h.y)).r) * .25;
       n.b = (texture2D(tSrc, vUv - off + vec2(-h.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(h.x, 0.)).b + texture2D(tSrc, vUv - off + vec2(0., -h.y)).b + texture2D(tSrc, vUv - off + vec2(0., h.y)).b) * .25; }
-    c.rgb = max(c.rgb + (c.rgb - n) * sharp2 * 2., 0.);
+    det += (c.rgb - n) * sharp2 * 2.;
+  }
+  if (diffuse > .001) {
+    // 뽀샤시 시험 (10/21 사용자: "디퓨즈? 같이 약간 뽀샤시하게 보이는 느낌"): a soft blurred copy of almost the whole picture screened
+    // on top — light, hazy, dreamy — under the sharpening (det, added last), so the ink lines still come out crisp over it
+    vec3 bl = texture2D(tBloom, vUv).rgb * diffuse;
+    c.rgb = 1. - (1. - c.rgb) * (1. - bl);
   }
   // 때깔 (10/21 사용자 "색보정이랑 빛번짐 ㄱ"): split tone — the light parts a touch warmer, the shade a touch cooler — and a little more colour in
   // the middle tones; 0 = off (linear light here)
@@ -280,6 +283,7 @@ void main(){
   if (abs(warm) > .001) c.rgb *= vec3(1. + .07 * warm, 1. + .012 * warm, 1. - .07 * warm);
   if (abs(sat) > .001) { float g = dot(c.rgb, vec3(.2126, .7152, .0722)); c.rgb = max(mix(vec3(g), c.rgb, 1. + sat), 0.); }
   if (vign > .001) { vec2 v = (vUv - .5) * vec2(outRes.x / outRes.y, 1.) * 1.6; c.rgb *= 1. - vign * smoothstep(.35, 1.05, length(v)); }
+  c.rgb = max(c.rgb + det, 0.);
   gl_FragColor = linearToOutputTexel(c);
 }`;
 
@@ -434,7 +438,11 @@ export class ToonPost {
     const cull = rects && this.cullFor;   // hide meshes that miss a box (no draw call; the picture is the same)
     // 1) colour, layers 0 + 2
     cam.layers.set(0); cam.layers.enable(2);
-    scene3(this.color, rects, b => { cull?.(b, true); r.clear(); r.render(scene, cam); });
+    // (three redraws a stale shadow map inside the first render — with the meshes outside that box culled, so their
+    // shadows vanished until the next full shadow update: a drawer opening took the bed's shadow off the wall, 10/22.
+    // The first box's colour pass skips the cull on such a frame)
+    let fresh = !!rects && r.shadowMap.enabled && r.shadowMap.needsUpdate;
+    scene3(this.color, rects, b => { cull?.(b, !fresh); fresh = false; r.clear(); r.render(scene, cam); });
     if (canDrop) this._dropDepth();
     // 2) object IDs + view normals + depth, layer 0 only
     const bg = scene.background; scene.background = null;

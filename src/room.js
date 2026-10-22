@@ -236,7 +236,8 @@ export class Room {
       const b = new THREE.Box3(); r.f.group.traverse(o => { if (o.isMesh && !o.userData.proxy && !o.userData.part) b.expandByObject(o); }); return b.expandByScalar(-.025);
     });
     // a loft's floor, posts, rails and curtains too, piece by piece (1·2판: the wardrobe's door opened up into the loft bed)
-    const loftBoxes = []; for (const l of this.lofts || []) l.group.traverse(o => { if (o.isMesh) { const b = new THREE.Box3().setFromObject(o).expandByScalar(-.02); if (!b.isEmpty()) loftBoxes.push(b); } });
+    // (a loft's wall-side post is up only while its wall is folded: not in a door's way — 10/22)
+    const loftBoxes = []; for (const l of this.lofts || []) l.group.traverse(o => { if (o.isMesh && !o.userData.wallPost) { const b = new THREE.Box3().setFromObject(o).expandByScalar(-.02); if (!b.isEmpty()) loftBoxes.push(b); } });
     const v = new THREE.Vector3();
     // nor into this room's own walls or floor (10/19 겹침 QA: 4판 옷장 문, 11판 냉장고 문, 15판 세탁기 문, 24·25판 자판기 문
     // swung 5–10 cm into the wall); a doorway's gap and a floor's cut-out are open; on a map, the next room's walls and
@@ -645,6 +646,15 @@ export class Room {
     const atW = lf.i === 0, atN = lf.j === 0;   // sides against the walls need no posts or rails
     const posts = [[x1, z1], ...(atW ? [] : [[x0, z1]]), ...(atN ? [] : [[x1, z0]]), ...(atW || atN ? [] : [[x0, z0]])];
     const postMeshes = posts.map(([px, pz]) => add(put(rbox(.14, y, .14, woodD, .03), px - Math.sign(px - cx) * .07, y / 2, pz - Math.sign(pz - cz) * .07)));
+    // (10/22 사용자 실폰 1판 "복층이랑 벽 경계 원래 이랬나?": turning the view folds the near walls down to knee height, and the
+    // deck's wall side then hung in the air) the corners against a wall get posts too, close to the wall under the deck — shown
+    // only while that wall is folded down (update), so a standing wall still carries the deck as before
+    this.loftWallPosts = this.loftWallPosts || [];
+    for (const [px, pz] of [[x0, z0], [x1, z0], [x0, z1]]) {
+      const walls = [...(atW && px === x0 ? ['W'] : []), ...(atN && pz === z0 ? ['N'] : [])]; if (!walls.length) continue;
+      const m = add(put(rbox(.12, y - .2, .12, woodD, .03), px + (px === x0 ? .06 : -.07), (y - .2) / 2, pz + (pz === z0 ? .06 : -.07)));
+      m.visible = false; m.userData.wallPost = true; this.loftWallPosts.push({ m, walls });
+    }
     // railing: the front edge (+z) and the east edge (+x), with a gap for the ladder
     const lad = lf.ladder || 'S', gap = lf.ladderAt ?? 0;
     const rail = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az); if (L < .1) return; const ang = Math.atan2(bz - az, bx - ax);
@@ -787,6 +797,8 @@ export class Room {
       }
       W.down = W.kk < .5;
     }
+    // a loft's posts against a wall: up only while that wall is folded down (buildLoft)
+    if (this.loftWallPosts) for (const q of this.loftWallPosts) { const on = q.walls.some(k => this.walls[k] && this.walls[k].kk <= .65); if (q.m.visible !== on) { q.m.visible = on; wd.shadowDirty = true; } }
     // roof pieces that rest on two walls (다락 박공 L.attic.gable): shown only while both stand
     if (this.roofBits) for (const b of this.roofBits) b.visible = b.userData.needs.every(q => !this.walls[q] || this.walls[q].kk > .65);
   }

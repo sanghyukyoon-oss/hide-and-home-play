@@ -10,7 +10,8 @@
 import * as THREE from 'three';
 
 const SIG = 34;
-const P = new THREE.Vector3(), M = new THREE.Matrix4();
+const P = new THREE.Vector3(), M = new THREE.Matrix4(), OW = new THREE.Matrix4(), LD = new THREE.Vector3();
+const FLOOR = -.3;   // a shadow is followed down to this height (under every floor a room stands on)
 
 export class DirtyTracker {
   constructor() {
@@ -47,6 +48,12 @@ export class DirtyTracker {
     const first = !this.still, rects = [], f = this.frame, objs = this.objs;
     if (first) objs.clear();
     const box = (o) => this._rect(o, M, W, H);
+    // a caster that moves while the shadow map is redrawn this frame (a door swinging): its shadow on the floor, the wall
+    // and the furniture next to it moves too, outside its own box — the box of its shadow volume (its corners and where
+    // they fall along the sun) is drawn again too, old place and new (10/22: a door's shadow stayed on the drawers)
+    const sun = world.sun, shUp = world.renderer.shadowMap.needsUpdate && sun?.castShadow;
+    if (shUp) { const a = sun.matrixWorld.elements, b = sun.target.matrixWorld.elements; LD.set(b[12] - a[12], b[13] - a[13], b[14] - a[14]).normalize(); }
+    const shade = (o, me) => { if (shUp && o.castShadow && LD.y < -.05) { const r = this._rect(o, M, W, H, me, LD); if (r) rects.push(r); } };
     const ls = [];   // every light in the scene (a boss's flashlight, a lamp): any change lights the whole picture anew
     scene.traverseVisible(o => {
       if (o.isLight) {
@@ -57,12 +64,12 @@ export class DirtyTracker {
       if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine) || !(o.layers.mask & 5)) return;
       const s = this._sig(o, this.scr);
       let e = objs.get(o);
-      if (!e) { e = { s: s.slice(), r: box(o), f }; objs.set(o, e); if (!first && e.r) rects.push(e.r); return; }
+      if (!e) { e = { s: s.slice(), r: box(o), f }; objs.set(o, e); if (!first && e.r) { rects.push(e.r); shade(o, o.matrixWorld.elements); } return; }
       e.f = f;
-      if (!same32(e.s, s)) { e.s.set(s); const r = box(o); if (e.r) rects.push(e.r); if (r) rects.push(r); e.r = r; }
+      if (!same32(e.s, s)) { shade(o, e.s); shade(o, o.matrixWorld.elements); e.s.set(s); const r = box(o); if (e.r) rects.push(e.r); if (r) rects.push(r); e.r = r; }
     });
     // gone (removed or hidden): its last box
-    for (const [o, e] of objs) if (e.f !== f) { if (e.r) rects.push(e.r); objs.delete(o); }
+    for (const [o, e] of objs) if (e.f !== f) { if (e.r) { rects.push(e.r); shade(o, e.s); } objs.delete(o); }
     const lit = this.ls && this.ls.length === ls.length && ls.every((v, i) => v === this.ls[i]);
     this.ls = ls;
     // (the fingerprints taken above are this frame's, so the next still frame can go back to boxes)
@@ -75,14 +82,18 @@ export class DirtyTracker {
     this.stats.part++;
     return { rects: merged, area };
   }
-  // the screen box (internal px) of a drawn mesh this frame, or null when it is off screen
-  _rect(o, M, W, H) {
+  // the screen box (internal px) of a drawn mesh this frame, or null when it is off screen; with me (its world matrix
+  // elements, maybe an old one) and ld (the sun's direction) the box of its shadow volume instead
+  _rect(o, M, W, H, me = null, ld = null) {
     const g = o.geometry; if (!g) return null;
     if (!g.boundingBox || g.userData._dbv !== verOf(g)) { g.computeBoundingBox(); g.userData._dbv = verOf(g); }
     const b = g.boundingBox; if (b.isEmpty()) return null;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (let i = 0; i < 8; i++) {
-      P.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).applyMatrix4(o.matrixWorld).applyMatrix4(M);
+    const mw = me ? OW.fromArray(me) : o.matrixWorld;
+    for (let i = 0; i < (ld ? 16 : 8); i++) {
+      P.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).applyMatrix4(mw);
+      if (i & 8) P.addScaledVector(ld, (FLOOR - P.y) / ld.y);
+      P.applyMatrix4(M);
       const x = (P.x * .5 + .5) * W, y = (P.y * .5 + .5) * H;
       if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
     }
@@ -104,7 +115,7 @@ export class DirtyTracker {
       s[k++] += m.opacity ?? 1;
       const c = m.color; if (c) { s[k++] += c.r; s[k++] += c.g; s[k++] += c.b; } else k += 3;
       const em = m.emissive; if (em) { s[k++] += em.r + m.emissiveIntensity; s[k++] += em.g; s[k++] += em.b; } else k += 3;
-      s[k++] += m.map ? m.map.id * 1e4 + m.map.version : -1;
+      s[k++] += m.map ? m.map.id * 1e4 + m.map.version + m.map.offset.x * 31 + m.map.offset.y * 71 : -1;   // (a sliding picture — the train's windows — is a change too, 10/22)
       s[k++] += (m.visible ? 1 : 0) + (flips ? 2 * THREE.DoubleSide : (m.side || 0) * 2) + (m.transparent ? 8 : 0) + (m.depthTest ? 16 : 0) + (m.depthWrite ? 32 : 0);
       k = 16;   // a second material folds into the same slots (sums)
     }

@@ -259,15 +259,20 @@ export class StageScene {
       // (?glowst=27,28 limits the try to those stages); ?glow=0 / ?diffuse=0 turn a stage's own off
       // 밤 빛 번짐은 판마다 따로 (10/22 사용자, 18판 너굴이네 복층: "너무 뿌옇다. 글로우 좀 줄여", "절반 줄여") — 없으면 .8
       const NIGHT_GLOW = { otakuloft: .4 };
-      const DAY = { station: ['glow', .12], traincar: ['glow', .12], seaside: ['glow', .12], street: ['diffuse', .2], alley1: ['diffuse', .2], alley3: ['diffuse', .2], alleyhouse: ['diffuse', .2], alleywide: ['diffuse', .2] };
+      const DAY = { station: ['diffuse', .09], traincar: ['diffuse', .09], traincar2: ['diffuse', .09], traincar3: ['diffuse', .09], seaside: ['diffuse', .09], island2: ['diffuse', .09], street: ['diffuse', .09], alley1: ['diffuse', .09], alley3: ['diffuse', .09], alleyhouse: ['diffuse', .09], alleywide: ['diffuse', .09] };
+      // (10/22 사용자 후보정 결정: 뽀샤시 .09는 기차·골목·섬만, 글로우는 아예 안 씀 — 밤 판도)
+      const EARLY = null;   // (10/22 사용자 고침: "1~20판에는 뽀샤시 넣지 말라는 거였는데")
       const q = new URLSearchParams(location.search), only = (q.get('glowst') || '').split(',').filter(Boolean).map(Number);
       const num = k => { const v = q.get(k); return v != null && v !== '' && !isNaN(+v) && (!only.length || only.includes(this.idx + 1)) ? +v : null; };
-      const own = !nightGlow && !this.spec.gray && DAY[this.spec.room], gq = num('glow'), dq = num('diffuse');
+      const own = !nightGlow && !this.spec.gray && (DAY[this.spec.room] || EARLY), gq = num('glow'), dq = num('diffuse');
       let glow = own && own[0] === 'glow' ? own[1] : 0, dif = own && own[0] === 'diffuse' ? own[1] : 0;
       if (gq != null) { glow = nightGlow ? 0 : gq; if (gq > 0) dif = 0; }
       if (dq != null) { dif = dq; if (dq > 0) glow = 0; }
-      P.bloomOn = nightGlow || glow > 0 || dif > 0;
-      P.bloomStr = nightGlow ? (NIGHT_GLOW[this.spec.room] ?? .8) : glow;
+      const NO_GLOW = true;   // (10/22 사용자: "글로우는 아예 안 쓰기로" — 밤 판의 빛 번짐도 끔; ?glow=N 시험은 그대로)
+      if (NO_GLOW && gq == null) glow = 0;
+      const nightOn = nightGlow && !NO_GLOW;
+      P.bloomOn = nightOn || glow > 0 || dif > 0;
+      P.bloomStr = nightOn ? (NIGHT_GLOW[this.spec.room] ?? .8) : glow;
       if (P.du?.diffuse) P.du.diffuse.value = nightGlow ? 0 : dif;
       const tl = num('tilt');   // 후보정 시험: 위·아래 흐림은 흐린 사본이 필요해서 빛 번짐 흐림을 문턱 없이 씀(이때 글로우·뽀샤시는 끔)
       if (tl > 0) { P.bloomOn = true; P.bloomStr = 0; if (P.du?.diffuse) P.du.diffuse.value = 0; }

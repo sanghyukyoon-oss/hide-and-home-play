@@ -43,7 +43,14 @@ addI18n({
   '여기 숨기기': 'Hide here', '숨을 곳': 'Hiding place',
   '보물을 골라, 드래그해서 숨겨!': 'Pick a treasure, drag it to hide!', '숨을 곳으로 드래그': 'Drag to a hiding place', '숨을 곳(가구) 가까이로 드래그해 봐!': 'Drag it near a hiding place (furniture)!',
   '자물쇠': 'Padlock', '서랍을 잠가 지켜': 'lock a drawer to guard it',
+  // 자주 털리게 (② 10/22): the coin purse, the padlock button on '내가 없는 동안…'
+  '자물쇠 걸기': 'Hang a padlock', '자물쇠 사기': 'Buy a padlock', '더 꽁꽁': 'Hide better', '자물쇠를 걸면 덜 털려!': 'Padlocks keep raiders out!',
 }, [
+  // (② 10/22) a coin purse taken, or a gift's thing found and left: before the plain news lines
+  [/^([^·]+?)[이가] (복수하러 와서 )?코인 (\d+)개를 털어 갔어! -(\d+)$/, (n, rv, c) => `${n} ${rv ? 'came for revenge and ' : ''}took ${c} coins! -${c}`],
+  [/^([^·]+?)[이가] 왔다가 빈손으로 갔어!$/, n => `${n} came and left empty-handed!`],
+  [/^코인 (\d+)개$/, n => `${n} coins`],
+  [/^코인 -(\d+)$/, n => `-${n} coins`],
   // the raid news (raid.js newsLine): revenge first, so the plain one doesn't take "복수하러 와서 …" for a name
   [/^([^·]+?)[이가] 복수하러 와서 ([^·]+?)[을를] 털어 갔어!(?: \(못 찾은 물건 덕에 \+(\d+)\))?$/, (n, it, c) => `${n} came for revenge and took ${it}!` + (c ? ` (+${c} for what they missed)` : '')],
   [/^([^·]+?)[이가] ([^·]+?)[을를] 털어 갔어!(?: \(못 찾은 물건 덕에 \+(\d+)\))?$/, (n, it, c) => `${n} took ${it}!` + (c ? ` (+${c} for what they missed)` : '')],

@@ -47,7 +47,7 @@ export function goRevenge(G, who) {
 function tally(S, ev) {
   const rp = ev.rp, partOf = e => e.free ? e.free.part || (e.free.host?.startsWith?.('p:') ? e.free.host.slice(2) : null) : S.spotByKey[e.spot]?.part?.key;
   const kept = rp.items.filter(e => !e.found), byLock = kept.filter(e => { const k = partOf(e); return k && rp.locks[k]; });
-  const left = rp.items.filter(e => e.found && !e.by && e.item !== ev.item).length;   // found, but a raid takes one thing
+  const left = rp.items.filter(e => e.found && !e.by && e.item !== (ev.item || ev.got)).length;   // found, but a raid takes one thing
   const byFriend = rp.items.filter(e => e.by).length;   // 친구 지킴이 (10/20)
   return { kept: kept.length, byLock: byLock.length, byFriend, left, total: rp.items.length };
 }
@@ -105,7 +105,7 @@ export async function playRaidReplay(S, ev) {
     const part = it.spot.part || null;
     visits.push({ e, it, part, locked: !!(part && rp.locks[part.key]) });
   }
-  const taken = ev.kind === 'steal' ? visits.find(v => v.e.item === ev.item) : null;
+  const taken = ev.kind === 'steal' ? visits.find(v => v.e.item === (ev.item || ev.got)) : null;   // (ev.got: a coin purse taken from beside it — ② 10/22)
   const misses = visits.filter(v => !v.e.found).sort(() => Math.random() - .5);
   const guarded = visits.filter(v => v.e.by).slice(0, 4);   // 친구 지킴이: found, and a friend stepped in
   const seq = [...misses.filter(v => v.locked).slice(0, 1), ...misses.filter(v => !v.locked)].slice(0, Math.max(1, (taken ? 3 : 4) - guarded.length));
@@ -168,6 +168,13 @@ export async function playRaidReplay(S, ev) {
       G.audio.sfx('found', 3);
       const g = v.it.g, s0 = g.scale.x, p0 = g.position.clone();
       await tw.run(.3, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .5)));
+      if (ev.lost) {   // the coin purse beside it goes; the thing stays where it was
+        const s = W.toScreen(wpos(g)); floatAt(g, `코인 -${ev.lost}`, 'red big'); G.audio.sfx('whoosh');
+        W.fx.burst(s.x, s.y, { n: 14, shape: 'circle', colors: ['#ffd23f', '#ffb300', '#fff3a0'], speed: 220, up: 160, gravity: 500, size: 8, life: .7 });
+        await wait(.8);
+        if (v.part && shut.has(v.part) && !messed.has(v.part)) { await S.openPart(v.part, false); shut.delete(v.part); }
+        continue;
+      }
       floatAt(g, '가져갔다!', 'red big'); G.audio.sfx('whoosh');
       await tw.run(.45, k => { g.position.y = p0.y + k * k * 1.6; g.scale.setScalar(s0 * (1 - k * .8)); });
       g.visible = false; g.position.copy(p0); g.scale.setScalar(s0); if (!temps.includes(v.it)) hiddenReal.push(g);
@@ -211,14 +218,14 @@ function replayCard(S, ev) {
   if (t.byLock) rows.push(row('자물쇠가 막음', `${t.byLock}개`, 'good'));
   if (t.byFriend) rows.push(row('친구가 막음', `${t.byFriend}개`, 'good'));
   if (t.left) rows.push(row('들켰지만 두고 감', `${t.left}개`));
-  if (stole) rows.push(row('털림', ITEMS[ev.item]?.name || '물건', 'bad'));
+  if (stole) rows.push(row('털림', ev.lost ? `코인 ${ev.lost}개` : ITEMS[ev.item]?.name || '물건', 'bad'));
   G.ui.panel({
     title: stole ? '털렸다…' : '지켜 냈다!', color: stole ? 'red' : 'green', cls: 'rpend',
-    body: [h('div', { class: 'rpface' }, h('img', { src: G.thumbs['face_' + ev.face] || G.thumbs.face_mong }), ...(stole ? [h('img', { class: 'ri', src: G.thumbs['item_' + ev.item] })] : [])),
+    body: [h('div', { class: 'rpface' }, h('img', { src: G.thumbs['face_' + ev.face] || G.thumbs.face_mong }), ...(stole ? [ev.lost ? h('img', { class: 'ri', src: 'data:image/svg+xml;utf8,' + encodeURIComponent(ICON.coin.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')) }) : h('img', { class: 'ri', src: G.thumbs['item_' + ev.item] })] : [])),
       h('div', { class: 'loottab' }, ...rows),
       ...(ev.coins ? [h('div', { class: 'txt' }, `못 찾은 물건 덕에 코인 +${ev.coins} (이미 받았어)`)] : []),
       ...(stole && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : []),
-      h('div', { class: 'txt' }, stole ? `${ga(ev.nick)} 집에 가서 찾으면 되찾을 수 있어!` : '잘 숨겨 둔 덕분이야!'),
+      h('div', { class: 'txt' }, stole ? (ev.lost ? '자물쇠를 걸면 덜 털려!' : `${ga(ev.nick)} 집에 가서 찾으면 되찾을 수 있어!`) : '잘 숨겨 둔 덕분이야!'),
       ...(messHere(S).length ? [h('div', { class: 'txt sm' }, `열어 놓고 간 서랍 ${messHere(S).length}개 · 터치하면 닫혀`)] : [])],
     buttons: stole
       ? [G.ui.btn('더 꽁꽁 숨기기', { color: 'orange', cls: 'sm', onClick: () => { G.ui.closePanel(); S.setMode('hide'); } }),   // (UI ②: 주황 = 내 집, 초록 하나 = 제일 할 일)

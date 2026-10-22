@@ -12,16 +12,18 @@ import { seatedAll } from './econ.js';   // 친구 지킴이: 방에 앉은 친�
 import { bumpFeat } from './specials.js';   // 스페셜 칸 '털림 막기 N번' (경제 10/20)
 import { CHAR_DEFS } from './gfx/chars.js';
 import { HOUSES } from './houses.js';   // 털 집 찾기 (10/20): the neighbourhood's (made-up) players come round too
+import { GIFT_THINGS } from './gifts.js';   // 선물로 받은 보물은 안 가져감 (② 10/22)
 
 const FIRST_DELAY = 3 * 60e3;        // the first raid comes soon after you first hide something
 const EVERY = 4 * 3600e3;            // then about every four hours you are away
 const REVENGE = 5 * 60e3;            // rob a resident and they come round for revenge soon after
-const MAX_CATCHUP = 2;               // at most this many raids are counted for one absence
+const MAX_CATCHUP = 3;               // at most this many raids are counted for one absence (2 → 3: ② 10/22, '방문 2~3명')
 const ROB_COOLDOWN = 6 * 3600e3;     // one grab per room per six hours
-// 친구 지킴이 (10/20 user: "친구 넣으면 친구가 침입당할 때 한 번 찾는 거 방해"): each friend sitting in my room stops one find a raid,
-// in the order they sat; the stopped thing stays. Tune the most a raid can be stopped here (shelves, 5 hidden, 0~4 friends: 97/81/50/19/3%).
+// 친구 지킴이 (10/20 user: "친구 넣으면 친구가 침입당할 때 한 번 찾는 거 방해"): the friends sitting in my room may stop a find,
+// in the order they sat; the stopped thing stays. Tune the most friends that guard here (② 10/22: each one now stops the find a quarter of
+// the time — ODDS.guard; three things in drawers, 0~4 friends: robbed 59/44/33/25/19 % a visit, raidsim)
 export const FRIEND_BLOCK_MAX = 4;
-const SHIELD = 8 * 3600e3;           // 문단속 (Clash's shield, 10/19): robbed once, nobody comes for eight hours
+const SHIELD = 4 * 3600e3;           // 문단속 (Clash's shield, 10/19): robbed once, nobody comes for a while (8 h → 4 h: ② 10/22, 자주 털리게)
 // some noses are better than others
 const NOSE = { shiba: .15, nerd: .1, grumpy: .05, hamster: .05, skater: 0, panda: 0, frog: -.05, sleepy: -.15 };
 
@@ -69,6 +71,28 @@ export function runRaids(G, { now = Date.now(), force = 0 } = {}) {
 // fixed snap spot inside a drawer — the default way to hide — got neither the drawer's nor its lock's protection): a fixed spot
 // keeps its part key (myhome.js placeTreasure, filled in for older saves on load), a free place has free.part, or a free host 'p:…'
 export const hidePart = e => e.part || e.free?.part || (typeof e.free?.host === 'string' && e.free.host.startsWith('p:') ? e.free.host.slice(2) : null);
+
+// ── 털릴 확률 (② 10/22, 사용자 실폰: 개굴이·보드킹 둘 다 "하나도 못 가져갔어 +30" → "너무 방어를 잘한다", "좀 개털려야 돈을 쓰지").
+// Before, every hidden thing rolled on its own and the lock, the drawer and a friend each took a big bite: one lock, things in
+// drawers and one friend at home came to under 20 % a visit. Now one roll a visit: about two in three with nothing done,
+// and each padlocked thing, each thing in a drawer and each friend at home takes a clear bite out of it — so a padlock
+// bought is felt on the next visit. Tune here; tools: ② nm-tools/raidsim.mjs prints the table.
+export const ODDS = { base: .72, inside: .05, locked: .15, min: .1, max: .85, guard: .25 };
+// how one hidden thing is kept: 'open' · 'inside' (a drawer or a lid) · 'locked' (that drawer is padlocked)
+export const keptBy = (e, locks) => { const p = hidePart(e); return p ? (locks[p] ? 'locked' : 'inside') : 'open'; };
+// the chance a visitor finds something (before the friends at home step in)
+export function findOdds(hid, locks, face = null) {
+  let p = ODDS.base + (NOSE[face] || 0);
+  for (const e of hid) { const k = keptBy(e, locks); if (k === 'inside') p -= ODDS.inside; else if (k === 'locked') p -= ODDS.locked; }
+  return Math.max(ODDS.min, Math.min(ODDS.max, p));
+}
+// what they come away with: a coin purse (15 % of your coins, 20~120) or the thing they found — half and half; a gift's thing
+// (선물 상자) is never taken, it's the coins then; too few coins to bother with, the thing
+export const PURSE = { frac: .15, min: 20, max: 120 };
+const NO_TAKE = new Set(GIFT_THINGS);
+export const purseOf = coins => coins < PURSE.min ? 0 : Math.max(PURSE.min, Math.min(PURSE.max, Math.round(coins * PURSE.frac)));
+// a visit that found nothing: a small thank-you (was 15 a thing: 30 for two — "+30" every time felt like winning)
+export const keepPay = n => Math.min(30, 10 * n);
 function raidOnce(G, now) {
   const save = G.save, R = raidOf(save), H = save.home, hid = hiddenTargets(save);
   if (!hid.length) return null;
@@ -76,35 +100,40 @@ function raidOnce(G, now) {
   const pool = raiders(), rv = R.revenge; R.revenge = null;
   const back = rv != null ? pool.find(o => o.id === (typeof rv === 'number' ? residentId(rv) : rv)) : null;
   const who = back || pool[Math.floor(Math.random() * pool.length)], id = who.id, revenge = !!back;
-  const locks = H.hide.locks || {}, nLocks = Object.keys(locks).length;
+  const locks = H.hide.locks || {};
+  // one roll: did they find anything? Then which — the easier to see, the likelier (open 4 · in a drawer 2 · padlocked 1)
   const found = [];
-  for (const e of hid) {
-    let p = .5 + (NOSE[who.face] || 0) - Math.min(.2, nLocks * .1);
-    const part = hidePart(e);
-    if (part) p -= .18;                  // inside a drawer or a lid
-    if (part && locks[part]) p -= .2;    // …and that one is locked
-    if (Math.random() < Math.max(.08, Math.min(.85, p))) found.push(e.item);
+  if (Math.random() < findOdds(hid, locks, who.face)) {
+    const w = e => ({ open: 4, inside: 2, locked: 1 })[keptBy(e, locks)];
+    let r = Math.random() * hid.reduce((a, e) => a + w(e), 0);
+    found.push((hid.find(e => (r -= w(e)) < 0) || hid[hid.length - 1]).item);
   }
   const ev = { at: now, who: id, nick: who.nick, face: who.face, revenge, seen: false };
-  // 친구 지킴이: each friend at home stops one of the finds (a random one), up to FRIEND_BLOCK_MAX
+  // 친구 지킴이: each friend at home may stop the find (ODDS.guard each, up to FRIEND_BLOCK_MAX friends)
   const guards = [...seatedAll(H)].filter(k => CHAR_DEFS[k]).slice(0, FRIEND_BLOCK_MAX), blockedBy = {};
-  for (const it of found.slice().sort(() => Math.random() - .5)) { const k = guards[Object.keys(blockedBy).length]; if (!k) break; blockedBy[it] = k; }
+  for (const it of found) { const k = guards.find(() => Math.random() < ODDS.guard); if (k) blockedBy[it] = k; }
   const taken = found.filter(it => !blockedBy[it]);
   if (Object.keys(blockedBy).length) ev.blocked = Object.values(blockedBy);
   // ① 털림 다시 보기 (10/19): what was hidden where and what this resident found — raidreplay.js plays it back in my room
   ev.rp = { zone: H.hide.zoneId, locks: { ...locks }, items: hid.map(e => ({ item: e.item, ...(e.free ? { free: e.free } : { spot: e.spot }), found: found.includes(e.item), ...(blockedBy[e.item] ? { by: blockedBy[e.item] } : {}) })) };
   if (taken.length) {
-    const item = taken[Math.floor(Math.random() * taken.length)];
-    ev.kind = 'steal'; ev.item = item; ev.coins = (hid.length - taken.length) * 10;
-    // it really goes: out of the hiding place, the drafts and my collection, into their room until I take it back
-    H.hide.items = H.hide.items.filter(x => x.item !== item);
-    for (const d of Object.values(H.drafts || {})) if (d?.items) d.items = d.items.filter(x => x.item !== item);
-    save.collection = save.collection.filter(x => x !== item);
-    const st = R.stolen[id] || (R.stolen[id] = []);
-    if (!st.includes(item)) st.push(item);
-    R.shield = ev.shield = now + SHIELD;   // 문단속
-    R.next = Math.max(R.next || 0, R.shield);
-  } else { ev.kind = 'fail'; ev.coins = 15 * hid.length; bumpFeat(save, 'keeps'); }
+    const item = taken[0], purse = purseOf(save.coins || 0);
+    ev.kind = 'steal'; ev.coins = 0;
+    if (purse && (NO_TAKE.has(item) || Math.random() < .5)) {
+      // the coin purse: they found where you hid things and took coins from beside it; the thing stays
+      ev.got = item; ev.lost = purse; save.coins = Math.max(0, (save.coins || 0) - purse);
+    } else if (NO_TAKE.has(item)) { ev.kind = 'fail'; ev.coins = 0; ev.got = item; ev.empty = true; }   // (a gift and an empty purse: nothing to take)
+    else {
+      ev.item = item;
+      // it really goes: out of the hiding place, the drafts and my collection, into their room until I take it back
+      H.hide.items = H.hide.items.filter(x => x.item !== item);
+      for (const d of Object.values(H.drafts || {})) if (d?.items) d.items = d.items.filter(x => x.item !== item);
+      save.collection = save.collection.filter(x => x !== item);
+      const st = R.stolen[id] || (R.stolen[id] = []);
+      if (!st.includes(item)) st.push(item);
+    }
+    if (ev.kind === 'steal') { R.shield = ev.shield = now + SHIELD; R.next = Math.max(R.next || 0, R.shield); }   // 문단속
+  } else { ev.kind = 'fail'; ev.coins = keepPay(hid.length); bumpFeat(save, 'keeps'); }
   if (ev.coins) save.coins += ev.coins;
   R.log.push(ev); R.log = R.log.slice(-20);
   return ev;
@@ -114,7 +143,9 @@ export const unseen = save => raidOf(save).log.filter(e => !e.seen);
 export function markSeen(G) { for (const e of raidOf(G.save).log) e.seen = true; G.persist(); if (typeof document !== 'undefined') document.querySelectorAll('.badge.newsn').forEach(e => e.remove()); }   // (the lobby's number on 놀러 가기 — ③ 10/21)
 export function newsLine(e) {
   const fr = (e.blocked || []).map(k => CHAR_DEFS[k]?.name).filter(Boolean);
+  if (e.kind === 'steal' && e.lost) return `${ga(e.nick)} ${e.revenge ? '복수하러 와서 ' : ''}코인 ${e.lost}개를 털어 갔어! -${e.lost}`;
   if (e.kind === 'steal') return `${ga(e.nick)} ${e.revenge ? '복수하러 와서 ' : ''}${eul(ITEMS[e.item]?.name || '물건')} 털어 갔어!` + (fr.length ? ` (친구가 ${fr.length}개 막아 줌)` : e.coins ? ` (못 찾은 물건 덕에 +${e.coins})` : '');
+  if (e.empty) return `${ga(e.nick)} 왔다가 빈손으로 갔어!`;
   if (fr.length) return `${ga(e.nick)} 왔다가 ${fr.join('·')}한테 막혀서 하나도 못 가져갔어! +${e.coins}`;
   return `${ga(e.nick)} ${e.revenge ? '복수하러 왔다가' : '몰래 왔다가'} 하나도 못 찾고 갔어! +${e.coins}`;
 }

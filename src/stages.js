@@ -452,6 +452,19 @@ LAYOUTS.traincar2 = { w: 5, d: 7, walls: { N: 'wall', W: 'wall' }, wallH: 3.0, y
     F('tbench2', 4, 1, 3), F('tbench2', 4, 3, 3), F('tbench2', 4, 5, 3, { stuff: 'toy', priority: true }), F('tcart2', 2, 4)],
   decor: [D('tshell', 'W', 0, { len: 7, width: 5 }), D('twindow2', 'W', -2.3, { blind: true }), D('twindow2', 'W', 0, { paw: true }), D('twindow2', 'W', 2.3),
     D('trailrack2', 'W', 0), D('tdoorend2', 'N', 0)], friendAt: [.2, 1.6] };
+// 28판 기차 객실 3차 (10/22, 사용자 "기차는 가로로 더 긴 형태여야 될 듯. 뒤에 구름 배경 빼고 창문으로 풍경은 계속 앞으로 가는 것처럼"):
+// traincar2's car made long like a real carriage (12 long, the same 5 wide) — five windows down the window wall with the
+// landscape sliding past in each (twindow2 o.flow), two rows of five benches, the rail and the racks run the whole length, the
+// snack cart in the middle of the aisle; seen at a slant along its length on a tall screen; a calm dark slate behind the car
+// (no sky — look.js RECIPES.traincar3), and now and then the car gives a little rock (tshell o.jolt). The pieces, their parts
+// and places keep traincar2's names (② 10/22).
+THEMES.traincar3 = { ...THEMES.traincar2, bg: ['#323b56', '#3b4664'] };
+LAYOUTS.traincar3 = { w: 5, d: 12, walls: { N: 'wall', W: 'wall' }, wallH: 3.0, yaw: .7, fitW: 10.8, theme: THEMES.traincar3,
+  furniture: [F('tbench2', 0, 1, 1, { stuff: 'paper' }), F('tbench2', 0, 3, 1, { drawer: true }), F('tbench2', 0, 5, 1, { stuff: 'bag' }), F('tbench2', 0, 7, 1), F('tbench2', 0, 9, 1, { stuff: 'paper' }),
+    F('tbench2', 4, 1, 3), F('tbench2', 4, 3, 3), F('tbench2', 4, 5, 3, { stuff: 'toy', priority: true }), F('tbench2', 4, 7, 3, { stuff: 'bag' }), F('tbench2', 4, 9, 3),
+    F('tcart2', 2, 6)],
+  decor: [D('tshell', 'W', 0, { len: 12, width: 5, jolt: true }), D('twindow2', 'W', -4.6, { flow: true }), D('twindow2', 'W', -2.3, { blind: true, flow: true }), D('twindow2', 'W', 0, { paw: true, flow: true }),
+    D('twindow2', 'W', 2.3, { flow: true }), D('twindow2', 'W', 4.6, { flow: true }), D('trailrack2', 'W', 0, { len: 11.8 }), D('tdoorend2', 'N', 0)], friendAt: [.2, 1.6] };
 // 섬 3차 (10/21): the same island, a tidier shore (look.js RECIPES.island2) — island stays as the user saw it
 THEMES.island2 = THEMES.island;
 LAYOUTS.island2 = LAYOUTS.island;
@@ -863,7 +876,7 @@ export const REGION_INTRO = {
 // 빠짐) · 29 호수 섬 흑백 · 30 바닷가 가게 ★ · 35 곰제과 · 37 도서관 흑백 · 38 아파트 현관 시간 놀이. 판 종류·자물쇠 자리는 그대로
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation', 'villaroof2:show', 'policefront:boss'],
-  alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'station', 'traincar:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
+  alley: ['street', 'alley1', 'skatepark:gray', 'alley3', 'alleyhouse', 'station', 'traincar3:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
   shop: ['konbini:gray', 'laundry', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'aptlobby2:timed', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
   camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide:treat', 'camp2:gray', 'cabin:show', 'campwide:boss'],
@@ -903,7 +916,8 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // (골목 밤의 1.2를 뺌), 29판 호수 섬 1.15 중앙 35px, 30판 바닷가 1.2 중앙 35px, 35판 곰제과 두 칸 8×5는 1.45에서 23~38px)
 // (#94 19~70 10/21~22 — 사용자 "스테이지 19 이후로 이거 엄청 작게": 시작 화면에서 찾을 것이 28px 미만인 판은 줌을 올리고(상한 1.5),
 // 넘치면 그 판 물건 크기도 ITEM_TUNE으로 — 측정은 메쉬 크기, 폰 세로 390×844)
-const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.4, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.5, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
+// (28판 기차 객실 3차 10/22: 12m 객실을 길이로 비스듬히 보는 판 — 1.4면 앞뒤가 잘려서 1.2, ① 권장 1.15~1.2)
+const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.2, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.5, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
 // 그 판 물건 크기(기본 .34 = 34cm 기준; 룩이 있는 방은 룩 값): 넓은 맵만 크게
 export const ITEM_TUNE = { 25: 0.48, 30: 0.46, 33: 0.44, 34: 0.46, 35: 0.44, 39: 0.5, 45: 0.42, 47: 0.5, 48: 0.5, 53: 0.47, 56: 0.42, 58: 0.42, 59: 0.42, 65: 0.4, 69: 0.45 };
 // #94 크기 규칙(목록·자리·자물쇠 칸·작은 물건 안전망 smallfix.js)이 닿는 판: 19판부터 이 판까지 — 장 단위로 늘려 감(30 → 40 → 50 → 70)

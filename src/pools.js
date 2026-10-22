@@ -58,6 +58,9 @@ export const ROOM_POOLS = {
   villaroof2: ['bubbletea', 'juicebox', 'sunglasses', 'snack', 'icecream', 'cupcake', 'gift', 'mandarin'],   // 20판 옥상 집들이
   station: ['strawhat', 'bobber', 'kimbap', 'onigiri', 'juicebox', 'umbrella', 'map', 'bubbletea'],   // 27판 개굴이 낚시 가방
   traincar: ['onigiri', 'kimbap', 'juicebox', 'bubbletea', 'map', 'umbrella', 'sunglasses', 'gimbap2'],   // 28판 기차 객실 간식·여행 짐
+  // (28판 기차 객실 2·3차 10/22 — 사용자 OK traincar3): 기차 간식·여행 짐, 작은 것 없이(주먹밥·주스팩·김밥은 14~20px로 나와서 뺌)
+  traincar2: ['bubbletea', 'sandwich', 'snack', 'gimbap2', 'map', 'umbrella', 'sunglasses', 'strawhat'],
+  traincar3: ['bubbletea', 'sandwich', 'snack', 'gimbap2', 'map', 'umbrella', 'sunglasses', 'strawhat'],
   island2: ['bobber', 'strawhat', 'rubberduck2', 'juicebox', 'sunglasses', 'gimbap2', 'duck', 'ball2'],   // 29판 호수 섬
   seaside: ['fishsnack', 'strawhat', 'icecream', 'sunglasses', 'bubbletea', 'coin', 'rubberduck2', 'juicebox'],   // 30판 바닷가 가게
   bearbakery: ['donut', 'cupcake', 'cookie', 'milk', 'honeypot', 'apple', 'candy', 'sandwich'],   // 35판 곰제과

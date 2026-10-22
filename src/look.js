@@ -314,6 +314,9 @@ RECIPES.traincar = { light: { ambColor: '#eef3f8', amb: 1.3, sunColor: '#fff2dc'
   block: { layers: [{ h: .1, color: '#f6ecd8', out: .06 }, { h: .22, color: '#5072b0', out: .06 }, { h: .08, color: '#f08a3c', out: .06 }, { h: .3, color: '#3a3f4c' }] }, itemSize: .38 };
 // (2차 10/21): the car floats over a sky of soft clouds, like the picture
 RECIPES.traincar2 = { ...RECIPES.traincar, clouds: true };
+// (3차 10/22, 사용자 "뒤에 구름 배경 빼고"): inside a train the outside is only what the windows show — a calm deep slate behind
+// the car, no clouds, the same light
+RECIPES.traincar3 = { ...RECIPES.traincar, sky: ['#3b4664', '#48546f', '#323b56'] };
 // (20판 2차 10/21): the neighbours' rooftops printed very faint along the bottom of the backdrop — boxy villas, a yellow tank
 // here and there, an antenna, a little rooftop room
 // (20판 3차 10/21, user on the phone: "20도 어둡고 우울"): a bright, warm afternoon instead of the sunset — a clear blue sky
