@@ -182,5 +182,5 @@ export function takePick(G, idx, chosen) {
 // ── 상점 장별 입고 (설계서 6장 N3): a piece of furniture comes into the shop with its chapter (its region: none/home → 1장,
 // apt → 2, alley → 3, shop → 4, park → 5, trail/camp → 6, building → 7); what you already own always shows
 const CH_OF_REGION = { home: 1, apt: 2, alley: 3, shop: 4, park: 5, trail: 6, camp: 6, building: 7 };
-export const chapterOfFurn = t => CH_OF_REGION[FURN_INFO[t]?.region] || 1;
+export const chapterOfFurn = t => FURN_INFO[t]?.ch || CH_OF_REGION[FURN_INFO[t]?.region] || 1;
 export const chapterNow = save => REGIONS.indexOf(regionOf(save.stage || 0)) + 1;

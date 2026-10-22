@@ -302,6 +302,10 @@ export class MyHomeScene {
     const z = this.zone, lay = zoneLayout(z);
     G.setBg(lay.theme.bg || (ZONE_TYPES[z.type].indoor ? ['#fff3e3', '#ffe2c4'] : ['#e4f6ff', '#d6f3d8'])); G.world.setLight(lay.theme.light || null);
     this.room = new Room(W, zoneLayout(z));
+    // A rotated or restored top item may be pulled inward to keep its whole footprint on the deck.
+    for (const r of this.room.furns) if (r.on) {
+      const saved = z.furniture.find(f => f.id === r.id); if (saved) Object.assign(saved, { x: r.x, z: r.z, a: r.a });
+    }
     W.root.add(this.room.group);
     this.nbGroup = this.buildNeighbours(); W.root.add(this.nbGroup);
     this.growSign = ECON ? this.buildGrowSign() : null;   // (방 넓히기: the room's next row, on the floor)
@@ -833,7 +837,8 @@ export class MyHomeScene {
     return {
       v: 2, title: this.zone.name, face: 'mong',
       zone: { type: this.zone.type, furniture: this.zone.furniture.map(f => ({ type: f.type, i: f.i, j: f.j, rot: f.rot, id: f.id, ...(f.x != null ? { x: f.x, z: f.z, a: f.a } : {}) })), paint: this.zone.paint || {},
-        ...(this.zone.style ? { style: this.zone.style } : {}), ...(this.zone.size ? { size: this.zone.size } : {}) },
+        ...(this.zone.style ? { style: this.zone.style } : {}), ...(this.zone.size ? { size: this.zone.size } : {}),
+        ...(this.zone.roof ? { roof: this.zone.roof, roofTurn: this.zone.roofTurn || 0 } : {}) },
       hidden: hid.items.map(e => e.free ? { item: e.item, free: e.free } : { item: e.item, spot: e.spot }), locks: Object.entries(hid.locks).map(([part, kind]) => ({ part, kind })), code: hid.code || '000',
       count: this.targetCount(),
     };
@@ -957,7 +962,7 @@ export class MyHomeScene {
         if (u.item) return { kind: 'item', item: u.item };
         if (u.char) return { kind: 'char', char: u.char };
         if (u.part && this.mode !== 'edit') return { kind: 'part', part: u.part };
-        if (u.furn) return { kind: 'furn', furn: u.furn };
+        if (u.furn) { if (this.mode === 'edit' && u.furn.rec?.roof) break; return { kind: 'furn', furn: u.furn }; }
         if (u.wall || u.floor) return { kind: 'floor' };
       }
     }

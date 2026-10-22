@@ -5,6 +5,7 @@
 // Spine: "다음엔 우리 집에서 놀자". Each friend has one hiding habit, one tell, one promise that comes back later; a gift is
 // the friend's seat at your place; 먹물이 is the kid nobody ever said "next time" to.
 import * as THREE from 'three';
+import { asRooms } from './roomalias.js';
 import { EN } from './i18n-en-dict.js';
 import { stageSpec, THEMES, layoutFor, STAGE_COUNT, REGIONS, REGION_INTRO } from './stages.js';
 import { STORIES, setStoryBinder } from './story.js';
@@ -302,6 +303,11 @@ const SCENES = [
     intro: [L('frog', '개굴! 발자국 따라왔어? 난 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! Followed the footprints? I'm taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')],
     say: { first: K('개굴! 하나 찾았다! 기차는 아직이야.', "Ribbit! Got one! The train's not here yet."), half: K('반이야! 저 멀리 땡땡 소리 들려.', 'Halfway! I can hear the crossing bell.'), last: K('하나 남았어! 기차 오기 전에!', 'One left! Before the train comes!') },
     after: [LP('frog', '기차 왔다! 같이 타자, 개굴!', "Here's the train! Hop on with me. Ribbit!"), LP('mong', '…발자국도 기차에 탔네.', '…The footprints got on the train too.')] },
+  // 32판 벚꽃역 동네형 (gptsakura, 10/22 검토 세션 결정 — 사용자 "여행 끝나고 집 갈 때라던가"): 여행 끝 귀갓길, 멍뭉이 마중 → 33 골목 보스로
+  { id: 'sakuraH', stage: { start: 'homeTrainIn', end: 'footprintsAlley' }, type: 'hidden', room: 'gptsakura', host: 'shiba', trace: true, goal: ['역 분실물', 'things lost at the station'],
+    intro: [L('shiba', '멍! 다녀왔어? 명예 순경, 복귀 첫 임무!', "Woof! You're back? Honorary officer, first mission back!"), L('shiba', '여행 간 사이 역에 분실물이 산더미야. 기차 짐까지 섞였어!', 'Lost things piled up at the station while you were away. Train luggage got mixed in too!')],
+    say: { first: K('킁! 여행 다녀와도 눈썰미 그대로네.', 'Sniff! Sharp eyes, even after a trip.'), half: K('반! 벚꽃이 또 떨어진다.', 'Half! The cherry blossoms are falling again.'), last: K('하나 남았어! 찾으면 집에 가자.', "One left! Find it and we'll head home.") },
+    after: [LP('shiba', '임무 완료! …근데 까만 발자국은 골목 쪽으로 갔대.', 'Mission done! …But they say the inky footprints went toward the alley.'), LP('mong', '…집 가는 길이네.', "…That's our way home.")] },
   // 28판 기차 객실 ★ (사건, 새 맵 — 방 id는 ①이 정함: traincar/train/cabin 어느 것이든 붙음): 터널을 지나는 사이 너굴이가 숨음.
   // 3장에서 너굴이 시간 판이 빠진 대신, 동네 숨기 1등이 기차에서 숨어요
   { id: 'traincarInc', stage: { start: 'tunnel', end: 'islandView' }, type: 'incident', room: 'traincar', alt: ['traincar2', 'traincar3', 'train', 'cabin'], host: 'raccoon', hide: K('터널 지나는 동안 숨는다! 1등은 기차에서도 1등!', "Hiding while we're in the tunnel! Number one on the train too!"),
@@ -445,7 +451,7 @@ SCENES.push(
     intro: [L('grumpy', '…뭐야. 내 골목에서 뭐 해.', '…What. What are you doing in my alley.'), L('shiba', '킁. 삐딱이 물건이 골목에 흩어졌다는 신고야.', "Sniff. We got a report that Grumpy's stuff is all over the alley."), L('grumpy', '…찾든가 말든가. 망가뜨리지만 마.', "…Find it or don't. Just don't break anything.")],
     say: { first: K('…그거 내 거 아니야. …내 거야.', "…That's not mine. …Okay, it's mine."), half: K('…그것까지 찾았네. 잃어버린 줄 알았는데.', '…You found that too. I thought it was gone.'), last: K('…하나 남았어. 별로 안 궁금하지만.', '…One left. Not that I care.') },
     after: [L('grumpy', '…다 찾았네. 거기 놔 줘. 내가 담을게.', "…You found it all. Leave it there. I'll pack it up."), L('mong', '…의자가 두 개네.', '…There are two chairs.'), L('grumpy', '하, 하나는 가방 놓는 거야.', "O-one's for my bag.")] },
-  { id: 'alley3H', stage: { start: 'bagBurst', end: 'bagOnChair' }, type: 'hidden', room: 'alley3', host: 'grumpy', name: K('동네 슈퍼', 'Corner Store'), goal: ['쏟아진 물건', 'spilled things'],
+  { id: 'alley3H', stage: { start: 'bagBurst', end: 'bagOnChair' }, type: 'hidden', room: 'alley3', host: 'grumpy', name: K('동네 슈퍼', 'Corner Store'), ifMap: { gptcornershop: { name: K('모퉁이 가게', 'Corner Store') } }, goal: ['쏟아진 물건', 'spilled things'],
     intro: [L('grumpy', '…장 보다가 가방이 터졌어.', '…My bag split open while I was shopping.'), L('grumpy', '…줍는 거 도와주든가. 말든가.', "…Help me pick it up. Or don't."), L('mong', '…도와줄게.', "…I'll help.")],
     say: { first: K('…그거 내 거 맞아. 고마운 건 아니고.', "…Yeah, that's mine. Not that I'm grateful."), half: K('…반. 생각보다 빠르네.', '…Half. Faster than I thought.'), last: K('…하나 남았어. 그건 꼭 찾아야 돼.', '…One left. That one I really need.') },
     after: [L('grumpy', '…다 찾았네. 가방은 새로 사야겠다.', '…You found it all. Guess I need a new bag.'), LP('mong', '…가방 놓을 의자는 있어?', '…Got a chair for the bag?'), LP('grumpy', '…있어. 두 개.', '…Yeah. Two.')] },   // 의자 두 개 사슬 23 → 25 → 31 → 내 집 (검토 세션 10/19)
@@ -1032,7 +1038,7 @@ QUIP_REPLY.catH = QUIP_REPLY.catK;
 // 차가운 물건인지(affinity.js isCold). 돌려주는 값은 지금 언어로 다 만든 말풍선 두 줄 [{who:'mong', text}, {who, text}], 대상이 아니면 null
 // (a timed stage has no scene — its pair hangs on the room: 18판 너굴이네 오덕 복층)
 const QUIP_ROOM = { otakuloft: { who: 'raccoon', any: K('…그건 한정판이라 거기 둔 거야. 건드리지 마.', "…That's a limited edition. That's why it's there. Don't touch.") } };
-const quipOf = idx => QUIP_REPLY[bind().scene[idx]?.id] || QUIP_ROOM[bind().room[idx]] || null;
+const quipOf = idx => QUIP_REPLY[bind().scene[idx]?.id] || roomLine(QUIP_ROOM, idx);
 export const quipAt = idx => !!quipOf(idx);
 export const quipLine = (idx, item, place, cold) => {
   const q = quipOf(idx); if (!q || !item || !place) return null;
@@ -1081,6 +1087,8 @@ export const SECRET_UI = { got: K('새 비밀! · 카드가 반짝이로', 'New 
 export const BOOK = { diary: K('몽글이 일기장', "Mongle's diary"), learned: K('배운 것', 'What I Learned'), notYet: K('판에서 처음 만나면 얻어', 'Find one in a stage to unlock') };
 export const UI = { homeHide: K('내 집에서 숨겨 보기', 'Hide something at home'), keepGoing: K('계속 찾기', 'Keep searching'), homeHideEnd: K('내 집에서 숨기기', 'Hide something at home'), keepPlaying: K('계속 놀기', 'Keep playing') };
 
+// GPT 새 맵 (10/22): 새 키가 옛 방의 장면·보스 이야기·ifMap·방 줄을 그대로 받아요 — 표는 roomalias.js (다른 파일도 같이 써요)
+const roomLine = (T, idx) => asRooms(bind().room[idx]).map(r => T[r]).find(Boolean) || null;
 // ── binding: walk the campaign once (after the themes are registered) and pin every scene / boss story / count
 const typeOf = s => s.tut === 1 ? 'tut1' : s.tut === 2 ? 'tut2' : s.boss ? 'boss' : s.timed ? 'timed' : s.gray ? 'gray' : s.incident ? 'incident' : 'hidden';   // hidden = 숨은그림 판
 let B = null;
@@ -1088,11 +1096,12 @@ function bind() {
   if (B) return B;
   B = { scene: {}, host: {}, meet: {}, fmeet: {}, gray: {}, timed: {}, type: {}, room: {} };
   const specs = []; for (let i = 0; i < STAGE_COUNT; i++) specs.push(stageSpec(i));
-  const roomsAll = new Set(specs.map(q => q.room)), used = new Set(), met = {}, fmet = {}, gown = {}, kits = new Set(); let g = 0, t = 0; B.grayOwn = {};
+  const roomsAll = new Set(specs.flatMap(q => asRooms(q.room))), used = new Set(), met = {}, fmet = {}, gown = {}, kits = new Set(); let g = 0, t = 0; B.grayOwn = {};
   for (let i = 0; i < specs.length; i++) {
     const s = specs[i], ty = typeOf(s); B.type[i] = ty; B.room[i] = s.room;
-    const kit = s.kit || s.model || null;   // 프라모델 조립판: a scene with kit only lands on that kit's stage (and is picked first there)
-    const pick = t => SCENES.find(x => !used.has(x.id) && x.type === t && x.nth == null && (x.room === s.room || x.alt?.includes(s.room)) && (x.night == null || !!s.night === x.night) && (!x.kit || x.kit === kit));
+    const kit = s.kit || s.model || null, rs = asRooms(s.room);   // 프라모델 조립판: a scene with kit only lands on that kit's stage (and is picked first there)
+    const ok = t => x => !used.has(x.id) && x.type === t && x.nth == null && (x.night == null || !!s.night === x.night) && (!x.kit || x.kit === kit);
+    const pick = t => SCENES.find(x => ok(t)(x) && (x.room === s.room || x.alt?.includes(s.room))) || SCENES.find(x => ok(t)(x) && (rs.includes(x.room) || x.alt?.some(a => rs.includes(a))));   // exact room first, then the old map's (roomalias.js)
     const sc = pick(ty) || (ty === 'gray' && SCENES.find(x => !used.has(x.id) && x.type === 'gray' && x.nth === g)) || null;   // (v2: the map's own 흑백 scene first)
     if (sc) { used.add(sc.id); [].concat(sc.uses || []).forEach(u => used.add(u)); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; const mp = sc.ifMap && Object.keys(sc.ifMap).filter(r => roomsAll.has(r)); if (mp?.length) B.scene[i] = Object.assign({}, B.scene[i], ...mp.map(r => sc.ifMap[r])); }
     if (kit) kits.add(kit);
@@ -1114,7 +1123,7 @@ function bind() {
   B.office = roof != null ? +roof : -1;
   // boss stories onto the first boss stage of their map (roadmap.js and the planner read STORIES by stage index)
   for (const k of Object.keys(STORIES)) delete STORIES[k];
-  for (const S of BOSS) { const i = specs.findIndex((s, j) => s.boss && s.room === S.room && !STORIES[j]); if (i >= 0) STORIES[i] = S; }
+  for (const S of BOSS) { const i = specs.findIndex((s, j) => s.boss && asRooms(s.room).includes(S.room) && !STORIES[j]); if (i >= 0) STORIES[i] = S; }
   for (const [id, { ifMap: rm, ...r }] of Object.entries(REGION)) if (REGION_INTRO[id]) { Object.assign(REGION_INTRO[id], r); for (const [k, o] of Object.entries(rm || {})) if (roomsAll.has(k)) Object.assign(REGION_INTRO[id], o); }
   // "토순이 찾기" for every friend (the banner's goal line)
   for (const [k, d] of Object.entries(CHAR_DEFS)) if (d?.name) K(`${d.name} 찾기`, `Find ${EN[d.name] || d.name}`);
@@ -1269,11 +1278,13 @@ const ROCKY_ROOM = {
   aptlobby: L('raccoon', '장 본 게 현관에 다 쏟아졌네? 엘리베이터 내려오기 전에 다 주워 봐!', 'Groceries all over the lobby? Pick it all up before the elevator comes down!'),
 };
 ROCKY_ROOM.aptlobby2 = ROCKY_ROOM.aptlobby;   // (현관 2차 맵 키)
+// 31판 돌아오는 저녁 기차 (긴 객실 한 칸, 10/22 검토 세션 결정): 28판 객실에서 들킨 너굴이의 복수전
+ROCKY_ROOM.gptlongcar = L('raccoon', '갈 땐 들켰지만, 돌아갈 땐 내가 이긴다! 역 도착 전에 승부야!', "You caught me on the way there, but I'm winning on the way back! Before we pull in!");
 // 18판 너굴이네 비 오는 밤 오덕 복층 (사용자 "18판 ㄱ" 10/21): 자기 방이라 더 우쭐
 ROCKY_ROOM.otakuloft = L('raccoon', '어서 와, 내 비밀 기지야. 비 오는 밤엔 숨바꼭질이지!', 'Welcome to my secret base. Rainy nights are for hide-and-seek!');
 // (the last timed stage always gets the last line — "마지막 승부다!" — however many timed stages the campaign has)
 const rockyAt = (idx, n) => { const t = bind().timed[idx] || 0; return t >= bind().timedN - 1 ? n - 1 : Math.min(n - 2, t); };
-export const timedIntro = idx => { const r = ROCKY_ROOM[bind().room[idx]], l = ROCKY[rockyAt(idx, ROCKY.length)]; return r ? [r, ...l] : l; };
+export const timedIntro = idx => { const r = roomLine(ROCKY_ROOM, idx), l = ROCKY[rockyAt(idx, ROCKY.length)]; return r ? [r, ...l] : l; };
 export const timedWin = idx => { const t = rockyAt(idx, ROCKY_WIN.length), l = L('raccoon', ROCKY_WIN[t]); return [t >= ROCKY_WIN.length - 1 ? { ...l, keep: true } : l]; };
 // boss games
 export const gameLines = (kind, lv) => GAME[`${kind}:${lv}`] || null;

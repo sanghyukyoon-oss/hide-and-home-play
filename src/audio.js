@@ -482,6 +482,12 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     el.preservesPitch = true; el.webkitPreservesPitch = true; el.mozPreservesPitch = true;
     try { const node = A.ctx.createMediaElementSource(el); T.gain = A.ctx.createGain(); T.gain.gain.value = 0; node.connect(T.gain).connect(A.musicBus); } catch { T.gain = null; }
     el.addEventListener('playing', () => { if (T.pending != null) { fade(T.pending, XF * .6); T.pending = null; } });
+    // a speed waiting for the loop point (seamRate below): written in the song's last half second, or at once if it already wrapped
+    el.addEventListener('timeupdate', () => {
+      const ct = el.currentTime, wrapped = ct < (T.lastCT ?? 0) - 1; T.lastCT = ct;
+      const r = T.atSeam; if (r == null) return;
+      if (wrapped || (el.duration || 0) - ct < .5 * (el.playbackRate || 1)) { T.atSeam = null; setRate(r); }
+    });
     el.addEventListener('error', () => {
       if (!T.url || (!Object.values(BGM).some(b => b.gpt === T.url || b.gpts?.includes(T.url)) && !Object.values(MAP_SONGS).includes(T.url))) return;
       console.warn('bgm file', T.url, 'could not be read — playing the lobby song');
@@ -490,8 +496,18 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   }
   // the speed only when it changes, and never the pitch setting (writing it, even the same value, cut the sound on iPhone)
   function setRate(rate) {
+    T.atSeam = null;
     if (T.rate === rate && T.el.playbackRate === rate) return;
     T.rate = rate; T.el.defaultPlaybackRate = rate; T.el.playbackRate = rate;
+  }
+  // 노래 빨라지기의 속도는 곡의 이음매에서만 바꾼다 (10/22, user on an iPhone: "여전히 노래 막 끊기고 그래. 특히 빠르게 재생하거나
+  // 물건 찾을 때?"): Safari stops the sound for ~0.1–0.3 s at every playbackRate change on a playing song (WebKit bug 163433), and
+  // the drift changed it on each notch up and on each find (a notch down). Now a drift speed waits for the song's own loop point —
+  // the last half second before it goes back to the top, where the loop already joins — and only the latest one is written there.
+  // A song that isn't playing takes it at once (no sound to cut).
+  function seamRate(rate) {
+    if (!T.el || T.el.paused || T.swapT || T.pending != null) return setRate(rate);
+    T.atSeam = T.el.playbackRate === rate ? null : rate;
   }
   function fade(to, sec) {
     T.goal = to;
@@ -574,7 +590,7 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
   A.drift = n => {
     A._drift = DRIFT[Math.max(0, Math.min(DRIFT.length - 1, n | 0))];
     if (A._hurry || !A._req || A._req.slot !== 'map') return;
-    A._req.rate = A._drift; if (T.el && T.url && T.slot === 'map') setRate(A._drift);
+    A._req.rate = A._drift; if (T.el && T.url && T.slot === 'map') seamRate(A._drift);   // (at the song's loop point — not mid-song)
   };
   // 막판 (the stage's last 10 seconds): the track playing hurries a little; off again on the next scene
   A.hurry = (on = true) => { A._hurry = !!on; if (A._req) A._req.rate = on ? HURRY : 1; if (T.el && T.url) setRate(on ? HURRY : 1); };

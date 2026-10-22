@@ -165,11 +165,27 @@ function zoom(c, G) {
   const slices = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(z => h('div', { class: 'cb-slice', style: `transform: translateZ(${-z * 1.1}px)` }));
   const wrap = h('div', { class: 'cb-wrap' }, ...slices, card); card.style.transform = 'translateZ(0)';
   const layer = h('div', { class: 'cb-zoom' }, wrap, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
-  const tilt = (x, y) => { const r = card.getBoundingClientRect(), nx = Math.max(-.5, Math.min(.5, (x - r.left) / r.width - .5)), ny = Math.max(-.5, Math.min(.5, (y - r.top) / r.height - .5));
+  // (user 10/22 "카드 움직일 때 왜 이렇게 덜덜덜 … 부드럽게 슥"): the finger was measured against the card's own box, which moves
+  // as the card turns — so each tilt changed the next one (shake); and each move jumped. Now: the box is taken once, flat, and
+  // a frame loop eases the card toward the finger (and back when you let go), one transform a frame
+  let r0 = null, aim = { x: 0, y: 0 }, now$ = { x: 0, y: 0 }, held = false, raf = 0, tl = 0;
+  const flatBox = () => { if (!held) r0 = card.getBoundingClientRect(); };
+  const tilt = (x, y) => { if (!r0) flatBox(); held = true; const r = r0;
+    aim = { x: Math.max(-.5, Math.min(.5, (x - r.left) / r.width - .5)), y: Math.max(-.5, Math.min(.5, (y - r.top) / r.height - .5)) }; go(); };
+  const settle = () => { held = false; aim = { x: 0, y: 0 }; go(); };   // (let go: card and friend ease back to face you)
+  const step = t => {
+    const dt = Math.min(.05, tl ? (t - tl) / 1000 : 1 / 60); tl = t; raf = 0;
+    if (!wrap.isConnected) return;
+    const k = 1 - Math.exp(-dt * (held ? 12 : 8));
+    now$.x += (aim.x - now$.x) * k; now$.y += (aim.y - now$.y) * k;
+    const nx = now$.x, ny = now$.y;
     // (user 10/21 "카드 각 더 꺾을 수 있게": ±15° more)
-    wrap.style.transition = ''; wrap.style.transform = `rotateY(${nx * 44}deg) rotateX(${-ny * 40}deg)`; scene?.move(nx, ny); card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`);
-    want = { y: -nx * 2 * .35, p: -ny * 2 * .175 }; };
-  const settle = () => { want = { y: 0, p: 0 }; wrap.style.transition = 'transform .35s cubic-bezier(.2, 1.4, .4, 1)'; wrap.style.transform = ''; scene?.move(0, 0, true); };   // (let go: card and friend back to face you)
+    wrap.style.transform = `rotateY(${nx * 44}deg) rotateX(${-ny * 40}deg)`; scene?.move(nx, ny);
+    card.style.setProperty('--hx', `${50 + nx * 90}%`); card.style.setProperty('--hy', `${50 + ny * 90}%`);
+    want = { y: -nx * 2 * .35, p: -ny * 2 * .175 };
+    if (held || Math.abs(aim.x - nx) + Math.abs(aim.y - ny) > .001) go(); else { tl = 0; if (!held) flatBox(); }
+  };
+  const go = () => { if (!raf) raf = requestAnimationFrame(step); };
   layer.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) tilt(e.clientX, e.clientY); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) layer.addEventListener(ev, settle);
   layer.addEventListener('pointerdown', e => { e.stopPropagation(); if (heroBtn?.contains(e.target) || diary?.contains(e.target)) return; if (!wrap.contains(e.target)) { layer.remove(); return; } tilt(e.clientX, e.clientY); });

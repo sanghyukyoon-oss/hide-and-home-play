@@ -1,8 +1,8 @@
 // 튜토리얼 B (③ 10/22, user: "지금 좀 과한 거 아닌가", "토순이집 들어가면 그냥 '이동 중에 터치를 하면 회전으로 잠시 바뀌어요' 이런 안내
-// 하나면"): a lighter start, to try side by side with the lessons we have (A). ?tut=b or 더보기 → 튜토리얼 B (this device); A stays
-// the default.
+// 하나면"): a lighter start. B is the default since 10/22 (user: "b로 하고 글자 노출 시간 좀 더 늘려"); ?tut=a or 더보기 → 튜토리얼 B 끄기
+// brings back the old lessons (A) on this device.
 //  1판: as A (user 10/22 "1은 원래 것이 나은 것 같음"; tutB1 below is kept, unused).
-//  2판: one line for 2.5 s — how to turn while moving. If you haven't turned in 20 s, the hand shows it once (no three steps).
+//  2판: one line for 5 s — how to turn while moving. If you haven't turned in 20 s, the hand shows it once (no three steps).
 //       Turning at all ends it, quietly.
 //  Gone in B: the three-beat drag + touch lesson and its '새로 얻었다' badge, the tilt and double-tap lessons, the controls
 //  summary on 2판's result (still in 더보기 → 조작 도움말).
@@ -12,7 +12,7 @@ import { tr } from './i18n.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
 const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
-export const TUT_B = (() => { const q = QS.get('tut'); if (q === 'b' || q === 'a') { try { localStorage.setItem('sbk-tut', q); } catch {} return q === 'b'; } try { return localStorage.getItem('sbk-tut') === 'b'; } catch { return false; } })();
+export const TUT_B = (() => { const q = QS.get('tut'); if (q === 'b' || q === 'a') { try { localStorage.setItem('sbk-tut', q); } catch {} return q === 'b'; } try { return localStorage.getItem('sbk-tut') !== 'a'; } catch { return true; } })();
 export function setTutB(on) { try { localStorage.setItem('sbk-tut', on ? 'b' : 'a'); } catch {} }
 export const TUTB_TXT = {
   turn: K('이동하면서 다른 손가락으로 터치하면 잠깐 회전돼요', 'While dragging, touch with another finger to turn for a moment'),
@@ -57,8 +57,10 @@ export async function tutB2(S) {
   for (let i = 0; i < 40 && (S.talking || S.cine || W.flying || !S.running); i++) await S.tw.wait(.25);
   if (S.dead || S.result) return;
   // (the game's own lesson card — .tip, as in teach(): ink border, the same font and colours)
-  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px;transition:opacity .4s` }, tr(TUTB_TXT.turn)); G.ui.tut.append(line);
-  setTimeout(() => { line.style.opacity = '0'; setTimeout(() => line.remove(), 450); }, 2600);
+  // (이동·회전 in coloured boxes, as the old lessons did — user 10/22 "이동, 회전에 전처럼 네모 색깔 네모로 강조")
+  const txt = tr(TUTB_TXT.turn).replace(/이동|dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/회전|turn/, w => `<span class="tkw tn">${w}</span>`);
+  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px;transition:opacity .4s`, html: txt }); G.ui.tut.append(line);
+  setTimeout(() => { line.style.opacity = '0'; setTimeout(() => line.remove(), 450); }, 5000);
   let turn = 0, y = W.yaw; const t0 = S.t;
   while (!S.dead && !S.result) {
     await S.tw.wait(.25);

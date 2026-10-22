@@ -192,7 +192,7 @@ const SHQ = typeof location !== 'undefined' ? new URLSearchParams(location.searc
 const PQ = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
 const PNUM = k => { const v = PQ?.get(k); return v != null && v !== '' && !isNaN(+v) ? +v : 0; };
 export const POST_TRY = { tilt: PNUM('tilt'), vign: PNUM('vign'), warm: PNUM('warm'), sat: PNUM('sat') };
-export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : .2;   // 10/22 사용자 후보정 결정: 언샵 .9 + 세밀 샤픈 .2 (둘 다 맨 위 층); ?sharp=N to try
+export const FINE_SHARP = SHQ != null && SHQ !== '' && !isNaN(+SHQ) ? +SHQ : .4;   // 10/22 사용자 후보정 결정: 언샵 1.12 + 세밀 샤픈 .4 (둘 다 맨 위 층, 저녁 픽스); ?sharp=N to try
 // where it starts, as a share of the way from the middle to a corner (10/21 사용자: 가장자리만이라 차이가 안 보임 → 안쪽부터; ?gsfrom=)
 const GFQ = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('gsfrom') : null;
 export const GRAY_SPLIT_FROM = GFQ != null && GFQ !== '' && !isNaN(+GFQ) ? +GFQ : .33;

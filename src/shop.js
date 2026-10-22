@@ -1,8 +1,10 @@
 // Shop panel: furniture, wallpaper, paint, floors and home-zone expansions, all bought with in-game coins.
 import { h, ICON } from './ui.js';
 import { FURN_INFO } from './gfx/furniture.js';
-import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STYLES, ZONE_SIZES, pinZoneFurniture, furnPrice, zoneLayout, STARTER } from './catalog.js';
+import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STYLES, ZONE_SIZES, GPT_ROOFS, pinZoneFurniture, furnPrice, zoneLayout, STARTER } from './catalog.js';
+import { makeGptRoof } from './gfx/gpt-roofs.js';
 import { Room } from './room.js';
+import { clearRoofFreeItems, roofHideDraft } from './freehide.js';
 import { layoutFor, LAYOUTS } from './stages.js';
 import { renderThumbs } from './thumbs.js';
 import { PICK_ITEMS, chapterOfFurn, chapterNow, ECON, KEEPSAKE_PRICE } from './econ.js';
@@ -35,6 +37,17 @@ const ga = n => { const c = n.charCodeAt(n.length - 1); return n + (c >= 0xAC00 
 
 // a little 3D picture of each home style (its stage set, or the plain zone with the starter furniture), made once
 const STYLE_ART = {};
+const ROOF_ART = {};
+function roofPic(r) {
+  if (ROOF_ART[r.id]) return h('img', { src: ROOF_ART[r.id], alt: '', draggable: 'false' });
+  if (!r.price) return swatch('#f6e0bf', '#fef2e1', 'wood');
+  const im = h('img', { class: 'lazy', alt: '', draggable: 'false' });
+  LAZY.push({ el: im, fn: () => {
+    const art = renderThumbs([{ key: r.id, dir: [.75, .85, 1], fit: 1.03, build: () => makeGptRoof(r.id, 4, 4, {}) }], 180);
+    ROOF_ART[r.id] = art[r.id]; im.src = art[r.id]; im.classList.remove('lazy');
+  } });
+  return im;
+}
 const fakeWorld = { shadowDirty: false, yaw: Math.PI / 4 };
 // one theme's picture, drawn later (the 테마 tab: each room picture is a whole room — ~1 s for the lot at once)
 function stylePic(st) {
@@ -51,7 +64,7 @@ function styleJob(st) {
   } };
 }
 
-const TABS = [['tools', '아이템'], ['items', '물건'], ['furn', '가구'], ['special', '스페셜'], ['style', '테마'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
+const TABS = [['tools', '아이템'], ['items', '물건'], ['furn', '가구'], ['special', '스페셜'], ['style', '테마'], ['roof', '지붕'], ['size', '방 크기'], ['wall', '벽지'], ['paint', '페인트'], ['floor', '바닥'], ['zone', '구역 확장']];
 
 // ctx: { G, zone (current zone object or null), onChange() }
 export function openShop(G, ctx = {}, tab = 'furn') {
@@ -217,6 +230,36 @@ export function openShop(G, ctx = {}, tab = 'furn') {
           G.persist(); G.audio.sfx('place'); ui.toast(`${ga(zone.name)} '${st.name}' 테마로 바뀌었어!`, 'green'); ctx.onChange?.('paint'); render(); peekShop(G, ctx);
         }
       }
+    } else if (tab === 'roof') {
+      const can = !!zone && ztype?.indoor;
+      note.textContent = can ? '뒤쪽만 덮는 지붕이에요. 앞은 열려 있어 방 안이 보여요.' : '지붕은 실내 방에 씌울 수 있어요.';
+      H.owned.roof ||= [];
+      const clearFor = (id, turn) => {
+        const clashes = G.scene?.room?.roofConflicts?.(id, turn) || [];
+        if (!clashes.length) return true;
+        ui.toast('지붕과 겹치는 가구를 조금 안쪽으로 옮겨 줘', 'red'); G.audio.sfx('miss'); return false;
+      };
+      if (can && zone.roof && zone.roof !== 'gpt_roof_none') note.append(h('button', { class: 'shoptab', onclick: () => {
+        const turn = ((zone.roofTurn || 0) + 1) % 4; if (!clearFor(zone.roof, turn)) return;
+        zone.roofTurn = turn; G.persist(); G.audio.sfx('swish'); ctx.onChange?.('paint'); render(); peekShop(G, ctx);
+      } }, '지붕 방향 돌리기 ↻'));
+      for (const r of GPT_ROOFS) {
+        const owned = !r.price || H.owned.roof.includes(r.id), later = G.econ && !owned && r.ch > chapterNow(G.save);
+        if (later) {
+          grid.append(h('div', { class: 'card silc', onclick: () => { ui.toast(chOpens(r.ch), ''); G.audio.sfx('locked'); } }, roofPic(r), h('div', {}, '???'), h('div', { class: 'sub' }, chOpens(r.ch))));
+          continue;
+        }
+        const on = (zone?.roof || 'gpt_roof_none') === r.id;
+        grid.append(card(G, { img: roofPic(r), name: r.name, sub: r.price ? '뒤쪽 28% · 네 방향' : '열린 천장', price: owned ? null : r.price, tag: on ? '사용 중' : owned ? '보유' : null,
+          action: owned ? '씌우기' : null, onBuy: null,
+          onUse: () => {
+            if (!can) { ui.toast('실내 방에서 지붕을 골라 줘', 'red'); return; }
+            if (!clearFor(r.id, zone.roofTurn || 0)) return;
+            if (!owned) { preview(r.name, r.price, null, () => H.owned.roof.push(r.id), null, r.id); return; }
+            if ((zone.roof || 'gpt_roof_none') !== r.id) clearRoofFreeItems(G.scene?.room, roofHideDraft(H, zone.id));
+            zone.roof = r.id; G.persist(); G.audio.sfx('place'); ctx.onChange?.('paint'); render(); peekShop(G, ctx);
+          } }));
+      }
     } else if (tab === 'size') {
       const cur = zone?.size || 0;
       note.textContent = zone ? `${zone.name} 크기를 한 칸씩 넓혀요. 놓아 둔 가구와 숨긴 물건은 그대로예요.` : '';
@@ -261,19 +304,25 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   // 미리보기 (10/20): the shop steps aside, the room wears it, and a bar at the bottom asks — 사기 (the coins, and it stays) or
   // 되돌리기 (back as it was). Either way the shop comes back on the same tab. Nothing is saved while you look.
   // (style: a theme's id — the whole room's look tried on, its walls and floor back to the theme's own, as 바꾸기 does)
-  function preview(name, price, look, own, style = null) {
+  function preview(name, price, look, own, style = null, roof = null) {
     if (!zone) return;
-    const was = zone.paint ? { ...zone.paint } : null, wasStyle = zone.style;
+    const was = zone.paint ? { ...zone.paint } : null, wasStyle = zone.style, wasRoof = zone.roof;
+    const wasHide = roof ? structuredClone(H.hide) : null, roofRoom = roof ? G.scene?.room : null;
+    const roofChanged = roof && (wasRoof || 'gpt_roof_none') !== roof;
+    // Inactive drafts are not rendered by build(). Leave them intact through preview/cancel/cold-load;
+    // purchase releases their old roof points. Only an active draft needs the existing _pv.hide snapshot.
+    if (roofChanged && H.hide?.zoneId === zone.id) clearRoofFreeItems(roofRoom, roofHideDraft(H, zone.id));
     // (QA9 10/21) while you look, the room's own look rides in the save (zone._pv): a save written meanwhile (the lobby saves on a
     // mode change) and an app closed mid-look come back as they were — main.js puts it back on load — and leaving the scene
     // undoes it (G._pvUndo, main.js go): the bar used to stay up over the next scene, its buttons working the old one
-    zone._pv = { paint: was, style: wasStyle };
-    G._pvUndo = () => { G._pvUndo = null; bar.remove(); zone.paint = was; if (style) zone.style = wasStyle; delete zone._pv; };
-    ui.closePanel(true); ctx.onPreview?.(true); if (style) { zone.style = style; zone.paint = {}; } else zone.paint = { ...(zone.paint || {}), ...look }; ctx.onChange?.('paint'); ctx.onPreview?.(true); G.audio.sfx('place');   // (the view before the rebuild too: the lobby mustn't fly back to its close-up)
+    zone._pv = { paint: was, style: wasStyle, ...(roof ? { roof: wasRoof ?? null, hide: wasHide } : {}) };
+    G._pvUndo = () => { G._pvUndo = null; bar.remove(); zone.paint = was; if (style) zone.style = wasStyle; if (roof) { zone.roof = wasRoof; H.hide = wasHide; } delete zone._pv; };
+    ui.closePanel(true); ctx.onPreview?.(true); if (roof) zone.roof = roof; else if (style) { zone.style = style; zone.paint = {}; } else zone.paint = { ...(zone.paint || {}), ...look }; ctx.onChange?.('paint'); ctx.onPreview?.(true); G.audio.sfx('place');   // (the view before the rebuild too: the lobby mustn't fly back to its close-up)
     // (10/20, user: "테마든 벽이든 사기 누르면 다시 상점으로 나오는 게 아니고 방으로 가야 할 듯": 사기 → the room, dressed in it; 되돌리기 → the shop's same tab)
-    const done = keep => { G._pvUndo = null; delete zone._pv; bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); if (keep && ctx.onBought) ctx.onBought({ kind: style ? 'style' : 'paint' }); else openShop(G, ctx, tab); };
+    const done = keep => { G._pvUndo = null; delete zone._pv; bar.remove(); if (!keep) { zone.paint = was; if (style) zone.style = wasStyle; if (roof) { zone.roof = wasRoof; H.hide = wasHide; } ctx.onChange?.('paint'); ctx.onPreview?.(true); } ctx.onPreview?.(false); if (keep && ctx.onBought) ctx.onBought({ kind: roof ? 'roof' : style ? 'style' : 'paint' }); else openShop(G, ctx, tab); };
     const buy = ui.btn('사기', { color: 'green', icon: 'coin', cls: 'sm', onClick: () => {
       if ((G.save.coins || 0) < price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; }
+      if (roofChanged) clearRoofFreeItems(roofRoom, roofHideDraft(H, zone.id));
       G.addCoins(-price); own(); delete zone._pv; G._pvUndo = null; G.persist(); G.audio.sfx('buy'); ui.toast(`${name} 샀어!`, 'green'); done(true); } });   // (외부 QA 10/21 P2-01: _pv was still in the save, so a reload took the bought look back off)
     const bar = h('div', { class: 'previewbar', style: 'position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffaf2;border:4px solid var(--ink,#3a2453);border-radius:20px;pointer-events:auto;z-index:30;white-space:nowrap' },
       h('div', { style: 'display:flex;flex-direction:column;line-height:1.15' }, h('b', {}, name), h('span', { style: 'font-size:13px;color:#8a6a9a', html: `${ICON.coin}`.replace('<svg', '<svg style="width:14px;height:14px;vertical-align:-2px"') + ' ' + price })),

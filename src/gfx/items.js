@@ -1,6 +1,7 @@
 // Cute props: hide-and-seek targets, treasures, chain items (key / code note) and decoys.
 // Every build() returns a Group with its origin at the bottom centre, roughly 0.3–0.45 wide.
 import * as THREE from 'three';
+import { createNote, noteKeyFor } from './gpt-notes.js';
 import { bakeItem } from './bake.js';
 import { rbox, sph, hemi, cyl, tor, cone, cap, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, disc, plane, shade } from './kit.js';
 import { tr } from '../i18n.js';
@@ -457,11 +458,13 @@ export const ITEMS = {
     g.add(put(sph(.02, '#ff5d8a', GLOSS), -.1, .02, 0));
     return g;
   } },
-  note: { name: '쪽지', h: .02, flat: true, special: 'code', build(opts = {}) {
-    const g = grp();
-    g.add(put(rbox(.24, .01, .19, '#fff7d6', .003), 0, .005, 0));
-    g.add(put(plane(.23, .18, mat('#ffffff', { map: noteTex(opts.code || '000'), rough: .7 })), 0, .0105, 0, -Math.PI / 2));
-    g.add(put(sph(.016, '#ff5d8a', GLOSS), .09, .02, -.07));
+  // (③ 10/22, GPT 3-n notes, user: "쪽지 … 접혀 있는 게 나을 것 같은데", "삼각은 좀 이상하고 3가지 다양하게"): one of GPT's
+  // folded notes (letter · memo · card, picked by the code — the same paper opens in noteview3d.js), lying folded, about a hand
+  // across; nothing written shows
+  note: { name: '쪽지', h: .03, flat: true, special: 'code', build(opts = {}) {
+    const n = createNote(noteKeyFor(opts.code || '000')), g = grp(); n.unfold(0);
+    const b = new THREE.Box3().setFromObject(n.group), sz = Math.max(b.max.x - b.min.x, b.max.z - b.min.z) || 1, k = .2 / sz;
+    n.group.scale.setScalar(k); n.group.position.y = .004; g.add(n.group);
     return g;
   } },
   notepiece: { name: '쪽지 조각', h: .02, flat: true, special: 'code', build(opts = {}) {

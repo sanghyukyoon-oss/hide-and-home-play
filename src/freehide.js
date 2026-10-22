@@ -5,6 +5,9 @@ import * as THREE from 'three';
 
 const N = new THREE.Vector3();
 
+// A roof rotates inside its synthetic furniture wrapper; free points belong to that actual roof-local frame.
+const decorNode = rec => rec.roof ? rec.f.group.children[0] : rec.f.group;
+
 // what is under the finger: { key, node, part, furn, label, point (world) } or { side: true } / null
 export function pickSurface(world, room, x, y, skip = null) {
   for (const h of world.pick(x, y, [room.group])) {
@@ -41,7 +44,7 @@ export function hostOf(room, obj) {
     if (u.part?.key) return { key: 'p:' + u.part.key, node: u.part.pivots[0], part: u.part, furn: u.part.furn, label: u.part.label || u.part.furn?.name || '' };
     if (u.furn) {
       const f = u.furn;
-      if (f.rec?.wall) { const di = room.decors.indexOf(f.rec); return di < 0 ? null : { key: 'd:' + di, node: f.group, furn: f, label: f.name || '' }; }
+      if (f.rec?.wall || f.rec?.roof) { const di = room.decors.indexOf(f.rec); return di < 0 ? null : { key: 'd:' + di, node: decorNode(f.rec), furn: f, label: f.name || '' }; }
       return f.rec?.id ? { key: 'f:' + f.rec.id, node: f.group, furn: f, label: (f.name || '') + ' 위' } : null;
     }
     if (u.floor) return { key: 'room', node: room.group, label: '바닥' };
@@ -59,9 +62,25 @@ function resolveHost0(room, key, partByKey) {
   if (key === 'room') return { key, node: room.group, label: '바닥' };
   const [t, id] = [key.slice(0, 1), key.slice(2)];
   if (t === 'f') { const r = room.furns.find(x => x.id === id); return r ? { key, node: r.f.group, furn: r.f, label: (r.f.name || '') + ' 위' } : null; }
-  if (t === 'd') { const r = room.decors[+id]; return r ? { key, node: r.f.group, furn: r.f, label: r.f.name || '' } : null; }
+  if (t === 'd') { const r = room.decors[+id]; return r ? { key, node: decorNode(r), furn: r.f, label: r.f.name || '' } : null; }
   if (t === 'p') { const p = partByKey?.[id]; return p ? { key, node: p.pivots[0], part: p, furn: p.furn, label: p.label || '' } : null; }
   return null;
+}
+
+// A room's hosts are local to that zone: the active hide draft may still belong to another room.
+export function roofHideDraft(home, zoneId) {
+  if (!zoneId) return null;
+  return home.hide?.zoneId === zoneId ? home.hide : home.drafts?.[zoneId] || null;
+}
+
+// Switching roof styles can replace a bench/planter with a different surface. Release only free points on that roof;
+// prepared spots and points on wall decor, furniture and moving parts keep their existing identities.
+export function clearRoofFreeItems(room, hide) {
+  const rec = room.gptRoof?.rec, index = rec?.roof ? room.decors.indexOf(rec) : -1;
+  if (index < 0 || !Array.isArray(hide?.items)) return 0;
+  const before = hide.items.length, key = 'd:' + index;
+  hide.items = hide.items.filter(e => e.free?.host !== key);
+  return before - hide.items.length;
 }
 
 // a spot object that the rest of the game (attachItem, parts opening, the planner, the bot) treats like any other

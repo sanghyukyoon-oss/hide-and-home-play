@@ -1,6 +1,8 @@
 // Home zones (modular expansion), shop catalog (furniture, wallpaper, paint, floors, zones) and the hideable items.
 import { THEMES } from './stages.js';
 import { FURN_INFO } from './gfx/furniture.js';
+import { GPT_ROOFS } from './gfx/gpt-roofs.js';
+export { GPT_ROOFS };
 
 const MY = THEMES.my;
 
@@ -130,6 +132,7 @@ export function zoneLayout(zone) {
   const base = st?.theme && THEMES[st.theme] ? THEMES[st.theme] : Z.theme;
   const theme = { ...base, ...(zone.paint || {}) };
   return { w: S.w, d: S.d, theme, furniture: zone.furniture.map(f => ({ ...f })), decor: zone.decor || st?.decor || Z.decor, door: zone.door !== undefined ? zone.door : st && 'door' in st ? st.door : Z.door, walls: { ...(st?.walls || Z.walls), ...(zone.walls || {}) }, indoor: Z.indoor, stack: true,
+    ...(Z.indoor && zone.roof ? { gptRoof: zone.roof, gptRoofTurn: zone.roofTurn || 0 } : {}),
     ...(st?.bleed ? { bleed: {} } : {}) };
 }
 // a house of several rooms joined (털 집 찾기 프리셋, 10/20): { rooms: [{ at: [x, z], ...zone }] } → a map like the stages' two-room homes

@@ -50,6 +50,8 @@ import { SPECIAL_BUILDERS, SPECIAL_INFO } from './gfx/special-props.js';   // �
 import { GIFT_BUILDERS, GIFT_INFO } from './gfx/gift-props.js';   // 특별 선물 후보 (10/20)
 import { ATTIC_BUILDERS, ATTIC_INFO } from './gfx/bunnyattic-props.js';   // 2판 토순이 다락 놀이방 (10/20)
 import { LOFT_BUILDERS, LOFT_INFO } from './gfx/loft-props.js';
+import { GPT_LOFT_BUILDERS, GPT_LOFT_INFO } from './gfx/gpt-loft-props.js';
+import { GPT_BUILDING_BUILDERS, GPT_BUILDING_INFO } from './gfx/gpt-building-props.js';
 import { BAKERY_BUILDERS, BAKERY_INFO } from './gfx/bearbakery-props.js';   // 6판 곰돌이 빵 굽는 부엌 (10/20)
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { THEMES, LAYOUTS, STAGE_COUNT } from './stages.js';
@@ -144,7 +146,11 @@ for (const k in ONEROOM_THEMES) THEMES[k] = { ...THEMES.my, ...ONEROOM_THEMES[k]
 THEMES.otakuloft = { ...THEMES.oneroom, friend: 'raccoon', name: '너굴이네 복층', wallKind: 'stripe', wall: '#ece3d5', wall2: '#e3d9c8', wainscot: '#d6c8b2', wallEdge: '#f1eadf', floor: '#c9a27a', floor2: '#b08860', base: '#a88f73', wood: '#d9a46a', woodD: '#9c6a42', door: '#c9d6e6', rug: '#3f5f8f', rug2: '#ffd98a', bean: '#ff8f3a', fridge: '#6a86c9' };   // (18판 구조 시안 10/21: 원룸의 결)
 registerStoryShop(ONEROOM_INFO);
 // 내 방 복층 판·사다리·계단·미끄럼틀 (③ 10/22, user: "복층 미끄럼틀 ㄱ")
-registerFurniture(LOFT_BUILDERS, LOFT_INFO); registerStoryShop(LOFT_INFO);
+// (③ 10/22: GPT's lofts below are the ones on sale — these first six stay buildable, for rooms that have them, but leave the shop)
+registerFurniture(LOFT_BUILDERS, LOFT_INFO);
+// (사용자 GPT 시트 10/22: 원목·세이지·그물·ㄱ자·나무집 — 책방(gpt_loft_library)은 아직 안 골라서 상점엔 빼 둠)
+registerFurniture(GPT_LOFT_BUILDERS, GPT_LOFT_INFO); registerStoryShop(Object.fromEntries(Object.entries(GPT_LOFT_INFO).filter(([k]) => k !== 'gpt_loft_library')));
+registerFurniture(GPT_BUILDING_BUILDERS, GPT_BUILDING_INFO); registerStoryShop(GPT_BUILDING_INFO);
 addHomeStyle({ id: 'st-oneroom', name: '나의 원룸', indoor: true, theme: 'oneroom', price: 350, bleed: true, sw: ['#e9e2d6', '#f4c58e'] });
 // 단지 놀이터 (concept I, region 5)
 registerFurniture(PLAYGROUND_BUILDERS, PLAYGROUND_INFO);
@@ -229,7 +235,7 @@ if (hashSave && (!stored || (hashSave.rev || 0) > (stored.rev || 0))) stored = h
 let save = econMigrate(migrate(stored));   // (경제·로비: new fields only, and only with it on — coins, stages, stars, furniture untouched)
 save.fresh = FRESH_ONCE;   // (QA9: this game is from after the fresh start — the #s= copy carries it)
 // (QA9) a wallpaper / floor / theme still being tried on when the app closed (shop.js preview): the room's own look comes back
-for (const z of Object.values(save.home?.zones || {})) if (z?._pv) { z.paint = z._pv.paint; if (z._pv.style !== undefined) z.style = z._pv.style; delete z._pv; }
+for (const z of Object.values(save.home?.zones || {})) if (z?._pv) { z.paint = z._pv.paint; if (z._pv.style !== undefined) z.style = z._pv.style; if ('roof' in z._pv) z.roof = z._pv.roof; if (z._pv.hide) save.home.hide = z._pv.hide; delete z._pv; }
 // (외부 QA 10/21 P2-02) a hidden thing still held (숨기기, hidehold.js) when the app closed: back in its old place
 { const hd = save.home?.hide, hp = hd?.heldPrev; if (hp) { if (hp.rec?.item && Array.isArray(hd.items) && !hd.items.some(e => e.item === hp.rec.item)) hd.items.splice(Math.max(0, Math.min(hd.items.length, hp.at ?? hd.items.length)), 0, hp.rec); delete hd.heldPrev; } }
 // 처음 하는 사람 (기획안 7장 '처음 20분', 사용자 10/18 밤 승인): 저장이 하나도 없으면 타이틀 다음 바로 1판으로 간다. 홈은

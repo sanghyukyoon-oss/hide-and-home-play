@@ -1,7 +1,9 @@
 // A diorama room: floor slab, 4 walls with Sims-style cutaway, grid-placed furniture, wall decor, hiding spots.
 import * as THREE from 'three';
 import { rbox, put, grp, mat, mesh, geo, canvasTex, shade, plane, sph } from './gfx/kit.js';
-import { makeFurniture, FURN_INFO } from './gfx/furniture.js';
+import { makeFurniture, FURN_INFO, Furn } from './gfx/furniture.js';
+import { GPT_LOFT_TOP } from './gfx/gpt-loft-props.js';
+import { makeGptRoof } from './gfx/gpt-roofs.js';
 import { clamp } from './util.js';
 import { houseRail, gableTop, timberFrame, entryNook } from './gfx/house-props.js';
 import { atticTop } from './gfx/bunnyattic-props.js';   // 2판 다락 (10/20)
@@ -17,6 +19,28 @@ const WALLS = {
   W: { rot: Math.PI / 2, n: new THREE.Vector3(1, 0, 0) },
   S: { rot: Math.PI, n: new THREE.Vector3(0, 0, -1) },
   E: { rot: -Math.PI / 2, n: new THREE.Vector3(-1, 0, 0) },
+};
+const roofColumnObbs = roof => {
+  if (!roof) return [];
+  roof.updateMatrix();
+  return (roof.userData.gptRoofColumns || []).map(q => {
+    const p = new THREE.Vector3(q.x, 0, q.z).applyMatrix4(roof.matrix);
+    return { x: p.x, z: p.z, c: Math.cos(roof.rotation.y), s: Math.sin(roof.rotation.y), hw: q.w / 2, hd: q.d / 2 };
+  });
+};
+const roofBandObb = (roof, w, d) => {
+  const cover = roof?.userData.gptRoofCoverage; if (!cover) return null;
+  const odd = Math.round(roof.rotation.y / (Math.PI / 2)) % 2, depth = odd ? w : d, width = odd ? d : w;
+  const p = new THREE.Vector3(0, 0, -depth / 2 + cover.depth / 2).applyMatrix4(roof.matrix);
+  return { x: p.x, z: p.z, c: Math.cos(roof.rotation.y), s: Math.sin(roof.rotation.y), hw: width / 2, hd: cover.depth / 2, h: cover.wallHeight - .15 };
+};
+const FURN_HEIGHTS = new Map();
+const furnitureHeight = (type, theme) => {
+  if (!FURN_HEIGHTS.has(type)) {
+    const f = makeFurniture(type, theme);
+    FURN_HEIGHTS.set(type, new THREE.Box3().setFromObject(f.group, true).max.y);
+  }
+  return FURN_HEIGHTS.get(type);
 };
 
 // Outdoor kit (ground textures + boundary pieces) is injected by main.js from gfx/outdoor.js when present.
@@ -109,7 +133,7 @@ const SPARE_DECOR = new Set(['window', 'curtainwin', 'posterwall', 'picture', 'c
 // the floor a slide needs where you land (and at the climbing wall's foot): local rectangles [x0, x1, z0, z1] at the piece's
 // own turn, kept inside the room and clear of furniture when a piece is set down (내 방·로비·배치 편집) — 10/19 user: "미끄럼틀
 // 뚫는 부분 엄청 많으니까 정리 잘해 줘 봐" (겹침 QA)
-export const KEEP_CLEAR = { slide: [[1.0, 1.6, -.35, .35], [-1.45, -1.0, -.3, .3]], slidetower: [[-.3, .2, 1.0, 1.6], [-1.0, -.45, .9, 1.5], [1.0, 1.5, -.7, -.15]] };
+export const KEEP_CLEAR = { gpt_loft_treehouse: [[.15, .99, 1.75, 2.5]], slide: [[1.0, 1.6, -.35, .35], [-1.45, -1.0, -.3, .3]], slidetower: [[-.3, .2, 1.0, 1.6], [-1.0, -.45, .9, 1.5], [1.0, 1.5, -.7, -.15]] };
 // what you may land on: a rug, a floor marking (사방치기), the sand pit, the ball pit
 const landing = t => t === 'rug' || t === 'sandbox2' || t === 'ballpit' || !!FURN_INFO[t]?.floor;
 const clearZones = (type, x, z, a) => (KEEP_CLEAR[type] || []).map(([x0, x1, z0, z1]) => {
@@ -124,7 +148,7 @@ const hasFine = e => !!(e.s && e.s !== 1 || e.ry || e.dx || e.dz || e.dy);
 // it stays put until that is taken off (myhome).
 export const STACK_SMALL = new Set(['kitrobot', 'kitparfait', 'kitmovebox', 'lamp', 'plant', 'monstera', 'amphora', 'tacklebox', 'baitbucket', 'speaker', 'yarnbasket', 'sp_neonlamp', 'sp_rocket', 'sp_skate', 'sp2_radio']);   // (sp_: 스페셜 models to come)
 // (복층 판 1.3 m + its boards — gfx/loft-props.js)
-export const STACK_TOP = { loft2_ladder: 1.33, loft2_stairs: 1.33, loft2_slide: 1.33, loft3_ladder: 1.33, loft3_stairs: 1.33, loft3_slide: 1.33, drawers: 1.01, desk: .81, table: .69, counter: .94, safe: .94, stool: .55, guidedesk: .85, kitchentable: .77, merchtable: .71, schooldesk: .68, kitmovebox: .47 };
+export const STACK_TOP = { ...GPT_LOFT_TOP, loft2_ladder: 1.33, loft2_stairs: 1.33, loft2_slide: 1.33, loft3_ladder: 1.33, loft3_stairs: 1.33, loft3_slide: 1.33, drawers: 1.01, desk: .81, table: .69, counter: .94, safe: .94, stool: .55, guidedesk: .85, kitchentable: .77, merchtable: .71, schooldesk: .68, kitmovebox: .47 };
 
 export class Room {
   constructor(world, layout) {
@@ -145,6 +169,20 @@ export class Room {
     if (layout.door) this.doorDecor = this.addDecor('door', layout.door.wall, layout.door.u);
     // a window or door on a side with no wall at all (a map's open side onto the next room) would hang in the air
     for (const rec of this.decors) if ((layout.walls?.[rec.wall] || 'wall') === 'none') { rec.f.group.visible = false; rec.hidden = true; }
+    // A roof is a room option, with native hiding anchors. Appended after wall decor keeps existing spot keys stable.
+    if (layout.gptRoof) {
+      const roof = makeGptRoof(layout.gptRoof, this.w, this.d, { ...this.T, wallH: layout.wallH || WALL_H }, layout.gptRoofTurn || 0);
+      if (roof) {
+        const f = new Furn(layout.gptRoof, this.w, this.d); f.noSolid = true; f.add(roof);
+        for (const s of roof.userData.gptRoofSpots || []) f.spot(s.kind || 'under', roof, s.x, s.y, s.z, s);
+        f.finalize(); this.group.add(f.group);
+        const rec = { type: layout.gptRoof, f, roof: true, hidden: false };
+        f.rec = rec; f.name = '지붕'; this.decors.push(rec);
+        this.gptRoof = f;
+        this.roofColumns = roofColumnObbs(roof);
+        this.roofBand = roofBandObb(roof, this.w, this.d);
+      }
+    }
     // a layout fixed by hand in 배치 편집 (exact) stands exactly as placed; the others get their wall pieces tidied
     if (!layout.exact) this.settleDecor();
     this.fitParts();
@@ -165,10 +203,10 @@ export class Room {
       for (const p of rec.f.parts) { const t0 = p.t; p.setOpen(1); g.updateMatrixWorld(true); b.union(new THREE.Box3().setFromObject(g, true)); p.setOpen(t0); }
       g.updateMatrixWorld(true); return b;
     };
-    const side = this.decors.filter(r => !r.hidden && r.wall !== 'N' && r.wall !== 'W').map(r => ({ wall: r.wall, b: reachBox(r) }));
+    const side = this.decors.filter(r => !r.roof && !r.hidden && r.wall !== 'N' && r.wall !== 'W').map(r => ({ wall: r.wall, b: reachBox(r) }));
     // doors first: they never move, so everything else on that wall has to keep clear of them
     for (const rec of [...this.decors].sort((a, b) => (b.type === 'door') - (a.type === 'door'))) {
-      if (rec.hidden) continue;
+      if (rec.hidden || rec.roof) continue;
       const K = rec.wall, g = rec.f.group;
       if (K !== 'N' && K !== 'W') { placed.push(rec); continue; }
       const ax = K === 'N' ? 'x' : 'z', dp = K === 'N' ? 'z' : 'x', len = K === 'N' ? this.w : this.d;
@@ -205,6 +243,11 @@ export class Room {
   // flat floor pieces and things hanging high on a wall don't. Boxes are cached; call fitParts() after moving things.
   clearAt(x, z, r = .3, opts = null) {
     const lx = x - this.group.position.x, lz = z - this.group.position.z;
+    if (!this.walkBodyClear(x, this.group.position.y, z, r, null, true)) return false;
+    for (const q of this.roofColumns || []) {
+      const dx = lx - q.x, dz = lz - q.z, u = Math.max(0, Math.abs(dx * q.c - dz * q.s) - q.hw), v = Math.max(0, Math.abs(dx * q.s + dz * q.c) - q.hd);
+      if (u * u + v * v < r * r) return false;
+    }
     if (this.isCut(Math.floor(lx + this.w / 2), Math.floor(lz + this.d / 2))) return false;   // no floor there
     // no standing in the water (바닷가 가게 10/21: a friend stood in the shallows): a floor zone of kind 'water' is off limits
     // to the body's middle half — the shore's edge stays a place to stand
@@ -214,7 +257,7 @@ export class Room {
     }
     if (!this._solid) {
       this.group.updateMatrixWorld(true);
-      this._solid = [...this.furns, ...this.decors].filter(q => q.type !== 'rug' && !(q.y > 1) && !q.f.noSolid).map(q => new THREE.Box3().setFromObject(q.f.group, true))
+      this._solid = [...this.furns, ...this.decors].filter(q => q.type !== 'rug' && !(q.y > 1) && !q.f.noSolid && !q.f.walkSolids).map(q => new THREE.Box3().setFromObject(q.f.group, true))
         .filter(b => !b.isEmpty() && b.max.y - b.min.y > .06 && b.min.y < this.group.position.y + .7)
         .concat((this.extraSolid || []).map(o => { const b = new THREE.Box3().setFromObject(o, true); b.raised = !!o.userData.raised; return b; }));
     }
@@ -225,11 +268,39 @@ export class Room {
     }
     return true;
   }
+  // New building pieces describe their real column/body volumes instead of blocking an entire doorway with one
+  // bounding box. The same height-aware bodies keep characters clear of furniture on an upstairs walking surface.
+  walkBodyClear(x, y, z, r = .24, ignore = null, preciseOnly = false) {
+    const lx = x - this.group.position.x, lz = z - this.group.position.z, ly = y - this.group.position.y;
+    if (ly < (this.roofBand?.h ?? 2.35) + .15 && ly + .55 > 0) for (const q of this.roofColumns || []) {
+      const dx = lx - q.x, dz = lz - q.z, u = Math.max(0, Math.abs(dx * q.c - dz * q.s) - q.hw), v = Math.max(0, Math.abs(dx * q.s + dz * q.c) - q.hd);
+      if (u * u + v * v < r * r) return false;
+    }
+    if (!this._walkBodies) {
+      this.group.updateMatrixWorld(true);
+      this._walkBodies = [...this.furns, ...this.decors].filter(q => q.type !== 'rug' && !q.f.noSolid).flatMap(q => {
+        if (q.f.walkSolids) return q.f.walkSolids.map(b => ({ f: q.f, precise: true, b,
+          inv: q.f.group.matrixWorld.clone().invert() }));
+        const b = new THREE.Box3().setFromObject(q.f.group, true);
+        return b.isEmpty() ? [] : [{ f: q.f, b: [b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z] }];
+      });
+    }
+    const p = new THREE.Vector3();
+    for (const q of this._walkBodies) {
+      if (q.f === ignore || (preciseOnly && !q.precise)) continue;
+      p.set(x, y, z); if (q.inv) p.applyMatrix4(q.inv);
+      const b = q.b; if (b[1] >= p.y + .55 || b[4] <= p.y + .06) continue;
+      const dx = Math.max(b[0] - p.x, 0, p.x - b[3]), dz = Math.max(b[2] - p.z, 0, p.z - b[5]);
+      if (dx * dx + dz * dz < r * r) return false;
+    }
+    return true;
+  }
   // Doors, lids and drawers open only as far as they can without going into the furniture next to them (a wardrobe
   // door swinging into the bed was drawn as a door poking through the blanket). Call again after moving furniture.
   fitParts() {
     this._solid = null;
-    const recs = [...this.furns, ...this.decors].filter(r => r.type !== 'rug');
+    this._walkBodies = null;
+    const recs = [...this.furns, ...this.decors].filter(r => r.type !== 'rug' && !r.roof);
     this.group.updateMatrixWorld(true);
     const boxes = recs.map(r => {
       // f.collideBox (a big tree: just its trunk) — local [x0, y0, z0, x1, y1, z1] in place of the box round every mesh (10/21)
@@ -448,6 +519,7 @@ export class Room {
     this.group.add(f.group);
     const rec = { f, type, i, j, rot, id: id ?? ('f' + Math.random().toString(36).slice(2, 8)), opts };
     f.rec = rec; this.furns.push(rec);
+    this._solid = null; this._walkBodies = null;
     this.world.shadowDirty = true;
     return rec;
   }
@@ -462,8 +534,10 @@ export class Room {
     const full = this.obb(type, x, z, a, 1);
     for (const [cx, cz] of obbCorners(full)) if (Math.abs(cx) > this.w / 2 + .02 || Math.abs(cz) > this.d / 2 + .02) return false;
     const floor = type === 'rug', me = this.obb(type, x, z, a);
+    if (!floor && (this.roofColumns || []).some(q => obbOverlap(me, q))) return false;
     // (on a top: only the others on that same top are in the way)
     const sp = this.stackSpot(type, x, z, a, ignoreId);
+    if (!floor && this.roofBand && obbOverlap(this.obb(type, sp?.x ?? x, sp?.z ?? z, a), this.roofBand) && furnitureHeight(type, this.T) + (sp?.y || 0) > this.roofBand.h) return false;
     if (sp) { const at = this.obb(type, sp.x, sp.z, a); return !this.furns.some(r => r.id !== ignoreId && r.on === sp.base.id && obbOverlap(at, this.recObb(r))); }
     for (const r of this.furns) {
       if (r.id === ignoreId || (r.type === 'rug') !== floor || (r.on && !floor)) continue;
@@ -473,6 +547,7 @@ export class Room {
     // a slide's landing stays open: inside the room with nothing standing on it, and nothing set down on another's
     for (const zo of clearZones(type, x, z, a)) {
       for (const [cx, cz] of obbCorners(zo)) if (Math.abs(cx) > this.w / 2 || Math.abs(cz) > this.d / 2) return false;
+      if ((this.roofColumns || []).some(q => obbOverlap(zo, q))) return false;
       for (const r of this.furns) if (r.id !== ignoreId && !landing(r.type) && obbOverlap(zo, this.recObb(r))) return false;
     }
     if (landing(type)) return true;
@@ -482,6 +557,21 @@ export class Room {
       if (clearZones(r.type, o.x, o.z, Math.atan2(o.s, o.c)).some(zo => obbOverlap(me, zo))) return false;
     }
     return true;
+  }
+  // Test only the actual support feet, so furniture can occupy all the space beneath the canopy.
+  roofConflicts(id, turn = 0) {
+    const roof = makeGptRoof(id, this.w, this.d, { ...this.T, wallH: this.L.wallH || WALL_H }, turn);
+    const columns = roofColumnObbs(roof);
+    if (!roof) return [];
+    const band = roofBandObb(roof, this.w, this.d);
+    this.group.updateMatrixWorld(true);
+    return this.furns.filter(r => {
+      if (landing(r.type)) return false;
+      const o = this.recObb(r);
+      if (columns.some(q => obbOverlap(o, q))) return true;
+      const box = new THREE.Box3().setFromObject(r.f.group, true);
+      return box.max.y - this.group.position.y > band.h && obbOverlap(o, band);
+    });
   }
   // the slides of this room whose landing has something on it or runs out of the room (stage layouts are placed by hand;
   // QA reads this)
@@ -505,11 +595,13 @@ export class Room {
     const rec = { f, type, x, z, a, id: id ?? ('f' + Math.random().toString(36).slice(2, 8)), opts };
     this.tileApprox(rec);
     f.rec = rec; this.furns.push(rec);
+    this._solid = null; this._walkBodies = null;
     if (this.stack) this.settle(rec);
     this.world.shadowDirty = true;
     return rec;
   }
   moveFurnitureAt(rec, x, z, a) {
+    this._solid = null; this._walkBodies = null;
     rec.x = x; rec.z = z; rec.a = a; this.tileApprox(rec);
     rec.f.group.position.set(x, 0, z); rec.f.group.rotation.y = a;
     if (this.stack) this.settle(rec);
@@ -524,9 +616,14 @@ export class Room {
       const o = this.recObb(r, 1), dx = x - o.x, dz = z - o.z, u = dx * o.c - dz * o.s, v = dx * o.s + dz * o.c;
       if (Math.abs(u) > o.hw || Math.abs(v) > o.hd) continue;
       // (a piece whose top is only part of it — 복층 판: the deck, not the ladder or slide in front — f.stackArea)
-      const A = r.f.stackArea; if (A && (Math.abs(u) > A.u || v < A.v0 || v > A.v1)) continue;
-      const me = this.obb(type, 0, 0, 0, 1), mu = Math.max(0, (A ? A.u : o.hw) - me.hw * .8), mv = Math.max(0, o.hd - me.hd * .8);
-      const cu = clamp(u, -mu, mu), cv = A ? clamp(v, A.v0 + me.hd * .8, A.v1 - me.hd * .8) : clamp(v, -mv, mv);
+      const legacy = r.f.stackArea;
+      const areas = r.f.stackAreas || [legacy ? { u0: -legacy.u, u1: legacy.u, v0: legacy.v0, v1: legacy.v1 } : { u0: -o.hw, u1: o.hw, v0: -o.hd, v1: o.hd }];
+      // Project the child's rotated footprint into the base frame; an L's cutout and its access route stay empty.
+      const inf = FURN_INFO[type], rel = a - Math.atan2(o.s, o.c), c = Math.abs(Math.cos(rel)), s = Math.abs(Math.sin(rel));
+      const hu = ((inf.w || 1) * c + (inf.d || 1) * s) / 2 * .98, hv = ((inf.w || 1) * s + (inf.d || 1) * c) / 2 * .98;
+      const A = areas.find(A => u >= A.u0 && u <= A.u1 && v >= A.v0 && v <= A.v1 && A.u1 - A.u0 >= 2 * hu && A.v1 - A.v0 >= 2 * hv);
+      if (!A) continue;
+      const cu = clamp(u, A.u0 + hu, A.u1 - hu), cv = clamp(v, A.v0 + hv, A.v1 - hv);
       return { base: r, x: o.x + cu * o.c + cv * o.s, z: o.z - cu * o.s + cv * o.c, y: STACK_TOP[r.type] };
     }
     return null;
@@ -534,8 +631,13 @@ export class Room {
   // a small piece sits on whatever it is over (rec.on: that piece's id), or back on the floor
   settle(rec) {
     if (!STACK_SMALL.has(rec.type)) return;
-    const sp = this.stackSpot(rec.type, rec.x, rec.z, rec.a, rec.id);
-    rec.on = sp ? sp.base.id : null; rec.y = sp ? sp.y : 0; rec.f.group.position.y = rec.y;
+    const o = this.recObb(rec, 1), a = rec.a ?? (rec.rot || 0) * Math.PI / 2;
+    const sp = this.stackSpot(rec.type, o.x, o.z, a, rec.id);
+    rec.on = sp ? sp.base.id : null; rec.y = sp ? sp.y : 0;
+    if (sp) {
+      rec.x = sp.x; rec.z = sp.z; rec.a ??= (rec.rot || 0) * Math.PI / 2;
+      this.tileApprox(rec); rec.f.group.position.set(rec.x, rec.y, rec.z);
+    } else rec.f.group.position.y = 0;
   }
   topsOn(rec) { return this.furns.filter(r => r.on === rec.id); }
   // tile-based callers (stage planner, NPC tiles) still see an approximate i, j, rot
@@ -723,12 +825,14 @@ export class Room {
     return occ;
   }
   moveFurniture(rec, i, j, rot) {
+    this._solid = null; this._walkBodies = null;
     rec.i = i; rec.j = j; rec.rot = rot;
     const [fw, fd] = this.footprint(rec.type, rot);
     rec.f.group.position.copy(this.tileToWorld(i, j, fw, fd)); rec.f.group.rotation.y = rot * Math.PI / 2;
     this.world.shadowDirty = true;
   }
   removeFurniture(rec) {
+    this._solid = null; this._walkBodies = null;
     this.group.remove(rec.f.group);
     this.furns = this.furns.filter(r => r !== rec);
     this.world.shadowDirty = true;
@@ -737,6 +841,7 @@ export class Room {
   // metres, dy = up or down (wall pieces; they slide along the wall by u already). Set on the piece's group, so its
   // hiding spots and doors go with it. A wall piece grows from its middle and keeps its back on the wall.
   fine(rec, e = rec) {
+    this._solid = null; this._walkBodies = null;
     const g = rec.f.group, s = +e.s || 1, ry = +e.ry || 0, dx = +e.dx || 0, dz = +e.dz || 0, dy = +e.dy || 0;
     Object.assign(rec, { s, ry, dx, dz, dy });
     if (rec.wall) {
@@ -765,6 +870,12 @@ export class Room {
   // stand point in front of a furniture / decor piece (world)
   frontOf(f) {
     const rec = f.rec, v = new THREE.Vector3();
+    if (rec?.roof) {
+      const roof = f.group.children[0], cover = roof.userData.gptRoofCoverage;
+      v.set(0, 0, (cover?.front || 0) + .55).applyMatrix4(roof.matrix);
+      v.x = clamp(v.x, -this.w / 2 + .35, this.w / 2 - .35); v.z = clamp(v.z, -this.d / 2 + .35, this.d / 2 - .35);
+      return v;
+    }
     if (rec.wall) {
       const W = this.walls[rec.wall];
       f.group.getWorldPosition(v); v.addScaledVector(W.n, .62); v.y = 0;

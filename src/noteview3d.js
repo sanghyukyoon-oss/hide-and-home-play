@@ -8,13 +8,34 @@ import * as THREE from 'three';
 import { h } from './ui.js';
 import { EN } from './i18n-en-dict.js';
 import { tr } from './i18n.js';
+import { createNote, noteKeyFor } from './gfx/gpt-notes.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
 // on in the game once GPT's folded notes are in (gpt-notes.js) and the user has seen them: until then ?note=3d
-export const NOTE3D = typeof location !== 'undefined' && /[?&]note=3d(&|$)/.test(location.search);
+// (③ 10/22: GPT's folded notes are in and picked — on by default; ?note=flat for the old flat note and its fly to the chip)
+export const NOTE3D = !(typeof location !== 'undefined' && /[?&]note=flat(&|$)/.test(location.search));
 export const NOTE_TXT = { fold: K('터치하면 접어서 넣어요', 'Tap to fold it away'), title: K('비밀번호 ♡', 'Password ♡') };
 
 // the writing on the face: handwritten digits on ruled paper (the face mesh's own uv 0..1)
+// the writing for a GPT note's inner sheet (its face: one canvas over the whole open sheet, 576 × 768, 8 % kept clear)
+export function noteFaceCanvas(code, line = '') {
+  const cv = document.createElement('canvas'); cv.width = 576; cv.height = 768; const x = cv.getContext('2d');
+  // (the face's map is the whole inner sheet: the paper itself first, its faint lines, then the writing)
+  x.fillStyle = '#fef9e9'; x.fillRect(0, 0, 576, 768); x.fillStyle = 'rgba(139,112,76,.05)'; for (let i = 0; i < 220; i++) x.fillRect((i * 137) % 576, (i * 83) % 768, 1, i % 3 + 1);
+  x.fillStyle = '#d8e6f6'; for (let y = 120; y < 700; y += 58) x.fillRect(46, y, 484, 3);
+  x.fillStyle = '#8a7aa8'; x.font = "34px Ssurround, sans-serif"; x.textAlign = 'center'; x.fillText(line || tr(NOTE_TXT.title), 288, 250);
+  x.fillStyle = '#2b62c9'; x.font = "700 170px LatinRound, Ssurround, sans-serif"; x.textBaseline = 'middle';
+  const s = String(code), w = 130;
+  [...s].forEach((d, i) => { x.save(); x.translate(288 + (i - (s.length - 1) / 2) * w, 420 + [0, -10, 8, -5][i % 4]); x.rotate([-.1, .07, -.05, .11][i % 4]); x.fillText(d, 0, 0); x.restore(); });
+  x.strokeStyle = '#2b62c9'; x.lineWidth = 6; x.lineCap = 'round'; x.beginPath(); x.moveTo(170, 540); x.quadraticCurveTo(288, 575, 406, 535); x.stroke();
+  return cv;
+}
+// GPT's note as the view wants it ({ group, unfold, face, size }), standing up facing +z, the code written on its face
+export function gptNote(code, line = '') {
+  const n = createNote(noteKeyFor(code)); n.group.rotation.set(0, 0, 0); n.group.position.set(0, 0, 0);
+  n.setContentCanvas(noteFaceCanvas(code, line));
+  return { group: n.group, unfold: t => n.unfold(t), face: null, size: [n.info?.width || .9, n.info?.height || 1.2], dispose: () => n.dispose(), gpt: true };
+}
 export function noteFaceTex(code, line = '') {
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 384; const x = cv.getContext('2d');
   x.fillStyle = '#fff8e2'; x.fillRect(0, 0, 512, 384);
@@ -55,24 +76,25 @@ export function standInNote() {
 }
 
 // up: { make, code, x, y, open, pill, line } — make() gives the model ({ group, unfold, face, size })
-export async function showNote3D(G, { make = standInNote, code = '000', x = innerWidth / 2, y = innerHeight / 2, open = false, pill = null, line = '' } = {}) {
-  const W = G.world, cam = W.cam, M = make(), g = M.group, [mw, mh] = M.size || [2, 2.6];
+export async function showNote3D(G, { make = null, code = '000', x = innerWidth / 2, y = innerHeight / 2, open = false, pill = null, line = '' } = {}) {
+  const W = G.world, cam = W.cam, M = make ? make() : gptNote(code, line), g = M.group, [mw, mh] = M.size || [2, 2.6];
+  void mh;
   if (M.face) { M.face.material = new THREE.MeshBasicMaterial({ map: noteFaceTex(code, line), toneMapped: false }); }
   // just in front of the camera: a world unit per screen pixel, the sheet about 240 px wide
   const dir = new THREE.Vector3(); cam.getWorldDirection(dir);
-  const at = (sx, sy, dist) => { const v = new THREE.Vector3((sx / W.W) * 2 - 1, -(sy / W.H) * 2 + 1, -1).unproject(cam); return v.add(dir.clone().multiplyScalar(dist - (cam.near + .001))); };
+  const at = (sx, sy, dist) => { const v = new THREE.Vector3((sx / W.W) * 2 - 1, -(sy / W.H) * 2 + 1, -1).unproject(cam); return v.add(dir.clone().multiplyScalar(dist)); };
   // (unproject gives a point on the near plane; moved on along the view to `dist`)
-  const center = at(W.W / 2, W.H * .44, 16), from = at(x, y, 16);
+  const center = at(W.W / 2, W.H * .44, 1.2), from = at(x, y, 1.2);
   // (a world unit on the screen, measured: the sheet about 230 px wide)
-  const upp = center.distanceTo(at(W.W / 2 + 100, W.H * .44, 16)) / 100, px = 230 / mw * upp;
+  const upp = center.distanceTo(at(W.W / 2 + 100, W.H * .44, 1.2)) / 100, px = 230 / mw * upp;
   // the room dims while the note is up (its lights turned down; the note itself is unlit paper, so it stays bright) — a see-
   // through veil in front was drawn by the outline pass as one big object and hid nothing
-  const L0 = { a: W.hemi.intensity, s: W.sun.intensity }, dim = k => { W.hemi.intensity = L0.a * (1 - .55 * k); W.sun.intensity = L0.s * (1 - .55 * k); };
+  const L0 = { a: W.hemi.intensity, s: W.sun.intensity }, dim = k => { W.hemi.intensity = L0.a * (1 - .3 * k); W.sun.intensity = L0.s * (1 - .3 * k); };
   const veil = { material: { set opacity(v) { dim(v / .55); } } };
   // (the sheet faces the camera; its own tilt and spin on a pivot inside, so the camera's turn isn't lost)
   const P = new THREE.Group(); P.quaternion.copy(cam.quaternion); P.add(g);
-  // (drawn last, over anything in the room in front of it; outlined like any object)
-  g.traverse(o => { if (o.isMesh) { o.renderOrder = 52; o.userData.inkLayer = true; [].concat(o.material).forEach(m => { m.transparent = true; m.depthTest = false; }); } });
+  // (just past the camera's near plane: nothing in the room is in front of it, and its own folds keep their depth order)
+  g.traverse(o => { if (o.isMesh) { o.renderOrder = 52; } });
   W.scene.add(P); W.idsDirty = true;
   const hint = h('div', { class: 'nv3-hint' }, tr(NOTE_TXT.fold)), layer = h('div', { class: 'nv3' }, hint);
   if (!document.getElementById('nv3-css')) { const st = document.createElement('style'); st.id = 'nv3-css'; st.textContent = `.nv3{position:absolute;inset:0;z-index:80;pointer-events:auto}.nv3-hint{position:absolute;left:0;right:0;top:${Math.round(innerHeight * .44 + 175)}px;text-align:center;color:#fff;font:600 17px 'Ssurround',sans-serif;opacity:0;transition:opacity .3s}.nv3.open .nv3-hint{opacity:.95}`; document.head.append(st); }
@@ -95,11 +117,11 @@ export async function showNote3D(G, { make = standInNote, code = '000', x = inne
     await tap;
     layer.classList.remove('open'); G.audio.sfx('flip', -2); skip = false;
     await run(200, k => M.unfold(1 - k));
-    const r = pill?.getBoundingClientRect(), to = r ? at(r.left + r.width / 2, r.top + r.height / 2, 16) : at(W.W / 2, W.H * .1, 16);
+    const r = pill?.getBoundingClientRect(), to = r ? at(r.left + r.width / 2, r.top + r.height / 2, 1.2) : at(W.W / 2, W.H * .1, 1.2);
     await run(300, k => { const e = k * k; P.position.lerpVectors(center, to, e); g.scale.setScalar(px * (1 - .85 * e)); g.rotation.z = .3 * e; veil.material.opacity = .55 * (1 - e); });
   } finally {
     layer.remove(); W.scene.remove(P); dim(0);
-    g.traverse(o => { if (o.isMesh) { o.geometry.dispose(); [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); } });
+    if (M.dispose) M.dispose(); else g.traverse(o => { if (o.isMesh) { o.geometry.dispose(); [].concat(o.material).forEach(m => { m.map?.dispose(); m.dispose(); }); } });
     W.idsDirty = true; W.shadowDirty = true;
     if (pill) { pill.classList.add('pop'); setTimeout(() => pill.classList.remove('pop'), 300); }
   }

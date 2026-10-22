@@ -99,6 +99,56 @@ export function walkGrid(rooms, r = .26, opts = null) {
     chain[0].nb.push(foot); foot.nb.push(chain[0]); chain[5].nb.push(top); top.nb.push(chain[5]);
     tiles.push(...chain);
   }
+  // Decoratable building pieces carry their own deck and climbing route in local metres. They use the same graph
+  // as the boss runner (including rotated pieces), so a staircase is a route to its deck, rather than a floor prop.
+  if (opts?.raised) for (const [ri, R] of rooms.entries()) for (const rec of R.furns) {
+    const f = rec.f, walk = f.walk; if (!walk) continue;
+    const made = [];
+    const add = (p, stair = false) => {
+      const v = new THREE.Vector3(...p).applyMatrix4(f.group.matrixWorld), o = R.group.position;
+      if (Math.abs(v.x - o.x) > R.w / 2 - r || Math.abs(v.z - o.z) > R.d / 2 - r
+        || !R.walkBodyClear(v.x, v.y, v.z, r, stair || !f.walkSolids ? f : null) || inOther(ri, v.x, v.y, v.z)) return null;
+      const existing = made.find(t => Math.hypot(t.x - v.x, t.y - v.y, t.z - v.z) < 1e-5);
+      if (existing) { if (stair) existing.stair = true; return existing; }
+      const t = { x: v.x, y: v.y, z: v.z, R, nb: [], building: rec.id, ...(stair ? { stair: true } : {}) };
+      made.push(t); return t;
+    };
+    for (const A of walk.areas || []) {
+      const x0 = A.x0 + r, x1 = A.x1 - r, z0 = A.z0 + r, z1 = A.z1 - r;
+      if (x1 < x0 || z1 < z0) continue;
+      const nx = Math.max(1, Math.ceil((x1 - x0) / .3)), nz = Math.max(1, Math.ceil((z1 - z0) / .3));
+      for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) add([x0 + (x1 - x0) * i / nx, A.y, z0 + (z1 - z0) * j / nz]);
+    }
+    const join = (a, b) => { if (!a || !b || a === b) return; if (!a.nb.includes(b)) a.nb.push(b); if (!b.nb.includes(a)) b.nb.push(a); };
+    for (const path of walk.paths || []) {
+      if (path.width < r * 2) continue;
+      const chain = [];
+      path.points.forEach((p, i) => {
+        if (!i) { chain.push(add(p, true)); return; }
+        const a = path.points[i - 1], n = Math.max(1, Math.ceil(Math.hypot(...p.map((v, k) => v - a[k])) / .28));
+        for (let j = 1; j <= n; j++) chain.push(add(p.map((v, k) => a[k] + (v - a[k]) * j / n), true));
+      });
+      if (chain[0]) chain[0].entry = true;
+      if (chain.at(-1)) chain.at(-1).entry = true;
+      chain.forEach((t, i) => { if (i) join(chain[i - 1], t); });
+    }
+    for (let i = 0; i < made.length; i++) {
+      const t = made[i];
+      for (const u of [...tiles.filter(u => !u.building), ...made.slice(i + 1)]) {
+        if ((t.stair && !t.entry) || (u.stair && !u.entry)) continue;
+        const distance = Math.hypot(t.x - u.x, t.z - u.z), same = u.building === rec.id;
+        if (Math.abs(t.y - u.y) > .16 || distance > (same ? .46 : .75) || !crossOK(R, u.R, (t.x + u.x) / 2, (t.z + u.z) / 2)) continue;
+        const n = Math.max(1, Math.ceil(distance / .15)); let clear = true;
+        for (let j = 0; j <= n; j++) {
+          const k = j / n;
+          if (!R.walkBodyClear(t.x + (u.x - t.x) * k, t.y + (u.y - t.y) * k, t.z + (u.z - t.z) * k, r, f.walkSolids ? null : f)) { clear = false; break; }
+        }
+        if (!clear) continue;
+        join(t, u);
+      }
+    }
+    tiles.push(...made);
+  }
   return tiles;
 }
 // breadth-first route over walkGrid tiles (excluding the ones in block); null when there is no way

@@ -572,18 +572,20 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
     radial-gradient(circle at 20% 30%, #fff 0 1px, transparent 2px), radial-gradient(circle at 70% 60%, #fff 0 1px, transparent 2px), radial-gradient(circle at 40% 80%, #fff 0 1.5px, transparent 2.5px);
   background-size: 260% 260%, 40px 40px, 52px 52px, 64px 64px; background-position: var(--hx) var(--hy), 0 0, 0 0, 0 0; }
 .tcard.r3 .cb-holo { opacity: .9; animation: cbshine 4s ease-in-out infinite alternate; }
-.tcard.r2 .cb-holo { opacity: .35; background-size: 260% 260%, 0 0, 0 0, 0 0; }
+.tcard.r2 .cb-holo { opacity: 0; }   /* (user 10/22 "별 3개 정도 돼야 프리즘": ★★ no shine — the foil is ★★★ and open secrets only) */
 @keyframes cbshine { from { background-position: 0% 30%, 0 0, 0 0, 0 0; } to { background-position: 100% 70%, 0 0, 0 0, 0 0; } }
 .tcard.big .cb-holo { animation: none; }
 /* 프리즘 (③ 10/21 시안, user: "츄로 프리즘카드 … 진짜 프리즘처럼 … 지금은 뭐 우유먹고 카드 위에 토한 거 같아"): no milky veil —
    a sharp rainbow band that slides across with the tilt (color-dodge), fine diagonal foil lines lit only where the light falls,
    one bright specular streak following; the friend's face and the words stay clear (a mask) */
 .tcard.r3 .cb-holo, .tcard.sec .cb-holo { opacity: 1; animation: none; mix-blend-mode: hard-light;
-  background: repeating-linear-gradient(115deg, hsl(0 100% 60% / .36) 0%, hsl(45 100% 55% / .36) 4%, hsl(120 90% 50% / .36) 8%, hsl(190 100% 52% / .36) 12%, hsl(255 100% 62% / .36) 16%, hsl(315 100% 60% / .36) 20%, hsl(360 100% 60% / .36) 24%);
-  background-size: 300% 300%; background-position: calc(var(--hx) * 1.6) calc(var(--hy) * 1.2);
+  /* (user 10/22 "프리즘 텍스쳐 경계가 보임 … 약간만 나오게, 리피타일같이": the band no longer runs past its tile — one big
+     no-repeat sheet whose stripes start and end on the same colour, slid only within the card — and about half as strong) */
+  background: repeating-linear-gradient(115deg, hsl(0 100% 60% / .18) 0%, hsl(45 100% 55% / .18) 4%, hsl(120 90% 50% / .18) 8%, hsl(190 100% 52% / .18) 12%, hsl(255 100% 62% / .18) 16%, hsl(315 100% 60% / .18) 20%, hsl(360 100% 60% / .18) 24%);
+  background-size: 300% 300%; background-repeat: no-repeat; background-position: var(--hx) var(--hy);
   -webkit-mask: radial-gradient(ellipse 40% 32% at 50% 45%, #0003 60%, #000 100%), linear-gradient(#000, #000); -webkit-mask-composite: source-in; mask: radial-gradient(ellipse 40% 32% at 50% 45%, #0003 60%, #000 100%); }
 .tcard.r3 .cb-holo::before, .tcard.sec .cb-holo::before { content: ''; position: absolute; inset: 0; border-radius: inherit; mix-blend-mode: color-dodge;
-  background: repeating-linear-gradient(55deg, #fff9 0 1px, transparent 1px 7px), repeating-linear-gradient(-55deg, #fff7 0 1px, transparent 1px 9px);
+  background: repeating-linear-gradient(55deg, #fff3 0 1px, transparent 1px 7px), repeating-linear-gradient(-55deg, #fff2 0 1px, transparent 1px 9px);   /* (X 그물: 진했음 → 약하게, 10/22) */
   -webkit-mask: radial-gradient(circle at var(--hx) var(--hy), #000 0, #0009 18%, transparent 42%); mask: radial-gradient(circle at var(--hx) var(--hy), #000 0, #0009 18%, transparent 42%); }
 .tcard.r3 .cb-holo::after, .tcard.sec .cb-holo::after { content: ''; position: absolute; inset: -20%; mix-blend-mode: overlay;
   background: linear-gradient(115deg, transparent calc(var(--hx) - 9%), #fff calc(var(--hx) - 1%), #fff calc(var(--hx) + 1%), transparent calc(var(--hx) + 9%)); opacity: .85; }
@@ -593,7 +595,7 @@ canvas#fx { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 @property --hy { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
 /* 카드 두께 (③ 10/21 시안, user: "카드도 약간 z로 익스트루드된 형태"): thin slices of the card behind it, a shade darker, so its
    edge shows as it tilts — about 2.5% of its width */
-.cb-wrap { position: relative; transform-style: preserve-3d; transition: transform .08s linear; }
+.cb-wrap { position: relative; transform-style: preserve-3d; }   /* (no transition: cardbook.js eases it every frame — 10/22 덜덜 fix) */
 .cb-slice { position: absolute; inset: 0; border-radius: 20px; background: var(--edge, #a0708f); border: 2px solid #2a1a3d; box-sizing: border-box; }
 .cb-slice:last-of-type { background: #2a1a3d; }
 .cb-new { position: absolute; top: 24%; right: 6%; background: #ff4f6d; color: #fff; font-size: 10px; padding: 1px 6px 2px; border-radius: 0 10px 0 10px; border: 2px solid var(--ink); }
@@ -2187,3 +2189,8 @@ html[lang="en"] .btnrow .btn { font-size: 16px; }
   background: linear-gradient(100deg, transparent 20%, rgba(255, 50, 60, .8) 35%, transparent 50%, rgba(60, 120, 255, .8) 65%, transparent 80%);
   background-size: 250% 100%; animation: stgSiren .6s linear infinite; }
 @keyframes stgSiren { from { background-position: 0 0; } to { background-position: -250% 0; } }
+
+/* 튜토리얼 B 한 줄의 낱말 상자 (10/22): 이동 = 민트, 회전 = 노랑 */
+.tip .tkw { display: inline-block; padding: 0 7px 2px; margin: 0 1px; border-radius: 8px; border: 2.5px solid var(--ink, #3b2a55); line-height: 1.25; }
+.tip .tkw.mv { background: #9ee8c0; }
+.tip .tkw.tn { background: #ffd36e; }
