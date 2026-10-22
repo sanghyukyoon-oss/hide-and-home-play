@@ -10,6 +10,12 @@ import { EN } from './i18n-en-dict.js';
 import { ITEMS } from './gfx/items.js';
 import { grp, put, cyl, sph, rbox, tor } from './gfx/kit.js';
 import { rng } from './util.js';
+import { registerFurniture } from './gfx/furniture.js';
+import { GPT_WIDE_DEVICE_BUILDERS, GPT_WIDE_DEVICE_INFO } from './gfx/gpt-wide-devices.js';
+import { GPT_LOBBY_DEVICE_BUILDERS, GPT_LOBBY_DEVICE_INFO } from './gfx/gpt-lobby-devices.js';
+import { GPT_CAMP_DEVICE_BUILDERS, GPT_CAMP_DEVICE_INFO } from './gfx/gpt-camp-devices.js';
+import { GPT_CABIN_DEVICE_BUILDERS, GPT_CABIN_DEVICE_INFO } from './gfx/gpt-cabin-devices.js';
+import { GPT_LAB_DEVICE_BUILDERS, GPT_LAB_DEVICE_INFO } from './gfx/gpt-lab-devices.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
 const fits = (type, s) => ITEMS[type] && ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat);
@@ -83,6 +89,63 @@ export const CHAINS = {
       line: K('…도토리 하나에 집이 열려?!', '…One acorn opens the house?!') }],
     aux: [{ dev: 'gpt_p2scope#0:0', sfx: [[.5, 'swish']], line: K('망원경 카드: "나무 위 바구니 → 다람쥐 집"', 'The telescope card: "basket up the tree → squirrel house"') },
       { dev: 'gpt_p2pond#0:0', sfx: [[.1, 'ratchet'], [.6, 'blub']] }, { dev: 'gpt_p2pavilion#0:0' }, { dev: 'gpt_p2wisteria#0:1', sfx: [[.5, 'flip']] }],
+  },
+  // 43판 단지 놀이터(원본 맵) + GPT 미니 구슬 길 ★구슬(5장 주인공): 미끄럼틀은 그대로, 그네 뒤 빈칸(3×1)에 작은 구슬 길(허브 10/22 밤:
+  // "놀이터 얼굴은 두고 빈 구석에 작게"). 판 비밀번호 자물쇠 뒤 대회 구슬 → 구슬 길 어디든 터치 → 홈통을 지그재그로 데굴 → 종 땡 →
+  // 종 아래 받침의 물건 (장화가 까꿍)
+  playground: {
+    layout: { add: [{ type: 'gptwidemarblerun', i: 3, j: 1 }] },
+    steps: [{ dev: 'gptwidemarblerun#0:0', tool: 'chainmarble', behind: ['code', 'pad', 'color'], dur: 2.6, body: true,
+      sfx: [[.05, 'clink'], [.26, 'land'], [.45, 'clink'], [.62, 'clink'], [.89, 'doorBell']],
+      need: K('구슬 길 꼭대기가 비어 있어! 대회 구슬이 어디 있지?', 'The top of the marble run is empty! Where is the contest marble?'),
+      found: K('대회 구슬이다! 놀이터 구슬 길 꼭대기에 올려 보자', 'The contest marble! Put it at the top of the playground marble run'),
+      line: K('데구르르… 땡! 구슬보다 장화가 먼저 도착!', 'Roll… ding! The boot beat the marble!') }],
+    aux: [{ dev: 'springrider#0:0' }, { dev: 'seesaw2#0:0' }],
+  },
+
+  // 46판 너굴이와 경주(시간 판, 원본 넓은 놀이터): GPT 분수 레버(물이 멎으면 바닥이 보임)·미니 구슬 길(홈통 → 종 → 장화 까꿍)을
+  // 오른쪽 놀이터 빈칸에(스프링 놀이기구 자리·뒷벽 앞). 시간 판이라 장난감 둘만 — 안 건드려도 클리어
+  playgroundwide: {
+    layout: { room: 1, remove: ['springrider#0'], add: [{ type: 'gptwidefountain', i: 4, j: 3 }, { type: 'gptwidemarblerun', i: 0, j: 1 }] },
+    aux: [{ dev: 'gptwidefountain#0:0', sfx: [[.05, 'whoosh'], [.14, 'blub'], [.5, 'blub']], line: K('분수도 잠깐 쉬는 중!', 'Even the fountain takes a break!') },
+      { dev: 'gptwidemarblerun#0:0', sfx: [[.05, 'clink'], [.26, 'land'], [.62, 'clink'], [.89, 'doorBell']], line: K('구슬보다 장화가 먼저 도착!', 'The boot beat the marble!') }],
+  },
+  // 66판 빌딩 로비 시간 판(원본 로비+사무실): 로비 벽 엘리베이터를 GPT '층 버튼 엘리베이터'로 — 누를 때마다 다음 층(1층 화분 →
+  // 2층 손 흔드는 너굴이 → 3층 물건). 시간 판이라 장난감 하나, 안 건드려도 클리어
+  lobbymap: {
+    layout: { room: 0, decor: { elevator: 'gpt_floor_elevator' } },
+    aux: [{ dev: 'gpt_floor_elevator#0:1', sfx: [[.05, 'stationChime'], [.27, 'ratchet'], [.53, 'door_metal'], [.96, 'pop']], repeat: true, line: K('너굴아, 엘리베이터에서 뭐 해?', 'Raccoon, what are you doing in the elevator?') }],
+  },
+  // 57판 넓은 캠프장(원본) + GPT 모닥불 ★캠프파이어(6장 주인공): 오른쪽 바비큐·바위 자리에 작은 모닥불 선풍기, 뒤 텐트 옆에 신호 나무 바구니
+  // (허브 10/22 밤: 캠프 소품 크기·갈색·초록, 가운데는 비움, 판다 X).
+  // 간식 자물쇠(작은 텐트 주인) 뒤 성냥 → 선풍기가 불씨를 키움 → 젖은 덮개가 들리며 별 모양 연기 신호 → 나무 바구니가 내려옴
+  campwide: {
+    layout: { remove: ['bbqgrill#0', 'rock#1'], add: [{ type: 'gptfire_fan', i: 5, j: 3 }, { type: 'gptfire_treebasket', i: 6, j: 1 }] },
+    steps: [{ dev: '@fire-fan', tool: 'matches', behind: ['treat', 'pad', 'color', 'code'], links: [{ dev: '@fire-smoke', at: .45 }, { dev: '@fire-basket', at: .85 }], payoff: '@fire-basket', dur: 2.6, body: true,
+      sfx: [[.05, 'pop'], [.3, 'whoosh'], [.6, 'whoosh'], [.88, 'ratchet']],
+      need: K('모닥불이 꺼져 있어. 선풍기로 부치려면 먼저 불씨가 있어야 해!', 'The campfire is out. You need a spark before the fan can help!'),
+      found: K('성냥이다! 모닥불에 불씨를 붙여 보자', 'Matches! Light the campfire'),
+      line: K('연기 신호다! 나무 위 바구니가 스르륵… 준비물이 왔어!', 'A smoke signal! The basket comes down from the tree… the supplies!') }],
+  },
+  // 54판 통나무 오두막(원본) + GPT 책장 손바퀴: 아래층 책장·서랍장 자리에. 자물쇠 뒤 태엽 손잡이 → 손바퀴(오두막 어디든 그 가구를
+  // 누르면) → 책장이 빙글 돌고 → 뒤에서 넓은 비밀 서랍이 쑥 "열쇠보다 야식을 더 꼭꼭 숨겼네!"
+  cabin: {
+    layout: { room: 0, remove: ['bookshelf#0', 'drawers#0'], add: [{ type: 'gptcabin_secret', i: 0, j: 0 }] },
+    steps: [{ dev: '@cabin-crank', tool: 'chainwinder', behind: ['pad', 'color', 'code'], links: [{ dev: '@cabin-bookcase', at: .3 }, { dev: '@cabin-hidden-drawer', at: .85 }], payoff: '@cabin-hidden-drawer', dur: 2.4, body: true,
+      sfx: [[.05, 'gearUp'], [.3, 'creak'], [.85, 'drawer']],
+      need: K('책장 손바퀴에 손잡이가 빠져 있어! 돌리면 책장이 움직일 것 같은데', 'The bookcase wheel has no handle! Turning it would move the shelf…'),
+      found: K('태엽 손잡이다! 책장 옆 손바퀴에 끼워 보자', 'A winding key! Fit it on the wheel by the bookcase'),
+      line: K('책장이 빙글! …열쇠보다 야식을 더 꼭꼭 숨겼네!', 'The bookcase spins! …the midnight snacks were hidden better than the key!') }],
+  },
+  // 67판 정전된 사무실(원본) + GPT 비상전원 두꺼비집: 복사기 자리에. 자물쇠 뒤 손전등 → 두꺼비집 레버(2.5초: 철컥 → 아래 덮개 열림)
+  // → 케이블 칸의 물건 + 불이 켜짐 (벽 전등 스위치로도 불은 켜짐 — 두꺼비집은 그 칸까지)
+  officefloor: {
+    layout: { room: 0, remove: ['copier#0'], add: [{ type: 'gptfusebox', i: 1, j: 0 }] },
+    steps: [{ dev: 'gptfusebox#0:0', tool: 'chainflash', behind: ['code', 'pad', 'color'], dur: 2.5, lights: true, body: true,
+      sfx: [[.02, 'latch'], [.25, 'creak'], [.65, 'click'], [.95, 'unlock']],
+      need: K('너무 깜깜해서 두꺼비집 레버가 안 보여… 손전등이 있으면!', 'Too dark to see the fuse-box lever… if only there were a flashlight!'),
+      found: K('손전등이다! 두꺼비집을 비춰 보자', 'A flashlight! Shine it on the fuse box'),
+      line: K('철컥! 비상등이 켜졌다!', 'Clunk! The emergency lights are on!') }],
   },
   // 43판 놀이터 대회 ★구슬(5장 주인공): 상품 상자(비밀번호) 속 구슬 → 시상대 구슬 길 → 종(개굴이 모자) → 도르래가 상품 바구니를 끌어올림
   gptplaycontest: {
@@ -173,14 +236,23 @@ export const CHAINS = {
   },
 };
 CHAINS.gptplaybig_open = CHAINS.gptplaybig; CHAINS.gptatrium_open = CHAINS.gptatrium; CHAINS.gptcampfire_open = CHAINS.gptcampfire;
-// 정본에 켠 맵(봇 클리어까지 잰 것만 — 맵이 들어오고 ②b가 재면 한 줄씩 늘어남)
-export const CHAINS_ON = new Set(['gptshopnight', 'gptpark2']);   // (?chains=all: every line in the table — ②b's measuring copies)
+// 정본에 켠 판 → 표의 줄 (10/22 저녁 사용자 비교 시트: GPT 맵은 44판만, 43·46·66판은 원본 맵에 GPT 장치를 옮겨 붙임 —
+// _handoff/gpt-compare-picks-1022.md). 판 번호(1부터)에 붙어서, 같은 맵을 쓰는 다른 판(45판 놀이터 밤 …)은 그대로.
+// (?chains=all: 맵 키로 표의 모든 줄 — ②b 측정용)
+export const CHAINS_ON = { 43: 'playground', 44: 'gptplayhamster', 46: 'playgroundwide', 54: 'cabin', 57: 'campwide', 66: 'lobbymap', 67: 'officefloor' };   // (43·57 off until redone — hub art check 10/22: 43 lost its slide to a big cream marble run, 57 a mint-yellow canopy + panda mid-camp)
 const ALL = typeof location !== 'undefined' && /[?&]chains=all(&|$)/.test(location.search);
 const recipeFor = spec => {
-  const R = (ALL || CHAINS_ON.has(spec.room)) && CHAINS[spec.room]; if (!R) return null;
+  const k = CHAINS_ON[spec.idx + 1], R = (k && (CHAINS[k].map || k) === spec.room ? CHAINS[k] : null) || (ALL ? CHAINS[spec.room] : null); if (!R) return null;
   const o = R.at?.[spec.idx + 1] ? { ...R, ...R.at[spec.idx + 1] } : R;
   return spec.showcase || spec.timed || spec.boss ? { ...o, steps: [] } : o;
 };
+// 원본 맵에 장치 가구 옮겨 붙이기 — 그 판에서만 (stage.js, 방을 짓기 전): layout.room번째 방에서 remove('type#n')를 빼고 add를 넣음
+export function chainLayout(spec, L) {
+  const k = CHAINS_ON[spec.idx + 1], R = k && CHAINS[k]; if (!R?.layout || (R.map || k) !== spec.room) return L;
+  const { room = 0, remove = [], add = [], decor = {} } = R.layout;   // (decor: 벽 장식 바꾸기 { 옛 키: 새 키 })
+  const edit = lay => { const seen = {}; return { ...lay, furniture: [...(lay.furniture || []).filter(f => { const n = seen[f.type] = (seen[f.type] ?? -1) + 1; return !remove.includes(f.type + '#' + n) && !remove.includes(f.type); }), ...add.map(f => ({ rot: 0, ...f }))], decor: (lay.decor || []).map(d => decor[d.type] ? { ...d, type: decor[d.type] } : d) }; };
+  return L.rooms ? { ...L, rooms: L.rooms.map((r, i) => i === room ? { ...r, layout: edit(r.layout) } : r) } : edit(L);
+}
 
 // 부품 찾기
 function findPart(room, ref) {
@@ -253,6 +325,7 @@ export function chainPlan(S, plan, cp) {
       plan.locks.push({ part: x.P, kind: 'gadget', code: x.st.tool });
       arm(S, x.P, x.st); Object.assign(x.P, { device: 'chain', chain: { M: x.st, links: x.links, pay: x.pay }, needItem: x.st.tool, needMsg: x.st.need });
       for (const l of x.links) { arm(S, l.part, l); l.part.isGadget = true; l.part.chainVia = x.P; }
+      if (x.st.body) { x.P.furn.group.traverse(o => { if (o.isMesh && !o.userData.part) o.userData.part = x.P; }); x.P.handle = x.P.furn.group; }   // (the whole piece is its handle: 43판 시상대 — the slot on top was a few px)
       x.P.isGadget = true;   // (ran once: it stays as it ends — a second touch only wobbles)
     }
     plan.chainTool = steps.map(x => x.st.tool).join('>');
@@ -324,3 +397,8 @@ export async function runChain(S, part, clearYaw) {
 }
 
 Object.assign(ITEMS, CHAIN_ITEMS);
+registerFurniture(GPT_WIDE_DEVICE_BUILDERS, GPT_WIDE_DEVICE_INFO);   // (46판에 옮겨 붙이는 GPT 분수·구슬 길)
+registerFurniture(GPT_LOBBY_DEVICE_BUILDERS, GPT_LOBBY_DEVICE_INFO);   // (66판 로비 벽의 GPT 층 버튼 엘리베이터)
+registerFurniture(GPT_CAMP_DEVICE_BUILDERS, GPT_CAMP_DEVICE_INFO);   // (57판 캠프장의 GPT 모닥불 선풍기·나무 바구니)
+registerFurniture(GPT_CABIN_DEVICE_BUILDERS, GPT_CABIN_DEVICE_INFO);   // (54판 오두막의 GPT 책장 손바퀴)
+registerFurniture(GPT_LAB_DEVICE_BUILDERS, GPT_LAB_DEVICE_INFO);   // (67판 사무실의 GPT 두꺼비집)

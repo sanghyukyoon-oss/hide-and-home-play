@@ -281,16 +281,21 @@ B.firepole = f => {
 // ── 장비 걸이 (2×1): against the wall
 // (10/22 밤 사용자 "판자 같은 천·뭔지 모를 덩어리": the coats were yellow slabs, the helmets had square board brims, the boots were
 // black blocks — now the coats hang as cloth from the hooks (folds, sleeves, a turned-up collar, reflective bands on the folds,
-// a zip and a pocket flap), the helmets have a round brim longer at the back and a badge, the boots a shaft, a toe and a band)
+// a zip and a pocket flap), the helmets have a round brim and a badge, the boots a shaft, a toe and a band — all inside the old
+// footprints, so the shelf gap and the spot between the boots stay as open as before
+// (1.0.185 19판 봇 느려짐, 허브 10/22: the key hung at the pocket covered the middle of the coat, so the bot's look-for-a-point
+// kept landing on the key — a tap there only swings it — and it turned round instead of lifting the coat. The pocket and its key
+// now sit low on the coat under the waist band (the key's ring hangs .276 over its spot, stage.js swingHung), close to the
+// cloth, and the middle of the coat is clear to tap)
 const COAT = '#d9a441';
 const coat = (add, x, y, z) => {
   const zc = clothWave(.42, .86, 2, .022);
   add(clothSlab(.42, .86, .07, zc), COAT, x, y, z);
   for (const s of [-1, 1]) add(G.cap(.065, .5, 3, 8), COAT, x + s * .245, y - .36, z + .01, 0, 0, s * .06);
   add(G.box(.3, .1, .09, .03), shade(COAT, -.25), x, y - .02, z + .01);
-  for (const yy of [-.3, -.6]) add(clothSlab(.43, .045, .074, zc, yy), '#f4f4ec', x, y, z + .002);
+  for (const yy of [-.26, -.45]) add(clothSlab(.43, .045, .074, zc, yy), '#f4f4ec', x, y, z + .002);
   add(G.box(.015, .7, .012, .004), '#6b5530', x, y - .45, z + .04 + zc(0, -.45));
-  add(G.box(.12, .03, .02, .008), shade(COAT, -.15), x + .12, y - .52, z + .042 + zc(.12, -.52));
+  add(G.box(.12, .03, .02, .008), shade(COAT, -.15), x + .15, y - .54, z + .042 + zc(.15, -.54));
 };
 B.gearrack = f => {
   const z0 = -.36;
@@ -298,13 +303,13 @@ B.gearrack = f => {
     add(G.box(1.8, 1.9, .06, .02), WOOD, 0, .95, z0 - .1);
     add(G.box(1.8, .04, .34, .01), WOODD, 0, 1.75, z0 + .06);   // the helmet shelf
     for (const [x, c] of [[-.6, RED], [0, YEL], [.6, RED]]) {
-      add(G.sph(.15, 14, 10), c, x, 1.8, z0 + .06, 0, 0, 0, [1, .8, 1.1]); add(G.cyl(.2, .21, .025, 18), c, x, 1.79, z0 + .03, 0, 0, 0, [1, 1, 1.25]);
+      add(G.sph(.15, 14, 10), c, x, 1.8, z0 + .06, 0, 0, 0, [1, .8, 1.1]); add(G.cyl(.18, .185, .025, 18), c, x, 1.79, z0 + .05, 0, 0, 0, [1, 1, 1.1]);
       add(G.box(.07, .08, .02, .01), '#f2d36b', x, 1.86, z0 + .2, -.3, 0, 0);
     }
     for (const x of [-.6, .6]) coat(add, x, 1.57, z0 + .02);   // the side coats on their hooks
     for (const x of [-.75, -.45, -.15, .15, .45, .75]) {   // boots
-      add(G.cyl(.075, .08, .26, 12), '#2a2a36', x, .17, z0 + .08); add(G.box(.16, .07, .26, .03), '#2a2a36', x, .035, z0 + .13);
-      add(G.sph(.08, 10, 7), '#2a2a36', x, .045, z0 + .24, 0, 0, 0, [1, .55, 1]); add(G.cyl(.079, .081, .035, 12), '#f2d36b', x, .22, z0 + .08);
+      add(G.cyl(.075, .08, .26, 12), '#2a2a36', x, .17, z0 + .08); add(G.box(.16, .07, .22, .03), '#2a2a36', x, .035, z0 + .11);
+      add(G.sph(.07, 10, 7), '#2a2a36', x, .045, z0 + .17, 0, 0, 0, [1, .55, 1]); add(G.cyl(.079, .081, .035, 12), '#f2d36b', x, .22, z0 + .08);
     }
   }));
   const cv = grp(); put(cv, 0, 1.58, z0 + .04); f.add(cv);
@@ -313,7 +318,7 @@ B.gearrack = f => {
   f.spot('inside', null, 0, .5, z0 + .04, { part: p, maxH: .4, label: '방화복 뒤', scale: .8 });
   // (② 레벨 10/21, 19판 "인터렉션과 방탈출적인 요소"): the coat's pocket — a stage's key hangs here (clueHang) and drops behind it when
   // the coat lifts (stage.js dropHung)
-  f.spot('on', cv, .12, -.62, .09, { maxH: .24, label: '방화복 주머니', scale: .8 }).hang = p;
+  f.spot('on', cv, .15, -.84, .05, { maxH: .24, label: '방화복 주머니', scale: .8 }).hang = p;
   f.spot('on', null, .3, 1.77, z0 + .12, { maxH: .25, label: '헬멧 선반 위', scale: .6 });
   f.spot('behind', null, -.3, 0, z0 + .3, { maxH: .3, label: '장화 사이', scale: .7 });
 };

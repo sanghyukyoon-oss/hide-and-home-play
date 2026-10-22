@@ -12,7 +12,7 @@ import { BOSS_GAME_INFO } from './bossgame.js';
 import { THEMES, stageSpec, layoutFor, planStage, planIncident, planShow, planCustom, capDecoys, STAGE_COUNT, CHAR_UNLOCK, REGION_INTRO, REGIONS, regionOf, sized } from '../stages.js';
 import { spinePuzzle } from '../showcase.js';
 import { deviceLayout, runDevice, deviceTell, DEVICE_FOUND } from '../devices.js';
-import { chainPrep, chainPlan } from '../gpt-chains.js';
+import { chainPrep, chainPlan, chainLayout } from '../gpt-chains.js';
 import { heroLayout as gptHeroLayout } from '../gpt-heroes.js';
 import { tapsSetup, spendTap, somethingIn, tapsStarOk, TAP_TXT } from '../taps.js';   // 톡 횟수 (10/18)
 import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, lensClear } from '../lens.js';   // 돋보기 가방 (경제 B5, G.econ only, 10/19)
@@ -178,6 +178,7 @@ export class StageScene {
       if (this.spec.tut === 1 && !G.save.settings?.oldMode) layout = firstLayout(layout);   // 1판: the toy box faces away from you
       if (this.spec.tut === 2) layout = tiltLayout(layout);   // 2판: the loft curtained — the tilt lesson's place (tiers.js)
       if (this.spec.showcase) layout = deviceLayout(this.spec.room, layout);   // R6 장치판: the map's device piece, this stage only
+      layout = chainLayout(this.spec, layout);   // (②b: a GPT device moved into this stage's own map — gpt-chains.js)
       // 판마다 대표 소품 (G3 10/22): this stage's own hero piece in place of an everyday one of the same size (heroes.js)
       layout = heroLayout(this.spec.room, layout);
     }
@@ -375,7 +376,7 @@ export class StageScene {
     Object.assign(this, { time: this.spec.time, timeMax: this.spec.time, timerOn: false, running: false, paused: false, combo: 0, bestCombo: 0, lastFind: -99, misses: [], dizzy: 0, keys: 0, codes: new Set(),
       result: null, scraps: {}, t: 0, idle: 0, rotAccum: 0, found: 0, missCount: 0, continued: false, botT: 0, tutStep: 0, lastSec: 99, needKey: false, needCode: false, partsOpened: 0, twinkleT: 0, _autoHint: null, _lastSpark: false, _stSoft: false, _stHard: false, _swN: 0, _swDone: false });
     this.hints = 2; this.hintsUsed = 0;   // 2 magnifiers a stage (3 → 2: #90 10/21, user "힌트 여전히 너무 많고"; with 새 경제 1 + the bag, lens.js)
-    if (G.econ) { this.hints = LENS_FREE; this.bagUsed = 0; }   // 경제 B5 (10/19): 2 free a stage, then the bag (lens.js)
+    if (G.econ) { this.hints = LENS_FREE; this.bagUsed = 0; }   // 경제 B5 (10/19): the bag — none free a stage since 10/22 night, the stock carries over (lens.js)
     this.tail = null; this._dF = this._dE = false;   // (대본 bits that must not carry over from the last stage)
     this.buildHud();
     if (this.kit) kitCover(this);   // 조립판: the box comes first — its comic panel covers the room from the iris on (modelkit.js)
@@ -1988,7 +1989,7 @@ export class StageScene {
     if (part.stuck) { this.wobble(part.furn.group); G.audio.sfx('wobble'); return; }
     if (part.lock?.kind === 'spine') return this.onSpine(part);
     if (part.lock?.kind === 'gadget') return this.useGadget(part);
-    if (part.isGadget) { this.wobble(part.furn.group); G.audio.sfx('wobble'); return; }
+    if (part.isGadget) { if (part.chainVia && part.chainVia.t < .5 && part.t < .5) return this.onPart(part.chainVia, x, y); this.wobble(part.furn.group); G.audio.sfx('wobble'); return; }   // (②b: a piece the chain moves — a touch on it works its machine)
     if (part.lock?.kind === 'marble') {
       G.audio.sfx('locked'); this.shakePart(part);
       G.ui.toast('빗장이 걸려 있어… 위에 있는 구슬 장치가 풀어 줄 것 같아', 'red');
@@ -2966,7 +2967,7 @@ export class StageScene {
       if (add.length && !this.kit) { const H = G.save.home, sh = H.shelf || (H.shelf = []); if (!sh.includes(add[0])) { sh.push(add[0]); H.shelfNew = add[0]; (H.homeQ ||= { friends: [], furns: [], items: [] }).items.push(add[0]); } } }
     else if (!this.preview && !this.custom && this.idx + 1 > (G.save.stage || 0)) { const t = this.targets.map(t => t.type).find(t => t !== 'key' && t !== 'note' && ITEMS[t] && !ITEMS[t].decoy && !ITEMS[t].noCollect && !G.save.collection.includes(t)); if (t && G.collect(t)) newItem = t; }
     // 경제 B5 (10/19): no free magnifier used → one into the bag (not a preview / model kit, not testing my own room)
-    const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this) : null;
+    const lensLine = G.econ && !this.preview && !this.custom?.selfTest && !G.playMode ? lensClear(this, stars) : null;
     // 선물은 아주 가끔 (10/20): a chapter's last stage, cleared — its furniture into the shop's 기념품; a gift's stage (econ.js GIFT_AT)
     // also waits in boxQ for the lobby's 🎁 지난 장 선물 until its boss card gives it (takeGiftPick takes it off)
     if (G.econ && !this.custom && !this.preview && !this.model && PICKS[this.idx]) { const H = G.save.home; H.offered = [...new Set([...(H.offered || []), ...PICKS[this.idx]])]; if (GIFT_AT.includes(this.idx) && !(this.idx in (H.picks || {}))) H.boxQ = [...new Set([...(H.boxQ || []), this.idx])]; }

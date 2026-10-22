@@ -24,7 +24,17 @@ export function vivid(hex) {
   return '#' + c.getHexString();
 }
 
-export function useCartoonStyle() { setStyle('toon', { remap: vivid, steps: [ART.shade, ART.mid, 1] }); }
+// 빛 받는 곳 하이라이트 시험 (10/22 사용자: "밝은 곳 하이라이트 — 리플렉션 말고 빛 받는 곳 포인트 — 하얗게 밝게"): ?hl=1.25[&hlw=2]
+// adds a fourth band on the faces turned most to the sun (the top hlw of 12 slices, about N·L > .67), hl times brighter;
+// the three bands below keep their places. Off unless asked.
+const HLQ = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
+const HL = +HLQ.get('hl') || 0, HLW = Math.max(1, Math.min(5, +HLQ.get('hlw') || 2));
+function toonSteps() {
+  const base = [ART.shade, ART.mid, 1];
+  if (!(HL > 1)) return base;
+  return Array.from({ length: 12 }, (_, i) => i >= 12 - HLW ? HL : base[Math.floor(i / 4)]);
+}
+export function useCartoonStyle() { setStyle('toon', { remap: vivid, steps: toonSteps() }); }
 
 export function applyArt(post) {
   const u = post.u;

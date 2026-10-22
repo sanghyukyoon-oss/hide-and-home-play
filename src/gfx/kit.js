@@ -74,8 +74,10 @@ export const SHADOW = { moved: false };
 export function setStyle(mode, { remap = null, steps = [.58, .8, 1] } = {}) {
   STYLE.mode = mode; STYLE.remap = remap;
   if (mode !== 'std') {
-    const d = new Uint8Array(steps.map(v => Math.round(v * 255)));
-    const t = new THREE.DataTexture(d, steps.length, 1, THREE.RedFormat);
+    // (a highlight band above 1 needs a float texture — 빛 받는 곳 하이라이트 시험, 10/22)
+    const hi = steps.some(v => v > 1);
+    const d = hi ? new Float32Array(steps) : new Uint8Array(steps.map(v => Math.round(v * 255)));
+    const t = new THREE.DataTexture(d, steps.length, 1, THREE.RedFormat, hi ? THREE.FloatType : THREE.UnsignedByteType);
     t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true;
     STYLE.grad = t;
   }

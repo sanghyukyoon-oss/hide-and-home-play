@@ -473,7 +473,7 @@ export class BossScene {
   }
   // the pad moves 몽글이 the way it is pushed on the screen; never into furniture, never into 너굴이 (SEP)
   padMove(dir, v, dt) {
-    if (this.phase !== 'seek' || this.result || this.paused || !v) return;
+    if (this.phase !== 'seek' || this.result || this.paused || !v || this._hopping) return;
     const W = this.G.world, p = this.hero.root.position, Y = W.yaw, st = this.T.run * v * dt;
     const mx = dir[0] * Math.cos(Y) + dir[1] * Math.sin(Y), mz = -dir[0] * Math.sin(Y) + dir[1] * Math.cos(Y);
     this.hpath = null;
@@ -486,6 +486,9 @@ export class BossScene {
     let cur = this._ht; if (!cur || Math.hypot(cur.x - p.x, cur.z - p.z) > .3 || Math.abs((cur.y || 0) - p.y) > .6) cur = this._ht = near3(T, p.x, p.y, p.z);
     // (⑤ 10/22: in a narrow way 몽글이 could never get past 너굴이 either) — pushing into 너굴이 for .6 s, 몽글이 squeezes past
     const squeeze = (this._pushT || 0) > .6;
+    // how far a point is from 몽글이's walk grid (its floor) — the free slide keeps near it
+    const offGrid = (x, z) => { let d = Infinity; for (const t of T) { if (Math.abs((t.y || 0) - p.y) > .4) continue; const e = Math.hypot(t.x - x, t.z - z); if (e < d) d = e; } return d; };
+    const x0 = p.x, z0 = p.z;
     const tryAt = (x, z) => {
       if (!squeeze && Math.hypot(x - sp.x, z - sp.z) < SEP && Math.hypot(x - sp.x, z - sp.z) < Math.hypot(p.x - sp.x, p.z - sp.z)) { this._pushT = (this._pushT || 0) + dt; return false; }
       if (!cur) return false;
@@ -497,11 +500,31 @@ export class BossScene {
       }
       if (!best) {   // (on the ground floor the old free slide still goes: it reaches a little closer to furniture than the grid's tiles)
         if ((cur.y || 0) > .1 || !this.canStep(p.x, p.z, x, z)) return false;
+        // (② 10/22, user on a phone: "계단이나 저런 데 갇혀서 안 움직일 때가 있다" — 몽글이 slid into the narrow gap between the stairs' side
+        // and the wall, where no tile reaches, and couldn't get out): never further than .32 m off the grid, unless that's the way back
+        { const dn = offGrid(x, z); if (dn > .32 && dn >= offGrid(p.x, p.z) - .001) return false; }
         p.x = x; p.z = z; this._ht = null; return true;
       }
       p.x = x; p.z = z; this._ht = best; return true;
     };
     if (tryAt(p.x + mx * st, p.z + mz * st) || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st)) { if (Math.hypot(p.x - sp.x, p.z - sp.z) >= SEP) this._pushT = 0; }
+    // still caught somewhere off the grid (an old save's spot, a gap the grid left): pushed half a second without getting anywhere, a little
+    // hop to the nearest open tile the way it's pushed — on the grid, a push into a wall is just a wall
+    if (Math.hypot(p.x - x0, p.z - z0) > st * .2) this._stuckT = 0;
+    else if ((this._stuckT = (this._stuckT || 0) + dt) > .5 && !this._hopping && offGrid(p.x, p.z) > .36) {
+      this._stuckT = 0;
+      // (beyond what the free slide reaches — a real pocket: the nearest tile it can go straight to, the way it's pushed first; never
+      // across a wall or a piece of furniture)
+      const d = t => Math.hypot(t.x - p.x, t.z - p.z), ok = T.filter(t => Math.abs((t.y || 0) - p.y) < .4 && d(t) < 1.6).sort((a, b) => d(a) - d(b));
+      const way = t => ((t.x - p.x) * mx + (t.z - p.z) * mz) / (d(t) || 1), clear = ok.filter(t => this.canStep(p.x, p.z, t.x, t.z));
+      const to = clear.find(t => way(t) > .3) || clear[0] || ok[0];
+      if (to) {
+        this._hopping = true; this._unstuck = (this._unstuck || 0) + 1;
+        const fx = p.x, fz = p.z, fy = p.y;
+        this.tw.run(.25, k => { p.x = fx + (to.x - fx) * k; p.z = fz + (to.z - fz) * k; p.y = fy + ((to.y || 0) - fy) * k + Math.sin(k * Math.PI) * .18; }).then(() => { p.set(to.x, to.y || 0, to.z); this._ht = to; this._hopping = false; });
+        this.G.audio.sfx('hop');
+      }
+    }
     const a = Math.atan2(mx, mz), r = this.hero.root.rotation.y; this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 12);
     this.hero.lift = Math.abs(Math.sin(this.t * 14)) * .06;
     { const t = this._ht || near3(T, p.x, p.y, p.z); if (t) p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10); }

@@ -47,7 +47,7 @@ B.gptcontestterrain=f=>{
 };
 
 // Winners' podium, three physical levels. The middle dais is hollow; a crank raises its shutter.
-B.gptcontestpodium=f=>{
+B.gptcontestpodium=(f,T,o={})=>{
   // The thin linkage cord reaches the neighbour; collision tests use the actual podium body, not its cord's huge AABB.
   f.collideBox=[-1.62,0,-.93,1.62,2.75,1.34];
   f.gptWalkBox=[-1.62,0,-.93,1.62,2.75,1.34];
@@ -72,7 +72,7 @@ B.gptcontestpodium=f=>{
   const frog=group(f,.20,.60,1.05);frog.name='gpt-existing-frog-mount';
   f.gptCharacter={kind:'frog',parent:frog,position:[0,0,0],idle:false};
   const bell=group(f,.20,1.30,1.05);cylinder(bell,.16,.25,.24,P.gold,0,0,0,16);cylinder(bell,.26,.26,.045,P.gold,0,-.13,0);ball(bell,.045,P.wood,0,-.17,0);rod(f,[.20,1.45,1.05],[.20,1.67,1.05],.03,P.wood);
-  const trip=group(f,-1.44,1.51,.55);axisDisc(trip,.13,.07,P.wood,0,0,0);rod(f,[-1.44,1.51,.55],[-2.20,2.08,-.40],.023,P.wood);
+  const trip=group(f,-1.44,1.51,.55);if(o.link!==false)axisDisc(trip,.13,.07,P.wood,0,0,0);if(o.link!==false)rod(f,[-1.44,1.51,.55],[-2.20,2.08,-.40],.023,P.wood);   // (②b: no pulley next to it on the original playground — no cord into the air)
   const travel=(t)=>{const segs=[0,.32,.45,.72,.82,1];let k=0;while(k<4&&t>segs[k+1])k++;const u=phase(t,segs[k],segs[k+1]),a=path[k],b=path[k+1];return a.map((n,j)=>n+(b[j]-n)*u);};
   const p=mechanism(f,'wheel',[release,marble,frog,bell,trip,socket],t=>{release.rotation.z=-phase(t,0,.08)*1.2;const r=phase(t,.06,.78),pt=travel(r);marble.visible=t>.001;marble.position.set(pt[0],pt[1]+.19,pt[2]);marble.rotation.z=-r*PI*8;const hit=phase(t,.76,.91);bell.rotation.z=Math.sin(hit*PI*3)*.30*(1-hit);frog.rotation.z=Math.sin(hit*PI*3)*.06*(1-hit);trip.rotation.z=-phase(t,.84,1)*PI*2;},{label:'대회 구슬 길',sfx:'clink',dur:3.1,chain:['구슬을 미끄럼틀에 놓는다','구슬이 되돌이 홈통을 데굴데굴','깔때기에서 마지막 길로 쏙','개굴 종이 울리고 시상대 바구니가 움직인다']});
   p.handle=socket;p.gptPrimary=true;p.gptTool='gptmarble';p.gptLinkFurniture='loftpulley';p.gptLinkAt=.84;p.gptFunny='띵! 종이 내 모자였어, 개굴!';p.gptWrong='빈 구슬 자리가 달그락!';p.gptTell='깔때기 아래에서 개굴…';p.gptFinish='fanfare';p.gptPhases=[{at:.06,sfx:'clink'},{at:.32,sfx:'clink'},{at:.56,sfx:'clink'},{at:.76,sfx:'doorBell'},{at:.84,sfx:'ratchet'},{at:.98,sfx:'cheer'}];

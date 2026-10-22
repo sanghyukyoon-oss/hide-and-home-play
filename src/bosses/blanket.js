@@ -362,12 +362,15 @@ export class Game {
     const room = this.room = new Room(W, layout); this.add(room.group);
     const rec = t => room.furns.find(r => r.type === t);
     const wd = rec('wardrobe'), ch = rec('chest');
-    // where a named friend appears: from [x, z, y] to [x, z, y], and the part that opens
+    // where a named friend pops up, in the piece's own frame: its floor point inside, the room inside (half width, half depth,
+    // height up to the shelf; a front that opens lets it stand out into the doorway) — or, for an open top, the rim it rises out
+    // of — and the part that opens (fold: its door on your side swings on round until it lies flat, out of the way)
+    const bk = rec('laundrybasket');
     this.spots = [
-      { name: 'wardrobe', part: wd?.f.parts[0], from: [-2, -2.05, .25], to: [-1.85, -1.42, 0], scale: .95 },
-      { name: 'chest', part: ch?.f.parts[0], from: [-2.12, -.95, -.55], to: [-2.12, -.95, .12], scale: .9 },
-      { name: 'basket', part: null, from: [-.6, -2.2, -.55], to: [-.6, -2.2, .05], scale: .9 },
-    ];
+      { name: 'wardrobe', rec: wd, part: wd?.f.parts[0], at: [0, .13, -.18], hw: .4, hd: .28, h: .9, front: true, fold: [1, 2.9], scale: .95 },
+      { name: 'chest', rec: ch, part: ch?.f.parts[0], at: [0, .06, -.05], hw: .35, hd: .24, rim: .52, scale: .75 },
+      { name: 'basket', rec: bk, part: null, at: [0, .03, 0], hw: .28, hd: .2, rim: .34, scale: .65 },
+    ].filter(s => s.rec);
   }
   // the floor futon, square to the camera: mattress, three pillows at the head, the quilt with its hem at the front
   buildFuton() {
@@ -655,26 +658,51 @@ export class Game {
     this.L.world.fx.burst(s.x, s.y, { n: 8, colors: ['#ffffff', '#ffe6f0'], shape: 'circle', size: 8, speed: 120, life: .35, gravity: 0 });
     this.drop(c.root); l.gone = true;
   }
-  // the named friend wasn't under there at all: it pops out of the wardrobe / toy chest / laundry basket, cross
+  // the named friend wasn't under there at all: the wardrobe door or the toy chest lid opens (the laundry basket just jolts) and
+  // it pops up right where it was hiding — a scale pop in place, sized to fit inside, never moving out through the furniture
+  // (user 10/22 실폰: "다 뚫리고 난리도 아니다. 그냥 문 열리고 스케일 애니 주고 뚫리지 않게")
   async popElsewhere(kind) {
     const L = this.L, W = L.world;
     const free = this.spots.filter(s => !s.busy); if (!free.length) return;
     const sp = free[(this._spotI = ((this._spotI ?? Math.floor(Math.random() * 3)) + 1)) % free.length]; sp.busy = true;
-    const c = new Char(kind), size = CS * sp.scale * (WHO[kind]?.size || 1);
-    c.root.scale.setScalar(size); c.root.position.set(sp.from[0], sp.from[2], sp.from[1]); c.faceTo(W.cam.position.x, W.cam.position.z);
+    const c = new Char(kind);
     if (isRaccoon(kind)) stripeTail(c);
-    c.setFace('sus'); c.pose = 'hips'; this.add(c.root); this.extra.add(c); W.idsDirty = true;
-    if (sp.part) this.tw.run(.22, k => sp.part.setOpen(k));
+    c.setFace('sus'); c.pose = 'hips';
+    // its body's size at scale 1 (not the floor shadow, hidden in there); facing you it is turned against the piece, so the
+    // wider of its width and depth must fit both ways
+    if (c.shadow) c.shadow.visible = false;
+    c.root.scale.setScalar(1); c.root.updateMatrixWorld(true);
+    const bb = new THREE.Box3(); c.root.traverse(o => { if (o.isMesh && o.visible && o !== c.shadow) bb.expandByObject(o); });
+    const bw = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z), bh = bb.max.y - bb.min.y, room = Math.min(sp.hw, sp.hd) * .92;
+    let size = CS * sp.scale * (WHO[kind]?.size || 1), lift = 0, dz = 0;
+    if (sp.rim) {
+      // an open top: it rises out of it, sunk only as deep as its round body still clears the walls at the rim
+      const R = bw * size / 2, d = R - Math.sqrt(Math.max(0, R * R - room * room));
+      lift = Math.max(sp.at[1], sp.rim - Math.min(d, bh * size * .45)) - sp.at[1];
+    } else {
+      size = Math.min(size, (sp.front ? sp.hw * .92 : room) * 2 / Math.max(.01, bw));
+      if (sp.h) size = Math.min(size, sp.h * .95 / Math.max(.01, bh));
+      // its back against the back board, its front out in the open doorway
+      if (sp.front) dz = Math.max(0, -sp.hd + bw * size / 2 + .02);
+    }
+    const g = sp.rec.f.group; g.updateMatrixWorld(true);
+    c.root.position.copy(g.localToWorld(new THREE.Vector3(sp.at[0], sp.at[1] + lift, sp.at[2] + dz))); c.faceTo(W.cam.position.x, W.cam.position.z);
+    c.root.scale.setScalar(.01); this.add(c.root); this.extra.add(c); W.idsDirty = true;
+    const open = k => { sp.part.setOpen(k); if (sp.fold) sp.part.pivots[sp.fold[0]].rotation.y = sp.fold[1] * k; };
+    if (sp.part) await this.tw.run(.22, open);
+    else { const sc = W.toScreen(c.root.position.clone().setY(c.root.position.y + .35)); W.fx.burst(sc.x, sc.y, { n: 8, colors: ['#ffffff', '#ffe6f0'], shape: 'circle', size: 7, speed: 140, life: .35, gravity: 0 }); }
+    if (this.dead) return;
     L.audio.sfx(sp.part ? 'open' : 'hop');
-    await this.tw.run(.28, k => { c.root.position.set(sp.from[0] + (sp.to[0] - sp.from[0]) * k, sp.from[2] + (sp.to[2] - sp.from[2]) * k + Math.sin(k * Math.PI) * .35, sp.from[1] + (sp.to[1] - sp.from[1]) * k); }, ease.outQuad);
+    await this.tw.run(.3, k => { c.root.scale.setScalar(size * Math.max(.01, k)); }, ease.outBack);
     if (this.dead) return;
     c.bump(.25); this.sayC(c, pickOne(['나 아니거든?', '나 아니거든?', '난 여기 있었는데?']), 1100, 'red'); L.audio.sfx('hmm');
     await this.tw.wait(1.25); if (this.dead) return;
     c.setFace('happy');
-    await this.tw.run(.24, k => { c.root.position.set(sp.to[0] + (sp.from[0] - sp.to[0]) * k, sp.to[2] + (sp.from[2] - sp.to[2]) * k + Math.sin(k * Math.PI) * .25, sp.to[1] + (sp.from[1] - sp.to[1]) * k); }, ease.inQuad);
-    if (sp.part) this.tw.run(.2, k => sp.part.setOpen(1 - k));
+    await this.tw.run(.2, k => { c.root.scale.setScalar(size * Math.max(.01, 1 - k)); }, ease.inQuad);
     if (this.dead) return;
-    this.drop(c.root); sp.busy = false;
+    this.drop(c.root);
+    if (sp.part) await this.tw.run(.2, k => open(1 - k));
+    sp.busy = false;
   }
   // speech bubbles: over a lump (its top, wherever it wiggles) or over a standing friend (scaled-up head)
   sayL(l, text, ms, cls) { const P = { get x() { return l.x; }, get y() { return TOP + l.H * Math.max(0, l.k) * l.breath + .5 * l.sc; }, get z() { return l.z; } }; return this.L.say({ root: { position: P }, headTop: () => 0 }, text, ms, cls); }
