@@ -71,6 +71,35 @@ const TREASURE_FALLBACK = ['teddy', 'console', 'crown', 'star', 'gift'];
 const NOT_TREASURE = new Set(['key', 'note', 'notepiece', 'colornote', 'sockp', 'report', 'snack']);
 const pick2 = a => a[Math.floor(Math.random() * a.length)];
 
+// (③ 10/22: the walk grid fell apart into islands — 보스1's ground floor under the balcony cut off by the sofa and table row,
+// the two shops of the shop street, the playground's fenced corners — so 너굴이 never went there and nothing there was a hiding
+// place): an island is joined to the rest across the narrowest gap a body can squeeze through (a step of up to 1.6 m, the
+// line of it clear at .2 → .16 → .12 m, never through a wall). Only between islands — the open floor keeps its normal grid.
+function bridgeGrid(tiles, opts) {
+  const comp = new Map(), comps = [];
+  const label = () => { comp.clear(); comps.length = 0; for (const t of tiles) { if (comp.has(t)) continue; const id = comps.length, list = [], q = [t]; comp.set(t, id); while (q.length) { const u = q.pop(); list.push(u); for (const v of u.nb) if (!comp.has(v)) { comp.set(v, id); q.push(v); } } comps.push(list); } };
+  const clear = (a, b, r) => { for (const k of [.15, .3, .5, .7, .85]) { const x = a.x + (b.x - a.x) * k, z = a.z + (b.z - a.z) * k, R = k < .5 ? a.R : b.R; if (!R.clearAt(x, z, r, opts)) return false; } return crossOK(a.R, b.R, (a.x + b.x) / 2, (a.z + b.z) / 2); };
+  for (let pass = 0; pass < 24; pass++) {
+    label(); if (comps.length < 2) break;
+    let joined = false;
+    for (const r of [.2, .16, .12]) {
+      for (const [ci, list] of comps.entries()) {
+        if (list.length < 3 || list.stair) continue;
+        let best = null, bd = 9;
+        for (const t of list) for (const u of tiles) {
+          if (comp.get(u) === ci || u.stair || t.stair || Math.abs((u.y || 0) - (t.y || 0)) > .05) continue;
+          const d = Math.hypot(u.x - t.x, u.z - t.z); if (d > 1.6 || d >= bd) continue;
+          if (clear(t, u, r)) { bd = d; best = [t, u]; }
+        }
+        if (best) { best[0].nb.push(best[1]); best[1].nb.push(best[0]); joined = true; break; }
+      }
+      if (joined) break;
+    }
+    if (!joined) break;
+  }
+  return tiles;
+}
+
 export class BossScene {
   constructor(G) { this.G = G; this.name = 'boss'; }
   async enter({ after = 4 } = {}) {
@@ -131,12 +160,12 @@ export class BossScene {
   }
   buildFloor() {
     // only the biggest connected stretch of floor counts (a corner boxed in by furniture is no place to start or hide)
-    const all = walkGrid(this.rooms, .24, this.T.climb ? { raised: true } : null), seen = new Set(); let best = [];
+    const all = bridgeGrid(walkGrid(this.rooms, .24, this.T.climb ? { raised: true } : null), this.T.climb ? { raised: true } : null), seen = new Set(); let best = [];
     for (const t of all) { if (seen.has(t)) continue; const comp = [], q = [t]; seen.add(t); while (q.length) { const u = q.pop(); comp.push(u); for (const v of u.nb) if (!seen.has(v)) { seen.add(v); q.push(v); } } if (comp.length > best.length) best = comp; }
     this.tiles = best;
     // 몽글이's own floor (③ 10/21, user: "몽실이 계단을 못오른다 ㅋㅋ"): every walkable tile, raised ones too, joined up stairs and
     // across floors — the part 너굴이's floor is in. The pad walks it tile to tile, so a step onto the stairs goes up them
-    { const allH = walkGrid(this.rooms, .24, { raised: true }), set = new Set(best), seenH = new Set(); let pick = best;
+    { const allH = bridgeGrid(walkGrid(this.rooms, .24, { raised: true }), { raised: true }), set = new Set(best), seenH = new Set(); let pick = best;
       for (const t of allH) { if (seenH.has(t)) continue; const comp = [], q = [t]; seenH.add(t); while (q.length) { const u = q.pop(); comp.push(u); for (const v of u.nb) if (!seenH.has(v)) { seenH.add(v); q.push(v); } }
         if (comp.some(u => best.some(b => Math.hypot(b.x - u.x, b.z - u.z) < .05 && Math.abs((b.y || 0) - (u.y || 0)) < .1)) && comp.length >= pick.length) pick = comp; }
       this.htiles = pick.length ? pick : best; }

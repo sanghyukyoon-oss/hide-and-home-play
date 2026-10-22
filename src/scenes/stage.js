@@ -34,6 +34,7 @@ import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
+import { TUT_B, tutB1, tutB2 } from '../tutb.js';
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
 import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
@@ -77,6 +78,7 @@ import { isRaid, raidSetup, raidGoal, raidStart, raidFind, raidSettle, raidScout
 // the last one sets off the build (modelkit.js). 놀이 모음's kit stage (S.model) or a campaign stage with spec.kit (8판).
 import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitFound, kitIntro, kitTruck, kitFinish, kitReward, kitCover } from '../modelkit.js';
 import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK, COZY_NIGHT, COZY_DARK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
+import { heroLayout } from '../heroes.js';
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
 import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS } from '../mongletv.js';   // 몽글 TV (10/19)
@@ -173,6 +175,8 @@ export class StageScene {
       if (this.spec.tut === 1 && !G.save.settings?.oldMode) layout = firstLayout(layout);   // 1판: the toy box faces away from you
       if (this.spec.tut === 2) layout = tiltLayout(layout);   // 2판: the loft curtained — the tilt lesson's place (tiers.js)
       if (this.spec.showcase) layout = deviceLayout(this.spec.room, layout);   // R6 장치판: the map's device piece, this stage only
+      // 판마다 대표 소품 (G3 10/22): this stage's own hero piece in place of an everyday one of the same size (heroes.js)
+      layout = heroLayout(idx + 1, layout);
     }
     if (custom) this.scene = null;
     // 프라모델 조립판: 놀이 모음's kit stage, or a campaign stage whose spec names a kit (8판 꼬마 로봇) — the hunt as always,
@@ -444,13 +448,17 @@ export class StageScene {
       for (let i = 0; i < 25 && (G.world.flying || this.cine) && !this.dead; i++) await this.tw.wait(.1);
       if (!this.dead) await this.inkyTrace();
     })();
+    // (튜토리얼 B — tutb.js, ③ 10/22: ?tut=b or 더보기: a line and a hand only if needed, instead of the lessons)
+    if (TUT_B && (this.spec.tut === 1 || this.spec.tut === 2)) { if (this.spec.tut === 1) tutB1(this); else tutB2(this); }
+    else {
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
     if (this.spec.tut === 2) { this.tutorial2(); if (TILT_ON || !DBL_ON) this.teachTilt(); }
+    }
     if (this.scene?.card) newCard(G, this.scene.card);
     else if (this.obs) newCard(G, 'obs');   // 61판: the observation locks' card, once (스토리 v96 CARDS.obs)   // e.g. 비밀 서재: 🆕 연쇄 장치
     if (this.scene?.teachMove && !G.save.tut?.move) this.teachMove();
     if (this.plan.showcase?.shelf && !custom && !this.preview) this.teachShelf();   // 비밀 서재: what to do, once (사용자 실폰 10/20)
-    armFtap(this);   // 6판부터 한 번: 끌다가 다른 손가락 톡 = 회전 (10/19)
+    if (!TUT_B) armFtap(this);   // 6판부터 한 번: 끌다가 다른 손가락 톡 = 회전 (10/19)
     if (this.spec.boss) G.ui.toast('방탈출 보스판! 단서를 차례로 풀어 봐', 'red');
     else if (this.spec.night && !this.incident) G.ui.toast('밤이 됐어! 달빛 아래 숨은 물건을 찾아봐', 'green');
     // the locks (열쇠·비밀번호·색깔·레버·간식) come as a 🆕 card the first time you touch one (onPart); these few keep a tip
@@ -764,7 +772,7 @@ export class StageScene {
     if (penalty) {
       this.missCount++;
       // (QA 10/20: on the first stage with taps the second miss also says "서랍·문은 공짜!" — the lesson waits until that has gone)
-      if (this.idx === DBL_AT && this.missCount === 2) { const go = () => { if (this.dead || this.result) return; if (DBL_ON) teachDbl(this); else G.ui.toast(DO.zoom, 'green'); }; if (this._tapTeach === 3) setTimeout(go, 2300); else go(); }   // 3판: small things far off → zoom, once it's needed
+      if (!TUT_B && this.idx === DBL_AT && this.missCount === 2) { const go = () => { if (this.dead || this.result) return; if (DBL_ON) teachDbl(this); else G.ui.toast(DO.zoom, 'green'); }; if (this._tapTeach === 3) setTimeout(go, 2300); else go(); }   // 3판: small things far off → zoom, once it's needed
       this.taunt('miss');
       if (this.timerOn) { this.time = Math.max(0, this.time - 2); G.ui.floatText(x, y, '-2초', 'red'); }
       G.audio.sfx('miss', 0, false);   // (its tick went with the tap — addMiss)
@@ -3069,7 +3077,7 @@ export class StageScene {
             : [h('span', { class: this.hintsUsed ? '' : 'on' }, '★ 힌트 없이'), this.story?.secret ? h('span', { class: this.secretFound ? 'on' : '' }, STAR_TXT.secret)
               : h('span', { class: tapsStarOk(this) ? 'on' : '' }, this.tapsLeft == null ? `★ 꼼꼼하게 · 헛손질 ${this.missCount}` : TAP_TXT.star)]))]),
         // (10/20, user: "2판 끝나면 결과 팝업과 같이 조작법 요약" — in this panel, so it is one popup, not two)
-        ...(this.spec.tut === 2 && !this.custom && !this.preview && G.world.scheme === 'F' ? [controlsBlock('ftap')] : []),
+        ...(this.spec.tut === 2 && !TUT_B && !this.custom && !this.preview && G.world.scheme === 'F' ? [controlsBlock('ftap')] : []),
         // (each line with its speaker's face and, but for 몽글이's own, a small name — two friends can share the two lines)
         ...(endLines ? [h('div', { class: 'endtalk' }, ...endLines.map(L => h('div', { class: 'et' + (L.who === 'mong' ? ' me' : '') }, G.thumbs['face_' + L.who] ? h('img', { src: G.thumbs['face_' + L.who] }) : '', h('span', {}, L.who !== 'mong' && CHAR_DEFS[L.who] ? h('b', { class: 'who' }, CHAR_DEFS[L.who].name) : '', tr(L.text)))))] : []),
         // 별 셋 = 비밀 한 줄: the line itself the moment it opens; short of three (once you know secrets exist), a grey 'one secret'
@@ -3278,7 +3286,7 @@ export class StageScene {
       this.idle += dt;
       songDrift(this, dt);
       sweepUpdate(this, dt);
-      if (this.idx === DBL_AT && this.idle > 15 && !this._dbl) teachDbl(this);
+      if (!TUT_B && this.idx === DBL_AT && this.idle > 15 && !this._dbl) teachDbl(this);
       if (this.idle > 11) this.taunt('idle');
       // a sparkle on something findable after a while of nothing: 9 s on a friend hunt; on a hidden-object stage you get
       // time to look yourself first — 12 s in chapters 1-2, 20 s from 3 (레벨 세션 B3, user: "진득하게")

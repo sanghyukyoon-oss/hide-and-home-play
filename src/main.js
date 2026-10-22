@@ -38,6 +38,7 @@ import { APT_BUILDERS, APT_INFO, APT_THEMES, APT_ITEMS } from './gfx/apt-props.j
 import { loadTune } from './tune.js';
 import { STREET_BUILDERS, STREET_INFO, STREET_THEMES, STREET_ITEMS } from './gfx/street-props.js';
 import { SHOP_BUILDERS, SHOP_INFO, SHOP_THEMES, SHOP_ITEMS } from './gfx/shop-props.js';
+import { HERO_BUILDERS, HERO_INFO } from './gfx/hero-props.js';
 import { BUILDING_BUILDERS, BUILDING_INFO, BUILDING_THEMES, BUILDING_ITEMS } from './gfx/building-props.js';
 import { TRAIL_BUILDERS, TRAIL_INFO, TRAIL_THEMES, TRAIL_ITEMS } from './gfx/trail-props.js';
 import { ONEROOM_BUILDERS, ONEROOM_INFO, ONEROOM_THEMES, ONEROOM_ITEMS } from './gfx/oneroom-props.js';
@@ -109,6 +110,8 @@ Object.assign(THEMES.street, { floorKind: 'brickpave', floor: '#ecd6b8', floor2:
 registerStoryShop(STREET_INFO);
 // 편의점·빨래방·카페 (region 4): shop interiors, also wearable as a home theme
 registerFurniture(SHOP_BUILDERS, SHOP_INFO);
+// 판마다 대표 소품 (G3 10/22, heroes.js puts them in)
+registerFurniture(HERO_BUILDERS, HERO_INFO);
 Object.assign(ITEMS, SHOP_ITEMS);
 const SHOP_POOL = ['receipt', 'sandwich', 'sockpair', 'coffee', 'lottery', 'onigiri', 'bubbletea', 'kimbap'];
 for (const k in SHOP_THEMES) THEMES[k] = { ...THEMES.my, ...SHOP_THEMES[k], friend: k === 'konbini' ? 'shiba' : 'sundae', light: WARM, pool: SHOP_POOL };

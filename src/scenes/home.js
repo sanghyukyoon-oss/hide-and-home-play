@@ -21,6 +21,7 @@ import { openRoadmap } from '../roadmap.js';
 import { THEMES, stageSpec, regionOf, STAGE_COUNT, REGIONS, CHAR_UNLOCK } from '../stages.js';
 import { h, ICON, fullscreenBtn } from '../ui.js';
 import { IN_APP, QA_TOOLS, VERSION_LABEL } from '../build.js';
+import { TUT_B, setTutB } from '../tutb.js';
 import { Tweens, ease, rng } from '../util.js';
 import { tr, LANG, setLang } from '../i18n.js';
 import { openGallery } from '../gallery.js';
@@ -931,6 +932,8 @@ export function openMore(G, extra = []) {
         ui.btn('지우고 새로 시작', { color: 'red', onClick: () => { const u = new URLSearchParams(location.search); u.set('reset', ''); location.replace(location.pathname + '?' + u.toString().replace(/=(&|$)/g, '$1')); } })] }), 200); } }),
     QA_TOOLS && ui.btn('새 아트', { color: 'yellow', cls: 'sm qa', onClick: () => { ui.closePanel(); preview('apt'); } }),
     ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),
+    // 튜토리얼 B (③ 10/22: a lighter 1·2판 to try — this device; tutb.js)
+    ui.btn(TUT_B ? '튜토리얼 B 끄기' : '튜토리얼 B 켜기', { color: TUT_B ? 'gray' : 'green', cls: 'sm', onClick: () => { setTutB(!TUT_B); const u = new URLSearchParams(location.search); u.delete('tut'); location.replace(location.pathname + (u.toString() ? '?' + u : '') + location.hash); } }),
     // compare the new incident stages with the old find-the-list stages (10/17 pivot)
     QA_TOOLS && ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', cls: 'sm qa', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
     ...layBtn, ...extra, ...(fs ? [fs] : []),
