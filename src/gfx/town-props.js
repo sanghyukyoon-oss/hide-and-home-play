@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { put, grp, mat, mesh, canvasTex, texCache, roundRect, shade } from './kit.js';
 import { HG as G, hmc as mc, hxf as xf } from './house-props.js';
+import { clothWave, clothSlab } from './clothbend.js';
 import { tr } from '../i18n.js';   // (canvas signs don't pass through the page's translator — 10/19)
 
 const PI = Math.PI, HP = PI / 2;
@@ -278,19 +279,36 @@ B.firepole = f => {
 };
 
 // ── 장비 걸이 (2×1): against the wall
+// (10/22 밤 사용자 "판자 같은 천·뭔지 모를 덩어리": the coats were yellow slabs, the helmets had square board brims, the boots were
+// black blocks — now the coats hang as cloth from the hooks (folds, sleeves, a turned-up collar, reflective bands on the folds,
+// a zip and a pocket flap), the helmets have a round brim longer at the back and a badge, the boots a shaft, a toe and a band)
+const COAT = '#d9a441';
+const coat = (add, x, y, z) => {
+  const zc = clothWave(.42, .86, 2, .022);
+  add(clothSlab(.42, .86, .07, zc), COAT, x, y, z);
+  for (const s of [-1, 1]) add(G.cap(.065, .5, 3, 8), COAT, x + s * .245, y - .36, z + .01, 0, 0, s * .06);
+  add(G.box(.3, .1, .09, .03), shade(COAT, -.25), x, y - .02, z + .01);
+  for (const yy of [-.3, -.6]) add(clothSlab(.43, .045, .074, zc, yy), '#f4f4ec', x, y, z + .002);
+  add(G.box(.015, .7, .012, .004), '#6b5530', x, y - .45, z + .04 + zc(0, -.45));
+  add(G.box(.12, .03, .02, .008), shade(COAT, -.15), x + .12, y - .52, z + .042 + zc(.12, -.52));
+};
 B.gearrack = f => {
   const z0 = -.36;
-  f.add(mc('gearrack', ({ add }) => {
+  f.add(mc('gearrack2', ({ add }) => {
     add(G.box(1.8, 1.9, .06, .02), WOOD, 0, .95, z0 - .1);
     add(G.box(1.8, .04, .34, .01), WOODD, 0, 1.75, z0 + .06);   // the helmet shelf
-    for (const [x, c] of [[-.6, RED], [0, YEL], [.6, RED]]) { add(G.sph(.16, 14, 10), c, x, 1.84, z0 + .06, 0, 0, 0, [1, .75, 1.1]); add(G.box(.36, .03, .4, .01), c, x, 1.79, z0 + .08); }
-    for (const x of [-.6, .6]) {   // the side coats
-      add(G.box(.46, .9, .14, .05), '#d9a441', x, 1.12, z0 + .02); for (const y of [.86, 1.06]) add(G.pbox(.47, .05, .145), '#f4f4ec', x, y, z0 + .02);
+    for (const [x, c] of [[-.6, RED], [0, YEL], [.6, RED]]) {
+      add(G.sph(.15, 14, 10), c, x, 1.8, z0 + .06, 0, 0, 0, [1, .8, 1.1]); add(G.cyl(.2, .21, .025, 18), c, x, 1.79, z0 + .03, 0, 0, 0, [1, 1, 1.25]);
+      add(G.box(.07, .08, .02, .01), '#f2d36b', x, 1.86, z0 + .2, -.3, 0, 0);
     }
-    for (const x of [-.75, -.45, -.15, .15, .45, .75]) add(G.box(.18, .3, .26, .05), '#2a2a36', x, .15, z0 + .12);   // boots
+    for (const x of [-.6, .6]) coat(add, x, 1.57, z0 + .02);   // the side coats on their hooks
+    for (const x of [-.75, -.45, -.15, .15, .45, .75]) {   // boots
+      add(G.cyl(.075, .08, .26, 12), '#2a2a36', x, .17, z0 + .08); add(G.box(.16, .07, .26, .03), '#2a2a36', x, .035, z0 + .13);
+      add(G.sph(.08, 10, 7), '#2a2a36', x, .045, z0 + .24, 0, 0, 0, [1, .55, 1]); add(G.cyl(.079, .081, .035, 12), '#f2d36b', x, .22, z0 + .08);
+    }
   }));
   const cv = grp(); put(cv, 0, 1.58, z0 + .04); f.add(cv);
-  cv.add(mc('gearrack-coat', ({ add }) => { add(G.box(.46, .9, .14, .05), '#d9a441', 0, -.46, 0); for (const y of [-.72, -.52]) add(G.pbox(.47, .05, .145), '#f4f4ec', 0, y, 0); add(G.cyl(.02, .02, .1, 6), STEEL2, 0, .02, -.05, HP, 0, 0); }));
+  cv.add(mc('gearrack-coat2', ({ add }) => { coat(add, 0, -.01, 0); add(G.cyl(.02, .02, .1, 6), STEEL2, 0, .02, -.05, HP, 0, 0); }));
   const p = f.part('lift', cv, t => { cv.rotation.x = -1.2 * t; }, { label: '방화복', sfx: 'swish', dur: .3 });
   f.spot('inside', null, 0, .5, z0 + .04, { part: p, maxH: .4, label: '방화복 뒤', scale: .8 });
   // (② 레벨 10/21, 19판 "인터렉션과 방탈출적인 요소"): the coat's pocket — a stage's key hangs here (clueHang) and drops behind it when

@@ -17,7 +17,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, heartShape, starShape, STYLE } from './kit.js';
-import { clothBend } from './clothbend.js';
+import { clothBend, clothWave, clothSlab } from './clothbend.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2, DS = THREE.DoubleSide;
@@ -149,13 +149,6 @@ function trapGeo(wT, wB, H, s, t) {
   for (let i = 0; i < p.count; i++) { const top = p.getY(i) > 0; p.setXYZ(i, p.getX(i) * (top ? wT : wB), top ? 0 : -H, p.getZ(i) + (top ? 0 : s)); }
   g.computeVertexNormals();
   return g;
-}
-// A T-shirt silhouette in the xy plane, collar at y = 0, hem at y = -.46.
-function shirtShape() {
-  const s = new THREE.Shape(), P = [[-.06, 0], [-.135, -.014], [-.2, -.09], [-.165, -.152], [-.13, -.122], [-.13, -.46], [.13, -.46], [.13, -.122], [.165, -.152], [.2, -.09], [.135, -.014], [.06, 0]];
-  s.moveTo(...P[0]); for (const p of P.slice(1)) s.lineTo(...p);
-  s.quadraticCurveTo(0, -.065, -.06, 0);
-  return s;
 }
 // A monstera leaf: heart-shaped with slits cut in from the edge; stem joint at the origin, tip at (0, 1).
 function monsteraShape() {
@@ -943,7 +936,8 @@ B.bigfridge = (f, T) => {
 };
 
 // 빨래건조대 (1×1): a folding drying rack with three T-shirts on hangers (sky stripe, a bear print, a mustard star) and a
-// sage towel over the low rail — the gap behind the laundry hides things.
+// sage towel over the low rail — the gap behind the laundry hides things. (10/22 밤 사용자 "판자 같은 천": the shirts were flat
+// cut-outs — now cloth that folds a little, sleeves hanging down from the shoulders, the prints riding on the folds; the towel too)
 B.dryrack = (f, T) => {
   const s1 = col(T, 'accent2'), tow = col(T, 'accent'), feet = col(T, 'accent3'), tk = [s1, tow, feet].join(',');
   const metal = '#e3e8f0', X = .42, TY = 1.2, LZ = .26, top = TY - .06;
@@ -955,25 +949,29 @@ B.dryrack = (f, T) => {
     }
     tube([-X - .04, TY, 0], [X + .04, TY, 0], .016, metal, 8);
     for (const sz of [-1, 1]) tube([-X, .5, sz * .15], [X, .5, sz * .15], .012, metal, 6);
-    // shirts on hangers (each one a little further forward so overlapping sleeves never share a plane)
-    const sh = G.ext(shirtShape(), .02, 0, 4);
+    // shirts on hangers (each one a little further forward so overlapping sleeves never share a plane): a torso that folds, two
+    // sleeves angled down from the shoulders, a ribbed collar; on(x, y, z, sx, sz) puts a print on the torso's folds
+    const TT = top - .035, zs = clothWave(.26, .425, 2, .014), sl = clothWave(.1, .1, 1, .006);
+    const on = (x, y, z, sx, sz) => sz + .003 + zs(x - sx, y - TT) + z;
     [[-.29, -.028, s1], [0, 0, WHITE], [.29, .028, TOMATO]].forEach(([x, z, c]) => {
       add(G.tor(.024, .005, PI * 1.3, 3, 10), STEEL2, x, TY, 0, 0, HP, -.4);
       tube([x, TY - .024, 0], [x, top + .005, z], .005, STEEL2, 4);
-      add(sh, c, x, top, z - .01);
+      add(clothSlab(.26, .425, .02, zs), c, x, TT, z - .01);
+      for (const s of [-1, 1]) add(clothSlab(.1, .1, .018, sl), c, x + s * .15, top - .012, z - .012, 0, 0, s * .9);
+      add(G.tor(.034, .009, PI, 4, 12), shade(c, -.1), x, TT + .004, z + .002, 0, 0, PI);
     });
-    const fz = .01 + .004;
-    add(G.pbox(.26, .03, .004), WHITE, -.29, top - .2, -.028 + fz);
-    add(G.pbox(.26, .012, .004), WHITE, -.29, top - .25, -.028 + fz);
-    add(G.sph(.055, 12, 8), BROWN, 0, top - .25, fz + .003, 0, 0, 0, [1, .9, .12]);
-    for (const s of [-1, 1]) { add(G.sph(.022, 8, 6), BROWN, s * .045, top - .195, fz + .002, 0, 0, 0, [1, 1, .15]); add(G.sph(.006, 5, 4), INK, s * .02, top - .24, fz + .012, 0, 0, 0, [1, 1, .4]); }
-    add(G.sph(.022, 8, 6), '#f6dcb8', 0, top - .265, fz + .009, 0, 0, 0, [1.2, .9, .2]);
-    add(G.ext(starShape(.055, .024), .006, 0, 2), MUSTARD, .29, top - .22, .028 + .01 + .004);
-    // towel over the front low rail
+    add(G.pbox(.25, .03, .004), WHITE, -.29, top - .2, on(-.29, top - .2, 0, -.29, -.028));
+    add(G.pbox(.25, .012, .004), WHITE, -.29, top - .25, on(-.29, top - .25, 0, -.29, -.028));
+    add(G.sph(.055, 12, 8), BROWN, 0, top - .25, on(0, top - .25, .003, 0, 0), 0, 0, 0, [1, .9, .12]);
+    for (const s of [-1, 1]) { add(G.sph(.022, 8, 6), BROWN, s * .045, top - .195, on(s * .045, top - .195, .002, 0, 0), 0, 0, 0, [1, 1, .15]); add(G.sph(.006, 5, 4), INK, s * .02, top - .24, on(s * .02, top - .24, .012, 0, 0), 0, 0, 0, [1, 1, .4]); }
+    add(G.sph(.022, 8, 6), '#f6dcb8', 0, top - .265, on(0, top - .265, .009, 0, 0), 0, 0, 0, [1.2, .9, .2]);
+    add(G.ext(starShape(.055, .024), .006, 0, 2), MUSTARD, .29, top - .22, on(.29, top - .22, .004, .29, .028));
+    // towel over the front low rail: the roll on the rail, a long front fall and a shorter back one, two white stripes on the front
+    const zt = clothWave(.5, .24, 2, .012), zt2 = clothWave(.5, .16, 2, -.008);
     add(G.cyl(.024, .024, .5, 10), tow, .06, .5, .15, 0, 0, HP);
-    add(G.box(.5, .24, .014, .006), tow, .06, .38, .174);
-    add(G.box(.5, .16, .014, .006), tow, .06, .42, .126);
-    for (const y of [.3, .34]) add(G.pbox(.5, .022, .004), WHITE, .06, y, .181 + .004);
+    add(clothSlab(.5, .24, .014, zt), tow, .06, .5, .174);
+    add(clothSlab(.5, .16, .014, zt2), tow, .06, .5, .126);
+    for (const y of [-.2, -.16]) add(clothSlab(.5, .022, .018, zt, y + .011), WHITE, .06, .5, .176);
   }));
   f.spot('behind', null, .08, 0, -.12, { maxH: .4, label: '빨래 뒤', scale: .85 });
 };

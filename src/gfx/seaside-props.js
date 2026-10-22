@@ -3,7 +3,7 @@
 // display counter and a boat alongside, seafood stalls, barrels, parasol tables, a chalkboard and a life-ring clock post.
 // Clean and bright: white, sky blue and sand, red and green for accents. Shared toy kit, one merged mesh per piece.
 import * as THREE from 'three';
-import { put, grp, shade } from './kit.js';
+import { put, grp, shade, mat, mesh, geo, canvasTex, texCache, roundRect } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -113,6 +113,25 @@ B.seadeck = (f, T, o = {}) => {
   f.spot('inside', null, -.5, .14, 1.75, { maxH: .2, label: '보트 안', scale: .75 });
 };
 
+// hand-drawn boards (10/22 밤 사용자 "뭔지 모를": the price board and the chalk menu were bare bars) — doodles and digits only, so
+// they read the same in both languages
+const TXS = texCache();
+const fishDoodle = (c, x, y, s, col) => { c.strokeStyle = col; c.lineWidth = 2.2; c.beginPath(); c.ellipse(x, y, 14 * s, 7 * s, 0, 0, 7); c.moveTo(x + 13 * s, y); c.lineTo(x + 22 * s, y - 6 * s); c.lineTo(x + 22 * s, y + 6 * s); c.closePath(); c.stroke(); c.fillStyle = col; c.beginPath(); c.arc(x - 7 * s, y - 1.5 * s, 1.6 * s, 0, 7); c.fill(); };
+const priceTex = () => TXS.get('fishprice', () => canvasTex(192, 144, (c, w, h) => {
+  c.fillStyle = '#fffaf0'; roundRect(c, 3, 3, w - 6, h - 6, 10); c.fill(); c.strokeStyle = '#e8414e'; c.lineWidth = 4; c.stroke();
+  fishDoodle(c, 62, 46, 1.6, '#3a7bd5'); c.fillStyle = '#e8414e'; c.font = 'bold 34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('3,000', w / 2, 102); c.fillStyle = '#ffc23d'; c.beginPath(); c.arc(150, 42, 14, 0, 7); c.fill();
+}));
+const chalkTex = () => TXS.get('chalkmenu', () => canvasTex(256, 352, (c, w, h) => {
+  c.fillStyle = '#2f3a36'; c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(255,255,255,.55)'; c.setLineDash([8, 6]); c.lineWidth = 3; c.strokeRect(12, 12, w - 24, h - 24); c.setLineDash([]);
+  fishDoodle(c, 96, 70, 2.2, '#ffffff'); c.strokeStyle = '#ffd86b'; c.lineWidth = 4; c.beginPath(); for (let x = 40; x <= 216; x += 8) c.lineTo(x, 118 + Math.sin(x / 9) * 4); c.stroke();
+  c.strokeStyle = '#ffffff'; c.lineWidth = 3; c.strokeRect(70, 160, 46, 44); c.beginPath(); c.arc(116, 182, 11, -1.4, 1.4); c.stroke();
+  for (const x of [82, 96, 108]) { c.beginPath(); c.moveTo(x, 152); c.quadraticCurveTo(x + 6, 140, x, 130); c.stroke(); }
+  c.fillStyle = '#ffb3c4'; c.font = 'bold 30px sans-serif'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('1,500', 132, 184);
+  c.fillStyle = '#ffffff'; c.fillText('5,000', 132, 76);
+  c.fillStyle = '#ffd86b'; for (const [x, y] of [[48, 268], [128, 290], [204, 262]]) { c.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 6 : 14, a = k * Math.PI / 5 - Math.PI / 2; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.fill(); }
+}));
+
 // 해산물 좌판 (2×1): two white crate tables on legs, ice and fish and shrimps in them, a small price board
 B.fishstall = (f, T) => {
   f.add(mc('fishstall', ({ add }) => {
@@ -120,10 +139,27 @@ B.fishstall = (f, T) => {
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.05, .48, .05, .01), '#ffffff', x + sx * .38, .24, sz * .26);
       add(G.box(.86, .14, .62, .02), '#ffffff', x, .55, 0, -.15, 0, 0);
       add(G.box(.8, .04, .56, .01), '#e9f4fa', x, .6, 0, -.15, 0, 0);
-      rows.forEach(([c, n], r) => { for (let k = 0; k < n; k++) { add(G.cap(.06, .16, 2, 8), c, x - .28 + k * .19, .68 - r * .05, -.12 + r * .24, -.15, 0, HP); add(G.cone(.05, .08, 3), shade(c, -.15), x - .28 + k * .19 + .14, .68 - r * .05, -.12 + r * .24, 0, 0, -HP, [1, 1, .4]); } });
+      // fish lie on their sides: a long body with a darker back, a fan tail, a fin, an eye; the coral rows are curled shrimps
+      rows.forEach(([c, n], r) => { for (let k = 0; k < n; k++) {
+        const fx = x - .28 + k * .19, fz = -.12 + r * .24, fy = .647 + fz * .149;   // (the ice leans toward the front: rows follow its top)
+        if (c === '#ff9b6b') {
+          add(G.tor(.045, .022, PI * 1.35, 6, 10), c, fx, fy + .01, fz, HP - .15, 0, .4);
+          add(G.cone(.03, .05, 8), shade(c, -.12), fx + .05, fy + .012, fz - .03, 0, 0, -HP, [.3, 1, 1]);
+          add(G.sph(.008, 5, 4), '#3b2a2a', fx - .03, fy + .03, fz + .03);
+        } else {
+          add(G.sph(.06, 12, 8), c, fx, fy, fz, -.15, 0, 0, [1.55, .42, .75]);
+          add(G.sph(.06, 10, 6), shade(c, -.2), fx, fy + .008, fz - .022, -.15, 0, 0, [1.35, .4, .42]);
+          add(G.cone(.05, .07, 10), shade(c, -.1), fx + .12, fy, fz, -.15, 0, HP, [.28, 1, 1]);
+          add(G.cone(.022, .045, 6), shade(c, -.1), fx + .01, fy + .006, fz - .045, -.15, 0, 0, [1.4, 1, .3]);
+          add(G.sph(.013, 8, 6), '#ffffff', fx - .065, fy + .022, fz + .01); add(G.sph(.007, 6, 4), '#2a2230', fx - .068, fy + .03, fz + .012);
+        }
+      } });
+      for (const [ix, iz] of [[-.32, .2], [.3, .22], [.05, -.2], [-.12, .23], [.33, -.18]]) add(G.box(.045, .04, .045, .012), '#f5fbff', x + ix, .64 + iz * .149, iz, .3, ix * 4, 0);
     }
-    add(G.box(.24, .18, .02, .01), DARK, 0, .85, .22, -.3, 0, 0); add(G.pbox(.16, .02, .005), '#ffffff', 0, .87, .235);
+    add(G.box(.26, .2, .02, .01), DARK, 0, .85, .22, -.3, 0, 0);
   }));
+  // the price card on its stick: a fish and 3,000
+  f.add(put(mesh(geo('fishprice-card', () => new THREE.PlaneGeometry(.24, .18)), mat('#ffffff', { map: priceTex() })), 0, .853, .232, -.3, 0, 0));
   f.spot('under', null, -.48, 0, 0, { maxH: .36, label: '좌판 밑', scale: .8 });
   f.spot('under', null, .48, 0, 0, { maxH: .36, label: '좌판 밑', scale: .8 });
 };
@@ -163,8 +199,9 @@ B.chalksign = (f, T) => {
   f.add(mc('chalksign', ({ add }) => {
     for (const s of [-1, 1]) add(G.box(.5, .7, .04, .01), WOOD, 0, .33, s * .12, s * .18, 0, 0);
     add(G.box(.42, .58, .01, .01), '#2f3a36', 0, .35, .145, .18, 0, 0);
-    for (const [y, w, c] of [[.5, .26, '#ffffff'], [.4, .3, YEL], [.3, .22, '#ffffff'], [.2, .28, '#ffb3c4']]) add(G.pbox(w, .025, .005), c, 0, y, .145 + (.5 - y) * .18 + .01, .18, 0, 0);
   }));
+  // the menu in chalk: a fish 5,000, a cup of coffee 1,500, a wavy underline, stars
+  f.add(put(mesh(geo('chalkmenu-face', () => new THREE.PlaneGeometry(.4, .55)), mat('#ffffff', { map: chalkTex() })), 0, .35, .151, .18, 0, 0));
   f.spot('behind', null, 0, 0, -.32, { maxH: .3, label: '칠판 뒤', scale: .7 });
 };
 

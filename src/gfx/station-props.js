@@ -401,12 +401,20 @@ B.platshelter = (f, T) => {
 
 // 가방 더미 (1×1, C안): two old trunks stacked with a picnic basket on top — its lid lifts
 B.suitcases = (f, T) => {
-  f.add(mc('suitcases', ({ add }) => {
+  // (10/22 밤 사용자 "뭔지 모를 덩어리": the stack read as a layer cake — the trunk gets its corners, handle and travel stickers,
+  // the middle case is a teal suitcase with a top handle and a luggage tag, the top one a wicker basket with side handles)
+  f.add(mc('suitcases2', ({ add, tube }) => {
     add(G.box(.62, .3, .4, .04), '#b97f4c', 0, .15, 0); add(G.box(.64, .04, .42, .02), '#8a5a33', 0, .27, 0);
     for (const x of [-.18, .18]) add(G.box(.04, .31, .41, .01), '#e0b46a', x, .155, 0);
-    add(G.box(.46, .24, .32, .04), '#d98b5f', -.02, .42, -.02, 0, .15, 0); add(G.box(.12, .04, .04, .01), '#e0b46a', -.02, .56, -.02, 0, .15, 0);
-    add(G.box(.26, .14, .2, .03), '#e9c28e', .05, .61, .02);
-    for (let k = 0; k < 3; k++) add(G.pbox(.27, .008, .21), '#c99a62', .05, .56 + k * .04, .02);
+    for (const x of [-.3, .3]) for (const y of [.03, .27]) add(G.box(.05, .05, .42, .012), '#6e4528', x, y, 0);
+    add(G.box(.14, .03, .03, .012), '#6e4528', 0, .2, .21); for (const x of [-.06, .06]) add(G.box(.02, .05, .02, .006), '#6e4528', x, .18, .21);
+    add(G.cyl(.05, .05, .006, 14), '#ff8fb8', -.1, .1, .203, HP, 0, 0); add(G.cyl(.04, .04, .006, 14), '#7fc8f0', .1, .12, .203, HP, 0, 0);
+    add(G.box(.46, .24, .32, .04), '#5fb8a8', -.02, .42, -.02, 0, .15, 0); add(G.box(.48, .03, .34, .015), '#3f8f80', -.02, .42, -.02, 0, .15, 0);
+    tube([-.1, .54, -.02], [-.1, .58, -.02], .012, '#2f5f56', 5); tube([.06, .54, -.04], [.06, .58, -.04], .012, '#2f5f56', 5); tube([-.1, .58, -.02], [.06, .58, -.04], .012, '#2f5f56', 5);
+    tube([.2, .48, .13], [.24, .38, .17], .004, '#d9cfb8', 3); add(G.box(.06, .08, .006, .004), '#ffffff', .25, .34, .175, 0, .15, .2);
+    add(G.box(.26, .14, .2, .03), '#e2b06a', .05, .61, .02);
+    for (let k = 0; k < 6; k++) add(G.pbox(.012, .13, .204), '#c58a44', -.06 + k * .045, .61, .02);
+    for (const s of [-1, 1]) add(G.tor(.035, .01, PI, 4, 10), '#a8743a', .05 + s * .135, .65, .02, 0, HP, s * HP);
   }));
   const lid = grp(); put(lid, .05, .68, -.08); f.add(lid);
   lid.add(mc('suitcases-lid', ({ add }) => { add(G.box(.27, .03, .21, .015), '#ffb3c4', 0, .015, .1); add(G.box(.27, .004, .03, .002), '#ffffff', 0, .032, .1); }));

@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { put, grp, shade } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
-import { clothBend } from './clothbend.js';
+import { clothBend, clothWave, clothSlab } from './clothbend.js';
 
 const PI = Math.PI, HP = PI / 2;
 const CREAM = '#f3eadc', LEAF = '#6cbf5a', LEAF2 = '#4fa64f', WOOD = '#c99a62', WOODD = '#8f6440', FOAM = '#f4f4f0', DARK = '#3a3048';
@@ -231,37 +231,40 @@ B.rubbertub = (f, T, o = {}) => {
   f.spot('beside', null, black ? .34 : -.34, 0, .34, { maxH: .26, label: black ? '까만 대야 옆' : '빨간 대야 옆', scale: .65 });
 };
 
-// 빨랫줄과 이불 (2×1): two steel posts set in cement-filled paint pails, a line between them; a pink flowered quilt folded over
-// the line (its front half flips up — a part), a towel and two socks pegged at the end
+// 빨랫줄과 이불 (2×1): two wooden posts set in cement-filled paint pails, a line sagging between them; a pink flowered quilt folded
+// over the line (its front half flips up — a part), a towel and two socks pegged at the end. (10/22 밤 사용자 "이불이 판자처럼
+// 빳빳하고 평평, 회색 쇠기둥": the quilt, its back half and the towel are cloth now — soft folds deepening toward the hem, the
+// flowers riding on them — and the line sags; wooden posts)
 const QUILT = '#ffb3c4', QUILT2 = '#f7a0b4';
 // (① 10/21: 'roofline', not 'clothesline' — that name is outdoor.js's alley clothesline, and this one, registered later,
 // took its place in every alley and yard stage from 1.0.147)
 B.roofline = (f, T) => {
-  const LY = 1.38, QX = -.25, QW = 1.12;
-  f.add(mc('clothesline', ({ add, tube }) => {
-    for (const x of [-.9, .9]) { add(G.cyl(.13, .11, .22, 14), '#e9e4d8', x, .11, 0); add(G.cyl(.12, .12, .01, 14), '#a9a49a', x, .215, 0); tube([x, .2, 0], [x, LY + .06, 0], .02, STEELG, 6); add(G.sph(.03, 6, 5), STEELG, x, LY + .07, 0); }
-    tube([-.9, LY, 0], [.9, LY, 0], .006, '#e8e2d2', 3);
+  const LY = 1.38, QX = -.25, QW = 1.12, sag = x => LY - .06 * (1 - (x / .9) ** 2), QY = sag(QX);
+  const zt = clothWave(.32, .44, 2, .016), zb = clothWave(QW, .86, 3, .022);
+  f.add(mc('clothesline2', ({ add, tube }) => {
+    for (const x of [-.9, .9]) { add(G.cyl(.13, .11, .22, 14), '#e9e4d8', x, .11, 0); add(G.cyl(.12, .12, .01, 14), '#a9a49a', x, .215, 0); tube([x, .2, 0], [x, LY + .06, 0], .024, '#c98f58', 8); add(G.sph(.034, 8, 6), '#b97c45', x, LY + .08, 0); }
+    for (let k = 0; k < 4; k++) { const a = -.9 + k * .45, b = a + .45; tube([a, sag(a), 0], [b, sag(b), 0], .006, '#e8e2d2', 3); }
     // the back half of the quilt (hangs a little shorter), its fold over the line
-    add(G.box(QW, .86, .03, .015), QUILT2, QX, LY - .43, -.04); add(G.cyl(.04, .04, QW, 10), QUILT, QX, LY + .005, 0, 0, 0, HP);
+    add(clothSlab(QW, .86, .03, zb), QUILT2, QX, QY, -.04); add(G.cyl(.04, .04, QW, 10), QUILT, QX, QY + .005, 0, 0, 0, HP);
     // the towel and the socks at the right end, wooden pegs
-    add(G.box(.32, .44, .02, .01), '#9fdcc8', .58, LY - .22, 0); for (let k = 0; k < 3; k++) add(G.pbox(.32, .02, .022), '#ffffff', .58, LY - .1 - k * .12, 0);
-    for (const [x, c] of [[.22, '#ffd86b'], [.3, '#9fc8ff']]) { add(G.box(.06, .18, .015, .01), c, x, LY - .1, 0); add(G.box(.09, .05, .015, .01), c, x + .02, LY - .18, 0); }
-    for (const x of [.24, .3, .45, .71]) add(G.pbox(.014, .05, .02), '#d9a466', x, LY + .01, .005);
+    add(clothSlab(.32, .44, .02, zt), '#9fdcc8', .58, sag(.58), 0); for (let k = 0; k < 3; k++) add(clothSlab(.32, .02, .022, zt, -.09 - k * .12), '#ffffff', .58, sag(.58), .002);
+    for (const [x, c] of [[.22, '#ffd86b'], [.3, '#9fc8ff']]) { add(G.box(.06, .18, .015, .01), c, x, sag(x) - .1, 0); add(G.box(.09, .05, .015, .01), c, x + .02, sag(x) - .18, 0); }
+    for (const x of [.24, .3, .45, .71]) add(G.pbox(.014, .05, .02), '#d9a466', x, sag(x) + .01, .005);
   }));
   // the front half of the quilt (20판 3차 10/21, user: "이불 올라가는 것도 카펫처럼 벤딩. 약간 페이지턴처럼 말려서 살짝 올라가는
   // 정도"; ③ #97 "25 이불도 벤딩으로": the six stiff strips still read as boards — now one cloth that bends, gfx/clothbend.js):
   // lifted, the bottom edge curls up and back first and the curl climbs, the top staying on the line. keyAt: a hook on the
   // inside near the bottom where something can hang until the quilt lifts (② 레벨: f.quiltKeyAt, parent the key to it)
-  const QH = .96, root = grp(); put(root, QX, LY, .03); f.add(root);
-  root.add(mc('clothesline-quilt4', ({ add }) => {
-    add(G.box(QW, QH, .03, .006), QUILT, 0, -QH / 2, .01);
+  const QH = .96, root = grp(), zq = clothWave(QW, QH, 3, .045); put(root, QX, QY, .03); f.add(root);
+  root.add(mc('clothesline-quilt5', ({ add }) => {
+    add(clothSlab(QW, QH, .03, zq), QUILT, 0, 0, .01);
     for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
       const x = -.42 + c * .28 + (r % 2) * .14, y = -.14 - r * .22;
       if (x > .5) continue;
-      for (let m = 0; m < 5; m++) add(G.sph(.026, 6, 4), '#ffffff', x + Math.cos(m * 1.26) * .03, y + Math.sin(m * 1.26) * .03, .03, 0, 0, 0, [1, 1, .3]);
-      add(G.sph(.016, 6, 4), '#ffd86b', x, y, .034, 0, 0, 0, [1, 1, .3]);
+      for (let m = 0; m < 5; m++) { const px = x + Math.cos(m * 1.26) * .03, py = y + Math.sin(m * 1.26) * .03; add(G.sph(.026, 6, 4), '#ffffff', px, py, .03 + zq(px, py), 0, 0, 0, [1, 1, .3]); }
+      add(G.sph(.016, 6, 4), '#ffd86b', x, y, .034 + zq(x, y), 0, 0, 0, [1, 1, .3]);
     }
-    add(G.pbox(QW, .03, .035), '#ffffff', 0, -QH + .015, .012);
+    add(clothSlab(QW, .03, .035, zq, -QH + .03), '#ffffff', 0, 0, .012);
   }));
   const keyAt = grp(); put(keyAt, .22, -QH + .1, -.01); root.add(keyAt);
   // the bend: the bottom curls first, the curl climbs; a little past at the end, then back (③ ui69 timing — the page-turn

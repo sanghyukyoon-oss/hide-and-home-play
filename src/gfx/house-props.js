@@ -138,7 +138,7 @@ export function entryNook(c, w, d, T = {}, owner = null, drop = .12) {
 
 // ── balcony railing: wall-local coords, x along the side, the room on +z; o.gaps = [u, ...] where stairs arrive ─────
 export function houseRail(len, T = {}, o = {}) {
-  const wood = col(T, 'wood'), woodD = col(T, 'woodD'), leaf = col(T, 'leaf'), leaf2 = col(T, 'leaf2');
+  const wood = col(T, 'wood'), woodD = col(T, 'woodD'), leaf = col(T, 'leaf');
   // (in order along the side: 펭펭이네 2층집 listed [2.5, −.5], and the rail ran on across both — over the stairs' landing and
   // the slide's top; user, 10/19: "스테이지 7에서 미끄럼틀 벽에 막혀 있다")
   const gaps = (o.gaps || []).slice().sort((a, b) => a - b).map(u => [u - .5, u + .5]), inGap = x => gaps.some(([a, b]) => x > a && x < b);
@@ -155,15 +155,8 @@ export function houseRail(len, T = {}, o = {}) {
       for (const x of [a, b]) { add(G.box(.13, H + .14, .13, .025), woodD, x + (x === a ? .065 : -.065), (H + .14) / 2, z); add(G.sph(.075, 10, 8), wood, x + (x === a ? .065 : -.065), H + .19, z); }
       for (let x = a + .3; x < b - .15; x += .3) add(G.box(.04, H - .12, .04, .01), wood, x, (H - .02) / 2 + .04, z);   // airy: the room behind stays readable
     }
-    // the floor's edge board, and ivy trailing over it at a few places
+    // the floor's edge board (the ivy that trailed over it came out — user 10/22 on 8판: "2층 난간에 주렁주렁 초록색 뭘까.. 제거하던가")
     add(G.box(L, .1, .08, .03), woodD, 0, -.05, z - .04);
-    for (let x = -L / 2 + .7; x < L / 2 - .3; x += 1.35) {
-      if (inGap(x)) continue;
-      const drop = .45 + ((x * 7.3) % .35 + .35) % .35;
-      tube([x, .04, z - .08], [x + .05, -drop, z - .12], .012, leaf2, 5);
-      leaves(add, x, .02, z - .1, 5, leaf, leaf2, 1.1, drop);
-      leaves(add, x + .18, .9, z - .02, 3, leaf, leaf2, .8);   // a sprig wound round the rail
-    }
   });
 }
 

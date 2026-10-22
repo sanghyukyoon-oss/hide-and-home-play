@@ -142,3 +142,15 @@ export function clothBend(f, pv, o = {}) {
   fn.cloth = true;
   return fn;
 }
+
+// a cloth hanging from its top edge (10/22 밤 사용자 "이불이 판자처럼 빳빳하고 평평" — the alley line, the rooftop line, the drying
+// rack): a thin slab cut fine whose face waves out by zf(x, y), y measured down from the top edge (negative); clothWave gives the
+// usual soft folds, deepening toward the hem. Decorations on the cloth sit at zf of their own spot so they ride the folds.
+export const clothWave = (w, h, folds, amp) => (x, y) => amp * (.3 + .7 * Math.min(1, -y / h)) * Math.sin((x / w + .5) * folds * Math.PI * 2);
+export function clothSlab(w, h, d, zf, y0 = 0) {
+  const g = new THREE.BoxGeometry(w, h, d, 14, Math.max(1, Math.round(h / .06)), 1), p = g.attributes.position;
+  g.translate(0, y0 - h / 2, 0);
+  for (let i = 0; i < p.count; i++) p.setZ(i, p.getZ(i) + zf(p.getX(i), p.getY(i)));
+  g.computeVertexNormals();
+  return g;
+}

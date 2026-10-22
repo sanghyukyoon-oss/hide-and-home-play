@@ -347,7 +347,15 @@ B.floormess = (f, T, o = {}) => {
   const k = o.kind || 0;
   const fm = f.add(mc('floormess|' + k, ({ add, tube }) => {
     if (k === 0) { add(G.sph(.22, 12, 8), '#6a86c9', 0, .07, 0, 0, .3, 0, [1.3, .35, 1]); add(G.sph(.12, 10, 7), '#5b78bd', .12, .1, .08, 0, 0, 0, [1, .5, 1]); add(G.tor(.07, .02, PI * 2, 5, 12), '#4f6db0', -.15, .13, -.02, HP, 0, 0); for (const sx of [-1, 1]) add(G.cyl(.006, .006, .14, 5), WHITE, -.08 + sx * .03, .12, .12, .6, 0, 0); }
-    else { add(G.box(.22, .03, .3, .03), '#ffc23d', -.1, .015, 0, 0, .4, 0); add(G.box(.12, .005, .14, .01), '#e8414e', -.1, .033, 0, 0, .4, 0); add(G.cyl(.035, .035, .12, 12), '#7fd6c0', .15, .035, .1, HP, .8, 0); add(G.box(.08, .01, .15, .015), CHAR, .1, .01, -.15, 0, -.3, 0); tube([.1, .01, -.08], [.25, .01, -.25], .005, WHITE, 3); }
+    else {
+      // (10/22 밤 사용자 "뭔지 모를 덩어리": the snack bag was a flat yellow board with a red square — now a puffed bag crimped
+      // shut at both ends, its red label, a few chips spilled out of it; the can has its rim)
+      const ry = .4, ex = Math.sin(ry) * .19, ez = Math.cos(ry) * .19;
+      add(G.sph(.14, 14, 10), '#ffc23d', -.1, .045, 0, 0, ry, 0, [1, .3, 1.35]);
+      for (const s of [-1, 1]) add(G.box(.2, .022, .035, .008), '#f2a91c', -.1 + s * ex, .03, s * ez, 0, ry, 0);
+      add(G.sph(.06, 10, 7), '#e8414e', -.1, .083, 0, 0, ry, 0, [1.15, .14, .85]);
+      for (const [x, z, a] of [[.06, .15, .3], [.12, .2, 1.2], [.02, .23, 2.1], [.15, .27, .7]]) add(G.sph(.028, 8, 6), '#f7d774', x, .012, z, .3, a, 0, [1.2, .3, 1]);
+      add(G.cyl(.035, .035, .12, 12), '#7fd6c0', .15, .035, .1, HP, .8, 0); add(G.tor(.031, .006, PI * 2, 4, 14), '#d9dee6', .15 + Math.sin(.8) * .06, .035, .1 + Math.cos(.8) * .06, 0, .8, 0); add(G.box(.08, .01, .15, .015), CHAR, .1, .01, -.15, 0, -.3, 0); tube([.1, .01, -.08], [.25, .01, -.25], .005, WHITE, 3); }
   }));
   fm.scale.setScalar(1.5);   // (검토 10/21: at the start view's distance the little ones read as specks)
   f.spot('under', null, k ? .02 : .22, 0, k ? .16 : .1, { maxH: .2, label: k ? '과자 봉지 밑' : '벗어 둔 후드티 밑', scale: .65 });   // (at the edge: it peeks out)

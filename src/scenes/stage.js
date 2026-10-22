@@ -281,17 +281,17 @@ export class StageScene {
       let glow = own && own[0] === 'glow' ? own[1] : 0, dif = own && own[0] === 'diffuse' ? own[1] : 0;
       if (gq != null) { glow = nightGlow ? 0 : gq; if (gq > 0) dif = 0; }
       if (dq != null) { dif = dq; if (dq > 0) glow = 0; }
-      const NO_GLOW = true;   // (10/22 사용자: "글로우는 아예 안 쓰기로" — 밤 판의 빛 번짐도 끔; ?glow=N 시험은 그대로)
+      const NO_GLOW = true;   // (10/22 사용자: "글로우는 아예 안 쓰기로" — 낮 판; ?glow=N 시험은 그대로)
       if (NO_GLOW && gq == null) glow = 0;
-      const nightOn = nightGlow && !NO_GLOW;
+      const nightOn = nightGlow;   // (10/22 저녁 사용자, 9판 후보정판으로 맞춰 봄: "어두운 판에서는 글로우 킬까 봐! 넘 밋밋" — 밤·정전 판만 글로우 .42·문턱 .66)
       P.bloomOn = nightOn || glow > 0 || dif > 0;
-      P.bloomStr = nightOn ? (NIGHT_GLOW[this.spec.room] ?? .8) : glow;
+      P.bloomStr = nightOn ? (NIGHT_GLOW[this.spec.room] ?? .42) : glow;
       if (P.du?.diffuse) P.du.diffuse.value = nightGlow ? 0 : dif;
       const tl = num('tilt');   // 후보정 시험: 위·아래 흐림은 흐린 사본이 필요해서 빛 번짐 흐림을 문턱 없이 씀(이때 글로우·뽀샤시는 끔)
       if (tl > 0) { P.bloomOn = true; P.bloomStr = 0; if (P.du?.diffuse) P.du.diffuse.value = 0; }
       if (P.du?.tilt) P.du.tilt.value = tl > 0 ? tl : 0;
       const gth = q.get('glowth');
-      if (P.blu?.th) P.blu.th.value = tl > 0 ? -1 : nightGlow ? .5 : dif > 0 ? .2 : gth != null && gth !== '' && !isNaN(+gth) ? +gth : .82;
+      if (P.blu?.th) P.blu.th.value = tl > 0 ? -1 : nightGlow ? .66 : dif > 0 ? .2 : gth != null && gth !== '' && !isNaN(+gth) ? +gth : .82;
       applyFxOverrides(P);   // 후보정 조절판에서 움직인 값이 판의 값 위에 (fxpanel.js)
     }
     this.hasBook = false; this.cine = false;
