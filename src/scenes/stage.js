@@ -35,6 +35,7 @@ import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
 import { TUT_B, tutB1, tutB2 } from '../tutb.js';
+import { NOTE3D, showNote3D } from '../noteview3d.js';
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
 import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
@@ -448,8 +449,9 @@ export class StageScene {
       for (let i = 0; i < 25 && (G.world.flying || this.cine) && !this.dead; i++) await this.tw.wait(.1);
       if (!this.dead) await this.inkyTrace();
     })();
-    // (튜토리얼 B — tutb.js, ③ 10/22: ?tut=b or 더보기: a line and a hand only if needed, instead of the lessons)
-    if (TUT_B && (this.spec.tut === 1 || this.spec.tut === 2)) { if (this.spec.tut === 1) tutB1(this); else tutB2(this); }
+    // (튜토리얼 B — tutb.js, ③ 10/22: ?tut=b or 더보기: in 2판 a line and a hand only if needed, instead of the lessons)
+    // (user 10/22: "1은 원래 것이 나은 것 같음" — B changes 2판 only)
+    if (TUT_B && this.spec.tut === 2) tutB2(this);
     else {
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
     if (this.spec.tut === 2) { this.tutorial2(); if (TILT_ON || !DBL_ON) this.teachTilt(); }
@@ -1672,6 +1674,12 @@ export class StageScene {
     } else {
       this.codes.add(it.code);
       this.codePill.style.display = ''; this.codePill.classList.remove('need'); this.codePill.set(it.code.split('').join(' '));
+      // 쪽지 펼치기 (noteview3d.js, ?note=3d until GPT's folded notes are in): it opens in the middle, a tap puts it in the chip;
+      // the chip, tapped again, shows it open
+      if (NOTE3D && !this.botOn()) {
+        this.paused = true; try { await showNote3D(G, { code: it.code, x: s.x, y: s.y, pill: this.codePill }); } finally { this.paused = false; }
+        if (!this.codePill._nv) { this.codePill._nv = true; this.codePill.style.pointerEvents = 'auto'; this.codePill.addEventListener('click', () => { const c = [...this.codes].pop(); if (c && !this.paused) { this.paused = true; showNote3D(G, { code: c, open: true, pill: this.codePill }).finally(() => { this.paused = false; }); } }); }
+      } else
       await G.ui.flyImg(G.thumbs.item_note, s.x, s.y, this.codePill, { size: 64 });
       G.ui.toast(`비밀번호는 ${it.code}! 금고를 열어봐`, 'green');
       this.pointAt(it.forPart);

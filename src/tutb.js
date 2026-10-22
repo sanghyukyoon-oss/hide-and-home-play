@@ -1,8 +1,7 @@
 // 튜토리얼 B (③ 10/22, user: "지금 좀 과한 거 아닌가", "토순이집 들어가면 그냥 '이동 중에 터치를 하면 회전으로 잠시 바뀌어요' 이런 안내
 // 하나면"): a lighter start, to try side by side with the lessons we have (A). ?tut=b or 더보기 → 튜토리얼 B (this device); A stays
 // the default.
-//  1판: no lesson cards, no hand — you just play. Only if nothing is touched for 7 s does a see-through hand drag across once.
-//       (the toy box is still the thing to turn to; nobody says so)
+//  1판: as A (user 10/22 "1은 원래 것이 나은 것 같음"; tutB1 below is kept, unused).
 //  2판: one line for 2.5 s — how to turn while moving. If you haven't turned in 20 s, the hand shows it once (no three steps).
 //       Turning at all ends it, quietly.
 //  Gone in B: the three-beat drag + touch lesson and its '새로 얻었다' badge, the tilt and double-tap lessons, the controls
@@ -22,24 +21,14 @@ export const TUTB_TXT = {
 
 // a see-through hand that drags across once (or a second finger touching while it drags, for the turn)
 async function hand(S, kind) {
-  const W = S.G.world, el = h('div', { class: 'tutb-hand', html: ICON.hand }), el2 = kind === 'turn' ? h('div', { class: 'tutb-hand two', html: ICON.hand }) : null;
-  css();
+  // (the game's own lesson hand — .hand, as in teach() — not a look of its own)
+  const W = S.G.world, el = h('div', { class: 'hand', html: ICON.hand }), el2 = kind === 'turn' ? h('div', { class: 'hand', html: ICON.hand, style: 'width:80px;height:80px' }) : null;
   const x0 = innerWidth * .38, y0 = innerHeight * .56, dx = innerWidth * .26;
   el.style.left = x0 + 'px'; el.style.top = y0 + 'px'; S.G.ui.tut.append(el); if (el2) { el2.style.left = (x0 + dx * .4) + 'px'; el2.style.top = (y0 - 90) + 'px'; S.G.ui.tut.append(el2); }
   const a = el.animate([{ transform: 'translate(0,0) scale(1.1)', opacity: 0 }, { transform: 'translate(0,0) scale(1)', opacity: .85, offset: .15 }, { transform: `translate(${dx}px,0)`, opacity: .85, offset: .8 }, { transform: `translate(${dx}px,0)`, opacity: 0 }], { duration: 1600, easing: 'ease-in-out' });
   if (el2) el2.animate([{ opacity: 0 }, { opacity: 0, offset: .35 }, { opacity: .85, transform: 'scale(.9)', offset: .45 }, { opacity: .85, offset: .75 }, { opacity: 0 }], { duration: 1600 });
   await a.finished.catch(() => {});
   el.remove(); el2?.remove(); void W;
-}
-let done = false;
-function css() {
-  if (done) return; done = true;
-  const s = document.createElement('style');
-  s.textContent = `.tutb-hand{position:absolute;z-index:31;pointer-events:none;width:84px;height:84px;margin:-8px 0 0 -26px;filter:drop-shadow(0 3px 4px rgba(42,26,61,.35))}
-.tutb-hand svg{width:100%;height:100%}
-.tutb-hand.two{width:72px;height:72px}
-.tutb-line{position:absolute;left:50%;transform:translateX(-50%);z-index:31;pointer-events:none;background:rgba(42,26,61,.78);color:#fff;border-radius:16px;padding:9px 16px;font:600 16px 'Ssurround',sans-serif;max-width:86vw;text-align:center;word-break:keep-all;transition:opacity .4s}`;
-  document.head.append(s);
 }
 
 // your fingers on the screen (the view moving by itself — the intro, the sway — doesn't count)
@@ -65,10 +54,10 @@ export async function tutB1(S) {
 // 2판: one line; 20 s with no turn of yours → the hand once; a turn ends it
 export async function tutB2(S) {
   const G = S.G, W = G.world;
-  css();
   for (let i = 0; i < 40 && (S.talking || S.cine || W.flying || !S.running); i++) await S.tw.wait(.25);
   if (S.dead || S.result) return;
-  const line = h('div', { class: 'tutb-line', style: `top:${Math.round(innerHeight * .2)}px` }, tr(TUTB_TXT.turn)); G.ui.tut.append(line);
+  // (the game's own lesson card — .tip, as in teach(): ink border, the same font and colours)
+  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px;transition:opacity .4s` }, tr(TUTB_TXT.turn)); G.ui.tut.append(line);
   setTimeout(() => { line.style.opacity = '0'; setTimeout(() => line.remove(), 450); }, 2600);
   let turn = 0, y = W.yaw; const t0 = S.t;
   while (!S.dead && !S.result) {
