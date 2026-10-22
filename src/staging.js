@@ -71,15 +71,15 @@ const tunnel = {
     const G = S.G, W = G.world;
     flowWindows(S);
     // in to the window at seat height, the carriage rocking a little
-    // (the window that faces the camera — one on the far wall, seen from inside the carriage)
-    let win = null, best = -1; const tex = trainView(), cd = V(0, 0, 0); W.cam.getWorldDirection(cd);
-    S.room.group.traverse(o => {
-      if (!o.isMesh || o.material?.map !== tex) return;
-      if (o.userData.furn?.parts?.some(q => /블라인드/.test(q.label) && q.t < .5)) return;
-      const n = V(0, 0, 1).applyQuaternion(o.getWorldQuaternion(new THREE.Quaternion())), d = -n.dot(cd);
-      if (d > best) { best = d; win = { o, n }; }
-    });
-    if (win && best > .2) { const p = win.o.getWorldPosition(V(0, 0, 0)); W.flyTo(S.tw, { target: V(p.x, p.y - .25, p.z), zoom: Math.max(W.zoom * 1.8, 2.6), dur: .6 }); }
+    // (the window that faces the camera — one on the far wall, seen from inside the carriage; any train window piece: twindow,
+    // twindow2 — traincar3's big flowing ones, ③ 10/22 — and never one with its blind down)
+    let win = null, best = -1; const cd = V(0, 0, 0); W.cam.getWorldDirection(cd);
+    for (const R of S.room.rooms || [S.room]) for (const r of [...R.furns, ...(R.decors || [])]) {
+      if (!/^twindow/.test(r.type) || r.f.parts?.some(q => /블라인드/.test(q.label) && q.t < .5)) continue;
+      const g = r.f.group, n = V(0, 0, 1).applyQuaternion(g.getWorldQuaternion(new THREE.Quaternion())), d = -n.dot(cd);
+      if (d > best) { best = d; const b = new THREE.Box3(); g.traverse(o => { if (o.isMesh && o.geometry?.type === 'PlaneGeometry') b.expandByObject(o); }); win = { c: b.isEmpty() ? g.getWorldPosition(V(0, 1.5, 0)) : b.getCenter(V(0, 0, 0)), n }; }
+    }
+    if (win && best > .2) W.flyTo(S.tw, { target: V(win.c.x, win.c.y - .25, win.c.z), zoom: Math.max(W.zoom * 1.8, 2.6), dur: .6 });
     await Promise.race([sway(S, 2.6), c.wait(2.6)]);
   },
   hide(S, ov) {

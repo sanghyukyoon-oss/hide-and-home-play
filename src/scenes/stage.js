@@ -53,6 +53,7 @@ import { tr } from '../i18n.js';
 import { EN } from '../i18n-en-dict.js';
 const SHELF_GOAL = '빠진 그림책을 찾아서 책장에 꽂아 줘!';   // (12판 첫 손 — 스토리 룸이 대사를 맞추면 script.js로 옮겨도 돼요)
 EN[SHELF_GOAL] ??= 'Find the missing picture book and put it back on the shelf!';
+EN['놀이 하고 가기'] ??= 'Play the game';
 // the star reasons the 흑백·너굴이·방탈출 stages had none of (QA 10/18: 2 stars on a boss with no word why)
 const STAR_TXT = { time: (EN['★ 시간 넉넉히'] = '★ Time to spare', '★ 시간 넉넉히'), secret: (EN['★ 비밀 아이템'] = '★ Secret item', '★ 비밀 아이템') };
 // 숨은그림 판 다듬기 (hunt.js: the host's habit places, no place nobody can see into, the key where you see it, the next
@@ -3045,7 +3046,15 @@ export class StageScene {
     // (② 레벨 10/21, 사용자 "19 26 미니게임 하나없이 달려서 갑갑": a stage played again still has its play after it — the save's
     // 'done' only pays it a third now (settleFollowup replayWin); 70판's last night only before the ending)
     const replayPlay = k => !G.save.bossDone?.[k] || (G.save.stage || 0) > this.idx + 1 && !(this.idx === STAGE_COUNT - 1);
-    const bossNext = BOSS_AFTER.includes(this.idx) && replayPlay(this.idx), gameNext = !bossNext && !!BOSS_GAMES[this.idx] && replayPlay('g' + this.idx), miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && replayPlay('m' + this.idx);
+    // (③ 10/22, 시트 결정 8 '다시 하는 판의 놀이'): the play after a stage comes by itself only the first time; played already, it waits
+    // behind a small '놀이 하고 가기' button on this panel (when you want it) and '다음' goes straight on to the next stage
+    const due = k => !G.save.bossDone?.[k];
+    const bossNext = BOSS_AFTER.includes(this.idx) && due(this.idx), gameNext = !bossNext && !!BOSS_GAMES[this.idx] && due('g' + this.idx), miniNext = !bossNext && !gameNext && !!MINI_AFTER[this.idx] && due('m' + this.idx);
+    const againPlay = this.custom || this.preview || this.model || bossNext || gameNext || miniNext ? null
+      : BOSS_AFTER.includes(this.idx) && replayPlay(this.idx) ? () => G.go('boss', { after: this.idx })
+      : BOSS_GAMES[this.idx] && replayPlay('g' + this.idx) ? () => G.go('bossgame', { kind: BOSS_GAMES[this.idx].kind, lv: BOSS_GAMES[this.idx].lv, after: this.idx })
+      : MINI_AFTER[this.idx] && replayPlay('m' + this.idx) ? () => (MINI_AFTER[this.idx].lab ? G.go('bossgame', { kind: MINI_AFTER[this.idx].kind, lv: MINI_AFTER[this.idx].lv || 0, after: this.idx, interlude: true }) : G.go('mini', { kind: MINI_AFTER[this.idx].kind, after: this.idx }))
+      : null;
     const starEls = [0, 1, 2].map(() => h('div', { class: 'st', html: ICON.star }));
     const cv = h('span', {}, '0');
     const p = G.ui.panel({
@@ -3084,6 +3093,7 @@ export class StageScene {
       buttons: this.model ? [G.ui.btn('놀이 모음', { color: 'blue', cls: 'sm', onClick: () => G.go('home', { gallery: true }) }),
         this.nextBtn = G.ui.btn('다시 조립', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })]
         : [...(noHome ? [] : [homeNow ? G.ui.btn(SUI.homeHide, { color: 'orange', icon: 'home', cls: 'sm', onClick: () => G.go('myhome') }) : G.ui.btn('홈', { color: 'blue', icon: 'home', cls: 'sm', onClick: () => G.go('home') })]),
+        ...(againPlay ? [G.ui.btn('놀이 하고 가기', { color: 'orange', icon: 'play', cls: 'sm', onClick: againPlay })] : []),
         this.nextBtn = this.custom?.selfTest ? G.ui.btn('내 방 고치러', { color: 'green', icon: 'home', cls: 'big', onClick: () => G.go('myhome', { zone: this.custom.back, mode: 'hide' }) })
           : this.custom ? G.ui.btn('다른 방', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('visit') })
           : this.preview ? G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => G.go('stage', this.retryArgs()) })

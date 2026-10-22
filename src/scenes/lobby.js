@@ -440,6 +440,8 @@ export class LobbyScene extends MyHomeScene {
     if (this.mode === 'passage') return this.passageDone();
     if (this.mode === 'lobby') {
       const hit = this.pick(x, y); if (hit.kind === 'char' && hit.char === this.mong) { if (this.hopOffRug()) return; this.heroView(); this.reactChar(this.mong); return; }
+      // 복층 미끄럼틀 (③ 10/22): a tap on it — 몽글이 hops up and slides down
+      if (hit.kind === 'furn' && hit.furn.loft?.way === 'slide' && !this.busyTut && !this.G.ui.panelOpen) { this.slideMong(hit.furn); return; }
       // 몽글 TV (10/19): the TV you bought plays too — just for fun here, no taps to win (its doors still open as before)
       if (hit.kind === 'furn' && TV_TYPES.has(hit.furn.type) && !this.busyTut && !this.G.bot && !this.G.ui.panelOpen) { this.G.audio.sfx('click'); openMongleTV(this.G, { level: tvLevel(this.G.save.stage || 0) }); return; }
     }
@@ -538,6 +540,32 @@ export class LobbyScene extends MyHomeScene {
     })();
     return true;
   }
+  // 몽글이 on the slide (③ 10/22, user: "미끄럼틀(몽글이가 실제로 타고 내려오는 짧은 애니메이션)"): up onto the deck in one big
+  // hop, a breath at the top, then down the slide (quick at first, easing out onto the floor), a little hop forward. It stays
+  // where it lands (not saved: next time it sits where it sat).
+  async slideMong(f) {
+    const m = this.mong, G = this.G, tw = this.tw; if (!m || m.hopping || this._sliding || !f.slidePath) return;
+    this._sliding = true; m.hopping = true;
+    try {
+      f.group.updateMatrixWorld(true);
+      const top = f.slidePath(0), p = m.root.position, p0 = p.clone(), peak = Math.max(p0.y, top.y) + .45;
+      // (the whole ride in view: the slide's middle, a little closer than the room view)
+      { const e = f.slidePath(1), W = G.world; this._heroView = 'room'; W.flyTo(tw, { target: new THREE.Vector3((top.x + e.x) / 2, .7, (top.z + e.z) / 2), zoom: clamp(W.zoom, 1.1, 1.5), dur: .5 }); }
+      m.faceTo(top.x, top.z); m.setFace?.('happy'); G.audio.sfx('hop');
+      await tw.run(.55, k => { p.x = p0.x + (top.x - p0.x) * k; p.z = p0.z + (top.z - p0.z) * k; p.y = k < .5 ? p0.y + (peak - p0.y) * Math.sin(k * Math.PI) : top.y + (peak - top.y) * Math.sin(k * Math.PI); });
+      if (this.dead) return;
+      p.copy(top); m.squash = .3; G.audio.sfx('land');
+      const end = f.slidePath(1); m.faceTo(end.x, end.z);
+      await tw.wait(.25); if (this.dead) return;
+      m.setFace?.('wow'); G.audio.sfx('swish'); G.audio.sfx('giggle');
+      await tw.run(1.05, k => { const e = 1 - (1 - k) * (1 - k); p.copy(f.slidePath(e)); m.root.rotation.x = -.35 * (1 - e); G.world.shadowDirty = true; }, t => t);
+      if (this.dead) return;
+      m.root.rotation.x = 0; p.y = 0; m.squash = .35; m.setFace?.('happy');
+      const fw = new THREE.Vector3(end.x - top.x, 0, end.z - top.z).normalize();
+      await m.hopTo(tw, p.x + fw.x * .35, p.z + fw.z * .35, { height: .3, dur: .35 });
+      m.faceTo(G.world.cam.position.x, G.world.cam.position.z);
+    } finally { m.hopping = false; this._sliding = false; m.root.rotation.x = 0; }
+  }
   // tap 몽글이 in the lobby: close up on it; again: the whole room; again: close up
   heroView() {
     const W = this.G.world, m = this.mong;
@@ -567,6 +595,9 @@ export class LobbyScene extends MyHomeScene {
   // 썰렁하니까 캐릭터 쪽 클로즈업으로 잡아주자"), opening out as furniture and friends fill it; 꾸미기·숨기기 see the whole room
   frameLobby(dur = .7, extra = [], cut = false) {
     if (this.dead || !this.room || this._growing || this._previewing) return;   // (방 넓히기: the room's own camera while its walls go out)
+    // (몽글이 on the slide: its own shot until it lands)
+    if (this._sliding) return;
+
     // (10/19 evening, user with a screenshot: "로비는 이 정도 뷰에서 캐릭터 위주로 처음에 보여지는 게 나을 거 같아 … 캐릭터가 정중앙에
     // 있는 구도") the lobby's own view is 몽글이 big and dead centre; tapping 몽글이 opens out to the room (heroView). Friends
     // arriving, the room pass and the star box (extra points, or the passage mode) still frame the whole group.

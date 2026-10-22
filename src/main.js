@@ -47,6 +47,7 @@ import { KIT_ITEMS, KIT_BUILDERS, KIT_INFO } from './gfx/modelkit-props.js';
 import { SPECIAL_BUILDERS, SPECIAL_INFO } from './gfx/special-props.js';   // 상점 스페셜 가구 13개 (10/20)
 import { GIFT_BUILDERS, GIFT_INFO } from './gfx/gift-props.js';   // 특별 선물 후보 (10/20)
 import { ATTIC_BUILDERS, ATTIC_INFO } from './gfx/bunnyattic-props.js';   // 2판 토순이 다락 놀이방 (10/20)
+import { LOFT_BUILDERS, LOFT_INFO } from './gfx/loft-props.js';
 import { BAKERY_BUILDERS, BAKERY_INFO } from './gfx/bearbakery-props.js';   // 6판 곰돌이 빵 굽는 부엌 (10/20)
 import { Char, CHAR_DEFS } from './gfx/chars.js';
 import { THEMES, LAYOUTS, STAGE_COUNT } from './stages.js';
@@ -134,6 +135,8 @@ for (const k in ONEROOM_THEMES) THEMES[k] = { ...THEMES.my, ...ONEROOM_THEMES[k]
 // 18판 너굴이네 복층 (otakuloft): the one-room's make, a greige paper wall with a fine stripe, dark oak floor, warm wood
 THEMES.otakuloft = { ...THEMES.oneroom, friend: 'raccoon', name: '너굴이네 복층', wallKind: 'stripe', wall: '#ece3d5', wall2: '#e3d9c8', wainscot: '#d6c8b2', wallEdge: '#f1eadf', floor: '#c9a27a', floor2: '#b08860', base: '#a88f73', wood: '#d9a46a', woodD: '#9c6a42', door: '#c9d6e6', rug: '#3f5f8f', rug2: '#ffd98a', bean: '#ff8f3a', fridge: '#6a86c9' };   // (18판 구조 시안 10/21: 원룸의 결)
 registerStoryShop(ONEROOM_INFO);
+// 내 방 복층 판·사다리·계단·미끄럼틀 (③ 10/22, user: "복층 미끄럼틀 ㄱ")
+registerFurniture(LOFT_BUILDERS, LOFT_INFO); registerStoryShop(LOFT_INFO);
 addHomeStyle({ id: 'st-oneroom', name: '나의 원룸', indoor: true, theme: 'oneroom', price: 350, bleed: true, sw: ['#e9e2d6', '#f4c58e'] });
 // 단지 놀이터 (concept I, region 5)
 registerFurniture(PLAYGROUND_BUILDERS, PLAYGROUND_INFO);

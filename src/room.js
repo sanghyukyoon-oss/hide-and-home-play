@@ -123,7 +123,8 @@ const hasFine = e => !!(e.s && e.s !== 1 || e.ry || e.dx || e.dz || e.dy);
 // with a flat top — dragged over it, it sits on that top (the height of the top's '…위' hiding spot). A piece with something on
 // it stays put until that is taken off (myhome).
 export const STACK_SMALL = new Set(['kitrobot', 'kitparfait', 'kitmovebox', 'lamp', 'plant', 'monstera', 'amphora', 'tacklebox', 'baitbucket', 'speaker', 'yarnbasket', 'sp_neonlamp', 'sp_rocket', 'sp_skate', 'sp2_radio']);   // (sp_: 스페셜 models to come)
-export const STACK_TOP = { drawers: 1.01, desk: .81, table: .69, counter: .94, safe: .94, stool: .55, guidedesk: .85, kitchentable: .77, merchtable: .71, schooldesk: .68, kitmovebox: .47 };
+// (복층 판 1.3 m + its boards — gfx/loft-props.js)
+export const STACK_TOP = { loft2_ladder: 1.33, loft2_stairs: 1.33, loft2_slide: 1.33, loft3_ladder: 1.33, loft3_stairs: 1.33, loft3_slide: 1.33, drawers: 1.01, desk: .81, table: .69, counter: .94, safe: .94, stool: .55, guidedesk: .85, kitchentable: .77, merchtable: .71, schooldesk: .68, kitmovebox: .47 };
 
 export class Room {
   constructor(world, layout) {
@@ -522,8 +523,10 @@ export class Room {
       if (r.id === ignoreId || r.on || STACK_TOP[r.type] == null || r.type === type) continue;
       const o = this.recObb(r, 1), dx = x - o.x, dz = z - o.z, u = dx * o.c - dz * o.s, v = dx * o.s + dz * o.c;
       if (Math.abs(u) > o.hw || Math.abs(v) > o.hd) continue;
-      const me = this.obb(type, 0, 0, 0, 1), mu = Math.max(0, o.hw - me.hw * .8), mv = Math.max(0, o.hd - me.hd * .8);
-      const cu = clamp(u, -mu, mu), cv = clamp(v, -mv, mv);
+      // (a piece whose top is only part of it — 복층 판: the deck, not the ladder or slide in front — f.stackArea)
+      const A = r.f.stackArea; if (A && (Math.abs(u) > A.u || v < A.v0 || v > A.v1)) continue;
+      const me = this.obb(type, 0, 0, 0, 1), mu = Math.max(0, (A ? A.u : o.hw) - me.hw * .8), mv = Math.max(0, o.hd - me.hd * .8);
+      const cu = clamp(u, -mu, mu), cv = A ? clamp(v, A.v0 + me.hd * .8, A.v1 - me.hd * .8) : clamp(v, -mv, mv);
       return { base: r, x: o.x + cu * o.c + cv * o.s, z: o.z - cu * o.s + cv * o.c, y: STACK_TOP[r.type] };
     }
     return null;
