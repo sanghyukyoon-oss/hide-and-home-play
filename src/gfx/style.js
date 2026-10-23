@@ -39,10 +39,12 @@ const qn = (k, d) => HLQ.has(k) && HLQ.get(k) !== '' && !isNaN(+HLQ.get(k)) ? +H
 export const SHADE = {
   hl: qn('hl', 1), hlw: Math.max(1, Math.min(5, qn('hlw', 2))),
   u: { shineA: { value: qn('shine', .7) }, shineT: { value: Math.min(.999, Math.max(.9, qn('shinet', .992))) },   // (10/23 사용자 값: 반짝 점 세기 .70·크기 .05)
-    rimA: { value: qn('rim', .35) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .31))) }, rimC: { value: new THREE.Color('#fffbcc') },   // (10/23 사용자 값 A: 림 .35·두께 .31·더하기·#fffbcc; B안은 .20·.35·오버레이·#000000)
-    shineC: { value: new THREE.Color('#ffffff') }, shineM: { value: 0 }, rimM: { value: 1 } },   // (색·합성: 0 보통 · 1 더하기 · 2 스크린 · 3 오버레이 — user 10/22 "색깔도 변경 가능? 합성 모드도")
+    rimA: { value: qn('rim', .35) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .31))) }, rimC: { value: new THREE.Color('#' + (HLQ.get('rimc') || 'fffbcc')) },   // (10/23 사용자 값 A: 림 .35·두께 .31·더하기·#fffbcc; B안은 .20·.35·오버레이·#000000)
+    shineC: { value: new THREE.Color('#' + (HLQ.get('shinec') || 'ffffff')) }, shineM: { value: qn('shinem', 0) }, rimM: { value: qn('rimm', 1) },
+    // (10/23 사용자: "스펙큘러는 화면 중앙에서 약간 위 정도는 잘 보이게, 가장자리랑 위아래로 갈수록 안 보이게") 1 = 가운데만, 0 = 화면 어디서나
+    shineFocus: { value: qn('shinef', 1) } },   // (색·합성: 0 보통 · 1 더하기 · 2 스크린 · 3 오버레이 — user 10/22 "색깔도 변경 가능? 합성 모드도")
   set(o) {
-    for (const k of ['shineA', 'shineT', 'rimA', 'rimW', 'shineM', 'rimM']) if (o[k] != null) this.u[k].value = o[k];
+    for (const k of ['shineA', 'shineT', 'rimA', 'rimW', 'shineM', 'rimM', 'shineFocus']) if (o[k] != null) this.u[k].value = o[k];
     for (const k of ['shineC', 'rimC']) if (o[k]) this.u[k].value.set(o[k]);
     if (o.hl != null || o.hlw != null) { if (o.hl != null) this.hl = o.hl; if (o.hlw != null) this.hlw = o.hlw; const g = STYLE.grad; if (g) { g.image.data.set(toonSteps()); g.needsUpdate = true; } }
   },
@@ -55,8 +57,10 @@ function shadePatch() {
   if (THREE.MeshToonMaterial.prototype.__shade) return;
   THREE.MeshToonMaterial.prototype.__shade = true;
   THREE.MeshToonMaterial.prototype.onBeforeCompile = function (sh) {
-    Object.assign(sh.uniforms, { uShineA: SHADE.u.shineA, uShineT: SHADE.u.shineT, uRimA: SHADE.u.rimA, uRimW: SHADE.u.rimW, uRimC: SHADE.u.rimC, uShineC: SHADE.u.shineC, uShineM: SHADE.u.shineM, uRimM: SHADE.u.rimM });
-    sh.fragmentShader = `uniform float uShineA, uShineT, uRimA, uRimW, uShineM, uRimM; uniform vec3 uRimC, uShineC;
+    Object.assign(sh.uniforms, { uShineA: SHADE.u.shineA, uShineT: SHADE.u.shineT, uRimA: SHADE.u.rimA, uRimW: SHADE.u.rimW, uRimC: SHADE.u.rimC, uShineC: SHADE.u.shineC, uShineM: SHADE.u.shineM, uRimM: SHADE.u.rimM, uShineF: SHADE.u.shineFocus });
+    // the pixel's place on the screen (−1…1), for the shine's centre focus
+    sh.vertexShader = 'varying vec2 vScr;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  vScr = gl_Position.xy / gl_Position.w;');
+    sh.fragmentShader = `uniform float uShineA, uShineT, uRimA, uRimW, uShineM, uRimM, uShineF; uniform vec3 uRimC, uShineC; varying vec2 vScr;
   vec3 sbBlend( vec3 b, vec3 c, float a, float m ) {
     vec3 r = m < 0.5 ? c : m < 1.5 ? b + c : m < 2.5 ? 1.0 - ( 1.0 - b ) * ( 1.0 - c ) : mix( 2.0 * b * c, 1.0 - 2.0 * ( 1.0 - b ) * ( 1.0 - c ), step( 0.5, b ) );
     return mix( b, r, a );
@@ -69,7 +73,9 @@ function shadePatch() {
     // on some maps (user 10/22: "타는 듯한 느낌이 드는 맵도") — so the dot needs the normal to bend across the pixel
     float curv = smoothstep( 0.002, 0.012, length( fwidth( normal ) ) );
     float k = smoothstep( uShineT, uShineT + 0.004, dot( normal, hv ) ) * step( 0.0, ndl ) * curv;
-    outgoingLight = sbBlend( outgoingLight, uShineC, k * uShineA, uShineM );
+    // brightest a little above the screen's centre, gone toward the sides, top and bottom
+    float foc = 1.0 - smoothstep( 0.35, 1.0, length( vec2( vScr.x / 0.95, ( vScr.y - 0.18 ) / 0.8 ) ) );
+    outgoingLight = sbBlend( outgoingLight, uShineC, k * uShineA * mix( 1.0, foc, uShineF ), uShineM );
     float fr = 1.0 - max( dot( normal, geometryViewDir ), 0.0 );
     float r = smoothstep( 1.0 - uRimW, 1.0 - uRimW + 0.03, fr ) * ( 1.0 - smoothstep( -0.05, 0.3, ndl ) ) * curv;
     outgoingLight = sbBlend( outgoingLight, uRimC, r * uRimA, uRimM ); }

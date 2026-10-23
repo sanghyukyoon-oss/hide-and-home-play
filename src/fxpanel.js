@@ -21,6 +21,7 @@ const SLIDERS = [
   // 셰이딩 (10/22 사용자: "하이라이트도 수치 후보정에서 편집 가능할까? 크기나 강도", "림라이트 어두운 쪽에") — style.js SHADE, every stage
   ['shine', '반짝 점 세기', 0, 1, .05],
   ['shineS', '반짝 점 크기', 0, 1, .05],
+  ['shineF', '반짝 점 화면 가운데만 (0 어디서나 · 1 가운데)', 0, 1, .05],
   ['hl', '빛면 하이라이트 (1 = 끔)', 1, 1.6, .05],
   ['rim', '림라이트 세기 (어두운 쪽 테두리)', 0, 1.2, .05],
   ['rimW', '림라이트 두께', .05, .6, .01],
@@ -30,7 +31,7 @@ const SLIDERS = [
 // colours (user 10/22: "림라이트랑 하이라이트 색깔도 변경 가능?")
 const COLORS = [['shineC', '반짝 점 색'], ['rimC', '림라이트 색']];
 // the shading's own start values (not the stage's — they are the same on every stage)
-const SH0 = { shine: SHADE.u.shineA.value, shineS: (.995 - SHADE.u.shineT.value) / .06, hl: SHADE.hl, rim: SHADE.u.rimA.value, rimW: SHADE.u.rimW.value,
+const SH0 = { shine: SHADE.u.shineA.value, shineS: (.995 - SHADE.u.shineT.value) / .06, shineF: SHADE.u.shineFocus.value, hl: SHADE.hl, rim: SHADE.u.rimA.value, rimW: SHADE.u.rimW.value,
   shineM: SHADE.u.shineM.value, rimM: SHADE.u.rimM.value, shineC: '#' + SHADE.u.shineC.value.getHexString(), rimC: '#' + SHADE.u.rimC.value.getHexString() };
 let over = {};
 try { over = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { over = {}; }
@@ -58,7 +59,7 @@ function put(P) {
   P.bloomStr = v.tilt > 0 ? 0 : v.glow;   // (틸트시프트의 흐림은 그림 전체라, 그대로 더하면 화면이 하얗게 뜸)
   // one blur feeds all three: 틸트시프트 needs the whole picture (no threshold), 뽀샤시 nearly all of it, the glow only the bright parts
   if (P.blu?.th) P.blu.th.value = v.tilt > 0 ? -1 : v.diffuse > 0 ? .2 : v.glowth;
-  SHADE.set({ shineA: v.shine, shineT: .995 - v.shineS * .06, hl: v.hl, rimA: v.rim, rimW: v.rimW, shineM: v.shineM, rimM: v.rimM, shineC: v.shineC, rimC: v.rimC });
+  SHADE.set({ shineFocus: v.shineF, shineA: v.shine, shineT: .995 - v.shineS * .06, hl: v.hl, rimA: v.rim, rimW: v.rimW, shineM: v.shineM, rimM: v.rimM, shineC: v.shineC, rimC: v.rimC });
 }
 
 export function installFxPanel(world) {
