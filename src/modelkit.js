@@ -22,6 +22,7 @@ import { blindFor } from './hunt-blind.js';
 import { haptic } from './feel.js';
 import { rng, ease } from './util.js';
 import { h, ICON } from './ui.js';
+import { playDialog } from './story.js';
 import { keepsake, FREE_KITS } from './econ.js';   // 선물은 아주 가끔: only the robot comes home free (10/20)
 
 // one entry per playable kit stage in 놀이 모음 (listed there as levels)
@@ -691,10 +692,14 @@ async function truckIntro(S) {
   const anims = new Set(), outs = [];
   const A = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); anims.add(a); return a.finished.catch(() => {}); };
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const NB = 30, GAP = 50;   // (boxes pouring out, one every 50 ms)
+  // (13판 user 10/23: "오프닝이 아쉽고 지저분" → 트럭 나옴 → 애들 대화 → 줌아웃 → 2장 타이틀): with S._truckTalk the truck pulls up in
+  // front of the apartment (no comic burst), the two talk, a dozen boxes pour out by themselves, and the room shows close up
+  // and pulls back while the pile goes up; the chapter card comes after (stage.js)
+  const talk = S._truckTalk?.length ? S._truckTalk : null;
+  const NB = talk ? 12 : 30, GAP = talk ? 90 : 50;   // (boxes pouring out, one every 50 ms)
   const F = (c, ...k) => h('div', { class: 'kb3-face kb3-' + c }, ...k);
   const count = h('span', { class: 'kb3-count' }, `이삿짐 ${NB}`);
-  const box = h('div', { class: 'kb3 big truck', style: `--box:${K.color};transform:translateX(120vw)` },
+  const box = h('div', { class: 'kb3 big truck', style: `--box:${K.color};transform:translateX(-120vw)` },
     h('div', { class: 'kb3-glow' }),
     h('div', { class: 'kb3-cube' },
       h('div', { class: 'kb3-floor' }),
@@ -705,9 +710,17 @@ async function truckIntro(S) {
         F('cright', h('i', { class: 'kb3-shield' }), h('i', { class: 'kb3-grille' }), h('i', { class: 'kb3-lamp l' }), h('i', { class: 'kb3-lamp r' }), h('i', { class: 'kb3-bumper' }, h('i', { class: 'kb3-plate' }))),
         F('ctop'), F('cbev a'), F('cbev b'), F('cbev c')),
       h('div', { class: 'kb3-lid' }, F('lback'), F('lleft'), F('lright'), F('lfront', h('b', { class: 'kb3-name' }, K.name)), F('ltop', h('i', { class: 'kb3-ltape' })))));
-  const lay = h('div', { class: 'kitintro comic', style: 'opacity:0;' + burstVars(K.id) },
-    h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box);
+  const lay = talk ? h('div', { class: 'kitintro street', style: 'opacity:0' }, h('div', { class: 'street-apt' }), h('div', { class: 'street-road' }), box)
+    : h('div', { class: 'kitintro comic', style: 'opacity:0;' + burstVars(K.id) },
+      h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box);
   (document.getElementById('hud') || col).append(lay);
+  // the whole truck in the middle of the screen (user 10/23 "트럭 화면 가운데 정렬"): the box and its cab measured together
+  if (talk) {
+    const t0 = box.style.transform; box.style.transform = 'none';
+    let x0 = Infinity, x1 = -Infinity; for (const e of box.querySelectorAll('.kb3-face')) { const r = e.getBoundingClientRect(); if (r.width) { x0 = Math.min(x0, r.left); x1 = Math.max(x1, r.right); } }
+    const lr = lay.getBoundingClientRect(); if (isFinite(x0)) box.style.translate = `${Math.round(lr.left + lr.width / 2 - (x0 + x1) / 2)}px 0`;
+    box.style.transform = t0;
+  }
   const covered = !!S.kitCover;
   if (covered) { lay.style.opacity = '1'; lay.style.animation = 'none'; const cv = S.kitCover; S.kitCover = null; requestAnimationFrame(() => requestAnimationFrame(() => cv.remove())); }
   const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
@@ -774,24 +787,35 @@ async function truckIntro(S) {
   try {
     if (!covered) { G.audio.sfx('swish'); await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.9,.3,1)' }); }
     centre();
-    // 부릉: in from the right, a little overshoot, a bounce on its wheels, dust
+    // 부릉: in, a little overshoot, a bounce on its wheels, dust
     G.audio.sfx('whoosh');
-    await A(box, [{ transform: 'translateX(120vw)' }, { transform: 'translateX(-14px)', offset: .78 }, { transform: 'translateX(0) scale(1.05,.92)', offset: .88 }, { transform: 'none' }], { duration: quick ? 420 : 620, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    // (with the talk: the empty street shows first, so the truck pulls in after the iris has opened, not behind it)
+    if (talk) { await wait(900); if (S.dead) throw 0; }
+    // (cab first both ways — ① 10/23: "트럭이 오른쪽에서 후진으로 들고 남"): in from the left, out to the right
+    await A(box, [{ transform: 'translateX(-120vw)' }, { transform: 'translateX(14px)', offset: .78 }, { transform: 'translateX(0) scale(1.05,.92)', offset: .88 }, { transform: 'none' }], { duration: quick ? 420 : 620, easing: 'cubic-bezier(.2,.8,.3,1)' });
     G.audio.sfx('land'); haptic('tick');
     { const r = front.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.bottom - 6, { n: 14, shape: 'circle', colors: ['#ffffff', '#f3e6d6', '#e9d6c0'], speed: 200, up: 20, gravity: 300, size: 10, life: .5 }); }
     if (S.dead) throw 0;
     phase = 'prompt';
+    if (talk) {
+      await playDialog(G, talk, { parent: lay }); if (S.dead) throw 0;
+      tapped();
+    } else {
     beat = cube.animate([{ transform: TRUCK_VIEW }, { transform: TRUCK_VIEW + ' scale3d(1.05,1.05,1.05)', offset: .18 }, { transform: TRUCK_VIEW, offset: .36 }], { duration: 900, iterations: Infinity });
     const lr = lay.getBoundingClientRect(), fr = box.getBoundingClientRect();
     kok = h('div', { class: 'kitkok ol truckcta', style: `left:${fr.left + fr.width / 2 - lr.left}px;top:${fr.top - lr.top - 18}px` }, '트럭을 터치!'); lay.append(kok);
     showHand();
     G.audio.sfx('heart');
     autoT = setTimeout(tapped, G.bot || S.botOn?.() ? 500 : 15000);   // (a bot, or nobody for 15 s: it pours by itself)
+    }
     await allOut; if (S.dead) throw 0;
-    beat.cancel(); kok?.remove(); hand?.remove();
+    beat?.cancel(); kok?.remove(); hand?.remove();
+    // (with the talk: the room under the wipe is seen close on the pile, and pulls back once it's clear)
+    const v0 = { target: W.target.clone(), zoom: W.zoom };
+    if (talk && S.kitPile) { W.target.copy(S.kitPile.at).setY(v0.target.y); W.zoom = v0.zoom * 1.9; W.shadowDirty = true; }
     // the last one gone: the truck drives off, a bright band wipes across, and behind it is the room
     G.audio.sfx('whoosh');
-    A(box, [{ transform: 'none' }, { transform: 'translateX(-140vw)' }], { duration: 520, easing: 'cubic-bezier(.5,0,.8,.4)' });
+    A(box, [{ transform: 'none' }, { transform: 'translateX(140vw)' }], { duration: 520, easing: 'cubic-bezier(.5,0,.8,.4)' });
     await wait(220);
     card.style.transform = 'translateX(-50%) translateY(140%)'; card.style.visibility = '';
     G.audio.sfx('star');
@@ -800,7 +824,8 @@ async function truckIntro(S) {
     A(band, [{ left: '-30%' }, { left: '130%' }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
     await A(lay, [{ clipPath: poly(-10) }, { clipPath: poly(160) }], { duration: WIPE, easing: 'cubic-bezier(.45,.05,.55,.95)' });
     lay.classList.add('clear');
-    if (S.kitPile && !S.dead) { await dropPile(S); if (!quick && !G.bot && !S.dead) await pileWow(S); }   // 쿵쿵쿵: the pile goes up — and, the first time, whoa
+    if (talk) { const back = W.flyTo(S.tw, { target: v0.target, zoom: v0.zoom, dur: 1.4, e: ease.inOutCubic }); if (S.kitPile && !S.dead) await dropPile(S); await back; }
+    else if (S.kitPile && !S.dead) { await dropPile(S); if (!quick && !G.bot && !S.dead) await pileWow(S); }   // 쿵쿵쿵: the pile goes up — and, the first time, whoa
     G.audio.sfx('swish');
     await A(card, [{ transform: 'translateX(-50%) translateY(140%)' }, { transform: 'translateX(-50%) translateY(-6px)', offset: .75 }, { transform: 'translateX(-50%)' }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1)' });
   } catch {}

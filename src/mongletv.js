@@ -22,6 +22,9 @@ import { MONITOR_TV as T, newCard } from './script.js';
 import { EN } from './i18n-en-dict.js';
 import { CHAR_DEFS } from './gfx/chars.js';
 import { REGIONS, regionOf } from './stages.js';
+// the TV's call to play (10/23)
+EN['플레이!'] = 'Play!';
+const PLAY_KO = '플레이!';
 
 export const TV_TYPES = new Set(['pcdesk', 'officedesk', 'tvlow', 'tvstand']);
 export const tvLevel = idx => (Math.max(0, REGIONS.indexOf(regionOf(Math.min(69, Math.max(0, idx || 0))))) >= 3 ? 'hard' : 'mid');
@@ -99,16 +102,42 @@ const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
 // One sheet (10/19, user: "뭔가 텍스처도 겹쳐 있어"): the picture is opaque and covers the whole screen, the set's own
 // screen is hidden while it shows, and the flicker dims it instead of fading it — a see-through plane sat on layer 2 (no
 // ink, not in the ID pass), so the old screen's face and lines showed through it.
-export function tvScreens(furns, { off = null } = {}) {
-  const c = document.createElement('canvas'); c.width = 64; c.height = 36;
-  const g0 = g; g = c.getContext('2d');
+export function tvScreens(furns, { off = null, cta = false } = {}) {
+  const b = document.createElement('canvas'); b.width = 64; b.height = 36;
+  const g0 = g; g = b.getContext('2d');
   rect(0, 0, 64, 36, '#1d1640'); rect(0, 12, 64, 10, '#2a2058'); rect(0, 18, 64, 10, '#35296c');
   for (const [x, y] of [[4, 3], [13, 7], [21, 2], [30, 9], [38, 4], [45, 10], [9, 12], [34, 1], [26, 14]]) rect(x, y, 1, 1, '#fff6c8');
   MOON.forEach((r, j) => [...r].forEach((q, i) => { if (q === 'y') rect(52 + i, 3 + j, 1, 1, '#ffe9a8'); }));
   rect(0, 28, 64, 8, '#5b4a3a'); for (let x = 0; x < 64; x += 8) rect(x, 28, 1, 8, '#6d5a47'); rect(0, 28, 64, 1, '#7d6852');
   cbox(14, 21, 12, 7, 0); spr('mong', 30, 19); spr('bunny', 46, 15);
   g = g0;
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
+  // the screen at 4× (the pixel picture stays crisp), and on a stage's playable TV the call to play on top (5판 user 10/23: "별 이펙트
+  // 같은 거나… 플레이! 버튼이 있어야 되나(모니터 안에서)"): stars twinkling round a '▶ 플레이!' button that bobs, until you've played
+  const c = document.createElement('canvas'); c.width = 256; c.height = 144;
+  const gc = c.getContext('2d'); gc.imageSmoothingEnabled = false;
+  const SPARK = [[30, 22, 0], [222, 18, 1.7], [196, 62, 3.1], [56, 70, 4.4], [128, 12, 2.3]];
+  let ctaOn = cta, ctaT = 0, ctaWait = 0;
+  const PLAY = tr(PLAY_KO);
+  const paint = () => {
+    gc.drawImage(b, 0, 0, 256, 144);
+    if (!ctaOn) return;
+    for (const [x, y, ph] of SPARK) {
+      const k = Math.max(0, Math.sin(ctaT * 3 + ph)), r = 3 + Math.round(k * 7);
+      if (k < .15) continue;
+      gc.fillStyle = `rgba(255,236,150,${.35 + .65 * k})`;
+      gc.fillRect(x - r, y - 1, r * 2 + 1, 3); gc.fillRect(x - 1, y - r, 3, r * 2 + 1); gc.fillRect(x - 2, y - 2, 5, 5);
+    }
+    const sc = 1 + .07 * Math.max(0, Math.sin(ctaT * 5)), w = 132 * sc, h = 40 * sc, x = 128 - w / 2, y = 102 - h / 2;
+    gc.fillStyle = '#2b2030'; gc.beginPath(); gc.roundRect(x - 4, y - 4 + 3, w + 8, h + 8, (h + 8) / 2); gc.fill();
+    gc.fillStyle = '#ffd23f'; gc.beginPath(); gc.roundRect(x, y, w, h, h / 2); gc.fill();
+    gc.fillStyle = '#fff3b0'; gc.fillRect(x + h / 2, y + 5, w - h, 4);
+    gc.fillStyle = '#2b2030'; gc.font = `700 ${Math.round(22 * sc)}px Ssurround, sans-serif`; gc.textAlign = 'left'; gc.textBaseline = 'middle';
+    const tw = gc.measureText(PLAY).width, tri = 14 * sc, x0 = 128 - (tri + 6 * sc + tw) / 2, cy = y + h / 2;
+    gc.beginPath(); gc.moveTo(x0, cy - tri * .6); gc.lineTo(x0 + tri, cy); gc.lineTo(x0, cy + tri * .6); gc.closePath(); gc.fill();
+    gc.fillText(PLAY, x0 + tri + 6 * sc, cy + 1);
+  };
+  paint();
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
   const list = new Map(), sz = new THREE.Vector3(), ct = new THREE.Vector3();
   for (const f of furns) {
     if (!f || !TV_TYPES.has(f.type) || list.has(f)) continue;
@@ -127,8 +156,10 @@ export function tvScreens(furns, { off = null } = {}) {
   const FLICK = [.3, 1, .55, 1], DARK = .06;   // (brightness: off, then the flicker steps)
   return {
     has: f => list.has(f),
+    cta(on) { if (ctaOn === !!on) return; ctaOn = !!on; paint(); tex.needsUpdate = true; },
     each: fn => { for (const e of list.values()) fn(e.f, e.plane); },   // (the stage gives each one the pulley's shine — sweep.js sweepAddTv)
     update(dt) {
+      if (ctaOn && list.size) { ctaT += dt; ctaWait -= dt; if (ctaWait <= 0) { ctaWait = .07; paint(); tex.needsUpdate = true; } }
       for (const e of list.values()) {
         const p = e.plane; if (!p) continue;
         const dark = !!off?.(e.f);
@@ -149,7 +180,7 @@ export function tvScreens(furns, { off = null } = {}) {
     },
     dispose() {
       for (const e of list.values()) if (e.plane) { e.plane.parent?.remove(e.plane); e.plane.geometry.dispose(); e.plane.material.dispose(); if (e.mat0 !== e.plane.material) e.mat0.dispose(); if (e.scr) e.scr.visible = true; }
-      list.clear(); tex.dispose(); c.width = c.height = 0;
+      list.clear(); tex.dispose(); c.width = c.height = 0; b.width = b.height = 0;
     },
   };
 }

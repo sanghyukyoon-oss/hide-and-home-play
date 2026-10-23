@@ -763,7 +763,7 @@ export const STAGES = [
   // (9판 정전 ② 10/23, user: "스위치 찾게 해서(혹은 두꺼비집) 그거 찾으면 밝게 변하는 거 어떰?" — dark: a power cut on the night; the switch on a wall)
   { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, dark: true, lightAt: [[0, 'N'], [0, 'W'], [1, 'N']], clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
     habitRoom: 1, habit: ['bed', 'futon', 'pillow', 'zabuton', 'catbed'], clueOn: { pad: ['plant'] }, clueRoom: 1 },   // ("목욕 끝! …내 물건 다 어디 갔지?" — the bathroom and the bed; one in the tub by the bubbles; the key in the bathroom where the first view reaches, its plant by the door — 검토 P0-1·P1-4)   // (then 이불 속 누구게 — the pajama party)
-  { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55 },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
+  { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55, artHunt: 'artstars' },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .3, kit: 'cattower' },   // 캣타워 조립판 (10/20, user "조립식 많이 들어가면 좋겠다" — 레벨 세션: 11판·19판; 함정 절반 as 8판; the top bed behind the lock)
   { room: 'study', n: 4, inside: 1, behind: 0, time: 110, clutter: .5, showcase: true },   // 비밀 서재 ★ — the chapter's finale (friend game)
 ];

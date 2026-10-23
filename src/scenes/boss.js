@@ -507,7 +507,52 @@ export class BossScene {
       }
       p.x = x; p.z = z; this._ht = best; return true;
     };
-    if (tryAt(p.x + mx * st, p.z + mz * st) || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st)) { if (Math.hypot(p.x - sp.x, p.z - sp.z) >= SEP) this._pushT = 0; }
+    // (③ 10/23, user: "여전히 계단을 못 올라감 몽글이.. 조금만 장애물 있어도 잘 못 가는 편") a thumb is never exactly on the grid's line:
+    // when the push itself doesn't go, 몽글이 slides along the grid instead — to the joined tile (or back to its own) that lies most
+    // the way it's pushed, within about 70° of it — so a rough push at the stairs climbs them and a push into a wall runs along it
+    const steer = () => {
+      if (!cur) return false;
+      let to = null, best = .34;
+      for (const t of [cur, ...(cur.nb || [])]) {
+        const ex = t.x - p.x, ez = t.z - p.z, d = Math.hypot(ex, ez); if (d < .02) continue;
+        const dot = (ex * mx + ez * mz) / d / (Math.hypot(mx, mz) || 1); if (dot <= best) continue;
+        { const ds = Math.hypot(t.x - sp.x, t.z - sp.z); if (!squeeze && ds < SEP && ds < Math.hypot(p.x - sp.x, p.z - sp.z)) continue; }
+        best = dot; to = t;
+      }
+      if (!to) return false;
+      const ex = to.x - p.x, ez = to.z - p.z, d = Math.hypot(ex, ez), s = Math.min(d, st * Math.max(.6, best));
+      p.x += ex / d * s; p.z += ez / d * s;
+      this._ht = to === cur || d - s > Math.hypot(to.x - cur.x, to.z - cur.z) / 2 ? cur : to;
+      return true;
+    };
+    // and when even that has nowhere to go (beside the stairs, behind a chair): a short way round on the grid to the tile ahead the way
+    // it's pushed (up to ~2.5 m, within 45°; at most 10 steps — a small detour, not a trip across the house), refreshed as the push turns
+    const route = () => {
+      if (!cur) return false;
+      const R = this._padRoute, ml = Math.hypot(mx, mz) || 1;
+      if (!R || R.until < this.t || (R.mx * mx + R.mz * mz) / ml < .87 || !R.path?.length) {
+        let g = null, gs = 0;
+        for (const t of T) {
+          const ex = t.x - p.x, ez = t.z - p.z, d = Math.hypot(ex, ez); if (d < .45 || d > 2.6) continue;
+          const dot = (ex * mx + ez * mz) / d / ml; if (dot < .7) continue;
+          const sc = dot * Math.min(d, 2); if (sc > gs) { gs = sc; g = t; }
+        }
+        const path = g ? gridPath(cur, g) : null;
+        this._padRoute = { path: path && path.length <= 10 ? path : null, until: this.t + .4, mx: mx / ml, mz: mz / ml };
+      }
+      const P = this._padRoute.path; if (!P?.length) return false;
+      const n = P[0], ex = n.x - p.x, ez = n.z - p.z, d = Math.hypot(ex, ez);
+      { const ds = Math.hypot(n.x - sp.x, n.z - sp.z); if (!squeeze && ds < SEP && ds < Math.hypot(p.x - sp.x, p.z - sp.z)) { this._pushT = (this._pushT || 0) + dt; return false; } }
+      if (d <= st) { p.x = n.x; p.z = n.z; this._ht = n; P.shift(); return true; }
+      p.x += ex / d * st; p.z += ez / d * st; this._ht = d < .3 ? n : cur; return true;
+    };
+    // (a way round once started is kept while the push still points the same way; a straight push that barely gets anywhere — pressed into
+    // the stairs' side — counts as stuck and starts one)
+    const ml0 = Math.hypot(mx, mz) || 1, Rk = this._padRoute, onRoute = Rk?.path?.length && Rk.until > this.t && (Rk.mx * mx + Rk.mz * mz) / ml0 > .87;
+    const gain = () => ((p.x - x0) * mx + (p.z - z0) * mz) / ml0;
+    let went = onRoute && route();
+    if (!went) { went = tryAt(p.x + mx * st, p.z + mz * st) || steer(); if (!went || gain() < st * .35) went = route() || went; }
+    if (went || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st)) { if (Math.hypot(p.x - sp.x, p.z - sp.z) >= SEP) this._pushT = 0; }
     // still caught somewhere off the grid (an old save's spot, a gap the grid left): pushed half a second without getting anywhere, a little
     // hop to the nearest open tile the way it's pushed — on the grid, a push into a wall is just a wall
     if (Math.hypot(p.x - x0, p.z - z0) > st * .2) this._stuckT = 0;

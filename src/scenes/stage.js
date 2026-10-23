@@ -49,7 +49,7 @@ import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line, KIT_TALK, inkyNamed } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
-import { staging, stagingHide, stagingHidden, stagingCrossing, stagingPrep, hatKeyHide } from '../staging.js';
+import { staging, stagingHide, stagingHidden, stagingCrossing, stagingPrep, hatKeyHide, stagingPart, stagingTap } from '../staging.js';
 import { asRoom } from '../roomalias.js';
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
@@ -86,6 +86,7 @@ import { heroLayout } from '../heroes.js';
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
 import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS } from '../mongletv.js';   // 몽글 TV (10/19)
+import { openArtHunt } from '../arthunt.js';   // 10판 그림 속 숨은그림 (10/23)
 import { songDrift } from '../songdrift.js';   // 오래 못 찾으면 노래가 빨라짐 (10/21)
 
 // 레벨 보고서 R1 '몰래 숨기' 시제품 (10/18) — only with ?hide=1 (the user compares it on the phone before anything changes):
@@ -374,7 +375,7 @@ export class StageScene {
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
     // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
     this.tvGame = !this.custom && !this.preview && !this.model && !this.spec.timed && !(this.spec.tut <= 2) ? tvGameFor(this.idx) : null;
-    if (!this.G.bot && this.tvGame) this.tvs = tvScreens((this.room.rooms || [this.room]).flatMap(R => R.furns).map(e => e.f).filter(f => f !== this.plan.tv?.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); } });
+    if (!this.G.bot && this.tvGame) this.tvs = tvScreens((this.room.rooms || [this.room]).flatMap(R => R.furns).map(e => e.f).filter(f => f !== this.plan.tv?.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); }, cta: true });
     this.tvs?.each((f, p) => sweepAddTv(this, f, p));   // (the pulley's shine on it: a shine means you can press it — 10/20)
     if (this.v2) v2Prep(this);
     W.shadowDirty = true;
@@ -409,8 +410,10 @@ export class StageScene {
     // 13판 이삿짐 (10/21, user: "트럭 먼저 나오고 상자 날아가고 그다음에 집 배경으로 챕터 나오면 될거같은데 순서"): the truck and
     // the pile first, then the chapter card over the room itself (its 3D hello, not the comic panel), then the talk
     const truckFirst = !!(this.kit && kitTruck(this));
+    // (10/23 user: "트럭 나옴 → 애들 대화 → 줌아웃 → 타이틀"): the chapter's talk goes with the truck, the card comes last on its own
+    this._truckTalk = truckFirst && cine && !G.bot && !G.skipTalk ? REGION_INTRO[this.spec.chapter]?.lines || null : null;
     if (truckFirst) { await kitIntro(this); if (this.dead) return; }
-    if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], region: REGIONS.find(r => r.id === this.spec.chapter)?.name, hello: this.hero && !this.kitCover ? () => this.cineHello() : null, noFaces: !!this.kitCover }); if (this.dead) return; await this.cineBye(); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
+    if (cine) { await playCinematic(G, { ...REGION_INTRO[this.spec.chapter], ...(this._truckTalk ? { lines: [] } : {}), region: REGIONS.find(r => r.id === this.spec.chapter)?.name, hello: this.hero && !this.kitCover ? () => this.cineHello() : null, noFaces: !!this.kitCover }); if (this.dead) return; await this.cineBye(); if (this.dead) return; }   // ('다시 하기' doesn't replay the chapter film — QA 10/18)
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
@@ -694,6 +697,7 @@ export class StageScene {
     // 몽글 TV (10/19): a tap on the screen plays; on the body only when no drawer or door is right by the finger
     const tvf = hit.kind === 'furn' && this.tvAt(hit.furn) ? hit.furn : null;
     if (tvf && this.tvs.screenAt(G.world, tvf, x, y)) return this.openTv();
+    if (hit.kind === 'furn' && stagingTap(this, hit.furn)) return;   // (31판 극장 간판: a touch puts one letter out)
     // R7 (level report): a locked piece of furniture answers a tap on its body — its nearest locked door or drawer reacts
     if (hit.kind === 'furn') { const lp = this.lockedPartNear(hit.furn, x, y); if (lp) return this.onPart(lp, x, y); }
     if (hit.kind === 'furn') { const lv = hit.furn.parts?.find(p => p.isLever); if (lv) return this.onPart(lv, x, y); }   // (톡: the lever's post or box pulls it too)
@@ -1925,10 +1929,34 @@ export class StageScene {
       state: () => this._tvPaid ? 'already' : 'gain',
       win: () => this.tvReward(),
     };
+    this.tvs?.cta(false);
     await openMongleTV(G, { level: tvLevel(this.idx), game: this.tvGame, pay });
     if (this.dead) return;
     this.paused = false; this.idle = 0;
     if (this._tvFly) { const f = this._tvFly; this._tvFly = null; this.rewardFly(f); }
+  }
+  // 10판 그림 속 숨은그림 (arthunt.js, user 10/23 "전시된 그림 하나는 2D 숨은그림 찾기"): a tap on that painting opens it big; three
+  // things to find in it (what's found stays found if you close it). All three: its colour comes back, it pays like 몽글 TV
+  // (once a stage), and it swings open as a tap would have opened it
+  async openArt(part) {
+    const G = this.G;
+    if (G.tv || this.paused || this.result || !this.running || G.ui.panelOpen) return;
+    this.paused = true; G.audio.sfx('click');
+    this._artGot = this._artGot || new Set();
+    const ok = await openArtHunt(G, { key: 'stars', got: this._artGot, gray: !!this.grayFurn?.size });
+    if (this.dead) return;
+    this.paused = false; this.idle = 0;
+    if (!ok) return;
+    this._artDone = true;
+    if (this.grayFurn?.size) this.colorIn(part.furn.group);
+    if (this.tapsLeft != null && !this._artPaid && !this.result) {
+      this._artPaid = true;
+      const taps0 = this.tapsLeft, coins0 = G.save.coins || 0;
+      this.tapsLeft += TV_TAPS; G.addCoins(TV_COINS); G.audio.sfx('coin');
+      this.rewardFly({ taps0, taps1: this.tapsLeft, coins0, coins1: G.save.coins || coins0 + TV_COINS });
+    }
+    await this.tw.wait(.5); if (this.dead) return;
+    this.onPart(part);
   }
   // (10/20, user on the phone: "보상 연출이 없음 — 이겨도 톡 숫자가 오르는 게 안 보여요") once the TV has closed: "+3" with the hand
   // flies into the tap count, which counts up; a coin pill pops in beside it (the stage has no coin count of its own —
@@ -2011,7 +2039,9 @@ export class StageScene {
     const G = this.G, W = G.world;
     if (part.busy && part._stepRun) { const tw = this.tw.list.find(q => q.tag === part); if (tw) { tw.t = tw.dur; part._skip = true; } return; }   // (a device running its steps: a second tap plays it to the end — 장치 설계서 원칙 2)
     if (part.busy) return;
+    stagingPart(this, part);   // (31판 극장: the popcorn machine overflows as it opens)
     this.idle = Math.max(0, this.idle - 4);
+    if (this.spec.artHunt && part.furn?.type === this.spec.artHunt && !this._artDone && !part.t && !G.bot) return this.openArt(part);
     if (part.isLever) return this.pullLever(part);
     if (part.crossing) return stagingCrossing(this, part);
     if (part.dig && part.t > .5) return;   // dug out: nothing to fill back in

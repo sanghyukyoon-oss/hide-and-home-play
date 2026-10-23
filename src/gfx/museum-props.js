@@ -435,6 +435,8 @@ B.donutart = f => {
   f.spot('on', null, .17, .44, .12, { maxH: .14, label: '조각상 받침 위', scale: .5 });
 };
 export const MUSEUM_BUILDERS = B;
+// a painting's own canvas (arthunt.js: 10판's 그림 속 숨은그림 draws on a copy of it)
+export const paintCanvas = key => PAINT[key]?.()?.image || null;
 export const MUSEUM_INFO = {
   artwave: { wall: true, span: 2, name: '몽글 파도 그림', price: 520, region: 'building' },
   artstars: { wall: true, span: 2, name: '별밤 그림', price: 520, region: 'building' },
