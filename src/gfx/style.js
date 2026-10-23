@@ -38,8 +38,8 @@ const HLQ = typeof location !== 'undefined' ? new URLSearchParams(location.searc
 const qn = (k, d) => HLQ.has(k) && HLQ.get(k) !== '' && !isNaN(+HLQ.get(k)) ? +HLQ.get(k) : d;
 export const SHADE = {
   hl: qn('hl', 1), hlw: Math.max(1, Math.min(5, qn('hlw', 2))),
-  u: { shineA: { value: qn('shine', .35) }, shineT: { value: Math.min(.999, Math.max(.9, qn('shinet', .97))) },
-    rimA: { value: qn('rim', 0) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .22))) }, rimC: { value: new THREE.Color('#fff4dc') },
+  u: { shineA: { value: qn('shine', .7) }, shineT: { value: Math.min(.999, Math.max(.9, qn('shinet', .992))) },   // (10/23 사용자 값: 반짝 점 세기 .70·크기 .05)
+    rimA: { value: qn('rim', .35) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .31))) }, rimC: { value: new THREE.Color('#fffbcc') },   // (10/23 사용자 값 A: 림 .35·두께 .31·더하기·#fffbcc; B안은 .20·.35·오버레이·#000000)
     shineC: { value: new THREE.Color('#ffffff') }, shineM: { value: 0 }, rimM: { value: 1 } },   // (색·합성: 0 보통 · 1 더하기 · 2 스크린 · 3 오버레이 — user 10/22 "색깔도 변경 가능? 합성 모드도")
   set(o) {
     for (const k of ['shineA', 'shineT', 'rimA', 'rimW', 'shineM', 'rimM']) if (o[k] != null) this.u[k].value = o[k];
