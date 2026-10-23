@@ -883,9 +883,10 @@ export const REGION_INTRO = {
 // 64 햇살 책방 다락. 'new|old': 새 맵이 아직 없으면 옛 맵으로(GPT 맵이 정본에 들어오는 대로 저절로 바뀜)
 // GPT 맵 스위치 (① 10/23 — 사용자 "게임처럼 돌려 볼 수 있게 세팅"): ?gptmaps=1이면 PLAN의 'new|old' 판이 GPT 새 맵, ?gptmaps=0이면 옛 맵.
 // 한 번 고르면 기억(localStorage gptmaps); 기본은 꺼짐 — 지금 플레이어의 판은 그대로
+// (10/23 사용자 "18판 원래 맵으로 돌려줄래? 클로드로 만든 맵으로" — 18판은 스위치와 상관없이 otakuloft; GPT 섞은 안 gptotakumix는 맵만 남김)
 export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('gptmaps'); if (q === '1' || q === '0') localStorage.setItem('gptmaps', q); return (q ?? localStorage.getItem('gptmaps')) === '1'; } catch (e) { return false; } })();
 export const PLAN = {
-  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'gptotakumix|otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
+  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
   alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'gptlongcar|traincar:timed', 'gptsakura|station', 'alleywide:boss'],
   shop: ['konbini:gray', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)

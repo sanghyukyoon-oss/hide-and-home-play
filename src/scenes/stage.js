@@ -200,6 +200,9 @@ export class StageScene {
       if (nightL) { G.setBg([nightL.sky[1], nightL.sky[2]]); setSky(nightL.sky); W.setLight(nightL.light); }
       // (포근한 밤 G2 10/21·10/22: a starry sky, the moon and a warmer light — no glow, the user's 10/22 call: NO_GLOW)
       else { G.setBg([COZY_NIGHT.sky[1], COZY_NIGHT.sky[2]]); setSky(COZY_NIGHT.sky); W.setLight(COZY_NIGHT.light); }
+      // 판마다 밤빛 더하기 (10/23 사용자 9판 메모: "여기 라이트 약간 더 줄 수 있남? 전체적으로")
+      const lift = { bunnybath: 1.25 }[this.spec.room];
+      if (lift) { W.hemi.intensity *= lift; W.sun.intensity *= lift; }
     }
     // 흑백판: the look's grey-stage light, if it has one (look.js — 14·17판), till the colour comes back
     const grayL = this.lookR && LOOK.has('light') && this.lookR.gray;
@@ -285,6 +288,7 @@ export class StageScene {
       if (dq != null) { dif = dq; if (dq > 0) glow = 0; }
       const NO_GLOW = true;   // (10/22 사용자: "글로우는 아예 안 쓰기로" — 낮 판; ?glow=N 시험은 그대로)
       if (NO_GLOW && gq == null) glow = 0;
+      P.nightShade = nightGlow;   // (10/23 사용자 9판 메모: "어두울 때는 스펙큘러 하이라이트 약하게 해야겠다. 지저분하게 되네" — fxpanel.js 반짝 점 .35배)
       const nightOn = nightGlow;   // (10/22 저녁 사용자, 9판 후보정판으로 맞춰 봄: "어두운 판에서는 글로우 킬까 봐! 넘 밋밋" — 밤·정전 판만 글로우 .42·문턱 .66)
       P.bloomOn = nightOn || glow > 0 || dif > 0;
       P.bloomStr = nightOn ? (NIGHT_GLOW[this.spec.room] ?? .42) : glow;

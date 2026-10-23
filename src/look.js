@@ -314,8 +314,9 @@ RECIPES.house2f = { ...RECIPES.house2f, light: { ambColor: '#f3eff5', amb: 1.36,
 Object.assign(RECIPES, {
   // 냥냥이네 부엌 (11판): a mint kitchen on a soft sage
   cat: { light: { ambColor: '#f0eef2', amb: 1.26, sunColor: '#ffe8c8', sun: 2.55, shadow: .62 }, sky: ['#cfe3d6', '#dcece2', '#bdd5c6'] },
-  // 박사님의 비밀 서재 (12판): parchment, a little dusky
-  study: { light: { ambColor: '#f2ebe6', amb: 1.24, sunColor: '#ffe0b4', sun: 2.55, shadow: .62 }, sky: ['#e2d3bb', '#ebdfcb', '#d2bfa3'] },
+  // 박사님의 비밀 서재 (12판): a whiter light on the room's own deep green (10/23 사용자 메모: "뭔가 라이팅이 누런디. 이상함" —
+  // was parchment, a little dusky: amb #f2ebe6 1.24 · sun #ffe0b4 2.55 · sky #e2d3bb #ebdfcb #d2bfa3)
+  study: { light: { ambColor: '#eef1f0', amb: 1.3, sunColor: '#fff4e6', sun: 2.5, shadow: .62 }, sky: ['#d3e2d9', '#e1ece5', '#c2d5ca'] },
   // 우리 아파트 거실 (13판) and the 투룸 map (20판): an afternoon apartment, warm peach
   apt: { light: { ambColor: '#f2ecf0', amb: 1.24, sunColor: '#ffe2bc', sun: 2.6, shadow: .62 }, sky: ['#ecd3c2', '#f3e0d2', '#dec2ad'] },
   // 파출소 (14판, 흑백) · 아파트 주방 (17판, 흑백): the gallery's quiet lilac-grey, a cooler and a warmer one

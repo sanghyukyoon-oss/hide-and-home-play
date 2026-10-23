@@ -33,6 +33,7 @@ const COLORS = [['shineC', '반짝 점 색'], ['rimC', '림라이트 색']];
 // the shading's own start values (not the stage's — they are the same on every stage)
 const SH0 = { shine: SHADE.u.shineA.value, shineS: (.995 - SHADE.u.shineT.value) / .06, shineF: SHADE.u.shineFocus.value, hl: SHADE.hl, rim: SHADE.u.rimA.value, rimW: SHADE.u.rimW.value,
   shineM: SHADE.u.shineM.value, rimM: SHADE.u.rimM.value, shineC: '#' + SHADE.u.shineC.value.getHexString(), rimC: '#' + SHADE.u.rimC.value.getHexString() };
+const NIGHT_SHINE = .35;   // 밤·정전 판의 반짝 점 (10/23 사용자 "어두울 때는 약하게")
 let over = {};
 try { over = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { over = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(over)); } catch { /* storage blocked: this visit only */ } };
@@ -40,7 +41,8 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(over)); } ca
 // what the post pass has now (the stage's own values, before the sliders)
 function current(P) {
   return { sharpen: P.du.sharpen.value, sharp2: P.du.sharp2?.value || 0, grade: P.gradeWant, warm: P.du.warm?.value || 0, sat: P.du.sat?.value || 0,
-    glow: P.bloomOn ? P.bloomStr : 0, glowth: P.blu?.th?.value > 0 ? P.blu.th.value : .82, diffuse: P.du.diffuse?.value || 0, tilt: P.du.tilt?.value || 0, vign: P.du.vign?.value || 0, ...SH0 };
+    glow: P.bloomOn ? P.bloomStr : 0, glowth: P.blu?.th?.value > 0 ? P.blu.th.value : .82, diffuse: P.du.diffuse?.value || 0, tilt: P.du.tilt?.value || 0, vign: P.du.vign?.value || 0, ...SH0,
+    shine: P.nightShade ? SH0.shine * NIGHT_SHINE : SH0.shine };
 }
 let base = null;   // the stage's own values, remembered at each stage start (기본값 goes back to these)
 // stage.js calls this after setting a stage's own look: the moved sliders go on top
