@@ -62,7 +62,8 @@ export function installStage3(LAYOUTS, THEMES) {
   // (C에만 새로 생긴 이름의 영어 — 숨김 자리·부품 이름이 집·물레방아·연잎 우산에 맞게 바뀐 것)
   Object.assign(EN, { '개굴이네 연잎 연못 집': "Froggy's Lily Pond House", '물레방아 양동이': 'Waterwheel bucket', '물속 양동이': 'Bucket in the water',
     '물가 의자 위': 'On the pond-side stool', '물가 마루 밑': 'Under the pond deck', '현관 벤치 위': 'On the porch bench', '집 밑': 'Under the house',
-    '우산 의자 위': 'On the umbrella chair', '우산 의자 밑': 'Under the umbrella chair' });
+    '우산 의자 위': 'On the umbrella chair', '우산 의자 밑': 'Under the umbrella chair',
+    '개굴이 집': "Froggy's house", '물레방아': 'Waterwheel', '연잎 징검다리': 'Lily-pad steps', '노란 우산 의자': 'Yellow umbrella chair', '개굴이 간판': "Froggy's sign" });
   THEMES.frogpond = { ...S3T, name: '개굴이네 연잎 연못 집' };
   // (다듬기 10/24: 섬과 자리를 화면 위아래로 펼침 — stretchC, s3c-props.js; 물에 걸치는 물레방아·연잎 징검다리는 펼친 물가에 맞춘 자리 그대로)
   const HC = (type, x, z, a, hero, o) => { const [X, Z] = stretchC([x, z]); return HA(type, X, Z, a, hero, o); };

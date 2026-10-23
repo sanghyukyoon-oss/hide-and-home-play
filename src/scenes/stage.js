@@ -28,7 +28,7 @@ import { setPlace, oddness, isCold } from '../affinity.js';
 const HINTS_OLD = typeof location !== 'undefined' && /[?&]hints=old(&|$)/.test(location.search);   // (the v157 automatic help, to compare)
 // 톡톡 두 번 확대 수업: 3판 (was 2판 — 2판 teaches turning while you drag now, one hand a stage: 1~10판 밸런스 10/19, 조작감 세션과 맞춤; ?dbl2=1 → 2판)
 const DBL_AT = typeof location !== 'undefined' && /[?&]dbl2=1(&|$)/.test(location.search) ? 1 : 2;
-import { FURN_INFO } from '../gfx/furniture.js';
+import { FURN_INFO, makeFurniture } from '../gfx/furniture.js';
 const FURN_NAME = t => FURN_INFO[t]?.name || t;
 import { Char, CHAR_DEFS } from '../gfx/chars.js';
 import { storyFor, playDialog, playCinematic, slidePuzzle, setFrameSolved } from '../story.js';
@@ -1214,7 +1214,8 @@ export class StageScene {
     // then the thing on its lid took the tap, and the lid never opened; the bot tapped 15 times and lost the stage. Things move
     // into pieces after this (fixBlindSpots), so 'opens' rather than 'holds something now'; such pieces only when nothing else is left)
     const holds = e => e.f.parts.some(p => p.spots?.length);
-    const all = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && tall(e) && G.hasThumb('furn_' + e.type)));
+    // (29판 개굴이네 연잎 연못 집 10/24: scenery pieces — the island ground, the rain — are no piece to find)
+    const all = r.shuffle(RS.flatMap(R => R.furns).filter(e => e.type !== 'rug' && !e.type.startsWith('lever') && !(e.y > 1) && !e.f.noOccupied && tall(e) && G.hasThumb('furn_' + e.type)));
     // (⑤ QA 10/21, 42판: the 그네 is a frame — a tap on its middle hits the ground; 16% of its box answered, the bot ran out of
     // taps 26 times): open frames after the solid pieces too, before the ones that open (② 10/22, 24판: the grind rail and the board
     // rack too — a tap on the rail's middle went to the floor or to a thing under it, the bot lost 14 taps there twice)
@@ -1228,12 +1229,17 @@ export class StageScene {
     for (const it of this.items) it.g.userData.grayStop = true;
     const pick = [];
     for (const e of cands) { if (pick.length >= k || used.has(e.type)) continue; used.add(e.type); pick.push(e); }
-    G.needThumbs(pick.map(e => 'furn_' + e.type));   // just these icons, in one batch
+    // (a piece drawn by another builder — opts.gptHero: 29판의 개굴이 간판·물레방아 — gets its own icon, not the old model's)
+    const tkey = e => { if (!e.f.heroKey) return 'furn_' + e.type; const k = 'furn_' + e.type + '@' + e.f.heroKey; if (!G.hasThumb(k)) G.furnJobs?.set(k, { key: k, build: () => makeFurniture(e.type, this.th, e.opts).group, dir: [.75, .7, 1], fit: 1.0 }); return k; };
+    const keys = new Map(pick.map(e => [e, tkey(e)]));
+    G.needThumbs([...keys.values()]);   // just these icons, in one batch
     for (const e of pick) {
-      const it = { type: 'furn:' + e.type, role: 'target', furnTarget: e, g: e.f.group, spot: { kind: 'on', label: FURN_NAME(e.type), part: null }, found: false, thumb: G.thumbs['furn_' + e.type] };
+      const it = { type: 'furn:' + e.type, role: 'target', furnTarget: e, g: e.f.group, spot: { kind: 'on', label: FURN_NAME(e.type), part: null }, found: false, thumb: G.thumbs[keys.get(e)] };
+      if (e.f.heroKey && FURN_INFO[e.f.heroKey]?.name) it.spot.label = FURN_INFO[e.f.heroKey].name;   // (and its own name)
       this.grayFurn.set(e.f, it); this.targets.push(it);
     }
     if (G.skipTalk || G.bot) setTimeout(() => !this.dead && G.ui.toast('색을 잃은 방! 찾을 때마다 색이 돌아와 — 큰 가구도 찾아 봐', 'green'), 1500);
+    for (const R of RS) for (const e of R.furns) e.f.onGray?.();   // (a piece's own grey-stage start: 29판 — the rainbow is gone while the colour is)
   }
   colorIn(g) { g.userData.colored = true; this.G.world.idsDirty = true; }
   // ── 먹물이 숨기 (스토리 룸 10/19, 사용자 "추천대로"): where it hides — a free tile where, from the start view, its head
@@ -3023,6 +3029,7 @@ export class StageScene {
     // walls and floor — colorpop.js
     await popColors(this, from);
     u.gray.value = 0; u.grayR.value = -1; W.dirty?.invalidate();
+    for (const R of this.room.rooms || [this.room]) for (const e of R.furns) e.f.onColor?.();   // (29판: the colour's back — the rain stops, a rainbow comes up)
     await this.tw.wait(.6);
   }
   async win() {

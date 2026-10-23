@@ -308,7 +308,9 @@ const SCENES = [
   { id: 'stationH', stage: { start: 'bagPop', moment: 'crossing', end: 'trainIn' }, type: 'hidden', room: 'station', host: 'frog', trace: true, uses: 'streetH', goal: ['개굴이 낚시 가방 물건', "Froggy's fishing bag things"],
     intro: [L('frog', '개굴! 발자국 따라왔어? 난 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! Followed the footprints? I'm taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')],
     // (3판이 C안 당근밭 carrotyard면 개굴이 첫 만남이 여기 — 10/24)
-    ifMap: { carrotyard: { intro: [L('frog', '개굴! 처음 보네? 난 개굴이, 낚시 챔피언! 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! New face? I'm Froggy, fishing champ! Taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')] } },
+    ifMap: { frogpond: { intro: [L('frog', '개굴! 발자국 따라왔어? 난 아침 기차 타고 호수 섬 우리 집에 가.', "Ribbit! Followed the footprints? I'm taking the morning train home to the lake island."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')],
+        after: [LP('frog', '기차 왔다! 같이 타자, 우리 집 구경 시켜 줄게!', "Here's the train! Hop on, I'll show you my house!"), LP('mong', '…발자국도 기차에 탔네.', '…The footprints got on the train too.')] },
+      carrotyard: { intro: [L('frog', '개굴! 처음 보네? 난 개굴이, 낚시 챔피언! 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! New face? I'm Froggy, fishing champ! Taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')] } },
     say: { first: K('개굴! 하나 찾았다! 기차는 아직이야.', "Ribbit! Got one! The train's not here yet."), half: K('반이야! 저 멀리 땡땡 소리 들려.', 'Halfway! I can hear the crossing bell.'), last: K('하나 남았어! 기차 오기 전에!', 'One left! Before the train comes!') },
     after: [LP('frog', '기차 왔다! 같이 타자, 개굴!', "Here's the train! Hop on with me. Ribbit!"), LP('mong', '…발자국도 기차에 탔네.', '…The footprints got on the train too.')] },
   // 32판 벚꽃역 동네형 (gptsakura, 10/22 검토 세션 결정 — 사용자 "여행 끝나고 집 갈 때라던가"): 여행 끝 귀갓길, 멍뭉이 마중 → 33 골목 보스로
@@ -322,8 +324,12 @@ const SCENES = [
     intro: [L('frog', '개굴! 객실이다. 섬까지 세 정거장!', 'Ribbit! Our car. Three stops to the island!'), L('raccoon', '나도 탔지롱. 터널 나가기 전에 날 찾아 봐!', "I'm on board too. Find me before we're out of the tunnel!")],
     reveal: [L('raccoon', '…선반 위는 반칙 아니거든?!', "…The luggage rack is NOT cheating!"), L('frog', '다음 역, 호수 섬! 내리자!', 'Next stop, the lake island! Off we go!'), L('mong', '…창문에 까만 손자국.', '…A little inky handprint on the window.')] },
   // 29판 호수 섬 흑백 (섬 3차): 먹물이가 따라온 여행 — "같이 타도 돼?"가 엔딩의 '같이'로
-  { id: 'islandGray', stage: { start: 'grayArrive', end: 'inkyTree' }, type: 'gray', room: 'island', alt: ['island2', 'island3'], host: 'frog', inky: K('호수 색은 처음 봤어. 한 번 가져 보고 싶었어.', "I'd never seen lake colors before. I wanted to hold them once."), caught: K('…다음엔 기차, 같이 타도 돼?', '…Next time, can I ride the train with you?'),
-    after: [LP('frog', '호수가 다시 파래졌다! 바닷가 가게 들렀다 가자, 개굴.', "The lake's blue again! Let's stop by the seaside shop. Ribbit."), LP('mong', '…그 애, 우리 따라 기차 탔나 봐.', '…That kid must have followed us onto the train.')] },
+  { id: 'islandGray', stage: { start: 'grayArrive', end: 'inkyTree' }, type: 'gray', room: 'island', alt: ['island2', 'island3', 'frogpond'], host: 'frog', inky: K('호수 색은 처음 봤어. 한 번 가져 보고 싶었어.', "I'd never seen lake colors before. I wanted to hold them once."), caught: K('…다음엔 기차, 같이 타도 돼?', '…Next time, can I ride the train with you?'),
+    after: [LP('frog', '호수가 다시 파래졌다! 바닷가 가게 들렀다 가자, 개굴.', "The lake's blue again! Let's stop by the seaside shop. Ribbit."), LP('mong', '…그 애, 우리 따라 기차 탔나 봐.', '…That kid must have followed us onto the train.')],
+    // (29판이 개굴이네 연잎 연못 집 frogpond면 — 10/24 사용자 결정: 호수 섬 행 기차에서 내려 개굴이네 집에 놀러 감, 흑백 그대로)
+    ifMap: { frogpond: { inky: K('연못 집 색은 처음 봤어. 한 번 가져 보고 싶었어.', "I'd never seen a pond house's colors before. I wanted to hold them once."),
+      intro: [L('frog', '개굴! 여기가 우리 집이야. 호수 섬 연못 집!', 'Ribbit! This is my place. My pond house on the lake island!'), L('frog', '…어? 집 색이 다 없어졌어!', '…Huh? All the colors in my house are gone!')],
+      after: [LP('frog', '우리 집 색이 돌아왔다! 바닷가 가게 들렀다 가자, 개굴.', "My house has its colors back! Let's stop by the seaside shop. Ribbit."), LP('mong', '…그 애, 우리 따라 기차 탔나 봐.', '…That kid must have followed us onto the train.')] } } },
   // 30판 냥냥이네 바닷가 가게 ★ (사건): 돌아가는 기차 전, 냥냥이가 숨음 → 끝은 집으로(31 골목 보스)
   { id: 'seasideInc', stage: { start: 'awningWave', end: 'sunsetTrain' }, type: 'incident', room: 'seaside', host: 'cat', hide: K('…찾든가 말든가다냥.', "…Find me or don't, meow."),
     intro: [L('cat', '…여행 왔냥? 마침 가게 정리 중이다냥.', "…On a trip, meow? I'm just tidying the shop."), L('cat', '숨바꼭질? …딱히 하고 싶은 건 아니다냥.', "Hide-and-seek? …Not that I want to, meow.")],

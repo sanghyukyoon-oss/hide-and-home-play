@@ -309,14 +309,20 @@ B.s3c_sign = f => {
 B.s3c_weather = f => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.7, 0, .01, -.65, .01];   // (rain and rainbow are no obstacle: their box held every lid and the waterwheel's bucket at a third — 10/24)
   // the sunshower (shared with A — s3-kit.js rainFall): a ring where a drop lands on the pond
-  rainFall(f, { wet: (x, z) => !inIsland(x, z, .45) && Math.hypot(x, z) < 8, ringY: W + .006 });
+  const rain = rainFall(f, { wet: (x, z) => !inIsland(x, z, .45) && Math.hypot(x, z) < 8, ringY: W + .006 });
   // the faint rainbow standing up out of the pond behind the island (six soft bands)
-  const bands = ['#ff9a9a', '#ffc98a', '#fff09a', '#a8e6a0', '#9fd2f6', '#c4b2f2'];
+  const bands = ['#ff9a9a', '#ffc98a', '#fff09a', '#a8e6a0', '#9fd2f6', '#c4b2f2'], bows = [];
   bands.forEach((c, k) => {
     const g = new THREE.TorusGeometry(2.5 - k * .11, .056, 6, 56, PI);
     const bm = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .34, depthWrite: false }));
-    bm.position.set(-8.6, -.3, -3.2); bm.rotation.y = PI / 4; scenery(bm); bm.renderOrder = -1; f.add(bm);
+    bm.position.set(-8.6, -.3, -3.2); bm.rotation.y = PI / 4; scenery(bm); bm.renderOrder = -1; f.add(bm); bows.push(bm);
   });
+  // (29판 흑백 10/24, 허브 "처음엔 색이 빠진 연못 집 + 여우비, 찾을수록 색이 돌아오고 마지막에 비가 그치며 무지개"): stage.js calls
+  // onGray at a grey stage's start and onColor once all the colour is back (colorBloom)
+  let bowK = null;
+  f.onGray = () => { for (const b of bows) b.visible = false; };
+  f.onColor = () => { rain.stop(); bowK = 0; for (const b of bows) { b.visible = true; b.material.opacity = 0; } };
+  const prevW = f.weather; f.weather = t => { prevW?.(t); if (bowK != null && bowK < 1) { bowK = Math.min(1, bowK + 1 / 45); for (const b of bows) b.material.opacity = .34 * bowK; } };
   const life = mc('s3c-life', ({ add }) => {
     for (const [x0, z0, nn, s] of [[-4.3, -1.6, 4, 1], [4.2, -2.4, 3, .9], [2.4, 4.0, 3, .85], [-3.6, 2.8, 3, .9]]) { const [x, z] = stretchC([x0, z0]); for (let k = 0; k < nn; k++) { const a = k * 2.3 + x; lily(add, x + Math.cos(a) * .3 * s, z + Math.sin(a) * .25 * s, (.13 + (k % 3) * .04) * s, a, W); if (k === 1) lotus2(add, x + Math.cos(a) * .3 * s, z + Math.sin(a) * .25 * s, .75); } }
     { const [x, z] = stretchC([1.2, 3.4]); dragonfly(add, x, .9, z, .4, '#7fb8e8'); } { const [x, z] = stretchC([-2.4, 1.2]); butterfly(add, x, .8, z, '#ffd3e4', .5, .85); }
@@ -328,4 +334,8 @@ export const S3C_BUILDERS = B;
 export const S3C_INFO = {
   s3c_island: { w: 1, d: 1, name: '연못 섬', price: 0, hidden: true },
   s3c_weather: { w: 1, d: 1, name: '여우비', price: 0, hidden: true },
+  // (29판 흑백: 찾을 가구 목록에 쓰는 이름 — 조각 종류는 정본 이름 그대로, 그림·이름만 이 판 것)
+  s3c_house: { w: 2, d: 1, name: '개굴이 집', price: 0, hidden: true }, s3c_wheel: { w: 2, d: 1, name: '물레방아', price: 0, hidden: true },
+  s3c_lilysteps: { w: 3, d: 3, name: '연잎 징검다리', price: 0, hidden: true }, s3c_umbrella: { w: 1, d: 1, name: '노란 우산 의자', price: 0, hidden: true },
+  s3c_sign: { w: 1, d: 1, name: '개굴이 간판', price: 0, hidden: true },
 };

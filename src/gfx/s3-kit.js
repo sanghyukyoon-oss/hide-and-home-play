@@ -199,10 +199,11 @@ export function rainFall(f, { n = 150, w = 12, d = 12, top = 5, cx = 0, cz = 0, 
   const drops = []; for (let i = 0; i < n; i++) drops.push({ x: spawnX(), z: spawnZ(), y: r() * top, v: 5.5 + r() * 2 });
   const M = new THREE.Matrix4(), P = new THREE.Vector3(), Q = new THREE.Quaternion(), S = new THREE.Vector3(1, 1, 1), Z = new THREE.Vector3(0, 0, 0);
   const RN = 36, ring = new THREE.InstancedMesh(RING, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .62, depthWrite: false }), RN);
-  const rings = Array.from({ length: RN }, () => ({ x: 0, z: 0, t: 9 })); let rk = 0;
+  const rings = Array.from({ length: RN }, () => ({ x: 0, z: 0, t: 9 })); let rk = 0, stopped = false;
   const set = dt => {
     drops.forEach((q, i) => { q.y -= q.v * dt; q.x -= q.v * dt * .12;
-      if (q.y < 0) { if (wet(q.x, q.z)) { const g = rings[rk++ % RN]; g.x = q.x; g.z = q.z; g.t = 0; } q.y += top; q.x = spawnX(); q.z = spawnZ(); }
+      if (q.out) { m.setMatrixAt(i, M.compose(P.set(0, -9, 0), Q, Z)); return; }   // (stopped: a drop that has landed stays gone)
+      if (q.y < 0) { if (wet(q.x, q.z)) { const g = rings[rk++ % RN]; g.x = q.x; g.z = q.z; g.t = 0; } if (stopped) { q.out = true; m.setMatrixAt(i, M.compose(P.set(0, -9, 0), Q, Z)); return; } q.y += top; q.x = spawnX(); q.z = spawnZ(); }
       else if (q.y > top) { q.y = r() * top; q.x = spawnX(); q.z = spawnZ(); }
       m.setMatrixAt(i, M.compose(P.set(q.x, q.y, q.z), Q, S)); });
     rings.forEach((g, i) => { g.t += dt; const k = g.t / .7; ring.setMatrixAt(i, k >= 1 ? M.compose(P.set(0, -9, 0), Q, Z) : M.compose(P.set(g.x, ringY, g.z), Q, S.set(.04 + k * .2, 1, .04 + k * .2))); });
@@ -216,6 +217,7 @@ export function rainFall(f, { n = 150, w = 12, d = 12, top = 5, cx = 0, cz = 0, 
   let last = null, acc = 0;
   const tick = t => { const dt = last == null ? 0 : t - last; last = t; if (!(dt > 0) || dt > .5) return; acc += dt; if (acc < 1 / rate) return; set(Math.min(.1, acc)); acc = 0; };
   f.weather = f.weather ? (prev => x => { prev(x); tick(x); })(f.weather) : tick;   // (ambient.js always(): runs while the stage is paused too)
-  return { m, ring };
+  // stop(): the rain ends — what is in the air still falls and lands, nothing new starts (29판: the colour's back)
+  return { m, ring, stop: () => { stopped = true; } };
 }
 

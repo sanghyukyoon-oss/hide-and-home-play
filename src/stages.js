@@ -901,7 +901,7 @@ export const NEW_DEFAULT = new Set([18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 
 export const NEW_MAPS = { 27: 'station4', 28: 'traincar5', 30: 'seaside2', 31: 'cinema', 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
-  alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
+  alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'frogpond:gray', 'seaside:show', 'alleywide:boss'],
   shop: ['konbini:gray', 'laundry', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'aptlobby2:timed', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
   camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide:treat', 'camp2:gray', 'cabin:show', 'campwide:boss'],
