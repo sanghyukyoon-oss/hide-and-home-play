@@ -407,6 +407,22 @@ export function lookRecipe(room, spec) {
 // a GPT map's own mood where the old one's backdrop doesn't suit it (LOOK 10/22 "each map its own backdrop", ⑥): 44판 모래 언덕 —
 // a clear summer blue over the park's grass block
 RECIPES.gptplayhamster = { ...RECIPES.park3, sky: ['#5fb2e6', '#c2e5f4', '#dcf0e6'] };
+// 공원·캠프 새 맵 (10/23, parkcamp-maps.js): 둥근 섬이 제 받침이라 block 없음, 판마다 제 하늘·빛
+// 55판 반딧불 계곡: 낮은 산 계곡의 맑은 하늘, 밤은 별이 아주 많은 깊은 남색(stars 'many': 은하수 띠) — 등불·반딧불 병·랜턴 자리에 따뜻한 빛 웅덩이
+RECIPES.fireflyvalley = { sky: ['#bfe3f2', '#eef6ec', '#cfe6c4'], itemSize: .4,
+  night: { light: { ambColor: '#bcc6f4', amb: 1.18, sunColor: '#e6e8ff', sun: 1.35, shadow: .48 }, sky: Object.assign(['#121a4e', '#26307a', '#5a5aa6'], { stars: 'many' }) },
+  glows: [[-1.95, .25, 1.0, '#ffd27a'], [.45, 2.55, .9, '#eaff9a'], [3.5, -2.35, .8, '#ffcf7a'], [-3.35, .05, .7, '#ffc46e'], [-2.25, 2.1, .6, '#fff2b8']] };
+// 45판 별 지붕 밤 놀이터: 낮엔 놀이터의 따뜻한 크림 하늘, 밤엔 포근한 밤 — 가로등 둘·별 지붕·단지 창 불빛 쪽에 빛 웅덩이
+RECIPES.starplay = { sky: ['#f4dfc4', '#fbf0e2', '#e9d0b0'], itemSize: .4,
+  night: { light: { ambColor: '#c8cff6', amb: 1.24, sunColor: '#fff0dc', sun: 1.5, shadow: .48 }, sky: Object.assign(['#1f2b72', '#3a4ea6', '#8f8bd0'], { stars: true }) },
+  glows: [[-.35, -2.9, 1.3, '#ffd27a'], [3.3, .95, 1.3, '#ffd27a'], [-2.25, -1.95, .9, '#fff2a0'], [-1.2, -3.3, .7, '#ffe7a8'], [1.8, -3.3, .7, '#ffe7a8']] };
+// 49판 소풍 잔디 언덕: 맑은 소풍 날 — 파란 하늘이 연둣빛으로
+RECIPES.picnichill = { light: { ambColor: '#f6f4ee', amb: 1.34, sunColor: '#fff2dc', sun: 2.55, shadow: .55 }, sky: ['#9fd4f2', '#eaf6ee', '#cfe8c0'], itemSize: .4 };
+// 56판 개울가 징검다리 캠핑: 산 캠핑장의 오후 하늘
+RECIPES.creekcamp = { sky: ['#cfe3f2', '#f4ecdc', '#e2c9a6'], itemSize: .4 };
+// 58판 흔들다리 숲 (흑백): 숲 그늘의 옅은 청록 하늘; 흑백일 땐 빛을 조금 낮추고 그늘을 깊게 — 밝은 길·짙은 침엽수가 세 회색으로 갈리게
+RECIPES.bridgewood = { sky: ['#cfe6ea', '#eef4ea', '#d2e4cc'], itemSize: .42,
+  gray: { light: { ambColor: '#f2eef6', amb: 1.04, sunColor: '#fff6ea', sun: 2.2, shadow: .74 } } };
 
 // ── light and sky (stage.enter, before the room is built) ──────────────────────────────────────────────────────
 // returns the theme with the look's light and background, so every later light change (lights on at a night stage's
@@ -475,8 +491,16 @@ function skyLine(x, { ink, tank }) {
 }
 // soft white clouds over the backdrop, more of them low down (the 기차 객실 floats over them)
 // a night sky (포근한 밤): small soft stars over the top half, a few brighter twinkles, a round cream moon high on the left
-function skyStars(x) {
+function skyStars(x, many = false) {
   let sd = 11; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  // (many: 55판 반딧불 계곡 "…별이 엄청 많아" — a faint milky band across and three times the small stars)
+  if (many) {
+    x.save(); x.translate(128, 150); x.rotate(-.5);
+    for (let i = 0; i < 420; i++) { const u = (R() - .5) * 420, v = (R() + R() + R() - 1.5) * 26; x.fillStyle = `rgba(235,230,255,${.08 + R() * .28})`; x.fillRect(u, v, 1, 1); }
+    const band = x.createLinearGradient(0, -40, 0, 40); band.addColorStop(0, 'rgba(200,190,255,0)'); band.addColorStop(.5, 'rgba(200,190,255,.12)'); band.addColorStop(1, 'rgba(200,190,255,0)');
+    x.fillStyle = band; x.fillRect(-220, -40, 440, 80); x.restore();
+    for (let i = 0; i < 150; i++) { const px = R() * 256, py = R() * 300, r = R() < .12 ? 1.4 : .7; x.fillStyle = `rgba(255,248,226,${.35 + R() * .55})`; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill(); }
+  }
   for (let i = 0; i < 70; i++) { const px = R() * 256, py = R() * 250, r = R() < .15 ? 1.6 : .9; x.fillStyle = `rgba(255,248,226,${.45 + R() * .5})`; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill(); }
   for (let i = 0; i < 6; i++) { const px = 20 + R() * 216, py = 18 + R() * 190, s = 3 + R() * 2; x.strokeStyle = 'rgba(255,246,214,.85)'; x.lineWidth = 1; x.beginPath(); x.moveTo(px - s, py); x.lineTo(px + s, py); x.moveTo(px, py - s); x.lineTo(px, py + s); x.stroke(); }
   const g = x.createRadialGradient(58, 70, 4, 58, 70, 46); g.addColorStop(0, 'rgba(255,240,200,.45)'); g.addColorStop(1, 'rgba(255,240,200,0)'); x.fillStyle = g; x.fillRect(0, 0, 140, 140);
@@ -515,7 +539,7 @@ export function setSky(sky) {
     if (sky.pattern) skyPattern(x, sky.pattern);
     if (sky.skyline) skyLine(x, sky.skyline);
     if (sky.clouds) skyClouds(x);
-    if (sky.stars) skyStars(x);
+    if (sky.stars) skyStars(x, sky.stars === 'many');
     if (sky.rain) skyRain(x);
     // a soft vignette (the corners settle, the middle where the room stands stays open) and a faint paper grain
     const v = x.createRadialGradient(128, 230, 60, 128, 260, 330);

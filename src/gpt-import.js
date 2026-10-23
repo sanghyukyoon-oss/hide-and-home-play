@@ -49,10 +49,12 @@ import { installGpt2cDoghouse } from './gpt2c-import.js';
 import { installGptStation } from './gptst-import.js';
 // 19판 곰돌이네 119 안전센터 2 firestation2: 정본 firestation 배치 + GPT 소방서 조각 셋(호스 건조탑 도르래·출동 종·소방견 집) — firestation2-map.js
 import { installFirestation2 } from './firestation2-map.js';
+// 공원·캠프 새 맵 다섯(45·49·55·56·58판, 10/23 새로 지음): 둥근 섬 받침 + 공용 키트 gfx/pc-kit.js — parkcamp-maps.js
+import { installParkCamp } from './parkcamp-maps.js';
 import { installGptDetails } from './gfx/gpt-details.js';
 
 // the maps each 들여온 key opens on (its campaign stage, for the preview's lighting and HUD)
-export const GPT_STAGE = { gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64 };
+export const GPT_STAGE = { gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64, starplay: 45, picnichill: 49, fireflyvalley: 55, creekcamp: 56, bridgewood: 58 };
 
 // a workshop piece that lists the boxes it really blocks with (gpt2-b gptWalkBoxes) walks by those, not by the box round all of it (room.js walkBoxes)
 // (gpt2-d: a piece with a walkBoxes list walks by that list instead of its whole box)
@@ -85,6 +87,7 @@ export function installGpt(MAPS, THEMES, LAYOUTS) {
   installGpt2cDoghouse(MAPS, THEMES, LAYOUTS);
   installGptStation(MAPS, THEMES, LAYOUTS);
   installFirestation2(LAYOUTS, THEMES);
+  installParkCamp(LAYOUTS, THEMES);
   installGptDetails(MAPS, LAYOUTS);
 }
 

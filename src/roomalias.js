@@ -17,6 +17,8 @@ export const ROOM_AS = {
   // 50~70판 (⑥)
   gptcabin2: 'cabin', gptcampfire: 'campwide', gptcampfire_open: 'campwide', gptroof: 'rooftop', gptpractice: 'kpop',
   gptatrium: ['lobbymap', 'lobby'], gptatrium_open: ['lobbymap', 'lobby'], gptlab: 'officefloor', gptroom1: 'officefloor', gptroom1w: 'officefloor',
+  // 공원·캠프 새 맵 (10/23, parkcamp-maps.js — 스토리 룸 표 redo-34to70-order-1023.md)
+  starplay: 'playground', picnichill: 'playgroundwide', fireflyvalley: 'trail', creekcamp: 'camp1', bridgewood: 'camp2',
 };
 export const asRooms = key => [key, ...[].concat(ROOM_AS[key] || [])];
 export const asRoom = key => [].concat(ROOM_AS[key] || key)[0];

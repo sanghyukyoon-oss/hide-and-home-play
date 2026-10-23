@@ -887,6 +887,10 @@ export const REGION_INTRO = {
 // 한 번 고르면 기억(localStorage gptmaps); 기본은 꺼짐 — 지금 플레이어의 판은 그대로
 // (10/23 사용자 "18판 원래 맵으로 돌려줄래? 클로드로 만든 맵으로" — 18판은 스위치와 상관없이 otakuloft; GPT 섞은 안 gptotakumix는 맵만 남김)
 export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('gptmaps'); if (q === '1' || q === '0') localStorage.setItem('gptmaps', q); return (q ?? localStorage.getItem('gptmaps')) === '1'; } catch (e) { return false; } })();
+// 새 맵 스위치 (10/23 사용자 "18~33 거의 다 새로" + 스토리 룸 34~70 표 — 아트 결정은 사용자가 월요일에): ?newmaps=1이면 아래 판이
+// 새 맵으로, ?newmaps=0이면 원래대로. 한 번 고르면 기억(localStorage newmaps); 기본은 꺼짐 — 고른 판은 PLAN에 새 키만 넣고 여기서 빼요
+export const NEW_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('newmaps'); if (q === '1' || q === '0') localStorage.setItem('newmaps', q); return (q ?? localStorage.getItem('newmaps')) === '1'; } catch (e) { return false; } })();
+export const NEW_MAPS = { 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
   alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
@@ -912,6 +916,8 @@ const EXTRA = { tv: false, torn: false, dig: false, sock: false };
 // 6장 간식: who sits on what, and the snack that moves them (the stage's host guards it; 🆕 간식 card on the first touch)
 // (D3 10/19: 간식 a third time on 57판 — the camp's middle, the host on the small tent; 짝 양말 a third time on 36판, the 상가 at night)
 const TREAT = { trail: { on: ['shrinebox', 'tentsmall'], item: 'acorn' }, campwide: { on: ['tentsmall'], item: 'acorn' } };
+// (55판 반딧불 계곡 fireflyvalley: 옛 산길과 같은 소원 상자·작은 텐트 — parkcamp-maps.js)
+TREAT.fireflyvalley = TREAT.trail;
 const planAt = (kind) => { const out = []; for (const [rid, list] of Object.entries(PLAN)) { const R = REGIONS.find(q => q.id === rid); list.forEach((e, l) => { if ((e.split(':')[1] || '') === kind) out.push(R.from + l); }); } return out; };
 // 너굴이's "숨바꼭질 놀이": a few stages run against a clock (the only timed ones); none in the first region any more —
 // the 비밀번호 tutorial (stage 7) used to have the clock on top of it
@@ -931,6 +937,8 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // 넘치면 그 판 물건 크기도 ITEM_TUNE으로 — 측정은 메쉬 크기, 폰 세로 390×844)
 // (28판 기차 객실 3차 10/22: 12m 객실을 길이로 비스듬히 보는 판 — 1.4면 앞뒤가 잘려서 1.2, ① 권장 1.15~1.2)
 const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.2, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.5, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
+// (공원·캠프 새 맵 10/23, parkcamp-maps.js: 둥근 섬이 다 보이는 시작 줌 — 판 번호 표(ZOOM_TUNE)는 옛 맵 값이라 맵 키로 덮어씀)
+const ROOM_ZOOM = { starplay: 1.1, picnichill: 1.1, fireflyvalley: 1.05, creekcamp: 1.2, bridgewood: 1.25 };
 // 그 판 물건 크기(기본 .34 = 34cm 기준; 룩이 있는 방은 룩 값): 넓은 맵만 크게
 export const ITEM_TUNE = { 25: 0.48, 30: 0.46, 33: 0.44, 34: 0.46, 35: 0.44, 39: 0.5, 45: 0.42, 47: 0.5, 48: 0.5, 53: 0.47, 56: 0.42, 58: 0.42, 59: 0.42, 65: 0.4, 69: 0.45 };
 // #94 크기 규칙(목록·자리·자물쇠 칸·작은 물건 안전망 smallfix.js)이 닿는 판: 19판부터 이 판까지 — 장 단위로 늘려 감(30 → 40 → 50 → 70)
@@ -1001,6 +1009,7 @@ export function stageSpec(idx) {
   if (ITEM_TUNE[idx]) s.itemSize = ITEM_TUNE[idx];
   if (TIME_TUNE[idx]) s.time = TIME_TUNE[idx];
   if (ZOOM_TUNE[idx]) s.zoom = ZOOM_TUNE[idx];
+  if (ROOM_ZOOM[s.room]) s.zoom = ROOM_ZOOM[s.room];
   if (TIMED.has(idx)) { s.timed = true; s.time = Math.round(s.time * 1.3 / 5) * 5; }
   // (18판 너굴이네 복층 10/22 — 사용자 "현실적인 복층, 방구조 약간 특이하고 장치도 좀", ① otakuloft A안): 비 오는 밤, 너굴이 시간 놀이에
   // 장치 둘 — 다락↔1층 바구니 도르래에 걸린 열쇠가 내려와 경품 오락기 받침(자물쇠)을 열고, 서랍 계단 옆 숨은 칸은 비밀번호;
@@ -1070,6 +1079,7 @@ function baseSpec(idx) {
   const P = (PLAN[R.id] || [])[local];
   let room = isWide(local) ? wide[wn % wide.length] : pool[nth % pool.length], kind = '';
   if (P) { const [r0, k0 = ''] = P.split(':'); kind = k0; const ks = r0.split('|'), r1 = (GPT_MAPS_ON ? ks : ks.slice(-1)).find(k => LAYOUTS[k] || MAPS[k]); if (r1) room = r1; }
+  { const nk = NEW_MAPS_ON && NEW_MAPS[idx + 1]; if (nk && (LAYOUTS[nk] || MAPS[nk])) room = nk; }   // 새 맵 스위치
   const boss = P ? kind === 'boss' : local === len - 1;
   const RL = REGION_LOCKS[R.id];
   let lock = (boss ? RL?.kinds : RL?.plan?.[local]) || [];

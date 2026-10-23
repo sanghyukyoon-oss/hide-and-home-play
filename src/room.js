@@ -409,6 +409,8 @@ export class Room {
     if (this.L.cut?.length) { ft.repeat.set(1, 1); fl = new THREE.Mesh(tileFloorGeo(w, d, this.isCut.bind(this), span), mat('#ffffff', { map: ft, rough: .7, rim: .12 })); fl.position.y = .001; }
     else { ft.repeat.set(w / span, d / span); fl = put(plane(w, d, mat('#ffffff', { map: ft, rough: .7, rim: .12 })), 0, .001, 0, -Math.PI / 2); }
     fl.userData.floor = true; fl.receiveShadow = true; g.add(fl); this.floorMesh = fl;
+    // (공원·캠프 새 맵 10/23: 둥근 섬 조각이 바닥을 대신할 때 — 네모 바닥판은 숨기고 섬 윗면이 바닥 노릇)
+    if (this.L.hideFloor) fl.visible = false;
     // raised floor sections (a tatami step, a window-seat platform) and little lofts (a 다락 up a ladder)
     this.extraSolid = [];
     for (const z of this.L.raised || []) this.buildRaised(z);
