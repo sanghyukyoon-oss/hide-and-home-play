@@ -7,12 +7,16 @@
 export const ROOM_AS = {
   // 18~28판 (①)
   gptotaku: 'otakuloft', gptotakumix: 'otakuloft', gptfirestation: 'firestation', firestation2: 'firestation', gptvillaroof: ['villaroof2', 'villaroof'], gptpolicefront: 'policefront',
+  // 18~21판 다시 (① 10/23)
+  policefront3: 'policefront', villaroof3: 'villaroof2',
   gptstreet: 'street', gptalley: 'alley1', gptcornershop: 'alley3', gptdoghouse: 'alleyhouse', gptdoghouse2: 'alleyhouse',
   gptstation: 'station', gpttraincar: 'traincar', gpttraincar2: ['traincar3', 'traincar'],
   // 22~26판 다시 만들기 (⑦ 10/23, redo7.js)
   street3: 'street', jangdokyard: 'alley1', skatebowl: 'skatepark', cornershop3: 'alley3', doghouse3: 'alleyhouse',
   // 기차 여행 끝 · 귀갓길 (10/22 새 판)
   gptlongcar: ['traincar2', 'traincar'], gptsakura: 'station', gptstation2: 'station', gptseastation: 'seaside',
+  // 30판 바닷가 가게 2 (⑧ 10/23: 같은 맵 디테일 업)
+  seaside2: 'seaside',
   // 32~49판 (⑥)
   // 39판 카페 지하 냉동 창고 (⑨ 10/23): 물건 풀은 카페 것 — 대본은 cafefreezerInc가 정확한 키로 먼저 붙음
   cafefreezer: 'cafe',

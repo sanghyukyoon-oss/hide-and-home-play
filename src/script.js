@@ -307,6 +307,8 @@ const SCENES = [
   // 27판 아침 기차역: 개굴이는 숨지 않고 플랫폼에 서 있어요. 26판 발자국이 역까지 이어짐(trace)
   { id: 'stationH', stage: { start: 'bagPop', moment: 'crossing', end: 'trainIn' }, type: 'hidden', room: 'station', host: 'frog', trace: true, uses: 'streetH', goal: ['개굴이 낚시 가방 물건', "Froggy's fishing bag things"],
     intro: [L('frog', '개굴! 발자국 따라왔어? 난 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! Followed the footprints? I'm taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')],
+    // (3판이 C안 당근밭 carrotyard면 개굴이 첫 만남이 여기 — 10/24)
+    ifMap: { carrotyard: { intro: [L('frog', '개굴! 처음 보네? 난 개굴이, 낚시 챔피언! 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! New face? I'm Froggy, fishing champ! Taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')] } },
     say: { first: K('개굴! 하나 찾았다! 기차는 아직이야.', "Ribbit! Got one! The train's not here yet."), half: K('반이야! 저 멀리 땡땡 소리 들려.', 'Halfway! I can hear the crossing bell.'), last: K('하나 남았어! 기차 오기 전에!', 'One left! Before the train comes!') },
     after: [LP('frog', '기차 왔다! 같이 타자, 개굴!', "Here's the train! Hop on with me. Ribbit!"), LP('mong', '…발자국도 기차에 탔네.', '…The footprints got on the train too.')] },
   // 32판 벚꽃역 동네형 (gptsakura, 10/22 검토 세션 결정 — 사용자 "여행 끝나고 집 갈 때라던가"): 여행 끝 귀갓길, 멍뭉이 마중 → 33 골목 보스로
@@ -393,6 +395,21 @@ SCENES.push(
     intro: [L('frog', '개굴! 여긴 내 낚시터. 보물 다 찾으면 챔피언 자리 줄게!', "Ribbit! My fishing spot. Find all my treasure and the champ title's yours!")],
     say: { first: K('개굴?! 그걸 벌써?', 'Ribbit?! Already?'), half: K('반이나…! 물소리가 도와줄 줄 알았는데.', 'Half…! I thought the water would cover for me.'), last: K('마지막 건 진짜 못 찾을걸! …아마.', "You'll never find the last one! …Probably.") },
     after: [L('frog', '다 찾았다고?! 한 판 더! 다음엔 내가 숨는다!', 'All of them?! One more round! Next time, I hide!'), L('mong', '좋아. 그땐 내가 찾을게.', "Okay. Then I'll find you.")] },
+  // 3판 C안 「개굴이네 연잎 연못 집 — 여우비 오는 날」 (frogpond, 10/24 사용자 "개구리가 좋아… 개구리 주제의 다른 내용도 보고 싶어", "아주 간단한 인터랙션(낚싯대 같은 급의)"):
+  // 낚시터 말고 개굴이네 집. 해 뜬 채 내리는 밝은 비, 우산 펴다 바람에 보물이 연잎·물속·지붕으로. 장치는 물레방아 양동이 감기 하나(릴과 같은 감기라 29판 그대로).
+  // 끝은 원래 3판 약속 그대로("다음엔 내가 숨는다!" → 45·48판). 그 맵이 판에 있을 때만 붙어요
+  { id: 'frogpondH', type: 'hidden', room: 'frogpond', host: 'frog', bubble: true,
+    pop: { say: K('개굴?! …퐁당.', 'Ribbit?! …Splash.'), move: 'splash' },
+    intro: [L('frog', '개굴! 비 오는 날이 제일 좋아. 여긴 내 연못 집이야!', "Ribbit! Rainy days are the best. This is my pond house!"), L('frog', '근데 우산 펴다가 보물이 다 날아갔어. 다 찾으면 챔피언 자리 줄게!', "But my treasures blew away when I opened my umbrella. Find them all and the champ title's yours!")],
+    say: { first: K('개굴?! 그걸 벌써?', 'Ribbit?! Already?'), half: K('반이나…! 빗소리가 도와줄 줄 알았는데.', 'Half…! I thought the rain would cover for me.'), last: K('마지막 건 진짜 못 찾을걸! …아마.', "You'll never find the last one! …Probably.") },
+    after: [L('frog', '다 찾았다고?! 한 판 더! 다음엔 내가 숨는다!', 'All of them?! One more round! Next time, I hide!'), L('mong', '좋아. 그땐 내가 찾을게.', "Okay. Then I'll find you.")] },
+  // (취소 10/24 "개구리가 좋아" — 맵이 없으면 안 붙어요, 보관)
+  // 3판 C안 「토순이네 뒷마당 당근밭」 (carrotyard, 10/24 사용자 "C안으로… 오전에 확인 가능하게, 정본에는 일단 3은 A로" — 스토리 룸 플랜 B 확정안):
+  // 1~2판 토순이 방 → 처음 바깥. 바람에 빨랫줄이 휙, 물건이 당근밭·허수아비·우물가로. 끝은 4판 펭펭이("동네 숨기 2등")로. 그 맵이 판에 있을 때만 붙어요
+  { id: 'carrotyardH', type: 'hidden', room: 'carrotyard', host: 'bunny', goal: ['바람에 날아간 물건', 'things the wind blew away'],
+    intro: [L('bunny', '앗, 빨래가! 바람이 휙 불어서 다 날아갔어!', 'Oh no, the laundry! The wind blew it all away!'), L('bunny', '내 물건도 같이 걸어 놨는데… 같이 찾아 줘!', 'My stuff was hanging there too… help me find it!'), L('mong', '…허수아비가 양말 신었다.', "…The scarecrow's wearing a sock.")],
+    say: { first: K('찾았다! 흙만 털면 돼.', 'Found one! Just brush off the dirt.'), half: K('반이야! 당근도 하나 뽑았어.', 'Halfway! I pulled up a carrot too.'), last: K('하나 남았어. 바람아, 이번엔 불지 마!', "One left. Wind, don't you dare blow now!") },
+    after: [L('bunny', '다 찾았다! 빨래도 다시 널었어.', "All found! The laundry's back on the line."), L('bunny', '아, 펭펭이가 다락에 놀러 오래. 동네 숨기 2등이래!', "Oh, Pengpeng says come over to the attic. Says they're the town's second-best hider!"), L('mong', '…1등은?', '…And first?')] },
   { id: 'pengH', type: 'hidden', room: 'peng',
     intro: [L('peng', '펭! 네가 토순이 한 번에 찾은 애야?', "Peng! You're the one who found Bunbun on the first try?"), L('peng', '나는 동네 숨기 2등. 1등은 너굴이.', "I'm the second-best hider in town. Rocky's first."), L('peng', '오늘은 내 물건을 꽁꽁 숨겼어. 다 찾으면 1등 비결 알려 줄게!', "Today I hid my stuff tight. Find it all and I'll tell you my number-one secret!")],
     say: { first: K('펭! 그건 연습용이야!', 'Peng! That one was for practice!'), half: K('반이나…? 1등 계획에 차질이…', 'Half…? My number-one plan is slipping…'), last: K('마지막 건 비결 1번으로 숨겼어. 못 찾을걸!', 'I hid the last one with tip number one. Good luck!') },
@@ -560,6 +577,9 @@ SCENES.push(
   { id: 'bunnybathH', type: 'hidden', room: 'bunnybath',
     pop: { say: K('에… 에취!', 'Ah… ah-choo!'), move: 'sneeze' },   // (거품이 퐁퐁)
     intro: [L('bunny', '목욕 끝! …근데 내 물건 다 어디 갔지?', "Bath's done! …But where did all my stuff go?"), L('mong', '…거품 속에.', '…In the bubbles.')],
+    // (9판이 정전 밤이면 — ② 10/23 dark: 벽 스위치를 찾아 켜는 판, 검토 세션 "9판 시작 정전 한 줄") · lightSay: 스위치를 켰을 때 토순이 한 줄(② stage.js lightsOn이 읽어요)
+    dark: { intro: [L('bunny', '목욕 끝! …앗, 불이 나갔어!', "Bath's done! …Whoa, the lights went out!"), L('bunny', '벽 스위치 어디 있지? 내 물건도 다 어디 갔지?', "Where's the wall switch? And where did all my stuff go?"), L('mong', '…거품 속에.', '…In the bubbles.')] },
+    lightSay: K('불 켜졌다! …어, 내 물건 다 보여!', "Lights on! …Oh, I can see all my stuff!"),
     say: { first: K('앗, 벌써? 아직 젖었는데!', "Huh, already? It's still wet!"), half: K('반 찾았다! 몸도 다 말랐어.', "Half found! I'm all dry now."), last: K('하나 남았어. 킥… 아니, 안 웃었어.', "One left. Hee… no, I didn't giggle.") },
     after: [L('bunny', '다 찾았다! 이제 파자마 파티 준비 끝!', 'All found! Pajama party: ready!'), L('bunny', '냥냥이도 불렀는데… 별로 안 궁금하대.', "I invited Nyannyan too… \"Not curious,\" apparently.")] },
   // 11판 캣타워 조립판 (kit 'cattower', 프라모델 정식판 10/20): spec에 kit이 있을 때만 붙고 catH를 대신해요(uses).
@@ -767,7 +787,7 @@ const GAME = {
   // 먹물이 이야기("해가 져서 먼저 내려왔어", "다들 찾다가 집에 가. 해 지면")의 반대말, "내일 또 놀자"는 먹물이가 못 들어 본 말
   'gohome:8': { lead: [L('hamster', '웁웁! 벌써 해 졌어. 다 같이 집으로 가자!', "Mmf! The sun's already down. Everyone, home!"), L('mong', '…한 명도 안 빼고.', '…Nobody gets left behind.')],
     out: [L('bunny', '다 왔다! 이제 이웃이니까 내일 또 놀자!', "We made it! We're neighbors now, so let's play again tomorrow!")] },
-  'whack:0': { lead: [L('frog', '개굴! 수풀 놀이 할 사람?', 'Ribbit! Who wants to play in the bushes?'), L('frog', '고개 내밀 때 터치하면 찾은 거야.', "Tap us when we pop up. That's a catch!"), L('raccoon', '나도 낄래~ 근데 나 누르면 하나 빼기다?', 'Count me in! Tap me, though, and you lose one.'), L('mong', '…누구야.', "…Who's that?")],
+  'whack:0': { lead: [L('frog', '개굴! 수풀 놀이 할 사람?', 'Ribbit! Who wants to play in the bushes?'), L('frog', '고개 내밀 때 터치하면 찾은 거야.', "Tap us when we pop up. That's a catch!"), L('raccoon', '나도 낄래~ 근데 나 누르면 하나 빼기다?', 'Count me in! Tap me, though, and you lose one.'), L('mong', '…누구야.', "…Who's that?")], ifMap: { carrotyard: { lead: [L('bunny', '당근밭 옆 수풀에서 놀자! 고개 내밀 때 터치하면 찾은 거야.', "Let's play in the bushes by the carrot patch! Tap us when we pop up."), L('raccoon', '나도 낄래~ 근데 나 누르면 하나 빼기다?', 'Count me in! Tap me, though, and you lose one.'), L('mong', '…누구야.', "…Who's that?")] } },
     out: [L('frog', '손 빠르다! 낚시터에서보다 더 빠르네, 개굴!', 'Fast hands! Even faster than at my fishing spot, ribbit!')] },
   // (1장 끝 → 2장: 토순이가 이사 짐 때문에 자러 온다 — 2장 시작 "우리 아파트로 이사 왔어!"로 이어짐. 6줄 → 4줄, 스토리 룸 10/20)
   'yasik:0': { lead: [L('bunny', '몽글아! 우리 집은 이삿짐 때문에 난리야. 오늘 너네 집에서 자도 돼?', "Mongle! My place is all moving boxes. Can I sleep over tonight?"), L('bunny', '꼬르륵… 냉장고에 컵케이크 있잖아…', 'Grumble… There are cupcakes in the fridge…'), L('mom', '얘들아~ 이제 자야지~', 'Kids! Bedtime!'), L('mong', '…이번엔 우리가 안 들킬 차례.', '…Our turn to stay out of sight.')],
@@ -1122,7 +1142,7 @@ function bind() {
     const ok = t => x => !used.has(x.id) && x.type === t && x.nth == null && (x.night == null || !!s.night === x.night) && (!x.kit || x.kit === kit);
     const pick = t => SCENES.find(x => ok(t)(x) && (x.room === s.room || x.alt?.includes(s.room))) || SCENES.find(x => ok(t)(x) && (rs.includes(x.room) || x.alt?.some(a => rs.includes(a))));   // exact room first, then the old map's (roomalias.js)
     const sc = pick(ty) || (ty === 'gray' && SCENES.find(x => !used.has(x.id) && x.type === 'gray' && x.nth === g)) || null;   // (v2: the map's own 흑백 scene first)
-    if (sc) { used.add(sc.id); [].concat(sc.uses || []).forEach(u => used.add(u)); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; const mp = sc.ifMap && Object.keys(sc.ifMap).filter(r => roomsAll.has(r)); if (mp?.length) B.scene[i] = Object.assign({}, B.scene[i], ...mp.map(r => sc.ifMap[r])); }
+    if (sc) { used.add(sc.id); [].concat(sc.uses || []).forEach(u => used.add(u)); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; const mp = sc.ifMap && Object.keys(sc.ifMap).filter(r => roomsAll.has(r)); if (mp?.length) B.scene[i] = Object.assign({}, B.scene[i], ...mp.map(r => sc.ifMap[r])); if (s.dark && sc.dark) B.scene[i] = Object.assign({}, B.scene[i], sc.dark); }   // (dark: the stage's power-cut lines, only on a dark stage)
     if (kit) kits.add(kit);
     // a visit told the other way (사건 ↔ 숨은그림) is used up with it, so it can't land on a later visit to the same map
     if (ty === 'hidden' || ty === 'incident') { const tw = pick(ty === 'hidden' ? 'incident' : 'hidden'); if (tw && !tw.own) used.add(tw.id); }   // (own: a ★ visit with its own story, never used up by the map's other visit)
@@ -1134,7 +1154,7 @@ function bind() {
     if (ty === 'gray') { B.gray[i] = g++; B.grayOwn[i] = gown[host] = (gown[host] ?? -1) + 1; }
     if (ty === 'timed') B.timed[i] = t++;
   }
-  B.timedN = t;
+  B.timedN = t; B.roomsAll = roomsAll;
   // 먹물이's phase: a voice the first time, then caught again, quiet from the camp on, helping once the talk is behind you
   const R = id => REGIONS.find(r => r.id === id)?.from ?? 999;
   const roof = Object.keys(B.scene).find(i => B.scene[i].id === 'office');
@@ -1308,7 +1328,7 @@ const rockyAt = (idx, n) => { const t = bind().timed[idx] || 0; return t >= bind
 export const timedIntro = idx => { const r = roomLine(ROCKY_ROOM, idx), l = ROCKY[rockyAt(idx, ROCKY.length)]; return r ? [r, ...l] : l; };
 export const timedWin = idx => { const t = rockyAt(idx, ROCKY_WIN.length), l = L('raccoon', ROCKY_WIN[t]); return [t >= ROCKY_WIN.length - 1 ? { ...l, keep: true } : l]; };
 // boss games
-export const gameLines = (kind, lv) => GAME[`${kind}:${lv}`] || null;
+export const gameLines = (kind, lv) => { const g = GAME[`${kind}:${lv}`]; if (!g?.ifMap) return g || null; const r = Object.keys(g.ifMap).find(k => bind().roomsAll.has(k)); return r ? { ...g, ...g.ifMap[r] } : g; };   // (ifMap: like a scene's — that map in the campaign)
 // 놀이 보상 이유 (경제·로비 세션 결과 카드, 10/19 사용자 "게임이라고 리워드가 없으니 이상"): 누가, 왜 주는지 한 줄 — 처음 이긴 때만 보임
 // (몽글 TV는 오락기 경품이라 따로 없음. yasik2는 70판 엔딩 바로 앞이라, 엔딩을 끊지 않게 엔딩 뒤에 보이거나 빼는 것을 권함)
 // (what each says matches what the card gives — stars, coins, a magnifier — never a snack or a 'prize' object: 검토 10/19)

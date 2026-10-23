@@ -455,6 +455,8 @@ export const DEVICE_FOUND = {
 // colour card → colour lock → key → padlock → the 바람개비 → into its socket on the deck's flagpole: the wind spins it, the
 // signal flag runs up, the boat out on the water sees it and comes in to the deck, the cover jiggles and lifts → 냥냥이
 SWAP.seaside = { seadeck: 'flagdeck' };
+// (seaside2 — 30판 바닷가 가게 2, ⑧ 10/23: its deck is the new type seadeck2, its flag deck flagdeck2 — gfx/seaside2-props.js)
+SWAP.seaside2 = { seadeck2: 'flagdeck2' };
 EN['바람개비'] ??= 'Pinwheel'; EN['보트 덮개'] ??= 'Boat cover'; EN['보트 덮개 밑'] ??= 'Under the boat cover'; EN['깃발 데크'] ??= 'Flag deck';
 PLANS.flagboat = (room, spec, story, planStage, cover) => {
   const plan = planStage(room, { ...spec, lock: ['pad', 'color'], n: 4, avoid: blindFor(spec.room) }, story);

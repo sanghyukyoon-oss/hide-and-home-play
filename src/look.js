@@ -154,11 +154,7 @@ Object.assign(RECIPES, {
   // 개굴이의 낚시터 (3판, 사용자 10/23 메모 "배경 주변이 타는 거 같아"): the yellow-green glow round the meadow went; a clear park sky
   // and a soil block under the lawn like 30판's plinth — grass lip, brown soil, a band of stones, darker earth (A안).
   // B안 fishingtown: the same pond in 26판's neighbourhood ring instead (gfx/gpt2c-dog-surround.js), the ground running on
-  fishing: {
-    light: { ambColor: '#f2f8f0', amb: 1.32, sunColor: '#fff6e2', sun: 2.55, shadow: .56 },
-    sky: ['#cfe9f6', '#eef7f4', '#d9eedf'],
-    block: { layers: [{ h: .08, color: '#8fd06a', out: .04 }, { h: .24, color: '#a57c56' }, { h: .26, color: '#b8ad9c', stones: true }, { h: .22, color: '#8a6648' }] },
-  },
+  // (10/24 사용자 "3판 이전처럼 맵 복구 — 단층 생기고 좁고 삭막해 보여": 흙 지층 받침·맑은 하늘(A안 10/23) 뺌, 옛 그대로. 흰 빛무리는 style.css에서 없앰)
   fishingtown: {
     light: { ambColor: '#f2f8f0', amb: 1.32, sunColor: '#fff6e2', sun: 2.55, shadow: .56 },
     sky: ['#cfe9f6', '#eef7f4', '#d9eedf'],
@@ -273,7 +269,7 @@ Object.assign(RECIPES, {
 const KERB = (lip = '#e6e0d8', stone = '#cdc5ba', earth = '#b98f68') => ({ layers: [{ h: .08, color: lip, out: .04 }, { h: .24, color: stone, stones: true }, { h: .32, color: earth }] });
 const GRASS = (lip = '#86c868', soil = '#a57c56', earth = '#8a6648') => ({ layers: [{ h: .08, color: lip, out: .04 }, { h: .2, color: soil }, { h: .26, color: '#b8ad9c', stones: true }, { h: .2, color: earth }] });
 const DIRT = (lip = '#dcae74', rock = '#b9a99a', earth = '#8a6648') => ({ layers: [{ h: .07, color: lip, out: .04 }, { h: .26, color: rock, stones: true }, { h: .3, color: earth }] });
-const SKY_ALLEY = ['#f2d6c0', '#f8e8da', '#e6cbb4'], SKY_PARK = ['#bfe3f2', '#e8f5ee', '#bfe0c8'], SKY_CAMP = ['#cfe3f2', '#f4ecdc', '#e2c9a6'];
+const SKY_ALLEY = ['#f2d6c0', '#f8e8da', '#e6cbb4'], SKY_PARK = ['#bfe3f2', '#e8f5ee', '#bfe0c8'], SKY_CAMP = ['#cfe3f2', '#eef4ea', '#cfe2cc'];   // (10/24 아트 점검 상: 캠프 50~60판 살구빛 바닥 쪽 하늘이 화면을 누렇게 — 옅은 풀빛으로; 전 #f4ecdc #e2c9a6)
 Object.assign(RECIPES, {
   alley1: { sky: SKY_ALLEY, block: KERB() },
   alley3: { sky: SKY_ALLEY, block: KERB() },
@@ -295,7 +291,10 @@ Object.assign(RECIPES, {
 });
 RECIPES.bear2 = { ...RECIPES.bear, itemSize: .38 };
 RECIPES.bunnybath.itemSize = .38;
-RECIPES.station.itemSize = .38;   // (a wide platform at zoom 1.2: things ≥ 28 px on the start view — 레벨)
+RECIPES.station.itemSize = .38;
+// 30판 바닷가 가게 2 (seaside2, ⑧ 10/23 허브: 27→28→30 아침→낮→노을) — a warm late afternoon a step short of the sunset its ending
+// turns to (staging.js sunsetTrain): apricot sun, a peach-and-pink sky; things still read in full colour. The old seaside keeps its day.
+RECIPES.seaside2 = { ...RECIPES.seaside };   // (10/23 밤 사용자 "새 해변도 뭔가 누래져서.. 이전엔 쨍하니 이뻤던 거 같은데" → 옛 30판 맑은 낮빛 그대로; 노을 안은 light #fbeee4/#ffe0b8, sky #f4c6bc #fde6d2 #f8cfa8)   // (a wide platform at zoom 1.2: things ≥ 28 px on the start view — 레벨)
 // 기차 여행 밤 (10/21, 27판 밤 자리): the station and the lake at night — a deep blue sky, cool moonlight, and warm pools under
 // the station lamp, the shelter's lanterns and the stopped train's windows, the crossing's red lamps; on the island the
 // lighthouse, the cottage window and the deck lantern
@@ -374,6 +373,9 @@ RECIPES.traincar2 = { ...RECIPES.traincar, clouds: true };
 // (3차 10/22, 사용자 "뒤에 구름 배경 빼고"): inside a train the outside is only what the windows show — a calm deep slate behind
 // the car, no clouds, the same light
 RECIPES.traincar3 = { ...RECIPES.traincar, sky: ['#3b4664', '#48546f', '#323b56'] };
+// (traincar4 ⑧ 10/23, 사용자 "배경 하늘색" + 허브 "27 아침 → 28 맑은 한낮 → 30 노을"): a clear midday — a sky-blue backdrop over the
+// land going by, bright near-white light; the land's own layered slab is the base (no block)
+RECIPES.traincar4 = { light: { ambColor: '#f3f7fc', amb: 1.36, sunColor: '#fff7e8', sun: 2.5, shadow: .5 }, sky: ['#7cc3ee', '#bfe5f8', '#e6f6fd'], itemSize: .48 };
 // (20판 2차 10/21): the neighbours' rooftops printed very faint along the bottom of the backdrop — boxy villas, a yellow tank
 // here and there, an antenna, a little rooftop room
 // (20판 3차 10/21, user on the phone: "20도 어둡고 우울"): a bright, warm afternoon instead of the sunset — a clear blue sky
@@ -397,6 +399,13 @@ RECIPES.gptstation = { ...townRecipe('station'), block: undefined };
 // (40판 지하상가: 상가 거리의 빛·하늘·밤, 물건은 크게 — 판 전체가 한 화면이라)
 { const { rooms, slab, fill, glows, ring, ground, floor, theme, ...um } = RECIPES.shopmap; RECIPES.undermall = { ...um, itemSize: .56 }; }
 const OWN_BASE = new Set(['gptfirestation', 'gptdoghouse', 'gptdoghouse2', 'gptstation', 'gpttraincar2', 'gptseastation']);
+OWN_BASE.add('policefront3');
+// (21판 3안 policefront3 ① 10/23: 옛 21판 하늘·빛 그대로, 받침은 자기 섬; 섬 전체가 한 화면이라 찾을 물건을 조금 크게 — 시작 화면 28 px)
+RECIPES.policefront3 = (({ block, glows, ring, rooms, ground, floor, slab, fill, theme, ...o }) => ({ ...o, itemSize: .45 }))(RECIPES.policefront);
+// (20판 새 안 villaroof3: 빌라 몸통이 받침이라 옛 20판 벽돌 받침을 빌리지 않음 — 사용자 "그리다 만 벽돌 텍스처 같은 건 버리자")
+OWN_BASE.add('villaroof3');
+// (10/23 밤 사용자 "빌라는 뭔가 라이팅 때문인가 누렇냐 왜" — 옛 20판 늦은 햇살을 물려받아서: 새 안은 맑은 낮빛·하늘색, 30판 낮빛 기준)
+RECIPES.villaroof3 = { ...(({ block, glows, ring, rooms, ground, floor, slab, fill, theme, ...o }) => o)(RECIPES.villaroof), light: { ambColor: '#f2f5f7', amb: 1.3, sunColor: '#fff5e8', sun: 2.6, shadow: .56 }, sky: ['#cde6f4', '#eef6fa', '#d8e8ee'] };
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
   // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 룩 — redo7/sNN.js)

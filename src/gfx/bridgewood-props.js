@@ -138,14 +138,15 @@ B.bw_bigtree = f => {
     add(G.sph(.2, 10, 6), P.moss, .45, .12, -.5, 0, 0, 0, [1.4, .35, 1]); add(G.sph(.16, 10, 6), P.moss, -.6, .1, .35, 0, 0, 0, [1.3, .35, 1]);
   }));
   // the basket: comes down its rope from the pulley (t 0: up at the perch, 1: on the ground)
-  const bk = new THREE.Group(); bk.position.set(1.05, 1.65, .75); f.add(bk);
+  // (②b 10/23: the basket was 25×33 px at the start view — half as big again, the thing in it sits up at the rim, half showing)
+  const bk = new THREE.Group(); bk.position.set(1.05, 1.65, .75); bk.scale.setScalar(1.5); f.add(bk);
   bk.add(mt('bw-basket', TX.cloth(), ({ add }) => { add(G.cyl(.17, .13, .2, 12), '#e2b070', 0, 0, 0, 0, 0, 0, 1, [2, 1]); }));
   bk.add(mc('bw-basket-rim', ({ add, tube }) => { add(G.tor(.17, .02, PI * 2, 4, 14), '#c48a4a', 0, .1, 0, HP); tube([-.16, .1, 0], [0, .3, 0], .008, P.rope, 4); tube([.16, .1, 0], [0, .3, 0], .008, P.rope, 4); }));
   const rope = mesh(G.cyl(.008, .008, 1, 4), mat(P.rope)); rope.userData.noMerge = true; f.add(rope);
-  const setRope = () => { const top = 2.1, y = bk.position.y + .3; rope.position.set(1.05, (top + y) / 2, .75); rope.scale.y = Math.max(.02, top - y); };
+  const setRope = () => { const top = 2.1, y = bk.position.y + .45; rope.position.set(1.05, (top + y) / 2, .75); rope.scale.y = Math.max(.02, top - y); };
   setRope();
-  const p = f.part('lift', [bk, rope], t => { bk.position.y = 1.65 - 1.53 * t; setRope(); }, { label: '도르래 바구니', sfx: 'ratchet', dur: 1.4 });
-  f.spot('inside', bk, 0, .0, 0, { part: p, maxH: .18, label: '바구니 안', scale: .5 });
+  const p = f.part('lift', [bk, rope], t => { bk.position.y = 1.65 - 1.48 * t; setRope(); }, { label: '도르래 바구니', sfx: 'ratchet', dur: 1.4 });
+  f.spot('inside', bk, 0, .06, 0, { part: p, maxH: .24, label: '바구니 안', scale: .65 });
   f.spot('on', null, -.2, 1.6, .2, { maxH: .3, label: '나무 위 쉼터', scale: .6 });
   f.spot('behind', null, -.2, 0, -.7, { maxH: .5, label: '고목 뿌리 사이', scale: .75 });
   f.spot('inside', null, 0, .4, .38, { maxH: .2, label: '고목 구멍 안', scale: .55 });
@@ -180,7 +181,8 @@ B.bw_signpost = f => {
     for (const [y, ry, w] of [[1.05, .4, .62], [.8, -.5, .55]]) { add(G.box(w, .14, .035, .015), '#f0d2a0', w / 2 - .05, y, 0, 0, ry, 0, 1, { w: .4 }); add(G.cone(.09, .12, 3), '#f0d2a0', w - .02, y, 0, 0, ry, -HP, [1, 1, .4]); }
   }));
   f.add(mc('bw-sign-bits', ({ add }) => { add(G.cone(.09, .12, 8), '#6f5240', 0, 1.56, 0); tuft(add, .2, .15, 1); add(G.rock(71, .2, 8, 6), P.stone2, -.2, .05, .15, 0, 0, 0, [.14, .08, .12]); }));
-  const pv = new THREE.Group(); pv.position.set(0, 1.3, 0); f.add(pv);
+  // (②b 10/23: the flip board was 22×18 px — bigger, a fatter arrow)
+  const pv = new THREE.Group(); pv.position.set(0, 1.3, 0); pv.scale.setScalar(1.8); f.add(pv);
   pv.add(mt('bw-sign-top', TX.plank(), ({ add }) => { add(G.box(.6, .16, .035, .015), '#ffe3b0', -.25, 0, 0, 0, 0, 0, 1, { w: .4 }); add(G.cone(.1, .12, 3), '#ffe3b0', -.58, 0, 0, 0, 0, HP, [1, 1, .4]); }));
   pv.add(mc('bw-sign-top-ink', ({ add }) => { for (let k = 0; k < 4; k++) add(G.box(.06, .02, .004, .002), '#6f5240', -.42 + k * .1, 0, .02); add(G.sph(.04, 8, 6), '#3a3550', -.2, 0, -.022, 0, 0, 0, [1, 1, .3]); }));
   const p = f.part('flip', pv, t => { pv.rotation.y = PI * t; }, { label: '화살표 판', sfx: 'flip', dur: .5 });

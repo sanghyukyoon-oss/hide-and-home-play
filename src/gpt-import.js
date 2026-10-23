@@ -53,13 +53,17 @@ import { installStationery } from './stationery-map.js';
 import { installFirestation2 } from './firestation2-map.js';
 // 공원·캠프 새 맵 다섯(45·49·55·56·58판, 10/23 새로 지음): 둥근 섬 받침 + 공용 키트 gfx/pc-kit.js — parkcamp-maps.js
 import { installParkCamp } from './parkcamp-maps.js';
+// 30판 바닷가 가게 2 — seaside2 (⑧ 10/23: 같은 맵, 디테일 업)
+import { installSeaside2 } from './seaside2-map.js';
 import { installGptDetails } from './gfx/gpt-details.js';
+// 28판 봄빛 로컬 열차 두 량 traincar4 (⑧ 10/23 — 패럴랙스 창밖·연결 통로·하늘색 바깥): 우리 모델 — traincar4-map.js
+import { installTraincar4 } from './traincar4-map.js';
 import { installUndermall } from './undermall-map.js';
 // 39판 새 맵 카페 지하 냉동 창고 cafefreezer (⑨ 10/23): 흙 속 단면 지하 + 냉동실·도르래 바구니 얼음·온풍기 — cafefreezer-map.js
 import { installCafefreezer } from './cafefreezer-map.js';
 
 // the maps each 들여온 key opens on (its campaign stage, for the preview's lighting and HUD)
-export const GPT_STAGE = { gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64, starplay: 45, picnichill: 49, fireflyvalley: 55, creekcamp: 56, bridgewood: 58, cafefreezer: 39, undermall: 40 };
+export const GPT_STAGE = { gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64, starplay: 45, picnichill: 49, fireflyvalley: 55, creekcamp: 56, bridgewood: 58, cafefreezer: 39, undermall: 40, seaside2: 30 };
 
 // a workshop piece that lists the boxes it really blocks with (gpt2-b gptWalkBoxes) walks by those, not by the box round all of it (room.js walkBoxes)
 // (gpt2-d: a piece with a walkBoxes list walks by that list instead of its whole box)
@@ -95,8 +99,10 @@ export function installGpt(MAPS, THEMES, LAYOUTS) {
   installFirestation2(LAYOUTS, THEMES);
   installParkCamp(LAYOUTS, THEMES);
   installGptDetails(MAPS, LAYOUTS);
+  installTraincar4(MAPS, THEMES, LAYOUTS); GPT_STAGE.traincar4 = 28;
   installUndermall(MAPS, THEMES);
   installCafefreezer(LAYOUTS, THEMES);
+  installSeaside2(LAYOUTS, THEMES);
 }
 
 export function gptPreview(qs, THEMES) {
@@ -107,3 +113,7 @@ export function gptPreview(qs, THEMES) {
   return { idx: lv - 1, direct: true, preview: true,
     spec: { room, n: 6, lock: [], clutter: 0, timed: false, night: false, gray: false, dark: false, showcase: false, time: 9999, zoom: Number.isFinite(previewZoom) && previewZoom > 0 ? Math.max(.5, Math.min(3, previewZoom)) : 1 } };
 }
+
+// 18~21판 다시 (① 10/23 — redo1-maps.js): 새로 지은 맵 키의 미리보기 판 번호
+import { REDO1_STAGE } from './redo1-maps.js';
+Object.assign(GPT_STAGE, REDO1_STAGE);

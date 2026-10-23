@@ -48,7 +48,7 @@ export function installParkCamp(LAYOUTS, THEMES) {
       at('bw_land', 0, 0), at('bw_bridge', .58, -.25, .087),
       at('bw_bigtree', -2.6, -1.85), at('bw_ferns', -1.0, -3.05), at('mushrooms', -3.6, -3.15), at('firewood', -3.5, .75, HP),
       at('lantern', -1.15, 1.6), at('bw_logtunnel', -1.45, 2.95, .1), at('pine', -3.65, 2.9),
-      at('bw_signpost', 2.45, -1.35, -.3), at('trunk', 3.5, -2.55, -.4), at('bw_lamppost', 3.6, .3), at('bw_musicstump', 3.05, 1.55), at('backpack2', 3.55, 3.05, .3), at('pine', 2.55, 3.0),
+      at('bw_signpost', 2.45, -1.35, .75), at('trunk', 3.5, -2.55, -.4), at('bw_lamppost', 3.6, .3), at('bw_musicstump', 3.05, 1.55), at('backpack2', 3.55, 3.05, .3), at('pine', 2.55, 3.0),
     ], { friendAt: [-1.5, .3] });
   }
   // ── 56판 개울가 징검다리 캠핑 (시간제 · 너굴이): 왼쪽 앞을 휘감는 개울, 징검다리 건너 자갈 물가(카누·낚싯대), 이쪽 다진 흙 캠프 자리 —

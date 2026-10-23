@@ -891,8 +891,12 @@ export const REGION_INTRO = {
 export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('gptmaps'); if (q === '1' || q === '0') localStorage.setItem('gptmaps', q); return (q ?? localStorage.getItem('gptmaps')) === '1'; } catch (e) { return false; } })();
 // 새 맵 스위치 (10/23 사용자 "18~33 거의 다 새로" + 스토리 룸 34~70 표 — 아트 결정은 사용자가 월요일에): ?newmaps=1이면 아래 판이
 // 새 맵으로, ?newmaps=0이면 원래대로. 한 번 고르면 기억(localStorage newmaps); 기본은 꺼짐 — 고른 판은 PLAN에 새 키만 넣고 여기서 빼요
-export const NEW_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('newmaps'); if (q === '1' || q === '0') localStorage.setItem('newmaps', q); return (q ?? localStorage.getItem('newmaps')) === '1'; } catch (e) { return false; } })();
-export const NEW_MAPS = { 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
+// (10/24 사용자 "맵 완성하고 빌드에 넣어 줘": 다 되고 점검을 통과한 판은 기본으로 새 맵 — NEW_DEFAULT. ?newmaps=1은 아직 덜 된 판까지 전부,
+// ?newmaps=0은 전부 옛 맵. 기억은 그대로 localStorage newmaps)
+export const NEW_MAPS_MODE = (() => { try { const q = new URLSearchParams(location.search).get('newmaps'); if (q === '1' || q === '0') localStorage.setItem('newmaps', q); return q ?? localStorage.getItem('newmaps') ?? 'default'; } catch (e) { return 'default'; } })();
+export const NEW_MAPS_ON = NEW_MAPS_MODE !== '0';
+export const NEW_DEFAULT = new Set([20, 21, 22, 30, 36]);   // 기본으로 새 맵인 판 (점검 통과 + 사용자 거절 없음; 45·49·55·56·58 공원·캠프는 10/24 사용자 "너무 실망"으로 뺌 — ?newmaps=1로만)
+export const NEW_MAPS = { 28: 'traincar4', 30: 'seaside2', 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
   alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
@@ -995,6 +999,9 @@ const KIT_AT = { 12: 'moving', 18: 'firetruck', 33: 'parfait' };   // (19판 미
 // (GPT 작업장 맵 ⑥ 10/22 — 사용자 고르기 시트): 36·43~70판 몇 판이 새 맵으로, 옛 맵은 키로 남음 — 판 표는 gpt6-maps.js GPT6_SWAP('옛 맵:판 종류' → 새 맵)
 installGpt6(THEMES, MAPS, PLAN);
 installRedo7({ LAYOUTS, THEMES, MAPS, NEW_MAPS });
+// 18~21판 다시 (① 10/23 — redo1-maps.js): 새 맵 키 설치 + 새 맵 스위치(?newmaps=1)에 등록만, 판 표(PLAN)는 그대로
+import { installRedo1 } from './redo1-maps.js';
+installRedo1({ LAYOUTS, THEMES, NEW_MAPS });
 export function stageSpec(idx) {
   idx = Math.max(0, idx);
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
@@ -1086,7 +1093,7 @@ function baseSpec(idx) {
   const P = (PLAN[R.id] || [])[local];
   let room = isWide(local) ? wide[wn % wide.length] : pool[nth % pool.length], kind = '';
   if (P) { const [r0, k0 = ''] = P.split(':'); kind = k0; const ks = r0.split('|'), r1 = (GPT_MAPS_ON ? ks : ks.slice(-1)).find(k => LAYOUTS[k] || MAPS[k]); if (r1) room = r1; }
-  { const nk = NEW_MAPS_ON && NEW_MAPS[idx + 1]; if (nk && (LAYOUTS[nk] || MAPS[nk])) room = nk; }   // 새 맵 스위치
+  { const nk = NEW_MAPS_ON && (NEW_MAPS_MODE === '1' || NEW_DEFAULT.has(idx + 1)) && NEW_MAPS[idx + 1]; if (nk && (LAYOUTS[nk] || MAPS[nk])) room = nk; }   // 새 맵 스위치
   const boss = P ? kind === 'boss' : local === len - 1;
   const RL = REGION_LOCKS[R.id];
   let lock = (boss ? RL?.kinds : RL?.plan?.[local]) || [];
@@ -1503,6 +1510,8 @@ const HIDEOUT = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'f
   // 10/18 (레벨 세션): stages 41 / 48 / 50 had no hideout at all (or one) — 103동 door, recycling bins, ice-cream cart,
   // grill, park bin, wish box, hiking pack; and 8's shower curtain and bed as R1 decoys
   'aptwall', 'recyclebins', 'icecart', 'bbqgrill', 'parkbin', 'shrinebox', 'backpack2', 'bathtub', 'bed', 'gpt_tc_rack'];   // (gpt_tc_rack: 28판 두 량 객차 선반 위 가방 — '선반 위는 반칙', ② 10/22)
+// (28판 새 키 traincar4 ⑧ 10/23: 짐 선반 여행 가방 먼저 — 대본 '…선반 위는 반칙'; 연결 통로 문 뒤도 너굴이 크기 자리)
+HIDEOUT.push('tc4rack', 'tc4endwall');
 export function planIncident(room, spec, story = null) {
   const given = Array.isArray(spec.lock) ? spec.lock.slice() : spec.lock === 'both' ? ['pad', 'code'] : spec.lock ? [spec.lock] : [];
   const DOOR = ['pad', 'code', 'color'];
