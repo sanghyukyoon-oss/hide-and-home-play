@@ -21,6 +21,7 @@ import { HOUSE_KIT } from './scenes/home.js';
 import { THEMES } from './stages.js';
 import { asRoom } from './roomalias.js';
 import { groundTex } from './gfx/outdoor.js';
+import { REDO_LOOK } from './redo7.js';
 
 const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
 const RAW = QS.get('look');
@@ -393,9 +394,13 @@ RECIPES.firestation2 = townRecipe('firestation');
 RECIPES.gptvillaroof = { ...townRecipe('villaroof2'), block: undefined }; RECIPES.gptpolicefront = townRecipe('policefront'); RECIPES.gptalley = townRecipe('alley1'); RECIPES.gptcornershop = townRecipe('alley3');
 RECIPES.gptstation = { ...townRecipe('station'), block: undefined };
 // (GPT maps on their own island or ground — 19·26·27·28판, 해변역: lookRecipe doesn't lend them the old map's block too, ① 10/22)
+// (40판 지하상가: 상가 거리의 빛·하늘·밤, 물건은 크게 — 판 전체가 한 화면이라)
+{ const { rooms, slab, fill, glows, ring, ground, floor, theme, ...um } = RECIPES.shopmap; RECIPES.undermall = { ...um, itemSize: .56 }; }
 const OWN_BASE = new Set(['gptfirestation', 'gptdoghouse', 'gptdoghouse2', 'gptstation', 'gpttraincar2', 'gptseastation']);
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
+  // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 룩 — redo7/sNN.js)
+  if (REDO_LOOK[room]) return REDO_LOOK[room];
   if (RECIPES[room]) return RECIPES[room];
   // (a GPT map under a new key: its old map's sky (with its skyline, clouds, rain, stars), light, night, block and thing size — roomalias.js; not what
   // sits where the old map's furniture or ground was: its glows, ring, rooms, ground, floor, slab, fills — ① 10/22: 18판's arcade glows floated in the new room)
@@ -407,6 +412,8 @@ export function lookRecipe(room, spec) {
 // a GPT map's own mood where the old one's backdrop doesn't suit it (LOOK 10/22 "each map its own backdrop", ⑥): 44판 모래 언덕 —
 // a clear summer blue over the park's grass block
 RECIPES.gptplayhamster = { ...RECIPES.park3, sky: ['#5fb2e6', '#c2e5f4', '#dcf0e6'] };
+// 39판 카페 지하 냉동 창고 (⑨ 10/23): 서늘한 하늘빛 배경에 흰 컵 무늬, 빛은 맑게(긴 그림자 X), 섬은 맵 자기 것이라 받침·바닥 그림자 없음, 넓은 판이라 물건 크게
+RECIPES.cafefreezer = { light: { ambColor: '#eef6fb', amb: 1.32, sunColor: '#fff6ec', sun: 2.35, shadow: .6 }, sky: ['#cfe8f4', '#e6f4f8', '#bcdfee'], pattern: { icon: 'cup', ink: 'rgba(255,255,255,.24)' }, shadow: false, itemSize: .6 };
 // 공원·캠프 새 맵 (10/23, parkcamp-maps.js): 둥근 섬이 제 받침이라 block 없음, 판마다 제 하늘·빛
 // 55판 반딧불 계곡: 낮은 산 계곡의 맑은 하늘, 밤은 별이 아주 많은 깊은 남색(stars 'many': 은하수 띠) — 등불·반딧불 병·랜턴 자리에 따뜻한 빛 웅덩이
 RECIPES.fireflyvalley = { sky: ['#bfe3f2', '#eef6ec', '#cfe6c4'], itemSize: .4,
@@ -1234,3 +1241,8 @@ RECIPES.gptotakumix = { ...RECIPES.otakuloft, mapGlows: true,
     [-1.4, -2.05, 1.0, '#ffd98a', 2.225], [-2.35, .95, 1.15, '#7f9bff'], [-2.9, -.85, .8, '#ffd27a'], [.05, -.95, .75, '#ffd27a']],
   halos: [[1.05, 1.3, -2.05, .95, '#7cf0ff'], [1.85, 1.3, -2.05, .95, '#ff8fc8'], [-1.33, .8, -.5, .7, '#9fd8ff'], [-2.25, 1.3, -.36, 1.15, '#ffd98f'],
     [-1.38, 2.95, -2.4, .8, '#ffd98f'], [2.95, 1.05, .4, .6, '#cfe6ff']] };
+// 36판 새 안 밤의 문구점 (stationery, ⑨ 10/23): 상가 거리의 하늘·빛·밤 그대로(받침은 맵 자체 섬), 밤 빛 웅덩이는 이 가게 자리에 — 가게 안 따뜻한 등 둘,
+// 계산대 위, 오락기 화면(분홍·파랑), 뽑기 줄 위; 물건 크기는 넓은 판 기준(gpt6-maps SPEC과 같은 값)
+RECIPES.stationery = { light: RECIPES.shopmap.light, sky: RECIPES.shopmap.sky, pattern: RECIPES.shopmap.pattern, night: RECIPES.shopmap.night, itemSize: .58,
+  glows: [[-1.1, -1.6, 1.5, '#ffd98a'], [.2, -.6, 1.0, '#ffe7b0'], [-2.1, -.4, .9, '#ffd27a'], [-.98, 1.6, .75, '#ff9fd0'], [-2.45, 1.45, .9, '#ffd27a'], [-2.6, -2.1, .8, '#fff0c0']],
+  halos: [[-.98, 1.05, 1.24, .7, '#7f9bff'], [-.98, 1.38, 1.2, .6, '#ff8fc8'], [-2.45, 1.3, 1.25, 1.0, '#ffd98f'], [.5, 1.77, -2.72, .55, '#9fd8ff']] };

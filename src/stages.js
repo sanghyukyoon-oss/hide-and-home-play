@@ -12,6 +12,8 @@ import { FURN_INFO } from './gfx/furniture.js';
 import { digPatch } from './gfx/outdoor.js';
 import { tvPuzzle } from './gfx/apt-props.js';
 import { installGpt6, gpt6Spec } from './gpt6-maps.js';   // GPT 작업장 맵 36·43~70판 (⑥ 10/22)
+// 22~26판 다시 만들기 (⑦ 10/23): 판마다 새 맵 키 → NEW_MAPS — redo7.js
+import { installRedo7, REDO_SPEC } from './redo7.js';
 import { applyEdit } from './layedits.js';
 import { planDevice } from './devices.js';
 import { ROOM_POOLS, ROOM_FEATURE, SOCKS, SOCK_ROOMS, STAGE_ITEMS } from './pools.js';
@@ -890,7 +892,7 @@ export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location
 // 새 맵 스위치 (10/23 사용자 "18~33 거의 다 새로" + 스토리 룸 34~70 표 — 아트 결정은 사용자가 월요일에): ?newmaps=1이면 아래 판이
 // 새 맵으로, ?newmaps=0이면 원래대로. 한 번 고르면 기억(localStorage newmaps); 기본은 꺼짐 — 고른 판은 PLAN에 새 키만 넣고 여기서 빼요
 export const NEW_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('newmaps'); if (q === '1' || q === '0') localStorage.setItem('newmaps', q); return (q ?? localStorage.getItem('newmaps')) === '1'; } catch (e) { return false; } })();
-export const NEW_MAPS = { 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
+export const NEW_MAPS = { 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
   alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
@@ -992,6 +994,7 @@ const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(locatio
 const KIT_AT = { 12: 'moving', 18: 'firetruck', 33: 'parfait' };   // (19판 미니 소방차 10/20 — its own start zoom and 함정 절반, below)
 // (GPT 작업장 맵 ⑥ 10/22 — 사용자 고르기 시트): 36·43~70판 몇 판이 새 맵으로, 옛 맵은 키로 남음 — 판 표는 gpt6-maps.js GPT6_SWAP('옛 맵:판 종류' → 새 맵)
 installGpt6(THEMES, MAPS, PLAN);
+installRedo7({ LAYOUTS, THEMES, MAPS, NEW_MAPS });
 export function stageSpec(idx) {
   idx = Math.max(0, idx);
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
@@ -1015,10 +1018,14 @@ export function stageSpec(idx) {
   // 장치 둘 — 다락↔1층 바구니 도르래에 걸린 열쇠가 내려와 경품 오락기 받침(자물쇠)을 열고, 서랍 계단 옆 숨은 칸은 비밀번호;
   // 시작 줌 1.35(1.2에서 오락기 받침 26px·택배상자 27px — #94 28px 기준)
   if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
+  // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 줌·물건 크기·자물쇠 자리 — redo7/sNN.js)
+  if (REDO_SPEC[s.room]) REDO_SPEC[s.room](s, idx);
   // (18판 10/22 사용자 고르기: GPT 너굴이네 비 오는 복층 A — gptotaku|otakuloft; 대본·물건은 asRoom으로 otakuloft 것): 비 오는 밤, 미니 냉장고 자물쇠·계단 옆 수납장 비밀번호
   if (s.room === 'gptotaku' || s.room === 'gptotakumix') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['gpt_minifridge'], code: ['gpt_storage_stairs'] }; s.zoom = 1.85; }   // (줌 1.85: 방을 크게 — 옛 18판처럼, 색 분포 colorstat 엔트로피 1.5→2.0)
   // (GPT 들여온 맵 시작 줌 ① 10/22: GPT 맵은 우리 맵보다 넓게 잡혀 작게 보임 — 방을 크게, 색 분포 colorstat 기준)
   { const Z = { gptfirestation: 1.6, gptvillaroof: 1.3, gptpolicefront: 1.75, gptalley: 2.1, gptcornershop: 1.6, gptstation: 2.2, gpttraincar2: 1.05 }; if (Z[s.room]) s.zoom = Z[s.room]; }   // (② 10/22 밤: 28판 두 량 객차 1.05 — 양쪽 칸 끝까지; GPT 소방서는 1.6 — 왼쪽 계단)
+  // (40판 지하상가 undermall ⑨ 10/23: 자물쇠 셋을 맵 가구에 — 열쇠 물품 보관함 · 색 관리실 열쇠 걸이함 · 비밀번호 관리실 금고; 판 전체가 한 화면, 물건은 크게)
+  if (s.room === 'undermall') { s.lockOn = { pad: ['um_lockers'], color: ['um_office'], code: ['um_safe'] }; s.itemSize = .56; }
   if (s.boss && s.sock) s.n = Math.max(5, (s.n || 8) - 1);   // (the 상가 boss's fourth lock, the sock: one thing fewer to find)
   if (GRAY.has(idx) && !s.timed && !s.boss) { s.gray = true; s.night = false; if (Array.isArray(s.lock)) s.lock = s.lock.filter(k => k !== 'color'); }   // a colour lock can't be read in grey
   // 사건 판 (10/17 pivot): from stage 3 on, every ordinary stage is a small incident — the owner hides behind a lock and

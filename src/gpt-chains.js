@@ -11,6 +11,7 @@ import { ITEMS } from './gfx/items.js';
 import { grp, put, cyl, sph, rbox, tor } from './gfx/kit.js';
 import { rng } from './util.js';
 import { CHAINS_A, ON_A } from './gpt-chains-a.js';   // (18~28판 줄 — ② 10/22; GPT 맵 스위치가 켜졌을 때만)
+import { UM_CHAIN } from './undermall-map.js';
 import { registerFurniture } from './gfx/furniture.js';
 import { GPT_WIDE_DEVICE_BUILDERS, GPT_WIDE_DEVICE_INFO } from './gfx/gpt-wide-devices.js';
 import { GPT_LOBBY_DEVICE_BUILDERS, GPT_LOBBY_DEVICE_INFO } from './gfx/gpt-lobby-devices.js';
@@ -76,6 +77,20 @@ export const CHAINS = {
       line: K('드르륵… 셔터 뒤에서 트레이가 쑥! …열쇠도 야근하네?', 'Rrrattle… a tray slides out behind the shutter! …even the keys work late?') }],
     aux: [{ dev: 'gpt_nightsign#0:0', sfx: [[.5, 'flip']], line: K('간판 뒷면에 낙서: "까꿍"', 'Scribbled on the back of the sign: "Peekaboo"') },
       { dev: 'gpt_nightvending#0:0', sfx: [[.6, 'clink']] }, { dev: 'gpt_nightbakery#0:0', sfx: [[.3, 'rustle']], line: K('차양이 착착 접힌다', 'The awning folds up') }, { dev: 'gpt_nightbench#0:0' }],
+  },
+  // 36판 새 안 밤의 문구점 (⑨ 10/23 stationery — 위 gptshopnight와 같은 짜임, 부품은 st_*): 가로등 스위치 → 반쯤 내린 셔터에 숫자 그림자
+  // (= 계산대 밑 금고 비밀번호) → 금고 속 레버 손잡이 → 셔터 레버: 톱니가 돌고 셔터가 말려 올라가며 → 창고 안 열쇠 트레이가 쑥
+  // 보조: 뽑기 손잡이(캡슐 퐁) · 오락기 버튼(화면 반짝·동전 짤랑) · 불량식품 회전 진열대(반 바퀴) · 영업 중 팻말(뒷면 낙서)
+  stationery: {
+    spec: { lock: ['code'], lockOn: { code: ['st_safe'] } }, open: ['st_safe#0:0'],
+    clue: { dev: 'st_streetlamp#0:0', lock: 'st_safe', pill: '💡 ?:??', toast: K('셔터에 숫자 그림자가 비쳤어! 금고 비밀번호인가?', 'Numbers in shadow on the shutter! The safe code?') },
+    steps: [{ dev: 'st_shutterlever#0:0', tool: 'chainlever', links: [{ dev: 'st_shutter#0:0', at: .4 }], payoff: 'st_shutter#0:0', dur: 1.0, sfx: [[.05, 'latch'], [.3, 'ratchet'], [.7, 'ratchet']],
+      need: K('셔터 레버에 손잡이가 빠져 있어! 손잡이가 어디 있을까?', 'The shutter lever has no handle! Where could it be?'),
+      found: K('레버 손잡이다! 셔터 옆 레버에 끼워 보자', 'A lever handle! Fit it on the lever by the shutter'),
+      line: K('드르륵… 셔터 뒤에서 트레이가 쑥! …열쇠도 야근하네?', 'Rrrattle… a tray slides out behind the shutter! …even the keys work late?') }],
+    aux: [{ dev: 'st_gacha#0:0', sfx: [[.05, 'ratchet'], [.6, 'pop']], line: K('캡슐 퐁! …뭐가 들었을까', 'Pop goes a capsule! …What is inside?') },
+      { dev: 'st_arcade#0:0', sfx: [[.05, 'click'], [.3, 'tick'], [.7, 'coin']], line: K('1등! …동전도 하나 굴러 나왔어', 'First place! …and a coin rolled out') },
+      { dev: 'st_snackrack#0:0', sfx: [[.05, 'gearUp'], [.85, 'click']] }, { dev: 'st_flipsign#0:0', sfx: [[.5, 'flip']], line: K('팻말 뒷면에 낙서: "까꿍"', 'Scribbled on the back of the sign: "Peekaboo"') }],
   },
   // 47판 흑백 연못 정자: 레버 자물쇠 뒤 도르래 손잡이 → 도토리 나무 도르래가 바구니를 내림 → 왕도토리 → 다람쥐 집 저울에 올리면
   // 저울이 기울며 집 문이 열리고 → 색 조각 (설계서 47: 도르래 → 도토리 → 저울 → 색 조각)
@@ -238,10 +253,12 @@ export const CHAINS = {
 };
 CHAINS.gptplaybig_open = CHAINS.gptplaybig; CHAINS.gptatrium_open = CHAINS.gptatrium; CHAINS.gptcampfire_open = CHAINS.gptcampfire;
 Object.assign(CHAINS, CHAINS_A);
+// (40판 지하상가 undermall: 맵이 그 키일 때만 — 정본 판 shopmap엔 안 붙음)
+CHAINS.undermall = UM_CHAIN; ON_A.push('undermall');
 // 정본에 켠 판 → 표의 줄 (10/22 저녁 사용자 비교 시트: GPT 맵은 44판만, 43·46·66판은 원본 맵에 GPT 장치를 옮겨 붙임 —
 // _handoff/gpt-compare-picks-1022.md). 판 번호(1부터)에 붙어서, 같은 맵을 쓰는 다른 판(45판 놀이터 밤 …)은 그대로.
 // (?chains=all: 맵 키로 표의 모든 줄 — ②b 측정용)
-export const CHAINS_ON = { 43: 'playground', 44: 'gptplayhamster', 46: 'playgroundwide', 54: 'cabin', 57: 'campwide', 66: 'lobbymap', 67: 'officefloor' };   // (43·57 off until redone — hub art check 10/22: 43 lost its slide to a big cream marble run, 57 a mint-yellow canopy + panda mid-camp)
+export const CHAINS_ON = { 36: 'stationery', 43: 'playground', 44: 'gptplayhamster', 46: 'playgroundwide', 54: 'cabin', 57: 'campwide', 66: 'lobbymap', 67: 'officefloor' };   // (43·57 off until redone — hub art check 10/22: 43 lost its slide to a big cream marble run, 57 a mint-yellow canopy + panda mid-camp)
 const ALL = typeof location !== 'undefined' && /[?&]chains=all(&|$)/.test(location.search);
 const recipeFor = spec => {
   const k = CHAINS_ON[spec.idx + 1], R = (k && (CHAINS[k].map || k) === spec.room ? CHAINS[k] : null) || (ALL || ON_A.includes(spec.room) ? CHAINS[spec.room] : null); if (!R) return null;

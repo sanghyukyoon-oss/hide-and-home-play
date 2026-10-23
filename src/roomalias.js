@@ -9,11 +9,19 @@ export const ROOM_AS = {
   gptotaku: 'otakuloft', gptotakumix: 'otakuloft', gptfirestation: 'firestation', firestation2: 'firestation', gptvillaroof: ['villaroof2', 'villaroof'], gptpolicefront: 'policefront',
   gptstreet: 'street', gptalley: 'alley1', gptcornershop: 'alley3', gptdoghouse: 'alleyhouse', gptdoghouse2: 'alleyhouse',
   gptstation: 'station', gpttraincar: 'traincar', gpttraincar2: ['traincar3', 'traincar'],
+  // 22~26판 다시 만들기 (⑦ 10/23, redo7.js)
+  street3: 'street', jangdokyard: 'alley1', skatebowl: 'skatepark', cornershop3: 'alley3', doghouse3: 'alleyhouse',
   // 기차 여행 끝 · 귀갓길 (10/22 새 판)
   gptlongcar: ['traincar2', 'traincar'], gptsakura: 'station', gptstation2: 'station', gptseastation: 'seaside',
   // 32~49판 (⑥)
+  // 39판 카페 지하 냉동 창고 (⑨ 10/23): 물건 풀은 카페 것 — 대본은 cafefreezerInc가 정확한 키로 먼저 붙음
+  cafefreezer: 'cafe',
+  // 40판 지하상가 (⑨ 10/23 — 대본 shop-boss·물건 풀·빛은 상가 거리 것)
+  undermall: 'shopmap',
   gptshopnight: 'shopmap', gptplaycontest: 'playground', gptplaynight: 'playground', gptplayhamster: 'park3',
   gptplaybig: 'playgroundwide', gptplaybig_open: 'playgroundwide', gptpark2: 'park2',
+  // 36판 새 안 밤의 문구점 (⑨ 10/23): 대본 shopmapH(ifMap stationery)·빛 레시피가 상가 거리 것으로
+  stationery: 'shopmap',
   // 50~70판 (⑥)
   gptcabin2: 'cabin', gptcampfire: 'campwide', gptcampfire_open: 'campwide', gptroof: 'rooftop', gptpractice: 'kpop',
   gptatrium: ['lobbymap', 'lobby'], gptatrium_open: ['lobbymap', 'lobby'], gptlab: 'officefloor', gptroom1: 'officefloor', gptroom1w: 'officefloor',

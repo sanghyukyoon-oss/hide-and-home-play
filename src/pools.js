@@ -38,6 +38,8 @@ export const ROOM_POOLS = {
   otakuloft: ['gamepad', 'console', 'snack', 'ramen', 'sunglasses', 'gift', 'teddy', 'bubbletea'],   // 18판 너굴이네 복층 (오타쿠 방: 게임·간식 — 작은 모델 없이)
   park3: ['kimbap', 'onigiri', 'juicebox', 'candy', 'cookie', 'snack', 'keyring', 'coin'],
   konbini: ['receipt', 'sandwich', 'coffee', 'lottery', 'onigiri', 'bubbletea', 'kimbap', 'ramen'],
+  // 36판 새 안 밤의 문구점 (⑨ 10/23): 문구·장난감, 할머니 안경
+  stationery: ['crayons', 'stapler', 'candy', 'snack', 'ball2', 'teddy', 'gamepad', 'glasses'],
   shopmap: ['receipt', 'sandwich', 'coffee', 'lottery', 'onigiri', 'bubbletea', 'kimbap', 'ramen'],
   laundry: ['sockpair', 'towel', 'tissue', 'coin', 'slipper', 'receipt', 'coffee', 'keyring'],
   cafe: ['coffee', 'icecream', 'cupcake', 'donut', 'cookie', 'bubbletea', 'milk', 'candy'],
