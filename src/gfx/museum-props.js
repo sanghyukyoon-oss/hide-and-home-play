@@ -5,7 +5,7 @@
 // A painting swings out from the wall (something may be tucked behind it); a draped piece can be unveiled; a crate with a
 // lid; an easel; the guide desk's drawer; a bench; velvet ropes; the Thinker as a bronze 몽글이.
 import * as THREE from 'three';
-import { put, grp, canvasTex, texCache } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, texCache } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -149,40 +149,100 @@ B.artstars = f => painting(f, 'stars', 1.62, 1.06, 1.42, '별밤 그림', '별�
 B.artlisa = f => painting(f, 'lisa', .7, .92, 1.42, '몽나리자 그림', '몽나리자 뒤');
 B.artpearl = f => painting(f, 'pearl', .7, .92, 1.42, '진주 귀걸이 토순이 그림', '진주 귀걸이 그림 뒤');
 
-// 생각하는 몽글이: a bronze mochi, chin on paw, on a marble plinth
+// ── a gallery plinth (10/23 user, 10판: plain white boxes "퀄 업") ──────────────────────────────────────────────────────
+// a dark skirting at the floor, a bead, a white shaft with a raised frame on each face, a neck bead and a wider cap slab, a
+// brass plaque on the front. Three values (dark skirt, white shaft, mid-grey frames) so it still reads as a plinth in 흑백.
+// The top surface is at H.
+const PL_SKIRT = '#5f566e', PL_BEAD = '#d8d0c2', PL_CAP = '#ece6da', PL_FRAME = '#d6cfc2', PL_PANEL = '#ebe5da';
+function plinth(add, W, H, D, { plaque = true } = {}) {
+  add(G.box(W + .07, .08, D + .07, .02), PL_SKIRT, 0, .04, 0);
+  add(G.box(W + .035, .03, D + .035, .01), PL_BEAD, 0, .095, 0);
+  const y0 = .11, y1 = H - .085, sh = y1 - y0;
+  add(G.box(W, sh, D, .015), MARBLE, 0, y0 + sh / 2, 0);
+  add(G.box(W + .035, .03, D + .035, .01), PL_BEAD, 0, H - .07, 0);
+  add(G.box(W + .08, .055, D + .08, .018), PL_CAP, 0, H - .0275, 0);
+  // the raised frame on each face (four slim mouldings round a slightly darker panel)
+  const fh = sh - .12, fy = y0 + sh / 2;
+  if (fh > .1) for (let k = 0; k < 4; k++) {
+    const a = k * HP, fw = (k % 2 ? D : W) - .12, out = (k % 2 ? W : D) / 2 + .003, c = Math.cos(a), s = Math.sin(a);
+    const at = (u, v, w, h) => add(G.pbox(w, h, .008), PL_FRAME, s * out + c * u, v, c * out - s * u, 0, a, 0);
+    at(0, fy + fh / 2, fw, .022); at(0, fy - fh / 2, fw, .022); at(-fw / 2, fy, .022, fh); at(fw / 2, fy, .022, fh);
+    add(G.pbox(fw - .03, fh - .03, .004), PL_PANEL, s * (out - .002), fy, c * (out - .002), 0, a, 0);
+  }
+  if (plaque) {
+    const py = y0 + sh * .62;
+    add(G.box(.2, .075, .014, .004), '#c9a24a', 0, py, D / 2 + .012);
+    for (const dy of [.013, -.01]) add(G.pbox(dy > 0 ? .13 : .09, .01, .004), '#6e5426', 0, py + dy, D / 2 + .02);
+  }
+}
+
+// 생각하는 몽글이: a bronze mochi on a rock, elbow on knee, chin on paw, eyes shut in thought — on a gallery plinth
 B.thinker = f => {
-  const PH = .78;
-  f.add(mc('thinker', ({ add, tube }) => {
-    add(G.box(.52, PH, .52, .03), MARBLE, 0, PH / 2, 0);
-    add(G.box(.58, .05, .58, .02), '#e2dccf', 0, PH + .025, 0); add(G.box(.58, .05, .58, .02), '#e2dccf', 0, .025, 0);
-    add(G.box(.22, .05, .012, .006), '#c9a24a', 0, PH * .62, .265);   // its plaque
-    add(G.box(.32, .1, .26, .03), BRONZE, 0, PH + .1, 0);   // the rock it sits on
-    add(G.sph(.17, 14, 10), BRONZE2, 0, PH + .3, 0, 0, 0, 0, [1, .95, .9]);   // body
-    add(G.sph(.13, 14, 10), BRONZE2, .02, PH + .5, .06);   // head, bowed forward
-    for (const s of [-1, 1]) add(G.sph(.045, 8, 6), BRONZE, .02 + s * .1, PH + .6, .04);   // ears
-    tube([.1, PH + .25, .1], [.04, PH + .42, .14], .04, BRONZE, 8);   // the arm up to the chin
-    add(G.sph(.05, 8, 6), BRONZE2, .04, PH + .43, .15);
-    for (const s of [-1, 1]) add(G.sph(.06, 8, 6), BRONZE, s * .08, PH + .17, .12);   // feet
+  const PH = .78, T0 = PH + .05, BZ = '#6b5a42', BZ2 = '#8c7654', BZ3 = '#ad9670', BZD = '#3e3226';
+  f.add(mc('thinker2', ({ add, tube }) => {
+    plinth(add, .52, T0, .52);
+    // the rock: two flattened lumps
+    add(G.sph(.17, 12, 8), BZ, -.02, T0 + .05, -.02, 0, .4, 0, [1.15, .45, .95]);
+    add(G.sph(.1, 10, 6), BZ, .1, T0 + .04, .07, 0, 0, 0, [1, .5, 1]);
+    // body, a lighter belly, the bowed head
+    add(G.sph(.16, 16, 12), BZ2, 0, T0 + .22, 0, 0, 0, 0, [1, .95, .92]);
+    add(G.sph(.1, 12, 8), BZ3, .01, T0 + .19, .1, 0, 0, 0, [1, 1, .55]);
+    add(G.sph(.13, 16, 12), BZ2, .02, T0 + .42, .05, .35, 0, 0);
+    for (const s of [-1, 1]) { add(G.sph(.045, 10, 8), BZ, .02 + s * .1, T0 + .52, .02); add(G.sph(.022, 8, 6), BZD, .02 + s * .1, T0 + .52, .06, 0, 0, 0, [1, 1, .4]); }
+    // eyes shut (two little dark arcs) and a muzzle
+    for (const s of [-1, 1]) add(G.tor(.022, .006, PI, 4, 10), BZD, .02 + s * .045, T0 + .43, .179, .35, 0, PI);
+    add(G.sph(.035, 10, 8), BZ3, .02, T0 + .38, .165, 0, 0, 0, [1.2, .8, .8]);
+    // legs: knees forward, feet on the rock
+    for (const s of [-1, 1]) { add(G.sph(.06, 10, 8), BZ2, s * .08, T0 + .13, .13); add(G.sph(.05, 10, 8), BZ, s * .08, T0 + .07, .17, 0, 0, 0, [1, .7, 1.2]); }
+    // the right arm: elbow on the knee, paw up under the chin; the left paw on the other knee
+    tube([.12, T0 + .26, .06], [.08, T0 + .16, .14], .035, BZ2, 8);
+    tube([.08, T0 + .16, .14], [.04, T0 + .32, .16], .032, BZ2, 8);
+    add(G.sph(.042, 10, 8), BZ3, .04, T0 + .335, .16);
+    tube([-.13, T0 + .26, .05], [-.09, T0 + .17, .14], .033, BZ2, 8);
+    add(G.sph(.038, 10, 8), BZ3, -.08, T0 + .17, .16);
   }));
   f.spot('behind', null, 0, 0, -.38, { maxH: .35, label: '조각상 뒤', scale: .7 });
-  f.spot('on', null, .19, PH + .05, .17, { maxH: .14, label: '조각상 받침 위', scale: .5 });
+  f.spot('on', null, .19, T0, .17, { maxH: .14, label: '조각상 받침 위', scale: .5 });
 };
 
-// 천 덮인 작품: a draped piece on a plinth — lift the cloth and it's a golden mochi bust
+// 천 덮인 작품: a draped piece on a plinth — lift the cloth and it's a golden mochi bust.
+// (10/23 user, 10판 "안에 이상한 거 있음": the old cloth was a cone with eight sticks stuck round it and the bust's ears
+// poked out through it. Now one bell of cloth with soft folds and a wavy hem, the whole bust well inside it.)
+const clothGeo = () => {
+  const pts = [[.285, 0], [.282, .03], [.262, .1], [.232, .18], [.21, .25], [.19, .31], [.16, .37], [.11, .42], [.05, .445], [0, .45]].map(([r, y]) => new THREE.Vector2(r, y));
+  const g = new THREE.LatheGeometry(pts, 48), P = g.attributes.position;
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i), a = Math.atan2(z, x), t = Math.max(0, 1 - y / .4);
+    const k = 1 + .1 * t * t * Math.sin(a * 7) + .03 * t * Math.sin(a * 3 + 1);
+    P.setXYZ(i, x * k, y + (y < .005 ? .012 * Math.sin(a * 7 + 1.4) + .012 : 0), z * k);
+  }
+  g.computeVertexNormals();
+  return g;
+};
 B.veiled = f => {
-  const PH = .62;
-  f.add(mc('veiledbase', ({ add }) => {
-    add(G.box(.5, PH, .5, .03), MARBLE, 0, PH / 2, 0); add(G.box(.56, .05, .56, .02), '#e2dccf', 0, PH + .025, 0);
-    add(G.sph(.15, 14, 10), '#e6b94a', 0, PH + .2, 0, 0, 0, 0, [1, .9, 1]); add(G.box(.18, .08, .14, .02), '#c9973a', 0, PH + .08, 0);
-    for (const s of [-1, 1]) add(G.sph(.05, 8, 6), '#e6b94a', s * .12, PH + .32, 0);
+  const PH = .62, T0 = PH + .05, AU = '#e6b94a', AU2 = '#c9973a', AU3 = '#f6d77a';
+  f.add(mc('veiledbase2', ({ add }) => {
+    plinth(add, .5, T0, .5);
+    // the bust: a round foot, a neck, the head with ears, shut eyes and a smile — all inside the cloth's bell
+    add(G.cyl(.1, .12, .04, 18), AU2, 0, T0 + .02, 0);
+    add(G.cyl(.06, .08, .07, 16), AU, 0, T0 + .075, 0);
+    add(G.sph(.125, 16, 12), AU, 0, T0 + .2, 0, 0, 0, 0, [1, .92, .95]);
+    for (const s of [-1, 1]) { add(G.sph(.04, 10, 8), AU, s * .085, T0 + .3, -.01); add(G.sph(.02, 8, 6), AU2, s * .085, T0 + .3, .028, 0, 0, 0, [1, 1, .4]); }
+    for (const s of [-1, 1]) add(G.tor(.018, .005, PI, 4, 10), AU2, s * .04, T0 + .21, .115, 0, 0, PI);
+    add(G.sph(.03, 10, 8), AU3, 0, T0 + .17, .115, 0, 0, 0, [1.2, .8, .7]);
   }));
-  const cloth = grp(); put(cloth, 0, PH + .03, 0); f.add(cloth);
-  cloth.add(mc('veilcloth', ({ add }) => {
-    add(G.cone(.3, .52, 10), '#f6f2ff', 0, .26, 0); add(G.sph(.17, 12, 8), '#f6f2ff', 0, .48, 0);
-    for (let k = 0; k < 8; k++) { const a = k / 8 * PI * 2; add(G.cyl(.03, .05, .4, 6), '#e6e0f4', Math.cos(a) * .2, .2, Math.sin(a) * .2, Math.sin(a) * .12, 0, -Math.cos(a) * .12); }
+  const cloth = grp(); put(cloth, 0, T0, 0); f.add(cloth);
+  cloth.add(mc('veilcloth2', ({ add }) => {
+    add(clothGeo(), '#f4f1fb', 0, 0, 0);
+    add(G.cyl(.27, .27, .01, 24), '#d9d3e8', 0, .006, 0);
+    add(G.sph(.035, 10, 8), '#e6e0f4', 0, .45, 0, 0, 0, 0, [1, .7, 1]);
+    // a gold cord tied round its waist
+    add(G.tor(.22, .009, PI * 2, 6, 36), '#d9a94a', 0, .25, 0, HP, 0, 0);
+    add(G.sph(.022, 8, 6), '#d9a94a', .02, .245, .222);
+    for (const s of [-1, 1]) add(G.cyl(.006, .006, .09, 6), '#d9a94a', .02 + s * .02, .2, .226, 0, 0, s * .2);
   }));
   const p = f.part('lift', cloth, (t, b) => { cloth.position.y = b.p.y + .55 * t; cloth.position.x = b.p.x + .35 * t; cloth.rotation.z = -.9 * t; cloth.scale.setScalar(1 - .35 * t); }, { label: '작품 덮개 천', sfx: 'swish', dur: .45 });
-  f.spot('inside', null, .13, PH + .05, .13, { part: p, maxH: .14, label: '덮개 천 속', scale: .55 });
+  f.spot('inside', null, .13, T0, .13, { part: p, maxH: .14, label: '덮개 천 속', scale: .55 });
 };
 
 // 이젤: a wooden easel with a canvas in progress (a sketched mochi) and a palette on its tray
@@ -206,27 +266,59 @@ B.easel = f => {
   f.spot('behind', null, 0, 0, -.34, { maxH: .35, label: '이젤 뒤', scale: .7 });
 };
 
-// 작품 운반 상자: a crate with a lid (lockable) and a red "handle with care" stamp
+// 작품 운반 상자: a crate with a lid (lockable), stencilled "handle with care"
+// (10/23 user, 10판 "진열 상자도" 퀄 업: it was a smooth block with two bands. Now plank boards with dark seams, corner
+// battens, a Z brace on each side, iron corner caps, rope handles, a plank lid with two cleats and a stencilled glass and
+// arrows on the front — light boards, dark battens and seams, so it reads as a crate in 흑백 too.)
+const stencil = () => tex('cratestencil', 256, 128, (c, w, h) => {
+  c.clearRect(0, 0, w, h); c.fillStyle = '#c8324a'; c.strokeStyle = '#c8324a'; c.lineCap = 'round'; c.lineJoin = 'round';
+  // a wine glass
+  c.lineWidth = 7; c.beginPath(); c.moveTo(34, 22); c.quadraticCurveTo(30, 62, 54, 66); c.quadraticCurveTo(78, 62, 74, 22); c.closePath(); c.stroke();
+  c.beginPath(); c.moveTo(54, 66); c.lineTo(54, 98); c.moveTo(38, 104); c.lineTo(70, 104); c.stroke();
+  // two up arrows
+  for (const x of [118, 156]) { c.beginPath(); c.moveTo(x, 104); c.lineTo(x, 34); c.stroke(); c.beginPath(); c.moveTo(x - 16, 50); c.lineTo(x, 26); c.lineTo(x + 16, 50); c.closePath(); c.fill(); }
+  // a stamped box round a mochi face
+  c.lineWidth = 6; c.strokeRect(186, 30, 56, 70);
+  c.beginPath(); c.arc(214, 70, 16, 0, 7); c.stroke(); for (const s of [-1, 1]) { c.beginPath(); c.arc(214 + s * 13, 52, 6, 0, 7); c.fill(); }
+});
+const stencilMat = () => new THREE.MeshBasicMaterial({ map: stencil(), color: '#e9e2dc', alphaTest: .5 });
 B.artcrate = f => {
   // a real open crate: four plank walls round a well (it was a solid block with straw on its top, so the lid came up on a
   // flat lid-sized face and a post-it lay on it like a sticker — user, 10판 on a phone: "상자 안쪽이 안 뚫려 있어")
-  const H = .52, W = .76, D = .62, T = .045, S = H - .22, wood = '#d9b07a', band = '#b98a52', inner = '#a8773f';
-  f.add(mc('artcrate2', ({ add }) => {
-    add(G.box(W, .06, D, .02), wood, 0, .03, 0);                                                        // the bottom
-    for (const sz of [-1, 1]) add(G.box(W, H - .06, T, .012), wood, 0, .06 + (H - .06) / 2, sz * (D / 2 - T / 2));   // front and back
-    for (const sx of [-1, 1]) add(G.box(T, H - .06, D - 2 * T, .012), wood, sx * (W / 2 - T / 2), .06 + (H - .06) / 2, 0);   // the sides
-    // the inner faces a shade darker, so the well reads as a well from above
+  const H = .52, W = .76, D = .62, T = .045, S = H - .22, wood = '#dcb680', wood2 = '#cfa66e', seam = '#7a5532', batten = '#9a6a3c', inner = '#a8773f', iron = '#4a4458';
+  f.add(mc('artcrate3', ({ add }) => {
+    add(G.box(W, .06, D, .02), wood2, 0, .03, 0);
+    for (const sz of [-1, 1]) add(G.box(W, H - .06, T, .008), wood, 0, .06 + (H - .06) / 2, sz * (D / 2 - T / 2));
+    for (const sx of [-1, 1]) add(G.box(T, H - .06, D - 2 * T, .008), wood, sx * (W / 2 - T / 2), .06 + (H - .06) / 2, 0);
     for (const sz of [-1, 1]) add(G.pbox(W - 2 * T - .004, H - S - .02, .006), inner, 0, S + (H - S) / 2 - .01, sz * (D / 2 - T - .003));
     for (const sx of [-1, 1]) add(G.pbox(.006, H - S - .02, D - 2 * T - .004), inner, sx * (W / 2 - T - .003), S + (H - S) / 2 - .01, 0);
-    // two plank bands round the outside (rings now, not slabs across the top)
-    for (const y of [.1, H - .1]) {
-      for (const sz of [-1, 1]) add(G.box(W + .02, .05, .02, .008), band, 0, y, sz * (D / 2 + .005));
-      for (const sx of [-1, 1]) add(G.box(.02, .05, D + .02, .008), band, sx * (W / 2 + .005), y, 0);
+    // plank seams: three boards a side
+    for (const y of [.2, .34]) {
+      for (const sz of [-1, 1]) add(G.pbox(W - .1, .01, .006), seam, 0, y, sz * (D / 2 + .002));
+      for (const sx of [-1, 1]) add(G.pbox(.006, .01, D - .1), seam, sx * (W / 2 + .002), y, 0);
     }
-    add(G.box(.26, .12, .01, .004), '#d9564a', -.12, H * .55, D / 2 + .016); add(G.box(.08, .08, .01, .004), '#d9564a', .14, H * .55, D / 2 + .016);
+    // corner battens up the four edges, and a top and bottom rail round the outside
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.06, H + .005, .06, .012), batten, sx * (W / 2 - .01), H / 2, sz * (D / 2 - .01));
+    for (const y of [.045, H - .035]) {
+      for (const sz of [-1, 1]) add(G.box(W - .06, .055, .022, .008), batten, 0, y, sz * (D / 2 + .008));
+      for (const sx of [-1, 1]) add(G.box(.022, .055, D - .06, .008), batten, sx * (W / 2 + .008), y, 0);
+    }
+    // a Z brace on each side face (not the front: the stencil and the lock are there)
+    const L = Math.hypot(D - .12, H - .17), ang = Math.atan2(H - .17, D - .12);
+    for (const sx of [-1, 1]) add(G.box(.022, .05, L, .008), batten, sx * (W / 2 + .012), H / 2, 0, -ang, 0, 0);
+    // iron caps on the corners, rope handles on the sides
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const y of [.03, H - .02]) add(G.box(.075, .06, .075, .01), iron, sx * (W / 2 - .01), y, sz * (D / 2 - .01));
+    for (const sx of [-1, 1]) add(G.tor(.06, .012, PI, 6, 12), '#e8d4a6', sx * (W / 2 + .03), H * .62, 0, 0, HP, PI);
   }));
+  const st = new THREE.Mesh(new THREE.PlaneGeometry(.5, .25), stencilMat()); st.position.set(0, H * .55 - .02, D / 2 + .021); f.add(st);
   const lid = grp(); put(lid, 0, H, -.31); f.add(lid);
-  lid.add(mc('artcratelid', ({ add }) => { add(G.box(.8, .05, .66, .015), '#c99a62', 0, .025, .31); add(G.box(.7, .02, .08, .006), '#b98a52', 0, .055, .31); }));
+  lid.add(mc('artcratelid2', ({ add }) => {
+    for (let k = 0; k < 4; k++) add(G.box(.8, .045, .162, .008), k % 2 ? wood2 : wood, 0, .0225, .31 - .243 + k * .162);
+    for (let k = 1; k < 4; k++) add(G.pbox(.78, .006, .008), seam, 0, .046, .31 - .324 + k * .162);
+    for (const sx of [-1, 1]) add(G.box(.07, .03, .64, .008), batten, sx * .28, .06, .31);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.07, .05, .07, .008), iron, sx * .375, .025, .31 + sz * .3);
+    add(G.box(.18, .012, .1, .004), '#f4ecd8', -.05, .052, .37, 0, .08, 0);
+  }));
   const p = f.part('lift', lid, t => { lid.rotation.x = -1.7 * t; }, { label: '작품 상자 뚜껑', sfx: 'open', dur: .35 });
   p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: -.05, z: .66, parent: lid };
   // packing straw down in the well (a hand's depth under the rim), what's tucked in lies on it
@@ -257,32 +349,71 @@ B.stanchion = f => {
   f.spot('behind', null, 0, 0, -.32, { maxH: .35, label: '관람선 뒤', scale: .7 });
 };
 
-// 안내 데스크 (2×1): brochures, a bell, a drawer (lockable with a code)
+// 안내 데스크 (2×1): a panelled counter with a glass vitrine on one end, brochures and a bell on the other, a drawer
+// (lockable with a code). (10/23 user, 10판 테이블/진열대 "퀄 업, ㅈㄴ 싫음": it was a plain white block with a stripe.)
+// Values for 흑백: a dark skirting, a cream body with raised mid-grey panels, a darker wooden top, the glass case lit inside.
 B.guidedesk = f => {
-  const TH = .8;
-  f.add(mc('guidedesk', ({ add }) => {
-    add(G.box(1.6, TH, .56, .03), '#f6f1e8', 0, TH / 2, 0); add(G.box(1.66, .05, .62, .015), '#c9a46a', 0, TH + .025, 0);
-    add(G.box(1.4, .08, .02, .01), '#8a6a9a', 0, TH * .78, .29);
-    for (let k = 0; k < 3; k++) add(G.box(.16, .02, .22, .004), ['#ff9ec2', '#8fd3f4', '#ffe27a'][k], -.5 + k * .2, TH + .06 + k * .006, .05, 0, k * .1, 0);
-    add(G.cyl(.06, .07, .05, 14), '#d9b45a', .5, TH + .075, .08); add(G.sph(.02, 8, 6), '#d9b45a', .5, TH + .11, .08);
+  const TH = .8, W = 1.6, D = .56, FR = '#d3c8b4', PAN = '#ece4d6', TOP = '#a8764a', TOP2 = '#8a5e38', BR = '#c9a24a';
+  f.add(mc('guidedesk2', ({ add, tube }) => {
+    add(G.box(W + .05, .08, D + .05, .02), PL_SKIRT, 0, .04, 0);
+    add(G.box(W, TH - .08, D, .02), '#f6f1e8', 0, .08 + (TH - .08) / 2, 0);
+    add(G.box(W + .08, .05, D + .08, .018), TOP, 0, TH + .025, 0);
+    add(G.box(W + .03, .02, D + .03, .006), TOP2, 0, TH - .01, 0);
+    add(G.pbox(W - .04, .022, .006), BR, 0, TH - .06, D / 2 + .003);
+    // raised panels: the left of the front, both ends
+    const frame = (cx, cy, w, h, place) => {
+      for (const [u, v, ww, hh] of [[0, h / 2, w, .024], [0, -h / 2, w, .024], [-w / 2, 0, .024, h], [w / 2, 0, .024, h]]) place(G.pbox(ww, hh, .01), FR, cx + u, cy + v);
+      place(G.pbox(w - .03, h - .03, .005), PAN, cx, cy);
+    };
+    frame(-.4, .42, .62, .5, (g, c, u, v) => add(g, c, u, v, D / 2 + .004));
+    // the back faces the room in 10판 (the drawer side is turned to the wall's end), so it gets two panels and the gold line too
+    for (const cx of [-.4, .4]) frame(cx, .42, .66, .5, (g, c, u, v) => add(g, c, u, v, -D / 2 - .004, 0, PI, 0));
+    add(G.pbox(W - .04, .022, .006), BR, 0, TH - .06, -D / 2 - .003);
+    for (const sx of [-1, 1]) frame(0, .42, D - .14, .5, (g, c, u, v) => add(g, c, sx * (W / 2 + .004), v, u, 0, HP, 0));
+    // a little "i" sign above the drawer
+    add(G.cyl(.065, .065, .012, 20), '#3f3a5a', .35, .63, D / 2 + .008, HP, 0, 0);
+    add(G.pbox(.018, .055, .006), '#fff6e6', .35, .615, D / 2 + .016); add(G.sph(.012, 8, 6), '#fff6e6', .35, .665, D / 2 + .016, 0, 0, 0, [1, 1, .4]);
+    // the vitrine on the left: a wooden base, a velvet cushion, a little vase and a scroll, brass posts and rails, a light strip
+    const VX = -.4, VW = .68, VD = .42, VH = .26, Y0 = TH + .05;
+    add(G.box(VW + .04, .05, VD + .04, .01), TOP2, VX, Y0 + .025, 0);
+    add(G.box(VW - .08, .03, VD - .12, .012), '#7a2c48', VX, Y0 + .065, 0);
+    const vase = [[.0, 0], [.035, .005], [.045, .04], [.04, .08], [.022, .11], [.02, .13], [.03, .14]].map(([r, y]) => new THREE.Vector2(r, y));
+    add(new THREE.LatheGeometry(vase, 14), '#f2ece2', VX - .12, Y0 + .08, 0);
+    add(G.cyl(.046, .046, .02, 14, true), '#3f5a9a', VX - .12, Y0 + .13, 0);
+    add(G.cyl(.022, .022, .16, 10), '#efe2c4', VX + .1, Y0 + .1, .02, 0, .3, HP);
+    for (const sx of [-1, 1]) add(G.cyl(.028, .028, .03, 10), '#c9a46a', VX + .1 + sx * .08 * Math.cos(.3), Y0 + .1, .02 - sx * .08 * Math.sin(.3), 0, .3, HP);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) tube([VX + sx * VW / 2, Y0 + .05, sz * VD / 2], [VX + sx * VW / 2, Y0 + .05 + VH, sz * VD / 2], .009, BR, 6);
+    for (const sz of [-1, 1]) add(G.pbox(VW + .02, .02, .02), BR, VX, Y0 + .05 + VH, sz * VD / 2);
+    for (const sx of [-1, 1]) add(G.pbox(.02, .02, VD + .02), BR, VX + sx * VW / 2, Y0 + .05 + VH, 0);
+    add(G.pbox(VW - .04, .012, .02), '#fff3c4', VX, Y0 + .05 + VH - .02, VD / 2 - .02);
+    // a slanted brochure rack and the bell on the right
+    add(G.box(.26, .03, .16, .006), TOP2, .1, TH + .065, .06);
+    for (let k = 0; k < 3; k++) add(G.box(.075, .15, .012, .003), ['#ff9ec2', '#8fd3f4', '#ffe27a'][k], .02 + k * .08, TH + .14, .06 - k * .004, -.35, 0, 0);
+    add(G.box(.26, .1, .012, .004), TOP2, .1, TH + .11, .01, -.35, 0, 0);
+    add(G.cyl(.065, .075, .02, 16), TOP2, .62, TH + .06, .1);
+    add(G.sph(.055, 14, 8), '#d9b45a', .62, TH + .07, .1, 0, 0, 0, [1, .85, 1]);
+    add(G.cyl(.008, .008, .03, 6), '#d9b45a', .62, TH + .13, .1); add(G.sph(.015, 8, 6), '#d9b45a', .62, TH + .15, .1);
   }));
+  f.add(mesh(new THREE.BoxGeometry(.66, .25, .4), mat('#dff2fa', { opacity: .26 }), { cast: false, recv: false })).position.set(-.4, TH + .05 + .05 + .125, 0);
   // the drawer is a real tray: it slides out with whatever is in it
   const dr = grp(); put(dr, .35, TH * .5, .28); f.add(dr);
-  dr.add(mc('guidedrawer', ({ add }) => {
-    add(G.box(.5, .2, .04, .01), '#efe7da', 0, 0, 0); add(G.box(.12, .03, .03, .008), '#c9a46a', 0, 0, .03);
+  dr.add(mc('guidedrawer2', ({ add }) => {
+    add(G.box(.5, .2, .04, .01), '#efe7da', 0, 0, 0);
+    for (const [u, v, w, h] of [[0, .075, .44, .018], [0, -.075, .44, .018], [-.22, 0, .018, .168], [.22, 0, .018, .168]]) add(G.pbox(w, h, .008), FR, u, v, .022);
+    add(G.box(.16, .04, .008, .004), '#a8823e', 0, 0, .024); add(G.box(.12, .025, .03, .008), BR, 0, 0, .035);
     add(G.box(.44, .02, .4, .006), '#e2d6c2', 0, -.08, -.2); for (const sx of [-1, 1]) add(G.box(.02, .12, .4, .006), '#e2d6c2', sx * .21, -.03, -.2); add(G.box(.44, .12, .02, .006), '#e2d6c2', 0, -.03, -.39);
   }));
   const p = f.part('door', dr, (t, b) => { dr.position.z = b.p.z + .36 * t; }, { label: '안내 데스크 서랍', sfx: 'open', dur: .3 });
   p.lockable = true; p.lockKind = 'code'; f.lockAt = { x: .14, y: 0, z: .03, parent: dr };
   f.spot('inside', dr, 0, -.07, -.18, { part: p, maxH: .12, label: '데스크 서랍 안', scale: .6 });
-  f.spot('on', null, .05, TH + .05, .02, { maxH: .3, label: '안내 데스크 위', scale: .65 });
+  f.spot('on', null, .38, TH + .05, .02, { maxH: .3, label: '안내 데스크 위', scale: .65 });
 };
 
 // 그리스 항아리: a black-figure amphora on a low plinth — orange clay, a black band of little running mochi
 B.amphora = f => {
   const PH = .34;
-  f.add(mc('amphora', ({ add, tube }) => {
-    add(G.box(.46, PH, .46, .03), MARBLE, 0, PH / 2, 0); add(G.box(.5, .04, .5, .015), '#e2dccf', 0, PH + .02, 0);
+  f.add(mc('amphora2', ({ add, tube }) => {
+    plinth(add, .46, PH + .04, .46);
     const pts = [[.05, 0], [.13, .03], [.2, .14], [.21, .3], [.17, .44], [.09, .52], [.075, .62], [.11, .66]].map(([r, y]) => new THREE.Vector2(r, y));
     add(new THREE.LatheGeometry(pts, 20), '#e08a3c', 0, PH + .04, 0);
     add(G.cyl(.205, .21, .1, 20, true), '#2a1d22', 0, PH + .04 + .26, 0);   // the black band
@@ -294,8 +425,8 @@ B.amphora = f => {
 // 도넛 조각상: a giant pink-glazed donut standing on its edge on a plinth — pop art
 B.donutart = f => {
   const PH = .4;
-  f.add(mc('donutart', ({ add }) => {
-    add(G.box(.5, PH, .4, .03), MARBLE, 0, PH / 2, 0); add(G.box(.54, .04, .44, .015), '#e2dccf', 0, PH + .02, 0);
+  f.add(mc('donutart2', ({ add }) => {
+    plinth(add, .5, PH + .04, .4);
     add(G.tor(.2, .1, Math.PI * 2, 12, 28), '#e9b47a', 0, PH + .04 + .3, 0);
     add(G.tor(.2, .085, Math.PI * 2, 12, 28), '#ff8fb8', 0, PH + .04 + .3, .03, 0, 0, 0, [1, 1, .9]);   // the glaze
     [['#ffe14d', .12, .14], ['#8fd3f4', -.16, .05], ['#7fd6c0', .05, -.18], ['#ffffff', -.08, .2], ['#ffe14d', .2, -.06]].forEach(([c, x, y]) => add(G.box(.05, .016, .016, .006), c, x, PH + .04 + .3 + y, .1, 0, 0, x * 5));

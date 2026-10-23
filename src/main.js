@@ -137,7 +137,7 @@ for (const k in BUILDING_THEMES) THEMES[k] = { ...THEMES.my, ...BUILDING_THEMES[
 // 둠칫이의 K-POP 무대 (must-have theme, 10/17): the plaza in front of the building at dusk — rooftop paving in pinks
 // 곰돌이의 몽글 미술관 (homage stage, 10/17): warm white walls, honey parquet, a lavender dado
 THEMES.museum = { ...THEMES.my, name: '곰돌이의 몽글 미술관', friend: 'bear', bg: ['#f3e6ea', '#e9dff2'], floorKind: 'planks', floor: '#c98f5a', floor2: '#b07a48',
-  wallKind: 'plain', wall: '#8a3352', wall2: '#7a2c48', wainscot: '#4a2236', trim: '#e2b24e', wallEdge: '#f3d9a0', rug: '#c8324a', rug2: '#ffd36e' };   // a gallery: wine walls, gold trim, warm parquet (10/17 redo: "미술관 구려")
+  wallKind: 'plain', wall: '#8a3352', wall2: '#7a2c48', wainscot: '#4a2236', trim: '#e2b24e', wallEdge: '#f3d9a0', rug: '#c8324a', rug2: '#ffd36e', potKind: 'gallery' };   // a gallery: wine walls, gold trim, warm parquet (10/17 redo: "미술관 구려")
 THEMES.kpop = { ...THEMES.rooftop, name: '둠칫이의 K-POP 무대', friend: 'dj', bg: ['#f1e4ff', '#ffe2ef'], base: '#c4b6d6', floor: '#efdcea', floor2: '#dcc4da', pave: '#f2d4e2',
   plaster: '#f4ecf6', brick: '#b98bd0', roofTile: '#ff7fb0', fence: '#e9dcf5', pool: ['sunglasses', 'earphones', 'bubbletea', 'juicebox', 'postit', 'coffee', 'receipt', 'idcard'] };
 THEMES.lobbymap = { ...THEMES.lobby, name: '빌딩 로비와 사무실' };

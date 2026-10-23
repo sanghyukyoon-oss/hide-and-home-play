@@ -305,8 +305,10 @@ const B = {};
 // ═════════════════════════════════════════════ BATHROOM ═════════════════════════════════════════════
 // 욕조 (2×1): a sky-skinned roll-top tub on gold ball feet, bubbles heaped at one end, a rubber duck on the rim.
 // A free-standing curtain frame; the dotted shower curtain bunches to the left to show the tub.
-B.bathtub = (f, T) => {
-  const skin = col(T, 'tub'), curt = col(T, 'curtain'), tk = [skin, curt].join(',');
+// (o.blackout — 9판 정전 욕실, 사용자 10/23 메모: 거품 방울 대신 벽 샤워기, 찾는 오리랑 헷갈리는 욕조 오리는 빼고, 테두리에 촛불 셋;
+// 커튼 밑단은 욕조 테두리 위에서 멈춤 — 커튼이 욕조로 들어가며 뚫려 보이던 것)
+B.bathtub = (f, T, o = {}) => {
+  const skin = col(T, 'tub'), curt = col(T, 'curtain'), dark = !!o.blackout, tk = [skin, curt, dark].join(',');
   const TW = 1.78, TD = .8, cz = -.08, y0 = .13, y1 = .54, rim = .075, fz = cz + TD / 2;
   const PX = .93, PZB = -.47, PZF = fz + .08, RY = 2.0;
   const ring = (w, d, r, t) => { const s = rrShape(-w / 2, -d / 2, w, d, r); s.holes.push(rrShape(-w / 2 + t, -d / 2 + t, w - 2 * t, d - 2 * t, r - t)); return s; };
@@ -322,11 +324,19 @@ B.bathtub = (f, T) => {
     add(G.tor(.055, .02, PI, 4, 8), STEEL, fx + .055, y1 + .16, cz);
     add(G.cyl(.024, .02, .05, 8), STEEL, fx + .11, y1 + .14, cz);
     for (const sz of [-1, 1]) { add(G.cyl(.012, .012, .05, 6), STEEL, fx, y1 + .03, cz + sz * .12); add(G.sph(.032, 8, 6), sz < 0 ? CORAL : SKY, fx, y1 + .065, cz + sz * .12, 0, 0, 0, [1, .7, 1]); }
-    // a heap of bubbles at the right end
-    [[.52, .44, -.06, .12, WHITE], [.68, .48, .1, .1, SKY2], [.36, .5, .12, .07, WHITE], [.7, .6, -.08, .075, WHITE], [.55, .62, .04, .065, SKY2], [.44, .58, -.15, .05, WHITE]]
+    // a heap of bubbles at the right end (not in the blackout bath: a wall shower over that end instead)
+    if (!dark) [[.52, .44, -.06, .12, WHITE], [.68, .48, .1, .1, SKY2], [.36, .5, .12, .07, WHITE], [.7, .6, -.08, .075, WHITE], [.55, .62, .04, .065, SKY2], [.44, .58, -.15, .05, WHITE]]
       .forEach(([x, y, z, r, c]) => add(G.sph(r, 12, 8), c, x, y, cz + z));
-    // rubber duck on the front rim
-    const A = local(addM, .66, y1 + .012, fz - .04, -1.05, 1);
+    else {
+      tube([PX - .06, y1 + .02, PZB + .02], [PX - .06, 1.62, PZB + .02], .018, STEEL, 6);
+      tube([PX - .06, 1.62, PZB + .02], [PX - .3, 1.7, PZB + .1], .016, STEEL, 6);
+      add(G.cyl(.075, .05, .045, 14), STEEL, PX - .33, 1.67, PZB + .12, .5, 0, 0);
+      add(G.cyl(.068, .068, .006, 14), '#cfe4ee', PX - .335, 1.645, PZB + .135, .5, 0, 0);
+      add(G.box(.09, .05, .03, .012), STEEL, PX - .06, .95, PZB + .03);
+      for (const sz of [-1, 1]) add(G.sph(.022, 8, 6), sz < 0 ? CORAL : SKY, PX - .06 + sz * .05, .95, PZB + .055);
+    }
+    // rubber duck on the front rim (not in the blackout bath — "찾는 오리랑 헷갈려")
+    const A = dark ? () => {} : local(addM, .66, y1 + .012, fz - .04, -1.05, 1);
     A(G.sph(.075, 12, 8), '#ffd93b', 0, .055, 0, 0, 0, 0, [1.25, .85, 1]);
     A(G.sph(.052, 12, 8), '#ffd93b', .065, .135, 0);
     A(G.sph(.026, 8, 6), ORANGE, .118, .125, 0, 0, 0, 0, [1.45, .55, 1.1]);
@@ -342,7 +352,7 @@ B.bathtub = (f, T) => {
     }
     tube([-PX, RY, PZF], [PX, RY, PZF], .017, STEEL, 6);
   }));
-  const CW = 2 * PX - .04, CH = RY - .05 - .3;
+  const CW = 2 * PX - .04, CH = RY - .05 - (dark ? .72 : .3);
   const cg = new THREE.Group(); put(cg, -PX + .02, RY - .035, PZF);
   cg.add(mg('bathtub-curtain|' + curt, mat('#ffffff', { map: dotTex(curt), side: DS }), ({ addM }) => {
     const g = new THREE.PlaneGeometry(CW, CH, 24, 1); g.translate(CW / 2, -CH / 2, 0);
@@ -354,6 +364,14 @@ B.bathtub = (f, T) => {
     add(G.pbox(CW, .045, .034), WHITE, CW / 2, -.02, 0);
   }));
   f.add(cg);
+  // three candles on the back rim — their flames glow, so the night's lamp pools find them (look.js nightLights)
+  if (dark) {
+    const flame = mat('#ffcf6a', { emissive: '#ffb347', ei: .9, rim: 0 });
+    f.add(mc('bathtub-candles', ({ add }) => {
+      for (const [x, h] of [[-.42, .12], [-.3, .08], [.18, .1]]) { add(G.cyl(.032, .034, h, 10), '#fbf3e0', x, y1 + h / 2 + .01, cz - TD / 2 + .045); add(G.cyl(.003, .003, .02, 4), INK, x, y1 + h + .02, cz - TD / 2 + .045); }
+    }));
+    for (const [x, h] of [[-.42, .12], [-.3, .08], [.18, .1]]) { const fl = new THREE.Mesh(G.sph(.016, 8, 6), flame); fl.scale.set(1, 1.7, 1); put(fl, x, y1 + h + .045, cz - TD / 2 + .045); f.add(fl); }
+  }
   const p = f.part('curtain', cg, t => { cg.scale.x = 1 - .82 * t; }, { label: '샤워 커튼', sfx: 'swish', dur: .32 });
   f.spot('inside', null, -.24, y0 + .026, cz, { part: p, maxH: .42, label: '욕조 안', scale: .92 });
 };

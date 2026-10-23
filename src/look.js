@@ -150,6 +150,18 @@ Object.assign(RECIPES, {
     block: { layers: [{ h: .07, color: '#e9e3da', out: .03 }, { h: .22, color: '#d8cfc0', stones: true }, { h: .3, color: '#c7a77c' }] },
     itemSize: .38,
   },
+  // 개굴이의 낚시터 (3판, 사용자 10/23 메모 "배경 주변이 타는 거 같아"): the yellow-green glow round the meadow went; a clear park sky
+  // and a soil block under the lawn like 30판's plinth — grass lip, brown soil, a band of stones, darker earth (A안).
+  // B안 fishingtown: the same pond in 26판's neighbourhood ring instead (gfx/gpt2c-dog-surround.js), the ground running on
+  fishing: {
+    light: { ambColor: '#f2f8f0', amb: 1.32, sunColor: '#fff6e2', sun: 2.55, shadow: .56 },
+    sky: ['#cfe9f6', '#eef7f4', '#d9eedf'],
+    block: { layers: [{ h: .08, color: '#8fd06a', out: .04 }, { h: .24, color: '#a57c56' }, { h: .26, color: '#b8ad9c', stones: true }, { h: .22, color: '#8a6648' }] },
+  },
+  fishingtown: {
+    light: { ambColor: '#f2f8f0', amb: 1.32, sunColor: '#fff6e2', sun: 2.55, shadow: .56 },
+    sky: ['#cfe9f6', '#eef7f4', '#d9eedf'],
+  },
   // 펭펭이네 다락방 (4판, 흑백): a cool attic, slate-lilac backdrop (the grey stage keeps its own colour game)
   peng: {
     light: { ambColor: '#eef0fa', amb: 1.3, sunColor: '#fff4e4', sun: 2.45, shadow: .62 },

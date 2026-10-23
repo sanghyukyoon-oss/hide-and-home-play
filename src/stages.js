@@ -568,7 +568,7 @@ export const MAPS = {
       furniture: [F('bed', 0, 0), F('wardrobe', 1, 0), F('drawers', 2, 0), F('plant', 4, 0), F('desk', 0, 3, 1), F('rug', 2, 2), F('stool', 1, 3), F('catbed', 4, 3), F('yarnbasket', 1, 4, 1)],   // (털실 바구니: 자물쇠가 방 쪽을 보게 — user 10/19 "바구니 자물쇠가 벽 쪽에 있어서")
       decor: [D('picture', 'N', -1.9), D('wallshelf', 'N', 1.6), D('window', 'W', -.5), D('clock', 'W', 1.6)] }) },
     { at: [2.5, 0], layout: RM('bath', 5, 5, { walls: { W: 'none' },
-      furniture: [F('bathtub', 1, 0), F('vanity', 3, 0), F('laundrybasket', 0, 1), F('toilet', 4, 2, 3), F('laundry', 4, 4, 3), F('rug', 1, 2), F('plant', 0, 4), F('trash', 3, 4)],
+      furniture: [F('bathtub', 1, 0, 0, { blackout: true }), F('vanity', 3, 0), F('laundrybasket', 0, 1), F('toilet', 4, 2, 3), F('laundry', 4, 4, 3), F('rug', 1, 2), F('plant', 0, 4), F('trash', 3, 4)],
       decor: [D('wallshelf2', 'N', -1.0), D('mirrorcab', 'N', 1.0), D('window', 'E', -1.5)] }) },
   ] }),
   // 곰돌이네 다락 3층집 (user 10/17: the 2층집 look is good, floors floating apart are not — "찾기 불편하기만 할듯"): one house
@@ -1616,3 +1616,9 @@ export function planCustom(room, doc, seed = 1) {
   }
   return { targets, placements, locks, rotSeed: r };
 }
+
+// 3판 낚시터 B안 (① 10/23, 사용자 "배경 주변이 타는 거 같아 … 26판처럼 둘레 모델 넣는 안 시도"): 같은 연못 마당을 26판 동네 배경 속에 —
+// 미리보기 ?gptmap=fishingtown&lv=3 (판 표는 그대로 fishing = A안: 흙 지층 받침)
+THEMES.fishingtown = { ...THEMES.fishing, gptSky: '#d9eedf', gptGround: '#9fd27a', gptGroundFar: '#d9eedf', gptPaving: '#e6dccb',
+  townWalls: ['#fbefd6', '#e6f1e0', '#f6dfe2', '#e8f0f4', '#fef2e1', '#e3eedc'], townRoofs: ['#e96d78', '#4e97d5', '#5aa84a', '#e08a4a', '#4e97d5', '#e782b2'] };
+LAYOUTS.fishingtown = { ...LAYOUTS.fishing, theme: THEMES.fishingtown, furniture: [...LAYOUTS.fishing.furniture, { type: 'gptneighborhood', x: 0, z: 0, a: 0 }] };

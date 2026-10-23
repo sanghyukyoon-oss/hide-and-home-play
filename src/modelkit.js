@@ -697,8 +697,10 @@ async function truckIntro(S) {
     h('div', { class: 'kb3-cube' },
       h('div', { class: 'kb3-floor' }),
       F('ifloor'), F('iback'), F('ileft'), F('back'), F('left'), F('bottom'), F('right'),
-      F('front', count, h('i', { class: 'kb3-wheel a' }), h('i', { class: 'kb3-wheel b' })),
-      h('div', { class: 'kb3-cab' }, F('cfront', h('i', { class: 'kb3-cwin' }), h('i', { class: 'kb3-wheel c' })), F('cright', h('i', { class: 'kb3-shield' }), h('i', { class: 'kb3-lamp l' }), h('i', { class: 'kb3-lamp r' })), F('ctop')),
+      F('front', h('i', { class: 'kb3-post' }), h('i', { class: 'kb3-tail' }), count, h('i', { class: 'kb3-arch ab' }), h('i', { class: 'kb3-flap' }), h('i', { class: 'kb3-wheel a' }), h('i', { class: 'kb3-wheel b' })),
+      h('div', { class: 'kb3-cab' },
+        F('cfront', h('i', { class: 'kb3-door' }), h('i', { class: 'kb3-cwin' }), h('i', { class: 'kb3-handle' }), h('i', { class: 'kb3-mirror' }), h('i', { class: 'kb3-arch c' }), h('i', { class: 'kb3-wheel c' })),
+        F('cright', h('i', { class: 'kb3-shield' }), h('i', { class: 'kb3-grille' }), h('i', { class: 'kb3-lamp l' }), h('i', { class: 'kb3-lamp r' }), h('i', { class: 'kb3-bumper' }, h('i', { class: 'kb3-plate' }))), F('ctop')),
       h('div', { class: 'kb3-lid' }, F('lback'), F('lleft'), F('lright'), F('lfront', h('b', { class: 'kb3-name' }, K.name)), F('ltop', h('i', { class: 'kb3-ltape' })))));
   const lay = h('div', { class: 'kitintro comic', style: 'opacity:0;' + burstVars(K.id) },
     h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box);
@@ -707,6 +709,13 @@ async function truckIntro(S) {
   if (covered) { lay.style.opacity = '1'; lay.style.animation = 'none'; const cv = S.kitCover; S.kitCover = null; requestAnimationFrame(() => requestAnimationFrame(() => cv.remove())); }
   const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
   cube.style.transform = KB3_VIEW; lid.style.transform = KB3_LID;
+  // (10/23, user: "트럭 화면 가운데 정렬"): the cab hangs off the cargo's end, so the truck as drawn is centred, not its cargo —
+  // measured once the panel is up (its rects are nothing while the HUD is still hidden), before it rolls in
+  const centre = () => { const bb = box.getBoundingClientRect(); let l = 1e9, r = -1e9;
+    for (const e of cube.querySelectorAll('.kb3-face, .kb3-wheel, .kb3-bumper')) { const q = e.getBoundingClientRect(); if (q.width) { l = Math.min(l, q.left); r = Math.max(r, q.right); } }
+    // (the HUD is zoomed: the screen's px back into the box's own)
+    const cs = getComputedStyle(box);
+    if (r > l && bb.width) box.style.marginLeft = `${parseFloat(cs.marginLeft) - ((l + r) / 2 - (bb.left + bb.width / 2)) * parseFloat(cs.width) / bb.width}px`; };
   card.style.zIndex = 31; card.style.visibility = 'hidden';
   const cells = Object.values(S.kitCells);
   W.camLock = true;
@@ -761,6 +770,7 @@ async function truckIntro(S) {
   lay.addEventListener('pointerdown', tapped);
   try {
     if (!covered) { G.audio.sfx('swish'); await A(lay, [{ opacity: 0, transform: 'scale(1.18)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.9,.3,1)' }); }
+    centre();
     // 부릉: in from the right, a little overshoot, a bounce on its wheels, dust
     G.audio.sfx('whoosh');
     await A(box, [{ transform: 'translateX(120vw)' }, { transform: 'translateX(-14px)', offset: .78 }, { transform: 'translateX(0) scale(1.05,.92)', offset: .88 }, { transform: 'none' }], { duration: quick ? 420 : 620, easing: 'cubic-bezier(.2,.8,.3,1)' });
