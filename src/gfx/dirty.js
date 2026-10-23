@@ -87,7 +87,10 @@ export class DirtyTracker {
   _rect(o, M, W, H, me = null, ld = null) {
     const g = o.geometry; if (!g) return null;
     if (!g.boundingBox || g.userData._dbv !== verOf(g)) { g.computeBoundingBox(); g.userData._dbv = verOf(g); }
-    const b = g.boundingBox; if (b.isEmpty()) return null;
+    let b = g.boundingBox;
+    // (one mesh of many copies — rain, petals, fireflies: the box round all its copies as they stand now, 3판 비 10/24)
+    if (o.isInstancedMesh) { const v = o.instanceMatrix.version; if (!o.boundingBox || o.userData._dbi !== v) { o.computeBoundingBox(); o.userData._dbi = v; } b = o.boundingBox; }
+    if (b.isEmpty()) return null;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     const mw = me ? OW.fromArray(me) : o.matrixWorld;
     for (let i = 0; i < (ld ? 16 : 8); i++) {
@@ -128,6 +131,9 @@ export class DirtyTracker {
     s[k++] = o.userData.oid || 0;
     s[k++] = o.renderOrder;
     s[k++] = ms.length;
+    // (copies moved inside one mesh — its own matrix stays put: without this the still-view redraw never saw the rain fall,
+    // and it stood frozen whenever nothing else on screen moved — 3판 여우비 10/24, user "비가 오다가 가끔 막 멈춘다")
+    s[k++] = o.isInstancedMesh ? o.instanceMatrix.version + o.count * 1e-3 : 0;
     return s;
   }
 }

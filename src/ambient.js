@@ -25,7 +25,7 @@ const PETAL = (() => { const g = new THREE.CircleGeometry(.055, 7); g.scale(1, .
 
 export class Ambient {
   constructor(room) {
-    this.t = Math.random() * 10; this.sway = []; this.steam = []; this.flutter = []; this.swing = []; this.ticks = [];
+    this.t = Math.random() * 10; this.sway = []; this.steam = []; this.flutter = []; this.swing = []; this.ticks = []; this.weather = []; this.wt = 0;
     const rooms = room.rooms || [room];
     for (const R of rooms) R.group.updateMatrixWorld(true);   // boxes below need the room's real placement
     // moving parts that hang: curtains flutter a little (open or shut), a hanging clock swings while it hangs closed
@@ -56,6 +56,7 @@ export class Ambient {
     for (const R of rooms) for (const r of R.decors || []) if (r.f.tick) this.ticks.push(r.f.tick);   // (a wall piece's own motion too: the train's windows, the rack's fan — 10/22)
     for (const R of rooms) for (const r of R.furns) {
       if (r.f.tick) this.ticks.push(r.f.tick);   // a piece's own little motion (a level crossing's lamps taking turns)
+      if (r.f.weather) this.weather.push(r.f.weather);   // weather (3판 여우비): keeps going while the stage is paused — always()
       const g = r.f.group, sw = SWAY.find(([re]) => re.test(r.type));
       if (sw) this.sway.push({ g, x0: g.rotation.x, z0: g.rotation.z, ...sw[1], ph: Math.random() * 6.3 });
       const st = STEAM[r.type];
@@ -108,6 +109,9 @@ export class Ambient {
     }
     P.m.instanceMatrix.needsUpdate = true;
   }
+  // (3판 여우비 10/24, user "비가 오다가 가끔 막 멈춘다": the stage's update stops whenever it is paused — the pause menu, a note
+  // shown up close, a puzzle — and the rain stood still in the air with it; weather runs on its own clock, paused or not)
+  always(dt) { this.wt += dt; for (const k of this.weather) k(this.wt); }
   update(dt) {
     const t = this.t += dt;
     if (this.petals) this.updatePetals(dt, t);

@@ -3373,6 +3373,7 @@ export class StageScene {
   // ── per-frame
   update(dt) {
     const G = this.G, W = G.world;
+    if (!this.dead) this.ambient?.always(dt);   // (weather: on its own clock, paused or not — ambient.js)
     if (this.dead || this.paused) return;
     this.tw.update(dt);
     this.t += dt;

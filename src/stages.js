@@ -754,7 +754,7 @@ MAPS.bearbakery = () => ({ theme: THEMES.bearbakery, friendAt: [-.84, -1.2], roo
 export const STAGES = [
   { room: 'bunny', n: 3, inside: 0, behind: 0, time: 60, tut: 1, clutter: .4 },
   { room: 'bunny', n: 4, inside: 2, behind: 0, time: 70, tut: 2, clutter: .5 },
-  { room: 'frogpond', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },   // 3판 = C안 여우비 오는 날 개굴이네 연잎 연못 집 (10/24 사용자 "C로 하자, 잘 나왔다" — ⑫; 옛 낚시터 fishing, A fishing3·B fishing2b는 ?gptmap= 미리보기)
+  { room: 'fishing3', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },   // 3판 = A안 개굴이의 낚시터 레벨업 + 여우비 (10/24 사용자 "3판은 A로"; C frogpond·B fishing2b·옛 fishing은 ?gptmap= 미리보기로 남김)
   { room: 'peng', n: 3, inside: 1, behind: 0, time: 85, clutter: .35 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 3 things + 2 grey furniture + 먹물이 — the first 흑백 (5 → 3, 1~10판 밸런스 10/19: a new rule's first stage carried the most to find, 8; now 6 — and clutter .5 → .35: a 흑백 stage has no decoy cap, fewer things left room for 9 decoys)
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4, habitMore: true, habit: ['kotatsu', 'table', 'zabuton', 'sofa', 'tvlow', 'recordcab', 'fridge', 'kitchen', 'counter', 'snack'] },   // (곰돌이: "손님 주려고 숨겨 놨는데" — by the food, 검토 P0-1)   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3, lockOn: { pad: ['dishcab'] } },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)

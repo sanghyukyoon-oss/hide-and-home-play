@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { put, grp, shade } from './kit.js';
 import { blobOutline, scaleOutline } from './pc-kit.js';
 import { groundMesh, beachGeo } from './s3b-props.js';
-import { G, mc, mt, TX, PI, HP, mix, texMat, paintTex, stone, lily, lotus, cattails, daisy, tuft, butterfly, dragonfly, scenery, lakeWater } from './s3-kit.js';
+import { G, mc, mt, TX, PI, HP, mix, texMat, paintTex, stone, lily, lotus, cattails, daisy, tuft, butterfly, dragonfly, scenery, lakeWater, rainFall } from './s3-kit.js';
 
 const B = {};
 const WOOD = '#e6b47a', WOODD = '#b98552', WOODL = '#f2cf9c';
@@ -306,30 +306,10 @@ B.s3c_sign = f => {
 
 // ── 여우비와 무지개 (숨김 자리 없음): 해 뜬 채 내리는 가늘고 밝은 빗줄기(한 메시, 매 순간 조금씩 떨어짐), 뒤쪽 하늘의 옅은 무지개,
 // 물 위 연잎 무리·잠자리·나비 ───────────────────────────────────────────────────────────────────────────────────────
-const DROP = (() => { const g = new THREE.CylinderGeometry(.006, .006, .32, 4, 1, true); g.rotateZ(.12); return g; })();
-const RING = (() => { const g = new THREE.RingGeometry(.82, 1, 28); g.rotateX(-HP); return g; })();
 B.s3c_weather = f => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.7, 0, .01, -.65, .01];   // (rain and rainbow are no obstacle: their box held every lid and the waterwheel's bucket at a third — 10/24)
-  const n = 150, r = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(5);
-  const m = new THREE.InstancedMesh(DROP, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .62, depthWrite: false }), n);
-  const drops = []; for (let i = 0; i < n; i++) drops.push({ x: (r() - .5) * 12, z: (r() - .5) * 12, y: r() * 5, v: 5.5 + r() * 2 });
-  const M = new THREE.Matrix4(), P = new THREE.Vector3(), Q = new THREE.Quaternion(), S = new THREE.Vector3(1, 1, 1), Z = new THREE.Vector3(0, 0, 0);
-  // where a drop lands on the pond a small ring opens and fades out (one mesh of rings, reused)
-  const RN = 36, ring = new THREE.InstancedMesh(RING, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .62, depthWrite: false }), RN);
-  const rings = Array.from({ length: RN }, () => ({ x: 0, z: 0, t: 9 })); let rk = 0;
-  const set = dt => {
-    drops.forEach((q, i) => { q.y -= q.v * dt; q.x -= q.v * dt * .12;
-      if (q.y < 0) { if (!inIsland(q.x, q.z, .45) && Math.hypot(q.x, q.z) < 8) { const g = rings[rk++ % RN]; g.x = q.x; g.z = q.z; g.t = 0; } q.y += 5; q.x = (r() - .5) * 12; q.z = (r() - .5) * 12; }
-      m.setMatrixAt(i, M.compose(P.set(q.x, q.y, q.z), Q, S)); });
-    rings.forEach((g, i) => { g.t += dt; const k = g.t / .7; ring.setMatrixAt(i, k >= 1 ? M.compose(P.set(0, -9, 0), Q, Z) : M.compose(P.set(g.x, W + .006, g.z), Q, S.set(.04 + k * .2, 1, .04 + k * .2))); });
-    S.set(1, 1, 1);
-  };
-  set(0);
-  scenery(m); m.renderOrder = 4; m.frustumCulled = false; f.add(m);
-  scenery(ring); ring.renderOrder = 2; ring.frustumCulled = false; f.add(ring);
-  let last = null;
-  f.tick = t => { const dt = last == null ? 0 : Math.min(.1, t - last); last = t; set(dt); m.instanceMatrix.needsUpdate = true; ring.instanceMatrix.needsUpdate = true; };
-  f.live = [...(f.live || []), m, ring];
+  // the sunshower (shared with A — s3-kit.js rainFall): a ring where a drop lands on the pond
+  rainFall(f, { wet: (x, z) => !inIsland(x, z, .45) && Math.hypot(x, z) < 8, ringY: W + .006 });
   // the faint rainbow standing up out of the pond behind the island (six soft bands)
   const bands = ['#ff9a9a', '#ffc98a', '#fff09a', '#a8e6a0', '#9fd2f6', '#c4b2f2'];
   bands.forEach((c, k) => {

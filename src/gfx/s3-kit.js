@@ -184,3 +184,38 @@ export function dragonfly(add, x, y, z, rot = 0, body = '#4fa9d8') {
 export const paintTex = (key, w, h, draw) => TEXC.get('s3paint|' + key, () => { const t = canvasTex(w, h, draw); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; });
 export const texMat = t => mat('#ffffff', { map: t });
 export const textured = (geom, t) => mesh(geom, texMat(t));
+
+// ── 여우비 (C 개굴이네 연잎 연못 집 · A 낚시터 공용, 10/24): 가늘고 밝은 빗줄기 한 메시, 물에 떨어진 자리마다 작은 동그라미 ─────────
+// o: { n 빗줄기 수, w·d 내리는 넓이, top 높이, wet(x, z) 물 위인가, ringY 물 높이, cx·cz 가운데 } — f.weather가 움직임(ambient.js always — 일시정지에도)
+// (사용자 "비가 오다가 가끔 막 멈춘다": ① 화면 일부만 다시 그리는 장치가 한 메시 안의 움직임을 못 봐서 — gfx/dirty.js가 이제 봄,
+//  ② 판이 잠깐 멈출 때(일시정지·쪽지 보기·퍼즐) 주변 움직임이 같이 멈춤 — 비는 제 시계로 따로 돎(ambient.js always),
+//  ③ 시계가 다시 시작되면 간격이 거꾸로일 수 있음 — 음수·큰 간격은 버리고, 위로 벗어나도 다시 떨어뜨림)
+const DROP = (() => { const g = new THREE.CylinderGeometry(.006, .006, .32, 4, 1, true); g.rotateZ(.12); return g; })();
+const RING = (() => { const g = new THREE.RingGeometry(.82, 1, 28); g.rotateX(-HP); return g; })();
+export function rainFall(f, { n = 150, w = 12, d = 12, top = 5, cx = 0, cz = 0, wet = () => false, ringY = -.07, rate = 24, seed = 5, opacity = .62 } = {}) {
+  const r = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(seed);
+  const m = new THREE.InstancedMesh(DROP, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity, depthWrite: false }), n);
+  const spawnX = () => cx + (r() - .5) * w, spawnZ = () => cz + (r() - .5) * d;
+  const drops = []; for (let i = 0; i < n; i++) drops.push({ x: spawnX(), z: spawnZ(), y: r() * top, v: 5.5 + r() * 2 });
+  const M = new THREE.Matrix4(), P = new THREE.Vector3(), Q = new THREE.Quaternion(), S = new THREE.Vector3(1, 1, 1), Z = new THREE.Vector3(0, 0, 0);
+  const RN = 36, ring = new THREE.InstancedMesh(RING, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .62, depthWrite: false }), RN);
+  const rings = Array.from({ length: RN }, () => ({ x: 0, z: 0, t: 9 })); let rk = 0;
+  const set = dt => {
+    drops.forEach((q, i) => { q.y -= q.v * dt; q.x -= q.v * dt * .12;
+      if (q.y < 0) { if (wet(q.x, q.z)) { const g = rings[rk++ % RN]; g.x = q.x; g.z = q.z; g.t = 0; } q.y += top; q.x = spawnX(); q.z = spawnZ(); }
+      else if (q.y > top) { q.y = r() * top; q.x = spawnX(); q.z = spawnZ(); }
+      m.setMatrixAt(i, M.compose(P.set(q.x, q.y, q.z), Q, S)); });
+    rings.forEach((g, i) => { g.t += dt; const k = g.t / .7; ring.setMatrixAt(i, k >= 1 ? M.compose(P.set(0, -9, 0), Q, Z) : M.compose(P.set(g.x, ringY, g.z), Q, S.set(.04 + k * .2, 1, .04 + k * .2))); });
+    S.set(1, 1, 1);
+    m.instanceMatrix.needsUpdate = true; ring.instanceMatrix.needsUpdate = true;
+  };
+  set(0);
+  scenery(m); m.renderOrder = 4; m.frustumCulled = false; f.add(m);
+  scenery(ring); ring.renderOrder = 2; ring.frustumCulled = false; f.add(ring);
+  // (rate: steps a second — the rain needs the whole screen drawn again each step, so not every frame on a phone)
+  let last = null, acc = 0;
+  const tick = t => { const dt = last == null ? 0 : t - last; last = t; if (!(dt > 0) || dt > .5) return; acc += dt; if (acc < 1 / rate) return; set(Math.min(.1, acc)); acc = 0; };
+  f.weather = f.weather ? (prev => x => { prev(x); tick(x); })(f.weather) : tick;   // (ambient.js always(): runs while the stage is paused too)
+  return { m, ring };
+}
+

@@ -40,7 +40,7 @@ export function installStage3(LAYOUTS, THEMES) {
       H('tacklebox', 1, 1, 0, 's3a_tacklebox', V), H('baitbucket', 4, 1, 0, 's3a_baitbucket', V), H('reeds', 5, 3, 0, 's3a_reeds', { seed: 1, ...V }), H('reeds', 1, 4, 0, 's3a_reeds', { seed: 2, ...V }),
       H('parasol', 6, 2, 0, 's3a_parasol', V), H('cooler', 6, 4, 0, 's3a_cooler', V), H('campchair', 0, 2, 0, 's3a_campchair', V), H('bush', 0, 5, 0, 's3a_bush', V), H('picnic', 3, 5, 0, 's3a_picnic', V),
       H('reeds', 5, 5, 0, 's3a_reeds', { seed: 3, ...V }),
-      AT('s3a_hedge', 0, -3, 0, { len: 7 }), AT('s3a_fence', -3.5, 0, 0, { len: 6 }), AT('s3a_around', 0, 0)] };
+      AT('s3a_hedge', 0, -3, 0, { len: 7 }), AT('s3a_fence', -3.5, 0, 0, { len: 6 }), AT('s3a_around', 0, 0), AT('s3a_rain', 0, 0)] };
 
   // ── B: 새 낚시터 — 맑은 호수 위 둥근 섬. 뒤(위)에 큰 나무와 미끼 가게, 오른쪽으로 물 위 잔교와 나룻배, 앞 물가에 연잎.
   // 조각은 3판과 같은 열다섯(연못→물가 연잎, 좌대→잔교, 간판→미끼 가게 옆 물고기 간판), 나머지는 A 모델 그대로

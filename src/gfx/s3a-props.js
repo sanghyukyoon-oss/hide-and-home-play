@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { put, grp, shade } from './kit.js';
 import { clothBend } from './clothbend.js';
-import { G, mc, mt, TX, PI, HP, mix, pondTex, texMat, paintTex, stone, lily, lotus, cattails, daisy, tuft, crown, butterfly, dragonfly, scenery } from './s3-kit.js';
+import { G, mc, mt, TX, PI, HP, mix, pondTex, texMat, paintTex, stone, lily, lotus, cattails, daisy, tuft, crown, butterfly, dragonfly, scenery, rainFall } from './s3-kit.js';
 
 const B = {};
 const WOOD = '#e6b47a', WOODD = '#b98552', WOODL = '#f2cf9c';
@@ -499,9 +499,17 @@ B.s3a_around = (f, T) => {
   f.add(scenery(fly));
 };
 
+// 여우비 (10/24 사용자 "3판은 A로" + "A에도 비가 오게 — C처럼 맑은 하늘 여우비"): 빛·하늘은 정본 3판 그대로, 가늘고 밝은 빗줄기만;
+// 연못(가운데 0, .5 · 반지름 1.25)에 떨어진 자리마다 작은 동그라미 — C와 같은 코드(s3-kit.js rainFall)
+B.s3a_rain = f => {
+  f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.7, 0, .01, -.65, .01];   // (no obstacle to a lid)
+  rainFall(f, { w: 10, d: 9, cz: .3, wet: (x, z) => Math.hypot(x, z - .5) < 1.22, ringY: .045, seed: 9 });
+};
+
 export const S3A_BUILDERS = B;
 export const S3A_INFO = {
   s3a_hedge: { w: 1, d: 1, name: '생울타리', price: 0, hidden: true },
   s3a_fence: { w: 1, d: 1, name: '울타리', price: 0, hidden: true },
   s3a_around: { w: 1, d: 1, name: '낚시터 둘레', price: 0, hidden: true },
+  s3a_rain: { w: 1, d: 1, name: '여우비', price: 0, hidden: true },
 };
