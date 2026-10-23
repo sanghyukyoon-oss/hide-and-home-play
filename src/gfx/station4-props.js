@@ -236,7 +236,8 @@ B.s4_shelter = f => {
   f.add(mc('s4-shelter2-trim', ({ add }) => { add(G.box(L + .26, .05, .06, .01), C.roofD, 0, 1.9, D / 2 + .02); }));
   f.spot('under', null, .25, 0, -.12, { maxH: .3, label: '승강장 의자 밑', scale: .65 });
   f.spot('on', null, -.05, .48, -.12, { maxH: .3, label: '승강장 의자 위', scale: .65 });
-  f.spot('on', null, .45, 2.05, -.05, { maxH: .25, label: '승강장 지붕 위', scale: .55 });
+  // (no place on the roof: its east half lies under the big cherry crown — a thing there sat inside the blossom where no view saw it
+  // and the bot circled it to the end of the clock, 봇 회귀 1.0.209; the west half is where the straw hat lies — staging roofHat)
   f.walkSolids = [[-.75, 0, -.37, .75, .8, .07], [-L / 2 + .18, 0, -.37, -L / 2 + .32, 1.9, -.23], [L / 2 - .32, 0, -.37, L / 2 - .18, 1.9, -.23]];
   f.collideBox = [-L / 2 + .15, 0, -.4, L / 2 - .15, .85, .08];
 };
