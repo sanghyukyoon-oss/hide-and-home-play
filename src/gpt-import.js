@@ -61,6 +61,8 @@ import { installTraincar4 } from './traincar4-map.js';
 import { installUndermall } from './undermall-map.js';
 // 39판 새 맵 카페 지하 냉동 창고 cafefreezer (⑨ 10/23): 흙 속 단면 지하 + 냉동실·도르래 바구니 얼음·온풍기 — cafefreezer-map.js
 import { installCafefreezer } from './cafefreezer-map.js';
+// 27판 '벚꽃마을역' station4 (⑧ 10/24 — 처음부터 다시: 앞뒤로 긴 섬·승강장 가까운 카메라; 새 맵 스위치 NEW_MAPS 27): station4-map.js
+import { installStation4 } from './station4-map.js';
 // 3판 세 안 A fishing3 · B fishing2b · C frogpond (10/24): 미리보기 ?gptmap=키&lv=3 — stage3-maps.js
 import { installStage3, S3_STAGE } from './stage3-maps.js';
 
@@ -105,6 +107,7 @@ export function installGpt(MAPS, THEMES, LAYOUTS) {
   installUndermall(MAPS, THEMES);
   installCafefreezer(LAYOUTS, THEMES);
   installSeaside2(LAYOUTS, THEMES);
+  installStation4(LAYOUTS, THEMES); GPT_STAGE.station4 = 27;
   installStage3(LAYOUTS, THEMES); Object.assign(GPT_STAGE, S3_STAGE);   // 3판 세 안 (10/24 — stage3-maps.js)
 }
 

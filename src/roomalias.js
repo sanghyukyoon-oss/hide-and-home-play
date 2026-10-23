@@ -18,6 +18,8 @@ export const ROOM_AS = {
   gptlongcar: ['traincar2', 'traincar'], gptsakura: 'station', gptstation2: 'station', gptseastation: 'seaside',
   // 30판 바닷가 가게 2 (⑧ 10/23: 같은 맵 디테일 업)
   seaside2: 'seaside',
+  // 27판 벚꽃마을역 (⑧ 10/24 — 처음부터 다시; 대본 stationH·개굴이·물건 풀은 옛 역 것)
+  station4: 'station',
   // 32~49판 (⑥)
   // 39판 카페 지하 냉동 창고 (⑨ 10/23): 물건 풀은 카페 것 — 대본은 cafefreezerInc가 정확한 키로 먼저 붙음
   cafefreezer: 'cafe',

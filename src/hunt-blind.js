@@ -21,6 +21,8 @@ export const BLIND = {
   // school: the 8 '책상 서랍 속' spots left 10/18 — the desk cubby was a solid box; it's an open shelf now (town-props B.schooldesk)
   shopmap: ['washer3|세탁기 안|0|25,-20'],
   // 새 맵 (10/21, ②레벨 측정: 물건을 두고 문을 연 채 줌 1.3·24시점 중 손가락이 잡는 시점 2 미만 — map-art d2ba0b7 배치)
+  // (27판 벚꽃마을역 station4: 그 맵의 자리는 다 보이게 지음 — 옛 역 줄을 빌리지 않음)
+  station4: [],
   station: ['platshelter|꽃상자 사이|2|-20,-20', 'treesakura|벚나무 뿌리 사이|0|5,-20'],
   seaside: ['cafeumbrella|파라솔 테이블 밑|0|25,30', 'cafeumbrella|파라솔 테이블 밑|0|35,20', 'fishstall|좌판 밑|0|10,10', 'fishstall|좌판 밑|1|10,10', 'seadeck|데크 밑|1|-25,-25',
     'flagdeck|데크 밑|1|-25,-25', 'chalksign|칠판 뒤|0|35,-20'],   // (② 10/21: 30판 ★ — the deck is the flag deck there, and the chalkboard's back)

@@ -376,6 +376,8 @@ RECIPES.traincar3 = { ...RECIPES.traincar, sky: ['#3b4664', '#48546f', '#323b56'
 // (traincar4 ⑧ 10/23, 사용자 "배경 하늘색" + 허브 "27 아침 → 28 맑은 한낮 → 30 노을"): a clear midday — a sky-blue backdrop over the
 // land going by, bright near-white light; the land's own layered slab is the base (no block)
 RECIPES.traincar4 = { light: { ambColor: '#f3f7fc', amb: 1.36, sunColor: '#fff7e8', sun: 2.5, shadow: .5 }, sky: ['#7cc3ee', '#bfe5f8', '#e6f6fd'], itemSize: .48 };
+// 27판 벚꽃마을역 station4 (⑧ 10/24, 허브 "새 맵은 맑은 낮빛 — 노을·누런 아침빛 X", "싱그럽고 깨끗한"): 맑은 하늘색 배경, 흰 햇빛; 둥근 섬이 제 받침이라 rim·block 없음
+RECIPES.station4 = { light: { ambColor: '#f3f7fc', amb: 1.36, sunColor: '#fff7ec', sun: 2.5, shadow: .52 }, sky: ['#86c8ee', '#c6e7f8', '#e9f6fc'], itemSize: .4 };
 // (20판 2차 10/21): the neighbours' rooftops printed very faint along the bottom of the backdrop — boxy villas, a yellow tank
 // here and there, an antenna, a little rooftop room
 // (20판 3차 10/21, user on the phone: "20도 어둡고 우울"): a bright, warm afternoon instead of the sunset — a clear blue sky
