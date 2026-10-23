@@ -190,17 +190,6 @@ function liveTex(w, h, draw, o = {}) {
 }
 const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
 const tex = (key, w, h, draw, o) => TEX.get(key, () => liveTex(w, h, draw, o));
-// the cat clock's dial (⑥ 10/23): cream face, 60 ticks (fat at the hours), 12·3·6·9, a pink nose and whiskers low down
-const catDialTex = () => tex('ap-catdial', 256, 256, (c, w, h) => {
-  const cx = w / 2, cy = h / 2, r = w / 2;
-  c.fillStyle = tint(CREAM); c.fillRect(0, 0, w, h);
-  c.fillStyle = tint('#b08a62'); for (let i = 0; i < 60; i++) { const a = i / 60 * PI * 2, big = i % 5 === 0; c.save(); c.translate(cx + Math.sin(a) * r * .88, cy - Math.cos(a) * r * .88); c.rotate(a); c.fillRect(big ? -2.5 : -1, big ? -7 : -3, big ? 5 : 2, big ? 14 : 6); c.restore(); }
-  c.font = 'bold 40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = tint('#6a4a30');
-  for (const [n, a] of [['12', 0], ['3', .25], ['6', .5], ['9', .75]]) c.fillText(n, cx + Math.sin(a * PI * 2) * r * .64, cy - Math.cos(a * PI * 2) * r * .64 + 2);
-  c.fillStyle = tint('#ff9fb0'); c.beginPath(); c.ellipse(cx, cy + r * .36, 9, 6, 0, 0, PI * 2); c.fill();
-  c.strokeStyle = tint('#c79a72'); c.lineWidth = 3; c.lineCap = 'round';
-  for (const s of [-1, 1]) for (const k of [-1, 0, 1]) { c.beginPath(); c.moveTo(cx + s * 22, cy + r * .4 + k * 9); c.lineTo(cx + s * 58, cy + r * .4 + k * 14); c.stroke(); }
-});
 const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(); };
 const line = (c, pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); };
 function heartPath(c, x, y, s) { c.beginPath(); c.moveTo(x, y + s * .7); c.bezierCurveTo(x - s * 1.2, y - s * .1, x - s * .55, y - s * .95, x, y - s * .35); c.bezierCurveTo(x + s * .55, y - s * .95, x + s * 1.2, y - s * .1, x, y + s * .7); }
@@ -1046,30 +1035,43 @@ B.balconywin = (f, T) => {
 // its nail (it stays flat on the wall) to show what was tucked behind it.
 B.catclock = (f, T) => {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), tk = [wood, woodD].join(',');
-  const R = .24, PY = 2.2, cy = -.3;
+  // (⑥ 10/23 밤 2판 실폰 "시계 기괴함": numbers on a dial that was also the cat's face — now a 키트캣 clock: the cat's head on
+  // top (big eyes glancing aside, a pink nose, a little w mouth, blush, whiskers out past the cheeks), a bow at the neck, the
+  // clock on its tummy (a small cream dial, twelve dots — fat ones at 12·3·6·9 — two hands at ten past ten), paws, a tail)
+  const PY = 2.2, hy = -.17, HR = .14, fz = .055, by = -.45, dy = -.44, DR = .075;
   f.add(mc('catclock-hook', ({ add }) => { add(G.cyl(.012, .012, .03, 8), STEEL2, 0, PY + .012, .015, HP, 0, 0); add(G.sph(.016, 8, 6), STEEL2, 0, PY + .012, .032); }));
   const pv = new THREE.Group(); put(pv, 0, PY, .006);
-  pv.add(mc('catclock|' + tk, ({ add, tube }) => {
-    add(G.cyl(R, R, .05, 32), wood, 0, cy, .03, HP, 0, 0);
+  pv.add(mc('catclock2|' + tk, ({ add }) => {
+    add(G.cyl(HR, HR, .05, 32), wood, 0, hy, .03, HP, 0, 0);
     for (const sx of [-1, 1]) {
-      add(G.ext(earShape(.16, .15, .03), .045, .006, 4), wood, sx * .15, cy + .15, .008, 0, 0, -sx * .45);
-      add(G.ext(earShape(.08, .075, .015), .008, 0, 4), BLUSH, sx * .152, cy + .16, .064, 0, 0, -sx * .45);
+      add(G.ext(earShape(.12, .12, .025), .04, .006, 4), wood, sx * .088, hy + .085, .01, 0, 0, -sx * .4);
+      add(G.ext(earShape(.06, .06, .012), .008, 0, 4), BLUSH, sx * .09, hy + .095, .052, 0, 0, -sx * .4);
+      add(G.sph(.032, 12, 9), WHITE, sx * .052, hy + .016, fz + .004, 0, 0, 0, [1, 1.2, .35]);
+      add(G.sph(.019, 10, 8), INK, sx * .052 + .009, hy + .012, fz + .012, 0, 0, 0, [1, 1.2, .4]);
+      add(G.sph(.006, 6, 5), WHITE, sx * .052 + .004, hy + .022, fz + .02);
+      add(G.sph(.02, 8, 6), BLUSH, sx * .09, hy - .042, fz + .002, 0, 0, 0, [1.2, .7, .3]);
+      for (const k of [-1, 0, 1]) add(G.box(.085, .006, .005, .002), woodD, sx * .15, hy - .03 + k * .018, fz + .004, 0, 0, sx * k * .16);
+      add(G.tor(.014, .0035, PI, 4, 8), INK, sx * .014, hy - .046, fz + .004, 0, 0, PI);
+      add(G.sph(.03, 10, 8), CORAL, sx * .03, by + .135, .062, 0, 0, sx * .3, [1.1, .7, .4]);
+      add(G.sph(.03, 10, 8), CREAM, sx * .058, by - .132, .05, 0, 0, 0, [1.2, .8, .6]);
     }
-    // (⑥ 10/23 사용자 메모 2판 "이런 아이템은 뭔지 모르겠어": a sleepy face and sprinkle dots on the dial read as a cookie, not a
-    // clock — now the dial is a clock first (numbers 12·3·6·9, ticks, two fat hands with round tips), the cat in its ears, tail,
-    // a little nose and whiskers low on the dial)
-    const fz = .055 + .012;
-    add(G.cyl(R - .028, R - .028, .012, 32), woodD, 0, cy, .055 + .004, HP, 0, 0);
-    add(G.box(.016, .1, .007, .004), INK, -.04, cy + .03, fz + .006, 0, 0, .95); add(G.sph(.013, 8, 6), INK, -.08, cy + .055, fz + .006, 0, 0, 0, [1, 1, .5]);
-    add(G.box(.013, .14, .007, .004), INK, .044, cy + .05, fz + .012, 0, 0, -.72); add(G.sph(.011, 8, 6), INK, .089, cy + .1, fz + .012, 0, 0, 0, [1, 1, .5]);
-    add(G.cyl(.018, .018, .02, 12), GOLD, 0, cy, fz + .014, HP, 0, 0);
-    add(G.tor(.06, .018, PI * 1.2, 5, 14), wood, .06, cy - R - .045, .03, 0, 0, -.3);
-    add(G.sph(.022, 8, 6), woodD, .06 + .06 * Math.cos(PI * 1.2 - .3), cy - R - .045 + .06 * Math.sin(PI * 1.2 - .3), .03);
+    add(G.sph(.013, 8, 6), CORAL, 0, hy - .032, fz + .006, 0, 0, 0, [1.3, .9, .5]);
+    add(G.sph(.014, 8, 6), shade(CORAL, -.1), 0, by + .135, .068);
+    add(G.box(.2, .27, .045, .04), wood, 0, by, .028);
+    add(G.cyl(DR + .013, DR + .013, .01, 32), woodD, 0, dy, .053, HP, 0, 0);
+    add(G.cyl(DR, DR, .01, 32), CREAM, 0, dy, .056, HP, 0, 0);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * PI * 2, big = i % 3 === 0; add(G.sph(big ? .009 : .005, 8, 6), big ? MUSTARD : woodD, Math.sin(a) * DR * .78, dy + Math.cos(a) * DR * .78, .062, 0, 0, 0, [1, 1, .45]); }
+    for (const [th, L, w, z] of [[-PI / 3, .04, .012, .063], [PI / 3, .058, .009, .066]]) {
+      add(G.box(w, L, .004, .002), INK, Math.sin(th) * L / 2, dy + Math.cos(th) * L / 2, z, 0, 0, -th);
+      add(G.sph(w * .75, 8, 6), INK, Math.sin(th) * L, dy + Math.cos(th) * L, z, 0, 0, 0, [1, 1, .4]);
+    }
+    add(G.cyl(.011, .011, .012, 12), GOLD, 0, dy, .068, HP, 0, 0);
+    add(G.tor(.05, .016, PI * 1.2, 5, 14), wood, .05, by - .135 - .05, .03, 0, 0, -.3);
+    add(G.sph(.022, 8, 6), woodD, .05 + .05 * Math.cos(PI * 1.2 - .3), by - .185 + .05 * Math.sin(PI * 1.2 - .3), .03);
   }));
-  pv.add(put(mesh(geo('catclock-dial', () => new THREE.CircleGeometry(R - .04, 40)), mat('#ffffff', { map: catDialTex(), rough: .8 })), 0, cy, .055 + .0125));
   f.add(pv);
   const p = f.part('flip', pv, t => { pv.rotation.z = 1.45 * t; }, { label: '고양이 시계', sfx: 'lift', dur: .34 });
-  f.spot('inside', null, 0, PY + cy, .012, { part: p, maxH: .09, label: '시계 뒤', wallFace: true });
+  f.spot('inside', null, 0, PY - .4, .012, { part: p, maxH: .09, label: '시계 뒤', wallFace: true });
 };
 
 // 선반 (wall, span 1): two honey wall shelves — a daruma, a family photo and a Fuji photo, a trailing pothos.

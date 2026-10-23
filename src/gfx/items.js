@@ -80,11 +80,26 @@ export const ITEMS = {
     return g;
   } },
   candy: { name: '사탕', h: .2, build() {
-    const g = grp();
-    g.add(put(sph(.1, '#ff5d8a', GLOSS), 0, .1, 0));
-    g.add(put(tor(.1, .02, '#ffffff', GLOSS), 0, .1, 0, 0, Math.PI / 2, 0));
-    g.add(put(cone(.07, .1, '#ffd84a', GLOSS), .15, .1, 0, 0, 0, Math.PI / 2));
-    g.add(put(cone(.07, .1, '#ffd84a', GLOSS), -.15, .1, 0, 0, 0, -Math.PI / 2));
+    // (⑥ 10/23 밤 사용자 "사탕도 디테일 올려서": a red ball and two yellow cones) — a round sweet with a red-and-white swirl,
+    // a clear wrapper over it with a shine, the wrapper twisted at both ends into pleated fans
+    const g = grp(), wrap = '#ffd23f';
+    const swirl = canvasTex(128, 64, (c, w, h) => {
+      c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); c.fillStyle = '#ff4f6e';
+      for (let x = -h; x < w + h; x += 32) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 14, h); c.lineTo(x + 14 + h, 0); c.lineTo(x + h, 0); c.fill(); }
+    });
+    g.add(put(sph(.082, '#ffffff', { ...GLOSS, map: swirl }, 22, 16), 0, .1, 0, 0, 0, 0, [1.2, 1, 1]));
+    g.add(put(sph(.092, '#fff6fb', { opacity: .28, rough: .1 }, 20, 14), 0, .1, 0, 0, 0, 0, [1.2, 1, 1]));
+    g.add(put(sph(.02, '#ffffff', { opacity: .85 }, 8, 6), -.035, .16, .045, 0, 0, .6, [1.6, .7, .5]));
+    const fan = geo('it-candy-fan', () => {
+      const c = new THREE.ConeGeometry(.06, .08, 16, 1, true), p = c.attributes.position;
+      for (let i = 0; i < p.count; i++) if (p.getY(i) < 0) { const k = Math.round((Math.atan2(p.getX(i), p.getZ(i)) + Math.PI) / (Math.PI / 8)) % 2 ? .72 : 1; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); }
+      c.computeVertexNormals(); return c;
+    });
+    for (const s of [-1, 1]) {
+      g.add(put(cyl(.016, .022, .03, wrap, GLOSS, 12), s * .112, .1, 0, 0, 0, Math.PI / 2));
+      g.add(put(tor(.018, .005, wrap, GLOSS, Math.PI * 2, 4, 12), s * .118, .1, 0, 0, Math.PI / 2, 0));
+      g.add(put(mesh(fan, mat(wrap, { ...GLOSS, side: THREE.DoubleSide })), s * .162, .1, 0, 0, 0, s * Math.PI / 2));
+    }
     return g;
   } },
   cookie: { name: '쿠키', h: .07, flat: true, build() {

@@ -32,6 +32,7 @@ export function install({ LAYOUTS, THEMES, SWAP, LOOK, SPEC }) {
     decor: [D('catsign', 'W', -.4), D('mailbox', 'N', 2.5)], friendAt: [-.4, .4],
   };
   SPEC.street3 = s => { s.zoom = 1; };
-  LOOK.street3 = { sky: ['#f4dcc4', '#faeadc', '#e9cfb6'] };
+  // (빛 10/23 허브·사용자 "누렇다, 이전엔 쨍하니 이뻤다": 새 맵은 맑은 낮빛 — 흰 해, 하늘색 하늘; 옛 골목 테마의 늦은 햇살은 덮음)
+  LOOK.street3 = { light: { ambColor: '#f4f6fb', amb: 1.32, sunColor: '#fff4e6', sun: 2.5, shadow: .56 }, sky: ['#9fd3f2', '#d9eefa', '#bfe2f6'] };
   SWAP[22] = ['street', 'street3'];
 }

@@ -93,21 +93,43 @@ B.reeds = f => {
   f.spot('inside', null, 0, 0, .05, { maxH: .26, label: '갈대 속', scale: .7 });
 };
 
-// 낚시 도구함 (1×1): a two-tier tackle box; the lid lifts on trays of lures and floats
+// 낚시 도구함 (1×1) (⑥ 10/23 밤 사용자 3판 "하는 김에 얘도 다시 모델링": a solid block with a lid that stood off it in the air
+// and four colour sticks on top) — a real tackle box: a sage green box with rounded corners, open inside (a spool of line
+// and a float in the corners, the middle free), a lid hinged on the back edge that opens past upright, an arched handle on
+// it, two brass latches, and on the lid's inside a cream tray of little compartments — lures, floats, sinkers, hooks
 B.tacklebox = f => {
-  f.add(mc('tackle', ({ add }) => {
-    add(G.box(.62, .26, .38, .03), '#3fae86', 0, .13, 0);
-    add(G.box(.64, .03, .4, .01), shade('#3fae86', -.15), 0, .2, 0);
-    add(G.box(.16, .06, .06, .02), '#2f8a68', 0, .14, .2);
+  const W = .6, H = .22, D = .36, t = .022, body = '#6aaf8e', lidC = '#7cbf9f', inner = '#4f8f74', brass = '#e8c45a', tray = '#f3efe2';
+  f.add(mc('tackle2', ({ add }) => {
+    add(G.box(W, .03, D, .015), body, 0, .015, 0);
+    for (const s of [-1, 1]) { add(G.box(W, H, t, .01), body, 0, H / 2, s * (D / 2 - t / 2)); add(G.box(t, H, D, .01), body, s * (W / 2 - t / 2), H / 2, 0); }
+    add(G.box(W - 2 * t, .004, D - 2 * t, .002), inner, 0, .032, 0);
+    for (const s of [-1, 1]) add(G.box(.05, .05, .016, .006), brass, s * .17, H - .03, D / 2 + .007);
+    add(G.cap(.024, .06, 2, 10), '#fff4e2', -.01, .1, D / 2 + .003, 0, 0, HP, [1, 1, .25]); add(G.cone(.026, .036, 3), '#fff4e2', .06, .1, D / 2 + .003, 0, 0, -HP, [1, 1, .25]); add(G.sph(.005, 6, 5), '#2a1d33', -.04, .106, D / 2 + .01);
+    for (const [x, z] of [[-.25, -.14], [.25, -.14], [-.25, .14], [.25, .14]]) add(G.box(.06, .012, .06, .005), shade(body, -.25), x, .004, z);
+    add(G.cyl(.042, .042, .05, 16), '#f6f3fb', -.21, .078, -.07, HP, 0, 0); add(G.cyl(.032, .032, .052, 16), '#7fb5ff', -.21, .078, -.07, HP, 0, 0);
+    add(G.sph(.026, 10, 8), '#ff5a6a', .21, .07, -.08); add(G.sph(.026, 10, 8), '#ffffff', .21, .05, -.08); add(G.cyl(.004, .004, .05, 5), '#ffffff', .21, .1, -.08);
   }));
-  const lid = grp(); put(lid, 0, .26, -.19); f.add(lid);
-  lid.add(mc('tacklelid', ({ add }) => { add(G.box(.62, .06, .38, .02), '#4fc59a', 0, .03, .19); add(G.box(.2, .04, .05, .015), '#ffcf3c', 0, .08, .19); }));
-  const p = f.part('lid', lid, (t, b) => { lid.rotation.x = -1.6 * t; }, { label: '도구함 뚜껑', sfx: 'open' });
-  f.add(mc('tacklein', ({ add }) => {
-    for (const [x, c] of [[-.2, '#ff5a6a'], [-.05, '#ffcf3c'], [.1, '#7fb5ff'], [.22, '#ff9ec2']]) add(G.cap(.025, .07, 2, 6), c, x, .25, .02, 0, 0, HP);
+  const lid = grp(); put(lid, 0, H, -D / 2); f.add(lid);
+  lid.add(mc('tacklelid2', ({ add }) => {
+    add(G.box(W + .01, .05, D + .01, .02), lidC, 0, .025, D / 2);
+    for (const s of [-1, 1]) { add(G.box(.05, .02, .02, .006), brass, s * .17, .012, D + .01); add(G.box(.03, .026, .04, .008), shade(lidC, -.2), s * .07, .062, D / 2); }
+    add(G.tor(.07, .012, PI, 6, 16), shade(lidC, -.2), 0, .062, D / 2);
+    // the tray on its inside: 4 × 2 compartments
+    add(G.box(W - .06, .006, D - .06, .003), tray, 0, -.003, D / 2);
+    for (const x of [-.14, 0, .14]) add(G.box(.006, .028, D - .06, .002), '#ded6c2', x, -.016, D / 2);
+    add(G.box(W - .06, .028, .006, .002), '#ded6c2', 0, -.016, D / 2);
+    for (const s of [-1, 1]) { add(G.box(W - .06, .028, .006, .002), '#ded6c2', 0, -.016, D / 2 + s * (D / 2 - .03)); add(G.box(.006, .028, D - .06, .002), '#ded6c2', s * (W / 2 - .03), -.016, D / 2); }
+    const zA = D / 2 - .08, zB = D / 2 + .08;
+    for (const [x, c] of [[-.24, '#ff7a6a'], [-.18, '#ffc23d']]) { add(G.cap(.011, .04, 2, 8), c, x, -.016, zA, 0, 0, HP); add(G.cone(.012, .02, 6), c, x, -.016, zA + .04, -HP, 0, 0); add(G.sph(.004, 5, 4), '#2a1d33', x, -.026, zA - .022); }
+    for (const z of [zB - .03, zB + .03]) { add(G.sph(.016, 8, 6), '#ff5a6a', -.235, -.016, z); add(G.sph(.016, 8, 6), '#ffffff', -.2, -.016, z); add(G.cyl(.003, .003, .03, 5), '#ffffff', -.17, -.016, z, 0, 0, HP); }
+    for (const [x, z] of [[-.05, zA - .02], [-.09, zA + .02], [-.04, zA + .03], [-.1, zA - .03]]) add(G.sph(.011, 8, 6), '#9aa3b2', x, -.016, z);
+    for (const [x, z] of [[.05, zA], [.09, zA + .02]]) add(G.tor(.014, .003, PI * 1.4, 4, 10), '#c9cfe0', x, -.016, z, HP, 0, 0);
+    for (const [x, c] of [[-.07, '#7fb5ff'], [.07, '#ff9ec2']]) { add(G.cap(.013, .05, 2, 8), c, x, -.016, zB, 0, 0, HP); add(G.cone(.013, .022, 6), c, x + .045, -.016, zB, 0, 0, -HP); }
+    for (const [x, z, c] of [[.18, zA, '#ffc23d'], [.24, zA + .02, '#7fd6c0'], [.21, zB, '#b9a6ff']]) add(G.box(.04, .014, .025, .006), c, x, -.016, z);
   }));
-  f.spot('inside', null, 0, .25, 0, { part: p, maxH: .14, label: '도구함 안', scale: .6 });
-  f.spot('on', lid, 0, .06, .19, { maxH: .3, label: '도구함 위', scale: .7 });
+  const p = f.part('lid', lid, (t, b) => { lid.rotation.x = -1.95 * t; }, { label: '도구함 뚜껑', sfx: 'open' });
+  f.spot('inside', null, 0, .035, .03, { part: p, maxH: .14, label: '도구함 안', scale: .6 });
+  f.spot('on', lid, .17, .05, D / 2, { maxH: .3, label: '도구함 위', scale: .7 });
 };
 
 // 미끼통 (1×1): a bait bucket with a little scoop

@@ -401,11 +401,13 @@ RECIPES.gptstation = { ...townRecipe('station'), block: undefined };
 const OWN_BASE = new Set(['gptfirestation', 'gptdoghouse', 'gptdoghouse2', 'gptstation', 'gpttraincar2', 'gptseastation']);
 OWN_BASE.add('policefront3');
 // (21판 3안 policefront3 ① 10/23: 옛 21판 하늘·빛 그대로, 받침은 자기 섬; 섬 전체가 한 화면이라 찾을 물건을 조금 크게 — 시작 화면 28 px)
-RECIPES.policefront3 = (({ block, glows, ring, rooms, ground, floor, slab, fill, theme, ...o }) => ({ ...o, itemSize: .45 }))(RECIPES.policefront);
+RECIPES.policefront3 = (({ block, glows, ring, rooms, ground, floor, slab, fill, theme, ...o }) => ({ ...o, light: { ambColor: '#eef1f2', amb: 1.5, sunColor: '#fff6e6', sun: 2.45, shadow: .56 }, itemSize: .45 }))(RECIPES.policefront);
 // (20판 새 안 villaroof3: 빌라 몸통이 받침이라 옛 20판 벽돌 받침을 빌리지 않음 — 사용자 "그리다 만 벽돌 텍스처 같은 건 버리자")
 OWN_BASE.add('villaroof3');
 // (10/23 밤 사용자 "빌라는 뭔가 라이팅 때문인가 누렇냐 왜" — 옛 20판 늦은 햇살을 물려받아서: 새 안은 맑은 낮빛·하늘색, 30판 낮빛 기준)
 RECIPES.villaroof3 = { ...(({ block, glows, ring, rooms, ground, floor, slab, fill, theme, ...o }) => o)(RECIPES.villaroof), light: { ambColor: '#f2f5f7', amb: 1.3, sunColor: '#fff5e8', sun: 2.6, shadow: .56 }, sky: ['#cde6f4', '#eef6fa', '#d8e8ee'] };
+// (① 10/24: 20판 새 안 맑은 낮빛 — 위 줄을 덮음; 하늘색 하늘, 이웃집 거의 흰색은 villaroof3-props NBWALL)
+RECIPES.villaroof3 = { ...RECIPES.villaroof3, light: { ambColor: '#eef1f2', amb: 1.5, sunColor: '#fff6e6', sun: 2.5, shadow: .52 }, sky: ['#8ccbef', '#cbe7f6', '#e8f4f9'], itemSize: .38 };
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
   // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 룩 — redo7/sNN.js)

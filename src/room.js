@@ -788,7 +788,7 @@ export class Room {
       const cc = lf.curtainColor || shade(T.wall2 || '#ffb3a3', .12), cd = shade(cc, -.16), h = 1.05, top = y + 1.1;
       // a real curtain, not a striped board (user, 2판 on a phone: "침대 쪽 벽인 거 같아서 이상함"): the cloth hangs in deep
       // soft folds (a wavy sheet, so the toon light shades each fold), from rings on a round rod with knob ends, with a
-      // scalloped hem — it still closes the nook from the side, as the tilt lesson needs
+      // plain hem — it still closes the nook from the side, as the tilt lesson needs
       const panel = (ax, az, bx, bz) => {
         const L = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bz - az, bx - ax);
         const A = .045, k = Math.PI * 2 / .19, t = .02, n = Math.max(8, Math.round(L / .02));
@@ -799,12 +799,7 @@ export class Room {
         const cloth = add(new THREE.Mesh(cg, mat(cc, { rough: .9, rim: .1, side: THREE.DoubleSide })));
         cloth.position.set(ax, top - h - .02, az); cloth.rotation.y = -ang;
         const at = (u, yy) => [ax + (bx - ax) * u / L, yy, az + (bz - az) * u / L];
-        // the hem: a soft band that follows the folds (⑥ 10/23 사용자 메모 2판 "동그란 거 징그럽다" — it was a row of balls)
-        { const hs = new THREE.Shape(), ht = t * 1.8; hs.moveTo(0, ht / 2);
-          for (let i = 1; i <= n; i++) { const u = L * i / n; hs.lineTo(u, A * Math.sin(k * u) + ht / 2); }
-          for (let i = n; i >= 0; i--) { const u = L * i / n; hs.lineTo(u, A * Math.sin(k * u) - ht / 2); }
-          const hg = new THREE.ExtrudeGeometry(hs, { depth: .05, bevelEnabled: false, curveSegments: 4 }); hg.rotateX(-Math.PI / 2);
-          const hem = add(new THREE.Mesh(hg, mat(cd, { rough: .9, side: THREE.DoubleSide }))); hem.position.set(ax, top - h - .03, az); hem.rotation.y = -ang; }
+        // (a plain hem — ⑥ 10/23 밤 2판 실폰: the row of balls read as creepy, the band after it as a stripe)
         add(put(new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, L + .1, 10), mat(woodD)), (ax + bx) / 2, top + .05, (az + bz) / 2, 0, -ang, Math.PI / 2));   // the rod
         for (const u of [-.05, L + .05]) { const [px, , pz] = at(u, 0); add(put(new THREE.Mesh(new THREE.SphereGeometry(.035, 10, 8), mat(woodD)), px, top + .05, pz)); }   // its knobs
         for (let u = .1; u < L - .05; u += .19) { const [px, , pz] = at(u, 0); add(put(new THREE.Mesh(new THREE.TorusGeometry(.03, .008, 4, 10), mat('#e8d6a8')), px, top + .05, pz, 0, Math.PI / 2 - ang, 0)); }   // rings round the rod

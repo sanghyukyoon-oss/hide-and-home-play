@@ -142,11 +142,23 @@ const washboardTex = () => tex('washboard', 96, 160, (c, w, h) => {
   c.fillStyle = '#e8b67c'; c.fillRect(0, 0, w, h);
   for (let y = 22; y < h - 14; y += 7) { c.fillStyle = '#f6d3a2'; c.fillRect(8, y, w - 16, 3.5); c.fillStyle = '#c98f58'; c.fillRect(8, y + 3.5, w - 16, 2); }
 });
-const onggiTex = base => tex('onggi|' + base, 256, 128, (c, w, h) => {
-  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, shade(base, -.04)); g.addColorStop(.6, base); g.addColorStop(1, shade(base, .03));
+// 옹기 유약 (⑥ 10/23 밤, 사용자 20판 "장독대 리소스 이상함" — 굵은 물결 띠 하나가 '무늬 단지'로 읽힘; ⑦ 23판 장독대와 같은 결):
+// the canvas top is the jar's mouth (onggiGeo maps v by height). Dark glaze darker toward the foot, faint wheel lines, glaze
+// runs from the shoulder, a thin hand-drawn grass band on the shoulder between two fine lines, a soft gloss streak and a dot
+const onggiTex = (base, seed = 1) => tex('onggi2|' + base + '|' + seed, 512, 256, (c, w, h) => {
+  const r = rng(seed * 7 + 3), g = c.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, shade(base, -.1)); g.addColorStop(.12, shade(base, .05)); g.addColorStop(.5, base); g.addColorStop(1, shade(base, -.16));
   c.fillStyle = g; c.fillRect(0, 0, w, h);
-  c.strokeStyle = shade(base, .14); c.lineWidth = 3.2;
-  for (const yy of [.6, .67]) { c.beginPath(); for (let x = 0; x <= w; x += 2) { const y = h * yy + Math.sin(x / w * PI * 12) * 3.5; x ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+  for (let y = 40; y < h; y += 8 + r() * 6) { c.fillStyle = r() < .5 ? 'rgba(255,225,195,.06)' : 'rgba(40,18,10,.08)'; c.fillRect(0, y, w, 2); }
+  for (let k = 0; k < 14; k++) { c.fillStyle = 'rgba(42,20,10,.12)'; roundRect(c, r() * w, h * .36, 4 + r() * 4, 14 + r() * 34, 3); c.fill(); }
+  const yb = h * .27; c.strokeStyle = 'rgba(250,224,190,.85)'; c.lineCap = 'round';
+  c.lineWidth = 2; for (const y of [yb - 15, yb + 15]) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+  for (let x = 6; x < w; x += 21) {
+    c.lineWidth = 2.2; c.beginPath(); c.moveTo(x, yb + 9); c.quadraticCurveTo(x + 3, yb - 2, x + 9, yb - 9); c.stroke();
+    c.fillStyle = 'rgba(250,224,190,.85)'; c.beginPath(); c.ellipse(x + 8, yb + 1, 4.5, 2, -.5, 0, PI * 2); c.fill();
+  }
+  for (const [x, a, wd] of [[w * .2, .32, 14], [w * .25, .16, 8], [w * .7, .12, 10]]) { const gg = c.createLinearGradient(x - wd, 0, x + wd, 0); gg.addColorStop(0, 'rgba(255,245,230,0)'); gg.addColorStop(.5, `rgba(255,245,230,${a})`); gg.addColorStop(1, 'rgba(255,245,230,0)'); c.fillStyle = gg; c.fillRect(x - wd, h * .36, wd * 2, h * .5); }
+  c.fillStyle = 'rgba(255,250,240,.75)'; c.beginPath(); c.ellipse(w * .2, h * .5, 5, 9, 0, 0, PI * 2); c.fill();
 });
 const hazardTex = () => tex('hazard', 128, 64, (c, w, h) => {
   c.fillStyle = '#ffd23f'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2433';
@@ -375,22 +387,43 @@ B.pyeongsang = (f, T) => {
   f.spot('under', null, .1, 0, zc + .26, { maxH: .3, label: '평상 밑', scale: .9 });
 };
 
-// 장독대: stone platform with three 옹기 항아리 whose lids lift
-function onggi(f, T, x, z, y0, R, H, name, dir) {
-  const brown = col(T, 'onggi'), lidC = shade(brown, -.05);
-  const pts = [[0, 0], [R * .58, 0], [R * .8, H * .1], [R * .97, H * .36], [R, H * .5], [R * .93, H * .7], [R * .74, H * .86], [R * .66, H * .92], [R * .68, H * .97], [R * .64, H], [R * .56, H], [R * .54, H * .95], [R * .54, H * .86], [0, H * .86]];
-  f.add(put(lathe(`onggi|${R}|${H}`, pts, '#ffffff', { map: onggiTex(brown) }), x, y0, z));
-  f.add(put(disc(R * .54, '#5e3320'), x, y0 + H * .865, z, -HP));
-  const lid = grp(put(cyl(R * .72, R * .76, .045, lidC, null, 24), 0, .022, 0), put(sph(R * .7, lidC, null, 24, 10), 0, .04, 0, 0, 0, 0, [1, .3, 1]), put(sph(.035, shade(lidC, -.12)), 0, .04 + R * .7 * .3, 0));
+// 장독대: a stone 축대 with three slabs on top, three 옹기 항아리 (큰·중·작은) whose lids lift and a little honey jar
+// (⑥ 10/23 밤 사용자 20판 "장독대 리소스 좀 이상하니까 다시": a jar with one fat wave band, a flat disc lid, a plain stone
+// block — now the 옹기 shape (broad shoulder, narrow mouth with a rolled lip), dark glaze with runs, a thin grass band and a
+// gloss streak, an upturned bowl lid with a knob. 20판 도르래(device-props pulleyjang) leans on the big jar: x −.52, z −.06,
+// its mouth at y 1.0 (slab .2 + .8), and on its lid being parts[0] — kept)
+const onggiPts = (R, H) => [[0, 0], [R * .56, 0], [R * .78, H * .08], [R * .95, H * .3], [R, H * .48], [R * .94, H * .66], [R * .78, H * .8], [R * .64, H * .88],
+  [R * .6, H * .93], [R * .66, H * .965], [R * .66, H], [R * .56, H], [R * .54, H * .96], [R * .54, H * .87], [0, H * .87]];
+const onggiGeo = (R, H) => geo(`onggi2|${R}|${H}`, () => {
+  const g = new THREE.LatheGeometry(onggiPts(R, H).map(([x, y]) => new THREE.Vector2(x, y)), 30), p = g.attributes.position, uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setY(i, p.getY(i) / H);
+  return g;
+});
+function onggi(f, T, x, z, y0, R, H, name, dir, seed = 1) {
+  const brown = seed % 2 ? col(T, 'onggi') : shade(col(T, 'onggi'), .07), lidC = shade(brown, -.06);
+  f.add(put(mesh(onggiGeo(R, H), mat('#ffffff', { map: onggiTex(brown, seed), rough: .4, rim: .22, side: DS })), x, y0, z, 0, seed * 1.3, 0));
+  f.add(put(disc(R * .54, '#3d2016'), x, y0 + H * .872, z, -HP));
+  const lid = grp(
+    put(mesh(geo('onggi2-lid|' + R, () => new THREE.SphereGeometry(R * .74, 24, 8, 0, PI * 2, 0, HP * .6)), mat(lidC, { rough: .4, rim: .22 })), 0, -R * .2, 0, 0, 0, 0, [1, .8, 1]),
+    put(cyl(R * .72, R * .72, .024, shade(lidC, -.1), null, 24), 0, .012, 0),
+    put(tor(R * .5, .006, shade(brown, .3), null, PI * 2, 4, 24), 0, R * .2, 0, HP, 0, 0),
+    put(cyl(R * .14, R * .18, .05, shade(lidC, -.08), null, 14), 0, R * .44, 0));
   put(lid, x, y0 + H, z); f.add(lid);
   const p = f.part('lift', lid, (t, b) => { lid.position.y = b.p.y + .28 * t; lid.position.x = b.p.x + dir * .17 * t; lid.rotation.z = -dir * .6 * t; }, { label: name + ' 뚜껑', sfx: 'lift' });
   f.spot('inside', null, x, y0 + H * .87, z, { part: p, maxH: .4, label: name + ' 안', scale: R < .25 ? .62 : .8 });
 }
 B.jangdok = (f, T) => {
-  f.add(put(rbox(1.88, .2, .9, '#ffffff', .05, { map: stoneTex() }), 0, .1, 0));
-  onggi(f, T, -.52, -.06, .2, .34, .8, '큰 항아리', -1);
-  onggi(f, T, .2, -.16, .2, .27, .62, '항아리', 1);
-  onggi(f, T, .66, .17, .2, .21, .46, '작은 항아리', 1);
+  f.add(put(rbox(1.9, .15, .92, '#ffffff', .04, { map: stoneTex() }), 0, .075, 0));
+  f.add(mg('jangdok-slabs', '#d9cfc0', ({ add }) => { for (const x of [-.6, 0, .6]) add(G.box(.57, .05, .8, .014), x, .175, -.01); }));
+  f.add(mg('jangdok-moss', '#86b860', ({ add }) => { for (const [x, y, z, k] of [[-.93, .155, .44, 1], [.94, .155, -.36, .8], [-.25, .03, .48, .8], [.6, .03, .48, .7]]) add(G.sph(.035 * k, 8, 6), x, y, z, 0, 0, 0, [1.5, .6, 1.1]); }));
+  f.add(mg('jangdok-pebbles', '#b9ae9e', ({ add }) => { for (const [x, z, k] of [[-.62, .5, 1], [.1, .51, .7], [.98, .26, .8]]) add(G.sph(.07 * k, 8, 6), x, .03, z, 0, k, 0, [1.3, .6, 1]); }));
+  onggi(f, T, -.52, -.06, .2, .34, .8, '큰 항아리', -1, 1);
+  onggi(f, T, .2, -.16, .2, .27, .62, '항아리', 1, 2);
+  onggi(f, T, .66, .17, .2, .21, .46, '작은 항아리', 1, 3);
+  // a little honey jar under a tied cloth (it does not open)
+  f.add(put(mesh(onggiGeo(.09, .18), mat('#ffffff', { map: onggiTex(shade(col(T, 'onggi'), .12), 4), rough: .4, rim: .22, side: DS })), -.24, .2, .3));
+  f.add(put(sph(.068, '#fbf6ec', null, 14, 8), -.24, .2 + .18, .3, 0, 0, 0, [1, .55, 1]));
+  f.add(put(tor(.056, .008, '#d9564a', null, PI * 2, 4, 16), -.24, .2 + .17, .3, HP, 0, 0));
   f.spot('behind', null, -.12, .2, -.33, { maxH: .4, label: '항아리 사이', scale: .8 });
   f.spot('on', null, .02, .2, .3, { maxH: .45, label: '장독대 위', scale: .85 });
 };
@@ -1120,8 +1153,19 @@ B.tent = (f, T) => {
 B.cooler = (f, T) => {
   const body = T.cooler || '#3f8cff', W = .66, H = .4, D = .44, z0 = -.04, fz = z0 + D / 2;
   f.add(mg('cooler-body', body, ({ add }) => hollowBox(add, W, H, D, .04, 0, 0, z0)));
-  f.add(put(rbox(W - .08, .2, D - .08, '#d8f3ff', .03), 0, .12, z0));
-  f.add(mg('cooler-cans', '#ff5a4e', ({ add }) => { add(G.cyl(.05, .05, .15, 14), -.18, .25, z0 - .08); add(G.cyl(.05, .05, .15, 14), -.06, .24, z0 - .1, .2, 0, .15); }));
+  // inside (⑥ 10/23 밤 3판 실폰 "상자 안쪽이 이상함": blue inside as well, a pale block filling it to the brim and two cans lying
+  // half sunk in it) — a white liner and rim, a floor a little down from the rim, two cans standing at the back, ice cubes
+  const iw = W - .08, idp = D - .08, fy = .215;
+  f.add(mg('cooler-liner', '#f7fbff', ({ add }) => {
+    add(G.box(iw, .02, idp, .004), 0, fy - .01, z0);
+    for (const sx of [-1, 1]) add(G.box(.006, H - fy, idp, .002), sx * (iw / 2 - .003), fy + (H - fy) / 2, z0);
+    for (const sz of [-1, 1]) add(G.box(iw, H - fy, .006, .002), 0, fy + (H - fy) / 2, z0 + sz * (idp / 2 - .003));
+    for (const sx of [-1, 1]) add(G.box(.04, .008, D, .003), sx * (W / 2 - .02), H + .002, z0);
+    for (const sz of [-1, 1]) add(G.box(W, .008, .04, .003), 0, H + .002, z0 + sz * (D / 2 - .02));
+  }));
+  f.add(mg('cooler-cans2', '#ff5a4e', ({ add }) => { add(G.cyl(.042, .042, .12, 14), -.2, fy + .06, z0 - .1); add(G.cyl(.042, .042, .12, 14), -.105, fy + .06, z0 - .115); }));
+  f.add(mg('cooler-cantops', '#dfe5f0', ({ add }) => { add(G.cyl(.036, .04, .012, 14), -.2, fy + .126, z0 - .1); add(G.cyl(.036, .04, .012, 14), -.105, fy + .126, z0 - .115); }));
+  f.add(mg('cooler-ice', '#d3f1ff', ({ add }) => { for (const [x, z, r] of [[-.22, .07, .3], [-.15, .1, -.5], [.01, -.13, .7], [.17, -.12, .2], [.22, .1, -.3], [-.04, .12, .1]]) add(G.box(.05, .045, .05, .012), x, fy + .022, z0 + z, 0, r, 0); }));
   f.add(mg('cooler-trim', '#ffffff', ({ add }) => { for (const sx of [-1, 1]) add(G.box(.05, .06, .2, .02), sx * (W / 2 + .02), H - .1, z0); add(G.box(.12, .06, .03, .01), 0, H - .04, fz + .01); }));
   const lid = grp(put(rbox(W + .04, .09, D + .04, '#ffffff', .035), 0, .045, D / 2 + .02), put(rbox(W - .12, .02, D - .14, shade(body, .1), .01), 0, .095, D / 2 + .02));
   put(lid, 0, H, z0 - D / 2 - .02); f.add(lid);

@@ -436,12 +436,12 @@ const NB = (() => {
   return out;
 })();
 // (사용자 승인 방향 10/23: 배경은 하얀 단순한 동네 — ⑦이 공용으로 만드는 중이라 지금은 단순하게; 멀리 다음 판 21판 파출소가 작게)
-const NBWALL = ['#f6f3ee', '#f1eee8', '#f8f6f1'], NBGLASS = '#d3dde2', NBROOF = '#e8ebe5', NBCAP = '#fbfaf7';
+const NBWALL = ['#f8f8f7', '#f3f4f3', '#fbfbfa'], NBGLASS = '#d3dde2', NBROOF = '#e9ecea', NBCAP = '#fcfcfb';
 B.vr3_town = (f, T) => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [100, 100, 100, 100.01, 100.01, 100.01];
   const Y0 = -DROP, SW = 1.4, RD = 4, CURB = .1;
   // 땅 (옅은 베이지 바탕)
-  f.add(put(mesh(geo('vr3ground', () => new THREE.PlaneGeometry(70, 70)), mat('#efece6', { rim: 0 }), { cast: false }), 0, Y0 - .02, 0, -HP, 0, 0));
+  f.add(put(mesh(geo('vr3ground', () => new THREE.PlaneGeometry(70, 70)), mat('#eff0ef', { rim: 0 }), { cast: false }), 0, Y0 - .02, 0, -HP, 0, 0));
   // 아스팔트: 앞(+z) 길, 옆(+x) 길, 교차로
   f.add(tm('town-asph', asphaltTex(), ({ add }) => {
     add(G.pbox(40, .02, RD), -2, Y0, BZ + SW + RD / 2); add(G.pbox(RD, .02, 40), BX + SW + RD / 2, Y0, -2);

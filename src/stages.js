@@ -197,9 +197,10 @@ export const LAYOUTS = {
   // 동네 뒷산 산길: pines, a pavilion, a spring, a little bridge over a stream, a lantern string, a hiker's tent
   trail: { w: 7, d: 6, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
     // grass on both sides of the dirt path that climbs from the stairs to the pavilion
+    // (10/23 아트 점검 50-1: the signpost at (1,1) stood right in front of the pine at (0,0) — the tree seemed to grow out of its top; now (1,0), between the pines)
     floorZones: [{ i: 0, j: 0, w: 4, d: 2, kind: 'grass', a: '#9fd27a', b: '#86c063' }, { i: 0, j: 4, w: 2, d: 2, kind: 'grass', a: '#9fd27a', b: '#86c063' },
       { i: 5, j: 4, w: 2, d: 2, kind: 'grass', a: '#9fd27a', b: '#86c063' }, { i: 6, j: 0, w: 1, d: 3, kind: 'grass', a: '#9fd27a', b: '#86c063' }],
-    furniture: [F('pine2', 0, 0), F('pine2', 2, 0), F('pavilion', 4, 0), F('pine2', 6, 1), F('trailsign', 1, 1), F('rockpile', 3, 1),
+    furniture: [F('pine2', 0, 0), F('pine2', 2, 0), F('pavilion', 4, 0), F('pine2', 6, 1), F('trailsign', 1, 0), F('rockpile', 3, 1),
       F('woodstairs', 0, 2), F('stonewall', 5, 2), F('stream', 2, 3), F('bridge', 3, 3), F('stream', 5, 3), F('spring', 6, 3),
       F('bench3', 1, 4), F('tentsmall', 0, 5), F('lanterns', 2, 5), F('backpack2', 4, 5), F('shrinebox', 5, 5), F('exerciser', 6, 5)],
     friendAt: [-2.0, .5] },
@@ -715,9 +716,10 @@ export const MAPS = {
     { at: [0, 0], layout: RM('park1', 8, 6, { walls: { N: 'fence', W: 'hedge', S: 'none', E: 'none' },
       // the big park: a playground on the left, the pond in the middle, a picnic corner on the right
       // (10/19 겹침 QA: the swings stood on the climbing wall's foot and through the tree — swings (2,0)→(3,0), tree (4,0)→(7,1))
+      // (10/23 아트 점검 48-1: the ice-cream cart's awning hung over the pond's rim and water — cart and planter swap: the cart to (6,4), its back on open grass)
       furniture: [F('slidetower', 0, 0), F('swings2', 3, 0), F('tree', 7, 1), F('picnic2', 5, 0), F('bush', 7, 0),
         F('springrider', 2, 2), F('pond', 3, 2), F('streetlamp2', 6, 2), F('bbqgrill', 7, 2), F('hopscotch', 0, 3), F('reeds', 2, 4),
-        F('planter', 6, 4), F('parkbin', 0, 5), F('bench', 1, 5), F('icecart', 5, 5), F('tree', 7, 5)] }) },
+        F('icecart', 6, 4), F('parkbin', 0, 5), F('bench', 1, 5), F('planter', 5, 5), F('tree', 7, 5)] }) },
   ] }),
   // 큰 캠핑장
   campwide: () => ({ theme: THEMES.campwide, friendAt: [2.5, 1.5], nBonus: 3, rooms: [
@@ -895,7 +897,7 @@ export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location
 // ?newmaps=0은 전부 옛 맵. 기억은 그대로 localStorage newmaps)
 export const NEW_MAPS_MODE = (() => { try { const q = new URLSearchParams(location.search).get('newmaps'); if (q === '1' || q === '0') localStorage.setItem('newmaps', q); return q ?? localStorage.getItem('newmaps') ?? 'default'; } catch (e) { return 'default'; } })();
 export const NEW_MAPS_ON = NEW_MAPS_MODE !== '0';
-export const NEW_DEFAULT = new Set([20, 21, 22, 30, 36]);   // 기본으로 새 맵인 판 (점검 통과 + 사용자 거절 없음; 45·49·55·56·58 공원·캠프는 10/24 사용자 "너무 실망"으로 뺌 — ?newmaps=1로만)
+export const NEW_DEFAULT = new Set([20, 21, 22, 23, 30, 36]);   // 기본으로 새 맵인 판 (점검 통과 + 사용자 거절 없음; 45·49·55·56·58 공원·캠프는 10/24 사용자 "너무 실망"으로 뺌 — ?newmaps=1로만)
 export const NEW_MAPS = { 28: 'traincar4', 30: 'seaside2', 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],

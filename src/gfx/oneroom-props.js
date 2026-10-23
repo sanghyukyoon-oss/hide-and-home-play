@@ -297,19 +297,6 @@ const tileTex = (c1, g1) => tex('or-tile|' + c1 + g1, 256, 256, (c, w, h) => {
     if (odd) { c.fillStyle = 'rgba(255,255,255,.85)'; daisy(c, k * s + s / 2, r * s + s / 2, 4.5, '#ffffff', tint(MUSTARD)); }
   }
 }, { repeat: [1, 1] });
-// corduroy: fine raised ribs (planar-mapped, so they run straight down the sides)
-const cordTex = c1 => tex('or-cord|' + c1, 64, 64, (c, w, h) => {
-  c.fillStyle = tint(c1); c.fillRect(0, 0, w, h);
-  const n = 6, s = w / n;
-  for (let k = 0; k < n; k++) { c.fillStyle = tint(shade(c1, .045)); c.fillRect(k * s + s * .2, 0, s * .42, h); c.fillStyle = tint(shade(c1, -.055)); c.fillRect(k * s + s * .74, 0, s * .2, h); }
-}, { repeat: [1, 1] });
-// soft plush fabric (⑥ 10/23 사용자 메모 2판 빈백 "쇼파 uv 이상함" — the corduroy stripes stretched round the bag read as wood
-// grain): a fine speckled weave with no direction, so it stays cloth however the uvs stretch
-const plushTex = c1 => tex('or-plush|' + c1, 128, 128, (c, w, h) => {
-  c.fillStyle = tint(c1); c.fillRect(0, 0, w, h);
-  let sd = 7; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 900; i++) { c.fillStyle = tint(shade(c1, R() < .5 ? .025 : -.025)); c.fillRect(Math.floor(R() * w), Math.floor(R() * h), 1, 1); }
-}, { repeat: [1, 1] });
 // a fluffy rug: short tufts every which way and a contrast ring near the edge
 const furTex = (c1, c2) => tex('or-fur|' + c1 + c2, 256, 256, (c, w, h) => {
   c.fillStyle = tint(c1); c.fillRect(0, 0, w, h);
@@ -1282,25 +1269,32 @@ B.beanbag = (f, T) => {
   const bean = col(T, 'bean'), rug = col(T, 'rug'), rug2 = col(T, 'rug2'), tk = [bean, rug, rug2].join(',');
   const RR = .48, RT = .02, PX = -.4, CZ = -.05, seam = shade(bean, -.16);
   f.add(mg('beanbag-rug|' + rug + rug2, mat('#ffffff', { map: rugTex(rug, rug2) }), ({ add }) => add(new THREE.CylinderGeometry(RR, RR, RT, 40), 0, RT / 2, 0)));
-  // a game controller on the rug (⑥ 10/23 사용자 메모 2판 "조이스틱 크기 정리": a bit bigger and tidier — one rounded body with
-  // two grips, a cross pad on the left, four buttons on the right, two small sticks, a lilac stripe)
-  f.add(mc('beanbag2|' + tk, ({ add }) => {
-    const gx = .25, gz = .3, a = -.6, M = (x, z) => [gx + x * Math.cos(a) + z * Math.sin(a), gz - x * Math.sin(a) + z * Math.cos(a)], y = RT + .02, body = '#f6f3fb';
-    add(G.box(.17, .036, .08, .03), body, gx, y, gz, 0, a, 0);
-    for (const s of [-1, 1]) { const [x, z] = M(s * .072, .03); add(G.sph(.042, 12, 9), body, x, y - .002, z, 0, a - s * .3, 0, [1, .5, 1.25]); }
-    { const [x, z] = M(0, -.032); add(G.box(.09, .008, .012, .004), LILAC, x, y + .016, z, 0, a, 0); }
-    { const [x, z] = M(-.05, .002); for (const r of [0, HP]) add(G.box(.036, .008, .012, .003), DARK, x, y + .02, z, 0, a + r, 0); }
-    for (const [x, z, c] of [[.05, -.012, TOMATO], [.068, .004, MUSTARD], [.05, .02, SKY], [.032, .004, MINT]]) { const [wx, wz] = M(x, z); add(G.cyl(.008, .008, .01, 10), c, wx, y + .02, wz); }
-    for (const s of [-1, 1]) { const [wx, wz] = M(s * .018, .022); add(G.cyl(.01, .011, .012, 10), DARK, wx, y + .021, wz); }
+  // a game pad on the floor by the rug (⑥ 10/23 밤 2판 실폰 "다 다시 바꿔": a box and two balls, then a bigger blob) — one flat pad cut in the
+  // pad's own outline (two round grips, a dip between them), soft bevelled edges, a cross on the left, four buttons on the
+  // right, two little pills in the middle
+  f.add(mc('beanbag3|' + tk, ({ add, addM }) => {
+    const gx = .33, gz = .47, a = -.6, y = .002, k = 1, body = '#f6f3fb', M = xf(gx, y, gz, 0, a, 0, k);
+    const sh = new THREE.Shape(), r = .04, d = PI / 180;
+    sh.moveTo(-.048, .034); sh.lineTo(.048, .034);
+    sh.absarc(.055, -.005, r, 100 * d, -120 * d, true);
+    sh.quadraticCurveTo(0, -.014, -.035, -.0396);
+    sh.absarc(-.055, -.005, r, -60 * d, -280 * d, true);
+    const pg = new THREE.ExtrudeGeometry(sh, { depth: .02, bevelEnabled: true, bevelThickness: .006, bevelSize: .006, bevelSegments: 2, curveSegments: 10 });
+    pg.rotateX(-HP); pg.translate(0, .006, 0);
+    addM(pg, M, body);
+    const P = (g, c, x, yy, z, ry = 0) => addM(g, M.clone().multiply(xf(x, yy, z, 0, ry, 0)), c), top = .033;
+    for (const ry of [0, HP]) P(G.box(.034, .008, .011, .003), DARK, -.055, top, .004, ry);
+    for (const [x, z, c] of [[.07, .004, TOMATO], [.055, -.011, MUSTARD], [.04, .004, SKY], [.055, .019, MINT]]) P(G.cyl(.0075, .0075, .01, 12), c, x, top, z);
+    for (const s of [-1, 1]) P(G.box(.014, .006, .006, .003), LILAC, s * .011, top - .002, -.012, -s * .4);
   }));
   // the bag: a wide soft seat and a slouched backrest behind it (its own mesh: it tips over to the left)
   const pv = new THREE.Group(); put(pv, PX, RT, CZ); f.add(pv);
   const prof = [[0, 0], [.3, 0], [.39, .04], [.42, .12], [.4, .22], [.33, .3], [.2, .345], [.08, .36], [0, .36]];
-  pv.add(pm('beanbag-bag2|' + bean, mat('#ffffff', { map: plushTex(bean), rough: .95 }), .2, ({ geo }) => {
-    geo(G.lathe(prof, 32), xf(-PX, 0, 0));
-    geo(G.sph(.3, 24, 14), xf(-PX, .36, -.16, -.35, 0, 0, [1.2, .85, .62]));
-  }));
-  pv.add(mc('beanbag-trim|' + tk, ({ add }) => {
+  // (⑥ 10/23 밤 2판 실폰 "다 다시 바꿔": corduroy stripes stretched round it read as wood grain, a speckled plush as sand) —
+  // plain soft cloth with the piping round the seat (seams down from the top made it a pumpkin)
+  pv.add(mc('beanbag-trim2|' + tk, ({ add }) => {
+    add(G.lathe(prof, 32), bean, -PX, 0, 0);
+    add(G.sph(.3, 24, 14), bean, -PX, .36, -.16, -.35, 0, 0, [1.2, .85, .62]);
     add(G.tor(.416, .011, PI * 2, 4, 40), seam, -PX, .12, 0, HP, 0, 0);
     add(G.ext(heartShape(.11), .035, .018, 8), TOMATO, -PX + .08, .4, .04, -.95, .3, 0);
     add(G.box(.05, .03, .01, .004), WHITE, -PX + .24, .07, .345, 0, .6, 0);
