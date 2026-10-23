@@ -55,6 +55,9 @@ export function install({ MAPS, THEMES, SWAP, LOOK, SPEC }) {
     itemSize: .38,
   };
   // 시작 줌: 집과 마당이 폰 세로에 다 들어오게 (옛 26판 1.4는 집 왼쪽이 잘렸음 — 찍어 보고 정함)
-  SPEC.doghouse3 = s => { s.zoom = 1.3; s.lockOn = { ...s.lockOn, code: ['safe'], color: ['d3_kennel'] }; };
+  // (허브 10/24 "찾을 것이 집 안에 몰려 있으니 2~3개를 마당으로"): 이 판의 버릇 자리(hunt.js spec.habit)를 마당 세 곳으로 — 빨랫줄 받침·
+  // 수돗가·댓돌 — 그리고 물건마다 먼저 거기부터(habitMore). 자리가 셋뿐이라 개집 안(색깔 자물쇠)까지 마당에 2~3개. 주인의 원래 버릇
+  // 단어(조리대·냉장고…)는 집 안 조리대를 먼저 잡아서 이 맵에서만 바꿈
+  SPEC.doghouse3 = s => { s.zoom = 1.3; s.habit = ['clothesline', 'watertap', 'doorstep']; s.habitMore = true; s.lockOn = { ...s.lockOn, code: ['safe'], color: ['d3_kennel'] }; };
   SWAP[26] = ['alleyhouse', 'doghouse3'];
 }
