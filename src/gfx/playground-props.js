@@ -19,6 +19,7 @@
 // belongs against the back edge of a map (its whole depth is façade, balconies and the entrance porch).
 // Bright afternoon palette on light-beige paving: cream, honey wood, tomato red, mustard, sky, mint, green, charcoal tiles.
 import * as THREE from 'three';
+import { clothWave, clothSlab } from './clothbend.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, starShape, heartShape, STYLE } from './kit.js';
@@ -1263,7 +1264,8 @@ B.picnic2 = (f, T) => {
   const pv = new THREE.Group(); pv.position.set(CX0, TY + .007, 0);
   pv.add(mg('picnic2-cloth|' + cl, mat('#ffffff', { map: ginghamTex(cl) }), ({ addM }) => {
     addM(planarUV(ni(G.box(CLW, .01, CD, .003)).translate(CLW / 2, 0, 0), .2), I4);
-    for (const s of [-1, 1]) addM(planarUV(ni(G.box(CLW, .11, .01, .003)).translate(CLW / 2, -.05, s * (CD / 2 + .005)), .2), I4);
+    // (⑥ 10/23 31~70판 훑기 "판자 같은 천": the drops were two stiff boards — now they hang in soft folds, a little longer)
+    for (const s of [-1, 1]) { const zw = clothWave(CLW, .15, 5, .012); addM(planarUV(ni(clothSlab(CLW, .15, .008, (x, y) => s * zw(x, y))).translate(CLW / 2, .004, s * (CD / 2 + .005)), .2), I4); }
   }));
   f.add(pv);
   const p = f.part('lift', pv, (t2, b) => { pv.rotation.z = 1.05 * t2; pv.position.y = b.p.y + .03 * t2; }, { label: '식탁보', sfx: 'lift', dur: .32 });

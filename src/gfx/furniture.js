@@ -14,6 +14,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeStatic } from './bake.js';
 import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, plane, roundRect, shade, STYLE, SHADOW } from './kit.js';
 import { clothBend } from './clothbend.js';
+import { gptLock } from './gpt-locks.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
 
@@ -58,27 +59,27 @@ export class Furn {
   setLock(part, kind, code = null) {
     part.lock = { kind, code };
     const L = part.lockAt || this.lockAt; if (!L) return;   // (part.lockAt: a piece with more than one lockable part — 10/21)
-    const g = new THREE.Group();
-    if (kind === 'pad') {
-      g.add(put(tor(.05, .016, '#c9cfe0', { metal: .6, rough: .3 }, Math.PI, 8, 16), 0, .07, 0));
-      g.add(put(rbox(.13, .11, .05, '#ffc93c', .025, { metal: .5, rough: .3 }), 0, 0, 0));
-      g.add(put(sph(.016, '#5a3d2e', null, 8, 6), 0, -.005, .028));
-    } else if (kind === 'color') {
-      // three empty colour sockets; the clue card says which colours, in order
-      g.add(put(rbox(.24, .12, .04, '#3b3f5c', .03), 0, 0, 0));
-      part.sockets = [];
-      for (let i = 0; i < 3; i++) { const sk = put(sph(.028, '#e9e4f2', null, 12, 10), -.07 + i * .07, 0, .03); g.add(sk); part.sockets.push(sk); }
-    } else if (kind === 'lever') {
-      // chained shut until a lever somewhere in the room is pulled
-      g.add(put(rbox(.2, .1, .04, '#6f7fae', .03), 0, 0, 0));
-      g.add(put(tor(.035, .012, '#c9cfe0', null), -.05, 0, .03, 0, 0, Math.PI / 2)); g.add(put(tor(.035, .012, '#c9cfe0', null), .0, 0, .03)); g.add(put(tor(.035, .012, '#c9cfe0', null), .05, 0, .03, 0, 0, Math.PI / 2));
-      g.add(put(extrude('star-s', starShape(.04, .018), .01, '#ffe14d'), 0, .075, .02));
-    } else {
-      g.add(put(rbox(.2, .13, .03, '#3b3f5c', .02), 0, 0, 0));
-      for (let i = 0; i < 3; i++) g.add(put(rbox(.045, .07, .02, '#9ff0c8', .01, { emissive: '#4bd18a', ei: .5 }), -.06 + i * .06, 0, .02));
+    const g = gptLock(kind, code);
+    const bind = () => g.traverse(o => { o.userData.part = part; o.userData.furn = this; });
+    if (kind === 'color') part.sockets = g.userData.sockets;
+    if (kind === 'code') {
+      // Observation clues can change 3 digits to 4 AFTER construction (the timetable).
+      // Refit the hardware on that existing property assignment, keeping the group,
+      // lock record, secret value and all engine logic intact. No solution is printed.
+      let value = code;
+      Object.defineProperty(part.lock, 'code', { enumerable: true, configurable: true,
+        get: () => value,
+        set: next => {
+          value = next;
+          const count = /^\d{4}$/.test(String(next)) ? 4 : 3;
+          if (g.userData.wheels.length !== count) {
+            const t = g.userData.openT; gptLock(kind, next, g); bind(); g.userData.open(t);
+          }
+        },
+      });
     }
     put(g, L.x, L.y, L.z);
-    g.traverse(o => { if (o.isMesh) { o.userData.part = part; o.userData.furn = this; } });
+    bind();
     (L.parent || this.group).add(g);
     part.lockMesh = g;
   }

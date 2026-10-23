@@ -1102,7 +1102,11 @@ B.log = (f, T) => {
 // 바위: roll it aside
 B.rock = (f, T) => {
   const rc = col(T, 'rock');
-  const rk = grp(put(mesh(rockGeo(3), mat(rc)), 0, 0, 0, 0, .4, 0, [.4, .36, .37]), put(sph(.14, '#7cc45a'), .03, .33, -.02, 0, 0, 0, [1.2, .3, 1.05]));
+  // (⑥ 10/23 31~70판 훑기: the moss was one flat green lid on top — now a few soft clumps hugging the top, with sprouts)
+  const rk = grp(put(mesh(rockGeo(3), mat(rc)), 0, 0, 0, 0, .4, 0, [.4, .36, .37]), mg('rock-moss2', '#7cc45a', ({ add }) => {
+    for (const [x, y, z, r] of [[.03, .3, -.02, .09], [-.08, .28, .07, .065], [.12, .27, .06, .06], [-.05, .29, -.1, .055]]) add(G.sph(r, 10, 7), x, y, z, 0, 0, 0, [1.25, .55, 1.15]);
+    for (const [x, z, a] of [[.05, .02, .3], [-.07, .08, -.4], [.11, .07, .1]]) add(G.cone(.012, .07, 4), x, .35, z, 0, 0, a);
+  }));
   put(rk, -.08, .2, 0); f.add(rk);
   const p = f.part('lift', rk, (t, b) => { rk.position.x = b.p.x + .4 * t; rk.position.y = b.p.y + .07 * Math.sin(t * PI); rk.rotation.z = -1.4 * t; }, { label: '바위', sfx: 'lift', dur: .42 });
   f.spot('inside', null, -.08, 0, 0, { part: p, maxH: .3, label: '바위 밑', scale: .85 });
@@ -1118,10 +1122,24 @@ B.firewood = (f, T) => {
   [[4, .12], [3, .33], [2, .54]].forEach(([n, y]) => { for (let i = 0; i < n; i++) logs.push([cx + (i - (n - 1) / 2) * .245, y]); });
   f.add(mg('fw-logs', bark, ({ add }) => logs.forEach(([x, y], i) => add(G.cyl(r, r, Lw, 12), x, y, i % 2 ? .03 : -.03, HP, 0, 0))));
   f.add(mg('fw-ends', '#ffffff', ({ add }) => logs.forEach(([x, y], i) => { const dz = i % 2 ? .03 : -.03; add(new THREE.CircleGeometry(r * .95, 16), x, y, dz + Lw / 2 + .002); add(new THREE.CircleGeometry(r * .95, 16), x, y, dz - Lw / 2 - .002, 0, PI, 0); }), { map: ringsTex() }));
-  const tarp = grp(put(rbox(.86, .04, .76, '#4f9a5e', .02), 0, 0, .38), put(rbox(.86, .22, .035, '#4f9a5e', .015), 0, -.1, .76, .25, 0, 0), put(rbox(.035, .2, .6, '#4f9a5e', .015), -.43, -.08, .38, 0, 0, -.3));
-  put(tarp, cx, .68, -.38); f.add(tarp);
+  // (⑥ 10/23 31~70판 훑기 "판자 같은 천": the tarp was three green boards — now one sheet of cloth that lies over the top logs
+  // and droops down the front and the left in soft folds, with two tie-down cords to pegs)
+  const tarp = grp(mesh(geo('fw-tarp2', () => {
+    const g = new THREE.BoxGeometry(.92, .022, .84, 22, 1, 20), q = g.attributes.position;
+    for (let i = 0; i < q.count; i++) {
+      const x = q.getX(i), z = q.getZ(i) + .42, fz = Math.max(0, z - .62) / .22, fx = Math.max(0, -.3 - x) / .16;
+      const droop = .26 * fz * fz + .2 * fx * fx;
+      q.setXYZ(i, x - .05 * fx * fx, q.getY(i) - droop + .012 * Math.sin(x * 23 + z * 4) * (fz + fx), z + .05 * fz);
+    }
+    g.computeVertexNormals(); return g;
+  }), mat('#4f9a5e')));
+  tarp.add(put(rbox(.9, .02, .03, shade('#4f9a5e', -.18), .008), 0, -.27, .845));
+  for (const x of [-.4, .4]) tarp.add(put(tor(.014, .005, '#d9dde4', null, PI * 2, 4, 10), x, -.2, .85));
+  put(tarp, cx, .7, -.38); f.add(tarp);   // (a thin cloth: up 2 cm so the top logs don't poke through)
+  f.add(mg('fw-ties', '#e8d9b8', ({ tube }) => { for (const x of [-.4, .4]) tube([cx + x, .48, .47], [cx + x * 1.15, .02, .62], .007, 5); }));
+  f.add(mg('fw-pegs', '#c49a64', ({ add }) => { for (const x of [-.4, .4]) add(G.cone(.018, .1, 6), cx + x * 1.15, .03, .62, PI, 0, 0); }));
   const p = f.part('lid', tarp, t => { tarp.rotation.x = -1.7 * t; }, { label: '방수포', sfx: 'swish' });
-  p.lockable = true; p.lockKind = 'lever'; f.lockAt = { x: .1, y: -.13, z: .8, parent: tarp };
+  p.lockable = true; p.lockKind = 'lever'; f.lockAt = { x: .1, y: -.13, z: .86, parent: tarp };   // (just proud of the drooping front cloth)
   f.spot('inside', null, cx, .66, 0, { part: p, maxH: .35, label: '방수포 밑', scale: .85 });
   f.add(put(cyl(.22, .26, .3, '#ffffff', { map: barkTex(bark) }, 20), .6, .15, .12));
   f.add(put(disc(.22, '#ffffff', { map: ringsTex() }), .6, .301, .12, -HP));

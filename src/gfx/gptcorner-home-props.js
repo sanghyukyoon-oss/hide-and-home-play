@@ -63,7 +63,8 @@ B.gpt_homebed = f => {
     { part: p, maxH: .68, scale: 1.7, label: '이불 속' });
   targetSpot.anchor.scale.setScalar(.001);
   f.gptTargetSpot = targetSpot;
-  f.spot('under', null, -.12, .025, .14,
+  // (① 10/23 스위치 sweep: 침대 판 한가운데 밑이라 위에서 안 보여 봇이 못 찾음 → 발치 끝으로, 반쯤 삐져나오게 — '끝 살짝 보이면 좋은 숨김')
+  f.spot('under', null, -.12, .025, .84,
     { maxH: .13, scale: .55, label: '낮은 침대 아래' });
 };
 

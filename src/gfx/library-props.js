@@ -121,8 +121,16 @@ B.libdesk = (f, T) => {
 B.bookdrop = (f, T) => {
   f.add(mc('bookdrop', ({ add }) => {
     add(G.box(.62, 1.0, .5, .05), '#f4efe6', 0, .5, -.02);
-    add(G.box(.42, .05, .02, .005), DARK, 0, .82, .235); add(G.box(.2, .12, .02, .005), '#d9534f', 0, .66, .235);
+    add(G.box(.42, .05, .02, .005), DARK, 0, .82, .235);
     add(G.box(.66, .05, .54, .02), shade('#f4efe6', -.08), 0, 1.02, -.02);
+    // (⑥ 10/23 31~70판 훑기: a plain white box with a red patch, nothing said what it was — now a book half pushed into the
+    // slot, a red sign with a white open book and an arrow down into the box, a blue band and little feet: a book drop)
+    add(G.box(.2, .05, .13, .006), '#4f86c6', .03, .86, .2, -.5, .1, 0); add(G.box(.19, .04, .005, .002), '#ffffff', .03, .86, .265, -.5, .1, 0);
+    add(G.box(.24, .17, .02, .01), '#d9534f', 0, .63, .235);
+    for (const sx of [-1, 1]) add(G.box(.075, .06, .01, .004), '#ffffff', sx * .04, .665, .248, 0, 0, sx * -.18);
+    add(G.box(.012, .04, .01, .003), '#ffffff', 0, .6, .248); add(G.cone(.026, .03, 3), '#ffffff', 0, .57, .248, PI, 0, 0);
+    add(G.box(.64, .05, .01, .004), '#4f86c6', 0, .34, .233);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.06, .05, .06, .015), DARK, sx * .26, .0, -.02 + sz * .19);
   }));
   const dv = grp(); put(dv, -.27, .1, .24); f.add(dv);
   dv.add(mc('bookdrop-door', ({ add }) => { add(G.box(.54, .4, .025, .01), '#e9e3d8', .27, .2, 0); add(G.box(.08, .03, .03, .01), '#a9b0c2', .48, .2, .02); }));

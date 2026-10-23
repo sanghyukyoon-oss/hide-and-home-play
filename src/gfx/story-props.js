@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, heartShape, STYLE } from './kit.js';
+import { gptLock } from './gpt-locks.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2, DS = THREE.DoubleSide;
@@ -745,13 +746,12 @@ export const STORY_ITEMS = {
       add(G.cyl(.058, .058, .25, 12), covD, -.155, .057, 0, HP, 0, 0, [.42, 1, 1]);
       add(G.pbox(.018, .004, .05), '#4fb8ff', .07, .092, .14, 0, .2, 0);
       add(G.pbox(.018, .03, .004), '#4fb8ff', .074, .078, .165, 0, .2, 0);
-      // strap: up the side, over the front cover, ending in a heart lock with a keyhole
+      // strap: up the side, over the front cover, ending in the shared little brass lock
       add(G.pbox(.07, .008, .05), strap, .13, .115, 0);
       add(G.pbox(.01, .12, .05), strap, .166, .057, 0);
-      add(G.ext(heartShape(.04), .014, .004, 6), GOLD, .1, .12, 0, -HP, 0, -HP);
-      add(G.cyl(.007, .007, .004, 6), '#8a5a1e', .097, .14, 0);
-      add(G.pbox(.012, .003, .004), '#8a5a1e', .104, .14, 0);
     }));
+    // Face up above the strap; the shackle runs toward the cover's outer edge.
+    g.add(put(gptLock('pad'), .1, .134, 0, -HP, 0, -HP, .48));
     g.add(put(mesh(geo('it-diarylabel', () => new THREE.PlaneGeometry(.26, .2)), mat('#ffffff', { map: diaryTex() })), -.015, .1115, 0, -HP));
     return g;
   } },

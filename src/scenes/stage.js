@@ -2056,8 +2056,11 @@ export class StageScene {
         for (let i = 0; i < digits.length; i++) { const sk = part.sockets?.[i]; if (sk) { sk.material = sk.material.clone(); sk.material.color.set(LOCK_COLORS[+digits[i]][0]); sk.scale.setScalar(1.4); this.tw.run(.2, k => sk.scale.setScalar(1.4 - .4 * k), ease.outBack); } G.audio.sfx('pop', 3 + i * 2); await this.tw.wait(.16); }
       } else {
         const digits = L.code.split('');
-        for (let i = 0; i < digits.length; i++) { G.ui.floatText(lp.x + (i - 1) * 26, lp.y - 20, digits[i], 'gold'); G.audio.sfx('tock'); await this.tw.wait(.14); }
+        // (⑥ 10/23 GPT 자물쇠: each wheel rolls round to its digit as it is called out)
+        const lm = part.lockMesh, setD = lm?.userData.setDigit;
+        for (let i = 0; i < digits.length; i++) { G.ui.floatText(lp.x + (i - 1) * 26, lp.y - 20, digits[i], 'gold'); G.audio.sfx('tock'); if (setD) { const d = +digits[i]; this.tw.run(.14, k => setD(i, d * k), ease.outCubic); } await this.tw.wait(.14); }
       }
+      { const op = part.lockMesh?.userData.open; if (op) await this.tw.run(.22, k => op(k), ease.outCubic); }   // (⑥ 10/23: the latch slides back before the lock comes off)
       G.audio.sfx('unlock');
       W.fx.burst(lp.x, lp.y, { n: 16, colors: ['#ffe14d', '#ffffff'] });
       if (part.lockMesh) { const m = part.lockMesh, y0 = m.position.y; await this.tw.run(.3, k => { m.position.y = y0 + k * .3; m.scale.setScalar(1 - k); }, ease.inBack); m.parent?.remove(m); part.lockMesh = null; }
@@ -2236,6 +2239,7 @@ export class StageScene {
     const target = lv.leverFor;
     if (!target?.lock) { G.ui.toast('철컥! …아무 일도 없네', ''); return; }
     G.audio.sfx('unlock'); G.hitstop(.06);
+    { const op = target.lockMesh?.userData.open; if (op) await this.tw.run(.35, k => op(k), ease.linear); }   // (⑥ 10/23 GPT 자물쇠: the gate swings and the chain drops first)
     if (target.lockMesh) { const m = target.lockMesh, y0 = m.position.y; await this.tw.run(.3, k => { m.position.y = y0 + k * .4; m.scale.setScalar(Math.max(.001, 1 - k)); }, ease.inBack); m.parent?.remove(m); target.lockMesh = null; }
     target.lock = null;
     // what the lever opened may be off screen: glide there so the payoff is seen

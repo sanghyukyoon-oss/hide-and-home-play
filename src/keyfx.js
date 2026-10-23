@@ -37,8 +37,9 @@ export async function keyOpen(S, part, lp) {
   G.audio.sfx('unlock'); G.hitstop(.05);
   W.fx.burst(lp.x, lp.y - 8, { n: 12, colors: ['#ffe14d', '#ffffff'], speed: 200, shape: 'star', size: 7 });
   W.fx.ring(lp.x, lp.y, { r: 54, color: '#ffe14d', width: 5, life: .3 });
-  const sy = shackle.position.y;
-  await S.tw.run(.15, t => { shackle.position.y = sy + .035 * t; shackle.rotation.y = 1.0 * t; }, ease.outBack); if (S.dead) return;
+  // (⑥ 10/23 GPT 자물쇠: the model's own open(t) — the shackle lifts out of the body and turns aside)
+  const sy = shackle.position.y, op = m.userData.open;
+  await S.tw.run(op ? .22 : .15, t => { if (op) op(t); else { shackle.position.y = sy + .035 * t; shackle.rotation.y = 1.0 * t; } }, op ? ease.outCubic : ease.outBack); if (S.dead) return;
   // the lock drops off, spinning (not waited for: the door opens meanwhile)
   const p0 = m.position.clone(), r0 = m.rotation.z;
   S.tw.run(.45, t => { m.position.y = p0.y - .5 * t * t + .06 * t; m.position.z = p0.z + .08 * t; m.rotation.z = r0 + 2.2 * t; m.scale.setScalar(1 - .6 * Math.max(0, t - .5) * 2); W.shadowDirty = true; }, ease.linear)

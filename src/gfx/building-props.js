@@ -20,7 +20,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, starShape, STYLE } from './kit.js';
-import { clothBend } from './clothbend.js';
+import { clothBend, clothWave, clothSlab } from './clothbend.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -1262,16 +1262,19 @@ B.laundryline = (f, T) => {
     add(G.box(.26, .04, .18, .014), MUSTARD, kx + .01, .2, kz, 0, -.06, 0);
     for (const dz of [-.05, .05]) add(G.pbox(.262, .005, .02), WHITE, kx + .01, .2225, kz + dz, 0, -.06, 0);
   }));
-  f.add(mg('laundryline-blanket|' + bl, mat('#ffffff', { map: blanketTex(bl) }), ({ addM, P }) => {
-    P(bw, .8, .016, bcx, LY - .4, FZL - .016, .55);
+  // (⑥ 10/23 31~70판 훑기 "판자 같은 천": the blanket and the sheet hung as flat boards — now cloth with soft folds that deepen
+  // toward the hem, the pattern following the folds)
+  const zb = clothWave(bw, .8, 3, .014), zf = clothWave(bw, .95, 3, .02), zs = clothWave(.68, .86, 3, .018);
+  f.add(mg('laundryline-blanket2|' + bl, mat('#ffffff', { map: blanketTex(bl) }), ({ addM }) => {
+    addM(planarUV(ni(clothSlab(bw, .8, .016, (x, y) => -zb(x, y))).translate(bcx, LY, FZL - .05), .55), I4);   // (folds out of the way of the front half's)
     addM(planarUV(ni(G.cyl(.024, .024, bw, 12)).rotateZ(HP).translate(bcx, LY, FZL), .55), I4);
   }));
-  f.add(mg('laundryline-sheet|' + a2, mat('#ffffff', { map: stripeTex(WHITE, a2, 4) }), ({ P }) => P(.68, .86, .012, .4, LY - .44, BZL, .34)));
+  f.add(mg('laundryline-sheet2|' + a2, mat('#ffffff', { map: stripeTex(WHITE, a2, 4) }), ({ addM }) => addM(planarUV(ni(clothSlab(.68, .86, .012, zs)).translate(.4, LY - .01, BZL), .34), I4)));
   // the front half of the blanket ("이불건조대에 이불 밴딩", ③ #97 10/21): its own cloth that curls up from the hem when
   // touched (gfx/clothbend.js); what's behind it stays where it was (not a part's spot: seen from behind as before)
   const fv = grp(); put(fv, bcx, LY, FZL + .016); f.add(fv);
-  fv.add(mg('laundryline-front|' + bl, mat('#ffffff', { map: blanketTex(bl) }), ({ P }) => P(bw, .95, .016, 0, -.475, 0, .55)));
-  fv.add(mc('laundryline-hem', ({ add }) => add(G.box(bw + .01, .04, .03, .008), GOLD, 0, -.93, 0)));
+  fv.add(mg('laundryline-front2|' + bl, mat('#ffffff', { map: blanketTex(bl) }), ({ addM }) => addM(planarUV(ni(clothSlab(bw, .95, .016, zf)), .55), I4)));
+  fv.add(mg('laundryline-hem2', mat(GOLD), ({ addM }) => addM(ni(clothSlab(bw + .01, .04, .03, zf, -.91)), I4)));
   f.part('lift', fv, clothBend(f, fv, { along: [0, -1, 0], toward: [0, 0, 1], len: .95, turn: 4.4, bias: 3, tip: .15 }), { label: '이불', sfx: 'flip', dur: .72 });
   f.spot('behind', null, -.4, 0, -.24, { maxH: .45, label: '이불 뒤', scale: .85 });
   f.spot('on', null, .58, .22, .3, { maxH: .4, label: '빨래 바구니 위', scale: .65 });

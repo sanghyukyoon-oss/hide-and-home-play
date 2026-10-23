@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, mat, mesh, geo, canvasTex, texCache, shade } from './kit.js';
+import { clothWave, clothSlab } from './clothbend.js';
 import { HG as G, hxf as xf, hmc as mc, hleaves as leaves } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -29,6 +30,13 @@ function gingham(c = '#e8574a') {
     for (let i = 0; i < 4; i++) { x.fillRect(i * 32, 0, 16, W); x.fillRect(0, i * 32, W, 16); }
     x.globalAlpha = 1; x.fillStyle = c; for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) x.fillRect(i * 32, j * 32, 16, 16);
   }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; });
+}
+// a cloth lying over something (⑥ 10/23 31~70판 훑기 "판자 같은 천"): a thin sheet w × d whose height is h(x, z) — a dome over what
+// it covers, edges that droop, small folds — instead of a flat board
+function drape(w, d, h, t = .012) {
+  const g = new THREE.BoxGeometry(w, t, d, 16, 1, 14), q = g.attributes.position;
+  for (let i = 0; i < q.count; i++) q.setY(i, q.getY(i) + h(q.getX(i), q.getZ(i)));
+  g.computeVertexNormals(); return g;
 }
 function bricks(a, b) {
   return TEX.get('b' + a + b, () => { const t = canvasTex(256, 256, (x, W) => {
@@ -363,7 +371,10 @@ B.breadbasket = (f, T, o = {}) => {
       for (const [dx, dz] of [[-.07, 0], [.06, .05], [0, -.08]]) for (let k = 0; k < 3; k++) add(G.box(.05, .01, .02, .005), CRUMB, dx, .62 + (k - 1) * .15, -.05 + dz + .045, 0, 0, .3);
     }));
     const cl0 = new THREE.Group(); put(cl0, 0, .28, .14);
-    cl0.add(pm('breadbasket0-cloth|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .12, ({ add }) => add(G.box(.42, .26, .02, .01), 0, 0, 0, -.12, 0, 0)));
+    // (⑥ 10/23 31~70판 훑기 "판자 같은 천": a flat board on the basket — now a cloth that wraps round the basket's front, tucked
+    // under the rim, with soft folds and a hem that waves)
+    const zc0 = clothWave(.44, .3, 3, .012);
+    cl0.add(pm('breadbasket0-cloth2|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .12, ({ add }) => add(clothSlab(.44, .3, .016, (x, y) => zc0(x, y) - 1.9 * x * x, .15).rotateX(-.12))));
     f.add(cl0);
     const p = f.part('lift', cl0, (t, b) => { cl0.position.y = b.p.y + .22 * t; cl0.position.z = b.p.z + .08 * t; cl0.rotation.x = .9 * t; }, { label: '바게트 바구니 천', sfx: 'lift' });
     f.spot('inside', null, .02, .05, .02, { part: p, maxH: .36, label: '바게트 바구니 안', scale: .8 });
@@ -378,7 +389,8 @@ B.breadbasket = (f, T, o = {}) => {
   }));
   const cl1 = new THREE.Group(); put(cl1, -.02, .16, .04);
   cl1.add(pm('breadbasket1-cloth|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .12, ({ add }) => {
-    add(G.box(.44, .03, .36, .015), 0, .02, 0, .08, .2, 0); add(G.box(.12, .14, .02, .01), .2, -.04, .2, .1, .2, .3);
+    // (⑥ 10/23: was a 3 cm board — now a thin cloth that domes over the buns and droops over the rim, one corner hanging)
+    add(drape(.5, .42, (x, z) => .05 * Math.max(0, 1 - (x * x / .045 + z * z / .03)) - .09 * Math.max(0, Math.hypot(x / .25, z / .21) - .78) ** 1.5 * 3 + .006 * Math.sin(x * 30 + z * 9)), 0, .03, 0, .06, .2, 0);
   }));
   f.add(cl1);
   const p = f.part('lift', cl1, (t, b) => { cl1.position.y = b.p.y + .26 * t; cl1.position.x = b.p.x - .12 * t; cl1.rotation.z = .6 * t; }, { label: '빵 바구니 천', sfx: 'lift' });
@@ -444,7 +456,9 @@ B.potrail = (f, T) => {
     hook(.18); add(G.cyl(.01, .01, .32, 6), STEEL, .18, 1.6, .1); add(G.sph(.045, 10, 6), STEEL, .18, 1.44, .12, 0, 0, 0, [1, .5, 1]);
     hook(.32); tube([.32, 1.74, .1], [.32, 1.6, .1], .008, wood(T), 6); add(G.sph(.04, 8, 6), STEEL, .32, 1.55, .1, 0, 0, 0, [.8, 1.4, .8]);
   }));
-  f.add(pm('potrail-towel|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .12, ({ add }) => add(G.box(.18, .32, .015, .006), .42, 1.62, .12, 0, 0, 0)));
+  // (⑥ 10/23: the towel was a board — now it hangs off the rail's end in two folds)
+  const zt = clothWave(.18, .32, 2, .012);
+  f.add(pm('potrail-towel2|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .12, ({ add }) => add(clothSlab(.18, .32, .014, zt), .42, 1.79, .12)));
 };
 const wood = T => col(T, 'woodD');
 
@@ -484,12 +498,22 @@ B.chalkmenu = (f, T) => {
   f.add(mcx('chalkmenu|' + tk, ({ add, tube }) => {
     add(G.box(.56, .44, .03, .012), wood, 0, 1.65, .02); add(G.pbox(.48, .36, .012), CHALK, 0, 1.65, .04);
     tube([-.2, 1.87, .03], [0, 2.0, .03], .006, woodD, 4); tube([.2, 1.87, .03], [0, 2.0, .03], .006, woodD, 4); add(G.sph(.02, 6, 5), BRASS, 0, 2.0, .035);
-    add(G.tor(.06, .008, PI, 3, 12), WHITE, -.12, 1.72, .048); add(G.pbox(.12, .008, .004), WHITE, -.12, 1.72, .048);
-    add(G.tor(.05, .008, PI * 1.3, 3, 12), WHITE, .1, 1.72, .048, 0, 0, -.6);
-    for (let k = 0; k < 2; k++) for (let w = 0; w < 4; w++) add(G.pbox(.07, .008, .004), k ? '#ffd9a8' : WHITE, -.15 + w * .1, 1.6 - k * .07, .048);
-    add(G.box(.06, .05, .01, .005), JAM, .18, 1.52, .048, 0, 0, .785);
   }));
+  // (⑥ 10/23 31~70판 훑기: two chalk arcs over rows of dashes read as a face, not a menu — now chalk drawings of a loaf, a
+  // croissant and a bun, each with its price, and a heart: numbers and pictures, nothing to translate)
+  f.add(put(mesh(geo('chalkmenu-plane', () => new THREE.PlaneGeometry(.46, .34)), mat('#ffffff', { map: chalkMenuTex(), rough: .95 })), 0, 1.65, .0475));
 };
+function chalkMenuTex() {
+  return TEX.get('chalkmenu', () => canvasTex(512, 380, (x, W, H) => {
+    x.fillStyle = CHALK; x.fillRect(0, 0, W, H);
+    x.lineCap = x.lineJoin = 'round'; x.strokeStyle = '#f4f1e8'; x.fillStyle = '#f4f1e8'; x.lineWidth = 7;
+    const row = (y, draw, price, c) => { x.save(); x.translate(70, y); draw(); x.restore(); x.font = 'bold 54px sans-serif'; x.textAlign = 'right'; x.textBaseline = 'middle'; x.fillStyle = c; x.fillText(price, W - 40, y + 4); x.fillStyle = '#f4f1e8'; x.setLineDash([3, 14]); x.beginPath(); x.moveTo(130, y + 10); x.lineTo(W - 200, y + 10); x.stroke(); x.setLineDash([]); };
+    row(80, () => { x.beginPath(); x.moveTo(-38, 22); x.quadraticCurveTo(-44, -26, 0, -28); x.quadraticCurveTo(44, -26, 38, 22); x.closePath(); x.stroke(); for (const d of [-16, 0, 16]) { x.beginPath(); x.moveTo(d - 6, -6); x.lineTo(d + 6, -16); x.stroke(); } }, '3,000', '#ffd9a8');
+    row(190, () => { x.beginPath(); x.arc(0, 18, 40, PI * 1.08, PI * 1.92); x.stroke(); for (const d of [-24, 0, 24]) { x.beginPath(); x.moveTo(d, -18 + Math.abs(d) * .5); x.lineTo(d, 12); x.stroke(); } }, '2,500', '#f4f1e8');
+    row(300, () => { x.beginPath(); x.ellipse(0, 6, 36, 24, 0, PI, 0); x.lineTo(36, 18); x.lineTo(-36, 18); x.closePath(); x.stroke(); x.beginPath(); x.arc(-8, 0, 5, 0, PI * 2); x.arc(12, -4, 5, 0, PI * 2); x.fill(); }, '1,500', '#ffd9a8');
+    x.fillStyle = JAM; x.beginPath(); x.moveTo(W - 46, 52); x.bezierCurveTo(W - 46, 30, W - 14, 30, W - 14, 52); x.bezierCurveTo(W - 14, 66, W - 30, 74, W - 30, 82); x.bezierCurveTo(W - 30, 74, W - 46, 66, W - 46, 52); x.fill();
+  }));
+}
 
 // 빵 식힘 수레 (1×1): a honey trolley on little casters with four trays — buns, croissants, loaves, a tray of cooling cookies
 // — and a gingham cloth over the top tray. Things go between the breads on two trays.
@@ -513,7 +537,9 @@ B.breadcart = (f, T) => {
     });
   }));
   f.add(pm('breadcart-cloth|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .12, ({ add }) => {
-    add(G.box(W + .02, .015, D * .6, .007), 0, TOP + .088, -.06); add(G.box(W + .02, .2, .015, .007), 0, TOP - .01, D / 2 - .02 - .02, 0, 0, 0);
+    // (⑥ 10/23 31~70판 훑기 "판자 같은 천": the front drop was a board — now it hangs in folds, its hem waving)
+    add(G.box(W + .02, .015, D * .6, .007), 0, TOP + .088, -.06);
+    const zc = clothWave(W + .02, .22, 4, .014); add(clothSlab(W + .02, .22, .014, zc), 0, TOP + .095, D / 2 - .04);
   }));
   f.spot('on', null, .18, YS[1] + .008, .1, { maxH: .26, label: '식힘 수레 둘째 칸', scale: .75 });
   f.spot('on', null, .18, YS[2] + .008, -.1, { maxH: .26, label: '식힘 수레 셋째 칸', scale: .75 });
@@ -645,7 +671,15 @@ B.bkparasol = (f, T) => {
 // 나무 상자 더미 (1×1): crates stacked by the door — milk bottles, flour, a milk can, a crate of oranges — one crate's lid lifts.
 B.bkcrates = (f, T) => {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), tk = [wood, woodD].join(',');
-  const crate = (add, x, y, z, w, h, d, ry = 0) => { add(G.box(w, h, d, .012), wood, x, y + h / 2, z, 0, ry, 0); for (const yy of [.3, .7]) add(G.box(w + .01, .03, d + .01, .006), woodD, x, y + h * yy, z, 0, ry, 0); };
+  // (⑥ 10/23 31~70판 훑기: a crate was a solid block with two bands, a stack of slabs — now a dark inside, three slats a
+  // side with gaps, corner posts and a hand-hole: a fruit crate)
+  const crate = (add, x, y, z, w, h, d, ry = 0) => {
+    const c = Math.cos(ry), sn = Math.sin(ry), at = (lx, lz) => [x + lx * c + lz * sn, z - lx * sn + lz * c];
+    add(G.box(w - .03, h - .02, d - .03, .006), shade(woodD, -.25), x, y + h / 2, z, 0, ry, 0);
+    for (const k of [0, 1, 2]) { const yy = y + h * (.2 + k * .3); add(G.box(w, h * .22, d, .008), wood, x, yy, z, 0, ry, 0); }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const [px, pz] = at(sx * (w / 2 - .02), sz * (d / 2 - .02)); add(G.box(.045, h, .045, .01), woodD, px, y + h / 2, pz, 0, ry, 0); }
+    for (const sx of [-1, 1]) { const [px, pz] = at(sx * (w / 2 + .002), 0); add(G.box(.008, .035, .11, .006), shade(woodD, -.35), px, y + h * .8, pz, 0, ry, 0); }
+  };
   f.add(mcx('bkcrates|' + tk, ({ add }) => {
     crate(add, -.12, 0, -.1, .5, .3, .4, .1);
     for (let k = 0; k < 6; k++) { const x = -.28 + (k % 3) * .1, z = -.18 + (k >> 1 & 1) * .12; add(G.cyl(.035, .035, .16, 10), WHITE, x + .02, .38, z); add(G.cyl(.037, .037, .02, 10), SKYB, x + .02, .46, z); }
