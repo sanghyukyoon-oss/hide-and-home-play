@@ -165,6 +165,14 @@ export const ITEMS = {
     g.add(put(rbox(.03, .006, .01, '#5b5672', .002), 0, .028, -.07));
     return g;
   } },
+  // (39판 카페 지하 냉동 창고 ② 10/23: the freezer door's missing handle — a chrome bar on two posts)
+  fzhandle: { name: '냉동 창고 핸들', h: .06, flat: true, noCollect: true, build() {
+    const g = grp();
+    g.add(put(mesh(geo('fzhandlebar', () => new THREE.CylinderGeometry(.018, .018, .24, 12)), mat('#d8e2ec', GLOSS)), 0, .045, 0, 0, 0, Math.PI / 2));
+    for (const sx of [-1, 1]) g.add(put(mesh(geo('fzhandlepost', () => new THREE.CylinderGeometry(.014, .016, .05, 10)), mat('#9aa6b4', GLOSS)), sx * .1, .02, 0));
+    g.add(put(mesh(geo('fzhandlegrip', () => new THREE.CylinderGeometry(.022, .022, .1, 12)), mat('#4f86c6', { rough: .5 })), 0, .045, 0, 0, 0, Math.PI / 2));
+    return g;
+  } },
   crank: { name: '건조대 손잡이', h: .06, flat: true, noCollect: true, build() {
     const g = grp();
     g.add(put(cyl(.012, .012, .16, '#a9b2c8', null, 10), 0, .015, 0, Math.PI / 2, 0, 0));

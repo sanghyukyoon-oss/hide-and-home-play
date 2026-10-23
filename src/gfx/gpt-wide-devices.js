@@ -56,6 +56,7 @@ B.gptwidemarblerun=(f,T,o={})=>{
   },{label:'미니 구슬 길: 홈통 → 종 → 장화',dur:2.45,sfx:'clink',chain:['구슬','홈통 낙하','종','장화 까꿍']});
   p.gptLoop='clink';p.gptPhases=[{at:.26,sfx:'land'},{at:.62,sfx:'clink'},{at:.89,sfx:'doorBell'}];p.gptFinish='giggle';p.gptFunny='구슬보다 장화가 먼저 도착!';
   inside(f,g,p,.63,.085,.31,'구슬 종 아래 받침',.4);
+  if (o.scale) g.scale.setScalar(o.scale);   // (43판 아트 점검 ② 10/23: a smaller run under the bike shelter's roofline)
 };
 
 export const GPT_WIDE_BUILDERS=B;

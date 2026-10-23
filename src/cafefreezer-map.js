@@ -11,16 +11,15 @@ const PI = Math.PI;
 // 테마: 카페 테마 위에 지하 창고 색(가구가 읽는 키는 카페 것), 친구 파르페
 const OWN = { name: '카페 지하 냉동 창고', friend: 'sundae', floorKind: 'tile', floor: '#d8e6e1', floor2: '#cdddd7', base: '#a3825f',
   wallKind: 'plain', wall: '#f2f4ec', wall2: '#e4ece6', bg: ['#e6f4f8', '#bfe0ec'] };
-let memo = null, memoOf = null;
 const F = (type, x, z, a = 0, opts) => ({ type, x, z, a, opts });
 
 export function installCafefreezer(LAYOUTS, THEMES) {
   registerFurniture(FZ_BUILDERS, FZ_INFO);
-  Object.defineProperty(THEMES, 'cafefreezer', { configurable: true, enumerable: true, get() {
-    const b = THEMES.cafe || THEMES.my;
-    if (memoOf !== b) { memoOf = b; memo = { ...b, ...OWN }; }
-    return memo;
-  } });
+  // (② 10/23 36 → 39 → 36 오류와 같은 자리: 카페 테마가 생긴 뒤 첫 값으로 박아 두고, 대입도 받음)
+  let made = null;
+  Object.defineProperty(THEMES, 'cafefreezer', { configurable: true, enumerable: true,
+    get() { if (made) return made; const b = THEMES.cafe, t = { ...(b || THEMES.my), ...OWN }; if (b) made = t; return t; },
+    set(v) { made = v; } });
   LAYOUTS.cafefreezer = { w: 6, d: 6, slab: 'none', bleed: null, wallH: 2.9, sun: [], walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
     yaw: PI / 4, fitW: 9.0,
     furniture: [

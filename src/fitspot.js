@@ -37,8 +37,11 @@ export function natSize(type) {
 }
 
 // the size a thing is drawn at, as a multiple of the place's own scale (stage.js; was inline there)
+const DECOY_LONG = .17, DECOY_MIN = .15;   // 흩뿌림 소품의 긴 변 (m): 적어도 이만큼은 크게, 이보다 작게밖에 안 되면 안 놓음
 export function wantScale(type, spot, role, want = .34) {
-  if (role === 'decoy') return 1.08;
+  // (a decoy: 1.08 of the place's scale, but never under ~17 cm on its longest side — in a small place a mug came out 12 cm and a
+  // book stack 15 cm, ⑥ 10/24 5판 실폰 "ㅈㄴ 작은 컵이랑 책이 가끔 등장함")
+  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2; return Math.max(1.08, Math.min(2.4, DECOY_LONG / (spot.scale || 1) / big)); }
   const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2;
   const room = (spot.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (spot.scale || 1));
   const ss = spot.scale || 1, lim = ITEMS[type]?.flat ? 2.4 : room;
@@ -207,8 +210,10 @@ function probe(type, spot, sc, edgeOnly = false) {
 export function drawnScale(type, spot, role = 'target', want = .34) {
   const sc = wantScale(type, spot, role, want), cap = capScale(type, spot, role);
   if (cap >= sc) return sc;
-  // (a decoy is clutter: in a tight place it may be drawn smaller, down to .6 — 3판 kept 2 of its 6 otherwise)
-  return role === 'decoy' ? (cap >= .6 ? cap : 0) : cap >= Math.max(1, sc * KEEP) ? cap : 0;
+  // (a decoy is clutter: in a tight place it may be drawn smaller, down to .6 — 3판 kept 2 of its 6 otherwise; but not under ~15 cm:
+  // smaller it reads as a toy of itself, so the place gets none — ⑥ 10/24)
+  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2; return cap >= .6 && cap * (spot.scale || 1) * big >= DECOY_MIN ? cap : 0; }
+  return cap >= Math.max(1, sc * KEEP) ? cap : 0;
 }
 export const spotFits = (type, spot, role) => drawnScale(type, spot, role) > 0;
 // drawn at (nearly) the full size wanted — ~34 cm on its longest side: not held down by a low headroom (1장's place preference)

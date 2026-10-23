@@ -9,6 +9,7 @@ export const ROOM_AS = {
   gptotaku: 'otakuloft', gptotakumix: 'otakuloft', gptfirestation: 'firestation', firestation2: 'firestation', gptvillaroof: ['villaroof2', 'villaroof'], gptpolicefront: 'policefront',
   // 18~21판 다시 (① 10/23)
   policefront3: 'policefront', villaroof3: 'villaroof2',
+  otakuloft3: 'otakuloft', otakuloft4: 'otakuloft', otakuloft5: 'otakuloft', firestation3: 'firestation', firestation3b: 'firestation',
   gptstreet: 'street', gptalley: 'alley1', gptcornershop: 'alley3', gptdoghouse: 'alleyhouse', gptdoghouse2: 'alleyhouse',
   gptstation: 'station', gpttraincar: 'traincar', gpttraincar2: ['traincar3', 'traincar'],
   // 22~26판 다시 만들기 (⑦ 10/23, redo7.js)
@@ -31,6 +32,10 @@ export const ROOM_AS = {
   gptatrium: ['lobbymap', 'lobby'], gptatrium_open: ['lobbymap', 'lobby'], gptlab: 'officefloor', gptroom1: 'officefloor', gptroom1w: 'officefloor',
   // 공원·캠프 새 맵 (10/23, parkcamp-maps.js — 스토리 룸 표 redo-34to70-order-1023.md)
   starplay: 'playground', picnichill: 'playgroundwide', fireflyvalley: 'trail', creekcamp: 'camp1', bridgewood: 'camp2',
+  // 3판 세 안 (10/24, stage3-maps.js): 대본·물건 풀·숨김 표는 낚시터 것 (frogpond는 제 대본 frogpondH가 먼저 붙음)
+  fishing3: 'fishing', fishing2b: 'fishing', frogpond: 'fishing',
+  // 3판 ⑩ 안 (10/24, stage3-r10.js)
+  fishing3r: 'fishing', fishisle: 'fishing',
 };
 export const asRooms = key => [key, ...[].concat(ROOM_AS[key] || [])];
 export const asRoom = key => [].concat(ROOM_AS[key] || key)[0];

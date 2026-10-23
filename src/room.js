@@ -69,13 +69,13 @@ const memo = (key, make) => {
   if (!base) { base = make(); TEXMEMO.set(key, base); clearTimeout(memoT); memoT = setTimeout(() => TEXMEMO.clear(), 3000); }
   return base.clone();
 };
-const GROUND = ['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'water'];
+const GROUND = ['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'water', 'meadow'];
 // res: the plank floor's picture size — 1024 (512 px a tile); the hotel's nine little rooms, seen whole from far out, ask for 512
 function floorTex(kind, a, b, T = null, res = 1024) { return GROUND.includes(kind) ? floorTex0(kind, a, b, T) : memo(`f|${kind}|${a}|${b}|${res}`, () => floorTex0(kind, a, b, T, res)); }
 function wallTex(kind, a, b) { return memo(`w|${kind}|${a}|${b}`, () => wallTex0(kind, a, b)); }
 function floorTex0(kind, a, b, T = null, res = 1024) {
   if (hasFloor(kind)) return canvasTex(512, 512, (c, W) => paint(c, W, kind, a, b, true));
-  if (['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'water'].includes(kind)) {   // (water: a shallow strip of sea or lake on the map's own floor — 바닷가 가게)
+  if (['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'water', 'meadow'].includes(kind)) {   // (meadow: 3판 세 안 10/24 — gfx/s3-kit.js)   // (water: a shallow strip of sea or lake on the map's own floor — 바닷가 가게)
     if (OUTDOOR?.groundTex) { try { return OUTDOOR.groundTex(kind, T || { floor: a, floor2: b }); } catch {} }
     return noiseGround(a, b, kind === 'grass' ? 160 : 90);
   }
@@ -1032,7 +1032,7 @@ function sunPatch({ from: [x0, z0, x1, z1], dir: [dx, dz], a = .42, color = '#ff
 export function makeApron(w, d, ft, T, o = {}) {
   const S = Math.max(w, d) + 16, at = new THREE.CanvasTexture(fadeMask(w / S, d / S, (o.fade ?? 5) / S));
   // outdoor ground textures carry one-off marks (lane lines, a manhole): the apron gets the plain ground instead
-  const outdoor = ['grass', 'sand', 'asphalt', 'brickpave', 'dirt'].includes(T.floorKind);
+  const outdoor = ['grass', 'sand', 'asphalt', 'brickpave', 'dirt', 'meadow'].includes(T.floorKind);
   // outdoors the plain ground runs on; indoors the room stands on a soft plain surround (a patterned floor carried
   // past the walls read as a seam)
   const sa = T.bg?.[1] || '#f3e6d6';

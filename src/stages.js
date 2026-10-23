@@ -754,7 +754,7 @@ MAPS.bearbakery = () => ({ theme: THEMES.bearbakery, friendAt: [-.84, -1.2], roo
 export const STAGES = [
   { room: 'bunny', n: 3, inside: 0, behind: 0, time: 60, tut: 1, clutter: .4 },
   { room: 'bunny', n: 4, inside: 2, behind: 0, time: 70, tut: 2, clutter: .5 },
-  { room: 'fishing', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },
+  { room: 'frogpond', n: 6, inside: 1, behind: 0, time: 80, clutter: .45 },   // 3판 = C안 여우비 오는 날 개굴이네 연잎 연못 집 (10/24 사용자 "C로 하자, 잘 나왔다" — ⑫; 옛 낚시터 fishing, A fishing3·B fishing2b는 ?gptmap= 미리보기)
   { room: 'peng', n: 3, inside: 1, behind: 0, time: 85, clutter: .35 },   // 흑백 (GRAY, 10/19 user "초반에 흑백 하나, 4 정도에"): 3 things + 2 grey furniture + 먹물이 — the first 흑백 (5 → 3, 1~10판 밸런스 10/19: a new rule's first stage carried the most to find, 8; now 6 — and clutter .5 → .35: a 흑백 stage has no decoy cap, fewer things left room for 9 decoys)
   { room: 'bear', n: 7, inside: 1, behind: 0, time: 90, lock: ['pad'], clutter: .5, tut: 4, habitMore: true, habit: ['kotatsu', 'table', 'zabuton', 'sofa', 'tvlow', 'recordcab', 'fridge', 'kitchen', 'counter', 'snack'] },   // (곰돌이: "손님 주려고 숨겨 놨는데" — by the food, 검토 P0-1)   // the key lesson (🆕 열쇠 card on the first padlock)
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3, lockOn: { pad: ['dishcab'] } },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
@@ -897,7 +897,7 @@ export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location
 // ?newmaps=0은 전부 옛 맵. 기억은 그대로 localStorage newmaps)
 export const NEW_MAPS_MODE = (() => { try { const q = new URLSearchParams(location.search).get('newmaps'); if (q === '1' || q === '0') localStorage.setItem('newmaps', q); return q ?? localStorage.getItem('newmaps') ?? 'default'; } catch (e) { return 'default'; } })();
 export const NEW_MAPS_ON = NEW_MAPS_MODE !== '0';
-export const NEW_DEFAULT = new Set([20, 21, 22, 23, 30, 36]);   // 기본으로 새 맵인 판 (점검 통과 + 사용자 거절 없음; 45·49·55·56·58 공원·캠프는 10/24 사용자 "너무 실망"으로 뺌 — ?newmaps=1로만)
+export const NEW_DEFAULT = new Set([18, 19, 20, 21, 22, 23, 24, 30, 36, 39, 40]);   // 기본으로 새 맵인 판 (점검 통과 + 사용자 거절 없음; 45·49·55·56·58 공원·캠프는 10/24 사용자 "너무 실망"으로 뺌 — ?newmaps=1로만)
 export const NEW_MAPS = { 28: 'traincar4', 30: 'seaside2', 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
@@ -946,7 +946,7 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // (28판 기차 객실 3차 10/22: 12m 객실을 길이로 비스듬히 보는 판 — 1.4면 앞뒤가 잘려서 1.2, ① 권장 1.15~1.2)
 const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.2, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.5, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
 // (공원·캠프 새 맵 10/23, parkcamp-maps.js: 둥근 섬이 다 보이는 시작 줌 — 판 번호 표(ZOOM_TUNE)는 옛 맵 값이라 맵 키로 덮어씀)
-const ROOM_ZOOM = { starplay: 1.1, picnichill: 1.1, fireflyvalley: 1.05, creekcamp: 1.2, bridgewood: 1.25 };
+const ROOM_ZOOM = { fishisle: 1.1, starplay: 1.1, picnichill: 1.1, fireflyvalley: 1.05, creekcamp: 1.2, bridgewood: 1.25 };
 // 그 판 물건 크기(기본 .34 = 34cm 기준; 룩이 있는 방은 룩 값): 넓은 맵만 크게
 export const ITEM_TUNE = { 25: 0.48, 30: 0.46, 33: 0.44, 34: 0.46, 35: 0.44, 39: 0.5, 45: 0.42, 47: 0.5, 48: 0.5, 53: 0.47, 56: 0.42, 58: 0.42, 59: 0.42, 65: 0.4, 69: 0.45 };
 // #94 크기 규칙(목록·자리·자물쇠 칸·작은 물건 안전망 smallfix.js)이 닿는 판: 19판부터 이 판까지 — 장 단위로 늘려 감(30 → 40 → 50 → 70)
@@ -1004,6 +1004,9 @@ installRedo7({ LAYOUTS, THEMES, MAPS, NEW_MAPS });
 // 18~21판 다시 (① 10/23 — redo1-maps.js): 새 맵 키 설치 + 새 맵 스위치(?newmaps=1)에 등록만, 판 표(PLAN)는 그대로
 import { installRedo1 } from './redo1-maps.js';
 installRedo1({ LAYOUTS, THEMES, NEW_MAPS });
+// 3판 낚시터 ⑩ 안 A' fishing3r · B' fishisle (10/24, 미리보기 ?gptmap=키&lv=3 — 판 표는 그대로)
+import { installStage3R10 } from './stage3-r10.js';
+installStage3R10({ LAYOUTS, THEMES });
 export function stageSpec(idx) {
   idx = Math.max(0, idx);
   if (idx >= STAGE_COUNT) return endlessSpec(idx);
@@ -1026,7 +1029,12 @@ export function stageSpec(idx) {
   // (18판 너굴이네 복층 10/22 — 사용자 "현실적인 복층, 방구조 약간 특이하고 장치도 좀", ① otakuloft A안): 비 오는 밤, 너굴이 시간 놀이에
   // 장치 둘 — 다락↔1층 바구니 도르래에 걸린 열쇠가 내려와 경품 오락기 받침(자물쇠)을 열고, 서랍 계단 옆 숨은 칸은 비밀번호;
   // 시작 줌 1.35(1.2에서 오락기 받침 26px·택배상자 27px — #94 28px 기준)
+  // (39판 카페 지하 냉동 창고 ② 10/23, ⑨ cafefreezer — 새 맵 스위치로 이 맵일 때만): 열쇠는 사물함, 색은 계단 밑 비품장(두 자물쇠가 다른
+  // 가구에), 판 물건은 빨래방 양말·고무 오리 대신 냉동 창고 것
+  if (s.room === 'cafefreezer') { s.lockOn = { ...s.lockOn, pad: ['fz_locker'], color: ['fz_supplycab'] }; s.items = ['icecream', 'cheese', 'milk', 'bubbletea', 'cupcake', 'teddy', 'medal']; }
   if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
+  // (18판 새 안 otakuloft3·4·5, ① 10/23: 같은 부품 키라 같은 장치·자물쇠 — 새 맵 스위치로 열릴 때)
+  if (s.room === 'otakuloft3' || s.room === 'otakuloft4' || s.room === 'otakuloft5') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
   // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 줌·물건 크기·자물쇠 자리 — redo7/sNN.js)
   if (REDO_SPEC[s.room]) REDO_SPEC[s.room](s, idx);
   // (18판 10/22 사용자 고르기: GPT 너굴이네 비 오는 복층 A — gptotaku|otakuloft; 대본·물건은 asRoom으로 otakuloft 것): 비 오는 밤, 미니 냉장고 자물쇠·계단 옆 수납장 비밀번호
@@ -1034,7 +1042,7 @@ export function stageSpec(idx) {
   // (GPT 들여온 맵 시작 줌 ① 10/22: GPT 맵은 우리 맵보다 넓게 잡혀 작게 보임 — 방을 크게, 색 분포 colorstat 기준)
   { const Z = { gptfirestation: 1.6, gptvillaroof: 1.3, gptpolicefront: 1.75, gptalley: 2.1, gptcornershop: 1.6, gptstation: 2.2, gpttraincar2: 1.05 }; if (Z[s.room]) s.zoom = Z[s.room]; }   // (② 10/22 밤: 28판 두 량 객차 1.05 — 양쪽 칸 끝까지; GPT 소방서는 1.6 — 왼쪽 계단)
   // (40판 지하상가 undermall ⑨ 10/23: 자물쇠 셋을 맵 가구에 — 열쇠 물품 보관함 · 색 관리실 열쇠 걸이함 · 비밀번호 관리실 금고; 판 전체가 한 화면, 물건은 크게)
-  if (s.room === 'undermall') { s.lockOn = { pad: ['um_lockers'], color: ['um_office'], code: ['um_safe'] }; s.itemSize = .56; }
+  if (s.room === 'undermall') { s.lockOn = { pad: ['um_lockers'], color: ['um_office'], code: ['um_safe'] }; s.itemSize = .64; }
   if (s.boss && s.sock) s.n = Math.max(5, (s.n || 8) - 1);   // (the 상가 boss's fourth lock, the sock: one thing fewer to find)
   if (GRAY.has(idx) && !s.timed && !s.boss) { s.gray = true; s.night = false; if (Array.isArray(s.lock)) s.lock = s.lock.filter(k => k !== 'color'); }   // a colour lock can't be read in grey
   // 사건 판 (10/17 pivot): from stage 3 on, every ordinary stage is a small incident — the owner hides behind a lock and

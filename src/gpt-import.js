@@ -61,9 +61,11 @@ import { installTraincar4 } from './traincar4-map.js';
 import { installUndermall } from './undermall-map.js';
 // 39판 새 맵 카페 지하 냉동 창고 cafefreezer (⑨ 10/23): 흙 속 단면 지하 + 냉동실·도르래 바구니 얼음·온풍기 — cafefreezer-map.js
 import { installCafefreezer } from './cafefreezer-map.js';
+// 3판 세 안 A fishing3 · B fishing2b · C frogpond (10/24): 미리보기 ?gptmap=키&lv=3 — stage3-maps.js
+import { installStage3, S3_STAGE } from './stage3-maps.js';
 
 // the maps each 들여온 key opens on (its campaign stage, for the preview's lighting and HUD)
-export const GPT_STAGE = { gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64, starplay: 45, picnichill: 49, fireflyvalley: 55, creekcamp: 56, bridgewood: 58, cafefreezer: 39, undermall: 40, seaside2: 30 };
+export const GPT_STAGE = { fishing3r: 3, fishisle: 3, gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64, starplay: 45, picnichill: 49, fireflyvalley: 55, creekcamp: 56, bridgewood: 58, cafefreezer: 39, undermall: 40, seaside2: 30 };
 
 // a workshop piece that lists the boxes it really blocks with (gpt2-b gptWalkBoxes) walks by those, not by the box round all of it (room.js walkBoxes)
 // (gpt2-d: a piece with a walkBoxes list walks by that list instead of its whole box)
@@ -103,6 +105,7 @@ export function installGpt(MAPS, THEMES, LAYOUTS) {
   installUndermall(MAPS, THEMES);
   installCafefreezer(LAYOUTS, THEMES);
   installSeaside2(LAYOUTS, THEMES);
+  installStage3(LAYOUTS, THEMES); Object.assign(GPT_STAGE, S3_STAGE);   // 3판 세 안 (10/24 — stage3-maps.js)
 }
 
 export function gptPreview(qs, THEMES) {

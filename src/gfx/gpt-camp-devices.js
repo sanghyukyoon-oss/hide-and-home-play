@@ -239,14 +239,19 @@ B.gptfire_treebasket = (f, T, o = {}) => {
   fireStatic(f, 'fire-tree-frame', ({ add, tube }) => {
     tube([-.42, .04, -.22], [-.5, 1.5, -.18], .16, C.bark, 8, .23);
     tube([-.5, 1.45, -.18], [-.25, 2.9, -.16], .12, C.bark, 8, .16);
-    tube([-.38, 2.15, -.17], [.77, 2.74, .02], .11, C.bark, 7, .15);
+    // (57판 아트 점검 ⑪ 10/23, 허브: "납작한 원반 잎 나무에 사람 손이 달려 바구니를 듦, 기괴하고 뭔지 모름" — ② 다시: 가늘게 휜 가지,
+    // 그 밑에 매단 나무 도르래 바퀴(살색 원반 X), 둥글게 겹친 잎 덩어리)
+    tube([-.38, 2.2, -.17], [.2, 2.62, -.04], .085, C.bark, 7, .11);
+    tube([.2, 2.62, -.04], [.86, 2.78, .06], .06, C.bark, 6, .08);
+    tube([.45, 2.68, 0], [.62, 2.98, -.06], .035, C.bark, 5, .05);
     tube([-.41, 2.1, -.16], [-1.0, 2.64, -.35], .075, C.bark, 7, .11);
-    add(G.sph(.69, 10, 7), '#65df85', -.62, 2.85, -.25, 0, .3, 0, [1.3, .62, 1]);
-    add(G.sph(.53, 9, 6), '#9ae067', -.1, 3.05, -.34, 0, .7, 0, [1.1, .65, 1]);
-    add(G.cyl(.2, .2, .1, 14), C.peach, .74, 2.68, .09, HP, 0, 0);
-    add(G.tor(.2, .028, PI * 2, 5, 16), C.woodD, .74, 2.68, .15);
-    add(G.cyl(.05, .05, .15, 8), C.steel, .74, 2.68, .15, HP, 0, 0);
-    tube([-.34, .7, .05], [.74, 2.65, .15], .022, C.rope, 5);
+    for (const [x, y, z, r, c] of [[-.7, 2.9, -.3, .52, '#5fcf7c'], [-.15, 3.12, -.38, .5, '#8fd86a'], [-.4, 3.32, -.2, .42, '#6fdc86'], [.15, 2.88, -.16, .36, '#7fd46f'], [-.95, 2.7, -.1, .34, '#8fd86a']])
+      add(G.sph(r, 12, 9), c, x, y, z, 0, 0, 0, [1.05, .88, 1]);
+    tube([.74, 2.76, .1], [.74, 2.64, .1], .018, C.steel, 5);
+    add(G.cyl(.15, .15, .07, 16), C.woodD, .74, 2.52, .12, HP, 0, 0);
+    add(G.tor(.15, .022, PI * 2, 5, 18), C.bark, .74, 2.52, .16);
+    add(G.cyl(.04, .04, .1, 8), C.steel, .74, 2.52, .12, HP, 0, 0);
+    tube([-.34, .7, .05], [.6, 2.5, .14], .022, C.rope, 5);
     add(G.box(.3, .26, .15, .04), C.navy, -.3, .74, .08);
     // A star weather-vane is scenery; every animal uses the game's canonical character builders.
     star(add, -.85, 2.66, -.21, .18, C.yellow);
@@ -254,7 +259,7 @@ B.gptfire_treebasket = (f, T, o = {}) => {
     for (const a of [0, 2, 4]) tube([-.42, .1, -.22], [-.42 + Math.cos(a) * .4, .03, -.22 + Math.sin(a) * .4], .065, C.bark, 6, .14);
   });
   if (o.gptStage === 60) return;
-  const basket = group(f.group, .74, 1.64, .16);
+  const basket = group(f.group, .74, 1.46, .16);   // (② 10/23: hung just under the pulley wheel)
   basket.add(fireMc('fire-tree-basket-panda-cameo', ({ add, tube }) => {
     wicker(add, tube, 1.25, .9, false);
     // Route the rear slings above Panda's ears instead of running diagonally through the head.
@@ -267,14 +272,14 @@ B.gptfire_treebasket = (f, T, o = {}) => {
 
   }));
   // (②b 10/22 밤 허브: 처음부터 보이는 판다는 뺌 — 바구니엔 준비물만)
-  const rope = group(f.group, .74, 2.67, .16);
+  const rope = group(f.group, .74, 2.37, .16);   // (② 10/23: from under the pulley wheel)
   rope.add(fireMc('fire-tree-rope', ({ add }) => add(G.cyl(.022, .022, 1, 5), C.rope, 0, -.5, 0)));
   const latch = group(f.group, -.3, .74, .19);
   latch.add(fireMc('fire-tree-latch', ({ add }) => {
     add(G.box(.075, .3, .075, .025), C.yellow, 0, .1, .02);
-    add(G.sph(.085, 9, 6), C.peach, 0, .28, .02);
+    add(G.sph(.075, 9, 6), C.woodD, 0, .28, .02);   // (② 10/23: a wooden cleat knob, not a peach ball that read as a hand)
   }));
-  const update = t => { basket.position.y = 1.64 - 1.24 * t; basket.rotation.z = Math.sin(t * PI * 4) * .035; rope.scale.y = 2.67 - basket.position.y - .84; latch.rotation.x = -1.0 * t; };
+  const update = t => { basket.position.y = 1.46 - 1.06 * t; basket.rotation.z = Math.sin(t * PI * 4) * .035; rope.scale.y = Math.max(.02, 2.37 - basket.position.y - .84); latch.rotation.x = -1.0 * t; };
   update(0);
   const p = mech(f, 'lift', [basket, rope, latch], update, 'fire-basket', '연기 신호를 받고 내려오는 나무 바구니', 1.0);
   p.gptRequires = 'fire-smoke';

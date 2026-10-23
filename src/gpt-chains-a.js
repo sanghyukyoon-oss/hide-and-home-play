@@ -70,7 +70,14 @@ export const CHAINS_A = {
 CHAINS_A.gptdoghouse2 = CHAINS_A.gptdoghouse;
 CHAINS_A.firestation = CHAINS_A.gptfirestation;
 CHAINS_A.firestation2 = CHAINS_A.gptfirestation;   // (19판 결정: 정본 소방서 + GPT 소방서 오브젝트 재배치 — ① firestation2)   // (19판은 정본 소방서 유지 + GPT 소방서 장치를 ①이 옮겨 놓음 — 같은 줄, 부품이 있는 것만 붙음)
+// (19판 3안 firestation3, ① 10/23: 같은 줄 — 출동 종을 당기면 차고 셔터가 말려 오르고 → 지붕 거대 사이렌이 돌고 → 소방견 집 지붕이 들썩;
+// 새 건물 조각 fs3_house의 부품 0 셔터 · 1 사이렌, 소방봉은 이 판에 곰돌이가 숨은 친구라 탄 사람 없이 장식)
+CHAINS_A.firestation3 = { aux: [{ ...CHAINS_A.gptfirestation.aux[0], links: [{ dev: 'fs3_house#0:0', at: .2 }, { dev: 'fs3_house#0:1', at: .5 }, { dev: 'gpt_firedoghouse#0:0', at: .8 }] },
+  ...CHAINS_A.gptfirestation.aux.slice(1)] };
+CHAINS_A.firestation3b = CHAINS_A.firestation3;
 // 정본에 켜는 맵 (사용자가 시트에서 고른 판만 — 검토 세션이 알려 주면 켬) — ① 10/23: GPT 맵 스위치(?gptmaps=1, stages.js GPT_MAPS_ON과 같은 값)가
 // 켜졌을 때만; 꺼져 있으면 지금 플레이어의 판은 그대로
 const GPT_ON = (() => { try { const q = new URLSearchParams(location.search).get('gptmaps'); return (q ?? localStorage.getItem('gptmaps')) === '1'; } catch (e) { return false; } })();
 export const ON_A = !GPT_ON ? [] : ['firestation2', 'firestation', 'gptfirestation', 'gptdoghouse', 'gptdoghouse2', 'gptvillaroof', 'gptpolicefront', 'gptalley', 'gptcornershop'];
+// (19판 새 안 firestation3·3b ① 10/23: 새 맵 스위치(?newmaps=1)로만 열리는 맵이라 줄은 늘 켬)
+ON_A.push('firestation3', 'firestation3b');

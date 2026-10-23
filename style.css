@@ -1673,7 +1673,7 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
    body with its blue band, the back's door post and tail lamp at its left end, one arch over the twin rear wheels and a mud
    flap; the cab with its door, side window, handle and mirror; its nose a windscreen, a grille, two round lamps and a bumper
    with a plate; chunky wheels with a yellow hub. Every part in the ink line of the game's UI. */
-.kb3.truck { --w: 230px; --h: 116px; --d: 128px; --lh: 22px; --cw: 82px; --ch: 92px; --tb: #3d7bff; --tb2: #2c62d6; --tb3: #234fb0; --tl: #e9eef9;
+.kb3.truck { --w: 230px; --h: 116px; --d: 128px; --lh: 22px; --cw: 82px; --ch: 96px; --cr: 16px; --tb: #3d7bff; --tb2: #2c62d6; --tb3: #234fb0; --tl: #e9eef9;
   --rib: repeating-linear-gradient(90deg, transparent 0 12px, rgba(44, 98, 214, .14) 12px 14px, rgba(255, 255, 255, .95) 14px 15px, transparent 15px 17px); }
 .kb3.truck.big { --w: 236px; --h: 118px; --d: 132px; }
 .kb3.truck .kb3-front { background: var(--rib), linear-gradient(180deg, #ffffff 0 60%, var(--tb) 60% 76%, #ffffff 76% 100%);
@@ -1699,37 +1699,51 @@ html[lang="en"] .panel .btn.big { font-size: 22px; padding-left: .8em; padding-r
 .kb3-tail { position: absolute; left: 20px; bottom: 9px; width: 11px; height: 18px; border-radius: 3px; background: linear-gradient(180deg, #ff6a5c 0 60%, #ffb02e 60%); box-shadow: 0 0 0 2.5px var(--ink); }
 /* wheels in arches (the twins at the back share one), a flap behind them */
 .kb3-arch { position: absolute; bottom: -3px; height: 30px; border: 3px solid var(--ink); border-bottom: none; border-radius: 30px 30px 0 0; background: #2a2236; box-sizing: border-box; }
-.kb3-arch.ab { left: 36px; width: 116px; } .kb3-arch.c { left: 4px; width: 58px; }
+.kb3-arch.ab { left: 36px; width: 116px; } .kb3-arch.c { left: 7px; width: 58px; }
 .kb3-flap { position: absolute; left: 22px; bottom: -22px; width: 12px; height: 26px; border-radius: 2px 2px 4px 4px; background: #3a3348; box-shadow: 0 0 0 2.5px var(--ink); }
 .kb3.truck .kb3-wheel { position: absolute; bottom: -22px; width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 0 0 3px var(--ink);
   background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .5) 0 6%, transparent 7%), radial-gradient(circle, #fff6c8 0 9%, #ffd23c 10% 30%, var(--ink) 31% 36%, #3a3348 37% 100%); }
-.kb3.truck .kb3-wheel.a { left: 44px; } .kb3.truck .kb3-wheel.b { left: 100px; } .kb3.truck .kb3-wheel.c { left: 11px; }
-/* the cab */
+.kb3.truck .kb3-wheel.a { left: 44px; } .kb3.truck .kb3-wheel.b { left: 100px; } .kb3.truck .kb3-wheel.c { left: 14px; }
+/* the cab (10/23, user: "13판 트럭 앞부분이 어색함"): a small cab-over's face — the roof rolls over its front edge (three bevel
+   strips, a glint on the top one), the windscreen with its pillar and wipers in the upper part of the nose, a body panel under
+   it with a wide slatted grille and round lamps at its lower corners, a thick bumper across the whole width with the plate in
+   it, wrapping round onto the side; the side's window, door and wheel arch lined up with the nose */
 .kb3-cab { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d;
   transform: translate3d(calc(var(--w) / 2 + var(--cw) / 2), calc(var(--h) / 2 - var(--ch) / 2), 0); }
-.kb3-cfront { width: var(--cw); height: var(--ch); left: calc(var(--cw) / -2); top: calc(var(--ch) / -2); transform: translateZ(calc(var(--d) / 2)); border-radius: 0 22px 0 0;
-  background: linear-gradient(180deg, var(--tb) 0 80%, var(--tb3) 80% 100%); box-shadow: inset 0 6px 0 rgba(255, 255, 255, .28); overflow: visible; }
-.kb3-cright { width: var(--d); height: var(--ch); left: calc(var(--d) / -2); top: calc(var(--ch) / -2); transform: rotateY(90deg) translateZ(calc(var(--cw) / 2));
-  background: linear-gradient(180deg, var(--tb2) 0 80%, var(--tb3) 80% 100%); overflow: visible; }
-.kb3-ctop { width: var(--cw); height: var(--d); left: calc(var(--cw) / -2); top: calc(var(--d) / -2); transform: rotateX(90deg) translateZ(calc(var(--ch) / 2)); background: #5b8fff;
-  box-shadow: inset 0 0 0 7px rgba(255, 255, 255, .18); }
-.kb3-door { position: absolute; left: 14px; top: 7px; width: 54px; height: 62px; border-radius: 6px 16px 4px 4px; box-shadow: inset 0 0 0 2.5px rgba(36, 22, 52, .55); }
-.kb3-cwin { position: absolute; left: 20px; top: 13px; width: 42px; height: 26px; border-radius: 4px 12px 4px 4px; box-shadow: inset 0 0 0 2.5px var(--ink);
+.kb3-cfront { width: var(--cw); height: var(--ch); left: calc(var(--cw) / -2); top: calc(var(--ch) / -2); transform: translateZ(calc(var(--d) / 2)); border-radius: 0 var(--cr) 0 0;
+  background: linear-gradient(180deg, var(--tb) 0 84%, var(--tb3) 84% 100%); box-shadow: inset 0 6px 0 rgba(255, 255, 255, .28); overflow: visible; }
+.kb3-cright { width: var(--d); height: calc(var(--ch) - var(--cr)); left: calc(var(--d) / -2); top: calc(var(--ch) / -2 + var(--cr)); transform: rotateY(90deg) translateZ(calc(var(--cw) / 2));
+  border-top: none; background: linear-gradient(180deg, var(--tb2) 0 84%, var(--tb3) 84% 100%); overflow: visible; }
+.kb3-ctop { width: calc(var(--cw) - var(--cr)); height: var(--d); left: calc(var(--cw) / -2); top: calc(var(--d) / -2); transform: rotateX(90deg) translateZ(calc(var(--ch) / 2));
+  border-right: none; background: linear-gradient(90deg, #5287f8, #5b8fff 40%, #6a9aff); }
+.kb3-ctop::before { content: ''; position: absolute; left: 7px; right: 5px; top: 11px; bottom: 11px; border-radius: 9px; background: rgba(255, 255, 255, .1); box-shadow: inset 0 0 0 2px rgba(36, 22, 52, .16); }
+.kb3-cbev { width: var(--d); height: calc(var(--cr) * .5176 + 1px); left: calc(var(--d) / -2); top: calc(var(--cr) * -.2588 - .5px); border-top: none; border-bottom: none; }
+.kb3-cbev.a { transform: translate3d(calc(var(--cw) / 2 - var(--cr) * .75), calc(var(--ch) / -2 + var(--cr) * .067), 0) rotateY(90deg) rotateX(75deg); background: #8db3ff; }
+.kb3-cbev.b { transform: translate3d(calc(var(--cw) / 2 - var(--cr) * .317), calc(var(--ch) / -2 + var(--cr) * .317), 0) rotateY(90deg) rotateX(45deg); background: #5d91ff; }
+.kb3-cbev.c { transform: translate3d(calc(var(--cw) / 2 - var(--cr) * .067), calc(var(--ch) / -2 + var(--cr) * .75), 0) rotateY(90deg) rotateX(15deg); background: #3b70e6; }
+.kb3-door { position: absolute; left: 9px; top: 10px; width: 60px; height: 57px; border-radius: 5px 14px 4px 4px; box-shadow: inset 0 0 0 2.5px rgba(36, 22, 52, .55); }
+.kb3-cwin { position: absolute; left: 15px; top: 18px; width: 48px; height: 30px; border-radius: 4px 12px 4px 4px; box-shadow: inset 0 0 0 2.5px var(--ink);
   background: linear-gradient(120deg, #bfeeff 0 38%, #ffffff 38% 50%, #bfeeff 50% 62%, #e6f9ff 62% 68%, #bfeeff 68%); }
-.kb3-handle { position: absolute; left: 22px; top: 46px; width: 14px; height: 5px; border-radius: 3px; background: var(--tl); box-shadow: 0 0 0 2px var(--ink); }
-.kb3-mirror { position: absolute; right: -12px; top: 16px; width: 9px; height: 20px; border-radius: 4px; background: #3a3348; box-shadow: 0 0 0 2px var(--ink); }
+.kb3-handle { position: absolute; left: 17px; top: 54px; width: 14px; height: 5px; border-radius: 3px; background: var(--tl); box-shadow: 0 0 0 2px var(--ink); }
+.kb3-mirror { position: absolute; right: -12px; top: 18px; width: 9px; height: 20px; border-radius: 4px; background: #3a3348; box-shadow: 0 0 0 2px var(--ink); }
 .kb3-mirror::before { content: ''; position: absolute; left: -6px; top: 8px; width: 7px; height: 3px; background: var(--ink); }
-.kb3-shield { position: absolute; left: 10%; right: 10%; top: 8px; height: 38%; border-radius: 10px 10px 5px 5px; box-shadow: inset 0 0 0 2.5px var(--ink);
+.kb3-bwrap { position: absolute; right: -3px; bottom: -8px; width: 14px; height: 21px; border-radius: 4px 0 0 4px; background: linear-gradient(180deg, #ffffff 0 30%, #dfe6f6 30% 70%, #c3cde6 70%);
+  box-shadow: 0 0 0 3px var(--ink); }
+.kb3-shield { position: absolute; left: 7px; right: 7px; top: 5px; height: 31px; border-radius: 13px 13px 4px 4px; box-shadow: inset 0 0 0 2.5px var(--ink);
   background: linear-gradient(90deg, transparent 0 calc(50% - 1.5px), var(--ink) calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)),
     linear-gradient(115deg, #bfeeff 0 30%, #ffffff 30% 40%, #bfeeff 40% 70%, #ffffff 70% 75%, #bfeeff 75%); }
-.kb3-grille { position: absolute; left: 33%; right: 33%; top: 54%; height: 18%; border-radius: 5px; box-shadow: 0 0 0 2.5px var(--ink);
-  background: repeating-linear-gradient(180deg, #e9eef9 0 3px, #24324f 3px 6px); }
-.kb3.truck .kb3-lamp { position: absolute; top: 52%; bottom: auto; width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--ink), 0 0 10px 2px rgba(255, 236, 120, .55);
+.kb3-shield::before, .kb3-shield::after { content: ''; position: absolute; bottom: 4px; width: 28%; height: 2.5px; border-radius: 2px; background: var(--ink); transform-origin: 0 50%; transform: rotate(-5deg); }
+.kb3-shield::before { left: 10%; } .kb3-shield::after { left: 58%; }
+.kb3-grille { position: absolute; left: 25%; right: 25%; top: 41px; height: 18px; border-radius: 6px; box-shadow: 0 0 0 2.5px var(--ink), inset 0 0 0 2px #e9eef9;
+  background: repeating-linear-gradient(180deg, #e9eef9 0 2px, #24324f 2px 5px); }
+.kb3-grille::after { content: ''; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--y2); box-shadow: 0 0 0 2px var(--ink); }
+.kb3.truck .kb3-lamp { position: absolute; top: 42px; bottom: auto; width: 19px; height: 19px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--ink), inset 0 0 0 2.5px #e9eef9, 0 0 10px 3px rgba(255, 236, 120, .5);
   background: radial-gradient(circle at 36% 34%, #ffffff 0 20%, #fff3a6 24% 40%, #ffd23c 44%); }
-.kb3.truck .kb3-lamp.l { left: 9%; } .kb3.truck .kb3-lamp.r { right: 9%; }
-.kb3-bumper { position: absolute; left: -5px; right: -5px; bottom: -6px; height: 16px; border-radius: 7px; background: linear-gradient(180deg, #ffffff 0 35%, #cfd8ee 35%);
+.kb3.truck .kb3-lamp.l { left: 7px; } .kb3.truck .kb3-lamp.r { right: 7px; }
+.kb3-bumper { position: absolute; left: -3px; right: -3px; bottom: -8px; height: 21px; border-radius: 0 4px 4px 0; background: linear-gradient(180deg, #ffffff 0 30%, #dfe6f6 30% 70%, #c3cde6 70%);
   box-shadow: 0 0 0 3px var(--ink); }
-.kb3-plate { position: absolute; left: 50%; top: 2px; width: 28px; height: 11px; margin-left: -14px; border-radius: 2px; background: #fff6c8; box-shadow: 0 0 0 2px var(--ink); }
+.kb3-plate { position: absolute; left: 50%; top: 4px; width: 30px; height: 12px; margin-left: -15px; border-radius: 2px; box-shadow: 0 0 0 2px var(--ink);
+  background: linear-gradient(90deg, transparent 0 16%, rgba(58, 36, 83, .5) 16% 44%, transparent 44% 56%, rgba(58, 36, 83, .5) 56% 84%, transparent 84%) 50% 50% / 100% 3px no-repeat, #fff6c8; }
 .kitrun-q { display: none; }
 .kitrun-cell.mystery:not(.found) .kitrun-ghost { opacity: 0; }
 .kitrun-cell.mystery:not(.found) .kitrun-q { display: flex; position: absolute; inset: 0; z-index: 2; align-items: center; justify-content: center; font-size: 24px; color: #fff; -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; font-style: normal; }

@@ -397,7 +397,7 @@ RECIPES.gptvillaroof = { ...townRecipe('villaroof2'), block: undefined }; RECIPE
 RECIPES.gptstation = { ...townRecipe('station'), block: undefined };
 // (GPT maps on their own island or ground — 19·26·27·28판, 해변역: lookRecipe doesn't lend them the old map's block too, ① 10/22)
 // (40판 지하상가: 상가 거리의 빛·하늘·밤, 물건은 크게 — 판 전체가 한 화면이라)
-{ const { rooms, slab, fill, glows, ring, ground, floor, theme, ...um } = RECIPES.shopmap; RECIPES.undermall = { ...um, itemSize: .56 }; }
+{ const { rooms, slab, fill, glows, ring, ground, floor, theme, ...um } = RECIPES.shopmap; RECIPES.undermall = { ...um, light: { ambColor: '#f4f6f8', amb: 1.3, sunColor: '#fff6e6', sun: 2.4, shadow: .55 }, sky: ['#d4ecf6', '#eef7fb', '#c4e2f0'], pattern: { icon: 'onigiri', ink: 'rgba(255,255,255,.22)' }, itemSize: .64 }; }
 const OWN_BASE = new Set(['gptfirestation', 'gptdoghouse', 'gptdoghouse2', 'gptstation', 'gpttraincar2', 'gptseastation']);
 OWN_BASE.add('policefront3');
 // (21판 3안 policefront3 ① 10/23: 옛 21판 하늘·빛 그대로, 받침은 자기 섬; 섬 전체가 한 화면이라 찾을 물건을 조금 크게 — 시작 화면 28 px)
@@ -1252,8 +1252,39 @@ RECIPES.gptotakumix = { ...RECIPES.otakuloft, mapGlows: true,
     [-1.4, -2.05, 1.0, '#ffd98a', 2.225], [-2.35, .95, 1.15, '#7f9bff'], [-2.9, -.85, .8, '#ffd27a'], [.05, -.95, .75, '#ffd27a']],
   halos: [[1.05, 1.3, -2.05, .95, '#7cf0ff'], [1.85, 1.3, -2.05, .95, '#ff8fc8'], [-1.33, .8, -.5, .7, '#9fd8ff'], [-2.25, 1.3, -.36, 1.15, '#ffd98f'],
     [-1.38, 2.95, -2.4, .8, '#ffd98f'], [2.95, 1.05, .4, .6, '#cfe6ff']] };
-// 36판 새 안 밤의 문구점 (stationery, ⑨ 10/23): 상가 거리의 하늘·빛·밤 그대로(받침은 맵 자체 섬), 밤 빛 웅덩이는 이 가게 자리에 — 가게 안 따뜻한 등 둘,
-// 계산대 위, 오락기 화면(분홍·파랑), 뽑기 줄 위; 물건 크기는 넓은 판 기준(gpt6-maps SPEC과 같은 값)
-RECIPES.stationery = { light: RECIPES.shopmap.light, sky: RECIPES.shopmap.sky, pattern: RECIPES.shopmap.pattern, night: RECIPES.shopmap.night, itemSize: .58,
-  glows: [[-1.1, -1.6, 1.5, '#ffd98a'], [.2, -.6, 1.0, '#ffe7b0'], [-2.1, -.4, .9, '#ffd27a'], [-.98, 1.6, .75, '#ff9fd0'], [-2.45, 1.45, .9, '#ffd27a'], [-2.6, -2.1, .8, '#fff0c0']],
-  halos: [[-.98, 1.05, 1.24, .7, '#7f9bff'], [-.98, 1.38, 1.2, .6, '#ff8fc8'], [-2.45, 1.3, 1.25, 1.0, '#ffd98f'], [.5, 1.77, -2.72, .55, '#9fd8ff']] };
+// 36판 새 안 밤의 문구점 (stationery, ⑨ 10/23): 상가 거리의 하늘·빛·밤 그대로(받침은 맵 자체 섬); 밤 빛은 등 바로 밑 작은 웅덩이 셋만 — 크레파스 진열대 스탠드,
+// 계산대 스탠드(따뜻한 흰색), 오락기 화면(분홍) — 허브 10/23 '누렇게 덮지 말 것'; 물건 크기는 넓은 판 기준(gpt6-maps SPEC과 같은 값)
+RECIPES.stationery = { light: RECIPES.shopmap.light, sky: RECIPES.shopmap.sky, pattern: RECIPES.shopmap.pattern, night: { light: { ...COZY_NIGHT.light, sunColor: '#f4f3f0' }, sky: RECIPES.shopmap.night.sky }, itemSize: .58,
+  glows: [[-2.25, -1.85, .7, '#fff1d8'], [-1.25, .05, .55, '#fff1d8'], [-.98, 1.62, .5, '#ffcfe4']],
+  halos: [[-.98, 1.05, 1.24, .55, '#9fb4ff'], [-2.25, 2.3, -2.2, .45, '#fff1d8'], [-1.25, 1.42, -.06, .35, '#fff1d8']] };
+// 3판 ⑩ 안 A' fishing3r (10/24 "싱그럽고 깨끗한"): 흰 해의 맑은 낮, 하늘색→연민트 하늘, 연한 그림자; 풀밭은 판 바닥이 그대로 이어져
+// 판 가장자리 너머 조금만 가다 하늘빛으로 스며듦(seamless — 네모 테두리·지층 없음, 판 전체가 한눈에)
+RECIPES.fishing3r = { light: { ambColor: '#f4f8f4', amb: 1.38, sunColor: '#fffaf0', sun: 2.4, shadow: .48 }, sky: ['#c2e9f8', '#f5fbf7', '#e9f8e6'], itemSize: .38,
+  ground: { size: 30, fade: [.9, 3.0], seamless: true } };
+// 3판 ⑩ 안 B' fishisle: A'와 같은 맑은 낮빛·하늘, 섬이 제 받침(물이 감쌈)
+RECIPES.fishisle = { light: { ambColor: '#f4f8f4', amb: 1.38, sunColor: '#fffaf0', sun: 2.4, shadow: .48 }, sky: ['#bfe9f3', '#eef9f6', '#d4f2ea'], itemSize: .38 };
+// 18판 새 안 otakuloft3·4·5 (① 10/23): 옛 18판 비 오는 밤 RECIPES.otakuloft(위)를 빌리므로 그 뒤에
+// 18판 새 안 너굴이네 게임기 집 (otakuloft3, ① 10/23): 옛 18판의 비 오는 밤 하늘·빛 그대로, 빛 웅덩이는 이 집 자리에 — 오락기 둘(청록·분홍),
+// 카트리지 벽 앞 브라운관, 다락 컴퓨터 모니터·둥지 등, 러그 위 따뜻한 빛, 섬 앞 왼쪽 가로등(보도 높이)
+RECIPES.otakuloft3 = { ...RECIPES.otakuloft,
+  glows: [[1.0, -1.85, 1.1, '#7cf0ff'], [2.0, -1.85, 1.1, '#ff6fb8'], [-2.3, 0, 1.0, '#9fd8ff'], [0, -2.05, .85, '#9fd8ff', 1.66], [-2.0, -1.55, .85, '#ffd98a', 1.66],
+    [-1.1, .8, 1.25, '#ffcf8a'], [-1.9, 3.6, 1.35, '#ffd27a', -.126]],
+  halos: [[1.0, 1.3, -2.45, .95, '#7cf0ff'], [2.0, 1.3, -2.45, .95, '#ff8fc8'], [-2.65, .85, 0, .7, '#9fd8ff'], [-1.85, 2.45, 3.82, 1.1, '#ffd98f'], [0, 2.75, -2.55, .6, '#9fd8ff']] };
+// 18판 새 안 너굴이네 오락실 2층집 다시 짓기 (otakuloft5, ① 10/23): 문 닫은 1층은 기계 불빛(빨강 경품 오락기 청록, 인형 뽑기 분홍)과 2층 밑 형광등 하나,
+// 간판 밑 분홍빛, 2층 너굴이 방(바닥 2.5)은 브라운관·서랍장 스탠드·로프트 침대 책상 등, 섬 앞 가로등
+// (새 맵 빛 규칙 10/23 사용자 '누렇냐': 낮빛만 맑게 — 해 #fff4e6·둘레 #eef1f2, 비 오는 밤빛(night)은 옛 18판 그대로)
+RECIPES.otakuloft5 = { ...RECIPES.otakuloft, light: { ambColor: '#eef1f2', amb: 1.2, sunColor: '#fff4e6', sun: 2.0, shadow: .55 },
+  glows: [[-2.0, 1.75, 1.1, '#7cf0ff'], [1.0, 2.3, 1.2, '#ff9fd0'], [0, -1.4, 1.5, '#e6ecff'], [-.5, 2.4, 1.6, '#ffb8dc'],
+    [.5, -1.8, .9, '#9fd8ff', 2.51], [2.6, -2.2, .8, '#ffd98a', 2.51], [-2.5, -2.0, .8, '#ffd98a', 2.51], [-1.5, 3.55, 1.3, '#ffd27a', -.126]],
+  halos: [[-2.0, 1.3, .3, .9, '#7cf0ff'], [1.0, 1.35, 1.3, .9, '#ff9fd0'], [.5, 3.6, -2.5, .7, '#9fd8ff'], [-1.5, 2.3, 3.6, 1.1, '#ffd98f'], [0, 4.68, 2.05, 1.6, '#ffb8dc']] };
+// 18판 비교안 너굴이네 오락실 2층집 (otakuloft4, ① 10/23): 문 닫은 1층 오락실은 기계 불빛만(인형 뽑기 분홍, 경품 오락기 청록, 2층 밑 오락기 둘),
+// 간판 밑 따뜻한 빛, 2층 너굴이 방은 모니터·브라운관·둥지 등(바닥 2.1), 섬 앞 가로등
+RECIPES.otakuloft4 = { ...RECIPES.otakuloft,
+  glows: [[-2.6, 1.0, 1.05, '#ff9fd0'], [-2.0, 1.75, 1.1, '#7cf0ff'], [0, -1.6, .9, '#ff6fb8'], [1.0, -1.6, .9, '#7cf0ff'], [0, 2.3, 2.0, '#ffd98a'],
+    [1.5, -1.7, .9, '#9fd8ff', 2.11], [0, -2.0, .8, '#9fd8ff', 2.11], [3.0, -2.3, .8, '#ffd98a', 2.11], [-1.5, 3.55, 1.3, '#ffd27a', -.126]],
+  halos: [[-2.9, 1.3, 1.0, .8, '#ff9fd0'], [-2.0, 1.3, -2.15 + 4.5, .9, '#7cf0ff'], [0, 1.3, -2.6, .8, '#ff8fc8'], [1.0, 1.3, -2.6, .8, '#7cf0ff'],
+    [1.5, 2.75, -2.6, .7, '#9fd8ff'], [-1.5, 2.3, 3.6, 1.1, '#ffd98f'], [0, 4.55, 2.85, 1.6, '#ffb8dc']] };
+// 19판 새 안 firestation3·3b (① 10/23): 섬이 제 받침, 새 맵 빛 규칙(맑은 낮빛·하늘색 하늘 — 사용자 '누렇냐')
+OWN_BASE.add('firestation3'); OWN_BASE.add('firestation3b');
+RECIPES.firestation3 = { light: { ambColor: '#eef1f2', amb: 1.5, sunColor: '#fff6e6', sun: 2.5, shadow: .54 }, sky: ['#8ccbef', '#cbe7f6', '#e8f4f9'], itemSize: .4 };
+RECIPES.firestation3b = RECIPES.firestation3;

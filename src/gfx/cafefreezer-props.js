@@ -366,6 +366,14 @@ B.fz_coldroom = (f, T) => {
   ];
 };
 
+// 속이 빈 몸통 (뒤판·옆판·윗판·밑판만, 앞은 문이 막음): 안 자리가 열린 문 너머로 보이고 손가락이 닿게 — ② 봇 10/23 '알바 사물함 위 칸
+// visibleAt 0/24'(꽉 찬 상자 속이었음)
+const shell5 = (add, W, H, D, z0, col, t = .03, y0 = 0) => {
+  add(G.pbox(W, H, t), col, 0, y0 + H / 2, z0 - D / 2 + t / 2);
+  for (const s of [-1, 1]) add(G.pbox(t, H, D), col, s * (W / 2 - t / 2), y0 + H / 2, z0);
+  add(G.pbox(W, t, D), col, 0, y0 + H - t / 2, z0); add(G.pbox(W, t, D), col, 0, y0 + t / 2, z0);
+};
+
 // ── 도르래 높은 선반 (1×1, 앞 +z): 냉동실 안 키 큰 철제 선반, 꼭대기 들보에서 앞으로 뻗은 팔 끝에 도르래 바퀴, 줄에 매달린 큰 철망 바구니
 // — 바구니 안엔 큰 얼음 블록(속에 파르페가 비침). 아래 두 칸엔 생크림 상자·냉동 딸기 봉지(숨김 자리 둘).
 //   f.basket 바구니 그룹(얼음 포함, 위치 = 바구니 바닥 가운데) · f.basketUp / f.basketDown 그 그룹의 위·아래 자리(가구 안 Vector3)
@@ -578,13 +586,14 @@ B.fz_frostshelf = (f, T) => {
 B.fz_icecreamchest = (f, T) => {
   const W = 1.24, D = .66, Hh = .82;
   f.add(mc('fz-chest', ({ add }) => {
-    add(G.box(W, Hh - .06, D, .06), '#ffffff', 0, (Hh - .06) / 2 + .06, -.08);
+    { const IN = Hh - .4; add(G.box(W, IN - .06, D, .04), '#ffffff', 0, (IN - .06) / 2 + .06, -.08);
+      for (const s of [-1, 1]) { add(G.pbox(W, Hh - IN, .05), '#ffffff', 0, IN + (Hh - IN) / 2, -.08 + s * (D / 2 - .025)); add(G.pbox(.05, Hh - IN, D), '#ffffff', s * (W / 2 - .025), IN + (Hh - IN) / 2, -.08); } }
     add(G.box(W - .04, .06, D - .04, .02), STEELD, 0, .03, -.08);
     add(G.box(W + .01, .14, .02, .01), '#5aa9ec', 0, Hh - .25, -.08 + D / 2);
-    add(G.box(W + .02, .04, D + .02, .015), STEEL, 0, Hh, -.08);
+    for (const sg of [-1, 1]) { add(G.pbox(W + .02, .04, .06), STEEL, 0, Hh, -.08 + sg * (D / 2 - .02)); add(G.pbox(.06, .04, D + .02), STEEL, sg * (W / 2 - .02), Hh, -.08); }
     // 속 (뚜껑 아래 보이는 통 넷)
-    add(G.pbox(W - .1, .02, D - .1), '#c9e6f2', 0, Hh - .2, -.08);
-    for (let k = 0; k < 4; k++) { const x = -.42 + k * .28; add(G.cyl(.11, .11, .16, 16), '#ffffff', x, Hh - .12, -.08); add(G.cyl(.105, .105, .01, 16), ['#ffb3cf', '#bdeedd', '#f6e6c0', '#9a6b4a'][k], x, Hh - .035, -.08); }
+    add(G.pbox(W - .1, .02, D - .1), '#c9e6f2', 0, Hh - .4, -.08);
+    for (let k = 0; k < 2; k++) for (let j = 0; j < 2; j++) { const x = .16 + k * .26, z = -.08 + (j - .5) * .26, y = Hh - .38; add(G.cyl(.11, .11, .24, 16), '#ffffff', x, y + .12, z); add(G.cyl(.105, .105, .01, 16), ['#ffb3cf', '#bdeedd', '#f6e6c0', '#9a6b4a'][k * 2 + j], x, y + .245, z); }
     // 뒤 압축기 통풍구
     for (let k = 0; k < 4; k++) add(G.pbox(.3, .015, .01), STEELD, .4, .2 + k * .05, -.08 + D / 2 + .005);
   }));
@@ -593,10 +602,10 @@ B.fz_icecreamchest = (f, T) => {
   f.add(mc('fz-chest-lid0', ({ add }) => { add(G.box(W / 2 - .02, .03, D - .06, .012), '#e1f2f8', W / 4 - .01, Hh + .03, -.08); add(G.pbox(W / 2 - .06, .012, .02), STEEL, W / 4 - .01, Hh + .05, -.08 + D / 2 - .06); }));
   const lid = grp(); put(lid, -W / 4 + .01, Hh + .055, -.08); f.add(lid);
   lid.add(mc('fz-chest-lid1', ({ add }) => { add(G.box(W / 2 - .02, .03, D - .06, .012), '#d7eef6', 0, 0, 0); add(G.box(.18, .03, .05, .01), STEELD, .18, .02, D / 2 - .1); }));
-  f.add(frosty(mc('fz-chest-frost', ({ add }) => { const r = rnd(41); for (let k = 0; k < 9; k++) add(G.sph(.04 + r() * .04, 7, 5), k % 2 ? FROST : FROSTB, -W / 2 + .1 + r() * (W - .2), Hh + .06, -.08 - D / 2 + .1 + r() * (D - .2), 0, r() * 3, 0, [1.5, .45, 1.2]); })));
+  f.add(frosty(mc('fz-chest-frost', ({ add }) => { const r = rnd(41); for (let k = 0; k < 9; k++) add(G.sph(.04 + r() * .04, 7, 5), k % 2 ? FROST : FROSTB, .06 + r() * (W / 2 - .16), Hh + .07, -.08 - D / 2 + .1 + r() * (D - .2), 0, r() * 3, 0, [1.5, .45, 1.2]); })));
   const p = f.part('slide', lid, (t, b) => { lid.position.x = b.p.x + (W / 2 - .04) * t; lid.position.y = b.p.y + .035 * Math.min(1, t * 4); }, { label: K('아이스크림 냉동고 뚜껑', 'Ice-cream freezer lid'), sfx: 'slide', dur: .6 });
   p.gpt2Reach = true;
-  f.spot('inside', null, -W / 4, Hh - .2, -.08, { part: p, maxH: .3, label: K('아이스크림 냉동고 안', 'In the ice-cream freezer'), scale: .85 });
+  f.spot('inside', null, -W / 4, Hh - .38, -.04, { part: p, maxH: .34, label: K('아이스크림 냉동고 안', 'In the ice-cream freezer'), scale: .85 });
   f.spot('behind', null, W / 2 + .14, 0, -.05, { maxH: .5, label: K('냉동고 옆 틈', 'Beside the freezer'), scale: .8 });
 };
 
@@ -638,11 +647,12 @@ B.fz_crates = (f, T) => {
 B.fz_locker = (f, T) => {
   const W = .8, D = .45, Hh = 1.72, z0 = -.24, dw = W / 2 - .02;
   f.add(mc('fz-locker', ({ add }) => {
-    add(G.box(W, Hh, D, .02), SKYB, 0, Hh / 2, z0);
+    shell5(add, W, Hh, D, z0, SKYB);
     add(G.box(W + .02, .04, D + .02, .01), SKYBD, 0, Hh, z0); add(G.box(W + .02, .06, D + .02, .01), SKYBD, 0, .03, z0);
-    add(G.pbox(.02, Hh - .1, .01), SKYBD, 0, Hh / 2, z0 + D / 2 + .004);
-    // 안 (열면 보임): 선반 둘
-    for (const sx of [-1, 1]) { add(G.pbox(dw - .04, .02, D - .06), '#d6e6f2', sx * W / 4, .9, z0); add(G.pbox(dw - .04, .02, D - .06), '#d6e6f2', sx * W / 4, .14, z0); }
+    add(G.pbox(.02, Hh - .06, D - .03), SKYBD, 0, Hh / 2, z0 + .015);
+    // 안 (열면 보임): 칸마다 선반 하나, 속은 옅은 하늘색, 위 칸 옷걸이 봉
+    add(G.pbox(W - .07, Hh - .08, .01), '#e3eef7', 0, Hh / 2, z0 - D / 2 + .035);
+    for (const sx of [-1, 1]) { add(G.pbox(dw - .03, .02, D - .04), '#d6e6f2', sx * W / 4, .9, z0); add(G.pbox(dw - .03, .02, D - .04), '#d6e6f2', sx * W / 4, .14, z0); add(G.cyl(.01, .01, dw - .05, 6), CHROME, sx * W / 4, 1.55, z0 - .1, 0, 0, HP); }
     // 옆 고리 + 노란 고무 앞치마 + 장화
     add(G.cyl(.012, .012, .08, 6), STEELD, W / 2 + .03, 1.45, z0 + .05, 0, 0, HP);
     add(G.box(.03, .7, .34, .04), '#f5c84c', W / 2 + .05, 1.08, z0 + .05); add(G.tor(.1, .008, PI, 3, 10), '#d9a83a', W / 2 + .05, 1.45, z0 + .05, 0, HP, 0);
@@ -661,8 +671,8 @@ B.fz_locker = (f, T) => {
     { const m = mesh(new THREE.PlaneGeometry(.15, .055), mat('#ffffff', { map: sign(96, 36, '#ffffff', [[nm, .55, 20, INK]], { round: 4 }), rough: .9, rim: .1 }), { cast: false }); put(m, -side * dw / 2, 1.38, .0205); pv.add(m); }
     const p = f.part('door', pv, (t, b) => { pv.rotation.y = b.r.y + side * 1.75 * t; }, { label: K(`${nm} 사물함`, `${en} locker`), sfx: 'door_metal', dur: .4 });
     p.lockable = true; p.lockAt = { x: -side * (dw - .07), y: 1.0, z: .05, parent: pv };
-    f.spot('inside', null, side * W / 4, .92, z0, { part: p, maxH: .5, label: K(`${nm} 사물함 위 칸`, `${en} locker, top`), scale: .85 });
-    if (side < 0) f.spot('inside', null, side * W / 4, .16, z0, { part: p, maxH: .6, label: K(`${nm} 사물함 아래 칸`, `${en} locker, bottom`), scale: .9 });
+    f.spot('inside', null, side * W / 4, .92, z0 + .13, { part: p, maxH: .5, label: K(`${nm} 사물함 위 칸`, `${en} locker, top`), scale: .85 });
+    if (side < 0) f.spot('inside', null, side * W / 4, .16, z0 + .13, { part: p, maxH: .6, label: K(`${nm} 사물함 아래 칸`, `${en} locker, bottom`), scale: .9 });
     return p;
   };
   mk(-1, '파르페', 'Parfait'); mk(1, '알바', 'Staff');
@@ -674,20 +684,20 @@ B.fz_locker = (f, T) => {
 B.fz_supplycab = (f, T) => {
   const W = .84, D = .44, Hh = 1.06, z0 = -.25;
   f.add(mc('fz-supplycab', ({ add }) => {
-    add(G.box(W, Hh, D, .02), '#f6f8f8', 0, Hh / 2, z0); add(G.box(W + .02, .04, D + .02, .01), WOOD, 0, Hh + .02, z0); add(G.box(W - .04, .06, D - .02, .01), STEELD, 0, .03, z0);
-    add(G.pbox(W - .08, .02, D - .06), '#e3e9e9', 0, .55, z0);
-    for (let k = 0; k < 3; k++) { add(G.cyl(.05, .04, .3, 12), '#ffffff', -.25 + k * .13, .71, z0 - .02); add(G.cyl(.052, .052, .02, 12), '#a8733f', -.25 + k * .13, .87, z0 - .02); }
-    for (let k = 0; k < 2; k++) add(G.box(.3, .2, .24, .02), KRAFT, .18, .17 + k * .2, z0, 0, k * .1, 0);
-    add(G.box(.2, .12, .2, .02), '#ffffff', -.15, Hh + .1, z0); add(G.box(.12, .1, .12, .02), '#e8b47c', .18, Hh + .09, z0);
+    shell5(add, W, Hh, D, z0, '#f6f8f8', .03, .06); add(G.box(W + .02, .04, D + .02, .01), WOOD, 0, Hh + .08, z0); add(G.box(W - .04, .06, D - .02, .01), STEELD, 0, .03, z0);
+    add(G.pbox(W - .06, .02, D - .04), '#e3e9e9', 0, .58, z0);
+    for (let k = 0; k < 2; k++) { add(G.cyl(.05, .04, .3, 12), '#ffffff', .12 + k * .14, .75, z0 - .06); add(G.cyl(.052, .052, .02, 12), '#a8733f', .12 + k * .14, .91, z0 - .06); }
+    for (let k = 0; k < 2; k++) add(G.box(.26, .18, .22, .02), KRAFT, .2, .18 + k * .19, z0 - .05, 0, k * .1, 0);
+    add(G.box(.2, .12, .2, .02), '#ffffff', -.15, Hh + .16, z0); add(G.box(.12, .1, .12, .02), '#e8b47c', .2, Hh + .15, z0);
   }));
   const pv = grp(); put(pv, -W / 2 + .01, 0, z0 + D / 2 + .01); f.add(pv);
   pv.add(mc('fz-supplycab-door', ({ add }) => { add(G.box(W - .04, Hh - .1, .025, .01), '#fbfcfc', W / 2 - .01, Hh / 2 + .02, 0); add(G.pbox(.012, Hh - .14, .01), '#dfe6e6', W / 2 - .01, Hh / 2 + .02, .014); add(G.box(.025, .16, .03, .01), CHROME, W - .1, .62, .025); }));
   { const m = mesh(new THREE.PlaneGeometry(.22, .09), mat('#ffffff', { map: sign(96, 40, '#ffffff', [['컵', .55, 24, '#a8733f']], { round: 4 }), rough: .9, rim: .1 }), { cast: false }); put(m, W / 2 - .01, .88, .0145); pv.add(m); }
   const p = f.part('door', pv, (t, b) => { pv.rotation.y = b.r.y - 1.7 * t; }, { label: K('계단 밑 비품장', 'Supply cupboard'), sfx: 'open', dur: .4 });
   p.lockable = true; f.lockAt = { x: W / 2 - .1, y: .62, z: z0 + D / 2 + .06 }; p.lockAt = { x: W - .1, y: .62, z: .05, parent: pv };
-  f.spot('inside', null, -.18, .57, z0, { part: p, maxH: .42, label: K('비품장 위 칸', 'Cupboard, top shelf'), scale: .85 });
-  f.spot('inside', null, -.2, .07, z0 + .04, { part: p, maxH: .42, label: K('비품장 아래 칸', 'Cupboard, bottom'), scale: .85 });
-  f.spot('on', null, .02, Hh + .04, z0, { maxH: .4, label: K('비품장 위', 'On the cupboard'), scale: .8 });
+  f.spot('inside', null, -.18, .6, z0 + .08, { part: p, maxH: .42, label: K('비품장 위 칸', 'Cupboard, top shelf'), scale: .85 });
+  f.spot('inside', null, -.2, .1, z0 + .08, { part: p, maxH: .42, label: K('비품장 아래 칸', 'Cupboard, bottom'), scale: .85 });
+  f.spot('on', null, .02, Hh + .1, z0, { maxH: .4, label: K('비품장 위', 'On the cupboard'), scale: .8 });
 };
 
 // ── 계단 (카페 1층 → 지하, 방 좌표에 그대로): 나무 디딤판·노란 미끄럼 방지, 강철 옆판, 서쪽 손잡이; 밑엔 비품장(따로)·컵 상자

@@ -121,6 +121,34 @@ PLANS.dryer = (room, spec, story, planStage, dd) => {
   plan.showcase = { kind: 'dryer', dd, ch };
   return plan;
 };
+// 39판 카페 지하 냉동 창고 (스토리 룸·② 10/23 — 빨래방 건조기 대신, 사용자 "33판 뒤 골목·같은 맵 정리"): colour card → colour lock →
+// key → padlock → the freezer door's handle → on the door it turns by itself, the door swings open in a cold puff → 파르페 in
+// a big block of ice → the heater blows warm air → the ice melts away. Two things to do (the handle, the heater), one rule
+PLANS.freezer = (room, spec, story, planStage, door) => {
+  // (⑨ cafefreezer 10/23: the ice may sit in the freezer or in a basket that comes down; the heater is any piece with warm air)
+  const f = door.furn, ice = room.parts.find(p => p !== door && p.spots.length && (p.furn.ice || p.furn.setMelt)), heat = room.parts.find(p => (p.furn.warmAt || p.furn.setHeat) && p.furn !== ice?.furn);
+  if (!ice || !heat || !f.handleAt) return null;
+  ice.lockable = heat.lockable = false;
+  const keep = ice.spots.map(x => [x, x.reserved]); for (const x of ice.spots) x.reserved = true;
+  let plan;
+  try { plan = planStage(room, { ...spec, lock: ['pad', 'color'], n: 4, sock: false, avoid: blindFor(spec.room) }, story); } finally { for (const [x, r] of keep) x.reserved = r; }
+  if (!toolBehindPad(plan, room, spec, 'fzhandle', door)) return null;
+  nest(plan, 'pad', 'color');
+  const dl = { part: door, kind: 'gadget', code: 'fzhandle' }, il = { part: ice, kind: 'gadget', code: 'fzwarm' };
+  plan.locks.push(dl, il);
+  door.needMsg = K('냉동 창고 문 핸들이 빠져 있어… 어딘가 있을 텐데.', "The freezer door handle's missing… it has to be around here somewhere.");
+  door.needItem = 'fzhandle';
+  // the ice: no tool to find — the way is the door first, then the heater (hints follow clueVia: RUN.freezer moves it), and a tap
+  // on it gets the hint, not a '?' tool
+  ice.needMsg = K('꽁꽁 얼었어! 온풍기 바람이면 녹을 것 같아', 'Frozen solid! Warm air from the heater should melt it');
+  Object.assign(ice, { device: 'melt', noPill: true, clueVia: door, coldSay: K('…추, 추워… 녹여 줘…', '…S-so cold… melt me out…') });
+  heat.afterOpen = S => RUN.warm(S, heat, door, ice);
+  plan.placements.push({ type: 'friendtoken', spot: ice.spots[0], role: 'target' });
+  plan.targets.unshift('friendtoken');
+  plan.incident = { part: ice, lock: il };
+  plan.showcase = { kind: 'freezer', door, ice, heat };
+  return plan;
+};
 // 30판 마당 2층집 '장독대 도르래': colour card → colour lock (the gate's milk box, say) → key → padlock (mailbox 102…) →
 // the 도르래 handle → the pulley hoists the 누름돌 off the big jar → the lid pops → 시바
 PLANS.pulley = (room, spec, story, planStage, big) => {
@@ -286,6 +314,87 @@ RUN.dryer = async (S, part) => {
   W.fx.burst(sd.x, sd.y, { n: 16, shape: 'rect', colors: ['#9fd3b0', '#ffc23d', '#8fd3f4', '#ffffff', '#ffb3cf'], speed: 240, up: 140, size: 14, life: .8 });
   await S.togglePart(part, true);
 };
+// 39판: the handle on the freezer door turns by itself, the door swings open and the cold falls out — 파르페 in the ice
+RUN.freezer = async (S, part) => {
+  const G = S.G, W = G.world, tw = S.tw, f = part.furn, ice = S.plan.showcase?.ice;
+  S.cine = true;
+  const at = f.group.localToWorld(f.handleAt.clone()), zoom = Math.max(W.zoom, 2.0);
+  await W.flyTo(tw, { yaw: clearYaw(S, [part.pivots[0]], at, zoom), target: at, zoom, dur: .55 });
+  if (S.dead) return;
+  const h = f.handle;
+  if (h) {
+    h.visible = true; G.audio.sfx('pop', 2); W.shadowDirty = true;
+    await tw.wait(.2);
+    const r0 = h.rotation.z; G.audio.sfx('ratchet');
+    await tw.run(.75, k => { h.rotation.z = r0 - k * Math.PI * 2; }, ease.inOutQuad);
+    G.audio.sfx('latch');
+  }
+  await S.togglePart(part, true);
+  if (S.dead) return;
+  const m = f.group.localToWorld((f.mistAt || f.handleAt).clone());
+  G.audio.sfx('whoosh');
+  for (let i = 0; i < 5; i++) setTimeout(() => {
+    if (S.dead) return;
+    const s = W.toScreen(m);
+    W.fx.burst(s.x + (i - 2) * 14, s.y, { n: 6, shape: 'circle', colors: ['#ffffff', '#e3f4ff', '#ffffff'], speed: 70, up: -10, gravity: 120, size: 16, life: 1.0 });
+  }, i * 110);
+  await tw.wait(.6);
+  // the basket on the pulley comes down out of the cold, the block of ice in it (⑨ fz_basketpulley)
+  const bf = ice?.furn, bk = bf?.basket;
+  if (bk && bf.basketUp && bf.basketDown) {
+    const bat = bf.group.localToWorld(bf.basketDown.clone());
+    await W.flyTo(tw, { target: bat, zoom, dur: .4 });
+    G.audio.sfx('ratchet');
+    await tw.run(1.4, k => { if (bf.setBasket) bf.setBasket(k); else bk.position.lerpVectors(bf.basketUp, bf.basketDown, k); W.shadowDirty = true; }, ease.inOutQuad);   // (setBasket: the rope and the wheel too)
+    G.audio.sfx('land');
+  }
+  S.cine = false;
+  if (S.dead || !ice?.lock) return;
+  ice.clueVia = S.plan.showcase.heat;
+  for (const sp of ice.spots) if (sp.itemGroup && sp.item) sp.itemGroup.visible = true;   // (파르페 through the ice)
+  S.say({ root: { position: S.partCenter(ice) }, headTop: () => .25 }, ice.coldSay, 1600);
+  G.ui.toast(ice.needMsg, '');
+};
+// the heater: warm air (and a word if there's nothing frozen to blow at yet), then it settles back to be pressed again
+RUN.warm = async (S, heat, door, ice) => {
+  const G = S.G, W = G.world, tw = S.tw, hf = heat.furn, p = hf.warmAt ? hf.group.localToWorld(hf.warmAt.clone()) : S.partCenter(heat);
+  for (let i = 0; i < 4; i++) setTimeout(() => {
+    if (S.dead) return;
+    const s = W.toScreen(p);
+    W.fx.burst(s.x, s.y, { n: 4, shape: 'circle', colors: ['#ffb36b', '#ffd9a8', '#fff1dc'], speed: 90, up: 30, gravity: -30, size: 10, life: .7 });
+  }, i * 140);
+  G.audio.sfx('whoosh');
+  hf.setHeat?.(1);
+  const back = () => tw.run(.35, k => { heat.setOpen(1 - k); hf.setHeat?.(1 - k); W.shadowDirty = true; }, ease.outCubic);
+  if (door.t < .5 || !ice.lock) { await tw.wait(.6); S.say({ root: { position: p }, headTop: () => .2 }, K('따뜻한 바람이 솔솔… 여긴 안 얼었는데?', 'A warm breeze… nothing frozen here, though?'), 1300); return back(); }
+  S.gadgets.add(ice.lock.code);
+  await S.useGadget(ice);
+  if (!S.dead) back();
+};
+// the ice block melts down — drips and a puddle's worth of bubbles — and the part opens on 파르페
+RUN.melt = async (S, part) => {
+  const G = S.G, W = G.world, tw = S.tw, f = part.furn, ice = f.setMelt ? null : f.ice;
+  S.cine = true;
+  const at = S.partCenter(part), zoom = Math.max(W.zoom, 2.0);
+  await W.flyTo(tw, { target: at, zoom, dur: .45 });
+  if (S.dead) return;
+  if (ice) {
+    const s0 = ice.scale.clone(); let last = 0;
+    G.audio.sfx('blub');
+    await tw.run(1.6, k => {
+      ice.scale.set(s0.x * (1 - k * .85), s0.y * (1 - k), s0.z * (1 - k * .85));
+      if (k - last > .15) { last = k; const s = W.toScreen(at); W.fx.burst(s.x, s.y + 20, { n: 3, shape: 'circle', colors: ['#bfe6ff', '#ffffff'], speed: 30, up: 0, gravity: 260, size: 8, life: .5 }); G.audio.sfx('tick'); }
+    }, ease.linear);
+    ice.visible = false; ice.scale.copy(s0); W.shadowDirty = true;
+  } else if (f.setMelt) {   // (⑨ cafefreezer: the ice part's own opening runs f.setMelt — just the drips here, while it plays)
+    G.audio.sfx('blub');
+    for (let i = 0; i < 8; i++) setTimeout(() => { if (S.dead) return; const s = W.toScreen(at); W.fx.burst(s.x, s.y + 20, { n: 3, shape: 'circle', colors: ['#bfe6ff', '#ffffff'], speed: 30, up: 0, gravity: 260, size: 8, life: .5 }); G.audio.sfx('tick'); }, 250 + i * 260);
+  }
+  G.audio.sfx('unlock');
+  S.cine = false;
+  if (S.dead) return;
+  await S.togglePart(part, true);
+};
 // 30판: the handle on the crank, the pulley hoists the 누름돌, the lid jiggles and pops
 RUN.pulley = async (S, part) => {
   const G = S.G, W = G.world, tw = S.tw, f = part.furn;
@@ -409,6 +518,19 @@ const TELL = {
     S.say({ root: { position: f.group.localToWorld(f.jarAt.clone()) }, headTop: () => .1 }, line, 1300);
     return true;
   },
+  // the freezer: white cold seeps from the door's gap, the door shivers — "덜덜…" (스토리 룸 10/23)
+  freezer(S, dev, line) {
+    const f = dev.furn, W = S.G.world, pv = dev.pivots[0], r0 = pv.rotation.y, p = f.group.localToWorld((f.mistAt || f.handleAt).clone());
+    S.tw.run(.45, k => { pv.rotation.y = r0 + Math.sin(k * Math.PI * 8) * .02 * (1 - k); }, ease.linear).then(() => { pv.rotation.y = r0; });
+    for (let i = 0; i < 3; i++) setTimeout(() => {
+      if (S.dead) return;
+      const s = W.toScreen(p);
+      W.fx.burst(s.x + (i - 1) * 10, s.y, { n: 3, shape: 'circle', colors: ['#ffffff', '#e3f4ff'], speed: 20, up: 0, gravity: 90, size: 11, life: .8 });
+    }, i * 220);
+    S.G.audio.sfx('wobble');
+    S.say({ root: { position: p }, headTop: () => .2 }, K('덜덜…', 'Brrr…'), 1300);
+    return true;
+  },
   dryer(S, dev, line) {
     const f = dev.furn, W = S.G.world, p = f.group.localToWorld(new THREE.Vector3(0, .05 + .9 + .16, .3)), pv = dev.pivots[0], r0 = pv.rotation.y;
     S.tw.run(.4, k => { pv.rotation.y = r0 - Math.sin(k * Math.PI * 4) * .04 * (1 - k); }, ease.linear).then(() => { pv.rotation.y = r0; });
@@ -446,6 +568,7 @@ export const DEVICE_FOUND = {
   sluicehandle: K('수문 손잡이다! 연못 수문 바퀴에 끼워 보자', 'The sluice handle! Fit it on the pond gate wheel'),
   bill1000: K('천 원짜리 지폐다! 동전 교환기에 넣어 보자', 'A 1000-won bill! Try the coin changer'),
   coin500: K('500원 동전! 건조기에 넣어 보자', 'A 500-won coin! Put it in the dryer'),
+  fzhandle: K('냉동 창고 핸들이다! 문에 끼워 보자', "The freezer handle! Let's fit it on the door"),
   pulleyhandle: K('도르래 손잡이다! 장독대 도르래에 끼워 보자', 'The pulley handle! Fit it on the pulley over the jars'),
   lightstick: K('응원봉이다! 무대 조종판에 꽂아 보자', 'A light-stick! Put it in the stage console'),
   matches: K('성냥이다! 다락 밑 별 랜턴에 불을 켜 보자', 'Matches! Light the star lantern under the attic hatch'),

@@ -11,6 +11,7 @@ import { ITEMS } from './gfx/items.js';
 import { grp, put, cyl, sph, rbox, tor } from './gfx/kit.js';
 import { rng } from './util.js';
 import { CHAINS_A, ON_A } from './gpt-chains-a.js';   // (18~28판 줄 — ② 10/22; GPT 맵 스위치가 켜졌을 때만)
+import { CHAINS_B, CHAINS_ON_B } from './gpt-chains-b.js';   // (공원·캠프 새 맵 45·49·55·56·58판 — ②b 10/23)
 import { UM_CHAIN } from './undermall-map.js';
 import { registerFurniture } from './gfx/furniture.js';
 import { GPT_WIDE_DEVICE_BUILDERS, GPT_WIDE_DEVICE_INFO } from './gfx/gpt-wide-devices.js';
@@ -110,7 +111,9 @@ export const CHAINS = {
   // "놀이터 얼굴은 두고 빈 구석에 작게"). 판 비밀번호 자물쇠 뒤 대회 구슬 → 구슬 길 어디든 터치 → 홈통을 지그재그로 데굴 → 종 땡 →
   // 종 아래 받침의 물건 (장화가 까꿍)
   playground: {
-    layout: { add: [{ type: 'gptwidemarblerun', i: 3, j: 1 }] },
+    // (아트 점검 ⑪ 10/23 '레일이 자전거 보관대 지붕·그네 틀을 뚫고 지나감' — 실제로 겹치진 않고 1.55 m 길이 둘 사이에 서서 그렇게 보임:
+    // ② 78%로 줄여 보관대 지붕선 아래로. 미끄럼틀·그네 자리는 그대로)
+    layout: { add: [{ type: 'gptwidemarblerun', i: 3, j: 1, opts: { scale: .78 } }] },
     steps: [{ dev: 'gptwidemarblerun#0:0', tool: 'chainmarble', behind: ['code', 'pad', 'color'], dur: 2.6, body: true,
       sfx: [[.05, 'clink'], [.26, 'land'], [.45, 'clink'], [.62, 'clink'], [.89, 'doorBell']],
       need: K('구슬 길 꼭대기가 비어 있어! 대회 구슬이 어디 있지?', 'The top of the marble run is empty! Where is the contest marble?'),
@@ -252,13 +255,14 @@ export const CHAINS = {
   },
 };
 CHAINS.gptplaybig_open = CHAINS.gptplaybig; CHAINS.gptatrium_open = CHAINS.gptatrium; CHAINS.gptcampfire_open = CHAINS.gptcampfire;
-Object.assign(CHAINS, CHAINS_A);
+Object.assign(CHAINS, CHAINS_A, CHAINS_B);
 // (40판 지하상가 undermall: 맵이 그 키일 때만 — 정본 판 shopmap엔 안 붙음)
 CHAINS.undermall = UM_CHAIN; ON_A.push('undermall');
 // 정본에 켠 판 → 표의 줄 (10/22 저녁 사용자 비교 시트: GPT 맵은 44판만, 43·46·66판은 원본 맵에 GPT 장치를 옮겨 붙임 —
 // _handoff/gpt-compare-picks-1022.md). 판 번호(1부터)에 붙어서, 같은 맵을 쓰는 다른 판(45판 놀이터 밤 …)은 그대로.
 // (?chains=all: 맵 키로 표의 모든 줄 — ②b 측정용)
 export const CHAINS_ON = { 36: 'stationery', 43: 'playground', 44: 'gptplayhamster', 46: 'playgroundwide', 54: 'cabin', 57: 'campwide', 66: 'lobbymap', 67: 'officefloor' };   // (43·57 off until redone — hub art check 10/22: 43 lost its slide to a big cream marble run, 57 a mint-yellow canopy + panda mid-camp)
+Object.assign(CHAINS_ON, CHAINS_ON_B);
 const ALL = typeof location !== 'undefined' && /[?&]chains=all(&|$)/.test(location.search);
 const recipeFor = spec => {
   const k = CHAINS_ON[spec.idx + 1], R = (k && (CHAINS[k].map || k) === spec.room ? CHAINS[k] : null) || (ALL || ON_A.includes(spec.room) ? CHAINS[spec.room] : null); if (!R) return null;
@@ -352,8 +356,8 @@ export function chainPlan(S, plan, cp) {
   }
   // 단서 보여 주기: 스위치를 켜면 판 비밀번호가 그 자리에 비친다(36판 가로등 → 셔터 그림자) — 쪽지 대신
   if (R.clue) {
-    const C = findPart(room, R.clue.dev), L = plan.locks.find(l => l.kind === 'code' && l.part.furn.type === R.clue.lock);
-    if (C && L) {
+    const C = findPart(room, R.clue.dev), L = plan.locks.find(l => l.kind === 'code' && l.part.furn.type === R.clue.lock) || (R.clue.any ? plan.locks.find(l => l.kind === 'code') : null);   // (any: the shown number opens whichever piece the code lock went on)
+    if (C && L && (!R.clue.shadow || C.furn.gptShadow)) {   // (shadow: the map must be able to show the number — else the note stays)
       plan.placements = plan.placements.filter(p => !(p.role === 'note' && p.forPart === L.part));
       if (R.clue.code) L.code = R.clue.code;   // (a code painted on the map: 65판 건너편 시계 3:15)
       else { const n = +L.code || 0; L.code = `${1 + n % 9}${String(5 * (Math.floor(n / 9) % 12)).padStart(2, '0')}`; }   // (a time, read at a glance: 9:35, never 1:70)

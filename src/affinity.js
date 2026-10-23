@@ -51,6 +51,10 @@ const PLACE = {
   ],
 };
 let place = null;
+// (3판 ⑩ 안 fishing3r·fishisle: 원래 3판 자리표 그대로)
+PLACE.fishing3r = PLACE.fishisle = PLACE.fishing;
+// (3판 세 안 A fishing3 · B fishing2b · C frogpond — stage3-maps.js: 같은 조각 종류라 원래 3판 자리표 그대로)
+PLACE.fishing3 = PLACE.fishing2b = PLACE.frogpond = PLACE.fishing;
 export const setPlace = room => { place = PLACE[room] || null; };
 // (the places the story room picked for a thing come first — planStage take)
 export const placeLike = (type, spot) => { if (!ON || !place || !spot || isCold(type)) return false; for (const [re, at, v] of place) if (re.test(type) && at(spot)) return v === 'like'; return false; };

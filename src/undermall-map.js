@@ -13,13 +13,18 @@ const PI = Math.PI;
 
 export function installUndermall(MAPS, THEMES) {
   registerFurniture(UM_BUILDERS, UM_INFO);
-  // (큰 면은 순하게: 크림·연민트 바둑판 타일 바닥, 크림 벽; 빛과 하늘은 상가 거리 shopmap의 것 — look.js lookRecipe가 별칭으로)
-  THEMES.undermall = { ...(THEMES.konbini || THEMES.my), name: K('지하상가', 'Underground Mall'), floorKind: 'checker', floor: '#efe6d6', floor2: '#dde7e2',
-    wallKind: 'plain', wall: '#f3ece0', wall2: '#e9dfcf', base: '#d9d2c6', accent: '#8aa0c8', accent2: '#ef8a7e', accent3: '#f2b544' };
+  // (큰 면은 순하게: 회백·연민트 바둑판 타일 바닥, 회백 벽 — 10/24 허브 '누렇지 않게', 기준 30판 낮빛; 빛과 하늘은 상가 거리 shopmap의 것 — look.js lookRecipe가 별칭으로)
+  // (② 10/23: 등록 때는 편의점 테마가 아직 없어 친구 없는 THEMES.my로 굳었음 — 편의점 테마가 생긴 뒤 첫 값으로 박아 두고, 대입도 받음)
+  const OWN = { name: K('지하상가', 'Underground Mall'), floorKind: 'checker', floor: '#f1f4f2', floor2: '#d9ebe6',
+    wallKind: 'plain', wall: '#f2f5f4', wall2: '#e3e9e8', base: '#d5d9d8', accent: '#8aa0c8', accent2: '#ef8a7e', accent3: '#f2b544' };
+  let made = null;
+  Object.defineProperty(THEMES, 'undermall', { configurable: true, enumerable: true,
+    get() { if (made) return made; const b = THEMES.konbini, t = { ...(b || THEMES.my), ...OWN }; if (b) made = t; return t; },
+    set(v) { made = v; } });
   const F = (type, x, z, a = 0, opts) => ({ type, x, z, a, ...(opts ? { opts } : {}) });
   MAPS.undermall = () => {
     const T = THEMES.undermall;
-    return { theme: T, friendAt: [.35, .65], nBonus: 3, fitAll: true, fitW: 14.0, homeShift: [-.2, -.42], bleed: false, rooms: [{ at: [0, 0], layout: {
+    return { theme: T, friendAt: [.35, .65], nBonus: 3, fitAll: true, fitW: 14.0, homeShift: [-1.5, -1.72], bleed: false, rooms: [{ at: [0, 0], layout: {
       w: 8, d: 6, theme: T, bleed: false, slab: 'none', walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
       furniture: [
         F('um_hall', 0, 0),
@@ -31,8 +36,8 @@ export function installUndermall(MAPS, THEMES) {
         F('um_office', 2.8, -1.5),
         F('um_safe', 3.3, -2.5),
         F('um_escalator', -3.45, -1.95),
-        F('um_lockers', -3.75, .98, PI / 2),
-        F('um_revolvingdoor', -3.27, 2.3),
+        F('um_lockers', -3.75, 2.4, PI / 2),
+        F('um_revolvingdoor', -3.27, 1.15),
         F('um_mapboard', 3.3, 2.3, .6),
       ],
       decor: [],

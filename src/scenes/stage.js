@@ -668,7 +668,7 @@ export class StageScene {
       if (it.hang) return this.tapHung(it);   // (out of reach: no find, no 톡 spent)
       // the hidden friend is only ever found by its door opening (revealFriend): a tap on it while the door is still swinging
       // used to go to onFound and the stage could never end (level report 10/18 B1, stage 20)
-      if (it.friend) { const pt = it.spot?.part; if (!pt || (!pt.busy && pt.t > .5)) this.revealFriend(it); return; }
+      if (it.friend) { const pt = it.spot?.part; if (pt?.noPill && pt.lock) return this.useGadget(pt); if (!pt || (!pt.busy && pt.t > .5)) this.revealFriend(it); return; }
       if (it.cameo) return cameoFound(this, it);
       if (it.obs) return obsLook(this, it);   // R4: a big look at the clock / the vases
       if (it.role === 'target') return this.onFound(it);
@@ -1809,6 +1809,7 @@ export class StageScene {
     if (!this.gadgets.has(L.code)) {
       G.audio.sfx('locked'); this.wobble(part.furn.group);
       G.ui.toast(part.needMsg || (L.code === 'vacremote' ? '로봇청소기가 쿨쿨 자고 있어… 리모컨이 있으면 깨울 수 있을 텐데' : '손잡이가 빠져 있어! 건조대를 내릴 손잡이를 찾아봐'), 'red');
+      if (part.noPill) { if (part.coldSay && this.friendHidden) this.say({ root: { position: this.partCenter(part) }, headTop: () => .25 }, part.coldSay, 1400); return; }   // (39판 ice: the heater is the way, not a tool — ② 10/23)
       const P = this.toolPill; P.style.display = ''; P.classList.add('need'); P.querySelector('.v').textContent = '?'; P.querySelector('img').src = G.thumbs['item_' + (part.needItem || (L.code === 'vacremote' ? 'vacremote' : 'crank'))];
       return;
     }

@@ -416,6 +416,8 @@ async function pileWow(S) {
 }
 // the box seen from above its front-right corner; the lid sits on the body's top (its transform moves it from there)
 const KB3_VIEW = 'rotateX(-28deg) rotateY(-34deg)', KB3_LID = 'translate3d(0,0,0)', KB3_PEEK = 'translate3d(0,-46px,0) rotateX(10deg)';
+// 13판's truck turned a little more to its nose (10/23, user: "13판 트럭 앞부분이 어색함"), so its face reads as a face
+const TRUCK_VIEW = 'rotateX(-28deg) rotateY(-40deg)';
 // the comic panel's zigzag bolts round the edges, pointing in (like the user's green zoom-burst reference)
 const BOLTS_SVG = '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="currentColor"><path d="M0 14 L30 30 L22 31 L44 44 L19 37 L26 35 L0 24 Z"/><path d="M100 10 L72 28 L80 29 L56 43 L82 35 L75 33 L100 20 Z"/><path d="M0 70 L28 62 L24 67 L44 56 L20 74 L24 70 L0 80 Z"/><path d="M100 66 L74 60 L78 65 L56 56 L80 72 L76 69 L100 77 Z"/><path d="M38 100 L44 78 L40 80 L49 62 L46 82 L50 80 L46 100 Z"/><path d="M58 0 L54 20 L58 18 L50 36 L52 16 L48 18 L50 0 Z"/></g></svg>';
 // ── the box (before the hunt), every kit stage. 10/20, the user on the phone (8판, "모든 조립판에 같게"): "상자 등장 → '콕
@@ -699,8 +701,9 @@ async function truckIntro(S) {
       F('ifloor'), F('iback'), F('ileft'), F('back'), F('left'), F('bottom'), F('right'),
       F('front', h('i', { class: 'kb3-post' }), h('i', { class: 'kb3-tail' }), count, h('i', { class: 'kb3-arch ab' }), h('i', { class: 'kb3-flap' }), h('i', { class: 'kb3-wheel a' }), h('i', { class: 'kb3-wheel b' })),
       h('div', { class: 'kb3-cab' },
-        F('cfront', h('i', { class: 'kb3-door' }), h('i', { class: 'kb3-cwin' }), h('i', { class: 'kb3-handle' }), h('i', { class: 'kb3-mirror' }), h('i', { class: 'kb3-arch c' }), h('i', { class: 'kb3-wheel c' })),
-        F('cright', h('i', { class: 'kb3-shield' }), h('i', { class: 'kb3-grille' }), h('i', { class: 'kb3-lamp l' }), h('i', { class: 'kb3-lamp r' }), h('i', { class: 'kb3-bumper' }, h('i', { class: 'kb3-plate' }))), F('ctop')),
+        F('cfront', h('i', { class: 'kb3-door' }), h('i', { class: 'kb3-cwin' }), h('i', { class: 'kb3-handle' }), h('i', { class: 'kb3-mirror' }), h('i', { class: 'kb3-arch c' }), h('i', { class: 'kb3-wheel c' }), h('i', { class: 'kb3-bwrap' })),
+        F('cright', h('i', { class: 'kb3-shield' }), h('i', { class: 'kb3-grille' }), h('i', { class: 'kb3-lamp l' }), h('i', { class: 'kb3-lamp r' }), h('i', { class: 'kb3-bumper' }, h('i', { class: 'kb3-plate' }))),
+        F('ctop'), F('cbev a'), F('cbev b'), F('cbev c')),
       h('div', { class: 'kb3-lid' }, F('lback'), F('lleft'), F('lright'), F('lfront', h('b', { class: 'kb3-name' }, K.name)), F('ltop', h('i', { class: 'kb3-ltape' })))));
   const lay = h('div', { class: 'kitintro comic', style: 'opacity:0;' + burstVars(K.id) },
     h('div', { class: 'kitintro-bg' }), h('div', { class: 'kitintro-rays' }), h('div', { class: 'kitintro-dots' }), h('div', { class: 'kitintro-bolts', html: BOLTS_SVG }), box);
@@ -708,7 +711,7 @@ async function truckIntro(S) {
   const covered = !!S.kitCover;
   if (covered) { lay.style.opacity = '1'; lay.style.animation = 'none'; const cv = S.kitCover; S.kitCover = null; requestAnimationFrame(() => requestAnimationFrame(() => cv.remove())); }
   const lid = box.querySelector('.kb3-lid'), glowEl = box.querySelector('.kb3-glow'), cube = box.querySelector('.kb3-cube'), front = box.querySelector('.kb3-front');
-  cube.style.transform = KB3_VIEW; lid.style.transform = KB3_LID;
+  cube.style.transform = TRUCK_VIEW; lid.style.transform = KB3_LID;
   // (10/23, user: "트럭 화면 가운데 정렬"): the cab hangs off the cargo's end, so the truck as drawn is centred, not its cargo —
   // measured once the panel is up (its rects are nothing while the HUD is still hidden), before it rolls in
   const centre = () => { const bb = box.getBoundingClientRect(); let l = 1e9, r = -1e9;
@@ -778,7 +781,7 @@ async function truckIntro(S) {
     { const r = front.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.bottom - 6, { n: 14, shape: 'circle', colors: ['#ffffff', '#f3e6d6', '#e9d6c0'], speed: 200, up: 20, gravity: 300, size: 10, life: .5 }); }
     if (S.dead) throw 0;
     phase = 'prompt';
-    beat = cube.animate([{ transform: KB3_VIEW }, { transform: KB3_VIEW + ' scale3d(1.05,1.05,1.05)', offset: .18 }, { transform: KB3_VIEW, offset: .36 }], { duration: 900, iterations: Infinity });
+    beat = cube.animate([{ transform: TRUCK_VIEW }, { transform: TRUCK_VIEW + ' scale3d(1.05,1.05,1.05)', offset: .18 }, { transform: TRUCK_VIEW, offset: .36 }], { duration: 900, iterations: Infinity });
     const lr = lay.getBoundingClientRect(), fr = box.getBoundingClientRect();
     kok = h('div', { class: 'kitkok ol truckcta', style: `left:${fr.left + fr.width / 2 - lr.left}px;top:${fr.top - lr.top - 18}px` }, '트럭을 터치!'); lay.append(kok);
     showHand();

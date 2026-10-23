@@ -1504,8 +1504,10 @@ const GROUND = {
     for (let i = 0; i < 26; i++) { const x = r() * S, y = r() * S; c.fillStyle = r.pick(['#ff9f43', '#ffd23f', '#e8704a']); c.beginPath(); c.ellipse(x, y, 4.5, 2.4, r() * 3, 0, PI * 2); c.fill(); }
   },
 };
+// (3판 세 안 10/24: 다른 파일이 땅 무늬를 더함 — gfx/s3-kit.js의 meadow)
+export const GROUND_MORE = {};
 export function groundTex(kind, T = {}) {
-  const draw = GROUND[kind] || GROUND.grass;
+  const draw = GROUND[kind] || GROUND_MORE[kind] || GROUND.grass;
   const t = liveTex(1024, 1024, (c, w) => draw(c, w, T), { text: kind === 'asphalt' });
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.userData.span = 5;

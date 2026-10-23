@@ -18,12 +18,12 @@ const sm = x => x * x * (3 - 2 * x);
 const dome = (r, ws = 14, hs = 5) => new THREE.SphereGeometry(r, ws, hs, 0, PI * 2, 0, HP);
 // 색: 큰 면은 순하게(크림·옅은 청록·연회색), 포인트는 작은 것에만
 const C = {
-  ink: '#4a3b52', cut: '#6d6577', cut2: '#585164', cream: '#fbf4e8', wall: '#f3ece0', wall2: '#e9dfcf', tile: '#d7e6e2', grout: '#f7f4ee',
-  soffit: '#f6f0e5', soffit2: '#e7ddcd', tube: '#fffdf2', steel: '#c9cfd8', steel2: '#a9b1bd', dark: '#3d3a52', rubber: '#3b3550',
-  conc: '#d9d2c6', conc2: '#c8c0b2', earth: '#b98f68', earth2: '#a27c5a', deep: '#8a6648', stone: '#cdc5ba', stone2: '#b9b0a3',
-  walk: '#e6ddd0', walk2: '#d4c9b9', grass: '#9fd27a', leaf: '#7cc46a', leaf2: '#5fae5a', trunk: '#9a6b45',
+  ink: '#4a3b52', cut: '#6d6577', cut2: '#585164', cream: '#f8f9f7', wall: '#f2f5f4', wall2: '#e3e9e8', tile: '#d7e6e2', grout: '#f6f8f7',
+  soffit: '#f3f6f5', soffit2: '#dfe6e6', tube: '#fbfdff', steel: '#c9cfd8', steel2: '#a9b1bd', dark: '#3d3a52', rubber: '#3b3550',
+  conc: '#d5d9d8', conc2: '#c3c9c9', earth: '#b98f68', earth2: '#a27c5a', deep: '#8a6648', stone: '#cfd1cd', stone2: '#b7bab6',
+  walk: '#e2e4e0', walk2: '#cdd1cc', grass: '#9fd27a', leaf: '#7cc46a', leaf2: '#5fae5a', trunk: '#9a6b45',
   coral: '#ef8a7e', mustard: '#f2b544', mint: '#8fd1bf', sky: '#8cc6e6', navy: '#5d74a8', lilac: '#b9a6e8', pink: '#f5a6bd', red: '#e8604c',
-  yellow: '#f7d354', wood: '#e3b37c', woodD: '#b8834f', glassC: '#cfe8ef', brass: '#e6b94e', white: '#fffdf8',
+  yellow: '#f7d354', wood: '#e3b37c', woodD: '#b8834f', glassC: '#cfe8ef', brass: '#e6b94e', white: '#fdfefc',
 };
 const B = {};
 const tex = texCache();
@@ -93,12 +93,18 @@ B.um_hall = f => {
   // (doors and drawers test what they open into by each piece's box: the hall's is only its floor slab, or nothing could open)
   f.collideBox = [X0, -1, Z0, X1, -.06, Z1];
   f.walkBoxes = [
-    [-2.86, 0, -1.72, -2.5, 2.7, -1.36],            // corner pillar
-    [-.98, 0, 2.18, .18, .9, 2.66],                 // bench
-    [1.7, 0, .38, 2.4, 1.0, .9],                    // mop cart + wet-floor sign
-    [3.25, 0, .3, 3.86, .6, .82],                   // lost-and-found box
-    [-2.62, 0, 1.58, -2.18, .9, 2.02],              // recycling bins
-    [X0 - .05, 0, Z1 - .02, X1 + .05, .4, Z1 + .2], [X1 - .02, 0, Z0, X1 + .2, .4, Z1 + .05],   // the cut rim
+    // (corner pillar)
+    [-2.86, 0, -1.72, -2.5, 2.7, -1.36],
+    // (bench)
+    [-.98, 0, 2.18, .18, .9, 2.66],
+    // (mop cart + wet-floor sign)
+    [1.7, 0, .38, 2.4, 1.0, .9],
+    // (lost-and-found box)
+    [3.25, 0, .3, 3.86, .6, .82],
+    // (recycling bins)
+    [-2.62, 0, 2.53, -2.18, .9, 2.97],
+    // (the cut rim)
+    [X0 - .05, 0, Z1 - .02, X1 + .05, .4, Z1 + .2], [X1 - .02, 0, Z0, X1 + .2, .4, Z1 + .05],
   ];
   f.add(mc('um-hall-base', ({ add, tube }) => {
     // ── the island: round-cornered tiers, each a little inset (concrete floor slab → earth with stones → deep earth)
@@ -135,9 +141,9 @@ B.um_hall = f => {
     // the escalator's way up (back-left, a lit opening) and the subway passage (front-left, a dark arch)
     add(G.box(1.12, 1.0, .03, .02), '#fff1c4', -3.45, 2.0, Z0 + .01);
     add(G.box(1.2, .06, .05, .01), C.steel2, -3.45, 2.52, Z0 + .02); for (const sx of [-1, 1]) add(G.box(.06, 1.02, .05, .01), C.steel2, -3.45 + sx * .58, 2.0, Z0 + .02);
-    add(G.box(.03, 2.05, 1.18, .02), C.dark, X0 + .012, 1.03, 2.3);
-    add(G.box(.035, .1, 1.3, .01), C.steel2, X0 + .02, 2.1, 2.3); for (const sz of [-1, 1]) add(G.box(.035, 2.1, .08, .01), C.steel2, X0 + .02, 1.05, 2.3 + sz * .63);
-    add(G.box(.02, .05, .9, .01), '#7fb8e8', X0 + .03, .35, 2.3);
+    add(G.box(.03, 2.05, 1.18, .02), C.dark, X0 + .012, 1.03, 1.15);
+    add(G.box(.035, .1, 1.3, .01), C.steel2, X0 + .02, 2.1, 1.15); for (const sz of [-1, 1]) add(G.box(.035, 2.1, .08, .01), C.steel2, X0 + .02, 1.05, 1.15 + sz * .63);
+    add(G.box(.02, .05, .9, .01), '#7fb8e8', X0 + .03, .35, 1.15);
     // ── the ground the mall is dug into, behind the back corner only (a wider one would widen the frame): earth columns from the
     // island's foot up to the street, their faces cut — the ceiling slab (dark band), earth with stones, a water main, the
     // sidewalk on top with a street tree, a lamp and the 출구 1 canopy. Past them the walls just end in a cut cap.
@@ -214,8 +220,10 @@ B.um_hall = f => {
     add(G.box(.37, .02, .25, .01), '#c94d43', kx, ky + .19, kz);
     for (let q = 0; q < 4; q++) add(G.pbox(.04, .07, .005), '#c94d43', kx - .12 + q * .08, ky + .11, kz + .152);
     for (const sz of [-1, 1]) tube([kx - .14, ky + .2, kz + sz * .12], [kx, ky + .35, kz + sz * .02], .012, '#c94d43', 5), tube([kx, ky + .35, kz + sz * .02], [kx + .14, ky + .2, kz + sz * .12], .012, '#c94d43', 5);
-    add(G.box(.12, .14, .07, .02), C.white, kx - .06, ky + .27, kz - .04);   // a milk carton poking out
-    add(G.cyl(.035, .035, .2, 8), C.leaf2, kx + .1, ky + .3, kz + .03, .3, 0, -.3);   // a leek
+    // (a milk carton poking out)
+    add(G.box(.12, .14, .07, .02), C.white, kx - .06, ky + .27, kz - .04);
+    // (a leek)
+    add(G.cyl(.035, .035, .2, 8), C.leaf2, kx + .1, ky + .3, kz + .03, .3, 0, -.3);
     // ── mop cart and the yellow wet-floor sign by the office
     const mx = 2.05, mz = .62;
     add(G.box(.5, .08, .36, .02), C.dark, mx, .12, mz); for (const [dx, dz] of [[-.2, -.14], [.2, -.14], [-.2, .14], [.2, .14]]) add(G.sph(.04, 6, 4), C.rubber, mx + dx, .04, mz + dz);
@@ -235,7 +243,7 @@ B.um_hall = f => {
     add(G.cone(.1, .26, 8), C.navy, lx - .11, .34, lz - .04, .2, 0, .15);
     add(G.sph(.09, 10, 6), C.mint, lx + .12, .36, lz + .02, 0, 0, 0, [1, .55, 1]); add(G.box(.12, .02, .07, .01), C.mint, lx + .2, .34, lz + .1);
     // ── recycling bins (paper · cans · general) by the lockers
-    const rx = -2.4, rz = 1.8;
+    const rx = -2.4, rz = 2.75;
     for (let q = 0; q < 3; q++) {
       const x = rx, z = rz - .14 + q * .14;
       add(G.box(.36, .62, .13, .02), [C.sky, C.mustard, '#9aa3ad'][q], x, .31, z);
@@ -250,15 +258,15 @@ B.um_hall = f => {
     fitText(c, '↑ 출구 1', W / 2, H * .3, W * .86, H * .2, C.white, { weight: 'bold' }); fitText(c, '관리실 →', W / 2, H * .7, W * .86, H * .2, '#ffe7a3', { weight: 'bold' });
   }, -2.68 + .176, 1.32, -1.54, 0, HP, 0);
   label(f.group, 'exit1', .5, .18, signDraw('출구 1', '#3f8f5a', C.white, { size: .6 }), -3.45, 2.42, Z0 + .03);
-  label(f.group, 'subway', .9, .16, signDraw('지하철 연결', '#3f8f5a', C.white, { size: .6 }), X0 + .045, 2.26, 2.3, 0, HP, 0);
+  label(f.group, 'subway', .9, .16, signDraw('지하철 연결', '#3f8f5a', C.white, { size: .6 }), X0 + .045, 2.26, 1.15, 0, HP, 0);
   label(f.group, 'lostbox', .34, .12, signDraw('분실물', C.cream, C.ink, { size: .62, edge: '#c99e64' }), 3.55, .2, .55 + .225);
   label(f.group, 'wetfloor', .22, .2, signDraw('미끄럼 주의', C.yellow, C.dark, { size: .38, lines: 2 }), 1.8 + .01, .3, .8 + .075, .14, .5, 0);
   // street name plate on top (a little bus-stop sign at the street)
   // spots in the corridor: the basket, under the bench, behind the bins, beside the pillar, in the lost box, the mop bucket
-  f.spot('on', null, -.6, .5, 2.4, { label: '벤치 위 장바구니 안', maxH: 0.5, scale: 1.25 });
+  f.spot('on', null, -.6, .67, 2.45, { label: '벤치 위 장바구니 안', maxH: 0.5, scale: 1.25 });
   f.spot('on', null, .05, .475, 2.38, { label: '벤치 오른쪽 끝', maxH: 0.75, scale: 1.7 });
   f.spot('under', null, -.15, .01, 2.4, { label: '벤치 밑', maxH: 0.42, scale: 1.3 });
-  f.spot('behind', null, -2.42, .01, 2.14, { label: '분리수거함 옆', maxH: 0.75, scale: 1.6 });
+  f.spot('behind', null, -2.42, .01, 2.42, { label: '분리수거함 옆', maxH: 0.75, scale: 1.6 });
   f.spot('behind', null, -2.42, .01, -1.2, { label: '기둥 옆 소화기 뒤', maxH: 0.75, scale: 1.6 });
   f.spot('on', null, 3.62, .35, .58, { label: '분실물 상자 안', maxH: 0.6, scale: 1.4 });
   f.spot('behind', null, 2.32, .17, .72, { label: '대걸레 카트 옆', maxH: 0.6, scale: 1.4 });
@@ -277,7 +285,7 @@ const STALL = {
   flower: { name: '꽃 한 송이', acc: '#6fbf8e', back: '#e7f3e5', floor: '#ece4d4', floor2: '#ddd2bd', unit: 'B1-01' },
 };
 B.um_shopstall = (f, T, o = {}) => {
-  const v = STALL[o.variant] ? o.variant : 'clothes', S = STALL[v], W = o.W || 1.4, D = o.D || 1.45, H = SOF, zf = D / 2, PT = .06, PH = 1.15;
+  const v = STALL[o.variant] ? o.variant : 'clothes', S = STALL[v], W = o.W || 1.4, D = o.D || 1.45, H = SOF, zf = D / 2, PT = .06, PH = .62;
   const shut = !!S.shut;
   // body: partitions, back panel, floor inset, the sign band and the shutter housing
   f.add(mc('um-stall-body|' + v + '|' + W + '|' + D, ({ add }) => {
@@ -324,7 +332,7 @@ B.um_shopstall = (f, T, o = {}) => {
   else if (v === 'snack') snackStall(f, W, D);
   else if (v === 'keys') keysStall(f, W, D, p0);
   else flowerStall(f, W, D);
-  if (!shut) f.spot('on', null, -W / 2 + .3, .015, zf - .2, { label: S.name + ' 앞 바닥', maxH: .8, scale: 1.5 });
+  if (v !== 'snack' && !shut) f.spot('on', null, v === 'flower' ? -.12 : -W / 2 + .3, .015, zf - (v === 'flower' ? .12 : .2), { label: S.name + ' 앞 바닥', maxH: .8, scale: 1.5 });
 };
 const shade2 = hex => { const c = new THREE.Color(hex); const h = {}; c.getHSL(h); c.setHSL(h.h, h.s, Math.max(0, h.l - .06)); return '#' + c.getHexString(); };
 
@@ -382,6 +390,7 @@ function snackStall(f, W, D) {
     add(G.box(.4, 1.3, .02, .01), '#fff8e0', fx, .82, fz - .17);
     for (const y of [.42, .82, 1.2]) {
       add(G.pbox(.4, .015, .38), C.steel, fx, y - .02, fz);
+      if (y < .5) continue;
       for (let k = 0; k < 4; k++) add(G.cyl(.032, .032, .2, 8), [C.sky, C.leaf, C.coral, C.yellow][(k + y * 10 | 0) % 4], fx - .15 + k * .1, y + .1, fz - .05);
     }
     // shelf on the right: green melamine plates, sauce bottles, a big pot, ramen packs
@@ -413,7 +422,7 @@ function snackStall(f, W, D) {
     add(G.box(.03, .4, .05, .01), C.steel2, .45, .78, .04);
   }));
   const p1 = f.part('door', door, t => { door.rotation.y = -1.7 * t; }, { label: '분식집 음료 냉장고', sfx: 'open', dur: .35 });
-  f.spot('inside', null, fx, .45, fz, { part: p1, maxH: 0.34, label: '음료 냉장고 아래 칸', scale: 1.15 });
+  f.spot('on', null, fx, 1.6, fz - .02, { label: '음료 냉장고 위', maxH: .45, scale: 1.3 });
   f.spot('on', null, .4, .83, -D / 2 + .2, { label: '분식집 접시 옆 선반', maxH: 0.38, scale: 1.1 });
   f.spot('behind', null, .42, .47, -D / 2 + .22, { label: '밥솥 옆', maxH: 0.32, scale: 1.0 });
 }
@@ -438,17 +447,13 @@ function keysStall(f, W, D, p0) {
     add(G.cyl(.07, .07, .03, 12), C.sky, .18, 1.32, -.02, .4, 0, 0);
     // the stamp drawer chest (the drawer is part1) on the counter's right
     add(G.box(.3, .22, .2, .02), C.woodD, .35, .97, -.12);
-    for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) if (!(r === 1 && k === 1)) { add(G.pbox(.085, .08, .01), C.wood, .26 + k * .095, .93 + r * .1, -.015); add(G.sph(.008, 5, 4), C.brass, .26 + k * .095, .93 + r * .1, -.006); }
+    for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) { add(G.pbox(.085, .08, .01), C.wood, .26 + k * .095, .93 + r * .1, -.015); add(G.sph(.008, 5, 4), C.brass, .26 + k * .095, .93 + r * .1, -.006); }
     // stamps lined up
     for (let k = 0; k < 4; k++) { add(G.cyl(.022, .025, .08, 8), [C.red, C.wood, C.navy, C.wood][k], -.05 + k * .06, .9, .08); add(G.sph(.026, 8, 6), C.woodD, -.05 + k * .06, .96, .08); }
   }));
-  const dr = grp(); put(dr, .35, .93, -.02); f.add(dr);
-  dr.add(mc('um-keys-drawer', ({ add }) => { add(G.box(.085, .08, .02, .006), C.wood, 0, 0, 0); add(G.sph(.01, 6, 4), C.brass, 0, 0, .015); add(G.box(.08, .01, .16, .004), C.woodD, 0, -.035, -.08); }));
-  const p1 = f.part('drawer', dr, (t, b) => { dr.position.z = b.p.z + .14 * t; }, { label: '도장 서랍', sfx: 'drawer', dur: .3 });
   f.spot('inside', null, -.05, .86, .1, { part: p0, maxH: 0.6, label: '열쇠 가게 계산대 위', scale: 1.5 });
   f.spot('inside', null, .1, .015, .4, { part: p0, maxH: 0.7, label: '열쇠 가게 계산대 앞', scale: 1.5 });
-  f.spot('inside', null, .45, .86, .1, { part: p0, maxH: 0.45, label: '열쇠 복사기 옆', scale: 1.2 });
-  f.spot('inside', dr, 0, -.03, -.08, { part: p1, maxH: .2, label: '도장 서랍 안', scale: .6 });
+  f.spot('inside', null, .35, 1.085, -.12, { part: p0, maxH: .35, label: '도장 서랍장 위', scale: 1.1 });
 }
 
 function flowerStall(f, W, D) {
@@ -513,12 +518,10 @@ B.um_kiosk = f => {
   const lid = grp(); put(lid, sx - .11, H + .2, sz); f.add(lid);
   lid.add(mc('um-kiosk-lid', ({ add }) => { add(dome(.115, 16, 5), C.steel, .11, 0, 0, 0, 0, 0, [1, .45, 1]); add(G.sph(.025, 8, 6), C.dark, .11, .055, 0); }));
   const p0 = f.part('lid', lid, t => { lid.rotation.z = 1.4 * t; }, { label: '순대 찜통 뚜껑', sfx: 'open', dur: .35 });
-  f.spot('inside', null, sx, H + .06, sz, { part: p0, maxH: .2, label: '찜통 안', scale: .7 });
   // cash drawer (part1) under the counter top, on the shop side (-z)... on the front for the player: a slim money drawer
   const dr = grp(); put(dr, .35, H - .12, D / 2 + .01); f.add(dr);
   dr.add(mc('um-kiosk-drawer', ({ add }) => { add(G.box(.42, .12, .03, .01), '#ffd28a', 0, 0, 0); add(G.box(.1, .025, .025, .008), C.dark, 0, 0, .025); add(G.box(.38, .02, .32, .006), C.steel, 0, -.05, -.16); }));
   const p1 = f.part('drawer', dr, (t, b) => { dr.position.z = b.p.z + .26 * t; }, { label: '분식 매대 돈통 서랍', sfx: 'drawer', dur: .3 });
-  f.spot('inside', dr, 0, -.04, -.16, { part: p1, maxH: .25, label: '돈통 서랍 안', scale: .8 });
   f.spot('on', null, -.3, .48, D / 2 + .22, { label: '빨간 의자 위', maxH: 0.7, scale: 1.6 });
   f.spot('on', null, .3, .48, D / 2 + .22, { label: '주황 의자 위', maxH: 0.7, scale: 1.6 });
   f.spot('under', null, 0, .01, D / 2 + .25, { label: '분식 매대 앞 의자 사이', maxH: 0.42, scale: 1.3 });
@@ -533,18 +536,16 @@ B.um_office = f => {
   f.noSolid = true;
   f.collideBox = [x0, -.1, z0, x1, -.02, z1];
   f.walkBoxes = [
-    [x0 - .02, 0, z0, x0 + .14, H, door0], [x0 - .02, 0, z1 - .08, x1, 1.0, z1 + .06], [x1 - .08, 0, z0, x1 + .04, .5, z1],
-    [x0 + .1, 0, -1.05, x0 + .72, .85, .32], [-.42, 0, z0, .12, 1.2, z0 + .52], [.6, 0, .12, 1.12, .8, .62], [.8, 0, -.35, 1.15, 1.8, .05],
+    [x0 - .02, 0, z0, x0 + .14, .64, door0], [x0 - .02, 0, z1 - .08, x1, 1.0, z1 + .06], [x1 - .08, 0, z0, x1 + .04, .5, z1],
+    [x0 + .1, 0, -1.05, x0 + .72, .85, .32], [-.42, 0, z0, .12, 1.2, z0 + .52], [.6, 0, .12, 1.12, .8, .62], [.8, 0, .85, 1.2, 1.8, 1.25],
   ];
   f.add(mc('um-office', ({ add, tube }) => {
     // floor: pale blue-grey linoleum with a border
     add(G.box(W - .14, .012, D - .1, .004), '#dfe5ea', 0, .006, -.02);
     for (let z = z0 + .3; z < z1; z += .3) add(G.pbox(W - .16, .004, .008), '#cfd7de', 0, .014, z);
-    // corridor wall (W): solid with a window to the corridor, then the doorway with its frame and the 관리실 plate
-    add(G.box(.12, H, door0 - z0, .02), C.wall, x0 + .06, H / 2, (z0 + door0) / 2);
-    add(G.box(.13, .9, .8, .02), '#9fb8d0', x0 + .06, 1.55, .05);
-    add(G.box(.14, .05, .86, .01), C.cream, x0 + .06, 1.08, .05); add(G.box(.14, .05, .86, .01), C.cream, x0 + .06, 2.02, .05);
-    for (const z of [-.35, .05, .45]) add(G.box(.14, .96, .05, .01), C.cream, x0 + .06, 1.55, z);
+    // corridor wall (W): a low wall up to the doorway (a tall one hid the key shop from the start view), then the doorway with
+    // its frame and the 관리실 plate
+    add(G.box(.12, .62, door0 - z0, .02), C.wall, x0 + .06, .31, (z0 + door0) / 2); add(G.box(.14, .04, door0 - z0, .01), C.wall2, x0 + .06, .64, (z0 + door0) / 2);
     add(G.box(.14, .2, door1 - door0 + .1, .02), C.wall, x0 + .06, H - .1, (door0 + door1) / 2);
     for (const z of [door0, door1]) add(G.box(.16, H - .2, .06, .015), '#8aa0c8', x0 + .06, (H - .2) / 2, z);
     add(G.box(.16, .05, door1 - door0 + .06, .015), '#8aa0c8', x0 + .06, H - .22, (door0 + door1) / 2);
@@ -561,8 +562,8 @@ B.um_office = f => {
     add(G.box(.12, .42, D, .02), C.wall2, x1 - .02, .21, 0); add(G.box(.14, .04, D + .02, .01), C.cut, x1 - .02, .43, 0);
     // back wall finish inside the office (the hall wall is behind): a pale blue band, a clock, a calendar, the duty board
     add(G.box(W - .2, 1.0, .02, .01), '#e6ecf3', 0, .5, z0 + .012);
-    add(G.cyl(.15, .15, .04, 20), C.white, -.85, 2.0, z0 + .03, HP, 0, 0); add(G.tor(.15, .02, PI * 2, 4, 20), C.navy, -.85, 2.0, z0 + .05);
-    add(G.pbox(.02, .1, .01), C.dark, -.85, 2.04, z0 + .056); add(G.pbox(.08, .018, .01), C.dark, -.82, 2.0, z0 + .056);
+    add(G.cyl(.15, .15, .04, 20), C.white, .3, 2.12, z0 + .03, HP, 0, 0); add(G.tor(.15, .02, PI * 2, 4, 20), C.navy, .3, 2.12, z0 + .05);
+    add(G.pbox(.02, .1, .01), C.dark, .3, 2.16, z0 + .056); add(G.pbox(.08, .018, .01), C.dark, .33, 2.12, z0 + .056);
     // CCTV desk along the corridor wall (inside), three monitors facing in, keyboard, a mug, a walkie-talkie
     add(G.box(.6, .04, 1.36, .015), C.wood, dx, .76, -.37);
     add(G.box(.56, .72, .04, .01), shade2(C.wood), dx, .38, -1.03); add(G.box(.04, .72, 1.3, .01), shade2(C.wood), x0 + .14, .38, -.37);
@@ -579,7 +580,7 @@ B.um_office = f => {
     // filing cabinet against the back wall, a plant and binders on top
     const cx = -.15;
     add(G.box(.5, 1.12, .5, .02), '#b8c4d4', cx, .56, z0 + .27);
-    for (const y of [.25, .95]) { add(G.box(.44, .3, .02, .01), '#c9d3e0', cx, y, z0 + .53); add(G.box(.14, .03, .025, .008), C.steel2, cx, y + .06, z0 + .545); }
+    for (const y of [.25, .6, .95]) { add(G.box(.44, .3, .02, .01), '#c9d3e0', cx, y, z0 + .53); add(G.box(.14, .03, .025, .008), C.steel2, cx, y + .06, z0 + .545); }
     for (let k = 0; k < 3; k++) add(G.box(.06, .26, .2, .01), [C.red, C.navy, C.mustard][k], cx - .15 + k * .065, 1.25, z0 + .25);
     // coffee table on the east side: kettle, two cup noodles, a thermos
     const tx = .86, tz = .37;
@@ -588,7 +589,7 @@ B.um_office = f => {
     add(G.cyl(.06, .05, .1, 12), C.red, tx + .1, .77, tz + .05); add(G.cyl(.061, .061, .012, 12), C.cream, tx + .1, .826, tz + .05);
     add(G.cyl(.06, .05, .1, 12), C.mustard, tx + .14, .77, tz - .12); add(G.cyl(.061, .061, .012, 12), C.cream, tx + .14, .826, tz - .12);
     // coat stand: the guard's jacket and cap, a flashlight
-    const kx = 1.0, kz = -.15;
+    const kx = 1.0, kz = 1.05;
     add(G.cyl(.14, .16, .03, 10), C.dark, kx, .015, kz); tube([kx, .03, kz], [kx, 1.68, kz], .02, C.woodD, 6);
     for (const a of [0, 2.1, 4.2]) tube([kx, 1.6, kz], [kx + Math.cos(a) * .13, 1.66, kz + Math.sin(a) * .13], .01, C.woodD, 4);
     add(G.box(.36, .6, .16, .05), '#5d74a8', kx - .02, 1.28, kz + .06); add(G.box(.08, .06, .01, .01), C.yellow, kx - .08, 1.42, kz + .145);
@@ -600,50 +601,48 @@ B.um_office = f => {
   label(f.group, 'office-front', .7, .16, signDraw('관리실', '#8aa0c8', C.white, { size: .66 }), 0, H - .05, z1 + .052);
   label(f.group, 'office-side', .7, .16, signDraw('관리실', '#8aa0c8', C.white, { size: .66 }), x0 - .005, H - .1, (door0 + door1) / 2, 0, -HP, 0);
   label(f.group, 'calendar', .3, .36, (c, Wd, Hd) => { paperFill(c, Wd, Hd, C.white, 3); c.fillStyle = C.red; c.fillRect(0, 0, Wd, Hd * .2); fitText(c, '10', Wd / 2, Hd * .1, Wd * .5, Hd * .16, C.white, { weight: 'bold' });
-    c.fillStyle = '#c9c0b4'; for (let r = 0; r < 5; r++) for (let k = 0; k < 7; k++) c.fillRect(Wd * (.08 + k * .125), Hd * (.28 + r * .14), Wd * .09, Hd * .09); }, -.45, 1.95, z0 + .025);
-  label(f.group, 'dutylog', .42, .3, (c, Wd, Hd) => { paperFill(c, Wd, Hd, '#fbf3e0', 5); fitText(c, '근무 일지', Wd / 2, Hd * .18, Wd * .8, Hd * .2, C.ink, { weight: 'bold' }); c.fillStyle = 'rgba(74,59,82,.35)'; for (let k = 0; k < 4; k++) c.fillRect(Wd * .1, Hd * (.38 + k * .14), Wd * (.5 + (k % 2) * .25), 2); fitText(c, '마감 10시', Wd * .7, Hd * .9, Wd * .5, Hd * .14, C.red); }, .45, 1.95, z0 + .025);
+    c.fillStyle = '#c9c0b4'; for (let r = 0; r < 5; r++) for (let k = 0; k < 7; k++) c.fillRect(Wd * (.08 + k * .125), Hd * (.28 + r * .14), Wd * .09, Hd * .09); }, .95, 1.9, z0 + .025);
+  label(f.group, 'dutylog', .42, .3, (c, Wd, Hd) => { paperFill(c, Wd, Hd, '#fbf3e0', 5); fitText(c, '근무 일지', Wd / 2, Hd * .18, Wd * .8, Hd * .2, C.ink, { weight: 'bold' }); c.fillStyle = 'rgba(74,59,82,.35)'; for (let k = 0; k < 4; k++) c.fillRect(Wd * .1, Hd * (.38 + k * .14), Wd * (.5 + (k % 2) * .25), 2); fitText(c, '마감 10시', Wd * .7, Hd * .9, Wd * .5, Hd * .14, C.red); }, -.15, 1.75, z0 + .025);
   // CCTV pictures on the three monitors (a little view of the mall: shops, the corridor)
   const cam = (c, Wd, Hd) => { c.fillStyle = '#2f4a44'; c.fillRect(0, 0, Wd, Hd); c.fillStyle = '#9fd7c0'; for (let k = 0; k < 4; k++) c.fillRect(Wd * (.08 + k * .22), Hd * .25, Wd * .16, Hd * .35); c.fillStyle = '#cfe8dc'; c.fillRect(0, Hd * .7, Wd, Hd * .06); fitText(c, 'CAM', Wd * .2, Hd * .12, Wd * .3, Hd * .14, '#d9fbe9'); };
   for (const [z, y] of [[-.62, 1.0], [-.18, 1.0], [-.4, 1.36]]) label(f.group, 'cctv', .38, .27, cam, x0 + .307, y, z, 0, HP, 0);
   // part0: the key cabinet on the corridor wall inside (glass-front door; hooks with tagged keys; a shelf at the bottom)
-  const KZ = -1.44, KW = .62, KH = .85, KY = 1.2, kxw = x0 + .12;
+  const KX = x0 + .14, KW = .62, KH = .85, KY = 1.2, KD = .3, kz = z0 + .03;
   f.add(mc('um-office-keycab', ({ add, tube }) => {
-    add(G.box(.18, KH, KW, .02), '#e9dcc6', kxw + .09, KY + KH / 2, KZ + KW / 2);
-    add(G.box(.02, KH - .06, KW - .06, .01), '#c8b48f', kxw + .02, KY + KH / 2, KZ + KW / 2);
+    add(G.box(KW, KH, .03, .01), '#e9dcc6', KX + KW / 2, KY + KH / 2, kz + .015);
+    for (const xx of [KX + .015, KX + KW - .015]) add(G.box(.03, KH, KD, .01), '#e9dcc6', xx, KY + KH / 2, kz + KD / 2);
+    for (const yy of [KY + .015, KY + KH - .015]) add(G.box(KW, .03, KD, .01), '#e9dcc6', KX + KW / 2, yy, kz + KD / 2);
+    add(G.box(KW - .06, KH - .06, .02, .01), '#c8b48f', KX + KW / 2, KY + KH / 2, kz + .035);
     for (let r = 0; r < 2; r++) for (let k = 0; k < 5; k++) {
-      const z = KZ + .09 + k * .11, y = KY + KH - .1 - r * .14;
-      tube([kxw + .03, y, z], [kxw + .08, y, z], .005, C.steel2, 4);
-      add(G.box(.008, .07, .03, .004), k % 2 ? C.brass : C.steel, kxw + .075, y - .05, z);
-      add(G.box(.006, .04, .035, .004), [C.red, C.yellow, C.sky, C.leaf, C.pink][(k + r) % 5], kxw + .08, y - .1, z);
+      const x = KX + .09 + k * .11, y = KY + KH - .1 - r * .14;
+      tube([x, y, kz + .045], [x, y, kz + .095], .005, C.steel2, 4);
+      add(G.box(.03, .07, .008, .004), k % 2 ? C.brass : C.steel, x, y - .05, kz + .09);
+      add(G.box(.035, .04, .006, .004), [C.red, C.yellow, C.sky, C.leaf, C.pink][(k + r) % 5], x, y - .1, kz + .095);
     }
-    add(G.box(.16, .025, KW - .06, .006), C.woodD, kxw + .09, KY + .12, KZ + KW / 2);
+    add(G.box(KW - .06, .025, KD - .02, .006), C.woodD, KX + KW / 2, KY + .12, kz + KD / 2);
   }));
-  const cab = grp(); put(cab, kxw + .185, KY, KZ); f.add(cab);
+  const cab = grp(); put(cab, KX, KY, kz + KD + .005); f.add(cab);
   cab.add(mc('um-office-keycab-door', ({ add }) => {
-    add(G.box(.03, KH, KW, .015), '#c9a37a', 0, KH / 2, KW / 2);
-    add(G.box(.012, KH - .12, KW - .12, .01), '#cfe8ef', .012, KH / 2, KW / 2);
-    add(G.box(.03, .1, .03, .008), C.brass, .02, KH / 2, KW - .06);
+    add(G.box(KW, KH, .03, .015), '#c9a37a', KW / 2, KH / 2, 0);
+    add(G.box(KW - .12, KH - .12, .012, .01), '#cfe8ef', KW / 2, KH / 2, .012);
+    add(G.box(.03, .1, .03, .008), C.brass, KW - .06, KH / 2, .02);
   }));
-  const p0 = f.part('door', cab, t => { cab.rotation.y = 1.7 * t; }, { label: '관리실 열쇠 걸이함', sfx: 'open', dur: .35 });
-  p0.lockable = true; p0.lockKind = 'color'; p0.lockAt = { parent: cab, x: .04, y: KH / 2 - .14, z: KW - .1 };
-  f.spot('inside', null, kxw + .1, KY + .135, KZ + KW / 2, { part: p0, maxH: .36, label: '열쇠 걸이함 아래 칸', scale: 1 });
+  const p0 = f.part('door', cab, t => { cab.rotation.y = -1.7 * t; }, { label: '관리실 열쇠 걸이함', sfx: 'open', dur: .35 });
+  p0.lockable = true; p0.lockKind = 'color'; p0.lockAt = { parent: cab, x: KW - .1, y: KH / 2 - .14, z: .04 };
+  f.spot('inside', null, KX + KW / 2, KY + .135, kz + KD / 2 + .02, { part: p0, maxH: .36, label: '열쇠 걸이함 아래 칸', scale: 1 });
   // part1: the desk drawer (in the pedestal by the door end)
   const dr = grp(); put(dr, dx + .25, .58, .1); f.add(dr);
   dr.add(mc('um-office-drawer', ({ add }) => { add(G.box(.03, .2, .36, .01), shade2(C.wood), 0, 0, 0); add(G.box(.025, .03, .12, .008), C.steel2, .02, 0, 0); add(G.box(.4, .02, .32, .006), C.wood, -.2, -.08, 0); }));
   const p1 = f.part('drawer', dr, (t, b) => { dr.position.x = b.p.x + .28 * t; }, { label: 'CCTV 책상 서랍', sfx: 'drawer', dur: .3 });
   f.spot('inside', dr, -.2, -.07, 0, { part: p1, maxH: 0.3, label: '책상 서랍 안', scale: 1.1 });
   // part2: the filing cabinet's middle drawer
-  const fd = grp(); put(fd, -.15, .6, z0 + .53); f.add(fd);
-  fd.add(mc('um-office-filedrawer', ({ add }) => { add(G.box(.44, .3, .02, .01), '#c9d3e0', 0, 0, 0); add(G.box(.14, .03, .025, .008), C.steel2, 0, .06, .015); add(G.box(.4, .02, .4, .006), '#b8c4d4', 0, -.13, -.2); for (let k = 0; k < 4; k++) add(G.box(.36, .2, .01, .004), '#f2e3c4', 0, -.03, -.06 - k * .08); }));
-  const p2 = f.part('drawer', fd, (t, b) => { fd.position.z = b.p.z + .32 * t; }, { label: '서류장 가운데 서랍', sfx: 'drawer', dur: .35 });
-  f.spot('inside', fd, 0, -.12, -.3, { part: p2, maxH: .25, label: '서류장 서랍 안', scale: .8 });
   // open places in the office
   f.spot('on', null, dx + .08, .78, .08, { label: 'CCTV 책상 위', maxH: 0.6, scale: 1.5 });
   f.spot('under', null, dx, .01, -.6, { label: 'CCTV 책상 밑', maxH: 0.7, scale: 1.5 });
   f.spot('on', null, x0 + .95, .5, -.45, { label: '관리실 의자 위', maxH: 0.6, scale: 1.5 });
   f.spot('on', null, -.05, 1.13, z0 + .27, { label: '서류장 위', maxH: 0.45, scale: 1.2 });
   f.spot('on', null, .74, .72, .52, { label: '커피 탁자 위', maxH: 0.45, scale: 1.3 });
-  f.spot('behind', null, .74, .01, -.3, { label: '옷걸이 밑', maxH: 0.75, scale: 1.5 });
+  f.spot('behind', null, .74, .01, .88, { label: '옷걸이 밑', maxH: 0.75, scale: 1.5 });
   f.spot('on', null, .55, .998, z1 + .04, { label: '관리실 창구 위', maxH: 0.6, scale: 1.5 });
 };
 
@@ -691,7 +690,6 @@ B.um_safe = f => {
   const p = f.part('door', pv, t => { pv.rotation.y = -1.85 * t; }, { label: '관리실 금고', sfx: 'open', dur: .5 });
   p.lockable = true; p.lockKind = 'code'; p.lockAt = { parent: pv, x: cx + .2, y: .1, z: .07 };
   f.spot('inside', null, -.05, y0 + .07, z0 + .02, { part: p, maxH: H * .5 - .12, label: '금고 아래 칸', scale: 1.25 });
-  f.spot('behind', null, W / 2 + .14, .01, z0 - .1, { label: '금고 옆', maxH: 0.7, scale: 1.5 });
 };
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -752,7 +750,7 @@ B.um_escalator = f => {
   };
   const p = f.part('slide', [...steps, bag], t => place(t), { label: '에스컬레이터', sfx: 'ratchet', dur: 2.6 });
   p.setOpen(0);
-  f.spot('inside', bag, 0, .05, 0, { part: p, maxH: .3, label: '에스컬레이터 위 쇼핑백 안', scale: .9 });
+  f.spot('inside', bag, 0, .33, 0, { part: p, maxH: .3, label: '에스컬레이터 위 쇼핑백 안', scale: .9 });
   label(f.group, 'esc-b1', .22, .14, signDraw('B1', C.navy, C.white, { size: .62 }), w / 2 + .1, .62, zb + .27, 0, HP, 0);
 };
 
@@ -819,21 +817,21 @@ B.um_lockers = f => {
   }));
   label(f.group, 'lockers', .62, .12, signDraw('물품 보관함', C.white, '#2f6f86', { size: .66 }), -.14, H - .08, zf + .012);
   // the doors: [row, col, part?, lockable?]
-  const DOORS = [[0, -1, true, false], [0, 1, false], [1, -1, false], [1, 1, true, true], [2, -1, true, false], [2, 1, false]];
+  const DOORS = [[0, -1, false], [0, 1, true, false], [1, -1, false], [1, 1, true, true], [2, -1, false], [2, 1, true, false]];
   DOORS.forEach(([r, sx, isPart, lock], i) => {
     const used = !isPart || lock;
-    const hx = sx < 0 ? -W / 2 + .03 : .015, y = Y0 + r * DH + .02;
+    const hx = sx < 0 ? -.015 : W / 2 - .03, y = Y0 + r * DH + .02, ox = -(DW - .03) / 2;
     const dv = grp(); put(dv, hx, y, zf - .005); f.add(dv);
     dv.add(mc('um-lockers-door|' + used, ({ add }) => {
-      add(G.box(DW - .03, DH - .04, .03, .012), body2, (DW - .03) / 2, (DH - .04) / 2, 0);
-      for (let k = 0; k < 3; k++) add(G.pbox(.2, .012, .006), '#6aa6b6', (DW - .03) / 2, DH - .12 - k * .03, .017);
-      add(G.box(.04, .1, .03, .008), C.steel2, DW - .1, (DH - .04) / 2, .02);
-      add(G.sph(.016, 6, 4), used ? C.red : C.leaf, DW - .1, (DH - .04) / 2 + .1, .02);
+      add(G.box(DW - .03, DH - .04, .03, .012), body2, ox, (DH - .04) / 2, 0);
+      for (let k = 0; k < 3; k++) add(G.pbox(.2, .012, .006), '#6aa6b6', ox, DH - .12 - k * .03, .017);
+      add(G.box(.04, .1, .03, .008), C.steel2, -DW + .1, (DH - .04) / 2, .02);
+      add(G.sph(.016, 6, 4), used ? C.red : C.leaf, -DW + .1, (DH - .04) / 2 + .1, .02);
     }));
-    label(dv, 'lockno' + i, .08, .06, (c, Wd, Hd) => { c.fillStyle = C.white; roundRect(c, 0, 0, Wd, Hd, 6); c.fill(); fitText(c, String(11 + i), Wd / 2, Hd / 2, Wd * .8, Hd * .7, C.ink, { weight: 'bold' }); }, .1, DH - .1, .017);
+    label(dv, 'lockno' + i, .08, .06, (c, Wd, Hd) => { c.fillStyle = C.white; roundRect(c, 0, 0, Wd, Hd, 6); c.fill(); fitText(c, String(11 + i), Wd / 2, Hd / 2, Wd * .8, Hd * .7, C.ink, { weight: 'bold' }); }, -.1, DH - .1, .017);
     if (!isPart) return;
-    const p = f.part('door', dv, t => { dv.rotation.y = -1.6 * t; }, { label: (11 + i) + '번 보관함', sfx: 'open', dur: .3 });
-    if (lock) { p.lockable = true; p.lockKind = 'pad'; p.lockAt = { parent: dv, x: DW - .1, y: (DH - .04) / 2 - .1, z: .04 }; }
+    const p = f.part('door', dv, t => { dv.rotation.y = 1.6 * t; }, { label: (11 + i) + '번 보관함', sfx: 'open', dur: .3 });
+    if (lock) { p.lockable = true; p.lockKind = 'pad'; p.lockAt = { parent: dv, x: -DW + .1, y: (DH - .04) / 2 - .1, z: .04 }; }
     f.spot('inside', null, sx * W / 4, Y0 + r * DH + .035, -.02, { part: p, maxH: DH - .06, label: (11 + i) + '번 보관함 안', scale: 1.2 });
   });
   f.spot('on', null, -.25, H + .005, 0, { label: '보관함 위', maxH: 0.5, scale: 1.5 });

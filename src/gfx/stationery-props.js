@@ -35,7 +35,7 @@ const WORDS = {
   '쫀드기': 'Chewy Strip', '아폴로': 'Apollo', '밭두렁': 'Rice Puffs', '꾀돌이': 'Smarty', '쥐포': 'Fish Jerky', '별사탕': 'Star Candy',
   '공책': 'Notebook', '종이인형': 'Paper Dolls', '딱지': 'Ddakji', '스티커': 'Stickers', '신학기 준비물': 'Back to School', '학용품 도매': 'School Supplies',
   '공책 100권': '100 Notebooks', '태권도': 'Taekwondo', '피아노': 'Piano', '원생 모집': 'Join us', '외상 사절': 'No credit', '1등': '1st',
-  '오늘 일찍 닫아요': 'Closing early', '고장': 'Broken', '연필': 'Pencils', '지우개': 'Erasers',
+  '오늘 일찍 닫아요': 'Closing early', '준비 중': 'Closed', '고장': 'Broken', '연필': 'Pencils', '지우개': 'Erasers',
 };
 for (const k in WORDS) if (EN[k] == null) EN[k] = WORDS[k];
 
@@ -189,8 +189,9 @@ const marqueeTex = () => TT('marq', 256, 80, (c, W, H) => {
 const flipTex = back => TT('flip' + (back ? 1 : 0), 256, 160, (c, W, H) => {
   if (!back) { c.fillStyle = C.cream; roundRect(c, 0, 0, W, H, 20); c.fill(); c.strokeStyle = C.grn; c.lineWidth = 10; roundRect(c, 8, 8, W - 16, H - 16, 14); c.stroke();
     fitText(c, '영업 중', W / 2, H / 2, W * .72, 62, '#2e7a4a', { weight: 'bold' }); return; }
-  paperFill(c, W, H, '#f3ead6', 8); c.strokeStyle = '#7a8a9a'; c.lineWidth = 4; c.strokeRect(10, 10, W - 20, H - 20);
-  fitText(c, '까꿍', W / 2, H * .45, W * .6, 58, '#e8604c', { weight: 'bold' });
+  c.fillStyle = C.cream; roundRect(c, 0, 0, W, H, 20); c.fill(); c.strokeStyle = C.red; c.lineWidth = 10; roundRect(c, 8, 8, W - 16, H - 16, 14); c.stroke();
+  fitText(c, '준비 중', W / 2, H * .42, W * .7, 56, '#b8473a', { weight: 'bold' });
+  c.save(); c.translate(W * .3, H * .78); c.rotate(-.12); fitText(c, '까꿍', 0, 0, W * .3, 26, C.blue, { weight: 'bold' }); c.restore();
   c.strokeStyle = C.blue; c.lineWidth = 3; c.beginPath(); c.arc(W * .82, H * .72, 14, 0, 7); c.stroke(); c.fillStyle = C.blue; c.fillRect(W * .78, H * .68, 3, 3); c.fillRect(W * .84, H * .68, 3, 3);
   c.beginPath(); c.arc(W * .82, H * .74, 6, .2, PI - .2); c.stroke();
 });
@@ -419,8 +420,9 @@ B.st_shop = f => {
   // ── 보도 위 생활 디테일: 우산꽂이(놓고 간 분홍 우산), 분리수거함·납작 상자 묶음, 스티로폼 화분 둘 ─────────────────
   f.add(mc('st-street', ({ add, tube }) => {
     add(G.cyl(.15, .13, .5, 14), '#7d9ab0', .8, .25, .3); add(G.cyl(.155, .155, .03, 14), '#5f7a90', .8, .5, .3);
-    tube([0.76, .3, 0.29], [0.70, 1.0, 0.23], .022, C.ink); add(G.cone(.09, .35, 8), '#3d4a7a', .72, .82, .25, PI + .1, 0, -.1);
-    tube([0.85, .3, 0.32], [0.93, 1.05, 0.39], .022, '#c0587a'); add(G.cone(.1, .4, 8), C.pink, .91, .85, .37, PI - .1, 0, .12); add(G.tor(.05, .015, PI, 4, 10), '#c0587a', .95, 1.07, .4, 0, .3, 0);
+    // 접은 우산 둘 (가늘게 말린 천 + 손잡이): 남색, 놓고 간 분홍
+    tube([.76, .3, .27], [.73, .78, .24], .045, '#3d4a7a', 8, .03); tube([.73, .78, .24], [.725, .96, .235], .012, C.ink); add(G.tor(.035, .012, PI, 4, 10), C.ink, .705, .96, .235, 0, 0, PI);
+    tube([.85, .3, .34], [.9, .8, .38], .05, C.pink, 8, .032); for (const t of [.45, .62]) add(G.cyl(.042, .042, .02, 8), '#c0587a', .85 + .05 * (t - .3) / .5 * 1, t, .34 + .04 * (t - .3) / .5); tube([.9, .8, .38], [.905, .98, .385], .012, '#c0587a'); add(G.tor(.035, .012, PI, 4, 10), '#c0587a', .925, .98, .385, 0, 0, PI);
     // 가게 안 문 옆 휴지통 (구겨진 종이)
     add(G.cyl(.14, .12, .36, 14), '#9fc3ae', -3.27, .18, .08); add(G.tor(.14, .015, PI * 2, 4, 14), '#7ea591', -3.27, .36, .08, HP, 0, 0);
     for (const [dx, dz] of [[-.03, .02], [.04, -.03]]) add(G.sph(.05, 7, 5), C.paper, -3.27 + dx, .37, .08 + dz);
@@ -477,7 +479,7 @@ B.st_shutter = f => {
   cur.add(put(mesh(geo('st-shut-bar', () => new THREE.BoxGeometry(W + .02, .07, .06)), mat(C.metalD)), 0, -H0 + .035, .01));
   cur.add(put(mesh(geo('st-shut-handle', () => new THREE.BoxGeometry(.3, .05, .05)), mat(C.ink)), 0, -H0 + .1, .04));
   // 숫자 그림자 (가로등을 켜면 보임)
-  const shadow = grp(); put(shadow, 0, -.62, .021); cur.add(shadow);
+  const shadow = grp(); put(shadow, 0, -.92, .021); cur.add(shadow);
   let code = '935';
   const tex = canvasTex(512, 256, c => drawShadow(c, code));
   const sm = mesh(geo('st-shadow-pl', () => new THREE.PlaneGeometry(1.36, .68)), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }), { cast: false });
@@ -614,6 +616,8 @@ B.st_counter = f => {
     add(G.tor(.07, .014, PI * 2, 6, 18), C.ink, .4, H + .02, .12, HP, 0, 0); add(G.cyl(.066, .066, .006, 16), '#d6ecff', .4, H + .02, .12); add(G.box(.025, .02, .16, .008), C.woodD, .4, H + .015, .26);
     add(G.cap(.03, .1, 3, 8), '#8f3a3a', .55, H + .03, -.1, 0, .4, HP);
     add(G.cyl(.05, .045, .14, 10), C.blue, .7, H + .07, -.16); for (let k = 0; k < 4; k++) add(G.cyl(.008, .008, .2, 6), [C.red, C.yel, C.grn, '#ffd25a'][k], .7 + (k - 1.5) * .015, H + .2, -.16 + (k % 2) * .015, (k - 1.5) * .08, 0, 0);
+    // 계산대 스탠드 (초록 갓, 따뜻한 흰 전구)
+    add(G.cyl(.07, .08, .03, 12), '#3f6b55', .8, H + .015, .12); add(G.cyl(.012, .012, .3, 6), C.metalD, .8, H + .17, .12); add(G.cone(.1, .12, 12), '#3f6b55', .8, H + .36, .14, .3, 0, 0); add(G.sph(.045, 8, 6), '#fff4dc', .8, H + .32, .16);
     add(G.sph(.1, 12, 8), C.pink, -.82, H + .1, -.12, 0, 0, 0, [1.25, 1, 1]); add(G.cyl(.035, .035, .04, 8), '#f7b4c8', -.94, H + .1, -.12, 0, 0, HP);
     for (const [dx, dz] of [[-.06, -.06], [.06, -.06], [-.06, .06], [.06, .06]]) add(G.cyl(.022, .022, .05, 6), C.pink, -.82 + dx, H + .025, -.12 + dz);
     // 뒤: 할머니 의자(방석·뜨개 숄), 둥근 의자 위 라디오·보온병
@@ -660,6 +664,8 @@ B.st_crayonrack = f => {
       add(G.cyl(.13, .13, 1.15, 14), col, x, .6, .05); add(G.cone(.13, .3, 14), col2, x, 1.32, .05);
       add(G.cyl(.133, .133, .5, 14), C.cream, x, .55, .05); add(G.cyl(.136, .136, .035, 14), C.ink, x, .32, .05); add(G.cyl(.136, .136, .035, 14), C.ink, x, .78, .05);
     }
+    // 이름판 위 꺾인 스탠드 (진열대를 비춤)
+    add(G.cyl(.012, .012, .3, 6), C.metalD, .5, H + .66, -.15, .5, 0, 0); add(G.cone(.08, .1, 12), C.ink, .5, H + .78, -.02, 1.9, 0, 0); add(G.sph(.035, 8, 6), '#fff4dc', .5, H + .75, .02);
     // 낱개 크레파스 몇 자루 (맨 아래 칸에 굴러다님)
     for (let k = 0; k < 5; k++) add(G.cyl(.022, .022, .16, 8), [C.red, C.yel, C.grn, C.purp, C.orng][k], -.5 + k * .09, .45, .2, 0, k * .7, HP);
   }));
