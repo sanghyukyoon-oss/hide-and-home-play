@@ -13,7 +13,8 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeStatic } from './bake.js';
 import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, plane, roundRect, shade, STYLE, SHADOW } from './kit.js';
-import { clothBend } from './clothbend.js';
+import { clothBend, clothWave, clothSlab } from './clothbend.js';
+import { bookPieces } from './bookbits.js';
 import { gptLock } from './gpt-locks.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
@@ -289,6 +290,21 @@ function liveTex(w, h, draw, o = {}) {
 }
 const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
 const tex = (key, w, h, draw, o) => TEX.get(key, () => liveTex(w, h, draw, o));
+// a globe's print (⑥ 10/23): soft sea, five rounded lands with a sand edge, a little ice at the poles, faint lines of latitude
+const globeTex = () => tex('fu-globe', 256, 128, (c, w, h) => {
+  c.fillStyle = tint('#86cdef'); c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.5; for (const y of [32, 64, 96]) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+  const land = pts => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.lineJoin = 'round'; c.lineWidth = 6; c.strokeStyle = tint('#f3dca0'); c.stroke(); c.fillStyle = tint('#8fd67a'); c.fill(); };
+  const at = (x0, y0, k, pts) => land(pts.map(([x, y]) => [x0 + x * k, y0 + y * k]));
+  for (const [x0, y0, k] of [[10, 24, .85], [48, 68, .7], [100, 20, .95], [124, 70, .62], [192, 26, .7], [204, 82, .55], [78, 40, .42], [166, 94, .42]]) at(x0, y0, k, [[0, 8], [30, 0], [52, 14], [44, 34], [24, 30], [8, 40], [-4, 22]]);
+  c.fillStyle = tint('#f4fbff'); c.fillRect(0, 0, w, 8); c.fillRect(0, h - 8, w, 8);
+});
+// one ABC block's face: the block colour with a light rim and a fat white letter (⑥ 10/23)
+const letterTex = (L, col) => tex('fu-abc|' + L + col, 128, 128, (c, w, h) => {
+  c.fillStyle = tint(col); c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 8; roundRect(c, 10, 10, w - 20, h - 20, 18); c.stroke();
+  txt(c, L, w / 2, h / 2 + 4, 78, '#ffffff', { stroke: tint(shade(col, -.28)), sw: 8 });
+});
 const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(); };
 const line = (c, pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); };
 function heartPath(c, x, y, s) { c.beginPath(); c.moveTo(x, y + s * .7); c.bezierCurveTo(x - s * 1.2, y - s * .1, x - s * .55, y - s * .95, x, y - s * .35); c.bezierCurveTo(x + s * .55, y - s * .95, x + s * 1.2, y - s * .1, x, y + s * .7); }
@@ -620,7 +636,11 @@ B.futon = (f, T) => {
   f.add(mc('futon|' + tk, ({ add }) => {
     add(G.box(.84, .1, 1.7, .04, 2), sheet, 0, .05, .02);                                           // mattress
     add(G.box(.854, .018, 1.714, .008), acc2, 0, .03, .02);                                         // piping
-    add(G.cyl(.05, .05, .2, 14), acc3, .3, .15, .8, 0, 0, HP);                                       // a little bolster at the foot
+    // a little bolster at the foot (⑥ 10/23 사용자 메모 4판 "이상한 실린더": a plain drum — now a soft roll pillow with gathered,
+    // tied ends and a band round its middle)
+    add(G.cap(.052, .16, 4, 14), acc3, .3, .152, .8, 0, 0, HP);
+    for (const s of [-1, 1]) { add(G.tor(.02, .008, PI * 2, 4, 10), shade(acc3, -.15), .3 + s * .125, .152, .8, 0, HP, 0); add(G.cone(.026, .03, 8), acc3, .3 + s * .148, .152, .8, 0, 0, -s * HP); }
+    add(G.cyl(.054, .054, .03, 16), CREAM, .3, .152, .8, 0, 0, HP);
   }));
   const pil = grp(mc('futon-pillow|' + tk, ({ add }) => {
     add(G.box(.58, .11, .3, .05, 2), pilC, 0, 0, 0);
@@ -675,9 +695,16 @@ B.wardrobe = (f, T) => {
     add(G.box(.24, .12, .2, .01), KRAFT, -.26, y0 + .045 + .06, z0 - .14);
     for (const dz of [-.05, .06]) { add(G.box(.08, .22, .09, .03), BROWN, .3, y0 + .045 + .11, z0 + dz - .02); add(G.box(.08, .05, .16, .02), BROWN, .3, y0 + .045 + .025, z0 + dz + .02); }
     // a hat box on top
-    add(G.cyl(.12, .12, .13, 20), acc2, -.27, top + .07 + .065, z0);
-    add(G.cyl(.126, .126, .03, 20), shade(acc2, -.1), -.27, top + .07 + .125, z0);
-    add(G.cyl(.121, .121, .03, 20), acc3, -.27, top + .07 + .05, z0);
+    // (⑥ 10/23 사용자 메모 2판 "이거 못생김 / 뭔지 모르겠어": a plain blue drum — now a hat box: polka dots, a lid that overhangs,
+    // a ribbon round it and across the lid, tied in a bow)
+    { const hx = -.27, hb = top + .07, hc = acc3, rib = shade(acc3, -.05);
+      add(G.cyl(.12, .12, .13, 24), acc2, hx, hb + .065, z0);
+      for (let i = 0; i < 10; i++) { const a = i / 10 * PI * 2 + (i % 2) * .3, yy = hb + (i % 2 ? .05 : .095); add(G.sph(.014, 8, 6), CREAM, hx + Math.sin(a) * .121, yy, z0 + Math.cos(a) * .121, 0, a, 0, [1, 1, .35]); }
+      add(G.cyl(.128, .128, .036, 24), shade(acc2, -.08), hx, hb + .148, z0);
+      for (let i = 0; i < 4; i++) { const a = i * HP; add(G.box(.03, .17, .006, .002), rib, hx + Math.sin(a) * .13, hb + .085, z0 + Math.cos(a) * .13, 0, a, 0); }
+      for (const ry of [0, HP]) add(G.box(.262, .006, .03, .002), rib, hx, hb + .167, z0, 0, ry, 0);
+      for (const s of [-1, 1]) add(G.tor(.03, .01, PI * 2, 5, 12), hc, hx + s * .03, hb + .185, z0 + .005, 0, s * .5, s * .5, [1, .6, 1]);
+      add(G.sph(.016, 8, 6), hc, hx, hb + .18, z0 + .006); }
   }));
   f.add(wd('wardrobe-crown', wood, ({ box }) => box(W + .08, .07, .7, 0, top + .035, -.145, { r: .02 })));
   const zf = fz + .028, DW = W / 2 - .015, DH = H - .05;
@@ -785,15 +812,19 @@ B.desk = (f, T) => {
     // pen pot, globe, books
     add(G.cyl(.045, .04, .1, 14), acc, .06, .805 + .05, z0 - .26);
     [[-.015, TOMATO, .14], [.012, SKY, .16], [0, MUSTARD, .13]].forEach(([dx, c, L], k) => tube([.06 + dx, .82, z0 - .26 + (k - 1) * .012], [.06 + dx * 2.2, .82 + L, z0 - .26 + (k - 1) * .02], .007, c, 5));
-    add(G.cyl(.06, .07, .02, 16), woodD, .84, .815, z0 - .23);
-    tube([.84, .825, z0 - .23], [.84, .87, z0 - .23], .012, woodD, 6);
-    add(G.tor(.115, .009, PI, 4, 16), GOLD, .84, .985, z0 - .23, 0, HP, -.4);
-    add(G.sph(.1, 16, 12), SKY, .84, .985, z0 - .23);
-    for (const [a, b, s] of [[.4, .2, .045], [-.9, -.3, .05], [2.2, .5, .04]]) add(G.sph(s, 8, 6), LEAF, .84 + Math.sin(a) * Math.cos(b) * .085, .985 + Math.sin(b) * .085, z0 - .23 + Math.cos(a) * Math.cos(b) * .085, 0, a, 0, [1, .8, .35]);
-    add(G.box(.24, .035, .17, .006), TOMATO, .8, .805 + .0175, z0 + .19, 0, .15, 0);
-    add(G.box(.22, .03, .16, .006), MINT, .81, .805 + .05, z0 + .19, 0, -.1, 0);
+    // (⑥ 10/23 사용자 메모 2판 "지구본 모델링 다시": a round foot and a turned stem, a half meridian ring on a tilted axis with a
+    // pin at each pole, and the ball printed with seas and lands (globeTex, its own mesh below) — not three green blobs)
+    add(G.cyl(.065, .075, .022, 18), woodD, .84, .816, z0 - .23);
+    add(G.cyl(.04, .05, .012, 14), shade(woodD, .1), .84, .833, z0 - .23);
+    tube([.84, .838, z0 - .23], [.84, .87, z0 - .23], .011, woodD, 8);
+    { const gM = xf(.84, .985, z0 - .23, 0, PI / 4, .41);   // (the ring's plane faces the usual view: its half circle runs round the ball's right side)
+      addM(G.tor(.118, .008, PI * 1.15, 4, 22), gM.clone().multiply(xf(0, 0, 0, 0, 0, -PI * .075 - HP)), GOLD);
+      for (const s of [-1, 1]) addM(G.sph(.012, 8, 6), gM.clone().multiply(xf(0, s * .108, 0)), GOLD); }
+    // (⑥ 10/23 사용자 메모 2·7판 "판판한 두 장짜리 책": two real books — gfx/bookbits.js)
+    for (const b of bookPieces([{ w: .24, t: .036, d: .17, c: TOMATO, ry: .15, deco: 1 }, { w: .22, t: .032, d: .16, c: MINT, ry: -.1, x: .01, deco: 2, ribbon: true, spine: -1 }])) add(b.g, b.c, .8, .805, z0 + .19);
   }));
   f.add(put(mesh(geo('fu-bulb', () => new THREE.SphereGeometry(.034, 10, 8)), glowMat()), -.632, 1.118, -.224));
+  f.add(put(mesh(geo('fu-globe', () => new THREE.SphereGeometry(.1, 28, 18)), mat('#ffffff', { map: globeTex(), rough: .6 })), .84, .985, z0 - .23, 0, 1.0, .41));
   const inner = shade(body, -.1);
   const drawer = (y, h, c, k, ih, label, spotH, sy, scale) => {
     const pv = new THREE.Group(); put(pv, .62, y, z0 + .37);
@@ -848,15 +879,21 @@ B.bookshelf = (f, T, o = {}) => {
   f.add(mc('bookshelf|' + tk, ({ add, tube }) => {
     add(G.pbox(W - .09, H - .085, .015), backC, 0, .085 + (H - .085) / 2, back + .0225);
     add(G.box(W - .1, .06, .02, .006), woodD, 0, .03, z0 + D / 2 - .03);
+    // (⑥ 10/23 사용자 메모 7·11·12판 "텍스쳐 좀 입히고 디테일 올려도": each book now has a rounded spine, cream page edges on
+    // top, and one of five spine marks — two bands, a label with a dot, three dots, a star, a wide band)
     for (const b of books) {
-      const zc = back + .03 + b.d / 2, front = zc + b.d / 2;
-      const rz = b.lean ? .12 : 0, yc = b.y + b.h / 2 - (b.lean ? .004 : 0), M = xf(b.x, yc, zc, 0, 0, rz);
-      add(G.box(b.w, b.h, b.d, .008), b.c, b.x, yc, zc, 0, 0, rz);
-      if (b.band > .3) {
-        const bc = b.band > .7 ? GOLD : shade(b.c, b.band > .5 ? .2 : -.18);
-        for (const dy of [b.h / 2 - .045, -b.h / 2 + .05]) add(G.pbox(b.w * .82, .018, .006), bc, b.x - Math.sin(rz) * dy, yc + Math.cos(rz) * dy, front + .004, 0, 0, rz);
-      }
-      if (b.band < .15) add(G.box(b.w * .6, .03, .006, .002), WHITE, b.x, yc + .02, front + .004, 0, 0, rz);
+      const zc = back + .03 + b.d / 2, front = zc + b.d / 2 + .006;
+      const rz = b.lean ? .12 : 0, yc = b.y + b.h / 2 - (b.lean ? .004 : 0);
+      const at = dy => [b.x - Math.sin(rz) * dy, yc + Math.cos(rz) * dy];
+      add(G.box(b.w, b.h, b.d - .012, .006), b.c, b.x, yc, zc - .006, 0, 0, rz);
+      add(G.cyl(b.w / 2, b.w / 2, b.h, 12), b.c, b.x, yc, zc + b.d / 2 - .014, 0, 0, rz, [1, 1, .32]);
+      { const [px, py] = at(b.h / 2 + .001); add(G.pbox(b.w - .014, .004, b.d - .03), '#fff4dc', px, py, zc - .01, 0, 0, rz); }
+      const k = Math.floor(b.band * 5), dk = shade(b.c, -.2), lt = shade(b.c, .22);
+      if (k === 0) for (const dy of [b.h / 2 - .045, -b.h / 2 + .05]) { const [px, py] = at(dy); add(G.pbox(b.w * .86, .016, .008), b.band > .1 ? GOLD : lt, px, py, front, 0, 0, rz); }
+      else if (k === 1) { const [px, py] = at(.03); add(G.box(b.w * .66, .06, .006, .002), CREAM, px, py, front + .001, 0, 0, rz); const [qx, qy] = at(.03); add(G.sph(.009, 8, 6), dk, qx, qy, front + .005, 0, 0, 0, [1, 1, .4]); }
+      else if (k === 2) for (const dy of [-.04, 0, .04]) { const [px, py] = at(dy); add(G.sph(.008, 8, 6), lt, px, py, front + .002, 0, 0, 0, [1, 1, .4]); }
+      else if (k === 3) { const [px, py] = at(.02); add(G.ext(starShape(Math.min(.025, b.w * .36), .011), .004, 0, 1), GOLD, px, py, front, 0, 0, rz); }
+      else { const [px, py] = at(-.01); add(G.pbox(b.w * .86, b.h * .3, .008), dk, px, py, front - .002, 0, 0, rz); const [qx, qy] = at(b.h / 2 - .04); add(G.pbox(b.w * .86, .01, .008), CREAM, qx, qy, front, 0, 0, rz); }
     }
     // on top: a little plant and a photo on a stand
     pottedPlant(add, -.24, H + .045, z0 - .02, pot, 1.15);
@@ -941,7 +978,10 @@ B.chest = (f, T) => {
     box(W - .12, .04, .012, 0, top - .03, fz + .006, { r: .004 });
     box(W - .12, .03, .012, 0, .075, fz + .006, { r: .004 });
   }));
-  f.add(mg('chest-abc', atlasMat(), ({ add }) => add(quadGeo(.52, .17, RG.abc), 0, .2, fz + .006)));
+  // (⑥ 10/23 사용자 메모 2판 "ABCD 블록 검은 테두리 정리": a flat printed strip whose outline read as a black frame — now four real
+  // wooden blocks set into the front, each its own colour with a fat white letter)
+  f.add(mc('chest-abcblocks|' + tk, ({ add }) => { ABC.forEach(([c], i) => add(G.box(.11, .11, .034, .014), c, -.195 + i * .13, .2 + (i % 2) * .012, fz + .016, 0, 0, (i % 2 ? -.06 : .05))); }));
+  ABC.forEach(([c, L], i) => f.add(put(mesh(geo('fu-abc-face', () => new THREE.PlaneGeometry(.088, .088)), mat('#ffffff', { map: letterTex(L, c), rough: .7 })), -.195 + i * .13, .2 + (i % 2) * .012, fz + .0335, 0, 0, (i % 2 ? -.06 : .05))));
   // the padded lid, hinged on the back top edge
   const lid = new THREE.Group(); put(lid, 0, top, bz); f.add(lid);
   lid.add(wd('chest-lidrim', wood, ({ box }) => box(W + .06, .05, D + .06, 0, .025, D / 2, { r: .015 })));
@@ -1247,12 +1287,16 @@ B.counter = (f, T, o = {}) => {
     add(G.box(W - .04, .76, .05, .016), acc, dcx, 0, 0);
     frameBars(add, dcx, 0, W - .06, .74, .075, .012, .025, shade(acc, -.16));   // (① 모델 품질 10/21: the frame a step darker and a cream heart up top —
     add(G.ext(heartShape(.07), .006, 0, 6), CREAM, dcx - .06, .2, .028);             // one plain panel read as a cardboard box in the icon)
-    for (const dy of [.08, .28]) add(G.cyl(.011, .011, .035, 8), STEEL2, W - .14, dy, .045, HP, 0, 0);
-    add(G.cap(.013, .2, 2, 8), STEEL, W - .14, .18, .062);
+    // (⑥ 10/23 사용자 메모 6판 "싱크대 손잡이 다시. 좀 헷갈려": a towel rolled across an upright bar read as neither — now one clear
+    // towel bar across the top of the door on two posts, the towel hanging over it in folds)
+    for (const dx of [-.2, .2]) add(G.cyl(.011, .011, .04, 8), STEEL2, dcx + dx, .27, .045, HP, 0, 0);
+    add(G.cap(.012, .4, 2, 8), STEEL, dcx, .27, .066, 0, 0, HP);
   }));
-  pv.add(pm('counter-towel|' + tw, mat('#ffffff', { map: ginghamTex(tw) }), .12, ({ box, geo }) => {
-    box(.13, .22, .012, W - .14, .06, .084, { r: .004 });
-    geo(G.cyl(.018, .018, .13, 10), xf(W - .14, .18, .075, 0, 0, HP));
+  const zt = clothWave(.15, .24, 2, .01);
+  pv.add(pm('counter-towel2|' + tw, mat('#ffffff', { map: ginghamTex(tw) }), .12, ({ geo }) => {
+    geo(clothSlab(.15, .24, .01, zt), xf(dcx + .08, .27, .082));
+    geo(clothSlab(.15, .1, .01, (x, y) => -zt(x, y) * .5), xf(dcx + .08, .27, .05));
+    geo(G.cyl(.019, .019, .15, 12, true), xf(dcx + .08, .27, .066, 0, 0, HP));
   }));
   f.add(pv);
   // on the worktop's back left corner: a crock of spatulas and ladles, a little sugar pot (the two places on it stay clear)
@@ -1444,6 +1488,7 @@ B.stool = (f, T) => {
   f.spot('under', null, 0, 0, .05, { maxH: .35, label: '의자 밑', scale: .8 });
 };
 
+const ABC = [['#ff8a78', 'A'], ['#ffc23d', 'B'], ['#8fd3f4', 'C'], ['#7fd6c0', 'D']];
 // ── Wall decor (origin: wall inner face, floor height; faces +z into the room)
 // 창문: a white window with a deep reveal onto a sunny garden view (a tree, the neighbours' roofs), a muntin cross, a sill
 // with a potted daisy, and patterned curtains on rings from a wooden rod — they draw back.

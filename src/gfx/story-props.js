@@ -626,12 +626,18 @@ B.kitchentable = (f, T) => {
     const px = -.5, pz = .06;
     add(G.cyl(.17, .14, .025, 20), WHITE, px, top + .012, pz);
     add(G.tor(.15, .008, PI * 2, 3, 20), SKY, px, top + .026, pz, HP);
-    add(G.sph(.07, 12, 8), '#f2a65a', px - .02, top + .045, pz, 0, .3, 0, [1.9, .55, 1]);
-    add(G.cone(.06, .08, 6), '#f2a65a', px + .13 * Math.cos(.3), top + .045, pz - .13 * Math.sin(.3), 0, .3, HP, [1, 1, .45]);
-    for (let i = 0; i < 3; i++) add(G.pbox(.012, .01, .1), '#8a4d2a', px - .07 + i * .045, top + .083, pz + .01 - i * .013, 0, .9, 0);
-    add(G.sph(.013, 5, 4), WHITE, px - .12 * Math.cos(.3), top + .07, pz + .12 * Math.sin(.3) + .02);
-    add(G.sph(.007, 4, 3), INK, px - .12 * Math.cos(.3) + .004, top + .078, pz + .12 * Math.sin(.3) + .026);
-    add(G.pbox(.012, .006, .16), STEEL, px + .22, top + .004, pz, 0, .1, 0);
+    // (⑥ 10/23 사용자 메모 6판 "이런 것들 디테일이 떨어짐": a stretched ball and a cone — now one grilled fish cut as a fish (round
+    // head, fat belly, a forked tail, a fin on its back), golden with darker grill bars, a white eye, beside it a lemon wedge and a
+    // sprig of parsley, and a pair of chopsticks on a little rest)
+    { const fsh = new THREE.Shape(); fsh.moveTo(-.12, 0); fsh.bezierCurveTo(-.12, .05, -.04, .062, .04, .04); fsh.lineTo(.09, .014); fsh.lineTo(.14, .05); fsh.lineTo(.125, 0); fsh.lineTo(.14, -.05); fsh.lineTo(.09, -.014); fsh.lineTo(.04, -.04); fsh.bezierCurveTo(-.04, -.062, -.12, -.05, -.12, 0);
+      const fg = G.ext(fsh, .035, .012, 10).rotateX(-HP), fy = top + .03, a = .3, P = (u, v) => [px + u * Math.cos(a) + v * Math.sin(a), pz - u * Math.sin(a) + v * Math.cos(a)];
+      add(fg, '#f0a24e', px - .01, fy, pz, 0, a, 0);
+      for (let i = 0; i < 4; i++) { const [x, z] = P(-.06 + i * .04, 0); add(G.box(.01, .006, .075 - Math.abs(i - 1.5) * .012, .002), '#8a4d2a', x, fy + .06, z, 0, a + .5, 0); }
+      { const [x, z] = P(.0, -.03); add(G.ext(fsh, .004, 0, 4).scale(.5, .35, 1).rotateX(-HP).rotateZ(-.2), '#e08a3a', x, fy + .055, z, 0, a, 0); }
+      { const [x, z] = P(-.095, .016); add(G.sph(.012, 8, 6), WHITE, x, fy + .05, z); add(G.sph(.006, 6, 4), INK, x + .002, fy + .056, z + .004); }
+      { const [x, z] = P(.02, .1); add(G.cyl(.035, .035, .02, 12, false, 0, PI), '#ffe066', x, top + .035, z, HP, a + .4, 0); add(G.sph(.016, 6, 5), '#6cbf5a', x + .04, top + .04, z - .02, 0, 0, 0, [1.3, .6, 1]); add(G.sph(.012, 6, 5), '#4ea85a', x + .055, top + .045, z - .01); }
+      for (const dz of [-.012, .012]) add(G.box(.008, .008, .2, .002), '#c98a52', px + .22, top + .012, pz + dz, 0, .1, 0);
+      add(G.box(.02, .012, .05, .004), '#ff9fb0', px + .22, top + .006, pz - .07, 0, .1, 0); }
     // vase with a flower
     const vx = .02, vz = -.26;
     add(G.lathe([[0, 0], [.045, 0], [.055, .05], [.035, .12], [.03, .15], [.04, .17], [0, .17]], 12), acc, vx, top, vz);

@@ -190,6 +190,17 @@ function liveTex(w, h, draw, o = {}) {
 }
 const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
 const tex = (key, w, h, draw, o) => TEX.get(key, () => liveTex(w, h, draw, o));
+// the cat clock's dial (⑥ 10/23): cream face, 60 ticks (fat at the hours), 12·3·6·9, a pink nose and whiskers low down
+const catDialTex = () => tex('ap-catdial', 256, 256, (c, w, h) => {
+  const cx = w / 2, cy = h / 2, r = w / 2;
+  c.fillStyle = tint(CREAM); c.fillRect(0, 0, w, h);
+  c.fillStyle = tint('#b08a62'); for (let i = 0; i < 60; i++) { const a = i / 60 * PI * 2, big = i % 5 === 0; c.save(); c.translate(cx + Math.sin(a) * r * .88, cy - Math.cos(a) * r * .88); c.rotate(a); c.fillRect(big ? -2.5 : -1, big ? -7 : -3, big ? 5 : 2, big ? 14 : 6); c.restore(); }
+  c.font = 'bold 40px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = tint('#6a4a30');
+  for (const [n, a] of [['12', 0], ['3', .25], ['6', .5], ['9', .75]]) c.fillText(n, cx + Math.sin(a * PI * 2) * r * .64, cy - Math.cos(a * PI * 2) * r * .64 + 2);
+  c.fillStyle = tint('#ff9fb0'); c.beginPath(); c.ellipse(cx, cy + r * .36, 9, 6, 0, 0, PI * 2); c.fill();
+  c.strokeStyle = tint('#c79a72'); c.lineWidth = 3; c.lineCap = 'round';
+  for (const s of [-1, 1]) for (const k of [-1, 0, 1]) { c.beginPath(); c.moveTo(cx + s * 22, cy + r * .4 + k * 9); c.lineTo(cx + s * 58, cy + r * .4 + k * 14); c.stroke(); }
+});
 const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(); };
 const line = (c, pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); };
 function heartPath(c, x, y, s) { c.beginPath(); c.moveTo(x, y + s * .7); c.bezierCurveTo(x - s * 1.2, y - s * .1, x - s * .55, y - s * .95, x, y - s * .35); c.bezierCurveTo(x + s * .55, y - s * .95, x + s * 1.2, y - s * .1, x, y + s * .7); }
@@ -1044,21 +1055,18 @@ B.catclock = (f, T) => {
       add(G.ext(earShape(.16, .15, .03), .045, .006, 4), wood, sx * .15, cy + .15, .008, 0, 0, -sx * .45);
       add(G.ext(earShape(.08, .075, .015), .008, 0, 4), BLUSH, sx * .152, cy + .16, .064, 0, 0, -sx * .45);
     }
+    // (⑥ 10/23 사용자 메모 2판 "이런 아이템은 뭔지 모르겠어": a sleepy face and sprinkle dots on the dial read as a cookie, not a
+    // clock — now the dial is a clock first (numbers 12·3·6·9, ticks, two fat hands with round tips), the cat in its ears, tail,
+    // a little nose and whiskers low on the dial)
     const fz = .055 + .012;
-    add(G.cyl(R - .035, R - .035, .012, 32), CREAM, 0, cy, .055 + .006, HP, 0, 0);
-    for (let i = 0; i < 12; i++) { const a = i / 12 * PI * 2, big = i % 3 === 0; add(G.sph(big ? .014 : .009, 8, 6), big ? MUSTARD : woodD, Math.sin(a) * .165, cy + Math.cos(a) * .165, fz + .004, 0, 0, 0, [1, 1, .45]); }
-    for (const sx of [-1, 1]) {
-      add(G.sph(.016, 8, 6), INK, sx * .07, cy - .05, fz + .004, 0, 0, 0, [1.2, .5, .4]);
-      add(G.sph(.02, 8, 6), BLUSH, sx * .105, cy - .085, fz + .003, 0, 0, 0, [1, .6, .3]);
-      for (const k of [-1, 1]) add(G.pbox(.06, .006, .004), woodD, sx * .14, cy - .1 + k * .016, fz + .004, 0, 0, sx * k * .15);
-    }
-    add(G.sph(.012, 6, 5), CORAL, 0, cy - .085, fz + .004, 0, 0, 0, [1.3, .9, .5]);
-    add(G.box(.014, .1, .006, .003), INK, -.035, cy + .03, fz + .009, 0, 0, .9);
-    add(G.box(.012, .14, .006, .003), INK, .045, cy + .05, fz + .016, 0, 0, -.7);
-    add(G.cyl(.016, .016, .02, 12), GOLD, 0, cy, fz + .012, HP, 0, 0);
+    add(G.cyl(R - .028, R - .028, .012, 32), woodD, 0, cy, .055 + .004, HP, 0, 0);
+    add(G.box(.016, .1, .007, .004), INK, -.04, cy + .03, fz + .006, 0, 0, .95); add(G.sph(.013, 8, 6), INK, -.08, cy + .055, fz + .006, 0, 0, 0, [1, 1, .5]);
+    add(G.box(.013, .14, .007, .004), INK, .044, cy + .05, fz + .012, 0, 0, -.72); add(G.sph(.011, 8, 6), INK, .089, cy + .1, fz + .012, 0, 0, 0, [1, 1, .5]);
+    add(G.cyl(.018, .018, .02, 12), GOLD, 0, cy, fz + .014, HP, 0, 0);
     add(G.tor(.06, .018, PI * 1.2, 5, 14), wood, .06, cy - R - .045, .03, 0, 0, -.3);
     add(G.sph(.022, 8, 6), woodD, .06 + .06 * Math.cos(PI * 1.2 - .3), cy - R - .045 + .06 * Math.sin(PI * 1.2 - .3), .03);
   }));
+  pv.add(put(mesh(geo('catclock-dial', () => new THREE.CircleGeometry(R - .04, 40)), mat('#ffffff', { map: catDialTex(), rough: .8 })), 0, cy, .055 + .0125));
   f.add(pv);
   const p = f.part('flip', pv, t => { pv.rotation.z = 1.45 * t; }, { label: '고양이 시계', sfx: 'lift', dur: .34 });
   f.spot('inside', null, 0, PY + cy, .012, { part: p, maxH: .09, label: '시계 뒤', wallFace: true });

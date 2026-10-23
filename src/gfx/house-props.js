@@ -126,11 +126,15 @@ export function entryNook(c, w, d, T = {}, owner = null, drop = .12) {
         put3(G.box(.08, .045, .17, .03), sh.c, .005, 0, .036);
         put3(G.pbox(.05, .006, .03), shade(sh.c, .12), .05, 0, .06);                          // the strap
       } else {
-        put3(G.box(.085, .022, .2, .01), sh.c2, 0, 0, .011);                                 // sole
-        put3(G.box(.084, .04, .11, .03), sh.c, .045, 0, .036);                               // the toe cap
-        put3(G.box(.07, .012, .06, .006), sh.c2, .095, 0, .058);                             // a soft fluffy edge
-        if (sh.ears === 'bunny') for (const e of [-1, 1]) put3(G.box(.022, .055, .012, .01), sh.c, .07, e * .02, .075, -.35, e * .25);
-        if (sh.ears === 'cat') for (const e of [-1, 1]) put3(G.cone(.018, .03, 4), sh.c, .065, e * .025, .07);
+        // (⑥ 10/23 사용자 메모 11판 "쓰레빠도 거슬린다": boxes stacked — now a foot-shaped sole (round heel, round toe), a puffy toe
+        // cap, a fluffy cuff, and the animal on it: ears, two dot eyes, a pink nose)
+        put3(G.cyl(.045, .045, .02, 14), sh.c2, -.06, 0, .01); put3(G.cyl(.047, .047, .02, 14), sh.c2, .05, 0, .01); put3(G.box(.09, .02, .11, .006), sh.c2, -.005, 0, .01);
+        put3(G.sph(.05, 14, 9).scale(.95, .62, 1.15), sh.c, .045, 0, .024);
+        put3(G.tor(.034, .012, PI, 5, 12).rotateX(-HP).rotateY(HP), sh.c2, .0, 0, .03);
+        for (const e of [-1, 1]) { put3(G.sph(.006, 6, 4), '#2a1d33', .085, e * .016, .052); }
+        put3(G.sph(.007, 6, 4), '#ff8fa8', .094, 0, .046);
+        if (sh.ears === 'bunny') for (const e of [-1, 1]) put3(G.cap(.011, .04, 2, 6), sh.c, .045, e * .018, .075, -.4, e * .22);
+        if (sh.ears === 'cat') for (const e of [-1, 1]) put3(G.cone(.016, .028, 4), sh.c, .062, e * .024, .066);
       }
     }
   });

@@ -729,8 +729,19 @@ B.reception = (f, T) => {
     add(G.sph(.012, 8, 6), WHITE, -.3 + .0, top + .32, -.2 + .02, 0, 0, 0, [1, 1, .5]);
     add(G.box(.16, .045, .13, .015), WHITE, -.68, top + .0225, -.2, 0, .2, 0);
     add(G.cap(.022, .12, 2, 8), navy, -.68, top + .06, -.2, 0, .2, HP);
-    add(G.cyl(.035, .035, .09, 12), woodD, .05, top + .045, -.22);
-    for (const [dx, c] of [[-.012, TOMATO], [.012, SKY], [0, MUSTARD]]) tube([.05 + dx, top + .08, -.22], [.05 + dx * 2, top + .15, -.22 + dx], .005, c, 4);
+    // (⑥ 10/23 사용자 메모 14판 "디테일 거지 같은 게 있음": a stub of a cup with three sticks — now a pen cup with a rim and a band,
+    // two yellow pencils (pink rubber, sharpened point), a blue pen with a clip and a little ruler)
+    { const cx = .05, cz = -.22;
+      add(G.cyl(.04, .036, .1, 14), navy, cx, top + .05, cz); add(G.tor(.04, .005, PI * 2, 4, 16), shade(navy, .2), cx, top + .1, cz, HP, 0, 0);
+      add(G.cyl(.0405, .0405, .022, 14, true), WHITE, cx, top + .05, cz);
+      for (const [dx, dz, a, b] of [[-.014, .006, -.18, .1], [.012, -.01, .16, -.08]]) {
+        const L = .15, ux = Math.sin(a), uz = Math.sin(b), y0 = top + .03, A = [cx + dx, y0, cz + dz], B = [cx + dx + ux * L, y0 + L, cz + dz + uz * L];
+        tube(A, B, .006, '#ffcf3d', 6); tube(B, [B[0] + ux * .018, B[1] + .018, B[2] + uz * .018], .0062, '#ffb3c1', 6);
+        tube([A[0] - ux * .01, y0 - .01, A[2] - uz * .01], A, .006, '#f3d9b0', 6);
+      }
+      tube([cx, top + .03, cz + .014], [cx - .01, top + .16, cz + .02], .006, '#5a8fe0', 8);
+      add(G.box(.004, .04, .006, .001), '#c9d1de', cx - .015, top + .14, cz + .02);
+      add(G.box(.012, .13, .004, .001), '#ffe9a6', cx + .025, top + .1, cz - .02, 0, .3, -.12); }
   }));
   f.add(mg('reception-prints', atlasMat(), ({ add, addM }) => {
     add(quadGeo(.54, .135, RG.info), -.33, .52, FZ + .02 + .006);

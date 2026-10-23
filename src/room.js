@@ -697,8 +697,14 @@ export class Room {
     const top = put(plane(z.w - .04, z.d - .04, mat('#ffffff', { map: zt, rough: .7, rim: .12 })), cx, h + .004, cz, -Math.PI / 2);
     top.receiveShadow = true; g.add(top);
     // a little step in front so it reads as a platform you climb onto ('full': one step the whole width of its front)
-    if (z.step === 'full') g.add(put(rbox(z.w, h * .5, .26, shade(edge, .08), .02), cx, h * .25, cz + z.d / 2 + .13));
-    else if (z.step !== false && !z.stairs) g.add(put(rbox(Math.min(1, z.w * .5), h * .5, .28, shade(edge, .08), .03), cx + (z.stepX ?? 0), h * .25, cz + z.d / 2 + .14));
+    // (⑥ 10/23 사용자 메모 11판 "밖에 삐져나온 주황 막대 거슬림": a platform that runs to the room's front edge put its step outside
+    // the floor — then the step goes on its open west side instead, or is left out)
+    const frontOpen = z.j + z.d < d, westOpen = z.i > 0;
+    if (z.step === 'full' && frontOpen) g.add(put(rbox(z.w, h * .5, .26, shade(edge, .08), .02), cx, h * .25, cz + z.d / 2 + .13));
+    else if (z.step !== false && z.step !== 'full' && !z.stairs) {
+      if (frontOpen) g.add(put(rbox(Math.min(1, z.w * .5), h * .5, .28, shade(edge, .08), .03), cx + (z.stepX ?? 0), h * .25, cz + z.d / 2 + .14));
+      else if (westOpen) g.add(put(rbox(.28, h * .5, Math.min(1, z.d * .5), shade(edge, .08), .03), cx - z.w / 2 - .14, h * .25, cz));
+    }
     // (새 맵 10/21, 사용자 "단차 같은 거 신경 써서… 깔끔하고 디테일하게"): opt-in finish for a platform — a rounded nosing along its
     // open edges (z.nose), a darker plinth at their foot (z.plinth), and real stairs (z.stairs: [{ side, at, w }]) down to the floor
     const open = { N: z.j > 0, S: z.j + z.d < d, W: z.i > 0, E: z.i + z.w < w };
@@ -791,7 +797,12 @@ export class Room {
         const cloth = add(new THREE.Mesh(cg, mat(cc, { rough: .9, rim: .1, side: THREE.DoubleSide })));
         cloth.position.set(ax, top - h - .02, az); cloth.rotation.y = -ang;
         const at = (u, yy) => [ax + (bx - ax) * u / L, yy, az + (bz - az) * u / L];
-        for (let u = .06; u < L - .03; u += .11) { const [px, py, pz] = at(u, top - h - .015); add(put(new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 5), mat(cd, { rough: .9 })), px, py, pz, 0, 0, 0, [1, .55, 1])); }   // the scalloped hem
+        // the hem: a soft band that follows the folds (⑥ 10/23 사용자 메모 2판 "동그란 거 징그럽다" — it was a row of balls)
+        { const hs = new THREE.Shape(), ht = t * 1.8; hs.moveTo(0, ht / 2);
+          for (let i = 1; i <= n; i++) { const u = L * i / n; hs.lineTo(u, A * Math.sin(k * u) + ht / 2); }
+          for (let i = n; i >= 0; i--) { const u = L * i / n; hs.lineTo(u, A * Math.sin(k * u) - ht / 2); }
+          const hg = new THREE.ExtrudeGeometry(hs, { depth: .05, bevelEnabled: false, curveSegments: 4 }); hg.rotateX(-Math.PI / 2);
+          const hem = add(new THREE.Mesh(hg, mat(cd, { rough: .9, side: THREE.DoubleSide }))); hem.position.set(ax, top - h - .03, az); hem.rotation.y = -ang; }
         add(put(new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, L + .1, 10), mat(woodD)), (ax + bx) / 2, top + .05, (az + bz) / 2, 0, -ang, Math.PI / 2));   // the rod
         for (const u of [-.05, L + .05]) { const [px, , pz] = at(u, 0); add(put(new THREE.Mesh(new THREE.SphereGeometry(.035, 10, 8), mat(woodD)), px, top + .05, pz)); }   // its knobs
         for (let u = .1; u < L - .05; u += .19) { const [px, , pz] = at(u, 0); add(put(new THREE.Mesh(new THREE.TorusGeometry(.03, .008, 4, 10), mat('#e8d6a8')), px, top + .05, pz, 0, Math.PI / 2 - ang, 0)); }   // rings round the rod

@@ -1469,6 +1469,15 @@ B.planter = (f, T) => {
     add(G.cap(.006, .03, 2, 4), INK, .16, SY + .27, .02, HP, 0, 0);
     add(G.box(.025, .3, .025, .006), woodD, -.48, SY + .1, .17);
     add(G.box(.2, .1, .02, .006), '#f6e2c0', -.48, SY + .3, .17);
+    // (⑥ 10/23 사용자 메모 7판 "화단도 디테일 업"): a lighter cap board round the top edge, soil clods and pebbles along the front,
+    // a ladybug on a leaf, a hand trowel stuck in the soil and a little mint watering can at the box's end
+    for (const sz of [-1, 1]) add(G.box(2 * PW - .14, .025, .07, .008), shade(wood, .1), 0, PH + .012, sz * (PD - .03));
+    for (const sx of [-1, 1]) add(G.box(.07, .025, 2 * PD - .14, .008), shade(wood, .1), sx * (PW - .07), PH + .012, 0);
+    for (let k = 0; k < 14; k++) { const x = -.82 + k * .125 + ((k * 37) % 5) * .01, z = .17 + ((k * 13) % 3) * .012; add(G.sph(.016 + (k % 3) * .004, 6, 4), k % 4 ? shade(soil, -.12) : '#e8dccb', x, SY + .004, z, 0, k, 0, [1.2, .55, 1]); }
+    add(G.sph(.014, 8, 6), '#ff4f5e', -.66, SY + .072, -.02, 0, 0, 0, [1, .6, 1.2]); for (const dx of [-.004, .004]) add(G.sph(.003, 4, 3), INK, -.66 + dx, SY + .08, -.02);
+    add(G.box(.04, .005, .07, .003), '#c9cfe0', .26, SY + .02, .15, -.9, .3, 0); add(G.cyl(.008, .009, .08, 8), '#ff8a3c', .26, SY + .085, .19, -.9 + HP, .3, 0);
+    { const wx = .62, wz = .38; add(G.cyl(.06, .07, .12, 14), '#8fd6c4', wx, .06, wz); add(G.tor(.045, .008, PI, 4, 10), '#6cbfab', wx - .02, .15, wz, 0, HP, 0);
+      add(G.cyl(.012, .018, .16, 8), '#8fd6c4', wx + .09, .12, wz, 0, 0, -1.0); add(G.cyl(.022, .016, .02, 10), '#6cbfab', wx + .155, .165, wz, 0, 0, -1.0); }
   }));
   f.add(mg('planter-sign', atlasMat(), ({ add }) => add(quadGeo(.19, .095, RG.love), -.48, SY + .3, .17 + .01 + .006)));
   f.spot('behind', null, .5, SY, -.13, { maxH: .3, label: '꽃 화단 속', scale: .7 });

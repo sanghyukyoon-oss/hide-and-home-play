@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { createNote, noteKeyFor } from './gpt-notes.js';
 import { bakeItem } from './bake.js';
+import { bookPile, piecesGroup } from './bookbits.js';
 import { rbox, sph, hemi, cyl, tor, cone, cap, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, disc, plane, shade } from './kit.js';
 import { tr } from '../i18n.js';
 
@@ -492,13 +493,10 @@ export const ITEMS = {
   } },
   // 책: a little stack with cream page edges and a ribbon bookmark, so it reads as books, not erasers
   books: { name: '책', h: .12, decoy: true, build(o = {}) {
-    const g = grp(), cols = ['#8b6cff', '#ff8fb8', '#59d0ff', '#ffb340'], v = o.v || 0;
-    [[.24, .045, .17, 0, .1], [.21, .04, .155, .045, -.15], [.19, .036, .14, .085, .25]].forEach(([w, t, d, y, r], k) => {
-      const c = cols[(v + k) % 4];
-      g.add(put(rbox(w, t, d, c, .008), 0, y + t / 2, 0, 0, r));
-      g.add(put(rbox(w - .02, t - .012, d - .006, '#fff6e2', .004), .012 * Math.cos(r), y + t / 2, -.012 * Math.sin(r), 0, r));   // pages
-      if (k === 2) g.add(put(rbox(.012, .004, .05, '#ff5a7a', .002), -.04, y + t + .002, d / 2 + .01, 0, r));   // bookmark
-    });
+    // (⑥ 10/23 사용자 메모 6·9판 "텍스쳐 좀 써서 재밌고 흥미롭게": spines with a title band, page lines, a sticker or a star on the
+    // cover, a ribbon — gfx/bookbits.js, shared with the desk's books)
+    const cols = ['#8b6cff', '#ff8fb8', '#59d0ff', '#ffb340'], v = o.v || 0;
+    const g = grp(); g.add(piecesGroup(bookPile(3, cols, v, { w: .24, d: .17, t: .04 }), (geom, c) => mesh(geom, mat(c))));
     return g;
   } },
   // 블록: a toy brick with four studs on top

@@ -303,6 +303,13 @@ const cordTex = c1 => tex('or-cord|' + c1, 64, 64, (c, w, h) => {
   const n = 6, s = w / n;
   for (let k = 0; k < n; k++) { c.fillStyle = tint(shade(c1, .045)); c.fillRect(k * s + s * .2, 0, s * .42, h); c.fillStyle = tint(shade(c1, -.055)); c.fillRect(k * s + s * .74, 0, s * .2, h); }
 }, { repeat: [1, 1] });
+// soft plush fabric (⑥ 10/23 사용자 메모 2판 빈백 "쇼파 uv 이상함" — the corduroy stripes stretched round the bag read as wood
+// grain): a fine speckled weave with no direction, so it stays cloth however the uvs stretch
+const plushTex = c1 => tex('or-plush|' + c1, 128, 128, (c, w, h) => {
+  c.fillStyle = tint(c1); c.fillRect(0, 0, w, h);
+  let sd = 7; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 900; i++) { c.fillStyle = tint(shade(c1, R() < .5 ? .025 : -.025)); c.fillRect(Math.floor(R() * w), Math.floor(R() * h), 1, 1); }
+}, { repeat: [1, 1] });
 // a fluffy rug: short tufts every which way and a contrast ring near the edge
 const furTex = (c1, c2) => tex('or-fur|' + c1 + c2, 256, 256, (c, w, h) => {
   c.fillStyle = tint(c1); c.fillRect(0, 0, w, h);
@@ -968,11 +975,19 @@ B.shoerack = (f, T) => {
     add(G.tor(.042, .008, PI * 2, 4, 16), TOMATO, nx, TY + .105, nz, HP + .3, 0, 0);
     add(G.sph(.013, 8, 6), GOLD, nx, TY + .093, nz + .047);
     add(G.sph(.028, 10, 6), GOLD, nx - .018, TY + .055, nz + .05, 0, 0, 0, [1, 1.3, .35]);
-    add(G.box(.17, .014, .11, .005), woodD, .3, TY + .007, -.26);
-    for (const sx of [-1, 1]) add(G.pbox(.006, .014, .11), shade(woodD, -.1), .3 + sx * .082, TY + .021, -.26);
-    add(G.tor(.018, .004, PI * 2, 3, 12), GOLD, .27, TY + .018, -.25, HP, 0, 0);
-    add(G.box(.06, .008, .018, .003), GOLD, .31, TY + .018, -.25, 0, .3, 0);
-    add(G.box(.04, .025, .008, .004), TOMATO, .33, TY + .02, -.28, 0, -.4, 0);
+    // the key tray (⑥ 10/23 사용자 메모 15판 "쟁반 위 열쇠 모양 뭔지 모르겠어": a gold bar and a red chip — now a rimmed tray with a
+    // proper house key (round bow with a hole, a shaft with teeth) on a ring with a heart charm, and a coin)
+    { const tx = .3, tz = -.26, ty = TY + .012;
+      add(G.box(.19, .012, .13, .005), woodD, tx, TY + .006, tz);
+      for (const sz of [-1, 1]) add(G.box(.19, .02, .012, .004), shade(woodD, -.08), tx, TY + .016, tz + sz * .059);
+      for (const sx of [-1, 1]) add(G.box(.012, .02, .13, .004), shade(woodD, -.08), tx + sx * .089, TY + .016, tz);
+      const kx = tx - .035, kz = tz + .01, ka = .35, K = (u, v) => [kx + u * Math.cos(ka) + v * Math.sin(ka), kz - u * Math.sin(ka) + v * Math.cos(ka)];
+      add(G.tor(.019, .007, PI * 2, 5, 16), GOLD, kx, ty + .004, kz, HP, 0, 0);
+      { const [x, z] = K(.06, 0); add(G.box(.066, .008, .014, .003), GOLD, x, ty + .004, z, 0, ka, 0); }
+      for (const u of [.072, .088]) { const [x, z] = K(u, .012); add(G.box(.008, .008, .012, .002), GOLD, x, ty + .004, z, 0, ka, 0); }
+      { const [x, z] = K(-.03, -.012); add(G.tor(.013, .003, PI * 2, 3, 12), STEEL, x, ty + .003, z, HP, 0, 0); }
+      { const [x, z] = K(-.05, -.03); add(G.ext(heartShape(.018), .008, .002, 6), TOMATO, x, ty + .002, z, -HP, 0, 0); }
+      add(G.cyl(.016, .016, .005, 14), '#e8c35a', tx + .055, ty + .002, tz + .03); }
     // the doormat and a pair of sneakers on it
     add(G.box(.7, .015, .38, .006), '#c48a50', 0, .0075, .2);
     for (const dx of [-.055, .055]) sneaker(add, -.17 + dx * 1.2, .021, .22, TOMATO, .3 + dx * 2);
@@ -1267,17 +1282,21 @@ B.beanbag = (f, T) => {
   const bean = col(T, 'bean'), rug = col(T, 'rug'), rug2 = col(T, 'rug2'), tk = [bean, rug, rug2].join(',');
   const RR = .48, RT = .02, PX = -.4, CZ = -.05, seam = shade(bean, -.16);
   f.add(mg('beanbag-rug|' + rug + rug2, mat('#ffffff', { map: rugTex(rug, rug2) }), ({ add }) => add(new THREE.CylinderGeometry(RR, RR, RT, 40), 0, RT / 2, 0)));
-  f.add(mc('beanbag|' + tk, ({ add }) => {   // a game controller on the rug
-    const gx = .27, gz = .3, a = -.6, M = (x, z) => [gx + x * Math.cos(a) + z * Math.sin(a), gz - x * Math.sin(a) + z * Math.cos(a)];
-    add(G.box(.13, .03, .065, .02), '#f6f3fb', gx, RT + .016, gz, 0, a, 0);
-    for (const s of [-1, 1]) { const [x, z] = M(s * .055, .025); add(G.sph(.036, 10, 8), '#f6f3fb', x, RT + .016, z, 0, a - s * .35, 0, [1, .5, 1.3]); }
-    for (const [x, z, c] of [[.04, -.012, TOMATO], [.055, .004, MUSTARD], [.04, .02, SKY], [.025, .004, MINT]]) { const [wx, wz] = M(x, z); add(G.cyl(.007, .007, .01, 8), c, wx, RT + .033, wz); }
-    for (const s of [-1, 1]) { const [wx, wz] = M(s * .014 - .02, .012); add(G.cyl(.009, .01, .014, 10), DARK, wx, RT + .036, wz); }
+  // a game controller on the rug (⑥ 10/23 사용자 메모 2판 "조이스틱 크기 정리": a bit bigger and tidier — one rounded body with
+  // two grips, a cross pad on the left, four buttons on the right, two small sticks, a lilac stripe)
+  f.add(mc('beanbag2|' + tk, ({ add }) => {
+    const gx = .25, gz = .3, a = -.6, M = (x, z) => [gx + x * Math.cos(a) + z * Math.sin(a), gz - x * Math.sin(a) + z * Math.cos(a)], y = RT + .02, body = '#f6f3fb';
+    add(G.box(.17, .036, .08, .03), body, gx, y, gz, 0, a, 0);
+    for (const s of [-1, 1]) { const [x, z] = M(s * .072, .03); add(G.sph(.042, 12, 9), body, x, y - .002, z, 0, a - s * .3, 0, [1, .5, 1.25]); }
+    { const [x, z] = M(0, -.032); add(G.box(.09, .008, .012, .004), LILAC, x, y + .016, z, 0, a, 0); }
+    { const [x, z] = M(-.05, .002); for (const r of [0, HP]) add(G.box(.036, .008, .012, .003), DARK, x, y + .02, z, 0, a + r, 0); }
+    for (const [x, z, c] of [[.05, -.012, TOMATO], [.068, .004, MUSTARD], [.05, .02, SKY], [.032, .004, MINT]]) { const [wx, wz] = M(x, z); add(G.cyl(.008, .008, .01, 10), c, wx, y + .02, wz); }
+    for (const s of [-1, 1]) { const [wx, wz] = M(s * .018, .022); add(G.cyl(.01, .011, .012, 10), DARK, wx, y + .021, wz); }
   }));
   // the bag: a wide soft seat and a slouched backrest behind it (its own mesh: it tips over to the left)
   const pv = new THREE.Group(); put(pv, PX, RT, CZ); f.add(pv);
   const prof = [[0, 0], [.3, 0], [.39, .04], [.42, .12], [.4, .22], [.33, .3], [.2, .345], [.08, .36], [0, .36]];
-  pv.add(pm('beanbag-bag|' + bean, mat('#ffffff', { map: cordTex(bean) }), .26, ({ geo }) => {
+  pv.add(pm('beanbag-bag2|' + bean, mat('#ffffff', { map: plushTex(bean), rough: .95 }), .2, ({ geo }) => {
     geo(G.lathe(prof, 32), xf(-PX, 0, 0));
     geo(G.sph(.3, 24, 14), xf(-PX, .36, -.16, -.35, 0, 0, [1.2, .85, .62]));
   }));
@@ -1337,9 +1356,14 @@ B.ricecooker = (f, T) => {
     add(G.box(.12, .07, .02, .008), '#efe8da', cx, CY + .09, cz + .158);
     for (const [dx, c] of [[-.025, TOMATO], [.025, MINT]]) add(G.cyl(.01, .01, .008, 10), c, cx + dx, CY + .07, cz + .168 + .004, HP, 0, 0);
     face(add, cx, CY + .158, cz + .162, .42, { blush: null });
-    add(G.cyl(.03, .025, .08, 12), WHITE, .2, CY + .04, -.18);
-    add(G.cap(.026, .07, 2, 8), '#fbf8f0', .205, CY + .13, -.18, 0, 0, -.15, [1, 1, .3]);
-    add(G.box(.025, .1, .012, .005), '#fbf8f0', .195, CY + .07, -.18, 0, 0, -.15);
+    // the rice paddle in its holder (⑥ 10/23 사용자 메모 15판 "주걱 다시 디자인": a capsule on a stick — now a real 주걱: a round
+    // shallow scoop with a dimpled face and two grains on it, a long handle with a hang hole, in a cup with a pink band)
+    add(G.cyl(.034, .028, .085, 14), WHITE, .2, CY + .0425, -.18); add(G.cyl(.0345, .0345, .016, 14, true), '#ffb3c6', .2, CY + .06, -.18);
+    { const sh = new THREE.Shape(); sh.absarc(0, .085, .037, -PI * .1, PI * 1.1, false); sh.lineTo(-.014, .03); sh.lineTo(-.012, -.04); sh.absarc(0, -.04, .012, PI, 0, false); sh.lineTo(.014, .03); sh.closePath();
+      const hole = new THREE.Path(); hole.absarc(0, -.035, .005, 0, PI * 2, true); sh.holes.push(hole);
+      add(G.ext(sh, .008, .003, 10), '#fbf8f0', .2, CY + .085, -.184, 0, 0, -.14);
+      add(G.sph(.03, 12, 8), '#efe9dc', .2 + .085 * Math.sin(.14), CY + .085 + .085 * Math.cos(.14), -.171, 0, 0, 0, [1, 1.05, .12]);
+      for (const [dx, dy] of [[-.01, .008], [.012, -.006]]) add(G.sph(.006, 6, 4), WHITE, .2 + .085 * Math.sin(.14) + dx, CY + .085 + .085 * Math.cos(.14) + dy, -.166, 0, 0, .5, [1.6, .8, .6]); }
     // middle: instant rice and a ramen pack; bottom: a rice sack and onions
     for (let k = 0; k < 3; k++) add(G.cyl(.06, .05, .045, 16), WHITE, -.17, TS[1] + .0225 + k * .045, z0 + .02);
     add(G.box(.26, .16, .1, .02), '#ff4b3a', .12, TS[1] + .08, -.4);
