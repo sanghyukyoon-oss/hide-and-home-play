@@ -52,7 +52,7 @@ export function stagingHidden(S) { const k = keyOf(S, 'start'); FX[k]?.hidden?.(
 // ── 28판 시작: 창밖이 흐르고 객실이 살짝 흔들린다 → 숨는 동안 터널(까만 1초) → 밝아지면 너굴이 자리에 모자만
 function flowWindows(S) {
   // (traincar4 ⑧ 10/23: its windows and the land outside flow on their own — only the rumble starts here)
-  const tex = trainView(); if (S._flow || (!tex && !furnOf(S, 'tc4scenery'))) return;
+  const tex = trainView(); if (S._flow || (!tex && !furnOf(S, 'tc4scenery') && !furnOf(S, 'tc5shell'))) return;
   S._flow = true;
   if (tex) {
     tex.wrapS = THREE.MirroredRepeatWrapping; tex.needsUpdate = true;
