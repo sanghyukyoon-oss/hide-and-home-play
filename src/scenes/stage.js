@@ -50,6 +50,7 @@ import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incid
 // 대본 (10/18): what everyone says, tied to the map + kind of stage, not the stage number (_handoff/script-ko-en-20261018.md)
 import { R1, r1Line, KIT_TALK, inkyNamed } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { staging, stagingHide, stagingHidden, stagingCrossing, stagingPrep, hatKeyHide } from '../staging.js';
+import { asRoom } from '../roomalias.js';
 import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
   stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
@@ -220,7 +221,7 @@ export class StageScene {
     // what the last three stages played asked for: this one picks other things first (stages.js planStage, 10/20)
     const recentT = G.save.recentT || [];
     if (!custom && !this.preview) this.spec = { ...this.spec, recentTypes: recentT.filter(e => e.i !== this.idx).flatMap(e => e.t) };
-    const chainP = custom || this.preview || this.kit ? null : chainPrep(this.room, this.spec);   // (②b 10/22: a GPT map's chained device — gpt-chains.js)
+    const chainP = custom || this.preview ? null : chainPrep(this.room, this.spec);   // (조립판도: 보조 장치만 — gpt-chains recipeFor, ② 10/22)   // (②b 10/22: a GPT map's chained device — gpt-chains.js)
     this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : this.kit ? planModel(this.room, this.spec, this.story) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, { ...this.spec, habit: HABIT_BREAK.has(this.idx) ? null : habitOf(th.friend) }, this.story)) || planStage(this.room, this.spec, this.story);
     if (chainP) this.plan = chainPlan(this, this.plan, chainP);
     if (this.incident && !this.plan.incident) this.incident = false;
@@ -278,7 +279,7 @@ export class StageScene {
       const EARLY = null;   // (10/22 사용자 고침: "1~20판에는 뽀샤시 넣지 말라는 거였는데")
       const q = new URLSearchParams(location.search), only = (q.get('glowst') || '').split(',').filter(Boolean).map(Number);
       const num = k => { const v = q.get(k); return v != null && v !== '' && !isNaN(+v) && (!only.length || only.includes(this.idx + 1)) ? +v : null; };
-      const own = !nightGlow && !this.spec.gray && (DAY[this.spec.room] || EARLY), gq = num('glow'), dq = num('diffuse');
+      const own = !nightGlow && !this.spec.gray && (DAY[this.spec.room] || DAY[asRoom(this.spec.room)] || EARLY), gq = num('glow'), dq = num('diffuse');
       let glow = own && own[0] === 'glow' ? own[1] : 0, dif = own && own[0] === 'diffuse' ? own[1] : 0;
       if (gq != null) { glow = nightGlow ? 0 : gq; if (gq > 0) dif = 0; }
       if (dq != null) { dif = dq; if (dq > 0) glow = 0; }

@@ -78,7 +78,7 @@ const tunnel = {
     // twindow2 — traincar3's big flowing ones, ③ 10/22 — and never one with its blind down)
     let win = null, best = -1; const cd = V(0, 0, 0); W.cam.getWorldDirection(cd);
     for (const R of S.room.rooms || [S.room]) for (const r of [...R.furns, ...(R.decors || [])]) {
-      if (!/^twindow/.test(r.type) || r.f.parts?.some(q => /블라인드/.test(q.label) && q.t < .5)) continue;
+      if (!/^twindow|^gpt_tc2_window/.test(r.type) || r.f.parts?.some(q => /블라인드/.test(q.label) && q.t < .5)) continue;   // (gpt_tc2_window: 28판 두 량 객차의 흐르는 창, ② 10/22)
       const g = r.f.group, n = V(0, 0, 1).applyQuaternion(g.getWorldQuaternion(new THREE.Quaternion())), d = -n.dot(cd);
       if (d > best) { best = d; const b = new THREE.Box3(); g.traverse(o => { if (o.isMesh && o.geometry?.type === 'PlaneGeometry') b.expandByObject(o); }); win = { c: b.isEmpty() ? g.getWorldPosition(V(0, 1.5, 0)) : b.getCenter(V(0, 0, 0)), n }; }
     }
@@ -627,8 +627,15 @@ const PREP = {
     roofHat(S);
   },
 };
+// GPT 벚꽃역의 장치 부품 (② 10/22): 한 번 누르면 단계마다 소리 내며 끝까지 (stage.js togglePart steps 러너) — [초, [[t, 소리]…]]
+const GPT2_STEPS = {
+  pulley: [2.2, [[0, 'ratchet'], [.45, 'creak'], [.88, 'land'], [.96, 'snore']]], flipsign: [1, [[0, 'flip'], [.85, 'pop']]],
+  falsebottom: [1, [[0, 'thunk'], [.7, 'pop']]], signal: [1, [[0, 'latch'], [.5, 'ratchet'], [.9, 'creak']]],
+  parcelrack: [1.6, [[0, 'slide'], [.85, 'thunk']]], locker: [1.1, [[0, 'door_metal'], [.6, 'slide']]], fishingbag: [.8, [[0, 'rustle'], [.75, 'found']]],
+};
 export function stagingPrep(S) {
   const k = keyOf(S, 'start'); try { PREP[k]?.(S); } catch (e) { console.warn('staging prep', k, e); }
+  for (const p of S.room.parts) { const st = GPT2_STEPS[p.gpt2Device]; if (st && !p.steps) { p.dur = st[0]; p.steps = st[1]; } }
   if (S.spec.hatKey) try { roofHat(S); } catch (e) { console.warn('staging prep hat', e); }
 }
 // 27판 방탈출 (② 레벨 10/22, user: "인터렉션 및 방탈출적인 요소"): the coin locker's key is in the straw hat on the platform
@@ -640,7 +647,11 @@ export function hatKeyHide(S) {
   if (!key || !cross) return;
   const fitsH = (type, s) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && spotFits(type, s);
   const near = s => HAT_LAND.test(s.furn?.type || '') && !s.reserved && !s.hang && !s.part && ['on', 'floor', 'beside'].includes(s.kind) && fitsH('key', s);
-  const land = S.room.spots.find(s => near(s) && !s.item);
+  // (GPT 벚꽃역 ② 10/22: the hat blows into the cat pulley's basket up on its gantry — the key waits in the basket, and the
+  // crank brings it down: crossing → hat → crank → key → locker, either of the first two first)
+  const pul = S.room.parts.find(p => p.gpt2Device === 'pulley'), bs = pul?.spots.find(s => !s.item && fitsH('key', s));
+  const land = bs || S.room.spots.find(s => near(s) && !s.item);
+  if (bs) { bs.reserved = false; key.hatPulley = pul; pul.afterOpen = S2 => { if (key.hatIn && key.vacHidden && !key.found) hatKeyShow(S2, key); }; }
   if (land) moveItem(key, land);
   else {   // (the luggage's places taken: swap with a thing to find there that fits where the key was)
     const o = S.items.find(i => i.role === 'target' && !i.friend && !i.found && i.spot && near(i.spot) && fitsH(i.type, key.spot));
@@ -648,9 +659,18 @@ export function hatKeyHide(S) {
   }
   key.under = cross; key.vacHidden = true; key.g.visible = false; S.G.world.idsDirty = true;
 }
+// the hat is down: on the luggage, the key shows; in the pulley's basket up on the gantry, the crank brings it down first
+function hatLanded(S, it) {
+  it.hatIn = true;
+  const pul = it.hatPulley;
+  if (pul && pul.t < .88) { it.under = pul; return; }   // (the hints and the bot: the crank now)
+  hatKeyShow(S, it);
+}
 function hatKeyShow(S, it) {
   const G = S.G, W = G.world;
   it.under = null; it.vacHidden = false; it.g.visible = true; W.idsDirty = true;
+  // (in the cat pulley's basket: hung from the sleeping cat's collar at the basket's front — inside, the cat and the hat hid it)
+  const bk = it.hatPulley?.furn?.basket; if (bk) { bk.attach(it.g); it.g.position.set(0, .31, .46); it.g.rotation.set(Math.PI / 2, 0, -.12); bk.updateMatrixWorld(true); }
   const g = it.g, y0 = g.position.y;
   S.tw.run(.35, k => { if (!S.dead) g.position.y = y0 + Math.sin(k * Math.PI) * .12; }).then(() => { if (!S.dead) g.position.y = y0; });
   G.audio.sfx('clink');
@@ -683,12 +703,13 @@ export async function stagingCrossing(S, part) {
   const G = S.G, W = G.world;
   if (S._crossRun) return; S._crossRun = true;
   const xs = []; for (const R of S.room.rooms || [S.room]) for (const r of R.furns) if (r.type === 'crossing') xs.push(r.f);
+  const gx = S.room.parts.filter(p => p.gpt2Device === 'crossing');   // (GPT 벚꽃역: the barrier is the part itself)
   try {
     G.audio.sfx('crossingNear'); xs.forEach(f => { f.ringing = true; });
-    await S.tw.run(.55, k => xs.forEach(f => f.arm?.setOpen(k)), ease.outCubic); if (S.dead) return;
+    await S.tw.run(.55, k => { xs.forEach(f => f.arm?.setOpen(k)); gx.forEach(p => p.setOpen(k)); W.shadowDirty = true; }, ease.outCubic); if (S.dead) return;
     await S.tw.wait(.35);
     // the freight train along the track (in the track's own frame: the platform train's), fast, right through the crossing
-    const F = furnOf(S, 'train');
+    const F = furnOf(S, 'train') || furnOf(S, 'gpt2_train');   // (GPT 벚꽃역: along its far track, between the platform and the far street)
     if (F) {
       const tr = freightMesh(); F.r.f.group.add(tr); W.idsDirty = true;
       const x0 = -7, x1 = 13; tr.position.set(x0, .1, -.02);
@@ -703,19 +724,22 @@ export async function stagingCrossing(S, part) {
         const R = roomOf(S), h0 = hat.position.clone(), h1 = h0.clone().add(V(.7, 0, .35)), gy = R.group.worldToLocal(furnOf(S, 'platshelter')?.r.f.group.getWorldPosition(V(0, 0, 0)) || V(0, 0, 0)).y + .02;
         h1.y = gy;
         // (27판: onto the luggage where the key waits, a hand's width beside it so the key shows)
-        if (hid[0]) { R.group.updateMatrixWorld(true); const kp = R.group.worldToLocal(hid[0].g.getWorldPosition(V(0, 0, 0))); h1.set(kp.x - .2, kp.y, kp.z + .06); }
+        const basket = hid[0]?.hatPulley?.furn?.basket;
+        if (basket) { R.group.updateMatrixWorld(true); const bp = R.group.worldToLocal(basket.getWorldPosition(V(0, 0, 0))); h1.set(bp.x + .15, bp.y + .42, bp.z - .05); }
+        else if (hid[0]) { R.group.updateMatrixWorld(true); const kp = R.group.worldToLocal(hid[0].g.getWorldPosition(V(0, 0, 0))); h1.set(kp.x - .2, kp.y, kp.z + .06); }
         G.audio.sfx('whoosh');
         await S.tw.run(1.1, k => { hat.position.lerpVectors(h0, h1, k); hat.position.y = h0.y + (gy - h0.y) * k * k + Math.sin(k * Math.PI) * .35; hat.rotation.y = .6 + k * 9; hat.rotation.z = Math.sin(k * 12) * .4 * (1 - k); W.shadowDirty = true; });
         hat.rotation.set(0, hat.rotation.y, 0); G.audio.sfx('pop', 2);
         if (S.stgHatTip) { S.stgHatTip.parent?.remove(S.stgHatTip); S.stgHatTip = null; }
-        for (const it of hid) hatKeyShow(S, it);
+        if (basket) basket.attach(hat);   // (it rides down with the basket)
+        for (const it of hid) hatLanded(S, it);
       }
       await pass; tr.parent?.remove(tr); tr.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
     }
     // (no hat to blow down — a bot, a retry without the start: the key still comes out when the train has gone)
-    for (const it of (S.items || []).filter(i => i.under?.crossing && !i.found)) hatKeyShow(S, it);
+    for (const it of (S.items || []).filter(i => i.under?.crossing && !i.found)) hatLanded(S, it);
     await S.tw.wait(.3); if (S.dead) return;
-    await S.tw.run(.5, k => xs.forEach(f => f.arm?.setOpen(1 - k)), ease.inOutQuad);
+    await S.tw.run(.5, k => { xs.forEach(f => f.arm?.setOpen(1 - k)); gx.forEach(p => p.setOpen(1 - k)); W.shadowDirty = true; }, ease.inOutQuad);
   } finally { xs.forEach(f => { f.ringing = false; }); S._crossRun = false; }
 }
 

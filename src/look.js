@@ -11,6 +11,7 @@
 //   glow  — at night, pools of lamp light on the ground under the lamps, the shop and the vending machines (painted
 //           discs, no real lights: next to nothing for a phone)
 // ?look=0 turns everything off (the map as it was); ?look=light,ring picks layers. Only maps with a recipe change.
+import { TOWN_SKY } from './gfx/town-kit.js';
 import * as THREE from 'three';
 import { put, rbox, mat, shade, fadeDisc } from './gfx/kit.js';
 import { reindexExact } from './gfx/bake.js';
@@ -367,9 +368,28 @@ RECIPES.traincar3 = { ...RECIPES.traincar, sky: ['#3b4664', '#48546f', '#323b56'
 RECIPES.villaroof2 = { ...RECIPES.villaroof, light: { ambColor: '#fff6ec', amb: 1.4, sunColor: '#fff2dc', sun: 2.55, shadow: .52 },
   sky: ['#9fd4f2', '#fff3e2', '#ffe4c2'], skyline: { ink: '#9fb6cc', tank: '#efc75e' } };
 
+// GPT 들여온 맵의 아침 빛 (gpt2-d 벚꽃역 동네형·긴 객실 한 칸, ① 10/22)
+const GPT_MORNING = { ambColor: '#fff0e2', amb: 1.3, sunColor: '#fff3e0', sun: 2.4, shadow: .63 };
+RECIPES.gptsakura = { light: GPT_MORNING, sky: ['#b0e5e8', '#fef2e1', '#f6e0bf'], shadow: false, itemSize: .58 };
+RECIPES.gptlongcar = { light: GPT_MORNING, sky: ['#b0e5e8', '#fef2e1', '#f6e0bf'], shadow: false, itemSize: .70 };
+// (공통 룩 키트 ① 10/22: 26판 동네 배경을 까는 바깥 판은 하늘도 26판처럼 — 옛 판의 빛·받침은 그대로; gfx/town-kit.js)
+// (허브 10/22 밤: 판마다 하늘은 그 판 orig 것 그대로 — 바깥 판이 다 같은 청록이면 똑같고 차갑다; 청록 하늘·땅은 26판만)
+const townRecipe = old => ({ light: RECIPES[old]?.light, block: RECIPES[old]?.block, sky: RECIPES[old]?.sky || TOWN_SKY });
+RECIPES.firestation2 = townRecipe('firestation');
+// (20판: the GPT shell is the villa below the roof — the old 20판's brick block under it showed through as half-drawn bricks, 사용자 "그리다 만 벽돌 텍스처 같은 건 버리자")
+RECIPES.gptvillaroof = { ...townRecipe('villaroof2'), block: undefined }; RECIPES.gptpolicefront = townRecipe('policefront'); RECIPES.gptalley = townRecipe('alley1'); RECIPES.gptcornershop = townRecipe('alley3');
+RECIPES.gptstation = { ...townRecipe('station'), block: undefined };
+// (GPT maps on their own island or ground — 19·26·27·28판, 해변역: lookRecipe doesn't lend them the old map's block too, ① 10/22)
+const OWN_BASE = new Set(['gptfirestation', 'gptdoghouse', 'gptdoghouse2', 'gptstation', 'gpttraincar2', 'gptseastation']);
 export function lookRecipe(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
-  return RECIPES[room] || RECIPES[asRoom(room)] || null;   // (a GPT map under a new key: its old map's light — roomalias.js)
+  if (RECIPES[room]) return RECIPES[room];
+  // (a GPT map under a new key: its old map's sky (with its skyline, clouds, rain, stars), light, night, block and thing size — roomalias.js; not what
+  // sits where the old map's furniture or ground was: its glows, ring, rooms, ground, floor, slab, fills — ① 10/22: 18판's arcade glows floated in the new room)
+  const o = RECIPES[asRoom(room)]; if (!o) return null;
+  const { glows, ring, rooms, ground, floor, slab, fill, theme, ...sky } = o;
+  if (OWN_BASE.has(room)) delete sky.block;
+  return sky;
 }
 // a GPT map's own mood where the old one's backdrop doesn't suit it (LOOK 10/22 "each map its own backdrop", ⑥): 44판 모래 언덕 —
 // a clear summer blue over the park's grass block
@@ -524,7 +544,7 @@ export class Look {
     this.filled = [];
     if (LOOK.has('fill')) for (const [rm, S] of this.subs) { if (S.band) this.buildBand(rm, S.band); if (S.wall) this.buildWallDecor(rm, S.wall); if (S.fill) this.buildFill(rm, S.fill); }
     if (this.filled.length || this.wallPieces?.length) this.clearSightlines();
-    if (LOOK.has('glow') && stage.spec.night) { if (R.glows && !this.isMap) this.buildGlows(); else this.nightLights(); }
+    if (LOOK.has('glow') && stage.spec.night) { if (R.glows && (!this.isMap || R.mapGlows)) this.buildGlows(); else this.nightLights(); }
     this.W.root.add(this.group);
     this.update(1);
   }
@@ -979,6 +999,12 @@ export class Look {
       p.rotation.x = -HP; p.position.set(x, y, z); p.renderOrder = 3; p.userData.noOcclude = true; p.layers.set(2);
       this.room.group.add(p);
     }
+    // halos: [x, y, z, size, colour] — the soft glow round a lamp or a screen, colour only like nightLights' (18판 섞은 안 2차)
+    for (const [x, y, z, sz, c] of this.R.halos || []) {
+      const sm = new THREE.SpriteMaterial({ map: tex, color: c, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false });
+      const sp = new THREE.Sprite(sm); sp.position.set(x, y, z); sp.scale.setScalar(sz); sp.renderOrder = 4; sp.userData.noOcclude = true; sp.layers.set(2);
+      this.room.group.add(sp); this.own.push(sm);
+    }
   }
 
   // A night room lit by what is in it (any map, no per-room list): every lamp-like glowing piece gets a warm pool on the
@@ -1159,3 +1185,15 @@ function glowTex() {
 RECIPES.otakuloft = { light: { ambColor: '#efe9f6', amb: 1.2, sunColor: '#ffe8c8', sun: 2.0, shadow: .55 }, sky: ['#1a2036', '#252f4c', '#141a2c'], rain: true, itemSize: .38,
   night: { light: { ambColor: '#e9e4f6', amb: 1.15, sunColor: '#ffe2bc', sun: 1.8, shadow: .5 }, sky: Object.assign(['#141a2e', '#1f2842', '#10142a'], { rain: true }) },
   glows: [[.5, -2.0, 1.1, '#7cf0ff'], [1.5, -2.0, 1.1, '#ff6fb8'], [2.5, -2.0, 1.1, '#ffd27a'], [-2.6, -.6, 1.0, '#9fd8ff'], [-2.0, -2.6, .8, '#ffd98a', 1.66], [-1.6, -1.8, .9, '#ffd98a', 1.66], [-.6, .6, 1.2, '#ffcf8a']] };
+// 18판 섞은 안 (gptotakumix, 10/22 사용자 "원본처럼 라이팅도 좀 주고"): otakuloft의 비 오는 밤 하늘·빛 그대로, 빛 웅덩이만 이 방 가구 자리에 —
+// 오락기 둘(청록·분홍), 브라운관, 컴퓨터 모니터, 장스탠드, 복층 협탁 램프(데크 위 2.225), 비 오는 창(창가 벤치 위) 앞 달빛
+// (mapGlows: 방 하나짜리 맵이라도 맵은 nightLights로 갔다 — 이 키만 자리 정한 빛으로)
+// (2차 10/22 사용자 "약간 전체적으로 어둡게 … 어두운 판 9판(욕조 있는 방)처럼"): 빛은 9판 bunnybath 밤처럼 푸른 달빛으로 낮추고(amb 1.15→1.0,
+// 해 1.8→.9), 하늘도 9판의 남보라 밤에 비; 대신 빛 웅덩이를 키우고 늘려(복층 밑 꼬마전구 띠, 창 앞 달빛) 램프·화면엔 번지는 빛(halos)을 —
+// 어두운 바탕에 따뜻한 데가 또렷하게
+RECIPES.gptotakumix = { ...RECIPES.otakuloft, mapGlows: true,
+  night: { light: { ambColor: '#aab1ea', amb: 1.0, sunColor: '#d2d8ff', sun: .9, shadow: .5 }, sky: Object.assign(['#151a45', '#25286a', '#33316f'], { rain: true }) },
+  glows: [[1.05, -1.65, 1.15, '#7cf0ff'], [1.85, -1.65, 1.15, '#ff6fb8'], [-1.3, -.1, 1.1, '#9fd8ff'], [2.95, .55, .95, '#cfe6ff'], [-2.2, -.2, 1.6, '#ffc278'],
+    [-1.4, -2.05, 1.0, '#ffd98a', 2.225], [-2.35, .95, 1.15, '#7f9bff'], [-2.9, -.85, .8, '#ffd27a'], [.05, -.95, .75, '#ffd27a']],
+  halos: [[1.05, 1.3, -2.05, .95, '#7cf0ff'], [1.85, 1.3, -2.05, .95, '#ff8fc8'], [-1.33, .8, -.5, .7, '#9fd8ff'], [-2.25, 1.3, -.36, 1.15, '#ffd98f'],
+    [-1.38, 2.95, -2.4, .8, '#ffd98f'], [2.95, 1.05, .4, .6, '#cfe6ff']] };

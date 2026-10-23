@@ -10,6 +10,7 @@ import { EN } from './i18n-en-dict.js';
 import { ITEMS } from './gfx/items.js';
 import { grp, put, cyl, sph, rbox, tor } from './gfx/kit.js';
 import { rng } from './util.js';
+import { CHAINS_A, ON_A } from './gpt-chains-a.js';   // (18~28판 줄 — ② 10/22; GPT 맵 스위치가 켜졌을 때만)
 import { registerFurniture } from './gfx/furniture.js';
 import { GPT_WIDE_DEVICE_BUILDERS, GPT_WIDE_DEVICE_INFO } from './gfx/gpt-wide-devices.js';
 import { GPT_LOBBY_DEVICE_BUILDERS, GPT_LOBBY_DEVICE_INFO } from './gfx/gpt-lobby-devices.js';
@@ -236,15 +237,16 @@ export const CHAINS = {
   },
 };
 CHAINS.gptplaybig_open = CHAINS.gptplaybig; CHAINS.gptatrium_open = CHAINS.gptatrium; CHAINS.gptcampfire_open = CHAINS.gptcampfire;
+Object.assign(CHAINS, CHAINS_A);
 // 정본에 켠 판 → 표의 줄 (10/22 저녁 사용자 비교 시트: GPT 맵은 44판만, 43·46·66판은 원본 맵에 GPT 장치를 옮겨 붙임 —
 // _handoff/gpt-compare-picks-1022.md). 판 번호(1부터)에 붙어서, 같은 맵을 쓰는 다른 판(45판 놀이터 밤 …)은 그대로.
 // (?chains=all: 맵 키로 표의 모든 줄 — ②b 측정용)
 export const CHAINS_ON = { 43: 'playground', 44: 'gptplayhamster', 46: 'playgroundwide', 54: 'cabin', 57: 'campwide', 66: 'lobbymap', 67: 'officefloor' };   // (43·57 off until redone — hub art check 10/22: 43 lost its slide to a big cream marble run, 57 a mint-yellow canopy + panda mid-camp)
 const ALL = typeof location !== 'undefined' && /[?&]chains=all(&|$)/.test(location.search);
 const recipeFor = spec => {
-  const k = CHAINS_ON[spec.idx + 1], R = (k && (CHAINS[k].map || k) === spec.room ? CHAINS[k] : null) || (ALL ? CHAINS[spec.room] : null); if (!R) return null;
+  const k = CHAINS_ON[spec.idx + 1], R = (k && (CHAINS[k].map || k) === spec.room ? CHAINS[k] : null) || (ALL || ON_A.includes(spec.room) ? CHAINS[spec.room] : null); if (!R) return null;
   const o = R.at?.[spec.idx + 1] ? { ...R, ...R.at[spec.idx + 1] } : R;
-  return spec.showcase || spec.timed || spec.boss ? { ...o, steps: [] } : o;
+  return spec.showcase || spec.timed || spec.boss || spec.kit ? { ...o, steps: [] } : o;   // (조립판: 부품 찾기가 목표 — 장치는 보조만, ② 10/22 19판)
 };
 // 원본 맵에 장치 가구 옮겨 붙이기 — 그 판에서만 (stage.js, 방을 짓기 전): layout.room번째 방에서 remove('type#n')를 빼고 add를 넣음
 export function chainLayout(spec, L) {

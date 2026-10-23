@@ -68,6 +68,8 @@ export function offWall(sides, x, y, z, m = WALL_GAP) {
 // neighbours (one step apart, clear floor between)
 // opts.raised: raised platforms count as floor one step up (the boss runner and seeker climb them)
 export function walkGrid(rooms, r = .26, opts = null) {
+  // (a map whose kerbs and low decks count as floor asks for it: GPT 22판 거리 layout gptWalkRaised / walkRaised — ① 10/22)
+  if (!opts && rooms.some(R => R.L?.gptWalkRaised || R.L?.walkRaised)) opts = { raised: true };
   const tiles = [], sides = wallSides(rooms);
   // furniture of the other rooms that reaches into this one's air (a slide from the floor below up onto a balcony: 7판 몽글이
   // stood on its top — 겹침 QA 10/19), with the height it spans

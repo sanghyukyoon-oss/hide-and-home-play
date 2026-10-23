@@ -8,6 +8,7 @@ import { clamp } from './util.js';
 import { houseRail, gableTop, timberFrame, entryNook } from './gfx/house-props.js';
 import { atticTop } from './gfx/bunnyattic-props.js';   // 2판 다락 (10/20)
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { addGptDetails } from './gfx/gpt-details.js';
 import { hasWall, hasFloor, paint } from './patterns.js';   // 벽지·바닥 더하기 (10/20): the shop's newer patterns
 
 const WALL_H = 2.5, WALL_T = .16;
@@ -186,6 +187,7 @@ export class Room {
     // a layout fixed by hand in 배치 편집 (exact) stands exactly as placed; the others get their wall pieces tidied
     if (!layout.exact) this.settleDecor();
     this.fitParts();
+    addGptDetails(this);
   }
   // Nothing hangs where it can't be seen: a window, door, clock or picture that ends up behind something tall standing
   // by its wall (a wardrobe, a loft bed, a fridge) or on top of another wall piece slides along the wall to the nearest
@@ -259,6 +261,10 @@ export class Room {
       this.group.updateMatrixWorld(true);
       this._solid = [...this.furns, ...this.decors].filter(q => q.type !== 'rug' && !(q.y > 1) && !q.f.noSolid && !q.f.walkSolids).map(q => new THREE.Box3().setFromObject(q.f.group, true))
         .filter(b => !b.isEmpty() && b.max.y - b.min.y > .06 && b.min.y < this.group.position.y + .7)
+        // a big piece of scenery (GPT 옥상·파출소·거리) gives its own walking barriers instead of one box round all of it: boxes, objects or a function giving them
+        .concat(this.furns.flatMap(q => [].concat(typeof q.f.walkBoxes === 'function' ? q.f.walkBoxes() : q.f.walkBoxes || []).map(a => a.isObject3D ? new THREE.Box3().setFromObject(a, true)
+          : new THREE.Box3(new THREE.Vector3(...a.slice(0, 3)), new THREE.Vector3(...a.slice(3, 6))).applyMatrix4(q.f.group.matrixWorld)))
+          .filter(b => !b.isEmpty() && b.max.y - b.min.y > .06 && b.min.y < this.group.position.y + .7))   // (the same rule as above: what hangs overhead doesn't block)
         .concat((this.extraSolid || []).map(o => { const b = new THREE.Box3().setFromObject(o, true); b.raised = !!o.userData.raised; return b; }));
     }
     for (const b of this._solid) {
@@ -330,6 +336,7 @@ export class Room {
     };
     recs.forEach((r, ri) => {
       for (const p of r.f.parts) {
+        if (p.gpt2Reach) { p.reach = 1; continue; }   // (GPT 벚꽃역 장치: 줄·회전·문이 다 움직여야 연쇄가 이어짐 — ①이 둔 표시, ② 10/22)
         const t0 = p.t;
         let fit = .35;
         // a bending cloth (gfx/clothbend.js) touching something already when shut (4판's loft futon on the loft's boards: every
@@ -701,7 +708,7 @@ export class Room {
       if (z.plinth) along(s, (ns, L, x, zz) => g.add(put(rbox(ns ? L : .05, .07, ns ? .05 : L, z.plinth, .015), x + (s === 'E' ? .005 : s === 'W' ? -.005 : 0), .035, zz + (s === 'S' ? .005 : s === 'N' ? -.005 : 0))));
     }
     for (const st of z.stairs || []) {
-      const n = Math.max(2, Math.round(h / .15)), td = .26, sw = st.w || 1, sx = st.side === 'E' ? 1 : st.side === 'W' ? -1 : 0, sz = st.side === 'S' ? 1 : st.side === 'N' ? -1 : 0;
+      const n = Math.max(2, st.steps || Math.round(h / .15)), td = .26, sw = st.w || 1, sx = st.side === 'E' ? 1 : st.side === 'W' ? -1 : 0, sz = st.side === 'S' ? 1 : st.side === 'N' ? -1 : 0;
       const ox = sx ? cx + sx * z.w / 2 : cx + (st.at || 0), oz = sz ? cz + sz * z.d / 2 : cz + (st.at || 0);
       for (let k = 1; k < n; k++) {
         const hh = h * (n - k) / n, dx = sx * (k - .5) * td, dz = sz * (k - .5) * td;
@@ -814,7 +821,7 @@ export class Room {
     const occ = new Set();
     for (let j = 0; j < this.d; j++) for (let i = 0; i < this.w; i++) if (this.isCut(i, j) || this.heightAt(i, j)) occ.add(i + ',' + j);
     for (const r of this.furns) {
-      if (r.type === 'rug') continue;
+      if (r.type === 'rug' || r.f.noOccupied) continue;   // (scenery that is floor and backdrop: takes no tiles)
       const o = this.recObb(r, 1);
       for (let j = 0; j < this.d; j++) for (let i = 0; i < this.w; i++) {
         const px = i - this.w / 2 + .5 - o.x, pz = j - this.d / 2 + .5 - o.z;
@@ -893,6 +900,8 @@ export class Room {
     const wd = this.world;
     // a gift's own little motion (gift-props.js: f.idle turns its live groups)
     this.liveT = (this.liveT || 0) + dt; for (const r of this.furns) r.f.idle?.(this.liveT);
+    // a modelled building's own cutaway (GPT 파출소: its near walls fold down the way the room's walls do, same camera)
+    for (const r of this.furns) r.f.updateView?.(wd, dt);
     const c = new THREE.Vector3(Math.sin(wd.yaw), 0, Math.cos(wd.yaw));
     for (const k in this.walls) {
       const W = this.walls[k];

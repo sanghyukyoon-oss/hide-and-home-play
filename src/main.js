@@ -55,7 +55,8 @@ import { GPT_BUILDING_BUILDERS, GPT_BUILDING_INFO } from './gfx/gpt-building-pro
 import { GPT_HERO_BUILDERS, GPT_HERO_INFO } from './gpt-heroes.js';
 import { BAKERY_BUILDERS, BAKERY_INFO } from './gfx/bearbakery-props.js';   // 6판 곰돌이 빵 굽는 부엌 (10/20)
 import { Char, CHAR_DEFS } from './gfx/chars.js';
-import { THEMES, LAYOUTS, STAGE_COUNT } from './stages.js';
+import { THEMES, LAYOUTS, MAPS, STAGE_COUNT } from './stages.js';
+import { installGpt, gptPreview } from './gpt-import.js';   // GPT 작업장에서 들여온 맵·가구·물건 (① 10/22)
 import { HOME_ZONES, STARTER, STARTER_ITEMS, registerOutdoorShop, registerStoryShop } from './catalog.js';
 import { runRaids } from './raid.js';
 import { recordPlay, net } from './net.js';
@@ -102,6 +103,7 @@ registerFurniture(MUSEUM_BUILDERS, MUSEUM_INFO);
 registerFurniture(SHOWCASE_BUILDERS, SHOWCASE_INFO);
 registerFurniture(DEVICE_BUILDERS, DEVICE_INFO); Object.assign(ITEMS, DEVICE_ITEMS);   // R6 장치판
 registerFurniture(TOWN_BUILDERS, TOWN_INFO);
+installGpt(MAPS, THEMES, LAYOUTS);
 // 프라모델 조립판 (modelkit.js): the kit's pieces are things to find; the finished model is furniture you get, not one you buy
 registerFurniture(KIT_BUILDERS, KIT_INFO); Object.assign(ITEMS, KIT_ITEMS);
 registerFurniture(SPECIAL_BUILDERS, SPECIAL_INFO);   // 상점 '스페셜' 칸 (specials.js SPECIALS): not in the furniture tab
@@ -548,13 +550,16 @@ async function boot() {
   bootBar(72);
   requestAnimationFrame(frame);
   // a person starts from the start screen and taps it; QA links (?lv, ?scene, ?play) and the bots go straight in
-  const tapToStart = !(qs.has('lv') || qs.has('scene') || qs.has('play') || PLAY_HASH || G.bot);
+  const gptGo = gptPreview(qs, THEMES);
+  if (gptGo) G.skipTalk = true;
+  const tapToStart = !(gptGo || qs.has('lv') || qs.has('scene') || qs.has('play') || PLAY_HASH || G.bot);
   G.booting = tapToStart;
   const lv = qs.get('lv'), sc = qs.get('scene'), play = qs.get('play') || PLAY_HASH?.[1];
   // one game of 놀이 모음 straight away: ?play=<id>&lv=<n> on the web, #play-<id>-<n> on the artifact (claude.ai passes the
   // address's # part to the page; n is 1-based; 'mini-' before the id is allowed) — links from the docs and the lab hub
   const playLv = qs.get('play') ? +(qs.get('lv') || 1) : +(PLAY_HASH?.[2] || 1);
-  const going = play ? (galleryPlay(play, playLv - 1) || G.go('home'))
+  const going = gptGo ? G.go('stage', gptGo)
+    : play ? (galleryPlay(play, playLv - 1) || G.go('home'))
     : lv ? G.go('stage', { idx: Math.max(0, +lv - 1), direct: true })
     : sc === 'myhome' ? G.go('myhome', { mode: qs.get('mode') || 'view' })
     : sc === 'visit' ? G.go('visit')

@@ -881,9 +881,12 @@ export const REGION_INTRO = {
 // (판 자리 다시 짜기 10/22 밤 — 검토 세션·스토리 룸 결정, ② 레벨 번호 밀기): 골목 22~33(12판)·상가 34~40(7판). 25 모퉁이 가게집,
 // 31 긴 객실(너굴이 시간 판, 28판 복수전), 32 벚꽃역 귀갓길(멍뭉이 마중), 33 골목 보스; 33 빨래방(39와 같은 맵)·38 아파트 현관 시간 판은 빠짐,
 // 64 햇살 책방 다락. 'new|old': 새 맵이 아직 없으면 옛 맵으로(GPT 맵이 정본에 들어오는 대로 저절로 바뀜)
+// GPT 맵 스위치 (① 10/23 — 사용자 "게임처럼 돌려 볼 수 있게 세팅"): ?gptmaps=1이면 PLAN의 'new|old' 판이 GPT 새 맵, ?gptmaps=0이면 옛 맵.
+// 한 번 고르면 기억(localStorage gptmaps); 기본은 꺼짐 — 지금 플레이어의 판은 그대로
+export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('gptmaps'); if (q === '1' || q === '0') localStorage.setItem('gptmaps', q); return (q ?? localStorage.getItem('gptmaps')) === '1'; } catch (e) { return false; } })();
 export const PLAN = {
-  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation', 'villaroof2:show', 'policefront:boss'],
-  alley: ['street', 'alley1', 'skatepark:gray', 'gptcornershop|alley3', 'alleyhouse', 'station', 'traincar3:show', 'island2:gray', 'seaside:show', 'gptlongcar|traincar:timed', 'gptsakura|station', 'alleywide:boss'],
+  apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'gptotakumix|otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
+  alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'gptlongcar|traincar:timed', 'gptsakura|station', 'alleywide:boss'],
   shop: ['konbini:gray', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
   camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide:treat', 'camp2:gray', 'cabin:show', 'campwide:boss'],
@@ -935,7 +938,7 @@ export const sized = i => i >= 18 && i < SIZE_TO;
 // locker's padlock key is in the straw hat on the platform roof (the crossing's freight train blows it down, staging.js), the
 // timetable's ★ time opens the ticket window's drawer. Only on a station that has the ticket window (①'s wider station):
 // without it the timetable stays on the locker as before.
-const HAT_KEY = { 27: { pad: ['coinlocker', 'gpt_locker'], code: ['ticketoffice', 'gpt_ticketoffice'] } };
+const HAT_KEY = { 27: { pad: ['coinlocker', 'gpt_locker', 'gpt2_locker'], code: ['ticketoffice', 'gpt_ticketoffice'] } };
 const furnTypes = room => { const L = LAYOUTS[room]; if (L) return (L.furniture || []).map(f => f.type); const M = MAPS[room]?.(); return M ? M.rooms.flatMap(r => (r.layout?.furniture || []).map(f => f.type)) : []; };
 const OBS_AT = { 19: { kind: 'poster' }, 22: {}, 23: { lock: ['code'] }, 25: {}, 26: { lock: ['code', 'color'] }, 27: { kind: 'timetable' } };
 export const TIME_TUNE = { 0: 45, 1: 80, 2: 80, 3: 85, 4: 90, 5: 95, 6: 100, 7: 100, 8: 105, 9: 105, 10: 110, 11: 110 };
@@ -984,7 +987,7 @@ export function stageSpec(idx) {
   const s = baseSpec(idx);
   if (KIT_AT[idx]) s.kit = KIT_AT[idx];
   if (s.kit === 'firetruck') { s.zoom = 1.3; s.clutter = .3; s.clueHang = { pad: 'gearrack' }; s.lockOn = { code: ['lockers'] }; }   // (19판 user 10/21 "인터렉션과 방탈출적인 요소": the padlock's key in the 방화복 pocket, drops when it lifts; the locker's code = the clock, 출동 1시 19분 = 119 — plan-19to50)
-  if (s.room === 'villaroof2') s.clueHang = { pad: 'roofline' };   // (20판: the padlock's key hangs inside the quilt, drops when it lifts — user 10/21)   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
+  if (asRoom(s.room) === 'villaroof2') s.clueHang = { pad: 'roofline' };   // (20판: the padlock's key hangs inside the quilt, drops when it lifts — user 10/21)   // (outdoors, small things: in a little closer — 레벨 세션 10/20)
   // 관찰 자물쇠 (사용자 10/22 시트 '먼저 정할 것' 2·5 "추천대로": 직접 입력 자물쇠는 방 안을 보고 맞히기 — 3장 22판 처음, 23·25·26·27 다시;
   // 시계만 되풀이되지 않게 19판 '119' 포스터, 27판 기차 시간표 — obslock.js). lock: 그 판 자물쇠 종류(기획: 23 알람시계, 26 금고 시계 + 개집 꽃병)
   const ob = OBS_AT[idx + 1];
@@ -1000,6 +1003,10 @@ export function stageSpec(idx) {
   // 장치 둘 — 다락↔1층 바구니 도르래에 걸린 열쇠가 내려와 경품 오락기 받침(자물쇠)을 열고, 서랍 계단 옆 숨은 칸은 비밀번호;
   // 시작 줌 1.35(1.2에서 오락기 받침 26px·택배상자 27px — #94 28px 기준)
   if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
+  // (18판 10/22 사용자 고르기: GPT 너굴이네 비 오는 복층 A — gptotaku|otakuloft; 대본·물건은 asRoom으로 otakuloft 것): 비 오는 밤, 미니 냉장고 자물쇠·계단 옆 수납장 비밀번호
+  if (s.room === 'gptotaku' || s.room === 'gptotakumix') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['gpt_minifridge'], code: ['gpt_storage_stairs'] }; s.zoom = 1.85; }   // (줌 1.85: 방을 크게 — 옛 18판처럼, 색 분포 colorstat 엔트로피 1.5→2.0)
+  // (GPT 들여온 맵 시작 줌 ① 10/22: GPT 맵은 우리 맵보다 넓게 잡혀 작게 보임 — 방을 크게, 색 분포 colorstat 기준)
+  { const Z = { gptfirestation: 1.6, gptvillaroof: 1.3, gptpolicefront: 1.75, gptalley: 2.1, gptcornershop: 1.6, gptstation: 2.2, gpttraincar2: 1.05 }; if (Z[s.room]) s.zoom = Z[s.room]; }   // (② 10/22 밤: 28판 두 량 객차 1.05 — 양쪽 칸 끝까지; GPT 소방서는 1.6 — 왼쪽 계단)
   if (s.boss && s.sock) s.n = Math.max(5, (s.n || 8) - 1);   // (the 상가 boss's fourth lock, the sock: one thing fewer to find)
   if (GRAY.has(idx) && !s.timed && !s.boss) { s.gray = true; s.night = false; if (Array.isArray(s.lock)) s.lock = s.lock.filter(k => k !== 'color'); }   // a colour lock can't be read in grey
   // 사건 판 (10/17 pivot): from stage 3 on, every ordinary stage is a small incident — the owner hides behind a lock and
@@ -1014,7 +1021,7 @@ export function stageSpec(idx) {
     const ch = REGIONS.indexOf(regionOf(idx)), shape = HO_SHAPE[idx + 1];
     if (shape) {   // how many things, and how many of them sit at the end of a lock chain
       s.n = shape[0];
-      const kinds = (Array.isArray(s.lock) ? s.lock : s.lock === 'both' ? ['pad', 'code'] : s.lock ? [s.lock] : []).slice(0, shape[1]);   // (chapter 1 writes one lock as a word)
+      const kinds = (Array.isArray(s.lock) ? s.lock : s.lock === 'both' ? ['pad', 'code'] : s.lock ? [s.lock] : []).slice(0, s.hatKey ? Math.max(2, shape[1]) : shape[1]);   // (chapter 1 writes one lock as a word)   // (27판 방탈출: both its locks)
       for (const k of REGION_LOCKS[regionOf(idx).id]?.kinds || ['pad']) if (kinds.length < shape[1] && !kinds.includes(k) && !(k === 'color' && (s.gray || s.night || s.dark))) kinds.push(k);   // (only what the chapter has taught)
       s.lock = kinds;
     }
@@ -1060,7 +1067,7 @@ function baseSpec(idx) {
   // wide maps take turns too (by stage number they never did: the wide stages are all odd, so a pair always gave the second)
   const P = (PLAN[R.id] || [])[local];
   let room = isWide(local) ? wide[wn % wide.length] : pool[nth % pool.length], kind = '';
-  if (P) { const [r0, k0 = ''] = P.split(':'); kind = k0; const r1 = r0.split('|').find(k => LAYOUTS[k] || MAPS[k]); if (r1) room = r1; }
+  if (P) { const [r0, k0 = ''] = P.split(':'); kind = k0; const ks = r0.split('|'), r1 = (GPT_MAPS_ON ? ks : ks.slice(-1)).find(k => LAYOUTS[k] || MAPS[k]); if (r1) room = r1; }
   const boss = P ? kind === 'boss' : local === len - 1;
   const RL = REGION_LOCKS[R.id];
   let lock = (boss ? RL?.kinds : RL?.plan?.[local]) || [];
@@ -1472,7 +1479,7 @@ export function capDecoys(plan, spec) {
 const HIDEOUT = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic',
   // 10/18 (레벨 세션): stages 41 / 48 / 50 had no hideout at all (or one) — 103동 door, recycling bins, ice-cream cart,
   // grill, park bin, wish box, hiking pack; and 8's shower curtain and bed as R1 decoys
-  'aptwall', 'recyclebins', 'icecart', 'bbqgrill', 'parkbin', 'shrinebox', 'backpack2', 'bathtub', 'bed'];
+  'aptwall', 'recyclebins', 'icecart', 'bbqgrill', 'parkbin', 'shrinebox', 'backpack2', 'bathtub', 'bed', 'gpt_tc_rack'];   // (gpt_tc_rack: 28판 두 량 객차 선반 위 가방 — '선반 위는 반칙', ② 10/22)
 export function planIncident(room, spec, story = null) {
   const given = Array.isArray(spec.lock) ? spec.lock.slice() : spec.lock === 'both' ? ['pad', 'code'] : spec.lock ? [spec.lock] : [];
   const DOOR = ['pad', 'code', 'color'];

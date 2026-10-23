@@ -6,7 +6,7 @@
 // 맨 앞 옛 키가 대표예요. gptlongcar·gptsakura처럼 옛 맵이 없는 새 판도 가장 가까운 옛 방을 대표로 둬요(빛·물건 표 기본값용).
 export const ROOM_AS = {
   // 18~28판 (①)
-  gptotaku: 'otakuloft', gptfirestation: 'firestation', gptvillaroof: ['villaroof2', 'villaroof'], gptpolicefront: 'policefront',
+  gptotaku: 'otakuloft', gptotakumix: 'otakuloft', gptfirestation: 'firestation', firestation2: 'firestation', gptvillaroof: ['villaroof2', 'villaroof'], gptpolicefront: 'policefront',
   gptstreet: 'street', gptalley: 'alley1', gptcornershop: 'alley3', gptdoghouse: 'alleyhouse', gptdoghouse2: 'alleyhouse',
   gptstation: 'station', gpttraincar: 'traincar', gpttraincar2: ['traincar3', 'traincar'],
   // 기차 여행 끝 · 귀갓길 (10/22 새 판)

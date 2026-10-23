@@ -1,0 +1,98 @@
+// GPT 작업장에서 들여온 맵·가구·물건 (① 10/22 — 사용자 고르기 시트, _handoff/gpt-picks-1022.md): 등록과 미리보기를 한곳에.
+// 들여올 때 네 단계를 거쳤다: 색 맞춤(tools/gpt-recolor.mjs) → 글자·종이(gfx/gpt-paper.js) → 동물은 우리 캐릭터로 → 스케일(gfx/gpt-scale.js).
+// 바꾼 판의 옛 맵은 키 그대로 남는다(otakuloft …); 판 표(stages.js PLAN)만 새 키를 가리킨다.
+// 미리보기: ?gptmap=<맵 키> — 그 맵을 찾을 물건 6개와 함께 바로 연다 (진행·보상 없음).
+import { registerFurniture } from './gfx/furniture.js';
+import { ITEMS } from './gfx/items.js';
+import { GPT_ROOM_BUILDERS, GPT_ROOM_INFO } from './gfx/gpt-otaku-room.js';
+import { GPT_OTAKU_BUILDERS, GPT_OTAKU_INFO } from './gfx/gpt-otaku-props.js';
+import { installGptOtakuMaps } from './gpt-otaku.js';
+import { harmonizeBuilders } from './gfx/gpt-paint.js';   // 맵마다 3~4색 배색으로 모으기 (① 10/22 사용자 "채색 다시 신경 써서" — 채도 올리기 X, 명암은 GPT 그대로)
+import { PAL } from './gfx/gpt-palettes.js';
+import { surfaceBuilders } from './gfx/gpt-surface.js';
+import { townTheme, withTown } from './gfx/town-kit.js';
+// (공통 룩 키트 10/22 밤: 바깥 판마다 26판 동네의 구조(흐린 큰 집·길) — 하늘·땅은 그 판 orig 배경처럼 따뜻하게, 집 벽은 그 판 배색의 옅은 색,
+// 지붕은 그 판 포인트 색, 뒤집기·돌림으로 배치도 판마다 다르게; 청록 땅은 26판만)
+const TOWN_OF = {
+  gptvillaroof: { townY: -3.45, townRot: Math.PI / 2, gptSky: '#ffe4c2', gptGround: '#d6e6c8', gptGroundFar: '#ffe4c2', gptPaving: '#e2dacd', townWalls: ['#e6f1e0', '#fbefd6', '#f6dfe2', '#e8f0f4', '#f5e6cf', '#e3eedc'], townRoofs: ['#5f9e55', '#c9733f', '#e88d9b', '#4f8fb0', '#b7602f', '#6aa86a'] },
+  gptpolicefront: { townFlip: true, gptSky: '#c4d6e8', gptGround: '#dfe2e8', gptGroundFar: '#c4d6e8', gptPaving: '#cfd3dc', townWalls: ['#e6edf7', '#f6efe2', '#e7f2e8', '#f7e4e2', '#eef1f6', '#f3ead8'], townRoofs: ['#205792', '#d9534f', '#2e8a49', '#3b6aa6', '#c94b4b', '#4a7aa8'] },
+  gptalley: { townRot: Math.PI, gptSky: '#e6cbb4', gptGround: '#ecd9c6', gptGroundFar: '#e6cbb4', gptPaving: '#dccab8', townWalls: ['#f4e7d6', '#e5f0e6', '#f5dfd9', '#eae9f2', '#f6ecd8', '#e2efe4'], townRoofs: ['#2f8f5a', '#d84a4f', '#4f7b9c', '#b76e40', '#3d9c69', '#c6503f'] },
+  gptcornershop: { townFlip: true, townRot: Math.PI / 2, gptSky: '#e6cbb4', gptGround: '#efdccc', gptGroundFar: '#e6cbb4', gptPaving: '#e0cdbd', townWalls: ['#f3e6f2', '#f6ecd8', '#f6dddd', '#e8eff5', '#efe4f0', '#f4ead6'], townRoofs: ['#8959a6', '#ee4850', '#76bf4f', '#b56d3f', '#7a4f99', '#d84a55'] },
+};
+import { GPT_BUILDERS as GPT_PROP_BUILDERS, GPT_INFO as GPT_PROP_INFO, GPT_ITEMS } from './gfx/gpt-props.js';
+// 20판 햇살 빌라 옥상 집들이 · 21판 동네 파출소 앞 (gpt2-a, fix-1022 반영): 빌더와 배치만 — 작업장의 장치·걷기·맵 등록 엔진은 뺌
+import { GPT_ROOF_BUILDERS, GPT_ROOF_INFO } from './gfx/gpt2a-roof-props.js';
+import { GPT_POLICE_BUILDERS, GPT_POLICE_INFO } from './gfx/gpt2a-police-props.js';
+import { gptRoofLayout, gptRoofTheme } from './gpt2a-roof-map.js';
+import { gptPoliceLayout, gptPoliceTheme } from './gpt2a-police-map.js';
+// 25판 동네 모퉁이 2층 가게집 (gpt3-j, fix-1022 반영): 빌더와 배치만 — 작업장의 걷기·장치 엔진은 뺌
+import { GPT_CORNER_BUILDERS, GPT_CORNER_INFO } from './gfx/gptcorner-props.js';
+import { GPT_HOME_BUILDERS, GPT_HOME_INFO } from './gfx/gptcorner-home-props.js';
+import { GPT_SHOP_BUILDERS, GPT_SHOP_INFO } from './gfx/gptcorner-shop-props.js';
+import { GPT_CORNER_THEME, gptCornerMap } from './gptcorner-map.js';
+// 23판 삐딱이네 골목 (gpt2-b, fix-1022 반영): 빌더와 배치만 — 작업장의 장치·걷기 엔진은 뺌 (22판 거리는 사용자 10/22 '원본 유지')
+import { GPT_ALLEY_BUILDERS, GPT_ALLEY_INFO, GPT_ALLEY_THEME, createGptAlleyMap } from './gfx/gpt2b-alley-props.js';
+import { GPT_ALLEY_ITEMS } from './gfx/gpt2b-alley-items.js';
+// 긴 객실 한 칸 gptlongcar · 벚꽃역 동네형 gptsakura (gpt2-d, fix-1022 반영; 판 자리는 ②가 31·32판으로): 빌더와 배치만, 겹치던 이름은 바꿈
+import { GPTSTATION_BUILDERS as SAKURA_BUILDERS, GPTSTATION_INFO as SAKURA_INFO } from './gfx/gptsakura-props.js';
+import { GPTTRAIN_BUILDERS as LONGCAR_BUILDERS, GPTTRAIN_INFO as LONGCAR_INFO, GPTTRAIN_ITEMS as LONGCAR_ITEMS } from './gfx/gptlongcar-props.js';
+import { registerGptStationMap as installSakura } from './gptsakura-map.js';
+import { registerGptTrainMap as installLongcar } from './gptlongcar-map.js';
+// 64판 햇살 책방 다락 gptroom1 (gpt-free, fix-1022 반영): 빌더와 배치만 — 넓힌판·작업장 장치·걷기 엔진은 뺌
+import { GPT_ROOM1_BUILDERS, GPT_ROOM1_INFO, createGptRoom1 } from './gfx/gptfree-room1.js';
+// 19판 몽글 119 안전센터 gptfirestation + 소방차·순찰차 2 (gpt3-k, fix-1022 반영): 빌더와 배치만, 색은 GPT 원색 그대로
+import { installGpt3k } from './gpt3k-import.js';
+// 26판 멍뭉이네 마당 2층집 gptdoghouse · 골목 계단집 gptdoghouse2 (gpt2-c, fix-1022 반영): 빌더와 배치만, GPT 원색 그대로
+import { installGpt2cDoghouse } from './gpt2c-import.js';
+
+// 27판 봄 아침 기차역 · 28판 두 량 객차 · 해변역 · 기차 여행 소품 2 (gpt-station, fix-1022 반영): 빌더와 배치만 — gptst-import.js
+import { installGptStation } from './gptst-import.js';
+// 19판 곰돌이네 119 안전센터 2 firestation2: 정본 firestation 배치 + GPT 소방서 조각 셋(호스 건조탑 도르래·출동 종·소방견 집) — firestation2-map.js
+import { installFirestation2 } from './firestation2-map.js';
+import { installGptDetails } from './gfx/gpt-details.js';
+
+// the maps each 들여온 key opens on (its campaign stage, for the preview's lighting and HUD)
+export const GPT_STAGE = { gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64 };
+
+// a workshop piece that lists the boxes it really blocks with (gpt2-b gptWalkBoxes) walks by those, not by the box round all of it (room.js walkBoxes)
+// (gpt2-d: a piece with a walkBoxes list walks by that list instead of its whole box)
+const boxesOnly = B => { for (const k in B) { const b = B[k]; B[k] = (f, ...a) => { const r = b(f, ...a); if (Array.isArray(f.walkBoxes)) f.noSolid = true; return r; }; } return B; };
+const walkByBoxes = B => { for (const k in B) { const b = B[k]; B[k] = (f, ...a) => { const r = b(f, ...a); if (f.gptWalkBoxes) { f.walkBoxes = f.gptWalkBoxes; f.noSolid = true; } return r; }; } return B; };
+
+export function installGpt(MAPS, THEMES, LAYOUTS) {
+  // (판 표 stages.js PLAN의 '새키|옛키': 여기서 새 키가 등록되면 그 판이 새 맵으로; 옛 키 표는 roomalias.js asRoom으로 찾음)
+  // 18판: GPT 원색의 명암은 그대로, 색상만 네 색 배색으로(청록·흐린 파랑·참나무·코랄), 크림 노랑은 절반 — 쨍한 색은 만화책 등·피규어·캔에만
+  registerFurniture(GPT_ROOM_BUILDERS, GPT_ROOM_INFO); registerFurniture(GPT_OTAKU_BUILDERS, GPT_OTAKU_INFO); installGptOtakuMaps(MAPS, THEMES);
+  // 가구·큰 소품 61 + 차 2 (상점엔 안 나옴 — 판에 놓는 건 ②·⑥) · 찾을 물건 65 (판마다 목록에 넣는 건 ②)
+  registerFurniture(GPT_PROP_BUILDERS, Object.fromEntries(Object.entries(GPT_PROP_INFO).map(([k, v]) => [k, { ...v, hidden: true }])));
+  Object.assign(ITEMS, GPT_ITEMS);
+  // (20판 아래 빌라 몸통 gptroofshell은 배색으로 모으지 않음 — 크림을 빼니 하늘빛을 받아 푸르스름했다, 허브 10/22 밤)
+  { const { gptroofshell, ...rest } = GPT_ROOF_BUILDERS; registerFurniture(surfaceBuilders(GPT_ROOF_BUILDERS, 'roof'), GPT_ROOF_INFO); }
+  registerFurniture(surfaceBuilders(GPT_POLICE_BUILDERS, 'police'), GPT_POLICE_INFO);
+  THEMES.gptvillaroof = townTheme(gptRoofTheme(THEMES.villaroof2 || THEMES.villaroof), TOWN_OF.gptvillaroof); LAYOUTS.gptvillaroof = withTown({ ...gptRoofLayout, theme: THEMES.gptvillaroof });
+  THEMES.gptpolicefront = townTheme(gptPoliceTheme(THEMES.policefront), TOWN_OF.gptpolicefront); LAYOUTS.gptpolicefront = withTown({ ...gptPoliceLayout, theme: THEMES.gptpolicefront });
+  registerFurniture(surfaceBuilders(GPT_CORNER_BUILDERS, 'corner'), GPT_CORNER_INFO); registerFurniture(surfaceBuilders(GPT_HOME_BUILDERS, 'corner'), GPT_HOME_INFO); registerFurniture(surfaceBuilders(GPT_SHOP_BUILDERS, 'corner'), GPT_SHOP_INFO);
+  THEMES.gptcornershop = { ...GPT_CORNER_THEME, friend: THEMES.alley3?.friend || GPT_CORNER_THEME.friend }; MAPS.gptcornershop = () => { const m = gptCornerMap(), L = m.rooms[0].layout; m.rooms[0].layout = withTown({ ...L, theme: townTheme(L.theme, TOWN_OF.gptcornershop) }); return m; };
+  registerFurniture(surfaceBuilders(walkByBoxes(GPT_ALLEY_BUILDERS), 'alley'), GPT_ALLEY_INFO); Object.assign(ITEMS, GPT_ALLEY_ITEMS);
+  // (그 판의 친구는 옛 판 그대로 — 도감·친구 열림)
+  THEMES.gptalley = townTheme({ ...THEMES.alley1, ...GPT_ALLEY_THEME, friend: THEMES.alley1?.friend ?? null }, TOWN_OF.gptalley);
+  MAPS.gptalley = () => { const m = createGptAlleyMap(THEMES.gptalley); m.rooms[0].layout = withTown(m.rooms[0].layout); return m; };
+  registerFurniture(harmonizeBuilders(boxesOnly(SAKURA_BUILDERS), PAL.train), SAKURA_INFO); registerFurniture(harmonizeBuilders(boxesOnly(LONGCAR_BUILDERS), PAL.train), LONGCAR_INFO); Object.assign(ITEMS, LONGCAR_ITEMS);
+  installSakura(LAYOUTS, THEMES); installLongcar(LAYOUTS, THEMES);
+  registerFurniture(harmonizeBuilders(GPT_ROOM1_BUILDERS, PAL.room1), GPT_ROOM1_INFO);
+  THEMES.gptroom1 = createGptRoom1(THEMES.officefloor).theme; MAPS.gptroom1 = () => createGptRoom1(THEMES.officefloor);
+  installGpt3k(MAPS, THEMES, LAYOUTS);
+  installGpt2cDoghouse(MAPS, THEMES, LAYOUTS);
+  installGptStation(MAPS, THEMES, LAYOUTS);
+  installFirestation2(LAYOUTS, THEMES);
+  installGptDetails(MAPS, LAYOUTS);
+}
+
+export function gptPreview(qs, THEMES) {
+  const room = qs.get('gptmap');
+  if (!room || !THEMES[room] && !GPT_STAGE[room]) return null;
+  const lv = +(qs.get('lv') || GPT_STAGE[room] || 1);
+  const previewZoom = +qs.get('gptzoom');   // workshop camera only; campaign zoom stays in stages.js
+  return { idx: lv - 1, direct: true, preview: true,
+    spec: { room, n: 6, lock: [], clutter: 0, timed: false, night: false, gray: false, dark: false, showcase: false, time: 9999, zoom: Number.isFinite(previewZoom) && previewZoom > 0 ? Math.max(.5, Math.min(3, previewZoom)) : 1 } };
+}
