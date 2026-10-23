@@ -39,8 +39,8 @@ const qn = (k, d) => HLQ.has(k) && HLQ.get(k) !== '' && !isNaN(+HLQ.get(k)) ? +H
 export const SHADE = {
   hl: qn('hl', 1), hlw: Math.max(1, Math.min(5, qn('hlw', 2))),
   u: { shineA: { value: qn('shine', .7) }, shineT: { value: Math.min(.999, Math.max(.9, qn('shinet', .992))) },   // (10/23 사용자 값: 반짝 점 세기 .70·크기 .05)
-    rimA: { value: qn('rim', .35) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .31))) }, rimC: { value: new THREE.Color('#' + (HLQ.get('rimc') || 'fffbcc')) },   // (10/23 사용자 값 A: 림 .35·두께 .31·더하기·#fffbcc; B안은 .20·.35·오버레이·#000000)
-    shineC: { value: new THREE.Color('#' + (HLQ.get('shinec') || 'ffffff')) }, shineM: { value: qn('shinem', 0) }, rimM: { value: qn('rimm', 1) },
+    rimA: { value: qn('rim', .15) }, rimW: { value: Math.min(.6, Math.max(.05, qn('rimw', .35))) }, rimC: { value: new THREE.Color('#' + (HLQ.get('rimc') || '000000')) },   // (10/23 사용자 값 A: 림 .35·두께 .31·더하기·#fffbcc; B안은 .20·.35·오버레이·#000000)
+    shineC: { value: new THREE.Color('#' + (HLQ.get('shinec') || 'ffffff')) }, shineM: { value: qn('shinem', 0) }, rimM: { value: qn('rimm', 3) },   // (10/23 사용자: 림라이트는 B — 어두운 림 약하게, 밤 판도 B)
     // (10/23 사용자: "스펙큘러는 화면 중앙에서 약간 위 정도는 잘 보이게, 가장자리랑 위아래로 갈수록 안 보이게") 1 = 가운데만, 0 = 화면 어디서나
     shineFocus: { value: qn('shinef', 1) } },   // (색·합성: 0 보통 · 1 더하기 · 2 스크린 · 3 오버레이 — user 10/22 "색깔도 변경 가능? 합성 모드도")
   set(o) {
