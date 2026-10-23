@@ -105,4 +105,22 @@ addI18n({
   // 20판 옥상 3차 (⑥ 10/21)
   '고추 말리기': 'Drying chillies', '소쿠리': 'Basket', '소쿠리 밑': 'Under the basket', '고추 돗자리 앞': 'In front of the chilli mat',
   '옥상 수도': 'Rooftop tap', '파란 양동이 안': 'In the blue bucket', '수도 옆': 'Beside the tap', '데크 화분 줄': 'Deck pots', '화분 줄 앞': 'In front of the pots',
+  // 27판 벚꽃마을역 station4 · 28판 봄빛 로컬 전차 traincar5 · 30판 바닷가 가게 2 seaside2 (⑧ 10/24 — 부품·숨김 자리 이름)
+  '벚꽃마을역': 'Sakura Town Station', '나무 역사': 'Wooden station house', '승강장 지붕': 'Platform roof', '간이 개찰기': 'IC card gate',
+  '개찰기 옆': 'Beside the card gate', '물품 보관함': 'Coin lockers', '물품 보관함 안': 'In the coin locker', '물품 보관함 위': 'On the coin lockers',
+  '역 이름판': 'Station sign', '역 이름판 밑': 'Under the station sign', '역사 처마 밑': 'Under the station eaves', '파스텔 전철': 'Pastel train',
+  '짐 카트': 'Luggage cart', '짐 카트 옆': 'Beside the luggage cart', '짐 카트 위': 'On the luggage cart', '우체통': 'Mailbox', '우체통 뒤': 'Behind the mailbox',
+  '꽃밭 속': 'In the flower bed', '문 옆 화분': 'Pot by the door', '벚나무 밑': 'Under the cherry tree', '선로 옆': 'Beside the track',
+  '승강장 의자 밑': 'Under the platform bench', '승강장 의자 위': 'On the platform bench', '쓰레기통 옆': 'Beside the bins', '쓰레기통 위': 'On the bins',
+  '울타리 밑': 'Under the fence', '자전거 옆': 'Beside the bikes', '전봇대 밑': 'At the foot of the pole', '낚시 가방 옆': 'Beside the fishing bag',
+  '봄빛 로컬 전차': 'Spring Local Train', '청록 로컬 전차': 'Teal local train', '레트로 노면 전차': 'Retro streetcar',
+  '운전실': 'Driver\'s cab', '운전석 위': 'On the driver\'s seat', '운전대 위': 'On the controls', '운임함 위': 'On the fare box',
+  '롱시트': 'Long seat', '박스석': 'Box seats', '좌석 위': 'On the seat', '좌석 서랍': 'Seat drawer', '좌석 서랍 안': 'In the seat drawer', '창가 탁자 위': 'On the window table',
+  '짐 선반': 'Luggage rack', '짐 선반 여행 가방': 'Suitcase on the rack', '여행 가방 뒤': 'Behind the suitcase', '배낭': 'Backpack', '배낭 뒤': 'Behind the backpack',
+  '손잡이 봉': 'Grab pole', '하차 벨': 'Stop button', '정리권 발권기': 'Ticket dispenser', '발권기 위': 'On the ticket dispenser',
+  '출입문': 'Train door', '출입문 발판': 'Door step', '연결 통로': 'Gangway', '고무 주름막': 'Rubber bellows', '주름막 사이': 'Between the bellows',
+  '칸 벽': 'Car wall', '칸 끝벽': 'Car end wall', '바닥 짐': 'Bags on the floor', '짐 위': 'On the bags',
+  '짐칸': 'Cargo corner', '짐칸 문': 'Cargo door', '짐칸 안': 'In the cargo corner', '전망석': 'Viewing seat', '전망석 위': 'On the viewing seat', '전망석 밑': 'Under the viewing seat', '꼬리 난간': 'Tail railing',
+  '깃발 데크': 'Flag deck', '바닷가 풍경': 'Seaside view', '나무 통 위': 'On the barrel', '모래성 옆': 'Beside the sandcastle',
+  '보트 덮개 밑': 'Under the boat cover', '생선 상자 위': 'On the fish crate', '통발 안': 'In the fish trap',
 });

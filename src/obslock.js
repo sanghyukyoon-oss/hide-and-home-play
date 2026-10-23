@@ -43,6 +43,21 @@ const T = {
   d1: K('바다', 'Sea'), d2: K('산', 'Hills'), d3: K('시내', 'Town'), d4: K('공항', 'Airport'),
   poster1: K('불나면!', 'Fire!'), poster2: K('바로 신고', 'Call right away'), tt: K('기차 시간표', 'Train timetable'), ttMine: K('우리 기차', 'Our train'),
 };
+// 31판 별빛극장 보스 (② 10/23 — 스토리 룸 안 A): 같은 관찰 자물쇠를 극장 모양으로 — 상영 시간표(별표 영화 시각)·필름 통 셋(작은
+// 것부터 색). 판 설정 obsCine가 켜면 obsSetup이 아래 말을 T에 덮고, 아닌 판에선 원래 말로 돌려놔요
+const CINE = {
+  tt: K('오늘의 상영 시간표', "Today's showtimes"), ttMine: K('우리 영화', 'Our film'),
+  noteTimetable: K('쪽지: "상영 시간표를 봐! 별표 영화는 몇 시?"', 'Note: "Check the showtimes! When is the ★ film?"'),
+  paperTimetable: K('상영 시간표를 봐!', 'Check the showtimes!'), paperStar: K('별표 영화', 'The ★ film'),
+  hintTimetable: K('별표 영화 시각 (네 자리)', "The ★ film's time (four digits)"), lookTimetable: K('상영 시간표', 'Showtimes'),
+  noteVase: K('쪽지: "필름 통 세 개를 봐! 작은 것부터"', 'Note: "Look at the three film cans! Smallest first"'),
+  paperVase: K('필름 통을 봐!', 'Check the film cans!'), hintVase: K('작은 필름 통부터 큰 통까지', 'From the smallest film can to the biggest'),
+  lookVase: K('필름 통 세 개', 'Three film cans'),
+  d1: K('별빛 탐정', 'Starlight Detective'), d2: K('고양이 우주선', 'Cat Spaceship'), d3: K('구름 기차', 'Cloud Train'), d4: K('숨바꼭질 대작전', 'Great Hide-and-Seek'),
+};
+const BASE = Object.fromEntries(Object.keys(CINE).map(k => [k, T[k]]));
+let CINE_ON = false;
+const ICON_T = () => CINE_ON ? '🎬' : '🚆', ICON_V = () => CINE_ON ? '🎞️' : '🏺';
 
 // ── what the room shows
 function drawClock(c, w, H, M, { hands = true } = {}) {
@@ -89,9 +104,23 @@ function wallClockDial(rec, H, M) {
   rec.f.group.add(g);
   return g;
 }
+// three film cans on their edge, small / middle / big, each a lock colour, in a shuffled row (31판 극장)
+const CAN_R = [.055, .08, .11];
+function canTrio(code, order) {
+  const g = grp();
+  order.forEach((k, slot) => {
+    const c = LOCK_COLORS[+code[k]][0], r = CAN_R[k], v = grp();
+    v.add(put(cyl(r, r, .045, c, { rough: .4 }, 24), 0, r, 0, Math.PI / 2, 0, 0));
+    v.add(put(cyl(r * .28, r * .28, .05, '#ffffff', null, 14), 0, r, 0, Math.PI / 2, 0, 0));
+    v.add(put(tor(r * .97, .006, '#3b2a55', null, Math.PI * 2, 6, 24), 0, r, .024));
+    v.position.x = (slot - 1) * .2; g.add(v);
+  });
+  return g;
+}
 // three vases, small / middle / tall, each a lock colour, stood in a shuffled row
 const VASE_H = [.14, .2, .27];
 function vaseTrio(code, order) {
+  if (CINE_ON) return canTrio(code, order);
   const g = grp();
   order.forEach((k, slot) => {
     const c = LOCK_COLORS[+code[k]][0], hh = VASE_H[k], v = grp(), x = (slot - 1) * .14;
@@ -106,6 +135,15 @@ function vaseTrio(code, order) {
 function drawVases(c, w, hgt, code, order) {
   c.fillStyle = '#fff7ee'; c.fillRect(0, 0, w, hgt);
   c.fillStyle = '#e9d6c4'; c.fillRect(0, hgt * .82, w, hgt * .18);
+  if (CINE_ON) {   // film cans: circles, small to big
+    order.forEach((k, slot) => {
+      const cx = w * (.22 + slot * .28), r = w * (.05 + k * .03), cy = hgt * .82 - r, col = LOCK_COLORS[+code[k]][0];
+      c.fillStyle = col; c.strokeStyle = '#3b2a55'; c.lineWidth = 5;
+      c.beginPath(); c.arc(cx, cy, r, 0, 7); c.fill(); c.stroke();
+      c.fillStyle = '#ffffff'; c.beginPath(); c.arc(cx, cy, r * .28, 0, 7); c.fill(); c.stroke();
+    });
+    return;
+  }
   order.forEach((k, slot) => {
     const cx = w * (.22 + slot * .28), base = hgt * .82, vh = hgt * (.3 + k * .17), vw = w * (.1 + k * .02), col = LOCK_COLORS[+code[k]][0];
     c.fillStyle = col; c.strokeStyle = '#3b2a55'; c.lineWidth = 5;
@@ -229,8 +267,9 @@ function groundSpot(S, L, build, used, rand, t0) {
   return null;
 }
 export function obsSetup(S) {
+  CINE_ON = !!S.spec.obsCine; Object.assign(T, CINE_ON ? CINE : BASE);   // (31판 극장: the same clues, cinema-shaped)
   // (from chapter 7 only — 1장 덜어내기 10/18: the code / colour locks of chapters 2-6 are plain notes again)
-  if (!OBS || S.custom || S.spec.boss || S.spec.endless || (S.idx < 60 && !S.spec.obs && !S.spec.obsKind)) return null;   // (19~50 다시 짜기: a stage the plan gives a picture clue — spec.obs / spec.obsKind 'poster' | 'timetable')
+  if (!OBS || S.custom || (S.spec.boss && !S.spec.obsBoss) || S.spec.endless || (S.idx < 60 && !S.spec.obs && !S.spec.obsKind)) return null;   // (19~50 다시 짜기: a stage the plan gives a picture clue — spec.obs / spec.obsKind 'poster' | 'timetable')
   const locks = (S.plan.locks || []).filter(L => (L.kind === 'code' || L.kind === 'color') && L.part?.lock);
   if (!locks.length) return null;
   const O = { src: new Map(), wrong: new Map(), free: new Set() }, used = new Set(), t0 = performance.now(), rand = rng(1 + S.idx * 7919 + locks.length);
@@ -286,7 +325,7 @@ export async function obsClue(S, it, s) {
   const G = S.G;
   if (src.kind === 'poster' || src.kind === 'timetable') {
     S.codes.add(it.code);
-    const P = S.codePill; P.style.display = ''; P.classList.remove('need'); P.set(src.kind === 'poster' ? '📋 ? ? ?' : '🚆 ?:??');
+    const P = S.codePill; P.style.display = ''; P.classList.remove('need'); P.set(src.kind === 'poster' ? '📋 ? ? ?' : ICON_T() + ' ?:??');
     await G.ui.flyImg(G.thumbs.item_note, s.x, s.y, P, { size: 64 });
     G.ui.toast(tr(src.kind === 'poster' ? T.notePoster : T.noteTimetable), 'green');
   } else if (src.kind === 'clock') {
@@ -296,7 +335,7 @@ export async function obsClue(S, it, s) {
     G.ui.toast(tr(src.wall ? T.noteWall : T.noteAlarm), 'green');
   } else {
     S.colorCodes.add(it.code);
-    const P = S.colorPill; P.style.display = ''; P.classList.remove('need'); P.querySelector('.v').textContent = '🏺 ? ? ?';
+    const P = S.colorPill; P.style.display = ''; P.classList.remove('need'); P.querySelector('.v').textContent = ICON_V() + ' ? ? ?';
     await G.ui.flyImg(G.thumbs.item_colornote, s.x, s.y, P, { size: 64 });
     G.ui.toast(tr(T.noteVase), 'green');
   }
@@ -354,7 +393,7 @@ function dialPanel(S, part, src) {
     const dial = h('div', { class: 'obs-dial' }, wheel(0), clock ? h('div', { class: 'obs-colon' }, ':') : null, ...v.slice(1).map((_, i) => wheel(i + 1)));
     const lab = clock ? h('div', { class: 'obs-lab' }, h('span', {}, tr(T.hour)), h('span', { style: 'width:14px' }), h('span', { class: 'w2' }, tr(T.min))) : null;
     const hint = clock ? (src.wall ? T.hintWall : T.hintAlarm) : src?.kind === 'poster' ? T.hintPoster : src?.kind === 'timetable' ? T.hintTimetable : S.codes.has(L.code) ? T.hintCode : T.hintNoCode;
-    const hintEl = h('div', { class: 'obs-hint' }, (clock ? '🕐 ' : src?.kind === 'poster' ? '📋 ' : src?.kind === 'timetable' ? '🚆 ' : '🔢 ') + tr(hint));
+    const hintEl = h('div', { class: 'obs-hint' }, (clock ? '🕐 ' : src?.kind === 'poster' ? '📋 ' : src?.kind === 'timetable' ? ICON_T() + ' ' : '🔢 ') + tr(hint));
     const go = () => {
       if (v.join('') === L.code) { G.ui.closePanel(); if (clock) S.codePill.set(`🕐 ${L.code[0]}:${L.code.slice(1)}`); res(true); return; }
       wrongTry(S, part, dial, res, hintEl);
@@ -373,11 +412,11 @@ function colorPanel(S, part, src) {
       if (picked.length >= N) return;
       picked.push(d); paint(); G.audio.sfx('pop', 3 + picked.length * 2);
       if (picked.length < N) return;
-      if (picked.join('') === L.code) { setTimeout(() => { G.ui.closePanel(); if (src?.kind === 'vase') S.colorPill.querySelector('.v').innerHTML = '🏺 ' + picked.map(d => `<i class="cdot" style="background:${LOCK_COLORS[d][0]}"></i>`).join(''); res(true); }, 220); return; }
+      if (picked.join('') === L.code) { setTimeout(() => { G.ui.closePanel(); if (src?.kind === 'vase') S.colorPill.querySelector('.v').innerHTML = ICON_V() + ' ' + picked.map(d => `<i class="cdot" style="background:${LOCK_COLORS[d][0]}"></i>`).join(''); res(true); }, 220); return; }
       wrongTry(S, part, row, res, hintEl); setTimeout(() => { picked.length = 0; paint(); }, 420);
     };
     const pal = h('div', { class: 'obs-pal' }, ...LOCK_COLORS.map(([c], d) => tapEl(h('div', { class: 'obs-c', style: `background:${c}` }), () => pick(d))));
-    const hintEl = h('div', { class: 'obs-hint' }, src?.kind === 'vase' ? '🏺 ' + tr(T.hintVase) : '🎨 ' + tr(T.hintColor));
+    const hintEl = h('div', { class: 'obs-hint' }, src?.kind === 'vase' ? ICON_V() + ' ' + tr(T.hintVase) : '🎨 ' + tr(T.hintColor));
     G.ui.panel({ title: tr(T.colorTitle), color: 'blue', close: () => res(false), cls: 'obs-panel', body: [hintEl, row, pal],
       buttons: [G.ui.btn(tr(T.clear), { color: 'gray', onClick: () => { picked.length = 0; paint(); } })] });
   });

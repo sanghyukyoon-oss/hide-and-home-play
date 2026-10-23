@@ -68,6 +68,8 @@ import { installStation4 } from './station4-map.js';
 // 3판 세 안 A fishing3 · B fishing2b · C frogpond (10/24): 미리보기 ?gptmap=키&lv=3 — stage3-maps.js
 import { installStage3, S3_STAGE } from './stage3-maps.js';
 
+// 31판 새 보스 맵 별빛극장의 비밀 영사실 cinema (⑧ 10/23 — 스토리 룸 안 A): 거대 소품 극장 단면 + 둥근 섬 — cinema-map.js
+import { installCinema } from './cinema-map.js';
 // the maps each 들여온 key opens on (its campaign stage, for the preview's lighting and HUD)
 export const GPT_STAGE = { fishing3r: 3, fishisle: 3, gptotaku: 18, gptotakumix: 18, gptfirestation: 19, firestation2: 19, gptvillaroof: 20, gptpolicefront: 21, gptalley: 23, gptcornershop: 25, gptdoghouse: 26, gptdoghouse2: 26, gptstation: 27, gpttraincar2: 28, gptseastation: 30, gptlongcar: 31, gptsakura: 32, gptroom1: 64, starplay: 45, picnichill: 49, fireflyvalley: 55, creekcamp: 56, bridgewood: 58, cafefreezer: 39, undermall: 40, seaside2: 30 };
 
@@ -112,6 +114,7 @@ export function installGpt(MAPS, THEMES, LAYOUTS) {
   installSeaside2(LAYOUTS, THEMES);
   installStation4(LAYOUTS, THEMES); GPT_STAGE.station4 = 27;
   installStage3(LAYOUTS, THEMES); Object.assign(GPT_STAGE, S3_STAGE);   // 3판 세 안 (10/24 — stage3-maps.js)
+  installCinema(LAYOUTS, THEMES); GPT_STAGE.cinema = 31;
 }
 
 export function gptPreview(qs, THEMES) {

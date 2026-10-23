@@ -1017,7 +1017,7 @@ B.sandbox = (f, T) => {
 };
 
 // 벤치: newspaper someone left, a pigeon
-B.bench = (f, T) => {
+B.bench = (f, T, o = {}) => {
   const sy = .42;
   f.add(mg('bench-iron', '#2f6d57', ({ tube }) => {
     for (const sx of [-1, 1]) {
@@ -1033,8 +1033,9 @@ B.bench = (f, T) => {
   const np = grp(put(rbox(.44, .025, .3, '#ffffff', .008, { map: newsTex() }), 0, 0, 0)); put(np, .45, sy + .056, 0, 0, .22, 0); f.add(np);
   const p = f.part('lift', np, (t, b) => { np.position.y = b.p.y + .3 * t; np.rotation.x = -.38 * t; np.rotation.z = .15 * t; }, { label: '신문지', sfx: 'swish' });
   f.spot('inside', null, .45, sy + .045, 0, { part: p, maxH: .3, label: '신문지 밑', scale: .82 });
-  f.spot('on', null, -.42, sy + .045, 0, { maxH: .45, label: '벤치 위', scale: .85 });
-  f.spot('under', null, 0, 0, -.02, { maxH: .35, label: '벤치 밑', scale: .85 });
+  // (o.bigSpots: a map that wants the things on and under its bench bigger — 31판 극장 로비, ② 10/24 '벤치 위' 23 px)
+  f.spot('on', null, -.42, sy + .045, 0, { maxH: o.bigSpots ? .55 : .45, label: '벤치 위', scale: o.bigSpots ? 1 : .85 });
+  f.spot('under', null, 0, 0, -.02, { maxH: .35, label: '벤치 밑', scale: o.bigSpots ? 1 : .85 });
   f.add(put(mg('pigeon', '#a9aec8', ({ add }) => { add(G.sph(.09, 12, 9), 0, .09, 0, 0, 0, .15, [1.3, .9, .9]); add(G.sph(.055, 12, 9), .1, .19, 0); add(G.box(.1, .03, .07, .01), -.13, .1, 0, 0, 0, .3); }), -.64, 0, .34, 0, .5, 0));
   f.add(put(mg('pigeon-b', '#ff9f43', ({ add }) => { add(G.cone(.022, .06, 8), .17, .19, 0, 0, 0, -HP); }), -.64, 0, .34, 0, .5, 0));
 };

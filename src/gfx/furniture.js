@@ -1593,6 +1593,24 @@ B.wallshelf = (f, T) => {
 };
 
 // 레버: a riveted steel wall plate with yellow-black hazard bands and a slot; a chrome lever with a red ball knob.
+// 전등 스위치 (9판 ② 10/23 — 사용자 "벽에 있는 자연스러운 형광등 스위치 말한 거야. 그 스위치도 찾는 물건으로 추가하고 찾으면 켜지는 걸로"):
+// a plain wall plate with a two-tone rocker, toy-sized like the things on the list (a real one is a few pixels on a phone);
+// f.rocker flips when it's found (stage.js onFound → lightsOn)
+B.lightswitch = (f, T) => {
+  const Y = 1.1;
+  f.add(mc('lightswitch', ({ add }) => {
+    add(G.box(.2, .28, .03, .02), '#fbf7ef', 0, Y, .015);
+    add(G.box(.17, .25, .008, .012), '#efe8dc', 0, Y, .032);
+    for (const sy of [-1, 1]) add(G.sph(.01, 8, 6), STEEL, 0, Y + sy * .105, .036, 0, 0, 0, [1, 1, .4]);
+  }));
+  const rk = new THREE.Group(); put(rk, 0, Y, .04); f.add(rk);
+  rk.add(mc('lightswitch-rocker', ({ add }) => {
+    add(G.box(.085, .14, .03, .012), '#ffffff', 0, 0, 0);
+    add(G.box(.06, .05, .008, .006), '#ff8fa8', 0, -.035, .016);
+  }));
+  rk.rotation.x = -.22;
+  f.rocker = rk;
+};
 B.lever = (f, T) => {
   f.add(mc('lever', ({ add }) => {
     add(G.box(.42, .56, .08, .05), '#8f9bc4', 0, 1.15, .04);
@@ -1704,7 +1722,7 @@ export const FURN_INFO = {
   stool: { w: 1, d: 1, name: '의자', price: 70 },
   findshelf: { w: 2, d: 1, name: '찾은 것 선반', price: 0 },   // (내 방에만: the things you found in the stages stand on it — lobby.js)
   window: { wall: true, name: '창문' }, picture: { wall: true, name: '액자' }, clock: { wall: true, name: '시계' },
-  wallshelf: { wall: true, name: '벽 선반' }, door: { wall: true, name: '문' }, lever: { wall: true, name: '레버' },
+  wallshelf: { wall: true, name: '벽 선반' }, door: { wall: true, name: '문' }, lever: { wall: true, name: '레버' }, lightswitch: { wall: true, name: '전등 스위치' },
 };
 
 // 찾은 것 선반 (경제·로비 10/19 — 사용자 "찾은 게 아무 데도 안 남는다"): an open wooden display shelf, three shelves of four

@@ -467,22 +467,35 @@ async function walkIn(S, c, { cam = true } = {}) {
 // its '-screen' plane — hidden), cin_popcorn (the glass lid part, the key hanging on the shelf above), cin_curtain, cin_seatrow.
 // In the stage a touch only (드래그 = the camera): the crank and the curtain cord go by themselves once touched.
 const LIT = '#ffd36a';
-// a bulb or a letter lit / dark: its meshes get an emissive copy of their material (kept, so it goes back)
+// a bulb or a letter dark / lit again: ⑧'s bulbs and letters glow on their own (each its own material), so 'dark' takes the glow
+// down and 'lit' puts back what it was; a piece that doesn't glow gets an emissive copy of its material instead
 function glow(o, on, col = LIT, k = 1.3) {
   o?.traverse?.(m => {
     if (!m.isMesh || !m.material || Array.isArray(m.material)) return;
-    const u = m.userData; if (!u.stgMat0) u.stgMat0 = m.material;
+    const u = m.userData, M = m.material;
+    if (u.stgEi == null && M.emissive) { u.stgEi = M.emissiveIntensity; u.stgC0 = M.color?.clone(); }
+    if (u.stgEi > 0) { M.emissiveIntensity = on ? u.stgEi : 0; if (u.stgC0) M.color.copy(u.stgC0).multiplyScalar(on ? 1 : .42); return; }
+    if (!u.stgMat0) u.stgMat0 = M;
     if (!on) { m.material = u.stgMat0; return; }
     if (!u.stgLit) { u.stgLit = u.stgMat0.clone(); if (u.stgLit.emissive) { u.stgLit.emissive.set(col); u.stgLit.emissiveIntensity = k; } else u.stgLit.color?.set(col); }
     m.material = u.stgLit;
   });
 }
+const haloTo = (f, on) => { const hl = f?.halo; if (!hl?.material) return; if (hl.userData.stgOp == null) hl.userData.stgOp = hl.material.opacity; hl.material.opacity = on ? hl.userData.stgOp : 0; };
 const boxOf = o => new THREE.Box3().setFromObject(o);
+// what of it shows (a hidden beam or film would make the projector's box reach the screen)
+function visBox(o) {
+  const b = new THREE.Box3(); o.updateMatrixWorld(true);
+  o.traverse(m => { if (!m.isMesh) return; for (let q = m; q; q = q.parent) { if (!q.visible) return; if (q === o) break; } b.expandByObject(m); });
+  return b.isEmpty() ? boxOf(o) : b;
+}
 const marqueeFlicker = {
   async start(S, c) {
     const G = S.G, W = G.world, F = furnOf(S, 'cin_marquee'), f = F?.r.f;
     const bulbs = f?.bulbs || [], letters = f?.letters || [];
-    c.finish = () => { for (const b of bulbs) glow(b, true); for (const l of letters) glow(l, true, '#fff1c8', .9); };
+    c.finish = () => { for (const b of bulbs) glow(b, true); for (const l of letters) glow(l, true, '#fff1c8', .9); haloTo(f, true); };
+    // (dark already if PREP ran — it does when this scene plays; dark now otherwise)
+    for (const b of bulbs) glow(b, false); for (const l of letters) glow(l, false); haloTo(f, false);
     // the friends with their trip bags walk up to the doors meanwhile (what alley-boss's comeHome did)
     const walk = walkIn(S, c, { cam: false });
     if (f) { const b = boxOf(f.group); await W.flyTo(S.tw, { target: b.getCenter(V(0, 0, 0)), zoom: fitZoom(W, b, .7), dur: .55 }); }
@@ -507,13 +520,13 @@ function filmLook(S, film) {
   const tick = dt => {
     if (S.dead) return; t += dt; if (t < next) return; next = t + .08;
     x.clearRect(0, 0, 256, 144);
-    const g = x.createRadialGradient(128, 72, 40, 128, 72, 150); g.addColorStop(0, 'rgba(60,35,10,0)'); g.addColorStop(1, 'rgba(40,22,6,.7)');
+    // (the picture has its own old-film look — grain, scratches, dark edges — so only what moves goes on top: a soft edge, a scratch now and then)
+    const g = x.createRadialGradient(128, 72, 60, 128, 72, 150); g.addColorStop(0, 'rgba(60,35,10,0)'); g.addColorStop(1, 'rgba(40,22,6,.28)');
     x.fillStyle = g; x.fillRect(0, 0, 256, 144);
-    x.fillStyle = 'rgba(140,90,40,.1)'; x.fillRect(0, 0, 256, 144);
-    for (let k = 0; k < 3; k++) if (Math.random() < .6) { x.fillStyle = Math.random() < .5 ? 'rgba(255,248,230,.45)' : 'rgba(30,18,8,.4)'; x.fillRect(Math.random() * 256, 0, 1 + Math.random(), 144); }
-    for (let k = 0; k < 6; k++) { x.fillStyle = 'rgba(20,12,4,.5)'; x.fillRect(Math.random() * 256, Math.random() * 144, 2, 2); }
+    for (let k = 0; k < 2; k++) if (Math.random() < .45) { x.fillStyle = Math.random() < .5 ? 'rgba(255,248,230,.45)' : 'rgba(30,18,8,.4)'; x.fillRect(Math.random() * 256, 0, 1 + Math.random(), 144); }
+    for (let k = 0; k < 3; k++) { x.fillStyle = 'rgba(20,12,4,.4)'; x.fillRect(Math.random() * 256, Math.random() * 144, 2, 2); }
     tex.needsUpdate = true;
-    if (c0) mat.color.copy(c0).multiplyScalar(.84 + Math.random() * .16);
+    if (c0) mat.color.copy(c0).multiplyScalar(.9 + Math.random() * .1);
   };
   if (S.ambient?.ticks) S.ambient.ticks.push(tick);
   else { let last = performance.now(); const iv = setInterval(() => { if (S.dead) return clearInterval(iv); const n = performance.now(); tick((n - last) / 1000); last = n; }, 80); }
@@ -529,11 +542,11 @@ const projectorFilm = {
   async end(S, c) {
     const G = S.G, W = G.world, P = furnOf(S, 'cin_projector')?.r.f, Sc = furnOf(S, 'cin_screen')?.r.f;
     if (!P || !Sc) return;
-    const crank = P.parts.find(p => !p.lock) || P.parts[0], beam = P.beam, film = Sc.film;
-    const show = () => { crank?.setOpen(1); if (beam) beam.visible = true; if (film) { film.visible = true; filmLook(S, film); } W.idsDirty = true; W.shadowDirty = true; };
+    const crank = P.parts.find(p => p.kind === 'crank') || P.parts.find(p => !p.lock) || P.parts[0], beam = P.beam, film = Sc.film;
+    const show = () => { crank?.setOpen(1); furnOf(S, 'cin_curtain')?.r.f.parts?.[0]?.setOpen(1); if (beam) beam.visible = true; if (film) { film.visible = true; filmLook(S, film); } W.idsDirty = true; W.shadowDirty = true; };
     c.finish = show;
     // the crank: it winds itself (드르륵), the projector whirs on
-    { const b = boxOf(P.group); await W.flyTo(S.tw, { target: b.getCenter(V(0, 0, 0)), zoom: fitZoom(W, b, .55), dur: .5 }); }
+    { const b = visBox(P.group); await W.flyTo(S.tw, { target: b.getCenter(V(0, 0, 0)), zoom: fitZoom(W, b, .55), dur: .5 }); }
     G.audio.sfx('ratchet'); const stop = G.audio.loopSfx?.('projector', .5);
     // (it runs on under the closing words, then winds down)
     setTimeout(() => stop?.(), 6000);
@@ -545,15 +558,23 @@ const projectorFilm = {
       await Promise.race([S.tw.run(.35, k => { for (const [m, o] of ms) m.opacity = o * k; }), c.wait(.35)]);
       for (const [m, o] of ms) m.opacity = o;
     }
+    // the stage curtain goes up by itself if it's still down (⑧ cin_curtain: one part, the cord and the two halves)
+    const cur = furnOf(S, 'cin_curtain')?.r.f.parts?.[0];
+    // (looking at the screen more from the front than the room's view does: most of the way round to face it)
+    let yaw = W.yaw;
+    if (film) { const n = film.getWorldDirection(V(0, 0, 0)), y1 = Math.atan2(n.x, n.z); let dy = y1 - W.yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; yaw = W.yaw + dy * .7; }
+    { const b = visBox(Sc.group); await W.flyTo(S.tw, { target: b.getCenter(V(0, 0, 0)), zoom: fitZoom(W, b, .9), yaw, dur: .8 }); }
+    if (cur && !(cur.t > .9) && !c.skipped) { G.audio.sfx(cur.sfx || 'swish'); await Promise.race([S.tw.run(.8, k => cur.setOpen(Math.max(cur.t, k)), ease.inOutQuad), c.wait(.8)]); cur.setOpen(1); }
     G.audio.sfx('flip');
     if (film) { film.visible = true; filmLook(S, film); W.idsDirty = true; }
-    { const b = boxOf(Sc.group); await W.flyTo(S.tw, { target: b.getCenter(V(0, 0, 0)), zoom: fitZoom(W, b, .9), dur: .7 }); }
+    // (the beam softer once the picture is up — at full it washed the picture out)
+    beam?.traverse(m => { if (m.isMesh && m.material?.transparent) m.material.opacity *= .5; });
     await c.wait(1);
-    // in to the corner: 먹물이 and the young 삐딱이 (where they are in the picture: Sc.filmCorner [u, v], else bottom right)
+    // in to the corner: 먹물이 and the young 삐딱이 (where they are in the picture: Sc.filmCorner [u, v], else ⑧'s picture's — bottom right)
     if (film && !c.skipped) {
-      const [u, v] = Sc.filmCorner || [.82, .74], p = filmPoint(film, u, v), bb = boxOf(film);
-      const z = fitZoom(W, bb, .9) * 2.4;
-      await W.flyTo(S.tw, { target: p, zoom: Math.min(6, z), dur: 1.1, e: ease.inOutCubic });
+      const [u, v] = Sc.filmCorner || [.8, .8], p = filmPoint(film, u, v), bb = visBox(Sc.group);
+      const z = fitZoom(W, bb, .9) * 1.8;
+      await W.flyTo(S.tw, { target: p, zoom: Math.min(6, z), yaw, dur: 1.1, e: ease.inOutCubic });
       await c.wait(1.4);
     }
     show();
@@ -563,11 +584,11 @@ const projectorFilm = {
 // goes out on a touch (the key on the shelf falls the usual way, its hang on the lid's part)
 export function stagingPart(S, part) {
   const t = part?.furn?.type;
-  if (t === 'cin_popcorn' && !part._popped && !(part.t > .5) && !part.lock) { part._popped = true; popcorn(S, part.furn); }
-  if (t === 'cin_curtain' && !(part.t > .5)) S.G.audio.sfx('swish');
+  // (⑧'s machine pops and overflows on its own — f.popcornPile, f.spill: then nothing more here)
+  if (t === 'cin_popcorn' && !part.furn.popcornPile && !part._popped && !(part.t > .5) && !part.lock) { part._popped = true; popcorn(S, part.furn); }
 }
 export function stagingTap(S, furn) {
-  if (furn?.type !== 'cin_marquee') return false;
+  if (furn?.type !== 'cin_marquee' || furn.parts?.length) return false;   // (⑧'s sign has its own part for it: 'flick')
   const L = furn.letters?.length ? furn.letters : furn.dimChar ? [furn.dimChar] : [];
   const one = furn.dimChar && L.includes(furn.dimChar) ? furn.dimChar : L[2] || L[0];
   if (!one) return true;
@@ -767,6 +788,12 @@ function roofHat(S) {
   }
 }
 const PREP = {
+  // 31판 극장: the sign dark until the friends arrive (marqueeFlicker lights it — prep runs only when that scene will play)
+  marqueeFlicker(S) {
+    if (S.retryRun) return;
+    const f = furnOf(S, 'cin_marquee')?.r.f; if (!f) return;
+    for (const b of f.bulbs || []) glow(b, false); for (const l of f.letters || []) glow(l, false); haloTo(f, false);
+  },
   bagPop(S) {
     const F = furnOf(S, 'train'); if (F?.r.f.car && !S.stgCarAway) { F.r.f.car.position.x -= 40; S.stgCarAway = true; }
     roofHat(S);

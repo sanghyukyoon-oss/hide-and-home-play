@@ -269,6 +269,11 @@ export class StageScene {
     }
     if (this.spec.hatKey) hatKeyHide(this);   // (27판: the locker key in the straw hat on the platform roof — the crossing's train blows it down)
     if (this.plan.showcase?.marble && this.plan.showcase.door.furn.marbleBall) this.plan.showcase.door.furn.marbleBall.visible = false;   // (12판: the run's marble is the one you find — ② 10/23)
+    // (9판 ② 10/23: the wall light switch is one of the things to find — tapped, it's found and the lights come on)
+    if (this.plan.lightItem) {
+      const sw = this.plan.lightItem, it = { type: 'lightswitch', role: 'target', lightSwitch: true, g: sw.f.group, spot: { kind: 'on', label: '전등 스위치', part: null, furn: sw.f }, found: false };
+      sw.f.group.userData.item = it; this.items.push(it); G.needThumbs?.(['item_lightswitch']);
+    }
     this.targets = this.items.filter(i => i.role === 'target');
     this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
     if (G.world.post) {
@@ -400,7 +405,7 @@ export class StageScene {
     G.audio.ambience?.(this.spec.room);   // (its own quiet beds, if it has any — audio.js AMB, 10/21)
     G.audio.music(this.spec.boss ? 'boss' : 'play');   // (방탈출 보스판: the boss music — 사운드 세션 10/19)
     this.bubble = h('div', { class: 'bubble count' }, ''); G.ui.wui.append(this.bubble);
-    if (this.plan.light) this.goDark();
+    if (this.plan.light || this.plan.lightItem) this.goDark();
     // the first run builds 1판 behind the start screen: the banner, the talk and the hide wait for the tap
     while (G.booting && !this.dead) await new Promise(r => setTimeout(r, 100));
     if (this.dead) return;
@@ -1590,7 +1595,11 @@ export class StageScene {
     if (it.role === 'target' && this.found % 2 === 1) setTimeout(() => !this.dead && this.taunt('found'), 500);   // 흑백판: the owner is a sore loser
     if (this.tutStep === 2) this.tutDone();
     const g = it.g, s0 = g.scale.x;
-    if (this.spec.gray) {   // a found thing in a 흑백판 stays where it was, in full colour
+    if (it.lightSwitch) {   // (9판: the switch stays on the wall — the rocker flips and the lights come on)
+      const rk = it.g.parent && it.spot.furn?.rocker; if (rk) this.tw.run(.18, k => { rk.rotation.x = -.22 + .44 * k; }, ease.outBack);
+      this.tw.run(.35, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .3)), ease.linear).then(() => g.scale.setScalar(s0));
+      if (this.dark) this.lightsOn();
+    } else if (this.spec.gray) {   // a found thing in a 흑백판 stays where it was, in full colour
       this.colorIn(g);
       this.tw.run(.35, k => g.scale.setScalar(s0 * (1 + Math.sin(k * Math.PI) * .45)), ease.linear).then(() => g.scale.setScalar(s0));
     } else {
@@ -2292,7 +2301,12 @@ export class StageScene {
     await this.tw.run(.5, k => { W.setLight(to); W.hemi.intensity = from.amb + (W.hemi.intensity - from.amb) * k; W.sun.intensity = from.sun + (W.sun.intensity - from.sun) * k; });
     W.setLight(to);
     W.fx.confetti(30);
+    // (9판 사용자 10/23: "켜짐과 동시에 글로우 같은, 어두울 때만 켜지는 후보정도 꺼지는 걸로" — the night glow and the dimmed sparkle
+    // points were for the dark; with the lights on the room looks like any lit room, the night sky stays)
+    if (W.post) { W.post.bloomOn = false; W.post.nightShade = false; }
     G.ui.toast('딸깍! 불이 켜졌다!', 'green');
+    const ls = sceneAt(this.idx)?.lightSay;   // (스토리 룸 10/23: the host's word when the lights come on — 9판 "불 켜졌다! …어, 내 물건 다 보여!")
+    if (ls) setTimeout(() => !this.dead && !this.result && this.say(this.friend, tr(ls), 2400), 450);
   }
   async pullLever(lv) {
     const G = this.G, W = G.world;
@@ -2505,6 +2519,8 @@ export class StageScene {
     };
     const sw = this.plan.light;
     if (this.dark && sw && sw.t < .5) return { kind: 'part', part: sw, obj: sw.furn.group, pos: this.partCenter(sw) };
+    const li = this.dark && this.plan.lightItem && this.targets.find(t => t.lightSwitch && !t.found);   // (9판: in the dark the switch first)
+    if (li) return { kind: 'item', item: li, obj: li.g, pos: this.worldCenter(li) };
     for (const it of this.targets) if (!it.found) addItemGoal(it);
     if (!cand.length) return null;
     // nearest to the screen centre first

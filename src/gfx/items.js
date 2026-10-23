@@ -173,6 +173,15 @@ export const ITEMS = {
     g.add(put(mesh(geo('fzhandlegrip', () => new THREE.CylinderGeometry(.022, .022, .1, 12)), mat('#4f86c6', { rough: .5 })), 0, .045, 0, 0, 0, Math.PI / 2));
     return g;
   } },
+  // (9판 ② 10/23: the wall light switch is on the list — its thumbnail; the switch itself is the wall decor, furniture.js B.lightswitch)
+  lightswitch: { name: '전등 스위치', h: .3, noCollect: true, build() {   // (upright, so its icon reads as a switch, not a note)
+    const g = grp();
+    g.add(put(rbox(.2, .28, .03, '#fbf7ef', .02), 0, .14, 0));
+    g.add(put(rbox(.11, .17, .035, '#ffffff', .014), 0, .14, .03, -.22, 0, 0));
+    g.add(put(rbox(.08, .07, .01, '#ff8fa8', .008), 0, .1, .052, -.22, 0, 0));
+    for (const sy of [-1, 1]) g.add(put(sph(.012, '#9aa3b2'), 0, .14 + sy * .11, .02));
+    return g;
+  } },
   crank: { name: '건조대 손잡이', h: .06, flat: true, noCollect: true, build() {
     const g = grp();
     g.add(put(cyl(.012, .012, .16, '#a9b2c8', null, 10), 0, .015, 0, Math.PI / 2, 0, 0));

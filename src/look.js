@@ -424,6 +424,9 @@ export function lookRecipe(room, spec) {
   if (OWN_BASE.has(room)) delete sky.block;
   return sky;
 }
+// 31판 별빛극장 (cinema, ⑧ 10/23): 여행에서 돌아온 저녁 — 하늘은 파랑·보라 저녁, 빛은 하얗고 맑게(허브 빛 규칙 10/23: 노을·살구빛으로 화면이
+// 누래지지 않게, 따뜻함은 전구 간판·촛대·가로등 같은 작은 등 색으로만 — gfx/cinema-props.js), 밝기는 낮과 비슷, 해 자리는 그대로(긴 그림자 X)
+RECIPES.cinema = { light: { ambColor: '#f1f2fb', amb: 1.32, sunColor: '#fbf9f4', sun: 2.4, shadow: .56 }, sky: ['#5f6fc4', '#8e98d8', '#c3c8ec'], itemSize: .46 };
 // a GPT map's own mood where the old one's backdrop doesn't suit it (LOOK 10/22 "each map its own backdrop", ⑥): 44판 모래 언덕 —
 // a clear summer blue over the park's grass block
 RECIPES.gptplayhamster = { ...RECIPES.park3, sky: ['#5fb2e6', '#c2e5f4', '#dcf0e6'] };

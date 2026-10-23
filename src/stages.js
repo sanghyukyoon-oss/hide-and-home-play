@@ -761,7 +761,7 @@ export const STAGES = [
   { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, clueHang: { pad: 'liftbasket' }, zoom: 1.4, habitHigh: true, habitMore: true, habit: [] },   // (habit: [] — only 'high up' is 펭펭이's habit here, not its everyday list: the bottom shelf counted as a habit place — 검토 10/20)   // (clueHang: the key hangs at the pulley's top, out of reach, until the basket comes up — user 10/20)   // (펭펭이 "비결 2번: 높은 데 숨기기!" — up high, every other thing as on any stage: the upstairs alone already holds half the house, 검토 P0-1)
   { room: 'house3', n: 6, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .3, zoom: 1.4, kit: 'robot', lockOn: { pad: ['wardrobe'] } },   // 프라모델 조립판 (10/19, 스토리 룸·레벨 세션 합의): 곰돌이가 어릴 때 못 맞춘 꼬마 로봇 — 부품 6개, 머리는 잠긴 상자 속(열쇠 세 번째), 함정 절반 (modelkit.js)
   // (9판 정전 ② 10/23, user: "스위치 찾게 해서(혹은 두꺼비집) 그거 찾으면 밝게 변하는 거 어떰?" — dark: a power cut on the night; the switch on a wall)
-  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, dark: true, lightAt: [[0, 'N'], [0, 'W'], [1, 'N']], clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
+  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, dark: true, lightItem: true, lightAt: [[0, 'N', .1], [0, 'W', 1.1], [1, 'N', -.2]],   // (u: the places the start view sees — ② probe 10/24) clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
     habitRoom: 1, habit: ['bed', 'futon', 'pillow', 'zabuton', 'catbed'], clueOn: { pad: ['plant'] }, clueRoom: 1 },   // ("목욕 끝! …내 물건 다 어디 갔지?" — the bathroom and the bed; one in the tub by the bubbles; the key in the bathroom where the first view reaches, its plant by the door — 검토 P0-1·P1-4)   // (then 이불 속 누구게 — the pajama party)
   { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55, artHunt: 'artstars' },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .3, kit: 'cattower' },   // 캣타워 조립판 (10/20, user "조립식 많이 들어가면 좋겠다" — 레벨 세션: 11판·19판; 함정 절반 as 8판; the top bed behind the lock)
@@ -897,8 +897,8 @@ export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location
 // ?newmaps=0은 전부 옛 맵. 기억은 그대로 localStorage newmaps)
 export const NEW_MAPS_MODE = (() => { try { const q = new URLSearchParams(location.search).get('newmaps'); if (q === '1' || q === '0') localStorage.setItem('newmaps', q); return q ?? localStorage.getItem('newmaps') ?? 'default'; } catch (e) { return 'default'; } })();
 export const NEW_MAPS_ON = NEW_MAPS_MODE !== '0';
-export const NEW_DEFAULT = new Set([18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 36, 39, 40]);   // 기본으로 새 맵인 판 (점검 통과 + 사용자 거절 없음; 45·49·55·56·58 공원·캠프는 10/24 사용자 "너무 실망"으로 뺌 — ?newmaps=1로만)
-export const NEW_MAPS = { 27: 'station4', 28: 'traincar5', 30: 'seaside2', 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
+export const NEW_DEFAULT = new Set([18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 36, 39, 40]);   // 기본으로 새 맵인 판 (점검 통과 + 사용자 거절 없음; 45·49·55·56·58 공원·캠프는 10/24 사용자 "너무 실망"으로 뺌 — ?newmaps=1로만)
+export const NEW_MAPS = { 27: 'station4', 28: 'traincar5', 30: 'seaside2', 31: 'cinema', 36: 'stationery', 39: 'cafefreezer', 40: 'undermall', 45: 'starplay', 49: 'picnichill', 55: 'fireflyvalley', 56: 'creekcamp', 58: 'bridgewood' };   // 판 번호 → 새 맵 키 (⑩ 공원·캠프 10/23)
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
   alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
@@ -1032,6 +1032,9 @@ export function stageSpec(idx) {
   // (39판 카페 지하 냉동 창고 ② 10/23, ⑨ cafefreezer — 새 맵 스위치로 이 맵일 때만): 열쇠는 사물함, 색은 계단 밑 비품장(두 자물쇠가 다른
   // 가구에), 판 물건은 빨래방 양말·고무 오리 대신 냉동 창고 것
   if (s.room === 'cafefreezer') { s.lockOn = { ...s.lockOn, pad: ['fz_locker'], color: ['fz_supplycab'] }; s.items = ['icecream', 'cheese', 'milk', 'bubbletea', 'cupcake', 'teddy', 'medal']; }
+  // (31판 별빛극장 보스 ② 10/23 — 스토리 룸 안 A, ⑧ cinema): 매표소 서랍 = 상영 시간표 비밀번호, 상영관 문 = 열쇠(팝콘 기계가 퐁퐁 하면
+  // 위에 걸린 열쇠가 툭), 영사실 문 = 필름 통 셋 색. 보스 판이지만 관찰 단서를 씀(골목 장이 23·26·27판에서 가르친 것이 보스에서 돌아옴)
+  if (s.room === 'cinema' && s.boss) Object.assign(s, { zoom: 1.6, itemSize: .6, items: ['star', 'trophy', 'icecream', 'headphones', 'teddy', 'gift', 'candy'], obsBoss: true, obsCine: true, obsKind: 'timetable', lockOn: { code: ['cin_ticketbooth'], pad: ['cin_hall_door'], color: ['cin_projroom_door'] }, clueHang: { pad: 'cin_popcorn' } });
   if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
   // (18판 새 안 otakuloft3·4·5, ① 10/23: 같은 부품 키라 같은 장치·자물쇠 — 새 맵 스위치로 열릴 때)
   if (s.room === 'otakuloft3' || s.room === 'otakuloft4' || s.room === 'otakuloft5') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
@@ -1142,7 +1145,7 @@ export function layoutFor(roomKey, raw = false) {
 const fits = (type, s, role, loose) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat) && (loose || spotFits(type, s, role));
 
 // Mount a lever (or a light switch) where it stays visible: a free wall slot, else a free back-edge tile.
-function mountLever(room, r, pref = null) {
+function mountLever(room, r, pref = null, kind = 'lever') {
   const RS = room.rooms || [room];
   const slots = [];
   // a lever must stay visible: skip wall slots that already carry decor or stand behind tall furniture
@@ -1150,16 +1153,20 @@ function mountLever(room, r, pref = null) {
   for (const Rm of RS) {
     const mountable = w => ['wall', 'alleywall'].includes(Rm.walls[w]?.kind || 'wall');
     const tileOf = (w, u) => w === 'N' ? [Math.floor(u + Rm.w / 2), 0] : w === 'S' ? [Math.floor(-u + Rm.w / 2), Rm.d - 1] : w === 'W' ? [0, Math.floor(-u + Rm.d / 2)] : [Rm.w - 1, Math.floor(u + Rm.d / 2)];
-    const blocked = (w, u) => { const [ti2, tj] = tileOf(w, u); return Rm.furns.some(f => { if (!TALL.includes(f.type) && !(f._h ??= new THREE.Box3().setFromObject(f.f.group).max.y - Rm.group.position.y > 1.0)) return false; const [fw, fd] = Rm.footprint(f.type, f.rot); return ti2 >= f.i && ti2 < f.i + fw && tj >= f.j && tj < f.j + fd; }); };
+    const hLim = kind === 'lightswitch' ? 1.2 : 1.0;   // (a switch plate sits at 1.1 m: a dresser with a jar on top doesn't hide it — 9판)
+    const blocked = (w, u) => { const [ti2, tj] = tileOf(w, u); return Rm.furns.some(f => { if (!TALL.includes(f.type) && !((f._ht ??= new THREE.Box3().setFromObject(f.f.group).max.y - Rm.group.position.y) > hLim)) return false; const [fw, fd] = Rm.footprint(f.type, f.rot); return ti2 >= f.i && ti2 < f.i + fw && tj >= f.j && tj < f.j + fd; }); };
     const half = Math.max(Rm.w, Rm.d) / 2 - .6;
-    for (const w of ['N', 'W', 'E', 'S']) for (let u = -half; u <= half + .01; u += 1) if (mountable(w) && !Rm.decors.some(d => d.wall === w && Math.abs(d.u - u) < .95) && !blocked(w, u)) slots.push([Rm, w, u]);
+    const gap = kind === 'lightswitch' ? .5 : .95;   // (a switch plate is small: it fits between a mirror and a towel rack)
+    for (const w of ['N', 'W', 'E', 'S']) for (let u = -half; u <= half + .01; u += kind === 'lightswitch' ? .5 : 1) if (mountable(w) && !Rm.decors.some(d => d.wall === w && Math.abs(d.u - u) < gap) && !blocked(w, u)) slots.push([Rm, w, u]);
   }
   let lv = null;
   // (pref [[room, wall], …]: a stage that wants it where the start view sees it — the first of those with room, else any back wall
   // (N·W face the start view), else anywhere — 9판's switch, ② 10/23: on a front wall it folded away with the wall)
   let pool = slots;
-  if (pref) { pool = slots.filter(([, w]) => w === 'N' || w === 'W'); for (const [ri, wl] of pref) { const want = slots.filter(([Rm, w]) => Rm === RS[ri] && w === wl); if (want.length) { pool = want; break; } } }   // (no back wall free: it stands on a back-edge tile instead, below)
-  if (pool.length) { const [Rm, w, u] = pool[Math.floor(r() * Math.min(pool.length, 6))]; lv = Rm.addDecor('lever', w, u); }
+  let aimed = false;   // (lightAt [room, wall, u]: the free place on that wall nearest u — a point the start view sees, 9판)
+  if (pref) { pool = slots.filter(([, w]) => w === 'N' || w === 'W'); for (const [ri, wl, u0] of pref) { let want = slots.filter(([Rm, w]) => Rm === RS[ri] && w === wl); if (want.length) { if (u0 != null) { want = want.slice().sort((a, b) => Math.abs(a[2] - u0) - Math.abs(b[2] - u0)); aimed = true; } pool = want; break; } } }   // (no back wall free: it stands on a back-edge tile instead, below)
+  if (kind === 'lightswitch' && !aimed) pool = pool.slice().sort((a, b) => Math.abs(a[2]) - Math.abs(b[2]));   // (the switch: the middle of its wall, toward the middle of the start view)
+  if (pool.length) { const [Rm, w, u] = pool[aimed ? 0 : Math.floor(r() * Math.min(pool.length, kind === 'lightswitch' ? 2 : 6))]; lv = Rm.addDecor(kind, w, u); }
   else {
     // back-edge tiles first (they never stand in front of anything), turned to face the middle
     const fa = room.L.friendAt || [99, 99];
@@ -1488,9 +1495,11 @@ export function planStage(room, spec, story = null) {
   fill(s => s.kind === 'inside' && !lockedParts.has(s.part), .35);
   // a dark room: the lights are out until you find the switch (a lever on a wall where it can be seen)
   let light = null;
-  if (spec.dark) { const sw = mountLever(room, r, spec.lightAt); if (sw) { light = sw.f.parts[0]; light.isLight = true; light.label = '전등 스위치'; } }
+  // (9판 ② 10/23: lightItem — a plain wall switch on the list of things to find, not a lever; found, the lights come on)
+  let lightItem = null;
+  if (spec.dark) { const sw = mountLever(room, r, spec.lightAt, spec.lightItem ? 'lightswitch' : 'lever'); if (sw?.type === 'lightswitch') lightItem = sw; else if (sw) { light = sw.f.parts[0]; light.isLight = true; light.label = '전등 스위치'; } }
   if (tv && !tv.lock) { tv.on(''); tv = null; }   // no code lock to point at: just a TV that is on
-  return { targets: placements.filter(p => p.role === 'target').map(p => p.type), placements, locks, light, tv, rotSeed: r };
+  return { targets: placements.filter(p => p.role === 'target').map(p => p.type), placements, locks, light, lightItem, tv, rotSeed: r };
 }
 // 함정 상한 (11~70판 레벨 세션 10/19, 리포트 v3 P2): the decoys grew with the map — 2 to 30 a stage, over 20 on 20·26·30·54·59판 —
 // while 톡 doesn't count them. At most 1.5× the things on the list, never under 6; not on 흑백판 (their own colour game) or
