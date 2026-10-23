@@ -439,7 +439,10 @@ export function deviceTell(S, part, line) {
 }
 
 // what the tools say when found (stage.js onFound)
+// (12판 비밀 서재 ② 10/23: the run's empty start and the marble's name — stage.js solveShowcase)
+K('구슬 길 출발점이 비어 있어! 파란 구슬을 찾아서 올려 줘', 'The start of the marble run is empty! Find the blue marble and put it on'); K('파란 구슬', 'Blue marble');
 export const DEVICE_FOUND = {
+  bluemarble: K('파란 구슬이다! 책장 뒤 구슬 길에 올리면 될 것 같아', 'A blue marble! It must go on the marble run behind the bookcase'),
   sluicehandle: K('수문 손잡이다! 연못 수문 바퀴에 끼워 보자', 'The sluice handle! Fit it on the pond gate wheel'),
   bill1000: K('천 원짜리 지폐다! 동전 교환기에 넣어 보자', 'A 1000-won bill! Try the coin changer'),
   coin500: K('500원 동전! 건조기에 넣어 보자', 'A 500-won coin! Put it in the dryer'),

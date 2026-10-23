@@ -166,6 +166,15 @@ export const ITEMS = {
     g.add(put(rbox(.012, .012, D - .01, '#ffd43b', .003), -W / 2 - .003, T - .008, 0));
     return g;
   } },
+  // (12판 비밀 서재 ② 10/23, user: "파란 구슬도 찾게 해서 무지개 풀고 찾은 구슬 쓰게 해서 열리게"): the marble the run above the cupboard
+  // is missing — the same glossy blue as the one that rolls (gfx/showcase-props.js)
+  bluemarble: { name: '파란 구슬', h: .12, noCollect: true, build() {
+    const g = grp();
+    g.add(put(mesh(geo('bluemarble', () => new THREE.SphereGeometry(.06, 18, 14)), mat('#3d8bff', { rough: .2, emissive: '#3d8bff', ei: .25 })), 0, .06, 0));
+    g.add(put(mesh(geo('bluemarbleswirl', () => new THREE.TorusGeometry(.0605, .007, 6, 24)), mat('#cfe6ff', GLOSS)), 0, .06, 0, .7, .3, 0));
+    g.add(put(sph(.014, '#ffffff'), -.022, .088, .03));
+    return g;
+  } },
   sock: { name: '양말', h: .06, flat: true, build() { return sockL('#7fd3ff', '#ffffff', '#ff7eb6'); } },
   // 짝 양말 (the laundromat's pair puzzle): the same sock in four clearly different looks, picked by opts.code 0–3
   sockp: { name: '짝 양말', h: .06, flat: true, build(o = {}) {

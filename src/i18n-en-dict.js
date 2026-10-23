@@ -2431,6 +2431,7 @@ export const EN = {
 "문에 짝 잃은 양말이 걸려 있어. 같은 무늬 양말을 찾아 줘!": "A lonely sock hangs on the door. Find one with the same pattern!",
 "짝꿍 완성! 세탁기 문이 열렸어": "A perfect pair! The washer door opened",
 "앗, 불이 꺼져 있어! 벽에 있는 전등 스위치를 찾아봐": "Oh, the lights are out! Find the light switch on a wall",
+"앗, 불이 꺼져 있어! 전등 스위치를 찾아봐": "Oh, the lights are out! Find the light switch",
 "딸깍! 불이 켜졌다!": "Click! Lights on!",
 "철컥! …아무 일도 없네": "Click! …nothing happened",
 "철컥! 비밀 칸이 열렸어!": "Click! A secret compartment opened!",

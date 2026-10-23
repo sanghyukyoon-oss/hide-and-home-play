@@ -7,7 +7,7 @@ import { WALLPAPERS, FLOORS } from './catalog.js';
 
 const wp = id => { const w = WALLPAPERS.find(x => x.id === id); return w ? { wallKind: w.wallKind, wall: w.wall, wall2: w.wall2, wainscot: w.wainscot } : {}; };
 const fl = id => { const f = FLOORS.find(x => x.id === id); return f ? { floorKind: f.floorKind, floor: f.floor, floor2: f.floor2 } : {}; };
-const F = (type, i, j, rot = 0) => ({ type, i, j, rot });
+const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, ...(opts ? { opts } : {}) });
 const D = (type, wall, u) => ({ type, wall, u });
 // two rooms side by side: a (left, its east wall a doorway) and b (right, open onto a), their back walls in one line
 const SIZES = [[5, 5], [6, 5], [6, 6], [7, 6], [7, 7], [8, 7]];   // (catalog.js ZONE_SIZES)
@@ -44,7 +44,7 @@ export const HOUSES = [
       furniture: [
         F('pyeongsang', 0, 0), F('jangdok', 2, 0), F('tree', 5, 0), F('clothesline', 6, 1, 1),
         F('tent', 0, 3), F('campchair', 2, 3), F('cooler', 3, 3), F('lantern', 3, 2), F('firewood', 0, 6),
-        F('garden', 5, 3), F('daeya', 4, 5), F('bush', 7, 3), F('picnic', 5, 6), F('mushrooms', 2, 6), F('log', 6, 0, 0), F('tree', 7, 6),
+        F('garden', 5, 3, 0, { v: 'b' }), F('daeya', 4, 5), F('bush', 7, 3), F('picnic', 5, 6), F('mushrooms', 2, 6), F('log', 6, 0, 0), F('tree', 7, 6),
       ],
     },
   },
@@ -98,7 +98,7 @@ export const HOUSES = [
       { type: 'room', size: 2, paint: { ...wp('wp-wood'), ...fl('fl-herring') }, decor: [D('balconywin', 'N', -.6), D('wallshelf2', 'W', .6)],
         furniture: [F('sofa2', 0, 0), F('recordcab', 2, 0), F('monstera', 3, 0), F('tvlow', 0, 4, 1), F('rug', 2, 2), F('kotatsu', 2, 3), F('zabuton', 3, 3), F('floorlamp', 5, 1), F('bookshelf', 0, 2, 1), F('laundrybasket', 4, 5), F('robovac', 2, 5)] },
       { type: 'yard', size: 0, paint: fl('fl-grass'),
-        furniture: [F('tree', 4, 0), F('garden', 0, 0), F('catfeeder', 2, 1), F('bench', 1, 4), F('parkbin', 4, 4), F('bush', 4, 2), F('daeya', 0, 2)] }),
+        furniture: [F('tree', 4, 0), F('garden', 0, 0, 0, { v: 'b' }), F('catfeeder', 2, 1), F('bench', 1, 4), F('parkbin', 4, 4), F('bush', 4, 2), F('daeya', 0, 2)] }),
   },
   {
     id: 'npc-panda', v: 1, tier: 2,

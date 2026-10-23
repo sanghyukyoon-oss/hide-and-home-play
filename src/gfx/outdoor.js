@@ -566,54 +566,126 @@ B.vending = (f, T) => {
   f.spot('on', null, .1, H, z0, { maxH: .4, label: '자판기 위', scale: .85 });
 };
 
-// 스티로폼 텃밭: fish boxes reused as planters (상추, 대파, 무 / 고추, 방울토마토), a terracotta pot of marigolds to lift, a
-// watering can. (10/22 밤 사용자 "얘네도": the boxes were smooth soap bars with the word running off the face, the crops lumps —
-// now the boxes have the thick styrofoam rim, rounded corners, shallow grooves round the sides and a little squash; the words
-// fit their face; lettuce leaves, a bunch of green onions, peppers hanging off their plant, cherry tomatoes up a stake)
-B.garden = (f, T) => {
-  const soil = col(T, 'soil'), sty = col(T, 'styro'), boxes = [[-.46, -.2, .8, 0], [.42, -.22, .72, 0]];
-  f.add(mg('garden-sty2', sty, ({ add }) => boxes.forEach(([x, z, w, ry]) => {
-    add(G.box(w, .27, .5, .05), x, .135, z, 0, ry, 0, [1, .985, .99]);
-    for (const s of [-1, 1]) { add(G.box(w + .02, .05, .06, .02), x, .285, z + s * .235, 0, ry, 0); add(G.box(.06, .05, .5, .02), x + s * (w / 2 - .02), .285, z, 0, ry, 0); }
-  })));
-  f.add(mg('garden-sty-groove', shade(sty, -.07), ({ add }) => boxes.forEach(([x, z, w, ry]) => {
-    for (const y of [.09, .18]) { add(G.box(w - .1, .008, .008, .002), x, y, z + .248, 0, ry, 0); for (const s of [-1, 1]) add(G.box(.008, .008, .4, .002), x + s * (w / 2 - .002), y, z, 0, ry, 0); }
-  })));
-  f.add(mg('garden-soil', soil, ({ add }) => boxes.forEach(([x, z, w, ry]) => add(G.box(w - .1, .04, .4, .015), x, .27, z, 0, ry, 0))));
-  f.add(put(plane(.58, .17, mat('#ffffff', { map: styroLabelTex('싱싱수산', '#2f6fe0') })), -.46, .13, .053));
-  f.add(put(plane(.52, .16, mat('#ffffff', { map: styroLabelTex('꿀사과', '#ff3b4e') })), .42, .13, .033));
-  // 상추: two rosettes of open leaves round a pale heart; 대파: a bunch of white stalks going green, the tips bent
-  f.add(mg('garden-lettuce2', '#8fe36a', ({ add }) => { for (const [x, z] of [[-.32, -.32], [-.2, -.12]]) for (let i = 0; i < 7; i++) { const a = i * PI * 2 / 7; add(G.sph(.06, 10, 8), x + Math.cos(a) * .055, .31 + (i % 2) * .015, z + Math.sin(a) * .055, 0, -a, .75, [1.25, .22, .8]); } }));
-  f.add(mg('garden-lettuce-heart', '#c8f2a2', ({ add }) => { for (const [x, z] of [[-.32, -.32], [-.2, -.12]]) add(G.sph(.04, 10, 8), x, .33, z, 0, 0, 0, [1, .8, 1]); }));
-  f.add(mg('garden-pa-white', '#f4f6ee', ({ add }) => { for (let i = 0; i < 4; i++) add(G.cyl(.014, .016, .12, 8), -.06 + (i % 2) * .03, .35, -.3 + i * .025); }));
-  f.add(mg('garden-pa-green', '#3fae4a', ({ add }) => { for (let i = 0; i < 4; i++) { const x = -.06 + (i % 2) * .03, z = -.3 + i * .025; add(G.cyl(.011, .013, .26, 8), x, .54, z, 0, 0, (i - 1.5) * .06); add(G.cyl(.009, .011, .1, 6), x + (i - 1.5) * .025 + .03, .7, z, 0, 0, -.9); } }));
-  const rad = grp(put(cap(.075, .12, '#fbfbf5'), 0, .0, 0), put(mg('radish-leaf', '#4fb85a', ({ add }) => { for (let i = 0; i < 3; i++) add(G.sph(.05, 10, 8), Math.sin(i * 2.1) * .04, .2, Math.cos(i * 2.1) * .04, Math.cos(i * 2.1) * .35, 0, -Math.sin(i * 2.1) * .35, [.7, 2.2, .35]); }), 0, 0, 0));
-  put(rad, -.64, .31, -.22); f.add(rad);
+// 스티로폼 텃밭: fish boxes reused as planters (상추, 대파, 무 / 고추, 방울토마토), a terracotta pot of marigolds to lift.
+// (10/23 사용자 "얘네 좀 못생겨서..": big flat white blocks with a shout of a word, plastic lettuce, floating onions, a board of
+// soil — two ways: A) the styrofoam boxes kept but small and soft, a little hand-drawn sticker, crumbly damp soil, lettuces of
+// overlapping leaves, tomato clusters on a tied stake, wooden name tags; B) 할머니 텃밭 — slatted wooden apple crates, a pot, a
+// red basin of 대파, a watering can. The lift parts (무, 화분) and the spots keep their names in both.)
+const soilTex = c1 => tex('soil3|' + c1, 128, 128, (c, w, h) => {
+  c.fillStyle = c1; c.fillRect(0, 0, w, h);
+  let sd = 5; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  c.fillStyle = shade(c1, -.05); for (let i = 0; i < 7; i++) blob(c, R() * w, R() * h, 7 + R() * 8);   // damp patches
+  for (let i = 0; i < 120; i++) { c.fillStyle = shade(c1, R() < .55 ? .12 : -.1); blob(c, R() * w, R() * h, .6 + R() * 1.1); }
+}, { repeat: [1, 1] });
+// a little sticker on a box: paper, a strip of tape, a drawn crop and its name in small handwriting
+const veggieTex = kind => tex('veg|' + kind, 192, 128, (c, w, h) => {
+  c.fillStyle = '#fffaf0'; roundRect(c, 3, 3, w - 6, h - 6, 10); c.fill();
+  c.fillStyle = 'rgba(255,214,120,.75)'; c.save(); c.translate(w * .5, 8); c.rotate(-.06); c.fillRect(-18, -6, 36, 12); c.restore();
+  if (kind === 'lettuce') { c.fillStyle = '#7fd65c'; for (let i = 0; i < 5; i++) blob(c, 32 + Math.cos(i * 1.3) * 9, 36 + Math.sin(i * 1.3) * 7, 11); c.fillStyle = '#c8f2a2'; blob(c, 32, 36, 7); }
+  else { c.strokeStyle = '#4ea85a'; c.lineWidth = 2; c.beginPath(); c.moveTo(32, 18); c.lineTo(32, 30); c.stroke(); c.fillStyle = '#ff4a3d'; blob(c, 26, 38, 8); blob(c, 38, 40, 8); blob(c, 32, 50, 7); c.fillStyle = '#4ea85a'; blob(c, 32, 30, 4); }
+  txt(c, kind === 'lettuce' ? '상추' : '토마토', 72, 38, 17, '#7a5a3a', { align: 'left' });
+}, { text: true });
+const tagTex = kind => tex('vtag|' + kind, 64, 96, (c, w, h) => {
+  c.fillStyle = '#f6e3bf'; roundRect(c, 2, 2, w - 4, h - 4, 14); c.fill();
+  if (kind === 'lettuce') { c.fillStyle = '#7fd65c'; for (let i = 0; i < 5; i++) blob(c, 16 + Math.cos(i * 1.3) * 6, 18 + Math.sin(i * 1.3) * 5, 7); }
+  else { c.fillStyle = '#ff4a3d'; blob(c, 13, 20, 6); blob(c, 21, 22, 6); c.fillStyle = '#4ea85a'; blob(c, 17, 13, 3); }
+});
+// crops (into one mg each — shared by both ways): a lettuce of overlapping leaves, a planted bunch of 대파, a tied stake of
+// cherry tomatoes, a pepper plant, a wooden name tag
+const lettuce = (f, key, list, S) => {
+  f.add(mg(key + '-out', '#7fd65c', ({ add }) => { for (const [x, z, k] of list) for (let i = 0; i < 9; i++) { const a = i * PI * 2 / 9 + k; add(G.sph(.055 * (k + 1), 10, 8), x + Math.cos(a) * .05 * (k + 1), S + .03 * (k + 1), z + Math.sin(a) * .05 * (k + 1), 0, -a, 1.0, [1.25, .22, .8]); } }));
+  f.add(mg(key + '-in', '#a8e67a', ({ add }) => { for (const [x, z, k] of list) for (let i = 0; i < 5; i++) { const a = i * PI * 2 / 5 + .3; add(G.sph(.04 * (k + 1), 10, 8), x + Math.cos(a) * .025 * (k + 1), S + .055 * (k + 1), z + Math.sin(a) * .025 * (k + 1), 0, -a, .55, [1.2, .28, .8]); } }));
+  f.add(mg(key + '-heart', '#d6f3a8', ({ add }) => { for (const [x, z, k] of list) add(G.sph(.026 * (k + 1), 10, 8), x, S + .065 * (k + 1), z, 0, 0, 0, [1, .85, 1]); }));
+};
+const onions = (f, key, x, z, S) => {
+  f.add(mg(key + '-w', '#f6f7ef', ({ add }) => { for (let i = 0; i < 5; i++) add(G.cyl(.013, .016, .09, 8), x + Math.cos(i * 2.4) * .022, S + .045, z + Math.sin(i * 2.4) * .022); }));
+  f.add(mg(key + '-g', '#3fae4a', ({ add, tube }) => { for (let i = 0; i < 5; i++) { const bx = x + Math.cos(i * 2.4) * .022, bz = z + Math.sin(i * 2.4) * .022, tx = bx + Math.cos(i * 2.4) * .06, tz = bz + Math.sin(i * 2.4) * .04; tube([bx, S + .085, bz], [tx, S + .32 + (i % 2) * .05, tz], .011, 6, .007); } }));
+};
+const tomatoes = (f, key, x, z, S, H = .44) => {
+  f.add(mg(key + '-stake', '#c9925a', ({ add }) => add(G.box(.022, H + .04, .022, .006), x, S + H / 2, z)));
+  f.add(mg(key + '-tie', '#f2e2b8', ({ add }) => { for (const y of [.18, .34]) add(G.tor(.02, .004, PI * 2), x, S + y, z, HP, 0, 0); }));
+  f.add(mg(key + '-vine', '#5aae4c', ({ add, tube }) => {
+    let q0 = [x + .02, S, z + .02]; for (let k = 1; k <= 5; k++) { const q = [x + .025 + Math.sin(k * 1.7) * .03, S + k * H / 5.5, z + .02 + Math.cos(k * 1.7) * .02]; tube(q0, q, .008, 5); q0 = q; }
+    for (const [y, a] of [[.12, .5], [.22, 2.4], [.3, 4.2], [.38, 1.2]]) add(G.sph(.045, 8, 6), x + Math.cos(a) * .06, S + y, z + Math.sin(a) * .05, 0, a, .6, [1.4, .26, .8]);
+  }));
+  const fruit = [[.06, .2, .05], [.075, .17, .03], [.045, .165, .065], [.06, .14, .045], [-.05, .3, .04], [-.062, .27, .025], [-.04, .265, .06]];
+  f.add(mg(key + '-red', '#ff4a3d', ({ add }) => { for (const [dx, y, dz] of fruit) add(G.sph(.022, 10, 8), x + dx, S + y, z + dz); }));
+  f.add(mg(key + '-cal', '#4ea85a', ({ add }) => { for (const [dx, y, dz] of fruit) add(G.cone(.012, .008, 5), x + dx, S + y + .02, z + dz, PI, 0, 0); }));
+};
+const pepper = (f, key, x, z, S) => {
+  f.add(mg(key + '-plant', '#4caf50', ({ add, tube }) => { tube([x, S, z], [x, S + .26, z], .01, 6); for (const [y, a] of [[.1, .3], [.16, 1.9], [.22, 3.4], [.26, 5.0]]) for (const s2 of [-1, 1]) add(G.sph(.034, 8, 6), x + Math.cos(a) * .045 * s2, S + y, z + Math.sin(a) * .045 * s2, 0, a, s2 * .5, [1.5, .3, .7]); }));
+  f.add(mg(key + '-red', '#ff3b30', ({ add }) => { for (const [dx, y, dz, rz] of [[-.04, .14, .03, .15], [.045, .19, .04, -.2], [.03, .1, -.04, .1]]) add(G.cap(.014, .05, 2, 8), x + dx, S + y, z + dz, 0, 0, rz); }));
+};
+const nameTag = (f, key, kind, x, z, S, ry = 0) => {
+  f.add(mg(key + '-stick', '#d9b07a', ({ add }) => add(G.box(.014, .12, .008, .003), x, S + .06, z, 0, ry, 0)));
+  f.add(put(mesh(geo('vtag-plane', () => new THREE.PlaneGeometry(.055, .082)), mat('#ffffff', { map: tagTex(kind), side: DS })), x, S + .15, z + .006, 0, ry, 0));
+};
+// the two lift parts, the same in both ways: a 무 pulled up out of the soil, a pot of marigolds
+const radishPart = (f, x, z, S) => {
+  const rad = grp(put(cap(.06, .1, '#fbfbf5'), 0, -.02, 0), put(cap(.035, .02, '#d9efc9'), 0, .06, 0),
+    put(mg('radish-leaf2', '#4fb85a', ({ add }) => { for (let i = 0; i < 4; i++) { const a = i * HP + .4; add(G.sph(.045, 10, 8), Math.sin(a) * .045, .17, Math.cos(a) * .045, Math.cos(a) * .4, 0, -Math.sin(a) * .4, [.6, 2.3, .3]); } }), 0, 0, 0));
+  put(rad, x, S, z); f.add(rad);
   const rp = f.part('lift', rad, (t, b) => { rad.position.y = b.p.y + .4 * t; rad.rotation.z = .35 * t; }, { label: '무', sfx: 'lift' });
-  f.spot('inside', null, -.64, .31, -.22, { part: rp, maxH: .3, label: '무 뽑은 자리', scale: .72 });
-  // 고추: a stem with leaf pairs, long red and green peppers hanging tip down; 방울토마토: up a wooden stake, red clusters
-  f.add(mg('pepper-plant', '#4caf50', ({ add, tube }) => {
-    tube([.4, .29, -.24], [.4, .62, -.24], .012, 6);
-    for (const [y, a] of [[.4, .3], [.48, 1.9], [.56, 3.4], [.62, 5.0]]) for (const s of [-1, 1]) add(G.sph(.04, 8, 6), .4 + Math.cos(a) * .05 * s, y, -.24 + Math.sin(a) * .05 * s, 0, a, s * .5, [1.5, .3, .7]);
-  }));
-  f.add(mg('pepper-red', '#ff3b30', ({ add }) => { for (const [x, y, z, rz] of [[.35, .44, -.2, .15], [.45, .5, -.19, -.2], [.43, .38, -.29, .1]]) add(G.cone(.022, .1, 8), x, y, z, 0, 0, PI + rz); }));
-  f.add(mg('pepper-green', '#3f9a3a', ({ add }) => { for (const [x, y, z, rz] of [[.37, .53, -.3, -.2], [.46, .43, -.25, .2]]) add(G.cone(.02, .09, 8), x, y, z, 0, 0, PI + rz); }));
-  f.add(mg('tomato-stake', '#c9925a', ({ add }) => add(G.box(.022, .5, .022, .006), .18, .52, -.32)));
-  f.add(mg('tomato-vine', '#5aae4c', ({ add, tube }) => {
-    let p = [.2, .29, -.3]; for (let k = 1; k <= 5; k++) { const q = [.18 + Math.sin(k * 1.7) * .04, .29 + k * .085, -.3 + Math.cos(k * 1.7) * .03]; tube(p, q, .008, 5); p = q; }
-    for (const [y, a] of [[.42, .5], [.55, 2.4], [.66, 4.2]]) add(G.sph(.045, 8, 6), .18 + Math.cos(a) * .06, y, -.31 + Math.sin(a) * .05, 0, a, .5, [1.4, .28, .8]);
-  }));
-  f.add(mg('tomato-fruit', '#ff4a3d', ({ add }) => { for (const [x, y, z] of [[.24, .47, -.27], [.25, .43, -.26], [.22, .44, -.25], [.12, .6, -.3], [.13, .56, -.28]]) add(G.sph(.024, 8, 6), x, y, z); }));
-  f.spot('on', null, .64, .31, -.12, { maxH: .4, label: '텃밭 상자 위', scale: .8 });
+  f.spot('inside', null, x, S, z, { part: rp, maxH: .3, label: '무 뽑은 자리', scale: .72 });
+};
+const marigoldPot = (f, x, z) => {
   const pot = grp(
     put(lathe('tpot', [[0, 0], [.1, 0], [.14, .17], [.155, .17], [.155, .21], [.125, .21], [.12, .19], [0, .19]], '#e07a52'), 0, 0, 0),
     put(mg('tpot-leaf', '#5fc45a', ({ add }) => { for (let i = 0; i < 4; i++) { const a = i * HP + .3; add(G.sph(.06, 10, 8), Math.cos(a) * .06, .25, Math.sin(a) * .06, 0, -a, .6, [1.3, .45, .7]); } }), 0, 0, 0),
     put(mg('tpot-marigold', '#ffc23d', ({ add }) => { for (const [cx, cz] of [[-.03, .02], [.04, -.03]]) for (let k = 0; k < 7; k++) { const a = k * PI * 2 / 7; add(G.sph(.026, 8, 6), cx + Math.cos(a) * .028, .31, cz + Math.sin(a) * .028, 0, -a, 0, [1.3, .45, .8]); } }), 0, 0, 0),
     put(mg('tpot-marigold-eye', '#e8742a', ({ add }) => { for (const [cx, cz] of [[-.03, .02], [.04, -.03]]) add(G.sph(.016, 8, 6), cx, .318, cz); }), 0, 0, 0));
-  put(pot, -.3, 0, .3); f.add(pot);
+  put(pot, x, 0, z); f.add(pot);
   const pp = f.part('lift', pot, (t, b) => { pot.position.y = b.p.y + .3 * t; pot.position.x = b.p.x - .1 * t; pot.rotation.z = .4 * t; }, { label: '화분', sfx: 'lift' });
-  f.spot('inside', null, -.3, 0, .3, { part: pp, maxH: .1, label: '화분 밑', scale: .9 });
+  f.spot('inside', null, x, 0, z, { part: pp, maxH: .1, label: '화분 밑', scale: .9 });
 };
+// A) small soft styrofoam boxes
+const gardenA = (f, T) => {
+  const soil = col(T, 'soil'), sty = col(T, 'styro'), H = .2, S = H - .01, boxes = [[-.46, -.2, .62, .42], [.42, -.22, .56, .4]];
+  f.add(mg('gardenA-sty', sty, ({ add }) => boxes.forEach(([x, z, w, d]) => {
+    add(G.box(w, H, d, .06), x, H / 2, z);
+    for (const s2 of [-1, 1]) { add(G.box(w + .02, .045, .055, .022), x, H + .005, z + s2 * (d / 2 - .02)); add(G.box(.055, .045, d + .02, .022), x + s2 * (w / 2 - .02), H + .005, z); }
+  })));
+  f.add(mg('gardenA-groove', shade(sty, -.06), ({ add }) => boxes.forEach(([x, z, w, d]) => add(G.box(w - .12, .006, .006, .002), x, H * .45, z + d / 2 + .001))));
+  f.add(mg('gardenA-soil|' + soil, '#ffffff', ({ add }) => boxes.forEach(([x, z, w, d]) => add(G.box(w - .08, .02, d - .08, .008), x, S, z)), { map: soilTex(soil), rough: .95 }));
+  f.add(mg('gardenA-clods', shade(soil, -.15), ({ add }) => boxes.forEach(([x, z, w, d], bi) => { for (let k = 0; k < 10; k++) add(G.sph(.013, 6, 4), x - w / 2 + .07 + ((k * 37 + bi * 11) % 40) / 40 * (w - .14), S + .01, z - d / 2 + .07 + ((k * 23 + bi * 7) % 30) / 30 * (d - .14), 0, k, 0, [1.3, .6, 1]); })));
+  f.add(put(plane(.15, .1, mat('#ffffff', { map: veggieTex('lettuce') })), -.3, .1, -.2 + .21 + .002, 0, 0, -.05));
+  f.add(put(plane(.15, .1, mat('#ffffff', { map: veggieTex('tomato') })), .52, .1, -.22 + .2 + .002, 0, 0, .06));
+  lettuce(f, 'gardenA-let', [[-.38, -.3, 0], [-.22, -.12, .15]], S);
+  onions(f, 'gardenA-pa', -.2, -.33, S);
+  nameTag(f, 'gardenA-tag1', 'lettuce', -.72, -.04, S, .2);
+  radishPart(f, -.64, -.22, S);
+  tomatoes(f, 'gardenA-tom', .26, -.3, S);
+  pepper(f, 'gardenA-pep', .5, -.2, S);
+  nameTag(f, 'gardenA-tag2', 'tomato', .62, -.07, S, -.2);
+  f.spot('on', null, .64, S, -.12, { maxH: .4, label: '텃밭 상자 위', scale: .8 });
+  marigoldPot(f, -.3, .3);
+};
+// B) 할머니 텃밭: slatted wooden apple crates, a pot, a basin of 대파 and a tin watering can
+const gardenB = (f, T) => {
+  const soil = col(T, 'soil'), wood = '#d4a46a', woodD = '#a8763f', H = .24, S = H - .02, crates = [[-.46, -.2, .64, .42], [.42, -.22, .56, .4]];
+  f.add(mg('gardenB-in', shade(woodD, -.25), ({ add }) => crates.forEach(([x, z, w, d]) => add(G.box(w - .03, H - .02, d - .03, .006), x, H / 2, z))));
+  f.add(mg('gardenB-slat', wood, ({ add }) => crates.forEach(([x, z, w, d]) => { for (const k of [0, 1, 2]) { const y = H * (.18 + k * .32); add(G.box(w, H * .24, d, .01), x, y, z); } })));
+  f.add(mg('gardenB-post', woodD, ({ add }) => crates.forEach(([x, z, w, d]) => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.045, H + .01, .045, .01), x + sx * (w / 2 - .02), H / 2, z + sz * (d / 2 - .02)); for (const sx of [-1, 1]) add(G.box(.008, .035, .1, .004), x + sx * (w / 2 + .002), H * .82, z); })));
+  f.add(mg('gardenB-soil|' + soil, '#ffffff', ({ add }) => crates.forEach(([x, z, w, d]) => add(G.box(w - .05, .02, d - .05, .008), x, S, z)), { map: soilTex(soil), rough: .95 }));
+  f.add(put(plane(.12, .08, mat('#ffffff', { map: veggieTex('tomato') })), .5, H * .5, -.22 + .2 + .003));
+  f.add(mg('gardenB-apple', '#ff5a4e', ({ add }) => { add(G.sph(.03, 12, 9), -.3, H * .5, -.2 + .21 + .012, 0, 0, 0, [1, .9, .4]); }));
+  f.add(mg('gardenB-apple-leaf', '#5fc45a', ({ add }) => add(G.sph(.014, 8, 6), -.29, H * .5 + .034, -.2 + .21 + .012, 0, 0, .6, [1.4, .6, .4])));
+  lettuce(f, 'gardenB-let', [[-.4, -.3, 0], [-.24, -.14, 0], [-.42, -.08, -.2]], S);
+  radishPart(f, -.64, -.22, S);
+  tomatoes(f, 'gardenB-tom', .26, -.3, S, .4);
+  pepper(f, 'gardenB-pep', .52, -.2, S);
+  nameTag(f, 'gardenB-tag', 'lettuce', -.12, -.32, S, -.15);
+  f.spot('on', null, .64, S, -.12, { maxH: .4, label: '텃밭 상자 위', scale: .8 });
+  marigoldPot(f, -.3, .3);
+  // a red rubber basin of 대파 and a tin watering can at the front
+  f.add(put(lathe('gardenB-basin', [[0, 0], [.12, 0], [.15, .11], [.16, .11], [.16, .125], [.145, .125], [.14, .11], [0, .1]], '#e8453c'), .18, 0, .3));
+  f.add(mg('gardenB-basin-soil|' + soil, '#ffffff', ({ add }) => add(G.cyl(.14, .14, .01, 16), .18, .105, .3), { map: soilTex(soil), rough: .95 }));
+  onions(f, 'gardenB-pa', .18, .3, .1);
+  f.add(mg('gardenB-can', '#b9c3cf', ({ add, tube }) => { add(G.cyl(.06, .065, .13, 14), .66, .065, .3); add(G.tor(.045, .008, PI), .64, .15, .3, 0, HP, 0); tube([.71, .06, .3], [.82, .16, .3], .012, 8, .018); add(G.cyl(.024, .016, .02, 10), .83, .17, .3, 0, 0, -.8); }));
+};
+// (10/23 사용자 "어떤 판은 스티로폼, 어떤 판은 나무… 이렇게 나오길": never mixed in one garden — a map gets one whole way.
+// opts.v 'a' | 'b' says which; without it a grass yard (a house's 마당) gets B, a street or alley A.)
+B.garden = (f, T, o = {}) => ((o.v || ((T && T.floorKind) === 'grass' ? 'b' : 'a')) === 'b' ? gardenB(f, T) : gardenA(f, T));
 
 // 에어컨 실외기: the fan grille swings open; things get left on top and slip underneath
 B.aircon = (f, T) => {

@@ -109,6 +109,7 @@ B.secretshelf = (f, T) => {
   }));
   const marble = mesh(new THREE.SphereGeometry(.05, 16, 12), mat('#3d8bff', { rough: .2, emissive: '#3d8bff', ei: .35 }));
   marble.userData.noMerge = true; put(marble, RUN[0][0], RUN[0][1] + .01, rz + .02); f.add(marble);
+  f.marbleBall = marble; f.marbleStart = marble.position.clone();   // (12판 ② 10/23: the marble can be missing — found in the room, put on the start)
   const cupPv = grp(); put(cupPv, -.1, 1.36, rz + .03); f.add(cupPv);
   const cup = mesh(new THREE.CylinderGeometry(.055, .04, .07, 14, 1, true), mat(BRASS, { side: THREE.DoubleSide }));
   cup.userData.noMerge = true; put(cup, 0, 0, 0); cupPv.add(cup);
@@ -137,7 +138,10 @@ B.secretshelf = (f, T) => {
       }
     }
     // a globe and an owl lamp on top
-    add(G.sph(.12, 16, 12), '#7fb7ff', -.22, H + .2, z0); add(G.cyl(.03, .07, .08, 12), WOODD, -.22, H + .09, z0);
+    add(G.sph(.12, 16, 12), '#6cb4e6', -.22, H + .2, z0); add(G.cyl(.03, .07, .08, 12), WOODD, -.22, H + .09, z0);
+    // (12판 ② 10/23: a globe that reads as one — land and a brass ring — not a big blue ball beside the blue marble you look for)
+    for (const [dx, dy, dz, r] of [[.06, .05, .085, .055], [-.05, .08, .075, .045], [.02, -.03, .11, .05], [-.09, -.02, -.05, .04], [.08, -.04, -.06, .045]]) add(G.sph(r, 10, 8), '#82c879', -.22 + dx, H + .2 + dy, z0 + dz, 0, 0, 0, [1, .6, 1]);
+    add(G.tor(.138, .008, PI * 2, 5, 28), BRASS, -.22, H + .2, z0, 0, HP * .55, .35);
     add(G.sph(.09, 12, 10), '#d9a066', .24, H + .14, z0); add(G.sph(.03, 8, 6), '#ffffff', .2, H + .17, z0 + .08); add(G.sph(.03, 8, 6), '#ffffff', .28, H + .17, z0 + .08);
   }));
   // the five picture books on the middle shelf: boxes plus one painted strip for the spines

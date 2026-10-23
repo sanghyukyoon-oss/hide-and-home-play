@@ -267,6 +267,7 @@ export class StageScene {
       this.items.push(it);
     }
     if (this.spec.hatKey) hatKeyHide(this);   // (27판: the locker key in the straw hat on the platform roof — the crossing's train blows it down)
+    if (this.plan.showcase?.marble && this.plan.showcase.door.furn.marbleBall) this.plan.showcase.door.furn.marbleBall.visible = false;   // (12판: the run's marble is the one you find — ② 10/23)
     this.targets = this.items.filter(i => i.role === 'target');
     this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
     if (G.world.post) {
@@ -1768,8 +1769,30 @@ export class StageScene {
     // close in on the cupboard and the marble run above it
     const nc = this.partCenter(door);
     await W.flyTo(tw, { target: new THREE.Vector3(nc.x, nc.y + .45, nc.z), zoom: Math.max(W.zoom, 2.6), dur: .5 });
-    await shelf.furn.marbleRun(tw, (n, p) => G.audio.sfx(n, p));
-    door.lock = null; this.cine = false;
+    // (12판 ② 10/23: the run's marble is the one to find — not found yet: its empty start shows, and the cupboard waits for it)
+    if (S.marble && !this.gadgets.has('bluemarble')) {
+      Object.assign(door, { lock: { kind: 'gadget', code: 'bluemarble' }, needItem: 'bluemarble', needMsg: '구슬 길 출발점이 비어 있어! 파란 구슬을 찾아서 올려 줘' });
+      const st = door.furn.marbleStart; if (st) { const p = W.toScreen(door.furn.group.localToWorld(st.clone())); W.fx.ring(p.x, p.y, { r: 36, color: '#3d8bff', width: 5, life: .8 }); }
+      G.audio.sfx('hmm'); G.ui.toast(door.needMsg, '');
+      const P = this.toolPill; P.style.display = ''; P.classList.add('need'); P.querySelector('.v').textContent = '?'; P.querySelector('img').src = G.thumbs.item_bluemarble;
+      this.cine = false; return;
+    }
+    if (S.marble) this.gadgets.delete('bluemarble');
+    await this.runMarble(door);
+  }
+  // the marble on the run's start (dropped in from above when it's the one you found), the run, the cupboard opens
+  async runMarble(door) {
+    const G = this.G, W = G.world, tw = this.tw, f = door.furn, m = f.marbleBall;
+    this.cine = true;
+    const nc = this.partCenter(door);
+    await W.flyTo(tw, { target: new THREE.Vector3(nc.x, nc.y + .45, nc.z), zoom: Math.max(W.zoom, 2.6), dur: .4 });
+    if (m && !m.visible && f.marbleStart) {
+      const st = f.marbleStart; m.visible = true; G.audio.sfx('pop', 2);
+      await tw.run(.35, k => { m.position.set(st.x, st.y + .35 * (1 - k) * (1 - k), st.z); });
+      G.audio.sfx('clink');
+    }
+    await f.marbleRun(tw, (n, p) => G.audio.sfx(n, p));
+    door.lock = null; this.cine = false; this.toolPill.style.display = 'none';
     await tw.wait(.15);
     if (!this.dead) await this.togglePart(door, true);
     if (!this.dead && this.scene?.cardAfter) newCard(G, this.scene.cardAfter);   // (12판: 연쇄 장치 카드는 장치가 다 움직인 뒤에 — 스토리 룸 10/20)
@@ -1792,6 +1815,7 @@ export class StageScene {
     this.gadgets.delete(L.code); this.toolPill.style.display = 'none';
     part.lock = null; this.idle = 0;
     if (part.robotVac) return this.runVacuum(part);
+    if (part.secret) return this.runMarble(part);   // (12판: the blue marble on the run — ② 10/23)
     if (part.dryRack) return this.lowerRack(part);
     if (part.device) return runDevice(this, part);   // R6 장치판 (devices.js)
     return this.togglePart(part, true);
@@ -2222,14 +2246,18 @@ export class StageScene {
     this.dark = true;
     // (포근한 밤 G2 10/21: a moonlit power cut — the same starry night a step darker, not black-violet; still dim enough to want the switch)
     W.setLight(COZY_DARK.light); this.G.setBg([COZY_DARK.sky[1], COZY_DARK.sky[2]]); setSky(COZY_DARK.sky);
-    setTimeout(() => !this.dead && this.dark && this.G.ui.toast('앗, 불이 꺼져 있어! 벽에 있는 전등 스위치를 찾아봐', 'red'), 1800);
+    // (9판 ② 10/23: no back wall free, the switch stands on a post — the toast doesn't send you to the walls)
+    const post = this.plan.light?.furn?.type === 'leverpost';
+    setTimeout(() => !this.dead && this.dark && this.G.ui.toast(post ? '앗, 불이 꺼져 있어! 전등 스위치를 찾아봐' : '앗, 불이 꺼져 있어! 벽에 있는 전등 스위치를 찾아봐', 'red'), 1800);
   }
   async lightsOn() {
     const G = this.G, W = G.world;
     this.dark = false;
     G.audio.sfx('unlock'); G.hitstop(.05);
-    const to = this.th.light || null, from = { amb: W.hemi.intensity, sun: W.sun.intensity };
-    G.setBg(this.th.bg); setSky(this.th.sky || null);
+    // (9판 ② 10/23: a night with a power cut — the lights come on, the night stays: the starry sky, the room bright)
+    const night = this.spec.night, NL = COZY_NIGHT.light;
+    const to = night ? { ...NL, amb: NL.amb * 1.2, sun: NL.sun * 1.2 } : this.th.light || null, from = { amb: W.hemi.intensity, sun: W.sun.intensity };
+    if (night) { G.setBg([COZY_NIGHT.sky[1], COZY_NIGHT.sky[2]]); setSky(COZY_NIGHT.sky); } else { G.setBg(this.th.bg); setSky(this.th.sky || null); }
     await this.tw.run(.5, k => { W.setLight(to); W.hemi.intensity = from.amb + (W.hemi.intensity - from.amb) * k; W.sun.intensity = from.sun + (W.sun.intensity - from.sun) * k; });
     W.setLight(to);
     W.fx.confetti(30);

@@ -528,7 +528,9 @@ SCENES.push(
       fed: K('음냐… 도토리다! 깼어, 깼어. 비켜 줄게.', "Mmh… an acorn! I'm up, I'm up. Moving.") }, room: 'trail', night: true, host: 'sleepy', goal: ['산길에 떨어뜨린 물건', 'things dropped on the trail'],
     intro: [L('sleepy', '음냐… 밤이 되니까 눈이 말똥말똥해.', "Mmh… now that it's night, I'm wide awake."), L('sleepy', '낮에 졸면서 걷다가… 이것저것 떨어뜨렸어.', 'I dozed while walking up today… and dropped a bunch of stuff.'), L('mong', '…랜턴 들고 같이 가자.', "…Grab the lantern. Let's go together.")],
     say: { first: K('오… 그거 내 거야. 잠결에 떨어뜨렸나 봐.', "Ooh… that's mine. Must've dropped it half asleep."), half: K('반이다. 밤엔 내가 더 잘 찾는 것 같아.', 'Half. I think I find stuff better at night.'), last: K('하나 남았어. 이렇게 같이 걷는 거, 좋다.', 'One left. Walking together like this is nice.') },
-    after: [L('sleepy', '다 찾았네… 별이 엄청 많아.', 'All found… so many stars.'), L('mong', '…응.', '…Yeah.'), L('sleepy', '…내일은 조금 덜 잘게.', "…Tomorrow I'll sleep a little less.")] },
+    after: [L('sleepy', '다 찾았네… 별이 엄청 많아.', 'All found… so many stars.'), L('mong', '…응.', '…Yeah.'), L('sleepy', '…내일은 조금 덜 잘게.', "…Tomorrow I'll sleep a little less.")],
+    // (55판이 ⑩의 반딧불 계곡 fireflyvalley면 — 10/23 공원·캠프 새 맵)
+    ifMap: { fireflyvalley: { after: [L('sleepy', '다 찾았네… 반딧불이 별처럼 많아.', 'All found… the fireflies are like stars.'), L('mong', '…응.', '…Yeah.'), L('sleepy', '…내일은 조금 덜 잘게.', "…Tomorrow I'll sleep a little less.")] } } },
   { id: 'campwideH', type: 'hidden', room: 'campwide', host: 'robot', goal: ['흩어진 물건', 'scattered things'],
     intro: [L('panda', '캠핑장 한가운데야. 오늘 밤 캠프파이어 하자.', 'This is the middle of camp. Campfire tonight.'), L('robot', '삐빅. 준비물 위치 데이터 손실. 다들 아무 데나 두고 감.', 'BEEP. Supply location data lost. Everyone left things wherever.')],
     say: { first: K('삐빅. 졸졸이 소지품 확인.', "BEEP. Dozy's belongings confirmed."), half: K('삐빅. 50%. 캠프파이어까지 예상 시간 단축.', 'BEEP. 50%. Campfire ETA shortened.'), last: K('삐빅. 1개 남음. 찾으면 점화 허가.', 'BEEP. One left. Find it and ignition is approved.') },
@@ -1295,6 +1297,8 @@ const ROCKY_ROOM = {
   aptlobby: L('raccoon', '장 본 게 현관에 다 쏟아졌네? 엘리베이터 내려오기 전에 다 주워 봐!', 'Groceries all over the lobby? Pick it all up before the elevator comes down!'),
 };
 ROCKY_ROOM.aptlobby2 = ROCKY_ROOM.aptlobby;   // (현관 2차 맵 키)
+// 56판 개울가 징검다리 캠핑 (⑩ 맵 creekcamp, 10/23): 너굴이가 캠핑장까지 따라와 시합
+ROCKY_ROOM.creekcamp = L('raccoon', '개울 건너기 전에 다 찾는 쪽이 1등! 징검다리 미끄러우니까 조심~', "First to find it all before crossing the creek wins! Careful, the stepping stones are slippery~");
 // 31판 돌아오는 저녁 기차 (긴 객실 한 칸, 10/22 검토 세션 결정): 28판 객실에서 들킨 너굴이의 복수전
 ROCKY_ROOM.gptlongcar = L('raccoon', '갈 땐 들켰지만, 돌아갈 땐 내가 이긴다! 역 도착 전에 승부야!', "You caught me on the way there, but I'm winning on the way back! Before we pull in!");
 // 18판 너굴이네 비 오는 밤 오덕 복층 (사용자 "18판 ㄱ" 10/21): 자기 방이라 더 우쭐

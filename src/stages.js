@@ -756,7 +756,8 @@ export const STAGES = [
   { room: 'bear2', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .55, zoom: 1.3, lockOn: { pad: ['dishcab'] } },   // zoom: 폰 세로 시작 줌(넓은 맵, 레벨 세션 10/19)
   { room: 'house2f', n: 8, inside: 2, behind: 0, time: 95, lock: ['pad'], clutter: .6, lockOn: { pad: ['chest'] }, clueIn: { pad: 'liftbasket' }, clueHang: { pad: 'liftbasket' }, zoom: 1.4, habitHigh: true, habitMore: true, habit: [] },   // (habit: [] — only 'high up' is 펭펭이's habit here, not its everyday list: the bottom shelf counted as a habit place — 검토 10/20)   // (clueHang: the key hangs at the pulley's top, out of reach, until the basket comes up — user 10/20)   // (펭펭이 "비결 2번: 높은 데 숨기기!" — up high, every other thing as on any stage: the upstairs alone already holds half the house, 검토 P0-1)
   { room: 'house3', n: 6, inside: 2, behind: 0, time: 100, lock: ['pad'], clutter: .3, zoom: 1.4, kit: 'robot', lockOn: { pad: ['wardrobe'] } },   // 프라모델 조립판 (10/19, 스토리 룸·레벨 세션 합의): 곰돌이가 어릴 때 못 맞춘 꼬마 로봇 — 부품 6개, 머리는 잠긴 상자 속(열쇠 세 번째), 함정 절반 (modelkit.js)
-  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
+  // (9판 정전 ② 10/23, user: "스위치 찾게 해서(혹은 두꺼비집) 그거 찾으면 밝게 변하는 거 어떰?" — dark: a power cut on the night; the switch on a wall)
+  { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, dark: true, lightAt: [[0, 'N'], [0, 'W'], [1, 'N']], clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
     habitRoom: 1, habit: ['bed', 'futon', 'pillow', 'zabuton', 'catbed'], clueOn: { pad: ['plant'] }, clueRoom: 1 },   // ("목욕 끝! …내 물건 다 어디 갔지?" — the bathroom and the bed; one in the tub by the bubbles; the key in the bathroom where the first view reaches, its plant by the door — 검토 P0-1·P1-4)   // (then 이불 속 누구게 — the pajama party)
   { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55 },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .3, kit: 'cattower' },   // 캣타워 조립판 (10/20, user "조립식 많이 들어가면 좋겠다" — 레벨 세션: 11판·19판; 함정 절반 as 8판; the top bed behind the lock)
@@ -1107,7 +1108,7 @@ export function layoutFor(roomKey, raw = false) {
 const fits = (type, s, role, loose) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat) && (loose || spotFits(type, s, role));
 
 // Mount a lever (or a light switch) where it stays visible: a free wall slot, else a free back-edge tile.
-function mountLever(room, r) {
+function mountLever(room, r, pref = null) {
   const RS = room.rooms || [room];
   const slots = [];
   // a lever must stay visible: skip wall slots that already carry decor or stand behind tall furniture
@@ -1120,7 +1121,11 @@ function mountLever(room, r) {
     for (const w of ['N', 'W', 'E', 'S']) for (let u = -half; u <= half + .01; u += 1) if (mountable(w) && !Rm.decors.some(d => d.wall === w && Math.abs(d.u - u) < .95) && !blocked(w, u)) slots.push([Rm, w, u]);
   }
   let lv = null;
-  if (slots.length) { const [Rm, w, u] = slots[Math.floor(r() * Math.min(slots.length, 6))]; lv = Rm.addDecor('lever', w, u); }
+  // (pref [[room, wall], …]: a stage that wants it where the start view sees it — the first of those with room, else any back wall
+  // (N·W face the start view), else anywhere — 9판's switch, ② 10/23: on a front wall it folded away with the wall)
+  let pool = slots;
+  if (pref) { pool = slots.filter(([, w]) => w === 'N' || w === 'W'); for (const [ri, wl] of pref) { const want = slots.filter(([Rm, w]) => Rm === RS[ri] && w === wl); if (want.length) { pool = want; break; } } }   // (no back wall free: it stands on a back-edge tile instead, below)
+  if (pool.length) { const [Rm, w, u] = pool[Math.floor(r() * Math.min(pool.length, 6))]; lv = Rm.addDecor('lever', w, u); }
   else {
     // back-edge tiles first (they never stand in front of anything), turned to face the middle
     const fa = room.L.friendAt || [99, 99];
@@ -1449,7 +1454,7 @@ export function planStage(room, spec, story = null) {
   fill(s => s.kind === 'inside' && !lockedParts.has(s.part), .35);
   // a dark room: the lights are out until you find the switch (a lever on a wall where it can be seen)
   let light = null;
-  if (spec.dark) { const sw = mountLever(room, r); if (sw) { light = sw.f.parts[0]; light.isLight = true; light.label = '전등 스위치'; } }
+  if (spec.dark) { const sw = mountLever(room, r, spec.lightAt); if (sw) { light = sw.f.parts[0]; light.isLight = true; light.label = '전등 스위치'; } }
   if (tv && !tv.lock) { tv.on(''); tv = null; }   // no code lock to point at: just a TV that is on
   return { targets: placements.filter(p => p.role === 'target').map(p => p.type), placements, locks, light, tv, rotSeed: r };
 }
@@ -1541,6 +1546,12 @@ export function planShowcase(room, spec, story = null) {
     if (home) bp.spot = home;
   }
   Object.assign(bp, { type: 'spinebook', role: 'book', forPart: shelf });
+  // (② 10/23, user on the phone: "파란 구슬도 찾게 해서 무지개 풀고 찾은 구슬 쓰게 해서 열리게") the run's marble is missing too: another
+  // thing to find, somewhere else — once the case has rolled aside it goes on the run's start and opens the cupboard. Not a lock
+  // more before it: just one more find (책 → 무지개 / 구슬 → 구슬 길)
+  const mp = plan.placements.filter(p => p.role === 'target' && p !== bp && p.type !== 'friendtoken' && p.spot.furn !== bp.spot.furn && !plan.locks.some(l => l.part === p.spot.part) && fits('bluemarble', p.spot))
+    .sort((a, b) => (b.spot.part ? 1 : 0) - (a.spot.part ? 1 : 0))[0];
+  if (mp) { plan.targets.splice(plan.targets.indexOf(mp.type), 1); Object.assign(mp, { type: 'bluemarble', role: 'gadget', code: 'bluemarble', forPart: door }); }
   // a scrambled shelf two swaps from right (was up to four): two pairs traded places, one book home; one of the five is missing
   const sw = r.shuffle([0, 1, 2, 3, 4]), order = [0, 1, 2, 3, 4];
   [order[sw[0]], order[sw[1]]] = [order[sw[1]], order[sw[0]]];
@@ -1551,7 +1562,7 @@ export function planShowcase(room, spec, story = null) {
   plan.placements.push({ type: 'friendtoken', spot: door.spots[0], role: 'target' });
   plan.targets.unshift('friendtoken');
   plan.incident = { part: door, lock: marble };
-  plan.showcase = { shelf, door, order, missing };
+  plan.showcase = { shelf, door, order, missing, marble: !!mp };
   return plan;
 }
 // 아파트 장치판 '로봇청소기 대소동' (10/18): the remote lies about → the robot vacuum goes under the sofa and comes back with the
