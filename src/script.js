@@ -264,9 +264,15 @@ const SCENES = [
   { id: 'konbini', type: 'incident', room: 'konbini', always: true,
     reveal: [L('shiba', '간식 코너 앞이라 꼬리가 그만…', 'The snack aisle set my tail off…'), L('shiba', '순찰 일지에 적어 둬야지. 「오늘도 들킴」.', 'Into the patrol log it goes: "Caught again."')],   // (no hiding in it: plays even if the shop falls back to a find-the-things stage)
     intro: [L('mong', '토순이는 도넛. 곰돌이는 꿀. 냥냥이는 생선.', 'Bunbun likes donuts. Bearie, honey. Nyannyan, fish.'), L('shiba', '친구들 좋아하는 걸 다 외웠어?', 'You memorized what all your friends like?'), L('mong', '일기장에 있어.', "It's in my diary."), L('shiba', '그럼 내 건?', 'Then what about me?'), L('mong', '…간식 전부.', '…Every snack.'), L('shiba', '정답!', 'Bingo!')] },
-  { id: 'laundry', type: 'incident', room: 'laundry',
+  // own: 33판 빨래방 숨은그림(삐딱이)이 같은 맵이라도 39판 ★ 파르페 이야기는 남아요 (10/23 판 표 되돌리기 — 전엔 33판이 써 버려서 39판이 빈 판이었어요)
+  { id: 'laundry', own: true, type: 'incident', room: 'laundry',
     reveal: [L('sundae', '휴~ 다 녹을 뻔! …어, 양말 한 짝 여기 있다.', "Phew! Almost melted! …Oh, here's a missing sock."), L('sundae', '체리는 너 가져. 찾아 준 상!', "The cherry's yours. Finder's prize!")],
     intro: [L('sundae', '이번엔 시원한 데 숨을 거야. 건조기 근처는 녹으니까 안 가!', "I'm hiding somewhere cool. Not near the dryer, I'd melt!")] },
+  // 39판 카페 지하 냉동 창고 ★ (⑨ 맵 cafefreezer, 10/23 — 33판이 빨래방으로 돌아가며 39판은 다른 맵, 스토리 룸 34~70 표): 더위를 피해 '제일 시원한 데'
+  // 숨은 파르페가 꽁꽁 — 전원 → 냉동 창고 문(냉기 김) → 온풍기 → 얼음이 녹아 꺼내요. 끝은 40판 마감 금고로
+  { id: 'cafefreezerInc', type: 'incident', room: 'cafefreezer', host: 'sundae', hide: K('녹기 전에 제일 시원한 데로!', 'To the coolest spot before I melt!'),
+    intro: [L('sundae', '더워서 녹을 것 같아! 이번엔 제일 시원한 데 숨을 거야.', "It's so hot I'm melting! This time I'm hiding somewhere really cool."), L('mong', '…설마.', "…Don't tell me.")],
+    reveal: [L('sundae', '…너, 너무 시원했어. 덜덜.', '…T-too cool. Brrr.'), L('sundae', '온풍기 고마워. 이제 딱 좋게 녹았어.', "Thanks for the heater. Now I'm melted just right."), L('sundae', '내일 마감 시간에 와. 보여 줄 게 있어.', "Come by at closing time tomorrow. I've got something to show you.")] },
   { id: 'cafe', keep: true, type: 'gray', room: 'cafe', inky: K('카페 색은 달콤해 보여서. 내 거야.', 'Café colors looked sweet. Mine now.'), caught: K('…동전, 두고 갈게.', "…I'll leave some coins."),
     after: [L('sundae', '…계산대에 누가 동전을 두고 갔어. 크레파스 그림이랑.', '…Someone left coins on the counter. And a crayon drawing.'), L('mong', '…숨바꼭질 그림이다. 구석에 까만 동그라미.', '…A hide-and-seek drawing. A little inky blob in the corner.'), L('mong', '나쁜 애는 아니야.', 'Not a bad kid.')] },
   // 공원·놀이터
@@ -488,7 +494,10 @@ SCENES.push(
     say: { first: K('…하나. 됐어.', '…One. Fine.'), half: K('…반. 셔터는 반만 내려도 되겠네.', '…Half. Could pull the shutter halfway down.'), last: K('…하나 남았어. 찾으면 불 끄고 가자.', "…One left. Find it and we'll turn off the lights.") },
     after: [L('grumpy', '…문단속 끝. 오늘 같이 있어 준 건… 나쁘지 않았어.', "…All locked up. Having you around today… wasn't bad."), L('sundae', '내일은 카페로 와! 디저트 쏠게.', "Come to the café tomorrow! Dessert's on me.")],
     // (37판이 동네 도서관 흑백이면 — ifMap: 그 방이 캠페인에 있을 때만)
-    ifMap: { library: { after: [L('grumpy', '…문단속 끝. 오늘 같이 있어 준 건… 나쁘지 않았어.', "…All locked up. Having you around today… wasn't bad."), L('sundae', '내일은 도서관 가자! 박사님이 새 책 들어왔대.', "Let's go to the library tomorrow! Doc says new books came in.")] } } },
+    ifMap: { library: { after: [L('grumpy', '…문단속 끝. 오늘 같이 있어 준 건… 나쁘지 않았어.', "…All locked up. Having you around today… wasn't bad."), L('sundae', '내일은 도서관 가자! 박사님이 새 책 들어왔대.', "Let's go to the library tomorrow! Doc says new books came in.")] },
+      // (36판이 ⑨의 밤 문구점 stationery면 — 10/23 상가 장 새 맵: 빨래방 줄을 빼고, 크레파스 진열대 앞에서 21판 이름 없는 크레파스 상자를 떠올려요)
+      stationery: { intro: [L('grumpy', '…문 닫을 시간인데 가게 열쇠랑 이것저것이 안 보여.', "…It's closing time, and the shop key and a bunch of stuff are missing."), L('sundae', '문방구 할머니가 일찍 들어가셨대. 문단속은 우리 몫!', "Grandma who runs the stationery shop went home early. Locking up's on us!"), L('mong', '…알바야?', '…You work here?'), L('grumpy', '…아니. 그냥 도와주는 거야.', '…No. Just helping out.')],
+        after: [L('grumpy', '…문단속 끝. 오늘 같이 있어 준 건… 나쁘지 않았어.', "…All locked up. Having you around today… wasn't bad."), L('mong', '…이 크레파스, 그 상자랑 똑같다.', '…These crayons. Same as the ones in that box.'), L('grumpy', '…옛날엔 여기서 제일 잘 팔리던 거야.', '…Used to be the best seller here, way back.'), L('sundae', '내일은 도서관 가자! 박사님이 새 책 들어왔대.', "Let's go to the library tomorrow! Doc says new books came in.")] } } },
   // 41판 (5장 첫 판, D1 10/19: 친구 숨기 → 숨은그림, 다람이 첫 만남): 간식은 다 찾지만 제일 중요한 도시락은 못 찾음 → 49판 보스
   { id: 'park2H', type: 'hidden', room: 'park2', goal: ['다람이가 숨긴 간식', 'snacks Chippy hid'],
     intro: [L('squirrel', '난 다람이! 소풍 간식을 공원 여기저기 숨겼어. …어디였더라?', "I'm Chippy! I hid the picnic snacks all over the park. …Where, though?")],
@@ -701,6 +710,14 @@ const BOSS = [
     secret: 'pawprint',
     lines: { tap: [K('흥.', 'Hmph.'), K('…거기 말고.', '…Not there.'), K('찾든 말든 상관없거든!', "I don't care if you find it!")] },
     outro: [L('grumpy', '…진짜 다 열었네.', '…You actually opened all of it.'), L('mong', '삐딱이, 까만 애 알아? 크레파스 들고 다니는.', 'Grumpy, know the inky kid? Carries crayons around.'), L('grumpy', '…어릴 때 같이 놀았던 것도 같고. 기억 안 나.', "…Maybe we played as kids. Don't remember."), L('grumpy', '내일도… 이 시간엔 있어.', "I'll be here tomorrow. Same time."), L('mong', '그럼 내일 또 올게. 다음엔 우리 집에서도 놀자.', "Then I'll come back tomorrow. And let's hang out at my place too."), L('grumpy', '…이거, 떡볶이 포장마차. 의자는 두 개면 돼.', "…Here. My tteokbokki stall. Two stools. That's plenty.")],
+    reward: { furn: 'tteokstall', coins: 300 } },
+  // 31판 「별빛극장의 비밀 영사실」 (10/23 사용자 "31 완전히 새로운 컨셉, 기차객실 안나와도" → 스토리 룸 안 A, ⑧ 맵 cinema): 3장 마지막 보스.
+  // 판 표가 cinema일 때만 붙어요(옛 alleywide면 위 alley-boss). 끝 연출 projectorFilm: 영사기 → 스크린 옛 필름(어릴 적 숨바꼭질, 구석에 까만 아이)
+  { id: 'cinema-boss', stage: { start: 'marqueeFlicker', end: 'projectorFilm' }, room: 'cinema', title: K('별빛극장의 비밀 영사실', "The Starlight Cinema's Secret Booth"), cast: 'grumpy',
+    intro: [L('grumpy', '…또 왔네. 한 판만이야. …시간은 많지만.', "…You're back. One game. …I've got time, though."), L('grumpy', '여긴 문 닫은 극장이야. …내 자리고.', "This cinema closed long ago. …It's my spot."), L('grumpy', '자물쇠 세 개 걸어 놨어. 열 수 있으면 열어 봐.', 'I put three locks on it. Open them if you can.')],
+    secret: 'pawprint',
+    lines: { tap: [K('흥.', 'Hmph.'), K('…거기 말고.', '…Not there.'), K('…팝콘은 내 거 아니야.', "…The popcorn's not mine."), K('찾든 말든 상관없거든!', "I don't care if you find it!")] },
+    outro: [L('grumpy', '…진짜 다 열었네.', '…You actually opened all of it.'), L('mong', '…저 구석. 까만 애다.', "…That corner. It's the inky kid."), L('grumpy', '…그 옆에 있는 거, 나야.', "…The one next to it. That's me."), L('grumpy', '…어릴 때 같이 놀았던 것도 같고. 기억 안 난다니까.', "…Maybe we played as kids. I said I don't remember."), L('grumpy', '내일도… 이 시간엔 있어.', "I'll be here tomorrow. Same time."), L('mong', '그럼 내일 또 올게. 다음엔 우리 집에서도 놀자.', "Then I'll come back tomorrow. And let's hang out at my place too."), L('grumpy', '…이거, 떡볶이 포장마차. 의자는 두 개면 돼.', "…Here. My tteokbokki stall. Two stools. That's plenty.")],
     reward: { furn: 'tteokstall', coins: 300 } },
   { id: 'shop-boss', room: 'shopmap', title: K('마감 시간의 금고', 'The Closing-Time Safe'), cast: 'sundae',
     intro: [L('sundae', '마감인데 잠금이 안 풀려! 번호 쪽지를 숨겼거든… 내가.', "It's closing time, but I can't unlock it! I hid the code note… myself."), L('shiba', '사장님, 그걸 왜…', 'Boss, why would you…'), L('sundae', '…누가 훔쳐볼까 봐!', '…So nobody could peek!')],
@@ -1106,7 +1123,7 @@ function bind() {
     if (sc) { used.add(sc.id); [].concat(sc.uses || []).forEach(u => used.add(u)); const k = sc.ifKit && Object.keys(sc.ifKit).find(q => kits.has(q)); B.scene[i] = k ? { ...sc, ...sc.ifKit[k] } : sc; const mp = sc.ifMap && Object.keys(sc.ifMap).filter(r => roomsAll.has(r)); if (mp?.length) B.scene[i] = Object.assign({}, B.scene[i], ...mp.map(r => sc.ifMap[r])); }
     if (kit) kits.add(kit);
     // a visit told the other way (사건 ↔ 숨은그림) is used up with it, so it can't land on a later visit to the same map
-    if (ty === 'hidden' || ty === 'incident') { const tw = pick(ty === 'hidden' ? 'incident' : 'hidden'); if (tw) used.add(tw.id); }
+    if (ty === 'hidden' || ty === 'incident') { const tw = pick(ty === 'hidden' ? 'incident' : 'hidden'); if (tw && !tw.own) used.add(tw.id); }   // (own: a ★ visit with its own story, never used up by the map's other visit)
     const th = THEMES[s.room] || layoutFor(s.room)?.theme;
     const host = sc?.host || (s.timed ? 'raccoon' : th?.friend);
     B.host[i] = host;

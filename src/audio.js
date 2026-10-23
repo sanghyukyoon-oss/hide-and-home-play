@@ -43,7 +43,7 @@ export const MAP_SONGS = {
 };
 const CH_SONGS = { home: ['ingame', 'take2'], apt: ['lobbyTake', 'take2'], alley: ['ingame', 'lobbyTake'], shop: ['ingame', 'take2'],
   park: ['lobbyTake', 'ingame'], camp: ['take2', 'lobbyTake'], building: ['ingame', 'take2'] };
-const CH_FROM = { home: 0, apt: 12, alley: 21, shop: 33, park: 40, camp: 49, building: 60 };   // (stages.js REGIONS from)
+const CH_FROM = { home: 0, apt: 12, alley: 21, shop: 31, park: 40, camp: 49, building: 60 };   // (stages.js REGIONS from)
 export function mapSongFor(spec) {
   const i = spec?.idx | 0;
   if (!spec) return 'ingame';

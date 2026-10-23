@@ -831,8 +831,8 @@ export const BOSS_MAZE = { home: ['mazehome', 'mazehome2'], apt: ['mazeapt'], al
 export const REGIONS = [
   { id: 'home', name: '몽글 마을 집', from: 0, to: 12, rooms: ['bunny', 'bear', 'cat', 'peng'] },
   { id: 'apt', name: '우리 아파트', from: 12, to: 21, rooms: ['apt', 'aptkitchen', 'oneroom'], wide: ['duplex', 'aptmap'] },
-  { id: 'alley', name: '동네 골목', from: 21, to: 33, dLen: 10, rooms: ['street', 'alley1', 'skatepark', 'alley3'], wide: ['alleyhouse', 'alleywide'] },
-  { id: 'shop', name: '편의점·상가', from: 33, to: 40, rooms: ['konbini', 'laundry', 'cafe'], wide: ['shopmap'] },
+  { id: 'alley', name: '동네 골목', from: 21, to: 31, rooms: ['street', 'alley1', 'skatepark', 'alley3'], wide: ['alleyhouse', 'alleywide'] },
+  { id: 'shop', name: '편의점·상가', from: 31, to: 40, rooms: ['konbini', 'laundry', 'cafe'], wide: ['shopmap'] },
   { id: 'park', name: '공원·놀이터', from: 40, to: 49, rooms: ['playground', 'park1', 'park2', 'park3'], wide: ['playgroundwide', 'parkwide'] },
   { id: 'camp', name: '산길·캠핑', from: 49, to: 60, rooms: ['trail', 'camp1', 'camp2', 'camp3'], wide: ['cabin', 'campwide'] },
   { id: 'building', name: '빌딩', from: 60, to: 70, rooms: ['lobby', 'kpop', 'rooftop', 'museum'], wide: ['officefloor', 'lobbymap'] },
@@ -878,17 +878,18 @@ export const REGION_INTRO = {
 // 정전 (a light switch) from 6장, after the lever. Kinds as before, plus treat (the host sits on a box till fed).
 // (기차 여행 편 10/21 — 사용자 OK, 스토리 룸 기획안 v4; ② 레벨 배치): 20 빌라 옥상 ★(장독대 도르래) · 27 기차역 아침 · 28 기차 객실 ★(3장 시간 판은
 // 빠짐) · 29 호수 섬 흑백 · 30 바닷가 가게 ★ · 35 곰제과 · 37 도서관 흑백 · 38 아파트 현관 시간 놀이. 판 종류·자물쇠 자리는 그대로
-// (판 자리 다시 짜기 10/22 밤 — 검토 세션·스토리 룸 결정, ② 레벨 번호 밀기): 골목 22~33(12판)·상가 34~40(7판). 25 모퉁이 가게집,
-// 31 긴 객실(너굴이 시간 판, 28판 복수전), 32 벚꽃역 귀갓길(멍뭉이 마중), 33 골목 보스; 33 빨래방(39와 같은 맵)·38 아파트 현관 시간 판은 빠짐,
-// 64 햇살 책방 다락. 'new|old': 새 맵이 아직 없으면 옛 맵으로(GPT 맵이 정본에 들어오는 대로 저절로 바뀜)
+// (판 자리 되돌리기 10/23 — 사용자 검토 시트 "32 초기맵으로", "33도 초기맵으로… 골목은 33 이후로 나오지 않게"; 스토리 룸·② 레벨):
+// 10/22 번호 밀기(RENUM-31to39)를 거꾸로 — 골목 22~31(10판, 31 골목 보스 → ⑧의 별빛극장 cinema가 들어오면 그 키로) · 상가 32~40(9판:
+// 32 편의점 흑백 · 33 빨래방 · 38 아파트 현관 시간 판 되살림). 31 긴 객실·32 벚꽃역은 키로만 보관. 25 모퉁이 가게집·64 햇살 책방 다락은 그대로.
+// 'new|old': 새 맵이 아직 없으면 옛 맵으로(GPT 맵이 정본에 들어오는 대로 저절로 바뀜)
 // GPT 맵 스위치 (① 10/23 — 사용자 "게임처럼 돌려 볼 수 있게 세팅"): ?gptmaps=1이면 PLAN의 'new|old' 판이 GPT 새 맵, ?gptmaps=0이면 옛 맵.
 // 한 번 고르면 기억(localStorage gptmaps); 기본은 꺼짐 — 지금 플레이어의 판은 그대로
 // (10/23 사용자 "18판 원래 맵으로 돌려줄래? 클로드로 만든 맵으로" — 18판은 스위치와 상관없이 otakuloft; GPT 섞은 안 gptotakumix는 맵만 남김)
 export const GPT_MAPS_ON = (() => { try { const q = new URLSearchParams(location.search).get('gptmaps'); if (q === '1' || q === '0') localStorage.setItem('gptmaps', q); return (q ?? localStorage.getItem('gptmaps')) === '1'; } catch (e) { return false; } })();
 export const PLAN = {
   apt: ['apt', 'police:gray', 'oneroom', 'school', 'aptkitchen:gray', 'otakuloft:timed', 'firestation2|firestation', 'gptvillaroof|villaroof2:show', 'gptpolicefront|policefront:boss'],
-  alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'gptlongcar|traincar:timed', 'gptsakura|station', 'alleywide:boss'],
-  shop: ['konbini:gray', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'laundry:show', 'shopmap:boss'],
+  alley: ['street', 'gptalley|alley1', 'skatepark:gray', 'gptcornershop|alley3', 'gptdoghouse|alleyhouse', 'gptstation|station', 'gpttraincar2|traincar3:show', 'island2:gray', 'seaside:show', 'alleywide:boss'],
+  shop: ['konbini:gray', 'laundry', 'cafe', 'bearbakery', 'shopmap:night', 'library:gray', 'aptlobby2:timed', 'laundry:show', 'shopmap:boss'],
   park: ['park2', 'park1:gray', 'playground', 'park3', 'playground:night', 'playgroundwide:timed', 'park2:gray', 'parkwide:show', 'playgroundwide:boss'],   // (opens on park2: the playground has no place for a lever)
   camp: ['trail:treat', 'camp1', 'camp2:dark', 'camp3:gray', 'cabin', 'trail:night', 'camp1:timed', 'campwide:treat', 'camp2:gray', 'cabin:show', 'campwide:boss'],
   building: ['lobby', 'kpop', 'museum', 'gptroom1|officefloor:gray', 'rooftop:night', 'lobbymap:timed', 'officefloor:dark', 'kpop:show', 'lobby:gray', 'lobbymap:boss'],
@@ -898,8 +899,8 @@ export const PLAN = {
 const REGION_LOCKS = {
   home: { kinds: ['pad'] },
   apt: { kinds: ['pad', 'code'], plan: [['code'], ['pad'], ['code'], ['code'], ['code'], [], ['pad', 'code']] },
-  alley: { kinds: ['pad', 'code', 'color'], plan: [['color'], ['color'], [], ['code'], ['color', 'pad'], ['code'], [], [], [], [], ['pad']] },   // (v2: 24·29 are 흑백 — no colour in grey — so the colour lock moves onto 23: 22·23·26 then the boss; alley3 takes no colour lock, and 26 loses it when the padlock goes first)
-  shop: { kinds: ['pad', 'code', 'color'], plan: [[], [], ['code'], ['pad', 'code'], []] },   // (the café has nothing that locks; no colour lock at night)
+  alley: { kinds: ['pad', 'code', 'color'], plan: [['color'], ['color'], [], ['code'], ['color', 'pad'], ['code'], [], []] },   // (v2: 24·29 are 흑백 — no colour in grey — so the colour lock moves onto 23: 22·23·26 then the boss; alley3 takes no colour lock, and 26 loses it when the padlock goes first)
+  shop: { kinds: ['pad', 'code', 'color'], plan: [[], ['pad'], [], ['code'], ['pad', 'code'], []] },   // (the café has nothing that locks; no colour lock at night)
   park: { kinds: ['pad', 'code', 'color', 'lever'], plan: [['lever'], ['pad'], ['code'], ['lever', 'color'], ['pad'], [], ['lever']] },   // (47 park2 흑백 takes the lever too: 41·44·47 then the boss)
   camp: { kinds: ['pad', 'code', 'color', 'lever'], plan: [[], ['lever'], ['pad'], ['code'], ['pad', 'color'], ['lever', 'code'], [], ['pad', 'color', 'lever'], ['code', 'lever']] },
   building: { kinds: ['pad', 'code', 'color', 'lever'], plan: [['code'], ['color'], ['pad', 'code'], ['pad'], ['pad'], [], ['code', 'pad'], [], ['pad', 'color']] },
@@ -915,7 +916,7 @@ const planAt = (kind) => { const out = []; for (const [rid, list] of Object.entr
 // the 비밀번호 tutorial (stage 7) used to have the clock on top of it
 export const TIMED = new Set(planAt('timed'));
 // stage index → character you meet (and can then see around town); 너굴이 comes from the first timed stage you clear
-export const CHAR_UNLOCK = { 10: 'cat', 20: 'tv', 32: 'coolcat', 39: 'sundae', 48: 'dj', 59: 'snowy', 69: 'robot' };
+export const CHAR_UNLOCK = { 10: 'cat', 20: 'tv', 30: 'coolcat', 39: 'sundae', 48: 'dj', 59: 'snowy', 69: 'robot' };
 export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[REGIONS.length - 1]; }
 // lock schedule inside a region (index = stage within the region); the last stage is the region's escape-room boss
 // (the old LOCK_PLAN — the same lock order in every region — is REGION_LOCKS above now)
@@ -928,9 +929,9 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // (#94 19~70 10/21~22 — 사용자 "스테이지 19 이후로 이거 엄청 작게": 시작 화면에서 찾을 것이 28px 미만인 판은 줌을 올리고(상한 1.5),
 // 넘치면 그 판 물건 크기도 ITEM_TUNE으로 — 측정은 메쉬 크기, 폰 세로 390×844)
 // (28판 기차 객실 3차 10/22: 12m 객실을 길이로 비스듬히 보는 판 — 1.4면 앞뒤가 잘려서 1.2, ① 권장 1.15~1.2)
-const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.2, 28: 1.4, 29: 1.2, 30: 1.2, 31: 1.4, 32: 1.5, 34: 1.3, 35: 1.5, 36: 1.5, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
+const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.2, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.5, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
 // 그 판 물건 크기(기본 .34 = 34cm 기준; 룩이 있는 방은 룩 값): 넓은 맵만 크게
-export const ITEM_TUNE = { 25: 0.48, 32: 0.46, 34: 0.44, 35: 0.46, 36: 0.44, 39: 0.5, 45: 0.42, 47: 0.5, 48: 0.5, 53: 0.47, 56: 0.42, 58: 0.42, 59: 0.42, 65: 0.4, 69: 0.45 };
+export const ITEM_TUNE = { 25: 0.48, 30: 0.46, 33: 0.44, 34: 0.46, 35: 0.44, 39: 0.5, 45: 0.42, 47: 0.5, 48: 0.5, 53: 0.47, 56: 0.42, 58: 0.42, 59: 0.42, 65: 0.4, 69: 0.45 };
 // #94 크기 규칙(목록·자리·자물쇠 칸·작은 물건 안전망 smallfix.js)이 닿는 판: 19판부터 이 판까지 — 장 단위로 늘려 감(30 → 40 → 50 → 70)
 export const SIZE_TO = 70;
 export const sized = i => i >= 18 && i < SIZE_TO;
@@ -970,8 +971,8 @@ const HO_SHAPE = {
   9: [7, 1], 11: [7, 1],   // (11판 8 → 7: 1~20판에서 가장 길었어요 — 사람 속도 봇 74초, 앞뒤 판보다 18초; 11~20판 레벨 점검 10/20)
   13: [8, 1], 14: [4, 1], 15: [8, 1], 19: [7, 2],   // (1~30 밸런스 10/20 — user "게임이 전반적으로 쉽다": 2장이 1장 끝보다 가벼웠어요(봇 42~55초 < 52~70초); 14판 흑백 물건 3 → 4, 15판 7 → 8)   // (13판's count is its kit card's — KITS.moving, 7 since 10/20; 19판 8 → 7: the big outdoor map with 24 px things, half of them behind doors, and now 말썽이's first stage — 1~20 한 줄 점검 10/20)
   22: [8, 1], 23: [8, 1], 25: [8, 1], 26: [8, 2], 27: [8, 1],   // (26판 11 → 10: 11개가 다 28px 밑, 사람 속도 봇 84초 — 27판(82초)과 둘이 1~30에서 가장 무거웠어요, 1~30 밸런스 10/20)
-  32: [8, 1], 35: [9, 0], 36: [8, 1], 37: [8, 1],   // (36판 곰제과 9 → 8: 사람 속도 봇 77~79초, 1~40판에서 가장 길었어요 — ② 레벨 10/21; 판 자리 다시 짜기 10/22: 32 벚꽃역 귀갓길 새로, 33 빨래방 빠짐, 34~37 → 35~38)
-    // (37: the sock puzzle is its second chain — D3)
+  33: [7, 1], 34: [9, 0], 35: [8, 1], 36: [8, 1],   // (35판 곰제과 9 → 8: 사람 속도 봇 77~79초, 1~40판에서 가장 길었어요 — ② 레벨 10/21)
+    // (36: the sock puzzle is its second chain — D3)
   41: [8, 1], 43: [8, 1], 44: [8, 2], 45: [8, 1],
   50: [8, 0], 52: [6, 1], 54: [6, 2], 55: [6, 1], 57: [6, 2],   // (57: the snack box is its third chain — D3)
   61: [6, 1], 62: [6, 1], 63: [6, 2], 65: [6, 1], 67: [6, 2],
@@ -979,7 +980,7 @@ const HO_SHAPE = {
 const MIX_OLD = typeof location !== 'undefined' && /[?&]mix=0(&|$)/.test(location.search);   // 12 (was 7; user 10/17: "흑백판 재밌다, 약간 늘려도") — none timed, dark, boss or with a colour lock
 // 이삿짐 풀기·파르페 쌓기 (10/19, user picked the story room's ideas ① ②): the same hunt on the kit card (modelkit.js), on
 // these stages (0-based) — 13판 우리 아파트 (the last thing in the chapter's code safe), 34판 카페 (no lock)
-const KIT_AT = { 12: 'moving', 18: 'firetruck', 34: 'parfait' };   // (19판 미니 소방차 10/20 — its own start zoom and 함정 절반, below)
+const KIT_AT = { 12: 'moving', 18: 'firetruck', 33: 'parfait' };   // (19판 미니 소방차 10/20 — its own start zoom and 함정 절반, below)
 // (GPT 작업장 맵 ⑥ 10/22 — 사용자 고르기 시트): 36·43~70판 몇 판이 새 맵으로, 옛 맵은 키로 남음 — 판 표는 gpt6-maps.js GPT6_SWAP('옛 맵:판 종류' → 새 맵)
 installGpt6(THEMES, MAPS, PLAN);
 export function stageSpec(idx) {
@@ -1055,8 +1056,7 @@ function baseSpec(idx) {
   const seed = 1000 + idx * 7919;
   if (idx < STAGES.length) return { ...STAGES[idx], idx, seed, region: 'home', ...(idx === 0 ? { intro: true, chapter: 'home' } : {}) };   // (1판: 1장's card — UI 세션 10/20)
   const R = regionOf(idx), ri = REGIONS.indexOf(R);
-  // (dLen: the length the chapter's pace was tuned to — 골목 grew 10 → 12 on 10/22, 31·32판 go at its top pace and 22~30 keep theirs)
-  const local = idx - R.from, len = R.to - R.from, d = Math.min(1, local / Math.max(1, (R.dLen || len) - 1));
+  const local = idx - R.from, len = R.to - R.from, d = local / Math.max(1, len - 1);
   const built = R.rooms.filter(k => LAYOUTS[k]);
   const pool = built.length ? built : REGIONS[0].rooms;
   // maps grow through a region: small rooms first, then wide maps every other stage, the boss on the widest
