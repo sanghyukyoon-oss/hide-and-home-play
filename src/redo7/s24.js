@@ -36,7 +36,7 @@ addI18n({
 });
 
 export const SKATEBOWL = {
-  w: 8, d: 6, exact: true, noEntry: true, slab: 'none', bleed: null, fitW: 9.6,
+  w: 8, d: 6, exact: true, noEntry: true, slab: 'none', bleed: null, fitW: 8.0,
   walls: { N: 'none', W: 'fence', S: 'none', E: 'none' },
   furniture: [
     at('skb_base', 0, 0),
@@ -73,9 +73,11 @@ export function install(ctx) {
   const { LAYOUTS, THEMES, SWAP, LOOK } = ctx;
   if (!THEMES.skatepark) return;
   registerFurniture(SKB_BUILDERS, SKB_INFO);
-  THEMES.skatebowl = { ...THEMES.skatepark, outdoor: true, floorKind: 'carpet', floor: '#d8d4dc', floor2: '#d8d4dc', base: '#c4bfca', fence: '#b9c2d8' };
+  THEMES.skatebowl = { ...THEMES.skatepark, outdoor: true, floorKind: 'carpet', floor: '#d6d3cd', floor2: '#d6d3cd', base: '#c4c1bb', fence: '#b9c2d8' };
   LAYOUTS.skatebowl = { ...SKATEBOWL, theme: THEMES.skatebowl };
   // 맑은 낮빛(허브 빛 규칙 10/23 — 흰 해·하늘색 하늘, 누런 빛 X), 해는 원래 자리(긴 그림자 X); 물건은 시작 화면 28 px 넘게 .56
+  // (10/24: 섬 전체가 폰 폭에 들어와 작게 보여서 조금 당김 — 섬 끝은 살짝 잘림)
+  ctx.SPEC.skatebowl = s => { s.zoom = 1.18; };
   LOOK.skatebowl = { light: { ambColor: '#f4f6fb', amb: 1.32, sunColor: '#fff4e6', sun: 2.5, shadow: .56 }, sky: ['#9fd3f2', '#d9eefa', '#bfe2f6'], itemSize: .56 };
   // 연쇄: 24판이 이 맵으로 열릴 때만 (gpt-chains recipeFor는 판의 방이 이 키일 때만 줄을 씀)
   if (!CHAINS.skatebowl) CHAINS.skatebowl = SKB_CHAIN();

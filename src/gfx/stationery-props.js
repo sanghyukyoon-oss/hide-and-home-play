@@ -7,6 +7,8 @@
 // 장치 연쇄(설계서 36, gpt-chains.js CHAINS.stationery): 가로등 스위치(st_streetlamp 0) → 셔터에 숫자 그림자 = 계산대 밑 금고(st_safe) 비밀번호
 //   → 금고 속 레버 손잡이 → 셔터 레버(st_shutterlever 0): 톱니가 돌고 셔터가 말려 올라가며(st_shutter 0) → 창고 안 열쇠 트레이가 쑥.
 // 판 안 장치는 모두 '터치하면 저절로 끝까지'(설계서 원칙 8). 글자는 게임 폰트(gpt-paper fitText, 한·영).
+// (10/24 디테일 다시 — 사용자 36 '디테일이 제일 실망': 뽑기 셋은 투명 돔·캡슐 알알이·다이얼·나오는 곳 뚜껑·광고 스티커, 오락기는 옛 업소용 옆모습·베젤 화면·조이스틱·동전 문,
+//  평상은 판자 결·이음·방석에 웅크려 자는 고양이, 가로등 딱지 판은 진짜 딱지 여섯, 회전 진열대 간판 한 장, 바퀴 달린 분리수거함, 진짜 화분·텃밭, 빛은 전구 바로 밑)
 // 좌표: 방 7 × 5.5 m(가운데 원점, 바닥 y 0), 카메라는 +x +z 쪽에서. 가게 x -3.5..0.95 · z -2.75..0.45, 창고 칸 x 0.95..2.8 · z -2.93..-1.0,
 // 보도 z 0.45..2.75, 연석 z 2.75..2.93(턱 .15), 찻길 z 2.93..3.9.
 import * as THREE from 'three';
@@ -30,12 +32,62 @@ const TC = texCache();
 const rnd = s => { let a = s * 9301 + 49297; return () => ((a = (a * 9301 + 49297) % 233280) / 233280); };
 // 새 글자는 한·영을 같이 (영어 화면에선 fitText가 tr로)
 const WORDS = {
+  // 숨김 자리 이름 (영어 모드)
+  '셔터 앞 보도': 'Sidewalk by the shutter',
+  '가게 앞 보도': 'Sidewalk by the shop',
+  '하수 덮개 옆': 'By the drain cover',
+  '텃밭 상자 속': 'In the planter box',
+  '우산꽂이 위': 'On the umbrella stand',
+  '반쯤 내린 셔터': 'Half-down shutter',
+  '셔터 뒤 가게 열쇠 트레이': 'Shop key tray behind the shutter',
+  '가로등 스위치': 'Streetlamp switch',
+  '셔터 레버': 'Shutter lever',
+  '계산대 밑 금고': 'Safe under the counter',
+  '금고 안 바닥': 'Safe floor',
+  '금고 안 선반': 'Safe shelf',
+  '계산대 서랍': 'Counter drawer',
+  '계산대 위 동전 접시 옆': 'By the coin tray on the counter',
+  '계산대 위 돋보기 옆': 'By the magnifier on the counter',
+  '할머니 의자 방석 위': "On Grandma's chair cushion",
+  '할머니 의자 밑': "Under Grandma's chair",
+  '크레파스 진열대 서랍': 'Crayon stand drawer',
+  '크레파스 서랍 속': 'In the crayon drawer',
+  '크레파스 칸 빈자리': 'Gap in the crayon rack',
+  '크레파스 윗칸 빈자리': 'Gap on the top crayon shelf',
+  '거대 크레파스 뒤': 'Behind the giant crayon',
+  '스티커 앨범 판': 'Sticker album board',
+  '스티커 판 뒤 벽감': 'Nook behind the sticker board',
+  '스티커 벽 선반 턱': 'Sticker wall ledge',
+  '딱지 상자 위': 'On the ddakji box',
+  '구슬 바구니 속': 'In the marble basket',
+  '불량식품 회전 진열대': 'Penny candy spinner',
+  '회전 진열대 뒷면 칸': 'Back of the spinner',
+  '회전 진열대 받침 앞': 'By the spinner base',
+  '뽑기 기계 손잡이': 'Capsule machine dial',
+  '뽑기 캡슐 나오는 곳': 'Capsule chute',
+  '파란 뽑기 기계 위': 'On the blue capsule machine',
+  '초록 뽑기 기계 위': 'On the green capsule machine',
+  '뽑기 기계 사이 바닥': 'Between the capsule machines',
+  '오락기 버튼': 'Arcade buttons',
+  '오락기 동전 반환구': 'Arcade coin return',
+  '오락기 꼭대기': 'On top of the arcade',
+  '오락기 뒤': 'Behind the arcade',
+  '영업 중 팻말': 'Open sign',
+  '팻말 받침 뒤': 'Behind the sign stand',
+  '평상 위 부채 옆': 'By the fan on the bench',
+  '연필 상자 날개': 'Pencil box flap',
+  '연필 상자 속': 'In the pencil box',
+  '선반 아래칸 필통 옆': 'By the pencil case, low shelf',
+  '평상 밑': 'Under the bench',
+  '분리수거함 뒤': 'Behind the recycling bins',
+  '선반 셋째 칸': 'Third shelf',
   '몽글문구': 'Mongle Stationery', '학용품 · 완구 · 팬시': 'School · Toys · Fancy', '크레파스': 'Crayons', '24색': '24 colors', '12색': '12 colors',
   '불량식품': 'Penny Candy', '100원': '100 won', '뽑기': 'Capsules', '500원': '500 won', '오락': 'Arcade', '까꿍': 'Peekaboo',
   '쫀드기': 'Chewy Strip', '아폴로': 'Apollo', '밭두렁': 'Rice Puffs', '꾀돌이': 'Smarty', '쥐포': 'Fish Jerky', '별사탕': 'Star Candy',
   '공책': 'Notebook', '종이인형': 'Paper Dolls', '딱지': 'Ddakji', '스티커': 'Stickers', '신학기 준비물': 'Back to School', '학용품 도매': 'School Supplies',
   '공책 100권': '100 Notebooks', '태권도': 'Taekwondo', '피아노': 'Piano', '원생 모집': 'Join us', '외상 사절': 'No credit', '1등': '1st',
   '오늘 일찍 닫아요': 'Closing early', '준비 중': 'Closed', '고장': 'Broken', '연필': 'Pencils', '지우개': 'Erasers',
+  '신상!': 'New!', '1장 100원': '100 won each', '재활용': 'Recycling', '일반쓰레기': 'Trash', '스케치북': 'Sketchbook', '물감': 'Paints',
 };
 for (const k in WORDS) if (EN[k] == null) EN[k] = WORDS[k];
 
@@ -109,22 +161,35 @@ const signTex = () => TT('sign', 1024, 288, (c, W, H) => {
   fitText(c, '몽글문구', W / 2, H * .43, W * .8, 96, C.red, { weight: 'bold', stroke: '#ffffff', sw: 8 });
   fitText(c, '학용품 · 완구 · 팬시', W / 2, H * .8, W * .7, 30, C.navy);
 });
-// 크레파스 상자 앞면 (색 띠 + 글자), 색마다 한 장
-const crayonBoxTex = (k, col, n) => TT('cbox' + k, 128, 176, (c, W, H) => {
-  c.fillStyle = col; c.fillRect(0, 0, W, H); c.fillStyle = C.cream; roundRect(c, 6, 6, W - 12, 40, 8); c.fill();
-  fitText(c, '크레파스', W / 2, 26, W - 24, 18, C.ink, { weight: 'bold' });
+// 크레파스 상자 앞면: 색 상자에 크림 이름 띠, 창으로 보이는 크레파스(종이 띠·뾰족 끝), 아래 '24색' 동그란 표
+const crayonBoxTex = (k, col, n) => TT('cbox2' + k + n, 128, 176, (c, W, H) => {
+  c.fillStyle = col; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(0, 0, 8, H);
+  c.fillStyle = C.cream; roundRect(c, 8, 8, W - 16, 38, 10); c.fill(); fitText(c, '크레파스', W / 2, 27, W - 28, 20, C.ink, { weight: 'bold' });
+  c.fillStyle = '#fbf8f0'; roundRect(c, 12, 54, W - 24, 78, 8); c.fill();
   const cs = ['#e8604c', '#f39a3d', '#ffcf48', '#6cbf6a', '#4f86c6', '#9b7fd0', '#f39ab4', '#7a5a43'];
-  for (let i = 0; i < 8; i++) { c.fillStyle = cs[i]; c.fillRect(12 + i * 13, 62, 10, 70); c.beginPath(); c.moveTo(12 + i * 13, 62); c.lineTo(17 + i * 13, 50); c.lineTo(22 + i * 13, 62); c.fill(); }
-  c.fillStyle = C.cream; roundRect(c, 30, 142, W - 60, 26, 6); c.fill(); fitText(c, n, W / 2, 155, W - 70, 16, C.ink);
+  for (let i = 0; i < 8; i++) { const x = 17 + i * 12.4, cc = cs[(i + k) % 8];
+    c.fillStyle = cc; c.fillRect(x, 70, 10, 58); c.beginPath(); c.moveTo(x, 70); c.lineTo(x + 5, 58); c.lineTo(x + 10, 70); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(x, 92, 10, 22); c.fillStyle = cc; c.fillRect(x + 2, 100, 6, 2); c.fillRect(x + 2, 105, 6, 2); }
+  c.strokeStyle = 'rgba(60,40,30,.35)'; c.lineWidth = 2; roundRect(c, 12, 54, W - 24, 78, 8); c.stroke();
+  c.fillStyle = '#ffe14d'; c.beginPath(); c.arc(W / 2, 154, 17, 0, 7); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 2; c.stroke(); fitText(c, n, W / 2, 154, 30, 14, C.ink, { weight: 'bold' });
 });
-// 불량식품 봉지 (이름·색)
+// 불량식품 봉지: 위아래 톱니 이음, 사선 반짝이, 이름(흰 테 굵은 글씨), 아래 과자 그림, 오른쪽 위 '100원' 동그라미
 const SNACKS = [['쫀드기', '#f39a3d'], ['아폴로', '#4f86c6'], ['밭두렁', '#ffcf48'], ['꾀돌이', '#e8604c'], ['쥐포', '#c79a6a'], ['별사탕', '#f39ab4']];
-const snackTex = i => TT('snack' + i, 128, 160, (c, W, H) => {
-  const [n, col] = SNACKS[i % SNACKS.length];
-  c.fillStyle = col; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(255,255,255,.35)'; for (let x = 0; x < W; x += 10) c.fillRect(x, 0, 4, 10);
-  c.fillStyle = C.cream; c.beginPath(); c.ellipse(W / 2, H * .5, W * .42, H * .24, 0, 0, 7); c.fill();
-  fitText(c, n, W / 2, H * .5, W * .72, 30, C.ink, { weight: 'bold' });
-  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(W * .78, H * .82, 13, 0, 7); c.fill(); fitText(c, '100원', W * .78, H * .82, 22, 9, C.red);
+const snackTex = i => TT('snack2' + i, 128, 176, (c, W, H) => {
+  const [n, col] = SNACKS[i % SNACKS.length], k = i % SNACKS.length;
+  c.fillStyle = col; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.moveTo(0, 60); c.lineTo(W, 20); c.lineTo(W, 44); c.lineTo(0, 84); c.fill();
+  for (const y of [0, H - 16]) { c.fillStyle = shade(col, .18); c.fillRect(0, y, W, 16); c.fillStyle = shade(col, -.12); for (let x = 0; x < W; x += 8) { c.beginPath(); c.moveTo(x, y + (y ? 16 : 0)); c.lineTo(x + 4, y + 8); c.lineTo(x + 8, y + (y ? 16 : 0)); c.fill(); } }
+  fitText(c, n, W / 2, 62, W - 18, 34, '#ffffff', { weight: 'bold', stroke: shade(col, -.3), sw: 6 });
+  const cx = W / 2, cy = 116;
+  c.fillStyle = '#fff6e4'; c.beginPath(); c.ellipse(cx, cy, 40, 26, 0, 0, 7); c.fill();
+  if (k === 0) { for (let j = 0; j < 3; j++) { c.fillStyle = ['#e8604c', '#ffcf48', '#6cbf6a'][j]; c.fillRect(cx - 30, cy - 14 + j * 10, 60, 7); } }
+  else if (k === 1) { for (let j = 0; j < 5; j++) { c.fillStyle = ['#ff8fc8', '#ffe14d', '#7cf0ff', '#b4f07c', '#ffb36b'][j]; c.fillRect(cx - 28 + j * 12, cy - 16, 8, 32); c.fillStyle = '#ffffff'; c.fillRect(cx - 28 + j * 12, cy - 16, 8, 5); } }
+  else if (k === 2) { c.fillStyle = '#e6b45a'; for (let j = 0; j < 7; j++) { c.beginPath(); c.ellipse(cx - 24 + (j % 4) * 16, cy - 8 + Math.floor(j / 4) * 16, 9, 6, j, 0, 7); c.fill(); } }
+  else if (k === 3) { for (let j = 0; j < 9; j++) { c.fillStyle = ['#c98a3a', '#e8604c', '#ffcf48'][j % 3]; c.beginPath(); c.arc(cx - 24 + (j % 5) * 12, cy - 6 + Math.floor(j / 5) * 14, 5, 0, 7); c.fill(); } }
+  else if (k === 4) { c.fillStyle = '#b07a4a'; c.beginPath(); c.ellipse(cx - 4, cy, 28, 14, 0, 0, 7); c.fill(); c.beginPath(); c.moveTo(cx + 20, cy); c.lineTo(cx + 36, cy - 12); c.lineTo(cx + 36, cy + 12); c.fill(); c.fillStyle = C.ink; c.beginPath(); c.arc(cx - 20, cy - 3, 3, 0, 7); c.fill(); }
+  else { for (let j = 0; j < 6; j++) { const x = cx - 24 + (j % 3) * 24, y = cy - 8 + Math.floor(j / 3) * 16; c.fillStyle = ['#ffffff', '#ffe14d', '#ff8fc8'][j % 3]; c.beginPath(); for (let q = 0; q < 10; q++) { const rr = q % 2 ? 3 : 8, t = -HP + q * PI / 5; c.lineTo(x + Math.cos(t) * rr, y + Math.sin(t) * rr); } c.fill(); } }
+  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(W - 22, 28, 15, 0, 7); c.fill(); c.strokeStyle = C.red; c.lineWidth = 2; c.stroke(); fitText(c, '100원', W - 22, 28, 24, 10, C.red, { weight: 'bold' });
 });
 // 공책 표지·스티커 판·딱지·종이인형
 const coverTex = i => TT('cover' + i, 128, 168, (c, W, H) => {
@@ -152,39 +217,146 @@ const dollTex = () => TT('doll', 128, 168, (c, W, H) => {
     c.fillStyle = dress; c.beginPath(); c.moveTo(x - 8, 56); c.lineTo(x + 8, 56); c.lineTo(x + 20, 112); c.lineTo(x - 20, 112); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#ffe4d0'; c.fillRect(x - 8, 112, 5, 18); c.fillRect(x + 3, 112, 5, 18); }
   c.setLineDash([]); fitText(c, '종이인형', W / 2, H - 16, W - 20, 16, '#c0587a', { weight: 'bold' });
 });
-const ddakjiTex = () => T('ddakji', 128, 128, (c, W, H) => {
-  c.fillStyle = C.blue; c.fillRect(0, 0, W, H); c.fillStyle = C.red; c.beginPath(); c.moveTo(0, 0); c.lineTo(W, H); c.lineTo(W, 0); c.fill();
-  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, 0); c.lineTo(W, H); c.moveTo(W, 0); c.lineTo(0, H); c.stroke(); c.strokeRect(10, 10, W - 20, H - 20);
+// 딱지: 두 장을 엇갈려 접은 바람개비 앞면 — 날개 넷(두 색 번갈아)이 가운데 작은 네모를 감싸고, 날개 사이로 아래 장이 비침, 접힌 금, 옛 달력 종이 무늬
+const DDAK = [['#4f86c6', '#e8604c'], ['#2e7a4a', '#ffcf48'], ['#9b7fd0', '#f39ab4'], ['#3d4a7a', '#f39a3d'], ['#e8604c', '#fff6e4'], ['#6cbf6a', '#4f86c6']];
+const ddakjiTex = (k = 0) => T('ddakji' + k, 128, 128, (c, W, H) => {
+  const [a, b] = DDAK[k % DDAK.length], m = W / 2, q = 15;
+  const poly = (pts, col) => { c.fillStyle = col; c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill(); };
+  c.fillStyle = shade(b, -.12); c.fillRect(0, 0, W, H);
+  const fl = [[[0, 0], [W, 0], [m + q, m - q]], [[W, 0], [W, H], [m + q, m + q]], [[W, H], [0, H], [m - q, m + q]], [[0, H], [0, 0], [m - q, m - q]]];
+  fl.forEach((p, i) => poly(p, i % 2 ? b : a));
+  c.save(); c.globalAlpha = .22; c.strokeStyle = '#ffffff'; c.lineWidth = 3;
+  for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(14 + i * 9, 10); c.lineTo(60 + i * 4, 10 + i * 4); c.stroke(); } c.restore();
+  c.fillStyle = 'rgba(255,255,255,.35)'; c.font = 'bold 16px sans-serif'; c.textAlign = 'center'; c.fillText(String(12 + k * 7), W * .78, H * .3);
+  poly([[m - q, m - q], [m + q, m - q], [m + q, m + q], [m - q, m + q]], b === '#fff6e4' ? a : '#fff6e4');
+  c.fillStyle = k % 2 ? C.red : C.blue; c.beginPath(); for (let i = 0; i < 10; i++) { const rr = i % 2 ? 4 : 10, t = -HP + i * PI / 5; c.lineTo(m + Math.cos(t) * rr, m + Math.sin(t) * rr); } c.fill();
+  c.strokeStyle = 'rgba(40,30,30,.55)'; c.lineWidth = 2.2; fl.forEach(p => { c.beginPath(); c.moveTo(...p[0]); c.lineTo(...p[2]); c.lineTo(...p[1]); c.stroke(); });
+  c.strokeRect(m - q, m - q, q * 2, q * 2); c.lineWidth = 5; c.strokeStyle = 'rgba(40,30,30,.6)'; c.strokeRect(2, 2, W - 4, H - 4);
 });
-// 뽑기 창: 알록달록 캡슐이 가득
-const gachaTex = k => T('gacha' + k, 128, 128, (c, W, H) => {
-  c.fillStyle = ['#dff1f7', '#fdeef3', '#f2f7dc'][k]; c.fillRect(0, 0, W, H); const r = rnd(30 + k);
-  const cs = [C.red, C.yel, C.blue, C.grn, C.pink, C.purp, C.orng];
-  for (let i = 0; i < 22; i++) { const x = 14 + r() * 100, y = 30 + r() * 92, rr = 12 + r() * 3, col = cs[Math.floor(r() * cs.length)];
-    c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x, y, rr, 0, 7); c.fill(); c.fillStyle = col; c.beginPath(); c.arc(x, y, rr, PI * (r() < .5 ? 0 : 1), PI * (r() < .5 ? 1 : 2)); c.fill();
-    c.strokeStyle = 'rgba(70,50,40,.35)'; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, rr, 0, 7); c.stroke(); }
-  c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(10, 6, 14, H - 12);
+// 딱지 판 바탕: 크림 판, 위 빨간 머리띠 '딱지', 아래 가격 띠 '1장 100원', 가운데 꽂힌 자리 연필 금
+const ddakjiBoardTex = () => TT('ddakboard', 192, 256, (c, W, H) => {
+  paperFill(c, W, H, '#f6ecd4', 9); c.fillStyle = C.red; roundRect(c, 8, 8, W - 16, 52, 12); c.fill();
+  fitText(c, '딱지', W / 2, 35, W - 40, 40, '#ffffff', { weight: 'bold', stroke: '#a83a2c', sw: 5 });
+  c.fillStyle = '#ffe14d'; roundRect(c, 20, H - 50, W - 40, 38, 10); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 2; roundRect(c, 20, H - 50, W - 40, 38, 10); c.stroke();
+  fitText(c, '1장 100원', W / 2, H - 31, W - 56, 24, C.ink, { weight: 'bold' });
+  c.strokeStyle = 'rgba(120,90,60,.25)'; c.setLineDash([4, 4]); for (const y of [70, 132]) { c.beginPath(); c.moveTo(14, y); c.lineTo(W - 14, y); c.stroke(); } c.setLineDash([]);
 });
-const plateTex = (key, word, bg, fg, sub) => TT('plate' + key, 256, 112, (c, W, H) => {
-  c.fillStyle = bg; roundRect(c, 0, 0, W, H, 18); c.fill(); c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(10, 8, W - 20, 6);
-  fitText(c, word, W / 2, sub ? H * .4 : H / 2, W * .82, sub ? 54 : 64, fg, { weight: 'bold' });
-  if (sub) fitText(c, sub, W / 2, H * .8, W * .7, 26, fg);
+// 뽑기 기계 앞판: 몸 색 바탕, 위 흰 둥근 이름판 '뽑기', 손잡이 자리 밝은 원, 동전 넣는 곳 위 노란 별 가격 '500원', 아래 캡슐 그림 띠
+const GCOL = ['#6fa8dc', '#ef7fa4', '#8fcb6c'];
+const gachaFaceTex = k => TT('gface' + k, 256, 256, (c, W, H) => {
+  const col = GCOL[k], g = c.createLinearGradient(0, 0, W, 0); g.addColorStop(0, shade(col, .07)); g.addColorStop(1, shade(col, -.05)); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(10, 0, 10, H);
+  c.fillStyle = '#ffffff'; roundRect(c, 16, 10, W - 32, 62, 24); c.fill(); c.strokeStyle = shade(col, -.22); c.lineWidth = 5; roundRect(c, 16, 10, W - 32, 62, 24); c.stroke();
+  fitText(c, '뽑기', W / 2, 42, W - 90, 46, C.red, { weight: 'bold', stroke: '#ffffff', sw: 4 });
+  for (const [x, cc] of [[34, C.yel], [W - 34, C.blue]]) { c.fillStyle = cc; c.beginPath(); c.arc(x, 41, 9, PI, 0); c.fill(); c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x, 41, 9, 0, PI); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 1.5; c.beginPath(); c.arc(x, 41, 9, 0, 7); c.stroke(); }
+  c.fillStyle = shade(col, .16); c.beginPath(); c.arc(W * .42, H * .5, 50, 0, 7); c.fill(); c.strokeStyle = shade(col, -.14); c.lineWidth = 4; c.stroke();
+  const sx = W * .8, sy = H * .3; c.fillStyle = '#ffe14d'; c.beginPath(); for (let i = 0; i < 16; i++) { const rr = i % 2 ? 22 : 31, t = -HP + i * PI / 8; c.lineTo(sx + Math.cos(t) * rr, sy + Math.sin(t) * rr); } c.closePath(); c.fill();
+  c.strokeStyle = '#c99a20'; c.lineWidth = 2; c.stroke(); fitText(c, '500원', sx, sy, 40, 17, C.red, { weight: 'bold' });
+  c.fillStyle = 'rgba(40,30,50,.18)'; c.fillRect(0, H - 30, W, 30);
+  const cs = [C.red, C.yel, C.purp, C.grn, C.orng]; for (let i = 0; i < 5; i++) { const x = 30 + i * 49; c.fillStyle = cs[i]; c.beginPath(); c.arc(x, H - 15, 9, PI, 0); c.fill(); c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x, H - 15, 9, 0, PI); c.fill(); }
 });
-// 오락기 화면: 픽셀 우주선 게임 · 반짝 화면
-const screenTex = flash => T('scr' + (flash ? 1 : 0), 128, 96, (c, W, H) => {
-  c.fillStyle = flash ? '#fff2a8' : '#14204a'; c.fillRect(0, 0, W, H);
-  if (flash) { fitText(c, '1등', W / 2, H * .42, W * .6, 34, C.red, { weight: 'bold' }); c.fillStyle = C.orng; for (let i = 0; i < 12; i++) { const a = i * PI / 6; c.fillRect(W / 2 + Math.cos(a) * 46 - 2, H * .42 + Math.sin(a) * 34 - 2, 4, 4); } return; }
-  c.fillStyle = '#ffffff'; const r = rnd(41); for (let i = 0; i < 30; i++) c.fillRect(r() * W, r() * H, 1.5, 1.5);
-  const px = (x, y, rows, col) => { c.fillStyle = col; rows.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === '#') c.fillRect(x + i * 3, y + j * 3, 3, 3); })); };
-  const inv = ['..#...#..', '...###...', '..#####..', '.##.#.##.', '#########', '#.#...#.#'];
-  for (let i = 0; i < 4; i++) px(10 + i * 28, 12, inv, ['#7cf0ff', '#ff8fc8', '#b4f07c', '#ffd27a'][i]);
-  px(52, 72, ['....#....', '...###...', '.#######.', '#########'], '#ffe14d');
-  c.fillStyle = '#ffffff'; c.fillRect(64, 56, 2, 8);
+// 뽑기 기계 옆 광고 스티커: 열린 캡슐에서 몽글이 장난감이 퐁 — '신상!' 별, 반짝이
+const gachaSideTex = k => TT('gside' + k, 256, 256, (c, W, H) => {
+  const bg = ['#fff3c4', '#e2f4ff', '#ffe4ee'][k], cap = [C.red, C.purp, C.blue][k];
+  c.fillStyle = '#ffffff'; roundRect(c, 4, 4, W - 8, H - 8, 30); c.fill(); c.fillStyle = bg; roundRect(c, 14, 14, W - 28, H - 28, 24); c.fill();
+  c.save(); c.translate(W * .5, H * .66); c.rotate(-.2);
+  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(0, 0, 62, 0, PI); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 4; c.stroke();
+  c.fillStyle = cap; c.beginPath(); c.arc(-30, -70, 58, PI, 0); c.fill(); c.stroke(); c.restore();
+  const mx = W * .52, my = H * .5; c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(mx, my, 42, 36, 0, 0, 7); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 4; c.stroke();
+  c.fillStyle = '#ffffff'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(mx + s * 26, my - 30, 11, 15, s * .4, 0, 7); c.fill(); c.stroke(); }
+  c.fillStyle = C.ink; for (const s of [-1, 1]) { c.beginPath(); c.arc(mx + s * 14, my - 4, 4.5, 0, 7); c.fill(); }
+  c.fillStyle = '#ffb3c4'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(mx + s * 24, my + 8, 7, 4, 0, 0, 7); c.fill(); }
+  c.strokeStyle = C.ink; c.lineWidth = 3; c.beginPath(); c.arc(mx, my + 6, 6, .2, PI - .2); c.stroke();
+  c.fillStyle = '#ffe14d'; for (const [x, y, r] of [[40, 120, 10], [214, 96, 8], [200, 190, 7]]) { c.beginPath(); for (let i = 0; i < 8; i++) { const rr = i % 2 ? r * .4 : r, t = i * PI / 4; c.lineTo(x + Math.cos(t) * rr, y + Math.sin(t) * rr); } c.fill(); }
+  c.save(); c.translate(70, 54); c.rotate(-.18); c.fillStyle = C.red; c.beginPath(); for (let i = 0; i < 20; i++) { const rr = i % 2 ? 30 : 42, t = i * PI / 10; c.lineTo(Math.cos(t) * rr * 1.25, Math.sin(t) * rr); } c.closePath(); c.fill();
+  fitText(c, '신상!', 0, 0, 74, 30, '#ffffff', { weight: 'bold' }); c.restore();
 });
-const marqueeTex = () => TT('marq', 256, 80, (c, W, H) => {
-  const g = c.createLinearGradient(0, 0, W, 0); g.addColorStop(0, '#ff8fc8'); g.addColorStop(1, '#ffb36b'); c.fillStyle = g; c.fillRect(0, 0, W, H);
-  c.fillStyle = '#fff6c8'; for (let i = 0; i < 14; i++) { c.beginPath(); c.arc(10 + i * 18, 8, 3, 0, 7); c.arc(10 + i * 18, H - 8, 3, 0, 7); c.fill(); }
-  fitText(c, '오락', W / 2, H / 2, W * .6, 44, '#ffffff', { weight: 'bold', stroke: '#c0457a', sw: 7 });
+// 오락기 화면: 남보라 우주, 위 점수 줄, 외계인 두 줄·방패·몽글이 우주선과 총알 — 반짝일 땐 '1등' 꽃가루
+const screenTex = flash => T('scr2' + (flash ? 1 : 0), 192, 144, (c, W, H) => {
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, flash ? '#fff6c0' : '#10183f'); g.addColorStop(1, flash ? '#ffd9e8' : '#2a2160'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  if (flash) { fitText(c, '1등', W / 2, H * .46, W * .5, 54, C.red, { weight: 'bold', stroke: '#ffffff', sw: 6 }); const r = rnd(44);
+    for (let i = 0; i < 40; i++) { c.fillStyle = [C.red, C.blue, C.grn, C.orng, C.purp][i % 5]; c.fillRect(r() * W, r() * H, 5, 3); } fitText(c, 'HIGH SCORE!', W / 2, H * .82, W * .7, 16, C.navy, { weight: 'bold' }); return; }
+  const r = rnd(41); c.fillStyle = '#ffffff'; for (let i = 0; i < 40; i++) c.fillRect(r() * W, 16 + r() * (H - 16), 1.5, 1.5);
+  c.font = 'bold 11px monospace'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = '#ffffff'; c.fillText('SCORE 01200', 6, 8); c.fillStyle = '#ffe14d'; c.textAlign = 'right'; c.fillText('HI 50000', W - 6, 8);
+  const px = (x, y, rows, col, s = 3) => { c.fillStyle = col; rows.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === '#') c.fillRect(x + i * s, y + j * s, s, s); })); };
+  const inv = ['..#...#..', '...###...', '..#####..', '.##.#.##.', '#########', '#.#...#.#'], inv2 = ['...##...', '..####..', '.##..##.', '########', '.#.##.#.', '#......#'];
+  for (let i = 0; i < 5; i++) px(14 + i * 34, 24, inv, ['#7cf0ff', '#ff8fc8', '#b4f07c', '#ffd27a', '#c9a6ff'][i]);
+  for (let i = 0; i < 5; i++) px(18 + i * 34, 48, inv2, '#ff9a6a');
+  for (let i = 0; i < 3; i++) px(22 + i * 60, 100, ['.######.', '########', '##....##'], '#6cdf7a', 3);
+  px(84, 120, ['....#....', '...###...', '.#######.', '#########', '##.#.#.##'], '#ffe14d');
+  c.fillStyle = '#ffffff'; c.fillRect(96, 92, 2, 10); c.fillStyle = '#ff6a6a'; c.fillRect(60, 70, 2, 8);
+  c.fillStyle = '#6cdf7a'; c.fillRect(0, H - 3, W, 3);
+});
+const marqueeTex = () => TT('marq2', 256, 72, (c, W, H) => {
+  const g = c.createLinearGradient(0, 0, W, 0); g.addColorStop(0, '#ff8fc8'); g.addColorStop(.5, '#ffd0e6'); g.addColorStop(1, '#ffb36b'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = '#fff6c8'; for (let i = 0; i < 16; i++) { c.beginPath(); c.arc(8 + i * 16, 6, 3, 0, 7); c.arc(8 + i * 16, H - 6, 3, 0, 7); c.fill(); }
+  fitText(c, '오락', W / 2, H / 2, W * .5, 44, '#ffffff', { weight: 'bold', stroke: '#c0457a', sw: 7 });
+  for (const s of [-1, 1]) { const x = W / 2 + s * 84, y = H / 2; c.fillStyle = '#ffe14d'; c.beginPath(); for (let i = 0; i < 10; i++) { const rr = i % 2 ? 6 : 15, t = -HP + i * PI / 5; c.lineTo(x + Math.cos(t) * rr, y + Math.sin(t) * rr); } c.fill(); }
+});
+// 오락기 조작판 그림: 짙은 남색에 노란 번개 띠, '1P'·'START' 글씨
+const panelTex = () => TT('apanel', 256, 112, (c, W, H) => {
+  c.fillStyle = '#28305e'; c.fillRect(0, 0, W, H); c.fillStyle = '#ffcf48'; c.beginPath(); c.moveTo(0, H * .78); c.lineTo(W * .4, H * .62); c.lineTo(W * .5, H * .74); c.lineTo(W, H * .55); c.lineTo(W, H * .66); c.lineTo(W * .52, H * .86); c.lineTo(W * .42, H * .74); c.lineTo(0, H * .9); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 3; c.beginPath(); c.arc(W * .3, H * .42, 26, 0, 7); c.stroke();
+  c.font = 'bold 16px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#ffffff'; c.fillText('1P', W * .3, H * .1 + 4); c.fillText('START', W * .78, H * .14);
+});
+// 오락기 옆판 그림: 분홍 바탕에 사선 띠, 별, 몽글이 우주선
+const arcSideTex = () => TT('aside', 256, 320, (c, W, H) => {
+  c.fillStyle = '#e2589a'; c.fillRect(0, 0, W, H);
+  for (let i = 0; i < 4; i++) { c.fillStyle = ['#ffcf48', '#7cf0ff', '#ffffff', '#9b7fd0'][i]; c.beginPath(); c.moveTo(0, H * .55 + i * 22); c.lineTo(W, H * .3 + i * 22); c.lineTo(W, H * .3 + i * 22 + 12); c.lineTo(0, H * .55 + i * 22 + 12); c.fill(); }
+  const mx = W * .55, my = H * .25; c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(mx, my, 50, 38, 0, 0, 7); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 4; c.stroke();
+  c.fillStyle = '#7cf0ff'; c.beginPath(); c.ellipse(mx, my - 6, 30, 18, 0, PI, 0); c.fill(); c.stroke();
+  c.fillStyle = C.ink; for (const s of [-1, 1]) { c.beginPath(); c.arc(mx + s * 12, my + 10, 4, 0, 7); c.fill(); }
+  c.fillStyle = '#ff8a3d'; c.beginPath(); c.moveTo(mx - 50, my + 6); c.lineTo(mx - 82, my - 4); c.lineTo(mx - 76, my + 14); c.lineTo(mx - 86, my + 26); c.lineTo(mx - 48, my + 18); c.fill();
+  c.fillStyle = '#ffe14d'; for (const [x, y, rr] of [[40, 40, 12], [210, 120, 9], [60, 250, 14], [190, 280, 10]]) { c.beginPath(); for (let i = 0; i < 10; i++) { const q = i % 2 ? rr * .45 : rr, t = -HP + i * PI / 5; c.lineTo(x + Math.cos(t) * q, y + Math.sin(t) * q); } c.fill(); }
+});
+// 오락기 동전 문: 은빛 판, 노란 투입구 창 둘 '100', 빨간 반환 단추, 열쇠 구멍
+const coinDoorTex = () => TT('acoin', 128, 160, (c, W, H) => {
+  const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#eef1f5'); g.addColorStop(1, '#a9b1bc'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  for (const x of [32, 96]) { c.fillStyle = '#ffcf48'; roundRect(c, x - 22, 18, 44, 60, 8); c.fill(); c.strokeStyle = '#a07a10'; c.lineWidth = 2; roundRect(c, x - 22, 18, 44, 60, 8); c.stroke();
+    c.fillStyle = '#2c2a3a'; c.fillRect(x - 3, 26, 6, 26); fitText(c, '100', x, 66, 38, 15, C.ink, { weight: 'bold' }); }
+  c.fillStyle = C.red; c.beginPath(); c.arc(W / 2, 104, 10, 0, 7); c.fill(); c.fillStyle = '#2c2a3a'; c.beginPath(); c.arc(W / 2, 134, 6, 0, 7); c.fill(); c.fillRect(W / 2 - 2, 134, 4, 10);
+});
+// 분리수거 표시: 재활용(돌아가는 화살표 셋) · 일반 쓰레기(휴지통 그림)
+const binTex = k => TT('bin' + k, 160, 176, (c, W, H) => {
+  c.fillStyle = '#ffffff'; roundRect(c, 4, 4, W - 8, H - 8, 18); c.fill(); const col = k ? '#5f6870' : '#2e8a4e';
+  if (!k) { c.save(); c.translate(W / 2, 74); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 11; c.lineCap = 'round';
+    for (let i = 0; i < 3; i++) { c.rotate(PI * 2 / 3); c.beginPath(); c.arc(0, 0, 38, -1.35, -.15); c.stroke(); const ax = Math.cos(-.05) * 38, ay = Math.sin(-.05) * 38; c.beginPath(); c.moveTo(ax + 12, ay - 10); c.lineTo(ax - 4, ay + 14); c.lineTo(ax - 14, ay - 10); c.closePath(); c.fill(); } c.restore(); }
+  else { c.fillStyle = col; c.fillRect(W / 2 - 34, 46, 68, 8); c.fillRect(W / 2 - 12, 38, 24, 8); c.beginPath(); c.moveTo(W / 2 - 30, 58); c.lineTo(W / 2 + 30, 58); c.lineTo(W / 2 + 24, 116); c.lineTo(W / 2 - 24, 116); c.fill();
+    c.fillStyle = '#ffffff'; for (const dx of [-12, 0, 12]) c.fillRect(W / 2 + dx - 2, 66, 4, 40); }
+  fitText(c, k ? '일반쓰레기' : '재활용', W / 2, 146, W - 24, 26, col, { weight: 'bold' });
+});
+// 장기판: 나무 바탕 9 × 10 줄, 궁 X자
+const janggiTex = () => T('janggi', 128, 128, (c, W, H) => {
+  c.fillStyle = '#ecc98e'; c.fillRect(0, 0, W, H); c.strokeStyle = '#7a4a28'; c.lineWidth = 1.6; const x0 = 10, y0 = 8, dx = (W - 20) / 8, dy = (H - 16) / 9;
+  for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(x0 + i * dx, y0); c.lineTo(x0 + i * dx, H - y0); c.stroke(); }
+  for (let j = 0; j < 10; j++) { c.beginPath(); c.moveTo(x0, y0 + j * dy); c.lineTo(W - x0, y0 + j * dy); c.stroke(); }
+  for (const j of [0, 7]) { c.beginPath(); c.moveTo(x0 + 3 * dx, y0 + j * dy); c.lineTo(x0 + 5 * dx, y0 + (j + 2) * dy); c.moveTo(x0 + 5 * dx, y0 + j * dy); c.lineTo(x0 + 3 * dx, y0 + (j + 2) * dy); c.stroke(); }
+  c.lineWidth = 3; c.strokeRect(2, 2, W - 4, H - 4);
+});
+// 둥근 부채: 태극 무늬 둘레 삼색 띠
+const fanTex = () => T('fan', 128, 128, (c, W, H) => {
+  const m = W / 2; c.fillStyle = '#fbf3e0'; c.fillRect(0, 0, W, H);
+  for (let i = 0; i < 3; i++) { c.strokeStyle = [C.red, C.yel, C.blue][i]; c.lineWidth = 6; c.beginPath(); c.arc(m, m, 58 - i * 6, 0, 7); c.stroke(); }
+  c.fillStyle = '#d8453a'; c.beginPath(); c.arc(m, m, 32, PI, 0); c.arc(m + 16, m, 16, 0, PI, true); c.arc(m - 16, m, 16, 0, PI); c.fill();
+  c.fillStyle = '#2f5fa8'; c.beginPath(); c.arc(m, m, 32, 0, PI); c.arc(m - 16, m, 16, PI, 0, true); c.arc(m + 16, m, 16, PI, 0); c.fill();
+});
+// 학용품 선반 표지: 스케치북 · 물감 상자 · 필통 둘
+const sketchTex = () => TT('sketch', 128, 160, (c, W, H) => {
+  c.fillStyle = '#3f7f6a'; c.fillRect(0, 0, W, H); c.fillStyle = '#fbf3e0'; roundRect(c, 14, 40, W - 28, 78, 8); c.fill();
+  c.strokeStyle = '#e8604c'; c.lineWidth = 4; c.beginPath(); c.moveTo(26, 100); c.quadraticCurveTo(50, 60, 70, 92); c.quadraticCurveTo(88, 116, 104, 70); c.stroke();
+  c.fillStyle = '#ffcf48'; c.beginPath(); c.arc(92, 58, 9, 0, 7); c.fill();
+  fitText(c, '스케치북', W / 2, 138, W - 24, 20, '#ffffff', { weight: 'bold' });
+  c.fillStyle = '#c7ccd4'; for (let i = 0; i < 9; i++) { c.beginPath(); c.arc(12 + i * 13, 10, 4, 0, 7); c.fill(); }
+});
+const paintTex = () => TT('paint', 192, 64, (c, W, H) => {
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H); c.fillStyle = C.blue; c.fillRect(0, 0, W, 12);
+  const cs = [C.red, C.orng, C.yel, C.grn, C.blue, C.purp]; for (let i = 0; i < 6; i++) { const x = 70 + i * 19; c.fillStyle = '#e6e6e6'; roundRect(c, x, 22, 14, 34, 4); c.fill(); c.fillStyle = cs[i]; c.fillRect(x, 32, 14, 16); }
+  fitText(c, '물감', 34, 32, 56, 22, C.ink, { weight: 'bold' }); fitText(c, '12색', 34, 52, 50, 13, C.red);
+});
+const penCaseTex = k => TT('pcase' + k, 128, 48, (c, W, H) => {
+  c.fillStyle = k ? '#f39ab4' : '#4f86c6'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(255,255,255,.3)'; for (let x = -20; x < W; x += 18) { c.beginPath(); c.moveTo(x, H); c.lineTo(x + 10, H); c.lineTo(x + 30, 0); c.lineTo(x + 20, 0); c.fill(); }
+  c.fillStyle = '#ffffff'; c.beginPath(); c.arc(W * .72, H / 2, 15, 0, 7); c.fill(); c.fillStyle = k ? '#8f9aab' : C.yel; c.beginPath(); c.arc(W * .72, H / 2 + 2, 10, 0, 7); c.fill();
+  c.fillStyle = C.ink; c.fillRect(W * .72 - 5, H / 2, 3, 3); c.fillRect(W * .72 + 2, H / 2, 3, 3); c.fillStyle = '#c7ccd4'; c.fillRect(0, 3, W, 3);
 });
 const flipTex = back => TT('flip' + (back ? 1 : 0), 256, 160, (c, W, H) => {
   if (!back) { c.fillStyle = C.cream; roundRect(c, 0, 0, W, H, 20); c.fill(); c.strokeStyle = C.grn; c.lineWidth = 10; roundRect(c, 8, 8, W - 16, H - 16, 14); c.stroke();
@@ -200,11 +372,20 @@ const posterTex = (k, title, lines, col) => TT('post' + k, 192, 256, (c, W, H) =
   fitText(c, title, W / 2, 37, W - 36, 30, '#ffffff', { weight: 'bold' });
   lines.forEach((t, i) => fitText(c, t, W / 2, 96 + i * 34, W - 40, 22, C.ink));
 });
-const glassCaseTex = () => T('gcase', 256, 112, (c, W, H) => {
-  c.fillStyle = '#e8f3f2'; c.fillRect(0, 0, W, H); const r = rnd(51);
-  for (let i = 0; i < 18; i++) { c.fillStyle = [C.red, C.blue, C.grn, C.yel, C.pink][i % 5]; c.beginPath(); c.arc(16 + r() * 100, 30 + r() * 70, 6, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(14 + r() * 100, 28 + r() * 70, 3, 3); }
-  for (let i = 0; i < 6; i++) { c.fillStyle = ['#ffffff', '#ffd6e2', '#d6ecff'][i % 3]; c.fillRect(132 + (i % 3) * 38, 34 + Math.floor(i / 3) * 34, 30, 20); c.fillStyle = C.blue; c.fillRect(132 + (i % 3) * 38, 40 + Math.floor(i / 3) * 34, 30, 6); }
-  c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(0, 6, W, 6);
+// 계산대 진열 유리 속: 윗단 동물 지우개·자 줄, 아랫단 흰 접시에 구슬·장난감 자동차·열쇠고리, 가격표, 유리 반사
+const glassCaseTex = () => TT('gcase2', 256, 112, (c, W, H) => {
+  c.fillStyle = '#e6f0ee'; c.fillRect(0, 0, W, H); c.fillStyle = '#d4c3a0'; c.fillRect(0, 52, W, 5); c.fillRect(0, H - 6, W, 6);
+  const er = [['#f7c6d0', 'cat'], ['#cfe6b8', 'frog'], ['#ffe2a0', 'bear'], ['#d5c8f0', 'cat'], ['#9fd3e0', 'frog'], ['#ffd2b0', 'bear']];
+  er.forEach(([col, kind], i) => { const x = 18 + i * 26, y = 36; c.fillStyle = col; roundRect(c, x - 10, y - 12, 20, 16, 5); c.fill();
+    c.fillStyle = col; if (kind !== 'frog') { c.beginPath(); c.arc(x - 6, y - 12, 4, 0, 7); c.arc(x + 6, y - 12, 4, 0, 7); c.fill(); } else { c.beginPath(); c.arc(x - 5, y - 13, 4, 0, 7); c.arc(x + 5, y - 13, 4, 0, 7); c.fill(); }
+    c.fillStyle = C.ink; c.fillRect(x - 5, y - 6, 2, 2); c.fillRect(x + 3, y - 6, 2, 2); });
+  for (let i = 0; i < 3; i++) { c.fillStyle = ['#ffcf48', '#8fd3c4', '#f39ab4'][i]; c.fillRect(176, 18 + i * 10, 70, 6); c.fillStyle = C.ink; for (let x = 180; x < 244; x += 6) c.fillRect(x, 18 + i * 10, 1, 3); }
+  c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(40, 84, 32, 12, 0, 0, 7); c.fill(); c.strokeStyle = '#b8c4c6'; c.lineWidth = 1.5; c.stroke(); const r = rnd(51);
+  for (let i = 0; i < 9; i++) { const x = 18 + r() * 44, y = 80 + r() * 6; c.fillStyle = [C.red, C.blue, C.grn, C.yel, C.purp][i % 5]; c.beginPath(); c.arc(x, y, 5, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(x - 2, y - 3, 2, 2); }
+  for (const [x, col] of [[100, C.red], [146, C.blue]]) { c.fillStyle = col; roundRect(c, x - 18, 76, 36, 14, 5); c.fill(); c.fillRect(x - 10, 70, 18, 8); c.fillStyle = '#cfe8ff'; c.fillRect(x - 7, 72, 12, 5); c.fillStyle = C.ink; c.beginPath(); c.arc(x - 10, 92, 4, 0, 7); c.arc(x + 10, 92, 4, 0, 7); c.fill(); }
+  for (let i = 0; i < 3; i++) { const x = 190 + i * 22; c.strokeStyle = '#9ea6b1'; c.lineWidth = 2; c.beginPath(); c.arc(x, 70, 5, 0, 7); c.stroke(); c.fillStyle = [C.pink, C.yel, C.mint][i]; c.beginPath(); c.arc(x, 86, 9, 0, 7); c.fill(); c.fillStyle = C.ink; c.fillRect(x - 4, 84, 2, 2); c.fillRect(x + 2, 84, 2, 2); }
+  for (const [x, y] of [[60, 46], [150, 46], [75, 100], [215, 100]]) { c.fillStyle = '#ffffff'; c.fillRect(x - 11, y - 5, 22, 10); c.fillStyle = C.red; c.font = 'bold 8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('100', x, y + 1); }
+  c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.moveTo(30, 0); c.lineTo(52, 0); c.lineTo(22, H); c.lineTo(0, H); c.fill(); c.beginPath(); c.moveTo(150, 0); c.lineTo(160, 0); c.lineTo(130, H); c.lineTo(120, H); c.fill();
 });
 const boxTex = (k, word) => TT('box' + k, 192, 128, (c, W, H) => {
   c.fillStyle = '#d7b07c'; c.fillRect(0, 0, W, H); c.fillStyle = 'rgba(120,80,40,.15)'; for (let x = 0; x < W; x += 6) c.fillRect(x, 0, 2, H);
@@ -259,9 +440,16 @@ function gear(add, x, y, z, r, color) {
   add(G.cyl(r * .28, r * .28, .075, 10), C.cream, x, y, z + .01, HP, 0, 0);
 }
 function pot(add, x, y, z, s = 1, bloom = null) {
-  add(G.cyl(.14 * s, .1 * s, .22 * s, 10), '#d98b5f', x, y + .11 * s, z); add(G.cyl(.15 * s, .15 * s, .04 * s, 10), '#e9a67a', x, y + .22 * s, z);
-  for (let k = 0; k < 6; k++) { const a = k * 2.4; add(G.sph(.09 * s, 8, 6), k % 2 ? C.leaf : C.leaf2, x + Math.cos(a) * .08 * s, y + (.32 + (k % 2) * .06) * s, z + Math.sin(a) * .08 * s, 0, 0, 0, [1.2, .7, 1]);
-    if (bloom && k % 2) add(G.sph(.045 * s, 7, 5), bloom, x + Math.cos(a) * .12 * s, y + .43 * s, z + Math.sin(a) * .12 * s); }
+  // 토분: 받침 접시·테 두른 주둥이·흙, 잎은 한 장씩 밖으로 퍼지고, 꽃은 꽃잎 다섯 (줄기 위)
+  add(G.cyl(.16 * s, .15 * s, .02 * s, 14), '#c47a52', x, y + .01 * s, z);
+  add(G.cyl(.135 * s, .1 * s, .21 * s, 14), '#d98b5f', x, y + .125 * s, z); add(G.cyl(.155 * s, .15 * s, .05 * s, 14), '#e9a67a', x, y + .245 * s, z);
+  add(G.cyl(.128 * s, .128 * s, .01 * s, 14), '#6b4a36', x, y + .262 * s, z);
+  for (let k = 0; k < 10; k++) { const a = k * 2.4, up = .45 + (k % 3) * .3, L = (.1 + (k % 2) * .035) * s;
+    add(G.sph(1, 8, 6), k % 2 ? C.leaf : C.leaf2, x + Math.cos(a) * L * .55, y + (.29 + (k % 3) * .035) * s, z + Math.sin(a) * L * .55, 0, -a, up, [L * .62, .011 * s, L * .28]); }
+  if (bloom) for (let j = 0; j < 3; j++) { const a = j * 2.1 + .5, fx = x + Math.cos(a) * .05 * s, fz = z + Math.sin(a) * .05 * s, fy = y + (.42 + j * .035) * s;
+    add(G.cyl(.006 * s, .006 * s, .14 * s, 5), C.leaf2, fx, fy - .07 * s, fz);
+    for (let q = 0; q < 5; q++) { const b = q * PI * 2 / 5; add(G.sph(.026 * s, 7, 5), bloom, fx + Math.cos(b) * .027 * s, fy, fz + Math.sin(b) * .027 * s, 0, 0, 0, [1, .45, 1]); }
+    add(G.sph(.016 * s, 7, 5), '#ffe14d', fx, fy + .008 * s, fz); }
 }
 // 접히는 벽 (방 벽처럼 카메라 쪽으로 오면 무릎 높이로 — 21판 파출소·18판 새 안과 같은 규칙)
 const foldWall = (f, n, H) => {
@@ -274,12 +462,13 @@ const foldWall = (f, n, H) => {
 const tagWall = o => o.traverse(m => { if (m.isMesh) { m.userData.noMerge = true; m.castShadow = true; m.receiveShadow = true; } });
 
 // ── 바탕: 섬 · 보도 · 찻길 · 가게 벽 · 창고 칸 · 거대 연필 기둥 · 지붕 간판 ───────────────────────────────────────────
+const BINS = [[3.08, .33, 0, '#4f86c6', .42, .64, .14], [3.5, .38, .3, '#8c949c', .34, .56, 0]];
 const WT = .18, WH = 2.4, SX0 = -3.5, SX1 = .95, SZ0 = -2.75, SZF = .45, BX1 = 2.8, BZF = -1.0, BH = 2.15;
 B.st_shop = f => {
   f.noOccupied = true; f.collideBox = [0, -.3, 0, .001, -.29, .001];
   // (걷기를 막는 몸: 벽 둘·창고 칸·거대 연필·분리수거함·우산꽂이 — 나머지 바탕은 지나다님)
   const walk = [[SX0 - WT, 0, SZ0 - WT, SX1, WH, SZ0], [SX0 - WT, 0, SZ0, SX0, WH, SZF], [SX1, 0, SZ0 - WT, BX1, BH, BZF],
-    [-3.83, 0, .3, -3.35, 2.6, .78], [2.95, 0, .05, 3.45, .8, .62], [.64, 0, .14, .96, .6, .46], [-3.45, 0, -.1, -3.1, .4, .26], [2.95, 0, -2.75, 3.6, .5, -1.5]];
+    [-3.83, 0, .3, -3.35, 2.6, .78], [2.85, 0, .05, 3.74, .8, .62], [.64, 0, .14, .96, .6, .46], [-3.45, 0, -.1, -3.1, .4, .26], [2.95, 0, -2.75, 3.6, .5, -1.5]];
   f.walkBoxes = walk; f.walkSolids = walk;
   // 섬 받침: 흙 두 단 + 돌 띠 + 보도 단(연석 턱) + 찻길
   f.add(mc('st-island', ({ add }) => {
@@ -304,7 +493,9 @@ B.st_shop = f => {
     add(G.cyl(.3, .3, .02, 22), '#6b7080', 2.2, -.142, 3.55); add(G.tor(.3, .022, PI * 2, 4, 22), '#535868', 2.2, -.132, 3.55, HP, 0, 0);
     for (let k = -2; k <= 2; k++) add(G.box(.46 - Math.abs(k) * .09, .01, .03, .004), '#535868', 2.2, -.128, 3.55 + k * .09);
     // 가게 뒤 좁은 땅: 풀 몇 줌, 배수 홈
-    for (const [x, z, n] of [[-3.3, -3.05, 4], [-1.2, -3.1, 5], [.6, -3.08, 3], [2.3, -3.1, 4], [3.7, -3.0, 4]]) for (let k = 0; k < n; k++) { const a = k * 2.3; add(G.sph(.08 + (k % 3) * .02, 8, 6), k % 2 ? C.leaf : C.leaf2, x + Math.cos(a) * .09, .05 + (k % 2) * .03, z + Math.sin(a) * .07, 0, 0, 0, [1.1, .8, 1]); }
+    for (const [x, z, n] of [[-3.3, -3.05, 9], [-1.2, -3.1, 11], [.6, -3.08, 8], [2.3, -3.1, 9], [3.7, -3.0, 10]]) { for (let k = 0; k < n; k++) { const a = k * 2.4, h = .1 + (k % 3) * .045, r0 = .02 + (k % 4) * .018;
+      add(G.cone(.016, h, 4), k % 3 ? C.leaf : C.leaf2, x + Math.cos(a) * r0, h / 2 - .005, z + Math.sin(a) * r0 * .7, Math.sin(a) * .4, 0, -Math.cos(a) * .4); }
+      add(G.sph(.016, 6, 5), n % 2 ? '#fff3b0' : '#ffffff', x + .03, .13, z + .02); add(G.sph(.008, 5, 4), '#ffd25a', x + .03, .142, z + .02); }
   }));
   // 바닥 그림: 보도블록(섬 윗면 전체), 찻길, 가게 타일, 창고 콘크리트
   { const g = new THREE.ShapeGeometry(island(0, IS.z0, CURB_Z - .19, IS.r, 0), 12); const t = rep(paveTex(), 1 / 1.2, 1 / 1.2); const m = mesh(g, mat('#ffffff', { map: t, rough: .75, rim: .08 }), { cast: false }); put(m, 0, .003, 0, -HP); m.userData.floor = true; f.add(m); }
@@ -376,10 +567,10 @@ B.st_shop = f => {
     // 평지붕과 낮은 난간, 단면 테
     add(G.box(BX1 - SX1 + .12, .14, BZF - SZ0 + WT + .12, .03), '#c3c8cc', (SX1 + BX1) / 2, BH + .07, (BZF + SZ0 - WT) / 2);
     add(G.box(BX1 - SX1 + .14, .04, BZF - SZ0 + WT + .14, .01), C.cut, (SX1 + BX1) / 2, BH + .16, (BZF + SZ0 - WT) / 2);
-    // 실외기 (팬 망) · 스티로폼 텃밭 (파 · 상추)
+    // 실외기 (팬 망) · 나무 텃밭 상자 (파 · 상추)
     add(G.box(.62, .44, .3, .03), '#e9ece8', 2.25, BH + .4, SZ0 + .05); add(G.cyl(.15, .15, .02, 16), '#9aa2a8', 2.15, BH + .41, SZ0 + .21, HP, 0, 0);
     for (let k = 0; k < 4; k++) add(G.tor(.04 + k * .035, .006, PI * 2, 3, 16), '#7d858c', 2.15, BH + .41, SZ0 + .225);
-    add(G.box(.62, .22, .36, .02), '#f4f4f0', 1.45, BH + .29, -1.55);
+    add(G.box(.62, .22, .36, .02), '#b98a5a', 1.45, BH + .29, -1.55); for (const y of [.22, .29, .36]) add(G.box(.63, .008, .37, .002), '#8f6440', 1.45, BH + y, -1.55);
     for (let k = 0; k < 7; k++) add(G.cyl(.012, .016, .22, 6), k % 2 ? '#7cc06a' : '#5ea85a', 1.22 + k * .075, BH + .5, -1.55 + (k % 2 ? .06 : -.06));
     for (let k = 0; k < 3; k++) add(G.sph(.09, 8, 6), C.leaf, 1.6 + (k % 2) * .08, BH + .44, -1.62 + k * .07, 0, 0, 0, [1.2, .6, 1]);
     // 셔터 위 차양 (빨강·크림 줄, 물결 끝)
@@ -417,7 +608,7 @@ B.st_shop = f => {
   }));
   { const t = TT('hb', 128, 64, (c, W, H) => { c.fillStyle = '#ffd25a'; c.fillRect(0, 0, W, H); fitText(c, 'HB', W / 2, H / 2, W * .7, 40, '#7a5a28', { weight: 'bold' }); }); decal(f, .2, .1, t, -3.59 + .13, 1.7, .54 + .155, PI / 3); }
 
-  // ── 보도 위 생활 디테일: 우산꽂이(놓고 간 분홍 우산), 분리수거함·납작 상자 묶음, 스티로폼 화분 둘 ─────────────────
+  // ── 보도 위 생활 디테일: 우산꽂이(놓고 간 분홍 우산), 분리수거함·납작 상자 묶음, 나무 텃밭 상자 둘 ─────────────────
   f.add(mc('st-street', ({ add, tube }) => {
     add(G.cyl(.15, .13, .5, 14), '#7d9ab0', .8, .25, .3); add(G.cyl(.155, .155, .03, 14), '#5f7a90', .8, .5, .3);
     // 접은 우산 둘 (가늘게 말린 천 + 손잡이): 남색, 놓고 간 분홍
@@ -426,21 +617,41 @@ B.st_shop = f => {
     // 가게 안 문 옆 휴지통 (구겨진 종이)
     add(G.cyl(.14, .12, .36, 14), '#9fc3ae', -3.27, .18, .08); add(G.tor(.14, .015, PI * 2, 4, 14), '#7ea591', -3.27, .36, .08, HP, 0, 0);
     for (const [dx, dz] of [[-.03, .02], [.04, -.03]]) add(G.sph(.05, 7, 5), C.paper, -3.27 + dx, .37, .08 + dz);
-    // 분리수거함: 파랑 재활용 · 회색 일반, 묶은 납작 상자
-    add(G.box(.42, .62, .42, .05), '#4f86c6', 3.08, .31, .33); add(G.box(.44, .05, .44, .02), '#3f72aa', 3.08, .64, .33);
-    add(G.box(.36, .56, .36, .05), '#8c949c', 3.33, .28, .38, 0, .3, 0); add(G.box(.38, .04, .38, .02), '#737b84', 3.33, .58, .38, 0, .3, 0);
-    add(G.box(.06, .5, .6, .01), '#c99a64', 3.42, .28, -.1, 0, 0, -.18); add(G.box(.06, .46, .56, .01), '#d7b07c', 3.36, .26, -.08, 0, 0, -.22);
-    add(G.box(.03, .52, .025, .008), '#f4f1e8', 3.4, .28, -.1, 0, 0, -.2);
-    // 스티로폼 상자 텃밭 (창고 옆): 상추·고추
-    for (const [x, z] of [[3.15, -2.45], [3.2, -1.95]]) { add(G.box(.5, .26, .36, .02), '#f4f4f0', x, .13, z); for (let k = 0; k < 4; k++) add(G.sph(.1, 8, 6), k % 2 ? '#8fcf6a' : '#6cb85a', x - .15 + k * .1, .3, z + (k % 2 ? .05 : -.05), 0, 0, 0, [1.2, .6, 1]); }
-    add(G.sph(.03, 6, 5), C.red, 3.12, .38, -1.95); add(G.sph(.03, 6, 5), C.red, 3.26, .36, -1.9);
+    // 분리수거함 둘 (바퀴 달린 통): 파란 재활용 통(뚜껑이 살짝 들림)·회색 일반 쓰레기통 — 몸 아래로 좁아짐, 테 띠, 뚜껑 손잡이, 뒤 바퀴 둘, 앞에 표시 그림
+    for (const [x, z, ry, col, w, h, lift] of BINS) {
+      const cs = Math.cos(ry), sn = Math.sin(ry), Q = (lx, ly, lz) => [x + lx * cs + lz * sn, ly, z - lx * sn + lz * cs], dk = shade(col, -.12);
+      add(G.box(w * .92, h - .1, w * .9, .04), col, ...Q(0, .05 + (h - .1) / 2, 0), 0, ry, 0); add(G.box(w, .12, w * .98, .04), col, ...Q(0, h - .1, .0), 0, ry, 0);
+      add(G.box(w + .012, .03, w * .98 + .012, .01), dk, ...Q(0, h - .165, 0), 0, ry, 0);
+      add(G.box(w + .03, .045, w + .02, .015), dk, ...Q(0, h - .02 + lift * .5, .0), -lift, ry, 0); add(G.box(.14, .03, .035, .01), shade(col, -.25), ...Q(0, h - .005 + lift, w / 2 + .02), -lift, ry, 0);
+      for (const s of [-1, 1]) { add(G.cyl(.055, .055, .035, 14), '#2c2f38', ...Q(s * (w / 2 - .04), .055, -w / 2 + .02), 0, ry, HP); add(G.cyl(.02, .02, .04, 8), C.metalD, ...Q(s * (w / 2 - .04), .055, -w / 2 + .02), 0, ry, HP); }
+      add(G.box(w * .1, .05, w * .1, .01), dk, ...Q(-w * .3, .025, w * .3), 0, ry, 0); add(G.box(w * .1, .05, w * .1, .01), dk, ...Q(w * .3, .025, w * .3), 0, ry, 0);
+    }
+    add(G.box(.06, .5, .6, .01), '#c99a64', 3.42, .28, -.18, 0, 0, -.18); add(G.box(.06, .46, .56, .01), '#d7b07c', 3.36, .26, -.16, 0, 0, -.22);
+    for (const y of [.12, .42]) add(G.box(.11, .012, .62, .004), '#f4f1e8', 3.39, y, -.17, 0, 0, -.2);
+    // (10/24 사용자 '스티로폼 상자 못생김' → 나무 텃밭 상자: 판자 줄·모서리 기둥·이름표)
+    // 나무 텃밭 상자 둘 (창고 옆): 판자 상자에 흙 — 상추 포기(잎 한 장씩)·대파 줄, 옆 상자엔 고추 포기(줄기·잎·빨간 고추)와 지지대
+    for (const [x, z] of [[3.15, -2.45], [3.2, -1.95]]) {
+      add(G.box(.5, .22, .36, .02), '#c4945f', x, .11, z); add(G.box(.44, .02, .3, .004), '#6b4a36', x, .238, z);
+      for (const y of [.075, .15]) { add(G.box(.505, .008, .365, .002), '#946845', x, y, z); }
+      for (const s of [-1, 1]) { add(G.box(.53, .035, .035, .01), '#a87a4c', x, .232, z + s * .18); add(G.box(.035, .035, .36, .01), '#a87a4c', x + s * .25, .232, z); }
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.045, .24, .045, .01), '#8a5f3c', x + sx * .245, .12, z + sz * .175);
+      add(G.box(.2, .07, .006, .002), '#f3ead6', x - .08, .13, z + .184);
+    }
+    for (const [cx, cz] of [[2.98, -2.42], [3.32, -2.36]]) for (let k = 0; k < 9; k++) { const a = k * 2.4, up = k < 5 ? .55 : 1.0, L = k < 5 ? .085 : .06;
+      add(G.sph(1, 8, 6), k < 5 ? '#7cc45a' : '#a8dc78', cx + Math.cos(a) * L * .5, .27 + (k < 5 ? 0 : .02), cz + Math.sin(a) * L * .5, 0, -a, up, [L * .62, .012, L * .42]); }
+    for (let k = 0; k < 6; k++) { const x = 3.02 + k * .055; add(G.cyl(.009, .011, .2, 6), '#f2f4ea', x, .33, -2.58); add(G.cyl(.008, .009, .16, 6), k % 2 ? '#5ea85a' : '#7cc06a', x + (k % 2 ? .01 : -.01), .51, -2.58, (k % 2 ? .12 : -.1), 0, 0); }
+    { const x = 3.2, z = -1.95; add(G.cyl(.008, .008, .4, 5), '#b8946a', x + .1, .44, z - .05); tube([x, .24, z], [x + .02, .5, z - .02], .012, '#5e9a50');
+      for (const [bx, by, bz, a] of [[-.05, .42, .04, .4], [.06, .45, -.03, 2.2], [.0, .52, .05, 4.1], [.05, .36, .06, 1.2], [-.06, .34, -.05, 3.3]]) { tube([x + .01, by - .05, z], [x + bx, by, z + bz], .006, '#5e9a50'); add(G.sph(1, 8, 6), C.leaf2, x + bx, by + .01, z + bz, 0, -a, .3, [.05, .01, .025]); }
+      for (const [bx, by, bz] of [[-.04, .38, .06], [.07, .4, .02], [.02, .33, -.06]]) add(G.cap(.011, .05, 3, 6), C.red, x + bx, by, z + bz, .25, 0, .3);
+      add(G.cap(.011, .045, 3, 6), '#4f9c3a', x - .07, .43, z - .02, -.2, 0, -.3); }
   }));
+  BINS.forEach(([x, z, ry, , w, h], k) => { const d = w * .45 + .004; decal(f, w * .62, w * .68, binTex(k), x + d * Math.sin(ry), h * .42, z + d * Math.cos(ry), ry); });
   // 숨김 자리 (보도·바닥)
   f.spot('on', null, 1.85, .012, -.05, { label: '셔터 앞 보도', maxH: .5, scale: 1.4 });
   f.spot('behind', null, 3.5, .012, .0, { label: '분리수거함 뒤', maxH: .4, scale: 1 });
   f.spot('on', null, -.4, .012, 2.25, { label: '가게 앞 보도', maxH: .5, scale: 1.5 });
   f.spot('on', null, -3.05, .03, 2.3, { label: '하수 덮개 옆', maxH: .45, scale: 1.2 });
-  f.spot('on', null, 3.18, .26, -2.45, { label: '스티로폼 텃밭 속', maxH: .3, scale: .9 });
+  f.spot('on', null, 3.18, .26, -2.45, { label: '텃밭 상자 속', maxH: .3, scale: .9 });
   f.spot('on', null, .8, .5, .3, { label: '우산꽂이 위', maxH: .3, scale: .85 });
 
   // 방 벽처럼: 카메라 쪽으로 온 벽은 무릎 높이로 (room.js와 같은 규칙: 안쪽 법선 · 카메라 방향 < -.18)
@@ -514,18 +725,28 @@ B.st_streetlamp = f => {
     // 스위치 함 (기둥 가운데, 앞을 봄)
     add(G.box(.34, .46, .14, .04), '#e9e2cc', 0, 1.05, .1); add(G.box(.26, .38, .02, .02), '#d4ccb2', 0, 1.05, .175);
     add(G.box(.08, .16, .03, .01), C.ink, 0, 1.07, .19);
-    // 기둥 전단 띠, 반사 띠
-    add(G.box(.16, .5, .02, .01), '#fff3d6', .0, 1.75, .07); for (const y of [.35, .45]) add(G.cyl(.075, .075, .05, 10), '#ffe14d', 0, y, 0);
+    // 반사 띠
+    for (const y of [.35, .45]) add(G.cyl(.075, .075, .05, 10), '#ffe14d', 0, y, 0);
   }));
-  { const t = TT('lampflyer', 64, 192, (c, W, H) => { paperFill(c, W, H, '#fff3d6', 3); fitText(c, '딱지', W / 2, 40, W - 10, 18, C.red, { weight: 'bold' }); fitText(c, '1등', W / 2, 100, W - 10, 16, C.ink); fitText(c, '500원', W / 2, 150, W - 10, 14, C.ink); }); decal(all, .15, .46, t, 0, 1.75, .082); }
+  // 딱지 판 (기둥 앞 아래쪽, 스위치 함 밑 — 위에 달면 평상의 고양이를 가림; 쇠띠 둘로 묶음): 나무 테 액자 속 크림 판, 빨간 머리띠 '딱지', 진짜 딱지 여섯이 색 압정에 꽂힘, 아래 노란 가격 띠 '1장 100원'
+  const db = grp(); put(db, 0, .6, .092); all.add(db);
+  db.add(mc('st-ddakjiboard', ({ add }) => {
+    add(G.box(.34, .4, .026, .01), C.woodD, 0, 0, 0); add(G.box(.3, .36, .01, .004), '#e9dcc0', 0, 0, .01);
+    for (const y of [-.12, .13]) { add(G.tor(.076, .009, PI * 2, 4, 18), '#5f6b75', 0, y, -.092, HP, 0, 0); add(G.box(.02, .03, .02, .004), '#5f6b75', 0, y, -.016); }
+    for (let k = 0; k < 6; k++) add(G.cyl(.009, .009, .012, 8), [C.red, C.yel, C.blue][k % 3], (k % 3 - 1) * .088, .065 - Math.floor(k / 3) * .115 + .032, .04, HP, 0, 0);
+  }));
+  decal(db, .3, .36, ddakjiBoardTex(), 0, 0, .0156);
+  { const dg = geo('st-ddak2', () => G.box(.072, .072, .012, .003));
+    for (let k = 0; k < 6; k++) { const g = grp(); put(g, (k % 3 - 1) * .088, .065 - Math.floor(k / 3) * .115, .026, 0, 0, (k * .37) % .5 - .25); db.add(g);
+      g.add(mesh(dg, mat(shade(DDAK[k][0], -.1)))); g.add(put(flat(.07, .07, ddakjiTex(k)), 0, 0, .0065)); } }
   const sw = grp(); put(sw, 0, 1.07, .21); f.add(sw);
   sw.add(mc('st-lampsw', ({ add }) => { add(G.box(.07, .2, .07, .02), C.red, 0, .06, 0); add(G.sph(.06, 9, 6), C.yel, 0, .17, .02); }));
-  const OFF = mat('#bdb8a0'), ON = mat('#ffeeb0', { emissive: '#ffd27a', ei: 1.6 });
+  const OFF = mat('#c9c6b8'), ON = mat('#fffaf0', { emissive: '#fff1d0', ei: 1.5 });
   const bulb = mesh(new THREE.SphereGeometry(.13, 12, 8), OFF); put(bulb, -.68, 2.93, -.46); bulb.scale.set(1, .7, 1); f.add(bulb);
   // 켜면 바닥 빛 웅덩이
-  const poolT = TC.get('st-pool', () => fadeDisc(64, '#ffe2a0', r => (1 - r) * .55));
-  const pool = mesh(new THREE.PlaneGeometry(2.4, 2.4), new THREE.MeshBasicMaterial({ map: poolT, transparent: true, depthWrite: false }), { cast: false, recv: false });
-  put(pool, -.9, .02, -.7, -HP); pool.visible = false; pool.userData.noMerge = true; pool.userData.noPaint = true; f.add(pool);
+  const poolT = TC.get('st-pool2', () => fadeDisc(64, '#fff2d6', r => (1 - r) * .5));
+  const pool = mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: poolT, transparent: true, depthWrite: false }), { cast: false, recv: false });
+  put(pool, -.68, .02, -.46, -HP); pool.visible = false; pool.userData.noMerge = true; pool.userData.noPaint = true; f.add(pool);
   f.live = [pool];
   // 셔터는 다른 가구: 장면에서 한 번 찾아 둠
   let shut = null, code = null, vis = false;
@@ -617,7 +838,7 @@ B.st_counter = f => {
     add(G.cap(.03, .1, 3, 8), '#8f3a3a', .55, H + .03, -.1, 0, .4, HP);
     add(G.cyl(.05, .045, .14, 10), C.blue, .7, H + .07, -.16); for (let k = 0; k < 4; k++) add(G.cyl(.008, .008, .2, 6), [C.red, C.yel, C.grn, '#ffd25a'][k], .7 + (k - 1.5) * .015, H + .2, -.16 + (k % 2) * .015, (k - 1.5) * .08, 0, 0);
     // 계산대 스탠드 (초록 갓, 따뜻한 흰 전구)
-    add(G.cyl(.07, .08, .03, 12), '#3f6b55', .8, H + .015, .12); add(G.cyl(.012, .012, .3, 6), C.metalD, .8, H + .17, .12); add(G.cone(.1, .12, 12), '#3f6b55', .8, H + .36, .14, .3, 0, 0); add(G.sph(.045, 8, 6), '#fff4dc', .8, H + .32, .16);
+    add(G.cyl(.07, .08, .03, 12), '#3f6b55', .8, H + .015, .12); add(G.cyl(.012, .012, .3, 6), C.metalD, .8, H + .17, .12); add(G.cone(.1, .12, 12), '#3f6b55', .8, H + .36, .14, .3, 0, 0);
     add(G.sph(.1, 12, 8), C.pink, -.82, H + .1, -.12, 0, 0, 0, [1.25, 1, 1]); add(G.cyl(.035, .035, .04, 8), '#f7b4c8', -.94, H + .1, -.12, 0, 0, HP);
     for (const [dx, dz] of [[-.06, -.06], [.06, -.06], [-.06, .06], [.06, .06]]) add(G.cyl(.022, .022, .05, 6), C.pink, -.82 + dx, H + .025, -.12 + dz);
     // 뒤: 할머니 의자(방석·뜨개 숄), 둥근 의자 위 라디오·보온병
@@ -628,7 +849,8 @@ B.st_counter = f => {
     add(G.cyl(.18, .18, .04, 14), C.woodL, .5, .48, -.8); add(G.cyl(.03, .03, .46, 8), C.woodD, .5, .23, -.8);
     add(G.cyl(.06, .06, .24, 12), '#e46f5e', .58, .62, -.86); add(G.cyl(.045, .045, .03, 12), '#f4f1e8', .58, .755, -.86);
   }));
-  // 라디오 (스피커 망·주파수 창) · 진열 유리 속 구슬·지우개
+  { const b = mesh(geo('st-bulb', () => new THREE.SphereGeometry(.042, 12, 8)), mat('#fffaf0', { emissive: '#fff1d8', ei: 1.3 }), { cast: false }); put(b, .8, H + .315, .165); f.add(b); }
+  // 라디오 (스피커 망·주파수 창) · 진열 유리 속 지우개·구슬·장난감
   f.add(mc('st-radio', ({ add }) => { add(G.box(.28, .17, .12, .03), '#cfa978', .4, .585, -.76); add(G.cyl(.005, .005, .3, 6), C.metal, .52, .78, -.78, .3, 0, -.3); }));
   decal(f, .25, .13, radioTex(), .4, .585, -.698);
   decal(f, .86, .3, glassCaseTex(), x0 + .46, .42, D / 2 + .017);
@@ -664,8 +886,14 @@ B.st_crayonrack = f => {
       add(G.cyl(.13, .13, 1.15, 14), col, x, .6, .05); add(G.cone(.13, .3, 14), col2, x, 1.32, .05);
       add(G.cyl(.133, .133, .5, 14), C.cream, x, .55, .05); add(G.cyl(.136, .136, .035, 14), C.ink, x, .32, .05); add(G.cyl(.136, .136, .035, 14), C.ink, x, .78, .05);
     }
-    // 이름판 위 꺾인 스탠드 (진열대를 비춤)
-    add(G.cyl(.012, .012, .3, 6), C.metalD, .5, H + .66, -.15, .5, 0, 0); add(G.cone(.08, .1, 12), C.ink, .5, H + .78, -.02, 1.9, 0, 0); add(G.sph(.035, 8, 6), '#fff4dc', .5, H + .75, .02);
+  }));
+  // 이름판 가운데 위 거위목 스탠드 (갓이 앞으로 숙여 상자 칸을 비춤), 갓 밑 빛나는 전구
+  f.add(mc('st-crayonlamp', ({ add, tube }) => {
+    add(G.box(.12, .03, .07, .01), C.metalD, 0, H + .575, -.18); tube([0, H + .58, -.18], [0, H + .7, -.1], .012, C.metalD, 6); tube([0, H + .7, -.1], [0, H + .69, .11], .012, C.metalD, 6);
+    add(G.cone(.09, .11, 14), '#3f6b55', 0, H + .64, .1, .55, 0, 0); add(G.tor(.088, .008, PI * 2, 4, 14), '#2f5444', 0, H + .593, .071, .55 + HP, 0, 0);
+  }));
+  { const b = mesh(geo('st-bulb', () => new THREE.SphereGeometry(.042, 12, 8)), mat('#fffaf0', { emissive: '#fff1d8', ei: 1.3 }), { cast: false }); put(b, 0, H + .588, .078); f.add(b); }
+  f.add(mc('st-crayonloose', ({ add }) => {
     // 낱개 크레파스 몇 자루 (맨 아래 칸에 굴러다님)
     for (let k = 0; k < 5; k++) add(G.cyl(.022, .022, .16, 8), [C.red, C.yel, C.grn, C.purp, C.orng][k], -.5 + k * .09, .45, .2, 0, k * .7, HP);
   }));
@@ -720,7 +948,7 @@ B.st_stickerwall = f => {
   [-.78, -.56].forEach((x, i) => hang(coverTex(i + 3), .2, .27, x + .1, 1.6, (i ? .04 : -.03)));
   [-.06, .18].forEach((x, i) => hang(stickerTex(i), .2, .27, x, 1.95, i ? -.04 : .03));
   hang(dollTex(), .24, .32, .62, 2.06, .02);
-  for (let k = 0; k < 3; k++) hang(ddakjiTex(), .12, .12, -.06 + k * .14, 1.58, k * .4);
+  for (let k = 0; k < 3; k++) hang(ddakjiTex(k + 3), .12, .12, -.06 + k * .14, 1.58, k * .4);
   hang(stickerTex(2), .18, .24, .32, 1.6, -.05);
   // 스티커 앨범 판 (들추면 벽감)
   const nook = grp(); f.add(nook);
@@ -735,95 +963,165 @@ B.st_stickerwall = f => {
   f.spot('on', null, .35, .2, .12, { label: '구슬 바구니 속', maxH: .3, scale: .95 });
 };
 
-// ── 불량식품 회전 진열대 (+z 앞): 네 면에 봉지가 줄줄이, 위에 '불량식품 100원' — 터치하면 반 바퀴 돌아 뒷면이 앞으로 ─────────
+// ── 불량식품 회전 진열대 (+z 앞): 은빛 철망 탑 네 면에 갈고리마다 봉지가 대롱대롱(톱니 이음·과자 그림), 꼭대기엔 동그란 테 위 간판 한 장 '불량식품 100원'
+// — 터치하면 반 바퀴 돌아 뒷면이 앞으로 ──────────────────────────────────────────────────────────────────
 B.st_snackrack = f => {
-  f.add(mc('st-snackbase', ({ add }) => { add(G.cyl(.36, .4, .08, 20), '#7d858c', 0, .04, 0); add(G.cyl(.03, .03, 1.6, 8), C.metalD, 0, .85, 0); }));
+  f.add(mc('st-snackbase', ({ add }) => { add(G.cyl(.36, .4, .07, 24), '#7d858c', 0, .035, 0); add(G.tor(.38, .012, PI * 2, 4, 24), C.metalD, 0, .07, 0, HP, 0, 0); add(G.cyl(.03, .03, 1.62, 8), C.metalD, 0, .86, 0); }));
   const rack = grp(); f.add(rack);
   rack.add(mc('st-snackrack', ({ add }) => {
-    for (let k = 0; k < 4; k++) { const a = k * HP; for (let j = 0; j < 3; j++) add(G.box(.5, .02, .03, .005), C.metal, Math.sin(a) * .27, .42 + j * .38, Math.cos(a) * .27, 0, a, 0); for (const s of [-1, 1]) add(G.box(.02, 1.2, .02, .005), C.metal, Math.sin(a) * .27 + Math.cos(a) * s * .25, 1.0, Math.cos(a) * .27 - Math.sin(a) * s * .25); }
-    add(G.box(.56, .03, .56, .01), C.metalD, 0, .38, 0); add(G.box(.56, .03, .56, .01), C.metalD, 0, 1.62, 0);
-    add(G.box(.5, .2, .03, .02), C.red, 0, 1.77, .0); add(G.box(.03, .2, .5, .02), C.red, 0, 1.77, .0);
+    for (let k = 0; k < 4; k++) { const a = k * HP, nx = Math.sin(a), nz = Math.cos(a);
+      for (let j = 0; j < 4; j++) add(G.box(.5, .016, .016, .004), C.metal, nx * .27, .42 + j * .38, nz * .27, 0, a, 0);
+      for (const s of [-1, 1]) add(G.box(.016, 1.2, .016, .004), C.metal, nx * .27 + nz * s * .25, 1.0, nz * .27 - nx * s * .25);
+      for (let j = 0; j < 3; j++) for (let i = 0; i < 2; i++) { if (k === 2 && j === 0) continue; const x = (i - .5) * .22, hy = .8 + j * .38;
+        add(G.box(.008, .008, .07, .002), C.metalD, nx * (.27 + .035) + nz * x, hy, nz * (.27 + .035) - nx * x, 0, a, 0); add(G.sph(.008, 6, 4), C.metalD, nx * .305 + nz * x, hy + .006, nz * .305 - nx * x); }
+    }
+    add(G.box(.56, .025, .56, .008), C.metalD, 0, .38, 0);
+    add(G.tor(.2, .012, PI * 2, 4, 24), C.metal, 0, 1.64, 0, HP, 0, 0); for (let k = 0; k < 4; k++) add(G.box(.016, .016, .22, .004), C.metal, Math.sin(k * HP) * .1, 1.64, Math.cos(k * HP) * .1, 0, k * HP, 0);
+    add(G.cyl(.014, .014, .16, 8), C.metalD, 0, 1.72, 0);
+    add(G.box(.54, .24, .03, .02), '#c8392c', 0, 1.9, 0); add(G.box(.56, .02, .034, .006), C.metal, 0, 2.02, 0); add(G.box(.56, .02, .034, .006), C.metal, 0, 1.78, 0);
   }));
-  // 봉지: 면마다 두 줄, 이름 그림
   let n = 0;
+  const bagG = geo('st-snackbag2', () => G.box(.18, .25, .035, .012));
   for (let k = 0; k < 4; k++) { const a = k * HP; for (let j = 0; j < 3; j++) for (let i = 0; i < 2; i++) {
     if (k === 2 && j === 0) continue;
-    const g = grp(), x = (i - .5) * .22; put(g, Math.sin(a) * .29 + Math.cos(a) * x, .58 + j * .38, Math.cos(a) * .29 - Math.sin(a) * x, 0, a, 0); rack.add(g);
-    g.add(put(mesh(geo('st-snackbag', () => new THREE.BoxGeometry(.18, .24, .04)), mat(SNACKS[n % 6][1])), 0, 0, 0)); g.add(put(flat(.18, .24, snackTex(n % 6)), 0, 0, .021)); n++;
+    const g = grp(), x = (i - .5) * .22; put(g, Math.sin(a) * .3 + Math.cos(a) * x, .66 + j * .38, Math.cos(a) * .3 - Math.sin(a) * x, -.06, a, (i - .5) * .06); rack.add(g);
+    g.add(put(mesh(bagG, mat(SNACKS[n % 6][1])), 0, 0, 0)); g.add(put(flat(.17, .24, snackTex(n % 6)), 0, 0, .0185)); n++;
   } }
-  { const t = TT('snacksign', 256, 96, (c, W, H) => { c.fillStyle = C.red; c.fillRect(0, 0, W, H); fitText(c, '불량식품', W / 2, H * .36, W * .82, 40, '#ffffff', { weight: 'bold' }); fitText(c, '100원', W / 2, H * .78, W * .5, 24, '#ffe14d', { weight: 'bold' }); });
-    for (const [x, z, ry] of [[0, .017, 0], [.017, 0, HP], [0, -.017, PI], [-.017, 0, -HP]]) { const m = flat(.48, .18, t); put(m, x, 1.77, z, 0, ry, 0); rack.add(m); } }
-  // 뒷면 아래 칸: 봉지 빠진 자리 (숨김)
+  { const t = TT('snacksign2', 256, 112, (c, W, H) => { c.fillStyle = '#c8392c'; roundRect(c, 0, 0, W, H, 16); c.fill(); c.strokeStyle = '#ffe14d'; c.lineWidth = 5; roundRect(c, 7, 7, W - 14, H - 14, 12); c.stroke();
+      fitText(c, '불량식품', W / 2, H * .4, W * .78, 44, '#ffffff', { weight: 'bold' }); fitText(c, '100원', W / 2, H * .78, W * .4, 24, '#ffe14d', { weight: 'bold' }); });
+    for (const [z, ry] of [[.0165, 0], [-.0165, PI]]) { const m = flat(.52, .22, t); put(m, 0, 1.9, z, 0, ry, 0); rack.add(m); } }
   rack.add(mc('st-snackshelf', ({ add }) => add(G.box(.46, .025, .2, .005), C.metal, 0, .52, -.22)));
   const p = f.part('spin', rack, t => { rack.rotation.y = PI * t; }, { label: '불량식품 회전 진열대', sfx: 'gearUp', dur: .9 });
   f.spot('inside', rack, 0, .535, -.24, { part: p, maxH: .3, scale: 1.1, label: '회전 진열대 뒷면 칸' });
   f.spot('on', null, .0, .09, .32, { label: '회전 진열대 받침 앞', maxH: .35, scale: 1.1 });
-  f.walkBoxes = [[-.4, 0, -.4, .4, 1.8, .4]]; f.walkSolids = f.walkBoxes;
+  f.walkBoxes = [[-.4, 0, -.4, .4, 2.05, .4]]; f.walkSolids = f.walkBoxes;
 };
 
-// ── 뽑기 기계 줄 (가게 앞, +z 앞): 셋 중 가운데가 크고, 손잡이를 터치하면 드르륵 돌아 캡슐이 톡 ──────────────────────
-const machine = (add, x, w, h, col, base) => {
-  add(G.box(w + .04, base, .5, .03), '#d9d6cf', x, base / 2, 0);
-  add(G.box(w, h, .44, .05), col, x, base + h / 2, 0); add(G.box(w + .04, .06, .48, .02), shade(col, -.15), x, base + h + .03, 0);
-  add(G.box(w - .1, .05, .1, .02), '#ffffff', x, base + h * .3, .2); add(G.box(w - .16, .14, .14, .03), '#3e3b55', x, base + .1, .2);
-  add(G.box(.08, .12, .03, .01), '#ffe14d', x + w * .3, base + h * .36, .225);
-};
+// ── 뽑기 기계 줄 (가게 앞, +z 앞): 셋 다 진짜 캡슐 뽑기 — 은빛 다리 넷 받침 위 몸통(앞판 그림·노란 별 가격 '500원'·동전 넣는 곳·은빛 다이얼·나오는 곳과 뚜껑),
+// 몸통 위 은빛 테에 투명 돔, 돔 속 캡슐 알알이(색 반구 + 옅은 반구, 제각각 기울어짐), 돔 꼭지 뚜껑, 옆엔 '신상!' 광고 스티커
+// 가운데 것 다이얼을 터치하면 드르륵 한 바퀴 → 나오는 곳 뚜껑이 들리며 캡슐이 퐁 ──────────────────────────────────────────
+const GM = [{ x: -.62, w: .48, bh: .44, r: .19 }, { x: 0, w: .56, bh: .5, r: .225 }, { x: .62, w: .48, bh: .44, r: .19 }], GST = .3, GD = .42;
+const CAPC = [C.red, C.yel, C.blue, C.grn, C.pink, C.purp, C.orng, C.mint];
+const CAPT = r => geo('st-capt-' + r, () => new THREE.SphereGeometry(r, 7, 3, 0, PI * 2, 0, HP)), CAPB = r => geo('st-capb-' + r, () => new THREE.SphereGeometry(r * .985, 7, 3, 0, PI * 2, HP, HP));
+const gDomeC = m => GST + m.bh + .07 + m.r * .8;
+const gLidTop = m => gDomeC(m) + m.r + .018;
+function gachaBody(add, m, k, withKnob) {
+  const { x, w, bh, r } = m, col = GCOL[k], dk = shade(col, -.2), FZ = GD / 2;
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const lx = x + sx * (w / 2 - .05), lz = sz * (GD / 2 - .05); add(G.cyl(.018, .018, GST, 8), C.metalD, lx, GST / 2, lz); add(G.cyl(.027, .03, .025, 10), '#4a4e5c', lx, .0125, lz); }
+  add(G.pbox(w - .06, .02, GD - .06), C.metalD, x, .1, 0);
+  add(G.box(w, bh, GD, .03), col, x, GST + bh / 2, 0);
+  add(G.box(w + .012, .05, GD + .012, .014), dk, x, GST + .025, 0);
+  add(G.box(w + .02, .035, GD + .02, .012), dk, x, GST + bh + .0175, 0);
+  add(G.cyl(r * .64, r * .7, .035, 24), C.metal, x, GST + bh + .0525, 0); add(G.tor(r * .6, .008, PI * 2, 4, 24), '#ffffff', x, GST + bh + .07, 0, HP, 0, 0);
+  add(G.pbox(w * .46, .12, .02), '#2c2a3a', x, .405, FZ + .001);
+  add(G.pbox(w * .5, .02, .08), C.metal, x, .335, FZ + .04);
+  for (const s of [-1, 1]) add(G.pbox(.014, .07, .08), C.metal, x + s * w * .25, .36, FZ + .04);
+  if (!withKnob) add(G.pbox(w * .44, .11, .008), '#dfeaf0', x, .4, FZ + .082, -.08, 0, 0);
+  const cy = GST + bh * .5, cx = x + w * .3;
+  add(G.pbox(.08, .13, .016), C.metal, cx, cy, FZ + .008); add(G.pbox(.012, .055, .006), '#2c2a3a', cx, cy + .02, FZ + .017);
+  add(G.cyl(.013, .013, .012, 8), C.red, cx, cy - .04, FZ + .018, HP, 0, 0);
+  if (!withKnob) { const kx = x - w * .08; add(G.cyl(.07, .072, .03, 22), C.metal, kx, cy, FZ + .015, HP, 0, 0); add(G.pbox(.15, .034, .03), '#f4f6f8', kx, cy, FZ + .04, 0, 0, .5); add(G.sph(.022, 10, 8), C.yel, kx + Math.cos(.5) * .065, cy + Math.sin(.5) * .065, FZ + .055); }
+  const dc = gDomeC(m);
+  add(G.cyl(r * .44, r * .52, .04, 20), dk, x, dc + r - .002, 0); add(G.tor(r * .44, .008, PI * 2, 4, 20), C.metal, x, dc + r + .018, 0, HP, 0, 0);
+  const rr0 = rnd(70 + k), cr = r * .21, R = r - cr * 1.1;
+  for (const [fy, rings] of [[-.6, [1]], [-.25, [1]], [.1, [.72]]]) {
+    const y = dc + fy * r, ring = Math.sqrt(Math.max(0, R * R - (fy * r) ** 2));
+    for (const f of rings) { const rr = ring * f, n = rr < .01 ? 1 : Math.max(3, Math.floor(PI * 2 * rr / (cr * 2.15)));
+      for (let i = 0; i < n; i++) { const a = i / n * PI * 2 + fy * 3 + rr0() * .3, px = x + Math.cos(a) * rr, pz = Math.sin(a) * rr, cc = CAPC[Math.floor(rr0() * CAPC.length)], ax = rr0() * 3, az = rr0() * 3;
+        add(CAPT(cr), cc, px, y, pz, ax, 0, az); add(CAPB(cr), shade(cc, .28), px, y, pz, ax, 0, az); } }
+  }
+}
 B.st_gacha = f => {
-  const XS = [-.62, 0, .62], WS = [.5, .58, .5], HS = [.62, .74, .62], COL = ['#7fb3e0', '#f08aa8', '#9fd27c'], BASE = [.34, .34, .34];
   const mid = grp(); f.add(mid);
-  f.add(mc('st-gacha-sides', ({ add }) => { for (const i of [0, 2]) machine(add, XS[i], WS[i], HS[i], COL[i], BASE[i]); for (const i of [0, 2]) add(G.cyl(.06, .06, .05, 14), '#ffffff', XS[i], BASE[i] + HS[i] * .36, .245, HP, 0, 0); }));
-  mid.add(mc('st-gacha-mid', ({ add }) => machine(add, XS[1], WS[1], HS[1], COL[1], BASE[1])));
-  for (const i of [0, 1, 2]) { decal(i === 1 ? mid : f, WS[i] - .1, HS[i] * .5, gachaTex(i), XS[i], BASE[i] + HS[i] * .66, .222); }
-  for (const [i, w, s] of [[0, '뽑기', '500원'], [1, '뽑기', '500원'], [2, '뽑기', '500원']]) { const g = i === 1 ? mid : f; decal(g, WS[i] - .04, .2, plateTex('g' + i, w, ['#3d4a7a', '#c0457a', '#2e7a4a'][i], '#ffffff', s), XS[i], BASE[i] + HS[i] + .2, .1); g.add(mc('st-gplate' + i, ({ add }) => add(G.box(WS[i], .22, .03, .02), ['#3d4a7a', '#c0457a', '#2e7a4a'][i], XS[i], BASE[i] + HS[i] + .2, .08))); }
-  // 가운데 손잡이 (크게) · 나오는 캡슐
-  const knob = grp(); put(knob, 0, BASE[1] + HS[1] * .36, .25); f.add(knob);
-  knob.add(mc('st-gknob', ({ add }) => { add(G.cyl(.09, .09, .06, 18), '#ffffff', 0, 0, 0, HP, 0, 0); add(G.box(.2, .05, .05, .02), C.yel, 0, 0, .04); }));
-  const cap = grp(); put(cap, 0, BASE[1] + .25, .05); f.add(cap); cap.visible = false;
-  cap.add(mc('st-gcapsule', ({ add }) => { add(G.sph(.075, 12, 8), '#ffffff', 0, 0, 0, 0, 0, 0, [1, .55, 1]); add(G.sph(.076, 12, 8), C.purp, 0, .015, 0, 0, 0, 0, [1, .5, 1]); }));
+  f.add(mc('st-gacha-sides', ({ add }) => { gachaBody(add, GM[0], 0, false); gachaBody(add, GM[2], 2, false); }));
+  mid.add(mc('st-gacha-mid', ({ add }) => gachaBody(add, GM[1], 1, true)));
+  const domeMat = mat('#eef8ff', { opacity: .3, rough: .1, rim: .5 });
+  GM.forEach((m, k) => {
+    const g = k === 1 ? mid : f;
+    const d = mesh(geo('st-gdome-' + m.r, () => new THREE.SphereGeometry(m.r, 24, 14, 0, PI * 2, 0, PI * .8)), domeMat, { cast: false }); put(d, m.x, gDomeC(m), 0); d.userData.noMerge = true; d.renderOrder = 2; g.add(d);
+    decal(g, m.w - .02, m.bh - .02, gachaFaceTex(k), m.x, GST + m.bh / 2, GD / 2 + .003);
+    decal(g, GD - .08, m.bh - .1, gachaSideTex(k), m.x + m.w / 2 + .003, GST + m.bh / 2 + .01, 0, HP);
+  });
+  const M = GM[1], cy = GST + M.bh * .5, FZ = GD / 2;
+  const knob = grp(); put(knob, M.x - M.w * .08, cy, FZ + .015); f.add(knob);
+  knob.add(mc('st-gknob', ({ add }) => { add(G.cyl(.08, .082, .03, 24), C.metal, 0, 0, 0, HP, 0, 0); add(G.cyl(.05, .05, .034, 18), '#ffffff', 0, 0, .002, HP, 0, 0); add(G.box(.17, .036, .034, .012), '#f4f6f8', 0, 0, .028); for (const s of [-1, 1]) add(G.sph(.024, 10, 8), C.yel, s * .075, 0, .045); }));
+  const flap = grp(); put(flap, M.x, .46, FZ + .082); f.add(flap);
+  flap.add(mc('st-gflap', ({ add }) => { add(G.box(M.w * .44, .11, .008, .003), '#dfeaf0', 0, -.055, 0); add(G.box(M.w * .2, .02, .012, .004), C.metalD, 0, -.1, .006); }));
+  const cap = grp(); put(cap, M.x, .4, FZ - .03); f.add(cap); cap.visible = false;
+  cap.add(mc('st-gcapsule', ({ add }) => { add(new THREE.SphereGeometry(.045, 12, 5, 0, PI * 2, 0, HP), C.purp, 0, 0, 0, .3, 0, .2); add(new THREE.SphereGeometry(.044, 12, 5, 0, PI * 2, HP, HP), '#e8e0f8', 0, 0, 0, .3, 0, .2); }));
   const st = (t, a, b) => THREE.MathUtils.clamp((t - a) / (b - a), 0, 1);
-  const p = f.part('lift', [mid, knob, cap], t => {
-    knob.rotation.z = -PI * 2 * st(t, 0, .55); const c = st(t, .55, 1);
-    cap.visible = t > .55; cap.position.z = .05 + .32 * c; cap.position.y = BASE[1] + .25 - .12 * Math.min(1, c * 1.3) + .06 * Math.sin(c * PI);
+  const p = f.part('lift', [mid, knob, flap, cap], t => {
+    knob.rotation.z = -PI * 2 * st(t, 0, .5); const c = st(t, .5, 1);
+    flap.rotation.x = -1.15 * st(t, .45, .62); cap.visible = t > .5;
+    cap.position.x = M.x + .09 * c; cap.position.z = FZ - .03 + .075 * c; cap.position.y = .4 - .02 * c + .05 * Math.sin(c * PI);
   }, { label: '뽑기 기계 손잡이', sfx: 'ratchet', dur: 1.2 });
   p.gptEndSfx = 'pop';
-  f.spot('inside', null, 0, BASE[1] + .04, .2, { part: p, maxH: .12, scale: .9, label: '뽑기 캡슐 나오는 곳' });
-  f.spot('on', null, -.62, BASE[0] + HS[0] + .06, -.05, { label: '파란 뽑기 기계 위', maxH: .35, scale: 1.1 });
-  f.spot('on', null, .62, BASE[2] + HS[2] + .06, -.05, { label: '초록 뽑기 기계 위', maxH: .35, scale: 1.1 });
+  f.spot('inside', null, M.x, .345, FZ + .04, { part: p, maxH: .12, scale: .9, label: '뽑기 캡슐 나오는 곳' });
+  f.spot('on', null, -.62, gLidTop(GM[0]), 0, { label: '파란 뽑기 기계 위', maxH: .35, scale: 1.1 });
+  f.spot('on', null, .62, gLidTop(GM[2]), 0, { label: '초록 뽑기 기계 위', maxH: .35, scale: 1.1 });
   f.spot('under', null, -.31, .01, .3, { label: '뽑기 기계 사이 바닥', maxH: .3, scale: .9 });
 };
 
-// ── 가게 앞 옛날 오락기 (+z 앞): 버튼을 터치하면 화면이 반짝 '1등' — 동전이 반환구로 톡 ───────────────────────────────
+// ── 가게 앞 업소용 미니 오락기 (+z 앞): 분홍 옆판(옛 오락기 옆모습 그대로 — 아래 동전 문, 튀어나온 조작판, 뒤로 누운 화면, 위 간판 처마)에
+// 옆판 그림, 남색 몸, 검은 베젤 속 화면(외계인·점수 줄), 빛나는 '오락' 간판, 조이스틱 공·버튼 둘, 은빛 동전 문(투입구 둘·반환구), 앞에 빨간 꼬마 의자
+// 파란 버튼을 터치하면 화면이 반짝 '1등' — 동전이 반환구로 짤랑 ──────────────────────────────────────────────────────────
 B.st_arcade = f => {
   const all = grp(); f.add(all);
+  const SW = .3, PINK = '#e2589a', NAVY = C.navy;
+  const prof = new THREE.Shape(); [[-.28, 0], [.3, 0], [.3, .7], [.38, .76], [.38, .83], [.16, .9], [.09, 1.3], [.21, 1.32], [.21, 1.5], [-.28, 1.5]].forEach(([u, v], i) => i ? prof.lineTo(u, v) : prof.moveTo(u, v));
+  const sideG = geo('st-arc-side', () => ext(prof, .04, 4));
   all.add(mc('st-arcade', ({ add }) => {
-    add(G.box(.66, .76, .56, .04), C.navy, 0, .38, 0); add(G.box(.66, .5, .36, .04), C.navy, 0, 1.0, -.1);
-    add(G.box(.68, .12, .62, .03), '#2c3660', 0, .02 + .06, 0);
-    add(G.box(.66, .1, .3, .03), '#5b6aa6', 0, .8, .14, -.35, 0, 0);
-    add(G.box(.7, .2, .44, .04), '#c0457a', 0, 1.38, -.08);
-    for (const s of [-1, 1]) add(G.box(.04, .9, .4, .02), '#ff8fc8', s * .345, .9, -.12);
-    add(G.cyl(.012, .012, .1, 8), C.ink, -.15, .89, .2); add(G.sph(.04, 10, 8), C.red, -.15, .95, .2);
-    add(G.cyl(.035, .035, .03, 12), C.yel, .14, .86, .22, -.35, 0, 0);
-    // 동전 투입구 · 반환구 컵
-    add(G.box(.2, .3, .02, .02), '#2c3660', 0, .44, .29); add(G.box(.05, .08, .02, .01), C.yel, -.04, .5, .3); add(G.box(.11, .06, .06, .02), '#7d858c', .0, .3, .3);
-    // 꼬마 의자
-    add(G.cyl(.15, .15, .05, 14), C.red, .0, .36, .52); for (let k = 0; k < 3; k++) { const a = k * PI * 2 / 3; add(G.cyl(.015, .015, .36, 6), C.metalD, Math.cos(a) * .1, .18, .52 + Math.sin(a) * .1); }
+    for (const s of [-1, 1]) add(sideG, PINK, s > 0 ? SW + .04 : -SW, 0, 0, 0, -HP, 0);
+    add(G.box(SW * 2, 1.5, .03, .01), NAVY, 0, .75, -.265);
+    add(G.box(SW * 2, .72, .03, .01), NAVY, 0, .36, .285);
+    add(G.box(SW * 2, .1, .1, .01), NAVY, 0, .75, .33);
+    add(G.box(SW * 2, .03, .48, .01), shade(NAVY, -.05), 0, 1.485, -.04);
+    add(G.box(SW * 2 + .12, .07, .64, .02), '#262d52', 0, .035, .02);
+    for (let k = 0; k < 5; k++) add(G.pbox(.42, .012, .006), '#1d2346', 0, .1 + k * .025, .301);
+    add(G.box(SW * 2, .06, .25, .015), '#4f5d9c', 0, .825, .27, .32, 0, 0);
+    add(G.box(SW * 2 + .01, .075, .02, .008), C.metal, 0, .795, .385);
+    add(G.box(SW * 2, .19, .13, .02), NAVY, 0, 1.41, .145);
+    for (let k = 0; k < 4; k++) add(G.box(.3, .008, .01, .003), '#1d2346', 0, 1.305 + k * .016, .11);
+    add(G.box(.24, .29, .015, .006), C.metal, 0, .47, .302);
+    add(G.box(.11, .065, .02, .006), '#1d1f30', 0, .31, .303); add(G.box(.13, .016, .055, .005), C.metal, 0, .2925, .32);
+    for (const x of [-.055, .055]) add(G.pbox(.006, .045, .004), '#2c2a3a', x, .535, .312);
+    for (const s of [-1, 1]) add(G.box(.035, .02, .035, .006), '#1d1f30', s * .27, .01, .26);
   }));
-  decal(all, .6, .14, marqueeTex(), 0, 1.38, .143, 0, { em: '#ff8fc8', ei: .5 });
-  const scr = flat(.5, .36, screenTex(false), { em: '#2a3a7a', ei: .5 }); put(scr, 0, 1.03, .083, -.22, 0, 0); f.add(scr);
-  const SCR0 = scr.material, SCR1 = mat('#ffffff', { map: screenTex(true), emissive: '#ffe08a', ei: .6, rim: .06 });
-  const btn = grp(); put(btn, .14, .88, .2); f.add(btn);
-  btn.add(mc('st-abtn', ({ add }) => add(G.cyl(.05, .05, .04, 12), C.orng, 0, 0, 0, -.35, 0, 0)));
-  const coin = grp(); put(coin, 0, .4, .26); f.add(coin); coin.visible = false;
-  coin.add(mc('st-acoin', ({ add }) => add(G.cyl(.04, .04, .01, 14), '#d9b54a', 0, 0, 0, HP, 0, 0)));
+  decal(all, .5, .58, arcSideTex(), SW + .042, .45, .0, HP);
+  decal(all, .22, .275, coinDoorTex(), 0, .47, .3105);
+  decal(all, .56, .15, marqueeTex(), 0, 1.41, .2115, 0, { em: '#ff8fc8', ei: .45 });
+  const scrG = grp(); put(scrG, 0, 1.1, .125, -.175, 0, 0); f.add(scrG);
+  scrG.add(mc('st-arc-bezel', ({ add }) => { add(G.box(SW * 2, .42, .03, .01), '#20243a', 0, 0, -.015); add(G.box(.48, .34, .006, .004), '#11142a', 0, .0, .001); }));
+  const scr = flat(.44, .3, screenTex(false), { em: '#3a4aa0', ei: .5 }); put(scr, 0, 0, .006); scrG.add(scr);
+  const SCR0 = scr.material, SCR1 = mat('#ffffff', { map: screenTex(true), emissive: '#ffe8b0', ei: .55, rim: .06 });
+  const cp = grp(); put(cp, 0, .825 + .03 * Math.cos(.32), .27 + .03 * Math.sin(.32), .32, 0, 0); f.add(cp);
+  cp.add(put(flat(.56, .22, panelTex()), 0, .002, 0, -HP, 0, 0));
+  cp.add(mc('st-arc-ctrl', ({ add }) => {
+    add(G.cyl(.04, .04, .008, 16), C.metal, -.12, .004, .01); add(G.cone(.022, .03, 10), '#1d1f30', -.12, .02, .01);
+    add(G.cyl(.008, .008, .08, 8), '#2c2a3a', -.12, .05, .01); add(G.sph(.034, 14, 10), '#e8443a', -.12, .095, .01); add(G.sph(.012, 8, 6), '#ffffff', -.132, .108, .022);
+    add(G.tor(.03, .006, PI * 2, 4, 16), C.metal, .07, .006, .0, HP, 0, 0); add(G.cyl(.026, .028, .022, 14), '#ffcf48', .07, .014, .0);
+    add(G.tor(.03, .006, PI * 2, 4, 16), C.metal, .17, .006, .0, HP, 0, 0);
+    add(G.cyl(.016, .016, .01, 12), '#ffffff', .17, .005, -.075);
+  }));
+  const btn = grp(); put(btn, .17, .014, 0); cp.add(btn);
+  btn.add(mc('st-abtn', ({ add }) => { add(G.cyl(.026, .028, .022, 14), '#4f86c6', 0, 0, 0); add(G.sph(.026, 12, 6), '#6fa0e0', 0, .008, 0, 0, 0, 0, [1, .35, 1]); }));
+  f.add(mc('st-arc-stool', ({ add, tube }) => {
+    const z = .64, y = .42;
+    add(G.cyl(.14, .13, .05, 18), '#d94a4a', 0, y, z); add(G.sph(.14, 16, 6), '#e8604c', 0, y + .02, z, 0, 0, 0, [1, .22, 1]); add(G.tor(.135, .01, PI * 2, 4, 20), C.metal, 0, y - .02, z, HP, 0, 0);
+    for (let k = 0; k < 4; k++) { const a = k * HP + PI / 4; tube([Math.cos(a) * .08, y - .03, z + Math.sin(a) * .08], [Math.cos(a) * .13, 0, z + Math.sin(a) * .13], .012, C.metalD, 6); add(G.sph(.016, 6, 5), '#2c2a3a', Math.cos(a) * .13, .008, z + Math.sin(a) * .13); }
+    add(G.tor(.1, .008, PI * 2, 4, 18), C.metal, 0, .15, z, HP, 0, 0);
+  }));
+  const coin = grp(); put(coin, 0, .38, .3); f.add(coin); coin.visible = false;
+  coin.add(mc('st-acoin', ({ add }) => { add(G.cyl(.026, .026, .007, 14), '#d9b54a', 0, 0, 0, HP, 0, 0); add(G.cyl(.018, .018, .008, 12), '#efcf6a', 0, 0, 0, HP, 0, 0); }));
   const st = (t, a, b) => THREE.MathUtils.clamp((t - a) / (b - a), 0, 1);
   const p = f.part('lift', [all, btn, scr, coin], t => {
-    btn.position.y = .88 - .02 * Math.sin(st(t, 0, .2) * PI);
+    btn.position.y = .014 - .01 * Math.sin(st(t, 0, .2) * PI);
     scr.material = t > .15 && t < .9 && Math.floor(t * 10) % 2 === 0 ? SCR1 : t >= .9 ? SCR1 : SCR0;
-    const c = st(t, .6, 1); coin.visible = t > .6; coin.position.y = .4 - .08 * c; coin.position.z = .26 + .08 * c; coin.rotation.x = c * PI * 3;
+    const c = st(t, .6, 1); coin.visible = t > .6; coin.position.y = .38 - .07 * c; coin.position.z = .3 + .025 * c; coin.rotation.x = c * PI * 2.5;
   }, { label: '오락기 버튼', sfx: 'click', dur: 1.3 });
   p.gptEndSfx = 'coin';
-  f.spot('inside', null, .0, .3, .3, { part: p, maxH: .1, scale: .8, label: '오락기 동전 반환구' });
-  f.spot('on', null, .0, 1.48, -.08, { label: '오락기 꼭대기', maxH: .35, scale: 1.1 });
+  f.spot('inside', null, .0, .3, .32, { part: p, maxH: .1, scale: .8, label: '오락기 동전 반환구' });
+  f.spot('on', null, .0, 1.5, -.08, { label: '오락기 꼭대기', maxH: .35, scale: 1.1 });
   f.spot('behind', null, .0, .01, -.4, { label: '오락기 뒤', maxH: .4, scale: .95 });
 };
 
@@ -842,23 +1140,61 @@ B.st_flipsign = f => {
   f.spot('behind', null, .1, .01, -.25, { label: '팻말 받침 뒤', maxH: .35, scale: 1 });
 };
 
-// ── 평상 (가게 앞 낮은 나무 평상): 자는 고양이, 부채, 장기판 ───────────────────────────────────────────────
+// 자는 고양이 (추로 결: 회청 바탕·진한 줄무늬, 이마·볼 살구 무늬, 흰 주둥이·앞발) — 방석 위에 식빵처럼 웅크리고, 턱은 앞발 위, 꼬리는 몸 앞을 감음
+// 원점 = 방석 윗면 가운데, 머리 쪽 = +x
+const CAT = { fur: '#8f9aab', furD: '#6c778a', apr: '#efb287', wht: '#fbf6ee', pink: '#f2a0ad', ink: '#3a2e33' };
+function sleepCat(add, tube) {
+  const K = CAT, bx = -.03, by = .11, rx = .23, ry = .12, rz = .17;
+  add(G.sph(1, 18, 12), K.fur, bx, by, 0, 0, 0, 0, [rx, ry, rz]);
+  add(G.sph(1, 12, 9), K.fur, bx - .1, by + .02, -.07, 0, 0, 0, [.12, .1, .1]);
+  for (const dx of [-.16, -.08, 0]) { const q = Math.sqrt(1 - (dx / rx) ** 2); add(G.sph(1, 14, 8), K.furD, bx + dx, by + .003, 0, 0, 0, 0, [.017, ry * q * 1.04, rz * q * 1.04]); }
+  add(G.sph(1, 10, 8), K.apr, bx + .07, by + ry * .9, .04, 0, 0, 0, [.065, .03, .055]);
+  const hx = .2, hy = .1, hz = .03;
+  add(G.sph(1, 16, 12), K.fur, hx, hy, hz, 0, 0, 0, [.12, .102, .118]);
+  add(G.sph(1, 10, 8), K.apr, hx + .02, hy + .088, hz, 0, 0, -.2, [.06, .022, .055]);
+  add(G.sph(1, 10, 8), K.apr, hx + .035, hy + .01, hz + .09, 0, 0, 0, [.05, .045, .03]);
+  for (const s of [-1, 1]) add(G.sph(1, 10, 8), K.wht, hx + .1, hy - .03, hz + s * .027, 0, 0, 0, [.034, .03, .035]);
+  add(G.sph(1, 8, 6), K.pink, hx + .123, hy - .006, hz, 0, 0, 0, [.012, .01, .016]);
+  for (const s of [-1, 1]) add(G.tor(.021, .0055, PI * .9, 4, 9), K.ink, hx + .107, hy + .03, hz + s * .05, 0, HP, PI + .15);
+  for (const s of [-1, 1]) { add(G.cone(.046, .08, 10), K.fur, hx - .02, hy + .112, hz + s * .066, s * .45, 0, .2); add(G.cone(.027, .052, 8), K.pink, hx - .008, hy + .106, hz + s * .066, s * .45, 0, .2); }
+  for (const s of [-1, 1]) add(G.cap(.03, .07, 3, 8), K.wht, hx + .1, .028, hz + s * .05 - .01, 0, 0, HP);
+  const tp = []; for (let i = 0; i <= 8; i++) { const a = PI * 1.02 - i / 8 * PI * .8; tp.push([bx + Math.cos(a) * (rx + .03), .034 + Math.sin(i / 8 * PI) * .012, Math.sin(a) * (rz + .035)]); }
+  for (let i = 0; i < 8; i++) { const r0 = .031 - i * .0016, col = i % 2 ? K.furD : K.fur; tube(tp[i], tp[i + 1], r0, col, 8, r0 - .0016); add(G.sph(r0 - .0016, 8, 6), col, ...tp[i + 1]); }
+}
+
+// ── 평상 (가게 앞 낮은 나무 평상): 판자 다섯(틈·결·옹이), 둘레 테·다리 이음 나무못·버팀, 발 걸이 — 위엔 남색 방석에 자는 고양이, 태극 부채, 장기판과 알, 보리차 컵 ─────
 B.st_bench = f => {
+  const L = 1.24, D = .66, TY = .415;
   f.add(mc('st-bench', ({ add }) => {
-    add(G.box(1.24, .07, .66, .02), C.woodL, 0, .38, 0); for (let k = 0; k < 7; k++) add(G.pbox(.012, .072, .64), C.woodD, -.54 + k * .18, .381, 0);
-    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(G.box(.07, .35, .07, .02), C.woodD, sx * .55, .175, sz * .27);
-    add(G.box(1.1, .04, .04, .01), C.woodD, 0, .12, .27); add(G.box(1.1, .04, .04, .01), C.woodD, 0, .12, -.27);
-    // 고양이 (식빵 자세, 회청 줄무늬, 하얀 발)
-    const cx = .3, cz = -.05, cy = .42;
-    add(G.sph(.2, 14, 10), C.cat, cx, cy + .1, cz, 0, .3, 0, [1.3, .75, .95]); add(G.sph(.12, 12, 9), C.cat, cx + .22, cy + .16, cz + .04, 0, .3, 0);
-    for (const s of [-1, 1]) add(G.cone(.045, .08, 6), C.catD, cx + .24 + s * -.02, cy + .27, cz + .04 + s * .06, 0, .3, 0);
-    for (let k = 0; k < 3; k++) add(G.box(.025, .1, .3, .01), C.catD, cx - .1 + k * .1, cy + .2, cz, 0, .3, 0);
-    add(G.sph(.04, 8, 6), '#ffffff', cx + .26, cy + .03, cz + .14); add(G.sph(.04, 8, 6), '#ffffff', cx + .18, cy + .03, cz + .16);
-    add(G.cap(.03, .25, 3, 8), C.catD, cx - .18, cy + .04, cz + .14, 0, .3, HP);
-    // 부채 · 장기판
-    add(G.cyl(.14, .14, .01, 12, false), '#f4f1e8', -.38, .43, .12, 0, 0, 0, [1, 1, .9]); add(G.box(.025, .012, .16, .006), C.woodD, -.38, .43, .25);
-    add(G.box(.32, .03, .3, .01), '#e7c27f', -.1, .43, -.15); for (const [dx, dz, c] of [[-.08, -.06, C.red], [.06, .04, '#2e7a4a'], [.0, -.1, C.red]]) add(G.cyl(.025, .025, .015, 8), c, -.1 + dx, .45, -.15 + dz);
+    add(G.box(L - .08, .012, D - .08, .004), '#5e4030', 0, TY - .042, 0);
+    const pw = (D - .02) / 5;
+    for (let k = 0; k < 5; k++) { const z = -D / 2 + .01 + pw * (k + .5), col = [C.woodL, '#e3bd86', '#efcf9f', C.woodL, '#e3bd86'][k];
+      add(G.box(L, .036, pw - .014, .008), col, 0, TY - .018, z);
+      for (let j = 0; j < 2; j++) add(G.pbox(L * (.28 + j * .2), .002, .004), shade(col, -.13), -.22 + j * .38 - k * .04, TY + .0006, z + (j - .5) * pw * .38);
+      add(G.cyl(.013, .013, .002, 8), shade(col, -.22), .38 - k * .19, TY + .0006, z + .012);
+      for (const s of [-1, 1]) add(G.cyl(.006, .006, .002, 6), '#6b5040', s * (L / 2 - .05), TY + .0006, z);
+    }
+    for (const s of [-1, 1]) { add(G.box(L - .06, .08, .045, .01), C.woodD, 0, TY - .076, s * (D / 2 - .045)); add(G.box(.045, .08, D - .1, .01), C.woodD, s * (L / 2 - .045), TY - .076, 0); }
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const lx = sx * (L / 2 - .075), lz = sz * (D / 2 - .075);
+      add(G.box(.075, TY - .036, .075, .015), C.woodD, lx, (TY - .036) / 2, lz); add(G.box(.085, .02, .085, .006), '#5e4030', lx, .01, lz);
+      add(G.box(.032, .15, .03, .006), C.woodD, lx - sx * .075, TY - .15, lz + sz * .02, 0, 0, sx * .75);
+      for (const dy of [-.02, .02]) add(G.cyl(.01, .01, .008, 8), '#5e4030', lx, TY - .076 + dy, sz * (D / 2 - .02), HP, 0, 0);
+    }
+    for (const s of [-1, 1]) add(G.box(.035, .035, D - .16, .008), C.woodD, s * (L / 2 - .075), .12, 0);
+    add(G.box(L - .16, .035, .035, .008), C.woodD, 0, .12, -(D / 2 - .075));
+    add(G.box(.48, .055, .4, .025), '#55689e', .28, TY + .0275, -.02); add(G.box(.5, .016, .42, .008), C.cream, .28, TY + .03, -.02);
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { add(G.sph(.016, 8, 6), C.red, .28 + sx * .245, TY + .03, -.02 + sz * .205); add(G.cone(.012, .04, 6), C.red, .28 + sx * .26, TY + .012, -.02 + sz * .22, PI, 0, 0); }
+    add(G.box(.3, .036, .27, .008), '#d9a66b', -.08, TY + .018, -.15);
+    for (const [px, pz, col] of [[-.18, -.24, '#c0392b'], [-.08, -.25, '#c0392b'], [.02, -.24, '#c0392b'], [-.14, -.12, '#c0392b'], [-.1, -.04, '#2e7a4a'], [.0, -.06, '#2e7a4a'], [-.2, -.05, '#2e7a4a'], [-.04, -.15, '#2e7a4a']]) {
+      add(G.cyl(.022, .024, .016, 8), '#fbf3e0', px, TY + .044, pz); add(G.tor(.016, .004, PI * 2, 3, 8), col, px, TY + .053, pz, HP, 0, 0); add(G.box(.014, .002, .004, .001), col, px, TY + .053, pz); add(G.box(.004, .002, .014, .001), col, px, TY + .053, pz); }
+    add(G.cyl(.022, .024, .016, 8), '#fbf3e0', .1, TY + .012, -.05, .3, 0, .9); add(G.tor(.016, .004, PI * 2, 3, 8), '#c0392b', .105, TY + .02, -.045, .3 + HP, 0, .9);
+    add(G.cyl(.13, .13, .006, 22), '#c9a640', -.38, TY + .003, .13); add(G.box(.024, .014, .17, .006), C.woodD, -.38, TY + .008, .3, 0, .0, 0);
+    add(G.cyl(.036, .03, .075, 12), '#8fd3c4', -.13, TY + .0375, .21); add(G.cyl(.031, .031, .004, 12), '#b07a4a', -.13, TY + .068, .21); add(G.tor(.022, .006, PI, 4, 8), '#8fd3c4', -.092, TY + .04, .21, 0, 0, -HP);
   }));
+  decal(f, .27, .25, janggiTex(), -.08, TY + .0365, -.15, 0, {}).rotation.set(-HP, 0, 0);
+  { const m = mesh(geo('st-fan', () => new THREE.CircleGeometry(.12, 22)), mat('#ffffff', { map: fanTex(), rough: .85, rim: .06 }), { cast: false }); put(m, -.38, TY + .0075, .13, -HP, 0, .3); f.add(m); }
+  const cat = grp(); put(cat, .28, TY + .055, -.02, 0, -.5, 0); f.add(cat);
+  cat.add(mc('st-sleepcat', ({ add, tube }) => sleepCat(add, tube)));
   f.spot('on', null, -.45, .415, -.12, { label: '평상 위 부채 옆', maxH: .45, scale: 1.3 });
   f.spot('under', null, -.15, .01, .0, { label: '평상 밑', maxH: .3, scale: 1 });
 };
@@ -891,17 +1227,24 @@ B.st_shelf = f => {
     add(G.cyl(.08, .1, .03, 12), C.woodD, -.5, .935, 0); add(G.cyl(.01, .01, .1, 6), C.woodD, -.5, .98, 0); add(G.sph(.15, 16, 12), '#7cc0e8', -.5, 1.13, 0);
     for (const [dx, dy, s] of [[-.06, .05, .07], [.05, -.04, .06], [.02, .1, .04]]) add(G.sph(s, 8, 6), '#7cc06a', -.5 + dx, 1.13 + dy, .1, 0, 0, 0, [1, 1, .6]);
     add(G.tor(.16, .01, PI, 4, 16), C.metalD, -.5, 1.13, 0, 0, HP, 0);
-    for (let k = 0; k < 5; k++) add(G.box(.03, .34, .26, .005), k % 2 ? '#fbf8f0' : '#e4d8c0', -.1 + k * .035, 1.09, 0);
+    // 스케치북 둘 (앞을 보고 벽에 기댐, 위 스프링)
+    for (const [dz, dx] of [[-.1, .02], [-.04, -.04]]) { add(G.box(.24, .32, .018, .004), '#fbf8f0', dx, 1.08, dz, -.1, 0, 0); for (let k = 0; k < 8; k++) add(G.tor(.01, .003, PI * 2, 3, 8), C.metalD, dx - .1 + k * .028, 1.239, dz - .016, 0, HP, 0); }
     add(G.box(.32, .08, .22, .02), '#ffffff', .35, .96, .03); for (let k = 0; k < 6; k++) add(G.box(.035, .02, .05, .006), [C.red, C.orng, C.yel, C.grn, C.blue, C.purp][k], .23 + k * .045, 1.0, .07);
     // 3단: 리코더 둘 · 탬버린 · 캐스터네츠
-    for (const x of [-.6, -.52]) { add(G.cyl(.02, .025, .38, 10), '#f4efe4', x, 1.6, .05, 0, 0, .1); add(G.cyl(.026, .026, .04, 10), '#8a6040', x - .02, 1.78, .05, 0, 0, .1); }
+    for (const x of [-.62, -.53]) { add(G.cyl(.019, .024, .36, 10), '#f4efe4', x, 1.58, .05); add(G.cyl(.027, .022, .07, 10), '#8a6040', x, 1.79, .05); add(G.cyl(.03, .024, .05, 10), '#8a6040', x, 1.425, .05);
+      for (let k = 0; k < 6; k++) add(G.cyl(.006, .006, .006, 6), C.ink, x, 1.5 + k * .042, .071, HP, 0, 0); }
     add(G.cyl(.14, .14, .05, 18, true), '#e9c48a', -.15, 1.55, .0, HP - .25, 0, 0); add(G.cyl(.13, .13, .005, 18), '#fbf3e0', -.15, 1.55, .0, HP - .25, 0, 0);
     for (let k = 0; k < 4; k++) { const a = k * HP; add(G.cyl(.025, .025, .01, 8), '#d9b54a', -.15 + Math.cos(a) * .14, 1.55 + Math.sin(a) * .135, .0 + Math.sin(a) * .03, HP, 0, 0); }
     add(G.sph(.05, 8, 6), C.red, .25, 1.44, .05, 0, 0, 0, [1, .5, 1]); add(G.sph(.05, 8, 6), C.blue, .37, 1.44, .05, 0, 0, 0, [1, .5, 1]);
+    // 칸 앞 가격표 (노란 쪽지)
+    for (const [x, y] of [[-.55, .44], [.32, .44], [-.5, .92], [.35, .92], [-.15, 1.4], [.3, 1.4]]) add(G.box(.07, .035, .004, .002), C.yel, x, y - .012, D / 2 + .002);
     // 4단: 줄넘기 둘(손잡이) · 색종이 묶음
     for (const [x, c] of [[-.45, C.red], [-.2, C.grn]]) { add(G.cyl(.025, .025, .14, 8), c, x, 1.95, .02, 0, 0, HP); add(G.cyl(.025, .025, .14, 8), c, x + .12, 1.95, .02, 0, 0, HP); tube([x + .07, 1.95, .02], [x + .05, 1.9, .09], .008, '#f4f1e8'); }
     for (let k = 0; k < 6; k++) add(G.box(.2, .008, .2, .002), [C.red, C.orng, C.yel, C.grn, C.blue, C.purp][k], .3, 1.89 + k * .009, .02, 0, k * .05, 0);
   }));
+  decal(f, .22, .29, sketchTex(), -.04, 1.081, -.04 + .0115, 0).rotation.x = -.1;
+  decal(f, .3, .075, paintTex(), .35, .96, .141);
+  decal(f, .21, .065, penCaseTex(0), .2, .475, .091); decal(f, .21, .065, penCaseTex(1), .45, .475, .091);
   // 아래 서랍 둘 (나란히)
   const parts = [];
   for (const [i, x] of [[0, -.37], [1, .37]]) {

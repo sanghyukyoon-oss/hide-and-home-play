@@ -19,6 +19,7 @@
 //   trees: true, seed: 1, ground: true (멀리 하늘색으로 녹는 바닥판 — 판에 이미 바닥 룩이 있으면 false)
 //   sky: '#f5f6f6'            먼 것이 녹아드는 색 (판 하늘 가운데 색)
 //   nearKinds / farKinds      줄마다 집 종류 순서 ('a' 2층 박공 · 'b' 단층 · 'c' 3층 빌라)
+//   spread: 1                 집 사이 간격 배수 (크면 집이 드문드문 — 26판 1.9)
 //   fold: true                카메라가 넘어간 변의 집·나무·랜드마크는 땅으로 접혀 사라짐(방 벽처럼) — 그룹으로 쓸 땐 매 프레임 foldTown(g, world.yaw, dt)
 //   palette: { w0, w1, w2, w3, win, road, curb, walk } 흰색 단계 바꾸기
 //   landmarks: [{ build: () => THREE.Object3D 또는 가구 키 문자열, x, z, s = 1, ry = 0, theme }]
@@ -88,8 +89,19 @@ function house(B, P, k, far) {
     for (const sx of [-1, 1]) B.box(L, .1, d + .3, P.w2, sx * w / 4, .18 + h + o.roof / 2 + .02, 0, 0, 0, -sx * slope);
     B.add(prism(w - .04, o.roof, d - .06), P.w0, 0, .18 + h, 0);
     if (o.chimney) B.box(.32, .7, .32, P.w1, w / 4, .18 + h + o.roof * .6, -d / 6);
+    // (10/24 ⑪ 점검 "흰 민무늬 상자 집 — 목업 같음": 가까운 줄은 기와 줄·용마루·물받이로 결을 줌)
+    if (!far) {
+      const cs = Math.cos(slope), sn = Math.sin(slope);
+      for (const sx of [-1, 1]) for (let t = .2; t < L - .1; t += .26) { const xx = sx * (w / 2 + .11 - t * cs), yy = .18 + h - .03 + t * sn + .06;
+        B.box(.035, .03, d + .3, P.w3, xx, yy, 0, 0, 0, -sx * slope); }
+      B.box(.16, .1, d + .34, P.w1, 0, .18 + h + o.roof + .06, 0);
+      for (const sz of [-1, 1]) B.box(w + .2, .07, .08, P.w2, 0, .18 + h - .02, sz * (d / 2 + .16));
+    }
   }
+  if (o.flat && !far) for (let x = -w / 2 + .1; x <= w / 2 - .05; x += .4) B.box(.05, .3, .05, P.w2, x, .18 + h + .3, d / 2 + .02);
   if (far) return;
+  // 판자 벽 결: 가로 줄 (앞·옆)
+  for (let y = .4; y < .18 + h - .1; y += .24) { B.box(w - .02, .02, .012, P.w1, 0, y, d / 2 - .012); for (const sx of [-1, 1]) B.box(.012, .02, d - .02, P.w1, sx * (w / 2 - .012), y, 0); }
   const fh = h / o.floors;
   for (let f = 0; f < o.floors; f++) for (const u of [-.3, .3]) {
     const x = u * w, y = .18 + fh * (f + .55);
@@ -97,12 +109,16 @@ function house(B, P, k, far) {
     B.box(.62, .56, .04, P.w1, x, y, d / 2 - .005);
     B.box(.5, .44, .03, P.win, x, y, d / 2 + .01);
     B.box(.62, .05, .1, P.w1, x, y - .3, d / 2 + .03);
+    B.box(.03, .44, .02, P.w0, x, y, d / 2 + .03); B.box(.5, .03, .02, P.w0, x, y, d / 2 + .03);
+    if ((f + (u > 0 ? 1 : 0)) % 2 === 0) B.box(.56, .12, .14, P.w2, x, y - .38, d / 2 + .09);
     if (o.balcony && f > 0) B.box(.9, .32, .3, P.w1, x, y - .32, d / 2 + .15);
   }
   for (const sx of [-1, 1]) B.box(.04, .5, .5, P.win, sx * (w / 2 - .005), .18 + fh * .55, 0);
   B.box(.58, 1.0, .05, P.w2, o.door, .68, d / 2);
   B.box(.76, .06, .32, P.w1, o.door, 1.3, d / 2 + .14);
   B.box(.7, .1, .36, P.w2, o.door, .05, d / 2 + .22);
+  B.add(new THREE.SphereGeometry(.03, 6, 4), P.w3, o.door + .2, .68, d / 2 + .04);
+  B.add(new THREE.CylinderGeometry(.13, .1, .26, 10), P.w2, o.door + .55, .13, d / 2 + .25); B.add(new THREE.SphereGeometry(.16, 8, 6), P.w1, o.door + .55, .36, d / 2 + .25);
   if (o.wall) for (const [a, b] of [[-w / 2, o.door - .45], [o.door + .45, w / 2]]) B.box(b - a, .42, .14, P.w1, (a + b) / 2, .21, d / 2 + .9);
 }
 function tree(B, P, s = 1) {
@@ -131,7 +147,7 @@ function road(B, P, r) {
 
 export function whiteTown(opts = {}) {
   const o = { clear: [-5, -3.5, 5, 3.5], gap: 3.4, open: ['S', 'E'], far: 9, roads: true, rows: 2, trees: true, seed: 1, ground: true, sky: '#f5f6f6', landmarks: [], skip: [], fold: true, roadLen: 8, haze: [10, 24],
-    nearKinds: ['a', 'b', 'a', 'b', 'b'], farKinds: ['a', 'c', 'b', 'a', 'c'], ...opts };
+    nearKinds: ['a', 'b', 'a', 'b', 'b'], farKinds: ['a', 'c', 'b', 'a', 'c'], spread: 1, ...opts };
   const P = { ...WHITE_PAL, ...(o.palette || {}) }, [x0, z0, x1, z1] = o.clear, r = rng(o.seed * 9301 + 7);
   const open = new Set(o.open), g = new THREE.Group(); g.name = 'whitetown'; g.userData.scenery = true;
   const placed = [];
@@ -172,7 +188,7 @@ export function whiteTown(opts = {}) {
         const z = alongX ? (side === 'N' ? z0 - off : z1 + off) : u + wd / 2;
         const ry = side === 'N' ? 0 : side === 'S' ? PI : side === 'W' ? HP : -HP;
         if (free(x, z, Math.max(wd, dp) / 2)) { B.at(x, z, ry, isFar ? .55 : 0); house(B, P, k, isFar); placed.push([x, z, Math.max(wd, dp) / 2]); }
-        u += wd + 1.0 + r() * 1.4;
+        u += wd + (1.0 + r() * 1.4) * o.spread;
         if (o.trees && u < a1) { const tx = alongX ? u - .6 : side === 'W' ? x0 - dist - 1.2 : x1 + dist + 1.2, tz = alongX ? (side === 'N' ? z0 - dist - 1.2 : z1 + dist + 1.2) : u - .6;
           if (free(tx, tz, .7) && r() < .8) { B.at(tx, tz, 0, isFar ? .55 : 0, .8 + r() * .35); tree(B, P); placed.push([tx, tz, .6]); } }
         n++;

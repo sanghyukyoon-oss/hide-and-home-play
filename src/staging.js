@@ -71,10 +71,10 @@ function hatMesh() {
   // a red ribbon round it tied in a bow at the side with two tails
   const g = new THREE.Group(), m = c => new THREE.MeshToonMaterial({ color: c });
   const add = (geo, c, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, m(c)); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); g.add(o); return o; };
-  add(new THREE.CylinderGeometry(.19, .19, .016, 32), '#e8c36a');
-  for (const [r, c] of [[.185, '#d9b25a'], [.16, '#efcf7c'], [.135, '#d9b25a']]) add(new THREE.TorusGeometry(r, .006, 4, 32), c, 0, .009, 0, Math.PI / 2);
-  add(new THREE.SphereGeometry(.112, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), '#f0d27e', 0, .008, 0, 0, 0, 0, 1, .95, 1);
-  add(new THREE.CylinderGeometry(.03, .05, .02, 14), '#e2bf68', 0, .112, 0);
+  add(new THREE.CylinderGeometry(.19, .19, .016, 32), '#f2d58a');
+  for (const [r, c] of [[.185, '#e3c06a'], [.16, '#f7e3a8'], [.135, '#e3c06a']]) add(new THREE.TorusGeometry(r, .006, 4, 32), c, 0, .009, 0, Math.PI / 2);
+  add(new THREE.SphereGeometry(.112, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), '#f5dc94', 0, .008, 0, 0, 0, 0, 1, 1.05, 1);
+  add(new THREE.CylinderGeometry(.03, .05, .02, 14), '#ecc977', 0, .12, 0);
   add(new THREE.CylinderGeometry(.114, .114, .034, 24, 1, true), '#e2584f', 0, .03, 0);
   add(new THREE.SphereGeometry(.026, 10, 8), '#e2584f', .1, .035, .05, 0, .6, 0, 1.2, .8, .6); add(new THREE.SphereGeometry(.026, 10, 8), '#e2584f', .1, .035, -.0, 0, -.6, 0, 1.2, .8, .6);
   add(new THREE.BoxGeometry(.016, .05, .012), '#c94a42', .12, .0, .03, 0, 0, .3); add(new THREE.BoxGeometry(.016, .05, .012), '#c94a42', .125, .0, .0, 0, 0, -.25);

@@ -28,12 +28,14 @@ export function installOtakuloft5(LAYOUTS, THEMES) {
     // (카메라: 돌려 볼 때 건물이 가운데 남게 중심은 섬 가운데, 시작 화면은 건물이 꽉 차게 — ① 10/24 사진 확인)
     yaw: .62, fitW: 9.6,
     furniture: [
-      { type: 'ol5_shell', x: 0, z: 0, a: 0 },
+      { type: 'ol5_shell', x: 0, z: 0, a: 0 }, { type: 'ol5_rain', x: 0, z: 0, a: 0 },
       // 2층 너굴이 방 (바닥 2.5 m) — 가구는 전부 우리가 1~17판에서 쓰던 것 (사용자 10/24 "2층 가구들 전부 우리가 원래 쓰던 가구들로
       // 재배치하기로 안 했음?"): 뒤 벽 줄 다락 이불(1×2)·책장·컴퓨터 책상·낮은 TV장(2×1, 게임기)·서랍장(비밀번호 칸)·스탠드 조명;
       // 가운데 줄: 화분·러그와 빈백·빨래 바구니; 앞 난간 줄은 비움 (미끄럼틀 입구·나선 계단 도착 칸)
       UP('futon', 0, 0), UP('bookshelf', 1, 0, 0, { seed: 4 }), UP('pcdesk', 2, 0), UP('tvlow', 3, 0), UP('drawers', 5, 0), UP('floorlamp', 6, 0),
       UP('plant', 1, 1), UP('rug', 2, 1), UP('beanbag', 3, 1), UP('laundrybasket', 6, 1),
+      // (10/24 "2층 썰렁": the middle row's empty cells get our own cosy pieces — a cushion pile, a starry mood lamp, a game rack)
+      UP('cushionpile', 0, 1), UP('gf_starlamp', 4, 1), UP('gamerack', 5, 1),
       // 1층 오락실 — 2층 밑 줄(카메라를 낮춰야 보이는 안쪽): 오락기 둘(하늘·라일락)·캡슐 뽑기·동전 교환기·경품 진열장·택배 상자
       { ...CAB(0, 0, { kind: 1, gap: 1 }), dx: -.06 }, { ...CAB(1, 0, { kind: 2 }), dx: .06 }, F('ol5_gacha', 2, 0), { ...F('ol5_changer', 3, 0), dx: .1 }, F('ol5_prizewall', 4, 0), F('boxstack', 6, 0),
       // 앞(두 층 높이): 왼쪽 미끄럼틀(2층 → 1층), 빨강 경품 오락기(자물쇠), 가운데 집게 크레인 바구니, 인형 뽑기 둘(분홍 곰·민트 토끼), 오른쪽 나선 계단(1층 → 2층)

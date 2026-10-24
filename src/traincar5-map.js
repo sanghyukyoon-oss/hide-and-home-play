@@ -11,6 +11,8 @@
 import { registerFurniture } from './gfx/furniture.js';
 import { TRAINCAR5_BUILDERS, TRAINCAR5_INFO } from './gfx/traincar5-props.js';
 import { ROOM_AS } from './roomalias.js';
+import { ITEMS } from './gfx/items.js';
+import { TRIP_ITEMS } from './gfx/trip-items.js';
 
 ROOM_AS.traincar5 = ['traincar3', 'traincar'];
 ROOM_AS.traincar5a = ['traincar3', 'traincar'];
@@ -98,31 +100,35 @@ export function makeTraincar5(theme) {
     friendAt: [.4, 4.6],
     furniture: [
       // 흐르는 선로(두 량 밑 한 판, 침목만 뒤로 흐르고 양 끝은 옅어짐) + 객차 흔들림
-      ft('tc5track', 0, 0, 0, { len: 20 }),
+      ft('tc5track', 0, 0, 0, { len: 20, lights: true }),
       // 1호차: 넓힌 운전실(2 m) · 운전실 옆 창 · 창 둘(롤 블라인드 / 하차 벨) · 롱시트 둘 · 짐 선반 · 옆 출입문 · 세로 봉 · 정리권 발권기 · 통로 매트
-      ft('tc5shell', 0, zA, 0, { v, w: 4, len: 6, nose: true, carNo: 1, noTrack: true }), ft('tc5wall', 0, zA, 0, { v, w: 4, len: 6, ads: true, fan: -1.25 }),
+      ft('tc5chassis', 0, zA, 0, { v, w: 4, len: 6, nose: true, carNo: 1 }),
+      ft('tc5side', 0, zA, 0, { v, w: 4, len: 6, wins: [{ z: -5.5 - zA, ww: .9, hh: 1.0, cy: 1.85, sill: false }, { z: -3.6 - zA, ww: .95 }, { z: -2.425 - zA, ww: .95 }] }), ft('tc5wall', 0, zA, 0, { v, w: 4, len: 6, ads: true, fan: -1.25, lamps: true }),
       ft('tc5end', 0, -4.5, 0, { v, w: 4, kind: 'cab', dir: 1, depth: 2.0 }),
       win(-5.55, { ww: .9, hh: 1.0, cy: 1.85, sill: 'none', noSill: true }),
       win1(-3.6, { blind: true }), win1(-2.45, { bell: true }),
       ft('tc5door', X0, -1.25, HP, { v, dw: .8 }),
       ft('tc5long', X0 + .31, -2.95, HP, { v, len: 2.1, drawer: true, stuff: 'paper' }), ft('tc5long', 1.69, -2.75, -HP, { v, len: 3.0, stuff: 'mikan', noUnder: true }),
       ft('tc5rack', X0, -2.95, HP, { v, len: 2.2, ry: 2.52, brackets: [-1.0, 0, 1.0], straps: true, case: .6, pack: -.55, hang: [0] }),
-      ft('tc5pole', 1.15, -1.0, 0, { v }), ft('tc5mat', 0, -2.6, 0, { len: 3.4, w: 1.1 }),
-      ft('tc5end', 0, -.57, 0, { v, w: 4, kind: 'arch', dir: -1, ticket: true }),
-      // 연결 통로
-      ft('tc5gang', 0, 0, 0, { len: 1, hw: .9, umbrella: true }),
+      ft('tc5mat', 0, -2.57, 0, { len: 3.66, w: 1.6 }),
+      ft('tc5gend', 0, -.57, 0, { v, w: 4, dir: -1, ticket: true, sign: 1 }),
+      // 연결 통로: 두 칸 끝벽의 문틀 사이를 바닥·양옆 주름막·지붕으로 하나로 이음, 문은 둘 다 열려 있고 누르면 닫혔다 다시 열림
+      ft('tc5tunnel', 0, 0, 0, { len: 1.0, umbrella: true }),
       // 2호차: 통로 문(주머니 벽에 열어 둠) · 박스석 둘 · 창 셋 · 더플백 선반 · 바닥 짐 · 통로 매트 · 꼬리 전망석
-      ft('tc5end', 0, .57, 0, { v, w: 4, kind: 'door', dir: 1, sign: 2 }),
-      ft('tc5shell', 0, zB, 0, { v, w: 4, len: 6, tail: true, carNo: 2, noTrack: true }), ft('tc5wall', 0, zB, 0, { v, w: 4, len: 6, ads: true, posters: [2.72], pk: 1 }),
+      ft('tc5gend', 0, .57, 0, { v, w: 4, dir: 1, sign: 2, fireX: 1.45 }),
+      ft('tc5chassis', 0, zB, 0, { v, w: 4, len: 6, tail: true, carNo: 2, doorZ: 1.05 }),
+      ft('tc5side', 0, zB, 0, { v, w: 4, len: 6, wins: [{ z: 1.7 - zB, ww: 1.2 }, { z: 3.15 - zB, ww: 1.2 }, { z: 5.8 - zB, ww: .9 }], doors: [{ z: 4.55 - zB, dw: .9 }] }), ft('tc5wall', 0, zB, 0, { v, w: 4, len: 6, ads: true, posters: [2.72], pk: 1, lamps: true }),
       win(1.75, { curtain: true, sill: 'none' }), win(3.7, { sill: 'none' }), win(5.55, { ww: 1.1, hh: 1.2, cy: 1.78, sill: 'short', noSill: true }),
       ft('tc5box', X0 + .5, 1.75, HP, { v, drawer: true, stuff: 'bento' }), ft('tc5box', X0 + .5, 3.7, HP, { v, stuff: 'cards' }),
       ft('tc5rack', X0, 2.72, HP, { v, len: 3.6, ry: 2.52, noCase: true, duffel: -.9 }),
-      ft('tc5bags', 1.35, 2.3, -.4, { v }), ft('tc5mat', .45, 2.85, 0, { len: 3.9, w: 1.1 }),
-      ft('tc5view', 0, 5.2, 0, { v, w: 1.6 }), ft('tc5end', 0, 6.42, 0, { v, w: 4, kind: 'deck', dir: -1, spot: false })] };
+      ft('tc5bags', 1.6, 2.2, 0, { v }), ft('tc5mat', .5, 2.6, 0, { len: 3.7, w: 1.5 }),
+      ft('tc5view', 0, 4.95, 0, { v, w: 1.6 }), ft('tc5tail', 0, 6.43, 0, { v, w: 4, dir: -1 })] };
 }
 
 export function installTraincar5(MAPS, THEMES, LAYOUTS) {
   registerFurniture(TRAINCAR5_BUILDERS, TRAINCAR5_INFO);
+  // (28판 찾을 물건: 기차 여행 물건 — gfx/trip-items.js, 판 목록은 pools.js ROOM_POOLS.traincar5)
+  Object.assign(ITEMS, TRIP_ITEMS);
   // (친구·대본·물건은 옛 28판 traincar3 그대로 — 테마 바탕은 그 판 것, 마루 색만 이 안의 것)
   const old = THEMES.traincar3 || THEMES.traincar || {};
   const sky = ['#9fd3f1', '#e6f6fd'];

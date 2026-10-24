@@ -33,7 +33,7 @@ export function install({ MAPS, THEMES, SWAP, LOOK, SPEC }) {
         F('diningset', 2, 2), F('shoerack', 5, 2, 3),
         F('tvlow', 2, 3), F('lamp', 4, 3), F('rug', 2, 4), F('table', 3, 4), F('sofa2', 2, 6, 2), F('laundrybasket', 5, 6), F('beanbag', 1, 5),
         // 하얀 동네 (공용 키트): 집터 둘레 x ±5.2, z ±3.7은 비우고, 앞 큰길·오른쪽 옆길, 멀리 북동쪽에 다음 판 동네 역
-        at('whitetown', 0, 0, 0, { at: [-2, 0], clear: [-5.2, -3.7, 5.2, 3.7], ground: false, sky: '#d9eefa', seed: 26,
+        at('whitetown', 0, 0, 0, { at: [-2, 0], clear: [-5.2, -3.7, 5.2, 3.7], ground: false, sky: '#d9eefa', seed: 26, rows: 1, spread: 1.9,
           landmarks: [{ build: 'd3_farstation', x: -5.5, z: -17.5, ry: .3, s: .85 }], skip: [[-5.5, -17.5, 6]] })],
       decor: [D('window', 'W', -.6), D('picture', 'W', 1.9), D('wallshelf2', 'N', 1.2)] } },
     // 2층: 멍뭉이 방 — 침대·옷장·책상·금고·책장, 박공벽에 벽시계

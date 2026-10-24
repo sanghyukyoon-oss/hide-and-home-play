@@ -295,7 +295,8 @@ RECIPES.bunnybath.itemSize = .38;
 RECIPES.station.itemSize = .38;
 // 30판 바닷가 가게 2 (seaside2, ⑧ 10/23 허브: 27→28→30 아침→낮→노을) — a warm late afternoon a step short of the sunset its ending
 // turns to (staging.js sunsetTrain): apricot sun, a peach-and-pink sky; things still read in full colour. The old seaside keeps its day.
-RECIPES.seaside2 = { ...RECIPES.seaside };   // (10/23 밤 사용자 "새 해변도 뭔가 누래져서.. 이전엔 쨍하니 이뻤던 거 같은데" → 옛 30판 맑은 낮빛 그대로; 노을 안은 light #fbeee4/#ffe0b8, sky #f4c6bc #fde6d2 #f8cfa8)   // (a wide platform at zoom 1.2: things ≥ 28 px on the start view — 레벨)
+RECIPES.seaside2 = { ...RECIPES.seaside, sky: ['#8ed2f2', '#dff3fb', '#b8e4f5'] };   // (10/24 사용자 "약간 칙칙해짐 … 원래 맑고 쨍했는데": 회색기 없는 맑은 하늘색)
+//    // (10/23 밤 사용자 "새 해변도 뭔가 누래져서.. 이전엔 쨍하니 이뻤던 거 같은데" → 옛 30판 맑은 낮빛 그대로; 노을 안은 light #fbeee4/#ffe0b8, sky #f4c6bc #fde6d2 #f8cfa8)   // (a wide platform at zoom 1.2: things ≥ 28 px on the start view — 레벨)
 // 기차 여행 밤 (10/21, 27판 밤 자리): the station and the lake at night — a deep blue sky, cool moonlight, and warm pools under
 // the station lamp, the shelter's lanterns and the stopped train's windows, the crossing's red lamps; on the island the
 // lighthouse, the cottage window and the deck lantern
@@ -573,6 +574,30 @@ function skyRain(x) {
   for (let i = 0; i < 260; i++) { const px = R() * 280 - 12, py = R() * 520, L = 10 + R() * 16; x.strokeStyle = R() < .15 ? 'rgba(220,235,255,.45)' : 'rgba(180,200,240,.22)'; x.lineWidth = R() < .2 ? 1.2 : .8; x.beginPath(); x.moveTo(px, py); x.lineTo(px - L * .18, py + L); x.stroke(); }
   x.restore();
 }
+// a rainy-night alley behind 18판 오락실 (10/24 사용자 "배경의 비는 퀄이 너무 안 좋으니 지워 주고, 배경도 좀 잘 맞게"): a soft
+// indigo dusk, rows of low building shapes with a few lit windows along the top, neon light bleeding pink, mint and lilac, and
+// at the foot a wet street where the colours run down in long soft streaks; big areas quiet, nothing sharp
+function skyAlley(x) {
+  let sd = 21; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const blob = (cx, cy, r, c, a) => { const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, c.replace('A', a)); g.addColorStop(1, c.replace('A', 0)); x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); };
+  for (const [cx, cy, r, c, a] of [[48, 120, 70, 'rgba(255,63,168,A)', .3], [214, 96, 64, 'rgba(31,228,255,A)', .26], [30, 330, 60, 'rgba(155,92,255,A)', .26], [226, 350, 66, 'rgba(157,255,58,A)', .16]]) blob(cx, cy, r, c, a);
+  for (const [y0, col, n] of [[150, 'rgba(32,34,64,.55)', 9], [182, 'rgba(26,28,54,.7)', 7]]) {
+    let px = -10;
+    for (let i = 0; i < n && px < 270; i++) {
+      const w = 26 + R() * 30, h = 40 + R() * 70, top = y0 - h;
+      x.fillStyle = col; x.beginPath(); x.roundRect ? x.roundRect(px, top, w, h + 60, 4) : x.rect(px, top, w, h + 60); x.fill();
+      for (let k = 0; k < 4; k++) if (R() < .55) { x.fillStyle = R() < .6 ? 'rgba(255,214,160,.42)' : 'rgba(160,230,255,.34)'; x.fillRect(px + 5 + R() * (w - 12), top + 8 + R() * (h - 14), 4, 5); }
+      px += w + 2 + R() * 6;
+    }
+  }
+  const st = x.createLinearGradient(0, 420, 0, 512); st.addColorStop(0, 'rgba(70,74,120,0)'); st.addColorStop(1, 'rgba(70,74,120,.35)');
+  x.fillStyle = st; x.fillRect(0, 420, 256, 92);
+  for (let i = 0; i < 14; i++) {
+    const cx = R() * 256, w = 3 + R() * 6, h = 34 + R() * 50, top = 440 + R() * 30, c = ['255,63,168', '31,228,255', '155,92,255', '157,255,58'][i % 4];
+    const g = x.createLinearGradient(0, top, 0, top + h); g.addColorStop(0, `rgba(${c},.32)`); g.addColorStop(1, `rgba(${c},0)`);
+    x.fillStyle = g; x.fillRect(cx, top, w, h);
+  }
+}
 let SKY_TEX = null;
 export function setSky(sky) {
   const app = document.getElementById('app'), W = typeof G !== 'undefined' ? G.world : null;
@@ -591,6 +616,7 @@ export function setSky(sky) {
     if (sky.clouds) skyClouds(x);
     if (sky.stars) skyStars(x, sky.stars === 'many');
     if (sky.rain) skyRain(x);
+    if (sky.alley) skyAlley(x);
     // (빛무리 10/24 사용자 "빛 번져서 하얗게 되잖아. 나머지를 분홍색 말고 빛 번진 색으로"): sky.glow — the middle, where the room stands,
     // goes white like the old look's light, fading out to the sky's own colour at the edges; no dark vignette then
     if (sky.glow) {
@@ -1089,14 +1115,14 @@ export class Look {
   buildGlows() {
     const tex = glowTex();
     for (const [x, z, r, c, y = .014] of this.R.glows || []) {   // (y: a pool on a raised floor — the station's platform)
-      const m = new THREE.MeshBasicMaterial({ color: c, map: tex, transparent: true, opacity: .78, blending: THREE.AdditiveBlending, depthWrite: false });
+      const m = new THREE.MeshBasicMaterial({ color: c, map: tex, transparent: true, opacity: .78 * (this.R.glowK ?? 1), blending: THREE.AdditiveBlending, depthWrite: false });
       const p = new THREE.Mesh(new THREE.PlaneGeometry(r * 2, r * 2), m);
       p.rotation.x = -HP; p.position.set(x, y, z); p.renderOrder = 3; p.userData.noOcclude = true; p.layers.set(2);
       this.room.group.add(p);
     }
     // halos: [x, y, z, size, colour] — the soft glow round a lamp or a screen, colour only like nightLights' (18판 섞은 안 2차)
     for (const [x, y, z, sz, c] of this.R.halos || []) {
-      const sm = new THREE.SpriteMaterial({ map: tex, color: c, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false });
+      const sm = new THREE.SpriteMaterial({ map: tex, color: c, transparent: true, opacity: .85 * (this.R.glowK ?? 1), blending: THREE.AdditiveBlending, depthWrite: false });
       const sp = new THREE.Sprite(sm); sp.position.set(x, y, z); sp.scale.setScalar(sz); sp.renderOrder = 4; sp.userData.noOcclude = true; sp.layers.set(2);
       this.room.group.add(sp); this.own.push(sm);
     }
@@ -1294,9 +1320,10 @@ RECIPES.gptotakumix = { ...RECIPES.otakuloft, mapGlows: true,
     [-1.38, 2.95, -2.4, .8, '#ffd98f'], [2.95, 1.05, .4, .6, '#cfe6ff']] };
 // 36판 새 안 밤의 문구점 (stationery, ⑨ 10/23): 상가 거리의 하늘·빛·밤 그대로(받침은 맵 자체 섬); 밤 빛은 등 바로 밑 작은 웅덩이 셋만 — 크레파스 진열대 스탠드,
 // 계산대 스탠드(따뜻한 흰색), 오락기 화면(분홍) — 허브 10/23 '누렇게 덮지 말 것'; 물건 크기는 넓은 판 기준(gpt6-maps SPEC과 같은 값)
+// (10/24 다시: 웅덩이·번짐을 실제 전구 바로 밑·옆으로 — 크레파스 진열대 가운데 거위목 스탠드, 계산대 스탠드 갓 밑(계산대 윗면에), 오락기 화면·간판 앞; 빛 색은 따뜻한 흰색)
 RECIPES.stationery = { light: RECIPES.shopmap.light, sky: RECIPES.shopmap.sky, pattern: RECIPES.shopmap.pattern, night: { light: { ...COZY_NIGHT.light, sunColor: '#f4f3f0' }, sky: RECIPES.shopmap.night.sky }, itemSize: .48,
-  glows: [[-2.25, -1.85, .7, '#fff1d8'], [-1.25, .05, .55, '#fff1d8'], [-.98, 1.62, .5, '#ffcfe4']],
-  halos: [[-.98, 1.05, 1.24, .55, '#9fb4ff'], [-2.25, 2.3, -2.2, .45, '#fff1d8'], [-1.25, 1.42, -.06, .35, '#fff1d8']] };
+  glows: [[-2.25, -1.98, .62, '#fff3e2'], [-1.32, -.1, .22, '#fff3e2', 1.008], [-.98, 1.8, .42, '#ffd6ea']],
+  halos: [[-.98, 1.1, 1.42, .5, '#a9bcff'], [-.98, 1.41, 1.48, .32, '#ffbfdc'], [-2.25, 2.39, -2.38, .42, '#fff3e2'], [-1.25, 1.31, .02, .32, '#fff3e2']] };
 // 3판 ⑩ 안 A' fishing3r (10/24 "싱그럽고 깨끗한"): 흰 해의 맑은 낮, 하늘색→연민트 하늘, 연한 그림자; 풀밭은 판 바닥이 그대로 이어져
 // 판 가장자리 너머 조금만 가다 하늘빛으로 스며듦(seamless — 네모 테두리·지층 없음, 판 전체가 한눈에)
 RECIPES.fishing3r = { light: { ambColor: '#f4f8f4', amb: 1.38, sunColor: '#fffaf0', sun: 2.4, shadow: .48 }, sky: ['#c2e9f8', '#f5fbf7', '#e9f8e6'], itemSize: .38,
@@ -1315,12 +1342,20 @@ RECIPES.otakuloft3 = { ...RECIPES.otakuloft,
 // (새 맵 빛 규칙 10/23 사용자 '누렇냐': 낮빛만 맑게 — 해 #fff4e6·둘레 #eef1f2, 비 오는 밤빛(night)은 옛 18판 그대로)
 // (10/24 사용자 메모 '톤': 새 기계 자리로 — 빨강 경품 오락기 화면(하늘), 인형 뽑기 둘(분홍·민트), 2층 밑 오락기 둘(청록·라일락), 간판(크림 라이트 박스라
 // 따뜻한 살구빛 — 바닥 웅덩이만, 판 위 번짐(halo)은 크림 글자를 하얗게 덮어 뺌), 2층은 브라운관·컴퓨터 모니터·다락 둥지 스탠드·서랍장 버섯 스탠드)
-RECIPES.otakuloft5 = { ...RECIPES.otakuloft, light: { ambColor: '#eef1f2', amb: 1.2, sunColor: '#fff4e6', sun: 2.0, shadow: .55 },
-  glows: [[-2.0, 1.2, 1.0, '#9fdcff'], [1.04, 2.0, .9, '#ffb8d6'], [1.9, 2.0, .9, '#a8f0dc'], [0, -1.4, 1.5, '#e6ecff'], [-.3, 2.5, 1.5, '#ffe0cc'],
-    [-3.06, -1.9, .7, '#9fe8ff'], [-1.94, -1.9, .7, '#d9c4ff'],
-    [.5, -1.8, .9, '#9fd8ff', 2.51], [2.6, -2.2, .8, '#ffd98a', 2.51], [-1.1, -1.9, .75, '#bfe4ff', 2.51], [-1.64, -1.8, .8, '#ffd98a', 2.51], [-1.5, 3.55, 1.3, '#ffd27a', -.126]],
-  halos: [[-2.0, 1.3, .55, .8, '#9fdcff'], [1.04, 1.7, 1.8, .7, '#ffb8d6'], [1.9, 1.7, 1.8, .7, '#a8f0dc'], [-3.06, 1.3, -2.4, .55, '#9fe8ff'], [-1.94, 1.3, -2.4, .55, '#d9c4ff'],
-    [.5, 3.6, -2.5, .7, '#9fd8ff'], [-1.12, 3.53, -2.75, .5, '#bfe4ff'], [-1.5, 2.3, 3.6, 1.1, '#ffd98f']] };
+// (10/24 사용자 "글로우 약간 줄여 주고 … 배경의 비는 지워 주고, 배경도 좀 잘 맞게"): the light pools and halos at 60%, the two big ones in
+// the middle smaller; no painted rain on the backdrop (the room's own rain is ol5_rain, the shared one) — a rainy-night alley instead
+// (2차 10/24 사용자 "빛이 좀 더 컬러풀했으면 … 어둡지만 뭔가 선명한? 쨍한?"): the night light itself goes deep blue and lower (the old
+// near-white night light washed everything into a misty lilac), and the machines' pools and halos go full neon — hot pink, cyan,
+// violet, lime — at full strength, so only what the light reaches is bright and the rest sinks into deep navy
+const NEON = { pink: '#ff3fa8', cyan: '#1fe4ff', violet: '#9b5cff', lime: '#9dff3a', amber: '#ffb347', sky: '#5fb8ff' };
+RECIPES.otakuloft5 = { ...RECIPES.otakuloft, rain: false, glowK: 1.08, light: { ambColor: '#eef1f2', amb: 1.2, sunColor: '#fff4e6', sun: 2.0, shadow: .55 },
+  night: { light: { ambColor: '#8a93e6', amb: .92, sunColor: '#c3b6ff', sun: 1.2, shadow: .55 }, sky: Object.assign(['#151935', '#1d2245', '#13162c'], { alley: true }) },
+  glows: [[-2.0, 1.2, .95, NEON.cyan], [1.04, 2.0, .85, NEON.pink], [1.9, 2.0, .85, NEON.lime], [0, -1.4, .95, NEON.violet], [-.3, 2.5, 1.0, NEON.pink],
+    [-3.06, -1.9, .7, NEON.cyan], [-1.94, -1.9, .7, NEON.violet],
+    [.5, -1.8, .85, NEON.sky, 2.51], [2.6, -2.2, .75, NEON.amber, 2.51], [-1.1, -1.9, .7, NEON.cyan, 2.51], [-1.64, -1.8, .75, NEON.amber, 2.51], [-1.5, 3.55, 1.2, NEON.amber, -.126],
+    [1.0, -1.5, .8, NEON.violet, 2.51], [-3.0, -1.5, .7, NEON.pink, 2.51], [-1.2, -.35, .7, '#ff9fd6', 2.51], [1.2, -.35, .7, '#7ff0d8', 2.51]],
+  halos: [[-2.0, 1.3, .55, .85, NEON.cyan], [1.04, 1.7, 1.8, .75, NEON.pink], [1.9, 1.7, 1.8, .75, NEON.lime], [-3.06, 1.3, -2.4, .6, NEON.cyan], [-1.94, 1.3, -2.4, .6, NEON.violet],
+    [.5, 3.6, -2.5, .7, NEON.sky], [-1.12, 3.53, -2.75, .5, NEON.cyan], [-1.5, 2.3, 3.6, 1.0, NEON.amber], [-.3, 2.3, 2.6, .9, NEON.pink], [1.0, 3.0, -1.5, .7, NEON.violet]] };
 // 18판 비교안 너굴이네 오락실 2층집 (otakuloft4, ① 10/23): 문 닫은 1층 오락실은 기계 불빛만(인형 뽑기 분홍, 경품 오락기 청록, 2층 밑 오락기 둘),
 // 간판 밑 따뜻한 빛, 2층 너굴이 방은 모니터·브라운관·둥지 등(바닥 2.1), 섬 앞 가로등
 RECIPES.otakuloft4 = { ...RECIPES.otakuloft,

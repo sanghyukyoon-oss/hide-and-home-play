@@ -99,9 +99,10 @@ B.st3_base = (f, T) => {
       const L = .36, a = Math.atan2(-ry, L);
       add(G.pbox(CROSS[1] - CROSS[0], .03, Math.hypot(L, ry)), '#d8d1c6', (CROSS[0] + CROSS[1]) / 2, ry / 2 - .008, z - s * L / 2, -s * a, 0, 0);
       for (const x of CROSS) add(G.pbox(.04, -ry, L), C.curbSide, x, ry / 2, z - s * L / 2);
-      const tz = z - s * (L + .17);
-      add(G.box(CROSS[1] - CROSS[0] - .16, .016, .26, .01), C.yel, (CROSS[0] + CROSS[1]) / 2, .012, tz);
-      for (let x = CROSS[0] + .17; x < CROSS[1] - .12; x += .11) for (const dz of [-.06, .06]) add(G.cyl(.02, .024, .016, 6), '#e2b237', x, .026, tz + dz);
+      // (10/24 사용자 "노란 거 떨어져 있다": 점자 블록은 경사로 윗단에 바로 붙여, 바닥에 반쯤 묻히게)
+      const tz = z - s * (L + .13);
+      add(G.box(CROSS[1] - CROSS[0] - .1, .012, .26, .006), C.yel, (CROSS[0] + CROSS[1]) / 2, .004, tz);
+      for (let x = CROSS[0] + .14; x < CROSS[1] - .09; x += .11) for (const dz of [-.06, .06]) add(G.cyl(.02, .024, .012, 6), '#e2b237', x, .014, tz + dz);
     }
     // 큰길 노면: 가운데 노란 두 줄(건널목에서 끊김) · 건널목 흰 띠(차 흐름과 나란히) · 정지선 · 길가 흰 줄
     for (const dz of [-.055, .055]) for (const [a, b] of [[ST3.x0 + .03, CROSS[0] - .5], [CROSS[1] + .5, x1 - .03]]) add(G.pbox(b - a, .006, .06), C.yel, (a + b) / 2, Y, midF + dz);

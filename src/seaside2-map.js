@@ -23,12 +23,16 @@ export function installSeaside2(LAYOUTS, THEMES) {
   const old = LAYOUTS.seaside;
   if (!old || !THEMES.seaside) return;
   registerFurniture(SEASIDE2_BUILDERS, SEASIDE2_INFO);
-  THEMES.seaside2 = { ...THEMES.seaside };
+  // (10/24 사용자 "약간 칙칙해짐, 원래 맑고 쨍했는데 … 해변과 모래사장 칙칙하지 않게 에메랄드빛"): 바다는 에메랄드, 모래는 밝은 크림
+  THEMES.seaside2 = { ...THEMES.seaside, water: '#4fd8c8', sand: '#f6e6c2' };
+  // 부두·가게 단은 회색기 빼고 밝은 크림 돌로, 모래 띠는 밝은 크림
+  const zones = (old.floorZones || []).map(z => z.kind === 'sand' ? { ...z, a: '#f6e6c2', b: '#efdcb2' } : z);
+  const raised = (old.raised || []).map((r, k) => ({ ...r, a: k ? '#f1eee8' : '#f4f1ec', b: k ? '#e6e2da' : '#e9e5de' }));
   LAYOUTS.seaside2 = {
-    ...old, theme: THEMES.seaside2,
+    ...old, theme: THEMES.seaside2, floorZones: zones, raised,
     furniture: [
       F('seadeck2', 0, 0), H('seashop', 3, 0, 'seashop2'), H('chalksign', 7, 1, 'chalksign2'), F('plantbig', 7, 0), H('ringpost', 3, 2, 'ringpost2'), F('streetlamp', 7, 2),
-      H('fishstall', 4, 4, 'fishstall2'), H('barrels', 6, 3, 'barrels2'), H('cafeumbrella', 6, 6, 'cafeumbrella2'), H('cafeumbrella', 7, 5, 'cafeumbrella2', { k: 1 }), F('planter', 4, 6),
+      H('fishstall', 4, 4, 'fishstall2'), H('barrels', 6, 3, 'barrels2'), H('cafeumbrella', 6, 6, 'cafeumbrella2'), H('cafeumbrella', 7, 5, 'cafeumbrella2', { k: 1 }), H('planter', 4, 6, 'seaplanter2'),
       F('sandcastle2', 1, 6), { type: 'sea2scene', x: 0, z: 0, a: 0 },
     ],
   };

@@ -33,6 +33,8 @@ export const BGM = {
 // sound-generation, README-sound.md 5절); ?amb=0 turns them off
 export const AMB = {
   otakuloft: [{ src: 'audio/sfx/amb-rain.mp4', gain: .1 }, { src: 'audio/sfx/amb-arcade.mp4', gain: .03 }],   // the rain on the window, the arcade cabinets idling (very low)
+  // (18판 otakuloft5 10/24 사용자 "빗소리는 약간 줄여 주고": the rain bed a third lower, this stage only)
+  otakuloft5: [{ src: 'audio/sfx/amb-rain.mp4', gain: .065 }, { src: 'audio/sfx/amb-arcade.mp4', gain: .03 }],
 };
 export const MAP_SONGS = {
   ingame: 'audio/gpt/bgm-map.mp4',      // Suno 'ingame' 1:02 (the stage song till now)

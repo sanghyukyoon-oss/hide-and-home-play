@@ -178,7 +178,12 @@ B.lockers = (f, T) => {
 // framed bay behind the cab, two roll-up lockers (one padlocked) with a yellow helmet on a shelf and a fire extinguisher inside,
 // a silver ladder on black posts; fat tyres with cream hub caps. Its size, parts and hiding spots are the ones ②·③ use.
 const FRED = '#ef4a3f', FRED2 = '#c93a31', FGLASS = '#4f6aa8', FBUMP = '#8a8fa3', FINK = '#3a3346', FCAP = '#f2e6c8';
-B.firetruck = (f, T) => {
+// (19판 10/24 사용자 메모 "자동차 바퀴 이상함" — opts.wheels 'v2', 19판 새 맵만): the dark well disc (R + .08) was a whole circle
+// out in front of the tyre's middle, so its lower half hung under the body and through the ground as a dark crescent; the
+// cream hub cap stood .05 proud of the tyre like a plate. v2: the well is only the arch over the tyre (on the body's face),
+// the tyre has tread blocks and a sidewall line, the rim sits inside the tyre (a dished steel wheel with six nuts and a low hub)
+B.firetruck = (f, T, opts = {}) => {
+  const W2 = opts?.wheels === 'v2';
   // SD proportions (the sheet): 2.4 long in its 3×2 slot, tall — the cab roof at 1.7, wheels .72 across, the lockers up over them
   const L = 2.4, Wd = 1.3, zc = 0, zf = Wd / 2, BY0 = .32, LF = .8, LT = 1.3, BT = 1.45, CX0 = .45, CX1 = 1.2, CY1 = 1.7, WR = .36;
   const CC = (CX0 + CX1) / 2, CL = CX1 - CX0, CW = Wd - .06, BX0 = -1.2, LOCK = [-.85, -.2], GY0 = 1.0, GY1 = CY1 - .2, GM = (GY0 + GY1) / 2;
@@ -187,7 +192,7 @@ B.firetruck = (f, T) => {
   const SWIN = [[CX0 + .16, GY0], [CX1 - .16, GY0], [CX1 - .16, GY1 - .14], [CX1 - .16, GY1 - .02, CX1 - .28, GY1 - .02], [CX0 + .16, GY1 - .02], [CX0 + .16, GY0]];
   cabSide.holes.push(outline(SWIN, THREE.Path));
   const cabRoof = outline([[CX0 + .04, CY1 - .2], [CX0 + .04, CY1 - .04, CX0 + .2, CY1 - .04], [CX1 - .3, CY1 - .04], [CX1 - .04, CY1 - .04, CX1 - .04, CY1 - .3], [CX1 - .12, CY1 - .3], [CX1 - .12, CY1 - .14, CX1 - .3, CY1 - .14], [CX0 + .2, CY1 - .14], [CX0 + .14, CY1 - .14, CX0 + .14, CY1 - .2], [CX0 + .04, CY1 - .2]]);
-  f.add(mc('firetruck7', ({ add, addM, tube }) => {
+  f.add(mc('firetruck7' + (W2 ? '-w2' : ''), ({ add, addM, tube }) => {
     // the body: solid at the back, two open lockers on the near side above the wheels (their shutters roll up)
     add(G.box(CX0 - BX0 + .02, BT - BY0, .76, .1, 3), FRED, (BX0 + CX0) / 2, (BY0 + BT) / 2, -.27);
     add(G.box(CX0 - BX0 + .02, LF - BY0, .56, .06, 2), FRED, (BX0 + CX0) / 2, (BY0 + LF) / 2, .37); add(G.box(CX0 - BX0 + .02, BT - LT, .56, .06, 2), FRED, (BX0 + CX0) / 2, (LT + BT) / 2, .37);
@@ -232,6 +237,7 @@ B.firetruck = (f, T) => {
     add(G.box(.16, .2, Wd, .07, 3), FBUMP, BX0 - .02, .36, 0); for (const sz of [-1, 1]) add(G.cyl(.06, .06, .03, 16), '#e2403a', BX0 - .005, .72, sz * .45, 0, 0, HP);
     // wheels: two big axles, fat tyres with cream hub caps, dark wells behind them
     for (const x of [-.72, .82]) for (const sz of [-1, 1]) {
+      if (W2) { toyWheel2(add, x, WR, sz * (zf - .1), WR, .3, sz, FCAP); wheelArch2(add, x, WR, sz * (zf + .006), WR + .07, FRED, '#8e2a26', FINK, BY0); continue; }
       toyWheel(add, x, WR, sz * (zf - .1), WR, .3, sz, FCAP);
       wheelArch(add, x, WR, sz * (zf + .024), WR + .08, FRED, '#8e2a26', FINK);
     }
@@ -414,6 +420,28 @@ const toyWheel = (add, x, y, z, R, W, sz, cap = HUBG) => {
   add(G.cyl(R - W * .45, R - W * .45, W * .9, 22), '#55536a', x, y, z, HP, 0, 0);
   add(G.sph(R * .58, 18, 10), cap, x, y, z + sz * W * .42, 0, 0, 0, [1, 1, .45]);
   add(G.sph(R * .2, 10, 8), shade(cap, -.3), x, y, z + sz * (W * .42 + R * .24), 0, 0, 0, [1, 1, .5]);
+};
+// v2 (19판 10/24): the well only over the tyre — a half disc from the axle up on the body's face, never under the body — and
+// the fender lip round it
+const wheelArch2 = (add, x, y, z, R, body, edge, well, yb) => {
+  const half = new THREE.Shape(); half.moveTo(R, Math.max(0, yb - y)); half.absarc(0, 0, R, Math.asin(Math.min(1, Math.max(0, yb - y) / R)), PI - Math.asin(Math.min(1, Math.max(0, yb - y) / R)), false); half.lineTo(-R, Math.max(0, yb - y));
+  add(new THREE.ShapeGeometry(half, 20), well, x, y, z, 0, z < 0 ? PI : 0, 0);
+  add(G.tor(R + .012, .036, PI, 6, 22), body, x, y, z + Math.sign(z) * .02, 0, 0, 0, [1, 1, .9]);
+  add(G.tor(R - .012, .014, PI, 4, 22), edge, x, y, z + Math.sign(z) * .044);
+};
+// v2 tyre: a fat round tyre with tread blocks on its face, a line round each sidewall; inside it a dished steel wheel (a
+// cream disc set in, a darker ring, six nuts) and a low domed hub that stays inside the tyre's own width
+const toyWheel2 = (add, x, y, z, R, W, sz, cap = HUBG) => {
+  const r0 = R - W * .45, t = W * .45;
+  add(G.tor(r0, t, PI * 2, 12, 30), TYRE, x, y, z, 0, 0, 0, [1, 1, 1.18]);
+  for (let k = 0; k < 18; k++) { const a = k * PI * 2 / 18; add(G.pbox(.07, .05, W * .78), '#3a3846', x + Math.cos(a) * (R - .012), y + Math.sin(a) * (R - .012), z, 0, 0, a + HP); }
+  add(G.tor(r0 + t * .45, .008, PI * 2, 4, 30), '#4a4858', x, y, z + sz * t * 1.02);
+  add(G.cyl(r0 - .005, r0 - .005, W * .7, 26), '#4a4858', x, y, z, HP, 0, 0);
+  add(G.cyl(r0 * .9, r0 * .82, .03, 26), cap, x, y, z + sz * W * .3, HP, 0, 0);
+  add(G.tor(r0 * .88, .018, PI * 2, 5, 26), shade(cap, -.18), x, y, z + sz * W * .33);
+  for (let k = 0; k < 6; k++) { const a = k * PI / 3 + .3; add(G.cyl(.016, .016, .03, 6), shade(cap, -.35), x + Math.cos(a) * r0 * .45, y + Math.sin(a) * r0 * .45, z + sz * W * .34, HP, 0, 0); }
+  add(G.sph(r0 * .3, 14, 8), shade(cap, -.08), x, y, z + sz * W * .33, 0, 0, 0, [1, 1, .55]);
+  add(G.cyl(.022, .022, .02, 8), shade(cap, -.4), x, y, z + sz * (W * .33 + r0 * .17), HP, 0, 0);
 };
 // a side profile (x along the car, y up) pushed out along z into a soft, round-edged solid of the given width, centred on z = 0
 const roundSlab = (shape, width, b) => { const g = new THREE.ExtrudeGeometry(shape, { depth: Math.max(.002, width - 2 * b), bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 4, curveSegments: 10 }); g.translate(0, 0, -(width - 2 * b) / 2); return g; };

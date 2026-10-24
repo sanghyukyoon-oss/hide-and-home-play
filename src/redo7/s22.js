@@ -2,8 +2,8 @@
 // 사이 턱, 정지 표지·반사경 배치 정리, 버스 정류장이 인도 한복판"): 옛 street와 같은 가구(이름·숨김 자리 그대로)를 인도 6 × 5에 다시 놓음.
 //   - 담(alleywall)은 인도 뒤 북·서에만 — 차도는 담에 안 막히고 섬 끝까지 흐름(gfx/redo7-street3.js 바탕)
 //   - 차도는 연석 한 단 아래, 앞 큰길(동서) + 오른쪽 골목길(남북) T자, 건널목·정지선·빗물받이·건너편 인도
-//   - 정류장은 큰길 연석 앞에 길을 보고, 가로등·소화전·정지 표지·볼록거울은 골목길 쪽 연석을 따라 한 줄(정지 표지는 골목길 정지선 옆,
-//     볼록거울은 모퉁이 — 둘 다 앞면이 시작 화면에 보이게 비스듬히), 맨홀 공사 자리에 러버콘 둘
+//   - 정류장은 큰길 연석 앞에 길을 보고, 가로등·소화전·볼록거울은 골목길 쪽 연석을 따라 한 줄(볼록거울은 모퉁이에서 두 길을 봄), 정지 표지는
+//     골목길 건너편 인도 모퉁이(10/24), 맨홀 공사 자리에 러버콘 둘
 // 옛 22판은 키 street로 그대로 — 판 표는 그대로고 새 맵 스위치(?newmaps=1)에서만 street3. 이야기·물건 표·빛은 roomalias.js가 street로 이어 줌.
 import { registerFurniture } from '../gfx/furniture.js';
 import { ST3_BUILDERS, ST3_INFO } from '../gfx/redo7-street3.js';
@@ -26,8 +26,10 @@ export function install({ LAYOUTS, THEMES, SWAP, LOOK, SPEC }) {
       F('pole', 0, 0), F('konbini', 1, 0), F('vending', 3, 0), F('vending', 4, 0), F('boxstack', 5, 0),
       F('potgate', 0, 1), F('tteokstall', 0, 2, 1), F('redstools', 1, 2), F('postbox2', 0, 4, 1),
       F('bike2', 1, 1), F('cones', 2, 2), F('manhole', 3, 2), F('cones', 4, 2),
-      F('streetlamp', 5, 1), F('hydrant', 5, 2), { ...F('stopsign', 5, 3), ry: 30 }, { ...F('mirrorpole', 5, 4), ry: 35 },
+      F('streetlamp', 5, 1), F('hydrant', 5, 2), { ...F('mirrorpole', 5, 4), ry: 35 },
       F('bench2', 3, 4),
+      // (10/24 사용자 "정지는 건너편 쪽으로 — 후사경이랑 너무 붙어 있어서": 골목길 건너편 인도 모퉁이, 앞면이 시작 화면에 보이게)
+      { type: 'stopsign', x: 5.3, z: 2.0, a: .5 },
     ],
     decor: [D('catsign', 'W', -.4), D('mailbox', 'N', 2.5)], friendAt: [-.4, .4],
   };

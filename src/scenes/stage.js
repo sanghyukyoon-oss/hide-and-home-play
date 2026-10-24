@@ -292,6 +292,10 @@ export class StageScene {
     }
     this.targets = this.items.filter(i => i.role === 'target');
     this.look = this.lookR ? new Look(this, this.lookR) : null;   // 룩 실험: the map's surroundings, fill, night glows
+    // (10/24 사용자 "배경 목업에 들어간 스트로크는 쓰지 말자. 본 스테이지에만"): 판 밖 배경(userData.scenery — 하얀 동네·먼 동네 실루엣·
+    // 멀리 보이는 다음 판 건물)은 잉크 외곽선 없이 색만(layer 2); 외곽선은 판(섬·방) 안 물체에만
+    { const bg = o => { if (o.userData.scenery) { o.traverse(m => { if (m.isMesh) m.layers.set(2); }); return; } for (const c of o.children) bg(c); };
+      bg(this.room.group); if (this.look) bg(this.look.group); }
     if (G.world.post) {
       const P = G.world.post, nightGlow = !!(this.spec.night || this.spec.dark);   // 때깔 빛 번짐: night and power-cut stages (10/21)
       // 낮 빛 (10/21 사용자 "글로우 .12 뽀샤시 .12(→.2), 동시에 넣지 말고 기차랑 골목씬에"): the train trip gets a soft glow on its brightest
@@ -938,6 +942,14 @@ export class StageScene {
     }
     this.gazeHint(t);
     this.say(f, line, 2600);
+  }
+  // 처음 판의 부드러운 도움: 화면 가운데에서 가까운 것 하나 — 친구의 눈길, 옅은 빛 세 번, 돋보기 반짝 (위치를 딱 집지 않고 '저쪽'만)
+  softGlow(left) {
+    const W = this.G.world, near = it => { const s = W.toScreen(this.worldCenter(it)); return Math.hypot(s.x - W.W / 2, s.y - W.H * .47); };
+    const t = left.slice().sort((a, b) => near(a) - near(b))[0]; if (!t) return;
+    this.gazeHint(t);
+    for (let i = 0; i < 3; i++) setTimeout(() => { if (this.dead || t.found) return; const s = W.toScreen(this.worldCenter(t)); W.fx.ring(s.x, s.y, { r: 70, color: '#fff1b8', width: 5, life: 1.0 }); }, 300 + i * 650);
+    const b = this.hintBtn; if (b) { b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 600); const r = b.getBoundingClientRect(); W.fx.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 8, shape: 'star', colors: ['#ffe14d', '#ffffff'], speed: 90, gravity: -20, life: .6 }); }
   }
   gazeHint(t) {
     const f = this.friend; if (!f?.root) return;
@@ -3466,6 +3478,12 @@ export class StageScene {
       const waitGaze = this.feelHelp && this._oneAt != null && (this._gazeAt == null || this.t - this._gazeAt < 10);
       // (10/19 evening, user a third time "힌트가 너무 많다" — 레벨 1~10 추천: a sparkle only for the last thing, the way the
       // owner's look and 6판's smoke already wait for it; with more left the 힌트 button is there)
+      // (10/24 사용자 "처음에 못 찾으면 힌트 알려 줘": 1~3판 배우는 구간만 — 15초 동안 하나도 못 찾으면 판마다 한 번, 가까운 것 쪽으로 부드럽게:
+      // 친구가 그쪽을 보고, 그 자리에 옅은 빛이 세 번, 돋보기 버튼이 반짝. 뒤 판은 원래 규칙 그대로; ②)
+      if (this.idx <= 2 && !this._firstHelp && !this.custom && !this.preview && !this.tutEls && !this.talking && this.tStart != null && this.t - Math.max(this.tStart, this.lastFind ?? -99) > 15) {
+        const left = this.targets.filter(t => !t.found && !t.friend && !t.furnTarget && !t.spot?.part?.lock);
+        if (left.length) { this._firstHelp = true; this.softGlow(left); }
+      }
       // 1~5판 막혔을 때 (2~5판의 숨은그림 — 1판은 친구 찾기의 킥킥이 있어요): 25초 soft, 45초 hard, 판마다 한 번씩, 둘 이상 남았을 때만
       if (this.idx >= 1 && this.idx <= 4 && !this.incident && !this.custom && !this.preview && !this.tutEls && !this.talking) {
         const left = this.targets.filter(t => !t.found && !t.friend && !t.furnTarget);

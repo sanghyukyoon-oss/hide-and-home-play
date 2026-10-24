@@ -155,6 +155,7 @@ addI18n({
   '흐르는 선로': 'Rolling track', '통로 매트': 'Aisle mat', '연결 통로 구석': 'Gangway corner', '운임함': 'Fare box', '정리권': 'Ticket',
   '앞창': 'Front window', '계기판': 'Instrument panel', '서랍 이름표': 'Drawer label',
   '봄빛 로컬 전차': 'Spring Local Train', '청록 로컬 전차': 'Teal local train', '레트로 노면 전차': 'Retro streetcar',
+  '칸 옆벽': 'Car side wall', '꼬리 끝벽': 'Tail end wall', '통로 끝벽': 'Gangway end wall', '차체 아래': 'Undercarriage',
 });
 // the folded newspaper's front page: masthead, headline, a photo, columns (our lettering, Korean and English)
 const newsTex = () => TX.get('tc5-news', () => textTex(512, 384, (c, W, H) => {
@@ -177,10 +178,12 @@ const gangSignTex = (k) => TX.get('tc5-gsign|' + k, () => textTex(256, 80, (c, W
   fitText(c, k ? '2호차' : '1호차', W / 2 + (k ? -10 : 10), H / 2, W * .6, 22, '#ffffff', { weight: '700' });
 }));
 // the aisle runner: soft teal with cream edges and a little diamond row
-const matTex = () => TX.get('tc5-mat', () => canvasTex(128, 256, (c, W, H) => {
-  c.fillStyle = '#7fb8a8'; c.fillRect(0, 0, W, H); c.fillStyle = '#f2e6cc'; c.fillRect(0, 0, 12, H); c.fillRect(W - 12, 0, 12, H);
-  c.fillStyle = '#6aa695'; c.fillRect(18, 0, 4, H); c.fillRect(W - 22, 0, 4, H);
-  c.fillStyle = '#e9f4ef'; for (let y = 16; y < H; y += 32) { c.beginPath(); c.moveTo(W / 2, y - 7); c.lineTo(W / 2 + 7, y); c.lineTo(W / 2, y + 7); c.lineTo(W / 2 - 7, y); c.fill(); }
+const matTex = () => TX.get('tc5-mat2', () => canvasTex(128, 256, (c, W, H) => {
+  // (사용자 메모 "복도 카페트 맘에 안들고 정렬 안되어있음"): a deep navy runner, a darker border with a thin cream line, a small gold-and-rose
+  // diamond lattice in the field
+  c.fillStyle = '#3e4a74'; c.fillRect(0, 0, W, H); c.fillStyle = '#2e3860'; c.fillRect(0, 0, 16, H); c.fillRect(W - 16, 0, 16, H);
+  c.fillStyle = '#e9dcc0'; c.fillRect(16, 0, 3, H); c.fillRect(W - 19, 0, 3, H);
+  for (let y = 0; y < H; y += 32) for (const x of [W / 2 - 22, W / 2, W / 2 + 22]) { const yy = y + (x === W / 2 ? 16 : 0); c.fillStyle = x === W / 2 ? '#d9b25a' : '#c9858c'; c.beginPath(); c.moveTo(x, yy - 5); c.lineTo(x + 5, yy); c.lineTo(x, yy + 5); c.lineTo(x - 5, yy); c.fill(); }
 }, { repeat: [1, 1] }));
 // the rolling track: gravel speckles, wooden sleepers (they move), two steel rails along it (they look still while it scrolls)
 const trackTex = () => TX.get('tc5-track', () => { const t = canvasTex(256, 128, (c, W, H) => {
@@ -266,7 +269,7 @@ const B = {};
 B.tc5shell = (f, T, o = {}) => {
   const C = P(o), W = o.w || 4, L = o.len || 6;
   f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
-  f.add(mc('tc5-shell3|' + [o.v, W, L, o.nose ? 1 : 0, o.tail ? 1 : 0, o.half ? 1 : 0, o.noTrack ? 1 : 0].join(','), ({ add, tube }) => {
+  f.add(mc('tc5-shell3|' + [o.v, W, L, o.nose ? 1 : 0, o.tail ? 1 : 0, o.half ? 1 : 0, o.noTrack ? 1 : 0, o.noSill ? 1 : 0].join(','), ({ add, tube }) => {
     add(G.box(W + .3, .56, L, .05), C.body, 0, -.33, 0);
     add(G.box(W + .34, .09, L + .02, .02), C.line, 0, -.06, 0);
     add(G.box(W + .36, .05, L + .03, .012), C.trim, 0, -.2, 0);
@@ -274,7 +277,7 @@ B.tc5shell = (f, T, o = {}) => {
     if (o.half) {
       add(G.box(.16, .95, L, .03), C.body, W / 2 + .08, .47, 0); add(G.box(.04, .9, L - .04, .01), C.up, W / 2 - .02, .46, 0);
       add(G.box(.24, .06, L + .02, .02), C.line, W / 2 + .07, .97, 0); add(G.box(.18, .04, L, .01), C.trim, W / 2 + .17, .7, 0);
-    } else {
+    } else if (!o.noSill) {
       add(G.box(.14, .34, L, .03), C.line, W / 2 + .07, .17, 0); add(G.box(.2, .05, L + .02, .02), C.trim, W / 2 + .07, .36, 0);
       add(G.box(.02, .07, L - .1, .01), C.body, W / 2 + .145, .13, 0);
     }
@@ -375,6 +378,7 @@ B.tc5wall = (f, T, o = {}) => {
       add(G.box(.9, .24, .06, .03), '#26232c', -.2, WH + .36, o.cap * (L / 2 + .01)); add(G.box(.7, .1, .065, .02), '#ffad4a', -.2, WH + .36, o.cap * (L / 2 + .02));
     }
   }));
+  if (o.lamps) addLamps(top, X0, L);
   // the wall fan: a cage and three blades that turn (only the blades move)
   let blades = null;
   if (o.fan != null) {
@@ -599,6 +603,44 @@ B.tc5box = (f, T, o = {}) => {
   f.spot('on', null, .6, SH + .04, z0 + .05, { maxH: .36, label: '좌석 위', scale: .95 });
 };
 
+// ═════════════════════════ 가방 (제대로) ═════════════════════════
+// (사용자 메모 10/24 "캐리어랑 가방 이상함... 제대로 하자. 제대로"): real luggage in big cute pieces, each in its own local frame
+//   suitcase  a hard shell — vertical ribs on both faces, a zip seam round its middle, corner guards, four spinner wheels on forks,
+//             a pull handle (two rods and a grip, o.up its height), a top carry handle and a side one, a name tag on a string
+//             (lying: on its back on a rack, the handle end toward +x)
+//   backpack  a rounded body, a big front pocket with a zip pull, a side bottle pocket, two padded shoulder straps, a grab loop
+//   duffel    a soft cylinder along x with darker end discs, a zip along the top, two carry handles, a shoulder strap
+function suitcase(add, tube, { w = .42, h = .6, d = .25, col = '#4f7fc4', colD = '#3f63a0', tag = '#f6cf5a', up = .26, lying = false } = {}) {
+  // drawn standing (height along y); lying turns it on its back: y → z, z → -y (worked by the caller's group)
+  add(G.box(w, h, d, .07), col, 0, h / 2 + .06, 0);
+  for (const s of [-1, 1]) for (let k = -1; k <= 1; k++) add(G.box(.05, h - .14, .016, .02), shade(col, .06), k * w * .28, h / 2 + .06, s * (d / 2 + .004));
+  add(G.box(w + .006, h + .006, .018, .01), colD, 0, h / 2 + .06, 0);
+  for (const sx of [-1, 1]) for (const sy of [0, 1]) for (const sz of [-1, 1]) add(G.box(.07, .07, .07, .025), '#3b3647', sx * (w / 2 - .02), .08 + sy * (h - .04), sz * (d / 2 - .02));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { add(G.box(.04, .05, .04, .012), '#3b3647', sx * (w / 2 - .06), .035, sz * (d / 2 - .06)); add(G.cyl(.028, .028, .026, 12), '#26232c', sx * (w / 2 - .06), .022, sz * (d / 2 - .06) + .01, 0, 0, HP); }
+  for (const sx of [-1, 1]) { add(G.box(.035, .05, .05, .012), '#3b3647', sx * .09, h + .07, -d / 2 + .05); tube([sx * .09, h + .08, -d / 2 + .05], [sx * .09, h + .08 + up, -d / 2 + .05], .012, '#c3c9d2', 8); }
+  add(G.box(.22, .04, .045, .018), '#26232c', 0, h + .09 + up, -d / 2 + .05);
+  tube([-.08, h + .07, .03], [-.06, h + .12, .03], .014, '#26232c', 6); tube([-.06, h + .12, .03], [.06, h + .12, .03], .016, '#26232c', 6); tube([.06, h + .12, .03], [.08, h + .07, .03], .014, '#26232c', 6);
+  add(G.box(.025, .16, .05, .012), '#26232c', w / 2 + .012, h * .6, 0);
+  tube([w / 2 - .02, h + .02, .06], [w / 2 + .03, h - .1, .1], .005, '#e0d6c0', 4); add(G.box(.075, .1, .012, .018), tag, w / 2 + .04, h - .16, .11, 0, -.3, .15);
+  add(G.sph(.045, 10, 8), '#ff9fb8', -w * .22, h * .72, d / 2 + .012, 0, 0, 0, [1, 1, .18]); add(G.box(.08, .05, .006, .015), '#ffffff', w * .2, h * .3, d / 2 + .012);
+}
+function backpack(add, tube, { col = '#5f86c4', colD = '#4a6fb0', pk = '#f6cf5a' } = {}) {
+  add(G.box(.36, .42, .24, .12), col, 0, .23, 0); add(G.sph(.17, 14, 10), col, 0, .4, 0, 0, 0, 0, [1.05, .55, .7]);
+  add(G.box(.27, .18, .09, .07), pk, 0, .16, .135); add(G.box(.2, .012, .01, .004), '#3b3647', 0, .24, .182); add(G.box(.02, .04, .012, .005), '#c3c9d2', .1, .232, .188);
+  add(G.box(.26, .012, .012, .004), colD, 0, .42, .108); add(G.box(.018, .035, .012, .005), '#c3c9d2', -.11, .41, .118);
+  add(G.box(.07, .16, .1, .035), colD, .2, .14, .02); add(G.cyl(.028, .028, .12, 8), '#bfe6c4', .2, .24, .02); add(G.cyl(.02, .02, .025, 8), '#3f9e6a', .2, .31, .02);
+  for (const sx of [-1, 1]) { tube([sx * .1, .44, -.12], [sx * .12, .3, -.17], .028, colD, 6); tube([sx * .12, .3, -.17], [sx * .12, .08, -.13], .028, colD, 6); }
+  tube([-.05, .5, -.04], [0, .55, -.04], .014, '#3b3647', 5); tube([0, .55, -.04], [.05, .5, -.04], .014, '#3b3647', 5);
+  add(G.sph(.028, 8, 6), '#ff9fb8', .12, .1, .2); tube([.1, .16, .19], [.12, .12, .2], .004, '#c3c9d2', 4);
+}
+function duffel(add, tube, { r = .16, len = .58, col = '#5fb3a0', colD = '#3f8f7c' } = {}) {
+  add(G.cyl(r, r, len - .06, 18), col, 0, r, 0, 0, 0, HP); for (const s of [-1, 1]) { add(G.sph(r, 16, 12), colD, s * (len / 2 - .03), r, 0, 0, 0, 0, [.28, 1, 1]); add(G.cyl(r * .55, r * .55, .012, 14), shade(colD, .1), s * (len / 2 + .012), r, 0, 0, 0, HP); }
+  add(G.box(len - .14, .012, .02, .004), '#3b3647', 0, 2 * r - .004, 0); add(G.box(.025, .05, .02, .006), '#c3c9d2', len * .3, 2 * r + .01, .012);
+  for (const s of [-1, 1]) { tube([-.08, 2 * r - .03, s * .07], [-.06, 2 * r + .07, s * .05], .015, colD, 6); tube([-.06, 2 * r + .07, s * .05], [.06, 2 * r + .07, s * .05], .017, colD, 6); tube([.06, 2 * r + .07, s * .05], [.08, 2 * r - .03, s * .07], .015, colD, 6); }
+  tube([-len / 2 + .05, r + .05, -r + .02], [0, r - .06, -r - .1], .011, '#3b3647', 5); tube([0, r - .06, -r - .1], [len / 2 - .05, r + .05, -r + .02], .011, '#3b3647', 5);
+  add(G.box(.18, .09, .02, .02), shade(col, .06), 0, r * .8, r - .01);
+}
+
 // ═════════════════════════ 짐 선반 ═════════════════════════
 // (wall piece along the far wall, local x along it): short brackets just over the windows (o.ry, 2.44), a front bar and slats; the big
 // suitcase (o.case: its x — corner guards, wheels, a pull handle, a tag, stickers) comes forward off the rack (lockable — 너굴이 hides
@@ -612,13 +654,6 @@ B.tc5rack = (f, T, o = {}) => {
     for (const x of BR) { add(G.box(.05, .05, .58, .012), S.steel, x, RY, .3); tube([x, RY - .1, .02], [x, RY, .4], .018, S.steel, 6); add(G.box(.08, .14, .03, .01), S.steel2, x, RY - .06, .015); }
     add(G.box(L, .035, .035, .01), S.steel, 0, RY, .58); add(G.box(L, .03, .03, .01), S.steel, 0, RY + .1, .6);
     for (let k = 0; k < 6; k++) add(G.box(L - .05, .018, .04, .004), S.steel2, 0, RY - .01, .1 + k * .09);
-    if (o.duffel != null) {
-      const d = o.duffel;
-      add(G.cyl(.17, .17, .62, 16), C.low, d, RY + .18, .3, 0, 0, HP); for (const dx of [-.22, .22]) add(G.cyl(.175, .175, .05, 16), C.bodyD, d + dx, RY + .18, .3, 0, 0, HP);
-      add(G.box(.5, .02, .02, .005), S.steel2, d, RY + .345, .3); add(G.box(.04, .03, .02, .005), S.yellow, d + .2, RY + .35, .31);
-      for (const z of [.22, .38]) { tube([d - .1, RY + .3, z], [d - .07, RY + .42, z], .015, C.bodyD, 6); tube([d - .07, RY + .42, z], [d + .07, RY + .42, z], .015, C.bodyD, 6); tube([d + .07, RY + .42, z], [d + .1, RY + .3, z], .015, C.bodyD, 6); }
-      tube([d - .3, RY + .2, .45], [d, RY + .02, .55], .012, '#4d4958', 5); tube([d, RY + .02, .55], [d + .3, RY + .2, .45], .012, '#4d4958', 5);
-    }
     if (o.straps) {
       tube([-L / 2, RY + .16, .95], [L / 2, RY + .16, .95], .03, S.steel, 10); for (const x of [-L / 2 + .2, L / 2 - .2]) tube([x, RY + .16, .95], [x, RY + .16, .5], .02, S.steel2, 6);
       for (let x = -L / 2 + .3; x < L / 2 - .2; x += .45) {
@@ -630,6 +665,7 @@ B.tc5rack = (f, T, o = {}) => {
       }
     }
   }));
+  if (o.duffel != null) { const dg = grp(); put(dg, o.duffel, RY + .01, .3, 0, .08, 0); f.add(dg); dg.add(mc('tc5-rackduffel', ({ add, tube }) => duffel(add, tube, { r: .15, len: .6 }))); }
   // hanging posters from the grab rail: a clip bar, two hooks, the print on both faces (each face its own plane, so neither reads backwards)
   for (const [k, hx] of (o.hang || []).entries()) {
     f.add(put(mc('tc5-hangclip2', ({ add, tube }) => { add(G.box(.5, .035, .03, .01), S.steel2, 0, 0, 0); for (const s of [-1, 1]) tube([s * .2, .02, 0], [s * .18, .17, 0], .008, S.steel2, 4); add(G.box(.5, .035, .03, .01), S.steel2, 0, -.36, 0); }), hx, RY - .02, .95));
@@ -637,28 +673,14 @@ B.tc5rack = (f, T, o = {}) => {
   }
   if (o.noCase) { f.spot('on', null, o.duffel != null ? o.duffel + .7 : 0, RY + .02, .3, { maxH: .3, label: '짐 선반 위', scale: .85 }); return; }
   const sc = grp(); put(sc, cx, RY + .02, .32); f.add(sc);
-  sc.add(mc('tc5-suitcase3', ({ add, tube }) => {
-    add(G.box(.64, .44, .36, .07), S.coral, 0, .22, 0); for (const x of [-.18, .18]) add(G.box(.04, .44, .38, .01), S.coral2, x, .22, 0);
-    for (const sx of [-1, 1]) for (const sy of [0, 1]) add(G.box(.08, .08, .38, .03), '#9e4f45', sx * .29, .04 + sy * .36, 0);
-    for (const sx of [-1, 1]) add(G.cyl(.035, .035, .03, 10), S.dark, sx * .24, -.005, .13, HP, 0, 0);
-    tube([-.1, .45, 0], [-.08, .53, 0], .016, S.dark, 6); tube([-.08, .53, 0], [.08, .53, 0], .018, S.dark, 6); tube([.08, .53, 0], [.1, .45, 0], .016, S.dark, 6);
-    for (const sx of [-1, 1]) add(G.box(.02, .1, .02, .005), S.steel2, sx * .1, .48, -.12);
-    add(G.box(.14, .1, .01, .03), S.yellow, -.12, .3, .185); add(G.cyl(.05, .05, .01, 12), '#8fd3f4', .14, .14, .186, HP, 0, 0); add(G.box(.1, .06, .01, .02), '#ffffff', .08, .32, .186);
-    add(G.sph(.04, 8, 6), '#ff9fb8', .2, .3, .185, 0, 0, 0, [1, 1, .2]);
-    tube([-.26, .44, .1], [-.3, .3, .2], .006, '#e0d6c0', 4); add(G.box(.08, .05, .008, .01), '#fff3c8', -.3, .27, .21, 0, 0, .3);
-  }));
+  { const lay = grp(); put(lay, .36, .12, 0); lay.rotation.set(-HP, HP, 0, 'YXZ'); sc.add(lay);
+    lay.add(mc('tc5-suitcase4', ({ add, tube }) => suitcase(add, tube, { w: .4, h: .56, d: .22, col: '#ec8a78', colD: '#c9675a', up: 0 }))); }
   const p = f.part('lift', sc, (t, b) => { sc.position.z = b.p.z + .34 * t; sc.position.y = b.p.y + .05 * Math.sin(t * PI); sc.rotation.x = .3 * t; }, { label: '짐 선반 여행 가방', sfx: 'lift_fabric', dur: .45 });
   p.lockable = true; p.lockAt = { x: 0, y: .22, z: .2, parent: sc };
   f.spot('on', null, cx, RY + .02, .24, { part: p, maxH: .45, label: '여행 가방 뒤', scale: .95 });
   if (o.pack != null) {
     const bp = grp(); put(bp, o.pack, RY + .01, .3); f.add(bp);
-    bp.add(mc('tc5-backpack2', ({ add, tube }) => {
-      add(G.box(.38, .42, .26, .12), S.blue, 0, .21, 0); add(G.box(.3, .18, .09, .05), S.yellow, 0, .14, .14); add(G.box(.22, .012, .01, .004), PAL.a.line, 0, .21, .186);
-      add(G.box(.2, .1, .06, .03), '#4a6fb0', 0, .36, .12); for (const sx of [-1, 1]) { add(G.box(.06, .16, .1, .03), '#4a6fb0', sx * .2, .14, .02); }
-      add(G.cyl(.03, .03, .14, 8), '#bfe6c4', .21, .22, .03); add(G.cyl(.02, .02, .03, 8), '#3f9e6a', .21, .3, .03);
-      tube([-.08, .42, -.02], [0, .5, -.02], .014, S.dark, 5); tube([0, .5, -.02], [.08, .42, -.02], .014, S.dark, 5);
-      tube([.05, .3, .15], [.08, .22, .19], .005, S.steel2, 4); add(G.sph(.03, 8, 6), '#ff9fb8', .08, .2, .2);
-    }));
+    bp.add(put(mc('tc5-backpack3', ({ add, tube }) => backpack(add, tube, {})), 0, 0, 0, 0, 0, 0, .82));
     const q = f.part('lift', bp, (t, b) => { bp.position.z = b.p.z + .3 * t; bp.rotation.z = .25 * t; }, { label: '배낭', sfx: 'lift_fabric', dur: .35 });
     f.spot('on', null, o.pack, RY + .02, .18, { part: q, maxH: .32, label: '배낭 뒤', scale: .85 });
   } else f.spot('on', null, cx + .9, RY + .02, .3, { maxH: .3, label: '짐 선반 위', scale: .85 });
@@ -730,13 +752,6 @@ B.tc5end = (f, T, o = {}) => {
       add(G.box(.36, .5, .3, .05), S.dark, DW + .35, 1.25, inC * .24); add(G.box(.3, .06, .24, .02), '#8fd3f4', DW + .35, 1.52, inC * .24); add(G.box(.12, .02, .04, .005), '#ffd37a', DW + .35, 1.4, inC * .4);
       // the cab floor (the tiles under it are cut away: nobody walks in) — a ribbed rubber plate
       add(G.box(W - .1, .05, D - .1, .02), '#5b5868', 0, -.02, out * D / 2); for (let k = 0; k < 8; k++) add(G.box(W - .2, .01, .03, .004), '#6c6878', 0, .01, out * (.15 + k * (D - .3) / 7));
-      // the nose: lower panel, the window band on thick posts, a header, sun visors, wipers
-      add(G.box(W, 1.0, .14, .03), C.up, 0, .5, zc - out * .07); add(G.box(W + .04, .06, .18, .02), C.trim, 0, 1.0, zc - out * .07);
-      add(G.box(W, .5, .05, .02), C.low, 0, .45, zc - out * .16);
-      for (const x of [X0 + .1, 0, W / 2 - .1]) add(G.box(x === 0 ? .14 : .2, WH - 1.0, .16, .04), C.glassF, x, (WH + 1.0) / 2, zc - out * .07);
-      add(G.box(W, .18, .18, .04), C.glassF, 0, WH - .06, zc - out * .07); add(G.box(W - .3, .07, .2, .02), C.bodyD, 0, WH - .2, zc - out * .1);
-      for (const x of [-1.0, 1.0]) { add(G.box(.7, .05, .32, .02), '#4d6b5f', x, 2.48, zc - out * .25, out * .5, 0, 0); }
-      for (const x of [-.95, .95]) { tube([x, 1.08, zc - out * .17], [x + (x < 0 ? .5 : -.5), 1.6, zc - out * .17], .014, S.dark, 5); add(G.sph(.03, 6, 4), S.dark, x, 1.08, zc - out * .17); }
       // the console across the front: a sloped desk, its lighter top
       const cz = zc - out * .45;
       add(G.box(W - .3, .82, .56, .06), C.bodyD, 0, .41, cz); add(G.box(W - .34, .06, .6, .03), '#5a5f6e', 0, .85, cz + out * .02, out * .28, 0, 0);
@@ -766,15 +781,37 @@ B.tc5end = (f, T, o = {}) => {
   }));
   if (cab) {
     const zc = out * D;
-    // the big front windows: a still view of hills and sky (the land comes at them, not past)
+    // the nose (사용자 "전차 맨앞 맨뒤 벽이 없고"): lower panel, the window band on thick posts, a header, sun visors, wipers; outside the
+    // headlights, the number plate, the destination board, the glass; it folds to the knee while the camera looks in from the front
+    const nose = grp(), noseDeco = grp(); f.add(nose); f.add(noseDeco); f.live = [...(f.live || []), nose, noseDeco];
+    nose.add(mc('tc5-noselow|' + [o.v, W, D, inC].join(','), ({ add, tube }) => {
+      add(G.box(W, 1.0, .14, .03), C.up, 0, .5, zc - out * .07); add(G.box(W + .04, .06, .18, .02), C.trim, 0, 1.0, zc - out * .07);
+      add(G.box(W, .5, .05, .02), C.low, 0, .45, zc - out * .16);
+      add(G.box(W + .3, .9, .04, .02), C.body, 0, .47, zc + out * .005); add(G.box(W + .32, .08, .05, .01), C.line, 0, .8, zc + out * .02);
+      for (const x of [-1.35, 1.35]) { add(G.cyl(.13, .13, .07, 16), '#f4f1e6', x, .55, zc + out * .05, HP, 0, 0); add(G.cyl(.085, .085, .02, 14), '#fff3b8', x, .55, zc + out * .09, HP, 0, 0); }
+      add(G.box(.36, .2, .03, .02), '#26232c', 0, .45, zc + out * .04); add(G.box(.3, .14, .01, .02), '#f6f2ea', 0, .45, zc + out * .058);
+    }));
+    noseDeco.add(mc('tc5-noseup|' + [o.v, W, D, inC].join(','), ({ add, tube }) => {
+      for (const x of [X0 + .1, 0, W / 2 - .1]) add(G.box(x === 0 ? .14 : .2, WH - 1.0, .16, .04), C.glassF, x, (WH + 1.0) / 2, zc - out * .07);
+      add(G.box(W, .18, .18, .04), C.glassF, 0, WH - .06, zc - out * .07); add(G.box(W - .3, .07, .2, .02), C.bodyD, 0, WH - .2, zc - out * .1);
+      for (const x of [-1.0, 1.0]) { add(G.box(.7, .05, .32, .02), '#4d6b5f', x, 2.48, zc - out * .25, out * .5, 0, 0); }
+      for (const x of [-.95, .95]) { tube([x, 1.08, zc - out * .17], [x + (x < 0 ? .5 : -.5), 1.6, zc - out * .17], .014, S.dark, 5); add(G.sph(.03, 6, 4), S.dark, x, 1.08, zc - out * .17); }
+      add(G.box(1.3, .26, .1, .04), '#26232c', 0, WH - .06, zc + out * .07);
+      for (const x of [-.95, .95]) tube([x, 1.08, zc + out * .03], [x + (x < 0 ? .5 : -.5), 1.62, zc + out * .03], .014, S.dark, 5);
+      add(G.cyl(.04, .05, .14, 10), S.steel2, -1.7, WH + .02, zc - out * .2);
+    }));
     const F = viewTex();
     for (const s of [-1, 1]) {
       const cw = W / 2 - .2, sky = mesh(new THREE.PlaneGeometry(cw, WH - 1.25), new THREE.MeshBasicMaterial({ map: F.sky }), { cast: false }); sky.material.toneMapped = false;
-      put(sky, s * (W / 4 + .02), (WH + 1.0) / 2 - .06, zc - out * .02, 0, inC < 0 ? PI : 0); f.add(sky);
+      put(sky, s * (W / 4 + .02), (WH + 1.0) / 2 - .06, zc - out * .02, 0, inC < 0 ? PI : 0); noseDeco.add(sky);
       const far = F.far.clone(); far.repeat.set(cw / 9, 1); far.offset.x = s * .3; far.needsUpdate = true;
       const fm = new THREE.MeshBasicMaterial({ map: far, transparent: true, depthWrite: false }); fm.toneMapped = false;
-      const fp = mesh(new THREE.PlaneGeometry(cw, WH - 1.25), fm, { cast: false }); put(fp, s * (W / 4 + .02), (WH + 1.0) / 2 - .06, zc - out * .025, 0, inC < 0 ? PI : 0); fp.layers.set(2); fp.userData.noOcclude = true; f.add(fp);
+      const fp = mesh(new THREE.PlaneGeometry(cw, WH - 1.25), fm, { cast: false }); put(fp, s * (W / 4 + .02), (WH + 1.0) / 2 - .06, zc - out * .025, 0, inC < 0 ? PI : 0); fp.layers.set(2); fp.userData.noOcclude = true; noseDeco.add(fp);
+      const gl = mesh(new THREE.PlaneGeometry(W / 2 - .44, WH - 1.3), mat('#bfe0f2', { rim: 0 }), { cast: false }); put(gl, s * (W / 4 - .02), (WH + 1.0) / 2 - .06, zc + out * .03, 0, inC > 0 ? PI : 0); noseDeco.add(gl);
     }
+    const nb = flat(1.2, .2, ledTex()); put(nb, 0, WH - .06, zc + out * .135, 0, inC > 0 ? PI : 0); noseDeco.add(nb);
+    // (the lower panel with the headlights stays; the window band above folds away)
+    foldPiece(f, [], [noseDeco], yaw => Math.cos(yaw) * inC >= -.18);
     const cz = zc - out * .45;
     for (const [k, x, r] of [[0, -.75, .09], [1, -.5, .09], [0, .05, .12]]) { const d = mesh(new THREE.CircleGeometry(r, 22), mat('#ffffff', { map: dialTex(k), rim: 0 }), { cast: false }); d.position.set(x, 1.04 + (r > .1 ? .02 : 0), cz - out * .185); d.rotation.y = inC < 0 ? PI : 0; f.add(d); }
     const scr = mesh(new THREE.PlaneGeometry(.36, .2), new THREE.MeshBasicMaterial({ map: TX.get('tc5-screen', () => canvasTex(128, 72, (c, Wd, H) => { c.fillStyle = '#1d3b5a'; c.fillRect(0, 0, Wd, H); c.strokeStyle = '#5fd3ff'; c.lineWidth = 2; for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(8, 12 + k * 12); c.lineTo(8 + 20 + (k * 37) % 90, 12 + k * 12); c.stroke(); } c.fillStyle = '#ffd37a'; c.fillRect(Wd - 30, 10, 20, 20); })) }), { cast: false });
@@ -924,17 +961,9 @@ B.tc5cargo = (f, T, o = {}) => {
 // (사용자 메모 "가방 … 오브젝트 디테일"): a hard-shell suitcase (ribs, four wheels, a pull handle up, a luggage tag, a sticker) and a teal
 // travel bag (handles, a zip, a striped band) beside it
 B.tc5bags = (f, T, o = {}) => {
-  f.add(mc('tc5-bags3', ({ add, tube }) => {
-    add(G.box(.42, .6, .26, .07), S.blue, 0, .34, 0); for (const x of [-.12, 0, .12]) add(G.box(.035, .54, .27, .01), '#527bbd', x, .34, 0);
-    add(G.box(.43, .03, .27, .01), '#3f5f9c', 0, .5, 0);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { add(G.cyl(.035, .035, .03, 10), S.dark, sx * .16, .035, sz * .09, 0, 0, HP); add(G.box(.04, .04, .04, .01), '#3f5f9c', sx * .16, .07, sz * .09); }
-    for (const sx of [-1, 1]) tube([sx * .08, .64, -.08], [sx * .08, .9, -.08], .012, S.steel2, 6); add(G.box(.22, .045, .05, .02), S.dark, 0, .91, -.08);
-    add(G.box(.3, .18, .02, .02), S.yellow, 0, .3, .14); add(G.sph(.045, 8, 6), '#ff9fb8', -.12, .45, .135, 0, 0, 0, [1, 1, .2]);
-    tube([.15, .6, .1], [.2, .5, .16], .005, '#e0d6c0', 4); add(G.box(.06, .08, .008, .01), '#fff3c8', .21, .46, .17, 0, 0, -.2);
-    add(G.box(.48, .3, .3, .12), '#a2c8bb', .5, .15, .1, 0, .3, 0); add(G.box(.46, .03, .02, .005), S.steel2, .5, .3, .18, 0, .3, 0); add(G.box(.48, .06, .31, .02), '#7fb3a4', .5, .1, .1, 0, .3, 0);
-    for (const sz of [-.06, .06]) { tube([.38, .29, .1 + sz], [.44, .42, .12 + sz], .014, '#5f8f80', 5); tube([.44, .42, .12 + sz], [.58, .42, .06 + sz], .014, '#5f8f80', 5); tube([.58, .42, .06 + sz], [.63, .29, .04 + sz], .014, '#5f8f80', 5); }
-  }));
-  if (o.spot !== false) f.spot('on', null, .5, .33, .1, { maxH: .26, label: '짐 위', scale: .8 });
+  f.add(mc('tc5-bags4', ({ add, tube }) => suitcase(add, tube, {})));
+  const dg = grp(); put(dg, .04, 0, .4, 0, .2, 0); f.add(dg); dg.add(mc('tc5-floorduffel', ({ add, tube }) => duffel(add, tube, { r: .14, len: .52 })));
+  if (o.spot !== false) f.spot('on', null, .04, .29, .4, { maxH: .26, label: '짐 위', scale: .8 });
 };
 
 // ═════════════════════════ 흐르는 선로 + 흔들림 ═════════════════════════
@@ -953,11 +982,13 @@ B.tc5track = (f, T, o = {}) => {
   const pl = mesh(new THREE.PlaneGeometry(Wd, L), m, { cast: false }); put(pl, 0, Y, 0, -HP); pl.layers.set(2); pl.renderOrder = 0; pl.userData.noOcclude = true; tg.add(pl);
   f.live = [tg];
   const amp = o.rock ?? .009, spd = o.speed ?? 3.2;
-  let last = -1, mine = null, pause = 0;
+  let last = -1, mine = null, pause = 0; const lightSt = {};
   f.tick = t => {
     const fr = Math.floor(t * 30); if (fr === last) return; last = fr;
     const y = (t * spd / SP) % 1; tex.offset.y = y;
-    const room = f.group.parent; if (!room || t < pause) return;
+    const room = f.group.parent; if (!room) return;
+    if (o.lights) { let r = room; while (r.parent) r = r.parent; tunnelLight(r, t, lightSt); }
+    if (t < pause) return;
     if (mine != null && Math.abs(room.rotation.z - mine) > 1e-6) { mine = null; pause = t + 3; return; }
     const jolt = Math.max(0, Math.sin(t * .9) - .985) * 40;
     const a = amp * (Math.sin(t * 3.6) * .7 + Math.sin(t * 1.7 + 1.3) * .3) + amp * .6 * Math.sin(t * 22) * jolt;
@@ -968,10 +999,350 @@ B.tc5track = (f, T, o = {}) => {
 B.tc5mat = (f, T, o = {}) => {
   const L = o.len || 3, W = o.w || 1.1;
   f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
-  const t = matTex().clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, L / 1.6); t.needsUpdate = true;
+  const t = matTex().clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, Math.max(1, Math.round(L / 1.2))); t.needsUpdate = true;
   const p = mesh(new THREE.PlaneGeometry(W, L), mat('#ffffff', { map: t, rim: 0 }), { cast: false }); put(p, 0, .008, 0, -HP); p.receiveShadow = true; f.add(p);
-  f.add(mc('tc5-matedge|' + L + W, ({ add }) => { for (const s of [-1, 1]) add(G.box(W + .02, .012, .03, .004), '#5f8f80', 0, .006, s * L / 2); }));
+  // brass strips across both ends, the runner's edges finished
+  f.add(mc('tc5-matedge2|' + L + W, ({ add }) => { for (const s of [-1, 1]) add(G.box(W + .04, .016, .04, .006), '#d9b25a', 0, .009, s * L / 2); for (const s of [-1, 1]) add(G.box(.02, .01, L, .004), '#2a3456', s * W / 2, .009, 0); }));
 };
+
+// ═════════════════════════ 벽이 접히는 차체 (사용자 10/24 "벽이 없는부분들 다 잘 이어지게… 이전판은 벽들이 보이다가 사각잡히면 사악 내려갔었거든") ═════════════════════════
+// Every wall of the cars now stands, and goes down to knee height while it would hide the inside from the camera — the way a room's
+// walls fold (room.js), worked out per piece from the camera's turn: a long side wall whose inside faces away from the camera, an end
+// wall seen from outside, and the two walls at the gangway whenever the camera looks along the train (they would hide the other car).
+// k: 1 standing … 0 folded (eased); the body scales down to .14 of its height, its fittings hide.
+const KNEE = .14;
+function foldPiece(f, body, deco, standing) {
+  let k = 1;
+  f.updateView = (Wd, dt = 1 / 60) => {
+    if (!Wd || !Number.isFinite(Wd.yaw)) return;
+    const want = standing(Wd.yaw) ? 1 : 0, k0 = k;
+    k += (want - k) * (1 - Math.exp(-Math.max(0, dt) * 12)); if (Math.abs(k - want) < .002) k = want;
+    if (k === k0) return;
+    for (const b of body) b.scale.y = KNEE + (1 - KNEE) * k;
+    for (const d of deco) d.visible = k > .65;
+    Wd.shadowDirty = true; Wd.idsDirty = true;
+  };
+}
+// a window's frame, sash bar, short ledge (in the piece's x-y plane, facing +z), as in twindow5
+function winFrame(add, C, W, H, cy, sill) {
+  add(G.box(W + .22, .11, .12, .04), C.glassF, 0, cy + H / 2 + .05, .04); add(G.box(W + .22, .11, .12, .04), C.glassF, 0, cy - H / 2 - .05, .04);
+  for (const s of [-1, 1]) add(G.box(.11, H + .22, .12, .04), C.glassF, s * (W / 2 + .05), cy, .04);
+  add(G.box(W, .06, .06, .02), C.glassF, 0, cy + H * .14, .05);
+  if (sill) { add(G.box(W + .06, .04, .13, .015), C.up2, 0, cy - H / 2 - .12, .07); add(G.box(W + .06, .015, .015, .004), C.trim, 0, cy - H / 2 - .11, .135); }
+}
+// a still view (sky and the far hills) in a w×h opening, facing +z of `host` at z0 — the nose and the tail windows
+function stillView(host, w, h, cy, z0, shift = 0) {
+  const F = viewTex(), sky = mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: F.sky }), { cast: false }); sky.material.toneMapped = false; put(sky, 0, cy, z0); host.add(sky);
+  const far = F.far.clone(); far.repeat.set(w / 9, 1); far.offset.x = shift; far.needsUpdate = true;
+  const fm = new THREE.MeshBasicMaterial({ map: far, transparent: true, depthWrite: false }); fm.toneMapped = false;
+  const fp = mesh(new THREE.PlaneGeometry(w, h), fm, { cast: false }); put(fp, 0, cy, z0 + .004); fp.layers.set(2); fp.userData.noOcclude = true; host.add(fp);
+}
+// the roof's edge and the cut section, mirrored for the near side (x → -x)
+const ringM = X0 => {
+  const s = new THREE.Shape(), R = .5, m = x => -x;
+  s.moveTo(m(X0 - .28), -.04); s.lineTo(m(X0 - .28), WH - .05); s.quadraticCurveTo(m(X0 - .28), WH + .45, m(X0 + .2), WH + .45); s.lineTo(m(X0 + R), WH + .45);
+  s.lineTo(m(X0 + R), WH + .3); s.lineTo(m(X0 + .2), WH + .3); s.quadraticCurveTo(m(X0 + .04), WH + .3, m(X0 + .04), WH - .05); s.lineTo(m(X0 + .04), -.04); s.lineTo(m(X0 - .28), -.04);
+  return s;
+};
+const eaveM = X0 => {
+  const s = new THREE.Shape(), R = .5, m = x => -x;
+  s.moveTo(m(X0 - .28), WH - .05); s.quadraticCurveTo(m(X0 - .28), WH + .45, m(X0 + .2), WH + .45); s.lineTo(m(X0 + R), WH + .45); s.lineTo(m(X0 + R), WH + .3);
+  s.lineTo(m(X0 + .2), WH + .3); s.quadraticCurveTo(m(X0 + .04), WH + .3, m(X0 + .04), WH - .05); s.lineTo(m(X0 - .28), WH - .05);
+  return s;
+};
+
+// ═════════════════════════ 가까운 쪽 옆벽 ═════════════════════════
+// (one car's near long side at x = +w/2, placed at the car's middle): cream panelling over a soft lower panel, the trim rail, the body
+// colour outside; o.wins [{ z, ww, hh, cy }] windows with the flowing view and a short ledge, o.doors [{ z, dw }] a pair of sliding doors
+// (z along the car from its middle)
+// (their little windows flow too, a yellow step inside); on top the roof's round edge, at both ends the cut section. It stands while the
+// camera is round on the far side (the turned views) and folds to the knee at the start — the inside shows over it.
+B.tc5side = (f, T, o = {}) => {
+  const C = P(o), W = o.w || 4, L = o.len || 6, XN = W / 2, wins = o.wins || [], doors = o.doors || [], DH = 2.15;
+  f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
+  const body = grp(), deco = grp(), top = grp(); f.add(body); f.add(deco); f.add(top); f.live = [body, deco, top];
+  // the openings along the wall, and the solid stretches between them
+  const ops = [...wins.map(w => ({ ...w, a: w.z - (w.ww || 1.1) / 2 - .1, b: w.z + (w.ww || 1.1) / 2 + .1, door: false })),
+    ...doors.map(d => ({ ...d, a: d.z - (d.dw || .9) / 2 - .12, b: d.z + (d.dw || .9) / 2 + .12, door: true }))].sort((p, q) => p.a - q.a);
+  body.add(mc('tc5-side|' + [o.v, W, L, ops.map(p => [p.a, p.b, p.door ? 1 : 0, p.cy ?? 1.78, p.hh ?? 1.2].join(':')).join(';')].join(','), ({ add }) => {
+    const slab = (z0, z1, y0, y1) => { if (z1 - z0 < .005 || y1 - y0 < .005) return; const zc = (z0 + z1) / 2, d = z1 - z0, yc = (y0 + y1) / 2, h = y1 - y0;
+      add(G.box(.1, h, d, .015), C.up, XN + .05, yc, zc); add(G.box(.07, h, d + .005, .015), C.body, XN + .135, yc, zc);
+      if (y0 < .9) { const t = Math.min(.86, y1) - y0; if (t > 0) add(G.box(.04, t, d, .01), C.low, XN - .015, y0 + t / 2, zc); } };
+    let z = -L / 2;
+    for (const p of ops) { slab(z, p.a, 0, WH); if (p.door) slab(p.a, p.b, DH + .14, WH); else { slab(p.a, p.b, 0, (p.cy ?? 1.78) - (p.hh ?? 1.2) / 2 - .1); slab(p.a, p.b, (p.cy ?? 1.78) + (p.hh ?? 1.2) / 2 + .1, WH); } z = p.b; }
+    slab(z, L / 2, 0, WH);
+    // the rails along the inside and the cream line and orange stripe outside (they run across the openings' solid parts only: drawn whole, under the frames)
+    add(G.box(.06, .06, L, .02), C.trim, XN - .025, .88, 0); add(G.box(.08, .06, L, .02), C.up2, XN + .01, WH - .02, 0);
+    add(G.box(.075, .26, L + .03, .01), C.line, XN + .14, 1.0, 0); add(G.box(.078, .045, L + .04, .005), C.trim, XN + .142, .84, 0);
+    for (const p of ops) if (p.door) { add(G.box(.4, .025, (p.dw || .9) + .2, .01), S.steel, XN - .2, .013, p.z); add(G.box(.07, .012, (p.dw || .9) + .2, .005), S.yellow, XN - .38, .028, p.z); }
+  }));
+  // windows: frame, ledge and the flowing view, each in a little group turned to face into the car (-x)
+  for (const w of wins) {
+    const g = grp(); put(g, XN - .005, 0, w.z, 0, -HP, 0); deco.add(g);
+    const Ww = w.ww || 1.1, Hh = w.hh || 1.2, cy = w.cy ?? 1.78;
+    g.add(mc('tc5-sidewin|' + [o.v, Ww, Hh, cy].join(','), ({ add }) => winFrame(add, C, Ww, Hh, cy, w.sill !== false)));
+    const tick = flowView(f, Ww, Hh, cy, .02, g); (f._ticks = f._ticks || []).push(tick);
+  }
+  // doors: a frame, two leaves that slide apart (a part), their windows flowing
+  for (const d of doors) {
+    const g = grp(); put(g, XN - .005, 0, d.z, 0, -HP, 0); deco.add(g);
+    const DWd = d.dw || .9, LW = DWd / 2;
+    g.add(mc('tc5-sidedoor|' + [o.v, DWd].join(','), ({ add, tube }) => {
+      add(G.box(DWd + .24, .14, .14, .04), C.glassF, 0, DH + .07, .05); for (const s of [-1, 1]) add(G.box(.12, DH, .14, .04), C.glassF, s * (DWd / 2 + .06), DH / 2, .05);
+      for (const s of [-1, 1]) tube([s * (DWd / 2 + .16), .9, .16], [s * (DWd / 2 + .16), 1.7, .16], .022, S.steel, 8);
+    }));
+    const leaves = [-1, 1].map(s => {
+      const l = grp(); put(l, s * DWd / 4, 0, .04); g.add(l);
+      l.add(mc('tc5-sideleaf|' + [o.v, DWd].join(','), ({ add }) => {
+        add(G.box(LW - .02, DH - .02, .05, .02), C.door, 0, (DH - .02) / 2, 0); add(G.box(LW - .1, .66, .02, .04), PAL.a.line, 0, 1.62, .026);
+        add(G.box(LW - .16, .06, .06, .01), C.trim, 0, .95, .01); add(G.box(.04, .3, .04, .01), S.steel, 0, 1.0, .04); add(G.box(LW - .06, .22, .02, .01), S.steel, 0, .13, .026);
+      }));
+      (f._ticks = f._ticks || []).push(flowView(f, LW - .2, .58, 1.62, .04, l));
+      return l;
+    });
+    f.part('door', leaves, (t, a, b) => { leaves[0].position.x = a.p.x - LW * .75 * t; leaves[1].position.x = b.p.x + LW * .75 * t; }, { label: '출입문', sfx: 'slide', dur: .45 });
+    f.spot('on', null, XN - .25, .03, d.z + .2, { maxH: .3, label: '출입문 발판', scale: .85 });
+  }
+  if (f._ticks) { const ts = f._ticks; f.tick = t => { for (const k of ts) k(t); }; }
+  // the roof's edge over this side and the cut section at both ends of the car
+  top.add(mc('tc5-sidetop|' + [o.v, W, L].join(','), ({ add }) => {
+    const e = G.ext(eaveM(-XN), L - .3, 0, 8); e.translate(0, 0, -(L - .3) / 2); add(e, C.roof, 0, 0, 0);
+    const r = G.ext(ringM(-XN), .15, .02, 8); for (const z of [-L / 2, L / 2 - .15]) add(r, C.bodyD, 0, 0, z);
+  }));
+  foldPiece(f, [body], [deco, top], yaw => -Math.sin(yaw) >= -.18);
+};
+
+// ═════════════════════════ 꼬리 끝벽 ═════════════════════════
+// (across the tail end, placed with its inside toward -z): a lower panel, two big rear windows on thick posts (a still view of the line
+// going away), a header with the train's name board outside, a hand rail under the windows inside, the red tail lamps and a little
+// marker board outside; it folds while the camera looks in from behind (the start view), stands from the front
+B.tc5tail = (f, T, o = {}) => {
+  const C = P(o), W = o.w || 4, X0 = -W / 2;
+  f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
+  f.walkBoxes = [[X0, 0, -.05, W / 2, 2.6, .05]];
+  const body = grp(), deco = grp(); f.add(body); f.add(deco); f.live = [body, deco];
+  body.add(mc('tc5-taillow|' + [o.v, W].join(','), ({ add }) => {
+    add(G.box(W + .3, 1.0, .14, .03), C.up, 0, .5, 0); add(G.box(W + .34, .07, .18, .02), C.trim, 0, 1.0, 0);
+    add(G.box(W + .32, 1.0, .05, .02), C.body, 0, .5, .095); add(G.box(W + .34, .08, .06, .01), C.line, 0, .78, .12);
+    add(G.box(W, .5, .04, .02), C.low, 0, .45, -.09);
+    for (const x of [-1.5, 1.5]) { add(G.cyl(.11, .11, .08, 14), '#f7f0e4', x, .62, .14, HP, 0, 0); add(G.cyl(.075, .075, .02, 12), S.red, x, .62, .18, HP, 0, 0); }
+  }));
+  deco.add(mc('tc5-tailup|' + [o.v, W].join(','), ({ add, tube }) => {
+    for (const x of [X0 - .05, 0, W / 2 + .05]) add(G.box(x === 0 ? .14 : .26, WH - 1.0, .16, .04), C.glassF, x, (WH + 1.0) / 2, 0);
+    add(G.box(W + .3, .22, .18, .04), C.glassF, 0, WH - .06, 0); add(G.box(W - .4, .08, .04, .02), C.bodyD, 0, WH - .2, .11);
+    tube([X0 + .3, 1.18, -.16], [W / 2 - .3, 1.18, -.16], .025, S.steel, 8); for (const x of [X0 + .3, W / 2 - .3]) tube([x, 1.18, -.16], [x, 1.18, -.04], .02, S.steel2, 6);
+  }));
+  for (const s of [-1, 1]) { const g = grp(); put(g, s * (W / 4 + .02), 0, -.02, 0, PI, 0); deco.add(g); stillView(g, W / 2 - .24, WH - 1.25, (WH + 1.0) / 2 - .06, 0, s * .4); }
+  for (const s of [-1, 1]) { const gl = mesh(new THREE.PlaneGeometry(W / 2 - .24, WH - 1.25), mat('#bfe0f2', { rim: 0 }), { cast: false }); put(gl, s * (W / 4 + .02), (WH + 1.0) / 2 - .06, .03); deco.add(gl);
+    deco.add(put(mc('tc5-tailglint', ({ add }) => { add(G.box(.06, .7, .004, .002), '#ffffff', -.3, 0, 0, 0, 0, .5); add(G.box(.03, .5, .004, .002), '#ffffff', -.18, .06, 0, 0, 0, .5); }), s * (W / 4 + .02), (WH + 1.0) / 2, .035)); }
+  const nb = flat(1.2, .16, ledTex()); put(nb, 0, WH - .06, .11); deco.add(nb);
+  const hm = mesh(new THREE.CircleGeometry(.24, 28), mat('#ffffff', { map: markTex(), rim: 0 }), { cast: false }); put(hm, 0, .5, .126); body.add(hm);
+  body.add(put(mc('tc5-markring', ({ add }) => add(G.tor(.245, .025, PI * 2, 6, 28), C.bodyD, 0, 0, 0)), 0, .5, .125));
+  // (the lower panel with the lamps and the head mark stays; the window band above folds away)
+  foldPiece(f, [], [deco], yaw => -Math.cos(yaw) * (o.dir === 1 ? -1 : 1) >= -.18);
+};
+
+// ═════════════════════════ 연결 통로 끝벽 (문 달린 출입구) ═════════════════════════
+// (across a car's end at the gangway, o.dir = the car's inside along local z): the doorway's steel frame and a dark rubber surround on
+// the gangway side that the bellows meet; a pair of doors that part to the sides (a part — they stand open, a tap shuts them and they
+// slide open again by themselves a moment later, so nobody walks through a shut door — 사용자 "문이랑 열리게 잘 만들어주고"); the wall
+// either side of the doorway and over it, full height (a fire box, the car's sign, o.ticket the numbered-ticket machine) — it goes down to
+// the knee whenever the camera looks along the train, and stands when the train is seen from its side; the frame and the doors stay.
+B.tc5gend = (f, T, o = {}) => {
+  const C = P(o), W = o.w || 4, X0 = -W / 2, inC = o.dir === -1 ? -1 : 1, out = -inC, DW2 = .66, DH = 2.1;
+  f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
+  // (walls either side, and the two open door leaves, keep walkers to the doorway: 1.1 m clear)
+  f.walkBoxes = [[X0, 0, -.08, -DW2 - .02, 2.6, .08], [DW2 + .02, 0, -.08, W / 2, 2.6, .08],
+    [-1.18, 0, Math.min(inC * .08, inC * .19), -.54, 2.2, Math.max(inC * .08, inC * .19)], [.54, 0, Math.min(inC * .08, inC * .19), 1.18, 2.2, Math.max(inC * .08, inC * .19)]];
+  const portal = grp(), body = grp(), deco = grp(); f.add(portal); f.add(body); f.add(deco); f.live = [portal, body, deco];
+  portal.add(mc('tc5-portal|' + [o.v, inC].join(','), ({ add }) => {
+    for (const s of [-1, 1]) add(G.box(.1, DH, .22, .02), S.steel, s * (DW2 - .03), DH / 2, 0); add(G.box(DW2 * 2 + .14, .1, .22, .02), S.steel, 0, DH + .05, 0);
+    for (const s of [-1, 1]) add(G.box(.2, DH + .12, .06, .02), '#4d4958', s * (DW2 + .07), (DH + .12) / 2, out * .1); add(G.box(DW2 * 2 + .5, .14, .06, .02), '#4d4958', 0, DH + .12, out * .1);
+    add(G.box(DW2 * 2, .015, .24, .005), S.yellow, 0, .008, 0);
+  }));
+  if (o.sign) { const sg = flat(.5, .14, labelTex('car' + o.sign, o.sign === 2 ? '2호차' : '1호차', PAL.a.bodyD, '#ffffff', 256, 80)); put(sg, 0, DH + .05, inC * .13, 0, inC < 0 ? PI : 0); portal.add(sg); }
+  body.add(mc('tc5-gendwall|' + [o.v, W, inC].join(','), ({ add }) => {
+    const seg = (x0, x1, y0, y1) => { const w = x1 - x0, h = y1 - y0; add(G.box(w, h, .12, .02), C.up, (x0 + x1) / 2, (y0 + y1) / 2, 0); add(G.box(w, h, .025, .008), C.body, (x0 + x1) / 2, (y0 + y1) / 2, out * .072);
+      if (y0 < .9) add(G.box(w, Math.min(.86, y1) - y0, .025, .008), C.low, (x0 + x1) / 2, y0 + (Math.min(.86, y1) - y0) / 2, inC * .072); };
+    seg(X0, -DW2 - .02, 0, WH); seg(DW2 + .02, W / 2, 0, WH); seg(-DW2 - .02, DW2 + .02, DH + .1, WH);
+    add(G.box(W, .05, .18, .02), C.trim, 0, .88, inC * .02); add(G.box(W + .02, .06, .18, .02), C.up2, 0, WH - .02, 0);
+  }));
+  const FX = o.fireX ?? X0 + .45;
+  deco.add(mc('tc5-genddeco|' + [inC, o.ticket ? 1 : 0, FX].join(','), ({ add }) => {
+    add(G.box(.42, .5, .1, .03), S.red, FX, .55, inC * .12); add(G.box(.3, .36, .01, .02), '#ffffff', FX, .58, inC * .175); add(G.cyl(.06, .06, .28, 10), S.red, FX, .45, inC * .21);
+    if (o.ticket) {
+      add(G.box(.3, .34, .2, .05), '#e2e5ea', X0 + .95, 1.2, inC * .17); add(G.box(.32, .06, .22, .02), PAL.a.trim, X0 + .95, 1.39, inC * .17);
+      add(G.box(.18, .05, .03, .01), S.dark, X0 + .95, 1.1, inC * .28); add(G.cyl(.04, .04, .03, 12), S.red, X0 + 1.03, 1.24, inC * .28, HP, 0, 0); add(G.box(.1, .006, .06, .002), S.paper, X0 + .95, 1.085, inC * .3);
+    }
+  }));
+  if (o.ticket) { const lb = flat(.24, .08, labelTex('ticket', '정리권', PAL.a.body, '#ffffff')); put(lb, X0 + .95, 1.29, inC * .272, 0, inC < 0 ? PI : 0); deco.add(lb); }
+  // the doors: two leaves that part to the sides (closed: they meet at the middle; open: tucked by the frame)
+  const leaves = [-1, 1].map(s => { const l = grp(); put(l, s * .31, 0, inC * .135); portal.add(l);
+    l.add(mc('tc5-gleaf|' + [inC, s, C.door].join(','), ({ add }) => {
+      add(G.box(.6, 2.0, .05, .025), C.door, 0, 1.0, 0); add(G.box(.04, 2.0, .06, .012), '#4d4958', -s * .3, 1.0, 0);
+      add(G.box(.4, .66, .02, .05), PAL.a.line, 0, 1.42, inC * .028); add(G.box(.34, .58, .02, .05), '#cfe9f5', 0, 1.42, inC * .036); add(G.box(.04, .45, .004, .003), '#ffffff', -.08, 1.46, inC * .048, 0, 0, .4);
+      add(G.box(.05, .26, .03, .015), '#3f3b49', -s * .22, 1.0, inC * .03); add(G.box(.55, .18, .02, .01), S.steel, 0, .11, inC * .028);
+    })); return l; });
+  const p = f.part('door', leaves, (t, a, b) => { leaves[0].position.x = a.p.x - .56 * t; leaves[1].position.x = b.p.x + .56 * t; }, { label: '연결 통로 문', sfx: 'slide', dur: .4 });
+  p.setOpen(1);
+  // (shut by a tap, they open again by themselves after a few seconds)
+  let shutAt = -1, lastT = 0;
+  f.tick = t => {
+    const dt = Math.min(.1, Math.max(0, t - lastT)); lastT = t;
+    if (p.busy || p.t >= .999) { shutAt = -1; return; }
+    if (shutAt < 0) { shutAt = t; return; }
+    if (t - shutAt > 3.5) p.setOpen(Math.min(1, p.t + dt * 2.5));
+  };
+  foldPiece(f, [body], [deco], yaw => Math.abs(Math.cos(yaw)) <= .6);
+};
+
+// ═════════════════════════ 연결 통로 (하나로 이어진 통로) ═════════════════════════
+// (between the two cars' doorways, o.len long — the end walls' faces): tread plate floor with threshold plates, full-height rubber
+// bellows on both sides in rounded folds that meet the doorways' rubber surrounds, a roof over it with its ribs, a hand rail, little signs
+// (← 1호차 · 2호차 →), a red umbrella left in the corner; the near bellows "출렁" — a tap and its halves bulge apart, something hides between
+B.tc5tunnel = (f, T, o = {}) => {
+  const L = o.len || 1.0, HW = .66, BH = 2.2;
+  f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
+  f.walkBoxes = [[-HW - .24, 0, -L / 2, -HW + .02, 2.4, L / 2], [HW - .02, 0, -L / 2, HW + .24, 2.4, L / 2]];
+  const tx = tread().clone(); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(HW, L / 2); tx.needsUpdate = true;
+  const fl = mesh(new THREE.PlaneGeometry(HW * 2, L), mat('#ffffff', { map: tx, rim: 0 }), { cast: false }); put(fl, 0, .014, 0, -HP); f.add(fl);
+  const RB = '#8d8a9c', RB2 = '#a6a3b5', RBd = '#6f6b80';
+  f.add(mc('tc5-tunnel|' + [L, o.umbrella ? 1 : 0].join(','), ({ add, tube }) => {
+    add(G.box(HW * 2 + .5, .5, L, .05), '#3c3a46', 0, -.32, 0);
+    for (const z of [-L / 2 + .06, L / 2 - .06]) { add(G.box(HW * 2, .03, .12, .01), S.steel, 0, .016, z); add(G.box(HW * 2, .012, .035, .004), S.yellow, 0, .034, z + (z < 0 ? -.045 : .045)); }
+    add(G.box(HW * 2 - .1, .008, .02, .004), '#8f98a6', 0, .02, 0);
+    const n = Math.max(6, Math.round(L / .11));
+    for (let k = 0; k < n; k++) { const z = -L / 2 + (k + .5) * L / n; add(G.box(.12, BH, L / n * .72, .03), k % 2 ? RB : RB2, -HW - .1 - (k % 2 ? .02 : 0), BH / 2, z); add(G.cyl(L / n * .3, L / n * .3, BH, 8), k % 2 ? RBd : RB, -HW - .05, BH / 2, z); }
+    // the roof: a dark cover from bellows to bellows, ribs across, a light strip under it
+    add(G.box(HW * 2 + .5, .08, L, .03), RB, 0, BH + .04, 0); for (let k = 0; k < n; k += 2) add(G.box(HW * 2 + .52, .03, .05, .01), RBd, 0, BH + .095, -L / 2 + (k + .5) * L / n);
+    for (const sx of [-1, 1]) add(G.box(.08, .1, L + .02, .02), PAL.a.bodyD, sx * (HW + .27), BH + .05, 0);
+    add(G.box(.5, .02, L - .2, .01), '#fff7d6', 0, BH - .005, 0);
+    tube([-HW + .05, .95, -L / 2 + .1], [-HW + .05, .95, L / 2 - .1], .026, S.steel, 8); for (const z of [-L / 2 + .12, L / 2 - .12]) tube([-HW + .05, .95, z], [-HW - .04, .95, z], .02, S.steel2, 6);
+    if (o.umbrella) { tube([-HW + .24, .02, -L / 2 + .22], [-HW + .12, .9, -L / 2 + .16], .03, '#e8574a', 8); add(G.tor(.05, .014, PI, 6, 10), '#8a5a34', -HW + .14, .94, -L / 2 + .16, 0, HP, 0); add(G.cone(.07, .3, 8), '#d9473c', -HW + .22, .2, -L / 2 + .21, .14, 0, 0); }
+  }));
+  for (const [k, z] of [[0, -L / 2 + .3], [1, L / 2 - .3]]) { const sg = flat(.42, .13, gangSignTex(k)); put(sg, -HW + .02, 1.55, z, 0, HP); f.add(sg); }
+  const halves = [-1, 1].map(sd => {
+    const g = grp(); put(g, HW + .08, 0, sd * L / 4); f.add(g);
+    g.add(mc('tc5-tbellow|' + L, ({ add }) => {
+      const m = Math.max(3, Math.round(L / 2 / .11));
+      for (let k = 0; k < m; k++) { const z = -L / 4 + (k + .5) * L / 2 / m; add(G.box(.12, BH, L / 2 / m * .72, .03), k % 2 ? RB : RB2, (k % 2 ? .02 : 0), BH / 2, z); add(G.cyl(L / 2 / m * .3, L / 2 / m * .3, BH, 8), k % 2 ? RBd : RB, -.04, BH / 2, z); }
+    }));
+    return g;
+  });
+  const bp = f.part('lift', halves, (t, a, b) => {
+    const w = Math.sin(t * PI) * .06;
+    halves[0].position.z = a.p.z - .2 * t; halves[1].position.z = b.p.z + .2 * t;
+    for (const g of halves) { g.scale.x = 1 + .5 * t + w * 4; g.rotation.z = -.1 * t - w; }
+  }, { label: '고무 주름막', sfx: 'rustle', dur: .45 });
+  f.spot('inside', null, HW + .02, .02, 0, { part: bp, maxH: .5, label: '주름막 사이', scale: .9 });
+  f.spot('on', null, .3, .02, .22, { maxH: .5, label: '연결 통로 구석', scale: .9 });
+};
+
+// ═════════════════════════ 차체 아래 (기계다운 밑) ═════════════════════════
+// (사용자 메모 10/24 "기차 아래쪽은 색깔 다시 정리해 줄래? … 검은색이라든지 뭔가 기계적으로. 지금은 판때기가 떠다니는 느낌"): one car's
+// underside, at the car's middle — a shallow body band (the teal livery, cream line, orange stripe, the car's name plate) sitting on a
+// near-black underframe that runs the car's length; hung under it, dark-grey machinery the eye can read — equipment boxes with louvres
+// and a yellow warning tag, an air tank, a pipe run; two bogies (a bolster, side frames outside the wheels, axle boxes with steel caps,
+// coil springs, brake blocks) on turning wheels with bright treads; at the outer end a knuckle coupler with its air hoses (o.nose: a
+// dark snowplough with a thin orange edge; o.tail: the tail end — its lamps and head mark are on the tail wall now). Nothing floats:
+// band, frame, bogies and couplers touch.
+const UF = '#2d2a35', UF2 = '#3a3744', UF3 = '#4a4756', TREAD = '#a7b0ba';
+B.tc5chassis = (f, T, o = {}) => {
+  const C = P(o), W = o.w || 4, L = o.len || 6, WY = -1.05, WR = .3, GA = 1.1, BZ = L / 2 - 1.2;
+  f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
+  f.add(mc('tc5-chassis|' + [o.v, W, L, o.nose ? 1 : 0, o.tail ? 1 : 0, o.doorZ ?? 'n'].join(','), ({ add, tube }) => {
+    // the band and the frame
+    add(G.box(W + .3, .36, L, .05), C.body, 0, -.2, 0);
+    add(G.box(W + .34, .07, L + .02, .02), C.line, 0, -.055, 0); add(G.box(W + .36, .045, L + .03, .012), C.trim, 0, -.31, 0);
+    for (let z = -L / 2 + .35; z < L / 2 - .2; z += .55) for (const sx of [-1, 1]) add(G.sph(.022, 6, 4), C.bodyD, sx * (W / 2 + .155), -.2, z);
+    add(G.box(W + .16, .14, L - .06, .03), UF, 0, -.45, 0);
+    add(G.box(W - .3, .06, L - .3, .02), UF2, 0, -.55, 0);
+    // under the frame, near side: an equipment box with louvres and a yellow tag, an air tank on straps, a pipe run; far side: two boxes
+    add(G.box(1.2, .36, .5, .05), UF2, .2, -.72, W / 2 - .45); for (let k = 0; k < 5; k++) add(G.box(.9, .022, .02, .004), UF, .2, -.62 - k * .055, W / 2 - .19);
+    add(G.box(.14, .08, .01, .01), '#f2c14e', .65, -.62, W / 2 - .195);
+    add(G.cyl(.15, .15, 1.0, 14), UF3, -.9, -.7, 0, 0, 0, HP); for (const dz of [-.3, .3]) add(G.tor(.152, .012, PI * 2, 4, 16), UF, -.9 + dz, -.7, 0, 0, HP, 0);
+    tube([-L / 2 + 1.9, -.56, W / 2 - .2], [L / 2 - 1.9, -.56, W / 2 - .2], .022, '#1f1c26', 6);
+    add(G.box(.9, .3, .5, .05), UF2, .1, -.7, -W / 2 + .45); add(G.box(.6, .26, .4, .04), UF3, -.9, -.68, -W / 2 + .5);
+    // the bogies
+    for (const bz of [-BZ, BZ]) {
+      add(G.box(2.5, .16, .55, .05), UF2, 0, -.66, bz); add(G.cyl(.18, .2, .1, 14), UF, 0, -.56, bz);
+      for (const sx of [-1, 1]) {
+        const x = sx * (GA + .24);
+        add(G.box(.12, .2, 1.55, .04), UF2, x, WY + .02, bz); add(G.box(.12, .12, .8, .03), UF2, x, WY + .2, bz);
+        for (const dz of [-.42, .42]) {
+          add(G.box(.18, .2, .22, .04), UF3, x + sx * .02, WY, bz + dz); add(G.cyl(.065, .065, .05, 12), S.steel, x + sx * .13, WY, bz + dz, 0, 0, HP);
+          add(G.cyl(.06, .06, .2, 10), '#5c5968', x, WY + .2, bz + dz); for (let k = 0; k < 3; k++) add(G.tor(.062, .012, PI * 2, 4, 12), '#6c6878', x, WY + .13 + k * .06, bz + dz, HP, 0, 0);
+        }
+        for (const dz of [-.74, .74]) add(G.box(.08, .2, .1, .02), '#5a5766', sx * (GA + .02), WY, bz + dz);
+        add(G.cyl(.06, .06, .22, 10), UF, sx * (GA - .2), WY + .18, bz, HP, 0, 0);
+      }
+    }
+    // a step under the near door
+    if (o.doorZ != null) { add(G.box(.32, .04, 1.0, .01), UF3, W / 2 + .05, -.42, o.doorZ); for (const dz of [-.45, .45]) add(G.box(.04, .2, .04, .01), UF, W / 2 + .05, -.33, o.doorZ + dz); }
+    // the couplers at the outer end (and a short stub at the gangway end), the air hoses
+    for (const [end, full] of [[o.nose ? -1 : o.tail ? 1 : 0, true], [o.nose ? 1 : o.tail ? -1 : 0, false]]) {
+      if (!end) continue;
+      const z0 = end * L / 2;
+      add(G.box(.18, .14, full ? .55 : .3, .03), UF, 0, -.58, z0 + end * (full ? .25 : .12));
+      if (full) {
+        add(G.box(.34, .26, .2, .05), UF2, 0, -.58, z0 + end * .55); add(G.box(.14, .2, .12, .03), UF, .12, -.58, z0 + end * .66);
+        for (const sx of [-1, 1]) { tube([sx * .45, -.5, z0 + end * .08], [sx * .5, -.72, z0 + end * .3], .03, '#1f1c26', 6); tube([sx * .5, -.72, z0 + end * .3], [sx * .42, -.86, z0 + end * .38], .03, '#1f1c26', 6); add(G.box(.08, .06, .06, .02), '#d94b40', sx * .42, -.89, z0 + end * .38); }
+        add(G.box(W - .4, .12, .05, .02), UF2, 0, -.42, z0 + end * .04);
+      }
+    }
+    if (o.nose) {
+      // the snowplough: a dark slanted blade with a thin orange edge
+      add(G.box(W - .3, .34, .16, .06), UF2, 0, -.72, -L / 2 - .12, -.25, 0, 0); add(G.box(W - .3, .04, .18, .01), C.trim, 0, -.56, -L / 2 - .16, -.25, 0, 0);
+    }
+  }));
+  // the car's name plate on the near side of the band (it faces the camera)
+  const bt = flat(1.4, .22, bodyTex(o.carNo || 1)); put(bt, W / 2 + .155, -.19, o.tail ? 1.4 : -1.4, 0, HP); f.add(bt);
+  // the wheels, an axle each pair, turning as the train goes: dark discs, bright treads, steel hubs
+  const axles = [];
+  for (const bz of [-BZ, BZ]) for (const dz of [-.42, .42]) {
+    const ax = grp(); put(ax, 0, WY, bz + dz); f.add(ax); axles.push(ax);
+    ax.add(mc('tc5-axle3', ({ add }) => {
+      for (const sx of [-1, 1]) {
+        add(G.cyl(WR, WR, .1, 18), '#2b2833', sx * GA, 0, 0, 0, 0, HP); add(G.tor(WR - .012, .018, PI * 2, 5, 22), TREAD, sx * GA, 0, 0, 0, HP, 0);
+        add(G.cyl(.12, .12, .12, 12), S.steel2, sx * GA, 0, 0, 0, 0, HP); add(G.box(WR * 1.6, .05, .03, .01), '#45414f', sx * (GA + .055), 0, 0);
+      }
+      add(G.cyl(.045, .045, GA * 2, 8), '#1f1c26', 0, 0, 0, 0, 0, HP);
+    }));
+  }
+  f.live = axles;
+  let last = -1;
+  f.tick = t => { const fr = Math.floor(t * 30); if (fr === last) return; last = fr; for (const a of axles) a.rotation.x = -t * 15; };
+};
+
+// ═════════════════════════ 객실 등 (터널 연출) ═════════════════════════
+// round lamps under the roof's edge (on the far wall, o.lamps in tc5wall): off in the daylight, warm and glowing while the train runs
+// through a tunnel (사용자 메모 "중간에 터널 들어가는 연출도 해 줘" — the windows go dark on their own clock, TUN; the lamps come on and
+// the light in the car turns a little warm, for those two or three seconds; nothing covers the screen). One shared material and glow.
+const LAMP_OFF = new THREE.Color('#eee6d4'), LAMP_ON = new THREE.Color('#ffe7a0');
+const LAMP = new THREE.MeshBasicMaterial({ color: LAMP_OFF.clone() }); LAMP.toneMapped = false;
+const GLOW = new THREE.MeshBasicMaterial({ map: null, color: '#ffd98a', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }); GLOW.toneMapped = false;
+const glowTex = () => TX.get('tc5-glow', () => canvasTex(64, 64, (c, W, H) => { const g = c.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }));
+function addLamps(group, X0, L) {
+  if (!GLOW.map) { GLOW.map = glowTex(); GLOW.needsUpdate = true; }
+  group.add(mc('tc5-lampbases|' + L, ({ add }) => { for (let z = -L / 2 + .8; z < L / 2 - .5; z += 1.45) { add(G.cyl(.12, .14, .05, 16), S.steel2, X0 + .42, WH + .26, z); } }));
+  for (let z = -L / 2 + .8; z < L / 2 - .5; z += 1.45) {
+    const m = mesh(new THREE.SphereGeometry(.1, 14, 8, 0, PI * 2, PI / 2, PI / 2), LAMP, { cast: false }); put(m, X0 + .42, WH + .24, z); group.add(m);
+    const g = mesh(new THREE.PlaneGeometry(.9, .9), GLOW, { cast: false }); put(g, X0 + .42, WH + .1, z, HP); g.layers.set(2); g.userData.noOcclude = true; g.renderOrder = 4; group.add(g);
+  }
+}
+// the tunnel's light in the car: the lamps, a warmer and a little brighter ambient light, a softer sun (the room's own lights, found once)
+function tunnelLight(root, t, st) {
+  const ph = t % TUN.every - TUN.at, k = ph < 0 || ph > TUN.len ? 0 : Math.min(1, ph / .35, (TUN.len - ph) / .35);
+  if (k === st.k && k === 0) { if (st.lights) for (const L of st.lights) { L.i0 = L.l.intensity; L.c0.copy(L.l.color); } return; }
+  if (!st.lights) { st.lights = []; root.traverse(o => { if (o.isAmbientLight || o.isHemisphereLight || o.isDirectionalLight) st.lights.push({ l: o, i0: o.intensity, c0: o.color.clone() }); }); }
+  st.k = k;
+  LAMP.color.lerpColors(LAMP_OFF, LAMP_ON, k); GLOW.opacity = .6 * k;
+  for (const L of st.lights) {
+    if (L.l.isDirectionalLight) L.l.intensity = L.i0 * (1 - .4 * k);
+    else { L.l.intensity = L.i0 * (1 + .2 * k); L.l.color.copy(L.c0).lerp(WARM, .55 * k); }
+  }
+}
+const WARM = new THREE.Color('#ffd9a0');
 
 export const TRAINCAR5_BUILDERS = B;
 export const TRAINCAR5_INFO = {
@@ -991,4 +1362,9 @@ export const TRAINCAR5_INFO = {
   tc5bags: { w: 1, d: .5, name: '바닥 짐', hidden: true },
   tc5track: { w: 3, d: 18, name: '흐르는 선로', hidden: true },
   tc5mat: { w: 1.1, d: 3, name: '통로 매트', hidden: true },
+  tc5side: { w: .3, d: 6, name: '칸 옆벽', hidden: true },
+  tc5tail: { w: 4, d: .3, name: '꼬리 끝벽', hidden: true },
+  tc5gend: { w: 4, d: .3, name: '통로 끝벽', hidden: true },
+  tc5chassis: { w: 4, d: 6, name: '차체 아래', hidden: true },
+  tc5tunnel: { w: 1.8, d: 1, name: '연결 통로', hidden: true },
 };

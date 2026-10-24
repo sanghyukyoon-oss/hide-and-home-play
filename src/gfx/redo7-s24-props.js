@@ -8,7 +8,7 @@
 // 1 '보드 보관함 문'(lockAt) · skb_miniramp 0 '램프 보드'·1 '램프 밑 천막' · skb_scoreboard '점수판' ·
 // skb_gacha '캡슐 손잡이' · skb_spinrack '보드 진열대'. 좌표는 방 좌표(가구 원점 = 발자국 가운데, 앞 = +z). 방 8 × 6, 섬은 방보다 조금 크게.
 import * as THREE from 'three';
-import { put, mat, mesh, canvasTex, texCache, roundRect, shade, starShape } from './kit.js';
+import { put, mat, mesh, canvasTex, texCache, roundRect, shade } from './kit.js';
 import { HG as G, hmc as rawMc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
@@ -21,8 +21,8 @@ const PI = Math.PI, HP = PI / 2;
 const mc = (key, fn) => rawMc('skb|' + key, fn);
 const TEX = texCache();
 const C = {
-  conc: '#cdc6cf', conc2: '#b8b0bc', conc3: '#a59cab', deck: '#e2dde4', steel: '#cdd3e2', steelD: '#8f97b2', ink: '#2a1d33',
-  wood: '#e9bb82', woodD: '#b98551', ply: '#f0cf9c', earth: '#b48f6c', earth2: '#977459', grass: '#93cc6a', grass2: '#74b453',
+  conc: '#cfccc6', conc2: '#b9b5ae', conc3: '#a29d96', deck: '#e3e0da', steel: '#cdd3e2', steelD: '#8f97b2', ink: '#2a1d33',
+  wood: '#e9bb82', woodD: '#b98551', ply: '#f0cf9c', earth: '#b48f6c', earth2: '#977459', grass: '#a7c58c', grass2: '#8fb276',
   pink: '#ff7eb0', mint: '#7fd8c4', yel: '#ffd250', sky: '#7cc4ef', red: '#f0564a', violet: '#a98ce8', orange: '#ff9a4a',
   tile: '#4f8fd8', tile2: '#eef6ff',
 };
@@ -45,7 +45,7 @@ const flat = (pts, m, y) => { const o = mesh(new THREE.ShapeGeometry(shapeOf(pts
 // ── 텍스처 ─────────────────────────────────────────────────────────────────────────────────────────────────────
 // 광장 콘크리트: 1.5 m 줄눈, 흙손 자국, 잔 알갱이, 바퀴 자국, 실금 — 한 장이 3 m
 const plazaTex = () => TEX.get('plaza', () => canvasTex(1024, 1024, (c, w, h) => {
-  c.fillStyle = '#c9c2c8'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#cbc8c2'; c.fillRect(0, 0, w, h);
   for (let k = 0; k < 40; k++) { const x = hash(k + 1) * w, y = hash(k + 2) * h, r = 40 + hash(k + 3) * 120; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, hash(k + 4) < .5 ? 'rgba(255,255,255,.10)' : 'rgba(120,110,130,.07)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
   // 흙손 자국: 옅은 호
   c.lineWidth = 2; for (let k = 0; k < 60; k++) { c.strokeStyle = `rgba(255,255,255,${.07 + hash(k + 9) * .07})`; const x = hash(k + 10) * w, y = hash(k + 11) * h, r = 50 + hash(k + 12) * 90, a = hash(k + 13) * 6; c.beginPath(); c.arc(x, y, r, a, a + .8); c.stroke(); }
@@ -61,12 +61,15 @@ const plazaTex = () => TEX.get('plaza', () => canvasTex(1024, 1024, (c, w, h) =>
 }, { repeat: [1 / 3, 1 / 3] }));
 // 보울 안 (보울 전체가 한 장): 시원한 회색 매끈한 콘크리트, 바닥 가운데는 조금 어둡게 닳음, 둘레를 도는 바퀴 자국, 곡면이 시작되는 곳의 분홍 페인트 선
 const bowlTex = () => TEX.get('bowl2', () => canvasTex(1024, 1024, (c, w, h) => {
-  c.fillStyle = '#b7bdca'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#b3b4b6'; c.fillRect(0, 0, w, h);
   const g = c.createRadialGradient(w / 2, h / 2, 40, w / 2, h / 2, w * .42); g.addColorStop(0, 'rgba(120,118,140,.18)'); g.addColorStop(.7, 'rgba(120,118,140,.06)'); g.addColorStop(1, 'rgba(255,255,255,.12)'); c.fillStyle = g; c.fillRect(0, 0, w, h);
   for (let k = 0; k < 2600; k++) { const n = hash(k + 300); c.fillStyle = n < .55 ? 'rgba(90,92,118,.1)' : 'rgba(255,255,255,.22)'; c.fillRect(hash(k + 301) * w, hash(k + 302) * h, 2, 2); }
   c.lineCap = 'round'; for (let k = 0; k < 18; k++) { c.strokeStyle = `rgba(46,42,62,${.1 + hash(k + 320) * .12})`; c.lineWidth = 3 + hash(k + 321) * 4; const r = .22 + hash(k + 322) * .24, a = hash(k + 323) * 6;
     for (const o of [0, .018]) { c.beginPath(); c.ellipse(w / 2, h / 2, (r + o) * w, (r + o) * h, 0, a, a + 1 + hash(k + 324) * 1.6); c.stroke(); } }
-  c.strokeStyle = 'rgba(255,126,176,.7)'; c.lineWidth = 7; c.setLineDash([60, 26]); c.beginPath(); c.ellipse(w / 2, h / 2, w * .36, h * .33, 0, 0, PI * 2); c.stroke(); c.setLineDash([]);
+  // (10/24 "질감으로 — 사용 흔적"): 코핑 밑 둘레의 짙은 왁스 자국, 배수구 둘레 젖은 고리, 바닥의 실금 하나
+  for (let k = 0; k < 9; k++) { const an = hash(k + 860) * PI * 2; c.fillStyle = 'rgba(70,66,84,.16)'; c.beginPath(); c.ellipse(w / 2 + Math.cos(an) * w * .44, h / 2 + Math.sin(an) * h * .43, 60, 14, an + HP, 0, PI * 2); c.fill(); }
+  const dg = c.createRadialGradient(w / 2, h / 2, 30, w / 2, h / 2, 150); dg.addColorStop(0, 'rgba(80,90,110,.22)'); dg.addColorStop(1, 'rgba(80,90,110,0)'); c.fillStyle = dg; c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(60,56,70,.45)'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(w * .62, h * .6); for (let k = 1; k < 9; k++) c.lineTo(w * .62 + k * 18 + (k % 2 ? 6 : -4), h * .6 + k * 10); c.stroke();
   c.fillStyle = 'rgba(255,255,255,.3)'; for (let k = 0; k < 24; k++) { c.beginPath(); c.ellipse(hash(k + 340) * w, hash(k + 341) * h, 16 + hash(k + 342) * 30, 6, hash(k + 343) * 3, 0, PI * 2); c.fill(); }
 }));
 // 코핑 밑 수영장 타일 띠: 파랑·흰 15 cm 타일 두 줄, 가끔 한 장 빠짐 — 가로 한 장이 1.2 m
@@ -86,71 +89,73 @@ const rampTex = () => TEX.get('ramp', () => canvasTex(512, 512, (c, w, h) => {
 }, { repeat: [.5, .5] }));
 
 // 그래피티 (아무의 태그도 베끼지 않은 동그란 글자·별·웃는 바퀴): 넓은 띠 한 장. kind로 몇 가지
-function bubbleWord(c, s, x, y, px, fill, edge = C.ink) {
-  c.font = `900 ${px}px Jua, Ssurround, "Arial Rounded MT Bold", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
-  c.strokeStyle = edge; c.lineWidth = px * .34; c.strokeText(s, x + px * .06, y + px * .08);
-  c.fillStyle = edge; c.fillText(s, x + px * .06, y + px * .08);
-  c.strokeStyle = '#ffffff'; c.lineWidth = px * .2; c.strokeText(s, x, y);
-  c.fillStyle = fill; c.fillText(s, x, y);
-  c.save(); c.globalAlpha = .45; c.fillStyle = '#ffffff'; c.beginPath(); c.rect(x - px * 4, y - px * .55, px * 8, px * .28); c.clip(); c.fillText(s, x, y); c.restore();
-}
-function drips(c, x0, x1, y, col, seed) {
-  c.fillStyle = col; for (let k = 0; k < 7; k++) { const x = x0 + hash(seed + k) * (x1 - x0), L = 12 + hash(seed + k + 9) * 40; roundRect(c, x - 3, y, 6, L, 3); c.fill(); c.beginPath(); c.arc(x, y + L, 5, 0, PI * 2); c.fill(); }
-}
-function star(c, x, y, R, col, rot = 0) {
-  c.save(); c.translate(x, y); c.rotate(rot); c.beginPath(); for (let k = 0; k < 10; k++) { const a = -HP + k * PI / 5, r = k % 2 ? R * .45 : R; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath();
-  c.lineJoin = 'round'; c.strokeStyle = C.ink; c.lineWidth = R * .22; c.stroke(); c.fillStyle = col; c.fill(); c.restore();
-}
-function smileWheel(c, x, y, R) {
-  c.lineWidth = R * .16; c.strokeStyle = C.ink; c.fillStyle = '#fff4d6'; c.beginPath(); c.arc(x, y, R, 0, PI * 2); c.fill(); c.stroke();
-  c.fillStyle = C.yel; c.beginPath(); c.arc(x, y, R * .42, 0, PI * 2); c.fill(); c.stroke();
-  c.fillStyle = C.ink; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(x + s * R * .38, y - R * .55, R * .08, R * .12, 0, 0, PI * 2); c.fill(); }
-  c.lineWidth = R * .1; c.beginPath(); c.arc(x, y + R * .55, R * .28, .2, PI - .2); c.stroke();
-  for (const s of [-1, 1]) { c.fillStyle = 'rgba(255,126,176,.6)'; c.beginPath(); c.ellipse(x + s * R * .65, y + R * .45, R * .14, R * .08, 0, 0, PI * 2); c.fill(); }
-}
-const graffitiTex = (kind) => TEX.get('graf|' + kind, () => canvasTex(2048, 384, (c, w, h) => {
-  // 바탕: 회색 콘크리트에 페인트 얼룩
-  c.fillStyle = kind === 'mural' ? '#e9e4e0' : '#d3ced8'; c.fillRect(0, 0, w, h);
-  for (let k = 0; k < 2200; k++) { c.fillStyle = hash(k + 600) < .5 ? 'rgba(100,90,115,.1)' : 'rgba(255,255,255,.18)'; c.fillRect(hash(k + 601) * w, hash(k + 602) * h, 2, 2); }
-  const blob = (x, y, rx, ry, col) => { c.fillStyle = col; c.beginPath(); for (let k = 0; k <= 24; k++) { const a = k / 24 * PI * 2, rr = 1 + .12 * Math.sin(a * 3 + x); c.lineTo(x + Math.cos(a) * rx * rr, y + Math.sin(a) * ry * rr); } c.fill(); };
-  if (kind === 'mural') {
-    blob(330, 200, 300, 150, '#bfe8f4'); blob(1050, 190, 380, 160, '#ffd7e6'); blob(1720, 200, 300, 150, '#fff0b8');
-    bubbleWord(c, 'SKATE', 360, 200, 150, C.mint); drips(c, 160, 560, 270, C.mint, 3);
-    bubbleWord(c, 'BOARD KING', 1060, 190, 128, C.pink); drips(c, 760, 1360, 250, C.pink, 7);
-    smileWheel(c, 1690, 190, 110);
-    star(c, 640, 90, 46, C.yel, .2); star(c, 1430, 300, 36, C.sky, -.3); star(c, 1900, 90, 30, C.pink, .5); star(c, 90, 80, 30, C.yel, -.2);
-    c.strokeStyle = C.violet; c.lineWidth = 10; c.lineCap = 'round'; c.beginPath(); c.moveTo(1460, 80); c.bezierCurveTo(1520, 30, 1560, 140, 1620, 70); c.stroke();
-    c.fillStyle = C.orange; for (let k = 0; k < 7; k++) { c.beginPath(); c.arc(1950 - k * 22, 320 - (k % 2) * 16, 9, 0, PI * 2); c.fill(); }
-  } else {
-    // 보울 바깥 벽 / 펀박스 옆: 작은 글자·스티커 모음
-    blob(260, 190, 220, 120, '#ffe1ec'); bubbleWord(c, 'BOWL', 260, 190, 120, C.sky); drips(c, 100, 420, 250, C.sky, 11);
-    star(c, 560, 120, 50, C.yel, .3); smileWheel(c, 760, 210, 80);
-    blob(1140, 190, 260, 120, '#d9f3e8'); bubbleWord(c, 'SK8', 1140, 190, 140, C.orange); drips(c, 980, 1300, 260, C.orange, 17);
-    star(c, 1460, 250, 40, C.pink, -.2);
-    blob(1760, 190, 230, 110, '#efe6ff'); bubbleWord(c, 'ROLL', 1760, 190, 112, C.violet);
-    // 스티커 몇 장
-    for (const [x, y, col, r] of [[470, 300, '#ffffff', .2], [1560, 110, C.yel, -.15], [1980, 300, C.mint, .1]]) { c.save(); c.translate(x, y); c.rotate(r); c.fillStyle = col; roundRect(c, -40, -22, 80, 44, 10); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 4; c.stroke(); c.fillStyle = C.red; c.beginPath(); c.arc(-14, 0, 9, 0, PI * 2); c.fill(); c.fillStyle = C.ink; c.fillRect(2, -6, 28, 5); c.fillRect(2, 4, 20, 5); c.restore(); }
-  }
+// ── 재질 (10/24 사용자 "그래피티는 그냥 빼고 질감으로 하자. 다양한 질감이고 사용 흔적이 좀 있는 느낌으로"): 면마다 다른 재질 한 장씩 —
+// 같은 그림을 여러 면에 돌려 쓰지 않음. 광장(줄눈 콘크리트) · 보울 안(흙손 마감) · 보울 바깥(거푸집 결 노출 콘크리트) · 레일뱅크 옆(자갈 박힌
+// 워시 콘크리트) · 램프 옆(페인트 벗겨진 합판) · 뒤 벽(시멘트 블록) · 매점(녹물 흐른 골함석)
+const speck = (c, w, h, n, seed, dark = 'rgba(70,64,76,.12)', light = 'rgba(255,255,255,.14)') => { for (let k = 0; k < n; k++) { const q = hash(seed + k); c.fillStyle = q < .5 ? dark : light; c.fillRect(hash(seed + k + 1) * w, hash(seed + k + 2) * h, 1.5 + hash(seed + k + 3) * 2, 1.5 + hash(seed + k + 4) * 2); } };
+const streaks = (c, w, h, n, seed, col, top = 0) => { for (let k = 0; k < n; k++) { const x = hash(seed + k) * w, L = h * (.2 + hash(seed + k + 1) * .5), ww = 6 + hash(seed + k + 2) * 18;
+  const g = c.createLinearGradient(0, top, 0, top + L); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x, top, ww, L); } };
+// 보울 바깥: 거푸집 판자 자국(가로 띠마다 결과 이음), 폼타이 구멍 줄, 위에서 흘러내린 빗물 얼룩, 바닥 쪽 흙 튄 자국
+const formTex = () => TEX.get('form', () => canvasTex(1024, 256, (c, w, h) => {
+  c.fillStyle = '#c3c0ba'; c.fillRect(0, 0, w, h);
+  const bh = h / 4;
+  for (let r = 0; r < 4; r++) { c.fillStyle = `rgba(${r % 2 ? '255,255,255,.05' : '60,55,60,.05'})`; c.fillRect(0, r * bh, w, bh);
+    c.strokeStyle = 'rgba(80,74,82,.16)'; c.lineWidth = 1.2; for (let k = 0; k < 7; k++) { const y = r * bh + 6 + k * (bh - 12) / 6 + (hash(r * 9 + k) - .5) * 4; c.beginPath(); c.moveTo(0, y); for (let x = 0; x <= w; x += 32) c.lineTo(x, y + Math.sin(x * .02 + r + k) * 1.6); c.stroke(); }
+    c.fillStyle = 'rgba(90,84,92,.35)'; c.fillRect(0, r * bh - 1, w, 2);
+    for (let x = 90 + r * 37; x < w; x += 240) c.fillRect(x, r * bh, 2, bh); }
+  for (let k = 0; k < 2; k++) for (let x = 60; x < w; x += 160) { const y = bh * (k * 2 + 1); c.fillStyle = '#9c978f'; c.beginPath(); c.arc(x + (k ? 80 : 0), y, 6, 0, PI * 2); c.fill(); c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.arc(x + (k ? 80 : 0) - 1.5, y - 1.5, 2.2, 0, PI * 2); c.fill(); }
+  speck(c, w, h, 2200, 1200);
+  streaks(c, w, h, 16, 1300, 'rgba(70,66,74,.14)');
+  const g = c.createLinearGradient(0, h * .75, 0, h); g.addColorStop(0, 'rgba(120,98,80,0)'); g.addColorStop(1, 'rgba(120,98,80,.28)'); c.fillStyle = g; c.fillRect(0, h * .75, w, h * .25);
 }, { repeat: [1, 1] }));
-// 바닥 그림: 큰 동그라미 안 별 (스프레이 분필)
-const groundArtTex = () => TEX.get('groundart', () => canvasTex(512, 512, (c, w, h) => {
-  c.clearRect(0, 0, w, h);
-  c.lineWidth = 16; c.strokeStyle = 'rgba(255,126,176,.85)'; c.beginPath(); c.arc(w / 2, h / 2, 200, 0, PI * 2); c.stroke();
-  c.setLineDash([22, 18]); c.lineWidth = 8; c.strokeStyle = 'rgba(127,216,196,.9)'; c.beginPath(); c.arc(w / 2, h / 2, 165, 0, PI * 2); c.stroke(); c.setLineDash([]);
-  star(c, w / 2, h / 2 + 6, 110, 'rgba(255,210,80,.95)', 0);
-}));
+// 레일뱅크 옆: 워시 콘크리트 — 박힌 자갈(옅은 회·황토·검정), 위 모서리 깨진 자국, 아래 바퀴 때
+const aggTex = () => TEX.get('agg', () => canvasTex(1024, 256, (c, w, h) => {
+  c.fillStyle = '#b4b0aa'; c.fillRect(0, 0, w, h);
+  const cols = ['#d9d4cb', '#c8bba8', '#9d968e', '#e9e4dc', '#867f78', '#c4ad8f'];
+  for (let k = 0; k < 1500; k++) { const x = hash(k + 1400) * w, y = hash(k + 1401) * h, r = 2 + hash(k + 1402) * 5; c.fillStyle = cols[k % 6]; c.beginPath(); c.ellipse(x, y, r * 1.2, r, hash(k + 1403) * 3, 0, PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x - r * .5, y - r * .6, r * .6, 1.2); }
+  speck(c, w, h, 1200, 1500, 'rgba(50,46,52,.18)');
+  // 위 모서리 깨진 자국 · 쓸린 자국
+  for (let k = 0; k < 9; k++) { const x = hash(k + 1600) * w, ww = 12 + hash(k + 1601) * 40; c.fillStyle = '#8f8a84'; c.beginPath(); c.moveTo(x, 0); c.lineTo(x + ww, 0); c.lineTo(x + ww * .6, 6 + hash(k + 1602) * 10); c.closePath(); c.fill(); }
+  c.fillStyle = 'rgba(40,36,44,.18)'; for (let k = 0; k < 12; k++) c.fillRect(hash(k + 1700) * w, h - 22 - hash(k + 1701) * 20, 40 + hash(k + 1702) * 90, 3);
+}, { repeat: [1, 1] }));
+// 램프 옆판: 합판 결 위에 옅은 세이지 페인트, 아래쪽·모서리부터 벗겨져 나무가 보임, 나사 줄, 보드 쓸린 자국
+const plySideTex = () => TEX.get('plyside', () => canvasTex(1024, 256, (c, w, h) => {
+  c.fillStyle = '#d8b088'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(150,100,60,.25)'; c.lineWidth = 1.4; for (let k = 0; k < 40; k++) { const y = hash(k + 1800) * h; c.beginPath(); c.moveTo(0, y); c.bezierCurveTo(w * .3, y + 8, w * .6, y - 8, w, y + (hash(k + 1801) - .5) * 14); c.stroke(); }
+  // 페인트: 위에서부터 칠, 아래는 물결 모양으로 벗겨짐 + 군데군데 조각
+  c.save(); c.beginPath(); c.moveTo(0, 0); c.lineTo(w, 0); for (let x = w; x >= 0; x -= 16) c.lineTo(x, h * .7 + Math.sin(x * .03) * 14 + (hash(x + 1900) - .5) * 18); c.closePath(); c.clip();
+  c.fillStyle = '#a9c3b4'; c.fillRect(0, 0, w, h); speck(c, w, h, 700, 1950, 'rgba(60,80,70,.12)');
+  c.restore();
+  c.fillStyle = '#d8b088'; for (let k = 0; k < 22; k++) { const x = hash(k + 2000) * w, y = hash(k + 2001) * h * .65, r = 4 + hash(k + 2002) * 14; c.beginPath(); for (let q = 0; q <= 10; q++) { const a = q / 10 * PI * 2, rr = r * (.6 + hash(k * 13 + q) * .5); c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr * .7); } c.fill(); }
+  c.fillStyle = 'rgba(90,60,40,.55)'; for (let x = 24; x < w; x += 72) for (const y of [16, h - 18]) { c.beginPath(); c.arc(x, y, 3.2, 0, PI * 2); c.fill(); }
+  c.strokeStyle = 'rgba(40,30,30,.18)'; c.lineCap = 'round'; c.lineWidth = 4; for (let k = 0; k < 8; k++) { const x = hash(k + 2100) * w, y = h * (.4 + hash(k + 2101) * .5); c.beginPath(); c.moveTo(x, y); c.lineTo(x + 60 + hash(k + 2102) * 80, y + (hash(k + 2103) - .5) * 20); c.stroke(); }
+}, { repeat: [1, 1] }));
+// 뒤 벽: 시멘트 블록(40 × 20, 엇갈림), 블록마다 옅은 차이, 줄눈, 위에서 흐른 물 자국과 하얀 백화, 아래 물 튄 띠, 모서리 이끼
+const blockTex = () => TEX.get('cmu', () => canvasTex(1024, 640, (c, w, h) => {
+  c.fillStyle = '#a7a39c'; c.fillRect(0, 0, w, h);
+  const bw = 128, bh = 64;
+  for (let r = 0; r * bh < h; r++) for (let k = -1; k * bw < w; k++) { const x = k * bw + (r % 2) * bw / 2, y = r * bh, n = hash(r * 31 + k + 2200);
+    c.fillStyle = n < .2 ? '#c9c5bd' : n < .6 ? '#c2beb6' : '#bbb7ae'; c.fillRect(x + 3, y + 3, bw - 6, bh - 6);
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(x + 3, y + 3, bw - 6, 3); }
+  speck(c, w, h, 3000, 2300);
+  streaks(c, w, h, 10, 2400, 'rgba(70,66,74,.16)');
+  for (let k = 0; k < 6; k++) { const x = hash(k + 2500) * w, y = bh * (1 + Math.floor(hash(k + 2501) * 6)); c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(x, y + 10, 26 + hash(k + 2502) * 30, 8, 0, 0, PI * 2); c.fill(); }
+  const g = c.createLinearGradient(0, h * .82, 0, h); g.addColorStop(0, 'rgba(90,80,70,0)'); g.addColorStop(1, 'rgba(90,80,70,.3)'); c.fillStyle = g; c.fillRect(0, h * .82, w, h * .18);
+  c.fillStyle = 'rgba(110,140,80,.45)'; for (let k = 0; k < 40; k++) { c.beginPath(); c.arc(hash(k + 2600) * 90, h - hash(k + 2601) * 70, 3 + hash(k + 2602) * 5, 0, PI * 2); c.fill(); }
+}, { repeat: [1, 1] }));
+// (10/24 사용자 "넘 촌스러워 … 매점 간판·현수막 큰 한글도 작게, 영어도 섞어 세련되게"): 차분한 남색 판에 작은 글자, 별·원색 띠 없음
 const signTex = () => TEX.get('sign', () => textTex(512, 256, (c, w, h) => {
-  c.fillStyle = '#2f2a48'; roundRect(c, 3, 3, w - 6, h - 6, 18); c.fill();
-  c.strokeStyle = C.yel; c.lineWidth = 5; roundRect(c, 11, 11, w - 22, h - 22, 13); c.stroke();
-  fitText(c, '보드킹 파크', w / 2, h * .38, w * .8, 46, '#ffffff', { weight: '800' });
-  fitText(c, '헬멧 꼭!', w / 2, h * .72, w * .6, 30, C.yel, { weight: '800' });
+  c.fillStyle = '#2f3440'; roundRect(c, 3, 3, w - 6, h - 6, 14); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2; roundRect(c, 12, 12, w - 24, h - 24, 9); c.stroke();
+  fitText(c, 'BOARD KING PARK', w / 2, h * .4, w * .72, 34, '#f2efe8', { weight: '800' });
+  fitText(c, '헬멧 꼭 · HELMET ON', w / 2, h * .68, w * .56, 20, '#c9d4cf', { weight: '800' });
 }));
 const scoreFront = () => TEX.get('scoreF', () => textTex(512, 320, (c, w, h) => {
-  c.fillStyle = '#fbf6ea'; roundRect(c, 3, 3, w - 6, h - 6, 20); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 6; roundRect(c, 6, 6, w - 12, h - 12, 17); c.stroke();
-  c.fillStyle = C.pink; roundRect(c, 20, 20, w - 40, 70, 12); c.fill();
-  fitText(c, '오늘의 묘기', w / 2, 56, w * .78, 38, '#ffffff', { weight: '800' });
-  for (let k = 0; k < 3; k++) star(c, w / 2 + (k - 1) * 110, 190, 42, [C.yel, C.mint, C.sky][k], (k - 1) * .2);
-  fitText(c, '보드킹 파크', w / 2, 278, w * .6, 24, '#8a7d9a', { weight: '800' });
+  c.fillStyle = '#f1eee6'; roundRect(c, 3, 3, w - 6, h - 6, 16); c.fill(); c.strokeStyle = '#4a4f5c'; c.lineWidth = 4; roundRect(c, 7, 7, w - 14, h - 14, 12); c.stroke();
+  fitText(c, 'TRICKS · 오늘의 기술', w / 2, 52, w * .7, 26, '#3a3f4c', { weight: '800' });
+  for (let k = 0; k < 3; k++) { c.fillStyle = '#dcd8cf'; roundRect(c, w / 2 + (k - 1) * 140 - 52, 100, 104, 150, 12); c.fill(); c.fillStyle = 'rgba(0,0,0,.08)'; c.fillRect(w / 2 + (k - 1) * 140 - 40, 175, 80, 3); }
+  c.fillStyle = 'rgba(90,80,70,.12)'; for (let k = 0; k < 30; k++) c.fillRect(hash(k + 2700) * w, hash(k + 2701) * h, 3, 2);
 }));
 // 뒷면: 점수 세 칸 (관찰 자물쇠 단서로 쓸 수 있게 큰 숫자 — 값은 ②가 다시 칠할 수 있게 SCORE에 둠)
 export const SCORE = [7, 2, 5];
@@ -160,17 +165,18 @@ const scoreBack = () => TEX.get('scoreB|' + SCORE.join(''), () => textTex(512, 3
   SCORE.forEach((n, k) => { const x = 95 + k * 160; c.fillStyle = '#fbf6ea'; roundRect(c, x - 62, 92, 124, 170, 16); c.fill(); c.fillStyle = [C.pink, C.mint, C.sky][k]; c.font = '900 130px Jua, Ssurround, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(n), x, 184); });
 }));
 const lockerTex = () => TEX.get('locker', () => textTex(256, 512, (c, w, h) => {
-  c.fillStyle = '#7fb8e8'; c.fillRect(0, 0, w, h);
-  for (let y = 40; y < 120; y += 14) { c.fillStyle = 'rgba(40,60,100,.45)'; roundRect(c, 40, y, w - 80, 7, 3); c.fill(); }
-  c.fillStyle = '#ffffff'; roundRect(c, 40, 150, w - 80, 46, 8); c.fill(); fitText(c, '보드 보관함', w / 2, 173, w - 100, 22, '#2f2a48', { weight: '800' });
-  for (const [x, y, col, r] of [[80, 290, C.yel, .2], [170, 340, C.pink, -.3], [100, 420, '#ffffff', .1], [180, 450, C.mint, .4]]) { c.save(); c.translate(x, y); c.rotate(r); c.fillStyle = col; roundRect(c, -34, -20, 68, 40, 10); c.fill(); c.strokeStyle = C.ink; c.lineWidth = 3; c.stroke(); c.restore(); }
-  star(c, 170, 250, 22, C.orange, .1);
+  // 칠한 쇠문: 바랜 하늘색, 환기 구멍, 작은 이름표, 손때·긁힘, 아래 녹
+  c.fillStyle = '#8fb6d4'; c.fillRect(0, 0, w, h);
+  for (let y = 40; y < 120; y += 14) { c.fillStyle = 'rgba(40,60,90,.4)'; roundRect(c, 40, y, w - 80, 7, 3); c.fill(); }
+  c.fillStyle = '#eef0ee'; roundRect(c, 70, 150, w - 140, 34, 6); c.fill(); fitText(c, 'LOCKER', w / 2, 167, w - 160, 18, '#3a3f4c', { weight: '800' });
+  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2; for (let k = 0; k < 10; k++) { const x = hash(k + 2800) * w, y = 220 + hash(k + 2801) * 240; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 20 + hash(k + 2802) * 30, y + 4); c.stroke(); }
+  const g = c.createLinearGradient(0, h * .85, 0, h); g.addColorStop(0, 'rgba(150,100,60,0)'); g.addColorStop(1, 'rgba(150,100,60,.35)'); c.fillStyle = g; c.fillRect(0, h * .85, w, h * .15);
 }));
 const gachaTex = () => TEX.get('gacha', () => textTex(256, 128, (c, w, h) => {
   c.fillStyle = '#ffffff'; roundRect(c, 4, 4, w - 8, h - 8, 14); c.fill(); c.strokeStyle = C.red; c.lineWidth = 6; roundRect(c, 8, 8, w - 16, h - 16, 11); c.stroke();
-  fitText(c, '캡슐 뽑기', w / 2, h * .4, w * .8, 30, C.red, { weight: '800' }); fitText(c, '한 판 더!', w / 2, h * .74, w * .6, 18, '#2f2a48', { weight: '800' });
+  fitText(c, 'CAPSULE', w / 2, h * .42, w * .7, 26, C.red, { weight: '800' }); fitText(c, '캡슐 뽑기', w / 2, h * .74, w * .5, 16, '#2f2a48', { weight: '800' });
 }));
-const decal = (w, h, t, o) => mesh(new THREE.PlaneGeometry(w, h), mat('#ffffff', { map: t, rim: .08, ...o }), { cast: false });
+const decal = (w, h, t, o) => { const m = mat('#ffffff', { map: t, rim: .08, ...o }).clone(); m.alphaTest = .5; return mesh(new THREE.PlaneGeometry(w, h), m, { cast: false }); };
 
 // 수직 벽면 띠: 윤곽 점들을 따라 높이 y0~y1, 원점에서 바깥으로 off만큼(음수면 안으로), uv = (길이/span, 높이 비)
 function wallStrip(pts, y0, y1, off, spanU) {
@@ -231,7 +237,6 @@ B.skb_base = f => {
   f.add(flat(O, mat('#ffffff', { map: plazaTex(), rough: .85, rim: .08 }), .008));
   const ring = []; const grassM = mat(C.grass, { rough: .9, rim: .1 });
   { const g = new THREE.ShapeGeometry(shapeOf(isleOutline(), [isleOutline(-.2).slice().reverse()])); const o = mesh(g, grassM, { cast: false }); o.rotation.x = -HP; o.position.y = .011; o.receiveShadow = true; f.add(o); ring.push(o); }
-  f.add(put(decal(1.7, 1.7, groundArtTex(), { opacity: .95 }), .9, .013, 2.15, -HP, 0, .3));
   // 입간판 판
   { const s = decal(.62, .31, signTex()); put(s, 3.65, .47, 2.68, 0, PI * .75 - PI, 0); s.rotation.set(0, PI / 4, 0); s.position.set(3.67, .46, 2.69); f.add(s); }
   f.group.traverse(o => { if (o.isMesh) o.receiveShadow = true; });
@@ -267,15 +272,20 @@ B.skb_bowl = f => {
   // 몸통 위를 덮어 겹치고, 안쪽 구멍도 서로 다르게(덱 1.2 cm, 몸통 3 cm 넓게) — 그 틈은 코핑이 덮음)
   const hole = superPts(a - deck + .012, b - deck + .012, e, 112).reverse();
   f.add(mc('bowl-body', ({ add }) => {
-    add(G.ext(shapeOf(outer, [superPts(a - deck + .03, b - deck + .03, e, 112).reverse()]), H - .03, 0, 4), '#c3c7d1', 0, 0, 0, -HP, 0, 0);
+    add(G.ext(shapeOf(outer, [superPts(a - deck + .03, b - deck + .03, e, 112).reverse()]), H - .03, 0, 4), '#c4c2bd', 0, 0, 0, -HP, 0, 0);
     add(G.ext(shapeOf(superPts(a + .03, b + .03, e, 112), [superPts(a - .06, b - .06, e, 112).reverse()]), .09, 0, 4), C.conc3, 0, -.02, 0, -HP, 0, 0);
     add(G.ext(shapeOf(superPts(a + .025, b + .025, e, 112), [hole]), .055, 0, 4), C.deck, 0, H - .055, 0, -HP, 0, 0);
   }));
   // 보울 안: 매끈한 콘크리트 곡면
   const inner = mesh(bowlInner(), mat('#ffffff', { map: bowlTex(), rough: .7, rim: .1 }), { cast: false }); inner.receiveShadow = true; f.add(inner);
   // 코핑: 테두리를 따라 도는 쇠 파이프
-  { const pts = rim.map(([x, z]) => new THREE.Vector3(x, H + .012, z)); const curve = new THREE.CatmullRomCurve3(pts, true);
-    f.add(mc('bowl-coping', ({ add }) => add(new THREE.TubeGeometry(curve, 160, .038, 8, true), C.steel, 0, 0, 0))); }
+  // (10/24 사용자 "보울 허접": 쇠 파이프 대신 수영장식 둥근 콘크리트 코핑 블록 — 블록마다 옅게 다른 색, 이음, 긁힌 자국)
+  { const pts = rim.map(([x, z]) => new THREE.Vector3(x, H + .012, z)); const curve = new THREE.CatmullRomCurve3(pts, true), Lc = curve.getLength(), nB = Math.round(Lc / .3);
+    f.add(mc('bowl-coping2', ({ add }) => {
+      for (let k = 0; k < nB; k++) { const u = (k + .5) / nB, p = curve.getPointAt(u), tg = curve.getTangentAt(u), a = Math.atan2(-tg.z, tg.x);
+        add(G.box(Lc / nB - .018, .075, .17, .03), k % 3 === 1 ? '#e1ddd5' : k % 3 ? '#ebe8e1' : '#e5e1da', p.x, H + .03, p.z, 0, a, 0);
+        if (hash(k + 800) < .35) add(G.box(.06 + hash(k + 801) * .08, .004, .012, .002), '#6e6878', p.x, H + .069, p.z, 0, a + .2, 0); }
+    })); }
   // 코핑 밑 타일 띠 (안쪽 벽, 바깥쪽을 향해 .004 안으로)
   { const g = wallStrip([...rim, rim[0]], H - .17, H - .025, -.008, 1.2); f.add(mesh(g, mat('#ffffff', { map: tileTex(), rough: .5, rim: .1, side: THREE.DoubleSide }), { cast: false })); }
   // 바깥 벽 그래피티: 카메라 쪽(앞·오른쪽) 반 바퀴
@@ -283,7 +293,7 @@ B.skb_bowl = f => {
     // order: start at the right-back, round the right side to the front
     const start = outer.findIndex(p => p[0] > .2 * a && p[1] < 0); const seq = []; for (let k = 0; k < N; k++) { const p = outer[(start + k) % N]; if (p[1] > -.25 * b || p[0] > .2 * a) seq.push(p); else if (seq.length) break; }
     const g = wallStrip(seq.slice().reverse(), .07, H - .03, .008, 2.8);
-    f.add(mesh(g, mat('#ffffff', { map: graffitiTex('bowl'), rough: .8, rim: .1, side: THREE.DoubleSide }), { cast: false })); }
+    f.add(mesh(g, mat('#ffffff', { map: formTex(), rough: .85, rim: .08, side: THREE.DoubleSide }), { cast: false })); }
   // 배수구: 바닥 가운데 어두운 구멍 + 쇠 뚜껑(뒤쪽 경첩으로 들림)
   f.add(mc('bowl-drain', ({ add }) => { add(G.cyl(.27, .27, .012, 28), '#8d879c', 0, y0 + .004, 0); add(G.cyl(.22, .22, .014, 28), '#3a3548', 0, y0 + .006, 0); for (let k = -4; k <= 4; k++) add(G.pbox(.02, .016, Math.sqrt(Math.max(0, .2 * .2 - (k * .045) ** 2)) * 2), '#5d6378', k * .045, y0 + .008, 0); }));
   const lid = new THREE.Group(); put(lid, 0, y0 + .016, -.22); f.add(lid);
@@ -323,30 +333,48 @@ B.skb_stairs = f => {
   f.spot('behind', null, W / 2 + .3, 0, .32, { maxH: .3, label: '계단 옆', scale: 1 });
 };
 
-// ── 펀박스 (2.4 × 1.1): 가운데 평평한 턱(.4), 양쪽 경사, 위에 플랫 레일, 뒤 모서리 쇠 레지, 옆면 그래피티 ───────────────────────────
+// ── 레일뱅크 펀박스 (2.4 × 1.1, 키 그대로 skb_funbox): 가운데 평평한 덱(.42) 양쪽 경사, 모서리마다 쇠 앵글, 위에서 오른쪽 경사를 따라
+// 꺾여 내려가는 빨간 둥근 레일(긁혀 벗겨진 은색 자국, 노랑·검정 줄무늬 기둥), 덱의 왁스 자국과 바퀴 자국, 옆면 가득 그래피티
+// (10/24 사용자 "레일뱅크 왤케 허접하냐. 디테일 올려줘")
 B.skb_funbox = f => {
-  // 평평한 윗면은 x ±top
-  const L = 2.4, Wd = 1.1, Hb = .4, top = .55;
-  f.add(mc('funbox', ({ add, addM }) => {
-    // side profile in x–y, extruded across z
+  const L = 2.4, Wd = 1.1, Hb = .42, top = .5, sl = Math.atan2(Hb, L / 2 - top), sL = Math.hypot(Hb, L / 2 - top);
+  const RZ = Wd / 2 - .16, RH = .24;   // 레일: 앞 가장자리에서 .16 안쪽, 덱 위 높이
+  f.add(mc('railbank', ({ add }) => {
     const s = new THREE.Shape(); s.moveTo(-L / 2, 0); s.lineTo(-top, Hb); s.lineTo(top, Hb); s.lineTo(L / 2, 0); s.lineTo(-L / 2, 0);
-    add(G.ext(s, Wd, .02, 2), C.conc, 0, 0, -Wd / 2);
-    // 경사면 끝 쇠판 (바닥과 만나는 곳) · 뒤 모서리 레지(앵글)
-    for (const sx of [-1, 1]) add(G.box(.08, .012, Wd, .004), C.steelD, sx * (L / 2 - .02), .008, 0);
-    add(G.box(top * 2 + .02, .04, .05, .01), C.steelD, 0, Hb + .02, -Wd / 2 + .02);
-    // 위 페인트 띠
-    add(G.box(top * 2 - .06, .006, Wd - .3, .003), C.mint, 0, Hb + .022, .05);
-    for (const [x, c] of [[-.32, C.pink], [0, C.yel], [.32, C.sky]]) add(G.ext(starShape(.07, .032), .006, 0), c, x, Hb + .028, .05, -HP, 0, 0);
-    // 플랫 레일: 앞쪽 가장자리를 따라 받침 둘
-    for (const sx of [-1, 1]) { add(G.box(.06, .16, .06, .01), C.steelD, sx * .45, Hb + .08, Wd / 2 - .14); add(G.box(.16, .02, .12, .006), C.steelD, sx * .45, Hb + .02, Wd / 2 - .14); }
-    add(G.box(1.25, .05, .05, .012), C.steel, 0, Hb + .17, Wd / 2 - .14);
+    add(G.ext(s, Wd, .015, 2), '#cbc8c2', 0, 0, -Wd / 2);
+    // 쇠 앵글: 덱 앞뒤 모서리, 경사 앞뒤 모서리, 덱과 경사가 꺾이는 곳 · 경사 끝 쇠판
+    for (const z of [-Wd / 2 + .02, Wd / 2 - .02]) {
+      add(G.box(top * 2, .03, .05, .008), '#7d8396', 0, Hb + .005, z);
+      for (const sx of [-1, 1]) add(G.box(sL, .03, .05, .008), '#7d8396', sx * (top + (L / 2 - top) / 2), Hb / 2 + .005, z, 0, 0, -sx * sl);
+    }
+    for (const sx of [-1, 1]) { add(G.box(.05, .02, Wd - .02, .006), '#9aa0b2', sx * top, Hb + .006, 0); add(G.box(.16, .012, Wd - .02, .004), '#8a90a3', sx * (L / 2 - .07), .006, 0); for (let k = 0; k < 4; k++) add(G.cyl(.012, .012, .006, 8), '#c9cedb', sx * (L / 2 - .07), .014, -Wd / 2 + .16 + k * .26); }
+    // 덱의 왁스 자국(조금 짙은 반들 얼룩) · 바퀴 자국
+    for (const [x, z, sx, sz] of [[-.15, .32, .34, .1], [.22, .3, .22, .08], [-.05, -.2, .2, .07]]) add(G.cyl(1, 1, .004, 18), '#a9a6b0', x, Hb + .004, z, 0, 0, 0, [sx, 1, sz]);
+    for (const z of [-.12, .05]) add(G.box(top * 2 - .1, .003, .02, .002), '#7c7884', 0, Hb + .005, z, 0, .04, 0);
+    // 빨간 레일: 덱 위 평평 → 오른쪽 경사 따라 꺾여 내려감
+    const pA = new THREE.Vector3(-top + .06, Hb + RH, RZ), pB = new THREE.Vector3(top, Hb + RH, RZ), pC = new THREE.Vector3(L / 2 - .1, .02 + RH * .9, RZ);
+    const rail = new THREE.CurvePath(); rail.add(new THREE.LineCurve3(pA, pB)); rail.add(new THREE.LineCurve3(pB, pC));
+    add(new THREE.TubeGeometry(rail, 40, .032, 10, false), '#8b91a0', 0, 0, 0);
+    for (const p of [pA, pC]) add(G.sph(.034, 10, 8), '#8b91a0', p.x, p.y, p.z);
+    // 벗겨진 은색 자국 (윗면)
+    for (let k = 0; k < 9; k++) { const u = k / 8, p = u < .55 ? pA.clone().lerp(pB, u / .55) : pB.clone().lerp(pC, (u - .55) / .45); add(G.box(.05 + hash(k + 880) * .05, .012, .022, .006), '#d9dde6', p.x, p.y + .026, p.z); }
+    // 기둥 셋: 노랑·검정 줄무늬
+    for (const x of [-top + .12, top - .05, L / 2 - .22]) {
+      const y0 = x > top ? Hb * (L / 2 - x) / (L / 2 - top) : Hb, yTop = x > top ? pB.y + (x - top) / (pC.x - top) * (pC.y - pB.y) : Hb + RH, hh = yTop - y0;
+      add(G.box(.05, hh, .05, .006), '#a3a8b4', x, y0 + hh / 2, RZ);
+      for (let k = 0; k < 3; k++) add(G.box(.052, .02 + hash(x * 7 + k) * .03, .052, .004), '#a0704a', x, y0 + .04 + k * hh * .3, RZ);
+      add(G.box(.12, .015, .1, .005), '#7d8396', x, y0 + .008, RZ);
+    }
+    // 쇠 앵글 녹물·긁힘 (경사 끝 쪽)
+    for (const [x, z] of [[-1.0, Wd / 2 - .02], [.95, Wd / 2 - .02], [-.2, -Wd / 2 + .02]]) { add(G.box(.06, .006, .052, .002), '#a0704a', x, Hb * .3 + .02, z); add(G.box(.12, .003, .054, .001), '#d5d9e2', x + .1, Hb * .3 + .02, z); }
   }));
-  // 옆면 그래피티 (앞면 +z, 사다리꼴 모양)
-  { const s = new THREE.Shape(); s.moveTo(-L / 2 + .05, .02); s.lineTo(-top, Hb - .03); s.lineTo(top, Hb - .03); s.lineTo(L / 2 - .05, .02); s.lineTo(-L / 2 + .05, .02);
-    const g = new THREE.ShapeGeometry(s), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) + L / 2) / L * .5 + .5, uv.getY(i) / Hb);
-    f.add(put(mesh(g, mat('#ffffff', { map: graffitiTex('bowl'), rough: .8, rim: .1 }), { cast: false }), 0, 0, Wd / 2 + .032)); }
+  // 옆면 그래피티 (앞 +z · 뒤 -z, 사다리꼴 모양 그대로)
+  const side = (z, ry) => { const s = new THREE.Shape(); s.moveTo(-L / 2 + .04, .02); s.lineTo(-top + .02, Hb - .025); s.lineTo(top - .02, Hb - .025); s.lineTo(L / 2 - .04, .02); s.lineTo(-L / 2 + .04, .02);
+    const g = new THREE.ShapeGeometry(s), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) + L / 2) / L, uv.getY(i) / Hb);
+    f.add(put(mesh(g, mat('#ffffff', { map: aggTex(), rough: .9, rim: .08 }), { cast: false }), 0, 0, z, 0, ry, 0)); };
+  side(Wd / 2 + .017, 0); side(-Wd / 2 - .017, PI);
   f.spot('on', null, .15, Hb + .03, -.2, { maxH: .35, label: '펀박스 위', scale: 1 });
-  f.spot('under', null, -.15, Hb + .03, Wd / 2 - .14, { maxH: .14, label: '플랫 레일 밑', scale: 1 });
+  f.spot('under', null, -.15, Hb + .03, RZ - .02, { maxH: .2, label: '플랫 레일 밑', scale: 1 });
   f.spot('behind', null, -L / 2 + .2, 0, -Wd / 2 - .14, { maxH: .3, label: '펀박스 뒤', scale: 1 });
 };
 
@@ -388,11 +416,11 @@ B.skb_miniramp = f => {
   // 앞 옆판 그래피티 (+z 면): 옆판 모양 그대로
   { const s = new THREE.Shape(); s.moveTo(-L / 2 + .02, .02); s.lineTo(-L / 2 + .02, H - .02); s.lineTo(-xa, H - .02); for (const [x, y] of curve) s.lineTo(x, Math.max(.02, y - .02)); s.lineTo(xa, H - .02); s.lineTo(L / 2 - .02, H - .02); s.lineTo(L / 2 - .02, .02); s.lineTo(-L / 2 + .02, .02);
     const g = new THREE.ShapeGeometry(s), uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) + L / 2) / L * .62, uv.getY(i) / H);
-    f.add(put(mesh(g, mat('#ffffff', { map: graffitiTex('bowl'), rough: .8, rim: .1 }), { cast: false }), 0, 0, Wd / 2 + .004)); }
+    f.add(put(mesh(g, mat('#ffffff', { map: plySideTex(), rough: .8, rim: .08 }), { cast: false }), 0, 0, Wd / 2 + .004)); }
   // 오른쪽 덱 위 보드 (부품): 코핑으로 미끄러져 램프를 타고 내려가 가운데에서 멈춤
   const board = new THREE.Group(); put(board, L / 2 - .2, H + .07, .2); f.add(board);
   board.add(mc('ramp-board', ({ add }) => {
-    add(G.box(.62, .03, .2, .015), C.pink, 0, .04, 0); add(G.box(.5, .005, .16, .002), C.yel, 0, .058, 0);
+    add(G.box(.62, .03, .2, .015), '#3f4350', 0, .04, 0); add(G.box(.5, .005, .16, .002), '#d8b48c', 0, .058, 0);
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.03, .03, .025, 10), '#fff4dc', sx * .2, .015, sz * .08, HP, 0, 0);
   }));
   const pb = f.part('lift', board, (t, b) => {
@@ -405,7 +433,7 @@ B.skb_miniramp = f => {
   // 왼쪽 덱 밑 창고: 줄무늬 천막이 덮고 있다가 말려 올라감
   const cur = new THREE.Group(); put(cur, -L / 2 + .2, H - .04, Wd / 2 + .03); f.add(cur);
   cur.add(mc('ramp-curtain', ({ add }) => {
-    for (let k = 0; k < 5; k++) add(G.box(deckW / 5 - .004, H - .1, .02, .006), k % 2 ? '#ffffff' : C.orange, -deckW / 2 + deckW / 10 + k * deckW / 5, -(H - .1) / 2, 0);
+    for (let k = 0; k < 5; k++) add(G.box(deckW / 5 - .004, H - .1, .02, .006), k % 2 ? '#e8e4da' : '#8a9aa6', -deckW / 2 + deckW / 10 + k * deckW / 5, -(H - .1) / 2, 0);
     add(G.cyl(.035, .035, deckW + .04, 10), '#e07a34', 0, .0, 0, 0, 0, HP);
   }));
   const pc = f.part('lift', cur, t => { cur.scale.y = Math.max(.08, 1 - .92 * t); }, { label: '램프 밑 천막', sfx: 'rustle', dur: .35 });
@@ -481,7 +509,7 @@ B.skb_scoreboard = f => {
 
 // ── 캡슐 뽑기 두 대 (설계서 8 변형): 빨강·민트 받침 위 투명 돔에 캡슐, 오른쪽 기계의 손잡이를 돌리면 캡슐 나오는 곳 뚜껑이 열림 ─────────
 B.skb_gacha = f => {
-  const M = [[-.24, C.red], [.24, '#4cbfa8']];
+  const M = [[-.24, '#c9746a'], [.24, '#8fb7aa']];
   const caps = ['#ff7eb0', '#ffd250', '#7cc4ef', '#a98ce8', '#ff9a4a', '#7fd8c4'];
   f.add(mc('gacha', ({ add }) => {
     add(G.box(1.0, .1, .5, .03), '#3a3450', 0, .05, 0);
@@ -516,15 +544,15 @@ B.skb_gacha = f => {
 };
 
 // ── 보드 진열대 (설계서 19 회전): 동그란 받침 위 기둥에 보드 넷이 둘러 꽂힘, 돌리면 뒤쪽이 앞으로 ─────────────────────────────────
-const DECKS = [[C.pink, C.yel], ['#3b3556', C.orange], [C.mint, '#ffffff'], [C.sky, C.pink]];
+const DECKS = [['#d9b48a', '#4a4f5c'], ['#3b3f4c', '#e8e4da'], ['#a9c3b4', '#3b3f4c'], ['#c7b8d8', '#4a4f5c']];
 B.skb_spinrack = f => {
   f.add(mc('spin-base', ({ add }) => { add(G.cyl(.36, .4, .08, 24), '#3a3450', 0, .04, 0); add(G.cyl(.3, .3, .02, 24), '#6d7590', 0, .09, 0); }));
   const top = new THREE.Group(); put(top, 0, .1, 0); f.add(top);
   top.add(mc('spin-top', ({ add }) => {
     add(G.cyl(.04, .04, 1.1, 12), C.steel, 0, .55, 0); add(G.cyl(.26, .26, .04, 20), '#ffffff', 0, .2, 0); add(G.cyl(.18, .18, .03, 20), '#ffffff', 0, .99, 0);
-    add(G.box(.36, .2, .03, .02), C.yel, 0, 1.18, 0); add(G.ext(starShape(.06, .028), .01, 0), C.pink, 0, 1.18, .02);
+    add(G.box(.36, .2, .03, .02), '#e8e4da', 0, 1.18, 0); add(G.box(.28, .03, .032, .006), '#4a4f5c', 0, 1.18, .002);
     DECKS.forEach(([c1, c2], k) => { const a = k * HP + PI / 4, x = Math.sin(a) * .2, z = Math.cos(a) * .2;
-      add(G.box(.2, .8, .03, .014), c1, x, .62, z, 0, a, 0); add(G.ext(starShape(.07, .032), .008, 0), c2, x + Math.sin(a) * .02, .66, z + Math.cos(a) * .02, 0, a, 0); add(G.box(.2, .06, .008, .004), c2, x + Math.sin(a) * .018, .38, z + Math.cos(a) * .018, 0, a, 0);
+      add(G.box(.2, .8, .03, .014), c1, x, .62, z, 0, a, 0); add(G.box(.2, .05, .008, .004), c2, x + Math.sin(a) * .02, .7, z + Math.cos(a) * .02, 0, a, 0); add(G.box(.2, .06, .008, .004), c2, x + Math.sin(a) * .018, .38, z + Math.cos(a) * .018, 0, a, 0);
       for (const y of [.36, .84]) for (const s of [-1, 1]) add(G.cyl(.025, .025, .03, 10), '#fff4e2', x + Math.cos(a) * s * .06 - Math.sin(a) * .03, y, z - Math.sin(a) * s * .06 - Math.cos(a) * .03, 0, a, HP); });
   }));
   const back = new THREE.Group(); put(back, 0, .22, -.3); top.add(back);
@@ -550,76 +578,26 @@ B.skb_bench = f => {
   f.spot('behind', null, L / 2 + .2, 0, .05, { maxH: .3, label: '벤치 옆', scale: 1 });
 };
 
-// ── 그래피티 벽 (2.4 × .22, 높이 1.55, 흑백판에서 색이 돌아오는 가구): 콘크리트 블록 벽 앞면 큰 벽화. 흑백판에선 분필 밑그림만 —
-// 찾아서 색이 돌아오는 순간 왼쪽부터 스프레이가 칠해지듯 벽화가 차오른다(furniture group의 userData.grayStop·colored를 보고, 1.4초)
-const MW = 1024, MH = 640;
-let muralSeq = 0;
-function drawMural(c, k) {
-  const w = MW, h = MH;
-  c.fillStyle = '#e8e3df'; c.fillRect(0, 0, w, h);
-  for (let n = 0; n < 1500; n++) { c.fillStyle = hash(n + 900) < .5 ? 'rgba(100,90,115,.09)' : 'rgba(255,255,255,.2)'; c.fillRect(hash(n + 901) * w, hash(n + 902) * h, 2, 2); }
-  // 블록 줄눈
-  c.strokeStyle = 'rgba(150,140,160,.35)'; c.lineWidth = 2; for (let y = 0; y < h; y += 80) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); for (let x = (y / 80) % 2 ? 0 : 80; x < w; x += 160) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 80); c.stroke(); } }
-  const paint = () => {
-    const blob = (x, y, rx, ry, col) => { c.fillStyle = col; c.beginPath(); for (let q = 0; q <= 28; q++) { const a = q / 28 * PI * 2, rr = 1 + .1 * Math.sin(a * 3 + x); c.lineTo(x + Math.cos(a) * rx * rr, y + Math.sin(a) * ry * rr); } c.fill(); };
-    blob(512, 210, 470, 170, '#ffd7e6'); blob(250, 470, 220, 140, '#c9eef6'); blob(760, 480, 250, 130, '#fff0b8');
-    bubbleWord(c, 'SKATE', 512, 215, 210, C.mint); drips(c, 200, 820, 300, C.mint, 31);
-    smileWheel(c, 250, 470, 105);
-    bubbleWord(c, 'BOARD', 760, 440, 92, C.pink); bubbleWord(c, 'KING', 760, 540, 92, C.orange);
-    star(c, 90, 90, 48, C.yel, .2); star(c, 950, 110, 40, C.sky, -.3); star(c, 470, 560, 30, C.violet, .4); star(c, 960, 590, 26, C.yel, .1);
-    c.strokeStyle = C.violet; c.lineWidth = 10; c.lineCap = 'round'; c.beginPath(); c.moveTo(40, 330); c.bezierCurveTo(90, 280, 120, 380, 170, 320); c.stroke();
-    c.fillStyle = C.orange; for (let q = 0; q < 6; q++) { c.beginPath(); c.arc(980 - q * 20, 380 - (q % 2) * 14, 8, 0, PI * 2); c.fill(); }
-  };
-  const sketch = () => {
-    // 분필 밑그림: 글자·바퀴·별 윤곽만 흰 선으로
-    c.save(); c.globalAlpha = .75; c.strokeStyle = '#ffffff'; c.lineWidth = 5; c.lineJoin = 'round'; c.setLineDash([16, 7]);
-    c.font = '900 210px Jua, Ssurround, "Arial Rounded MT Bold", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.strokeText('SKATE', 512, 215);
-    c.font = '900 92px Jua, Ssurround, sans-serif'; c.strokeText('BOARD', 760, 440); c.strokeText('KING', 760, 540);
-    c.beginPath(); c.arc(250, 470, 105, 0, PI * 2); c.stroke(); c.beginPath(); c.arc(250, 470, 44, 0, PI * 2); c.stroke();
-    for (const [x, y, R] of [[90, 90, 48], [950, 110, 40]]) { c.beginPath(); for (let q = 0; q <= 10; q++) { const a = -HP + q * PI / 5, r = q % 2 ? R * .45 : R; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.stroke(); }
-    c.restore();
-  };
-  sketch();
-  if (k > 0) {
-    // 왼쪽부터 물결 모양 경계로 칠이 차오름 (경계 앞에 스프레이 안개)
-    const X = k * w * 1.18;
-    c.save(); c.beginPath(); c.moveTo(0, 0); for (let y = 0; y <= h; y += 16) c.lineTo(X - 60 + Math.sin(y * .05 + k * 9) * 40, y); c.lineTo(0, h); c.closePath(); c.clip(); paint(); c.restore();
-    if (k < 1) for (let n = 0; n < 90; n++) { const y = hash(n + k * 77) * h, x = X - 60 + Math.sin(y * .05 + k * 9) * 40 + (hash(n + 5 + k * 31) - .3) * 70; c.fillStyle = [C.pink, C.mint, C.yel, C.sky][n % 4]; c.globalAlpha = .55; c.beginPath(); c.arc(x, y, 2 + hash(n + 9) * 5, 0, PI * 2); c.fill(); }
-    c.globalAlpha = 1;
-  }
-}
+// ── 블록 벽 (2.4 × .22, 높이 1.55, 키 그대로 skb_graffiti — 흑백판에서 색이 돌아오는 가구): 시멘트 블록 벽, 위 콘크리트 갓돌, 양 끝 기둥.
+// (10/24 사용자 "그래피티는 그냥 빼고 질감으로": 벽화·글자 없이 블록 결·물 자국·백화·이끼) 발밑엔 기대 둔 보드와 헬멧, 물병
 B.skb_graffiti = f => {
   const L = 2.4, T = .22, H = 1.55;
-  f.add(mc('graffiti-wall', ({ add }) => {
-    add(G.box(L, H, T, .03), C.conc2, 0, H / 2, 0);
-    add(G.box(L + .06, .07, T + .06, .02), '#efecf1', 0, H + .03, 0);
-    for (const sx of [-1, 1]) add(G.box(.26, H + .04, T + .08, .03), C.conc, sx * (L / 2 - .1), (H + .04) / 2, 0);
-    add(G.box(L + .04, .08, T + .04, .02), C.conc3, 0, .04, 0);
-    // 발밑: 스프레이 통 셋, 페인트 묻은 깔개
-    add(G.box(.7, .01, .4, .005), '#efe6d8', .55, .006, T / 2 + .26, 0, .1, 0);
-    for (const [x, z, c] of [[.32, .3, C.pink], [.48, .42, C.mint], [.66, .27, C.yel]]) { add(G.cyl(.04, .04, .19, 12), c, x, .1, T / 2 + z); add(G.cyl(.028, .03, .03, 10), '#ffffff', x, .21, T / 2 + z); add(G.cyl(.012, .012, .02, 8), C.ink, x, .235, T / 2 + z); }
-    for (const [x, z, r, c] of [[.25, .16, .05, C.pink], [.75, .44, .04, C.mint], [.58, .14, .035, C.yel], [.9, .3, .03, C.sky]]) add(G.cyl(r, r, .004, 12), c, x, .013, T / 2 + z);
+  f.add(mc('blockwall', ({ add }) => {
+    add(G.box(L, H, T, .02), '#b9b5ae', 0, H / 2, 0);
+    add(G.box(L + .08, .08, T + .08, .02), '#d4d0c8', 0, H + .035, 0);
+    for (const sx of [-1, 1]) add(G.box(.28, H + .05, T + .08, .02), '#c8c4bc', sx * (L / 2 - .1), (H + .05) / 2, 0);
+    add(G.box(L + .04, .08, T + .04, .02), '#9e9a93', 0, .04, 0);
+    // 갓돌 깨진 귀퉁이 · 쓸린 모서리
+    add(G.box(.12, .04, .1, .01), '#a8a49c', -.62, H + .07, T / 2 + .02); add(G.box(.3, .02, .02, .005), '#8e8a84', .4, H + .005, T / 2 + .045);
+    // 발밑: 벽에 기대 둔 보드 · 헬멧 · 물병
+    add(G.box(.2, .66, .03, .015), '#3d3a48', .78, .34, T / 2 + .08, -.18, 0, 0); add(G.box(.16, .5, .006, .003), '#e8e3d8', .78, .36, T / 2 + .1, -.18, 0, 0);
+    for (const y of [.12, .58]) for (const s2 of [-1, 1]) add(G.cyl(.026, .026, .03, 10), '#f2ede2', .78 + s2 * .06, y, T / 2 + .14 - (y - .12) * .18, 0, 0, HP);
+    add(new THREE.SphereGeometry(.13, 16, 8, 0, PI * 2, 0, HP), '#7fa89a', .32, .02, T / 2 + .22, 0, 0, 0, [1, .9, 1.15]);
+    add(G.cyl(.035, .035, .17, 12), '#d9e4ec', .52, .085, T / 2 + .3); add(G.cyl(.022, .026, .03, 10), '#5a6070', .52, .185, T / 2 + .3);
   }));
-  // 벽화: 이 벽만의 살아 있는 캔버스 (아이콘을 그리는 사본과 나눠 쓰지 않게 하나씩 — 안 쓰이면 texCache가 두 판 뒤에 버림)
-  const tex = TEX.get('muralLive|' + (++muralSeq), () => canvasTex(MW, MH, c => drawMural(c, 1)));
-  const m = mesh(new THREE.PlaneGeometry(L - .5, H - .16), mat('#ffffff', { map: tex, rough: .85, rim: .08 }), { cast: false });
-  put(m, 0, H / 2 + .04, T / 2 + .006); m.userData.noMerge = true; f.add(m); f.live = [...(f.live || []), m];
-  // 흑백판이 시작될 때(grayStop이 붙을 때)는 바로 밑그림으로, 찾아서 색이 돌아올 때(colored)는 1.4초 동안 왼쪽부터 칠해짐
-  let gs = false, col = false, shown = 1, anim = null;
-  const draw = k => { drawMural(tex.image.getContext('2d'), k); tex.needsUpdate = true; };
-  let last = 0;
-  const tick = () => {
-    const now0 = performance.now(); if (now0 - last < 6) return; last = now0;
-    const ud = f.group.userData, g = !!ud.grayStop, c = !!ud.colored, want = g && !c ? 0 : 1;
-    if (g !== gs) { gs = g; col = c; anim = null; if (shown !== want) { shown = want; draw(want); } return; }
-    if (c !== col) { col = c; anim = { from: shown, to: want, t0: performance.now() }; }
-    if (anim) { const k = Math.min(1, (performance.now() - anim.t0) / 1400), e = 1 - (1 - k) * (1 - k); draw(anim.to ? e : 1 - e); if (k >= 1) { shown = anim.to; anim = null; } }
-  };
-  // (toonpost.js assignIds puts its own onBeforeRender on every mesh: keep theirs and run this one first — once a frame, the passes share it)
-  let theirs = null;
-  Object.defineProperty(m, 'onBeforeRender', { configurable: true, get() { return function (...a) { tick(); return theirs?.apply(this, a); }; }, set(v) { theirs = v; } });
-
-  f.spot('on', null, -.75, H + .07, 0, { maxH: .3, label: '그래피티 벽 위', scale: .8 });
+  const m = mesh(new THREE.PlaneGeometry(L - .5, H - .14), mat('#ffffff', { map: blockTex(), rough: .9, rim: .06 }), { cast: false });
+  put(m, 0, H / 2 + .04, T / 2 + .006); f.add(m);
+  f.spot('on', null, -.75, H + .08, 0, { maxH: .3, label: '그래피티 벽 위', scale: .8 });
   f.spot('behind', null, L / 2 + .12, 0, .1, { maxH: .35, label: '그래피티 벽 끝', scale: 1 });
   f.spot('under', null, .95, 0, T / 2 + .35, { maxH: .25, label: '스프레이 통 옆', scale: 1 });
 };
@@ -631,11 +609,14 @@ const corrTex = (col) => TEX.get('corr|' + col, () => canvasTex(512, 256, (c, w,
   for (let x = 0; x < w; x += 32) { const g = c.createLinearGradient(x, 0, x + 32, 0); g.addColorStop(0, 'rgba(255,255,255,.22)'); g.addColorStop(.45, 'rgba(255,255,255,0)'); g.addColorStop(.55, 'rgba(40,60,70,.12)'); g.addColorStop(1, 'rgba(40,60,70,.2)'); c.fillStyle = g; c.fillRect(x, 0, 32, h); }
   for (let n = 0; n < 500; n++) { c.fillStyle = 'rgba(60,80,90,.06)'; c.fillRect(hash(n + 950) * w, hash(n + 951) * h, 3, 2); }
   c.fillStyle = 'rgba(150,100,70,.18)'; for (let n = 0; n < 6; n++) { c.beginPath(); c.ellipse(hash(n + 960) * w, h - 10 - hash(n + 961) * 30, 14, 26, 0, 0, PI * 2); c.fill(); }
+  // 리벳 줄과 거기서 흘러내린 녹물, 찌그러진 자국
+  for (let x = 16; x < w; x += 64) { c.fillStyle = 'rgba(70,80,80,.4)'; c.beginPath(); c.arc(x, 12, 3, 0, PI * 2); c.fill();
+    if (hash(x + 970) < .55) { const g = c.createLinearGradient(0, 14, 0, 14 + 60 + hash(x + 971) * 80); g.addColorStop(0, 'rgba(160,96,58,.5)'); g.addColorStop(1, 'rgba(160,96,58,0)'); c.fillStyle = g; c.fillRect(x - 3, 14, 6, 140); } }
+  for (let n = 0; n < 2; n++) { const x = hash(n + 980) * w, y = 60 + hash(n + 981) * 120, g = c.createRadialGradient(x, y, 2, x, y, 26); g.addColorStop(0, 'rgba(30,40,40,.2)'); g.addColorStop(1, 'rgba(30,40,40,0)'); c.fillStyle = g; c.fillRect(x - 30, y - 30, 60, 60); }
 }, { repeat: [1 / 1.4, 1 / .7] }));
 const kioskSign = () => TEX.get('kioskSign', () => textTex(512, 128, (c, w, h) => {
-  c.fillStyle = '#fff6e8'; roundRect(c, 3, 3, w - 6, h - 6, 16); c.fill(); c.strokeStyle = C.orange; c.lineWidth = 5; roundRect(c, 9, 9, w - 18, h - 18, 12); c.stroke();
-  fitText(c, '보드킹 매점', w / 2, h / 2 + 2, w * .7, 44, '#3a3450', { weight: '800' });
-  star(c, 46, h / 2, 20, C.yel, .2); star(c, w - 46, h / 2, 20, C.pink, -.2);
+  c.fillStyle = '#f2efe6'; roundRect(c, 3, 3, w - 6, h - 6, 10); c.fill(); c.strokeStyle = '#4a4f5c'; c.lineWidth = 3; roundRect(c, 9, 9, w - 18, h - 18, 7); c.stroke();
+  fitText(c, 'SNACK BAR · 매점', w / 2, h / 2 + 2, w * .66, 32, '#3a3f4c', { weight: '800' });
 }));
 const menuTex = () => TEX.get('kioskMenu', () => textTex(256, 320, (c, w, h) => {
   c.fillStyle = '#3a3450'; roundRect(c, 2, 2, w - 4, h - 4, 14); c.fill();
@@ -648,7 +629,7 @@ export const KIOSK = { L: 2.2, D: 1.1, H: 1.32, y0: .1 };
 B.skb_kiosk = f => {
   // 창구 구멍 x HX0~HX1 · y HY0~HY1, 보관함 칸막이 x PX
   const { L, D, H, y0 } = KIOSK, T = .05, HX0 = -.95, HX1 = .3, HY0 = .62, HY1 = 1.08, PX = .55;
-  const MINT = '#8fd4c4', MINT2 = '#6fbcaa', inside = '#4c5a6a';
+  const MINT = '#9fc2b5', MINT2 = '#82a99b', inside = '#4c5a6a';
   f.add(mc('kiosk', ({ add }) => {
     // 받침 블록 넷 · 바닥 · 지붕 · 뒷벽 · 왼쪽 끝 · 칸막이(보관함)
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.22, y0, .2, .02), C.conc2, sx * (L / 2 - .15), y0 / 2, sz * (D / 2 - .14));
@@ -701,7 +682,7 @@ B.skb_kiosk = f => {
   const hatch = new THREE.Group(); put(hatch, (HX0 + HX1) / 2, y0 + HY1 + .02, D / 2 + .01); f.add(hatch);
   hatch.add(mc('kiosk-hatch', ({ add }) => {
     add(G.box(HX1 - HX0 + .08, HY1 - HY0 + .06, .035, .01), '#f7f3ea', 0, -(HY1 - HY0 + .06) / 2, 0);
-    for (let k = 0; k < 5; k++) add(G.box((HX1 - HX0 + .08) / 5 - .01, .1, .04, .006), k % 2 ? '#ffffff' : C.orange, -(HX1 - HX0 + .08) / 2 + (HX1 - HX0 + .08) / 10 + k * (HX1 - HX0 + .08) / 5, -.06, .004);
+    for (let k = 0; k < 5; k++) add(G.box((HX1 - HX0 + .08) / 5 - .01, .1, .04, .006), k % 2 ? '#efebe2' : '#c98f6a', -(HX1 - HX0 + .08) / 2 + (HX1 - HX0 + .08) / 10 + k * (HX1 - HX0 + .08) / 5, -.06, .004);
     add(G.box(.12, .03, .05, .01), C.steelD, 0, -(HY1 - HY0) + .02, .03);
   }));
   const ph = f.part('lift', hatch, t => { hatch.rotation.x = -1.35 * t; }, { label: '매점 창구', sfx: 'creak', dur: .5 });

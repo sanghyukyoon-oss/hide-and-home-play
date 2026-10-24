@@ -63,6 +63,8 @@ export const ROOM_POOLS = {
   // (28판 기차 객실 2·3차 10/22 — 사용자 OK traincar3): 기차 간식·여행 짐, 작은 것 없이(주먹밥·주스팩·김밥은 14~20px로 나와서 뺌)
   traincar2: ['bubbletea', 'sandwich', 'snack', 'gimbap2', 'map', 'umbrella', 'sunglasses', 'strawhat'],
   traincar3: ['bubbletea', 'sandwich', 'snack', 'gimbap2', 'map', 'umbrella', 'sunglasses', 'strawhat'],
+  // (28판 새 맵 traincar5 ⑧ 10/24, 사용자 "찾는 물건 다 새롭게 해줄래? 계속 찾는것만 찾으니 이상하다"): 기차 여행 물건 8 — gfx/trip-items.js + 귤·스노우볼
+  traincar5: ['trainticket', 'ekiben', 'guidebook', 'filmcam', 'stampbook', 'thermos', 'mandarin', 'snowglobe'],
   island2: ['bobber', 'strawhat', 'rubberduck2', 'juicebox', 'sunglasses', 'gimbap2', 'duck', 'ball2'],   // 29판 호수 섬
   seaside: ['fishsnack', 'strawhat', 'icecream', 'sunglasses', 'bubbletea', 'coin', 'rubberduck2', 'juicebox'],   // 30판 바닷가 가게
   bearbakery: ['donut', 'cupcake', 'cookie', 'milk', 'honeypot', 'apple', 'candy', 'sandwich'],   // 35판 곰제과
@@ -82,7 +84,8 @@ export const STAGE_ITEMS = {
   25: ['apple', 'milk', 'onigiri', 'kimbap', 'ramen', 'candy', 'sandwich', 'donut'],
   26: ['ball', 'bellball', 'whistle', 'teddy', 'block', 'cookie', 'gift', 'cupcake'],
   27: ['bobber', 'strawhat', 'map', 'rubberduck2', 'snack', 'umbrella', 'mandarin', 'icecream'],
-  28: ['console', 'mug', 'sunglasses', 'slipper', 'bunnyband'],
+  // (28판 traincar5 ⑧ 10/24: 기차 여행 물건 — 판 목록에서만 뽑음, ROOM_POOLS만이면 공용 풀이 섞임)
+  28: ['trainticket', 'ekiben', 'guidebook', 'filmcam', 'stampbook', 'thermos', 'mandarin', 'snowglobe'],
   29: ['tadpolejar', 'frogboots', 'snowglobe', 'umbrella', 'rubberduck2'],   // (10/24 사용자 "찾는 물건 신기하거나 좋아 보이는 걸로": 연못 집의 올챙이 병·개구리 장화)
   30: ['fishsnack', 'snowglobe', 'crown', 'star', 'towel', 'bellball'],
   32: ['sandwich', 'ramen', 'onigiri', 'kimbap'],

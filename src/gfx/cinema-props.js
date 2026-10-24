@@ -25,6 +25,7 @@ import { LOCK_COLORS } from './items.js';
 
 addI18n({
   '상영 판 앞': 'In front of the showtimes board',
+  '무대 계단 위': 'On the stage step', '무대 앞 바닥 구석': 'Floor corner by the stage',
   '별빛극장': 'Starlight Cinema', '매표소': 'Tickets', '상영관': 'Screen 1', '영사실': 'Projection', '비상구': 'EXIT', '오늘의 상영': 'Now Showing',
   '매점': 'Snack Bar', '팝콘': 'Popcorn', '콜라': 'Cola', '오징어': 'Dried squid', '쥐포': 'Fish jerky', '달려라 몽글이': 'Run, Mongle!', '우주 고양이': 'Space Cat',
   '숨바꼭질 대작전': 'Hide & Seek Mission', '관계자 외 출입금지': 'Staff only', '개봉 박두': 'Coming soon', '조조 할인': 'Early bird', '한 장': 'One ticket',
@@ -420,10 +421,7 @@ B.cin_shell = (f, T0) => {
       add(G.box(.8, .62, .7, .06), STONE, X0 - .3, .19, -2.86); add(G.box(.86, .08, .76, .03), shade(STONE, -.08), X0 - .3, .52, -2.86);
       add(G.box(.8, .56, .7, .06), STONE, X0 - .3, .16, 2.05); add(G.box(.86, .08, .76, .03), shade(STONE, -.08), X0 - .3, .46, 2.05);
     }));
-    // 릴에서 풀린 필름 띠 (납작한 띠 — 톱니 구멍·칸 그림): 감긴 필름 꼭대기에서 뒤로 풀려 나와 뒷벽 위에 내려앉고, 벽 안쪽의 필름 띠 장식으로 이어짐
-    // (디테일 10/24: 두께 1.6 cm — 옆에서 봐도 종이 한 장이 아니라 필름 띠)
-    { const P = [[-4.8, 5.13, -.35], [-4.8, 5.08, -1.0], [-4.79, 4.92, -1.6], [-4.75, 4.55, -2.2], [-4.66, 4.05, -2.7], [-4.5, 3.62, -3.05], [-4.2, 3.535, -3.12], [-3.95, 3.535, -3.08]];
-      W.deco.add(filmRibbon(P, .16, .016, i => { const k = ss(Math.max(0, Math.min(1, (i - 2) / 4))); return [1 - k, 0, k]; })); }
+    // (10/24 사용자 '필름롤쪽에 지저분한거 지워': 릴 꼭대기에서 뒷벽 프리즈로 내려앉던 풀린 필름 띠는 뺌 — 프리즈 위에 대각선 조각만 떠 보였음)
     tagWall(W.g, 'W'); tagWall(W.deco, 'W'); tagWall(W.knee, 'W');
   }
 
@@ -477,8 +475,9 @@ B.cin_shell = (f, T0) => {
   { const b = mesh(new THREE.SphereGeometry(.09, 10, 8), mat('#fff3d0', { emissive: GLOWC, ei: 1.3 }), { cast: false }); put(b, -4.7, ISY + 2.47, 3.67); f.add(b); f.add(halo(-4.7, ISY + 2.45, 3.67, 1.2, '#ffcf8a', .5)); f.add(pool(-4.75, ISY + .02, 3.7, 1.1, '#ffb86a', .35)); }
 
   // 바탕의 숨김 자리 (늘 보이는 곳): 무대 앞 끝 둘, 사다리 뒤 구석, 비상구 문턱, 오른쪽 화단 뒤
-  f.spot('on', null, STAGE.x1 - .22, STAGE.h, STAGE.z1 - .25, { maxH: 0.55, label: '무대 앞 끝', scale: 1 });
-  f.spot('on', null, STAGE.x1 - .25, STAGE.h, STAGE.z0 + .25, { maxH: 0.55, label: '무대 안쪽 끝', scale: 1 });
+  // (10/24 사용자 '곰 뚫림': 무대 양 끝 자리가 묶은 양옆 커튼 다발 속이었음 — 무대 앞 계단 위와 무대 앞 바닥 구석으로 옮김)
+  f.spot('on', null, STAGE.x1 + .18, .155, STAGE.z1 - .35, { maxH: 0.45, label: '무대 계단 위', scale: 1 });
+  f.spot('on', null, STAGE.x1 + .3, 0, STAGE.z0 + .4, { maxH: 0.5, label: '무대 앞 바닥 구석', scale: 1 });
   f.spot('behind', null, 2.8, 0, -1.9, { maxH: 0.5, label: '대걸레 통 옆', scale: 1 });
   f.spot('on', null, PART.x + .02, PART.h + .06, .45, { maxH: 0.4, label: '칸막이 위', scale: 1 });
   f.spot('behind', null, 3.75, ISY, 3.72, { maxH: 0.5, label: '극장 앞 화단 뒤', scale: 1 });

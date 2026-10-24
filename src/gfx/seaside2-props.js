@@ -232,18 +232,13 @@ const dialTex = () => TX.get('s2dial', () => canvasTex(64, 64, (c, w) => {
   c.strokeStyle = '#e8414e'; c.lineWidth = 2.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(32, 32); c.lineTo(32 + Math.sin(.9) * 22, 32 - Math.cos(.9) * 22); c.stroke();
 }));
 // the sea seen through the diorama's side: clear water darkening down, foam on top, weed and a few fish, the sand bed
-const seaSideTex = () => TX.get('s2seaside', () => rep(canvasTex(512, 128, (c, w, h) => {
-  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#8fd8ee'); g.addColorStop(.7, '#5aa8cc'); g.addColorStop(1, '#4b95bd');
+// 받침 옆면의 바다 단면 (10/24 사용자 "해변과 모래사장 칙칙하지 않게 에메랄드빛… 마감 잘 해라"): 물고기·해초 그림 없이 맑은 에메랄드 물빛 —
+// 위는 밝고 아래로 깊어지는 색, 위에서 비쳐 드는 옅은 빛줄기 셋, 물 위 가장자리 흰 물결 테, 바닥은 밝은 모래 띠
+const seaSideTex = () => TX.get('s2seaside2', () => rep(canvasTex(512, 128, (c, w, h) => {
+  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#7fe8da'); g.addColorStop(.6, '#3fc4bf'); g.addColorStop(1, '#2aa6aa');
   c.fillStyle = g; c.fillRect(0, 0, w, h);
-  c.fillStyle = 'rgba(255,255,255,.08)'; for (const x of [40, 170, 300, 420]) { c.beginPath(); c.moveTo(x, 8); c.lineTo(x + 24, 8); c.lineTo(x + 60, 110); c.lineTo(x + 40, 110); c.closePath(); c.fill(); }
-  c.lineCap = 'round';
-  for (const x0 of [60, 196, 332, 452]) for (const [dx, col, top] of [[0, '#3f9e6a', 60], [9, '#5cbf7f', 76]]) {
-    c.strokeStyle = col; c.lineWidth = 5; c.beginPath(); c.moveTo(x0 + dx, 114); for (let y = 114; y > top; y -= 5) c.lineTo(x0 + dx + Math.sin(y / 7 + dx) * 4, y); c.stroke();
-  }
-  fishFill(c, 130, 54, 1.0, 'rgba(255,255,255,.6)', 1); fishFill(c, 268, 82, .8, '#ffb07a', -1); fishFill(c, 392, 44, .7, 'rgba(255,255,255,.5)', 1);
-  c.strokeStyle = 'rgba(255,255,255,.65)'; c.lineWidth = 1.5; for (const [x, y, r] of [[150, 40, 3], [156, 30, 2], [286, 66, 2.5], [410, 30, 2]]) { c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); }
-  c.fillStyle = '#e6cd98'; c.beginPath(); c.moveTo(0, 112); for (let x = 0; x <= w; x += 8) c.lineTo(x, 110 + Math.sin(x / w * PI * 6) * 3); c.lineTo(w, h); c.lineTo(0, h); c.closePath(); c.fill();
-  c.fillStyle = '#b9b2c4'; for (const [x, y] of [[90, 120], [230, 118], [250, 122], [380, 121], [470, 119]]) { c.beginPath(); c.ellipse(x, y, 5, 3, 0, 0, 7); c.fill(); }
+  c.fillStyle = 'rgba(255,255,255,.1)'; for (const x of [60, 230, 390]) { c.beginPath(); c.moveTo(x, 6); c.lineTo(x + 30, 6); c.lineTo(x + 66, 108); c.lineTo(x + 40, 108); c.closePath(); c.fill(); }
+  c.fillStyle = '#f3e3c0'; c.beginPath(); c.moveTo(0, 112); for (let x = 0; x <= w; x += 8) c.lineTo(x, 110 + Math.sin(x / w * PI * 6) * 2.5); c.lineTo(w, h); c.lineTo(0, h); c.closePath(); c.fill();
   c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, 3);
   c.fillStyle = 'rgba(255,255,255,.75)'; for (let x = 0; x < w; x += 16) { c.beginPath(); c.arc(x + 8, 3, 6, 0, PI); c.fill(); }
 })));
@@ -323,7 +318,8 @@ B.seashop2 = (f, T) => {
     for (const sz of [-1, 1]) add(G.box(W + .06, .07, .04, .01), '#ffffff', x0, y0 + H1 + .04, z0 + sz * (D / 2 + .02));
     for (const sx of [-1, 1]) add(G.box(.04, .07, D + .06, .01), '#ffffff', x0 + sx * (W / 2 + .02), y0 + H1 + .04, z0);
     // the roof trim: a ridge roll, white barge boards on the gable edges, gutters along both eaves, a down pipe at the east front corner
-    add(G.cyl(.06, .06, W + .36, 10), shade(BLUE, -.25), x0, y1 + rh + .03, z0, 0, 0, HP);
+    // (10/24 ⑪ 점검 "용마루가 굵은 검은 띠": 짙은 파란 가는 원통에 잉크선이 겹쳐 면처럼 보였음 — 흰 처마 판과 같은 밝은 덮개 판 둘로)
+    for (const sd of [-1, 1]) add(G.box(W + .36, .03, .16, .01), '#eef1f5', x0, y1 + rh + .01, z0 + sd * .06, sd * slope, 0, 0);
     for (const sx of [-1, 1]) for (const s of [-1, 1]) add(G.box(.05, .11, len + .07, .015), '#ffffff', x0 + sx * (W / 2 + .175), y1 + rh / 2 - .025, z0 + s * half / 2, s * slope, 0, 0);
     for (const s of [-1, 1]) add(G.cyl(.04, .04, W + .3, 10), '#e6e9ef', x0, y1 - .07, z0 + s * 1.0, 0, 0, HP);
     tube([x0 + 1.33, y1 - .08, z0 + 1.0], [x0 + 1.33, y1 - .32, zf + .06], .03, '#e6e9ef', 8);
@@ -457,6 +453,50 @@ B.seashop2 = (f, T) => {
   f.spot('on', null, x0 + 1.05, .205, .8, { maxH: .25, label: '생선 상자 위', scale: .6 });
 };
 
+// ── 나룻배 (10/24 사용자 "배 허접. 다시 만들어"): 공 반쪽 대신 진짜 선체 — 길이를 따라 단면을 이어 붙인 몸체(이물은 뾰족하게 올라가고
+// 고물은 평평한 판), 칠은 아래 적갈 바닥칠·가운데 흰 판·위 파란 띠, 위 뱃전 테와 고물판, 안은 밝은 나무, 가로 앉을판 둘, 노걸이와 노.
+// 원점 = 물 높이 가운데, 이물 +x. L 길이 · B 폭 · D 깊이(뱃전 y = D)
+function hullStrip(L, B, D, j0, j1, inner) {
+  const NX = 28, NS = 14, pos = [], idx = [];
+  const sec = u => { const t = u > .45 ? (u - .45) / .55 : (.45 - u) / .45;
+    const hb = B / 2 * (u > .45 ? Math.sqrt(Math.max(0, 1 - t ** 1.6)) : 1 - .22 * t * t), dd = D * (u > .45 ? 1 - .5 * t * t : 1 - .12 * t * t), sh = u > .45 ? .09 * t * t : .02 * t * t;
+    return [hb * (inner ? .9 : 1), dd * (inner ? .86 : 1), sh]; };
+  for (let i = 0; i <= NX; i++) { const u = i / NX, x = -L / 2 + u * L, [hb, dd, sh] = sec(u);
+    for (let j = j0; j <= j1; j++) { const a = -HP + PI * j / NS, cz = Math.sin(a), cy = Math.cos(a); pos.push(x, D + sh - Math.pow(cy, .75) * dd, cz * hb); } }
+  const n = j1 - j0 + 1;
+  for (let i = 0; i < NX; i++) for (let j = 0; j < n - 1; j++) { const a = i * n + j, b = a + n; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  // outer faces look out (away from the keel line), inner faces look in: flip by testing one mid vertex
+  const mi = Math.floor(NX / 2) * n + Math.floor(n / 2), ny = g.attributes.normal.getY(mi), nz = g.attributes.normal.getZ(mi), pz = pos[mi * 3 + 2], py = pos[mi * 3 + 1];
+  const out = (nz * pz + ny * (py - D)) > 0;
+  if (out === !!inner) { const I = g.index.array; for (let k = 0; k < I.length; k += 3) { const t = I[k + 1]; I[k + 1] = I[k + 2]; I[k + 2] = t; } g.computeVertexNormals(); }
+  return g;
+}
+function rowBoat(add, tube, L = 1.7, B = .62, D = .3, o = {}) {
+  const NS = 14;
+  add(hullStrip(L, B, D, 0, 2, false), '#3f6fae'); add(hullStrip(L, B, D, NS - 2, NS, false), '#3f6fae');
+  add(hullStrip(L, B, D, 2, 4, false), '#f6f2ea'); add(hullStrip(L, B, D, NS - 4, NS - 2, false), '#f6f2ea');
+  add(hullStrip(L, B, D, 4, NS - 4, false), '#b35a4a');
+  add(hullStrip(L, B, D, 0, NS, true), '#e2c49a');
+  // 뱃전 테 (위 가장자리를 따라 도는 나무 테) · 이물 끝 · 고물판
+  const rim = []; for (let i = 0; i <= 28; i++) { const u = i / 28, t = u > .45 ? (u - .45) / .55 : (.45 - u) / .45, hb = B / 2 * (u > .45 ? Math.sqrt(Math.max(0, 1 - t ** 1.6)) : 1 - .22 * t * t), sh = u > .45 ? .09 * t * t : .02 * t * t; rim.push([-L / 2 + u * L, D + sh, hb]); }
+  for (const sd of [-1, 1]) for (let i = 0; i < rim.length - 1; i++) tube([rim[i][0], rim[i][1], sd * rim[i][2]], [rim[i + 1][0], rim[i + 1][1], sd * rim[i + 1][2]], .022, WOODD, 6);
+  add(G.box(.04, D * .9, B * .78, .015), '#3f6fae', -L / 2 + .01, D * .55, 0); add(G.box(.05, .03, B * .8, .01), WOODD, -L / 2 + .01, D + .02, 0);
+  add(G.cyl(.02, .02, .14, 8), WOODD, L / 2 - .02, D + .1, 0, 0, 0, -.5);
+  // 앉을판 둘 · 노걸이 · 노 (안쪽에 나란히) · 밧줄 고리
+  for (const x of [-.32, .22]) add(G.box(.12, .03, B * .86, .01), WOOD, x, D * .72, 0);
+  for (const sd of [-1, 1]) { add(G.tor(.025, .007, PI * 2, 4, 10), IRON, -.05, D + .06, sd * (B / 2 - .01), 0, 0, 0); if (!o.noOars) { tube([-.62, D * .6, sd * .14], [.5, D * .64, sd * .17], .012, WOOD, 5); add(G.box(.2, .012, .07, .004), WOOD, .58, D * .65, sd * .175); } }
+  add(G.tor(.03, .008, PI * 2, 4, 10), IRON, L / 2 - .05, D + .02, 0, HP, 0, 0);
+}
+// 물결치는 천 깃발 (원점 = 깃대 쪽 아래 귀퉁이, +x로 뻗음, 위로 H): 흰 천 + 깃대 쪽 파란 띠 + 파란 물고기, 양면
+function flagCloth(W = .5, H = .34) {
+  const wave = (x, y) => Math.sin(x / W * PI * 2.2) * .03 * (x / W);
+  const bend = g => { const P = g.attributes.position; for (let i = 0; i < P.count; i++) P.setZ(i, P.getZ(i) + wave(P.getX(i), P.getY(i))); g.computeVertexNormals(); return g; };
+  const cloth = bend(new THREE.PlaneGeometry(W, H, 14, 4).translate(W / 2, H / 2, 0));
+  const band = bend(new THREE.PlaneGeometry(.1, H, 2, 4).translate(.05, H / 2, .004));
+  const fs = new THREE.ShapeGeometry(fishShape(.22, .12)); fs.translate(W * .58, H / 2, .004); bend(fs);
+  return { cloth, band, fish: fs };
+}
 // ── 물 위 데크 (3×2, new type seadeck2 · flagdeck2 on 30판 ★): the same deck on stilts, the same counter, case, barrel and steps ─
 B.seadeck2 = (f, T, o = {}) => {
   const y = .4, dev = !!o.device;
@@ -559,23 +599,14 @@ B.seadeck2 = (f, T, o = {}) => {
   f.spot('beside', null, .82, y + .03, .3, { maxH: .3, label: '레몬 통 옆', scale: .7 });
   f.spot('inside', null, TX0, y + .065, TZ, { maxH: .2, label: '통발 안', scale: .6 });
   if (dev) return;
-  // the rowboat tied alongside in the shallows: a painted band, seats, oars across, the outboard, a crate of fish in the bow
-  f.add(mc('seadeck2-boat', ({ add, addM, tube }) => {
-    const bx = -.55, bz = 1.75, by = 0, HULL = '#c9844e';
-    const bowl = r => new THREE.SphereGeometry(r, 20, 8, 0, PI * 2, HP, HP);
-    add(bowl(.5), HULL, bx, by + .24, bz, 0, 0, 0, [1.7, .7, .6]);
-    add(G.cyl(.46, .46, .03, 24), shade(HULL, .3), bx, by + .12, bz, 0, 0, 0, [1.6, 1, .53]);
-    add(G.cyl(.47, .47, .08, 24, true), shade(HULL, .15), bx, by + .2, bz, 0, 0, 0, [1.66, 1, .57]);
-    add(G.tor(.5, .03, PI * 2, 6, 28), shade(HULL, -.15), bx, by + .24, bz, HP, 0, 0, [1.7, .6, 1]);
-    add(G.tor(.49, .016, PI * 2, 4, 28), BLUE2, bx, by + .17, bz, HP, 0, 0, [1.7, .6, 1]);
-    add(G.box(.08, .04, .5, .01), WOOD, bx - .2, by + .19, bz); add(G.box(.08, .04, .5, .01), WOOD, bx + .35, by + .19, bz);
-    add(G.box(.26, .2, .26, .03), '#4a4256', bx - .62, by + .3, bz); add(G.box(.28, .05, .28, .02), '#f4efe4', bx - .62, by + .42, bz);
-    add(G.cyl(.05, .05, .2, 8), '#4a4256', bx - .62, by + .34, bz + .15, HP, 0, 0); add(G.cyl(.025, .025, .3, 8), '#4a4256', bx - .74, by + .12, bz);
-    for (const sd of [-1, 1]) { tube([bx - .45, by + .25, bz + sd * .12], [bx + .45, by + .27, bz + sd * .2], .014, WOOD, 5); add(G.box(.18, .01, .07, .004), WOOD, bx + .52, by + .275, bz + sd * .21, 0, sd * -.08, 0); }
-    add(G.box(.2, .1, .16, .01), WOOD, bx + .58, by + .22, bz); for (const dz2 of [-.03, .04]) add(G.cone(.03, .05, 3), '#c9d6e0', bx + .58 + dz2, by + .29, bz + dz2, 0, 0, 0, [1, 1, .3]);
-    tube([-.3, y + .05, .9], [bx + .8, by + .26, bz - .12], .012, ROPE, 4);
-  }));
-  f.spot('inside', null, -.5, .14, 1.75, { maxH: .2, label: '보트 안', scale: .75 });
+  // the rowboat tied alongside in the shallows (10/24 다시 지은 선체 — rowBoat), a crate of fish on the bow seat, its line to the deck cleat
+  { const bt = grp(); put(bt, -.55, 0, 1.75); f.add(bt);
+    bt.add(mc('seadeck2-boat3', ({ add, tube }) => {
+      rowBoat(add, tube);
+      add(G.box(.22, .1, .18, .015), WOOD, .26, .27, 0); for (const dz of [-.04, .04]) add(G.sph(.035, 8, 6), '#c9d6e0', .26 + dz, .33, dz, 0, 0, 0, [1.8, .6, .7]);
+      tube([.82, .34, 0], [.25, y + .05, -.85], .01, ROPE, 4);
+    })); }
+  f.spot('inside', null, -.62, .06, 1.75, { maxH: .2, label: '보트 안', scale: .75 });
 };
 
 // 깃발 데크 2 (3×2, 30판 ★ — devices.js SWAP.seaside2): the deck above with the flagpole, flag, pinwheel socket, the boat under its
@@ -593,22 +624,20 @@ B.flagdeck2 = (f, T) => {
     for (let k = 0; k < 3; k++) add(G.tor(.03, .008, PI * 2, 4, 10), ROPE, PX + .06, y + .44 - k * .02, PZ, HP, 0, 0);
   }));
   const flag = grp(); put(flag, PX + .06, y + .3, PZ); pole.add(flag);
-  flag.add(live(mc('flagdeck2-flag', ({ add }) => {
-    for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) add(G.box(.14, .14, .012, .004), (r + c) % 2 ? '#e8414e' : '#ffffff', .1 + c * .14, .21 - r * .14, 0);
+  // (10/24 사용자 "깃발이냐 뭐냐": 작은 체크 조각 대신 물결치는 천 — 흰 천, 깃대 쪽 파란 띠, 파란 물고기; 양면)
+  flag.add(live(mc('flagdeck2-flag2', ({ add }) => {
+    const { cloth, band, fish } = flagCloth();
+    for (const sz of [1, -1]) { add(cloth, '#fbf8f2', 0, 0, 0, 0, 0, 0, [1, 1, sz]); add(band, '#3f6fae', 0, 0, 0, 0, 0, 0, [1, 1, sz]); add(fish, '#3f6fae', 0, 0, 0, 0, 0, 0, [1, 1, sz]); }
   })));
   flag.scale.set(.25, .7, 1);
   const pin = grp(); put(pin, PX, y + PH - .06, PZ + .12); pin.visible = false; pole.add(pin);
   pin.add(live(mc('flagdeck2-pin', ({ add }) => { for (let k = 0; k < 4; k++) { const a = k * HP; add(G.box(.12, .12, .01, .01), ['#ff8fb8', '#ffd86b', '#8fd3f4', '#9be38f'][k], Math.cos(a) * .07, Math.sin(a) * .07, 0, 0, 0, a + PI / 4, [1, .6, 1]); } add(G.sph(.025, 8, 6), '#ffffff', 0, 0, .01); })));
   const boat = grp(); put(boat, BX, 0, BZ0); f.add(boat);
-  boat.add(live(mc('flagdeck2-boat', ({ add, tube }) => {
-    const bowl = r => new THREE.SphereGeometry(r, 20, 8, 0, PI * 2, HP, HP);
-    add(bowl(.5), HULL, 0, .24, 0, 0, 0, 0, [1.7, .7, .6]); add(G.cyl(.46, .46, .03, 24), '#e8c49a', 0, .12, 0, 0, 0, 0, [1.6, 1, .53]);
-    add(G.tor(.5, .03, PI * 2, 6, 28), '#a86a3a', 0, .24, 0, HP, 0, 0, [1.7, .6, 1]); add(G.box(.08, .04, .5, .01), WOOD, .35, .19, 0);
-    add(G.tor(.49, .016, PI * 2, 4, 28), BLUE2, 0, .17, 0, HP, 0, 0, [1.7, .6, 1]);
-    for (let k = 0; k < 4; k++) add(G.sph(.04, 8, 6), '#ffffff', -.6 + k * .4, .26, .3, 0, 0, 0, [1, .5, .5]);
-    for (const sd of [-1, 1]) { tube([-.62, .27, sd * .33], [.55, .27, sd * .33], .013, WOOD, 5); add(G.box(.16, .012, .06, .004), WOOD, .62, .27, sd * .33); }
-    add(G.cyl(.04, .04, .16, 10), '#ffffff', .45, .14, .31, 0, 0, HP); tube([.38, .24, .3], [.38, .16, .32], .004, ROPE, 3);
-    tube([.82, .26, 0], [.98, .3, -.1], .012, ROPE, 4);
+  boat.add(live(mc('flagdeck2-boat3', ({ add, tube }) => {
+    rowBoat(add, tube, 1.7, .62, .3, { noOars: true });
+    for (const sd of [-1, 1]) { tube([-.62, .3, sd * .33], [.55, .3, sd * .33], .013, WOOD, 5); add(G.box(.16, .012, .06, .004), WOOD, .62, .3, sd * .33); }
+    add(G.cap(.04, .1, 4, 10), '#ffffff', .45, .17, .33, 0, 0, HP); tube([.38, .3, .32], [.38, .2, .34], .004, ROPE, 3);
+    tube([.86, .36, 0], [1.0, .38, -.1], .012, ROPE, 4);
   })));
   const cover = grp(); put(cover, 0, .26, -.28); boat.add(cover);
   cover.add(mc('flagdeck2-cover', ({ add, tube }) => {
@@ -890,6 +919,45 @@ B.sea2scene = (f, T) => {
       C(G.cyl(.004, .004, .025, 4), '#e8504a', s * .018, .06, .03); C(G.sph(.01, 6, 4), '#ffffff', s * .018, .075, .03); C(G.sph(.005, 4, 3), '#2a2230', s * .018, .078, .038);
     }
   }));
+};
+
+// ── 바닷가 화단 (2×1, planter의 gptHero seaplanter2 — 10/24 사용자 "저 꽃 어셋 너무 구려. 만들때 제대로 만들어라"): 바래서 결이 드러난
+// 흰 판자 상자(판자 사이 틈·못), 모래 섞인 흙과 조개 몇 개, 파란 수국 두 송이(작은 네 잎 꽃이 모인 둥근 송이), 분홍 갯패랭이 방울 꽃,
+// 바닷바람에 누운 사구 풀, 작은 다육이 — 동그란 덩어리 꽃 대신 꽃마다 모양이 있게. 숨김 자리는 옛 화단 그대로 '꽃 화단 속'
+B.seaplanter2 = (f, T) => {
+  const PW = .9, PD = .27, PH = .32, SY = PH - .04, WD = '#e9e4da', WD2 = '#d6d0c4';
+  f.add(mc('seaplanter2', ({ add, tube }) => {
+    // 판자 상자: 앞뒤 판자 세 줄(틈), 옆판, 모서리 기둥, 위 테, 못
+    for (const sz of [-1, 1]) { for (let k = 0; k < 3; k++) add(G.box(2 * PW - .08, PH / 3 - .012, .035, .008), k % 2 ? WD : WD2, 0, PH / 6 + k * PH / 3, sz * (PD - .018));
+      for (const x of [-.6, 0, .6]) for (let k = 0; k < 3; k++) add(G.sph(.008, 5, 4), '#8a8478', x, PH / 6 + k * PH / 3, sz * (PD + .001)); }
+    for (const sx of [-1, 1]) { add(G.box(.035, PH, 2 * PD - .07, .008), WD2, sx * (PW - .06), PH / 2, 0); add(G.box(.07, PH + .04, .07, .012), '#cfc8ba', sx * (PW - .035), (PH + .04) / 2, -(PD - .035)); add(G.box(.07, PH + .04, .07, .012), '#cfc8ba', sx * (PW - .035), (PH + .04) / 2, PD - .035); }
+    for (const sz of [-1, 1]) add(G.box(2 * PW + .02, .025, .07, .008), '#f3efe7', 0, PH + .012, sz * (PD - .02));
+    add(G.box(2 * PW - .14, .03, 2 * PD - .1, .008), '#b99a74', 0, SY - .015, 0);
+    for (const [x, z, c] of [[-.78, .14, '#fff4ec'], [.7, .16, '#ffe0e6'], [.1, .17, '#fff4ec']]) add(new THREE.CylinderGeometry(.03, .03, .01, 10, 1, false, 0, PI), c, x, SY + .002, z, 0, x * 3, 0);
+    // 파란 수국 두 송이: 잎 몇 장 위에 작은 꽃(네 잎) 수십 개가 둥글게
+    for (const [cx, cz, R, base] of [[-.55, -.03, .17, '#7fa6e0'], [-.25, .06, .13, '#a9b8ee'], [.2, -.02, .15, '#9db4ec']]) {
+      for (let k = 0; k < 7; k++) { const a = k * .9; add(G.sph(.09, 8, 6), k % 2 ? '#5f9e5a' : '#4f8f50', cx + Math.cos(a) * R * .9, SY + .05, cz + Math.sin(a) * R * .7, 0, a, .3, [1.5, .3, .8]); }
+      for (let k = 0; k < 46; k++) { const t = k / 46, ph = Math.acos(1 - t * 1.2), th = k * 2.4, x = cx + Math.sin(ph) * Math.cos(th) * R, y = SY + .1 + R * .9 + Math.cos(ph) * R * .8, z = cz + Math.sin(ph) * Math.sin(th) * R;
+        const c = k % 4 === 0 ? '#c9d8f6' : k % 3 ? base : '#6f92d6';
+        for (let q = 0; q < 4; q++) add(G.sph(.016, 5, 4), c, x + Math.cos(q * HP + k) * .013, y, z + Math.sin(q * HP + k) * .013, 0, 0, 0, [1, .5, 1]); }
+    }
+    // 분홍 갯패랭이: 가는 줄기 끝 작은 방울 꽃
+    for (let k = 0; k < 12; k++) { const x = -.08 + k * .04 + (k % 2) * .02, z = .12 - (k % 3) * .06, h = .14 + (k % 3) * .04;
+      tube([x, SY, z], [x + .01, SY + h, z], .004, '#6a9a5c', 3);
+      for (let q = 0; q < 6; q++) add(G.sph(.014, 5, 4), q % 2 ? '#f29ab8' : '#e77fa4', x + .01 + Math.cos(q) * .016, SY + h + .01 + (q % 3) * .008, z + Math.sin(q) * .016); }
+    for (let k = 0; k < 6; k++) add(G.sph(.03, 6, 4), '#7fae6a', -.2 + k * .06, SY + .015, .1 - (k % 2) * .04, 0, 0, 0, [1.4, .4, 1]);
+    // 사구 풀: 가는 잎이 바람 쪽(+x)으로 눕게
+    for (const [cx, cz] of [[.52, -.08], [.7, .08], [.82, -.1], [-.82, -.06], [-.38, -.14]]) for (let k = 0; k < 11; k++) { const a = (k / 9 - .5) * 1.4, L = .2 + (k % 3) * .06;
+      tube([cx, SY, cz], [cx + Math.sin(a + .5) * L * .6, SY + L, cz + Math.cos(a * 2) * .05], .006, k % 2 ? '#a9b86a' : '#c2c47e', 3); }
+    // 앞 가장자리 흰 갯국화 (작은 흰 꽃잎 + 노란 가운데) — 흙이 비어 보이지 않게
+    for (let k = 0; k < 9; k++) { const x = -.72 + k * .17, z = .17 - (k % 2) * .03, y = SY + .05 + (k % 3) * .02;
+      add(G.sph(.04, 6, 4), '#6f9f62', x, SY + .02, z, 0, k, 0, [1.4, .4, 1]);
+      for (let q = 0; q < 6; q++) add(G.sph(.013, 5, 4), '#ffffff', x + Math.cos(q * 1.05) * .022, y, z + Math.sin(q * 1.05) * .022, 0, 0, 0, [1.3, .4, 1]);
+      add(G.sph(.011, 5, 4), '#ffd25c', x, y + .006, z); }
+    // 다육이 로제트
+    for (let k = 0; k < 9; k++) { const a = k * 2.4, r = .02 + (k % 3) * .015; add(G.sph(.028, 6, 4), k < 3 ? '#a8cfa8' : '#8fbf9a', .4 + Math.cos(a) * r, SY + .03 + (k < 3 ? .02 : 0), .12 + Math.sin(a) * r, .3, a, 0, [1, .5, 1.6]); }
+  }));
+  f.spot('behind', null, .5, SY, -.13, { maxH: .3, label: '꽃 화단 속', scale: .7 });
 };
 
 export const SEASIDE2_BUILDERS = B;

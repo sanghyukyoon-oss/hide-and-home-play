@@ -19,6 +19,7 @@ import { rrect, circle, ext, islandShape, ISY, rainTex, tileTex, foldWall, tagWa
 import { warmPaper, seg } from './otakuloft4-props.js';
 import { FONT, fitText, textTex, paperFill, paperSheet } from './gpt-paper.js';
 import { LANG, addI18n } from '../i18n.js';
+import { rainFall } from './s3-kit.js';
 
 addI18n({
   '너굴이네 오락실 2층집': "Rocky's Arcade House", '너굴 오락실': "ROCKY'S ARCADE", '게임 · 인형 뽑기 · 경품': 'GAMES · CLAW · PRIZES',
@@ -224,6 +225,16 @@ B.ol5_shell = (f, T) => {
   }));
   { const top = mesh(new THREE.PlaneGeometry(RWID, -NZ + SZ), mat('#ffffff', { map: plankTex(), rough: .7, rim: .1 }), { cast: false }); put(top, 0, Y2 + .002, (NZ + SZ) / 2, -HP, 0, 0); top.userData.floor = true; f.add(top); }
   { const g = mesh(new THREE.PlaneGeometry(4.9, .86), mat(GLASS, { opacity: .3, rough: .2 }), { cast: false }); put(g, 0, Y2 + .47, SZ - .05); f.add(g); }
+  // (10/24 사용자 "위(2층)가 좀 어색하고 썰렁 … 어둡지만 컬러풀하고 화사하게"): a string of fairy lights draped post to post along the
+  // railing's top rail — little glowing bulbs in pink, mint, butter and lilac — and a second one along the back wall's top
+  { const cols = ['#ff3fa8', '#1fe4ff', '#ffd23a', '#9b5cff'], mats = cols.map(c => mat(c, { emissive: c, ei: 1.4 })), wire = [], bulb = new THREE.SphereGeometry(.048, 10, 8);
+    const drape = (x0, x1, y, z, n, sag, k0) => { for (let i = 0; i <= n; i++) { const t = i / n, x = x0 + (x1 - x0) * t, yy = y - sag * 4 * t * (1 - t); wire.push([x, yy, z]);
+      if (i > 0 && i < n) { const m = new THREE.Mesh(bulb, mats[(k0 + i) % 4]); m.position.set(x, yy - .045, z); m.scale.set(1, 1.25, 1); m.userData.noMerge = true; f.add(m); } } };
+    const posts = [-2.45, -1.2, 0, 1.2, 2.45];
+    for (let k = 0; k < posts.length - 1; k++) drape(posts[k], posts[k + 1], Y2 + .93, SZ - .02, 6, .16, k);
+    for (let k = 0; k < 3; k++) drape(-3.2 + k * 2.2, -1.0 + k * 2.2, Y2 + 2.25, NZ + .06, 8, .22, k + 1);
+    f.add(mc('ol5-fairywire', ({ tube }) => { for (let i = 1; i < wire.length; i++) if (Math.abs(wire[i][0] - wire[i - 1][0]) < .5) tube(wire[i - 1], wire[i], .006, '#3d3a52', 4); }));
+  }
   { const b = mesh(new THREE.BoxGeometry(1.2, .04, .12), mat('#f4f8ff', { emissive: '#f4f8ff', ei: 1.0 }), { cast: false }); put(b, 0, SLAB_B - .06, -1.6); f.add(b); }
   for (let k = 0; k < 16; k++) bulb(f, k % 2 ? '#fff1b8' : '#ffd0c4', -3.3 + k * 6.6 / 15, (SLAB_B + Y2) / 2, SZ + .07, .03);
 
@@ -317,7 +328,8 @@ B.ol5_shell = (f, T) => {
     tagWall(W.g, 'W'); tagWall(W.deco, 'W'); tagWall(W.knee, 'W');
   }
   // ── 오른쪽: 옆모습 테두리 띠 (오른쪽에서 볼 때만 숨김) ───────────────────────────────────────────────────────
-  const E = foldWall(f, [-1, 0, 0], TOP); E.th = -.75; E.stub = .02;
+  // (10/24 사용자 "저 옆에 벽은 줌인 들어가거나 회전해도 유지해도 될 듯, 얇아서"): the right side's thin frame never folds
+  const E = foldWall(f, [-1, 0, 0], TOP); E.th = -2; E.stub = .02;
   E.g.add(mc('ol5-eframe', ({ add }) => {
     for (let k = 2; k < PROFILE.length; k++) seg(add, EX + .1, .2, PROFILE[k - 1], PROFILE[k], .16, CAB);
     seg(add, EX + .1, .2, PROFILE[PROFILE.length - 1], [-3.0, 0], .16, CAB);
@@ -898,9 +910,19 @@ B.ol5_changer = (f, T) => {
   f.spot('behind', null, .38, 0, z0, { maxH: .4, label: '동전 교환기 옆 틈', scale: .7 });
 };
 
+// 비 (10/24 사용자 "비 오는 거 개굴이에 썼던 걸로 해 줄래? … 배경의 비는 퀄이 너무 안 좋으니 지워 주고"): the shared rain of 3판·29판
+// (s3-kit.js rainFall — the one that never stops), thin and quiet for the night: fewer, fainter drops, none under the building's
+// roof, a ring where one lands in a puddle or on the street out front
+B.ol5_rain = f => {
+  f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.7, 0, .01, -.65, .01];
+  const inHouse = (x, z) => x > NX0 - .08 && x < NX1 + .08 && z > NZ - NT - .08 && z < 3.2;
+  rainFall(f, { n: 110, w: 10.5, d: 9.6, cx: .35, cz: .4, top: 5.6, opacity: .34, seed: 18, ringY: ISY + .02, out: inHouse,
+    wet: (x, z) => !inHouse(x, z) && x > -4.2 && x < 4.9 && z > -3.7 && z < 4.5 });
+};
 export const OL5_BUILDERS = B;
 export const OL5_INFO = {
   ol5_shell: { w: 1, d: 1, name: '너굴이네 오락실 2층집', hidden: true, price: 0 },
+  ol5_rain: { w: 1, d: 1, name: '비', hidden: true, price: 0 },
   ol5_spiral: { w: 1, d: 1, name: '철제 나선 계단', hidden: true, price: 0 },
   ol5_slide: { w: 1, d: 3, name: '노란 미끄럼틀', hidden: true, price: 0 },
   ol5_prizewall: { w: 2, d: 1, name: '경품 진열장', hidden: true, price: 0 },

@@ -200,7 +200,8 @@ export const textured = (geom, t) => mesh(geom, texMat(t));
 //  ③ 시계가 다시 시작되면 간격이 거꾸로일 수 있음 — 음수·큰 간격은 버리고, 위로 벗어나도 다시 떨어뜨림)
 const DROP = (() => { const g = new THREE.CylinderGeometry(.006, .006, .32, 4, 1, true); g.rotateZ(.12); return g; })();
 const RING = (() => { const g = new THREE.RingGeometry(.82, 1, 28); g.rotateX(-HP); return g; })();
-export function rainFall(f, { n = 150, w = 12, d = 12, top = 5, cx = 0, cz = 0, wet = () => false, ringY = -.07, rate = 24, seed = 5, opacity = .62 } = {}) {
+// (out(x, z): no drop there — under a roof (18판 오락실 건물): one landing inside is hidden, as if the roof took it)
+export function rainFall(f, { n = 150, w = 12, d = 12, top = 5, cx = 0, cz = 0, wet = () => false, ringY = -.07, rate = 24, seed = 5, opacity = .62, out = null } = {}) {
   const r = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(seed);
   const m = new THREE.InstancedMesh(DROP, new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity, depthWrite: false }), n);
   const spawnX = () => cx + (r() - .5) * w, spawnZ = () => cz + (r() - .5) * d;
@@ -211,9 +212,9 @@ export function rainFall(f, { n = 150, w = 12, d = 12, top = 5, cx = 0, cz = 0, 
   const set = dt => {
     drops.forEach((q, i) => { q.y -= q.v * dt; q.x -= q.v * dt * .12;
       if (q.out) { m.setMatrixAt(i, M.compose(P.set(0, -9, 0), Q, Z)); return; }   // (stopped: a drop that has landed stays gone)
-      if (q.y < 0) { if (wet(q.x, q.z)) { const g = rings[rk++ % RN]; g.x = q.x; g.z = q.z; g.t = 0; } if (stopped) { q.out = true; m.setMatrixAt(i, M.compose(P.set(0, -9, 0), Q, Z)); return; } q.y += top; q.x = spawnX(); q.z = spawnZ(); }
+      if (q.y < 0) { if (wet(q.x, q.z) && !(out && out(q.x, q.z))) { const g = rings[rk++ % RN]; g.x = q.x; g.z = q.z; g.t = 0; } if (stopped) { q.out = true; m.setMatrixAt(i, M.compose(P.set(0, -9, 0), Q, Z)); return; } q.y += top; q.x = spawnX(); q.z = spawnZ(); }
       else if (q.y > top) { q.y = r() * top; q.x = spawnX(); q.z = spawnZ(); }
-      m.setMatrixAt(i, M.compose(P.set(q.x, q.y, q.z), Q, S)); });
+      m.setMatrixAt(i, out && out(q.x, q.z) ? M.compose(P.set(0, -9, 0), Q, Z) : M.compose(P.set(q.x, q.y, q.z), Q, S)); });
     rings.forEach((g, i) => { g.t += dt; const k = g.t / .7; ring.setMatrixAt(i, k >= 1 ? M.compose(P.set(0, -9, 0), Q, Z) : M.compose(P.set(g.x, ringY, g.z), Q, S.set(.04 + k * .2, 1, .04 + k * .2))); });
     S.set(1, 1, 1);
     m.instanceMatrix.needsUpdate = true; ring.instanceMatrix.needsUpdate = true;
