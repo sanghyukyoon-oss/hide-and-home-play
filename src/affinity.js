@@ -50,6 +50,15 @@ const PLACE = {
     [FOOD, s => k(/picnic/, ['behind'])(s) || k(/baitbucket/)(s), 'never'],
   ],
 };
+// 2판 토순이네 침실(처음 배우는 판, 사용자 10/24 "2판이 좀 어렵대 사람들이 … 머리띠 다른 곳에"): 토순이 머리띠는 다락 이불 위·서랍장 위
+// (시작 화면에서 보이는 곳) — 책상 밑 상자 같은 열어야 하는 데는 아니에요 (②)
+PLACE.bunny = [
+  [/bunnyband/, s => s.label === '이불 위' || s.label === '서랍장 위', 'like'],
+  [/bunnyband/, s => s.kind === 'inside', 'never'],
+  // (안경도 책상·식물 선반 위 — 옷장 위칸까지 열면 처음 판에 열어 보는 게 둘이 됐음)
+  [/glasses/, s => /^식물 선반|^책상 위/.test(s.label || ''), 'like'],
+  [/glasses/, s => s.kind === 'inside', 'never'],
+];
 let place = null;
 // (3판 ⑩ 안 fishing3r·fishisle: 원래 3판 자리표 그대로)
 PLACE.fishing3r = PLACE.fishisle = PLACE.fishing;

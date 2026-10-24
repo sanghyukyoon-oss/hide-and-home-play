@@ -1598,18 +1598,27 @@ B.wallshelf = (f, T) => {
 // f.rocker flips when it's found (stage.js onFound → lightsOn)
 B.lightswitch = (f, T) => {
   const Y = 1.1;
-  // (GPT 정밀 QA ART-07 10/24: 첫 화면 14 px, 어두운 벽과 밝기가 비슷 → 판 1.3배에 진한 나무 테두리를 둘러 벽과 갈라 보이게; ②)
-  f.add(mc('lightswitch2', ({ add }) => {
-    add(G.box(.32, .42, .02, .025), '#8a6a5c', 0, Y, .01);
-    add(G.box(.26, .36, .03, .02), '#fbf7ef', 0, Y, .025);
-    add(G.box(.22, .32, .008, .012), '#efe8dc', 0, Y, .042);
-    for (const sy of [-1, 1]) add(G.sph(.013, 8, 6), STEEL, 0, Y + sy * .135, .046, 0, 0, 0, [1, 1, .4]);
+  // (⑥ 10/24 사용자 9판 "디자인 구려서 스위치인지 엽서인지도 모르겠다"): a real wall switch — a thick white plate with rounded
+  // corners standing proud of the wall on a dark shadow rim, two slotted screws, a bevelled frame round two fat rocker
+  // toggles that tilt (you see the raised half and the dip), a little green locator light glowing under them for the
+  // power cut; on (found) the rockers tip the other way
+  f.add(mc('lightswitch3', ({ add }) => {
+    add(G.box(.34, .44, .015, .03), '#4a4458', 0, Y - .006, .008);
+    add(G.box(.3, .4, .045, .035), '#fbf8f2', 0, Y, .03);
+    add(G.box(.24, .26, .012, .02), '#e6e0d6', 0, Y + .015, .056);
+    for (const sy of [-1, 1]) { add(G.cyl(.016, .016, .01, 12), '#c9cfe0', 0, Y + sy * .165, .055, HP, 0, 0); add(G.box(.024, .004, .004, .001), '#7a8090', 0, Y + sy * .165, .061, 0, 0, sy * .6); }
+    add(G.box(.05, .016, .006, .004), '#3a3a48', 0, Y - .125, .055);
   }));
-  const rk = new THREE.Group(); put(rk, 0, Y, .05); f.add(rk);
-  rk.add(mc('lightswitch-rocker2', ({ add }) => {
-    add(G.box(.11, .18, .03, .014), '#ffffff', 0, 0, 0);
-    add(G.box(.08, .065, .008, .007), '#ff8fa8', 0, -.045, .016);
-  }));
+  f.add(put(mesh(geo('ls-led', () => new THREE.BoxGeometry(.036, .01, .006)), glowMat('#b8ffcb', '#5dff8a', 1.2)), 0, Y - .125, .059));
+  const rk = new THREE.Group(); put(rk, 0, Y + .015, .06); f.add(rk);
+  const rm = mc('lightswitch-rocker3', ({ add }) => {
+    for (const sx of [-1, 1]) {
+      add(G.box(.095, .22, .04, .016), '#ffffff', sx * .055, 0, 0);
+      add(G.box(.06, .006, .004, .002), '#c9c2b6', sx * .055, 0, .021);
+      add(G.sph(.009, 8, 6), '#ff8f8f', sx * .055, .07, .021, 0, 0, 0, [1, 1, .4]);
+    }
+  });
+  rm.userData.noMerge = true; rk.add(rm);   // (its own mesh: it tips when found — merged into the plate it could not move)
   rk.rotation.x = -.22;
   f.rocker = rk;
 };
