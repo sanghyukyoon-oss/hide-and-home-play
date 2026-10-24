@@ -51,7 +51,7 @@ import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 
 import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
 import { closeUp, closeBack, clearParts, clearTurn, covered } from '../closeup.js';
 import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
-import { armFtap } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
+import { armFtap, armFtapB } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
 import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
@@ -528,7 +528,7 @@ export class StageScene {
     else if (this.obs) newCard(G, 'obs');   // 61판: the observation locks' card, once (스토리 v96 CARDS.obs)   // e.g. 비밀 서재: 🆕 연쇄 장치
     if (this.scene?.teachMove && !G.save.tut?.move) this.teachMove();
     if (this.plan.showcase?.shelf && !custom && !this.preview) this.teachShelf();   // 비밀 서재: what to do, once (사용자 실폰 10/20)
-    if (!TUT_B) armFtap(this);   // 6판부터 한 번: 끌다가 다른 손가락 톡 = 회전 (10/19)
+    if (!TUT_B) armFtap(this); else armFtapB(this);   // 6판부터 한 번: 끌다가 다른 손가락 톡 = 회전 (10/19)
     if (this.spec.boss) G.ui.toast('방탈출 보스판! 단서를 차례로 풀어 봐', 'red');
     else if (this.spec.night && !this.incident) G.ui.toast('밤이 됐어! 달빛 아래 숨은 물건을 찾아봐', 'green');
     // the locks (열쇠·비밀번호·색깔·레버·간식) come as a 🆕 card the first time you touch one (onPart); these few keep a tip

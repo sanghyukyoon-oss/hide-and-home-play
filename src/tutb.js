@@ -16,6 +16,7 @@ export const TUT_B = (() => { const q = QS.get('tut'); if (q === 'b' || q === 'a
 export function setTutB(on) { try { localStorage.setItem('sbk-tut', on ? 'b' : 'a'); } catch {} }
 export const TUTB_TXT = {
   turn: K('이동하면서 다른 손가락으로 터치하면 잠깐 회전돼요', 'While dragging, touch with another finger to turn for a moment'),
+  keep: K('떼지 마!', 'Keep holding!'), keep2: K('다른 손가락으로 터치!', 'Touch with another finger!'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 
@@ -61,11 +62,36 @@ export async function tutB2(S) {
   const txt = tr(TUTB_TXT.turn).replace(/이동|dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/회전|turn/, w => `<span class="tkw tn">${w}</span>`);
   const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px;transition:opacity .4s`, html: txt }); G.ui.tut.append(line);
   setTimeout(() => { line.style.opacity = '0'; setTimeout(() => line.remove(), 450); }, 5000);
+  // (user 10/24: "'떼지 마' 튜토리얼에 넣어 달랬는데" — the B lesson had no such tag) while one finger drags, a big "떼지 마!" over it
+  // (kept on screen, toward the middle) with "다른 손가락으로 터치!" under it; gone when the turn is done or the finger lifts
+  keepCss();
+  const tag = h('div', { class: 'tbkeep' }, h('b', {}, tr(TUTB_TXT.keep)), h('span', {}, tr(TUTB_TXT.keep2))); G.ui.tut.append(tag);
+  const place = () => {
+    const ps = [...(W.ptrs?.values() || [])];
+    if (ps.length !== 1 || S.paused || S.talking) { tag.classList.remove('on'); return; }
+    const p = ps[0], w = tag.offsetWidth || 220, hgt = tag.offsetHeight || 80;
+    const x = Math.max(w / 2 + 10, Math.min(innerWidth - w / 2 - 10, p.x * .6 + innerWidth / 2 * .4)), yy = Math.max(hgt + 70, Math.min(innerHeight - 160, p.y - 70));
+    tag.style.left = x + 'px'; tag.style.top = yy + 'px'; tag.classList.add('on');
+  };
+  const iv = setInterval(place, 50);
   let turn = 0, y = W.yaw; const t0 = S.t;
-  while (!S.dead && !S.result) {
-    await S.tw.wait(.25);
-    if (W.ptrs?.size) turn += Math.abs(W.yaw - y); y = W.yaw;
-    if (turn > .3) break;
-    if (S.t - t0 > 20) { await hand(S, 'turn'); break; }
-  }
+  try {
+    while (!S.dead && !S.result) {
+      await S.tw.wait(.25);
+      if (W.ptrs?.size) turn += Math.abs(W.yaw - y); y = W.yaw;
+      if (turn > .3) break;
+      if (S.t - t0 > 20 && !tag.classList.contains('on')) { await hand(S, 'turn'); }
+      if (S.t - t0 > 60) break;
+    }
+  } finally { clearInterval(iv); tag.classList.remove('on'); setTimeout(() => tag.remove(), 300); }
+}
+let kcss = false;
+function keepCss() {
+  if (kcss) return; kcss = true;
+  const s = document.createElement('style');
+  s.textContent = `.tbkeep{position:absolute;z-index:31;pointer-events:none;translate:-50% -100%;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 18px 7px;border-radius:18px;background:#fff;color:#3b2a55;border:3px solid #3b2a55;box-shadow:0 4px 0 rgba(59,42,85,.25);opacity:0;transition:opacity .15s;white-space:nowrap}
+.tbkeep b{font-size:26px;line-height:1.1;color:#ff4f7b}.tbkeep span{font-size:15px}
+.tbkeep::after{content:'';position:absolute;left:50%;bottom:-13px;margin-left:-10px;border:10px solid transparent;border-top-color:#3b2a55;border-bottom:0}
+.tbkeep.on{opacity:1}`;
+  document.head.append(s);
 }

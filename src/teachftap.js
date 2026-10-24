@@ -49,6 +49,27 @@ export function armFtap(S) {
   lesson(S, st);
 }
 
+// 튜토리얼 B 뒤 한 번 더 (10/24, user: "튜토 지났는데도 4~5판까지 '이동 중 터치'를 안 쓰면, 중간에 저번에 만든 상세한 튜토를 한 번
+// 재생하면 좋겠어"): 3~5판 each count whether a drag-then-touch turn happened (saved: tut.ftapUsed); still never by 4판, the detailed
+// three-beat play once, a while into the stage (12 s, the glass free) — 4판, or 5판 if 4판's was cut short. Once; never for one who used it.
+export function armFtapB(S) {
+  const G = S.G, W = G.world;
+  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 2 || S.idx > 4 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
+  const T = G.save.tut || (G.save.tut = {});
+  if (T.ftapRe || T.ftapUsed) return;
+  const prevRot = W.onRotate;
+  W.onRotate = d => { prevRot?.(d); if (fturning(W) && !T.ftapUsed) { T.ftapUsed = 1; G.persist?.(); } };
+  if (S.idx < 3) return;
+  const stop = () => S.dead || !!S.result || !!T.ftapUsed || !!T.ftapRe;
+  (async () => {
+    for (let i = 0; i < 240 && !(S.running && S.t - (S.tStart ?? S.t) > 12); i++) { if (stop()) return; await S.tw.wait(.5); }
+    if (!await waitStart(S, stop)) return;
+    const L = lines(S); S.tutEls = L.els;
+    try { if (await play(S, L)) { T.ftapRe = 1; G.persist?.(); await S.tw.wait(.6); } }
+    finally { L.remove(); if (S.tutEls === L.els) { S.tutEls = null; S._tutEnd = S.t; } }
+  })();
+}
+
 // 한 번 더 (10/20 밤, user: "뒤쪽 가서도 이동 중 터치해서 잠시 회전 안 쓰면 튜토 한 번 더 내보낼 수 있어?"): once learned, every
 // stage (the same stages as the lesson) counts as unused until a drag-then-touch turn happens in it — the dial or a two-finger
 // twist doesn't count, it's this move we remind of. Three stages in a row unused → at the start of the next one, the same
