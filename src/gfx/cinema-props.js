@@ -498,11 +498,14 @@ B.cin_shell = (f, T0) => {
   };
 };
 
-// ── 거대 전구 간판 '별빛극장' (뒷벽 위에 높이 선 옛 극장식 세로 간판 — 판의 얼굴, 허브 10/24 "거대 소품 건물이 판의 얼굴·화면 꽉"):
-// 글자 넷을 위에서 아래로(별·빛·극·장 — 영어는 STAR·LIGHT·CINE·MA), 둘레 전구, 꼭대기 부채꼴 왕관과 별, 뒤 철골 받침.
-// f.bulbs: 켜질 순서(왼쪽 기둥 아래→위, 위 줄 왼→오, 오른쪽 기둥 위→아래, 아래 줄 오→왼), f.letters: 글자 넷(위→아래, 덩어리마다 재질 따로,
-// 색만 그림) — 둘 다 f.live 안. 간판을 누르면 넷째 글자가 꺼지며 비뚤어져 '별빛극 장'(부품 하나, 한 번이면 그대로).
-const MQW = 1.36, MQH = 3.9, MQD = .24, MQY0 = .3, MQYC = MQY0 + MQH / 2, MQLY = [0, 1, 2, 3].map(i => MQY0 + MQH - .52 - i * .95);
+// ── 거대 세로 간판 '별빛극장' (뒷벽 위에 높이 선 옛 극장식 아르데코 세로 간판 — 판의 얼굴; 사용자 10/24 "꼭 제발 멋지게"):
+// 두께 있는 깊은 남색 몸통(잔 결 판 넷·금속 테·옆 금빛 지느러미·뒤 철판), 위는 계단식 부채꼴 왕관(햇살 살·첨탑·별), 아래는 계단 꼭지,
+// 글자 넷은 판에서 튀어나온 네온관(관 굵기·뒤로 꺾여 들어가는 끝·짙은 전극 마개·관 받침 집게, 뒤 판에 은은한 분홍 번짐 — 영어 STAR·LIGHT·CINE·MA도 같은 관),
+// 둘레 전구는 황동 소켓에 꽂힌 진짜 전구 — 다 켜져 있을 때만 셋에 하나씩 반짝임이 돌아감(체이서; ③ marqueeFlicker가 끄고 켜는 동안엔 멈춤),
+// 받침은 바닥판·I형 기둥 둘·사선 버팀대·삼각 덧판·볼트·당김줄로 지붕에 고정. 발광은 간판 것만(장면 빛은 그대로).
+// f.bulbs: 켜질 순서(왼쪽 기둥 아래→위, 위 줄 왼→오, 오른쪽 기둥 위→아래, 아래 줄 오→왼) — 전구 유리 하나하나(재질 따로), f.letters: 글자 넷(위→아래,
+// 네온관 한 덩어리씩, 재질 따로) — 둘 다 f.live 안. 간판을 누르면 넷째 글자가 꺼지며 비뚤어져 '별빛극 장'(부품 하나, 한 번이면 그대로).
+const MQW = 1.36, MQH = 3.9, MQD = .3, MQY0 = .34, MQYC = MQY0 + MQH / 2, MQLY = [0, 1, 2, 3].map(i => MQY0 + MQH - .55 - i * .93), MQPH = .78;
 const MQBULBS = (() => {
   const out = [], top = MQY0 + MQH - .1, bot = MQY0 + .1, xl = -MQW / 2 + .1, xr = MQW / 2 - .1, n = 12;
   for (let k = 0; k < n; k++) out.push([xl, bot + .2 + (top - bot - .4) * k / (n - 1)]);
@@ -511,46 +514,170 @@ const MQBULBS = (() => {
   for (let k = 3; k >= 0; k--) out.push([xl + (xr - xl) * k / 3, bot]);
   return out;
 })();
-const GLYPHS = {};
-const glyphTex = s => GLYPHS[s] || (GLYPHS[s] = canvasTex(160, 160, (c, W, H) => {
-  c.clearRect(0, 0, W, H);
-  say(c, s, W / 2, H / 2 + 4, W * .9, s.length > 1 ? 64 : 132, '#fff6dc', { weight: 'bold', stroke: '#b8383d', sw: s.length > 1 ? 10 : 16 });
+const NAVY = '#2b2c5e', NAVYD = '#1f2049', NEON = '#ff6d8f';
+// 네온 글씨체: 글자마다 획(단위 칸 0~1, y 위로) — 's'로 시작하면 부드러운 곡선, 'c'면 닫힌 고리, 나머지는 꺾인 곳만 살짝 둥근 직선 관
+const NEON_GLYPH = {
+  '별': [[.1, .95, .1, .56, .42, .56, .42, .95], [.1, .76, .42, .76], [.76, .97, .76, .5], [.54, .83, .76, .83], [.54, .67, .76, .67], [.2, .42, .8, .42, .8, .24, .2, .24, .2, .05, .82, .05]],
+  '빛': [[.12, .95, .12, .54, .46, .54, .46, .95], [.12, .75, .46, .75], [.76, .97, .76, .5], [.5, .45, .5, .37], [.22, .34, .78, .34], ['s', .5, .33, .4, .2, .2, .04], ['s', .5, .3, .62, .18, .82, .04]],
+  '극': [[.14, .93, .84, .93, .84, .64], [.05, .51, .95, .51], [.14, .38, .84, .38, .84, .04]],
+  '장': [[.06, .93, .52, .93], ['s', .29, .93, .2, .74, .06, .56], ['s', .29, .82, .4, .68, .54, .56], [.76, .97, .76, .5], [.76, .74, .95, .74], ['c', .5, .21, .19]],
+  S: [['s', .86, .82, .62, .97, .32, .95, .13, .79, .2, .6, .5, .51, .8, .41, .88, .22, .7, .04, .38, .03, .12, .18]],
+  T: [[.04, .96, .96, .96], [.5, .96, .5, .03]],
+  A: [[.05, .03, .5, .97, .95, .03], [.25, .37, .75, .37]],
+  R: [[.13, .03, .13, .96, .52, .96], ['s', .52, .96, .78, .91, .87, .74, .77, .55, .5, .5, .13, .5], [.5, .5, .9, .03]],
+  L: [[.16, .97, .16, .04, .9, .04]],
+  I: [[.5, .96, .5, .04], [.24, .96, .76, .96], [.24, .04, .76, .04]],
+  G: [['s', .88, .8, .66, .97, .35, .96, .11, .74, .09, .36, .27, .07, .56, .02, .84, .14, .88, .44], [.88, .44, .55, .44]],
+  H: [[.13, .97, .13, .03], [.87, .97, .87, .03], [.13, .5, .87, .5]],
+  C: [['s', .88, .8, .66, .97, .35, .96, .11, .74, .09, .3, .3, .04, .64, .03, .88, .2]],
+  N: [[.13, .03, .13, .97, .87, .03, .87, .97]],
+  E: [[.87, .96, .14, .96, .14, .04, .87, .04], [.14, .5, .7, .5]],
+  M: [[.08, .03, .08, .97, .5, .38, .92, .97, .92, .03]],
+};
+// 한 칸(글자 하나 또는 단어)을 판 위 점들로: 획마다 { pts(Vector3), closed, open } — 꺾인 획은 모서리마다 점 둘을 넣어 살짝 둥글게
+const neonStrokes = (word, W, H) => {
+  const ch = [...word], n = ch.length, ko = /[가-힣]/.test(word);
+  const cw = W / n, gh = ko ? H * .9 : Math.min(H * .62, cw * 1.45), gw = ko ? W * .9 : Math.min(cw * .84, gh * .78), out = [];
+  ch.forEach((c, i) => {
+    const cx = -W / 2 + cw * (i + .5), map = (u, v) => new THREE.Vector3(cx + (u - .5) * gw, (v - .5) * gh, 0);
+    for (const s0 of NEON_GLYPH[c] || []) {
+      const flag = typeof s0[0] === 'string' ? s0[0] : '', a = flag ? s0.slice(1) : s0;
+      if (flag === 'c') { const [u, v, r] = a, pts = []; for (let k = 0; k < 18; k++) { const t = k / 18 * PI * 2; pts.push(map(u + Math.cos(t) * r * gh / gw, v + Math.sin(t) * r)); } out.push({ pts, closed: true }); continue; }
+      let pts = []; for (let k = 0; k < a.length; k += 2) pts.push(map(a[k], a[k + 1]));
+      if (!flag) {
+        const R = Math.min(gw, gh) * .06, P = [pts[0]];
+        for (let k = 1; k < pts.length - 1; k++) { const A = pts[k - 1], Bp = pts[k], C = pts[k + 1], d1 = A.distanceTo(Bp), d2 = C.distanceTo(Bp), r = Math.min(R, d1 * .4, d2 * .4); P.push(Bp.clone().lerp(A, r / d1), Bp.clone(), Bp.clone().lerp(C, r / d2)); }
+        P.push(pts[pts.length - 1]);
+        const D = []; for (let k = 0; k < P.length; k++) { if (k) { const d = P[k - 1].distanceTo(P[k]); if (d > .12) for (let j = 1; j < Math.ceil(d / .12); j++) D.push(P[k - 1].clone().lerp(P[k], j / Math.ceil(d / .12))); } D.push(P[k]); }
+        pts = D;
+      }
+      out.push({ pts, closed: false });
+    }
+  });
+  return out;
+};
+// 네온관 한 글자 칸: 관(뒤로 꺾여 판으로 들어가는 끝 포함) 한 덩어리 + 전극 마개·받침 집게 덩어리
+const neonGeo = (word, W, H, r, back) => {
+  const tubes = [], bits = [];
+  for (const s of neonStrokes(word, W, H)) {
+    let pts = s.pts;
+    if (!s.closed) { const a = pts[0], b = pts[pts.length - 1]; pts = [a.clone().setZ(-back), a.clone().setZ(-back * .35), ...pts, b.clone().setZ(-back * .35), b.clone().setZ(-back)]; bits.push({ p: a.clone().setZ(-back + r), cap: true }, { p: b.clone().setZ(-back + r), cap: true }); }
+    const cv = new THREE.CatmullRomCurve3(pts, s.closed, 'centripetal'), L = cv.getLength();
+    tubes.push(new THREE.TubeGeometry(cv, Math.min(72, Math.max(10, Math.round(L / .03))), r, 6, s.closed));
+    const m = s.pts[Math.floor(s.pts.length / 2)]; bits.push({ p: m.clone().setZ(-back * .5), cap: false });
+  }
+  return { tube: mergeGeometries(tubes, false), bits };
+};
+// 네온 번짐 그림 (판에 비치는 분홍 빛: 획을 두껍게 흐리게)
+const NEONGLOW = {};
+const neonGlowTex = (word, W, H) => NEONGLOW[word] || (NEONGLOW[word] = canvasTex(256, 256, (c, w, h) => {
+  c.clearRect(0, 0, w, h); const S = w / (W + .2), X = u => w / 2 + u * S, Y = v => h / 2 - v * S;
+  c.lineCap = c.lineJoin = 'round';
+  for (const [lw, a, bl] of [[44, .26, 30], [22, .45, 14]]) {
+    c.strokeStyle = `rgba(255,96,140,${a})`; c.lineWidth = lw; c.shadowColor = 'rgba(255,80,130,.8)'; c.shadowBlur = bl;
+    for (const s of neonStrokes(word, W, H)) { c.beginPath(); s.pts.forEach((p, i) => i ? c.lineTo(X(p.x), Y(p.y)) : c.moveTo(X(p.x), Y(p.y))); if (s.closed) c.closePath(); c.stroke(); }
+  }
+}));
+// 판의 잔 결: 깊은 남색에 가는 세로 결, 아래로 살짝 어두워짐, 가장자리 안쪽 가는 금줄
+const mqPanelTex = once(() => canvasTex(128, 128, (c, W, H) => {
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#26285a'); g.addColorStop(1, '#1b1c44'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const r = rnd(29); for (let x = 0; x < W; x += 2) { c.fillStyle = r() < .5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.06)'; c.fillRect(x, 0, 1, H); }
+  for (let i = 0; i < 90; i++) { c.fillStyle = 'rgba(160,170,255,.05)'; c.fillRect(r() * W, r() * H, 1, 3 + r() * 8); }
+  c.strokeStyle = 'rgba(217,178,94,.55)'; c.lineWidth = 2; c.strokeRect(6, 6, W - 12, H - 12);
+  c.fillStyle = 'rgba(217,178,94,.6)'; for (const [x, y] of [[6, 6], [W - 6, 6], [6, H - 6], [W - 6, H - 6]]) { c.beginPath(); c.moveTo(x, y - 6); c.lineTo(x + 6, y); c.lineTo(x, y + 6); c.lineTo(x - 6, y); c.closePath(); c.fill(); }
 }));
 B.cin_marquee = (f, T0) => {
   const sign = grp(); f.add(sign);
-  sign.add(mc('cin-marquee', ({ add }) => {
-    // 뒤 철골 받침: 다리 둘, 사선 버팀대, 가로대
-    for (const sx of [-1, 1]) { add(G.box(.12, MQY0 + .2, .12, .02), IRON, sx * .44, (MQY0 + .2) / 2, -.04); add(G.box(.07, 1.3, .07, .01), IRON, sx * .44, .9, -.42, -.55, 0, 0); }
-    for (const y of [1.2, 2.4, 3.6]) add(G.box(MQW - .2, .06, .06, .01), IRON, 0, y, -MQD / 2 - .05);
-    add(G.box(MQW, MQH, MQD, .08), MQ, 0, MQYC, 0);
-    add(G.box(MQW + .08, .1, MQD + .05, .02), GOLD, 0, MQY0 + MQH, 0); add(G.box(MQW + .08, .1, MQD + .05, .02), GOLD, 0, MQY0, 0);
-    for (const sx of [-1, 1]) add(G.box(.1, MQH + .08, MQD + .05, .02), GOLD, sx * MQW / 2, MQYC, 0);
-    // 왕관: 부채꼴(반원) 층 둘과 별
-    const fan = (r) => { const sh = new THREE.Shape(); sh.moveTo(-r, 0); sh.absarc(0, 0, r, PI, 0, true); sh.closePath(); return sh; };
-    add(ext(fan(.62), MQD, 16), MQ, 0, MQY0 + MQH + .04, -MQD / 2); add(ext(fan(.4), MQD + .04, 16), GOLD, 0, MQY0 + MQH + .04, -MQD / 2 - .02);
-    for (let k = 1; k < 6; k++) { const a = PI - k * PI / 6; add(G.box(.025, .5, .03, .006), GOLDD, Math.cos(a) * .3, MQY0 + MQH + .06 + Math.sin(a) * .3, MQD / 2 + .01, 0, 0, a - HP); }
-    add(G.ext(starShape(.22, .1), .06, 0, 4), GOLD, 0, MQY0 + MQH + .86, -.03);
-    for (const [x, y] of MQBULBS) add(G.cyl(.038, .038, .04, 8), '#2c2440', x, y, MQD / 2 + .02, HP, 0, 0);
-    for (const y of MQLY) add(G.box(.98, .86, .05, .04), '#3a2f55', 0, y, MQD / 2 + .01);
+  const FZ = MQD / 2;
+  sign.add(mc('cin-marquee2', ({ add, tube }) => {
+    // 받침: 지붕 위 바닥판(볼트), I형 기둥 둘(앞뒤 날개), 사선 버팀대와 삼각 덧판, 가로 보 셋, 뒤로 당긴 줄
+    add(G.box(MQW + .3, .06, .5, .015), IRON, 0, .03, -.08);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.022, .022, .03, 8), CHROME, sx * (MQW / 2 + .08), .07, -.08 + sz * .19);
+    for (const sx of [-1, 1]) {
+      const x = sx * .44;
+      add(PB(.04, MQY0 + .1, .12), IRON, x, (MQY0 + .1) / 2, -.04); for (const dz of [-.06, .06]) add(PB(.12, MQY0 + .1, .018), '#4c4560', x, (MQY0 + .1) / 2, -.04 + dz);
+      add(G.box(.07, 1.3, .07, .01), IRON, x, .9, -.47, -.55, 0, 0);
+      const gs = new THREE.Shape(); gs.moveTo(0, 0); gs.lineTo(.22, 0); gs.lineTo(0, .22); gs.closePath(); add(ext(gs, .02, 2), '#4c4560', x - .01, .06, -.1, 0, HP, 0);
+      add(G.sph(.02, 6, 4), CHROME, x, .25, -FZ - .02); add(G.sph(.02, 6, 4), CHROME, x, MQY0 + .06, -FZ - .02);
+      tube([sx * (MQW / 2 - .05), MQY0 + MQH - .1, -FZ - .02], [sx * (MQW / 2 + .2), .07, -.62], .009, '#8a8698', 4);
+    }
+    for (const y of [1.25, 2.45, 3.65]) add(PB(MQW - .2, .07, .05), IRON, 0, y, -FZ - .045);
+    // 몸통: 깊은 남색 상자, 앞 가장자리 금빛 테(위아래·양옆), 옆면 금빛 지느러미 셋, 뒤 철판과 점검 문·리벳
+    add(G.box(MQW, MQH, MQD, .06), NAVY, 0, MQYC, 0);
+    add(G.box(MQW + .1, .1, MQD + .06, .02), GOLD, 0, MQY0 + MQH, 0); add(G.box(MQW + .1, .1, MQD + .06, .02), GOLD, 0, MQY0, 0);
+    for (const sx of [-1, 1]) {
+      add(G.box(.1, MQH + .08, MQD + .06, .02), GOLD, sx * MQW / 2, MQYC, 0);
+      for (const [dz, w] of [[-.08, .05], [0, .07], [.08, .05]]) add(G.box(w, MQH - .3, .03, .01), dz ? GOLDD : GOLD, sx * (MQW / 2 + .05 + w / 2), MQYC, dz);
+      for (let k = 0; k < 5; k++) add(PB(.012, .012, MQD), NAVYD, sx * (MQW / 2 + .055), MQY0 + .5 + k * .75, 0);
+    }
+    add(PB(MQW - .24, MQH - .3, .012), '#3a3a52', 0, MQYC, -FZ - .006); add(PB(.4, .6, .014), '#4c4560', .2, 1.4, -FZ - .012);
+    for (let k = 0; k < 9; k++) for (const sx of [-1, 1]) add(G.sph(.016, 5, 4), '#8a8698', sx * (MQW / 2 - .16), MQY0 + .25 + k * .43, -FZ - .012);
+    // 판 넷: 한 칸씩 움푹한 테(금줄 + 짙은 턱), 칸 사이 금빛 마름모
+    for (const y of MQLY) {
+      add(G.box(1.02, MQPH, .03, .015), NAVYD, 0, y, FZ + .002);
+      for (const [w, h, dx, dy] of [[1.04, .025, 0, MQPH / 2], [1.04, .025, 0, -MQPH / 2], [.025, MQPH, -.51, 0], [.025, MQPH, .51, 0]]) add(PB(w, h, .03), GOLD, dx, y + dy, FZ + .012);
+    }
+    for (let i = 0; i < 3; i++) { const y = (MQLY[i] + MQLY[i + 1]) / 2; add(G.box(.09, .09, .03, .006), GOLD, 0, y, FZ + .012, 0, 0, PI / 4); for (const sx of [-1, 1]) add(PB(.3, .012, .02), GOLDD, sx * .26, y, FZ + .01); }
+    // 위 왕관: 계단식 부채 셋(남색·금·남색), 햇살 살 일곱, 첨탑(층층 원판)과 별, 양 어깨 계단 턱
+    const fan = r => { const sh = new THREE.Shape(); sh.moveTo(-r, 0); sh.absarc(0, 0, r, PI, 0, true); sh.closePath(); return sh; };
+    const TOP = MQY0 + MQH + .05;
+    add(ext(fan(.68), MQD - .04, 20), NAVY, 0, TOP, -FZ + .02); add(ext(fan(.71), .03, 20), GOLD, 0, TOP - .005, FZ - .03);
+    add(ext(fan(.5), .04, 18), GOLD, 0, TOP, FZ - .01); add(ext(fan(.42), .05, 16), NAVYD, 0, TOP, FZ);
+    for (let k = 1; k < 8; k++) { const a = PI - k * PI / 8; add(PB(.03, .3, .02), GOLD, Math.cos(a) * .27, TOP + Math.sin(a) * .27, FZ + .05, 0, 0, a - HP); }
+    add(ext(fan(.12), .06, 12), GOLD, 0, TOP, FZ + .01);
+    for (const sx of [-1, 1]) { add(G.box(.22, .12, MQD, .02), NAVY, sx * (MQW / 2 - .11), TOP + .06, 0); add(G.box(.24, .03, MQD + .03, .01), GOLD, sx * (MQW / 2 - .11), TOP + .135, 0); add(G.box(.12, .1, MQD - .04, .02), NAVY, sx * (MQW / 2 - .1), TOP + .2, 0); add(G.sph(.04, 8, 6), GOLD, sx * (MQW / 2 - .1), TOP + .28, 0); }
+    for (const [y, r] of [[.72, .08], [.8, .06], [.88, .045]]) add(G.cyl(r, r * 1.15, .08, 12), y > .85 ? GOLD : NAVY, 0, TOP + y, 0);
+    add(G.cone(.03, .2, 8), GOLD, 0, TOP + 1.02, 0);
+    add(G.ext(starShape(.2, .09), .06, .01, 4), GOLD, 0, TOP + 1.2, -.03);
+    // 아래 꼭지: 계단 셋과 구슬
+    for (const [y, w] of [[MQY0 - .06, .7], [MQY0 - .14, .46], [MQY0 - .21, .26]]) add(G.box(w, .08, MQD - .06, .02), y < MQY0 - .1 ? GOLD : NAVY, 0, y, 0);
+    add(G.sph(.06, 10, 8), GOLD, 0, MQY0 - .3, 0);
+    // 전구 소켓: 황동 테 받침 + 짙은 목
+    for (const [x, y] of MQBULBS) { add(G.cyl(.05, .05, .02, 10), GOLDD, x, y, FZ + .012, HP, 0, 0); add(G.cyl(.032, .036, .045, 8), '#3a3046', x, y, FZ + .04, HP, 0, 0); }
   }));
-  // 전구 (하나하나 따로)
-  const bg = new THREE.SphereGeometry(.058, 10, 8);
-  f.bulbs = MQBULBS.map(([x, y]) => { const b = mesh(bg, own(BULB, { emissive: GLOWC, ei: 1.5 }), { cast: false }); put(b, x, y, MQD / 2 + .065); b.name = 'cin-bulb'; b.userData.noMerge = true; sign.add(b); return b; });
-  // 글자 넷 (색만 그리는 판: 테두리선 없이, 발광 색을 ③이 바꿈)
-  const words = LANG === 'en' ? ['STAR', 'LIGHT', 'CINE', 'MA'] : ['별', '빛', '극', '장'];
+  // 판 넷의 결 그림
+  for (const y of MQLY) { const q = quad(.96, MQPH - .06, texMat(mqPanelTex(), { rough: .7, rim: .04 })); put(q, 0, y, FZ + .018); sign.add(q); }
+  // 전구 (하나하나 따로 — 유리, 살짝 길쭉)
+  const bg = new THREE.SphereGeometry(.05, 12, 9); bg.scale(1, 1, 1.15);
+  f.bulbs = MQBULBS.map(([x, y]) => { const b = mesh(bg, own('#fff6dc', { emissive: '#ffd890', ei: 1.3 }), { cast: false }); put(b, x, y, FZ + .085); b.name = 'cin-bulb'; b.userData.noMerge = true; sign.add(b); return b; });
+  // 반짝임 (체이서: 켜진 전구 위에 겹쳐 셋에 하나씩 도는 밝은 빛 — f.bulbs와 따로)
+  const chase = f.bulbs.map(b => { const s = halo(b.position.x, b.position.y, b.position.z + .03, .42, '#fff4dc', 1); s.visible = false; sign.add(s); return s; });
+  // 글자 넷: 네온관 (영어도 같은 관 — 단어가 길면 관이 가늘어짐)
+  const words = LANG === 'en' ? ['STAR', 'LIGHT', 'CINE', 'MA'] : ['별', '빛', '극', '장'], LW = .82, LH = .68, BACK = .07;
+  f.letterGlow = [];
   f.letters = words.map((s, i) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(.86, .8), toonMat({ color: '#fff3d6', map: glyphTex(s), transparent: true, alphaTest: .35, emissive: new THREE.Color(GLOWC), emissiveIntensity: .55 }));
-    put(m, 0, MQLY[i], MQD / 2 + .045); m.name = 'cin-letter'; colourOnly(keep(m)); sign.add(m); return m;
+    const n = [...s].length, r = n === 1 ? .04 : n <= 2 ? .03 : n <= 4 ? .024 : .02, { tube: tg, bits } = neonGeo(s, LW, LH, r, BACK);
+    const m = mesh(tg, toonMat({ color: '#ffc4d4', emissive: new THREE.Color(NEON), emissiveIntensity: .85 }), { cast: false });
+    put(m, 0, MQLY[i], FZ + .02 + BACK); m.name = 'cin-letter'; keep(m);
+    // (전극 마개·집게는 글자마다 제 재질 — ③의 끄고 켜기가 글자 하나씩 돌아도 서로 안 엉킴)
+    // (10/24 사진: 짙고 큰 마개가 관 끝마다 검은 덩어리로 보여 — 작게, 회색 금속빛으로)
+    const cg = mergeGeometries(bits.map(({ p, cap }) => (cap ? new THREE.CylinderGeometry(r * 1.12, r * 1.12, r * 1.6, 8) : new THREE.CylinderGeometry(r * .45, r * .45, BACK * .9, 6)).rotateX(HP).translate(p.x, p.y, p.z)), false);
+    if (cg) m.add(keep(mesh(cg, own('#6e6880', { rough: .45 }), { cast: false })));
+    sign.add(m);
+    const gl = new THREE.Mesh(new THREE.PlaneGeometry(LW + .2, LW + .2), new THREE.MeshBasicMaterial({ map: neonGlowTex(s, LW, LH), transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false }));
+    gl.material.toneMapped = false; put(gl, 0, MQLY[i], FZ + .032); gl.renderOrder = 3; colourOnly(keep(gl)); sign.add(gl); f.letterGlow.push(gl);
+    return m;
   });
-  (f.live || (f.live = [])).push(...f.bulbs, ...f.letters);
+  (f.live || (f.live = [])).push(...f.bulbs, ...f.letters, ...chase, ...f.letterGlow);
   f.dimLetter = 3;
-  f.collideBox = [-MQW / 2 - .1, 0, -.6, MQW / 2 + .1, MQY0 + MQH + 1.1, .2];
-  f.halo = halo(0, MQYC, -.25, 4.6, '#ffd9a0', .26); sign.add(f.halo);
+  f.collideBox = [-MQW / 2 - .1, 0, -.6, MQW / 2 + .1, MQY0 + MQH + 1.5, .2];
+  f.halo = halo(0, MQYC, -.25, 4.6, '#ffdce6', .22); sign.add(f.halo);
   const L = f.letters[3], y0 = L.position.y, x0 = L.position.x, e0 = L.material.emissiveIntensity;
   const p = f.part('flick', sign, t => { const k = ss(t); L.rotation.z = -.42 * k; L.position.y = y0 - .1 * k; L.position.x = x0 + .06 * k; L.material.emissiveIntensity = e0 * (1 - .92 * k); }, { label: '간판 전구', sfx: 'click', dur: .8 });
   p.steps = [[0, 'click'], [.35, 'tick'], [.7, 'click']]; p.gpt2Reach = true;
   // (뒷벽이 접히면 간판도 숨음 — 카메라가 뒤로 돌았을 때; 간판은 카메라 쪽으로 조금 돌려 놓으므로 뒷벽 방향으로 잼)
-  f.updateView = Wd => { if (Wd && Number.isFinite(Wd.yaw)) { const v = Math.cos(Wd.yaw) >= -.18; if (sign.visible !== v) { sign.visible = v; Wd.shadowDirty = true; Wd.idsDirty = true; } } };
+  // 체이서·네온 번짐: 전구가 다 켜져 있을 때만 돌고(③ 연출이 하나씩 켜는 동안·꺼 둔 동안은 멈춤), 번짐은 글자 밝기를 따라감 — 바뀔 때만 손댐
+  const ei0 = f.bulbs[0].material.emissiveIntensity, gl0 = f.letterGlow.map(g => g.material.opacity);
+  let tt = 0, step = -1;
+  f.updateView = (Wd, dt = 1 / 60) => {
+    if (Wd && Number.isFinite(Wd.yaw)) { const v = Math.cos(Wd.yaw) >= -.18; if (sign.visible !== v) { sign.visible = v; Wd.shadowDirty = true; Wd.idsDirty = true; } }
+    if (!sign.visible) return;
+    f.letters.forEach((l, i) => { const g = f.letterGlow[i], k = Math.max(0, Math.min(1, (l.material.emissiveIntensity / e0 - .3) / .7)), op = +(gl0[i] * k).toFixed(3); if (g.material.opacity !== op) g.material.opacity = op; const on = op > .01; if (g.visible !== on) g.visible = on; });
+    const all = f.bulbs.every(b => b.material.emissiveIntensity > ei0 * .5);
+    tt += Math.min(.1, Math.max(0, dt)); const s = all ? Math.floor(tt * 6) : -1;
+    if (s === step) return; step = s;
+    chase.forEach((c, i) => { const on = s >= 0 && (i + s) % 3 === 0; if (c.visible !== on) c.visible = on; });
+  };
 };
 
 // 팝콘 통 위 띠: 크림 바탕에 빨간 글자 '★ 별빛극장 · 팝콘 ★'을 둘레로 셋

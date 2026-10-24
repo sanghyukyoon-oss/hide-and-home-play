@@ -20,7 +20,7 @@ const SPEC = {
   gptpark2: { zoom: 1.08, itemSize: .5 },   // (.46 left one thing at 27 px; the park already fills the width, so the things grow, not the zoom)
   gptplayhamster: { zoom: 1.4, itemSize: .5 },
   // 36판 새 안 밤의 문구점 (⑨ 10/23, stationery-map.js — 가게와 보도가 한 화면, 물건 28px)
-  stationery: { zoom: 1.5, itemSize: .58 },
+  stationery: { zoom: 1.5, itemSize: .48 },
 };
 
 export function installGpt6(THEMES, MAPS, PLAN) {

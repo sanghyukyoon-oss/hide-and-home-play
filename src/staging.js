@@ -47,6 +47,7 @@ export async function staging(S, phase) {
 }
 // while the friend hides (사건 판, r1Hide's eyes-shut card)
 export function stagingHide(S, ov) { const k = keyOf(S, 'start'); FX[k]?.hide?.(S, ov); }
+export const stagingHasHide = S => !!FX[keyOf(S, 'start')]?.hide;
 export function stagingHidden(S) { const k = keyOf(S, 'start'); FX[k]?.hidden?.(S); }
 
 // ── 28판 시작: 창밖이 흐르고 객실이 살짝 흔들린다 → 숨는 동안 터널(까만 1초) → 밝아지면 너굴이 자리에 모자만

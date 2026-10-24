@@ -37,6 +37,7 @@ export const BLIND = {
   otakuloft: ['mangashelf|만화책장 위|0|-20,-25', 'mangashelf|만화책장 위|0|0,-25', 'crtset|TV 뒤|1|-30,0', 'beanbag|빈백 밑|0|-20,5'],
   aptlobby: ['elevator|엘리베이터 안|0|-10,-30', 'movetruck|트럭 밑|0|30,-25'],
   aptlobby2: ['elevator|엘리베이터 안|0|-10,-30', 'movetruck|트럭 밑|0|30,-25'],
+  aptlobby3: ['al3_elevator|엘리베이터 안|0|-10,-30'],
   bunnyattic: ['roundwin|동그란 창틀 위|0|-30,-5'],
   bunnyattic1: ['roundwin|동그란 창틀 위|0|-30,-5'],
 };

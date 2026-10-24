@@ -1325,6 +1325,7 @@ const ROCKY_ROOM = {
   aptlobby: L('raccoon', '장 본 게 현관에 다 쏟아졌네? 엘리베이터 내려오기 전에 다 주워 봐!', 'Groceries all over the lobby? Pick it all up before the elevator comes down!'),
 };
 ROCKY_ROOM.aptlobby2 = ROCKY_ROOM.aptlobby;   // (현관 2차 맵 키)
+ROCKY_ROOM.aptlobby3 = ROCKY_ROOM.aptlobby;   // (현관 3차 맵 키 10/24)
 // 56판 개울가 징검다리 캠핑 (⑩ 맵 creekcamp, 10/23): 너굴이가 캠핑장까지 따라와 시합
 ROCKY_ROOM.creekcamp = L('raccoon', '개울 건너기 전에 다 찾는 쪽이 1등! 징검다리 미끄러우니까 조심~', "First to find it all before crossing the creek wins! Careful, the stepping stones are slippery~");
 // 31판 돌아오는 저녁 기차 (긴 객실 한 칸, 10/22 검토 세션 결정): 28판 객실에서 들킨 너굴이의 복수전

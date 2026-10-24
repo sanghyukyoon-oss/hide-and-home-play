@@ -59,7 +59,7 @@ import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incid
 import { R1, r1Line, KIT_TALK, inkyNamed } from '../script.js';   // R1 몰래 숨기 lines (story session, 10/18)
 import { staging, stagingHide, stagingHidden, stagingCrossing, stagingPrep, hatKeyHide, stagingPart, stagingTap } from '../staging.js';
 import { asRoom } from '../roomalias.js';
-import { sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
+import { grayPhase, sceneAt, hostAt, goalLine, incidentIntro, incidentReveal, hideLine, hidePool, grayIntro, inkyTaunt, inkyCaught, inkyStays, sceneAfter,
   timedIntro, timedWin, ROCKY_LOSE, BONUS_SAY, firstLayout, planFirst, boxTail, newCard, DO, UI as SUI, fallbackIntro, isHidden, hiddenIntro, hiddenGoal, hiddenSay, inkyHide, INKY_FOUND,
   stageHost, diarySecret, secretOpen, anySecret, SECRET_UI, replayHi, stuckLine } from '../script.js';
 import { tr } from '../i18n.js';
@@ -141,6 +141,10 @@ const TAUNT = {
   found: ['어? 그걸 찾았어?!', '흥, 운이 좋았네!', '이번엔 봐준 거야!', '쳇, 들켰다…'],
   furn: ['그 큰 걸 이제 봤어? ㅎㅎ', '가구까지 찾다니!'],
 };
+
+// how many 흑백판 come before this one (the first two teach the rule — 4·10판)
+import { hideCard, quickHide } from '../hideshort.js';
+const grayBefore = idx => { let n = 0; for (let j = 0; j < idx; j++) if (stageSpec(j).gray) n++; return n; };
 
 export class StageScene {
   constructor(G) { this.G = G; this.name = 'stage'; }
@@ -375,6 +379,13 @@ export class StageScene {
     this.frameCamera();
     if (this.kit) kitSetup(this);   // 이삿짐's boxes, the big parfait
     if (this.villain?.hide) this.hideInky(retry);
+    // (10/24 사용자 "흑백판 연출 이상한 부분 많음 … 컬러였다가 흑백이었다가 컬러였다가 … 뒤쪽은 캐릭터 숨고 흑백으로 되고 바로
+    // 시작되면 될 듯"): after the first two 흑백판 (4·10판, where 먹물이 hides as the last thing to find and the rule is taught) the
+    // room also starts in colour — banner, chapter card, the stage's own opening — and then 먹물이 dashes in, ducks behind
+    // something and the colour drains, once; it is no target there, it wanders out a few seconds into play
+    // (스토리 룸 10/24: not where 먹물이 is already helping — 69판 "여긴 아직 못 돌려놨어. 같이 찾자": a fresh dash would break its
+    // promise from 64판; there the room is grey from the start, as before)
+    else if (this.villain && this.spec.gray && !custom && !this.preview && grayBefore(this.idx) >= 2 && grayPhase(this.idx) < 3) this.hideInky(retry, true);
     if (this.hunt) {   // things that can be seen, the key where the start view sees it, the next friend peeking (not on the list)
       this.blindFixed = fixBlindSpots(this); chainToView(this);
       const c = placeCameo(this); if (c) { this.cameo = c; this.items.push(c); }
@@ -455,8 +466,18 @@ export class StageScene {
     if (this.spec.gray && !custom) {
       // 대본: the owner, then 먹물이 by where we are in the story (a voice → caught again → quiet → helping)
       // (the first 흑백판 keeps its card: it says the rule; the next ones say it in a bubble — 레벨 v3 개선 1, was the first three)
-      let grayN = 0; for (let j = 0; j < this.idx; j++) if (stageSpec(j).gray) grayN++;
-      if (this.villain?.hide && this._dash) { await this.inkyDash(); if (this.dead) return; }
+      const grayN = grayBefore(this.idx);
+      if (this._dash) {
+        await this.inkyDash(); if (this.dead) return;
+        this.tray.classList.add('grayst');
+        // (a roaming 먹물이: it stays ducked a while, then walks out from the tile nearest its hiding place)
+        const v = this.villain;
+        if (v && !v.hide) {
+          // (from the nearest tile it can walk on from — one with a free neighbour, as npcLoop asks)
+          const g = v.hideT, tiles = this.walkTiles || [], walk = t => tiles.some(q => q !== t && q.R === t.R && Math.abs(q.i - t.i) + Math.abs(q.j - t.j) === 1 && t.R.clearAt((q.x + t.x) / 2, (q.z + t.z) / 2, .32));
+          v.t = tiles.filter(walk).sort((a, b) => Math.hypot(a.x - g.x, a.z - g.z) - Math.hypot(b.x - g.x, b.z - g.z))[0] || v.t; v.rest = 5;
+        }
+      }
       await this.openTalk(grayIntro(this.idx, th.friend, !!this.villain), { title: '색을 잃은 방' }, grayN < 1);
       if (this.dead) return;
       this.giveShades();   // everyone puts the special shades on
@@ -476,6 +497,7 @@ export class StageScene {
       await this.talk(fallbackIntro(th.friend), { title: th.name }); if (this.dead) return;
     }
     raidStart(this);   // (타이머 털기: the owner starts counting)
+    if (this.spec.room === 'frogpond' && !custom) reelSetup(this);   // (29판: the bucket's catch, set last — the start's spreading moved it out; the bucket is under water, winding it up is how you see it)
     this.running = true; this.tStart = this.t;
     // 7·11판: 먹물이 was here too — its footprints, laid on the view you actually play from (after the intro's camera)
     if (sceneAt(this.idx)?.trace && !custom && !this.preview && !this.villain) (async () => {
@@ -563,7 +585,7 @@ export class StageScene {
     });
     col.append(this.tray);
     // many things to find: two rows of bigger pictures instead of one row of tiny ones (11 in a row were ~18 px)
-    if (this.spec.gray) this.tray.classList.add('grayst');   // the list is drained of colour too: shapes only
+    if (this.spec.gray && !this._dash) this.tray.classList.add('grayst');   // (with 먹물이's dash: once the colour has drained)   // the list is drained of colour too: shapes only
     const two = !this.kit && this.targets.length > 7, joyB = this.kit ? Math.max(118, Math.round(this.tray.getBoundingClientRect().height) + 36) : two ? 146 : 100;   // (a kit's card: just above it, however tall its skin is)
     // the buttons sit just above the (slimmer) tray (user, 10/17-18: "유아이가 너무 크고")
     document.getElementById('app').style.setProperty('--joyB', joyB + 'px');
@@ -1045,6 +1067,7 @@ export class StageScene {
     // the full "눈 감아! 하나, 둘, 셋" only the first time; after that a short dark "쉿…" — the hiding sounds stay, they're the
     // clue (user, 10/18: "하나둘셋이것도 계속보니까 짜증나")
     const full = !G.save.r1Counted;
+    if (hideCard(this)) {
     const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, full ? R1.close : '쉿…'), this.r1N = h('span', { class: 'ol' }, ''));
     document.getElementById('overlay').append(ov);
     stagingHide(this, ov);
@@ -1053,6 +1076,11 @@ export class StageScene {
     else { await tw.wait(.35); if (this.dead) return; }
     G.audio.sfx('tap', 12); await tw.wait(.15); G.audio.sfx('tap', 14); await tw.wait(.2); G.audio.sfx(real.sfx || 'open'); await tw.wait(.35); G.audio.sfx('close');
     ov.classList.add('out'); setTimeout(() => ov.remove(), 300);
+    } else {
+      // (after the first two 사건 판: no screen-wide card — a hop and a puff, then the hiding sounds)
+      await quickHide(this, f); if (this.dead) return;
+      G.audio.sfx('tap', 12); await tw.wait(.12); G.audio.sfx(real.sfx || 'open'); await tw.wait(.25); G.audio.sfx('close');
+    }
     this.friendHidden = true; this.r1Trail(); stagingHidden(this);
     // a word once it's done — from where they stood counting, not over the hiding place: a bubble on the hideout showed the
     // answer before anyone looked (GPT QA L03, 10/19); the crumbs and the hiding sounds are the clues
@@ -1257,7 +1285,8 @@ export class StageScene {
   // ── 먹물이 숨기 (스토리 룸 10/19, 사용자 "추천대로"): where it hides — a free tile where, from the start view, its head
   // shows over something but its body doesn't (level 1, the first 흑백판), or better hidden still (level 2); the colour
   // is still on until it dashes there (inkyDash)
-  hideInky(retry = false) {
+  hideInky(retry = false, roam = false) {
+    if (roam && (retry || this.G.bot || this.G.skipTalk)) return;   // (a roaming 먹물이 without the dash just stands where it was put)
     // crouched beside a big piece of furniture with part of it showing — the way a peeking friend hides (hunt.js placeCameo):
     // level 1 (the first 흑백판) wants the peek on screen at the start; level 2 is happier hidden from the start view, as
     // long as some turn of the room shows it; never right beside the owner
@@ -1269,7 +1298,7 @@ export class StageScene {
     // 7 cm into the next room's wall — 겹침 QA 10/19)
     const inside = R.rooms ? (x, z) => R.rooms.some(q => { const o = q.group.position; return Math.abs(x - o.x) < q.w / 2 - .25 && Math.abs(z - o.z) < q.d / 2 - .25; }) : R.w && R.d ? (x, z) => Math.abs(x) < R.w / 2 - .25 && Math.abs(z - cz) < R.d / 2 - .25 : (x, z) => x > all.min.x + .1 && x < all.max.x - .1 && z > all.min.z + .1 && z < all.max.z - .1;
     const free = (x, z, pad = .05) => inside(x, z) && !boxes.some(o => x > o.b.min.x - pad && x < o.b.max.x + pad && z > o.b.min.z - pad && z < o.b.max.z + pad) && (!this.sides || offWall(this.sides, x, R.group.position.y, z));
-    ch.root.scale.setScalar(.85);
+    if (!roam) ch.root.scale.setScalar(.85);
     const roots = [R.group, ch.root], y0 = W.yaw, p0 = W.pitch, t0 = performance.now();
     let best = null;
     const tall = boxes.filter(o => o.b.max.y - o.b.min.y > .45 && o.b.max.y < 2.4).sort(() => Math.random() - .5);
@@ -1290,7 +1319,7 @@ export class StageScene {
           W.yaw = y0; W.pitch = p0; W.updateCam(); R.update?.(1);
           if (!views) continue;
           const cov = coveredFrac(this, ch);
-          const score = v.hide >= 2 ? (atStart ? 2 : 6) + (cov > .45 && cov < .9 ? 6 : 0) + Math.min(views, 3)
+          const score = !roam && v.hide >= 2 ? (atStart ? 2 : 6) + (cov > .45 && cov < .9 ? 6 : 0) + Math.min(views, 3)
             : (atStart && onScreen ? 8 : 0) + (cov > .3 && cov < .85 ? 6 : 0) + Math.min(views, 3);
           if (!best || score > best.score) best = { x, z, y: o.b.min.y, score };
         }

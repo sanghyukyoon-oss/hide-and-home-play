@@ -20,6 +20,7 @@ import { CHAR_DEFS } from './gfx/chars.js';
 import { R1, r1Line, hidePool } from './script.js';
 import { moveItem, chainToView } from './hunt.js';
 import { ease } from './util.js';
+import { hideCard, quickHide } from './hideshort.js';
 
 const K = (ko, en) => { if (en) EN[ko] = en; return ko; };
 export const SHH = K('쉿… 숨는 중', 'Shh… hiding');
@@ -151,6 +152,8 @@ export async function v2Hide(S) {
   S.r1 = { real: V.real, cands: V.cands, miss: 0, told: new Set(), objs: [] };   // (the 15 s rule in update() keys on this)
   await tw.wait(.5);
   style();
+  const sd = sndOf(V.real);
+  if (hideCard(S)) {
   const w = h('span', { class: 'v2w ol' }, '');
   const ov = h('div', { class: 'r1-eyes' }, h('b', { class: 'ol' }, R1.close), S.r1N = h('span', { class: 'ol' }, ''), w);
   document.getElementById('overlay').append(ov);
@@ -159,8 +162,14 @@ export async function v2Hide(S) {
   if (!G.save.r1Counted) { for (const n of R1.nums) { if (S.dead) return; S.r1N.textContent = n; G.audio.sfx('tock'); await tw.wait(.6); } G.save.r1Counted = true; G.persist?.(); }   // (the same once-only flag as stage.js r1Hide)
   else { ov.querySelector('b').textContent = SHH; }
   for (let i = 0; i < 4; i++) { G.audio.sfx('tap', 10 + i); await tw.wait(.11); }
-  const sd = sndOf(V.real); w.textContent = sd.w; G.audio.sfx(sd.s); await tw.wait(.7);
+  w.textContent = sd.w; G.audio.sfx(sd.s); await tw.wait(.7);
   ov.classList.add('out'); setTimeout(() => ov.remove(), 300);
+  } else {
+    // (after the first two 사건 판 — hideshort.js: no screen-wide card, a hop and a puff, then the hiding sound)
+    await quickHide(S, f); if (S.dead) return;
+    for (let i = 0; i < 2; i++) { G.audio.sfx('tap', 10 + i); await tw.wait(.1); }
+    G.audio.sfx(sd.s); await tw.wait(.3);
+  }
   S.friendHidden = true;
   trail(S, S.friendHome, V.real);
   peek(S);

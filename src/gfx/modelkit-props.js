@@ -9,7 +9,8 @@
 //     the plastic runner (sprue) still on it — that's what makes it read as a model-kit piece, not a toy.
 // One bright plastic colour per piece, so each piece reads at phone size by its colour and its outline.
 import * as THREE from 'three';
-import { rbox, sph, cyl, tor, cone, cap, put, grp, extrude, starShape } from './kit.js';
+import { rbox, sph, cyl, tor, cone, cap, put, grp, extrude, starShape, mesh, mat, geo, canvasTex } from './kit.js';
+import { tr } from '../i18n.js';
 
 const WHITE = '#f6f7ff', BLUE = '#3d7bff', GREEN = '#4cc62e', RED = '#ff4f5e', YELLOW = '#ffc93c', ORANGE = '#ff9a3c',
   CYAN = '#63dcff', PEG = '#d5d9ea', DARK = '#2a2440';
@@ -339,6 +340,24 @@ export function buildParfait() {
   g.add(put(cyl(.009, .007, .78, '#c3ccd8', null, 8), .09, .62, -.07, .12, 0, -.2));
   g.add(put(sph(.026, '#c3ccd8', null, 10, 8), .015, .25, -.115, 0, 0, 0, [1, .45, 1.4]));
   g.add(put(sph(.016, '#c3ccd8', null, 8, 6), .168, 1.0, -.024, 0, 0, 0, [1, .6, 1]));
+  // (⑥ 10/24 사용자 34판 "파르페? 조형?" — still read as an empty glass): a little pink easel card beside it with the finished
+  // parfait drawn on it and '파르페', so you know what this glass is waiting to become
+  { const card = canvasTex(256, 320, (c, w, h) => {
+      c.fillStyle = '#fff6ee'; c.fillRect(0, 0, w, h); c.strokeStyle = '#ff8fb3'; c.lineWidth = 12; c.strokeRect(6, 6, w - 12, h - 12);
+      c.fillStyle = '#ff6fa6'; c.font = 'bold 42px Ssurround, Jua, sans-serif'; c.textAlign = 'center'; c.fillText(tr('파르페'), w / 2, 58);
+      const cx = w / 2, top = 96, bot = 248, rt = 62, rb = 34, layer = (y0, y1, col) => { c.fillStyle = col; c.beginPath(); const r0 = rb + (rt - rb) * (bot - y0) / (bot - top), r1 = rb + (rt - rb) * (bot - y1) / (bot - top); c.moveTo(cx - r0, y0); c.lineTo(cx + r0, y0); c.lineTo(cx + r1, y1); c.lineTo(cx - r1, y1); c.closePath(); c.fill(); };
+      [[248, 222, '#d9964f'], [222, 192, '#ffb3cc'], [192, 172, '#ffe27a'], [172, 146, '#ff5a72'], [146, 118, '#fffaf3']].forEach(([a, b, col]) => layer(a, b, col));
+      c.fillStyle = '#fffaf3'; c.beginPath(); c.arc(cx, 112, 46, Math.PI, 0); c.fill();
+      c.fillStyle = '#f0c27a'; c.save(); c.translate(cx - 28, 92); c.rotate(-.3); c.fillRect(-8, -36, 16, 56); c.restore(); c.save(); c.translate(cx + 30, 94); c.rotate(.25); c.fillRect(-8, -36, 16, 56); c.restore();
+      c.fillStyle = '#e8233a'; c.beginPath(); c.arc(cx + 4, 66 + 6, 15, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#5a8a2a'; c.lineWidth = 4; c.beginPath(); c.moveTo(cx + 6, 58); c.quadraticCurveTo(cx + 14, 40, cx + 26, 36); c.stroke();
+      c.strokeStyle = '#8fbcd8'; c.lineWidth = 5; c.beginPath(); c.moveTo(cx - rt, top); c.lineTo(cx - rb, bot); c.lineTo(cx + rb, bot); c.lineTo(cx + rt, top); c.stroke();
+      c.fillStyle = '#8fbcd8'; c.fillRect(cx - 6, bot, 12, 34); c.fillRect(cx - 36, bot + 30, 72, 10);
+    });
+    const easel = grp(); put(easel, .38, 0, .12, 0, -.35, 0); g.add(easel);
+    for (const sx of [-1, 1]) easel.add(put(cyl(.012, .012, .5, '#c98f58', null, 6), sx * .1, .24, -.02, -.12, 0, 0));
+    easel.add(put(cyl(.01, .01, .46, '#a8733f', null, 6), 0, .22, -.12, .4, 0, 0));
+    easel.add(put(rbox(.27, .34, .014, '#ff8fb3', .01), 0, .32, 0, -.12, 0, 0));
+    easel.add(put(mesh(geo('kit-parfait-card', () => new THREE.PlaneGeometry(.25, .31)), mat('#ffffff', { map: card })), 0, .32, .009, -.12, 0, 0)); }
   const L = (key, f) => { const l = grp(); f(l); l.visible = false; g.add(l); layers[key] = l; };
   const band = (y0, h, r0, r1, c) => put(cyl(r1, r0, h, c, null, 26), 0, y0 + h / 2, 0);   // a layer filling the glass from y0
   const rAt = y => .13 + (.21 - .13) * (y - .23) / .44;

@@ -39,10 +39,13 @@ export function reelSetup(S) {
   for (const p of S.room.parts || []) if (p.furn?.type === 'fishdock' && p.spots?.length) p.reel = { casts: 0, junk: null, kind: null };
   // 3판 (the fishing ground): one thing on the list always waits in the keep-net, so everyone meets the reel's surprise
   const reel = S.room.parts.find(p => p.reel), spot = reel?.spots[0];
-  if (S.idx === 2 && spot && !(spot.item && spot.item.role === 'target')) {
+  // (29판 연못 집 10/24, 사용자 "물레방아에서 건질 수 있는 뭔가도 넣어 줘": the waterwheel's bucket always brings one thing up too —
+  // the tadpole jar when it is on the list)
+  const pond = S.spec.room === 'frogpond';
+  if ((S.idx === 2 || pond) && spot && !(spot.item && spot.item.role === 'target')) {
     // (a drink, kept cool in the water — 스토리 룸 10/19: a ball or a donut in the net made no sense; and only what fits in it)
     const ok = t => !t.found && !t.friend && !t.spot.part && ITEMS[t.type] && ITEMS[t.type].h * (spot.scale || 1) <= spot.maxH + .001 && spotFits(t.type, spot) && affOk(t.type, spot);
-    const it = S.targets.find(t => ok(t) && isCold(t.type) && t.spot.kind !== 'on') || S.targets.find(t => ok(t) && isCold(t.type)) || S.targets.find(t => ok(t) && t.spot.kind !== 'on') || S.targets.find(ok);
+    const it = (pond && S.targets.find(t => !t.found && !t.friend && !t.spot.part && t.type === 'tadpolejar')) || S.targets.find(t => ok(t) && isCold(t.type) && t.spot.kind !== 'on') || S.targets.find(t => ok(t) && isCold(t.type)) || S.targets.find(t => ok(t) && t.spot.kind !== 'on') || S.targets.find(ok);
     if (it && !spot.item) moveItem(it, spot);
   }
 }

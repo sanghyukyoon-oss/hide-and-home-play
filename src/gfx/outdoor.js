@@ -1242,22 +1242,27 @@ B.firewood = (f, T) => {
   f.add(mg('fw-ends', '#ffffff', ({ add }) => logs.forEach(([x, y], i) => { const dz = i % 2 ? .03 : -.03; add(new THREE.CircleGeometry(r * .95, 16), x, y, dz + Lw / 2 + .002); add(new THREE.CircleGeometry(r * .95, 16), x, y, dz - Lw / 2 - .002, 0, PI, 0); }), { map: ringsTex() }));
   // (⑥ 10/23 31~70판 훑기 "판자 같은 천": the tarp was three green boards — now one sheet of cloth that lies over the top logs
   // and droops down the front and the left in soft folds, with two tie-down cords to pegs)
-  const tarp = grp(mesh(geo('fw-tarp2', () => {
-    const g = new THREE.BoxGeometry(.92, .022, .84, 22, 1, 20), q = g.attributes.position;
+  // (⑥ 10/24 2차 점검 "여전히 판자 같은 천": a thin sheet now (1.2 cm), sagging past the ends of the top logs (not over the
+  // middle, where the thing hidden under it sits), deep soft
+  // folds where it hangs down the front and the left, a wavy hem with a stitched edge, grommets and tie cords)
+  const TC = '#5aa66a';
+  const tarp = grp(mesh(geo('fw-tarp3', () => {
+    const g = new THREE.BoxGeometry(.92, .012, .95, 30, 1, 30), q = g.attributes.position;
     for (let i = 0; i < q.count; i++) {
-      const x = q.getX(i), z = q.getZ(i) + .42, fz = Math.max(0, z - .62) / .22, fx = Math.max(0, -.3 - x) / .16;
-      const droop = .26 * fz * fz + .2 * fx * fx;
-      q.setXYZ(i, x - .05 * fx * fx, q.getY(i) - droop + .012 * Math.sin(x * 23 + z * 4) * (fz + fx), z + .05 * fz);
+      const x = q.getX(i), z = q.getZ(i) + .475, fz = Math.max(0, z - .76) / .19, fx = Math.max(0, -.3 - x) / .16;
+      const d = Math.min(Math.abs(x - .1225), Math.abs(x + .1225)), top = (1 - Math.min(1, fz + fx)), sag = .022 * Math.min(1, Math.max(0, d - .12) / .12) * top;
+      const droop = .3 * fz * fz + .22 * fx * fx, fold = .04 * Math.sin(x * 26 + z * 3) * fz + .04 * Math.sin(z * 24) * fx + .006 * Math.sin(x * 9 + z * 11) * top;
+      q.setXYZ(i, x - .05 * fx * fx + fold * fx, q.getY(i) - droop - sag + fold * (1 - fz * .4), z + .05 * fz + fold * fz * .6);
     }
     g.computeVertexNormals(); return g;
-  }), mat('#4f9a5e')));
-  tarp.add(put(rbox(.9, .02, .03, shade('#4f9a5e', -.18), .008), 0, -.27, .845));
-  for (const x of [-.4, .4]) tarp.add(put(tor(.014, .005, '#d9dde4', null, PI * 2, 4, 10), x, -.2, .85));
-  put(tarp, cx, .7, -.38); f.add(tarp);   // (a thin cloth: up 2 cm so the top logs don't poke through)
-  f.add(mg('fw-ties', '#e8d9b8', ({ tube }) => { for (const x of [-.4, .4]) tube([cx + x, .48, .47], [cx + x * 1.15, .02, .62], .007, 5); }));
-  f.add(mg('fw-pegs', '#c49a64', ({ add }) => { for (const x of [-.4, .4]) add(G.cone(.018, .1, 6), cx + x * 1.15, .03, .62, PI, 0, 0); }));
+  }), mat(TC, { side: THREE.DoubleSide, rough: .95 })));
+  tarp.add(put(mesh(geo('fw-tarp3-hem', () => { const pts = []; for (let i = 0; i <= 24; i++) { const x = -.46 + .92 * i / 24; pts.push(new THREE.Vector3(x, -.3 + .028 * Math.sin(x * 26 + 3.4), .99 + .02 * Math.sin(x * 26))); } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, .008, 5); }), mat(shade(TC, -.2))), 0, 0, 0));
+  for (const x of [-.4, .4]) tarp.add(put(tor(.014, .005, '#d9dde4', null, PI * 2, 4, 10), x, -.26, .99));
+  put(tarp, cx, .73, -.38); f.add(tarp);   // (a thin cloth: up a little so the top logs don't poke through)
+  f.add(mg('fw-ties', '#e8d9b8', ({ tube }) => { for (const x of [-.4, .4]) tube([cx + x, .47, .61], [cx + x * 1.15, .02, .76], .007, 5); }));
+  f.add(mg('fw-pegs', '#c49a64', ({ add }) => { for (const x of [-.4, .4]) add(G.cone(.018, .1, 6), cx + x * 1.15, .03, .76, PI, 0, 0); }));
   const p = f.part('lid', tarp, t => { tarp.rotation.x = -1.7 * t; }, { label: '방수포', sfx: 'swish' });
-  p.lockable = true; p.lockKind = 'lever'; f.lockAt = { x: .1, y: -.13, z: .86, parent: tarp };   // (just proud of the drooping front cloth)
+  p.lockable = true; p.lockKind = 'lever'; f.lockAt = { x: .1, y: -.16, z: .92, parent: tarp };   // (just proud of the drooping front cloth)
   f.spot('inside', null, cx, .66, 0, { part: p, maxH: .35, label: '방수포 밑', scale: .85 });
   f.add(put(cyl(.22, .26, .3, '#ffffff', { map: barkTex(bark) }, 20), .6, .15, .12));
   f.add(put(disc(.22, '#ffffff', { map: ringsTex() }), .6, .301, .12, -HP));

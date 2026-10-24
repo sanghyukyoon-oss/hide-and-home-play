@@ -151,12 +151,22 @@ B.bookcart = (f, T) => {
 
 // 책장 사다리 (1×1, 3차): a rolling library ladder leaning on the tall shelves, a brass rail along the top, a stool at its foot
 B.libladder = (f, T) => {
-  f.add(mc('libladder', ({ add, tube }) => {
-    add(G.cyl(.018, .018, 1.0, 8), '#c9a24a', 0, 1.95, -.38, 0, 0, HP);
-    for (const sx of [-1, 1]) tube([sx * .2, .05, .3], [sx * .2, 1.95, -.32], .028, WOODD, 6);
-    for (let k = 1; k < 8; k++) { const t = k / 8; add(G.box(.42, .035, .06, .01), WOOD, 0, .05 + 1.9 * t, .3 - .62 * t); }
-    for (const sx of [-1, 1]) add(G.cyl(.04, .04, .04, 10), DARK, sx * .2, .03, .3, HP, 0, 0);
+  // (⑥ 10/24 사용자 37판 "사다리 떠있다": its top leant on the air 65 cm in front of the shelves — the shelves' face is at z −1.0
+  // from this tile's centre) the ladder now runs from its casters on the floor to brass hooks over a brass rail fixed to the
+  // shelf fronts on brackets; rubber-capped rails, a footrest stool beside it
+  const Z0 = -.22, Z1 = -.96, H = 1.95;
+  f.add(mc('libladder2', ({ add, tube }) => {
+    add(G.cyl(.018, .018, 1.0, 8), '#c9a24a', 0, H, Z1 - .04, 0, 0, HP);
+    for (const sx of [-.45, 0, .45]) { add(G.box(.03, .05, .06, .01), '#a8822f', sx, H, Z1 - .07); add(G.sph(.024, 8, 6), '#c9a24a', sx, H, Z1 - .04); }
+    for (const sx of [-1, 1]) {
+      tube([sx * .2, .07, Z0], [sx * .2, H - .04, Z1 + .02], .028, WOODD, 6);
+      add(G.tor(.03, .01, PI, 4, 8), DARK, sx * .2, H - .005, Z1 - .02, 0, HP, 0);
+      add(G.box(.05, .06, .06, .012), DARK, sx * .2, .06, Z0);
+      add(G.cyl(.03, .03, .03, 10), '#5b5672', sx * .2, .03, Z0 + .03, 0, 0, HP);
+    }
+    for (let k = 1; k < 8; k++) { const t = k / 8; add(G.box(.42, .035, .07, .01), WOOD, 0, .07 + (H - .1) * t, Z0 + (Z1 - Z0) * t); add(G.box(.43, .008, .02, .003), '#a8733f', 0, .09 + (H - .1) * t, Z0 + (Z1 - Z0) * t + .03); }
     add(G.cyl(.15, .15, .05, 14), WOOD, .3, .35, .32); for (const a of [0, 2.1, 4.2]) add(G.box(.03, .34, .03, .01), WOODD, .3 + Math.cos(a) * .1, .17, .32 + Math.sin(a) * .1);
+    add(G.cyl(.13, .13, .012, 14), '#c95a4a', .3, .38, .32);
   }));
   f.spot('beside', null, -.3, 0, .3, { maxH: .3, label: '사다리 옆', scale: .7 });
 };

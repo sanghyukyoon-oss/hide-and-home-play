@@ -814,7 +814,14 @@ B.um_revolvingdoor = f => {
   f.walkBoxes = [[-R - .05, 0, -R - .05, R + .05, H + .2, R + .05]];
   f.add(mc('um-revolve', ({ add }) => {
     add(G.cyl(R + .06, R + .06, .05, 28), C.steel2, 0, .025, 0);
-    add(G.cyl(R + .08, R + .08, .14, 28), '#8aa0c8', 0, H + .07, 0); add(G.cyl(R + .1, R + .1, .03, 28), C.cream, 0, H + .155, 0);
+    // (10/24 아트 점검 2차: the roof was a plain white drum — now a navy fascia with a brass rim and little lamps, a low steel dome
+    // with eight ribs and a finial on top, like a real subway revolving door's canopy)
+    add(G.cyl(R + .08, R + .08, .14, 28), C.navy, 0, H + .07, 0);
+    add(G.tor(R + .085, .016, PI * 2, 4, 32), C.brass, 0, H + .005, 0, HP, 0, 0); add(G.tor(R + .085, .016, PI * 2, 4, 32), C.brass, 0, H + .14, 0, HP, 0, 0);
+    for (let k = 0; k < 16; k++) { const a = k / 16 * PI * 2; add(G.sph(.018, 6, 4), '#fff3c4', Math.cos(a) * (R + .09), H + .07, Math.sin(a) * (R + .09)); }
+    add(G.cyl(R * .5, R + .1, .12, 28), C.steel, 0, H + .2, 0); add(G.cyl(R * .5, R * .5, .02, 20), C.steel2, 0, H + .27, 0);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * PI * 2, rr = R * .78; add(G.box(.025, .03, R * .55, .008), C.steel2, Math.cos(a) * rr, H + .215, Math.sin(a) * rr, -.4, -a + HP, 0); }
+    add(G.cyl(.012, .02, .14, 6), C.brass, 0, H + .34, 0); add(G.sph(.035, 8, 6), C.brass, 0, H + .42, 0);
     // the curved side frames (±z): top and bottom rails and three posts each
     for (const sz of [-1, 1]) for (let k = 0; k < 3; k++) { const a = (k - 1) * .55, x = Math.sin(a) * R, z = sz * Math.cos(a) * R; add(G.cyl(.025, .025, H, 8), C.steel2, x, H / 2, z); }
   }));
@@ -824,6 +831,7 @@ B.um_revolvingdoor = f => {
   }
   f.add(mc('um-revolve-rings', ({ add }) => { for (const y of [.08, H - .05]) add(G.tor(R, .022, PI * 2, 4, 28), C.steel2, 0, y, 0, HP, 0, 0); }));
   label(f.group, 'subwaydoor', .7, .13, signDraw('지하철 연결', '#3f8f5a', C.white, { size: .62 }), R * .72, H + .07, R * .72 + .01, 0, PI / 4, 0);
+  label(f.group, 'subwaydoor2', .7, .13, signDraw('지하철 연결', '#3f8f5a', C.white, { size: .62 }), -R * .72, H + .07, R * .72 + .01, 0, -PI / 4, 0);
   // the wings (part0): a centre post and four glass wings; an umbrella pocket on the back wing holds something
   const wing = grp(); put(wing, 0, 0, 0); f.add(wing);
   wing.add(mc('um-revolve-wings', ({ add }) => {

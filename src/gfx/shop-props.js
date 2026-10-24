@@ -1250,6 +1250,14 @@ B.espresso = (f, T) => {
       add(G.cyl(.012, .012, .06, 6), STEEL, x, TY + .23, -.3);
       add(G.box(.05, .016, .016, .005), CHAR, x + .018, TY + .262, -.3);
     });
+    // (⑥ 10/24 사용자 34판 "커피머신 디테일 올려줘"): the drip tray's grate, a steel milk pitcher under the steam wand, a tamper on
+    // its mat and a glass jar of beans — a working bar, not a box with spouts
+    for (let k = 0; k < 7; k++) add(G.pbox(.012, .006, .18), STEEL, mx - .27 + k * .09, TY + .064, mz + .08);
+    add(G.cyl(.04, .046, .1, 14), STEEL, mx + MW / 2 + .05, TY + .05, mz + .27); add(G.cone(.018, .03, 6), STEEL, mx + MW / 2 + .085, TY + .095, mz + .27, 0, 0, -1.1);
+    add(G.tor(.026, .007, PI * 1.2, 4, 10), STEEL2, mx + MW / 2 + .015, TY + .055, mz + .27, 0, 0, HP + .3);
+    add(G.box(.12, .008, .1, .004), '#5b5672', mx - .3, TY + .004, mz + .3); add(G.cyl(.03, .03, .025, 14), STEEL, mx - .3, TY + .021, mz + .3); add(G.cyl(.012, .016, .07, 10), '#9a6a48', mx - .3, TY + .068, mz + .3); add(G.sph(.02, 10, 8), '#9a6a48', mx - .3, TY + .105, mz + .3);
+    add(G.cyl(.05, .05, .13, 14), '#dfeef6', .58, TY + .065, -.1); add(G.cyl(.054, .054, .025, 14), '#9a6a48', .58, TY + .14, -.1);
+    for (let k = 0; k < 9; k++) add(G.sph(.016, 6, 5), COFFEE, .58 + Math.cos(k * 2.1) * .025, TY + .02 + (k % 4) * .022, -.1 + Math.sin(k * 2.1) * .025, 0, k, 0, [1, .7, 1.2]);
     potPlant(add, .82, TY, -.1, col(T, 'pot'), .8);
   }));
   f.add(mg('espresso-prints', atlasMat(), ({ add }) => {

@@ -245,6 +245,11 @@ B.s3c_wheel = f => {
     for (const a of [0, 2.09, 4.19]) tube([-.55 + Math.cos(a) * .11, Y + .02, .05 + Math.sin(a) * .11], [-.55 + Math.cos(a) * .08, Y + .2, .05 + Math.sin(a) * .08], .018, WOODD, 6);
     add(G.cyl(.145, .15, .05, 18), '#ffc6d6', -.55, Y + .25, .05);
     add(G.cyl(.07, .08, .14, 14), '#7fd3b8', -.2, Y + .1, .25); tube([-.13, Y + .08, .25], [.0, Y + .2, .25], .014, '#7fd3b8', 5); add(G.tor(.05, .01, PI, 4, 10), '#5fb7a0', -.2, Y + .17, .25, 0, 0, 0);
+    // (29판 10/24 "디테일 올려"): a coil of rope on the deck, a little lantern hung from the arm's post, a scoop net leaning on it
+    for (let k = 0; k < 4; k++) add(G.tor(.075 - k * .012, .012, PI * 2, 5, 18), '#d9b98a', -.82, Y + .04 + k * .014, -.22, HP, 0, 0);
+    tube([X1 - .05, Y + .9, AZ0], [X1 - .18, Y + .9, AZ0], .008, WOODD, 4); tube([X1 - .18, Y + .9, AZ0], [X1 - .18, Y + .82, AZ0], .004, '#8a95a8', 4);
+    add(G.box(.06, .08, .06, .015), '#ffe9a8', X1 - .18, Y + .76, AZ0); add(G.cone(.05, .035, 4), '#8a95a8', X1 - .18, Y + .82, AZ0, 0, PI / 4, 0); add(G.cyl(.032, .032, .01, 4), '#8a95a8', X1 - .18, Y + .715, AZ0, 0, PI / 4, 0);
+    tube([X0 + .25, Y + .03, .33], [X0 + .5, Y + .62, .37], .01, WOODD, 5); add(G.tor(.07, .008, PI * 2, 4, 16), '#5fb0e6', X0 + .52, Y + .68, .37, .4, 0, .3);
   }));
   // the wheel: a part pivot (it turns as the bucket comes up)
   const wheel = grp(); put(wheel, .85, .5, 0); f.add(wheel);
@@ -281,7 +286,9 @@ B.s3c_wheel = f => {
     bucket.position.y = bB.p.y + (yHi - yLo) * t; bucket.rotation.y = t * .8;
     crank.rotation.z = -t * PI * 6; wheel.rotation.z = -t * PI * 1.5; setRope(bucket.position.y);
   }, { label: '물레방아 양동이', sfx: 'swish', dur: .9 });
-  f.spot('inside', bucket, 0, .04, 0, { part: p, maxH: .22, label: '물속 양동이', scale: .72 });
+  // (29판 10/24: 'in' — sunk half in the bucket's water, like a thing in a pond: as 'inside' the lift's rope and wheel counted as a
+  // lid right over it, and the catch drew at 4%)
+  f.spot('in', bucket, 0, .1, 0, { part: p, maxH: .22, label: '물속 양동이', scale: .72 });
   f.spot('on', null, -.55, Y + .29, .05, { maxH: .3, label: '물가 의자 위', scale: .7 });
   f.spot('under', null, -.62, .005, -.2, { maxH: .14, label: '물가 마루 밑', scale: .7 });
 };
@@ -358,6 +365,18 @@ B.s3c_sign = f => {
     add(G.box(.52, .03, .24, .01), '#5fb45e', -.23, 1.1, -.03, 0, 0, .42); add(G.box(.52, .03, .24, .01), '#5fb45e', .23, 1.1, -.03, 0, 0, -.42);
     add(G.sph(.04, 10, 8), '#ffb6cc', 0, 1.22, -.03);
     tuft(add, .3, .08, .9); tuft(add, -.36, .1, .8); daisy(add, .22, .14, .9, '#c9b6f6', '#fff2a0');
+  }));
+  // (29판 10/24 사용자 "오브젝트 디테일 알아서 좀 올려 줘"): a light wood frame round the painted board with brass nails, a little
+  // wooden tag hanging under it with frog footprints, raindrops along the leaf roof's edge, a pot of water lilies at its foot
+  f.add(mc('s3c-sign-more', ({ add, tube }) => {
+    for (const [w, h2, x, y] of [[.86, .035, 0, 1.0], [.86, .035, 0, .56], [.035, .44, -.43, .78], [.035, .44, .43, .78]]) add(G.box(w, h2, .02, .008), WOODL, x, y, .004);
+    for (const [x, y] of [[-.41, .98], [.41, .98], [-.41, .58], [.41, .58]]) add(G.sph(.011, 8, 6), '#e9b84a', x, y, .016);
+    for (const sx of [-1, 1]) tube([sx * .1, .545, -.005], [sx * .1, .47, -.005], .004, '#efe0c0', 4);
+    add(G.box(.3, .085, .02, .008), WOODL, 0, .43, -.005); add(G.box(.3, .012, .022, .004), shade(WOODL, -.08), 0, .39, -.005);
+    for (const [x, y] of [[-.09, .43], [-.03, .44], [.03, .42], [.09, .435]]) { add(G.sph(.012, 8, 6), '#6cc06a', x, y, .008, 0, 0, 0, [1, 1, .4]); for (const d of [-1, 0, 1]) add(G.sph(.005, 6, 4), '#6cc06a', x + d * .009, y + .015, .008, 0, 0, 0, [1, 1, .4]); }
+    for (const [x, d] of [[-.42, .08], [-.2, .02], [.12, .04], [.38, .06]]) add(G.sph(.016, 8, 6), '#dff6ff', x, 1.0 - Math.abs(x) * .25 - d, .1, 0, 0, 0, [.8, 1.4, .8]);
+    add(G.cyl(.08, .065, .1, 14), '#9fd2f0', .48, .05, .12); add(G.tor(.08, .01, PI * 2, 4, 16), '#c9e6f6', .48, .1, .12, HP, 0, 0); add(G.cyl(.07, .07, .006, 14), '#8fe0e6', .48, .095, .12);
+    add(G.cyl(.04, .04, .004, 14), '#6cc06a', .46, .1, .11); add(G.sph(.016, 10, 8), '#ffb6cc', .5, .11, .14);
   }));
   const board = new THREE.Mesh(new THREE.PlaneGeometry(.82, .43), texMat(frogSignTex())); board.position.set(0, .78, -.003); f.add(board);
   f.spot('behind', null, 0, 0, -.25, { maxH: .3, label: '간판 뒤', scale: .7 });

@@ -1012,6 +1012,9 @@ installRedo1({ LAYOUTS, THEMES, NEW_MAPS });
 // 3판 낚시터 ⑩ 안 A' fishing3r · B' fishisle (10/24, 미리보기 ?gptmap=키&lv=3 — 판 표는 그대로)
 import { installStage3R10 } from './stage3-r10.js';
 installStage3R10({ LAYOUTS, THEMES });
+// 38판 아파트 현관 3차 aptlobby3 (10/24, 사용자 메모 — 구조·벽·매트·호출 버튼 엘리베이터)
+import { installAptLobby3 } from './aptlobby3-map.js';
+installAptLobby3({ THEMES, MAPS, PLAN });
 export function stageSpec(idx) {
   idx = Math.max(0, idx);
   if (idx >= STAGE_COUNT) return endlessSpec(idx);

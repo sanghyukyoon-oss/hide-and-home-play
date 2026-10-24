@@ -547,10 +547,12 @@ B.breadcart = (f, T) => {
 
 // ── 곰제과 앞마당 (10/20 밤, 사용자가 보낸 '바닷가 가게' 그림에서 예쁜 점만: 흰 판자 · 줄무늬 차양 · 앞마당 좌판 · 파라솔) ──
 const NAVY = '#3f5f9e', NAVY2 = '#2f4a80', SKYB = '#8fc4ea', PAINT = '#fbf8f2', PAINT2 = '#ece6db';
+// (10/24 아트 점검 2차 35: the strips were tilted the wrong way — up at the front and down into the wall behind; now they slope down
+// from the wall to the valance)
 // a striped awning: a sloped canvas (stripes as separate strips) and a scalloped valance; w wide, reaching d out, at height y
 function awning(add, x, y, w, d, c1, c2, z0 = 0) {
   const n = Math.max(4, Math.round(w / .16)), sw = w / n, ang = .5;
-  for (let k = 0; k < n; k++) add(G.box(sw + .004, .02, d, .004), k % 2 ? c2 : c1, x - w / 2 + sw * (k + .5), y - Math.sin(ang) * d / 2, z0 + Math.cos(ang) * d / 2, ang, 0, 0);
+  for (let k = 0; k < n; k++) add(G.box(sw + .004, .02, d, .004), k % 2 ? c2 : c1, x - w / 2 + sw * (k + .5), y - Math.sin(ang) * d / 2, z0 + Math.cos(ang) * d / 2, -ang, 0, 0);
   const fz = z0 + Math.cos(ang) * d, fy = y - Math.sin(ang) * d;
   for (let k = 0; k < n; k++) add(new THREE.CylinderGeometry(sw / 2, sw / 2, .02, 10, 1, false, 0, PI), k % 2 ? c2 : c1, x - w / 2 + sw * (k + .5), fy - .005, fz, HP, 0, 0, [1, 1, 1.6]);
   add(G.cyl(.012, .012, w + .04, 6), PAINT2, x, y + .01, z0 + .02, 0, 0, HP);

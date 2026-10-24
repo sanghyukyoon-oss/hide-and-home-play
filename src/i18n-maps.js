@@ -72,6 +72,8 @@ addI18n({
   '트럭 밑': 'Under the truck', '트럭 짐칸 입구': 'At the back of the truck', '상자 더미': 'Pile of boxes', '상자 더미 위': 'On the pile of boxes',
   '이삿짐 상자 안': 'In a moving box', '손수레': 'Hand truck', '손수레 밑': 'Under the hand truck', '손수레 위': 'On the hand truck',
   '낮은 턱': 'Low ledge', '턱 안쪽': 'Behind the ledge', '턱 위': 'On the ledge', '발판 위': 'On the step', '자물쇠 상자': 'Padlocked box', '소화전함': 'Fire hose cabinet',
+  // 38판 현관 3차 (10/24)
+  '엘리베이터 호출 버튼': 'Elevator call button', '돌기둥': 'Stone pillar', '벽등': 'Wall lamp', '어서 오세요 매트': 'Welcome mat',
 
   // 토순이 다락
   '동그란 다락 창': 'Round attic window', '동그란 창틀 위': 'On the round window frame', '창가 의자': 'Window seat', '창가 의자 위': 'On the window seat',

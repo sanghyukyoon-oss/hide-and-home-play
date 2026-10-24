@@ -326,47 +326,60 @@ B.s3a_reeds = (f, T, o = {}) => {
 // ── 파라솔 의자 (1×1): 산호·크림 여덟 폭 파라솔(물결 끝단), 흰 대, 하늘색 줄무늬 나무 비치 의자 ─────────────────────────────
 const stripeTex = (a, b, n = 8) => paintTex('s3a-stripe|' + a + b + n, 128, 128, (c, w, h) => { for (let k = 0; k < n; k++) { c.fillStyle = k % 2 ? b : a; c.fillRect(k * w / n, 0, w / n + 1, h); } });
 B.s3a_parasol = (f, T, o = {}) => {
-  f.collideBox = [-.3, 0, -.2, .3, .8, .34];   // (the pole and the beach chair: the canopy's wide box held a neighbour's lid at a third — 10/24)
-  const P1 = o.vivid ? '#ff6f80' : '#ff8f8a', P2 = o.vivid ? '#ffffff' : '#fff6ea';
-  f.add(mc('s3a-parasol' + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add, tube }) => {
-    tube([0, 0, -.1], [0, 1.5, -.1], .026, '#f6f2ea', 8);
-    add(G.cyl(.09, .11, .04, 14), '#d9d2c9', 0, .02, -.1);
+  // (10/24 사용자 3판 실폰 "파라솔·의자 좀 더 띄워 줘, 간격. 디테일 다시 잡아 주고.. 모양이 이상해"): the umbrella stands a step
+  // behind and to the left of the chair (it went through the chair's back), and the chair is a real folding deck chair — two
+  // long back rails crossing the seat rails in an X, a rear leg, flat wooden armrests, a striped sling that sags between the
+  // top bar and the front bar; a thin towel folded over the top bar, a small pillow; the loose dots under the canopy are gone
+  const PX = -.55, PZ = .12;
+  f.collideBox = [-.3, 0, -.28, .3, .8, .38];
+  const P1 = o.vivid ? '#ff6f80' : '#ff8f8a', P2 = o.vivid ? '#ffffff' : '#fff6ea', D = o.vivid || o.detail;
+  f.add(mc('s3a-parasol2' + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add, tube }) => {
+    tube([PX, 0, PZ], [PX, 1.5, PZ], .026, '#f6f2ea', 8);
+    add(G.cyl(.13, .15, .05, 16), D ? '#ffe9b8' : '#d9d2c9', PX, .025, PZ);
     for (let k = 0; k < 8; k++) {
-      const c = k % 2 ? P2 : P1, g = new THREE.ConeGeometry(.78, .34, 4, 1, true, k * PI / 4, PI / 4); add(g, c, 0, 1.44, -.1);
-      const a = k * PI / 4 + PI / 8; add(G.sph(.075, 10, 6), c, Math.sin(a) * .72, 1.27, -.1 + Math.cos(a) * .72, 0, a, 0, [1.4, .5, .5]);
+      const c = k % 2 ? P2 : P1, g = new THREE.ConeGeometry(.78, .34, 4, 1, true, k * PI / 4, PI / 4); add(g, c, PX, 1.44, PZ);
+      const a = k * PI / 4 + PI / 8; add(G.sph(.075, 10, 6), c, PX + Math.sin(a) * .72, 1.27, PZ + Math.cos(a) * .72, 0, a, 0, [1.4, .5, .5]);
     }
-    add(G.cone(.79, .02, 8), '#ffd9d4', 0, 1.27, -.1, PI, 0, 0);
-    add(G.sph(.045, 10, 8), P1, 0, 1.64, -.1);
-    if (o.vivid || o.detail) { for (let k = 0; k < 8; k++) { const a = k * PI / 4; tube([0, 1.12, -.1], [Math.sin(a) * .7, 1.28, -.1 + Math.cos(a) * .7], .007, '#e8e8f0', 4); }
-      add(G.cyl(.04, .04, .05, 10), '#e8e8f0', 0, 1.12, -.1); add(G.cyl(.035, .035, .04, 10), '#c9cfe0', 0, .75, -.1);
-      for (let k = 0; k < 24; k++) { const a = k / 24 * PI * 2; add(G.sph(.014, 6, 4), k % 2 ? P1 : '#ffd84a', Math.sin(a) * .79, 1.22, -.1 + Math.cos(a) * .79); }
-      // (10/24 사용자 3판 "파라솔과 의자도 디테일"): a little vented cap on top, white seams down each panel, the tilt crank on the pole,
-      // a sand anchor at its foot; the beach chair gets wooden armrests with brass bolts, a striped headrest pillow, a towel over
-      // its back and a pair of flip-flops beside it
-      add(G.cyl(.07, .09, .03, 12), P2, 0, 1.6, -.1); add(G.cone(.075, .06, 12), P1, 0, 1.645, -.1);
-      for (let k = 0; k < 8; k++) { const a = k * PI / 4; tube([0, 1.6, -.1], [Math.sin(a) * .77, 1.28, -.1 + Math.cos(a) * .77], .006, '#ffffff', 4); }
-      add(G.cyl(.03, .03, .05, 10), '#c9cfe0', 0, .95, -.1); tube([0, .95, -.1], [.08, .95, -.1], .008, '#c9cfe0', 4); tube([.08, .95, -.1], [.08, .89, -.1], .007, '#c9cfe0', 4); add(G.sph(.016, 8, 6), '#ff6a6a', .08, .885, -.1);
-      add(G.cyl(.13, .15, .05, 16), '#ffe9b8', 0, .025, -.1); add(G.tor(.13, .012, PI * 2, 5, 18), '#e9c98a', 0, .05, -.1, HP, 0, 0);
-      for (const sx of [-1, 1]) { add(G.box(.05, .02, .3, .008), WOODL, sx * .25, .44, .12, -.12, 0, 0); tube([sx * .25, .3, .26], [sx * .25, .44, .24], .012, WOOD, 5);
-        for (const [y, z] of [[.3, .3], [.3, .02], [.72, -.12]]) add(G.sph(.013, 8, 6), '#e9b84a', sx * .228, y, z); }
-      // (on the cloth back: centre (0, .52, 0), tipped back .42 — up the back is u, out of it is n)
-      const bu = [0, Math.cos(.42), -Math.sin(.42)], bn = [0, Math.sin(.42), Math.cos(.42)], onBack = (x, d, e) => [x, .52 + bu[1] * d + bn[1] * e, bu[2] * d + bn[2] * e];
-      add(G.box(.32, .07, .08, .03), '#fff6ea', ...onBack(0, .2, .045), -.42, 0, 0); for (const x of [-.1, 0, .1]) add(G.box(.025, .072, .082, .006), '#7fc6ef', ...onBack(x, .2, .045), -.42, 0, 0);
-      add(G.box(.2, .3, .012, .004), '#ffe08a', ...onBack(.1, -.02, .017), -.42, 0, 0); for (const d of [-.14, .1]) add(G.box(.2, .02, .014, .002), '#ff9e7a', ...onBack(.1, d, .019), -.42, 0, 0);
-      for (const [x, z, r] of [[.36, .3, .25], [.45, .27, -.15]]) { const c = Math.cos(r), s2 = Math.sin(r), at = (dx, dz) => [x + dx * c + dz * s2, z - dx * s2 + dz * c];
+    add(G.cone(.79, .02, 8), '#ffd9d4', PX, 1.27, PZ, PI, 0, 0);
+    add(G.sph(.045, 10, 8), P1, PX, 1.64, PZ);
+    if (D) {
+      for (let k = 0; k < 8; k++) { const a = k * PI / 4; tube([PX, 1.12, PZ], [PX + Math.sin(a) * .7, 1.28, PZ + Math.cos(a) * .7], .007, '#e8e8f0', 4); tube([PX, 1.6, PZ], [PX + Math.sin(a) * .77, 1.28, PZ + Math.cos(a) * .77], .006, '#ffffff', 4); }
+      add(G.cyl(.04, .04, .05, 10), '#e8e8f0', PX, 1.12, PZ); add(G.cyl(.07, .09, .03, 12), P2, PX, 1.6, PZ); add(G.cone(.075, .06, 12), P1, PX, 1.645, PZ);
+      add(G.cyl(.03, .03, .05, 10), '#c9cfe0', PX, .95, PZ); tube([PX, .95, PZ], [PX + .08, .95, PZ], .008, '#c9cfe0', 4); add(G.sph(.016, 8, 6), '#ff6a6a', PX + .085, .95, PZ);
+      add(G.tor(.13, .012, PI * 2, 5, 18), '#e9c98a', PX, .05, PZ, HP, 0, 0);
+    }
+    // the deck chair's frame (per side): the long back rail from the front foot up to the top bar, the seat rail from the back
+    // foot up to the armrest's front crossing it, the rear leg, a flat armrest on two posts
+    for (const sx of [-1, 1]) {
+      const x = sx * .22;
+      tube([x, 0, .36], [x, .8, -.16], .018, WOOD, 6);
+      tube([x, 0, -.14], [x, .4, .3], .018, WOOD, 6);
+      tube([x, 0, -.3], [x, .5, -.02], .016, WOOD, 6);
+      add(G.box(.05, .022, .34, .008), WOODL, sx * .25, .44, .12); tube([sx * .24, .4, .3], [sx * .24, .43, .3], .012, WOOD, 5); tube([sx * .225, .58, -.04], [sx * .245, .44, -.04], .012, WOOD, 5);
+      if (D) for (const [y, z] of [[.22, .085], [.4, .3], [.58, -.04]]) add(G.cyl(.012, .012, .05, 8), '#e9b84a', x, y, z, 0, 0, HP);
+    }
+    tube([-.22, .8, -.16], [.22, .8, -.16], .016, WOOD, 6); tube([-.22, .36, .26], [.22, .36, .26], .016, WOOD, 6); tube([-.22, .02, -.29], [.22, .02, -.29], .014, WOOD, 6);
+    if (D) {
+      // a thin towel folded over the top bar (front and back flaps), a small pillow resting on the sling below it
+      add(G.box(.2, .005, .07, .002), '#ffe08a', .08, .812, -.16); add(G.box(.2, .16, .005, .002), '#ffe08a', .08, .73, -.135, -.42, 0, 0); add(G.box(.2, .1, .005, .002), '#ffe08a', .08, .76, -.19, .2, 0, 0);
+      for (const y of [.69, .77]) add(G.box(.202, .012, .006, .001), '#ff9e7a', .08, y, -.135 + (.73 - y) * .45, -.42, 0, 0);
+      add(G.box(.16, .045, .05, .02), '#fff6ea', -.05, .7, -.09, -.42, 0, 0); add(G.box(.03, .046, .052, .006), '#7fc6ef', -.05, .7, -.09, -.42, 0, 0);
+      // flip-flops beside it
+      for (const [x, z, r] of [[.42, .3, .25], [.5, .27, -.15]]) { const c = Math.cos(r), s2 = Math.sin(r), at = (dx, dz) => [x + dx * c + dz * s2, z - dx * s2 + dz * c];
         add(G.cyl(.034, .034, .012, 16), '#7fd3b8', x, .006, z, 0, r, 0, [1, 1, 2.3]); add(G.cyl(.03, .03, .004, 16), '#bff0e0', x, .013, z, 0, r, 0, [1, 1, 2.2]);
         const [tx, tz] = at(0, -.045), [lx, lz] = at(-.03, .005), [rx2, rz2] = at(.03, .005);
-        tube([tx, .014, tz], [lx, .03, lz], .006, '#ff8fa8', 4); tube([tx, .014, tz], [rx2, .03, rz2], .006, '#ff8fa8', 4); tube([lx, .03, lz], [lx, .014, lz], .005, '#ff8fa8', 4); tube([rx2, .03, rz2], [rx2, .014, rz2], .005, '#ff8fa8', 4); }
+        tube([tx, .014, tz], [lx, .03, lz], .006, '#ff8fa8', 4); tube([tx, .014, tz], [rx2, .03, rz2], .006, '#ff8fa8', 4); }
     }
-    // the beach chair's wooden frame
-    for (const sx of [-1, 1]) { tube([sx * .21, 0, .32], [sx * .21, .3, .02], .018, WOOD, 6); tube([sx * .21, 0, -.06], [sx * .21, .3, .3], .018, WOOD, 6); tube([sx * .21, .3, .3], [sx * .21, .72, -.12], .018, WOOD, 6); }
-    tube([-.21, .72, -.12], [.21, .72, -.12], .016, WOOD, 6); tube([-.21, .3, .3], [.21, .3, .3], .016, WOOD, 6);
   }));
+  // the sling: striped cloth from the top bar sagging down to the front bar, in short slats so it curves
   const cloth = texMat(stripeTex('#7fc6ef', '#ffffff'));
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(.42, .02, .34), cloth); seat.position.set(0, .3, .12); f.add(seat);
-  const back = new THREE.Mesh(new THREE.BoxGeometry(.42, .44, .02), cloth); back.position.set(0, .52, .0); back.rotation.x = -.42; f.add(back);
-  f.spot('on', null, 0, .32, .12, { maxH: .3, label: '파라솔 의자 위', scale: .75 });
-  f.spot('under', null, 0, 0, .12, { maxH: .22, label: '파라솔 의자 밑', scale: .7 });
+  const pts = [[.8, -.15], [.6, -.06], [.42, .02], [.3, .1], [.29, .18], [.36, .26]];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [y0, z0] = pts[i], [y1, z1] = pts[i + 1], len = Math.hypot(y1 - y0, z1 - z0);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.4, .012, len + .01), cloth); m.position.set(0, (y0 + y1) / 2, (z0 + z1) / 2); m.rotation.x = -Math.atan2(y1 - y0, z1 - z0); f.add(m);
+  }
+  f.spot('on', null, 0, .31, .12, { maxH: .3, label: '파라솔 의자 위', scale: .75 });
+  f.spot('under', null, 0, 0, .1, { maxH: .22, label: '파라솔 의자 밑', scale: .7 });
 };
 
 // ── 아이스박스 (1×1): 하늘색 몸통에 흰 띠·흰 뚜껑, 회색 손잡이; 안은 흰 안감·얼음·캔 (자물쇠 가능) ────────────────────────────

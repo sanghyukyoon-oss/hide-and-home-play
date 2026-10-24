@@ -216,8 +216,9 @@ Object.assign(RECIPES, {
     ],
   },
   cafe: {
-    light: { ambColor: '#f6ece0', amb: 1.24, sunColor: '#ffe2bc', sun: 2.55, shadow: .62 },
-    sky: ['#d3dca9', '#c6d199', '#b4c186'],
+    // (10/24 사용자 34판 "좀 칙칙한데 약간 밝게": a touch more light, a lighter backdrop)
+    light: { ambColor: '#f8f0e6', amb: 1.36, sunColor: '#ffe8c8', sun: 2.75, shadow: .58 },
+    sky: ['#e2e8bd', '#d7dfae', '#c8d29e'],
     pattern: { icon: 'cup', ink: 'rgba(96,112,44,.2)' },
     theme: { wall: '#f1e4bb', wall2: '#e8d7a6', wainscot: '#a8693f', wallEdge: '#fbf3dc', floor: '#cf9256', floor2: '#a46a3a', base: '#8a5634', stool: '#ff9f6b' },
     slab: true,
@@ -228,7 +229,7 @@ Object.assign(RECIPES, {
       { furn: 'stool2', theme: 'cafe', x: -1.6, z: -1.05, ry: -.2 },
       { furn: 'plantbig', x: -2.55, z: -.05, s: .85 },
       { furn: 'aframe', theme: 'cafe', x: 2.55, z: 2.0, ry: -.7 },
-      { furn: 'monstera', x: 2.6, z: 1.0, s: .8 },
+      { furn: 'monstera', x: 2.6, z: -.3, s: .8 },   // (10/24: off 1.0, where 34판's big parfait stands)
       { furn: 'doormat', door: 'W', opts: { color: '#a8693f' } },
     ],
   },
@@ -426,6 +427,8 @@ RECIPES.villaroof3 = { ...RECIPES.villaroof3, light: { ambColor: '#eef1f2', amb:
 // 크림 하늘 + 가운데 흰 빛무리(setSky의 sky.glow) — 맵이 선 가운데가 하얗게 번지고 끝으로 갈수록 옅은 크림. 하늘색 하늘인 판은 그대로
 const CREAM_GLOW = Object.assign(['#fbf4ec', '#fffaf5', '#f5ece2'], { glow: true });
 for (const k of ['bunny', 'apt', 'aptlobby', 'aptlobby2', 'kpop', 'playground', 'playgroundwide', 'bearbakery', 'konbini']) if (RECIPES[k]) RECIPES[k] = { ...RECIPES[k], sky: CREAM_GLOW };
+// 38판 현관 3차 (10/24): 현관 2차와 같은 빛·하늘, 바닥에 깔던 매트·소품(fill)은 없이 — '어서 오세요' 매트는 맵의 문 앞에 하나만
+RECIPES.aptlobby3 = (({ fill, ...o }) => o)(RECIPES.aptlobby2);
 // (빛무리 10/24 사용자 "칙칙한 판들에 배경 타게 글로우 넣는 방향은 어때?" → 고름: "39·40같이 패턴 들어간 배경은 그냥 유지"): 18~31판의 하늘색 낮
 // 하늘(무늬 없는)에도 가운데 흰·크림 빛무리 — 하늘색은 가장자리에 그대로 남음. 밤·정전·흑백·무늬 바탕은 그대로
 export function lookRecipe(room, spec) {
@@ -1291,7 +1294,7 @@ RECIPES.gptotakumix = { ...RECIPES.otakuloft, mapGlows: true,
     [-1.38, 2.95, -2.4, .8, '#ffd98f'], [2.95, 1.05, .4, .6, '#cfe6ff']] };
 // 36판 새 안 밤의 문구점 (stationery, ⑨ 10/23): 상가 거리의 하늘·빛·밤 그대로(받침은 맵 자체 섬); 밤 빛은 등 바로 밑 작은 웅덩이 셋만 — 크레파스 진열대 스탠드,
 // 계산대 스탠드(따뜻한 흰색), 오락기 화면(분홍) — 허브 10/23 '누렇게 덮지 말 것'; 물건 크기는 넓은 판 기준(gpt6-maps SPEC과 같은 값)
-RECIPES.stationery = { light: RECIPES.shopmap.light, sky: RECIPES.shopmap.sky, pattern: RECIPES.shopmap.pattern, night: { light: { ...COZY_NIGHT.light, sunColor: '#f4f3f0' }, sky: RECIPES.shopmap.night.sky }, itemSize: .58,
+RECIPES.stationery = { light: RECIPES.shopmap.light, sky: RECIPES.shopmap.sky, pattern: RECIPES.shopmap.pattern, night: { light: { ...COZY_NIGHT.light, sunColor: '#f4f3f0' }, sky: RECIPES.shopmap.night.sky }, itemSize: .48,
   glows: [[-2.25, -1.85, .7, '#fff1d8'], [-1.25, .05, .55, '#fff1d8'], [-.98, 1.62, .5, '#ffcfe4']],
   halos: [[-.98, 1.05, 1.24, .55, '#9fb4ff'], [-2.25, 2.3, -2.2, .45, '#fff1d8'], [-1.25, 1.42, -.06, .35, '#fff1d8']] };
 // 3판 ⑩ 안 A' fishing3r (10/24 "싱그럽고 깨끗한"): 흰 해의 맑은 낮, 하늘색→연민트 하늘, 연한 그림자; 풀밭은 판 바닥이 그대로 이어져

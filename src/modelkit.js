@@ -154,7 +154,9 @@ export function kitSetup(S) {
   // (not where anyone stands: a box set down on a walker's tile had 식빵 inside it all stage — 겹침 QA 10/20; and each tile used
   // goes out of the walkers' list, S.blockTile)
   const near = S.bodies ? S.bodies() : [];
-  const tiles = (S.freeTiles || []).filter(t => (!t.R?.clearAt || t.R.clearAt(t.x, t.z, .3)) && !near.some(p => Math.hypot(p.x - t.x, p.z - t.z) < .7));
+  // (and not on the look's own fill — a plant, a sign: 34판's big parfait stood inside the café's monstera, ⑥ 10/24)
+  const fills = (S.look?.filled || []).filter(g => g.parent).map(g => g.getWorldPosition(new THREE.Vector3()));
+  const tiles = (S.freeTiles || []).filter(t => (!t.R?.clearAt || t.R.clearAt(t.x, t.z, .3)) && !near.some(p => Math.hypot(p.x - t.x, p.z - t.z) < .7) && !fills.some(p => Math.hypot(p.x - t.x, p.z - t.z) < .6));
   const at = (t, o) => { const P = new THREE.Vector3(t.x, t.y || 0, t.z); o.position.copy(S.room.group.worldToLocal(P)); S.room.group.add(o); };
   if (K.type === 'place' && K.pile) { buildPile(S, K, tiles, near); return; }
   if (K.type === 'place') {

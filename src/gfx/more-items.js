@@ -5,6 +5,8 @@
 // 응원봉 (cheerstick) is not 68판's device lightstick (a white stick, a pink ball): a lilac star on a fat handle.
 import * as THREE from 'three';
 import { rbox, sph, cyl, tor, cone, put, grp, mat, mesh, geo, extrude, starShape } from './kit.js';
+import { EN } from '../i18n-en-dict.js';
+Object.assign(EN, { '올챙이 유리병': 'Tadpole jar', '개구리 장화': 'Frog rain boots' });
 
 const PI = Math.PI, HP = PI / 2;
 const GLOSS = { rough: .38 };
@@ -151,6 +153,48 @@ const RAW = {
     g.add(put(cone(.03, .03, '#f2fbff', GLOSS, 10), 0, H - .004, R + .012, -HP * .9, 0, 0, [1, 1, .4]));
     for (const [y, w] of [[.06, .05], [.09, .03], [.12, .05], [.15, .03]]) g.add(put(rbox(w, .006, .004, '#ffffff', .002), -.03 + w / 2, y, R + .002));
     for (const [x, z, r] of [[-.03, .02, .026], [.025, -.02, .03], [.035, .04, .02], [-.04, -.04, .018]]) g.add(put(sph(r, '#c8ffe0', null, 12, 8), x, .155, z));
+    return g;
+  } },
+  // 올챙이 유리병 (29판 개굴이네 연잎 연못 집, 10/24 사용자 "찾는 물건 신기하거나 좋아 보이는 걸로"): a fat glass jar of pond water,
+  // three tadpoles wriggling in it, a little lily pad floating on top, a cork with a string loop and a frog-face label
+  tadpolejar: { name: '올챙이 유리병', h: .26, build() {
+    // (a toon jar: the pond water is the jar's body — pale teal, no see-through to sort — the glass shows as a bright rim, a
+    // white glint stripe and an empty band at the top; the tadpoles swim against the front)
+    const g = grp(), R = .08, H = .2;
+    g.add(put(cyl(R, R - .004, .15, '#9fe6e0', { rough: .25 }, 24), 0, .079, 0));
+    g.add(put(cyl(R + .003, R + .003, .045, '#effcff', { opacity: .55, rough: .08 }, 24, true), 0, .175, 0));
+    g.add(put(cyl(R + .004, R + .004, .008, '#d6f3f6', null, 24), 0, .004, 0));
+    g.add(put(cyl(R - .002, R - .002, .004, '#7fd6d8', null, 24), 0, .155, 0));
+    g.add(put(tor(R, .009, '#f4feff', GLOSS, PI * 2, 6, 26), 0, H, 0, HP, 0, 0));
+    g.add(put(rbox(.014, .12, .004, '#ffffff', .006), -.045, .1, R - .012, 0, -.55, 0));
+    g.add(put(cyl(.05, .046, .035, '#e3b47a', null, 18), 0, H + .015, 0)); g.add(put(tor(.048, .005, '#fff1dc', null, PI * 2, 4, 16), 0, H + .02, 0, HP, 0, 0));
+    g.add(put(tor(.025, .004, '#fff1dc', null, PI * 2, 4, 14), .04, H + .04, 0, 0, 0, .5));
+    for (const [x, y, a] of [[-.028, .11, .5], [.03, .075, 2.6], [.0, .045, 1.1]]) {
+      const z = Math.sqrt(Math.max(0, R * R - x * x)) + .002;
+      g.add(put(sph(.017, '#2f3340', GLOSS, 12, 10), x, y, z, 0, 0, 0, [1, 1, .55]));
+      g.add(put(cone(.011, .04, '#3d4252', null, 8), x + Math.cos(a) * .028, y + Math.sin(a) * .028, z, 0, 0, a - HP, [1, 1, .3]));
+      g.add(put(sph(.004, '#ffffff', null, 6, 4), x + .006, y + .008, z + .008));
+    }
+    g.add(put(cyl(.038, .038, .005, '#6cc06a', null, 18), .015, .159, -.01));
+    g.add(put(sph(.014, '#ffb6cc', null, 10, 8), .025, .166, -.015));
+    g.add(put(rbox(.06, .04, .004, '#fff6e0', .008), .035, .05, Math.sqrt(R * R - .035 * .035) + .003, 0, .45, 0));
+    return g;
+  } },
+  // 개구리 장화: a pair of glossy green rain boots, a frog's eyes bulging on each toe, a pink tongue-coloured pull tab, cream soles
+  frogboots: { name: '개구리 장화', h: .2, build() {
+    const g = grp(), C = '#7fd06a', dk = '#5aae5a';
+    const boot = (x, ry) => {
+      const b = grp();
+      b.add(put(cyl(.045, .05, .15, C, GLOSS, 18), 0, .095, 0));
+      b.add(put(rbox(.1, .055, .15, C, .025, GLOSS), 0, .028, .035));
+      b.add(put(rbox(.106, .014, .158, '#fff3dc', .006), 0, .007, .035));
+      b.add(put(tor(.046, .008, dk, GLOSS, PI * 2, 6, 18), 0, .17, 0, HP, 0, 0));
+      b.add(put(rbox(.025, .03, .006, '#ff8fa8', .006), 0, .16, -.05));
+      for (const sx of [-1, 1]) { b.add(put(sph(.02, C, GLOSS, 12, 10), sx * .025, .065, .08)); b.add(put(sph(.012, '#ffffff', null, 10, 8), sx * .025, .07, .095)); b.add(put(sph(.006, '#2a1d33', null, 8, 6), sx * .025, .071, .105)); }
+      b.add(put(tor(.016, .003, '#2a1d33', null, PI * .8, 4, 10), 0, .045, .108, 0, 0, PI * 1.1));
+      put(b, x, 0, 0, 0, ry, 0); g.add(b);
+    };
+    boot(-.055, .12); boot(.06, -.08);
     return g;
   } },
 };

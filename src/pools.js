@@ -68,6 +68,7 @@ export const ROOM_POOLS = {
   bearbakery: ['donut', 'cupcake', 'cookie', 'milk', 'honeypot', 'apple', 'candy', 'sandwich'],   // 35판 곰제과
   library: ['glasses', 'crayons', 'apple', 'milk', 'teddy', 'heart', 'star', 'coin'],   // 37판 도서관 (박사 "대출대에 누가 동전을")
   aptlobby2: ['umbrella', 'keyring', 'coffee', 'slipper', 'remote', 'gift', 'milk', 'ball2'],   // 38판 아파트 현관
+  aptlobby3: ['umbrella', 'keyring', 'coffee', 'slipper', 'remote', 'gift', 'milk', 'ball2'],   // 38판 아파트 현관 3차
 };
 // 판별 찾을 것 목록 (19~70 다시 짜기 10/21 — 스토리 룸 plan-19to50·51to70.json itemKeys, ② 레벨이 넣음; 판 번호는 1부터): 이 판은 이 목록에서만
 // 골라요(그 집 주인다운 것, 앞 3판과 겹침 0). 함정은 같은 종류를 빼요(planStage decoyTypes)
@@ -82,7 +83,7 @@ export const STAGE_ITEMS = {
   26: ['ball', 'bellball', 'whistle', 'teddy', 'block', 'cookie', 'gift', 'cupcake'],
   27: ['bobber', 'strawhat', 'map', 'rubberduck2', 'snack', 'umbrella', 'mandarin', 'icecream'],
   28: ['console', 'mug', 'sunglasses', 'slipper', 'bunnyband'],
-  29: ['duck', 'acorn', 'pot', 'honeypot', 'heart'],
+  29: ['tadpolejar', 'frogboots', 'snowglobe', 'umbrella', 'rubberduck2'],   // (10/24 사용자 "찾는 물건 신기하거나 좋아 보이는 걸로": 연못 집의 올챙이 병·개구리 장화)
   30: ['fishsnack', 'snowglobe', 'crown', 'star', 'towel', 'bellball'],
   32: ['sandwich', 'ramen', 'onigiri', 'kimbap'],
   33: ['sockpair', 'teddy', 'block', 'tissue', 'gift', 'slipper', 'bunnyband'],

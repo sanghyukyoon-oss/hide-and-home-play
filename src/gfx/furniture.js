@@ -1757,23 +1757,38 @@ export function makeFurniture(type, theme, opts = {}) {
 
 // Freestanding lever for outdoor stages that have no tall wall to mount one on: a steel post with hazard bands on a dark
 // base, a riveted panel and the same red-knobbed lever.
+// (⑥ 10/24 2차 점검 "회색 기둥에 빨간 공만 — 밋밋"): a concrete foot with four bolts, the post with hazard bands and a cap, a
+// control box with a door seam, two lamps (green on top, red below), a white ↓ arrow sticker, a cream tag on a string, and
+// the lever on a toothed hub with a black rubber grip under the red knob
 B.leverpost = (f, T) => {
-  f.add(mc('leverpost', ({ add }) => {
-    add(G.cyl(.11, .14, .07, 18), CHAR, 0, .035, 0);
-    add(G.box(.12, .9, .12, .03), '#8f9bc4', 0, .5, 0);
-    for (const y of [.22, .42]) add(G.box(.132, .07, .132, .01), '#ffe14d', 0, y, 0);
-    add(G.box(.36, .42, .1, .05), '#8f9bc4', 0, .98, .02);
-    for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(G.sph(.016, 8, 6), STEEL, sx * .13, .98 + sy * .15, .07 + .002, 0, 0, 0, [1, 1, .5]);
-    add(G.box(.26, .06, .05, .015), '#ffe14d', 0, 1.17, .08);
-    add(G.box(.06, .3, .012, .006), CHAR, 0, 1.0, .07 + .006);
-    add(G.cyl(.045, .045, .09, 14), STEEL2, 0, .92, .1, 0, 0, HP);
+  f.add(mc('leverpost2', ({ add, tube }) => {
+    add(G.box(.32, .08, .32, .03), '#cfc8bd', 0, .04, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { add(G.cyl(.018, .018, .02, 6), STEEL2, sx * .11, .09, sz * .11); add(G.sph(.012, 6, 5), STEEL, sx * .11, .1, sz * .11); }
+    add(G.cyl(.11, .14, .07, 18), CHAR, 0, .115, 0);
+    add(G.box(.12, .82, .12, .03), '#8f9bc4', 0, .55, 0);
+    for (const y of [.26, .46]) add(G.box(.132, .07, .132, .01), '#ffe14d', 0, y, 0);
+    add(G.box(.38, .46, .12, .05), '#8f9bc4', 0, .98, .02);
+    add(G.box(.32, .4, .006, .004), shade('#8f9bc4', -.14), 0, .98, .083);
+    add(G.box(.42, .05, .16, .02), shade('#8f9bc4', -.1), 0, 1.23, .02);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(G.sph(.014, 8, 6), STEEL, sx * .15, .98 + sy * .18, .084, 0, 0, 0, [1, 1, .5]);
+    add(G.sph(.028, 10, 8), '#5fd38a', -.12, 1.14, .09, 0, 0, 0, [1, 1, .6]); add(G.sph(.028, 10, 8), '#ff6b57', .12, 1.14, .09, 0, 0, 0, [1, 1, .6]);
+    const arrow = new THREE.Shape(); arrow.moveTo(-.015, .05); arrow.lineTo(.015, .05); arrow.lineTo(.015, 0); arrow.lineTo(.035, 0); arrow.lineTo(0, -.04); arrow.lineTo(-.035, 0); arrow.lineTo(-.015, 0); arrow.closePath();
+    add(G.ext(arrow, .004, 0, 1), WHITE, -.12, .96, .086);
+    add(G.box(.06, .3, .012, .006), CHAR, .06, 1.0, .089);
+    add(G.cyl(.05, .05, .09, 12), STEEL2, .06, .92, .11, 0, 0, HP);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * PI * 2; add(G.box(.012, .012, .03, .003), STEEL, .06 + .025, .92 + Math.cos(a) * .055, .11 + Math.sin(a) * .055, a, 0, 0); }
+    tube([.19, .9, .08], [.21, .8, .09], .003, '#e8d9b8', 4);
+    add(G.box(.06, .08, .006, .004), CREAM, .21, .76, .09, 0, 0, .12);
+    for (const y of [.775, .755]) add(G.box(.04, .005, .002, .001), '#c9b89a', .21, y, .094, 0, 0, .12);
   }));
-  f.add(mg('leverpost-stripes', atlasMat(), ({ add }) => add(quadGeo(.23, .043, RG.hazard), 0, 1.17, .105 + .006)));
-  const pv = new THREE.Group(); put(pv, 0, .92, .1);
-  pv.add(mc('leverpost-arm', ({ add }) => {
+  f.add(mg('leverpost-stripes', atlasMat(), ({ add }) => add(quadGeo(.23, .043, RG.hazard), 0, 1.23, .105 + .006)));
+  const pv = new THREE.Group(); put(pv, .06, .92, .1);
+  pv.add(mc('leverpost-arm2', ({ add }) => {
     add(G.cyl(.035, .035, .32, 12), '#d9dfef', 0, .16, 0);
-    add(G.sph(.09, 16, 12), '#ff4f66', 0, .34, 0);
-    add(G.sph(.028, 8, 6), '#ffd0d6', -.03, .38, .055, 0, 0, 0, [1, 1, .5]);
+    add(G.cyl(.045, .045, .1, 12), '#3b3550', 0, .27, 0);
+    for (const y of [.235, .27, .305]) add(G.tor(.046, .006, PI * 2, 4, 14), '#2a2433', 0, y, 0, HP, 0, 0);
+    add(G.sph(.08, 16, 12), '#ff4f66', 0, .37, 0);
+    add(G.sph(.025, 8, 6), '#ffd0d6', -.03, .41, .05, 0, 0, 0, [1, 1, .5]);
   }));
   f.add(pv);
   const p = f.part('lever', pv, t => { pv.rotation.x = .1 + .95 * t; }, { label: '레버', sfx: 'door', dur: .35 });

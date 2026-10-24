@@ -597,10 +597,17 @@ B.stool2 = (f, T) => {
       add(G.sph(.016, 6, 5), INK, sx * .06, sy + .46, -lz - .012, 0, 0, 0, [1, 1.2, .5]);
     }
     add(G.tor(.016, .005, PI, 3, 6), INK, 0, sy + .44, -lz - .012, 0, 0, PI);
+    // (⑥ 10/24 사용자 34판 "의자 디테일 올려줘"): two spindles in the back, a little heart on the top board, rungs between the
+    // front legs, felt pads under the feet
+    for (const sx of [-1, 1]) add(G.cyl(.012, .014, .13, 8), woodD, sx * .06, sy + .31, -lz - .03, -.06, 0, 0);
+    add(G.ext(heartShape(.025), .008, 0, 6), BLUSH, .12, sy + .36, -lz - .02, -.06, 0, 0);
+    add(G.pbox(2 * lx, .025, .025), woodD, 0, .1, lz);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.03, .03, .012, 10), '#c9b89a', sx * lx, .006, sz * lz);
   }));
   const cu = grp(mc('stool2-cush|' + tk, ({ add }) => {
     add(G.box(.38, .06, .35, .028, 2), cush, 0, 0, 0);
-    add(G.sph(.016, 6, 4), shade(cush, -.12), 0, .032, 0, 0, 0, 0, [1, .5, 1]);
+    for (const [x, z] of [[-.08, -.07], [.08, -.07], [-.08, .07], [.08, .07]]) add(G.sph(.012, 6, 4), shade(cush, -.12), x, .032, z, 0, 0, 0, [1, .5, 1]);
+    for (const sz of [-1, 1]) add(G.box(.37, .014, .014, .006), shade(cush, -.08), 0, 0, sz * .172); for (const sx of [-1, 1]) add(G.box(.014, .014, .33, .006), shade(cush, -.08), sx * .187, 0, 0);
     for (const sx of [-1, 1]) add(G.cap(.009, .06, 2, 4), shade(cush, -.1), sx * .17, -.01, -.19, .5, 0, sx * .3);
   }));
   put(cu, 0, sy + .075, .01); f.add(cu);
