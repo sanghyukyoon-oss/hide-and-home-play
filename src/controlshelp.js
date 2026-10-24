@@ -77,8 +77,8 @@ export function openHelp(G, { onClose = null } = {}) {
     btns.forEach((b, i) => b.classList.toggle('on', i + 1 === n));
     back.style.visibility = n ? '' : 'hidden';
   };
-  const btns = Array.from({ length: 10 }, (_, i) => { const b = h('button', { class: 'chst' }, String(i + 1)); b.addEventListener('pointerup', e => { e.stopPropagation(); G.audio.sfx('click'); show(i + 1); }); return b; });
-  const back = h('button', { class: 'chback' }, tr(T.back)); back.addEventListener('pointerup', e => { e.stopPropagation(); G.audio.sfx('click'); show(0); });
+  const btns = Array.from({ length: 10 }, (_, i) => { const b = h('button', { class: 'chst' }, String(i + 1)); b.addEventListener('pointerup', e => { e.stopPropagation(); G.audio.sfx('click'); show(i + 1); }); b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); G.audio.sfx('click'); show(i + 1); } }); return b; });
+  const back = h('button', { class: 'chback' }, tr(T.back)); back.addEventListener('pointerup', e => { e.stopPropagation(); G.audio.sfx('click'); show(0); }); back.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); G.audio.sfx('click'); show(0); } });
   G.ui.panel({ title: T.title, color: 'blue', cls: 'chpanel', close: () => onClose?.(),
     body: [h('div', { class: 'chblock' }, head, list), h('div', { class: 'chhead' }, tr(T.stages)), h('div', { class: 'chstages' }, ...btns), back],
     buttons: [G.ui.btn('알겠어!', { color: 'green', onClick: () => { G.ui.closePanel(); onClose?.(); } })] });

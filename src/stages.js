@@ -1495,7 +1495,8 @@ export function planStage(room, spec, story = null) {
   // (함정, 10/18: the place's own unused things + DECOY_POOL only — never the common pool, never another stage's answers)
   const decoyTypes = DECOY_POOL.concat(own.filter(t => !targets.includes(t))).filter(t => !tool(t) && !(spec.items && targets.includes(t)));   // (a 머그컵 to find and 머그컵 decoys beside it read as one — 19~50 lists have mugs, books, blocks)
   const fill = (pred, frac) => {
-    const c = r.shuffle(all.filter(s => !used.has(s) && pred(s)));
+    // (no clutter on a pot's soil — a mug or a block set in the earth read as a speck, ⑥ 10/24 GPT QA ART-08)
+    const c = r.shuffle(all.filter(s => !used.has(s) && pred(s) && !/흙/.test(s.label || '') && !s.noDecoy));
     const n = Math.round(c.length * frac);
     for (let k = 0; k < n; k++) {
       const s = c[k];

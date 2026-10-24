@@ -268,7 +268,18 @@ B.fz_shell = (f, T) => {
       add(G.box(.42, .26, 1.0, .03), WOOD, X0 - .4, UP + .19, -1.6); add(G.box(.36, .05, .94, .02), '#7a5a3e', X0 - .4, UP + .31, -1.6);
       for (let k = 0; k < 6; k++) { add(G.sph(.06, 8, 6), ['#ff9fb8', '#ffe27a', '#ffffff'][k % 3], X0 - .4 + (k % 2 ? .08 : -.08), UP + .4, -1.98 + k * .15); add(G.sph(.07, 8, 6), GRASS2, X0 - .4, UP + .35, -1.98 + k * .15); }
       // 우유 상자 셋 (배달 와서 내려놓은 것)
-      for (const [z, y] of [[1.6, 0], [2.05, 0], [1.82, .3]]) { add(G.box(.42, .28, .42, .03), MILK, X0 - .4, UP + .14 + y, z); add(G.box(.36, .02, .36, .01), '#3d86c6', X0 - .4, UP + .29 + y, z); }
+      // (⑥ 10/24 GPT QA ART-15 "블록아웃처럼 보임"): plastic crates with hand holes and rim bands, milk cartons standing in them —
+      // white gable tops with a blue band show over the rims
+      for (const [z, y] of [[1.6, 0], [2.05, 0], [1.82, .3]]) {
+        const x = X0 - .4, by = UP + y;
+        add(G.box(.42, .28, .42, .03), MILK, x, by + .14, z); add(G.box(.36, .02, .36, .01), '#2f6fa8', x, by + .275, z);
+        add(G.box(.44, .03, .44, .01), shade(MILK, .12), x, by + .27, z); add(G.box(.44, .025, .44, .01), shade(MILK, -.1), x, by + .03, z);
+        for (const s of [-1, 1]) { add(G.box(.13, .045, .01, .02), '#2f6fa8', x, by + .2, z + s * .211); add(G.box(.01, .045, .13, .02), '#2f6fa8', x + s * .211, by + .2, z); }
+        for (const [dx, dz] of [[-.09, -.09], [.09, -.09], [-.09, .09], [.09, .09]]) {
+          add(G.box(.13, .14, .13, .006), '#fbfbf6', x + dx, by + .24, z + dz); add(G.box(.132, .04, .132, .004), '#5aa9ec', x + dx, by + .26, z + dz);
+          add(G.box(.13, .04, .13 * .72, .004), '#fbfbf6', x + dx, by + .32, z + dz, HP / 2, 0, 0); add(G.box(.13, .03, .012, .003), '#fbfbf6', x + dx, by + .345, z + dz);
+        }
+      }
     }));
     tagWall(W.g, 'W'); tagWall(W.deco, 'W');
   }

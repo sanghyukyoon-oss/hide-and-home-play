@@ -249,7 +249,10 @@ const firstRun = !stored;
 let hashT = 0, hashPayload = JSON.stringify(save);
 // The hash is a committed save too: practice mutates a temporary copy and must never leak through a queued flush.
 const flushHashSave = () => { if (!WEB) return; clearTimeout(hashT); try { history.replaceState(null, '', location.pathname + location.search + '#s=' + b64e(hashPayload)); } catch {} };
-const saveToHash = () => { if (!WEB) return; hashPayload = JSON.stringify(save); clearTimeout(hashT); hashT = setTimeout(flushHashSave, 400); };
+// (GPT QA QA-12 10/24: with storage blocked the address is the only save, and a reload within the 400 ms wait lost a stage clear —
+// pagehide comes too late on a reload): then it's written at once
+const LS_OK = (() => { try { localStorage.setItem('sbk-ls', '1'); localStorage.removeItem('sbk-ls'); return true; } catch { return false; } })();
+const saveToHash = () => { if (!WEB) return; hashPayload = JSON.stringify(save); clearTimeout(hashT); if (!LS_OK) flushHashSave(); else hashT = setTimeout(flushHashSave, 400); };
 // Storage-blocked browsers also retain the newest pending activity when a tab reloads or backgrounds immediately.
 addEventListener('pagehide', flushHashSave);
 addEventListener('beforeunload', flushHashSave);

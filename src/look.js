@@ -428,6 +428,8 @@ RECIPES.villaroof3 = { ...(({ block, glows, ring, rooms, ground, floor, slab, fi
 RECIPES.villaroof3 = { ...RECIPES.villaroof3, light: { ambColor: '#eef1f2', amb: 1.5, sunColor: '#fff6e6', sun: 2.5, shadow: .52 }, sky: ['#8ccbef', '#cbe7f6', '#e8f4f9'], itemSize: .38 };
 // (빛 번진 색 10/24 사용자 "빛 번져서 하얗게 되잖아. 나머지를 지금 분홍색 말고 빛 번진 색으로 — 하양이라던지"): 분홍·살구 하늘이던 판은
 // 크림 하늘 + 가운데 흰 빛무리(setSky의 sky.glow) — 맵이 선 가운데가 하얗게 번지고 끝으로 갈수록 옅은 크림. 하늘색 하늘인 판은 그대로
+const OFFICE_GRAY = { sky: ['#dfe3ea', '#eef1f5', '#d2d7e0'], rooms: ['office'] };
+RECIPES.office = { theme: { floor: '#a3a8b2', floor2: '#949aa5', base: '#9aa0ab', wall: '#fbf8f1', wall2: '#f1ece1', wainscot: '#d2d6de' } };
 const CREAM_GLOW = Object.assign(['#fbf4ec', '#fffaf5', '#f5ece2'], { glow: true });
 for (const k of ['bunny', 'apt', 'aptlobby', 'aptlobby2', 'kpop', 'playground', 'playgroundwide', 'bearbakery', 'konbini']) if (RECIPES[k]) RECIPES[k] = { ...RECIPES[k], sky: CREAM_GLOW };
 // 38판 현관 3차 (10/24): 현관 2차와 같은 빛·하늘, 바닥에 깔던 매트·소품(fill)은 없이 — '어서 오세요' 매트는 맵의 문 앞에 하나만
@@ -442,6 +444,8 @@ export function lookRecipe(room, spec) {
 }
 function lookRecipe0(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
+  // (64판 흑백 사무실, GPT QA ART-16 10/24 "다 하얘서 면 구분이 없음"): 흑백일 때만 바닥은 중간 회색, 벽은 밝게, 가구는 그 사이 — 회색 하늘
+  if (room === 'officefloor' && spec?.gray) return OFFICE_GRAY;
   // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 룩 — redo7/sNN.js)
   if (REDO_LOOK[room]) return REDO_LOOK[room];
   if (RECIPES[room]) return RECIPES[room];

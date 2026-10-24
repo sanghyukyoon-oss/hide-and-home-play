@@ -904,7 +904,10 @@ B.bridge = (f, T) => {
   const XE = .92, YE = .13, YC = .42, ZR = .335;
   const yA = x => YE + (YC - YE) * (1 - (x / XE) ** 2), sl = x => -2 * (YC - YE) * x / XE ** 2;
   const PXS = [-.84, -.42, 0, .42, .84];
-  f.add(mg('bridge-water', waterMat(), ({ addM }) => addM(planarUV(new THREE.PlaneGeometry(.92, .99).rotateX(-HP).translate(0, .014, 0), .5), I4)));
+  // (ART-20 10/24: 다리 밑 물도 네모 판 대신 끝이 둥글게 얕아지는 띠 + 끝 돌)
+  { const sh = new THREE.Shape(), N = 16, w = z => .44 * Math.sqrt(Math.max(.05, Math.min(1, (.5 - Math.abs(z)) / .2)));
+    for (let i = 0; i <= N; i++) { const z = -.5 + i / N; i ? sh.lineTo(-w(z), -z) : sh.moveTo(-w(z), -z); } for (let i = N; i >= 0; i--) { const z = -.5 + i / N; sh.lineTo(w(z), -z); } sh.closePath();
+    f.add(mg('bridge-water2', waterMat(), ({ addM }) => addM(planarUV(new THREE.ShapeGeometry(sh, 4).rotateX(-HP).translate(0, .014, 0), .5), I4))); }
   f.add(mt('bridge-planks|' + tk, grainTex(), ({ add, tube }) => {
     for (let i = 0; i < 17; i++) { const x = -.88 + i * .11; add(G.box(.1, .035, .62, .008), i % 2 ? wood : shade(wood, -.035), x, yA(x), 0, 0, 0, Math.atan(sl(x)), 1, { s: .5, swap: true }); }
     const xsP = Array.from({ length: 13 }, (_, i) => -.9 + i * .15);
@@ -941,12 +944,15 @@ B.bridge = (f, T) => {
 // off a damp hollow.
 B.stream = (f, T) => {
   const pal = stonePal(T), tk = pal.join(',');
-  const xc = z => -.06 + .07 * Math.sin(z * 4.2 + .5), hw = z => .19 + .03 * Math.sin(z * 6.5 + 1), FXZ = [.35, .25];
+  // (50·55판 GPT QA ART-20 10/24 "시냇물이 짧은 네모 패치처럼 끊겨 보임"): 칸 끝에서 물이 둥글게 얕아지며 끝나고(폭이 줄어듦), 끝마다 둥근 돌 몇 개와 옅은 얕은 물 테
+  const xc = z => -.06 + .07 * Math.sin(z * 4.2 + .5), hw = z => (.19 + .03 * Math.sin(z * 6.5 + 1)) * Math.sqrt(Math.max(.04, Math.min(1, (.5 - Math.abs(z)) / .2))), FXZ = [.35, .25];
   const NZ = 12, zs = Array.from({ length: NZ + 1 }, (_, i) => -.5 + i / NZ);
   const sh = new THREE.Shape();
   zs.forEach((z, i) => (i ? sh.lineTo(xc(z) - hw(z), -z) : sh.moveTo(xc(z) - hw(z), -z)));
   [...zs].reverse().forEach(z => sh.lineTo(xc(z) + hw(z), -z)); sh.closePath();
-  f.add(mg('stream-water', waterMat(), ({ addM }) => addM(planarUV(new THREE.ShapeGeometry(sh, 4).rotateX(-HP).translate(0, .013, 0), .5), I4)));
+  f.add(mg('stream-water2', waterMat(), ({ addM }) => addM(planarUV(new THREE.ShapeGeometry(sh, 4).rotateX(-HP).translate(0, .013, 0), .5), I4)));
+  // 얕은 물 테 (끝 쪽 물가의 옅은 모래빛 얕은 물)
+  f.add(mc('stream-shallow', ({ add }) => { for (const ze of [-.42, .42]) add(G.cyl(.16, .16, .004, 18), '#cfe6d8', xc(ze), .009, ze, 0, 0, 0, [1.1, 1, .7]); }));
   f.add(mt('stream-stones|' + tk, speckleTex(), ({ add }) => {
     for (let i = 0; i < 9; i++) for (const sd of [-1, 1]) {
       const z = -.44 + i * .11 + (sd > 0 ? .05 : 0); if (sd > 0 && Math.abs(z - FXZ[1]) < .16) continue; if (z > .46) continue;
@@ -954,6 +960,7 @@ B.stream = (f, T) => {
       add(stoneGeo(120 + k), pal[k % 6], xc(z) + sd * (hw(z) + sz * .55), sz * .35, z, 0, k, 0, [sz * 1.15, sz * .7, sz]);
     }
     add(stoneGeo(140, .08), pal[3], xc(-.16) - .05, .028, -.16, 0, 0, 0, [.075, .03, .065]);
+    for (const ze of [-.47, .47]) for (let k = 0; k < 4; k++) { const sz = .045 + (k % 2) * .015; add(stoneGeo(160 + k + (ze > 0 ? 4 : 0)), pal[(k + 2) % 6], xc(ze) - .12 + k * .08, sz * .35, ze + (k % 2 ? .02 : -.02) * Math.sign(ze), 0, k, 0, [sz * 1.2, sz * .7, sz]); }
     add(stoneGeo(141, .08), pal[4], xc(.08) + .06, .028, .08, 0, 2, 0, [.07, .03, .06]);
   }));
   f.add(mc('stream-deco', ({ add, tube }) => {

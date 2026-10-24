@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // DOM UI kit: Supercell-style chunky buttons, ribbon panels, pills, toasts, world-anchored bubbles, fly-to animations.
 // a strip of cards the finger drags sideways itself (③ 10/21, user: "숨기기에서 물건 스크롤이 안됨"): on the phone the page's
 // touch-action:none (html, body) reached the list too — so it follows the finger here, glides on after a flick, a drag is
@@ -27,6 +28,8 @@ export function dragScroll(el, mark = el) {
   requestAnimationFrame(edge);
   return edge;
 }
+// the names of the icon buttons (read out for a screen reader, shown on a long hover)
+const ICON_NAME = { home: '홈', pause: '일시정지', close: '닫기', hint: '힌트' };
 export const ICON = {
   // 방 넓히기 (UI 세션 10/20, user: "망치 아이콘이 ㅈㄴ 못생김" — the 🔨 emoji): drawn like the others, a chunky ink-lined mallet
   hammer: '<svg viewBox="0 0 40 40"><g transform="rotate(-38 20 21)"><rect x="17" y="16" width="6.5" height="21" rx="3.2" fill="#d9924e" stroke="#3a2453" stroke-width="3"/><path d="M19.4 20v13" stroke="#f3c08a" stroke-width="2" stroke-linecap="round"/><rect x="7" y="5.5" width="26.5" height="12.5" rx="4" fill="#8f9bd0" stroke="#3a2453" stroke-width="3"/><path d="M10.5 9.6h16" stroke="#dfe5ff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 11.5h-1.5M33.5 11.5H35" stroke="#3a2453" stroke-width="3" stroke-linecap="round"/></g></svg>',
@@ -142,6 +145,8 @@ export class UI {
   ibtn(icon, color, onClick, badge = null) {
     const b = this.btn(null, { color, icon, cls: 'ibtn', onClick });
     b.dataset.icon = icon;   // (the app's back button finds a scene's home button by it — src/appback.js)
+    // (GPT QA QA-10 10/24: an icon button had no name for a screen reader) — what it does, in the language on screen
+    const nm = ICON_NAME[icon]; if (nm) { const t = tr(nm); b.setAttribute('aria-label', t); b.title = t; }
     if (badge != null) { const bd = h('div', { class: 'badge' }, String(badge)); b.append(bd); b.badge = bd; }
     return b;
   }
@@ -157,6 +162,19 @@ export class UI {
     if (close) { const c = this.ibtn('close', 'red', () => { this.closePanel(); close(); }); c.classList.add('close'); p.append(c); }
     this.overlay.innerHTML = ''; this.overlay.append(p); this.overlay.classList.add('on');
     this.panelOpen = p;
+    // (GPT QA QA-11 10/24: with a window open, Tab went on to the stage button behind it and Enter started a stage) a dialog: the
+    // focus moves into it and stays there while it's open (Tab and Shift+Tab go round its own buttons)
+    p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true');
+    const prev = document.activeElement;
+    const focusables = () => [...p.querySelectorAll('[tabindex]:not([tabindex="-1"]), button, input, select, textarea, a[href]')].filter(e => !e.closest('.disabled') && e.offsetParent !== null);
+    p.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') return;
+      const f = focusables(); if (!f.length) { e.preventDefault(); return; }
+      const i = f.indexOf(document.activeElement), n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i < 0 || i >= f.length - 1 ? 0 : i + 1);
+      e.preventDefault(); f[n].focus();
+    });
+    if (prev && prev !== document.body && prev.matches?.(':focus-visible')) requestAnimationFrame(() => { if (p.isConnected) (focusables()[0] || p).focus?.(); });
+    p._prevFocus = prev;
     // short screens (a phone browser with its bars, 375×548): the panel shrinks to fit between its ribbon and the notice strip
     // at the bottom instead of running off both edges (QA 10/19: 11판's first clear lost its title, a notice sat on its
     // buttons) — measured unzoomed, once now and once after a result panel's late lines (2D UI 정리 ④)
@@ -167,11 +185,15 @@ export class UI {
       if (z < 1) { const k = Math.max(.7, z); p.style.zoom = k.toFixed(3); p.style.margin = `${(TOP / k).toFixed(1)}px auto ${(BOTTOM / k).toFixed(1)}px`; }
     };
     requestAnimationFrame(fit); setTimeout(fit, 900); setTimeout(fit, 1800);   // (and once more after a result's coins have counted up)
+    // (GPT QA QA-07 10/24: turned to landscape with a window open, it ran off the top and bottom) — fitted again on every resize
+    const onResize = () => { if (!p.isConnected || p.classList.contains('closing')) { removeEventListener('resize', onResize); return; } fit(); };
+    addEventListener('resize', onResize);
     return p;
   }
   closePanel(instant = false) {
     if (!this.panelOpen) { this.overlay.classList.remove('on'); return; }
     const p = this.panelOpen; this.panelOpen = null;
+    if (p.contains(document.activeElement)) { try { p._prevFocus?.isConnected ? p._prevFocus.focus() : document.activeElement.blur(); } catch {} }
     p.inert = true; p.classList.add('closing');   // it fades out for 160 ms; nothing in it may be pressed meanwhile
     this.overlay.classList.remove('on');
     if (instant) p.remove();

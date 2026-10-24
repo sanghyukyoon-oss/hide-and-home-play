@@ -1099,7 +1099,9 @@ export const STREET_ITEMS = {
     // colour (opaque milk tea), the pearls pressed against its lower wall, a milky band above the drink to the lid, the printed band)
     const g = grp();
     g.add(mc('it-bubbletea3', ({ add, tube }) => {
-      add(G.cyl(.069, .056, .162, 24), '#c98f55', 0, .083, 0); add(G.cyl(.058, .058, .006, 22), '#b97f47', 0, .003, 0);
+      // (⑥ 10/24 GPT QA ART-06 "7판 책장에서 책·나무와 섞임": the tea a lighter milky caramel than any shelf wood, so the dark pearls
+      // and the white lid stand out on it)
+      add(G.cyl(.069, .056, .162, 24), '#efcc9c', 0, .083, 0); add(G.cyl(.058, .058, .006, 22), '#dcae78', 0, .003, 0);
       for (let i = 0; i < 9; i++) { const a = i / 9 * PI * 2; add(G.sph(.012, 12, 9), i % 2 ? '#5a3424' : '#2e1a16', Math.cos(a) * .047, .02 + (i % 3) * .008, Math.sin(a) * .047); }   // (10/24 "튀어나오지만 말게": only a flat dot of each pearl shows at the wall)
       add(G.cyl(.075, .07, .038, 24, true), '#fdf6ee', 0, .182, 0); add(G.cyl(.07, .07, .006, 22), '#f3e3cf', 0, .165, 0);
       for (const [x, z, r] of [[.03, -.012, .4], [-.022, .024, -.3]]) add(G.box(.026, .024, .026, .006), '#eaf7ff', x, .18, z, .2, r, .1);

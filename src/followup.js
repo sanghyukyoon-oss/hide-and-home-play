@@ -17,6 +17,22 @@ export function followupAt(after) {
   return null;
 }
 const canonical = p => { const f = followupAt(p?.after); return f && f.scene === p.scene && f.key === p.key ? f : null; };
+// (GPT QA QA-03 10/24: the plays between stages moved when the stages were re-ordered — 깨우기 g32 → g30, 바꿔치기 m34 → m33 — and a
+// save made before kept its play-in-progress and its unseen result card at the old place, which normalize then threw away): the same
+// play a few stages either way is where it went; what's already done there moves with it
+const moved = p => {
+  if (!p?.kind || canonical(p)) return canonical(p);
+  for (const d of [-1, 1, -2, 2, -3, 3]) { const f = followupAt((p.after | 0) + d); if (f && f.scene === p.scene && f.kind === p.kind) return f; }
+  return null;
+};
+function migrateMoved(save) {
+  for (const k of ['followup', 'followupFinish']) {
+    const p = save[k], f = p && !canonical(p) ? moved(p) : null;
+    if (!f) continue;
+    if (save.bossDone?.[p.key] && !save.bossDone[f.key]) save.bossDone[f.key] = true;
+    save[k] = { ...p, ...f };
+  }
+}
 const needsFinish = f => f?.scene === 'bossgame' && !f.interlude; // story or ending; empty stories finish immediately
 export function queueFollowup(save, after) {
   if (after === 69 && save.ending) { (save.bossDone || (save.bossDone = {})).g69 = true; return; }
@@ -27,6 +43,7 @@ export function queueFollowup(save, after) {
 export function normalizeFollowup(save) {
   // Older versions could finish the ending after skipping the last night without writing g69.
   if (save.ending) { (save.bossDone || (save.bossDone = {})).g69 = true; if (save.followupFinish?.after === 69) delete save.followupFinish; }
+  migrateMoved(save);
   const p = canonical(save.followup), tail = canonical(save.followupFinish);
   if (!p || save.bossDone?.[p.key]) delete save.followup; else save.followup = p;
   if (!tail) delete save.followupFinish;

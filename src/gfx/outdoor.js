@@ -1203,8 +1203,13 @@ B.log = (f, T) => {
   f.add(mg('log-rings', '#ffffff', ({ add }) => { add(new THREE.RingGeometry(r, R, 24), ex, cy, 0, 0, HP, 0); add(new THREE.RingGeometry(r, R, 24), -ex, cy, 0, 0, -HP, 0); }, { map: ringsTex() }));
   const plug = (sx, c1, c2, label) => {
     const pv = grp(
-      mg('logplug|' + c1, c1, ({ add }) => { for (const [y, z, s] of [[-.08, 0, .14], [.02, -.1, .11], [.04, .1, .11], [.1, 0, .1]]) add(G.sph(s, 12, 9), 0, y, z, 0, 0, 0, [.7, 1, 1]); }),
-      mg('logplug2|' + c2, c2, ({ add }) => { for (const [y, z] of [[-.06, -.12], [.1, .08], [-.12, .1]]) add(G.sph(.06, 10, 8), .04, y, z, 0, 0, 0, [.6, 1, 1.2]); }));
+      // (⑥ 10/24 GPT QA ART-18 "매끈한 마개"): not four big smooth balls filling the mouth — a heap of small tufts, lower and
+      // fuller at the bottom, thinning to wisps at the top so the log's dark inside shows over it, a few fronds sticking out
+      mg('logplug3|' + c1, c1, ({ add }) => { for (const [y, z, s] of [[-.14, 0, .075], [-.12, -.1, .065], [-.11, .1, .065], [-.06, -.15, .055], [-.05, .15, .055], [-.05, 0, .07], [.01, -.08, .06], [.02, .09, .055], [.05, -.16, .04], [.07, .02, .05], [.1, .12, .035]]) add(G.sph(s, 9, 7), sx * (s - .06) * .5, y, z, 0, y * 9, 0, [.75, 1, 1]); }),
+      mg('logplug4|' + c2, c2, ({ add }) => {
+        for (const [y, z] of [[-.08, -.05], [-.02, .1], [.04, -.11], [-.13, .06]]) add(G.sph(.035, 8, 6), sx * .035, y, z, 0, 0, 0, [.6, 1, 1.2]);
+        for (const [y, z, a] of [[.08, -.06, .4], [.12, .06, -.3], [.03, .16, -.9], [.0, -.17, .9], [.13, -.01, .1]]) add(G.cone(.012, .07, 4), sx * .02, y, z, a, 0, 0);
+      }));
     put(pv, sx * (ex - .06), cy, 0); f.add(pv);
     const p = f.part('lift', pv, (t, b) => { pv.position.x = b.p.x + sx * .3 * t; pv.position.y = b.p.y - .16 * t; pv.rotation.z = -sx * .5 * t; pv.scale.setScalar(1 - .25 * t); }, { label, sfx: 'swish' });
     // the thing sits at the log's mouth (it shows only once the plug is lifted, so it reads as rolled out): deep inside the

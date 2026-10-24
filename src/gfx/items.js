@@ -551,11 +551,15 @@ export const ITEMS = {
     // (사용자 메모 10/24 28판 "컵이랑 선그란스? 이것도 디테일 잡아줘"): a rounded rim with the cream inside and the coffee in it, a little
     // foot ring, a thick round handle on two joints, a band and a heart on the side
     const g = grp(), c = o.color || '#9be7c4', cD = shade(c, -.14);
-    g.add(put(cyl(.06, .054, .118, c, null, 22), 0, .061, 0));
+    // (⑥ 10/24 GPT QA ART-08 "입구가 막힌 원기둥": the body was a closed cylinder, so the cream inside and the coffee sat under its
+    // lid) — a hollow cup now: the coloured outside, a cream inside wall down to a floor, the coffee surface a little below the rim
+    const L = (pts, col) => put(mesh(geo('it-mug|' + pts.flat().join(','), () => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), 24)), mat(col, { side: THREE.DoubleSide })), 0, 0, 0);
+    g.add(L([[0, .002], [.054, .002], [.06, .118], [.057, .123]], c));
+    g.add(L([[.051, .12], [.047, .03], [0, .03]], '#fffaf1'));
     g.add(put(cyl(.052, .052, .008, cD, null, 20), 0, .004, 0));
-    g.add(put(tor(.057, .007, shade(c, .1), null, Math.PI * 2, 8, 26), 0, .12, 0, Math.PI / 2, 0, 0));
-    g.add(put(cyl(.052, .052, .006, '#fffaf1', null, 20), 0, .116, 0));
-    g.add(put(cyl(.046, .046, .006, '#8a5a3c', null, 20), 0, .109, 0));
+    g.add(put(tor(.0545, .0055, shade(c, .1), null, Math.PI * 2, 8, 26), 0, .121, 0, Math.PI / 2, 0, 0));
+    g.add(put(cyl(.0485, .0485, .004, '#8a5a3c', null, 20), 0, .095, 0));
+    g.add(put(tor(.04, .003, '#c9a07a', null, Math.PI * 2, 6, 20), 0, .0975, 0, Math.PI / 2, 0, 0));
     g.add(put(cyl(.0605, .057, .018, '#fffaf1', null, 22, true), 0, .05, 0));
     g.add(put(tor(.034, .013, c, null, Math.PI * 1.25, 8, 18), .066, .064, 0, 0, 0, -Math.PI * .62));
     for (const y of [.096, .036]) g.add(put(sph(.012, cD, null, 10, 8), .061, y, 0));

@@ -306,6 +306,9 @@ export function openShop(G, ctx = {}, tab = 'furn') {
   // (style: a theme's id — the whole room's look tried on, its walls and floor back to the theme's own, as 바꾸기 does)
   function preview(name, price, look, own, style = null, roof = null) {
     if (!zone) return;
+    // (GPT QA QA-01 10/24: a second look while the first was still up took the first as 'how it was' — 되돌리기 then kept the unbought
+    // first wallpaper, and a reload kept it for good): the look still up goes back first
+    try { G._pvUndo?.(); } catch {}
     const was = zone.paint ? { ...zone.paint } : null, wasStyle = zone.style, wasRoof = zone.roof;
     const wasHide = roof ? structuredClone(H.hide) : null, roofRoom = roof ? G.scene?.room : null;
     const roofChanged = roof && (wasRoof || 'gpt_roof_none') !== roof;

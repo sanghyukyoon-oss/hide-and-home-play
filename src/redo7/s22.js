@@ -8,6 +8,7 @@
 import { registerFurniture } from '../gfx/furniture.js';
 import { ST3_BUILDERS, ST3_INFO } from '../gfx/redo7-street3.js';
 import { addI18n } from '../i18n.js';
+import { STREET_THEMES } from '../gfx/street-props.js';
 
 const F = (type, i, j, rot = 0, o = {}) => ({ type, i, j, rot, ...o });
 const D = (type, wall, u, o = {}) => ({ type, wall, u, ...o });
@@ -15,7 +16,9 @@ const D = (type, wall, u, o = {}) => ({ type, wall, u, ...o });
 export function install({ LAYOUTS, THEMES, SWAP, LOOK, SPEC }) {
   registerFurniture(ST3_BUILDERS, ST3_INFO);
   addI18n({ '골목 길바닥': 'Street corner', '빗물받이 옆': 'By the drain', '가로수 밑': 'Under the street tree', '어린이 보호': 'SCHOOL ZONE', '천천히': 'SLOW' });
-  const old = THEMES.street || {};
+  // (GPT QA NEW-UI-22 10/24: when this runs the old street theme may not be in THEMES yet — street3 came out with no name, so 22판's
+  // title was blank; its friend and backdrop were missing too: the old theme straight from where it's written, under THEMES.my)
+  const old = THEMES.street?.name ? THEMES.street : { ...(THEMES.my || {}), ...STREET_THEMES.street };
   THEMES.street3 = { ...old, floorKind: 'brickpave', floor: '#e8b48e', floor2: '#e8b48e', pave: '#e8b48e', tactile: false };
   LAYOUTS.street3 = {
     w: 6, d: 5, theme: THEMES.street3, slab: 'none', bleed: null, exact: true, noEntry: true,

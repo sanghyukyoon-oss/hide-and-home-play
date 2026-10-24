@@ -10,11 +10,21 @@ import { EN_APP } from './i18n-en-app.js';
 for (const k in EN_APP) if (EN[k] == null) EN[k] = EN_APP[k];   // what the app build still missed (10/19) — the dictionary wins
 
 const KEY = 'sumbakkokjip.lang';
+// (GPT QA QA-06 10/24: with storage blocked the choice was lost on the reload and the phone's language came back): the address
+// carries it too (?lang=), and wins
 export const LANG = (() => {
+  try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'ko' || q === 'en') return q; } catch {}
   try { const s = localStorage.getItem(KEY); if (s === 'ko' || s === 'en') return s; } catch {}
   return (navigator.language || 'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en';
 })();
-export function setLang(l) { try { localStorage.setItem(KEY, l); } catch {} location.reload(); }
+export function setLang(l) {
+  let kept = false; try { localStorage.setItem(KEY, l); kept = localStorage.getItem(KEY) === l; } catch {}
+  try {
+    const u = new URL(location.href);
+    if (!kept || u.searchParams.has('lang')) { u.searchParams.set('lang', l); location.replace(u.toString()); return; }
+  } catch {}
+  location.reload();
+}
 
 const HAN = /[가-힣]/;
 const miss = new Set();

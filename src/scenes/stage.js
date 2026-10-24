@@ -3420,6 +3420,8 @@ export class StageScene {
       const el = h('div', { class: 'setrow', role: 'button', tabindex: '0' }, h('span', { class: 'k' }, k), v);
       el.addEventListener('pointerup', e => { e.stopPropagation(); G.audio.sfx('click'); tap(); v.textContent = val(); });
       el.addEventListener('pointerdown', e => e.stopPropagation());
+      // (GPT QA QA-08 10/24: Enter and Space work the row as a touch does)
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); G.audio.sfx('click'); tap(); v.textContent = val(); } });
       el.refresh = () => { v.textContent = val(); };
       return el;
     };
