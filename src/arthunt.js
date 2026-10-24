@@ -20,9 +20,9 @@ const W = 640, H = 400;
 // to sink it in), how far a tap may miss (r)
 const ART = 'art/museum/arthunt/', BG = 'bg.jpg';
 const THINGS = [
-  { id: 'key', name: '열쇠', src: 'key.png', x: 512, y: 236, size: 48, rot: -.45, alpha: .9, blend: 'source-over', r: 40 },
-  { id: 'fish', name: '생선', src: 'fish.png', x: 236, y: 112, size: 52, rot: .15, alpha: .78, blend: 'source-over', r: 40 },
-  { id: 'inky', name: '먹물이', src: 'inky.png', x: 64, y: 236, size: 34, rot: 0, alpha: .95, blend: 'source-over', r: 38 },
+  { id: 'key', name: '열쇠', src: 'key.png', x: 480, y: 80, size: 25, rot: -.9, alpha: .82, blend: 'source-over', r: 34 },
+  { id: 'fish', name: '생선', src: 'fish.png', x: 322, y: 110, size: 38, rot: .55, alpha: .72, blend: 'source-over', r: 36 },
+  { id: 'inky', name: '먹물이', src: 'inky.png', x: 98, y: 292, size: 24, rot: 0, alpha: .92, blend: 'source-over', r: 32 },
 ];
 const IMG = new Map();
 const load = src => IMG.get(src) || IMG.set(src, new Promise(res => { const im = new Image(); im.decoding = 'async'; im.onload = () => res(im); im.onerror = () => res(null); im.src = ART + src; })).get(src);
