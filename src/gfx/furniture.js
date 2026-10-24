@@ -36,7 +36,7 @@ export class Furn {
   }
   spot(kind, parent, x, y, z, o = {}) {
     const a = new THREE.Object3D(); a.position.set(x, y, z); (parent || this.group).add(a);
-    const s = { kind, anchor: a, part: o.part || null, maxH: o.maxH ?? .45, label: o.label || '', furn: this, item: null, idx: this.spots.length, wallFace: !!o.wallFace, scale: o.scale ?? 1 };
+    const s = { kind, anchor: a, part: o.part || null, maxH: o.maxH ?? .45, label: o.label || '', furn: this, item: null, idx: this.spots.length, wallFace: !!o.wallFace, scale: o.scale ?? 1, noDecoy: !!o.noDecoy };
     if (s.part) s.part.spots.push(s);
     this.spots.push(s);
     return s;
@@ -1598,15 +1598,17 @@ B.wallshelf = (f, T) => {
 // f.rocker flips when it's found (stage.js onFound → lightsOn)
 B.lightswitch = (f, T) => {
   const Y = 1.1;
-  f.add(mc('lightswitch', ({ add }) => {
-    add(G.box(.2, .28, .03, .02), '#fbf7ef', 0, Y, .015);
-    add(G.box(.17, .25, .008, .012), '#efe8dc', 0, Y, .032);
-    for (const sy of [-1, 1]) add(G.sph(.01, 8, 6), STEEL, 0, Y + sy * .105, .036, 0, 0, 0, [1, 1, .4]);
+  // (GPT 정밀 QA ART-07 10/24: 첫 화면 14 px, 어두운 벽과 밝기가 비슷 → 판 1.3배에 진한 나무 테두리를 둘러 벽과 갈라 보이게; ②)
+  f.add(mc('lightswitch2', ({ add }) => {
+    add(G.box(.32, .42, .02, .025), '#8a6a5c', 0, Y, .01);
+    add(G.box(.26, .36, .03, .02), '#fbf7ef', 0, Y, .025);
+    add(G.box(.22, .32, .008, .012), '#efe8dc', 0, Y, .042);
+    for (const sy of [-1, 1]) add(G.sph(.013, 8, 6), STEEL, 0, Y + sy * .135, .046, 0, 0, 0, [1, 1, .4]);
   }));
-  const rk = new THREE.Group(); put(rk, 0, Y, .04); f.add(rk);
-  rk.add(mc('lightswitch-rocker', ({ add }) => {
-    add(G.box(.085, .14, .03, .012), '#ffffff', 0, 0, 0);
-    add(G.box(.06, .05, .008, .006), '#ff8fa8', 0, -.035, .016);
+  const rk = new THREE.Group(); put(rk, 0, Y, .05); f.add(rk);
+  rk.add(mc('lightswitch-rocker2', ({ add }) => {
+    add(G.box(.11, .18, .03, .014), '#ffffff', 0, 0, 0);
+    add(G.box(.08, .065, .008, .007), '#ff8fa8', 0, -.045, .016);
   }));
   rk.rotation.x = -.22;
   f.rocker = rk;

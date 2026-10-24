@@ -72,7 +72,7 @@ B.s3b_cove = f => {
   }));
   const pad = (x, z, r, rot) => {
     put(f.add(mc('s3b-lily|' + r + '|' + rot, ({ add }) => lily(add, 0, 0, r, rot, W + .008))), x, 0, z);
-    f.spot('on', null, x, W + .035, z, { maxH: .28, label: '연잎 위', scale: .7 });
+    f.spot('on', null, x, W + .035, z, { maxH: .28, label: '연잎 위', scale: .7, noDecoy: true });
   };
   pad(.45, -.4, .25, .4); pad(-.35, -.55, .21, 2.1); pad(.7, .45, .23, 4.4);
   f.spot('behind', null, -1.15, -.01, -.55, { maxH: .25, label: '연못가 돌 뒤', scale: .7 });

@@ -65,6 +65,8 @@ const low = type => !!ITEMS[type]?.flat || (ITEMS[type]?.h ?? 1) <= .06;   // (�
 export function affinity(type, spot) {
   if (!ON || !spot || !type || type === 'friendtoken') return 'ok';   // (a friend may hide anywhere — even the fridge)
   if (place && !isCold(type)) for (const [re, at, v] of place) if (re.test(type) && at(spot)) return v;
+  // (조립 부품은 화분 흙 위 X: 잎에 묻혀 8판 로봇 몸통이 첫 화면 15 px 파란 조각으로만 보임 — GPT 정밀 QA ART-05, ② 10/24)
+  if (/^kit_/.test(type) && /화분 흙/.test(spot.label || '')) return 'never';
   if (spot.kind !== 'inside') return 'ok';
   const f = furnOf(spot), c = cat(type);
   // (every stage, 스토리 룸 원칙 1 "몸이 들어가야 해요"): a birdhouse holds only something smaller than a hand, a camp

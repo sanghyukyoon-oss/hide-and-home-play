@@ -162,8 +162,9 @@ export const CHAINS = {
   },
   // 67판 정전된 사무실(원본) + GPT 비상전원 두꺼비집: 복사기 자리에. 자물쇠 뒤 손전등 → 두꺼비집 레버(2.5초: 철컥 → 아래 덮개 열림)
   // → 케이블 칸의 물건 + 불이 켜짐 (벽 전등 스위치로도 불은 켜짐 — 두꺼비집은 그 칸까지)
+  // 뒤 벽 화이트보드(whiteboard)는 두꺼비집이 덮어 관통해서 이 판에서만 뺌 (QA NEW-ART-67, 북쪽 벽에 빈 자리 없음)
   officefloor: {
-    layout: { room: 0, remove: ['copier#0'], add: [{ type: 'gptfusebox', i: 1, j: 0 }] },
+    layout: { room: 0, remove: ['copier#0'], add: [{ type: 'gptfusebox', i: 1, j: 0 }], decor: { whiteboard: null } },
     steps: [{ dev: 'gptfusebox#0:0', tool: 'chainflash', behind: ['code', 'pad', 'color'], dur: 2.5, lights: true, body: true,
       sfx: [[.02, 'latch'], [.25, 'creak'], [.65, 'click'], [.95, 'unlock']],
       need: K('너무 깜깜해서 두꺼비집 레버가 안 보여… 손전등이 있으면!', 'Too dark to see the fuse-box lever… if only there were a flashlight!'),
@@ -276,8 +277,8 @@ const recipeFor = spec => {
 // 원본 맵에 장치 가구 옮겨 붙이기 — 그 판에서만 (stage.js, 방을 짓기 전): layout.room번째 방에서 remove('type#n')를 빼고 add를 넣음
 export function chainLayout(spec, L) {
   const k = CHAINS_ON[spec.idx + 1], R = k && CHAINS[k]; if (!R?.layout || (R.map || k) !== spec.room) return L;
-  const { room = 0, remove = [], add = [], decor = {} } = R.layout;   // (decor: 벽 장식 바꾸기 { 옛 키: 새 키 })
-  const edit = lay => { const seen = {}; return { ...lay, furniture: [...(lay.furniture || []).filter(f => { const n = seen[f.type] = (seen[f.type] ?? -1) + 1; return !remove.includes(f.type + '#' + n) && !remove.includes(f.type); }), ...add.map(f => ({ rot: 0, ...f }))], decor: (lay.decor || []).map(d => decor[d.type] ? { ...d, type: decor[d.type] } : d) }; };
+  const { room = 0, remove = [], add = [], decor = {} } = R.layout;   // (decor: 벽 장식 바꾸기 { 옛 키: 새 키 }, null이면 뺌)
+  const edit = lay => { const seen = {}; return { ...lay, furniture: [...(lay.furniture || []).filter(f => { const n = seen[f.type] = (seen[f.type] ?? -1) + 1; return !remove.includes(f.type + '#' + n) && !remove.includes(f.type); }), ...add.map(f => ({ rot: 0, ...f }))], decor: (lay.decor || []).filter(d => decor[d.type] !== null).map(d => decor[d.type] ? { ...d, type: decor[d.type] } : d) }; };
   return L.rooms ? { ...L, rooms: L.rooms.map((r, i) => i === room ? { ...r, layout: edit(r.layout) } : r) } : edit(L);
 }
 
@@ -399,6 +400,16 @@ function aux(S, p, a) {
   for (const l of links) { arm(S, l.part, {}); l.part.isGadget = true; l.part.chainVia = p; }
   if (a.sfx || links.length) { arm(S, p, a); p._run = { links, wait: [] }; }   // (opening only: t going up)
   if (a.line) { const ao = p.afterOpen; p.afterOpen = s => { ao?.(s); if (!p._said) { p._said = true; s.say(s.friend, a.line, 1500); } }; }
+  // (GPT 장치의 '누를 때마다 다음' — 66판 층 버튼 엘리베이터: 열린 뒤 잠깐 있다 저절로 닫히고 다음 층으로, 다시 누를 수 있게.
+  // 전엔 gptRepeat·gptBeforeRun을 아무도 안 불러서 한 번 누르면 1층 그대로 멈춤 — GPT 정밀 QA-04, ② 10/24)
+  if (p.gptRepeat) {
+    p.gptBeforeRun?.();
+    const ar = p.afterOpen;
+    p.afterOpen = s => {
+      ar?.(s);
+      setTimeout(async () => { if (s.dead || p.busy || p.t < .5) return; p.busy = true; await s.tw.run(.5, k => p.setOpen(1 - k)); p.busy = false; if (!s.dead) p.gptBeforeRun?.(); }, 1800);
+    };
+  }
 }
 
 // 장치 한 판: 카메라가 장치와 이어지는 것들을 다 보이게 돌고 → 부품이 돌며 단계 소리 → 중간에 다음 장치가 저절로 → 끝 한 줄

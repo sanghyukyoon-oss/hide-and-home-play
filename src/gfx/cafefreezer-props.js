@@ -379,6 +379,9 @@ B.fz_coldroom = (f, T) => {
 
 // 속이 빈 몸통 (뒤판·옆판·윗판·밑판만, 앞은 문이 막음): 안 자리가 열린 문 너머로 보이고 손가락이 닿게 — ② 봇 10/23 '알바 사물함 위 칸
 // visibleAt 0/24'(꽉 찬 상자 속이었음)
+// 뒤 기둥: 옅은 색·살짝 비침이라 잉크선 없이 물러남 (39판 QA ART-14: 앞뒤 기둥 선이 겹쳐 철망처럼 촘촘했음)
+const POSTB = '#e6edf3';
+const backPost = (f, w, h, x, z) => { const m = mesh(G.box(w, h, w, .01), mat(POSTB, { opacity: .9 }), { cast: false }); put(m, x, h / 2, z); f.add(m); return m; };
 const shell5 = (add, W, H, D, z0, col, t = .03, y0 = 0) => {
   add(G.pbox(W, H, t), col, 0, y0 + H / 2, z0 - D / 2 + t / 2);
   for (const s of [-1, 1]) add(G.pbox(t, H, D), col, s * (W / 2 - t / 2), y0 + H / 2, z0);
@@ -396,9 +399,10 @@ const shell5 = (add, W, H, D, z0, col, t = .03, y0 = 0) => {
 const BK = { up: new THREE.Vector3(0, 1.46, .5), down: new THREE.Vector3(0, .04, .5), top: 2.62, wy: 2.74 };
 B.fz_basketpulley = (f, T) => {
   const W = 1.12, D = .48, z0 = -.12, ys = [.1, .56];
+  for (const sx of [-1, 1]) backPost(f, .05, BK.top, sx * (W / 2 - .03), z0 - (D / 2 - .03));
   f.add(mc('fz-bkrack', ({ add }) => {
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.05, BK.top, .05, .01), STEEL, sx * (W / 2 - .03), BK.top / 2, z0 + sz * (D / 2 - .03));
-    for (const y of [...ys, 1.2]) { add(G.box(W, .025, D, .008), STEEL, 0, y, z0); for (let k = 0; k < 5; k++) add(G.pbox(.008, .01, D - .02), STEELD, -W / 2 + .12 + k * .22, y + .016, z0); }
+    for (const sx of [-1, 1]) add(G.box(.065, BK.top, .065, .015), STEEL, sx * (W / 2 - .035), BK.top / 2, z0 + (D / 2 - .035));
+    for (const y of ys) add(G.box(W, .04, D, .012), STEEL, 0, y, z0);
     // 꼭대기 들보 + 앞으로 뻗은 팔 + 도르래 받침
     add(G.box(W + .06, .08, D + .06, .02), STEELD, 0, BK.top, z0);
     add(G.box(.09, .09, BK.up.z - z0 + .22, .02), STEELD, 0, BK.top + .06, (z0 + BK.up.z + .22) / 2);
@@ -412,7 +416,7 @@ B.fz_basketpulley = (f, T) => {
   { const m = mesh(new THREE.PlaneGeometry(.5, .16), mat('#ffffff', { map: sign(200, 64, '#ffffff', [['생크림', .55, 30, '#e86f8f']], { round: 4 }), rough: .9, rim: .1 }), { cast: false }); put(m, -.28, ys[0] + .2, z0 + .175); f.add(m); }
   f.add(frosty(mc('fz-bkrack-frost', ({ add }) => {
     const r = rnd(51);
-    for (const y of [...ys, 1.2, BK.top]) for (let k = 0; k < 5; k++) add(G.sph(.04 + r() * .04, 7, 5), k % 2 ? FROST : FROSTB, -W / 2 + .1 + r() * (W - .2), y + .03, z0 + D / 2 - .02, 0, r() * 3, 0, [1.5, .5, 1]);
+    for (const y of [...ys, BK.top]) for (let k = 0; k < 5; k++) add(G.sph(.04 + r() * .04, 7, 5), k % 2 ? FROST : FROSTB, -W / 2 + .1 + r() * (W - .2), y + .03, z0 + D / 2 - .02, 0, r() * 3, 0, [1.5, .5, 1]);
     for (let k = 0; k < 5; k++) add(G.cone(.02, .08 + (k % 3) * .04, 5), FROSTB, -.4 + k * .2, BK.top - .07, z0 + D / 2, PI, 0, 0);
   })));
   // 도르래 바퀴 (돌아감)
@@ -427,9 +431,10 @@ B.fz_basketpulley = (f, T) => {
   const BW = .92, BH = .5, BD = .78;
   bk.add(live(mc('fz-basket', ({ add, tube }) => {
     add(G.box(BW, .03, BD, .01), STEELD, 0, .015, 0);
-    for (const y of [.02, BH * .5, BH]) { add(G.pbox(BW, .022, .022), STEEL, 0, y, BD / 2); add(G.pbox(BW, .022, .022), STEEL, 0, y, -BD / 2); add(G.pbox(.022, .022, BD), STEEL, BW / 2, y, 0); add(G.pbox(.022, .022, BD), STEEL, -BW / 2, y, 0); }
-    for (let k = 0; k <= 6; k++) { const x = -BW / 2 + k * BW / 6; add(G.pbox(.014, BH, .014), STEEL, x, BH / 2, BD / 2); add(G.pbox(.014, BH, .014), STEEL, x, BH / 2, -BD / 2); }
-    for (let k = 0; k <= 5; k++) { const z = -BD / 2 + k * BD / 5; add(G.pbox(.014, BH, .014), STEEL, BW / 2, BH / 2, z); add(G.pbox(.014, BH, .014), STEEL, -BW / 2, BH / 2, z); }
+    for (const y of [.02, BH]) { add(G.pbox(BW, .034, .034), STEEL, 0, y, BD / 2); add(G.pbox(BW, .034, .034), STEEL, 0, y, -BD / 2); add(G.pbox(.034, .034, BD), STEEL, BW / 2, y, 0); add(G.pbox(.034, .034, BD), STEEL, -BW / 2, y, 0); }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.pbox(.034, BH, .034), STEEL, sx * BW / 2, BH / 2, sz * BD / 2);
+    for (let k = 1; k <= 2; k++) { const x = -BW / 2 + k * BW / 3; add(G.pbox(.02, BH, .02), STEEL, x, BH / 2, BD / 2); add(G.pbox(.02, BH, .02), STEEL, x, BH / 2, -BD / 2); }
+    for (const sx of [-1, 1]) add(G.pbox(.02, BH, .02), STEEL, sx * BW / 2, BH / 2, 0);
     add(G.box(.3, .1, .012, .01), ORANGE, 0, BH * .75, BD / 2 + .01);
     // 매다는 줄 넷 → 위 고리
     const hy = 1.2;
@@ -560,9 +565,11 @@ B.fz_heater = (f, T) => {
 // ── 성에 낀 철제 선반 (2×1, 앞 +z): 4단 — 우유 상자·과일 상자·생크림 통·버터, 둘째 칸 앞은 두꺼운 성에 덩어리(보조: 톡 → 와르르)
 B.fz_frostshelf = (f, T) => {
   const W = 1.5, D = .46, Hh = 1.92, ys = [.12, .58, 1.04, 1.5];
+  const PH = ys[3] + .05;
+  for (const sx of [-1, 1]) backPost(f, .04, PH, sx * (W / 2 - .02), -.25 - (D / 2 - .02));
   f.add(mc('fz-frostshelf', ({ add }) => {
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.04, Hh, .04, .01), STEEL, sx * (W / 2 - .02), Hh / 2, -.25 + sz * (D / 2 - .02));
-    for (const y of ys) { add(G.box(W, .025, D, .008), STEEL, 0, y, -.25); for (let k = 0; k < 7; k++) add(G.pbox(.008, .01, D - .02), STEELD, -W / 2 + .1 + k * .22, y + .016, -.25); }
+    for (const sx of [-1, 1]) add(G.box(.055, PH, .055, .014), STEEL, sx * (W / 2 - .028), PH / 2, -.25 + (D / 2 - .028));
+    for (const y of ys) add(G.box(W, .04, D, .012), STEEL, 0, y, -.25);
     // 바닥 칸: 우유 상자 둘(파랑) + 우유 팩
     for (const x of [-.45, .2]) { add(G.box(.5, .3, .38, .03), MILK, x, ys[0] + .16, -.26); add(G.box(.44, .02, .32, .01), '#3d86c6', x, ys[0] + .3, -.26); for (let k = 0; k < 3; k++) { add(G.box(.1, .2, .1, .01), '#ffffff', x - .13 + k * .13, ys[0] + .25, -.26); add(G.box(.104, .04, .104, .01), MILK, x - .13 + k * .13, ys[0] + .32, -.26); } }
     // 셋째 칸: 과일 상자(딸기·망고 라벨) + 생크림 통
@@ -574,7 +581,7 @@ B.fz_frostshelf = (f, T) => {
   f.add(frosty(mc('fz-frostshelf-frost', ({ add }) => {
     const r = rnd(31);
     for (const y of ys) for (let k = 0; k < 6; k++) add(G.sph(.04 + r() * .04, 7, 5), k % 2 ? FROST : FROSTB, -W / 2 + .1 + r() * (W - .2), y + .02, -.25 + D / 2 - .02, 0, r() * 3, 0, [1.6, .5, 1]);
-    for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) add(G.sph(.05, 7, 5), FROST, sx * (W / 2 - .02), .4 + k * .42 + r() * .1, -.25 + D / 2 - .02, 0, 0, 0, [1.2, .8, 1.2]);
+    for (const sx of [-1, 1]) for (let k = 0; k < 2; k++) add(G.sph(.05, 7, 5), FROST, sx * (W / 2 - .02), .4 + k * .84 + r() * .1, -.25 + D / 2 - .02, 0, 0, 0, [1.2, .8, 1.2]);
     for (let k = 0; k < 5; k++) add(G.cone(.02, .08 + (k % 3) * .04, 5), FROSTB, -.5 + k * .25, ys[3] - .04, -.25 + D / 2 - .03, PI, 0, 0);
   })));
   // 둘째 칸 성에 덩어리 (보조 장치): 톡 → 금이 가며 앞으로 기울어 떨어지고 부서짐

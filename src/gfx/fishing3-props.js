@@ -63,7 +63,7 @@ B.fs3_pond = f => {
       for (let k = 0; k < 5; k++) { const a = .6 + k * 1.15; add(G.box(r * .8, .004, .008, .002), '#8fd27a', Math.cos(a) * r * .4, .066, -Math.sin(a) * r * .4, 0, a, 0); }
     }));
     m.rotation.y = rot; m.position.set(x, 0, z);
-    f.spot('on', null, x, .065, z, { maxH: .28, label: '연잎 위', scale: .7 });
+    f.spot('on', null, x, .065, z, { maxH: .28, label: '연잎 위', scale: .7, noDecoy: true });
   };
   pad(.45, -.4, .25, .4); pad(-.35, -.55, .21, 2.1); pad(.7, .45, .23, 4.4);
   f.spot('behind', null, -1.15, 0, -.55, { maxH: .25, label: '연못가 돌 뒤', scale: .7 });

@@ -308,7 +308,7 @@ B.s3c_lilysteps = f => {
   }));
   const pad = (x, z, r, rot) => {
     put(f.add(mc('s3c-pad|' + r + '|' + rot, ({ add, tube }) => bigLeaf(add, 0, W + .006, 0, r, rot, { drops: 2, tube }))), x, 0, z);
-    f.spot('on', null, x, W + .045, z, { maxH: .28, label: '연잎 위', scale: .7 });
+    f.spot('on', null, x, W + .045, z, { maxH: .28, label: '연잎 위', scale: .7, noDecoy: true });
   };
   pad(.45, -.4, .3, .4); pad(-.35, -.55, .26, 2.1); pad(.7, .45, .27, 4.4);
   f.spot('behind', null, -1.15, -.01, -.55, { maxH: .25, label: '연못가 돌 뒤', scale: .7 });

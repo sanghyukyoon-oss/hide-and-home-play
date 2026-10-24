@@ -34,7 +34,7 @@ B.pond = f => {
       add(G.tor(r * .55, .005, PI * 1.4, 3, 16), shade(LEAF2, .15), 0, .066, 0, HP, 0, 0);
     }));
     m.rotation.y = rot; m.position.set(x, 0, z);
-    f.spot('on', null, x, .065, z, { maxH: .28, label: '연잎 위', scale: .7 });
+    f.spot('on', null, x, .065, z, { maxH: .28, label: '연잎 위', scale: .7, noDecoy: true });
   };
   pad(.45, -.4, .24, .4); pad(-.35, -.55, .2, 2.1); pad(.7, .45, .22, 4.4);
   f.spot('behind', null, -1.15, 0, -.55, { maxH: .25, label: '연못가 돌 뒤', scale: .7 });
