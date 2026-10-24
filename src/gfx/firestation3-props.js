@@ -7,6 +7,7 @@
 // 소방 빨강은 크게 두 곳만(소방차, 사이렌) — 벽은 크림 회벽, 테두리는 순한 벽돌, 지붕은 흐린 남청.
 // 숨김 자리(f.spot)·움직이는 부품(f.part: 0 셔터, 1 사이렌, 2 당직실 이불)은 정본 엔진 그대로. 좌표는 방 좌표(조각을 방 가운데에 둠).
 import * as THREE from 'three';
+import { addI18n } from '../i18n.js';
 import { put, grp, mat, mesh, geo, texCache, roundRect, canvasTex } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
@@ -136,28 +137,13 @@ function edgeBoxes() {
   return out;
 }
 
-// ── the neighbourhood far behind (사용자 10/23 승인 방향: '이어지는 동네' — 하얀 단순한 동네, 다음 판 20판 빌라가 작게):
-// a pale low ground with a road, white gable houses, and the sunny villa with its rooftop (yellow water tank, the pink parasol,
-// pots, the little rooftop room) a little to the right. No shadows, no picking.
-function townGroup() {
-  const m = mc('fs3-town2', ({ add }) => {
-    const W = '#fbfaf7', R1 = '#e3e8ee', R2 = '#eceff2', WIN = '#dfe6ee';
-    // its own white rounded platform, like a next little island down the road
-    const plat = new THREE.Shape(), PW = 11, PD = 4.2, PR = 2;
-    plat.moveTo(-PW + PR, -PD); plat.lineTo(PW - PR, -PD); plat.quadraticCurveTo(PW, -PD, PW, -PD + PR); plat.lineTo(PW, PD - PR); plat.quadraticCurveTo(PW, PD, PW - PR, PD);
-    plat.lineTo(-PW + PR, PD); plat.quadraticCurveTo(-PW, PD, -PW, PD - PR); plat.lineTo(-PW, -PD + PR); plat.quadraticCurveTo(-PW, -PD, -PW + PR, -PD);
-    add(G.ext(plat, .7, .08, 6), '#f4f1ec', 0, -.7, 0, -HP, 0, 0);
-    add(G.box(2 * PW - .6, .02, 1.3, .01), '#e8e4dd', 0, .02, 2.4);
-    const house = (x, z, w, d, h, ry, roof) => {
-      add(G.box(w, h, d, .06), W, x, h / 2, z, 0, ry, 0);
-      for (const sx of [-1, 1]) add(G.box(w * .62, .1, d + .3, .03), roof, x + Math.cos(ry) * sx * w / 4, h + w * .14, z - Math.sin(ry) * sx * w / 4, 0, ry, -sx * .5);
-      add(G.box(w * .9, w * .28, d * .96, .02), W, x, h + .02, z, 0, ry, 0);
-      for (const fx of [-.25, .25]) add(G.box(w * .18, h * .26, .03, .01), WIN, x + Math.cos(ry) * fx * w, h * .55, z + d / 2 * Math.cos(ry) + .02 - Math.sin(ry) * fx * w, 0, ry, 0);
-    };
-    house(-9, -1.2, 2.6, 2.2, 1.9, .15, R1); house(-5.6, .2, 3.0, 2.4, 2.4, -.1, R2); house(-2.2, -1.6, 2.2, 2.0, 1.7, .2, R1);
-    house(1.2, .6, 2.6, 2.2, 2.0, 0, R2); house(8.6, -1.3, 2.4, 2.2, 1.8, -.2, R1);
-    // 20판 햇살 빌라: three storeys, balconies, a rooftop with its yellow water tank, a pink parasol, pots and the rooftop room
-    const vx = 4.8, vz = -.6, vh = 3.3;
+// ── 20판 햇살 빌라 far behind (사용자 10/23 승인 방향 '이어지는 동네': 다음 판 건물이 멀리 작게) — a landmark of the white town
+// (gfx/whitetown-kit.js, ① 10/24: the old flat white board with little houses on it read as a paper cut-out, 아트 점검 10/23)
+addI18n({ '햇살빌라(먼 동네)': 'Sunny Villa (down the street)' });
+B.fs3_villamark = f => {
+  f.add(mc('fs3-villamark', ({ add }) => {
+    const WIN = '#dfe6ee', vx = 0, vz = 0, vh = 3.3;
+    // three storeys, balconies, a rooftop with its yellow water tank, a pink parasol, pots and the rooftop room
     add(G.box(3.2, vh, 2.6, .06), '#fffaf2', vx, vh / 2, vz);
     for (let k = 0; k < 3; k++) { add(G.box(3.24, .06, 2.64, .01), '#ece4d6', vx, (k + 1) * 1.1, vz); for (const fx of [-.8, .8]) add(G.box(.6, .5, .03, .01), WIN, vx + fx, .6 + k * 1.1, vz + 1.31); add(G.box(1.2, .3, .3, .02), '#f6efe2', vx - .8, .32 + k * 1.1, vz + 1.42); }
     add(G.box(3.3, .2, 2.7, .03), '#efe6d6', vx, vh + .1, vz);
@@ -167,15 +153,8 @@ function townGroup() {
     for (const [px, pz] of [[vx - 1.3, vz + 1.0], [vx + 1.3, vz + 1.0], [vx + 1.3, vz]]) { add(G.cyl(.14, .11, .22, 10), '#e6a07a', px, vh + .31, pz); add(G.sph(.2, 10, 8), '#86c46b', px, vh + .52, pz); }
     for (let x = vx - 1.6; x <= vx + 1.61; x += .4) add(G.box(.04, .35, .04, .01), '#ffffff', x, vh + .37, vz + 1.33);
     add(G.box(3.24, .05, .05, .01), '#ffffff', vx, vh + .55, vz + 1.33);
-    // round pale trees between the houses
-    for (const [x, z, r] of [[-7.4, 1.4, .7], [-.4, -.6, .6], [2.9, 2.2, .55], [7.2, 1.6, .7], [-10.2, 1.8, .6]]) { add(G.cyl(.08, .1, .7, 6), '#e0d6c8', x, .35, z); add(G.sph(r, 12, 8), '#e6efe1', x, .7 + r * .8, z); }
-  });
-  // small and far, low behind the island (an orthographic view: far is shown by size and by sitting low)
-  // (behind = away from the start camera, yaw .62: its line runs across the view, the villa to the right of the station)
-  const g = grp(m); g.scale.setScalar(.36); g.position.set(-6.2, -1.1, -8.8); g.rotation.y = .62;
-  g.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; o.raycast = () => {}; o.userData.scenery = true; o.userData.noMerge = true; } });
-  return g;
-}
+    }));
+};
 // the front band of the island is a street: the pavement (SW0..RZ) and a kerb down to the asphalt road (RZ..front, top RY)
 const SW0 = 2.25, RZ = 2.85, RY = -.115;
 B.fs3_island = f => {
@@ -249,8 +228,6 @@ B.fs3_island = f => {
     const room = f.group.parent; if (!room) return;
     f.fs3Floor = true;
     for (const o of room.children) if (o.isMesh && o.userData.floor) o.visible = false;
-    // the white neighbourhood far behind, with 20판's villa among its houses — hung on the room's group, not as furniture
-    room.add(townGroup());
   };
 };
 
@@ -631,5 +608,6 @@ B.fs3_house = (f, T, opts = {}) => {
 export const FS3_BUILDERS = B;
 export const FS3_INFO = {
   fs3_island: { w: .1, d: .1, name: '안전센터 둥근 섬', price: 0, hidden: true, floor: true },
+  fs3_villamark: { w: .1, d: .1, name: '햇살빌라(먼 동네)', price: 0, hidden: true },
   fs3_house: { w: 7, d: 4, name: '곰돌이네 119 안전센터', price: 0, hidden: true, floor: true },
 };

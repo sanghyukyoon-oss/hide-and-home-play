@@ -325,11 +325,20 @@ for (const [k, T] of Object.entries(TOP)) {
 // the big parfait: a tall glass on a stem; every layer its own group (hidden until its topping is found)
 export function buildParfait() {
   const g = grp(), layers = {}, glass = { opacity: .28 };
-  g.add(put(cyl(.15, .17, .035, '#eaf6ff', null, 26), 0, .018, 0));                      // foot
-  g.add(put(cyl(.032, .04, .16, '#eaf6ff', null, 14), 0, .11, 0));                        // stem
-  g.add(put(cyl(.13, .05, .05, '#eaf6ff', null, 22), 0, .205, 0));                        // the bowl's bottom
+  // (10/24 아트 점검 34: empty at the start it read as a white bar stool in a glass tube — the foot and stem are glass too now, it stands
+  // on a pink paper doily, a long parfait spoon waits in it and two glints run down the front, so it reads as a dessert glass to fill)
+  const foot = { opacity: .62 };
+  g.add(put(cyl(.25, .25, .006, '#ffd3e2', null, 28), 0, .003, 0));
+  g.add(put(tor(.245, .012, '#ffbcd2', null, Math.PI * 2, 6, 40), 0, .007, 0, Math.PI / 2, 0, 0));
+  g.add(put(cyl(.15, .17, .035, '#cfe8f6', foot, 26), 0, .024, 0));
+  g.add(put(cyl(.032, .04, .16, '#cfe8f6', foot, 14), 0, .117, 0));
+  g.add(put(cyl(.13, .05, .05, '#cfe8f6', foot, 22), 0, .21, 0));
   g.add(put(cyl(.21, .13, .44, '#d8f0ff', glass, 28, true), 0, .45, 0));                  // the glass (see-through)
   g.add(put(tor(.21, .012, '#ffffff', null, Math.PI * 2, 8, 36), 0, .67, 0, Math.PI / 2, 0, 0));   // rim
+  for (const [x, h, w] of [[-.1, .3, .022], [-.065, .2, .011]]) g.add(put(rbox(w, h, .004, '#ffffff', .002, { opacity: .7 }), x, .47, Math.sqrt(.172 * .172 - x * x), 0, Math.atan2(x, Math.sqrt(.172 * .172 - x * x)), 0));
+  g.add(put(cyl(.009, .007, .78, '#c3ccd8', null, 8), .09, .62, -.07, .12, 0, -.2));
+  g.add(put(sph(.026, '#c3ccd8', null, 10, 8), .015, .25, -.115, 0, 0, 0, [1, .45, 1.4]));
+  g.add(put(sph(.016, '#c3ccd8', null, 8, 6), .168, 1.0, -.024, 0, 0, 0, [1, .6, 1]));
   const L = (key, f) => { const l = grp(); f(l); l.visible = false; g.add(l); layers[key] = l; };
   const band = (y0, h, r0, r1, c) => put(cyl(r1, r0, h, c, null, 26), 0, y0 + h / 2, 0);   // a layer filling the glass from y0
   const rAt = y => .13 + (.21 - .13) * (y - .23) / .44;

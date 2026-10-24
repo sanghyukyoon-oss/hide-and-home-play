@@ -1172,8 +1172,11 @@ B.outdoorunit = (f, T) => {
 // 옥상 텃밭 상자 (1×1): two styrofoam boxes from the market (제주 감귤, 싱싱 수산) turned vegetable beds on a pallet — green and
 // red lettuce, a chili plant, cherry tomatoes on a stake, wooden name tags, red-coated work gloves; a mint watering can and
 // a little succulent pot on the floor (the pot lifts).
-B.rooftopgarden = (f, T) => {
-  const wood = col(T, 'wood'), woodD = col(T, 'woodD'), pot = col(T, 'pot'), tk = [wood, woodD, pot].join(',');
+// (10/24 아트 점검 65: opts.v 'wood' — the market's styrofoam boxes ('싱싱 수산', the ones the user called ugly) become two slatted
+// wooden planter boxes like the alley gardens; the same soil, plants, tags, gloves, can and the lifting pot)
+B.rooftopgarden = (f, T, o = {}) => {
+  const WD = o.v === 'wood', CR = '#d9a66c', CRD = '#a8733f';
+  const wood = col(T, 'wood'), woodD = col(T, 'woodD'), pot = col(T, 'pot'), tk = [wood, woodD, pot, WD ? 'wood' : ''].join(',');
   const PY = .1, z0 = -.08, BW = .42, BH = .26, BD = .48, t = .03, SY = PY + BH - .03;
   const rosette = (add, x, z, r, c1, c2, n = 7) => {
     for (let k = 0; k < n; k++) { const a = k / n * PI * 2; add(G.sph(r, 9, 7), k % 2 ? c1 : c2, x + Math.cos(a) * r * .7, SY + r * .55, z + Math.sin(a) * r * .7, 0, -a, .55, [1.15, .45, .8]); }
@@ -1185,8 +1188,19 @@ B.rooftopgarden = (f, T) => {
     for (let k = 0; k < 5; k++) add(G.box(.9, .025, .11, .006), wood, 0, PY - .0125, z0 - .29 + k * .145);
     for (const sx of [-1, 1]) {
       const cx = sx * .22;
-      for (const sz of [-1, 1]) add(G.pbox(BW, BH, t), STYRO, cx, PY + BH / 2, z0 + sz * (BD / 2 - t / 2));
-      for (const s2 of [-1, 1]) add(G.pbox(t, BH, BD - 2 * t), STYRO, cx + s2 * (BW / 2 - t / 2), PY + BH / 2, z0);
+      if (WD) {
+        for (let k = 0; k < 3; k++) {
+          const y = PY + .045 + k * (BH - .02) / 3, h = (BH - .02) / 3 - .018;
+          for (const sz of [-1, 1]) add(G.box(BW, h, t, .008), k % 2 ? CR : shade(CR, .04), cx, y + h / 2, z0 + sz * (BD / 2 - t / 2));
+          for (const s2 of [-1, 1]) add(G.box(t, h, BD - 2 * t, .008), k % 2 ? shade(CR, .04) : CR, cx + s2 * (BW / 2 - t / 2), y + h / 2, z0);
+        }
+        add(G.pbox(BW - .02, .03, BD - .02), CRD, cx, PY + .03, z0);
+        for (const s2 of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.045, BH, .045, .01), CRD, cx + s2 * (BW / 2 - .02), PY + BH / 2, z0 + sz * (BD / 2 - .02));
+        add(G.pbox(BW - 2 * t, BH - .05, BD - 2 * t), SOIL, cx, PY + (BH - .05) / 2 + .01, z0);
+      } else {
+        for (const sz of [-1, 1]) add(G.pbox(BW, BH, t), STYRO, cx, PY + BH / 2, z0 + sz * (BD / 2 - t / 2));
+        for (const s2 of [-1, 1]) add(G.pbox(t, BH, BD - 2 * t), STYRO, cx + s2 * (BW / 2 - t / 2), PY + BH / 2, z0);
+      }
       add(G.pbox(BW - 2 * t, .02, BD - 2 * t), SOIL, cx, SY - .01, z0);
     }
     // box A: two green lettuces and a red one (적상추)
@@ -1222,8 +1236,8 @@ B.rooftopgarden = (f, T) => {
     add(G.tor(.06, .012, PI, 4, 12), shade(MINT, -.08), wx - .04, .19, wz, 0, 0, .4);
   }));
   f.add(mg('rooftopgarden-prints', atlasMat(), ({ add }) => {
-    add(quadGeo(.38, .114, RG.styroA), -.22, PY + BH / 2, z0 + BD / 2 + .006);
-    add(quadGeo(.38, .114, RG.styroB), .22, PY + BH / 2, z0 + BD / 2 + .006);
+    if (!WD) add(quadGeo(.38, .114, RG.styroA), -.22, PY + BH / 2, z0 + BD / 2 + .006);
+    if (!WD) add(quadGeo(.38, .114, RG.styroB), .22, PY + BH / 2, z0 + BD / 2 + .006);
     [[-.12, SY + .13], [.07, SY + .12], [.36, SY + .12]].forEach(([x, y], i) => add(quadGeo(.094, .047, TAG(i)), x, y, z0 + .17 + .003 + .006));
   }));
   // the little succulent pot (its own mesh): it lifts
@@ -1479,7 +1493,7 @@ export const BUILDING_THEMES = {
     curtain: '#f3f6fb', rug: '#34508a', rug2: '#ffffff', pot: '#e88a5c', navy: '#34508a', stone: '#ecdec6', sofa: '#2f9e8f',
     light: { ambColor: '#f6f2ff', amb: 1.5, sunColor: '#fff6ea', sun: 2.4 } },
   rooftop: { ...BASE_T, name: '빌딩 옥상', friend: null, bg: ['#e4f3ff', '#cfe8fb'], base: '#b7c3cf',
-    floorKind: 'brickpave', floor: '#eadccb', floor2: '#d8c6af', pave: '#ebd2b4', asphalt: '#8d8a99',
+    floorKind: 'brickpave', floor: '#eadccb', floor2: '#d8c6af', pave: '#ebd2b4', asphalt: '#8d8a99', tactile: false,
     wallKind: 'plain', wall: '#f1ece4', wall2: '#d9846a', wainscot: '#e3d9cb', wallEdge: '#fbf8f2',
     plaster: '#eee8de', brick: '#d9846a', roofTile: '#4f7fb8', gate: '#3b8f6a', concrete: '#d9d2c6', stone: '#d8cfc2',
     wood: '#e9b884', woodD: '#c4905c', body: '#fff7ea', accent: '#7fd6c0', accent2: '#8fd3f4', accent3: '#ffc23d', door: '#bfe6d2',

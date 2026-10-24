@@ -360,6 +360,14 @@ RECIPES.bunnyattic1 = RECIPES.bunnyattic2 = RECIPES.bunnyattic;
 // (22·27판 골목 'street': waits for the user's art sign-off — 10/19 "22판 골목 룩 … 빼고"; sumbak-look keeps it)
 delete RECIPES.street;
 RECIPES.aptlobby2 = RECIPES.aptlobby;   // (현관 2차: the same light)
+// (10/24 아트 점검 38: the cream lobby floor was half the screen with nothing on it — a mat before the lift, a long mat across the
+// middle, an umbrella stand in the corner and a parcel left by the wall; flat or by the walls, on the raised floor (y .18))
+RECIPES.aptlobby2 = { ...RECIPES.aptlobby, fill: [
+  { furn: 'doormat', x: -1.0, z: -2.3, y: .18, s: 1.25, opts: { color: '#34508a' } },
+  { furn: 'doormat', x: -1.4, z: -.35, y: .18, ry: .08, s: 1.9, opts: { color: '#7fbfae' } },
+  { furn: 'umbrellastand', x: -3.62, z: -2.62, y: .18, s: .85 },
+  { furn: 'parcel', x: .05, z: -2.62, y: .18, ry: .35, s: .7 },
+] };
 // (G1 10/21) the street (22판, its old look still waits on the user — deleted above) and the fire station (19판) stand on the
 // kerb block too: the street gets only a sky and the block, the fire station keeps its light and sky
 RECIPES.street = { sky: ['#f4dcc4', '#faeadc', '#e9cfb6'], block: KERB() };
@@ -1047,9 +1055,9 @@ export class Look {
         const p = wl.g.localToWorld(new THREE.Vector3(dr.u, 0, .42)); ex = p.x - ox; ez = p.z - oz; ery = wl.g.rotation.y;
       }
       if (keep.some(([x, z]) => Math.hypot(x - ox - ex, z - oz - ez) < .75)) continue;
-      if (room.clearAt && !room.clearAt(ox + ex, oz + ez, .3)) continue;
+      if (room.clearAt && !room.clearAt(ox + ex, oz + ez, .3, e.y ? { raised: true } : null)) continue;
       const f = makeFurniture(e.furn, (e.theme && THEMES[e.theme]) || room.T || this.T, e.opts);
-      put(f.group, ex, 0, ez, 0, ery, 0, e.s || null);
+      put(f.group, ex, e.y || 0, ez, 0, ery, 0, e.s || null);
       f.group.userData.lookFill = true;
       room.group.add(f.group); this.filled.push(f.group);
     }

@@ -211,6 +211,27 @@ function liveTex(w, h, draw, o = {}) {
 }
 const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
 const tex = (key, w, h, draw, o) => TEX.get(key, () => liveTex(w, h, draw, o));
+// corduroy: soft rounded wales (a lit ridge, a shaded groove), six to a tile (the beanbag's cloth — 2판)
+const cordTex = c1 => tex('or-cord2|' + c1, 96, 96, (c, w, h) => {
+  c.fillStyle = tint(c1); c.fillRect(0, 0, w, h);
+  const n = 6, s = w / n;
+  for (let k = 0; k < n; k++) { c.fillStyle = tint(shade(c1, .035)); c.fillRect(k * s + s * .18, 0, s * .4, h); c.fillStyle = tint(shade(c1, .06)); c.fillRect(k * s + s * .3, 0, s * .14, h);
+    c.fillStyle = tint(shade(c1, -.045)); c.fillRect(k * s + s * .76, 0, s * .16, h); }
+}, { repeat: [1, 1] });
+// uvs for cloth round a soft round thing (in its own frame, axis up through cx, cz): the top (facing up) mapped flat, x across,
+// so the wales run straight over it; the sides by arc length round the axis and height up it, so they run straight down;
+// a tile is s metres. Each triangle across the back seam gets one side's u shifted a turn on, so no tile is squeezed into it.
+function cordUV(g, cx, cz, s, R = .42) {
+  const c = g.index ? g.toNonIndexed() : g, p = c.attributes.position, nn = c.attributes.normal, uv = new Float32Array(p.count * 2), turn = PI * 2 * R / s;
+  for (let i = 0; i < p.count; i += 3) {
+    const up = (nn.getY(i) + nn.getY(i + 1) + nn.getY(i + 2)) / 3 > .72;
+    for (let k = 0; k < 3; k++) { const x = p.getX(i + k), y = p.getY(i + k), z = p.getZ(i + k);
+      uv[(i + k) * 2] = up ? (x - cx) / s : Math.atan2(z - cz, x - cx) * R / s; uv[(i + k) * 2 + 1] = up ? (z - cz) / s : y / s; }
+    if (!up) { const u = [0, 1, 2].map(k => uv[(i + k) * 2]); if (Math.max(...u) - Math.min(...u) > turn / 2) for (let k = 0; k < 3; k++) if (u[k] < 0) uv[(i + k) * 2] += turn; }
+  }
+  c.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return c;
+}
 const blob = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, PI * 2); c.fill(); };
 const line = (c, pts) => { c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); };
 function heartPath(c, x, y, s) { c.beginPath(); c.moveTo(x, y + s * .7); c.bezierCurveTo(x - s * 1.2, y - s * .1, x - s * .55, y - s * .95, x, y - s * .35); c.bezierCurveTo(x + s * .55, y - s * .95, x + s * 1.2, y - s * .1, x, y + s * .7); }
@@ -1290,11 +1311,18 @@ B.beanbag = (f, T) => {
   // the bag: a wide soft seat and a slouched backrest behind it (its own mesh: it tips over to the left)
   const pv = new THREE.Group(); put(pv, PX, RT, CZ); f.add(pv);
   const prof = [[0, 0], [.3, 0], [.39, .04], [.42, .12], [.4, .22], [.33, .3], [.2, .345], [.08, .36], [0, .36]];
-  // (⑥ 10/23 밤 2판 실폰 "다 다시 바꿔": corduroy stripes stretched round it read as wood grain, a speckled plush as sand) —
-  // plain soft cloth with the piping round the seat (seams down from the top made it a pumpkin)
-  pv.add(mc('beanbag-trim2|' + tk, ({ add }) => {
-    add(G.lathe(prof, 32), bean, -PX, 0, 0);
-    add(G.sph(.3, 24, 14), bean, -PX, .36, -.16, -.35, 0, 0, [1.2, .85, .62]);
+  // (⑥ 10/23 밤: corduroy stripes stretched round it read as wood grain — the box-mapped uvs, not the cloth; 2판 사용자 10/24 "빈백 텍스쳐를
+  // 지워버렸네.. uv만 정리 해달라니까") — the corduroy back, wrapped the way the cloth goes: wales straight up the sides (even
+  // spacing round the bag, cut by arc length) and straight across the seat and the backrest's top, the same width everywhere
+  pv.add(mg('beanbag-cord|' + bean, mat('#ffffff', { map: cordTex(bean) }), ({ addM }) => {
+    addM(cordUV(G.lathe(prof, 40).applyMatrix4(xf(-PX, 0, 0)), -PX, 0, .18), new THREE.Matrix4());
+    addM(cordUV(G.sph(.3, 32, 18).applyMatrix4(xf(-PX, .36, -.16, -.35, 0, 0, [1.2, .85, .62])), -PX, 0, .18), new THREE.Matrix4());
+  }));
+  pv.add(mc('beanbag-trim3|' + tk, ({ add }) => {
+    // a zip round the back low down (a slider and its pull), a darker welt round the foot
+    add(G.tor(.419, .006, 1.3, 4, 18), shade(bean, -.34), -PX, .065, 0, HP, 0, PI * 1.36);
+    add(G.box(.03, .022, .012, .004), '#d9dde6', -PX + .419 * Math.cos(PI * 1.36 + 1.3), .065, .419 * Math.sin(PI * 1.36 + 1.3), 0, -(PI * 1.36 + 1.3) - HP, 0);
+    add(G.tor(.392, .014, PI * 2, 4, 40), shade(bean, -.1), -PX, .035, 0, HP, 0, 0);
     add(G.tor(.416, .011, PI * 2, 4, 40), seam, -PX, .12, 0, HP, 0, 0);
     add(G.ext(heartShape(.11), .035, .018, 8), TOMATO, -PX + .08, .4, .04, -.95, .3, 0);
     add(G.box(.05, .03, .01, .004), WHITE, -PX + .24, .07, .345, 0, .6, 0);

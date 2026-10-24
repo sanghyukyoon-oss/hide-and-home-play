@@ -192,7 +192,7 @@ export const LAYOUTS = {
   // 빌딩 옥상: a parapet round the back, the stair door, a water tank, AC units, washing on a line, a sun lounger
   rooftop: { w: 6, d: 5, walls: { N: 'alleywall', W: 'alleywall', S: 'none', E: 'none' },
     furniture: [F('antenna', 3, 0), F('watertank', 4, 0), F('outdoorunit', 5, 0), F('outdoorunit', 5, 1),
-      F('laundryline', 1, 2), F('deckchair', 3, 3), F('rooftopgarden', 0, 3), F('rooftopgarden', 0, 4), F('boxes', 5, 4)],
+      F('laundryline', 1, 2), F('deckchair', 3, 3), F('rooftopgarden', 0, 3, 0, { v: 'wood' }), F('rooftopgarden', 0, 4, 0, { v: 'wood' }), F('boxes', 5, 4)],
     decor: [D('rooftopdoor', 'N', -2.0)], friendAt: [.9, .1] },
   // 동네 뒷산 산길: pines, a pavilion, a spring, a little bridge over a stream, a lantern string, a hiker's tent
   trail: { w: 7, d: 6, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
@@ -744,9 +744,12 @@ MAPS.bearbakery = () => ({ theme: THEMES.bearbakery, friendAt: [-.84, -1.2], roo
     decor: [D('potrail', 'N', -1.5), D('bakejars', 'N', 1.5), D('ginghamwin', 'W', -.2), D('chalkmenu', 'W', -1.75)],
     sun: [{ from: [-2.5, -.6, -2.5, .4], dir: [2.4, 1.0] }] }) },
   { at: [2.5, 0], layout: RM('bakeyard', 3, 5, { walls: { N: 'wall', W: 'none', E: 'none', S: 'none' },
-    furniture: [F('bkstall', 1, 0), F('bklamp', 0, 1), F('floursacks', 0, 2), F('bkparasol', 2, 2), F('breadbasket', 1, 3, 0, { v: 1 }), F('bkcrates', 1, 4), F('bkplanter', 2, 4)],
+    furniture: [F('bkstall', 1, 0), F('bklamp', 2, 3), F('floursacks', 0, 2), F('bkparasol', 2, 2), F('breadbasket', 2, 1, 0, { v: 1 }), F('bkcrates', 1, 4), F('bkplanter', 2, 4)],
     decor: [D('bkfacade', 'N', 0)], sun: [] }) },
 ] });
+// (10/24 아트 점검 35: the lamp post at (0, 1) stood against the kitchen's doorway and drew over the counter from the start view — out to the
+// terrace's street edge, between the parasol and the big pot; the yard's bread basket (1, 3) to the stall's side (2, 1), which also
+// opens the yard's middle to the kitchen door — it was a walk island)
 // ── Stages: 4 regions, 50 stages. Region 1 is hand-tuned; the rest are generated from region rules so that
 // difficulty rises through more targets, deeper hiding places and new lock mechanics, not just smaller items or
 // shorter timers. Region rooms that are not built yet fall back to indoor rooms so the game always runs.

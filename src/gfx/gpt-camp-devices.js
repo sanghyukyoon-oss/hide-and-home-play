@@ -163,16 +163,19 @@ const B = {};
 
 B.gptfire_fan = (f, T, o = {}) => {
   fireStatic(f, 'fire-fan-base', ({ add, tube }) => {
-    add(G.cyl(.93, 1.02, .11, 14), '#e0ac67', .32, .055, .02);
+    // (아트 점검 10/24, 57판: 돌·장작 끝이 베이지 도넛 고리처럼 보임 — ② 다시: 재 빛 흙 바닥, 크기·모양이 다른 회색 돌, 장작 끝은 나이테 단면, 숯 몇 덩이)
+    add(G.cyl(.93, 1.02, .11, 14), '#7d6553', .32, .055, .02);
+    add(G.cyl(.5, .56, .02, 12), '#4a403b', .32, .115, .02);
     for (let i = 0; i < 10; i++) {
-      const a = i * PI * 2 / 10;
-      add(G.sph(.19, 7, 5), i % 2 ? '#b4b6af' : '#e0cd67', .32 + Math.cos(a) * .83, .17, .02 + Math.sin(a) * .83, 0, a, 0, [1.1, .75, 1]);
+      const a = i * PI * 2 / 10 + (i % 3) * .06, r = .8 + (i % 2) * .05;
+      add(G.sph(.17 + (i % 3) * .025, 7, 5), ['#9da1a3', '#b4b6af', '#878c8f'][i % 3], .32 + Math.cos(a) * r, .15 + (i % 2) * .03, .02 + Math.sin(a) * r, (i % 4) * .3, a, 0, [1.2 - (i % 3) * .12, .62 + (i % 2) * .1, .95]);
     }
     for (const a of [.4, 2.5, 4.3]) {
-      const dx = Math.cos(a) * .12, dz = Math.sin(a) * .12;
       tube([.32 - Math.cos(a) * .55, .2, .02 - Math.sin(a) * .55], [.32 + Math.cos(a) * .55, .26, .02 + Math.sin(a) * .55], .115, C.woodD, 7);
-      add(G.cyl(.1, .1, .02, 7), '#e9b35d', .32 + Math.cos(a) * .56, .26, .02 + Math.sin(a) * .56, HP, a, 0);
+      add(G.cyl(.105, .105, .02, 9), '#c08250', .32 + Math.cos(a) * .565, .26, .02 + Math.sin(a) * .565, HP, a, 0);
+      add(G.cyl(.045, .045, .022, 8), '#7a4a2a', .32 + Math.cos(a) * .57, .26, .02 + Math.sin(a) * .57, HP, a, 0);
     }
+    for (const [x, z, r] of [[.18, .12, .07], [.44, -.1, .06], [.36, .2, .05], [.1, -.14, .05]]) add(G.box(r * 1.6, r * .9, r * 1.3, r * .3), '#3b3533', x, .15, z, 0, x * 3, 0);
     // Blanket trivet outside the fire ring; when tilted it reveals the smoke signal instead of crossing through the flame.
     for (const x of [-.25, .95]) tube([x, .08, -.76], [x, 1.33, -.76], .045, C.woodD, 6);
     tube([-.32, 1.33, -.76], [1.02, 1.33, -.76], .05, C.woodD, 6);

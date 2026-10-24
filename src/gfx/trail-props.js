@@ -983,8 +983,16 @@ B.lanterns = (f, T) => {
     for (const sx of [-1, 1]) add(G.cyl(.05, .058, PH, 12, true), sx < 0 ? woodD : shade(woodD, .04), sx * PXL, PH / 2, pz, 0, sx, 0, 1, [PH / .3, 2 * PI * .058 / .3, true]);
     add(G.box(.2, .03, .2, .008), wood, PXL, PH + .015, pz, 0, 0, 0, 1, .5);
   }));
-  f.add(mt('lanterns-stones|' + tk, speckleTex(), ({ add }) => {
-    for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) { const a = k / 5 * PI * 2 + sx, s = .055 + (k % 2) * .015; add(stoneGeo(160 + k + (sx > 0 ? 5 : 0)), pal[(k + 2 * sx + 6) % 6], sx * PXL + Math.cos(a) * .1, s * .4, pz + Math.sin(a) * .1, 0, a, 0, [s * 1.1, s * .7, s]); }
+  // (10/24 아트 점검 57·60: five pale stones round each foot read as a white bone end — now the post goes into a squat dark stake
+  // block on a little mound of earth, two small grey stones beside it)
+  f.add(mt('lanterns-foot|' + tk, grainTex(), ({ add }) => {
+    for (const sx of [-1, 1]) add(G.box(.15, .16, .15, .02), shade(bark, -.18), sx * PXL, .08, pz, 0, .3 * sx, 0, 1, .4);
+  }));
+  f.add(mc('lanterns-mound|' + tk, ({ add }) => {
+    for (const sx of [-1, 1]) {
+      add(G.dome(.15, 14, 5), '#8b6a4a', sx * PXL, 0, pz, 0, 0, 0, [1, .35, 1]);
+      for (const [dx, dz, r] of [[.13, .08, .035], [-.1, .12, .028]]) add(G.sph(r, 8, 6), '#9b958c', sx * PXL + dx * sx, r * .5, pz + dz, 0, 0, 0, [1.2, .7, 1]);
+    }
   }));
   f.add(mc('lanterns|' + tk, ({ add, tube }) => {
     add(G.dome(.06, 12, 5), shade(bark, -.1), -PXL, PH, pz, 0, 0, 0, [1, .7, 1]);
@@ -1010,7 +1018,8 @@ B.lanterns = (f, T) => {
       addM(quadGeo(.04, .107, RG.tag), xf(x, cy - LR * LSY - .18, pz + .002 + .006, 0, 0, (i % 2 ? .08 : -.08)));
     });
   }));
-  f.spot('on', null, PXL, PH + .03, pz, { maxH: .3, label: '등 기둥 꼭대기', scale: .55 });
+  // (아트 점검 10/24, 50·55판: 꼭대기 판 위 물건이 기둥에 꽂힌 듯 보임 — 숨기기 원칙 '왜 거기 있는지' → 기둥 발치 돌 옆 바닥으로, ②)
+  f.spot('beside', null, PXL - .05, 0, pz + .32, { maxH: .4, label: '등 기둥 옆', scale: .85 });
 };
 
 // ═════════════════════════════════════════════ CAMPING GEAR ═════════════════════════════════════════════

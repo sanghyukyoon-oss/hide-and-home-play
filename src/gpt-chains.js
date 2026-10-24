@@ -113,7 +113,9 @@ export const CHAINS = {
   playground: {
     // (아트 점검 ⑪ 10/23 '레일이 자전거 보관대 지붕·그네 틀을 뚫고 지나감' — 실제로 겹치진 않고 1.55 m 길이 둘 사이에 서서 그렇게 보임:
     // ② 78%로 줄여 보관대 지붕선 아래로. 미끄럼틀·그네 자리는 그대로)
-    layout: { add: [{ type: 'gptwidemarblerun', i: 3, j: 1, opts: { scale: .78 } }] },
+    // (아트 점검 2차 10/24: 줄여도 그네 틀이 레일 앞을 가로질러 '뚫은' 것처럼 보임 → 그네 앞 빈 줄(2~4, 3)로: 그네 틀이 레일 뒤에 서고,
+    // 시작 화면 가운데라 5장 주인공 장치가 처음부터 보임. 뒷줄 구석은 시작 화면 밖이라 뺐어요)
+    layout: { add: [{ type: 'gptwidemarblerun', i: 2, j: 3, opts: { scale: .78 } }] },
     steps: [{ dev: 'gptwidemarblerun#0:0', tool: 'chainmarble', behind: ['code', 'pad', 'color'], dur: 2.6, body: true,
       sfx: [[.05, 'clink'], [.26, 'land'], [.45, 'clink'], [.62, 'clink'], [.89, 'doorBell']],
       need: K('구슬 길 꼭대기가 비어 있어! 대회 구슬이 어디 있지?', 'The top of the marble run is empty! Where is the contest marble?'),
@@ -125,7 +127,9 @@ export const CHAINS = {
   // 46판 너굴이와 경주(시간 판, 원본 넓은 놀이터): GPT 분수 레버(물이 멎으면 바닥이 보임)·미니 구슬 길(홈통 → 종 → 장화 까꿍)을
   // 오른쪽 놀이터 빈칸에(스프링 놀이기구 자리·뒷벽 앞). 시간 판이라 장난감 둘만 — 안 건드려도 클리어
   playgroundwide: {
-    layout: { room: 1, remove: ['springrider#0'], add: [{ type: 'gptwidefountain', i: 4, j: 3 }, { type: 'gptwidemarblerun', i: 0, j: 1 }] },
+    // (아트 점검 2차 10/24: 아이스크림 수레(4,5) 오른쪽이 분수 물통 안으로 파고듦 → 수레를 왼쪽 빈 칸(2,5)으로, 분수는 85% — 물통이 2×2 칸보다
+    // 넓어 옆 쓰레기통·고양이 밥집·피크닉 상 모서리에 닿던 것)
+    layout: { room: 1, remove: ['springrider#0', 'icecart#0'], add: [{ type: 'gptwidefountain', i: 4, j: 3, opts: { scale: .85 } }, { type: 'gptwidemarblerun', i: 0, j: 1 }, { type: 'icecart', i: 2, j: 5 }] },
     aux: [{ dev: 'gptwidefountain#0:0', sfx: [[.05, 'whoosh'], [.14, 'blub'], [.5, 'blub']], line: K('분수도 잠깐 쉬는 중!', 'Even the fountain takes a break!') },
       { dev: 'gptwidemarblerun#0:0', sfx: [[.05, 'clink'], [.26, 'land'], [.62, 'clink'], [.89, 'doorBell']], line: K('구슬보다 장화가 먼저 도착!', 'The boot beat the marble!') }],
   },

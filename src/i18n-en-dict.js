@@ -2035,6 +2035,7 @@ export const EN = {
 "납작한 돌": "Flat stone",
 "개울가 돌 밑": "Under the creek stone",
 "등 기둥 꼭대기": "Top of the lantern pole",
+"등 기둥 옆": "Beside the lantern post",
 "등산 가방 뚜껑": "Backpack flap",
 "등산 가방 안": "In the backpack",
 "텐트 지퍼 문": "Tent zipper",

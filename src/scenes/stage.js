@@ -23,7 +23,15 @@ import { fixSmall } from '../smallfix.js';   // 작은 물건 안전망 (#94, �
 import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
-import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
+import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn, DECOY_SIZE } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
+// a placed thing's longest side as drawn (m): its own meshes, not its tap sphere
+const _dl = new THREE.Box3(), _dlb = new THREE.Box3();
+function drawnLong(g) {
+  g.updateMatrixWorld(true); _dl.makeEmpty();
+  g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _dl.union(_dlb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } });
+  if (_dl.isEmpty()) return 1;
+  const v = _dl.getSize(new THREE.Vector3()); return Math.max(v.x, v.y, v.z);
+}
 import { setPlace, oddness, isCold } from '../affinity.js';
 const HINTS_OLD = typeof location !== 'undefined' && /[?&]hints=old(&|$)/.test(location.search);   // (the v157 automatic help, to compare)
 // 톡톡 두 번 확대 수업: 3판 (was 2판 — 2판 teaches turning while you drag now, one hand a stage: 1~10판 밸런스 10/19, 조작감 세션과 맞춤; ?dbl2=1 → 2판)
@@ -260,6 +268,10 @@ export class StageScene {
       const jit = (r() - .5) * .7; g.userData.jit = jit;
       attachItem(p.spot, g, { rotY: 0, scale: sc }); faceItem(g, p.spot, jit); centerOn(g, p.spot); squareIfCrossing(g, p.spot); settleOn(g, p.spot);
       if ((p.spot.kind === 'on' || p.spot.kind === 'inside') && !nestles(p.spot) && !p.spot.wallFace) this.fitClear(p.spot, g);   // (not flat on a wall behind a poster or a frame: the wall it lies on read as in the way — 70%)   // (10/19 user: "스테이지5 열쇠 뚫어 버렸네? 크기 키우다가 ㅋ")
+      // (a decoy that clearing its place squeezed under ~15 cm on its longest side reads as a toy of itself — 2판 커튼 뒤 창틀의
+      // 토끼 슬리퍼 came out 10 cm, 사용자 10/24 "쓰레빠 웰케 작아짐": fitspot lets a decoy down to 15 cm, fitClear then took 30% more;
+      // that place gets none, like a decoy fitspot already turns away)
+      if (p.role === 'decoy' && drawnLong(g) < (DECOY_SIZE[p.type]?.[1] || .15)) { g.parent?.remove(g); p.spot.itemGroup = null; continue; }
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
       if (p.hang) it.hang = p.hang;   // (7판: on the pulley's top hook, out of reach until the basket comes up — tapHung / dropHung)
       if (p.vacHidden) { it.vacHidden = true; g.visible = false; }   // rides out on the robot vacuum (아파트 장치판)

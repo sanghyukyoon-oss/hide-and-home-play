@@ -38,10 +38,13 @@ export function natSize(type) {
 
 // the size a thing is drawn at, as a multiple of the place's own scale (stage.js; was inline there)
 const DECOY_LONG = .17, DECOY_MIN = .15;   // 흩뿌림 소품의 긴 변 (m): 적어도 이만큼은 크게, 이보다 작게밖에 안 되면 안 놓음
+// 실제로 큰 흩뿌림 소품은 제 크기대로 (m, [바라는 긴 변, 이보다 작으면 안 놓음]): 접은 우산·밀짚모자가 20 cm, 슬리퍼가 10 cm로 장난감처럼
+// 보였음 — 사용자 10/24 2판 "쓰레빠 웰케 작아짐… 작게 들어간 오브젝트 발견해서 크기 맞춰줘", 1~31판 측정(①)
+export const DECOY_SIZE = { umbrella: [.55, .45], strawhat: [.36, .3], slipper: [.26, .22], ball2: [.24, .2], books: [.22, .19], gimbap2: [.21, .18] };
 export function wantScale(type, spot, role, want = .34) {
   // (a decoy: 1.08 of the place's scale, but never under ~17 cm on its longest side — in a small place a mug came out 12 cm and a
   // book stack 15 cm, ⑥ 10/24 5판 실폰 "ㅈㄴ 작은 컵이랑 책이 가끔 등장함")
-  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2; return Math.max(1.08, Math.min(2.4, DECOY_LONG / (spot.scale || 1) / big)); }
+  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2, D = DECOY_SIZE[type]; return Math.max(1.08, Math.min(D ? 4 : 2.4, (D ? D[0] : DECOY_LONG) / (spot.scale || 1) / big)); }
   const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2;
   const room = (spot.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (spot.scale || 1));
   const ss = spot.scale || 1, lim = ITEMS[type]?.flat ? 2.4 : room;
@@ -212,7 +215,7 @@ export function drawnScale(type, spot, role = 'target', want = .34) {
   if (cap >= sc) return sc;
   // (a decoy is clutter: in a tight place it may be drawn smaller, down to .6 — 3판 kept 2 of its 6 otherwise; but not under ~15 cm:
   // smaller it reads as a toy of itself, so the place gets none — ⑥ 10/24)
-  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2; return cap >= .6 && cap * (spot.scale || 1) * big >= DECOY_MIN ? cap : 0; }
+  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2; return cap >= .6 && cap * (spot.scale || 1) * big >= (DECOY_SIZE[type]?.[1] || DECOY_MIN) ? cap : 0; }
   return cap >= Math.max(1, sc * KEEP) ? cap : 0;
 }
 export const spotFits = (type, spot, role) => drawnScale(type, spot, role) > 0;

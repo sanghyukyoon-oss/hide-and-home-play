@@ -44,6 +44,7 @@ B.gptwidefountain=(f,T,o={})=>{
   p.gptLoop='waterLap';p.gptPhases=[{at:.14,sfx:'blub'},{at:.52,sfx:'coin'}];p.gptFinish='coin';p.gptFunny='분수도 잠깐 쉬는 중!';
   // No decorative duplicate: the stage places the real existing 500-won coin on this empty basin floor.
   const s=f.spot('inside',g,0,.22,.28,{part:p,maxH:.65,label:'물이 멎은 분수 바닥의 동전 자리',scale:1.5});s.gptWant=.9;s.gptCoin=true;p.gptCoinType='coin500';p.gptCoinSpot=s;if(o.bossLever){p.gptLever=true;p.isLever=true;}
+  if (o.scale) g.scale.setScalar(o.scale);   // (46판 아트 점검 ② 10/24: the basin is wider than its 2×2 tiles — a smaller one keeps off its neighbours)
 };
 
 B.gptwidemarblerun=(f,T,o={})=>{

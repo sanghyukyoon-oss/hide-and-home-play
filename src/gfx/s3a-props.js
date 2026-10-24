@@ -271,8 +271,8 @@ B.s3a_tacklebox = (f, T, o = {}) => {
     for (const sx of [-1, 1]) add(G.box(.07, .06, .025, .01), '#e9b84a', sx * .2, .19, .205);
     // (C 10/24 사용자 "오브젝트 디테일 부족": the tray inside is a pale mint, not a dark hole, and its little rooms hold a fish lure,
     // red-and-white floats, a spool of line and a few hooks)
-    add(G.box(.5, .02, .3, .006), o.detail ? '#dff3ea' : shade(C, -.3), 0, .255, 0);
-    if (o.detail) {
+    add(G.box(.5, .02, .3, .006), o.vivid || o.detail ? '#dff3ea' : shade(C, -.3), 0, .255, 0);   // (A too: 10/24 사용자 3판 "낚시상자 고쳐라")
+    if (o.vivid || o.detail) {
       for (const [x, c] of [[-.2, '#ffb36a'], [.19, '#8fd0ff']]) { add(G.sph(.03, 10, 8), c, x, .275, -.08, 0, 0, 0, [1.6, .8, .8]); add(G.cone(.022, .04, 4), c, x + .055, .275, -.08, 0, 0, -HP); add(G.sph(.007, 6, 4), '#2a1d33', x - .028, .282, -.07); add(G.tor(.012, .003, PI * 1.4, 4, 8), '#aab6c8', x + .005, .262, -.06, HP, 0, 0); }
       for (const x of [-.07, .06]) { add(G.sph(.022, 8, 6), '#ff6a6a', x, .282, -.09); add(G.sph(.021, 8, 6), '#ffffff', x, .262, -.09, 0, 0, 0, [1, .7, 1]); add(G.cyl(.004, .004, .03, 4), '#ff6a6a', x, .305, -.09); }
       add(G.cyl(.032, .032, .04, 14), '#fff6e6', -.2, .278, .1, HP, 0, 0); add(G.cyl(.026, .026, .042, 14), '#8fd0ff', -.2, .278, .1, HP, 0, 0);
@@ -285,7 +285,9 @@ B.s3a_tacklebox = (f, T, o = {}) => {
     add(G.box(.62, .07, .38, .03), shade(C, .08), 0, .035, .19);
     tube([-.12, .07, .19], [-.1, .14, .19], .014, '#e9b84a', 6); tube([.12, .07, .19], [.1, .14, .19], .014, '#e9b84a', 6); tube([-.1, .14, .19], [.1, .14, .19], .016, '#e9b84a', 6);
     // (C) a frog sticker on the lid and a white rim round it
-    if (o.detail) { add(G.box(.5, .006, .28, .004), '#e9fbf2', 0, .072, .19); add(G.cyl(.06, .06, .008, 18), '#7fcf6a', .17, .077, .26); for (const sx of [-1, 1]) { add(G.cyl(.022, .022, .01, 12), '#7fcf6a', .17 + sx * .036, .078, .21); add(G.cyl(.011, .011, .012, 10), '#ffffff', .17 + sx * .036, .08, .21); } }
+    // (inside the lid, seen when it is up: a cream foam pad with a row of hooks and a little measuring strip)
+    if (o.vivid || o.detail) { add(G.box(.52, .008, .3, .004), '#fff3dc', 0, -.003, .19); for (let k = 0; k < 6; k++) add(G.tor(.014, .003, PI * 1.5, 4, 8), '#9aa6b8', -.2 + k * .08, -.01, .12, HP, 0, 0); add(G.box(.44, .004, .03, .001), '#ffd84a', 0, -.008, .27); for (let k = 0; k < 9; k++) add(G.box(.003, .005, k % 2 ? .012 : .02, .0005), '#5a5060', -.2 + k * .05, -.011, .265); }
+    if (o.vivid || o.detail) { add(G.box(.5, .006, .28, .004), '#e9fbf2', 0, .072, .19); add(G.cyl(.06, .06, .008, 18), '#7fcf6a', .17, .077, .26); for (const sx of [-1, 1]) { add(G.cyl(.022, .022, .01, 12), '#7fcf6a', .17 + sx * .036, .078, .21); add(G.cyl(.011, .011, .012, 10), '#ffffff', .17 + sx * .036, .08, .21); } }
   }));
   const p = f.part('lid', lid, (t, b) => { lid.rotation.x = -1.6 * t; }, { label: '도구함 뚜껑', sfx: 'open' });
   f.spot('inside', null, 0, .25, 0, { part: p, maxH: .14, label: '도구함 안', scale: .6 });
@@ -326,7 +328,7 @@ const stripeTex = (a, b, n = 8) => paintTex('s3a-stripe|' + a + b + n, 128, 128,
 B.s3a_parasol = (f, T, o = {}) => {
   f.collideBox = [-.3, 0, -.2, .3, .8, .34];   // (the pole and the beach chair: the canopy's wide box held a neighbour's lid at a third — 10/24)
   const P1 = o.vivid ? '#ff6f80' : '#ff8f8a', P2 = o.vivid ? '#ffffff' : '#fff6ea';
-  f.add(mc('s3a-parasol' + (o.vivid ? '-v' : ''), ({ add, tube }) => {
+  f.add(mc('s3a-parasol' + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add, tube }) => {
     tube([0, 0, -.1], [0, 1.5, -.1], .026, '#f6f2ea', 8);
     add(G.cyl(.09, .11, .04, 14), '#d9d2c9', 0, .02, -.1);
     for (let k = 0; k < 8; k++) {
@@ -335,9 +337,27 @@ B.s3a_parasol = (f, T, o = {}) => {
     }
     add(G.cone(.79, .02, 8), '#ffd9d4', 0, 1.27, -.1, PI, 0, 0);
     add(G.sph(.045, 10, 8), P1, 0, 1.64, -.1);
-    if (o.vivid) { for (let k = 0; k < 8; k++) { const a = k * PI / 4; tube([0, 1.12, -.1], [Math.sin(a) * .7, 1.28, -.1 + Math.cos(a) * .7], .007, '#e8e8f0', 4); }
+    if (o.vivid || o.detail) { for (let k = 0; k < 8; k++) { const a = k * PI / 4; tube([0, 1.12, -.1], [Math.sin(a) * .7, 1.28, -.1 + Math.cos(a) * .7], .007, '#e8e8f0', 4); }
       add(G.cyl(.04, .04, .05, 10), '#e8e8f0', 0, 1.12, -.1); add(G.cyl(.035, .035, .04, 10), '#c9cfe0', 0, .75, -.1);
-      for (let k = 0; k < 24; k++) { const a = k / 24 * PI * 2; add(G.sph(.014, 6, 4), k % 2 ? P1 : '#ffd84a', Math.sin(a) * .79, 1.22, -.1 + Math.cos(a) * .79); } }
+      for (let k = 0; k < 24; k++) { const a = k / 24 * PI * 2; add(G.sph(.014, 6, 4), k % 2 ? P1 : '#ffd84a', Math.sin(a) * .79, 1.22, -.1 + Math.cos(a) * .79); }
+      // (10/24 사용자 3판 "파라솔과 의자도 디테일"): a little vented cap on top, white seams down each panel, the tilt crank on the pole,
+      // a sand anchor at its foot; the beach chair gets wooden armrests with brass bolts, a striped headrest pillow, a towel over
+      // its back and a pair of flip-flops beside it
+      add(G.cyl(.07, .09, .03, 12), P2, 0, 1.6, -.1); add(G.cone(.075, .06, 12), P1, 0, 1.645, -.1);
+      for (let k = 0; k < 8; k++) { const a = k * PI / 4; tube([0, 1.6, -.1], [Math.sin(a) * .77, 1.28, -.1 + Math.cos(a) * .77], .006, '#ffffff', 4); }
+      add(G.cyl(.03, .03, .05, 10), '#c9cfe0', 0, .95, -.1); tube([0, .95, -.1], [.08, .95, -.1], .008, '#c9cfe0', 4); tube([.08, .95, -.1], [.08, .89, -.1], .007, '#c9cfe0', 4); add(G.sph(.016, 8, 6), '#ff6a6a', .08, .885, -.1);
+      add(G.cyl(.13, .15, .05, 16), '#ffe9b8', 0, .025, -.1); add(G.tor(.13, .012, PI * 2, 5, 18), '#e9c98a', 0, .05, -.1, HP, 0, 0);
+      for (const sx of [-1, 1]) { add(G.box(.05, .02, .3, .008), WOODL, sx * .25, .44, .12, -.12, 0, 0); tube([sx * .25, .3, .26], [sx * .25, .44, .24], .012, WOOD, 5);
+        for (const [y, z] of [[.3, .3], [.3, .02], [.72, -.12]]) add(G.sph(.013, 8, 6), '#e9b84a', sx * .228, y, z); }
+      // (on the cloth back: centre (0, .52, 0), tipped back .42 — up the back is u, out of it is n)
+      const bu = [0, Math.cos(.42), -Math.sin(.42)], bn = [0, Math.sin(.42), Math.cos(.42)], onBack = (x, d, e) => [x, .52 + bu[1] * d + bn[1] * e, bu[2] * d + bn[2] * e];
+      add(G.box(.32, .07, .08, .03), '#fff6ea', ...onBack(0, .2, .045), -.42, 0, 0); for (const x of [-.1, 0, .1]) add(G.box(.025, .072, .082, .006), '#7fc6ef', ...onBack(x, .2, .045), -.42, 0, 0);
+      add(G.box(.2, .3, .012, .004), '#ffe08a', ...onBack(.1, -.02, .017), -.42, 0, 0); for (const d of [-.14, .1]) add(G.box(.2, .02, .014, .002), '#ff9e7a', ...onBack(.1, d, .019), -.42, 0, 0);
+      for (const [x, z, r] of [[.36, .3, .25], [.45, .27, -.15]]) { const c = Math.cos(r), s2 = Math.sin(r), at = (dx, dz) => [x + dx * c + dz * s2, z - dx * s2 + dz * c];
+        add(G.cyl(.034, .034, .012, 16), '#7fd3b8', x, .006, z, 0, r, 0, [1, 1, 2.3]); add(G.cyl(.03, .03, .004, 16), '#bff0e0', x, .013, z, 0, r, 0, [1, 1, 2.2]);
+        const [tx, tz] = at(0, -.045), [lx, lz] = at(-.03, .005), [rx2, rz2] = at(.03, .005);
+        tube([tx, .014, tz], [lx, .03, lz], .006, '#ff8fa8', 4); tube([tx, .014, tz], [rx2, .03, rz2], .006, '#ff8fa8', 4); tube([lx, .03, lz], [lx, .014, lz], .005, '#ff8fa8', 4); tube([rx2, .03, rz2], [rx2, .014, rz2], .005, '#ff8fa8', 4); }
+    }
     // the beach chair's wooden frame
     for (const sx of [-1, 1]) { tube([sx * .21, 0, .32], [sx * .21, .3, .02], .018, WOOD, 6); tube([sx * .21, 0, -.06], [sx * .21, .3, .3], .018, WOOD, 6); tube([sx * .21, .3, .3], [sx * .21, .72, -.12], .018, WOOD, 6); }
     tube([-.21, .72, -.12], [.21, .72, -.12], .016, WOOD, 6); tube([-.21, .3, .3], [.21, .3, .3], .016, WOOD, 6);
@@ -396,9 +416,26 @@ B.s3a_campchair = (f, T, o = {}) => {
   const sy = .4, seat = '#7cc4ec';
   f.add(mc('s3a-cchair' + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add, tube }) => {
     for (const sx of [-1, 1]) { const x = sx * .26, c = '#5a6a86'; tube([x, 0, .2], [x, sy + .02, -.2], .022, c); tube([x, 0, -.2], [x, sy + .02, .2], .022, c); tube([x, sy + .02, -.2], [x, .9, -.32], .02, c); tube([x, sy + .18, .22], [x, sy + .18, -.24], .022, c); }
-    add(G.cyl(.045, .04, .08, 14), '#ffcf3c', .31, sy + .2, .17);
-    if (o.vivid || o.detail) { add(G.cyl(.032, .028, .1, 12), '#fff6d6', .31, sy + .27, .17); add(G.cyl(.03, .03, .01, 12), '#ffe27a', .31, sy + .315, .17); tube([.31, sy + .3, .17], [.33, sy + .38, .16], .004, '#ff6a8a', 4); add(G.sph(.016, 8, 6), '#9fe07a', .3, sy + .325, .18, 0, 0, 0, [1, .4, 1]);
-      add(G.box(.04, .12, .16, .01), '#5aa0d0', -.29, sy + .1, .02); }
+    // (10/24 사용자 3판 "의자 옆 음료수 크기 이상, 의자 디테일 올려"): a cup holder ring hung off the right armrest with a small
+    // paper cup of orange juice in it (it was a big yellow tub on the seat's corner); padded armrests, rivets where the legs
+    // cross, rubber feet, a top rail, a little headrest pillow, piping and a frog patch on the back, a side pocket with a map
+    if (o.vivid || o.detail) {
+      const hx = .335, hy = sy + .14, hz = .14;
+      tube([.26, sy + .18, hz], [hx, sy + .17, hz], .006, '#5a6a86', 4); add(G.tor(.034, .006, PI * 2, 5, 16), '#5a6a86', hx, hy, hz, HP, 0, 0); add(G.cyl(.03, .03, .006, 14), '#4a5a76', hx, hy - .045, hz);
+      tube([hx - .03, hy, hz], [hx - .028, hy - .045, hz], .004, '#5a6a86', 4); tube([hx + .03, hy, hz], [hx + .028, hy - .045, hz], .004, '#5a6a86', 4);
+      add(G.cyl(.028, .022, .075, 14), '#fffaf0', hx, hy - .005, hz); add(G.tor(.028, .004, PI * 2, 4, 14), '#ffffff', hx, hy + .033, hz, HP, 0, 0); add(G.cyl(.025, .025, .006, 14), '#ffb347', hx, hy + .03, hz);
+      add(G.box(.032, .022, .004, .002), '#ff8a5a', hx, hy, hz + .028); tube([hx + .005, hy + .03, hz], [hx + .02, hy + .095, hz - .01], .0035, '#ff6a8a', 4);
+      for (const sx of [-1, 1]) { const x = sx * .26;
+        add(G.box(.05, .03, .3, .012), '#3f78a8', x, sy + .2, -.01); add(G.sph(.016, 8, 6), '#c9cfdc', x, (sy + .02) / 2, 0);
+        for (const z of [.2, -.2]) add(G.sph(.026, 8, 6), '#3a4458', x, .012, z, 0, 0, 0, [1, .55, 1]); }
+      tube([-.26, .9, -.32], [.26, .9, -.32], .018, '#5a6a86');
+      add(G.box(.04, .12, .16, .01), '#5aa0d0', -.29, sy + .1, .02); add(G.box(.008, .08, .1, .002), '#fff6e0', -.315, sy + .14, .02); add(G.box(.004, .02, .1, .001), '#ff8a7a', -.32, sy + .15, .02);
+      const bk = (x, y, z) => [x, sy + .27 + y * Math.cos(-.22) - z * Math.sin(-.22), -.26 + y * Math.sin(-.22) + z * Math.cos(-.22)];
+      for (const y of [.225, -.225]) add(G.box(.53, .016, .04, .006), '#5aa0d0', ...bk(0, y, 0), -.22, 0, 0);
+      add(G.box(.5, .045, .006, .002), '#ffffff', ...bk(0, .08, .02), -.22, 0, 0);
+      add(G.cyl(.05, .05, .006, 18), '#8fd06a', ...bk(0, -.05, .021), -.22 + HP, 0, 0); for (const sx of [-1, 1]) { add(G.cyl(.018, .018, .007, 12), '#8fd06a', ...bk(sx * .03, -.01, .022), -.22 + HP, 0, 0); add(G.cyl(.008, .008, .008, 10), '#2a1d33', ...bk(sx * .03, -.01, .026), -.22 + HP, 0, 0); }
+      add(G.box(.3, .08, .06, .03), '#fff3e0', ...bk(0, .26, .04), -.22, 0, 0); for (const sx of [-1, 1]) add(G.box(.012, .07, .062, .004), '#ffc6a8', ...bk(sx * .12, .26, .04), -.22, 0, 0);
+    } else add(G.cyl(.045, .04, .08, 14), '#ffcf3c', .31, sy + .2, .17);
     add(G.box(.52, .04, .42, .015), seat, 0, sy, 0, .05, 0, 0);
     add(G.box(.52, .46, .035, .015), seat, 0, sy + .27, -.26, -.22, 0, 0);
   }));

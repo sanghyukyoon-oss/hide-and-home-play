@@ -21,7 +21,7 @@ const C = {
   ink: '#4a3b52', cut: '#6d6577', cut2: '#585164', cream: '#f8f9f7', wall: '#f2f5f4', wall2: '#e3e9e8', tile: '#d7e6e2', grout: '#f6f8f7',
   soffit: '#f3f6f5', soffit2: '#dfe6e6', tube: '#fbfdff', steel: '#c9cfd8', steel2: '#a9b1bd', dark: '#3d3a52', rubber: '#3b3550',
   conc: '#d5d9d8', conc2: '#c3c9c9', earth: '#b98f68', earth2: '#a27c5a', deep: '#8a6648', stone: '#cfd1cd', stone2: '#b7bab6',
-  walk: '#e2e4e0', walk2: '#cdd1cc', grass: '#9fd27a', leaf: '#7cc46a', leaf2: '#5fae5a', trunk: '#9a6b45',
+  walk: '#e2e4e0', walk2: '#cdd1cc', base: '#a9a49a', grass: '#9fd27a', leaf: '#7cc46a', leaf2: '#5fae5a', trunk: '#9a6b45',
   coral: '#ef8a7e', mustard: '#f2b544', mint: '#8fd1bf', sky: '#8cc6e6', navy: '#5d74a8', lilac: '#b9a6e8', pink: '#f5a6bd', red: '#e8604c',
   yellow: '#f7d354', wood: '#e3b37c', woodD: '#b8834f', glassC: '#cfe8ef', brass: '#e6b94e', white: '#fdfefc',
 };
@@ -35,7 +35,7 @@ const WORDS = {
   '오늘은 일찍 닫아요': 'Closing early today', '떡볶이': 'Tteokbokki', '어묵': 'Fish cake', '순대': 'Sundae', '튀김': 'Fritters',
   '오늘의 메뉴': "Today's Menu", '세일': 'SALE', '지하상가 안내도': 'Mall Map', '현위치': 'You are here', '옷': 'Clothes', '분식': 'Snacks',
   '열쇠': 'Keys', '꽃': 'Flowers', '보관함': 'Lockers', '까꿍!': 'Peekaboo!', '미끄럼 주의': 'Wet Floor', '금고': 'Safe', '근무 일지': 'Duty Log',
-  '마감 10시': 'Closes 10 pm', '지하 1층': 'B1', '오늘의 꽃': "Today's Flowers", '사용 중': 'In use', '비어 있음': 'Free',
+  '마감 10시': 'Closes 10 pm', '버스 정류장': 'Bus Stop', '마을버스 7': 'Village Bus 7', '지하 1층': 'B1', '오늘의 꽃': "Today's Flowers", '사용 중': 'In use', '비어 있음': 'Free',
 };
 for (const k in WORDS) if (EN[k] == null) EN[k] = WORDS[k];
 
@@ -151,7 +151,8 @@ B.um_hall = f => {
     const column = (x0, x1, z0, z1) => {
       add(G.box(x1 - x0, earthY + .73, z1 - z0, .05, 2), C.earth, (x0 + x1) / 2, (earthY - .73) / 2, (z0 + z1) / 2);
       add(G.box(x1 - x0 - .16, .34, z1 - z0 - .16, .12, 2), C.deep, (x0 + x1) / 2, -.88, (z0 + z1) / 2);
-      add(G.box(x1 - x0 + .02, .07, z1 - z0 + .02, .02), C.walk, (x0 + x1) / 2, earthY + .035, (z0 + z1) / 2);
+      add(G.box(x1 - x0 + .03, .05, z1 - z0 + .03, .015), C.base, (x0 + x1) / 2, earthY - .07, (z0 + z1) / 2);
+      add(G.box(x1 - x0 + .02, .12, z1 - z0 + .02, .02), C.walk, (x0 + x1) / 2, earthY + .01, (z0 + z1) / 2);
     };
     column(nx0, NX1, nz0, nz1); column(nx0, wx1, nz1, WZ1);
     // the cut faces that show: the column fronts above the walls (+z, +x) and the two column ends (x = NX1, z = WZ1)
@@ -174,8 +175,6 @@ B.um_hall = f => {
     add(G.cyl(.08, .08, .03, 12), C.stone2, nx0 + .5, .6, WZ1 + .02, HP, 0, 0); add(G.cyl(.05, .05, .035, 10), C.dark, nx0 + .5, .6, WZ1 + .025, HP, 0, 0);
     add(G.sph(.16, 10, 8), C.deep, NX1 + .02, .3, nz0 + .55, 0, 0, 0, [.2, .8, 1]);
     // the street on top: joints, the road kerb, a street tree, a lamp, the 출구 1 canopy over the escalator's way up
-    for (let x = nx0 + .5; x < NX1; x += .5) add(G.pbox(.02, .01, nz1 - nz0), C.walk2, x, earthY + .072, (nz0 + nz1) / 2);
-    for (let z = nz1 + .5; z < WZ1; z += .5) add(G.pbox(wx1 - nx0, .01, .02), C.walk2, (nx0 + wx1) / 2, earthY + .072, z);
     add(G.box(NX1 - nx0, .1, .14, .02), C.stone, (nx0 + NX1) / 2, earthY + .08, nz0 + .07);
     add(G.box(.14, .1, WZ1 - nz0, .02), C.stone, nx0 + .07, earthY + .08, (nz0 + WZ1) / 2);
     { const x = .9, z = nz0 + .5;
@@ -189,6 +188,34 @@ B.um_hall = f => {
     add(G.box(1.15, .06, BACK + .1, .02), C.navy, -3.45, earthY + .98, (nz0 + nz1) / 2);
     add(G.box(1.1, .02, BACK + .05, .01), '#b6cfe8', -3.45, earthY + 1.02, (nz0 + nz1) / 2);
     add(G.box(.9, .05, BACK - .1, .01), C.dark, -3.45, earthY + .075, (nz0 + nz1) / 2);
+    // (10/24 아트 점검 40: the street read as one thin empty plate — a bus stop sign, a waiting bench, a planter and a bike rack, a few lumps
+    // along the kerb and the corner; the middle of the pavement stays open)
+    const sty = earthY + .07, srz = nz0 + .3;
+    { const x = 1.95;
+      tube([x, sty, srz], [x, sty + 1.2, srz], .028, C.steel2, 8);
+      add(G.cyl(.15, .15, .035, 22), C.white, x, sty + 1.2, srz + .01, HP, 0, 0);
+      add(G.box(.2, .26, .025, .01), C.white, x, sty + .82, srz + .02);
+      add(G.cyl(.06, .07, .05, 12), C.conc2, x, sty + .025, srz); }
+    { const x = .05, z = nz0 + .42;
+      for (const sx of [-1, 1]) add(G.box(.05, .26, .3, .015), C.steel2, x + sx * .38, sty + .13, z);
+      add(G.box(.9, .05, .34, .02), C.wood, x, sty + .28, z);
+      for (let k = 0; k < 3; k++) add(G.pbox(.86, .008, .01), C.woodD, x, sty + .307, z - .1 + k * .1);
+      add(G.box(.9, .2, .04, .02), C.wood, x, sty + .45, z + .16); }
+    { const x = -2.35, z = nz0 + .5, w = .78, d = .42;
+      add(G.box(w, .22, d, .04), C.conc2, x, sty + .11, z);
+      add(G.box(w - .08, .02, d - .08, .01), C.deep, x, sty + .215, z);
+      for (const [dx, dz, r, c] of [[-.24, -.05, .13, C.leaf], [0, .04, .15, C.leaf2], [.24, -.03, .12, C.leaf]]) add(G.sph(r, 10, 8), c, x + dx, sty + .25, z + dz, 0, 0, 0, [1, .8, 1]);
+      for (const [dx, dz, c] of [[-.13, .1, C.pink], [.12, .11, C.mustard], [-.3, .1, C.white], [.3, .09, C.pink], [.05, -.1, C.mustard]]) add(G.sph(.035, 8, 6), c, x + dx, sty + .33, z + dz); }
+    { const x = nx0 + .55;
+      for (const z of [-2.2, -1.55, -.9]) { tube([x, sty, z - .2], [x, sty + .42, z - .2], .02, C.steel2, 6); tube([x, sty + .42, z - .2], [x, sty + .42, z + .2], .02, C.steel2, 6); tube([x, sty + .42, z + .2], [x, sty, z + .2], .02, C.steel2, 6); }
+      const bz = -1.55, bx = x + .12, wr = .2, wy = sty + wr;
+      for (const dz of [-.3, .3]) { add(G.tor(wr, .022, PI * 2, 5, 22), C.rubber, bx, wy, bz + dz, 0, HP, 0); add(G.cyl(.03, .03, .05, 8), C.steel2, bx, wy, bz + dz, HP, 0, 0); }
+      tube([bx, wy, bz - .3], [bx, wy + .24, bz - .02], .022, C.mint, 6); tube([bx, wy + .24, bz - .02], [bx, wy, bz + .02], .022, C.mint, 6);
+      tube([bx, wy, bz + .02], [bx, wy, bz + .3], .02, C.mint, 6); tube([bx, wy + .24, bz - .02], [bx, wy + .3, bz - .1], .02, C.mint, 6);
+      tube([bx, wy + .24, bz - .02], [bx, wy + .36, bz + .24], .02, C.mint, 6); tube([bx, wy + .36, bz + .24], [bx, wy, bz + .3], .02, C.mint, 6);
+      add(G.box(.08, .03, .14, .015), C.dark, bx, wy + .32, bz - .12);
+      tube([bx - .16, wy + .4, bz + .24], [bx + .16, wy + .4, bz + .24], .016, C.dark, 6);
+      add(G.box(.2, .1, .14, .02), C.wood, bx, wy + .46, bz + .32); }
     // ── a slim bulkhead along the back walls (a deeper soffit hid the shops' back walls from the start view): fluorescent tubes
     // under it, its front edge cut
     const sd = .34;
@@ -261,7 +288,30 @@ B.um_hall = f => {
   label(f.group, 'subway', .9, .16, signDraw('지하철 연결', '#3f8f5a', C.white, { size: .6 }), X0 + .045, 2.26, 1.15, 0, HP, 0);
   label(f.group, 'lostbox', .34, .12, signDraw('분실물', C.cream, C.ink, { size: .62, edge: '#c99e64' }), 3.55, .2, .55 + .225);
   label(f.group, 'wetfloor', .22, .2, signDraw('미끄럼 주의', C.yellow, C.dark, { size: .38, lines: 2 }), 1.8 + .01, .3, .8 + .075, .14, .5, 0);
-  // street name plate on top (a little bus-stop sign at the street)
+  // the street on top: pavers drawn on the pavement, the bus stop's round sign and its timetable
+  { const topY = CEIL + .24, earthY = topY + .5, nx0 = X0 - WT - BACK, nz0 = Z0 - WT - BACK, nz1 = Z0 - WT, wx1 = X0 - WT, y = earthY + .073;
+    const pave = tex.get('um-pave', () => { const t = new THREE.CanvasTexture((() => {
+      const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+      x.fillStyle = '#b9bdb6'; x.fillRect(0, 0, 256, 256);
+      const cols = ['#e4e1d9', '#dcd9d0', '#e9e6de', '#d5d3cb', '#e0ddd4'];
+      for (let j = 0; j < 8; j++) for (let i = -1; i < 5; i++) { const px = i * 64 + (j % 2) * 32; x.fillStyle = cols[(i * 7 + j * 3 + 20) % 5]; roundRect(x, px + 2, j * 32 + 2, 60, 28, 4); x.fill(); }
+      return c; })()); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; });
+    const slab = (x0, x1, z0, z1) => {
+      const w = x1 - x0, d = z1 - z0, g = geo(`um-pave|${w.toFixed(2)}|${d.toFixed(2)}`, () => { const q = new THREE.PlaneGeometry(w, d); const uv = q.attributes.uv; for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * w / .8, uv.getY(k) * d / .8); return q; });
+      const m = mesh(g, mat('#ffffff', { map: pave, rim: 0 }), { cast: false }); put(m, (x0 + x1) / 2, y, (z0 + z1) / 2, -HP, 0, 0); m.renderOrder = 1; f.group.add(m);
+    };
+    slab(nx0 + .01, NX1, nz0 + .14, nz1); slab(nx0 + .14, wx1, nz1, WZ1);
+    label(f.group, 'busstop', .26, .26, (c, W, H) => {
+      c.fillStyle = '#3f8f5a'; c.beginPath(); c.arc(W / 2, H / 2, W / 2 - 2, 0, PI * 2); c.fill();
+      c.fillStyle = C.white; roundRect(c, W * .26, H * .2, W * .48, H * .34, 10); c.fill();
+      c.fillStyle = '#3f8f5a'; roundRect(c, W * .32, H * .25, W * .36, H * .12, 4); c.fill();
+      fitText(c, '버스 정류장', W / 2, H * .7, W * .7, H * .16, C.white, { weight: 'bold' });
+    }, 1.95, earthY + .07 + 1.2, nz0 + .3 + .03);
+    label(f.group, 'bustimes', .17, .22, (c, W, H) => {
+      c.fillStyle = '#fbfcf8'; roundRect(c, 0, 0, W, H, 8); c.fill();
+      fitText(c, '마을버스 7', W / 2, H * .16, W * .84, H * .14, '#3f8f5a', { weight: 'bold' });
+      c.fillStyle = '#c9cfc6'; for (let k = 0; k < 5; k++) c.fillRect(W * .14, H * (.34 + k * .12), W * (.72 - (k % 2) * .2), H * .045);
+    }, 1.95, earthY + .07 + .82, nz0 + .3 + .035); }
   // spots in the corridor: the basket, under the bench, behind the bins, beside the pillar, in the lost box, the mop bucket
   f.spot('on', null, -.6, .67, 2.45, { label: '벤치 위 장바구니 안', maxH: 0.5, scale: 1.25 });
   f.spot('on', null, .05, .475, 2.38, { label: '벤치 오른쪽 끝', maxH: 0.75, scale: 1.7 });

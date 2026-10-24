@@ -7,10 +7,11 @@
 // 대본·물건 풀·빛은 옛 키로 이어짐(roomalias.js firestation3 → firestation).
 import { registerFurniture } from './gfx/furniture.js';
 import { FS3_BUILDERS, FS3_INFO } from './gfx/firestation3-props.js';
+import { WHITETOWN_BUILDERS, WHITETOWN_INFO } from './gfx/whitetown-kit.js';
 
 export function installFirestation3(LAYOUTS, THEMES) {
   if (!THEMES.firestation) return;
-  registerFurniture(FS3_BUILDERS, FS3_INFO);
+  registerFurniture(FS3_BUILDERS, FS3_INFO); registerFurniture(WHITETOWN_BUILDERS, WHITETOWN_INFO);
   // (바닥판은 섬이 대신함 — 테마 바닥은 섬 포장색 한 가지, 사물함은 흐린 파랑)
   THEMES.firestation3 = { ...THEMES.firestation, name: '곰돌이네 119 안전센터', floorKind: 'carpet', floor: '#ece5d9', floor2: '#ece5d9', base: '#d3a47a', edge: '#b0805a',
     locker: '#8fb3d3', friend: THEMES.firestation.friend ?? 'bear' };
@@ -32,6 +33,10 @@ export function installFirestation3(LAYOUTS, THEMES) {
       { type: 'cones', x: 2.45, z: 3.3, y: -.115 },
       { type: 'boxstack', x: 3.6, z: -2.7 },
       { type: 'bike2', x: 4.35, z: -1.0, a: -Math.PI / 2 },
+      // 하얀 동네 (⑦ 공용 키트, 아트 점검 10/23 '흰 종이 오린 판' → 입체 흰 집·먼 줄은 하늘색으로 흐려짐·돌리면 접힘): 섬 밑동 높이의 땅에 깔아
+      // 섬이 동네 안에 솟은 블록으로, 뒤 멀리 다음 판 20판 햇살 빌라
+      { type: 'whitetown', x: 0, z: 0, y: -.86, opts: { clear: [-5.6, -4.6, 5.6, 4.6], sky: '#cbe7f6', seed: 19,
+        landmarks: [{ build: 'fs3_villamark', x: -3, z: -10.5, ry: .62, s: .9 }], skip: [[-3, -10.5, 4]] } },
     ],
     decor: [], friendAt: [1.2, .9],
   };

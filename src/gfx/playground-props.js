@@ -1657,13 +1657,43 @@ export const PLAYGROUND_ITEMS = {
     return g;
   } },
   // 축구공: a white soccer ball with twelve black pentagon patches
+  // (10/24 사용자 3판 "축구공이 너무 못생겼다": the patches were five-sided sphere caps with a grey pole dot, too big, on a faceted
+  // ball — now the real cut of a ball (a truncated icosahedron): twelve curved charcoal pentagons, the pale seams between the
+  // white hexagons, a smooth ball)
   ball2: { name: '축구공', h: .2, build() {
     const g = grp(), R = .1, ph = (1 + Math.sqrt(5)) / 2;
-    g.add(mc('it-ball2', ({ add, addM }) => {
-      add(G.sph(R, 26, 18), WHITE, 0, R, 0);
-      for (const v of [[-1, ph, 0], [1, ph, 0], [-1, -ph, 0], [1, -ph, 0], [0, -1, ph], [0, 1, ph], [0, -1, -ph], [0, 1, -ph], [ph, 0, -1], [ph, 0, 1], [-ph, 0, -1], [-ph, 0, 1]]) {
-        const d = v3(v).normalize();
-        addM(new THREE.SphereGeometry(R + .003, 5, 2, 0, PI * 2, 0, .42), new THREE.Matrix4().compose(new THREE.Vector3(0, R, 0), new THREE.Quaternion().setFromUnitVectors(Y, d), new THREE.Vector3(1, 1, 1)), CHAR);
+    g.add(mc('it-ball2b', ({ add, addM }) => {
+      add(G.sph(R, 48, 36), WHITE, 0, R, 0);
+      const ico = [[-1, ph, 0], [1, ph, 0], [-1, -ph, 0], [1, -ph, 0], [0, -1, ph], [0, 1, ph], [0, -1, -ph], [0, 1, -ph], [ph, 0, -1], [ph, 0, 1], [-ph, 0, -1], [-ph, 0, 1]].map(v => v3(v).normalize());
+      const slerp = (u, w, t) => u.clone().multiplyScalar(1 - t).addScaledVector(w, t).normalize();
+      const on = (d, r) => d.clone().multiplyScalar(r).add(new THREE.Vector3(0, R, 0));
+      const near = a => ico.filter(b => b !== a && a.dot(b) > .4);
+      for (const a of ico) {
+        // the pentagon: its corners a third of the way to each neighbour, in turn round a; each fan slice split 4×4 and pressed
+        // onto the ball so the patch curves with it
+        const ref = Math.abs(a.y) < .9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0), e1 = ref.clone().cross(a).normalize(), e2 = a.clone().cross(e1);
+        const cs = near(a).map(b => slerp(a, b, 1 / 3)).sort((p, q) => Math.atan2(p.dot(e2), p.dot(e1)) - Math.atan2(q.dot(e2), q.dot(e1)));
+        const pos = [], N = 4, rr = R + .0022;
+        for (let i = 0; i < 5; i++) {
+          const P = a, Q = cs[i], S = cs[(i + 1) % 5], pt = (u, v) => P.clone().multiplyScalar(1 - u - v).addScaledVector(Q, u).addScaledVector(S, v).normalize();
+          for (let r = 0; r < N; r++) for (let c = 0; c < N - r; c++) {
+            const A = pt(r / N, c / N), B = pt((r + 1) / N, c / N), C = pt(r / N, (c + 1) / N);
+            for (const v of [A, B, C]) pos.push(...on(v, rr).toArray());
+            if (c < N - r - 1) { const D = pt((r + 1) / N, (c + 1) / N); for (const v of [B, D, C]) pos.push(...on(v, rr).toArray()); }
+          }
+        }
+        const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        const nr = []; for (let i = 0; i < pos.length; i += 3) { const n = new THREE.Vector3(pos[i], pos[i + 1] - R, pos[i + 2]).normalize(); nr.push(n.x, n.y, n.z); }
+        pg.setAttribute('normal', new THREE.Float32BufferAttribute(nr, 3));
+        // (wound so the face looks out)
+        const t0 = new THREE.Vector3(...pos.slice(0, 3)), t1 = new THREE.Vector3(...pos.slice(3, 6)), t2 = new THREE.Vector3(...pos.slice(6, 9));
+        if (t1.clone().sub(t0).cross(t2.clone().sub(t0)).dot(a) < 0) { const P2 = pg.attributes.position; for (let i = 0; i < P2.count; i += 3) { for (let k = 0; k < 3; k++) { const x = P2.getComponent(i + 1, k); P2.setComponent(i + 1, k, P2.getComponent(i + 2, k)); P2.setComponent(i + 2, k, x); } } const N2 = pg.attributes.normal; for (let i = 0; i < N2.count; i += 3) for (let k = 0; k < 3; k++) { const x = N2.getComponent(i + 1, k); N2.setComponent(i + 1, k, N2.getComponent(i + 2, k)); N2.setComponent(i + 2, k, x); } }
+        addM(pg, I4, '#2f2b3c');
+        // the seams: the middle third of each edge to a neighbour (between two white hexagons), once per edge
+        for (const b of near(a)) if (ico.indexOf(a) < ico.indexOf(b)) {
+          const pts = [1 / 3, .44, .56, 2 / 3].map(t => on(slerp(a, b, t), R + .0004));
+          for (let k = 0; k < 3; k++) { const [L, m] = tubeM(pts[k].toArray(), pts[k + 1].toArray()); addM(new THREE.CylinderGeometry(.002, .002, L, 5), m, '#c4cad8'); }
+        }
       }
     }));
     return g;

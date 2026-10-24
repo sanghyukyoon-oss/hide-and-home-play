@@ -1210,7 +1210,8 @@ B.log = (f, T) => {
     // tube it could not be seen from any angle — stage 59's key was lost there (level report 10/18 B2)
     f.spot('inside', null, sx * (ex + .06), .02, .05, { part: p, maxH: .3, label: '통나무 속', scale: .66 });
   };
-  plug(1, '#ff9f43', '#ffd23f', '낙엽 뭉치'); plug(-1, '#6fc45a', '#a8e07a', '이끼 뭉치');
+  // (10/24 아트 점검 51·52·56·57·60: the moss plug's bright lime read as green jelly in the log's mouth — a damp forest moss now)
+  plug(1, '#ff9f43', '#ffd23f', '낙엽 뭉치'); plug(-1, '#6f8f4e', '#8ea765', '이끼 뭉치');
   f.add(mg('log-mush-s', '#fff3dc', ({ add }) => { add(G.cyl(.025, .03, .1, 8), -.3, 2 * R + .02, .08); add(G.cyl(.02, .025, .07, 8), -.16, 2 * R + .01, .12); }));
   f.add(mg('log-mush-c', '#ff6b5e', ({ add }) => { add(G.sph(.06, 12, 8), -.3, 2 * R + .07, .08, 0, 0, 0, [1, .6, 1]); add(G.sph(.045, 12, 8), -.16, 2 * R + .05, .12, 0, 0, 0, [1, .6, 1]); }));
   f.spot('on', null, .22, 2 * R - .01, 0, { maxH: .45, label: '통나무 위', scale: .85 });
@@ -1309,7 +1310,10 @@ B.mushrooms = (f, T) => {
 B.pine = (f, T) => {
   const g1 = col(T, 'pine');
   f.add(put(cyl(.07, .1, .6, col(T, 'bark'), null, 12), 0, .3, 0));
-  const tier = (key, r, h, color) => lathe('pine|' + key, [[0, h], [r * .3, h * .72], [r * .72, h * .3], [r, .02], [r * .82, -.03], [0, .04]], color, null, 20);
+  // (10/24 아트 점검 51·52·56·57·60: on a straight-sided cone the comic shine dot ran the whole height of a tier — a glassy stripe on every
+  // layer; the tiers' normals lean up toward the sky, so no line of them meets the shine and the light falls soft and even)
+  const soft = m => { const g = m.geometry; if (!g.userData.softPine) { const n = g.attributes.normal; for (let k = 0; k < n.count; k++) { const x = n.getX(k) * .45, y = n.getY(k) * .45 + 1, z = n.getZ(k) * .45, l = Math.hypot(x, y, z); n.setXYZ(k, x / l, y / l, z / l); } n.needsUpdate = true; g.userData.softPine = true; } return m; };
+  const tier = (key, r, h, color) => soft(lathe('pine|' + key, [[0, h], [r * .3, h * .72], [r * .72, h * .3], [r, .02], [r * .82, -.03], [0, .04]], color, null, 20));
   const t1 = grp(tier('a2', .5, .5, g1)); put(t1, 0, .26, 0); f.add(t1);
   f.add(put(tier('b', .4, .58, shade(g1, .05)), 0, .7, 0));
   f.add(put(tier('c', .29, .54, shade(g1, .1)), 0, 1.12, 0));
