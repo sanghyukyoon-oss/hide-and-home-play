@@ -743,7 +743,9 @@ MAPS.bearbakery = () => ({ theme: THEMES.bearbakery, friendAt: [-.84, -1.2], roo
       F('breadbasket', 0, 2, 0, { v: 0 }), F('bakeisland', 1, 2), F('breadcart', 0, 4, 1), F('plant', 4, 4)],
     decor: [D('potrail', 'N', -1.5), D('bakejars', 'N', 1.5), D('ginghamwin', 'W', -.2), D('chalkmenu', 'W', -1.75)],
     sun: [{ from: [-2.5, -.6, -2.5, .4], dir: [2.4, 1.0] }] }) },
+  // (35판 10/24 사용자 "단차도 좀 넣어 주고"): 가게 앞 좌판 자리는 돌 디딤 한 단(20 cm) 위 — 둥근 테·짙은 밑단·돌 면, 마당 쪽 앞에 계단 하나
   { at: [2.5, 0], layout: RM('bakeyard', 3, 5, { walls: { N: 'wall', W: 'none', E: 'none', S: 'none' },
+    raised: [{ i: 0, j: 0, w: 3, d: 2, h: .2, kind: 'hex', a: '#f1ece3', b: '#ddd5c7', edge: '#c9bfae', nose: '#f6f1e8', plinth: '#a8998a', stone: '#d6cdbf', step: false, stairs: [{ side: 'S', at: -.2, w: 1 }] }],
     furniture: [F('bkstall', 1, 0), F('bklamp', 2, 3), F('floursacks', 0, 2), F('bkparasol', 2, 2), F('breadbasket', 2, 1, 0, { v: 1 }), F('bkcrates', 1, 4), F('bkplanter', 2, 4)],
     decor: [D('bkfacade', 'N', 0)], sun: [] }) },
 ] });
@@ -949,7 +951,7 @@ export function regionOf(idx) { return REGIONS.find(r => idx < r.to) || REGIONS[
 // (#94 19~70 10/21~22 — 사용자 "스테이지 19 이후로 이거 엄청 작게": 시작 화면에서 찾을 것이 28px 미만인 판은 줌을 올리고(상한 1.5),
 // 넘치면 그 판 물건 크기도 ITEM_TUNE으로 — 측정은 메쉬 크기, 폰 세로 390×844)
 // (28판 기차 객실 3차 10/22: 12m 객실을 길이로 비스듬히 보는 판 — 1.4면 앞뒤가 잘려서 1.2, ① 권장 1.15~1.2)
-const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.2, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.5, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
+const ZOOM_TUNE = { 5: 1.2, 17: 1.2, 18: 1.25, 20: 1.35, 21: 1.35, 22: 1.1, 25: 1.5, 26: 1.4, 27: 1.2, 28: 1.4, 29: 1.2, 30: 1.5, 33: 1.3, 34: 1.2, 35: 1.5, 36: 1.2, 37: 1.2, 39: 1.5, 42: 1.15, 44: 1.1, 45: 1.45, 47: 1.5, 48: 1.5, 49: 1.35, 53: 1.5, 54: 1.25, 56: 1.5, 58: 1.5, 59: 1.5, 62: 1.15, 63: 1.5, 65: 1.5, 66: 1.45, 69: 1.5 };
 // (공원·캠프 새 맵 10/23, parkcamp-maps.js: 둥근 섬이 다 보이는 시작 줌 — 판 번호 표(ZOOM_TUNE)는 옛 맵 값이라 맵 키로 덮어씀)
 const ROOM_ZOOM = { fishisle: 1.1, starplay: 1.1, picnichill: 1.1, fireflyvalley: 1.05, creekcamp: 1.2, bridgewood: 1.25 };
 // 그 판 물건 크기(기본 .34 = 34cm 기준; 룩이 있는 방은 룩 값): 넓은 맵만 크게

@@ -45,8 +45,13 @@ export function fixSmall(S) {
   for (const it of S.targets) {
     if (performance.now() - t0 > 400) break;   // (a time budget, not a hitch)
     if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role !== 'target') continue;
-    // (24판 ② 10/23: a chain's reward stays where the chain ends — the 배수구 — however small; the chain's own camera shows it)
-    if (it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    // (24판 ② 10/23: a chain's reward stays where the chain ends — the 배수구, 25판 옥상 바구니 — the chain's own camera shows it;
+    // 10/24 허브: not tiny there either — drawn bigger in its own place, up to 2.2×, so a finger finds it (25판 쿠키 봇 빗나감 14번)
+    if (it.spot.part?.chainVia || it.spot.part?.device === 'chain') {
+      const px = screenPx(W, it.g), sp = it.spot;
+      if (px > 0 && px < MIN_PX) { const sc = it.g.scale.x / (sp.scale || 1) * Math.min(2.2, MIN_PX * 1.15 / px); redraw(it, sp, sc); moved.push(`${it.type}: ${sp.label} ${Math.round(px)}px → 키움`); }
+      continue;
+    }
     const px0 = screenPx(W, it.g); if (px0 >= MIN_PX) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), lockedIn = old.part?.lock ? old.part : null, wasIn = !!old.part;
     const free = s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && fits(it.type, s);

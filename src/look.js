@@ -356,6 +356,8 @@ RECIPES.aptmap = RECIPES.apt;
 RECIPES.bunnyattic = { light: { ambColor: '#f4eef6', amb: 1.3, sunColor: '#fff0dc', sun: 2.5, shadow: .6 }, sky: ['#e3cbdc', '#efdde7', '#d4b8cb'], itemSize: .38 };
 // 6판 곰돌이 빵 굽는 부엌 (10/20): a warm baking afternoon, a butter-apricot backdrop
 RECIPES.bearbakery = { light: { ambColor: '#f4ece8', amb: 1.28, sunColor: '#ffe6c2', sun: 2.55, shadow: .6 }, sky: ['#ecd3b4', '#f4e3cc', '#dfc29e'], itemSize: .44 };
+// (35판 10/24 사용자 "배경 글로우 넣고 쨍하게": 곰제과는 맑은 흰 해·밝은 주변광 — 크림 하늘·빛무리는 CREAM_GLOW, 6판 v1 부엌도 같은 레시피)
+RECIPES.bearbakery.light = { ambColor: '#faf8f4', amb: 1.48, sunColor: '#fff8ee', sun: 2.7, shadow: .5 };
 // (다락·곰제과 v2, 10/21 — 사용자는 v1을 고름; 후보로 남겨 둠)
 RECIPES.bearbakery2 = { ...RECIPES.bearbakery, itemSize: .4 };
 RECIPES.bunnyattic1 = RECIPES.bunnyattic2 = RECIPES.bunnyattic;
