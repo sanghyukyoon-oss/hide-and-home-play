@@ -372,9 +372,10 @@ const railLights = (add, tube, x0, x1, z) => {
 // ── 너굴이 이불 (1×2, the mezzanine's bed, head at -z): a mattress on the floor in a grey-blue sheet, a puffy mustard duvet
 // kicked half down with a fold, a long body pillow by the wall, a raccoon plush sitting at the foot, comics stacked on the
 // mattress, a phone face up on its cable by the pillow; the pillow and the duvet lift (2판 futon's way)
-B.otakufuton = (f, T) => {
+// (o.noRail: no mezzanine handrail in front of it — 18판 otakuloft5's room floor — so no fairy lights hung on one)
+B.otakufuton = (f, T, o = {}) => {
   const SHEET = '#dfe6f2', DUV = '#f4a259', DUV2 = '#fff1d6';
-  f.add(mc('otakufuton', ({ add, tube }) => {
+  f.add(mc('otakufuton' + (o.noRail ? '|nr' : ''), ({ add, tube }) => {
     add(G.box(.9, .16, 1.86, .05), SHEET, 0, .08, 0); add(G.box(.914, .02, 1.874, .008), '#9fb0cc', 0, .03, 0);
     // the body pillow along the wall side
     add(G.cyl(.1, .1, 1.0, 14), '#ffd6e6', -.33, .25, -.15, HP, 0, 0); for (const z of [-.64, .34]) add(G.sph(.1, 12, 8), '#ffd6e6', -.33, .25, z, 0, 0, 0, [1, 1, .5]);
@@ -391,7 +392,8 @@ B.otakufuton = (f, T) => {
     for (let k = 0; k < 3; k++) add(G.cyl(.045 - k * .006, .05 - k * .006, .07, 10), k % 2 ? '#4a4048' : '#a89a8c', px + .13, py + .05 + k * .06, pz - .1, .4, 0, -.6);
     // the phone on its cable by the pillow
     add(G.box(.075, .012, .15, .012), CHAR, .3, .166, -.42, 0, .3, 0); add(G.box(.06, .004, .12, .004), '#7cf0ff', .3, .174, -.42, 0, .3, 0);
-    railLights(add, tube, -.46, .5, 1.075);   // (out past the handrail's face, hanging under it)
+    // (out past the handrail's face, hanging under it)
+    if (!o.noRail) railLights(add, tube, -.46, .5, 1.075);
     tube([.28, .165, -.5], [.4, .14, -.62], .006, WHITE, 3); tube([.4, .14, -.62], [.44, .02, -.85], .006, WHITE, 3); tube([.44, .02, -.85], [.44, .02, -.98], .006, WHITE, 3);
   }));
   const pil = grp(mc('otakufuton-pillow', ({ add }) => { add(G.box(.52, .12, .3, .05, 2), '#ffffff', 0, 0, 0); add(G.box(.3, .005, .2, .004), '#8fd3f4', .04, .062, .02); }));
@@ -415,8 +417,8 @@ B.otakufuton = (f, T) => {
 };
 
 // ── 다락 둥지 (1×1, small, by the bed): a floor cushion with a handheld on it, a tower of comics in three piles, a reading
-// lamp with a warm shade, a big snack bag and a can, the hoodie in a heap
-B.loftnest = (f, T) => {
+// lamp with a warm shade, a big snack bag and a can, the hoodie in a heap (o.noRail: no handrail — no lights or towel on one)
+B.loftnest = (f, T, o = {}) => {
   const cu = grp(); put(cu, -.1, .045, .16); f.add(cu);
   cu.add(mc('loftnest-cushion', ({ add }) => {
     add(G.box(.5, .09, .5, .04), '#5f8fd0', 0, 0, 0, 0, .25, 0); add(G.box(.42, .01, .42, .01), '#7fb8e6', 0, .047, 0, 0, .25, 0);
@@ -429,17 +431,19 @@ B.loftnest = (f, T) => {
   const ph = f.part('lift', hd, (t, b) => { hd.position.y = b.p.y + .3 * t; hd.rotation.x = -.5 * t; hd.rotation.z = .3 * t; }, { label: '후드티', sfx: 'lift', dur: .25 });
   f.spot('under', null, -.16, .0, -.1, { part: ph, maxH: .18, label: '벗어 둔 후드티 밑', scale: .7 });
   f.collideBox = [-.44, 0, -.5, .5, .32, .5];   // (low: the comic shelf's secret row swings out over it; the bed's duvet beside it)
-  f.add(mc('loftnest', ({ add, tube }) => {
+  f.add(mc('loftnest' + (o.noRail ? '|nr' : ''), ({ add, tube }) => {
     for (const [x, z, n, r] of [[.16, -.12, 9, .1], [.02, -.16, 6, -.25], [.3, .06, 4, .5]]) for (let k = 0; k < n; k++) add(G.box(.14, .03, .2, .004), ['#e8414e', '#3a7bd5', '#ffc23d', '#f2f2f2', '#4caf7a', '#8a5ad8', '#ff8fb8'][(k + n) % 7], x, .015 + k * .031, z, 0, r + (k % 3 - 1) * .08, 0);
     // the lamp
     add(G.cyl(.12, .14, .03, 16), CHAR, .36, .015, -.34); add(G.cyl(.012, .012, .82, 6), STEEL, .36, .43, -.34); add(G.cyl(.08, .15, .16, 16), '#ffe0a6', .36, .88, -.34); add(G.sph(.04, 8, 6), '#fff6d6', .36, .82, -.34);
     // the snack bag, a can, the hoodie
     add(G.box(.3, .06, .4, .045), '#e8414e', .18, .03, .3, 0, .6, 0); add(G.box(.16, .006, .18, .006), '#ffe14d', .18, .062, .3, 0, .6, 0);
     add(G.cyl(.04, .04, .13, 12), '#7fd6c0', .38, .065, .36); add(G.cyl(.035, .035, .01, 12), STEEL, .38, .133, .36);
-    railLights(add, tube, -.5, .5, .575);
-    // a striped towel thrown over the handrail
-    for (const [z, y, h] of [[.47, .45, .26], [.53, .44, .3]]) { add(G.box(.26, h, .014, .006), '#ff9fb8', .12, y, z); for (const dy of [-.06, .04]) add(G.box(.262, .02, .016, .004), WHITE, .12, y + dy, z); }
-    add(G.cyl(.024, .024, .262, 8), '#ff9fb8', .12, .6, .5, 0, 0, HP);
+    if (!o.noRail) {
+      railLights(add, tube, -.5, .5, .575);
+      // a striped towel thrown over the handrail
+      for (const [z, y, h] of [[.47, .45, .26], [.53, .44, .3]]) { add(G.box(.26, h, .014, .006), '#ff9fb8', .12, y, z); for (const dy of [-.06, .04]) add(G.box(.262, .02, .016, .004), WHITE, .12, y + dy, z); }
+      add(G.cyl(.024, .024, .262, 8), '#ff9fb8', .12, .6, .5, 0, 0, HP);
+    }
   }));
   f.spot('behind', null, .12, 0, -.3, { maxH: .26, label: '만화책 탑 뒤', scale: .7 });
 };

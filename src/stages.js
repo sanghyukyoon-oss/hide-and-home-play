@@ -1043,6 +1043,8 @@ export function stageSpec(idx) {
   if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
   // (18판 새 안 otakuloft3·4·5, ① 10/23: 같은 부품 키라 같은 장치·자물쇠 — 새 맵 스위치로 열릴 때)
   if (s.room === 'otakuloft3' || s.room === 'otakuloft4' || s.room === 'otakuloft5') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
+  // (18판 otakuloft5 2층이 우리 원래 가구로 — 사용자 10/24: 비밀번호 칸은 서랍장)
+  if (s.room === 'otakuloft5') s.lockOn = { pad: ['arcade3'], code: ['drawers'] };
   // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 줌·물건 크기·자물쇠 자리 — redo7/sNN.js)
   if (REDO_SPEC[s.room]) REDO_SPEC[s.room](s, idx);
   // (18판 10/22 사용자 고르기: GPT 너굴이네 비 오는 복층 A — gptotaku|otakuloft; 대본·물건은 asRoom으로 otakuloft 것): 비 오는 밤, 미니 냉장고 자물쇠·계단 옆 수납장 비밀번호

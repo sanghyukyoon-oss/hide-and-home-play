@@ -416,25 +416,30 @@ B.s3a_campchair = (f, T, o = {}) => {
   const sy = .4, seat = '#7cc4ec';
   f.add(mc('s3a-cchair' + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add, tube }) => {
     for (const sx of [-1, 1]) { const x = sx * .26, c = '#5a6a86'; tube([x, 0, .2], [x, sy + .02, -.2], .022, c); tube([x, 0, -.2], [x, sy + .02, .2], .022, c); tube([x, sy + .02, -.2], [x, .9, -.32], .02, c); tube([x, sy + .18, .22], [x, sy + .18, -.24], .022, c); }
-    // (10/24 사용자 3판 "의자 옆 음료수 크기 이상, 의자 디테일 올려"): a cup holder ring hung off the right armrest with a small
-    // paper cup of orange juice in it (it was a big yellow tub on the seat's corner); padded armrests, rivets where the legs
-    // cross, rubber feet, a top rail, a little headrest pillow, piping and a frog patch on the back, a side pocket with a map
+    // (10/24 사용자 3판 "의자 옆 음료수 크기 이상, 의자 디테일 올려" → 2차 "음료수 너무 작다, 디테일 맘에 안 든다"): like a real
+    // camping chair — navy fabric armrests, a fabric cup sleeve sewn to the right one's end holding a tall tumbler of orange juice
+    // (dome lid, straw, a lemon slice), a navy band across the back's top, navy piping round the back and the seat's front edge,
+    // a zip pocket on the back, rivets where the legs cross, rubber feet, a top rail, a side pocket with a map
     if (o.vivid || o.detail) {
-      const hx = .335, hy = sy + .14, hz = .14;
-      tube([.26, sy + .18, hz], [hx, sy + .17, hz], .006, '#5a6a86', 4); add(G.tor(.034, .006, PI * 2, 5, 16), '#5a6a86', hx, hy, hz, HP, 0, 0); add(G.cyl(.03, .03, .006, 14), '#4a5a76', hx, hy - .045, hz);
-      tube([hx - .03, hy, hz], [hx - .028, hy - .045, hz], .004, '#5a6a86', 4); tube([hx + .03, hy, hz], [hx + .028, hy - .045, hz], .004, '#5a6a86', 4);
-      add(G.cyl(.028, .022, .075, 14), '#fffaf0', hx, hy - .005, hz); add(G.tor(.028, .004, PI * 2, 4, 14), '#ffffff', hx, hy + .033, hz, HP, 0, 0); add(G.cyl(.025, .025, .006, 14), '#ffb347', hx, hy + .03, hz);
-      add(G.box(.032, .022, .004, .002), '#ff8a5a', hx, hy, hz + .028); tube([hx + .005, hy + .03, hz], [hx + .02, hy + .095, hz - .01], .0035, '#ff6a8a', 4);
+      const NV = '#2f5f8f';
       for (const sx of [-1, 1]) { const x = sx * .26;
-        add(G.box(.05, .03, .3, .012), '#3f78a8', x, sy + .2, -.01); add(G.sph(.016, 8, 6), '#c9cfdc', x, (sy + .02) / 2, 0);
+        add(G.box(.07, .035, .34, .015), NV, x, sy + .195, -.01); add(G.box(.003, .002, .3, .001), '#8fb8e0', x, sy + .2135, -.01);
+        add(G.sph(.016, 8, 6), '#c9cfdc', x, (sy + .02) / 2, 0);
         for (const z of [.2, -.2]) add(G.sph(.026, 8, 6), '#3a4458', x, .012, z, 0, 0, 0, [1, .55, 1]); }
+      const cx = .3, cz = .175, cy0 = sy + .11;
+      add(G.cyl(.056, .052, .05, 18, true), NV, cx, cy0 + .025, cz); add(G.cyl(.052, .052, .006, 18), '#24496e', cx, cy0 + .003, cz); add(G.tor(.056, .006, PI * 2, 4, 18), '#8fb8e0', cx, cy0 + .05, cz, HP, 0, 0);
+      add(G.cyl(.044, .039, .12, 18), '#ffa83a', cx, cy0 + .064, cz); add(G.cyl(.047, .044, .03, 18, true), '#e6f4ff', cx, cy0 + .138, cz); add(G.tor(.047, .004, PI * 2, 4, 18), '#ffffff', cx, cy0 + .153, cz, HP, 0, 0);
+      add(G.cyl(.042, .042, .004, 18), '#ffc76a', cx, cy0 + .124, cz); for (const [dx, dz] of [[-.015, .01], [.012, -.014], [.018, .012]]) add(G.box(.014, .012, .014, .003), '#f2fbff', cx + dx, cy0 + .128, cz + dz, 0, dx * 20, 0);
+      tube([cx + .008, cy0 + .1, cz], [cx + .014, cy0 + .22, cz - .006], .007, '#ff6a8a', 6); tube([cx + .014, cy0 + .22, cz - .006], [cx + .045, cy0 + .245, cz - .02], .007, '#ff6a8a', 6);
+      add(G.cyl(.028, .028, .006, 16), '#ffe14d', cx - .045, cy0 + .15, cz + .02, HP, .6, 0); add(G.cyl(.022, .022, .007, 16), '#fff6c0', cx - .045, cy0 + .15, cz + .02, HP, .6, 0);
       tube([-.26, .9, -.32], [.26, .9, -.32], .018, '#5a6a86');
       add(G.box(.04, .12, .16, .01), '#5aa0d0', -.29, sy + .1, .02); add(G.box(.008, .08, .1, .002), '#fff6e0', -.315, sy + .14, .02); add(G.box(.004, .02, .1, .001), '#ff8a7a', -.32, sy + .15, .02);
       const bk = (x, y, z) => [x, sy + .27 + y * Math.cos(-.22) - z * Math.sin(-.22), -.26 + y * Math.sin(-.22) + z * Math.cos(-.22)];
-      for (const y of [.225, -.225]) add(G.box(.53, .016, .04, .006), '#5aa0d0', ...bk(0, y, 0), -.22, 0, 0);
-      add(G.box(.5, .045, .006, .002), '#ffffff', ...bk(0, .08, .02), -.22, 0, 0);
-      add(G.cyl(.05, .05, .006, 18), '#8fd06a', ...bk(0, -.05, .021), -.22 + HP, 0, 0); for (const sx of [-1, 1]) { add(G.cyl(.018, .018, .007, 12), '#8fd06a', ...bk(sx * .03, -.01, .022), -.22 + HP, 0, 0); add(G.cyl(.008, .008, .008, 10), '#2a1d33', ...bk(sx * .03, -.01, .026), -.22 + HP, 0, 0); }
-      add(G.box(.3, .08, .06, .03), '#fff3e0', ...bk(0, .26, .04), -.22, 0, 0); for (const sx of [-1, 1]) add(G.box(.012, .07, .062, .004), '#ffc6a8', ...bk(sx * .12, .26, .04), -.22, 0, 0);
+      add(G.box(.52, .1, .04, .012), NV, ...bk(0, .18, .002), -.22, 0, 0);
+      for (const sx of [-1, 1]) add(G.box(.014, .46, .04, .006), NV, ...bk(sx * .253, 0, .002), -.22, 0, 0);
+      add(G.box(.52, .014, .04, .006), NV, ...bk(0, -.223, .002), -.22, 0, 0);
+      add(G.box(.26, .12, .012, .03), '#9fd6f4', ...bk(0, -.08, .021), -.22, 0, 0); add(G.box(.22, .006, .004, .001), '#5a6a86', ...bk(0, -.03, .028), -.22, 0, 0); add(G.box(.014, .03, .006, .003), '#ffd84a', ...bk(.1, -.045, .03), -.22, 0, 0);
+      add(G.box(.52, .012, .03, .005), NV, 0, sy + .002, .2, .05, 0, 0);
     } else add(G.cyl(.045, .04, .08, 14), '#ffcf3c', .31, sy + .2, .17);
     add(G.box(.52, .04, .42, .015), seat, 0, sy, 0, .05, 0, 0);
     add(G.box(.52, .46, .035, .015), seat, 0, sy + .27, -.26, -.22, 0, 0);

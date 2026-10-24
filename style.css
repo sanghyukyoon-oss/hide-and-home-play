@@ -33,7 +33,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #ffe6ef; fon
    colour at the bottom where the street fades out (no white glow in the middle) */
 #app.look-sky { background: linear-gradient(180deg, var(--skyA) 0%, var(--skyB) 42%, var(--skyC) 100%); }
 /* (10/24 아트 점검 상: 하늘 레시피가 없는 판의 가운데 흰 빛무리가 맵 둘레에 번져 "타는 것 같음" — 판·보스 화면은 흰 중심 없이 판 색 두 가지만) */
-#app[data-scene="stage"]:not(.look-sky), #app[data-scene="boss"]:not(.look-sky) { background: linear-gradient(180deg, var(--bgA) 0%, var(--bgB) 100%); }
+/* (10/24 사용자 "빛 번져서 하얗게 되잖아. 나머지를 지금 분홍색 말고 빛 번진 색으로 — 하양이라던지"): 하늘 레시피가 없는 판·보스는 판 테마의
+   분홍·살구 두 색 대신 빛무리와 같은 흰·크림 — 가운데 흰빛이 화면 끝까지 순하게 이어짐 */
+#app[data-scene="stage"]:not(.look-sky), #app[data-scene="boss"]:not(.look-sky) { background: radial-gradient(125% 80% at 50% 44%, #ffffff 0%, #fffcf7 38%, #f8f1e7 100%); }
 #bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 #bg i { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .55); filter: blur(2px); animation: drift 18s ease-in-out infinite alternate; }
 #bg i:nth-child(1) { width: 120px; height: 120px; left: 6%; top: 12%; }

@@ -422,7 +422,19 @@ OWN_BASE.add('villaroof3');
 RECIPES.villaroof3 = { ...(({ block, glows, ring, rooms, ground, floor, slab, fill, theme, ...o }) => o)(RECIPES.villaroof), light: { ambColor: '#f2f5f7', amb: 1.3, sunColor: '#fff5e8', sun: 2.6, shadow: .56 }, sky: ['#cde6f4', '#eef6fa', '#d8e8ee'] };
 // (① 10/24: 20판 새 안 맑은 낮빛 — 위 줄을 덮음; 하늘색 하늘, 이웃집 거의 흰색은 villaroof3-props NBWALL)
 RECIPES.villaroof3 = { ...RECIPES.villaroof3, light: { ambColor: '#eef1f2', amb: 1.5, sunColor: '#fff6e6', sun: 2.5, shadow: .52 }, sky: ['#8ccbef', '#cbe7f6', '#e8f4f9'], itemSize: .38 };
+// (빛 번진 색 10/24 사용자 "빛 번져서 하얗게 되잖아. 나머지를 지금 분홍색 말고 빛 번진 색으로 — 하양이라던지"): 분홍·살구 하늘이던 판은
+// 크림 하늘 + 가운데 흰 빛무리(setSky의 sky.glow) — 맵이 선 가운데가 하얗게 번지고 끝으로 갈수록 옅은 크림. 하늘색 하늘인 판은 그대로
+const CREAM_GLOW = Object.assign(['#fbf4ec', '#fffaf5', '#f5ece2'], { glow: true });
+for (const k of ['bunny', 'apt', 'aptlobby', 'aptlobby2', 'kpop', 'playground', 'playgroundwide', 'bearbakery', 'konbini']) if (RECIPES[k]) RECIPES[k] = { ...RECIPES[k], sky: CREAM_GLOW };
+// (빛무리 10/24 사용자 "칙칙한 판들에 배경 타게 글로우 넣는 방향은 어때?" → 고름: "39·40같이 패턴 들어간 배경은 그냥 유지"): 18~31판의 하늘색 낮
+// 하늘(무늬 없는)에도 가운데 흰·크림 빛무리 — 하늘색은 가장자리에 그대로 남음. 밤·정전·흑백·무늬 바탕은 그대로
 export function lookRecipe(room, spec) {
+  const R = lookRecipe0(room, spec), n = (spec?.idx ?? -1) + 1;
+  if (!R?.sky || R.sky.glow || R.pattern || R.sky.pattern || n < 18 || n > 31 || spec?.night || spec?.dark || spec?.gray) return R;
+  const c = R.sky[0], blue = parseInt(c.slice(5, 7), 16) > parseInt(c.slice(1, 3), 16) + 12;
+  return blue ? { ...R, sky: Object.assign([...R.sky], R.sky, { glow: true }) } : R;
+}
+function lookRecipe0(room, spec) {
   if (!LOOK.size || spec?.custom) return null;
   // (22~26판 다시 만들기 ⑦ 10/23: 새 맵 키의 룩 — redo7/sNN.js)
   if (REDO_LOOK[room]) return REDO_LOOK[room];
@@ -464,7 +476,7 @@ RECIPES.bridgewood = { sky: ['#cfe6ea', '#eef4ea', '#d2e4cc'], itemSize: .42,
 // end) goes back to the look's day, not the house light
 export function lookTheme(R, th) {
   if (!R || !LOOK.has('light')) return th;
-  return { ...th, light: R.light || th.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern || R.skyline || R.clouds || R.rain ? Object.assign([...R.sky], { pattern: R.pattern, skyline: R.skyline, clouds: R.clouds, rain: R.rain }) : R.sky };
+  return { ...th, light: R.light || th.light, bg: [R.sky[1], R.sky[2]], sky: R.pattern || R.skyline || R.clouds || R.rain || R.glow ? Object.assign([...R.sky], { pattern: R.pattern, skyline: R.skyline, clouds: R.clouds, rain: R.rain, glow: R.glow ?? R.sky.glow }) : R.sky };
 }
 // the colours a shop's room is built in (this stage only): a lone room takes the recipe's theme; a map whose recipe lists
 // rooms gives each of those rooms its own recipe's theme and remembers which (lookKey: the look's pieces go in by it)
@@ -576,10 +588,18 @@ export function setSky(sky) {
     if (sky.clouds) skyClouds(x);
     if (sky.stars) skyStars(x, sky.stars === 'many');
     if (sky.rain) skyRain(x);
-    // a soft vignette (the corners settle, the middle where the room stands stays open) and a faint paper grain
-    const v = x.createRadialGradient(128, 230, 60, 128, 260, 330);
-    v.addColorStop(0, 'rgba(40,20,50,0)'); v.addColorStop(1, 'rgba(40,20,50,.13)');
-    x.fillStyle = v; x.fillRect(0, 0, 256, 512);
+    // (빛무리 10/24 사용자 "빛 번져서 하얗게 되잖아. 나머지를 분홍색 말고 빛 번진 색으로"): sky.glow — the middle, where the room stands,
+    // goes white like the old look's light, fading out to the sky's own colour at the edges; no dark vignette then
+    if (sky.glow) {
+      const gl = x.createRadialGradient(128, 236, 8, 128, 248, 245);
+      gl.addColorStop(0, 'rgba(255,255,255,.96)'); gl.addColorStop(.42, 'rgba(255,253,248,.72)'); gl.addColorStop(1, 'rgba(255,251,244,0)');
+      x.fillStyle = gl; x.fillRect(0, 0, 256, 512);
+    } else {
+      // a soft vignette (the corners settle, the middle where the room stands stays open) and a faint paper grain
+      const v = x.createRadialGradient(128, 230, 60, 128, 260, 330);
+      v.addColorStop(0, 'rgba(40,20,50,0)'); v.addColorStop(1, 'rgba(40,20,50,.13)');
+      x.fillStyle = v; x.fillRect(0, 0, 256, 512);
+    }
     let sd = 3; const R = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 2600; i++) { x.fillStyle = R() < .5 ? 'rgba(255,255,255,.05)' : 'rgba(60,30,60,.045)'; x.fillRect(R() * 256, R() * 512, 1, 1); }
     SKY_TEX = new THREE.CanvasTexture(c); SKY_TEX.colorSpace = THREE.SRGBColorSpace; SKY_TEX.minFilter = THREE.LinearFilter;
@@ -1290,10 +1310,14 @@ RECIPES.otakuloft3 = { ...RECIPES.otakuloft,
 // 18판 새 안 너굴이네 오락실 2층집 다시 짓기 (otakuloft5, ① 10/23): 문 닫은 1층은 기계 불빛(빨강 경품 오락기 청록, 인형 뽑기 분홍)과 2층 밑 형광등 하나,
 // 간판 밑 분홍빛, 2층 너굴이 방(바닥 2.5)은 브라운관·서랍장 스탠드·로프트 침대 책상 등, 섬 앞 가로등
 // (새 맵 빛 규칙 10/23 사용자 '누렇냐': 낮빛만 맑게 — 해 #fff4e6·둘레 #eef1f2, 비 오는 밤빛(night)은 옛 18판 그대로)
+// (10/24 사용자 메모 '톤': 새 기계 자리로 — 빨강 경품 오락기 화면(하늘), 인형 뽑기 둘(분홍·민트), 2층 밑 오락기 둘(청록·라일락), 간판(크림 라이트 박스라
+// 따뜻한 살구빛 — 바닥 웅덩이만, 판 위 번짐(halo)은 크림 글자를 하얗게 덮어 뺌), 2층은 브라운관·컴퓨터 모니터·다락 둥지 스탠드·서랍장 버섯 스탠드)
 RECIPES.otakuloft5 = { ...RECIPES.otakuloft, light: { ambColor: '#eef1f2', amb: 1.2, sunColor: '#fff4e6', sun: 2.0, shadow: .55 },
-  glows: [[-2.0, 1.75, 1.1, '#7cf0ff'], [1.0, 2.3, 1.2, '#ff9fd0'], [0, -1.4, 1.5, '#e6ecff'], [-.5, 2.4, 1.6, '#ffb8dc'],
-    [.5, -1.8, .9, '#9fd8ff', 2.51], [2.6, -2.2, .8, '#ffd98a', 2.51], [-2.5, -2.0, .8, '#ffd98a', 2.51], [-1.5, 3.55, 1.3, '#ffd27a', -.126]],
-  halos: [[-2.0, 1.3, .3, .9, '#7cf0ff'], [1.0, 1.35, 1.3, .9, '#ff9fd0'], [.5, 3.6, -2.5, .7, '#9fd8ff'], [-1.5, 2.3, 3.6, 1.1, '#ffd98f'], [0, 4.68, 2.05, 1.6, '#ffb8dc']] };
+  glows: [[-2.0, 1.2, 1.0, '#9fdcff'], [1.04, 2.0, .9, '#ffb8d6'], [1.9, 2.0, .9, '#a8f0dc'], [0, -1.4, 1.5, '#e6ecff'], [-.3, 2.5, 1.5, '#ffe0cc'],
+    [-3.06, -1.9, .7, '#9fe8ff'], [-1.94, -1.9, .7, '#d9c4ff'],
+    [.5, -1.8, .9, '#9fd8ff', 2.51], [2.6, -2.2, .8, '#ffd98a', 2.51], [-1.1, -1.9, .75, '#bfe4ff', 2.51], [-1.64, -1.8, .8, '#ffd98a', 2.51], [-1.5, 3.55, 1.3, '#ffd27a', -.126]],
+  halos: [[-2.0, 1.3, .55, .8, '#9fdcff'], [1.04, 1.7, 1.8, .7, '#ffb8d6'], [1.9, 1.7, 1.8, .7, '#a8f0dc'], [-3.06, 1.3, -2.4, .55, '#9fe8ff'], [-1.94, 1.3, -2.4, .55, '#d9c4ff'],
+    [.5, 3.6, -2.5, .7, '#9fd8ff'], [-1.12, 3.53, -2.75, .5, '#bfe4ff'], [-1.5, 2.3, 3.6, 1.1, '#ffd98f']] };
 // 18판 비교안 너굴이네 오락실 2층집 (otakuloft4, ① 10/23): 문 닫은 1층 오락실은 기계 불빛만(인형 뽑기 분홍, 경품 오락기 청록, 2층 밑 오락기 둘),
 // 간판 밑 따뜻한 빛, 2층 너굴이 방은 모니터·브라운관·둥지 등(바닥 2.1), 섬 앞 가로등
 RECIPES.otakuloft4 = { ...RECIPES.otakuloft,

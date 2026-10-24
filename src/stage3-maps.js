@@ -34,10 +34,11 @@ export function installStage3(LAYOUTS, THEMES) {
   // (B·C의 풀빛은 처음 정한 그대로 — S3T; A는 정본 3판 잔디색 그대로에 무늬만 meadow)
   const S3T = { ...THEMES.fishing, floorKind: 'meadow', grass: '#8bce6f', floor: '#8bce6f', floor2: '#7fc466', base: '#8bce6f' };
   THEMES.fishing3 = { ...THEMES.fishing, floorKind: 'meadow' };
+  // (낚시 상자는 10/23 밤 ⑥이 다시 만든 정본 도구함 그대로 — 속이 비어 물건이 안에 들어감; 10/24 사용자 "저 낚시상자는 안에 약간 들어가 있어야지, 어디 만든 거 맘에 들었는데")
   const V = { vivid: true };   // (A: 정본 3판 소품 색 — 빨간 파라솔·파란 아이스박스·주황 미끼통·빨간 체크)
   LAYOUTS.fishing3 = { ...LAYOUTS.fishing, theme: THEMES.fishing3, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
     furniture: [H('pond', 2, 2, 0, 's3a_pond'), H('fishdock', 2, 1, 0, 's3a_fishdock'), H('tree', 0, 0, 0, 's3a_tree', V), H('bench', 4, 0, 0, 's3a_bench', V), H('fishsign', 6, 0, 0, 's3a_fishsign'),
-      H('tacklebox', 1, 1, 0, 's3a_tacklebox', V), H('baitbucket', 4, 1, 0, 's3a_baitbucket', V), H('reeds', 5, 3, 0, 's3a_reeds', { seed: 1, ...V }), H('reeds', 1, 4, 0, 's3a_reeds', { seed: 2, ...V }),
+      H('tacklebox', 1, 1, 0, null), H('baitbucket', 4, 1, 0, 's3a_baitbucket', V), H('reeds', 5, 3, 0, 's3a_reeds', { seed: 1, ...V }), H('reeds', 1, 4, 0, 's3a_reeds', { seed: 2, ...V }),
       H('parasol', 6, 2, 0, 's3a_parasol', V), H('cooler', 6, 4, 0, 's3a_cooler', V), H('campchair', 0, 2, 0, 's3a_campchair', V), H('bush', 0, 5, 0, 's3a_bush', V), H('picnic', 3, 5, 0, 's3a_picnic', V),
       H('reeds', 5, 5, 0, 's3a_reeds', { seed: 3, ...V }),
       AT('s3a_hedge', 0, -3, 0, { len: 7 }), AT('s3a_fence', -3.5, 0, 0, { len: 6 }), AT('s3a_around', 0, 0), AT('s3a_rain', 0, 0)] };
@@ -72,7 +73,7 @@ export function installStage3(LAYOUTS, THEMES) {
   LAYOUTS.frogpond = islandMap(9, 8, THEMES.frogpond, [
     AT('s3c_island', 0, 0), AT('s3c_weather', 0, 0),
     HC('bench', -1.65, -1.5, 0, 's3c_house'), HC('tree', 1.75, -2.0, 0, 's3a_tree', DC), HC('fishsign', .35, -1.75, -.2, 's3c_sign'),
-    HA('fishdock', 4.45, .95, 0, 's3c_wheel'), HC('baitbucket', 2.3, -.85, 0, 's3a_baitbucket', DC), HC('tacklebox', -.15, -.65, .3, 's3a_tacklebox', DC),
+    HA('fishdock', 4.45, .95, 0, 's3c_wheel'), HC('baitbucket', 2.3, -.85, 0, 's3a_baitbucket', DC), HC('tacklebox', -.15, -.65, .3, null),
     HA('pond', 4.75, 5.55, .71, 's3c_lilysteps'), HC('parasol', .95, 1.25, -.4, 's3c_umbrella'),
     HC('picnic', -1.45, .75, .25, 's3a_picnic', DC), HC('cooler', 1.85, .9, -.5, 's3a_cooler', DC), HC('campchair', -2.75, .6, .9, 's3a_campchair', DC),
     HC('bush', -2.85, -.5, .4, 's3a_bush', DC),
