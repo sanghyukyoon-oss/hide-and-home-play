@@ -876,30 +876,30 @@ B.plantbig = (f, T) => {
   const PW = .52, PH = .5, RW = .55, RT = .045;
   // 미술관 (10판, 10/23 user "화분 아래쪽 디테일", 잎은 OK): the speckled terrazzo cube read as rough there — a smooth
   // glazed round pot instead, a cream lip and a gold line, dark soil with a few pebbles, on a saucer
-  if (gal) f.add(mc('plantbig-gallerypot', ({ add }) => {
+  // (⑥ 10/24 사용자 16판 "이 화분 어셋 이 부분 디테일 올려 달라니까": the speckled cube there too) — every 큰 화분 now the glazed
+  // round pot (the gallery one keeps its navy, other rooms glaze it in their own colour): a saucer with a rim, a pot with a foot
+  // ring, a cream lip, a gold line, a little drainage-hole shadow on the saucer, dark soil with
+  // pebbles and a fallen leaf on the soil
+  const glaze = gal ? '#34466e' : navy;
+  f.add(mc('plantbig-pot2|' + glaze, ({ add }) => {
     add(G.cyl(.29, .26, .045, 28), '#8f879c', 0, .0225, 0);
     add(G.tor(.27, .014, PI * 2, 6, 32), '#a8a0b4', 0, .045, 0, HP, 0, 0);
+    add(G.cyl(.17, .17, .012, 24), '#6f6880', 0, .046, 0);
     const pts = [[0, .045], [.16, .045], [.19, .06], [.235, .14], [.258, .26], [.255, .37], [.24, .43], [.25, .445]].map(([r, y]) => new THREE.Vector2(r, y));
-    add(new THREE.LatheGeometry(pts, 32), '#34466e', 0, 0, 0);
+    add(new THREE.LatheGeometry(pts, 32), glaze, 0, 0, 0);
+    add(G.tor(.19, .01, PI * 2, 4, 28), shade(glaze, -.12), 0, .06, 0, HP, 0, 0);
     add(G.cyl(.275, .255, .07, 32), '#f1eadc', 0, .475, 0);
     add(G.tor(.262, .007, PI * 2, 4, 32), '#d9a94a', 0, .44, 0, HP, 0, 0);
     add(G.tor(.26, .006, PI * 2, 4, 32), '#d9a94a', 0, .2, 0, HP, 0, 0);
     add(G.cyl(.245, .245, .02, 28), '#4a3226', 0, .5, 0);
     for (let i = 0; i < 7; i++) { const a = i * 2.3, r = .08 + (i % 3) * .05; add(G.sph(.022, 8, 6), i % 3 ? '#efe8dc' : '#b9b2c6', Math.cos(a) * r, .51, Math.sin(a) * r, 0, 0, 0, [1.2, .5, 1]); }
-  }));
-  else f.add(mg('plantbig-pot|' + navy, mat('#ffffff', { map: terrazzoTex(navy) }), ({ P }) => {
-    P(PW, PH - .04, PW, 0, .04 + (PH - .04) / 2, 0, .45);
-    for (const sz of [-1, 1]) P(RW, .05, RT, 0, PH + .025, sz * (RW / 2 - RT / 2), .45);
-    for (const sx of [-1, 1]) P(RT, .05, RW - 2 * RT, sx * (RW / 2 - RT / 2), PH + .025, 0, .45);
+    add(G.box(.08, .006, .045, .004), '#8fbf5a', .12, .513, -.08, 0, .6, .1);
   }));
   const LV = [];
   for (let i = 0; i < 28; i++) { const a = i * 2.4, y = .8 + i * .036; LV.push([a, y, .04 + (i % 4) * .03, .28 + (i % 5) * .11 + (i > 22 ? .3 : 0), .27 + (i % 3) * .035, [LEAF2, LEAF, '#3f9a52', LEAF3][i % 4]]); }
   f.add(mc('plantbig|' + tk, ({ add, addM, tube }) => {
-    if (!gal) add(G.box(PW - .04, .04, PW - .04, .01), NAVY2, 0, .02, 0);
-    if (!gal) add(G.pbox(RW - 2 * RT, .035, RW - 2 * RT), SOIL, 0, PH + .0175, 0);
-    if (!gal) for (let i = 0; i < 9; i++) { const a = i * 2.1; add(G.sph(.022, 8, 6), i % 3 ? '#f4efe6' : '#c9c3d9', Math.cos(a) * (.08 + (i % 3) * .06), PH + .035, Math.sin(a) * (.08 + (i % 3) * .06), 0, 0, 0, [1.2, .5, 1]); }
     const bark = '#9a6a45';
-    tube([0, gal ? .5 : PH + .02, 0], [.02, 1.2, -.01], .036, bark, 8, .03);
+    tube([0, .5, 0], [.02, 1.2, -.01], .036, bark, 8, .03);
     tube([.02, 1.2, -.01], [-.1, 1.62, .04], .026, bark, 6, .018);
     tube([.02, 1.18, -.01], [.14, 1.58, -.06], .024, bark, 6, .016);
     const leaf = G.ext(figShape(), .018, 0, 5), rib = G.pbox(.02, .78, .01);

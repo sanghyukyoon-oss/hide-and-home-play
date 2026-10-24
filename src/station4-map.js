@@ -42,11 +42,14 @@ export function installStation4(LAYOUTS, THEMES) {
       at('s4_icgate', -2.0, -1.05, 0, null, PY), hero('coinlocker', 's4_locker', -.85, -1.22, 0, PY), hero('platshelter', 's4_shelter', .1, -.95, 0, PY),
       at('s4_bins', 1.35, -1.25, 0, null, PY), at('s4_vend', 2.32, -1.2, 0, null, PY),
       // out on the platform: 개굴이's fishing bag, the luggage cart by the vending machines
-      hero('tripbag', 's4_tripbag', -2.65, -.4, .25, PY), hero('suitcases', 's4_cart', 2.45, -.3, 0, PY),
+      hero('tripbag', 's4_tripbag', -2.2, -.4, .25, PY), hero('suitcases', 's4_cart', 2.45, -.3, 0, PY),
       // the track: the train (away until the end — staging bagPop / trainIn), the crossing either side of the road
       hero('train', 's4_train', -1.0, TZ), hero('crossing', 's4_crossing', 3.35, TZ + .92), hero('crossing', 's4_crossing', 5.05, TZ - .95, Math.PI),
       // the front bank: the bikes, the station's name board, the postbox by the road; the poles along the road
       at('s4_bikes', -3.55, 2.85), at('s4_namesign', 1.95, 2.8), at('s4_post', 2.7, 3.05), at('s4_pole', POLES[0][0], POLES[0][1]), at('s4_pole', POLES[1][0], POLES[1][1]),
     ],
-    friendAt: [-3.3, -.3] };
+    // (개굴이 on the open grass of the front bank, by the bed but out of it, facing the train's door side. On the platform he can't
+    // start: stage.js clears the spot against the platform's block and stands him at y 0 — then, unseen inside it, moves him to the
+    // nearest seen ground, which was the flower bed by the fence (사용자 메모 '개구리 꽃에 뚫림'))
+    friendAt: [-1.0, 3.45] };
 }

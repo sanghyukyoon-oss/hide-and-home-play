@@ -9,7 +9,7 @@
 // 시간표는 틀만(숫자 X — 단서 시간표는 obslock.js가 놓음).
 import * as THREE from 'three';
 import { grp, put, mat, plane, canvasTex, texCache } from './kit.js';
-import { G, mc, mt, TX, HP, island, blobOutline, tuft, flower, bush } from './pc-kit.js';
+import { G, mc, mt, TX, HP, island, blobOutline, scaleOutline, tuft, flower, bush } from './pc-kit.js';
 import { textTex, fitText, FONT } from './gpt-paper.js';
 import { addI18n, tr } from '../i18n.js';
 
@@ -20,7 +20,7 @@ addI18n({ '벚꽃마을역': 'Sakura Town', '벚꽃마을': 'Sakura Town', '몽�
   '여행 가방 위': 'On the suitcase', '여행 가방 옆': 'By the suitcase', '자판기 옆': 'Beside the vending machine', '자판기 위': 'On the vending machine', '우체통 뒤': 'Behind the postbox',
   '벚나무 뿌리 사이': 'Between the cherry roots', '벚나무 밑': 'Under the cherry tree', '전봇대 밑': 'At the foot of the pole', '역 이름판 밑': 'Under the station sign',
   '자전거 바구니': 'Bike basket', '자전거 옆': 'By the bikes', '개찰기 옆': 'By the ticket gate', '꽃밭 속': 'In the flower bed', '울타리 밑': 'Under the fence',
-  '선로 옆': 'Beside the track', '쓰레기통 옆': 'By the bins', '쓰레기통 위': 'On the bins', '짐 카트 위': 'On the luggage cart', '짐 카트 옆': 'By the luggage cart', '◀ 몽글동': '◀ Mongle-dong', '바닷가 ▶': 'Seaside ▶', '차단기 아래': 'Under the crossing gate', '건널목 차단기': 'Crossing gate', '파스텔 전철': 'Pastel train' });
+  '선로 옆': 'Beside the track', '매표소': 'Tickets', '창 밑 화분': 'By the window plant', '쓰레기통 앞': 'In front of the bins', '나무 역사': 'Wooden station house', '매표 창구': 'Ticket window', '승강장 지붕': 'Platform roof', '우체통': 'Postbox', '벚나무': 'Cherry tree', '역 이름판': 'Station sign', '간이 개찰기': 'IC card reader', '짐 카트': 'Luggage cart', '쓰레기통 옆': 'By the bins', '쓰레기통 위': 'On the bins', '짐 카트 위': 'On the luggage cart', '짐 카트 옆': 'By the luggage cart', '◀ 몽글동': '◀ Mongle-dong', '바닷가 ▶': 'Seaside ▶', '차단기 아래': 'Under the crossing gate', '건널목 차단기': 'Crossing gate', '파스텔 전철': 'Pastel train' });
 
 const C = {
   grass: '#a9d888', lip: '#93cc74', ballast: '#bfb8af', sleeper: '#8a6a52', rail: '#9aa0ae', asphalt: '#9a9ea8', line: '#ffffff', kerb: '#e3ded6', pave: '#e6dfd3',
@@ -44,6 +44,33 @@ const kawara = () => gtex('kawara', 128, (x, w, h) => {
   }
 });
 
+// blossom: little five-petal flowers packed into clumps, pink-grey petal edges and deeper centres (white = the crown's colour)
+const blossomTex = () => gtex('blossom', 256, (x, w, h) => {
+  let q = 11; const r = () => (q = (q * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 26; i++) { x.fillStyle = 'rgba(150,60,95,.10)'; x.beginPath(); x.arc(r() * w, r() * h, 10 + r() * 16, 0, 7); x.fill(); }
+  for (let i = 0; i < 210; i++) {
+    const px = r() * w, py = r() * h, pr = 4 + r() * 5, a0 = r() * 6.3;
+    for (let k = 0; k < 5; k++) { const a = a0 + k * 1.2566; x.fillStyle = 'rgba(255,255,255,.9)'; x.strokeStyle = 'rgba(170,70,110,.32)'; x.lineWidth = 1;
+      x.beginPath(); x.ellipse(px + Math.cos(a) * pr * .55, py + Math.sin(a) * pr * .55, pr * .5, pr * .34, a, 0, 7); x.fill(); x.stroke(); }
+    x.fillStyle = 'rgba(205,80,120,.55)'; x.beginPath(); x.arc(px, py, pr * .22, 0, 7); x.fill();
+  }
+});
+// asphalt: fine light and dark grit, a few hairline cracks and one darker patch
+const asphaltTex = () => gtex('asphalt', 256, (x, w, h) => {
+  let q = 5; const r = () => (q = (q * 16807) % 2147483647) / 2147483647;
+  x.fillStyle = 'rgba(40,40,55,.08)'; x.fillRect(w * .55, h * .1, w * .3, h * .22);
+  for (let i = 0; i < 1600; i++) { x.fillStyle = r() < .5 ? 'rgba(255,255,255,.28)' : 'rgba(30,30,45,.22)'; x.fillRect(r() * w, r() * h, 1 + r() * 1.6, 1 + r() * 1.6); }
+  for (let i = 0; i < 5; i++) { x.strokeStyle = 'rgba(30,30,45,.3)'; x.lineWidth = 1; x.beginPath(); let px = r() * w, py = r() * h; x.moveTo(px, py); for (let k = 0; k < 5; k++) { px += (r() - .5) * 30; py += (r() - .5) * 30; x.lineTo(px, py); } x.stroke(); }
+});
+// the island outline cut to the strip x0..x1 (Sutherland–Hodgman on two vertical edges): the road follows the shore
+function clipStrip(pts, x0, x1) {
+  const cut = (P, keep, X) => { const out = []; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], ia = keep(a[0]), ib = keep(b[0]);
+    if (ia) out.push(a); if (ia !== ib) { const t = (X - a[0]) / (b[0] - a[0]); out.push([X, a[1] + (b[1] - a[1]) * t]); } } return out; };
+  return cut(cut(pts, x => x >= x0, x0), x => x <= x1, x1);
+}
+// where the shore crosses x (its two z's)
+// (x must lie inside the outline's x range — the kerbs stand just outside the road's strip, so they ask the island's shore, not the road's)
+function shoreZ(pts, x) { const zs = []; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; if ((a[0] - x) * (b[0] - x) <= 0 && a[0] !== b[0]) zs.push(a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0])); } return [Math.min(...zs), Math.max(...zs)]; }
 // a gable roof, ridge along x, printed with kawara: two thick sloped panels, the gable prism under them, a ridge with end tiles
 function gableRoof(f, key, x, y, z, L, D, h, over = .3) {
   const hd = D / 2 + over, ph = Math.atan2(h, D / 2), s = hd / Math.cos(ph), t = .1;
@@ -69,31 +96,64 @@ const B = {};
 
 // ── the island: grass, the track bed and rails, the road, the platform's edge lines, waiting marks, the front bank, wires, petals ──
 // (마지막 패스 10/24 허브: 앞뒤로 긴 섬 — 선로가 화면을 대각선으로 지나고 승강장이 그 옆으로 길게; 카메라는 승강장 가까이)
+// a leafy shrub: a darker core with flat pointed leaves fanned round and up it, the leaves reading one by one; with `head`, a
+// hydrangea's flower heads of small florets on top (아트 점검 10/24: the front bed's ball bushes — one neon green, two lilac —
+// looked like slime)
+function leafBush(add, x, z, s, c1, c2, head = null, y0 = 0) {
+  if (y0) { const a0 = add; add = (g, c, X, Y, ...r) => a0(g, c, X, Y + y0, ...r); }
+  add(G.sph(.2 * s, 10, 8), c2, x, .18 * s, z, 0, 0, 0, [1.1, .8, 1.1]);
+  for (let k = 0; k < 26; k++) {
+    const t = k / 26, a = k * 2.399, r = (.26 - .2 * t) * s;
+    add(G.sph(1, 6, 3), k % 3 ? c1 : c2, x + Math.cos(a) * r, (.08 + .38 * t) * s, z + Math.sin(a) * r, 0, -a, .3 + .5 * (1 - t), [.13 * s, .026 * s, .065 * s]);
+  }
+  if (!head) return;
+  for (let h = 0; h < 4; h++) {
+    const a = h * 1.7 + .4, hx = x + Math.cos(a) * .13 * s, hz = z + Math.sin(a) * .13 * s, hy = (.44 + (h % 2) * .06) * s;
+    for (let k = 0; k < 9; k++) { const b = k * 2.4, rr = k ? .07 * s : 0; add(G.sph(.036 * s, 6, 4), k % 2 ? head[0] : head[1], hx + Math.cos(b) * rr, hy + (k ? 0 : .03 * s), hz + Math.sin(b) * rr, 0, 0, 0, [1, .7, 1]); }
+  }
+}
 const OUT = blobOutline(5, 3.5, { pad: .7, round: 2.0, amp: .14, seed: 27 });
 // the track along x at z TZ; the road along z at x 3.55..4.85; the platform x -5..3, z -1.5..0.5
 export const TZ = 1.05;
 export const POLES = [[5.05, -2.45], [3.2, 3.6]];
 const RX0 = 3.55, RX1 = 4.85, RXC = (RX0 + RX1) / 2;
+// the road's shape: the island cut to its strip, a hair inside the shore so it never hangs over the side
+const SHORE = scaleOutline(OUT, -.05), ROADP = clipStrip(SHORE, RX0, RX1);
 B.s4_land = f => {
   island(f, { key: 's4-land2', pts: OUT, top: C.grass, lip: C.lip, seed: 27,
     layers: [{ h: .2, color: C.earth, k: 0 }, { h: .3, color: C.band, k: -.03, stones: true }, { h: .26, color: C.earthD, k: -.13 }],
     pebble: '#e6ddd0', skip: [[RXC, -4.1, .9], [RXC, 4.1, .9]],
     decorTex: ({ add }) => {
       add(G.slab([[-5.6, TZ - .55], [5.6, TZ - .55], [5.6, TZ + .62], [-5.6, TZ + .62]], .014, 0), C.ballast, 0, .002, 0, 0, 0, 0, 1, { w: .45 });
-      add(G.slab([[RX0, -4.15], [RX1, -4.15], [RX1, 4.15], [RX0, 4.15]], .02, 0), C.asphalt, 0, .004, 0, 0, 0, 0, 1, { w: .6 });
       // the paving by the bikes
       add(G.slab([[-4.6, 2.25], [-2.5, 2.25], [-2.5, 3.45], [-4.6, 3.45]], .012, 0), C.pave, 0, .003, 0, 0, 0, 0, 1, { w: .5 });
     },
     decorTexMap: TX.stone(),
     decor: ({ add, tube }) => {
+      // the road's kerbs: from just inside the shore to the crossing, both sides, their ends rounded
+      for (const x of [RX0 - .06, RX1 + .06]) {
+        const [za, zb] = shoreZ(SHORE, x);
+        for (const [z0, z1] of [[za + .08, TZ - .72], [TZ + .72, zb - .08]]) { add(G.box(.12, .1, z1 - z0, .04), C.kerb, x, .05, (z0 + z1) / 2); add(G.box(.13, .02, z1 - z0 - .04, .01), '#f4f0ea', x, .1, (z0 + z1) / 2); }
+      }
+      // the road's cut at the shore: a dark asphalt band and its gravel bed in the island's side, under the road's two ends
+      for (let i = 0; i < OUT.length; i++) {
+        const a = OUT[i], b = OUT[(i + 1) % OUT.length]; if (a[0] < RX0 || a[0] > RX1 || b[0] < RX0 || b[0] > RX1) continue;
+        tube([a[0], -.035, a[1]], [b[0], -.035, b[1]], .035, '#7c808a', 5); tube([a[0], -.1, a[1]], [b[0], -.1, b[1]], .04, '#b9b0a4', 5);
+      }
       // sleepers and rails, the length of the island
       for (let s = -5.5; s < 5.6; s += .42) add(G.box(.14, .045, .9, .008), C.sleeper, s, .035, TZ);
       for (const k of [-.33, .33]) { tube([-5.65, .09, TZ + k], [5.65, .09, TZ + k], .032, C.rail, 6); tube([-5.65, .125, TZ + k], [5.65, .125, TZ + k], .02, '#d7dbe3', 6); }
       // the crossing: rubber boards between and beside the rails, the road's white lines and kerbs
       add(G.box(1.3, .05, 1.15, .012), '#6f6a66', RXC, .03, TZ);
       for (let k = -2; k <= 2; k++) add(G.box(.02, .052, 1.1, .004), '#5b5652', RXC + k * .26, .031, TZ);
-      for (let z = -3.8; z < 4.0; z += .85) if (Math.abs(z + .2 - TZ) > .8) add(G.box(.07, .006, .45, .002), C.line, RXC, .026, z + .2);
-      for (const x of [RX0 - .05, RX1 + .05]) for (const [z0, z1] of [[-4.0, TZ - .7], [TZ + .7, 4.0]]) add(G.box(.1, .08, z1 - z0, .02), C.kerb, x, .04, (z0 + z1) / 2);
+      // lane paint: the dashed centre line, solid edge lines, a stop line each side of the crossing; a manhole and two drain grates
+      { const [za, zb] = shoreZ(SHORE, RXC);
+        for (let z = za + .35; z < zb - .3; z += .8) if (Math.abs(z + .2 - TZ) > .85) add(G.box(.07, .006, .42, .002), C.line, RXC, .032, z + .2);
+        for (const x of [RX0 + .1, RX1 - .1]) for (const [z0, z1] of [[za + .25, TZ - .75], [TZ + .75, zb - .25]]) add(G.box(.04, .006, z1 - z0, .002), C.line, x, .032, (z0 + z1) / 2);
+        for (const z of [TZ - .95, TZ + .95]) add(G.box(1.1, .006, .1, .002), C.line, RXC, .032, z);
+        add(G.cyl(.2, .2, .012, 18), '#6d6f78', RXC + .3, .034, TZ + 2.0); add(G.cyl(.16, .16, .014, 18), '#83868f', RXC + .3, .036, TZ + 2.0);
+        for (let k = -2; k <= 2; k++) add(G.box(.26, .016, .015, .003), '#5e6068', RXC + .3, .044, TZ + 2.0 + k * .055);
+        for (const [x, z] of [[RX0 + .14, TZ - 1.9], [RX1 - .14, TZ + 2.7]]) { add(G.box(.18, .012, .34, .004), '#5e6068', x, .034, z); for (let k = -3; k <= 3; k++) add(G.box(.15, .016, .012, .002), '#3f4049', x, .04, z + k * .045); } }
       // the platform's edge: the white line and the yellow dotted tactile strip (on the raised platform)
       add(G.box(8.0, .012, .05, .004), C.white, -1, PY + .006, .38);
       add(G.box(8.0, .012, .26, .006), C.strip, -1, PY + .006, .14);
@@ -110,7 +170,8 @@ B.s4_land = f => {
       add(G.box(3.2, .14, .55, .03), C.woodD, -.4, .07, TZ + 1.4);
       add(G.box(3.1, .03, .48, .02), '#8b6a4e', -.4, .145, TZ + 1.4);
       for (let k = 0; k < 14; k++) flower(add, -1.85 + k * .22, TZ + 1.3 + (k % 2) * .18, ['#ffffff', '#ffd23f', '#ffb3cf', '#b9a6ff'][k % 4], 1.1, .14);
-      bush(add, -2.3, TZ + 1.45, .55, '#a9b8f0', '#8f9fe0'); bush(add, 1.5, TZ + 1.45, .5, '#c9b0ea', '#b49ce0'); bush(add, -5.0, TZ + 1.5, .5, '#7cc46a', '#5fae5a');
+      leafBush(add, -2.3, TZ + 1.45, .75, '#5fae5a', '#3f8f4f', ['#a9b8f0', '#8f9fe0']); leafBush(add, 1.5, TZ + 1.45, .7, '#5fae5a', '#3f8f4f', ['#c9b0ea', '#b49ce0']);
+      leafBush(add, -5.0, TZ + 1.5, .7, '#6cb85c', '#468f48');
       // the overhead wires between the two poles (they run on past the island's edge)
       const [p, q] = POLES;
       const dl = Math.hypot(q[0] - p[0], q[1] - p[1]), ux = (q[0] - p[0]) / dl * 1.4, uz = (q[1] - p[1]) / dl * 1.4;
@@ -120,11 +181,15 @@ B.s4_land = f => {
       pet.forEach(([x, z], i) => add(G.cyl(.04, .04, .005, 6), i % 3 ? C.pink : C.pink2, x, (x < 3 && z > -1.5 ? PY : 0) + .01, z, 0, i, 0, [1, 1, .7]));
       for (const [x, z] of [[-4.6, 3.7], [2.6, 3.6], [-1.0, 3.8], [5.3, -3.2], [-5.3, -2.6]]) tuft(add, x, z, 1);
     } });
+  f.add(mt('s4-road', asphaltTex(), ({ add }) => { add(G.slab(ROADP, .025, 0), C.asphalt, 0, .004, 0, 0, 0, 0, 1, { w: .9 }); }));
   // a couple of places in the front bed
   f.spot('in', null, -1.1, .14, TZ + 1.42, { maxH: .22, label: '꽃밭 속', scale: .55 });
   f.spot('in', null, .5, .14, TZ + 1.38, { maxH: .22, label: '꽃밭 속', scale: .55 });
   f.spot('beside', null, -3.9, 0, TZ + 1.05, { maxH: .3, label: '울타리 밑', scale: .55 });
-  f.walkSolids = [[-5.25, 0, TZ + .78, 3.1, .5, TZ + .86], [-2.0, 0, TZ + 1.1, 1.2, .2, TZ + 1.7]];
+  // (the flower bed as tall as the fence: at .2 it was a step up, and 개굴이 — moved to where the start view sees him — stood in it, 아트 점검 10/24)
+  // (the bed and its three shrubs as solid as the fence: 개굴이 wandered onto the bed's west end and stood in the hydrangea — 사용자 메모
+  // '개구리 꽃에 뚫림', still there after the friendAt move)
+  f.walkSolids = [[-5.25, 0, TZ + .78, 3.1, .5, TZ + .86], [-2.75, 0, TZ + 1.05, 1.85, .5, TZ + 1.85], [-5.4, 0, TZ + 1.1, -4.6, .5, TZ + 1.9]];
 };
 
 // ── the station house: plank skirt, white plaster, kawara gable roof; door, latticed window, the station's name, the route
@@ -140,21 +205,38 @@ B.s4_station = f => {
     add(G.box(W + .04, .08, D + .04, .02), C.post, 0, y0 + .82, 0);
     add(G.box(W + .04, .09, D + .04, .02), C.post, 0, y0 + H - .02, 0);
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.13, H, .13, .02), C.post, sx * (W / 2 - .02), y0 + H / 2, sz * (D / 2 - .02));
-    // the doorway: a sliding glass door in a dark frame, its lattice
-    add(G.box(.9, 1.4, .05, .02), C.post, dx, y0 + .7, zf + .01);
-    add(G.box(.8, 1.3, .02, .01), C.glass2, dx, y0 + .67, zf + .03);
-    for (const u of [-.2, 0, .2]) add(G.box(.025, 1.3, .02, .005), C.post, dx + u, y0 + .67, zf + .04);
-    for (const v of [.33, .67, 1.0]) add(G.box(.8, .025, .02, .005), C.post, dx, y0 + v, zf + .04);
-    // a latticed window (right)
-    add(G.box(.62, .6, .05, .02), C.post, wx, y0 + 1.22, zf + .01); add(G.box(.54, .52, .02, .01), C.glass, wx, y0 + 1.22, zf + .03);
-    for (const u of [-.13, 0, .13]) add(G.box(.02, .52, .02, .005), C.white, wx + u, y0 + 1.22, zf + .045);
-    add(G.box(.54, .02, .02, .005), C.white, wx, y0 + 1.22, zf + .045);
+    // the entrance (사용자 메모 '출입구인지 창문인지'): a deep doorway — a thick frame with a lintel, two sliding doors (wood kick
+    // panel below, glass above, one in front of the other), their bar handles, a stone threshold at the platform's height and a
+    // little tiled canopy over it
+    const D0 = PY, DH = 1.34, DW = .96;
+    add(G.box(DW + .2, DH + .14, .07, .02), C.post, dx, D0 + (DH + .14) / 2, zf + .02);
+    add(G.box(DW + .3, .12, .1, .02), C.post, dx, D0 + DH + .12, zf + .04);
+    add(G.box(DW, DH, .02, .005), '#4a3f52', dx, D0 + DH / 2, zf + .03);
+    [[-1, .05], [1, .085]].forEach(([sd, z]) => {
+      const cx = dx + sd * DW / 4;
+      add(G.box(DW / 2 + .02, DH, .035, .015), C.post, cx, D0 + DH / 2, zf + z);
+      add(G.box(DW / 2 - .06, .34, .02, .01), C.siding, cx, D0 + .22, zf + z + .02);
+      add(G.box(DW / 2 - .06, DH - .52, .015, .008), C.glass2, cx, D0 + .44 + (DH - .52) / 2, zf + z + .02);
+      add(G.box(.02, DH - .52, .02, .004), C.post, cx, D0 + .44 + (DH - .52) / 2, zf + z + .03);
+      add(G.box(DW / 2 - .06, .02, .02, .004), C.post, cx, D0 + .44 + (DH - .52) * .55, zf + z + .03);
+      add(G.box(.025, .22, .03, .01), C.steel2, cx - sd * (DW / 4 - .06), D0 + .66, zf + z + .04);
+    });
+    add(G.box(DW + .3, .05, .3, .02), C.plinth, dx, D0 + .025, zf + .15);
+    add(G.box(.7, .012, .4, .01), '#8a6a52', dx, D0 + .056, zf + .48); for (let k = 0; k < 5; k++) add(G.box(.62, .004, .03, .002), '#6f5543', dx, D0 + .063, zf + .33 + k * .075);
+    add(G.box(DW + .5, .07, .42, .02), C.roofD, dx, D0 + DH + .36, zf + .2, .32, 0, 0);
+    for (const sd of [-1, 1]) add(G.box(.05, .05, .3, .01), C.post, dx + sd * (DW / 2 + .12), D0 + DH + .24, zf + .15, -.6, 0, 0);
+    // a latticed window (right) — a window, plainly: high on the wall, a sill board under it, a header over it, lattice
+    add(G.box(.66, .62, .05, .02), C.post, wx, y0 + 1.28, zf + .01); add(G.box(.56, .52, .02, .01), C.glass, wx, y0 + 1.28, zf + .03);
+    for (const u of [-.14, 0, .14]) add(G.box(.02, .52, .02, .005), C.white, wx + u, y0 + 1.28, zf + .045);
+    add(G.box(.56, .02, .02, .005), C.white, wx, y0 + 1.28, zf + .045);
+    add(G.box(.78, .05, .14, .015), C.wood, wx, y0 + .95, zf + .07); add(G.box(.74, .05, .06, .015), C.post, wx, y0 + 1.62, zf + .04);
     // the timetable frame (empty — the clue one is set by the stage) left of the door, the route map on the east wall
     add(G.box(.46, .44, .04, .02), C.post, -.42, 1.22, zf + .02);
     add(G.box(.04, .36, .68, .02), C.post, W / 2 + .02, 1.3, .3);
-    // a potted plant by the door
-    add(G.cyl(.15, .12, .26, 12), '#d98b5f', dx + .62, PY + .13, zf + .3);
-    for (let k = 0; k < 6; k++) add(G.sph(.12, 8, 6), k % 2 ? '#6cbf5a' : '#4fa64f', dx + .62 + Math.cos(k * 1.1) * .08, PY + .36 + (k % 2) * .07, zf + .3 + Math.sin(k * 1.1) * .07);
+    // a potted plant under the window (사용자 메모: it stood in the IC gate — moved clear of it): a terracotta pot with a rim, soil, a leafy plant
+    { const px = wx + .2, pz = zf + .3;
+      add(G.cyl(.16, .12, .28, 14), '#d98b5f', px, PY + .14, pz); add(G.cyl(.18, .18, .06, 14), '#c97a4f', px, PY + .28, pz); add(G.cyl(.15, .15, .02, 12), '#6b4a33', px, PY + .3, pz);
+      leafBush(add, px, pz, .75, '#5fae5a', '#3f8f4f', null, PY + .29); }
   }));
   gableRoof(f, 's4-st2', 0, y0 + H, 0, W, D, .85, .34);
   // the station's name over the eave: 벚꽃마을역 / Sakura Town
@@ -177,40 +259,57 @@ B.s4_station = f => {
     c.strokeStyle = 'rgba(58,48,72,.25)'; c.lineWidth = 1; for (let r = 1; r < 5; r++) { c.beginPath(); c.moveTo(w * .08, h * (.2 + r * .16)); c.lineTo(w * .92, h * (.2 + r * .16)); c.stroke(); }
   }, -.42, 1.22, zf + .045, 0);
   f.spot('beside', null, -W / 2 + .1, PY, zf + .4, { maxH: .4, label: '역사 처마 밑', scale: .7 });
-  f.spot('beside', null, wx + .2, PY, zf + .3, { maxH: .4, label: '역사 처마 밑', scale: .7 });
-  f.spot('beside', null, dx + .62, PY, zf + .62, { maxH: .3, label: '문 옆 화분', scale: .6 });
+  // (no second eave place at wx + .2, zf + .3: the window's plant pot stands right there now — a thing put there sat inside the pot
+  // and no view saw it, the bot circled it to the end of the clock, 봇 회귀 10/24)
+  f.spot('beside', null, wx + .2, PY, zf + .62, { maxH: .3, label: '창 밑 화분', scale: .6 });
   f.walkSolids = [[-W / 2 - .08, 0, -D / 2 - .08, W / 2 + .08, 2.9, D / 2 + .08]];
   // (doors next to it swing by its walls, not by the box round its eaves and name board — room.js fitParts)
   f.collideBox = [-W / 2 - .08, 0, -D / 2 - .08, W / 2 + .08, y0 + H, D / 2 + .08];
 };
 
-// ── the ticket window (type ticketoffice — HAT_KEY 27 'code'): a window in the station's wall, a ledge, and under the ledge
-// a hollow wooden cupboard whose door takes the code lock (the timetable's ★ time opens it)
+// ── the ticket window (type ticketoffice — HAT_KEY 27 'code'; 사용자 메모 '창구 퀄'): a booth window in a thick frame — glass with a
+// round speaking grille and a coin tray at its foot, a '매표소' board over it; a counter ledge; under it a panelled wooden cupboard
+// whose door has a brass hasp where the code lock hangs (the timetable's ★ time opens it)
 B.ticketoffice = f => {
-  const CW = .8, CH = .62, CD = .34, y0 = .14;
-  f.add(mc('s4-ticket', ({ add }) => {
-    add(G.box(.86, .62, .06, .02), C.post, 0, 1.12, 0);
-    add(G.box(.76, .5, .02, .01), C.glass2, 0, 1.13, .03);
-    add(G.box(.76, .1, .025, .01), C.white, 0, 1.43, .035);
-    add(G.cyl(.09, .09, .02, 14), C.dark, 0, .93, .035, HP, 0, 0);
-    add(G.box(.92, .05, CD + .06, .015), C.wood, 0, y0 + CH + .025, CD / 2);
-    // the cupboard: back, sides, floor — open at the front for the door
+  const CW = .82, CH = .6, CD = .34, y0 = .14;
+  f.add(mc('s4-ticket2', ({ add }) => {
+    add(G.box(.94, .7, .07, .03), C.post, 0, 1.16, .01);
+    // the backing of the '매표소' board above the window (the board is a painted face 1 cm in front of it)
+    add(G.box(.8, .22, .04, .015), C.post, 0, 1.6, .02);
+    add(G.box(.8, .54, .02, .01), C.glass2, 0, 1.17, .045);
+    add(G.box(.8, .02, .025, .005), C.white, 0, 1.3, .05);
+    // the speaking grille: a silver ring with three bars; the coin tray: a dark dish set into the sill
+    add(G.tor(.075, .014, Math.PI * 2, 6, 18), '#c9cdd6', 0, 1.06, .06); for (const k of [-1, 0, 1]) add(G.box(.12, .008, .01, .003), '#8f97ab', 0, 1.06 + k * .03, .058);
+    add(G.box(.96, .06, .2, .02), C.wood, 0, .84, .1); add(G.box(.3, .03, .14, .01), '#4a4256', 0, .87, .09); add(G.box(.26, .015, .1, .006), '#c9cdd6', 0, .88, .095);
+    add(G.box(.98, .03, .22, .01), C.woodD, 0, .805, .1);
+    // the cupboard: back, sides, floor (open at the front for its door), a plinth, the ledge over it
     add(G.pbox(CW, CH, .03), C.woodD, 0, y0 + CH / 2, .015);
-    for (const s of [-1, 1]) add(G.pbox(.03, CH, CD), C.woodD, s * (CW / 2 - .015), y0 + CH / 2, CD / 2);
-    add(G.pbox(CW, .03, CD), C.woodD, 0, y0 + .015, CD / 2); add(G.box(CW + .04, y0, CD + .04, .02), C.plinth, 0, y0 / 2, CD / 2);
-    add(G.sph(.045, 10, 6), C.yel, .3, y0 + CH + .07, CD / 2, 0, 0, 0, [1, .7, 1]); add(G.cyl(.04, .035, .08, 10), '#5fa8e8', -.32, y0 + CH + .09, CD / 2);
+    for (const s2 of [-1, 1]) add(G.box(.04, CH, CD, .01), C.wood, s2 * (CW / 2 - .02), y0 + CH / 2, CD / 2);
+    add(G.pbox(CW, .03, CD), C.woodD, 0, y0 + .015, CD / 2); add(G.box(CW + .06, y0, CD + .05, .02), C.plinth, 0, y0 / 2, CD / 2);
+    add(G.box(CW + .08, .05, CD + .08, .015), C.wood, 0, y0 + CH + .025, CD / 2);
+    // a call bell on the ledge
+    add(G.cyl(.05, .055, .02, 14), C.dark, .32, .885, .12); add(G.sph(.045, 12, 6), '#e8eaf0', .32, .895, .12, 0, 0, 0, [1, .7, 1]); add(G.cyl(.008, .008, .03, 6), C.dark, .32, .94, .12);
   }));
-  const dv = grp(); put(dv, -CW / 2 + .02, y0 + CH / 2, CD + .005); f.add(dv);
-  dv.add(mc('s4-ticket-door', ({ add }) => {
-    add(G.box(CW - .04, CH - .04, .03, .02), C.wood, CW / 2 - .02, 0, 0);
-    add(G.box(CW - .2, CH - .2, .01, .01), '#c98f58', CW / 2 - .02, 0, .018);
-    add(G.cyl(.022, .022, .03, 8), C.steel2, CW - .12, 0, .03, HP, 0, 0);
+  board(f, .74, .16, 360, (c, w, h) => {
+    c.fillStyle = '#3a5f8a'; c.fillRect(0, 0, w, h);
+    fitText(c, '매표소', w * .36, h * .52, w * .5, h * .7, '#ffffff');
+    const other = tr('매표소') === '매표소' ? 'Tickets' : '매표소';
+    c.font = FONT(Math.round(h * .36)); c.fillStyle = '#cfe2f5'; c.textAlign = 'center'; c.fillText(other, w * .8, h * .56, w * .34);
+  }, 0, 1.6, .052, 0);
+  const dv = grp(); put(dv, -CW / 2 + .04, y0 + CH / 2, CD + .005); f.add(dv);
+  dv.add(mc('s4-ticket2-door', ({ add }) => {
+    add(G.box(CW - .08, CH - .04, .03, .02), C.wood, CW / 2 - .04, 0, 0);
+    add(G.box(CW - .22, CH - .2, .012, .01), '#c98f58', CW / 2 - .04, 0, .02);
+    add(G.box(CW - .3, CH - .28, .01, .01), '#e0a76a', CW / 2 - .04, 0, .028);
+    // the brass hasp plate the lock hangs from, and the knob
+    add(G.box(.12, .16, .012, .01), '#e8b84a', CW - .2, .02, .03); add(G.tor(.03, .008, Math.PI * 2, 5, 12), '#c99a2e', CW - .2, .06, .04);
+    add(G.sph(.025, 10, 8), '#e8b84a', CW - .12, -.12, .035);
   }));
   const p = f.part('door', dv, t => { dv.rotation.y = -1.6 * t; }, { label: '창구 서랍', sfx: 'open', dur: .3 });
-  p.lockable = true; p.lockKind = 'code'; f.lockAt = { x: CW - .12, y: -.08, z: .04, parent: dv };
+  p.lockable = true; p.lockKind = 'code'; f.lockAt = { x: CW - .2, y: -.02, z: .05, parent: dv };
   f.spot('inside', null, 0, y0 + .03, CD / 2, { part: p, maxH: CH - .1, label: '창구 서랍 안', scale: .8 });
-  f.spot('on', null, -.12, y0 + CH + .05, CD / 2 + .02, { maxH: .28, label: '창구 선반', scale: .7 });
-  f.walkSolids = [[-.46, 0, -.05, .46, 1.5, CD + .05]];
+  f.spot('on', null, -.18, .87, .14, { maxH: .28, label: '창구 선반', scale: .7 });
+  f.walkSolids = [[-.47, 0, -.05, .47, 1.55, CD + .06]];
 };
 
 // ── the platform roof (type platshelter): two posts, a kawara roof sloping back, a bench under it with someone's tote bag
@@ -226,9 +325,19 @@ B.s4_shelter = f => {
     // on the bench: a tote bag (mustard, its handles up) and a folded newspaper
     add(G.box(.32, .26, .14, .04), '#f2c14e', .38, .61, -.18); for (const s of [-1, 1]) add(G.tor(.07, .012, Math.PI, 4, 8), '#d9a53a', .38 + s * .07, .74, -.18);
     add(G.box(.34, .03, .24, .01), '#f4f1ea', -.35, .5, -.1, 0, .25, 0); for (let k = 0; k < 3; k++) add(G.box(.22, .004, .02, .002), '#9a93a8', -.38 + k * .02, .518, -.16 + k * .05, 0, .25, 0);
-    // the station clock: a round white face in a dark rim, hung under the front beam; the name sign beside it
-    add(G.cyl(.008, .008, .2, 4), C.dark, -.45, 1.82, .42); add(G.cyl(.17, .17, .07, 18), C.dark, -.45, 1.62, .42, HP, 0, 0); add(G.cyl(.145, .145, .075, 18), C.white, -.45, 1.62, .42, HP, 0, 0);
-    add(G.box(.015, .1, .01, .003), C.dark, -.45, 1.66, .462); add(G.box(.08, .015, .01, .003), C.dark, -.42, 1.62, .462);
+    // the station clock: a bracket from the beam, a thick dark rim round a white face, twelve hour marks (four bold), hands at
+    // ten past ten with a red second hand and a centre cap — both faces; the name sign beside it
+    { const cx = -.45, cy = 1.56, cz = .42;
+      add(G.box(.04, .2, .04, .01), C.dark, cx, 1.76, cz); add(G.box(.12, .03, .05, .01), C.dark, cx, 1.85, cz);
+      add(G.cyl(.2, .2, .08, 22), C.dark, cx, cy, cz, HP, 0, 0); add(G.tor(.19, .022, Math.PI * 2, 6, 24), '#4a4256', cx, cy, cz + .03); add(G.tor(.19, .022, Math.PI * 2, 6, 24), '#4a4256', cx, cy, cz - .03);
+      for (const sd of [1, -1]) {
+        const fz = cz + sd * .042;
+        add(G.cyl(.17, .17, .006, 22), C.white, cx, cy, fz, HP, 0, 0);
+        for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6, big = k % 3 === 0; add(G.box(big ? .022 : .012, big ? .05 : .03, .006, .002), C.dark, cx + Math.sin(a) * .135, cy + Math.cos(a) * .135, fz + sd * .004, 0, 0, -a); }
+        const hand = (a, L, wd, c) => add(G.box(wd, L, .006, .003), c, cx + Math.sin(a) * L / 2, cy + Math.cos(a) * L / 2, fz + sd * .008, 0, 0, -a);
+        hand(-1.0 * sd, .085, .02, C.dark); hand(1.05 * sd, .12, .014, C.dark); hand(2.6 * sd, .13, .006, '#e8473f');
+        add(G.cyl(.016, .016, .012, 10), C.dark, cx, cy, fz + sd * .012, HP, 0, 0);
+      } }
     for (const x of [.15, .75]) add(G.cyl(.008, .008, .22, 4), C.dark, x, 1.8, .42);
     add(G.box(.75, .22, .04, .02), C.white, .45, 1.62, .42); add(G.box(.75, .045, .045, .01), C.mintD, .45, 1.53, .42);
   }));
@@ -252,7 +361,8 @@ B.s4_bins = f => {
       add(G.box(.18, .1, .01, .01), '#ffffff', x, .45, .155);
     });
   }));
-  f.spot('beside', null, .55, 0, .05, { maxH: .35, label: '쓰레기통 옆', scale: .6 });
+  // (in front, not beside: the gap between the bins and the vending machine at the back wall showed from no view — 봇 회귀 10/24)
+  f.spot('beside', null, -.12, 0, .34, { maxH: .35, label: '쓰레기통 앞', scale: .6 });
   f.spot('on', null, .28, .68, 0, { maxH: .25, label: '쓰레기통 위', scale: .55 });
   f.walkSolids = [[-.43, 0, -.16, .43, .7, .16]];
 };
@@ -329,25 +439,42 @@ B.s4_crossing = f => {
   f.walkSolids = [[-.17, 0, -.17, .17, 2.4, .17], [-.24, 0, .12, .08, .5, .4]];
 };
 
-// ── 개굴이's fishing bag (type tripbag): green canvas, a flap that lifts, the rod strapped on ────────────────────
+// ── 개굴이's fishing bag (type tripbag; 사용자 메모 '낚시가방 퀄'): a soft canvas bag (woven, rounded), a front pocket with a flap and
+// a brass buckle, a mesh side pocket, a zip round the lid, two leather straps over it, the shoulder strap arching behind; the rod in a
+// tube holder at its side, its reel, the line and a red-white float clipped to the strap. The lid lifts (the bag bursts at the start).
 B.s4_tripbag = f => {
-  const W = .62, H = .32, D = .36, CANV = '#7cc47a';
-  f.add(mc('s4-tripbag', ({ add }) => {
-    add(G.box(W, H, D, .06), CANV, 0, H / 2, 0);
-    for (const s of [-1, 1]) add(G.box(.06, H + .01, D + .02, .02), '#5fae5a', s * .18, H / 2, 0);
-    add(G.box(.2, .14, .04, .02), '#6cbb6a', 0, .14, D / 2 + .01);
-    add(G.cyl(.008, .008, .5, 6), C.dark, .1, .31, -D / 2 - .03, 0, 0, HP);
+  const W = .64, H = .32, D = .38, CANV = '#7cc47a', CANV2 = '#5fae5a', LEA = '#a8733f';
+  f.add(mt('s4-tripbag2', TX.cloth(), ({ add }) => {
+    add(G.box(W, H, D, .07), CANV, 0, H / 2, 0, 0, 0, 0, 1, { w: .12 });
+    add(G.box(.34, .16, .05, .03), CANV2, -.05, .13, D / 2 + .02, 0, 0, 0, 1, { w: .12 });
+    add(G.box(.08, .22, .2, .03), '#9fd4a0', W / 2 + .03, .13, -.02, 0, 0, 0, 1, { w: .08 });
+  }));
+  f.add(mc('s4-tripbag2-bits', ({ add, tube }) => {
+    add(G.box(.36, .07, .055, .025), '#4f9a4f', -.05, .23, D / 2 + .03, -.2, 0, 0); add(G.box(.05, .04, .02, .005), '#e8b84a', -.05, .2, D / 2 + .06);
+    for (const x of [-.14, .2]) add(G.box(.045, H + .02, D + .03, .01), LEA, x, H / 2, 0);
+    add(G.box(W + .01, .012, .012, .004), C.dark, 0, H - .01, D / 2 + .003); add(G.box(.025, .04, .01, .004), '#e8b84a', .27, H - .03, D / 2 + .01);
+    // the shoulder strap, arching behind
+    const pts = [[-W / 2 + .05, H - .02, -D / 2 - .01], [-.18, H + .2, -D / 2 - .06], [.1, H + .26, -D / 2 - .07], [W / 2 - .05, H - .02, -D / 2 - .01]];
+    for (let k = 0; k < 3; k++) tube(pts[k], pts[k + 1], .02, LEA, 5);
+    // the rod holder at the right end, the rod rising out of it with its reel and line, the float on the front strap
+    add(G.cyl(.035, .035, .3, 10), '#4f9a4f', W / 2 + .07, .17, .1);
+    tube([W / 2 + .07, .1, .1], [W / 2 + .25, 1.0, -.05], .012, '#6b4a33', 6, .006);
+    add(G.cyl(.045, .045, .03, 12), C.steel2, W / 2 + .1, .4, .09, 0, 0, HP); add(G.cyl(.012, .012, .06, 6), C.dark, W / 2 + .14, .4, .09, 0, 0, HP);
+    tube([W / 2 + .25, 1.0, -.05], [W / 2 + .2, .7, .02], .003, '#ffffff', 4);
+    add(G.sph(.035, 10, 8), C.red, .2, .14, D / 2 + .03, 0, 0, 0, [1, 1.2, 1]); add(G.sph(.033, 10, 6), C.white, .2, .18, D / 2 + .03, 0, 0, 0, [1, .7, 1]); add(G.cyl(.004, .004, .05, 4), C.dark, .2, .23, D / 2 + .03);
   }));
   const lid = grp(); put(lid, 0, H, -D / 2); f.add(lid);
-  lid.add(mc('s4-tripbag-flap', ({ add }) => {
-    add(G.box(W + .02, .04, D + .02, .02), CANV, 0, .02, D / 2);
-    add(G.cyl(.012, .016, 1.0, 8), C.woodD, .1, .07, D / 2, 0, 0, HP); add(G.cyl(.04, .04, .03, 12), C.steel2, -.18, .1, D / 2 + .03, HP, 0, 0);
-    add(G.sph(.04, 8, 6), C.red, .55, .08, D / 2); add(G.sph(.04, 8, 6), C.white, .55, .12, D / 2, 0, 0, 0, [1, .6, 1]);
+  lid.add(mt('s4-tripbag2-flap', TX.cloth(), ({ add }) => { add(G.box(W + .03, .05, D + .03, .025), CANV, 0, .02, D / 2, 0, 0, 0, 1, { w: .12 }); }));
+  lid.add(mc('s4-tripbag2-flapbits', ({ add }) => {
+    for (const x of [-.14, .2]) { add(G.box(.05, .012, D + .04, .005), LEA, x, .05, D / 2); add(G.box(.06, .03, .03, .008), '#e8b84a', x, .05, D + .01); }
+    add(G.box(.12, .03, .07, .02), LEA, .03, .07, D / 2);
   }));
   const p = f.part('lift', lid, t => { lid.rotation.x = -1.9 * t; }, { label: '낚시 가방', sfx: 'lift', dur: .32 });
-  f.spot('inside', null, 0, .03, 0, { part: p, maxH: .22, label: '낚시 가방 안', scale: .7 });
-  f.spot('beside', null, .5, 0, .12, { maxH: .3, label: '낚시 가방 옆', scale: .6 });
-  f.walkSolids = [[-.32, 0, -.19, .32, .34, .19]];
+  // (the bag's body is one solid block: what was put inside sat buried in it — as the flap lifts, a lining tray rises to the rim
+  // with the thing on it, 봇 회귀 10/24)
+  f.pullOut(p, f.spot('inside', null, 0, .03, 0, { part: p, maxH: .22, label: '낚시 가방 안', scale: .7 }), 0, { w: W - .14, d: D - .1, color: '#e9dcb8', up: H - .02 });
+  f.spot('beside', null, -.5, 0, .14, { maxH: .3, label: '낚시 가방 옆', scale: .6 });
+  f.walkSolids = [[-.34, 0, -.21, .5, .36, .21]];
 };
 // ── coin lockers (type coinlocker — HAT_KEY 27 'pad'): two by three soft blue doors, the lower middle one opens ───
 B.s4_locker = f => {
@@ -377,20 +504,43 @@ B.s4_locker = f => {
 };
 
 // ── small things ─────────────────────────────────────────────────────────────────────────────────────────────
-// two vending machines (red, blue), facing +z: a window of little bottles, the buttons, the slot
+// two vending machines (red, blue), facing +z (사용자 메모 '그 앞 자판기 퀄'): a lit header band, a deep display window of three
+// shelves of cans and bottles with price strips and push buttons, the coin slot, note slot, a little green display and the change
+// lever, a poster panel, the take-out pocket with its flap, a dark kick plate; the white cap and side trim
 B.s4_vend = f => {
-  f.add(mc('s4-vend', ({ add }) => {
-    [[-.34, C.red], [.34, C.blue]].forEach(([x, c], n) => {
-      add(G.box(.64, 1.6, .58, .05), c, x, .8, 0); add(G.box(.66, .06, .6, .02), '#ffffff', x, 1.6, 0);
-      add(G.box(.54, .66, .02, .02), '#f4f7fb', x, 1.14, .29);
-      for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) add(G.cyl(.035, .035, .13, 8), ['#ffd23f', '#7fd6c0', '#ff8f6b', '#ffffff', '#9fc4ff'][(r * 4 + k + n) % 5], x - .19 + k * .125, .9 + r * .2, .27);
-      for (let k = 0; k < 4; k++) add(G.box(.06, .03, .02, .01), C.white, x - .19 + k * .125, .78, .3);
-      add(G.box(.42, .14, .04, .02), C.dark, x, .3, .28); add(G.box(.08, .14, .03, .01), '#cfd3dc', x + .2, .62, .3);
+  const W = .66, Hh = 1.72, D = .6, zf = D / 2, DR = ['#ffd23f', '#7fd6c0', '#ff8f6b', '#ffffff', '#9fc4ff', '#c9a6ff', '#8fdc7a'];
+  f.add(mc('s4-vend2', ({ add }) => {
+    [[-.35, C.red, '#c93a33'], [.35, C.blue, '#3a74b8']].forEach(([x, c, cd], n) => {
+      add(G.box(W, Hh, D, .05), c, x, Hh / 2, 0);
+      add(G.box(W + .02, .05, D + .02, .02), '#ffffff', x, Hh + .01, 0);
+      for (const sd of [-1, 1]) add(G.box(.015, Hh - .1, D - .1, .005), cd, x + sd * (W / 2 + .003), Hh / 2, 0);
+      // the header: a white lit band with the brand stripe
+      add(G.box(W - .06, .13, .03, .02), '#f4f7fb', x, Hh - .12, zf + .005); add(G.box(W - .1, .04, .032, .01), cd, x, Hh - .12, zf + .008);
+      // the display window: a pale lit back, three shelves; cans and bottles; a price strip and a button under each
+      add(G.box(W - .08, .72, .02, .02), '#ffffff', x, 1.17, zf + .002); add(G.box(W - .12, .66, .02, .01), '#eef6ff', x, 1.17, zf + .006);
+      for (let r = 0; r < 3; r++) {
+        const y = .9 + r * .21;
+        add(G.box(W - .12, .012, .05, .004), '#c9cdd6', x, y, zf - .005);
+        for (let k = 0; k < 5; k++) {
+          const ix = x - .2 + k * .1, col = DR[(r * 5 + k + n * 2) % DR.length];
+          if ((k + r) % 2) { add(G.cyl(.028, .028, .1, 10), col, ix, y + .06, zf - .01); add(G.cyl(.022, .022, .006, 10), '#c9cdd6', ix, y + .113, zf - .01); }
+          else { add(G.cyl(.026, .026, .08, 10), col, ix, y + .05, zf - .01); add(G.cone(.026, .035, 10), col, ix, y + .107, zf - .01); add(G.cyl(.011, .011, .02, 8), '#ffffff', ix, y + .13, zf - .01); }
+          add(G.box(.07, .018, .01, .004), '#ffffff', ix, y - .025, zf + .022); add(G.cyl(.009, .009, .012, 8), '#4a8fd8', ix + .02, y - .025, zf + .032, HP, 0, 0);
+        }
+      }
+      // controls (right) and a poster panel (left) under the window
+      add(G.box(.2, .3, .03, .02), '#f4f7fb', x + .17, .66, zf + .006);
+      add(G.box(.05, .012, .01, .003), C.dark, x + .2, .76, zf + .024); add(G.box(.09, .016, .01, .003), C.dark, x + .17, .71, zf + .024);
+      add(G.box(.1, .05, .01, .005), '#5fbf7a', x + .17, .63, zf + .024); add(G.cyl(.016, .016, .02, 8), '#c9cdd6', x + .21, .56, zf + .028, HP, 0, 0);
+      add(G.box(.32, .3, .02, .02), '#ffffff', x - .12, .66, zf + .004); add(G.box(.28, .12, .022, .01), n ? '#ffd23f' : '#7fd6c0', x - .12, .7, zf + .006); add(G.cyl(.04, .04, .024, 12), n ? '#ff8f6b' : '#ffffff', x - .16, .6, zf + .006, HP, 0, 0);
+      // the take-out pocket and its flap, the kick plate
+      add(G.box(.46, .2, .03, .02), '#2f2a3a', x, .3, zf + .004); add(G.box(.42, .12, .02, .01), '#5b5672', x, .33, zf + .02, -.25, 0, 0);
+      add(G.box(W, .08, .03, .01), '#3a3048', x, .04, zf + .004);
     });
   }));
   f.spot('beside', null, .82, 0, .1, { maxH: .45, label: '자판기 옆', scale: .7 });
-  f.spot('on', null, .3, 1.63, 0, { maxH: .3, label: '자판기 위', scale: .6 });
-  f.walkSolids = [[-.69, 0, -.31, .69, 1.65, .31]];
+  f.spot('on', null, .3, Hh + .04, 0, { maxH: .3, label: '자판기 위', scale: .6 });
+  f.walkSolids = [[-.69, 0, -.31, .69, Hh, .31]];
 };
 // the round red postbox
 B.s4_post = f => {
@@ -403,18 +553,32 @@ B.s4_post = f => {
   f.spot('behind', null, -.1, 0, -.38, { maxH: .35, label: '우체통 뒤', scale: .6 });
   f.walkSolids = [[-.22, 0, -.22, .22, 1.05, .22]];
 };
-// the cherry tree — the stage's face (opts.s: its size): a thick leaning trunk, a big soft crown in three pinks
+// the cherry tree — the stage's face (opts.s: its size; 사용자 메모 '벚꽃나무 퀄'): a thick leaning trunk with a root flare, limbs that
+// fork up into the crown and show between the clumps, and a crown of cauliflower clumps — each a core and seven lobes, lighter on
+// top, deeper pink underneath — printed with small five-petal flowers; a few loose sprays hang below the crown's edge
+const CROWN = [[0, 2.2, 0, 1.0], [.8, 2.0, .25, .72], [-.75, 2.05, -.1, .75], [.15, 2.55, -.55, .72], [-.25, 1.9, .65, .62], [.45, 2.7, .35, .6], [-.6, 2.6, .25, .55], [.9, 2.45, -.4, .5], [-.9, 2.2, .55, .5], [.6, 2.0, .8, .5]];
 B.s4_sakura = (f, T, o = {}) => {
-  const k = o.s || 1;
-  f.add(mt('s4-sakura-trunk|' + k, TX.bark(), ({ add }) => {
-    add(G.cyl(.16 * k, .26 * k, 1.6 * k, 10), C.bark, 0, .8 * k, 0, 0, 0, .06, 1, { w: .4 });
-    add(G.cyl(.08 * k, .12 * k, .9 * k, 8), C.bark, .35 * k, 1.5 * k, .12 * k, 0, 0, -.65, 1, { w: .4 }); add(G.cyl(.07 * k, .1 * k, .8 * k, 8), C.bark, -.3 * k, 1.55 * k, -.1 * k, .2, 0, .6, 1, { w: .4 });
-    for (const a of [0, 2.1, 4.2]) add(G.cyl(.05 * k, .12 * k, .45 * k, 6), C.bark, Math.cos(a) * .25 * k, .08 * k, Math.sin(a) * .25 * k, Math.sin(a) * .9, 0, -Math.cos(a) * .9, 1, { w: .4 });
+  const k = o.s || 1, LIMB = [[.75, 2.05, .2], [-.7, 2.1, -.05], [.12, 2.45, -.5], [-.25, 1.95, .55], [.55, 1.95, .7]];
+  f.add(mt('s4-sakura2-wood|' + k, TX.bark(), ({ add, tube }) => {
+    add(G.cyl(.17 * k, .27 * k, 1.5 * k, 12), C.bark, 0, .75 * k, 0, 0, 0, .05, 1, { w: .4 });
+    for (const a of [0, 1.6, 3.2, 4.7]) add(G.cyl(.05 * k, .13 * k, .5 * k, 6), C.bark, Math.cos(a) * .25 * k, .1 * k, Math.sin(a) * .25 * k, Math.sin(a) * .95, 0, -Math.cos(a) * .95, 1, { w: .4 });
+    for (const [x, y, z] of LIMB) {
+      const m = [x * .45 * k, (1.35 + (y - 1.35) * .5) * k, z * .45 * k];
+      tube([0, 1.3 * k, 0], m, .1 * k, C.bark, 7, .07 * k, { w: .4 }); tube(m, [x * k, y * k, z * k], .07 * k, C.bark, 6, .04 * k, { w: .4 });
+      tube(m, [x * .8 * k + .2 * k, (y + .2) * k, z * .8 * k - .15 * k], .04 * k, C.bark, 5, .02 * k, { w: .4 });
+    }
   }));
-  f.add(mt('s4-sakura-crown|' + k, TX.leaf(), ({ add }) => {
-    for (const [dx, dy, dz, r, c] of [[0, 2.2, 0, 1.0, C.pink], [.8, 2.0, .25, .72, C.pink2], [-.75, 2.05, -.1, .75, C.pink], [.15, 2.55, -.55, .72, C.pink3],
-      [-.25, 1.9, .65, .62, C.pink2], [.45, 2.7, .35, .6, C.pink], [-.6, 2.6, .25, .55, C.pink3], [.9, 2.45, -.4, .5, C.pink], [-.9, 2.2, .55, .5, C.pink], [.6, 2.0, .8, .5, C.pink3]])
-      add(G.sph(r * k, 16, 12), c, dx * k, dy * k, dz * k, 0, 0, 0, [1, .84, 1], { w: .5 });
+  f.add(mt('s4-sakura2-crown|' + k, blossomTex(), ({ add }) => {
+    CROWN.forEach(([dx, dy, dz, r], ci) => {
+      const cx = dx * k, cy = dy * k, cz = dz * k, R = r * k;
+      add(G.sph(R * .78, 14, 10), C.pink, cx, cy, cz, 0, 0, 0, [1, .82, 1], { w: .45 });
+      for (let j = 0; j < 7; j++) {
+        const a = j * .9 + ci * 1.3, e = ((j % 3) - 1) * .5, ox = Math.cos(a) * Math.cos(e), oy = Math.sin(e) * .7 + .12, oz = Math.sin(a) * Math.cos(e);
+        const col = oy > .3 ? C.pink3 : oy < -.1 ? '#f7aecb' : (j % 2 ? C.pink : C.pink2);
+        add(G.sph(R * (.42 + .08 * (j % 2)), 12, 9), col, cx + ox * R * .58, cy + oy * R * .5, cz + oz * R * .58, 0, a, 0, [1, .84, 1], { w: .45 });
+      }
+    });
+    for (const [x, y, z] of [[1.15, 1.75, .45], [-1.05, 1.8, .2], [.35, 1.7, 1.05], [-.4, 1.7, -.9], [1.0, 1.85, -.6]]) for (let j = 0; j < 4; j++) add(G.sph(.11 * k, 8, 6), j % 2 ? C.pink2 : C.pink, (x + (j - 1.5) * .07) * k, (y - j * .05) * k, (z + (j % 2) * .06) * k, 0, 0, 0, [1, .85, 1], { w: .3 });
   }));
   f.spot('beside', null, .38 * k, 0, .3 * k, { maxH: .35, label: '벚나무 뿌리 사이', scale: .6 });
   f.spot('beside', null, -.35 * k, 0, .32 * k, { maxH: .35, label: '벚나무 밑', scale: .6 });
@@ -469,15 +633,20 @@ B.s4_bikes = f => {
   f.spot('beside', null, 1.15, 0, .1, { maxH: .35, label: '자전거 옆', scale: .6 });
   f.walkSolids = [[-1.0, 0, -.6, 1.0, .7, .6]];
 };
-// the simple IC ticket gate: a short post with a card reader
+// the IC card-reader stand (사용자 메모 '왼쪽 기둥 퀄·뚫리지 않게'): a rounded base plate, a slim white body with a blue stripe, an
+// angled reader head whose pad glows blue with the card mark, a green arrow lamp facing the platform
 B.s4_icgate = f => {
-  f.add(mc('s4-icgate', ({ add }) => {
-    add(G.box(.2, .9, .2, .04), '#e8edf2', 0, .45, 0); add(G.box(.22, .06, .24, .02), C.steel2, 0, .92, 0);
-    add(G.box(.16, .03, .16, .02), '#5fa8e8', 0, .96, .02); add(G.box(.1, .015, .1, .01), '#bfe3ff', 0, .98, .02);
-    add(G.box(.12, .08, .02, .01), '#7fd6a0', 0, .7, .105);
+  f.add(mc('s4-icgate2', ({ add }) => {
+    add(G.box(.34, .04, .34, .02), '#8f97ab', 0, .02, 0);
+    add(G.box(.22, .86, .24, .06), '#f1f3f7', 0, .47, 0);
+    for (const s2 of [-1, 1]) add(G.box(.012, .7, .26, .005), '#4a8fd8', s2 * .11, .45, 0);
+    add(G.box(.26, .12, .3, .04), '#dfe3ea', 0, .95, .01, -.35, 0, 0);
+    add(G.box(.18, .02, .2, .02), '#7fbff0', 0, 1.01, .02, -.35, 0, 0); add(G.tor(.04, .008, Math.PI * 2, 5, 14), '#ffffff', 0, 1.022, .025, HP - .35, 0, 0);
+    add(G.box(.14, .1, .012, .02), '#2f3a4a', 0, .72, .122); add(G.cone(.03, .05, 3), '#7fe08a', .01, .72, .13, 0, 0, -HP);
+    add(G.box(.12, .04, .01, .005), '#4a8fd8', 0, .58, .121);
   }));
-  f.spot('beside', null, .25, 0, .1, { maxH: .3, label: '개찰기 옆', scale: .55 });
-  f.walkSolids = [[-.11, 0, -.11, .11, 1.0, .11]];
+  f.spot('beside', null, .26, 0, .1, { maxH: .3, label: '개찰기 옆', scale: .55 });
+  f.walkSolids = [[-.17, 0, -.17, .17, 1.05, .17]];
 };
 
 export const S4_BUILDERS = B;

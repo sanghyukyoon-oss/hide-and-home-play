@@ -32,10 +32,10 @@ export function installVillaroof3(LAYOUTS, THEMES) {
     raised: [{ i: 0, j: 0, w: 3, d: 3, h: .2, kind: 'planks', a: '#d9a466', b: '#c99456', edge: '#a8733f', trim: '#e9c28e', step: 'full' }],
     furniture: [
       { type: 'vr3_villa', x: 0, z: 0, a: 0 }, { type: 'vr3_town', x: 0, z: 0, a: 0 },
-      F('lightline', 0, 0, 0, { party: true }), { ...F('pyeongsang', 0, 1), dz: -.4 }, F('snacktable', 2, 1, 0, { party: true }), F('balloons', 2, 0), F('potrow', 0, 2),
+      F('lightline', 0, 0, 0, { party: true }), { ...F('pyeongsang', 0, 1), dz: -.4 }, F('snacktable', 2, 1, 0, { party: true }), F('balloons', 2, 0), F('vr3_potrow', 0, 2),
       F('jangdok', 3, 0), F('vr3_stairhut', 5, 0),
-      F('garden', 4, 4), F('garden', 5, 3), F('rooftap', 6, 4),
-      F('roofline', 1, 4),
+      F('garden', 4, 4), F('garden', 5, 3), F('vr3_tap', 6, 4),
+      F('roofline', 1, 4, 0, { bigKey: true }),
     ],
     decor: [],
     friendAt: [.6, .2] };

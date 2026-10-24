@@ -238,7 +238,7 @@ B.rubbertub = (f, T, o = {}) => {
 const QUILT = '#ffb3c4', QUILT2 = '#f7a0b4';
 // (① 10/21: 'roofline', not 'clothesline' — that name is outdoor.js's alley clothesline, and this one, registered later,
 // took its place in every alley and yard stage from 1.0.147)
-B.roofline = (f, T) => {
+B.roofline = (f, T, o = {}) => {
   const LY = 1.38, QX = -.25, QW = 1.12, sag = x => LY - .06 * (1 - (x / .9) ** 2), QY = sag(QX);
   const zt = clothWave(.32, .44, 2, .016), zb = clothWave(QW, .86, 3, .022);
   f.add(mc('clothesline2', ({ add, tube }) => {
@@ -271,7 +271,9 @@ B.roofline = (f, T) => {
   // sound, a touch longer so the roll is seen)
   const p = f.part('lift', root, clothBend(f, root, { along: [0, -1, 0], toward: [0, 0, 1], len: QH, turn: 4.4, bias: 3, tip: .15, follow: [keyAt] }), { label: '이불', sfx: 'flip', dur: .72 });
   f.quiltKeyAt = keyAt;
-  f.spot('inside', null, QX, 0, 0, { part: p, maxH: .36, label: '이불 뒤', scale: .8 });
+  const behind = f.spot('inside', null, QX, 0, 0, { part: p, maxH: .36, label: '이불 뒤', scale: .8 });
+  // (o.bigKey, 20판 villaroof3 ① 10/24 — 사용자 "떨어진 열쇠가 작음"): what drops out of the quilt lands at least 27 cm long (stage.js dropHung)
+  if (o.bigKey) behind.minLong = .27;
   // (② 레벨 10/21, user "이불 들추면 열쇠가 차릉 아래로 떨어지게"): the hook inside the quilt — a stage's key hangs here (clueHang) and drops
   // onto '이불 뒤' when the quilt lifts (stage.js dropHung)
   f.spot('on', keyAt, 0, 0, 0, { maxH: .24, label: '이불 속', scale: .8 }).hang = p;

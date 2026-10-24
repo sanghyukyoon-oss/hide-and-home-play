@@ -2,16 +2,24 @@
 // 잡아 준 것 자체는 좋지만.. 좀 더 현실적이고 디테일하게 모델링 다시 해 줘"; 앞서 "옥상 수조 좀 더 크게, 문·벽돌색·나무·장독대가 오리지널처럼,
 // 건물에 그리다 만 벽돌 텍스처 같은 건 버리자").
 //   vr3_villa    — 옥상 아래로 이어지는 3층 적벽돌 빌라 몸통(벽돌 결 텍스처 한 장으로 고르게), 층마다 크림 띠, 알루미늄 창(커튼·블라인드·
-//                  간유리)·방범창·화분대·실외기·도시가스 배관과 계량기·우수관·계단실 유리블록, 1층 필로티(작은 차·스쿠터·분리수거함·우편함·
-//                  현관), 옥상 난간(바깥은 벽돌, 안은 크림 + 초록 방수 턱)과 초록 우레탄 방수 바닥(롤러 결·덧칠·실금·배수구)
-//   vr3_town     — 대략의 동네: 옥상들이 내려다보이는 낮은 빌라들(초록 옥상·노란 물탱크·옥탑·안테나·빨래), 보도블럭 인도와 연석 턱,
-//                  아스팔트 길(가장자리 선·횡단보도), 골목, 전봇대와 전선, 가로수, 세워 둔 차 — 큰 면은 옅게
+//                  간유리)·방범창·화분대·실외기·도시가스 세로관(벽 따라 곧게, 층마다 밸브·계량기)·우수관·계단실 유리블록, 1층 필로티(빈 주차 칸·
+//                  스쿠터·분리수거함·우편함·현관), 3층 계단실 단면(내려온 끝에 복도 바닥·뉴얼 기둥 난간), E 면 햇살빌라 간판(한·영 글자),
+//                  옥상 난간(바깥은 벽돌, 안은 크림 + 초록 방수 턱)과 초록 우레탄 방수 바닥(롤러 결·덧칠·실금·배수구)
+//   vr3_town     — 둘레(외곽선 없음): T자 길·인도·연석·노면 표시, 동네 텃밭·비닐하우스·쌈지 공원(정자·벤치)·생울타리·가로수·먼 나무, 멀리 21판 파출소
+//   vr3_potrow   — 데크 앞줄 2단 화분 선반 · vr3_tap — 앞 오른쪽 수돗가(대야 수박·양동이·호스 수레)
 //   vr3_stairhut — 계단실(옛 옥탑방의 벽돌·초록 철문·번호키 그대로, 문은 code 자물쇠 자리) 위에 크게 올린 노란 물탱크(사다리·배관·맨홀 뚜껑)
 // 계약은 house-props.js와 같음: 원점 = 자리 가운데 바닥, 앞은 +z. 정적인 것은 꼭짓점 색 한 덩어리(hmc), 결이 있는 면은 평면 매핑 텍스처 한 덩어리.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { put, grp, mat, mesh, geo, canvasTex, texCache } from './kit.js';
+import { put, grp, mat, mesh, geo, canvasTex, texCache, STYLE } from './kit.js';
 import { HG as G, hxf as xf, hmc as mc } from './house-props.js';
+import { LANG, addI18n } from '../i18n.js';
+
+addI18n({
+  '햇살빌라 몸통과 옥상': 'Sunny Villa and its roof', '햇살빌라 동네': 'Sunny Villa neighbourhood', '계단실과 물탱크': 'Stair hut and water tank',
+  '난간 구석': 'Parapet corner', '계단실 문': 'Stair hut door', '계단실 문 안': 'Inside the stair hut door', '문턱 위': 'On the doorstep', '사다리 옆': 'By the ladder',
+  '옥상 화분 선반': 'Rooftop plant shelf', '옥상 수돗가': 'Rooftop tap', '화분 줄 앞': 'In front of the pots', '파란 양동이 안': 'In the blue bucket', '수도 옆': 'By the tap',
+});
 
 const PI = Math.PI, HP = PI / 2;
 // 건물 크기: 바깥 면 x ±BX, z ±BZ, 옥상 바닥 y 0, 땅 y -DROP. 층 높이 FH (3층 -1.85..0, 2층 -3.7..-1.85), 1층 필로티 -5.1..-3.7
@@ -114,30 +122,26 @@ function concTex() {
     c.globalAlpha = .4; c.fillStyle = '#b9b2a6'; c.fillRect(0, 0, W, 2); c.fillRect(0, 0, 2, W); c.globalAlpha = 1;
   })));
 }
-// 이웃 빌라 벽 (한 칸 2 m × 한 층 1.85 m): 벽색, 옅은 줄눈, 가운데 창(흰 틀·하늘빛 유리·창턱), 아래 층 띠
-function nbTex(wall, glass) {
-  return TEX.get('vr3nb' + wall + glass, () => rep(canvasTex(256, 256, (c, W, H) => {
-    c.fillStyle = wall; c.fillRect(0, 0, W, H);
-    c.globalAlpha = .07; c.fillStyle = '#000000'; for (let y = 8; y < H; y += 16) c.fillRect(0, y, W, 2); c.globalAlpha = 1;
-    c.fillStyle = '#f4f2ee'; c.fillRect(58, 38, 140, 104); c.fillStyle = glass; c.fillRect(66, 46, 124, 88);
-    c.fillStyle = '#f4f2ee'; c.fillRect(126, 46, 5, 88); c.globalAlpha = .45; c.fillStyle = '#ffffff'; c.fillRect(76, 50, 14, 80); c.globalAlpha = 1;
-    c.fillStyle = '#e9e4da'; c.fillRect(50, 142, 156, 9); c.fillStyle = '#efe9df'; c.fillRect(0, 244, W, 12);
-  })));
-}
 // 간판: 햇살빌라 (크림 판에 밤색 글씨)
+// (영어 모드: 큰 글씨 SUNNY VILLA, 작은 한글 — 사용자 규칙 '간판 글자는 영어 모드에서 맞는 글자')
 function signTex() {
-  return TEX.get('vr3sign', () => canvasTex(512, 144, (c, W, H) => {
+  const en = LANG === 'en';
+  return TEX.get('vr3sign2' + (en ? 'en' : 'ko'), () => canvasTex(512, 144, (c, W, H) => {
     c.fillStyle = '#f6efe2'; c.fillRect(0, 0, W, H); c.strokeStyle = '#8a5a3c'; c.lineWidth = 8; c.strokeRect(6, 6, W - 12, H - 12);
-    c.fillStyle = '#7a4a30'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 74px sans-serif'; c.fillText('햇살빌라', W / 2, 64);
-    c.font = 'bold 26px sans-serif'; c.fillStyle = '#b07a52'; c.fillText('SUNNY VILLA', W / 2, 116);
+    c.fillStyle = '#ffd25c'; c.beginPath(); c.arc(64, 70, 26, 0, PI * 2); c.fill(); c.strokeStyle = '#ffd25c'; c.lineWidth = 6; c.lineCap = 'round';
+    for (let k = 0; k < 8; k++) { const a = k * PI / 4; c.beginPath(); c.moveTo(64 + Math.cos(a) * 34, 70 + Math.sin(a) * 34); c.lineTo(64 + Math.cos(a) * 44, 70 + Math.sin(a) * 44); c.stroke(); }
+    c.fillStyle = '#7a4a30'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const fit = (t, size, y, col) => { c.fillStyle = col; let f = size; do { c.font = `bold ${f}px sans-serif`; f -= 2; } while (c.measureText(t).width > W - 150 && f > 12); c.fillText(t, W / 2 + 36, y); };
+    if (en) { fit('SUNNY VILLA', 60, 62, '#7a4a30'); fit('햇살빌라', 26, 114, '#b07a52'); } else { fit('햇살빌라', 74, 64, '#7a4a30'); fit('SUNNY VILLA', 26, 116, '#b07a52'); }
   }));
 }
 // 옥상문 안내판
 function noteTex() {
-  return TEX.get('vr3note', () => canvasTex(256, 128, (c, W, H) => {
+  const en = LANG === 'en';
+  return TEX.get('vr3note' + (en ? 'en' : 'ko'), () => canvasTex(256, 128, (c, W, H) => {
     c.fillStyle = '#fbfaf4'; c.fillRect(0, 0, W, H); c.fillStyle = '#d8473b'; c.fillRect(0, 0, W, 30);
-    c.fillStyle = '#ffffff'; c.font = 'bold 22px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('옥상 출입문', W / 2, 16);
-    c.fillStyle = '#3a3048'; c.font = 'bold 22px sans-serif'; c.fillText('문을 꼭', W / 2, 62); c.fillText('닫아 주세요', W / 2, 96);
+    c.fillStyle = '#ffffff'; c.font = 'bold 22px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(en ? 'ROOF DOOR' : '옥상 출입문', W / 2, 16);
+    c.fillStyle = '#3a3048'; c.font = 'bold 22px sans-serif'; c.fillText(en ? 'Please keep' : '문을 꼭', W / 2, 62); c.fillText(en ? 'the door shut' : '닫아 주세요', W / 2, 96);
   }));
 }
 
@@ -242,21 +246,35 @@ function stairCut(add, tube) {
   add(G.sph(.07, 10, 8), '#fff4c8', NX + .03, y0 + DH + .3, dz, 0, 0, 0, [.5, 1, 1]);
   tube([NX + .2, y0 + .02, -1.56], [NX + .12, y0 + .78, -1.54], .012, '#3f6fb5', 5); add(G.cone(.07, .3, 8), '#3f6fb5', NX + .19, y0 + .18, -1.56);
   for (const [z, a] of [[dz + .12, .1], [dz + .26, -.15]]) add(G.box(.2, .05, .09, .025), '#f2f1ec', NX + .3, y0 + .03, z, 0, a, 0);
-  // 계단: 북쪽 벽 따라, 앞(BX)에서 시작해 뒤로 오름 — 꽉 찬 단, 논슬립 줄
-  const SW = .66, sz = -NZ0 + SW / 2, n = 7, R = .135, TR = .15;
+  // 계단 (① 10/24 사용자 "계단 내려오고 난간이랑 공간이 있어야 돌아가지 저기서 점프하라는 얘기야?"): 북쪽 벽 따라 뒤로 오르는 여섯 단이
+  // 잘린 면에서 .64 m 물러나 시작 — 내려온 끝 앞에 3층 복도 바닥이 넓게 남아 301호 쪽으로 돌아 나감. 계단 열린 쪽은 난간 기둥·살·손잡이가
+  // 끝 기둥(뉴얼)에서 꺾여 내려오고, 맨 아랫단은 앞으로 조금 넓은 첫 단; 위는 뒤 벽 앞 층계참(반 층)
+  const SW = .66, sz = -NZ0 + SW / 2, n = 6, R = FH / 2 / (n + 1), TR = .13, X0S = BX - .64;
   for (let k = 0; k < n; k++) {
-    const x = BX - .15 - TR / 2 - k * TR, h = R * (k + 1);
-    add(G.pbox(TR, h, SW), '#ddd6ca', x, y0 + h / 2, sz); add(G.pbox(.03, .012, SW - .04), '#4f4c55', x + TR / 2 - .02, y0 + h + .006, sz);
+    const x = X0S - TR / 2 - k * TR, h = R * (k + 1), w = k ? TR : TR + .04;
+    add(G.pbox(w, h, SW), '#ddd6ca', x + (k ? 0 : .02), y0 + h / 2, sz); add(G.pbox(.035, .014, SW - .06), '#4f4c55', x + TR / 2 - .022 + (k ? 0 : .04), y0 + h + .007, sz);
+    add(G.pbox(.006, h - .02, SW - .02), '#cfc6b8', x + TR / 2 + .001 + (k ? 0 : .04), y0 + h / 2, sz);
   }
-  const ly = y0 + R * n, lx0 = NX, lx1 = BX - .15 - n * TR;
-  add(G.pbox(lx1 - lx0, R * n, SW), '#ddd6ca', (lx0 + lx1) / 2, y0 + R * n / 2, sz);
-  add(G.pbox(.02, R * n + .02, SW + .02), '#cfc6b8', (lx0 + lx1) / 2 - (lx1 - lx0) / 2 + .01, y0 + R * n / 2, sz);
-  // 손잡이 (계단 열린 쪽)
-  const hz = sz + SW / 2 + .02, hb = [BX - .2, y0 + R + .55, hz], ht = [lx1 + .02, ly + .55, hz];
-  tube(hb, ht, .016, '#d9dde3', 6); tube([lx1 + .02, ly + .55, hz], [lx0 + .1, ly + .55, hz], .016, '#d9dde3', 6);
-  for (let k = 0; k < 4; k++) { const t = k / 3, x = hb[0] + (ht[0] - hb[0]) * t, y = hb[1] + (ht[1] - hb[1]) * t; tube([x, y - .55 + R * .5, hz], [x, y, hz], .01, '#c9ced6', 5); }
+  const ly = y0 + R * (n + 1), lx0 = NX, lx1 = X0S - n * TR;
+  add(G.pbox(lx1 - lx0, R * (n + 1), SW), '#ddd6ca', (lx0 + lx1) / 2, y0 + R * (n + 1) / 2, sz);
+  add(G.pbox(.035, .014, SW - .06), '#4f4c55', lx1 - .022, ly + .007, sz);
+  add(G.pbox(lx1 - lx0 - .04, .006, SW - .06), '#e6dfd3', (lx0 + lx1) / 2, ly + .003, sz);
+  // 난간 (계단 열린 쪽): 끝 기둥 둘(아래·층계참), 살, 위 손잡이 — 아래 끝은 뉴얼 기둥에서 둥글게 마감
+  const hz = sz + SW / 2 - .035, RH = .52, rail = (x, y) => [x, y + RH, hz];
+  const bx = X0S - .03, by = y0 + R, tx = lx1 + .03, tyy = ly;
+  add(G.box(.06, RH + R + .06, .06, .012), '#b9bfc8', bx, y0 + (RH + R + .06) / 2, hz); add(G.sph(.04, 10, 8), '#d9dde3', bx, y0 + RH + R + .08, hz);
+  add(G.box(.06, RH + .06, .06, .012), '#b9bfc8', tx, tyy + (RH + .06) / 2, hz);
+  tube(rail(bx, by), rail(tx, tyy), .02, '#d9dde3', 8); tube(rail(tx, tyy), [lx0 + .05, tyy + RH, hz], .02, '#d9dde3', 8);
+  const railY = x => by + RH + (x - bx) * (tyy - by) / (tx - bx);
+  for (let k = 1; k < n; k++) { const x = X0S - TR / 2 - k * TR, h = R * (k + 1); tube([x, y0 + h, hz], [x, railY(x), hz], .009, '#c9ced6', 5); }
+  for (let k = 1; k <= 2; k++) { const x = tx - k * (tx - lx0 - .05) / 3; tube([x, tyy, hz], [x, tyy + RH, hz], .009, '#c9ced6', 5); }
+  // 벽 손잡이 (북쪽 벽, 계단 따라) — 벽 받침 셋
+  const wz = -NZ0 + .045; tube([X0S, y0 + R + .78, wz], [lx1, ly + .78, wz], .014, '#c9a46a', 6);
+  for (let k = 0; k < 3; k++) { const t = k / 2, x = X0S + (lx1 - X0S) * t, y = y0 + R + .78 + (ly - y0 - R) * t; add(G.pbox(.02, .02, .04), '#9aa0aa', x, y - .02, wz - .02); }
+  // 첫 단 앞 복도: 발매트, 벽 스위치
+  add(G.box(.42, .012, .3, .006), '#7aa6c9', BX - .3, y0 + .006, -1.9); add(G.pbox(.36, .013, .015), '#e9eef3', BX - .3, y0 + .007, -1.78);
   // 층계참 화분, 소화기
-  add(G.cyl(.09, .07, .16, 10), POT, NX + .25, ly + .08, sz); for (let m = 0; m < 6; m++) add(G.sph(.07, 7, 5), m % 2 ? LEAF : LEAF2, NX + .25 + Math.cos(m * 1.1) * .06, ly + .24 + (m % 3) * .04, sz + Math.sin(m * 1.1) * .06);
+  add(G.cyl(.09, .07, .16, 10), POT, NX + .15, ly + .08, sz - .12); for (let m = 0; m < 6; m++) add(G.sph(.07, 7, 5), m % 2 ? LEAF : LEAF2, NX + .15 + Math.cos(m * 1.1) * .06, ly + .24 + (m % 3) * .04, sz - .12 + Math.sin(m * 1.1) * .06);
   add(G.cyl(.06, .06, .3, 10), '#d8473b', BX - .25, y0 + .15, -NZ1 - .14); add(G.sph(.04, 8, 6), '#2c2f36', BX - .25, y0 + .33, -NZ1 - .14);
   // 잘린 자리 마감: 크림 테두리
   add(G.pbox(.05, FH - .14, .05), CREAM, BX + .01, y0 + (FH - .14) / 2, -NZ0 + .025); add(G.pbox(.05, FH - .14, .05), CREAM, BX + .01, y0 + (FH - .14) / 2, -NZ1 - .025);
@@ -329,14 +347,11 @@ B.vr3_villa = (f, T) => {
     });
     for (let k = 0; k < 4; k++) add(G.box(.6, .03, .44, .005), k % 2 ? '#d7b07a' : '#c99f68', .9, Y0 + .02 + k * .032, .55, 0, k * .05, 0);
     tube([.62, Y0 + .1, .55], [1.18, Y0 + .1, .55], .006, '#f4f0e0', 4);
-    // 작은 차(하늘색) — 필로티에 앞을 길로
-    const CX = -1.92, CZ = 1.55;
-    add(G.box(1.08, .4, 2.15, .12), '#a9cfe2', CX, Y0 + .38, CZ); add(G.box(.94, .34, 1.15, .12), '#56697b', CX, Y0 + .72, CZ - .12);
-    add(G.box(.96, .06, 1.02, .03), '#a9cfe2', CX, Y0 + .9, CZ - .14);
-    for (const s of [-1, 1]) { add(G.box(.02, .26, .5, .01), '#a9cfe2', CX + s * .47, Y0 + .72, CZ - .1); }
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { add(G.cyl(.17, .17, .14, 16), '#33303a', CX + sx * .5, Y0 + .17, CZ + sz * .66, 0, 0, HP); add(G.cyl(.08, .08, .15, 10), '#c9ccd1', CX + sx * .5, Y0 + .17, CZ + sz * .66, 0, 0, HP); }
-    for (const s of [-1, 1]) add(G.sph(.07, 10, 8), '#fff6d8', CX + s * .36, Y0 + .42, CZ + 1.07, 0, 0, 0, [1, .8, .5]);
-    add(G.box(1.1, .1, .08, .03), '#e8e6e2', CX, Y0 + .24, CZ + 1.08); add(G.pbox(.3, .08, .01), '#ffffff', CX, Y0 + .34, CZ + 1.1);
+    // 빈 주차 칸 (① 10/24 사용자 "자동차 안되면 지워줘 그냥" — 상자 차를 빼고): 뒤쪽 노란 바퀴 멈춤 턱 둘, 기둥 곁 주황 고깔, 벽에 '주차' 표지
+    for (const x of [-2.35, -1.5]) { add(G.box(.5, .1, .14, .03), '#f2cf62', x, Y0 + .05, .45); for (const d of [-.12, .12]) add(G.pbox(.08, .102, .142), '#3d3a44', x + d, Y0 + .05, .45); }
+    add(G.cyl(.03, .14, .36, 12), '#f08a3c', -BX + .5, Y0 + .2, BZ - .5); for (const y of [.15, .25]) add(G.cyl(.06 - y * .1, .1 - y * .2, .045, 12), '#ffffff', -BX + .5, Y0 + y, BZ - .5);
+    add(G.box(.26, .03, .26, .01), '#3d3a44', -BX + .5, Y0 + .015, BZ - .5);
+    add(G.box(.42, .3, .03, .01), '#3f6fb5', -1.92, Y0 + 1.15, .04); add(G.pbox(.16, .18, .01), '#ffffff', -1.92, Y0 + 1.15, .058);
     // 스쿠터(민트)
     const SX = .55, SZ = 2.1;
     add(G.box(.16, .06, .62, .03), '#9ad3c0', SX, Y0 + .2, SZ); add(G.box(.18, .22, .3, .06), '#9ad3c0', SX, Y0 + .35, SZ - .2);
@@ -349,15 +364,21 @@ B.vr3_villa = (f, T) => {
       for (let y = -.6; y > Y0; y -= 1.2) add(G.pbox(.11, .03, .11), STEEL, x, y, z);
       add(G.cyl(.04, .055, .1, 8), PIPE, x, Y0 + .08, z);
     }
-    // 도시가스: E 면 앞쪽 세로관(노랑) + 층마다 가지와 계량기, 1층 아래 굵은 관
-    const gz = 1.0;
-    tube([BX + .08, Y0 + .25, gz], [BX + .08, -FH + .5, gz], .03, GAS, 8);
+    // 도시가스 (① 10/24 사용자 "바닥으로 가스관이 흐르네? 지저분하지 않게 정리"): 땅에서 올라오는 세로관 하나가 E 면 막힌 벽(필로티 뒤 벽돌·
+    // 2층 유리블록 앞·3층 간판과 계단실 단면 사이)을 곧게 타고 오르고, 층마다 짧은 가지 → 밸브 → 계량기 상자로 벽에 들어감. 바닥을 기는 관 없음
+    const gz = -1.22, gx = BX + .075;
+    add(G.box(.2, .08, .2, .02), '#d6d0c6', gx, Y0 + .14, gz); add(G.cyl(.05, .05, .1, 10), GAS, gx, Y0 + .2, gz);
+    tube([gx, Y0 + .18, gz], [gx, -FH + .62, gz], .028, GAS, 8); add(G.cyl(.034, .034, .05, 10), GAS, gx, -FH + .64, gz);
+    add(G.cyl(.04, .04, .09, 10), '#e0b12e', gx, Y0 + .62, gz); add(G.box(.1, .022, .03, .008), '#e2403a', gx + .02, Y0 + .69, gz + .03, 0, 0, .3);
     for (const fy of [-2 * FH, -FH]) {
-      tube([BX + .08, fy + .5, gz], [BX + .08, fy + .5, gz - .55], .022, GAS, 6); tube([BX + .08, fy + .5, gz - .55], [BX + .02, fy + .5, gz - .55], .022, GAS, 6);
-      add(G.box(.12, .2, .2, .02), '#d9dbe0', BX + .1, fy + .32, gz - .3); add(G.pbox(.01, .07, .1), '#9aa0aa', BX + .165, fy + .34, gz - .3);
+      const by = fy + .56, mz = gz + .34;
+      tube([gx, by, gz], [gx, by, mz - .12], .02, GAS, 6); add(G.sph(.026, 8, 6), GAS, gx, by, gz);
+      add(G.cyl(.032, .032, .06, 8), '#e0b12e', gx, by, gz + .1, HP, 0, 0); add(G.box(.07, .018, .025, .006), '#e2403a', gx + .015, by + .035, gz + .1);
+      add(G.box(.13, .24, .22, .025), '#e4e6ea', BX + .07, by - .02, mz); add(G.pbox(.012, .08, .13), '#3d4652', BX + .136, by + .02, mz);
+      add(G.pbox(.012, .025, .08), '#f2f3f5', BX + .137, by + .03, mz); add(G.pbox(.01, .03, .05), '#f0c13a', BX + .136, by - .1, mz);
+      tube([gx, by - .1, mz + .02], [BX + .01, by - .1, mz + .02], .016, GAS, 6);
     }
-    tube([BX + .08, Y0 + .25, gz], [BX + .08, Y0 + .25, gz + .9], .03, GAS, 8);
-    for (let y = Y0 + .6; y < -FH; y += .9) add(G.pbox(.06, .03, .1), STEEL, BX + .05, y, gz);
+    for (let y = Y0 + .9; y < -FH + .5; y += .85) { add(G.pbox(.05, .035, .1), STEEL, BX + .03, y, gz); add(G.sph(.012, 5, 4), '#d6dae0', BX + .062, y, gz + .035); }
     // 바깥 덩굴: 앞 난간 두 곳, 옆 한 곳 (갓돌 바깥으로 늘어짐)
     for (const [x, z, face] of [[-2.2, BZ + .02, 'S'], [.9, BZ + .02, 'S'], [BX + .02, 1.9, 'E']]) {
       for (let t = 0; t < 2; t++) { const len = 6 + t * 3;
@@ -383,8 +404,8 @@ B.vr3_villa = (f, T) => {
           if (!fl) acUnit(A, -.5, wy - .3);
         } else if (face === 'E') {
           windowOn(A, glass, face, -1.7, wy, 1.0, .95, { glass: fl ? 0 : 1, bars: true, box: fl === 1 });
-          windowOn(A, glass, face, .4, wy - .05, .62, .5, { glass: fl ? 2 : 3, sill: true });
-          A(G.box(.24, .24, .08, .02), '#d9dbe0', .95, wy + .25, .04); A(G.box(.2, .04, .14, .01), '#d9dbe0', .95, wy + .13, .09);
+          // (① 10/24 사용자 "간판이 뚫림": 3층은 이 자리에 햇살빌라 간판만 — 작은 창·계량기가 간판 뒤로 뚫고 나왔다; 계량기는 가스관 곁으로)
+          if (fl) windowOn(A, glass, face, .4, wy - .05, .62, .5, { glass: 2, sill: true });
         } else if (face === 'N') {
           windowOn(A, glass, face, -2.0, wy, 1.0, .9, { glass: fl ? 3 : 1, bars: 'dark', ac: 'below' });
           windowOn(A, glass, face, .3, wy, 1.4, 1.0, { glass: fl ? 2 : 0, rail: true });
@@ -400,8 +421,10 @@ B.vr3_villa = (f, T) => {
       if (face === 'E' || face === 'W') windowOn(A, glass, face, face === 'E' ? 1.8 : -1.8, -DROP + .85, .7, .5, { glass: 4, bars: 'dark' });
     }
     stairCut(add, tube);
-    // 간판 받침 쇠
-    add(G.box(1.46, .46, .04, .01), '#8a5a3c', BX + .02, -.48, -.35, 0, HP, 0);
+    // 간판: 밤색 테 판(벽에서 띄운 받침 쇠 넷), 위 갓등 둘
+    add(G.box(1.46, .46, .05, .015), '#8a5a3c', BX + .045, -.48, -.35, 0, HP, 0);
+    for (const dz of [-.55, .55]) for (const dy of [-.15, .15]) add(G.pbox(.04, .03, .03), STEEL, BX + .015, -.48 + dy, -.35 + dz);
+    for (const dz of [-.4, .4]) { tube([BX + .01, -.2, -.35 + dz], [BX + .2, -.2, -.35 + dz], .01, DARK, 5); add(G.cone(.06, .07, 10), DARK, BX + .2, -.24, -.35 + dz); add(G.sph(.025, 8, 6), '#fff4c8', BX + .2, -.275, -.35 + dz); }
   }));
   // 창 유리 (안쪽 커튼·블라인드가 비치는 그림, 종류마다 한 덩어리)
   glass.forEach((list, v) => {
@@ -409,112 +432,152 @@ B.vr3_villa = (f, T) => {
     f.add(tm('villa-glass' + v + '|' + list.length, glassTex(v), ({ add }) => { for (const [w, h, x, y, z, ry] of list) add(new THREE.PlaneGeometry(w, h), x, y, z, 0, ry, 0); }, '#ffffff', { ownUV: true }));
   });
   // 햇살빌라 간판 (E 면 3층 위)
-  f.add(put(mesh(geo('vr3sign', () => new THREE.PlaneGeometry(1.38, .39)), mat('#ffffff', { map: signTex(), rim: 0 })), BX + .046, -.48, -.35, 0, HP, 0));
+  f.add(put(mesh(geo('vr3sign', () => new THREE.PlaneGeometry(1.38, .39)), mat('#ffffff', { map: signTex(), rim: 0 })), BX + .073, -.48, -.35, 0, HP, 0));
   // 방수 바닥 한 장
   f.add(put(mesh(geo('vr3roof', () => new THREE.PlaneGeometry(PX * 2, PZ * 2)), mat('#ffffff', { map: roofTex(), rim: 0 }), { cast: false }), 0, .003, 0, -HP, 0, 0));
   f.spot('behind', null, -PX + .35, 0, PZ - .25, { maxH: .35, label: '난간 구석', scale: .75 });
 };
 
-// ── 동네 (대략): 낮은 이웃 빌라 옥상들, 길·인도·골목, 전봇대·가로수·세워 둔 차 ───────────────────────────────────────────────
-// [x0, x1, z0, z1, 층 수, 벽 색 번호, 옥상 소품 seed]
-// 이웃 집 터: 4.6 m 네모 집들이 .8 m 골목을 두고 격자로 — 우리 집·길·인도·멀리 파출소 자리는 비움. 가까운 집은 1층(세 카메라 어느 쪽에서도
-// 우리 빌라 앞을 가리지 않게), 먼 집은 1~2층: 우리 옥상(3층)에서 옥상들이 내려다보이는 동네
-const NB = (() => {
-  const out = [], hit = (a, b) => a[0] < b[1] && a[1] > b[0] && a[2] < b[3] && a[3] > b[2];
-  const keep = [[-5.0, 4.92, -4.6, 4.42], [3.52, 10.4, -40, 40], [-40, 40, 3.02, 9.9], [-14.2, -9.4, -17.4, -12.2]];
-  let sd = 1;
-  const XS = [], ZS = [];
-  for (let k = -4; k <= 3; k++) { const a = -9.8 + k * 5.4, c = 10.4 + k * 5.4; if (a + 4.6 <= 3.52) XS.push(a); if (c >= 10.4) XS.push(c); }
-  for (let k = -4; k <= 3; k++) { const a = -9.3 + k * 5.4, c = 9.9 + k * 5.4; if (a + 4.6 <= 3.02) ZS.push(a); if (c >= 9.9) ZS.push(c); }
-  for (const x0 of XS) for (const z0 of ZS) {
-    if (Math.max(Math.abs(x0 + 2.3), Math.abs(z0 + 2.3)) > 27) continue;
-    const L = [x0, x0 + 4.6, z0, z0 + 4.6]; if (keep.some(k => hit(L, k))) continue;
-    const cx = x0 + 2.3, cz = z0 + 2.3, dist = Math.max(Math.abs(cx), Math.abs(cz)), h = (sd * 7 + 3) % 5;
-    const fl = dist < 12 ? 1 : dist < 16 && (cx > 8 || cz > 8) ? 1 : 1 + (h > 1 ? 1 : 0);
-    out.push([...L, fl, sd % 3, sd]); sd++;
-  }
-  return out;
-})();
-// (사용자 승인 방향 10/23: 배경은 하얀 단순한 동네 — ⑦이 공용으로 만드는 중이라 지금은 단순하게; 멀리 다음 판 21판 파출소가 작게)
-const NBWALL = ['#f8f8f7', '#f3f4f3', '#fbfbfa'], NBGLASS = '#d3dde2', NBROOF = '#e9ecea', NBCAP = '#fcfcfb';
+// ── 동네 둘레 (① 10/24 다시 — 아트 점검 "배경의 흰 상자 집이 목업처럼 보인다", 사용자 "도로도 정리해 주고 자동차 안되면 지워줘 그냥") ──
+// 흰 상자 집·세워 둔 차를 빼고 옥상 텃밭 판다운 둘레: 땅의 동네 텃밭(나무 테 두른 밭·고랑·지지대·비닐하우스)과 쌈지 공원(정자·벤치·잔디),
+// 길 건너 산책길 생울타리와 가로수, 멀리 나무 무리, 다음 판(21판) 파출소는 작게 그대로.
+// 길은 T자 하나로 정리: 앞 큰길 + 옆길이 앞길에 닿고, 인도는 길을 건너지 않으며 모서리에서 만남; 가운데 노란 점선은 교차로에서 끊기고,
+// 옆길 정지선 + 횡단보도 둘(옆길·앞길). 놀이 구역 밖 전부라 잉크 외곽선 없이 색만(userData.scenery), 멀수록 하늘빛으로 흐려짐
+const SKYF = new THREE.Color('#e4f0f4'), _fc = new THREE.Color();
+const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const fade = (c, x, z) => '#' + _fc.set(c).lerp(SKYF, smooth(9, 30, Math.hypot(x, z)) * .62).getHexString();
+const GVM = new Map();
+function groundMat() {
+  if (!GVM.has(STYLE.mode)) { const m = mat('#ffffff', { rim: 0 }).clone(); m.vertexColors = true; m.name = 'vr3ground'; GVM.set(STYLE.mode, m); }
+  return GVM.get(STYLE.mode);
+}
+const tintC = c => new THREE.Color(STYLE.mode !== 'std' && STYLE.remap ? STYLE.remap(c) : c);
+// 땅: 가까이는 연한 풀빛, 멀리는 하늘빛으로 (꼭짓점 색)
+function groundMesh(Y) {
+  const g = geo('vr3ground2|' + STYLE.mode, () => {
+    const pg = new THREE.PlaneGeometry(90, 90, 30, 30); pg.rotateX(-HP);
+    const p = pg.attributes.position, col = new Float32Array(p.count * 3), near = tintC('#e0e9dc'), far = tintC('#e4f0f4'), c = new THREE.Color();
+    for (let i = 0; i < p.count; i++) { c.copy(near).lerp(far, smooth(10, 38, Math.hypot(p.getX(i), p.getZ(i)))); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+    pg.setAttribute('color', new THREE.BufferAttribute(col, 3)); return pg;
+  });
+  return put(mesh(g, groundMat(), { cast: false }), 0, Y - .02, 0);
+}
 B.vr3_town = (f, T) => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [100, 100, 100, 100.01, 100.01, 100.01];
-  const Y0 = -DROP, SW = 1.4, RD = 4, CURB = .1;
-  // 땅 (옅은 베이지 바탕)
-  f.add(put(mesh(geo('vr3ground', () => new THREE.PlaneGeometry(70, 70)), mat('#eff0ef', { rim: 0 }), { cast: false }), 0, Y0 - .02, 0, -HP, 0, 0));
-  // 아스팔트: 앞(+z) 길, 옆(+x) 길, 교차로
-  f.add(tm('town-asph', asphaltTex(), ({ add }) => {
-    add(G.pbox(40, .02, RD), -2, Y0, BZ + SW + RD / 2); add(G.pbox(RD, .02, 40), BX + SW + RD / 2, Y0, -2);
+  f.group.name = 'vr3town'; f.group.userData.scenery = true;
+  const Y0 = -DROP, SW = 1.4, RD = 4, CURB = .1, L = 26;
+  const ZR0 = BZ + SW, ZR1 = ZR0 + RD, XR0 = BX + SW, XR1 = XR0 + RD;   // 앞길 z ZR0..ZR1, 옆길 x XR0..XR1
+  f.add(groundMesh(Y0));
+  // 아스팔트: 앞 큰길(끝까지), 옆길(앞길에 닿는 T자)
+  f.add(tm('town2-asph', asphaltTex(), ({ add }) => {
+    add(G.pbox(L * 2, .02, RD), 0, Y0, (ZR0 + ZR1) / 2); add(G.pbox(RD, .02, ZR0 + L), (XR0 + XR1) / 2, Y0, (ZR0 - L) / 2);
   }, '#ffffff', { s: 2 }));
-  // 보도블럭 인도 (턱 .1): 우리 집 앞·옆, 길 건너편
-  f.add(tm('town-pave', paveTex(), ({ add }) => {
-    add(G.pbox(40, CURB, SW), -2, Y0 + CURB / 2, BZ + SW / 2 + .001);
-    add(G.pbox(SW, CURB, 40), BX + SW / 2 + .001, Y0 + CURB / 2, -2 - .0);
-    add(G.pbox(40, CURB, SW), -2, Y0 + CURB / 2, BZ + SW + RD + SW / 2);
-    add(G.pbox(SW, CURB, 40), BX + SW * 1.5 + RD, Y0 + CURB / 2, -2);
+  // 보도블럭 인도 (턱 .1): 길을 건너지 않고 모서리에서 만남
+  const walks = [[-L, XR0, BZ, ZR0], [BX, XR0, -L, BZ], [XR1, L, BZ, ZR0], [XR1, XR1 + SW, -L, BZ], [-L, L, ZR1, ZR1 + SW]];
+  f.add(tm('town2-pave', paveTex(), ({ add }) => {
+    for (const [x0, x1, z0, z1] of walks) add(G.pbox(x1 - x0, CURB, z1 - z0), (x0 + x1) / 2, Y0 + CURB / 2, (z0 + z1) / 2);
   }, '#ffffff', { s: 1 }));
-  // 골목 콘크리트 (뒤·왼쪽) — 우리 집과 이웃 사이
-  f.add(tm('town-conc', concTex(), ({ add }) => {
-    add(G.pbox(30, .01, 1.58), -5, Y0 + .005, -BZ - .79); add(G.pbox(1.48, .01, 30), -BX - .74, Y0 + .005, 0);
+  // 골목·필로티 콘크리트: 우리 집 뒤·왼쪽 골목(길에 닿기 전까지), 필로티 바닥
+  f.add(tm('town2-conc', concTex(), ({ add }) => {
+    add(G.pbox(L + BX, .012, 1.58), (BX - L) / 2, Y0 + .006, -BZ - .79); add(G.pbox(1.48, .012, L + BZ), -BX - .74, Y0 + .006, (BZ - L) / 2);
     add(G.pbox(BX * 2, .012, BZ), 0, Y0 + .006, BZ / 2);
   }, '#ffffff', { s: 2 }));
-  // 이웃 벽 (층 칸 맞춘 창 그림), 색마다 한 덩어리
-  for (let v = 0; v < 3; v++) {
-    const list = NB.filter(n => n[5] === v);
-    f.add(tm('town-nb' + v, nbTex(NBWALL[v], NBGLASS), ({ add }) => {
-      for (const [x0, x1, z0, z1, fl] of list) add(G.pbox(x1 - x0, fl * FH, z1 - z0), (x0 + x1) / 2, Y0 + fl * FH / 2, (z0 + z1) / 2, 0, 0, 0, 1, g => {
-        const p = g.attributes.position, n = g.attributes.normal, uv = new Float32Array(p.count * 2);
-        for (let i = 0; i < p.count; i++) { const ax = Math.abs(n.getX(i)), az = Math.abs(n.getZ(i));
-          uv[i * 2] = (ax > az ? p.getZ(i) - z0 : p.getX(i) - x0) / 2.3; uv[i * 2 + 1] = (p.getY(i) - Y0) / FH; }
-        g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); return g;
-      });
-    }, '#ffffff', { custom: true }));
-  }
-  f.add(mc('vr3-town', ({ add, tube }) => {
-    // 연석 (인도 가장자리, 회색 턱)
-    add(G.pbox(40, CURB + .02, .12), '#c8c3bb', -2, Y0 + CURB / 2, BZ + SW); add(G.pbox(.12, CURB + .02, 40), '#c8c3bb', BX + SW, Y0 + CURB / 2, -2);
-    add(G.pbox(40, CURB + .02, .12), '#c8c3bb', -2, Y0 + CURB / 2, BZ + SW + RD); add(G.pbox(.12, CURB + .02, 40), '#c8c3bb', BX + SW + RD, Y0 + CURB / 2, -2);
-    // 길 가장자리 흰 선, 가운데 노란 선(점선), 횡단보도
-    for (let x = -20; x < 18; x += 1.4) add(G.pbox(.8, .005, .08), '#f6e7a0', x, Y0 + .012, BZ + SW + RD / 2);
-    for (let z = -20; z < 18; z += 1.4) add(G.pbox(.08, .005, .8), '#f6e7a0', BX + SW + RD / 2, Y0 + .012, z);
-    for (let k = 0; k < 7; k++) add(G.pbox(.3, .005, 1.6), '#f7f6f2', BX + SW + .45 + k * .52, Y0 + .012, BZ + SW + RD + .1 - 1.0 + 1.2);
-    // 이웃 옥상: 초록 방수 바닥, 낮은 난간 갓돌, 물탱크·옥탑·안테나·빨래 건조대·화분
-    for (const [x0, x1, z0, z1, fl, , sd] of NB) {
-      const top = Y0 + fl * FH, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0, R = rng(sd * 31 + 7);
-      add(G.pbox(w - .3, .02, d - .3), NBROOF, cx, top + .01, cz);
-      add(G.pbox(w, .3, .16), NBCAP, cx, top + .15, z0 + .08); add(G.pbox(w, .3, .16), NBCAP, cx, top + .15, z1 - .08);
-      add(G.pbox(.16, .3, d), NBCAP, x0 + .08, top + .15, cz); add(G.pbox(.16, .3, d), NBCAP, x1 - .08, top + .15, cz);
-      add(G.pbox(w + .04, .1, d + .04), '#eeebe5', cx, top - .05, cz);
-      if (sd % 3 === 0) { const tx = x0 + 1 + R() * (w - 2), tz = z0 + .9 + R() * 1.0;
-        add(G.cyl(.42, .42, .75, 16), '#f3dc9a', tx, top + .5, tz); add(G.sph(.42, 16, 6), '#f3dc9a', tx, top + .88, tz, 0, 0, 0, [1, .3, 1]); add(G.pbox(.9, .12, .9), '#e3e3df', tx, top + .08, tz); }
-      if (sd % 4 === 2) { const hx = x1 - 1.3, hz = z0 + 1.1; add(G.pbox(1.8, 1.5, 1.5), '#f4f1ec', hx, top + .75, hz); add(G.pbox(2.0, .1, 1.7), '#e9e6e0', hx, top + 1.55, hz); }
+  f.add(mc('vr3-town2', ({ add, tube }) => {
+    const A = (g, c, x, y, z, rx, ry, rz, sc) => add(g, fade(c, x, z), x, y, z, rx, ry, rz, sc);
+    // 연석 (밝은 화강석 턱)
+    const KERB = '#d9d4cb';
+    A(G.pbox(L + XR0, CURB + .03, .12), KERB, (XR0 - L) / 2, Y0 + CURB / 2, ZR0); A(G.pbox(L - XR1, CURB + .03, .12), KERB, (XR1 + L) / 2, Y0 + CURB / 2, ZR0);
+    A(G.pbox(.12, CURB + .03, ZR0 + L), KERB, XR0, Y0 + CURB / 2, (ZR0 - L) / 2); A(G.pbox(.12, CURB + .03, ZR0 + L), KERB, XR1, Y0 + CURB / 2, (ZR0 - L) / 2);
+    A(G.pbox(L * 2, CURB + .03, .12), KERB, 0, Y0 + CURB / 2, ZR1);
+    // 노면: 가운데 노란 점선(교차로에서 끊김), 옆길 정지선, 횡단보도 둘
+    const YL = '#f3df8e', WL = '#f7f7f4', ym = Y0 + .012;
+    for (let x = -L + .6; x < L; x += 1.6) if (x < XR0 - .8 || x > XR1 + .8) A(G.pbox(.9, .006, .1), YL, x, ym, (ZR0 + ZR1) / 2);
+    for (let z = -L + .6; z < BZ - 1.4; z += 1.6) A(G.pbox(.1, .006, .9), YL, (XR0 + XR1) / 2, ym, z);
+    A(G.pbox(RD / 2 - .15, .006, .22), WL, XR0 + RD / 4, ym, BZ - 1.15);
+    for (let k = 0; k < 5; k++) A(G.pbox(.42, .006, 1.2), WL, XR0 + .4 + k * .8, ym, BZ - .3);
+    for (let k = 0; k < 5; k++) A(G.pbox(1.2, .006, .42), WL, -1.1, ym, ZR0 + .4 + k * .8);
+    // 맨홀 뚜껑 둘, 빗물받이
+    for (const [x, z] of [[-6, ZR0 + 1.1], [XR0 + 2.9, -5]]) { A(G.cyl(.32, .32, .012, 18), '#8f8c95', x, ym, z); A(G.tor(.3, .018, PI * 2, 4, 18), '#7d7a84', x, ym + .004, z, HP, 0, 0); }
+    for (const x of [-4.2, 1.6, 12]) A(G.pbox(.5, .008, .2), '#77747d', x, ym, ZR0 + .16);
+    // ── 가로수: 인도 나무 받침 + 둥근 수관 ──
+    const tree = (x, z, s = 1, grate = true, k0 = 0) => {
+      if (grate) { A(G.box(.5, .05, .5, .01), '#b4ada2', x, Y0 + CURB + .025, z); A(G.pbox(.36, .052, .36), '#8f7a62', x, Y0 + CURB + .026, z); }
+      const y0 = grate ? Y0 + CURB : Y0;
+      tube([x, y0, z], [x, y0 + 1.3 * s, z], .08 * s, fade('#9a7a5c', x, z), 6);
+      for (let k = 0; k < 5; k++) { const a = k * 1.3 + k0; A(G.sph(.5 * s, 9, 7), (k + k0) % 2 ? '#a9d394' : '#93c486', x + Math.cos(a) * .32 * s, y0 + (1.7 + (k % 3) * .28) * s, z + Math.sin(a) * .32 * s); }
+      A(G.sph(.42 * s, 9, 7), '#b8dca2', x, y0 + 2.35 * s, z);
+    };
+    // (우리 집 앞·옆 인도 나무는 빌라 필로티·창을 가리지 않게 멀리만)
+    tree(-9, BZ + .7, 1, true, 1); tree(BX + .7, -9.5, 1, true, 2);
+    for (const x of [-12, -6.5, 2.4, 7, 12.5, 18]) tree(x, ZR1 + .7, 1.05, true, x);
+    for (const z of [-2, -8.5, -15]) tree(XR1 + .7, z, 1.05, true, z);
+    // ── 생울타리: 인도 바깥(길 건너 산책길·옆길 건너) 낮고 둥근 초록 줄 ──
+    const hedge = (x0, x1, z0, z1) => { const w = x1 - x0, d = z1 - z0; A(G.box(w, .5, d, .2), '#9fcb8c', (x0 + x1) / 2, Y0 + .25, (z0 + z1) / 2);
+      for (let t = .5; t < Math.max(w, d); t += .9) { const x = w > d ? x0 + t : (x0 + x1) / 2, z = w > d ? (z0 + z1) / 2 : z0 + t; A(G.sph(.3, 8, 6), '#b2d79c', x, Y0 + .5, z, 0, 0, 0, [1.2, .55, 1.2]); } };
+    hedge(-L + 1, -1.9, ZR1 + SW + .1, ZR1 + SW + .7); hedge(-.2, L - 1, ZR1 + SW + .1, ZR1 + SW + .7);
+    hedge(XR1 + SW + .1, XR1 + SW + .7, -L + 1, BZ - .2);
+    // ── 동네 텃밭 (뒤 골목 너머, 한적하게 한 줄): 나무 테 두른 밭 넷, 고랑마다 상추·배추·고추 지지대, 앞 흙길, 빨간 물조리개 ──
+    const PLOT = (x, z, kind) => {
+      const w = 2.3, d = 1.5;
+      A(G.box(w, .16, d, .02), '#c99c6a', x, Y0 + .08, z); A(G.pbox(w - .12, .03, d - .12), '#9c7a5c', x, Y0 + .15, z);
+      for (let r = 0; r < 3; r++) {
+        const rz = z - d / 2 + .3 + r * .45; A(G.pbox(w - .25, .05, .2), '#a9866a', x, Y0 + .18, rz);
+        for (let c = 0; c < 6; c++) {
+          const px = x - w / 2 + .3 + c * .34;
+          if (kind === 0) A(G.sph(.1, 7, 5), c % 2 ? '#9fd27e' : '#86c46e', px, Y0 + .24, rz, 0, 0, 0, [1.2, .7, 1.2]);
+          else if (kind === 1) { A(G.sph(.12, 7, 5), '#c8e2a6', px, Y0 + .26, rz); A(G.sph(.09, 6, 5), '#e6f2cf', px, Y0 + .33, rz); }
+          else { tube([px, Y0 + .18, rz], [px, Y0 + .52, rz], .01, fade('#c9a46a', px, rz), 4); A(G.sph(.09, 6, 5), '#7fbf6a', px, Y0 + .38, rz, 0, 0, 0, [1, 1.2, 1]); if (c % 2) A(G.cap(.018, .05, 2, 5), '#e2513f', px + .05, Y0 + .36, rz); }
+        }
+      }
+      A(G.pbox(.04, .4, .04), '#b18a5c', x - w / 2 + .1, Y0 + .3, z + d / 2 - .05); A(G.box(.3, .18, .02, .01), '#f4efe4', x - w / 2 + .1, Y0 + .52, z + d / 2 - .03);
+    };
+    [[-11.7, 0], [-8.9, 1], [-6.1, 2], [-3.3, 0]].forEach(([x, k]) => PLOT(x, -7.9, k));
+    A(G.pbox(11.6, .01, .6), '#d8c8ae', -7.5, Y0 + .005, -6.75);
+    A(G.box(.3, .2, .16, .04), '#e2513f', -7.5, Y0 + .1, -6.75); tube([-7.35, Y0 + .16, -6.75], [-7.15, Y0 + .26, -6.75], .015, fade('#e2513f', -7, -7), 4);
+    // 비닐하우스 두 동 (흰 반원 지붕 + 갈비살 + 끝 문)
+    const house = (x, z, len) => {
+      const R = 1.05; A(G.cyl(R, R, len, 16, true), '#eef4f0', x, Y0, z, HP, 0, 0, [1, 1, 1]);
+      for (let t = -len / 2; t <= len / 2 + .01; t += len / 5) A(G.tor(R + .01, .025, PI, 3, 16), '#cfd8d4', x, Y0, z + t, 0, 0, 0);
+      for (const s of [-1, 1]) { A(G.cyl(R - .01, R - .01, .02, 16, false), '#f6f9f7', x, Y0, z + s * len / 2, HP, 0, 0, [1, 1, 1]); }
+      A(G.pbox(.5, .9, .03), '#cfe0d8', x, Y0 + .45, z + len / 2 + .02);
+    };
+    house(-6.6, -11.2, 3.4);
+    // ── 쌈지 공원 (왼쪽 골목 너머): 잔디, 정자(초록 기와 지붕), 벤치 둘, 둥근 나무 ──
+    A(G.box(6.5, .04, 7.5, .02), '#cfe4bb', -9.6, Y0 + .02, -.6);
+    { const px = -9.2, pz = -1.2, H = 1.5;
+      A(G.box(2.1, .25, 2.1, .03), '#c99c6a', px, Y0 + .125, pz);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) A(G.box(.14, H, .14, .02), '#b0784c', px + sx * .9, Y0 + .25 + H / 2, pz + sz * .9);
+      A(G.box(2.2, .12, 2.2, .02), '#b0784c', px, Y0 + .25 + H, pz);
+      A(G.cone(1.75, .85, 4), '#7fae86', px, Y0 + .25 + H + .45, pz, 0, PI / 4, 0); A(G.sph(.1, 8, 6), '#e2bd6a', px, Y0 + .25 + H + .9, pz); }
+    const bench = (x, z, ry) => { A(G.box(1.1, .06, .36, .02), '#d9a466', x, Y0 + .42, z, 0, ry, 0); A(G.box(1.1, .3, .05, .02), '#d9a466', x - Math.sin(ry) * .17, Y0 + .62, z - Math.cos(ry) * .17, 0, ry, 0);
+      for (const s of [-1, 1]) A(G.pbox(.06, .42, .32), '#6f7480', x + Math.cos(ry) * s * .45, Y0 + .21, z - Math.sin(ry) * s * .45, 0, ry, 0); };
+    bench(-7.4, 2.0, PI); bench(-11.4, 1.8, PI);
+    tree(-12.2, -3.6, 1.15, false, 1); tree(-7, -3.9, .95, false, 2); tree(-12.4, 2.4, 1.0, false, 3);
+    // ── 옆길 건너: 텃밭 셋과 나무 ──
+    for (const [z, k] of [[-3.2, 1], [-6.4, 0]]) PLOT(XR1 + SW + 2.2, z, k);
+    tree(XR1 + SW + 4.6, -4, 1.1, false, 4); tree(XR1 + SW + 4.4, 1.2, 1.0, false, 5);
+    // ── 길 건너 앞: 산책길 화단(꽃 점) ──
+    for (let x = -L + 2; x < L - 2; x += 2.6) for (let k = 0; k < 3; k++) A(G.sph(.06, 6, 5), ['#ffb3c4', '#ffd86b', '#ffffff'][k], x + k * .22, Y0 + .56, ZR1 + SW + .4 + (k % 2) * .12);
+    // ── 멀리 나무 무리 (지평선 쪽, 하늘빛으로 흐려짐) ──
+    const R0 = (() => { let a = 77; return () => ((a = (a * 16807) % 2147483647) - 1) / 2147483646; })();
+    for (let k = 0; k < 34; k++) {
+      const ang = k / 34 * PI * 2 + R0() * .15, d = 21 + R0() * 7, x = Math.cos(ang) * d, z = Math.sin(ang) * d;
+      if (x < -9 && x > -15 && z < -12 && z > -18) continue;
+      const s = 1.3 + R0() * .7; A(G.sph(1.1 * s, 8, 6), k % 2 ? '#a9d394' : '#9cc98a', x, Y0 + 1.3 * s, z, 0, 0, 0, [1, .9, 1]);
+      A(G.sph(.8 * s, 8, 6), '#b8dca2', x + .6 * s, Y0 + 1.0 * s, z + .3 * s);
     }
     // 멀리 다음 판(21판) 동네 파출소, 작게: 흰 타일 단층, 파란 띠, 둥근 모서리 탑 위 빨강·파랑 경광등, 지붕 위 파란 간판, 앞 유리문
     { const qx = -11.8, qz = -14.8, qw = 3.6, qd = 2.8, qh = 1.7, tx = qx + qw / 2 - .25, tz = qz + qd / 2 - .25;
-      add(G.box(qw, qh, qd, .05), '#fbfbf8', qx, Y0 + qh / 2, qz); add(G.pbox(qw + .02, .18, qd + .02), '#4f7fc4', qx, Y0 + qh - .38, qz);
-      add(G.pbox(qw + .12, .09, qd + .12), '#e6ebf2', qx, Y0 + qh + .045, qz);
-      add(G.cyl(.6, .6, 2.5, 22), '#fbfbf8', tx, Y0 + 1.25, tz); add(G.cyl(.615, .615, .18, 22), '#4f7fc4', tx, Y0 + qh - .38, tz);
-      add(G.cyl(.66, .66, .08, 22), '#e6ebf2', tx, Y0 + 2.54, tz); add(G.cyl(.22, .26, .14, 14), '#d9dde3', tx, Y0 + 2.65, tz);
-      add(G.sph(.17, 12, 8), '#ff5a5a', tx - .14, Y0 + 2.8, tz, 0, 0, 0, [1, 1.2, 1]); add(G.sph(.17, 12, 8), '#4f86ff', tx + .14, Y0 + 2.8, tz, 0, 0, 0, [1, 1.2, 1]);
-      add(G.box(1.7, .42, .1, .03), '#3f6fb5', qx - .5, Y0 + qh + .32, qz + qd / 2 - .3); add(G.pbox(1.3, .1, .012), '#ffffff', qx - .5, Y0 + qh + .34, qz + qd / 2 - .244);
-      add(G.pbox(.9, 1.1, .03), '#bcd6e6', qx - .6, Y0 + .55, qz + qd / 2 + .01); add(G.pbox(.06, 1.1, .04), '#4f7fc4', qx - .6, Y0 + .55, qz + qd / 2 + .02);
-      for (const x of [qx + .5, qx - 1.4]) add(G.pbox(.6, .5, .03), '#c9dbe6', x, Y0 + 1.0, qz + qd / 2 + .01);
-      add(G.box(.36, .16, .05, .02), '#4f7fc4', qx - .6, Y0 + 1.22, qz + qd / 2 + .04); }
-    // 가로수 둘 (인도), 전봇대 넷과 전선
-    for (const [x, z, s] of [[-2.6, BZ + .7, 1], [-7.5, BZ + SW + RD + .7, 1.1]]) {
-      add(G.box(.42, .06, .42, .01), '#a69f94', x, Y0 + CURB + .03, z); tube([x, Y0 + CURB, z], [x, Y0 + 1.6 * s, z], .07 * s, '#8a6a4f', 6);
-      for (let k = 0; k < 6; k++) { const a = k * 1.1; add(G.sph(.55 * s, 10, 8), k % 2 ? '#a9d69a' : '#93c98a', x + Math.cos(a) * .35 * s, Y0 + (2.0 + (k % 3) * .3) * s, z + Math.sin(a) * .35 * s); }
-    }
-    const poles = [[BX + .45, BZ + SW - .25], [-3.3, BZ + SW - .25], [BX + SW - .25, -4.0], [BX + SW + RD + .3, BZ + SW + RD + .3]];
-    for (const [x, z] of poles) { tube([x, Y0 + CURB, z], [x, Y0 + 4.6, z], .09, '#c9c4ba', 8); add(G.pbox(.9, .08, .08), '#8c939e', x, Y0 + 4.3, z, 0, PI / 4, 0); add(G.cyl(.14, .14, .4, 12), '#a3adb8', x + .18, Y0 + 3.8, z); }
-    for (const [i, j] of [[0, 1], [0, 2], [0, 3]]) for (const dy of [4.3, 4.05]) {
-      const [ax, az] = poles[i], [bx, bz] = poles[j]; let prev = null;
-      for (let k = 0; k <= 8; k++) { const t = k / 8, p = [ax + (bx - ax) * t, Y0 + dy - Math.sin(t * PI) * .35, az + (bz - az) * t]; if (prev) tube(prev, p, .012, '#4a4458', 3); prev = p; }
-    }
-    // 길에 세워 둔 차 하나(흰색)
-    const cx = -5.2, cz = BZ + SW + .7;
-    add(G.box(2.15, .4, 1.08, .12), '#f2f1ec', cx, Y0 + .38, cz); add(G.box(1.15, .34, .94, .12), '#56697b', cx + .12, Y0 + .72, cz); add(G.box(1.02, .06, .96, .03), '#f2f1ec', cx + .14, Y0 + .9, cz);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.17, .17, .14, 14), '#33303a', cx + sx * .66, Y0 + .17, cz + sz * .5, HP, 0, 0);
+      A(G.box(qw, qh, qd, .05), '#fbfbf8', qx, Y0 + qh / 2, qz); A(G.pbox(qw + .02, .18, qd + .02), '#4f7fc4', qx, Y0 + qh - .38, qz);
+      A(G.pbox(qw + .12, .09, qd + .12), '#e6ebf2', qx, Y0 + qh + .045, qz);
+      A(G.cyl(.6, .6, 2.5, 22), '#fbfbf8', tx, Y0 + 1.25, tz); A(G.cyl(.615, .615, .18, 22), '#4f7fc4', tx, Y0 + qh - .38, tz);
+      A(G.cyl(.66, .66, .08, 22), '#e6ebf2', tx, Y0 + 2.54, tz); A(G.cyl(.22, .26, .14, 14), '#d9dde3', tx, Y0 + 2.65, tz);
+      A(G.sph(.17, 12, 8), '#ff5a5a', tx - .14, Y0 + 2.8, tz, 0, 0, 0, [1, 1.2, 1]); A(G.sph(.17, 12, 8), '#4f86ff', tx + .14, Y0 + 2.8, tz, 0, 0, 0, [1, 1.2, 1]);
+      A(G.box(1.7, .42, .1, .03), '#3f6fb5', qx - .5, Y0 + qh + .32, qz + qd / 2 - .3); A(G.pbox(1.3, .1, .012), '#ffffff', qx - .5, Y0 + qh + .34, qz + qd / 2 - .244);
+      A(G.pbox(.9, 1.1, .03), '#bcd6e6', qx - .6, Y0 + .55, qz + qd / 2 + .01); A(G.pbox(.06, 1.1, .04), '#4f7fc4', qx - .6, Y0 + .55, qz + qd / 2 + .02);
+      for (const x of [qx + .5, qx - 1.4]) A(G.pbox(.6, .5, .03), '#c9dbe6', x, Y0 + 1.0, qz + qd / 2 + .01);
+      A(G.box(.36, .16, .05, .02), '#4f7fc4', qx - .6, Y0 + 1.22, qz + qd / 2 + .04); }
+    // (전봇대·전선은 뺌 — 빌라 앞면을 가로지르던 줄이 지저분, 사용자 "도로도 정리")
   }));
 };
 
@@ -598,9 +661,103 @@ B.vr3_stairhut = (f, T) => {
   f.spot('beside', null, .78, 0, Z1 + .28, { maxH: .25, label: '사다리 옆', scale: .7 });
 };
 
+
+// ── 옥상 화분 선반 (2×1, 데크 앞줄 — ① 10/24 사용자 "오브젝트들 디테일 상당히 떨어짐": 옛 공용 화분 줄 대신 이 판 것) ──────────────────────
+// 나무 2단 계단식 선반: 위 칸 토분 셋(고추 — 빨강·초록 고추, 방울토마토 — 지지대에 묶은 줄기·송이, 흰 화분 대파), 아래 칸 초록 긴 화분에
+// 상추 포기 넷과 깻잎 화분·다육 그릇, 바닥엔 초록 물조리개·모종삽·상토 포대. 덩어리는 크게, 포인트 색은 열매·물조리개만
+const TERRA = '#d98b5f', TERRA2 = '#c4774d', SOIL = '#7a5a44', WOODL = '#ddb07a', WOODM = '#c29060', LET = '#9fd27e', LET2 = '#7fc06a';
+function pot(add, x, y, z, r, h, c = TERRA, c2 = TERRA2) {
+  add(G.cyl(r, r * .78, h, 16), c, x, y + h / 2, z); add(G.tor(r * .98, r * .13, PI * 2, 6, 20), c2, x, y + h - r * .05, z, HP, 0, 0);
+  add(G.cyl(r * .9, r * .9, .012, 16), SOIL, x, y + h - .02, z);
+}
+function lettuce(add, x, y, z, s = 1) {
+  for (let k = 0; k < 7; k++) { const a = k * 2.4; add(G.sph(.075 * s, 8, 6), k % 2 ? LET : LET2, x + Math.cos(a) * .055 * s, y + .03 * s, z + Math.sin(a) * .055 * s, 0, -a, .55, [1.35, .32, 1]); }
+  add(G.sph(.05 * s, 8, 6), '#c4e6a2', x, y + .05 * s, z, 0, 0, 0, [1, .8, 1]);
+}
+B.vr3_potrow = (f, T) => {
+  f.add(mc('vr3-potrow', ({ add, tube }) => {
+    // 선반: 옆판 둘(계단 모양), 아래 칸 판, 위 칸 판, 뒤 다리
+    for (const x of [-.82, .82]) { add(G.box(.05, .2, .62, .012), WOODM, x, .1, -.02); add(G.box(.05, .26, .3, .012), WOODM, x, .33, -.18); }
+    add(G.box(1.7, .045, .32, .012), WOODL, 0, .2, .12); for (const z of [.02, .12, .22]) add(G.pbox(1.62, .002, .006), '#c99a62', 0, .224, z);
+    add(G.box(1.7, .045, .3, .012), WOODL, 0, .46, -.17); for (const z of [-.25, -.15, -.07]) add(G.pbox(1.62, .002, .006), '#c99a62', 0, .484, z);
+    add(G.pbox(1.6, .05, .02), WOODM, 0, .06, .26); add(G.pbox(1.6, .05, .02), WOODM, 0, .3, -.31);
+    // 위 칸: 고추 화분
+    pot(add, -.55, .48, -.17, .1, .17);
+    tube([-.55, .63, -.17], [-.55, .9, -.17], .008, '#6fa65a', 4);
+    for (let k = 0; k < 7; k++) { const a = k * 1.9, y = .7 + k * .03; add(G.sph(.045, 7, 5), k % 2 ? '#6fb85a' : '#5aa64f', -.55 + Math.cos(a) * .07, y, -.17 + Math.sin(a) * .06, 0, -a, .3, [1.5, .45, .9]); }
+    for (const [dx, dz, c, ry] of [[.05, .05, '#e2513f', .2], [-.06, .03, '#e2513f', -.3], [.02, -.06, '#5fa84a', .5], [-.03, .07, '#e2513f', 1]]) {
+      add(G.cap(.017, .07, 3, 6), c, -.55 + dx, .72, -.17 + dz, 0, ry, .2); add(G.sph(.012, 5, 4), '#4f8f3a', -.55 + dx, .77, -.17 + dz); }
+    // 위 칸: 방울토마토 (지지대·묶은 끈·송이)
+    pot(add, -.08, .48, -.17, .12, .19);
+    tube([-.08, .64, -.17], [-.08, 1.12, -.17], .009, '#c99a62', 4); tube([.0, .64, -.13], [-.02, 1.0, -.15], .007, '#c99a62', 4);
+    for (let k = 0; k < 8; k++) { const a = k * 2.3, y = .72 + k * .05; add(G.sph(.055, 7, 5), k % 2 ? '#6fb85a' : '#5aa64f', -.08 + Math.cos(a) * .08, y, -.17 + Math.sin(a) * .07, 0, -a, .35, [1.5, .45, .9]);
+      if (k % 2) add(G.tor(.014, .004, PI * 2, 3, 8), '#f4efe4', -.08, y - .02, -.17, HP, 0, 0); }
+    for (const [x, y, z] of [[-.02, .8, -.1], [-.01, .76, -.08], [.0, .82, -.07], [-.15, .92, -.11], [-.14, .88, -.09], [-.04, 1.0, -.12], [-.03, .96, -.1]]) add(G.sph(.026, 8, 6), '#e8414e', x, y, z);
+    // 위 칸: 흰 화분 대파
+    pot(add, .4, .48, -.17, .1, .16, '#f2eee6', '#e2ddd2');
+    for (let k = 0; k < 6; k++) { const a = k * 1.05, x = .4 + Math.cos(a) * .04, z = -.17 + Math.sin(a) * .04, tl = (k % 2 ? .1 : -.08);
+      tube([x, .62, z], [x, .72, z], .016, '#f4f2e8', 5); tube([x, .72, z], [x + tl * .3, 1.0 - (k % 3) * .06, z + tl * .2], .014, k % 2 ? '#7fc06a' : '#6fb85a', 5); }
+    // 아래 칸: 초록 긴 화분에 상추 넷, 깻잎 화분, 다육 그릇
+    add(G.box(.8, .16, .24, .03), '#6faa7c', -.28, .3, .12); add(G.pbox(.84, .03, .27), '#5f9a6c', -.28, .37, .12); add(G.pbox(.74, .01, .2), SOIL, -.28, .38, .12);
+    for (let k = 0; k < 4; k++) lettuce(add, -.58 + k * .2, .38, .12, 1);
+    pot(add, .33, .225, .12, .1, .15);
+    for (let k = 0; k < 9; k++) { const a = k * 2.2, y = .4 + (k % 3) * .04; add(G.sph(.06, 8, 5), k % 2 ? '#4f9a4f' : '#5aa85a', .33 + Math.cos(a) * .06, y, .12 + Math.sin(a) * .06, 0, -a, .25, [1.25, .25, 1.1]); }
+    add(G.cyl(.11, .08, .07, 14), '#e9e2d4', .65, .26, .12); for (let k = 0; k < 5; k++) { const a = k * 1.25; add(G.cone(.03, .07, 6), '#8ccab0', .65 + Math.cos(a) * .05, .32, .12 + Math.sin(a) * .05, Math.sin(a) * .4, 0, -Math.cos(a) * .4); }
+    add(G.cone(.035, .09, 6), '#9fd6c0', .65, .34, .12);
+    // 바닥: 물조리개(초록, 꽃 노즐), 모종삽, 상토 포대
+    const WX = .62, WZ = .4;
+    add(G.cyl(.09, .1, .2, 14), '#5cb07a', WX, .1, WZ); add(G.cyl(.06, .06, .02, 12), '#4f9a6a', WX - .02, .21, WZ);
+    add(G.tor(.07, .014, PI, 4, 12), '#4f9a6a', WX, .2, WZ, 0, HP, 0);
+    tube([WX + .07, .06, WZ], [WX + .24, .22, WZ], .016, '#5cb07a', 6); add(G.cyl(.035, .022, .04, 10), '#4f9a6a', WX + .25, .235, WZ, 0, 0, -.8);
+    add(G.box(.32, .4, .16, .06), '#e9dcc4', -.55, .18, .42, -.1, .2, 0); add(G.box(.2, .12, .01, .005), '#6faa7c', -.53, .22, .5, -.1, .2, 0);
+    add(G.box(.12, .04, .08, .015), '#8a5a3c', -.62, .38, .4, -.1, .2, 0);
+    add(G.box(.05, .012, .1, .006), '#c9ccd2', -.15, .012, .45, 0, .5, 0); tube([-.13, .012, .39], [-.09, .02, .3], .012, '#e2513f', 5);
+  }));
+  f.spot('beside', null, .2, 0, .4, { maxH: .2, label: '화분 줄 앞', scale: .6 });
+};
+
+// ── 옥상 수돗가 (1×1, 앞 오른쪽 구석 — 옛 공용 옥상 수도 대신): 세운 수도관(놋쇠 꼭지·빨강 손잡이·걸어 둔 고무장갑), 빨간 고무 대야에 물과
+// 띄워 둔 수박(집들이!)·바가지, 파란 양동이(숨김 자리), 초록 호스 감개 수레, 솔·빗자루 ──────────────────────────────────────────────
+B.vr3_tap = (f, T) => {
+  const PX = -.3, PZ = -.3;
+  f.add(mc('vr3-tap', ({ add, tube }) => {
+    add(G.box(.22, .07, .22, .02), '#d9d2c4', PX, .035, PZ);
+    tube([PX, .06, PZ], [PX, .74, PZ], .032, '#9aa3b2', 10); for (const y of [.3, .55]) add(G.pbox(.08, .03, .08), '#7f8898', PX, y, PZ);
+    tube([PX, .7, PZ], [PX + .13, .7, PZ], .026, '#d9b15a', 10); add(G.cyl(.032, .026, .08, 10), '#d9b15a', PX + .15, .66, PZ);
+    add(G.cyl(.012, .012, .06, 6), '#d9b15a', PX + .07, .75, PZ); add(G.box(.11, .02, .03, .008), '#e2403a', PX + .07, .785, PZ);
+    add(G.box(.08, .16, .03, .03), '#ffd86b', PX - .04, .58, PZ + .04, 0, 0, .15); add(G.box(.07, .13, .03, .03), '#ffd86b', PX + .01, .55, PZ + .05, 0, 0, -.1);
+    // 빨간 고무 대야: 물, 수박, 바가지
+    const BX2 = PX + .22, BZ2 = PZ + .26;
+    add(G.cyl(.27, .22, .2, 20, true), '#e2513f', BX2, .1, BZ2); add(G.cyl(.22, .22, .01, 20), '#c8433a', BX2, .006, BZ2);
+    add(G.tor(.27, .022, PI * 2, 5, 24), '#c8433a', BX2, .2, BZ2, HP, 0, 0);
+    add(G.cyl(.255, .255, .012, 20), '#9fd3e6', BX2, .155, BZ2);
+    add(G.sph(.12, 14, 10), '#4f9a4f', BX2 - .05, .19, BZ2 - .02, 0, .3, 0, [1, .9, 1.15]);
+    for (let k = 0; k < 6; k++) add(G.sph(.121, 14, 10), '#2f7a3f', BX2 - .05, .19, BZ2 - .02, 0, .3 + k * PI / 6, 0, [.18, .9, 1.16]);
+    add(G.sph(.08, 10, 8), '#e9cf8a', BX2 + .12, .17, BZ2 + .1, 0, 0, 0, [1, .4, 1]); tube([BX2 + .18, .18, BZ2 + .12], [BX2 + .27, .2, BZ2 + .17], .015, '#c9a46a', 5);
+    // 파란 양동이 (숨김 자리) — 솔 하나 걸침
+    const QX = PX + .34, QZ = PZ - .02;
+    add(G.cyl(.14, .11, .25, 16, true), '#4a8fe0', QX, .125, QZ); add(G.cyl(.11, .11, .01, 16), '#3a78c8', QX, .006, QZ);
+    add(G.tor(.14, .012, PI * 2, 4, 18), '#3a78c8', QX, .25, QZ, HP, 0, 0); add(G.tor(.13, .006, PI, 3, 12), '#9aa3b2', QX, .25, QZ, 0, .6, 0);
+    add(G.box(.12, .04, .06, .015), '#ffd86b', QX + .1, .27, QZ + .05, .2, .4, 0); for (let k = 0; k < 4; k++) add(G.pbox(.01, .03, .05), '#e9a23a', QX + .06 + k * .025, .24, QZ + .05);
+    // 호스 감개 수레: 바퀴 둘, 감긴 초록 호스, 손잡이 — 호스 끝이 수도꼭지로
+    const RX = PX + .02, RZ = PZ + .58;
+    for (const s of [-1, 1]) { add(G.cyl(.11, .11, .02, 16), '#3d3a44', RX + s * .14, .11, RZ, 0, 0, HP); add(G.pbox(.02, .28, .04), '#9aa3b2', RX + s * .12, .17, RZ - .02); }
+    add(G.cyl(.09, .09, .22, 14), '#5cc278', RX, .2, RZ, 0, 0, HP); for (let k = 0; k < 5; k++) add(G.tor(.095, .012, PI * 2, 4, 16), k % 2 ? '#4fb06a' : '#5cc278', RX - .09 + k * .045, .2, RZ, 0, HP, 0);
+    tube([RX - .12, .3, RZ - .02], [RX - .12, .42, RZ - .08], .012, '#9aa3b2', 5); tube([RX + .12, .3, RZ - .02], [RX + .12, .42, RZ - .08], .012, '#9aa3b2', 5); tube([RX - .13, .42, RZ - .08], [RX + .13, .42, RZ - .08], .014, '#3d3a44', 5);
+    tube([RX, .12, RZ - .08], [PX + .05, .03, PZ + .2], .016, '#5cc278', 6); tube([PX + .05, .03, PZ + .2], [PX + .16, .6, PZ], .016, '#5cc278', 6);
+    // 빗자루 (수도관에 기댐)
+    tube([PX - .12, .02, PZ + .1], [PX - .03, .95, PZ + .01], .014, '#c99a62', 5);
+    add(G.cone(.08, .22, 8), '#e9c47a', PX - .13, .1, PZ + .11, -.09, 0, .09, [1, 1, .45]);
+  }));
+  f.spot('inside', null, PX + .34, .02, PZ - .02, { maxH: .2, label: '파란 양동이 안', scale: .5 });
+  f.spot('beside', null, .28, 0, -.3, { maxH: .26, label: '수도 옆', scale: .6 });
+};
+
 export const VR3_BUILDERS = B;
 export const VR3_INFO = {
   vr3_villa: { w: 7, d: 6, name: '햇살빌라 몸통과 옥상', hidden: true, floor: true },
   vr3_town: { w: 7, d: 6, name: '햇살빌라 동네', hidden: true, floor: true },
   vr3_stairhut: { w: 2, d: 2, name: '계단실과 물탱크', hidden: true },
+  vr3_potrow: { w: 2, d: 1, name: '옥상 화분 선반', hidden: true },
+  vr3_tap: { w: 1, d: 1, name: '옥상 수돗가', hidden: true },
 };

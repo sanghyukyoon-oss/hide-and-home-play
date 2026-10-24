@@ -898,6 +898,8 @@ export class StageScene {
     const from = it.g.getWorldPosition(new THREE.Vector3()), qW = it.g.getWorldQuaternion(new THREE.Quaternion());
     if (it.role === 'key' && (part.label === '이불' || part.label === '방화복')) G.audio.sfx('clink');   // (20판 이불·19판 방화복: the key drops — 차릉, user 10/21)
     moveItem(it, spot);
+    // (20판 villaroof3 ① 10/24, 사용자 "떨어진 열쇠가 작음": a place may ask for what lands on it to be at least this long — spot.minLong)
+    if (spot.minLong) { const L = drawnLong(it.g); if (L > .01 && L < spot.minLong) { it.g.scale.multiplyScalar(spot.minLong / L); it.g.updateMatrixWorld(true); } }
     // it falls the way it hung and turns once on the way down into how it lies in the basket, then bounces once (design 10/20)
     const g = it.g, to = g.position.clone(), f = g.parent.worldToLocal(from.clone()), qTo = g.quaternion.clone();
     const qFrom = g.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qW), spin = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
