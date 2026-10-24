@@ -3782,4 +3782,11 @@ export const EN = {
 "시계 다이얼 냉동고": "Dial-Clock Freezer", "파르페 회전 진열장": "Parfait Carousel Case", "무지개 비밀 서가": "Rainbow Secret Shelf",
 "보드킹의 보드 정비 거치대": "Board King's Board Care Rack", "해바라기 고래 무지개 계단": "Sunflower Whale Rainbow Stairs", "행복슈퍼 선반 바구니 도르래": "Happy Mart Basket Pulley",
 "보드 정비": "Board Care", "타고 · 고치고 · 또 타고": "Ride · Repair · Repeat", "과일 · 생활용품 · 1988년부터": "Fruit · Daily Goods · Since 1988", "카페": "Cafe",
+// ⑤ QA 10/24 (1.0.237 영어 점검에서 남은 한글): 13판 트럭 손짓, 19판 소방서 근무표·소방차 부품, 8판 새집 부품, 카페 메뉴판, 빨래방 순서판, 24판 간판, 교실 포스터, 꽃
+"트럭을 터치!": "Touch the truck!", "주간": "Day", "야간": "Night", "비번": "Off duty",
+"뒷바퀴": "Rear wheels", "앞바퀴": "Front wheels", "운전석": "Cab", "사다리": "Ladder", "물대포": "Water cannon", "경광등": "Siren light", "헬멧": "Helmet",
+"받침": "Base", "기둥": "Pole", "작은 기둥": "Small pole", "집": "House", "옆 방석": "Side cushion", "꼭대기": "Top",
+"카푸치노": "Cappuccino", "모카": "Mocha", "딸기케이크": "Strawberry cake", "얼그레이": "Earl Grey", "레몬티": "Lemon tea",
+"동전 넣기": "Insert coin", "세제 넣기": "Add soap", "TRICKS · 오늘의 기술": "TRICKS · Today's tricks", "오늘의 기술": "Today's tricks",
+"실내화": "Indoor shoes", "튤립": "Tulip",
 };

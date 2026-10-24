@@ -1,252 +1,301 @@
-// GPT home architecture: four small roof canopies, never a lid over the whole room.
-// Local north is -Z. The roof occupies only the rear 28% of a room; +Z is the clean, open cut-away.
-// Same vertex-colour toon material/ink pipeline as house-props.js, one cached mesh per roof.
+// 내 방 지붕 (⑥ 10/24 밤 — 사용자 "지붕 좀 별로라서 니가 완전 새롭게 다시 만들어주면 좋겠어"): eight new roofs, each a house with a
+// theme you read at once — 빨간 기와, 북유럽 판자, 일본 기와, 버섯 초가, 온실 유리, 캔디 줄무늬, 별 관측 돔, 옥상 정원. Same rules as
+// before (the room stays open): a canopy over only the rear 28% of the room on four timber posts, never a lid; local north is
+// -Z, +Z the open cut-away. Ink-outlined cel shading, big faces soft, small things the point colours.
+// The four old GPT roofs' ids carry on as aliases (a save that bought one keeps a roof — the new one in its place).
 import * as THREE from 'three';
 import { shade } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
+import { EN } from '../i18n-en-dict.js';
 
 const PI = Math.PI, HP = PI / 2;
+const K = (ko, en) => { EN[ko] = en; return ko; };
 export const GPT_ROOFS = [
-  { id: 'gpt_roof_none', name: '지붕 없음', price: 0, ch: 1, sw: ['#f6e0bf', '#e1d5e3'] },
-  { id: 'gpt_roof_shingle', name: '도토리 물결 지붕', price: 900, ch: 1, sw: ['#b7aa8c', '#dcc49d', '#a8c8c7'] },
-  { id: 'gpt_roof_tile', name: '세이지 기와 지붕', price: 1050, ch: 2, sw: ['#a7b49a', '#d7c7a4', '#c9dac4'] },
-  { id: 'gpt_roof_storybook', name: '코랄 동화 지붕', price: 1100, ch: 3, sw: ['#d98d77', '#f0bf9b', '#f4dfb9'] },
-  { id: 'gpt_roof_garden', name: '옥상 작은 정원', price: 1450, ch: 4, sw: ['#e2cfaa', '#abc0a0', '#e3a58d'] },
+  { id: 'gpt_roof_none', name: K('지붕 없음', 'No roof'), price: 0, ch: 1, sw: ['#f6e0bf', '#e1d5e3'] },
+  { id: 'roof_redtile', name: K('빨간 기와 지붕', 'Red Tile Roof'), price: 900, ch: 1, sw: ['#d9765a', '#f6eee4'] },
+  { id: 'roof_nordic', name: K('북유럽 판자 지붕', 'Nordic Plank Roof'), price: 950, ch: 1, sw: ['#6f86a0', '#f4efe6'] },
+  { id: 'roof_kawara', name: K('일본 기와 지붕', 'Japanese Tile Roof'), price: 1050, ch: 2, sw: ['#7d8a9c', '#f3efe6'] },
+  { id: 'roof_candy', name: K('캔디 줄무늬 지붕', 'Candy Stripe Roof'), price: 1100, ch: 2, sw: ['#f59ab4', '#fff6f8'] },
+  { id: 'roof_mushroom', name: K('버섯 초가 지붕', 'Mushroom Thatch Roof'), price: 1150, ch: 3, sw: ['#e2685a', '#e8cf98'] },
+  { id: 'roof_glass', name: K('온실 유리 지붕', 'Greenhouse Glass Roof'), price: 1250, ch: 3, sw: ['#cfeae4', '#ffffff'] },
+  { id: 'roof_garden', name: K('옥상 정원', 'Rooftop Garden'), price: 1450, ch: 4, sw: ['#c9a87a', '#8fc07a'] },
+  { id: 'roof_observatory', name: K('별 관측 돔', 'Stargazing Dome'), price: 1600, ch: 4, sw: ['#f2f0ec', '#5d6fa8'] },
 ];
+// the old roofs (GPT 10/22) → the new one that takes their place (bought ones stay owned, rooms keep a roof)
+export const ROOF_ALIAS = { gpt_roof_shingle: 'roof_redtile', gpt_roof_tile: 'roof_kawara', gpt_roof_storybook: 'roof_mushroom', gpt_roof_garden: 'roof_garden' };
+export const roofId = id => ROOF_ALIAS[id] || id;
 
-const PAL = {
-  gpt_roof_shingle: { roof: '#b7aa8c', tile: '#c6b89a', trim: '#e4cba5', wood: '#bd8d5c', dark: '#8f704e', clad: '#f4e5c7' },
-  gpt_roof_tile: { roof: '#a0ae95', tile: '#b8c3a8', trim: '#e1d0ab', wood: '#bd996b', dark: '#8f7958', clad: '#f3e6ca' },
-  gpt_roof_storybook: { roof: '#d98d77', tile: '#ecad8b', trim: '#f0d4ad', wood: '#bf8c60', dark: '#91684a', clad: '#f6e4c7' },
-  gpt_roof_garden: { roof: '#dac7a5', tile: '#e7d9bd', trim: '#f1dfbe', wood: '#c59a69', dark: '#97794f', clad: '#f1e4cb' },
+// shared timber and trims
+const WOOD = '#c9976a', WOODD = '#9c7350', TRIM = '#f4ebdc';
+const band = (W, D, H) => {
+  const B = Math.min(1.9, D * .28), zBack = -D / 2 - .12, zFront = -D / 2 + B;
+  return { B, zBack, zFront, zc: (zBack + zFront) / 2, half: (zFront - zBack) / 2, totalW: W + .3 };
 };
-
-// A real little arch, with a flat sill and a soft half-moon top. Shapes lie in XY, depth along Z.
-function arch(r, h, bottom = 0) {
-  const s = new THREE.Shape();
-  s.moveTo(-r, bottom); s.lineTo(r, bottom);
-  s.absellipse(0, bottom, r, h, 0, PI, false); s.closePath();
-  return s;
-}
-function archRing(r, h, thick) {
-  const s = arch(r, h);
-  const hole = new THREE.Path();
-  hole.moveTo(-r + thick, thick); hole.lineTo(r - thick, thick);
-  hole.absellipse(0, thick, r - thick, h - thick * 1.6, 0, PI, false); hole.closePath();
-  s.holes.push(hole); return s;
-}
-
-// The rounded, scalloped exposed tile edge is geometry, never a texture wrapped across a roof.
-function shingle(w, len, thick, waviness = .025) {
-  const s = new THREE.Shape(), hw = w / 2, hl = len / 2;
-  s.moveTo(-hw, -hl); s.lineTo(hw, -hl); s.lineTo(hw, hl - waviness);
-  s.quadraticCurveTo(hw * .63, hl + waviness, hw * .32, hl - waviness * .1);
-  s.quadraticCurveTo(0, hl + waviness * 1.4, -hw * .32, hl - waviness * .1);
-  s.quadraticCurveTo(-hw * .7, hl + waviness, -hw, hl - waviness);
-  s.closePath();
-  const g = G.ext(s, thick, .006, 3);
-  g.rotateX(HP); g.translate(0, thick, 0); return g;
-}
-
-// Subtract a convex opening from a tile polygon, retaining the real tile fragments around its edge.
-// Keeping fragments avoids a coarse rectangular gap when a dormer crosses several shingle courses.
-function outsideCut(poly, cut) {
-  let inside = poly; const pieces = [];
-  for (let k = 0; k < cut.length && inside.length >= 3; k++) {
-    const a = cut[k], b = cut[(k + 1) % cut.length], yes = [], no = [];
-    const dist = p => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
-    for (let i = 0; i < inside.length; i++) {
-      const p = inside[i], q = inside[(i + 1) % inside.length], dp = dist(p), dq = dist(q);
-      (dp >= 0 ? yes : no).push(p);
-      if ((dp >= 0) !== (dq >= 0)) {
-        const t = dp / (dp - dq), hit = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
-        yes.push(hit); no.push(hit);
-      }
-    }
-    if (no.length >= 3) pieces.push(no);
-    inside = yes;
-  }
-  return pieces;
-}
-const polyShape = (points, cos = 1) => {
-  const s = new THREE.Shape(); points.forEach(([x, u], i) => i ? s.lineTo(x, u / cos) : s.moveTo(x, u / cos)); s.closePath(); return s;
-};
-
-function supportFrame(add, tube, W, zBack, zFront, H, P) {
-  // The canopy can also stand in an open room. Posts are inboard of the room-wall planes.
+// four posts inboard of the walls (their feet are the roof's only footprint — room.js roofConflicts), beams front and back
+function frame(add, tube, W, zBack, zFront, H, wood = WOOD, foot = TRIM) {
   const x = W / 2 - .14;
   for (const sx of [-1, 1]) for (const z of [zBack + .16, zFront - .16]) {
-    add(G.box(.15, H, .15, .025), P.wood, sx * x, H / 2, z);
-    add(G.box(.22, .1, .22, .025), P.trim, sx * x, .05, z);
-    add(G.box(.2, .11, .2, .02), P.trim, sx * x, H - .045, z);
-    // High braces leave a comfortable open passage below the roof.
-    tube([sx * x, H - .43, z], [sx * (x - .3), H - .06, z], .044, P.wood, 6);
+    add(G.box(.15, H, .15, .025), wood, sx * x, H / 2, z);
+    add(G.box(.22, .1, .22, .025), foot, sx * x, .05, z);
+    add(G.box(.2, .1, .2, .02), foot, sx * x, H - .05, z);
+    tube([sx * x, H - .42, z], [sx * (x - .3), H - .06, z], .042, wood, 6);
   }
-  add(G.box(W - .12, .15, .17, .025), P.wood, 0, H - .025, zFront - .16);
-  add(G.box(W - .12, .15, .17, .025), P.wood, 0, H - .025, zBack + .16);
+  for (const z of [zFront - .16, zBack + .16]) add(G.box(W - .12, .15, .17, .025), wood, 0, H - .025, z);
+}
+// a point on a gable slope: u 0 at the ridge → half at the eave; side +1 the front slope, -1 the back
+const onSlope = (ridge, rise, half, zc, side, u) => [ridge - rise * u / half, zc + side * u];
+// a little weathervane: a post, crossed arms, an arrow and a cockerel cut-out on top
+function vane(add, tube, x, y, z, c = '#4a4458', bird = '#e2685a') {
+  tube([x, y, z], [x, y + .5, z], .015, c, 5);
+  add(G.box(.26, .014, .014, .004), c, x, y + .22, z); add(G.box(.014, .014, .26, .004), c, x, y + .22, z);
+  add(G.box(.32, .018, .018, .004), c, x, y + .4, z); add(G.cone(.04, .07, 4), c, x + .17, y + .4, z, 0, 0, -HP);
+  const s = new THREE.Shape(); s.moveTo(-.07, 0); s.lineTo(.06, 0); s.quadraticCurveTo(.1, .05, .08, .1); s.lineTo(.05, .07); s.quadraticCurveTo(.02, .12, -.02, .08); s.quadraticCurveTo(-.09, .1, -.1, .03); s.closePath();
+  add(G.ext(s, .012, .003, 4), bird, x - .01, y + .45, z - .006);
 }
 
-function dormer(add, tube, P, x, z, y, roofColor) {
-  const R = .49, H = .34, deep = .62;
-  // Hollow curved hood. There is a recess behind the glass, a real floor and rear wall.
-  add(G.ext(archRing(R + .075, H + .075, .065), deep, .012, 10), roofColor, x, y, z - deep + .035);
-  add(G.ext(arch(R - .02, H - .035), .035, 0, 10), '#719693', x, y + .045, z - deep + .055);
-  add(G.box(.86, .05, deep - .06, .012), P.wood, x, y + .027, z - deep / 2 + .03);
-  // Pale, recessed blue glass and warm timber mullions; no painted flat black opening.
-  add(G.ext(arch(R - .075, H - .075), .018, 0, 10), '#b6d8d4', x, y + .055, z - .105);
-  add(G.ext(archRing(R, H, .063), .065, .008, 10), P.wood, x, y, z - .055);
-  for (const sx of [-1, 1]) add(G.box(.035, .21, .045, .01), P.wood, x + sx * .18, y + .135, z - .022);
-  add(G.box(.9, .04, .06, .012), P.wood, x, y + .055, z - .02);
-  // A thick sill finishes the opening. The smaller entrance awning is a separate lower roof below the fascia.
-  add(G.box(1.08, .1, .28, .025), P.trim, x, y - .015, z + .075);
-}
-
-function pitched(add, tube, id, W, D, H, P) {
-  const B = Math.min(1.9, D * .28), zBack = -D / 2 - .12, zFront = -D / 2 + B,
-    zc = (zBack + zFront) / 2, half = (zFront - zBack) / 2, rise = Math.min(.61, .35 + half * .22),
-    ridge = H + rise + .08, ang = Math.atan2(rise, half), len = Math.hypot(half, rise), totalW = W + .3;
-  const story = id === 'gpt_roof_storybook', sage = id === 'gpt_roof_tile';
-  const dx = -W * .12, dormU = Math.min(half - .065, .715), dy = ridge - rise * dormU / half + .015,
-    cos = Math.cos(ang), slope = rise / half, opening = [[dx - .49, Math.min(half - .015, dormU + .04)]];
-  // Follow the curved hood's intersection with the main pitch, instead of cutting a large rectangle.
-  for (let k = 0; k <= 14; k++) {
-    const x = -.49 + .98 * k / 14, h = .31 * Math.sqrt(Math.max(0, 1 - (x / .49) ** 2));
-    opening.push([dx + x, Math.max(.015, (ridge - dy - .06 - h) / slope)]);
-  }
-  opening.push([dx + .49, Math.min(half - .015, dormU + .04)]);
-  supportFrame(add, tube, W, zBack + .12, zFront, H, P);
-  // Front slope and its shingles share the same close-fitting curved opening under the dormer.
+// ── 빨간 기와: a Mediterranean gable of rounded terracotta barrel tiles, white stucco gable ends with a round vent, a white
+// chimney with a little tiled cap, a cockerel weathervane on the ridge and a flower box of geraniums under the front eave
+function redtile(add, tube, W, D, H) {
+  const { zBack, zFront, zc, half, totalW } = band(W, D, H), rise = Math.min(.66, .38 + half * .22), ridge = H + rise + .1, ang = Math.atan2(rise, half), len = Math.hypot(half, rise);
+  const T1 = '#d98a70', T2 = '#c97a63', ST = '#f6eee4';
+  frame(add, tube, W, zBack, zFront, H);
   for (const side of [-1, 1]) {
-    const slab = (x, width, a, b) => {
-      if (width < .025 || b - a < .015) return;
-      const u = (a + b) / 2;
-      add(G.box(width, .11, (b - a) / Math.cos(ang), .018), P.clad, x, ridge - rise * u / half - .09, zc + side * u, side * ang);
-    };
-    if (side < 0) slab(0, totalW, 0, half);
-    else {
-      const panel = polyShape([[-totalW / 2, 0], [totalW / 2, 0], [totalW / 2, half], [-totalW / 2, half]], cos);
-      const hole = new THREE.Path(); opening.forEach(([x, u], i) => i ? hole.lineTo(x, u / cos) : hole.moveTo(x, u / cos)); hole.closePath();
-      panel.holes.push(hole);
-      const g = G.ext(panel, .11, 0, 3); g.rotateX(HP);
-      add(g, P.roof, 0, ridge - .045, zc, ang);
-    }
-    // Four/five shingle courses: generous pieces, relief, tiny warm colour variation.
-    const rows = sage ? 4 : 5, cols = Math.max(9, Math.round(totalW / (sage ? .38 : .42))), tw = totalW / cols;
+    add(G.box(totalW, .08, len + .05, .02), shade(T2, -.12), 0, ridge - rise / 2 - .04, zc + side * half / 2, side * ang);
+    const n = Math.max(10, Math.round(totalW / .19)), tw = totalW / n, rows = 4;
     for (let r = 0; r < rows; r++) {
-      const a = half * r / rows, b = half * (r + 1) / rows, u = (a + b) / 2;
-      for (let c = 0; c < cols; c++) {
-        const x = -totalW / 2 + (c + .5) * tw, tileLen = (b - a) / Math.cos(ang) + .045;
-        const color = (c + r * 3) % 7 === 0 ? shade(P.tile, .04) : (c + r) % 3 === 0 ? P.tile : P.roof;
-        const y = ridge - rise * u / half + .012 + (rows - r) * .005;
-        const nearDormer = side > 0 && Math.abs(x - dx) < .49 + tw * .6;
-        if (nearDormer) {
-          const hw = (tw + .018) / 2, du = tileLen * cos / 2, wav = (story ? .035 : .026) * cos;
-          const polygon = sage ? [[x - hw, u - du], [x + hw, u - du], [x + hw, u + du], [x - hw, u + du]] :
-            [[x - hw, u - du], [x + hw, u - du], [x + hw, u + du - wav], [x + hw * .65, u + du + wav * .25],
-              [x + hw * .32, u + du], [x, u + du + wav * .6], [x - hw * .32, u + du], [x - hw * .65, u + du + wav * .25], [x - hw, u + du - wav]];
-          const fragment = (poly, thick, lift, c) => {
-            for (const part of outsideCut(poly, opening)) {
-              const g = G.ext(polyShape(part, cos), thick, 0, 2); g.rotateX(HP);
-              add(g, c, 0, ridge + lift, zc, ang);
-            }
-          };
-          fragment(polygon, .047, .058 + (rows - r) * .006, color);
-          if (sage) {
-            const sx = x - tw * .43;
-            fragment([[sx - .035, u - du], [sx + .035, u - du], [sx + .035, u + du], [sx - .035, u + du]], .065, .105 + (rows - r) * .006, shade(color, .045));
-          }
-        } else if (sage) {
-          // Broad pan tiles with raised tubular seams; the front lip turns gently upward.
-          add(G.box(tw + .016, .055, tileLen, .024), color, x, y, zc + side * u, side * ang);
-          add(G.cyl(.043, .043, tileLen, 8), shade(color, .045), x - tw * .43, y + .039, zc + side * u, HP + side * ang);
-        } else add(shingle(tw + .018, tileLen, .047, story ? .035 : .026), color, x, y, zc + side * u, side * ang, side < 0 ? PI : 0);
+      const u = half * (r + .5) / rows, [y, z] = onSlope(ridge, rise, half, zc, side, u), L = len / rows + .05;
+      for (let c = 0; c < n; c++) {
+        const x = -totalW / 2 + (c + .5) * tw, col = (c + r * 2) % 5 === 0 ? shade(T1, .05) : c % 2 ? T2 : T1;
+        add(new THREE.CylinderGeometry(tw * .55, tw * .55, L, 8, 1, true, HP, PI), col, x, y + .01 + (c % 2 ? .02 : 0), z, HP + side * ang, 0, 0);
       }
     }
-    // Thick, light fascia and finished cut edges: the underside reads as timber, never a black wedge.
-    add(G.box(totalW + .06, .13, .13, .035), P.wood, 0, H - .015, zc + side * (half + .035));
-    add(G.box(totalW + .08, .07, .09, .025), P.trim, 0, H + .095, zc + side * (half + .065));
-    for (const sx of [-1, 1]) {
-      add(G.box(.13, .15, len + .12, .025), P.wood, sx * (totalW / 2 + .015), ridge - rise / 2 - .055, zc + side * half / 2, side * ang);
-      add(G.box(.15, .055, len + .14, .022), P.trim, sx * (totalW / 2 + .02), ridge - rise / 2 + .065, zc + side * half / 2, side * ang);
-    }
+    add(G.box(totalW + .08, .1, .1, .03), WOOD, 0, H + .02, zc + side * (half + .03));
   }
-  // Rounded ridge caps run parallel to the back wall, with a proper raised end tile.
-  const caps = Math.max(10, Math.round(totalW / .32)), cw = totalW / caps;
-  for (let k = 0; k < caps; k++) add(G.cyl(.105, .105, cw + .025, 10), k % 3 === 0 ? P.tile : shade(P.roof, .06), -totalW / 2 + (k + .5) * cw, ridge + .075, zc, 0, 0, HP);
+  const caps = Math.max(10, Math.round(totalW / .26));
+  for (let k = 0; k < caps; k++) add(new THREE.CylinderGeometry(.09, .09, totalW / caps + .03, 10, 1, false, HP, PI), k % 2 ? T1 : T2, -totalW / 2 + (k + .5) * totalW / caps, ridge + .045, zc, 0, 0, HP);
+  // stucco gable ends with a round vent
   for (const sx of [-1, 1]) {
-    add(G.cyl(.127, .127, .08, 12), P.trim, sx * (totalW / 2 + .035), ridge + .075, zc, 0, 0, HP);
-    if (sage) add(G.sph(.105, 10, 7), P.tile, sx * (totalW / 2 + .04), ridge + .17, zc, 0, 0, 0, [1, 1.35, .75]);
+    const s = new THREE.Shape(); s.moveTo(-half, 0); s.lineTo(half, 0); s.lineTo(0, rise); s.closePath();
+    add(G.ext(s, .06, .01, 2), ST, sx * (totalW / 2 - .02) - (sx > 0 ? .06 : 0), H + .05, zc, 0, HP, 0);
+    add(G.cyl(.09, .09, .07, 14), shade(ST, -.08), sx * (totalW / 2 + .02), H + .05 + rise * .4, zc, 0, 0, HP);
+    for (let k = -1; k <= 1; k++) add(G.box(.075, .012, .012, .003), WOODD, sx * (totalW / 2 + .055), H + .05 + rise * .4 + k * .03, zc);
   }
-  dormer(add, tube, P, dx, zc + dormU, dy, story ? P.roof : P.tile);
-  // A separate little entrance canopy sits beneath the main eave, with two visible timber brackets.
-  const ay = H - .29, az = zFront + .015;
-  add(G.box(1.16, .08, .28, .025), P.wood, dx, ay, az, .16);
-  for (let k = 0; k < 5; k++) add(shingle(.235, .29, .035, .015), k % 2 ? P.tile : P.roof, dx + (k - 2) * .23, ay + .065, az, .16);
-  for (const sx of [-1, 1]) {
-    add(G.box(.065, .34, .065, .014), P.wood, dx + sx * .42, H - .16, az - .11);
-    tube([dx + sx * .42, ay - .19, az - .11], [dx + sx * .42, ay - .04, az + .09], .032, P.wood, 5);
-  }
-  if (story) {
-    // Small brick chimney, three warm courses and an open cap: recognizable at phone size.
-    const cx = W * .3, cz = zc - half * .25, cy = ridge - rise * .25;
-    add(G.box(.35, .64, .34, .025), '#e0b397', cx, cy + .23, cz);
-    for (let k = 0; k < 3; k++) add(G.box(.365, .027, .355, .008), '#f1d5b6', cx, cy + .04 + k * .17, cz);
-    for (const s of [-1, 1]) add(G.box(.49, .1, .1, .02), P.trim, cx, cy + .59, cz + s * .19);
-    for (const s of [-1, 1]) add(G.box(.1, .1, .28, .02), P.trim, cx + s * .195, cy + .59, cz);
-    add(G.box(.27, .025, .26, .008), '#967259', cx, cy + .53, cz);
-  }
-  return { B, zc, zFront, ridge };
+  // chimney
+  { const cx = W * .28, [cy, cz] = onSlope(ridge, rise, half, zc, -1, half * .35);
+    add(G.box(.32, .7, .3, .03), ST, cx, cy + .22, cz); add(G.box(.4, .06, .38, .02), shade(ST, -.1), cx, cy + .58, cz);
+    add(new THREE.CylinderGeometry(.13, .13, .4, 8, 1, false, HP, PI), T1, cx, cy + .66, cz, 0, 0, HP); }
+  vane(add, tube, -W * .28, ridge + .1, zc);
+  // a flower box of geraniums under the front eave
+  { const fz = zFront + .05, fy = H - .38;
+    add(G.box(1.1, .16, .2, .03), T2, -W * .12, fy, fz); add(G.box(1.06, .03, .16, .01), '#7a5a3e', -W * .12, fy + .08, fz);
+    for (let k = 0; k < 7; k++) { const x = -W * .12 - .45 + k * .15; add(G.sph(.065, 8, 6), '#6fae6a', x, fy + .14, fz, 0, k, 0, [1.1, .8, 1]); add(G.sph(.04, 8, 6), k % 2 ? '#ff6f7a' : '#ff9eb0', x + .02, fy + .2, fz + .03); }
+    for (const s of [-1, 1]) tube([-W * .12 + s * .45, fy - .06, fz - .02], [-W * .12 + s * .45, H - .08, zFront - .1], .015, '#4a4458', 4); }
+  return { ridge };
 }
 
-function garden(add, tube, W, D, H, P) {
-  const B = Math.min(1.9, D * .28), zBack = -D / 2 - .1, zFront = -D / 2 + B, zc = (zBack + zFront) / 2,
-    deckY = H + .17;
-  supportFrame(add, tube, W, zBack + .1, zFront, H, P);
-  // A deep, layered terrace, not a paper-thin floating slab.
-  add(G.box(W + .3, .22, B + .22, .045), P.wood, 0, H + .015, zc);
-  add(G.box(W + .36, .09, B + .28, .03), P.trim, 0, H + .11, zc);
-  add(G.box(W + .2, .06, B + .13, .025), P.roof, 0, deckY - .025, zc);
-  const boards = Math.max(10, Math.round((W + .2) / .38)), step = (W + .2) / boards;
-  for (let k = 0; k < boards; k++) add(G.box(step - .018, .025, B + .09, .008), k % 3 ? P.tile : '#e3d1af', -W / 2 - .1 + (k + .5) * step, deckY + .012, zc);
-  // Low rear/side parapet, open front: the player can read the whole little garden.
-  const parapet = '#e9d9b9';
-  add(G.box(W + .22, .37, .14, .035), parapet, 0, deckY + .17, zBack - .02);
-  add(G.box(W + .28, .075, .2, .028), P.trim, 0, deckY + .375, zBack - .02);
+// ── 북유럽 판자: a steep gable of slate-blue boards with raised seams, white scalloped bargeboards, a pale timber gable end with
+// a little cross window, a black stove pipe with a hat, and a birdhouse on a post at the side
+function nordic(add, tube, W, D, H) {
+  const { zBack, zFront, zc, half, totalW } = band(W, D, H), rise = Math.min(.95, .55 + half * .3), ridge = H + rise + .1, ang = Math.atan2(rise, half), len = Math.hypot(half, rise);
+  const R1 = '#6f86a0', R2 = '#5f7690', WH = '#f8f4ec', PL = '#e9d6b6';
+  frame(add, tube, W, zBack, zFront, H, '#b98e66');
+  for (const side of [-1, 1]) {
+    const [y, z] = onSlope(ridge, rise, half, zc, side, half / 2);
+    add(G.box(totalW, .09, len + .08, .02), R1, 0, y, z, side * ang);
+    const n = Math.max(8, Math.round(totalW / .32));
+    for (let k = 0; k <= n; k++) add(G.box(.035, .05, len + .06, .012), R2, -totalW / 2 + k * totalW / n, y + .06, z, side * ang);
+    // the scalloped white bargeboard along the eave
+    add(G.box(totalW + .1, .1, .07, .02), WH, 0, H + .03, zc + side * (half + .04));
+    for (let k = 0; k < Math.round(totalW / .18); k++) add(G.sph(.055, 8, 6), WH, -totalW / 2 + .09 + k * .18, H - .02, zc + side * (half + .05), 0, 0, 0, [1, .8, .5]);
+  }
+  add(G.box(totalW + .06, .1, .16, .03), WH, 0, ridge + .06, zc);
   for (const sx of [-1, 1]) {
-    add(G.box(.14, .37, B + .12, .035), parapet, sx * (W / 2 + .07), deckY + .17, zc);
-    add(G.box(.2, .075, B + .16, .03), P.trim, sx * (W / 2 + .07), deckY + .375, zc);
+    // pale vertical boards on the gable end, white barge along its slopes, a cross window
+    const s = new THREE.Shape(); s.moveTo(-half, 0); s.lineTo(half, 0); s.lineTo(0, rise); s.closePath();
+    const xg = sx * (totalW / 2 - .03);
+    add(G.ext(s, .05, .006, 2), PL, xg - (sx > 0 ? .05 : 0), H + .04, zc, 0, HP, 0);
+    for (let k = -3; k <= 3; k++) { const h = rise * (1 - Math.abs(k) / 4) * .95; add(G.box(.012, h, .012, .003), shade(PL, -.12), xg + sx * .03, H + .04 + h / 2, zc + k * half / 4); }
+    for (const sd of [-1, 1]) add(G.box(.06, .07, len + .1, .02), WH, xg + sx * .04, ridge - rise / 2, zc + sd * half / 2, sd * ang);
+    add(G.box(.06, .3, .26, .02), WH, xg + sx * .045, H + .04 + rise * .36, zc); add(G.box(.06, .24, .2, .01), '#9cc0d6', xg + sx * .055, H + .04 + rise * .36, zc);
+    add(G.box(.07, .24, .02, .004), WH, xg + sx * .065, H + .04 + rise * .36, zc); add(G.box(.07, .02, .2, .004), WH, xg + sx * .065, H + .04 + rise * .36, zc);
   }
-  // Back corner planter: open soil, thick rim, three friendly broad-leaved shrubs.
-  const px = -W * .28, pz = zBack + .36, pw = Math.min(1.25, W * .3);
-  add(G.box(pw, .27, .5, .04), '#dcae8e', px, deckY + .135, pz);
-  add(G.box(pw - .1, .035, .4, .012), '#a88b65', px, deckY + .28, pz);
-  for (const s of [-1, 1]) add(G.box(pw + .05, .065, .075, .02), '#f0c5a2', px, deckY + .3, pz + s * .23);
-  for (const s of [-1, 1]) add(G.box(.075, .065, .4, .02), '#f0c5a2', px + s * pw / 2, deckY + .3, pz);
-  for (let k = 0; k < 3; k++) {
-    const x = px + (k - 1) * pw * .27;
-    tube([x, deckY + .27, pz], [x, deckY + .67 + (k % 2) * .12, pz], .022, '#96a078', 5);
-    for (let n = 0; n < 4; n++) {
-      const a = n * 2.4 + k, yy = deckY + .42 + n * .075;
-      add(G.sph(.14, 8, 6), n % 2 ? '#b5c39b' : '#95b18d', x + Math.cos(a) * .08, yy, pz + Math.sin(a) * .08, 0, a, .5, [1.15, .75, .8]);
-    }
-  }
-  // A slatted bench and folded cushion leave the front half free for a hidden treasure.
-  const bx = W * .24, bz = zBack + .47, bw = Math.min(1.35, W * .31);
-  for (const sx of [-1, 1]) add(G.box(.12, .32, .38, .02), P.wood, bx + sx * (bw / 2 - .13), deckY + .16, bz);
-  for (let k = 0; k < 3; k++) add(G.box(bw, .07, .13, .02), k % 2 ? P.trim : P.tile, bx, deckY + .35, bz + (k - 1) * .145);
-  add(G.box(bw + .04, .27, .08, .025), P.wood, bx, deckY + .51, bz - .23);
-  add(G.box(.44, .09, .32, .04), '#b8c6ad', bx - bw * .22, deckY + .43, bz + .015);
-  // A watering can with a real loop handle and an angled spout, kept bigger than a tiny detail speck.
-  const wx = -W * .1, wz = zFront - .35;
-  add(G.cyl(.105, .13, .22, 10), '#91b8ac', wx, deckY + .115, wz);
-  add(G.tor(.13, .027, PI * 1.6, 5, 12), '#81a99c', wx - .11, deckY + .15, wz, 0, HP, -.55);
-  tube([wx + .09, deckY + .08, wz], [wx + .27, deckY + .24, wz], .035, '#91b8ac', 6, .05);
-  add(G.sph(.06, 8, 5), '#bad2bd', wx + .28, deckY + .245, wz, 0, 0, -.8, [1.1, .45, 1]);
-  // Short fence across only the rear third, giving the plants a delicate climbing trellis.
-  for (let k = 0; k < 5; k++) add(G.box(.045, .55, .04, .01), P.wood, px - pw / 2 + k * pw / 4, deckY + .56, zBack + .09);
-  for (let k = 0; k < 2; k++) add(G.box(pw + .08, .045, .04, .01), P.wood, px, deckY + .48 + k * .27, zBack + .09);
-  return { B, zc, zFront, deckY };
+  // stove pipe with a hat
+  { const [y, z] = onSlope(ridge, rise, half, zc, -1, half * .4); tube([W * .3, y - .05, z], [W * .3, y + .6, z], .07, '#3a3a48', 10); add(G.cone(.13, .1, 10), '#3a3a48', W * .3, y + .68, z); add(G.cyl(.09, .09, .03, 10), '#5b5672', W * .3, y + .6, z); }
+  // a birdhouse on a post beside the front posts
+  { const bx = -W / 2 + .12, bz = zFront + .1, by = H - .2;
+    add(G.box(.24, .22, .2, .02), '#e2685a', bx, by, bz); const r = new THREE.Shape(); r.moveTo(-.16, 0); r.lineTo(.16, 0); r.lineTo(0, .13); r.closePath();
+    add(G.ext(r, .24, .01, 2), R1, bx, by + .11, bz - .12); add(G.cyl(.04, .04, .022, 12), '#3a3a48', bx, by + .02, bz + .102, HP, 0, 0); add(G.cyl(.01, .01, .06, 6), WOODD, bx, by - .05, bz + .13, HP, 0, 0); }
+  return { ridge };
 }
+
+// ── 일본 기와: a gently curved (sagging) gable of blue-grey round tiles in lines down the slope, a white-plastered ridge with
+// dark end tiles, eave ends that curl up, a glass wind chime with its paper strip and a red paper lantern
+function kawara(add, tube, W, D, H) {
+  const { zBack, zFront, zc, half, totalW } = band(W, D, H), rise = Math.min(.72, .42 + half * .24), ridge = H + rise + .14;
+  const KW = '#98a6b8', KD = '#7c8a9e', PLA = '#f3efe6';
+  frame(add, tube, W, zBack, zFront, H, '#a8775a');
+  const SEG = 4, prof = u => ridge - rise * (u / half) ** 1.35;   // a concave pitch: steep at the ridge, flattening to the eave
+  for (const side of [-1, 1]) {
+    for (let s = 0; s < SEG; s++) {
+      const u0 = half * s / SEG, u1 = half * (s + 1) / SEG, y0 = prof(u0), y1 = prof(u1), L = Math.hypot(u1 - u0, y0 - y1) + .03, a = Math.atan2(y0 - y1, u1 - u0);
+      const ym = (y0 + y1) / 2, zm = zc + side * (u0 + u1) / 2;
+      add(G.box(totalW, .07, L, .01), KD, 0, ym - .03, zm, side * a);
+      const n = Math.max(12, Math.round(totalW / .17));
+      for (let c = 0; c < n; c++) add(new THREE.CylinderGeometry(.045, .045, L, 7, 1, true, HP, PI), (c + s) % 6 === 0 ? shade(KW, .06) : KW, -totalW / 2 + (c + .5) * totalW / n, ym + .015, zm, HP + side * a, 0, 0);
+    }
+    // the eave: a row of round tile ends, and corners curling up
+    const ey = prof(half), ez = zc + side * (half + .02), n = Math.max(12, Math.round(totalW / .17));
+    for (let c = 0; c < n; c++) add(G.cyl(.05, .05, .03, 10), KD, -totalW / 2 + (c + .5) * totalW / n, ey + .01, ez, HP, 0, 0);
+    for (const sx of [-1, 1]) add(G.box(.22, .06, .14, .02), KD, sx * (totalW / 2 - .05), ey + .08, ez, 0, 0, sx * .5);
+    add(G.box(totalW + .05, .09, .09, .02), '#a8775a', 0, H + .02, zc + side * (half - .05));
+  }
+  add(G.box(totalW + .06, .16, .22, .03), PLA, 0, ridge + .04, zc); add(G.box(totalW + .1, .06, .26, .02), KD, 0, ridge + .14, zc);
+  for (const sx of [-1, 1]) { add(G.box(.12, .26, .3, .03), KD, sx * (totalW / 2 + .04), ridge + .12, zc); add(G.cyl(.05, .05, .04, 10), PLA, sx * (totalW / 2 + .1), ridge + .14, zc, 0, 0, HP); }
+  // the wind chime and the lantern hang from the front beam
+  const hy = H - .1, hz = zFront - .16;
+  { const x = W * .2; tube([x, hy, hz], [x, hy - .2, hz], .004, '#c9c2b6', 3); add(G.sph(.07, 10, 8, ), '#bfe6f0', x, hy - .25, hz, 0, 0, 0, [1, .8, 1]); add(G.cyl(.065, .065, .01, 10), '#e2685a', x, hy - .28, hz); tube([x, hy - .29, hz], [x, hy - .42, hz], .003, '#c9c2b6', 3); add(G.box(.05, .12, .004, .002), '#fbf6ec', x, hy - .48, hz); }
+  { const x = -W * .22; tube([x, hy, hz], [x, hy - .12, hz], .006, '#3a3a48', 3); add(G.cyl(.1, .1, .03, 12), '#3a3a48', x, hy - .14, hz); add(G.sph(.13, 12, 10), '#e5544a', x, hy - .3, hz, 0, 0, 0, [1, 1.25, 1]); for (const y of [-.24, -.3, -.36]) add(G.tor(.12, .006, PI * 2, 4, 16), '#b8433a', x, hy + y, hz, HP, 0, 0); add(G.cyl(.08, .08, .03, 12), '#3a3a48', x, hy - .47, hz); }
+  return { ridge };
+}
+
+// ── 버섯 초가: a big red toadstool cap with white spots spread over the rear band, a straw thatch fringe hanging under its rim,
+// a round window with a green shutter peeping out of the cap, little mushrooms and a snail on top
+function mushroom(add, tube, W, D, H) {
+  const { zBack, zFront, zc, half } = band(W, D, H), R = W / 2 + .2, cy = H + .02;
+  const CAP = '#e8806e', DOT = '#fff8ee', STRAW = '#e8cf98', STRAW2 = '#d4b67a', CH = 1.25;
+  frame(add, tube, W, zBack, zFront, H, '#b68a62');
+  add(new THREE.SphereGeometry(1, 30, 12, 0, PI * 2, 0, HP), CAP, 0, cy, zc, 0, 0, 0, [R, CH, half + .32]);
+  add(G.cyl(R, R, .06, 30), shade(CAP, -.12), 0, cy + .01, zc, 0, 0, 0, [1, 1, (half + .32) / R]);
+  // white spots on the cap (each a flattened bead sunk into the surface)
+  for (const [a, e, s] of [[.3, .55, .13], [1.2, .35, .1], [2.1, .62, .12], [2.9, .3, .09], [-.6, .4, .11], [-1.5, .58, .1], [-2.4, .32, .12], [0, .85, .09], [1.6, .82, .08], [-2.2, .8, .08]]) {
+    const x = Math.cos(a) * Math.cos(e) * R, y = Math.sin(e) * CH, z = Math.sin(a) * Math.cos(e) * (half + .32);
+    add(G.sph(1, 10, 8), DOT, x, cy + y - .02, zc + z, 0, -a, e - HP, [s * 1.4, s * .5, s * 1.4]);
+  }
+  // thatch fringe under the rim
+  const n = Math.round(PI * 2 * R / .1);
+  for (let k = 0; k < n; k++) { const a = k / n * PI * 2, x = Math.cos(a) * (R - .04), z = Math.sin(a) * (half + .28); add(G.cone(.07, .22 + (k % 3) * .04, 5), k % 2 ? STRAW : STRAW2, x, cy - .1, zc + z, PI, 0, 0); }
+  // a round window in the cap with a little green shutter and a flower box
+  { const wx = -W * .18, wy = cy + .55, wz = zc + (half + .32) * .78;
+    add(G.cyl(.17, .17, .1, 18), '#f4ebdc', wx, wy, wz, HP, 0, 0); add(G.cyl(.13, .13, .11, 18), '#9cc0d6', wx, wy, wz, HP, 0, 0);
+    add(G.box(.26, .02, .02, .004), '#f4ebdc', wx, wy, wz + .06); add(G.box(.02, .26, .02, .004), '#f4ebdc', wx, wy, wz + .06);
+    add(G.box(.14, .28, .03, .02), '#6fae6a', wx + .22, wy, wz - .02, 0, -.5, 0); add(G.box(.32, .07, .1, .02), '#b68a62', wx, wy - .2, wz + .04);
+    for (let k = 0; k < 4; k++) add(G.sph(.035, 8, 6), ['#ff9eb0', '#ffe27a', '#fff8ee', '#bda7ff'][k], wx - .11 + k * .075, wy - .14, wz + .05); }
+  // little mushrooms and a snail on top
+  for (const [x, z, s] of [[W * .2, .1, 1], [W * .27, .25, .7], [-W * .32, -.1, .8]]) { add(G.cyl(.035 * s, .045 * s, .12 * s, 8), DOT, x, cy + (CH - .06) * (1 - (x / R) ** 2) ** .5 + .04, zc + z); add(G.sph(.09 * s, 10, 6), '#ffb84a', x, cy + (CH - .06) * (1 - (x / R) ** 2) ** .5 + .12 * s, zc + z, 0, 0, 0, [1, .55, 1]); }
+  { const sx = W * .05, sy = cy + CH - .02, sz = zc + .1; add(G.tor(.045, .025, PI * 2, 6, 14), '#c98a52', sx, sy + .06, sz, 0, 0, 0); add(G.cap(.025, .14, 2, 6), '#e8d9b8', sx + .05, sy + .01, sz, 0, 0, HP); for (const s of [-1, 1]) tube([sx + .11, sy + .03, sz + s * .012], [sx + .14, sy + .08, sz + s * .02], .005, '#e8d9b8', 3); }
+  return { ridge: cy + CH };
+}
+
+// ── 온실 유리: a white-framed glass gable — pale mint panes between slim white glazing bars, one roof light propped open, a
+// gutter, pots of herbs on a shelf under the front beam and a trailing ivy basket
+function glass(add, tube, W, D, H) {
+  const { zBack, zFront, zc, half, totalW } = band(W, D, H), rise = Math.min(.7, .4 + half * .25), ridge = H + rise + .08, ang = Math.atan2(rise, half), len = Math.hypot(half, rise);
+  const GL = '#d9f0ea', GL2 = '#c4e6df', FR = '#ffffff';
+  frame(add, tube, W, zBack, zFront, H, '#f4f2ee', '#e2ddd4');
+  const n = Math.max(6, Math.round(totalW / .45)), pw = totalW / n;
+  for (const side of [-1, 1]) {
+    const [y, z] = onSlope(ridge, rise, half, zc, side, half / 2);
+    for (let k = 0; k < n; k++) {
+      const x = -totalW / 2 + (k + .5) * pw, open = side > 0 && k === Math.floor(n * .7);
+      if (open) { const [oy, oz] = onSlope(ridge, rise, half, zc, side, half * .25); add(G.box(pw - .04, .025, len * .5, .01), GL2, x, oy + .12, oz, side * ang - .35); add(G.box(.02, .14, .02, .004), FR, x, oy + .05, oz + .12); continue; }
+      add(G.box(pw - .03, .02, len, .006), k % 2 ? GL : GL2, x, y, z, side * ang);
+      add(G.box(pw * .3, .022, len * .7, .004), '#f4fffb', x - pw * .2, y + .005, z, side * ang, 0, .02);
+    }
+    for (let k = 0; k <= n; k++) add(G.box(.045, .05, len + .04, .01), FR, -totalW / 2 + k * pw, y + .02, z, side * ang);
+    add(G.box(totalW + .06, .06, .06, .015), FR, 0, H + .02, zc + side * (half + .02));
+    tube([-totalW / 2, H - .03, zc + side * (half + .08)], [totalW / 2, H - .03, zc + side * (half + .08)], .035, '#c9cfd6', 8);
+  }
+  add(G.box(totalW + .06, .07, .08, .02), FR, 0, ridge + .02, zc);
+  for (const sx of [-1, 1]) {
+    const s = new THREE.Shape(); s.moveTo(-half, 0); s.lineTo(half, 0); s.lineTo(0, rise); s.closePath();
+    add(G.ext(s, .02, 0, 2), GL, sx * (totalW / 2 - .01) - (sx > 0 ? .02 : 0), H + .02, zc, 0, HP, 0);
+    for (let k = -2; k <= 2; k++) { const h = rise * (1 - Math.abs(k) / 3); add(G.box(.03, h, .03, .006), FR, sx * (totalW / 2), H + .02 + h / 2, zc + k * half / 3); }
+  }
+  // a shelf of herb pots under the front beam, an ivy basket hanging at the corner
+  { const sy = H - .48, sz = zFront - .08;
+    add(G.box(W * .6, .04, .2, .01), '#e2ddd4', 0, sy, sz); for (const s of [-1, 1]) add(G.box(.04, .2, .14, .01), '#e2ddd4', s * W * .28, sy + .1, sz - .04);
+    for (let k = 0; k < 5; k++) { const x = -W * .24 + k * W * .12; add(G.cyl(.065, .05, .11, 10), k % 2 ? '#d98b5f' : '#e8b089', x, sy + .075, sz); add(G.sph(.08, 8, 6), ['#6fae6a', '#8fc07a', '#5aa65e'][k % 3], x, sy + .17, sz, 0, k, 0, [1, .9, 1]); }
+    const ix = W / 2 - .45, iy = H - .45; for (const s of [-1, 1]) tube([ix, H - .1, sz - .02], [ix + s * .1, iy + .05, sz], .004, '#c9c2b6', 3);
+    add(G.sph(.13, 12, 8, ), '#c98a52', ix, iy, sz, 0, 0, 0, [1, .5, 1]); for (let k = 0; k < 6; k++) add(G.sph(.05, 8, 6), '#6fae6a', ix + Math.cos(k) * .12, iy - .05 - (k % 3) * .07, sz + Math.sin(k) * .08); }
+  return { ridge };
+}
+
+// ── 캔디 줄무늬: a candy-shop awning roof — wide pink and white stripes, a scalloped valance, white icing drips along the ridge
+// with sprinkles, gumdrops on top, lollipops on the posts and a candy cane hooked on the beam
+function candy(add, tube, W, D, H) {
+  const { zBack, zFront, zc, half, totalW } = band(W, D, H), rise = Math.min(.6, .34 + half * .22), ridge = H + rise + .08, ang = Math.atan2(rise, half), len = Math.hypot(half, rise);
+  const PK = '#f59ab4', WT = '#fff6f8', MINT = '#8fdccb';
+  frame(add, tube, W, zBack, zFront, H, '#f4c9d8', WT);
+  const n = Math.max(8, Math.round(totalW / .34)), sw = totalW / n;
+  for (const side of [-1, 1]) {
+    const [y, z] = onSlope(ridge, rise, half, zc, side, half / 2);
+    for (let k = 0; k < n; k++) add(G.box(sw + .004, .07, len + .04, .015), k % 2 ? WT : PK, -totalW / 2 + (k + .5) * sw, y, z, side * ang);
+    // the scalloped valance
+    for (let k = 0; k < n; k++) add(new THREE.CylinderGeometry(sw / 2, sw / 2, .03, 12, 1, false, 0, PI), k % 2 ? WT : PK, -totalW / 2 + (k + .5) * sw, H - .02, zc + side * (half + .04), HP, 0, side > 0 ? PI : 0);
+    add(G.box(totalW + .06, .08, .06, .02), MINT, 0, H + .04, zc + side * (half + .03));
+  }
+  // icing along the ridge, drips, sprinkles, gumdrops
+  add(G.cyl(.1, .1, totalW + .1, 12), WT, 0, ridge + .03, zc, 0, 0, HP);
+  for (let k = 0; k < Math.round(totalW / .22); k++) { const x = -totalW / 2 + .11 + k * .22; for (const side of [-1, 1]) { const d = .08 + (k * 7 % 3) * .05, [y, z] = onSlope(ridge, rise, half, zc, side, d); add(G.cap(.035, d * .9, 2, 6), WT, x, y + .06, z, side * (HP - ang), 0, 0); } }
+  for (let k = 0; k < 14; k++) add(G.box(.04, .012, .012, .003), ['#ff6f7a', '#7fb5ff', '#ffe27a', MINT][k % 4], -totalW / 2 + .15 + k * totalW / 14, ridge + .13, zc + (k % 2 ? .04 : -.04), 0, k, 0);
+  for (const [x, c] of [[-W * .3, '#ff6f7a'], [-W * .05, MINT], [W * .22, '#bda7ff']]) add(G.sph(.1, 12, 8), c, x, ridge + .17, zc, 0, 0, 0, [1, .8, 1]);
+  // lollipops on the front posts, a candy cane on the beam
+  for (const sx of [-1, 1]) { const x = sx * (W / 2 - .14), z = zFront - .16; add(G.cyl(.16, .16, .05, 18), WT, x, H + .32, z + .1, HP, 0, 0); for (let k = 0; k < 4; k++) add(G.tor(.04 + k * .03, .012, PI * 2, 4, 18), k % 2 ? PK : MINT, x, H + .32, z + .13); tube([x, H + .06, z + .1], [x, H + .18, z + .1], .015, WT, 5); }
+  { const x = W * .1, y = H - .2, z = zFront - .06; for (let k = 0; k < 6; k++) add(G.cyl(.025, .025, .06, 8), k % 2 ? WT : '#ff6f7a', x, y - .2 + k * .06, z); add(G.tor(.06, .025, PI, 6, 10), '#ff6f7a', x + .06, y + .17, z); }
+  return { ridge };
+}
+
+// ── 별 관측 돔: a flat roof deck with a white dome — its slit open on the night, a telescope poking out — a star pennant, a
+// little antenna with a red light and a deck rail; the front of the deck is free to stand things on
+function observatory(add, tube, W, D, H) {
+  const { B, zBack, zFront, zc } = band(W, D, H), deckY = H + .2, DM = '#f2f0ec', NV = '#5d6fa8';
+  frame(add, tube, W, zBack, zFront, H, '#8f9bb8', '#d6dbe2');
+  add(G.box(W + .3, .22, B + .2, .04), '#d6dbe2', 0, H + .02, zc); add(G.box(W + .36, .06, B + .26, .02), '#a9b2c4', 0, H + .14, zc);
+  for (let k = 0; k < Math.round((W + .2) / .4); k++) add(G.box(.38, .02, B + .05, .006), k % 2 ? '#c9cfe0' : '#d6dbe2', -W / 2 - .1 + .2 + k * .4, deckY - .03, zc);
+  // the dome on a drum, with its slit and the telescope
+  const dx = -W * .18, dr = Math.min(.85, B * .5), dz = zBack + dr + .12;
+  add(G.cyl(dr + .04, dr + .06, .24, 24), '#e2ddd4', dx, deckY + .1, dz);
+  add(new THREE.SphereGeometry(dr, 24, 12, 0, PI * 2, 0, HP), DM, dx, deckY + .22, dz);
+  for (let k = 0; k < 8; k++) add(new THREE.TorusGeometry(dr + .004, .008, 4, 24, PI), '#c9cfe0', dx, deckY + .22, dz, 0, k * PI / 8, 0);
+  add(G.box(.22, dr * 1.02, .06, .02), '#2b3a6e', dx, deckY + .22 + dr * .5, dz + dr * .62, -.62, 0, 0);
+  tube([dx, deckY + .5, dz + .2], [dx + .1, deckY + .95, dz + .75], .07, NV, 10, .09); add(G.cyl(.1, .1, .06, 12), '#e2b448', dx + .1, deckY + .95, dz + .75, .9, 0, -.2);
+  for (let k = 0; k < 3; k++) { const a = k * 2.1; add(G.sph(.035, 6, 5), '#ffe27a', dx + Math.cos(a) * .3, deckY + dr + .35 + k * .08, dz + Math.sin(a) * .2, 0, 0, 0, [1, 1, .3]); }
+  // a pennant with a star, an antenna with a red light, a deck rail
+  { const px = W * .32, pz = zBack + .25; tube([px, deckY, pz], [px, deckY + 1.1, pz], .018, '#c9cfe0', 5); const s = new THREE.Shape(); s.moveTo(0, 0); s.lineTo(.42, .12); s.lineTo(0, .24); s.closePath(); add(G.ext(s, .01, 0, 2), NV, px, deckY + .82, pz); add(G.sph(.03, 6, 5), '#ffe27a', px + .13, deckY + .94, pz + .01, 0, 0, 0, [1, 1, .4]); }
+  { const ax = W * .12, az = zBack + .2; tube([ax, deckY, az], [ax, deckY + .7, az], .012, '#a9b2c4', 4); for (const y of [.35, .5]) add(G.box(.3, .012, .012, .003), '#a9b2c4', ax, deckY + y, az); add(G.sph(.03, 8, 6), '#ff5a5a', ax, deckY + .72, az); }
+  for (const sx of [-1, 1]) { for (let k = 0; k < 5; k++) add(G.cyl(.016, .016, .4, 6), '#a9b2c4', sx * (W / 2 + .08), deckY + .2, zBack + .1 + k * (B / 4)); add(G.cyl(.02, .02, B, 6), '#a9b2c4', sx * (W / 2 + .08), deckY + .4, zc, HP, 0, 0); }
+  add(G.cyl(.02, .02, W + .16, 6), '#a9b2c4', 0, deckY + .4, zBack + .08, 0, 0, HP);
+  return { deckY };
+}
+
+// ── 옥상 정원: a timber deck on the canopy with a low parapet, a raised vegetable bed (lettuces, tomatoes on canes, a
+// scarecrow mochi), a string of little lights on two poles, a round table with two stools and a birdbath
+function garden(add, tube, W, D, H) {
+  const { B, zBack, zFront, zc } = band(W, D, H), deckY = H + .17, P = '#e9d9b9';
+  frame(add, tube, W, zBack, zFront, H);
+  add(G.box(W + .3, .22, B + .22, .045), WOOD, 0, H + .015, zc); add(G.box(W + .36, .09, B + .28, .03), TRIM, 0, H + .11, zc);
+  for (let k = 0; k < Math.round((W + .2) / .3); k++) add(G.box(.28, .025, B + .09, .008), k % 3 ? '#dcc49d' : '#e8d5b0', -W / 2 - .1 + .15 + k * .3, deckY, zc);
+  add(G.box(W + .22, .32, .14, .035), P, 0, deckY + .15, zBack - .02); add(G.box(W + .28, .06, .2, .025), TRIM, 0, deckY + .33, zBack - .02);
+  for (const sx of [-1, 1]) { add(G.box(.14, .32, B + .12, .035), P, sx * (W / 2 + .07), deckY + .15, zc); add(G.box(.2, .06, B + .16, .025), TRIM, sx * (W / 2 + .07), deckY + .33, zc); }
+  // the raised bed of vegetables
+  const bx = -W * .22, bz = zBack + .4, bw = Math.min(1.5, W * .36);
+  add(G.box(bw, .28, .5, .03), '#b98e66', bx, deckY + .14, bz); add(G.box(bw - .08, .03, .42, .01), '#7a5a3e', bx, deckY + .27, bz);
+  for (let k = 0; k < 4; k++) { const x = bx - bw / 2 + .2 + k * (bw - .4) / 3; for (let n = 0; n < 5; n++) add(G.sph(.055, 8, 6), n % 2 ? '#8fc07a' : '#a8d48a', x + Math.cos(n * 1.3) * .05, deckY + .32, bz - .1 + Math.sin(n * 1.3) * .05, 0, n, .4, [1, .7, 1]); }
+  for (let k = 0; k < 3; k++) { const x = bx - bw / 2 + .25 + k * (bw - .5) / 2, z = bz + .13; tube([x, deckY + .27, z], [x, deckY + .8, z], .012, '#c9a26a', 4); for (let n = 0; n < 4; n++) add(G.sph(.05, 8, 6), '#6fae6a', x + (n % 2 ? .04 : -.04), deckY + .42 + n * .09, z, 0, 0, 0, [1, .7, .8]); for (const y of [.5, .65]) add(G.sph(.035, 8, 6), '#ff6f5a', x + .04, deckY + y, z + .03); }
+  { const sx = bx + bw / 2 - .1, sz = bz - .08; tube([sx, deckY + .27, sz], [sx, deckY + .8, sz], .014, '#c9a26a', 4); add(G.box(.32, .03, .03, .006), '#c9a26a', sx, deckY + .62, sz); add(G.sph(.1, 12, 8), '#fff6ee', sx, deckY + .82, sz); add(G.cone(.14, .1, 10), '#e8cf98', sx, deckY + .93, sz); for (const s of [-1, 1]) add(G.sph(.012, 6, 5), '#2a1d33', sx + s * .035, deckY + .83, sz + .09); }
+  // the string of lights
+  { const z = zFront - .1; for (const sx of [-1, 1]) tube([sx * (W / 2 - .05), deckY, z], [sx * (W / 2 - .05), deckY + .95, z], .02, WOODD, 5);
+    const n = 9; for (let k = 0; k < n; k++) { const t = k / (n - 1), x = -(W / 2 - .05) + t * (W - .1), y = deckY + .93 - .22 * 4 * t * (1 - t); add(G.sph(.035, 8, 6), ['#ffe27a', '#ff9eb0', '#bfe6f0'][k % 3], x, y - .05, z); if (k < n - 1) { const t2 = (k + 1) / (n - 1); tube([x, y, z], [-(W / 2 - .05) + t2 * (W - .1), deckY + .93 - .22 * 4 * t2 * (1 - t2), z], .004, '#4a4458', 3); } } }
+  // a round table, two stools, a birdbath
+  { const tx = W * .2, tz = zc + .05; add(G.cyl(.3, .3, .04, 18), '#f4ebdc', tx, deckY + .45, tz); add(G.cyl(.03, .04, .43, 8), WOODD, tx, deckY + .22, tz); add(G.cyl(.15, .17, .03, 12), WOODD, tx, deckY + .015, tz);
+    add(G.cyl(.05, .04, .1, 10), '#e8b089', tx + .08, deckY + .52, tz); add(G.sph(.06, 8, 6), '#ff9eb0', tx + .08, deckY + .6, tz);
+    for (const s of [-1, 1]) { add(G.cyl(.14, .14, .04, 12), '#8fc07a', tx + s * .42, deckY + .3, tz); for (const k of [0, 1, 2]) { const a = k * 2.1; tube([tx + s * .42 + Math.cos(a) * .1, deckY, tz + Math.sin(a) * .1], [tx + s * .42 + Math.cos(a) * .07, deckY + .28, tz + Math.sin(a) * .07], .012, WOODD, 4); } } }
+  { const x = W * .38, z = zBack + .3; add(G.cyl(.06, .1, .35, 10), '#d6cfc2', x, deckY + .17, z); add(G.cyl(.2, .14, .06, 14), '#d6cfc2', x, deckY + .37, z); add(G.cyl(.16, .16, .01, 14), '#9cd0e4', x, deckY + .395, z); add(G.sph(.04, 8, 6), '#7fb5ff', x + .1, deckY + .44, z, 0, 0, 0, [1.3, 1, 1]); }
+  return { deckY };
+}
+
+const BUILD = { roof_redtile: redtile, roof_nordic: nordic, roof_kawara: kawara, roof_mushroom: mushroom, roof_glass: glass, roof_candy: candy, roof_observatory: observatory, roof_garden: garden };
+const DECKS = { roof_garden: [.17, 0], roof_observatory: [.2, .22] };   // (a roof you can stand things on: its deck height over the wall top, and where on it — a fraction of W)
 
 /**
  * Full-room coordinates, at floor y=0. turn is a quarter turn (same +Y convention as furniture).
@@ -256,6 +305,7 @@ function garden(add, tube, W, D, H, P) {
  * userData.gptRoofColumns contains local floor rectangles; transform through this group for placement/collision.
  */
 export function makeGptRoof(id, w, d, theme = {}, turn = 0) {
+  id = roofId(id);
   if (!id || id === 'gpt_roof_none') return null;
   const root = new THREE.Group(); root.name = id;
   const n = ((Math.round(turn) % 4) + 4) % 4;
@@ -263,19 +313,16 @@ export function makeGptRoof(id, w, d, theme = {}, turn = 0) {
   root.userData.gptRoof = id;
   root.userData.gptRoofSpots = [];
   root.userData.gptRoofColumns = [];
-  if (!PAL[id] || !Number.isFinite(w) || !Number.isFinite(d) || w < 2 || d < 2) return root;
-  const W = n % 2 ? d : w, D = n % 2 ? w : d, H = Number.isFinite(theme.wallH) ? theme.wallH : 2.5,
-    P = PAL[id], isGarden = id === 'gpt_roof_garden';
-  // Every input affecting geometry is included: changing room size or wall height cannot reuse a stale roof.
-  const key = ['gptroof-v2', id, W, D, H].join('|');
-  root.add(mc(key, ({ add, tube }) => { if (isGarden) garden(add, tube, W, D, H, P); else pitched(add, tube, id, W, D, H, P); }));
-  // mc's closure does not run on cache hits. Keep metadata independent of geometry generation.
-  const B = Math.min(1.9, D * .28), zFront = -D / 2 + B, zc = (-D / 2 + zFront) / 2;
-  for (const sx of [-1, 1]) for (const z of [-D / 2 + .16, zFront - .16]) {
-    root.userData.gptRoofColumns.push({ x: sx * (W / 2 - .14), z, w: .22, d: .22 });
-  }
-  root.userData.gptRoofSpots.push({ x: W * .24, y: .025, z: zc + .12, kind: 'under', label: '지붕 아래', maxH: .62, scale: 1 });
-  if (isGarden) root.userData.gptRoofSpots.push({ x: W * .27, y: H + .2, z: zFront - .36, kind: 'on', label: '옥상 벤치 앞', maxH: .45, scale: .9 });
+  if (!BUILD[id] || !Number.isFinite(w) || !Number.isFinite(d) || w < 2 || d < 2) return root;
+  const W = n % 2 ? d : w, D = n % 2 ? w : d, H = Number.isFinite(theme.wallH) ? theme.wallH : 2.5;
+  // every input affecting geometry is in the key: a new room size or wall height can't reuse a stale roof
+  const key = ['homeroof-v1', id, W, D, H].join('|');
+  root.add(mc(key, ({ add, tube }) => { BUILD[id](add, tube, W, D, H); }));
+  // (mc's closure does not run on a cache hit: the metadata is worked out here, apart from the geometry)
+  const { B, zFront, zc } = band(W, D, H);
+  for (const sx of [-1, 1]) for (const z of [-D / 2 - .12 + .16, zFront - .16]) root.userData.gptRoofColumns.push({ x: sx * (W / 2 - .14), z, w: .22, d: .22 });
+  root.userData.gptRoofSpots.push({ x: W * .24, y: .025, z: zc + .12, kind: 'under', label: K('지붕 아래', 'Under the roof'), maxH: .62, scale: 1 });
+  if (DECKS[id]) root.userData.gptRoofSpots.push({ x: W * DECKS[id][1], y: H + DECKS[id][0], z: zFront - .4, kind: 'on', label: K('옥상 데크 위', 'On the roof deck'), maxH: .45, scale: .9 });
   root.userData.gptRoofCoverage = { depth: B, fraction: B / D, front: zFront, wallHeight: H };
   return root;
 }

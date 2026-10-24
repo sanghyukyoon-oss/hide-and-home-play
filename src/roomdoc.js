@@ -5,6 +5,7 @@
 import { ITEMS } from './gfx/items.js';
 import { FURN_INFO } from './gfx/furniture.js';
 import { ZONE_TYPES, GPT_ROOFS } from './catalog.js';
+import { roofId } from './gfx/gpt-roofs.js';
 
 const HOST = /^(room|f:[A-Za-z0-9_-]{1,40}|d:\d{1,3}|p:[^\s]{1,80})$/;
 const SPOT = /^[^\s]{1,80}$/;
@@ -19,7 +20,7 @@ export function validateRoom(doc) {
   if (!Array.isArray(z.furniture) || z.furniture.length > 60) return '가구 목록이 이상해요';
   if (z.style != null && (typeof z.style !== 'string' || !/^st-[a-z0-9-]{1,30}$/.test(z.style))) return '테마가 이상해요';
   if (z.size != null && !(Number.isInteger(z.size) && z.size >= 0 && z.size <= 8)) return '방 크기가 이상해요';
-  if (z.roof != null && !GPT_ROOFS.some(r => r.id === z.roof)) return '모르는 지붕이에요';
+  if (z.roof != null && !GPT_ROOFS.some(r => r.id === roofId(z.roof))) return '모르는 지붕이에요';
   if (z.roofTurn != null && !(Number.isInteger(z.roofTurn) && z.roofTurn >= 0 && z.roofTurn < 4)) return '지붕 방향이 이상해요';
   const ids = new Set();
   for (const f of z.furniture) {

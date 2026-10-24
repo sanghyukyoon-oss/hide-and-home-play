@@ -2,7 +2,7 @@
 import { h, ICON } from './ui.js';
 import { FURN_INFO } from './gfx/furniture.js';
 import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STYLES, ZONE_SIZES, GPT_ROOFS, pinZoneFurniture, furnPrice, zoneLayout, STARTER } from './catalog.js';
-import { makeGptRoof } from './gfx/gpt-roofs.js';
+import { makeGptRoof, roofId } from './gfx/gpt-roofs.js';
 import { Room } from './room.js';
 import { clearRoofFreeItems, roofHideDraft } from './freehide.js';
 import { layoutFor, LAYOUTS } from './stages.js';
@@ -234,6 +234,9 @@ export function openShop(G, ctx = {}, tab = 'furn') {
       const can = !!zone && ztype?.indoor;
       note.textContent = can ? '뒤쪽만 덮는 지붕이에요. 앞은 열려 있어 방 안이 보여요.' : '지붕은 실내 방에 씌울 수 있어요.';
       H.owned.roof ||= [];
+      // (⑥ 10/24: the old roofs became new ones — a bought old one is the new one owned, a room under one keeps its roof)
+      H.owned.roof = [...new Set(H.owned.roof.map(roofId))];
+      for (const z of Object.values(H.zones || {})) if (z?.roof) z.roof = roofId(z.roof);
       const clearFor = (id, turn) => {
         const clashes = G.scene?.room?.roofConflicts?.(id, turn) || [];
         if (!clashes.length) return true;
@@ -349,7 +352,7 @@ function peekShop(G, ctx) {
   setTimeout(() => { if (p._peek) addEventListener('pointerdown', back, true); }, 80);
 }
 // the hiding things the shop sells from the start (① 맵·아트 10/21 후보 (가) — the starter donut·duck, kit parts and the plain ones left out)
-export const SHOP_ITEMS = ['cookie', 'console', 'teddy', 'crown', 'gift', 'icecream', 'cupcake', 'heart', 'star', 'bunnyband', 'snowglobe', 'honeypot', 'medal', 'firehelmet', 'strawhat', 'yarn', 'slipper', 'bubbletea', 'onigiri', 'ramen', 'keyring', 'rubberduck2', 'hairpin', 'acorn', 'coin', 'sunglasses'];
+export const SHOP_ITEMS = ['cookie', 'console', 'teddy', 'crown', 'gift', 'icecream', 'cupcake', 'heart', 'star', 'bunnyband', 'snowglobe', 'honeypot', 'medal', 'firehelmet', 'strawhat', 'yarn', 'slipper', 'bubbletea', 'onigiri', 'ramen', 'keyring', 'rubberduck2', 'hairpin', 'acorn', 'coin', 'sunglasses', 'papercrane', 'dalgona', 'rolypoly', 'eggtoy', 'instaphoto', 'knithat'];
 const ITEM_NEW_PRICE = 80;   // (one you've met in a stage: 40)
 // 상점 빨리 열기 (③ 10/21, user on the phone: "상점 들어갈때 좀 느려 ㅋㅋ 갯수가 많아서 그런가"): the first open drew every furniture icon
 // it hadn't drawn yet (up to ~200 3D renders) and built every piece once to count its hiding spots — 2+ s before the panel

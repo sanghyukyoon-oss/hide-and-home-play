@@ -86,6 +86,11 @@ export const SPECIALS = [
   { t: 'sp2_phonebox', price: 780, need: ['keeps', 5], say: K('털림 막기 5번', 'Keep your treasure safe from 5 raids') },
   { t: 'sp2_ferris', price: 850, need: ['cards', 110], say: K('도감 110장이면 열려요', 'Opens at 110 cards in the book') },
   { t: 'sp2_bumper', price: 950, need: ['cards', 120], say: K('도감 120장이면 열려요', 'Opens at 120 cards in the book') },
+  // 스페셜 3차 4개 (⑥ 내 방 10/24, user: "지붕이랑 아이템들 새로 추가해주고"): 가챠 머신 · 고무 풀장 · 붕어빵 포장마차 · 즉석사진 부스
+  { t: 'sp3_gacha', price: 440, need: ['stage', 16], say: K('16판 깨기', 'Clear stage 16') },
+  { t: 'sp3_pool', price: 520, need: ['stars3', 22], say: K('별 셋 22판', '3 stars on 22 stages') },
+  { t: 'sp3_bungeo', price: 640, need: ['stage', 38], say: K('38판 깨기', 'Clear stage 38') },
+  { t: 'sp3_photobooth', price: 760, need: ['raids', 7], say: K('친구네 털기 7번', "Raid friends' homes 7 times") },
 ];
 // where one stands: open, and how far along (have / n)
 export function specialState(save, sp, f = feats(save)) {

@@ -48,6 +48,7 @@ import { addHomeStyle } from './catalog.js';
 import { KIT_ITEMS, KIT_BUILDERS, KIT_INFO } from './gfx/modelkit-props.js';
 import { SPECIAL_BUILDERS, SPECIAL_INFO } from './gfx/special-props.js';   // 상점 스페셜 가구 13개 (10/20)
 import { GIFT_BUILDERS, GIFT_INFO } from './gfx/gift-props.js';   // 특별 선물 후보 (10/20)
+import { MYHOME_BUILDERS, MYHOME_INFO, MYHOME_SHOP, MYHOME_ITEMS } from './gfx/myhome-props.js';   // 내 방 새 가구 8·스페셜 4·물건 6 (⑥ 10/24)
 import { ATTIC_BUILDERS, ATTIC_INFO } from './gfx/bunnyattic-props.js';   // 2판 토순이 다락 놀이방 (10/20)
 import { LOFT_BUILDERS, LOFT_INFO } from './gfx/loft-props.js';
 import { GPT_LOFT_BUILDERS, GPT_LOFT_INFO } from './gfx/gpt-loft-props.js';
@@ -108,6 +109,7 @@ installGpt(MAPS, THEMES, LAYOUTS);
 registerFurniture(KIT_BUILDERS, KIT_INFO); Object.assign(ITEMS, KIT_ITEMS);
 registerFurniture(SPECIAL_BUILDERS, SPECIAL_INFO);   // 상점 '스페셜' 칸 (specials.js SPECIALS): not in the furniture tab
 registerFurniture(GIFT_BUILDERS, GIFT_INFO);
+registerFurniture(MYHOME_BUILDERS, MYHOME_INFO); registerStoryShop(MYHOME_SHOP); Object.assign(ITEMS, MYHOME_ITEMS);
 Object.assign(ITEMS, APT_ITEMS);
 const WARM = { ambColor: '#ffeedd', amb: 1.5, sunColor: '#fff4e0', sun: 2.3 };
 for (const k in APT_THEMES) THEMES[k] = { ...THEMES.my, ...APT_THEMES[k], friend: 'bunny', light: WARM, pool: ['remote', 'slipper', 'mandarin', 'gamepad', 'tissue', 'cookie', 'milk', 'sock'] };

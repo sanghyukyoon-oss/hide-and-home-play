@@ -256,6 +256,11 @@ const PAT = [
   // bossgame.js · stage.js
   [/^보스 클리어! 코인 \+(\d+)$/, a => `Boss cleared! Coins +${a}`],
   // QA 10/18: English gaps found in the campaign (before the broad patterns at the end)
+  // ⑤ QA 10/24: 조립판 상자 위 개수(modelkit.js kb3-count) — '부품 7개', '짐 30개', '토핑 7개', 13판 '이삿짐 30'
+  [/^부품 (\d+)개$/, a => `${a} part${a === '1' ? '' : 's'}`],
+  [/^짐 (\d+)개$/, a => `${a} box${a === '1' ? '' : 'es'}`],
+  [/^토핑 (\d+)개$/, a => `${a} topping${a === '1' ? '' : 's'}`],
+  [/^이삿짐 (\d+)$/, a => `Boxes ${a}`],
   [/^쉬어가기 성공! 코인 \+(\d+)$/, a => `Break cleared! Coins +${a}`],
   [/^★ 헛짚기 (\d+)번$/, a => `★ Wrong picks: ${a}`],
   [/^헛손질 (\d+)$/, a => `Missed taps: ${a}`],

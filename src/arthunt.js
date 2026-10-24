@@ -12,7 +12,7 @@ import { EN } from './i18n-en-dict.js';
 import { tr } from './i18n.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
-const TXT = { look: K('그림 속에서 찾아 봐!', 'Find them in the painting!'), fish: K('생선', 'Fish'), zoom: K('두 손가락으로 확대 · 두 번 터치하면 2배', 'Pinch to zoom · touch twice for 2×') };
+const TXT = { look: K('그림 속에서 찾아 봐!', 'Find them in the painting!'), fish: K('생선', 'Fish'), zoom: K('두 손가락으로 확대 · 두 번 터치하면 2배', 'Pinch to zoom · touch twice for 2×'), found: K('찾음', 'Got') };
 
 const W = 640, H = 400;
 // the things, in the 640×400 picture's units: where (x, y — its middle), how wide (size), turned (rot, radians), how see-through
@@ -42,20 +42,42 @@ function style() {
 .ah-zoom{position:relative;transform-origin:0 0;line-height:0}
 .ah-pic canvas{width:100%;height:auto;display:block;transition:filter .6s}
 .ah-tip{align-self:center;font-size:13px;color:#fffaf2;opacity:.9}
-.ah-ring{position:absolute;width:15%;aspect-ratio:1;border:4px solid #ff4f7b;border-radius:50%;translate:-50% -50%;box-shadow:0 0 0 3px #fff;animation:ahring .35s cubic-bezier(.2,1.6,.4,1)}
+.ah-ring{position:absolute;width:15%;aspect-ratio:1;border-radius:50%;translate:-50% -50%;border:3px dashed #ffe08a;box-shadow:0 0 0 2px rgba(43,32,48,.55),0 0 14px 4px rgba(255,214,106,.75),inset 0 0 12px rgba(255,214,106,.6);animation:ahring .45s cubic-bezier(.2,1.6,.4,1),ahspin 9s linear infinite}
+@keyframes ahspin{to{rotate:360deg}}
 @keyframes ahring{0%{scale:2;opacity:0}100%{scale:1;opacity:1}}
 .ah-miss{position:absolute;translate:-50% -50%;color:#fff;font:700 26px/1 sans-serif;text-shadow:0 0 3px #2b2030,0 0 3px #2b2030;pointer-events:none;animation:ahmiss .5s forwards}
 @keyframes ahmiss{to{opacity:0;scale:1.4}}
-.ah-cards{display:flex;gap:10px;justify-content:center}
-.ah-card{position:relative;width:76px;background:#fffaf2;border:3px solid #2b2030;border-radius:14px;padding:4px 4px 2px;text-align:center;font-size:13px;color:#2b2030}
-.ah-card img{width:64px;height:64px;display:block;margin:0 auto;object-fit:contain}
-.ah-card.got{background:#d9f7c9}
-.ah-card.got::after{content:'✔';position:absolute;right:-8px;top:-10px;width:26px;height:26px;border-radius:13px;background:#39b54a;color:#fff;border:3px solid #2b2030;font:700 15px/22px sans-serif}
+.ah-cards{display:flex;gap:12px;justify-content:center}
+.ah-card{position:relative;width:84px;padding:6px 6px 0;border-radius:10px;background:linear-gradient(135deg,#f6d27a,#c9973c 48%,#f0c76a 70%,#b8862f);border:3px solid #2b2030;box-shadow:0 4px 0 #8a6526;text-align:center}
+.ah-card .ah-cpic{position:relative;height:68px;border-radius:5px;border:2px solid #7a5a22;background:radial-gradient(circle at 50% 40%,#2f4f9e,#18296b);overflow:hidden}
+.ah-card .ah-cpic::after{content:'';position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(255,255,255,0) 45%);pointer-events:none}
+.ah-card .ah-name{margin:5px -6px 0;padding:3px 0 4px;background:#3b2440;color:#ffe9b0;font-size:13px;font-weight:900;border-radius:0 0 7px 7px;letter-spacing:.3px}
+.ah-card img{width:100%;height:100%;display:block;object-fit:contain;transform:scale(1.18);filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.ah-card.got .ah-cpic{background:radial-gradient(circle at 50% 40%,#5a86d0,#2a4ea5)}
+.ah-stamp{position:absolute;right:-12px;top:-12px;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff7a6b,#c8352d 70%);border:3px solid #7a1f1a;box-shadow:0 2px 0 #5a1612;color:#fff2d6;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;rotate:-14deg;animation:ahstamp .38s cubic-bezier(.2,1.8,.4,1)}
+@keyframes ahstamp{0%{scale:2.4;opacity:0}60%{scale:.9;opacity:1}100%{scale:1}}
+.ah-spark{position:absolute;width:8px;height:8px;left:50%;top:40%;pointer-events:none;background:#fff3b0;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation:ahspark .7s ease-out forwards}
+@keyframes ahspark{to{translate:var(--dx) var(--dy);opacity:0;scale:.4}}
+
 .ah-x{position:absolute;right:-14px;top:-16px;width:38px;height:38px;border-radius:19px;border:3px solid #2b2030;background:#fffaf2;color:#2b2030;font:700 20px/30px sans-serif;padding:0}
-.ah-done{position:absolute;left:50%;top:50%;translate:-50% -50%;background:#ffd23f;border:4px solid #2b2030;border-radius:18px;padding:8px 22px;font-size:26px;color:#2b2030;white-space:nowrap;animation:ahring .4s cubic-bezier(.2,1.6,.4,1)}`;
+.ah-done{position:absolute;left:50%;bottom:9%;translate:-50% 0;z-index:3;pointer-events:none;animation:ahbanner .55s cubic-bezier(.2,1.5,.4,1)}
+.ah-done .rb{position:relative;padding:8px 34px 9px;background:linear-gradient(180deg,#e5484d,#b8262e);border:3px solid #5a1612;border-radius:4px;box-shadow:0 5px 0 #5a1612;color:#fff6dc;font-size:27px;font-weight:900;letter-spacing:1px;white-space:nowrap;text-shadow:0 2px 0 #7a1f1a}
+.ah-done .rb::before,.ah-done .rb::after{content:'';position:absolute;top:10px;width:30px;height:100%;background:#a3232a;border:3px solid #5a1612;z-index:-1}
+.ah-done .rb::before{left:-22px;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,28% 50%)}
+.ah-done .rb::after{right:-22px;clip-path:polygon(0 0,100% 0,72% 50%,100% 100%,0 100%)}
+@keyframes ahbanner{0%{scale:.3 1;opacity:0}100%{scale:1;opacity:1}}
+.ah-dust{position:absolute;width:10px;height:10px;pointer-events:none;background:#ffe08a;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation:ahdust 1.1s ease-out forwards}
+@keyframes ahdust{0%{scale:.2;opacity:1}100%{translate:var(--dx) var(--dy);scale:1.1;opacity:0}}`;
   document.head.append(s);
 }
 
+// a found card: the wax seal (and, fresh, a little burst of sparkles out of the frame)
+function stampOn(cd, fresh) {
+  cd.classList.add('got');
+  if (!cd.querySelector('.ah-stamp')) { const st = document.createElement('div'); st.className = 'ah-stamp'; st.textContent = tr(TXT.found); cd.append(st); }
+  if (!fresh) return;
+  for (let i = 0; i < 9; i++) { const a = Math.PI * 2 * i / 9, p = document.createElement('i'); p.className = 'ah-spark'; p.style.setProperty('--dx', (Math.cos(a) * 44).toFixed(0) + 'px'); p.style.setProperty('--dy', (Math.sin(a) * 44).toFixed(0) + 'px'); cd.append(p); setTimeout(() => p.remove(), 800); }
+}
 // open it; resolves true once all three are found (now or before), false when closed first. got: a Set kept by the stage
 export async function openArtHunt(G, { key = 'stars', got = new Set(), gray = false } = {}) {
   style();
@@ -85,9 +107,13 @@ export async function openArtHunt(G, { key = 'stars', got = new Set(), gray = fa
   const cardOf = new Map();
   for (const t of THINGS) {
     const cd = document.createElement('div'); cd.className = 'ah-card' + (got.has(t.id) ? ' got' : '');
+    // (user 10/24: "아래 카드 세개도 이상하고") a little gilt frame like the painting's: the thing's own picture filling a night-blue
+    // pane, a dark name plate under it; found, a red wax seal and a spray of sparkles
     const ic = document.createElement('img'); ic.src = ART + t.src; ic.alt = '';
-    const nm = document.createElement('div'); nm.textContent = tr(t.name);
-    cd.append(ic, nm); cards.append(cd); cardOf.set(t.id, cd);
+    const pic = document.createElement('div'); pic.className = 'ah-cpic'; pic.append(ic);
+    const nm = document.createElement('div'); nm.className = 'ah-name'; nm.textContent = tr(t.name);
+    cd.append(pic, nm); cards.append(cd); cardOf.set(t.id, cd);
+    if (got.has(t.id)) stampOn(cd, false);
   }
   const tip = document.createElement('div'); tip.className = 'ah-tip'; tip.textContent = tr(TXT.zoom);
   box.append(title, frame, cards, tip);
@@ -146,12 +172,19 @@ export async function openArtHunt(G, { key = 'stars', got = new Set(), gray = fa
         return;
       }
       lastTap = null;
-      got.add(t.id); ringAt(t); cardOf.get(t.id).classList.add('got'); c.style.filter = grayNow();
+      got.add(t.id); ringAt(t); stampOn(cardOf.get(t.id), true); c.style.filter = grayNow();
       G.audio.sfx('pop', 3 + got.size * 2);
       if (got.size >= THINGS.length) {
         G.audio.sfx('win');
-        const d = document.createElement('div'); d.className = 'ah-done ol'; d.textContent = tr('다 찾았다!'); frame.append(d);
-        setTimeout(() => end(true), 1100);
+        // (user 10/24: "다찾았다 글자도 어색") a red ribbon unrolls over the bottom of the painting, star dust bursting out round it
+        const d = document.createElement('div'); d.className = 'ah-done'; d.append(Object.assign(document.createElement('div'), { className: 'rb', textContent: tr('다 찾았다!') })); frame.append(d);
+        const fr = frame.getBoundingClientRect(), cx = fr.width / 2, cy = fr.height * .82;
+        for (let i = 0; i < 26; i++) {
+          const a = Math.PI * 2 * i / 26 + Math.random() * .2, r = 80 + Math.random() * 120, p = document.createElement('i'); p.className = 'ah-dust';
+          p.style.left = (cx - 5) + 'px'; p.style.top = (cy - 5) + 'px'; p.style.setProperty('--dx', (Math.cos(a) * r).toFixed(0) + 'px'); p.style.setProperty('--dy', (Math.sin(a) * r * .6 - 30).toFixed(0) + 'px');
+          p.style.animationDelay = (i % 5) * 40 + 'ms'; frame.append(p); setTimeout(() => p.remove(), 1400);
+        }
+        setTimeout(() => end(true), 1500);
       }
     };
   });
