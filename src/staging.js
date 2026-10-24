@@ -86,6 +86,18 @@ const tunnel = {
   async start(S, c) {
     const G = S.G, W = G.world;
     flowWindows(S);
+    // (28판 traincar5, 사용자 QA ART-13 10/24: the start view cuts both cars' ends — first the whole train, both cars end to end,
+    // for a moment, then in to the view you play from)
+    if (furnOf(S, 'tc5chassis')) {
+      const box = new THREE.Box3();
+      for (const R of S.room.rooms || [S.room]) for (const r of R.furns) if (/^tc5(chassis|side|wall|end|gend|tunnel|tail)/.test(r.type)) box.expandByObject(r.f.group);
+      if (!box.isEmpty()) {
+        const t0 = W.target.clone(), z0 = W.zoom;
+        await W.flyTo(S.tw, { target: box.getCenter(V(0, 0, 0)), zoom: fitZoom(W, box, .94), dur: .45 }); if (S.dead || c.skipped) return;
+        await c.wait(1.1); if (S.dead || c.skipped) return;
+        await W.flyTo(S.tw, { target: t0, zoom: z0, dur: .8 }); if (S.dead || c.skipped) return;
+      }
+    }
     // in to the window at seat height, the carriage rocking a little
     // (the window that faces the camera — one on the far wall, seen from inside the carriage; any train window piece: twindow,
     // twindow2 — traincar3's big flowing ones, ③ 10/22 — and never one with its blind down)
