@@ -285,9 +285,6 @@ B.cs3_shutter = (f, T) => {
   f.add(mc('box', ({ add }) => {
     add(G.box(W + .14, .26, .26, .05), '#d7dde4', 0, TOP + .12, z - .02);   // 감기는 통
     for (const s of [-1, 1]) add(G.box(.07, TOP, .09, .015), '#b9c3cc', s * (W / 2 + .02), TOP / 2, z);   // 가이드 레일
-    add(G.box(.18, .26, .1, .03), '#8fa0ab', CX, 1.05, CZ);   // 크랭크 상자 (모서리 기둥 앞면)
-    add(G.cyl(.04, .04, .06, 10), '#4b4f5e', CX, 1.05, CZ + .06, HP, 0, 0);   // 손잡이 꽂는 구멍
-    add(G.box(.05, .14, .02, .006), C.yel, CX, 1.21, CZ + .051);
     add(G.box(.03, .03, .3, .008), '#8fa0ab', CX - .05, TOP + .05, CZ / 2);
   }));
   // 안쪽 칸: 음료 상자와 쌀 포대 (셔터 아래로 보임)
@@ -299,13 +296,21 @@ B.cs3_shutter = (f, T) => {
   const slats = put(rbox(W, TOP - LOW, .025, '#ffffff', .008, { map: shutterTex() }), 0, -(TOP - LOW) / 2, 0); pv.add(slats);
   const bar = put(rbox(W + .02, .07, .05, '#b9c3cc', .015), 0, -(TOP - LOW) - .02, .01); pv.add(bar);
   pv.add(put(pane(.32, .25, noteTex()), .22, -(TOP - LOW) + .32, .016, 0, 0, -.06));
+  // 크랭크 상자 (모서리 기둥 앞면, 손잡이 꽂는 구멍)가 장치의 손잡이(누르는 곳): 전엔 손잡이가 숨은 크랭크 모형이라 셔터를 눌러도
+  // 흔들리기만 하고, 보이지 않는 점 둘레 44 px 안을 눌러야 열렸음 — 25판 봇이 손잡이를 들고 40초씩 못 누르던 것. 상자를 조금 키움 (② 10/24)
+  const cbox = new THREE.Group(); f.add(cbox);
+  cbox.add(mc('cbox', ({ add }) => {
+    add(G.box(.22, .32, .12, .03), '#8fa0ab', CX, 1.05, CZ);
+    add(G.cyl(.05, .05, .07, 12), '#4b4f5e', CX, 1.05, CZ + .07, HP, 0, 0);
+    add(G.box(.06, .16, .02, .006), C.yel, CX, 1.25, CZ + .061);
+  }));
   const hasHandle = new THREE.Group(); put(hasHandle, CX, 1.05, CZ + .1); f.add(hasHandle);
   hasHandle.visible = false;
   hasHandle.add(mc('crank', ({ add }) => { add(G.box(.04, .26, .04, .01), '#c9cfe0', 0, -.12, .02); add(G.cyl(.035, .035, .1, 10), '#ffcf5c', 0, -.24, .07, HP, 0, 0); }));
-  const p = f.part('shutter', [pv, hasHandle], t => {
+  const p = f.part('shutter', [cbox, pv, hasHandle], t => {
     const k = Math.min(1, t * 1.05); pv.scale.y = 1 - .93 * k; hasHandle.visible = t > .01; hasHandle.rotation.z = -t * PI * 8;
   }, { label: '셔터 크랭크', sfx: 'drawer', dur: 1.6 });
-  p.handle = hasHandle;
+  p.handle = cbox;
   f.spot('inside', null, -.38, .56, z - .45, { part: p, maxH: .32, label: '셔터 안 음료 상자 위', scale: .8 });
   f.spot('on', null, .42, .5, z - .5, { maxH: .3, label: '쌀 포대 위', scale: .75 });
 };

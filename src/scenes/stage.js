@@ -3048,9 +3048,12 @@ export class StageScene {
     this.G.ui.wui.append(b);
     // (over the head in the world — 19판 user 10/24 "멍멍이랑 말풍선 떨어져 있음": a friend inside a piece of furniture, like the dog in
     // its doghouse, has a position of its own inside that piece, and read as a place in the room the bubble sat far off)
-    ch.root.updateWorldMatrix(true, false);
-    const wp = ch.root.getWorldPosition(new THREE.Vector3()), up = ch.root.parent ? ch.root.parent.getWorldScale(new THREE.Vector3()).y : 1;
-    const p = this.G.world.toScreen(wp.setY(wp.y + ch.headTop() * up + .2));
+    // (a spot-only caller passes { root: { position } } — no matrices there, so its position is already the world place)
+    const real = typeof ch.root.updateWorldMatrix === 'function';
+    if (real) ch.root.updateWorldMatrix(true, false);
+    const wp = real ? ch.root.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3().copy(ch.root.position);
+    const up = real && ch.root.parent ? ch.root.parent.getWorldScale(new THREE.Vector3()).y : 1;
+    const p = this.G.world.toScreen(wp.setY(wp.y + (ch.headTop?.() ?? 0) * up + .2));
     b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px';   // (placed once — ui.js keepIn keeps it inside the screen)
     const kill = () => b.remove();
     setTimeout(kill, ms);
