@@ -1095,22 +1095,19 @@ export const STREET_ITEMS = {
   // bottom (well in from the wall, seen through it) in milk tea that fills the cup, a milk foam top with two ice cubes, a sealed film lid
   // on the rim, the shop band and a fat pink straw through the seal
   bubbletea: { name: '버블티', h: .31, build() {
-    const g = grp(), tea = '#e8c49a';
-    g.add(mc('it-bubbletea2', ({ add, tube }) => {
-      for (let i = 0; i < 7; i++) { const a = i / 7 * PI * 2; add(G.sph(.015, 12, 9), i % 2 ? '#5a3424' : '#2e1a16', Math.cos(a) * .034, .017, Math.sin(a) * .034); }
-      for (const [x, z, c] of [[.012, -.01, '#7a4a30'], [-.014, .006, '#2e1a16'], [.004, .02, '#5a3424']]) add(G.sph(.015, 12, 9), c, x, .036, z);
-      add(G.cyl(.066, .066, .018, 22), '#fff4e2', 0, .174, 0);
-      for (const [x, z, r] of [[.03, -.012, .4], [-.022, .024, -.3]]) add(G.box(.026, .024, .026, .006), '#eaf7ff', x, .185, z, .2, r, .1);
+    // (사용자 메모 10/24 28판 "버블티 이거 투명도 없애보자. 이상하다": no see-through parts any more — the drink itself is the cup's
+    // colour (opaque milk tea), the pearls pressed against its lower wall, a milky band above the drink to the lid, the printed band)
+    const g = grp();
+    g.add(mc('it-bubbletea3', ({ add, tube }) => {
+      add(G.cyl(.069, .056, .162, 24), '#c98f55', 0, .083, 0); add(G.cyl(.058, .058, .006, 22), '#b97f47', 0, .003, 0);
+      for (let i = 0; i < 9; i++) { const a = i / 9 * PI * 2; add(G.sph(.016, 12, 9), i % 2 ? '#5a3424' : '#2e1a16', Math.cos(a) * .056, .018 + (i % 3) * .008, Math.sin(a) * .056); }
+      add(G.cyl(.075, .07, .038, 24, true), '#fdf6ee', 0, .182, 0); add(G.cyl(.07, .07, .006, 22), '#f3e3cf', 0, .165, 0);
+      for (const [x, z, r] of [[.03, -.012, .4], [-.022, .024, -.3]]) add(G.box(.026, .024, .026, .006), '#eaf7ff', x, .18, z, .2, r, .1);
       add(G.tor(.075, .006, PI * 2, 4, 28), WHITE, 0, .2, 0, HP);
       add(G.cyl(.075, .075, .004, 28), '#fff6fa', 0, .2, 0);
       add(G.tor(.05, .004, PI * 2, 4, 24), '#ffb3cc', 0, .2025, 0, HP);
       tube([.012, .06, 0], [.034, .31, .012], .015, '#ff7fa8', 12);
     }));
-    g.add(mesh(geo('it-bubbletea-cup', () => { const c = new THREE.CylinderGeometry(.075, .059, .2, 28, 1, true); c.translate(0, .1, 0); return c; }), mat('#ffffff', { opacity: .16, rough: .15 })));
-    // (10/24 사용자 "음료도 아래까지 덮고 약간 오퍼시티 85%로": no step over the pearls — the tea fills the cup to the bottom, the
-    // pearls sit in it, a little seen through)
-    g.add(mesh(geo('it-bubbletea-tea', () => new THREE.CylinderGeometry(.066, .055, .159, 24).translate(0, .0855, 0)), mat('#c98f55', { opacity: .9 })   /* (10/24 사용자 "버블티 진하게, 투명도 10으로": .85 → .9, 음료색 한 톤 진하게) */));
-    g.add(mesh(geo('it-bubbletea-base', () => new THREE.CylinderGeometry(.059, .059, .004, 28).translate(0, .002, 0)), mat('#f2faff', { opacity: .16, rough: .15 })));
     g.add(mg('it-bubbletea-band', atlasMat(), ({ add }) => add(bandGeo(.0744, .0704, .05, RG.tea, 2.4, 18), 0, .13, 0)));
     return g;
   } },

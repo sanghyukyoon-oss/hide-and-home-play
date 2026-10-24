@@ -21,6 +21,7 @@ import { put, grp, mat, mesh, canvasTex, texCache, shade } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
+import { addI18n } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2;
 const K = (ko, en) => { if (EN[ko] == null) EN[ko] = en; return ko; };
@@ -147,6 +148,51 @@ const tread = () => TX.get('tc5-tread', () => canvasTex(128, 128, (c, W, H) => {
   for (let y = 0; y < H; y += 16) for (let x = 0; x < W; x += 16) { c.save(); c.translate(x + 8, y + 8); c.rotate(((x + y) / 16) % 2 ? .6 : -.6); c.fillStyle = '#d5dae1'; c.fillRect(-5, -1.5, 10, 3); c.fillStyle = '#9aa2ad'; c.fillRect(-5, 1.5, 10, 1); c.restore(); }
 }, { repeat: [2, 2] }));
 
+// ── 사용자 메모 10/24 (28판 traincar5 손보기): 신문·컵라면 인쇄, 연결 통로 안내판, 통로 매트, 흐르는 선로(침목만 흐르고 양 끝은 옅어짐)
+addI18n({
+  '봄빛 신문': 'Spring Daily', '호수 섬 축제 개막': 'Lake Island Fest opens', '벚꽃 기차 만석': 'Sakura trains sold out', '오늘의 날씨 맑음': 'Today: sunny',
+  '컵라면': 'Cup noodles', '매운맛': 'Spicy', '1호차': 'Car 1', '2호차': 'Car 2', '운전실 안': 'In the cab', '기관사 모자 옆': "Beside the driver's cap",
+  '흐르는 선로': 'Rolling track', '통로 매트': 'Aisle mat', '연결 통로 구석': 'Gangway corner', '운임함': 'Fare box', '정리권': 'Ticket',
+  '앞창': 'Front window', '계기판': 'Instrument panel', '서랍 이름표': 'Drawer label',
+  '봄빛 로컬 전차': 'Spring Local Train', '청록 로컬 전차': 'Teal local train', '레트로 노면 전차': 'Retro streetcar',
+});
+// the folded newspaper's front page: masthead, headline, a photo, columns (our lettering, Korean and English)
+const newsTex = () => TX.get('tc5-news', () => textTex(512, 384, (c, W, H) => {
+  c.fillStyle = '#f6f2ea'; c.fillRect(0, 0, W, H);
+  c.fillStyle = '#2d2a33'; c.fillRect(10, 8, W - 20, 4); fitText(c, '봄빛 신문', W / 2, 30, W * .6, 26, '#2d2a33', { weight: '700' }); c.fillRect(10, 50, W - 20, 2);
+  fitText(c, '호수 섬 축제 개막', W / 2, 76, W - 30, 24, '#c2453c', { weight: '700' });
+  c.fillStyle = '#a9c7e6'; c.fillRect(14, 96, W * .46, 74); c.fillStyle = '#9fd07a'; c.fillRect(14, 140, W * .46, 30); c.fillStyle = '#f5b3c6'; c.beginPath(); c.arc(70, 132, 16, 0, 7); c.fill();
+  c.fillStyle = '#8b8790'; for (let k = 0; k < 7; k++) c.fillRect(W * .52, 98 + k * 11, W * .44, 5);
+  fitText(c, '벚꽃 기차 만석', W * .27, 184, W * .48, 14, '#2d2a33', { weight: '700' }); fitText(c, '오늘의 날씨 맑음', W * .74, 184, W * .44, 14, '#2d2a33', { weight: '700' });
+}));
+// the cup noodle's band: red, a little bowl and steam, 컵라면 · 매운맛
+const noodleTex = () => TX.get('tc5-noodle', () => textTex(256, 96, (c, W, H) => {
+  c.fillStyle = '#e8574a'; c.fillRect(0, 0, W, H); c.fillStyle = '#ffd23c'; c.fillRect(0, H - 14, W, 8);
+  fitText(c, '컵라면', W * .5, H * .38, W * .7, 22, '#ffffff', { weight: '700' }); fitText(c, '매운맛', W * .5, H * .7, W * .5, 13, '#fff3c8');
+}));
+// small signs in the gangway: ← 1호차 · 2호차 →
+const gangSignTex = (k) => TX.get('tc5-gsign|' + k, () => textTex(256, 80, (c, W, H) => {
+  c.fillStyle = PAL.a.bodyD; c.fillRect(0, 0, W, H); c.fillStyle = '#ffffff';
+  c.beginPath(); if (k) { c.moveTo(W - 20, H / 2); c.lineTo(W - 42, H / 2 - 14); c.lineTo(W - 42, H / 2 + 14); } else { c.moveTo(20, H / 2); c.lineTo(42, H / 2 - 14); c.lineTo(42, H / 2 + 14); } c.fill();
+  fitText(c, k ? '2호차' : '1호차', W / 2 + (k ? -10 : 10), H / 2, W * .6, 22, '#ffffff', { weight: '700' });
+}));
+// the aisle runner: soft teal with cream edges and a little diamond row
+const matTex = () => TX.get('tc5-mat', () => canvasTex(128, 256, (c, W, H) => {
+  c.fillStyle = '#7fb8a8'; c.fillRect(0, 0, W, H); c.fillStyle = '#f2e6cc'; c.fillRect(0, 0, 12, H); c.fillRect(W - 12, 0, 12, H);
+  c.fillStyle = '#6aa695'; c.fillRect(18, 0, 4, H); c.fillRect(W - 22, 0, 4, H);
+  c.fillStyle = '#e9f4ef'; for (let y = 16; y < H; y += 32) { c.beginPath(); c.moveTo(W / 2, y - 7); c.lineTo(W / 2 + 7, y); c.lineTo(W / 2, y + 7); c.lineTo(W / 2 - 7, y); c.fill(); }
+}, { repeat: [1, 1] }));
+// the rolling track: gravel speckles, wooden sleepers (they move), two steel rails along it (they look still while it scrolls)
+const trackTex = () => TX.get('tc5-track', () => { const t = canvasTex(256, 128, (c, W, H) => {
+  c.fillStyle = '#c6c0b7'; c.fillRect(0, 0, W, H);
+  const r = RNG(7); for (let k = 0; k < 420; k++) { c.fillStyle = ['#b3ada4', '#d6d1c9', '#a8a29a'][k % 3]; c.fillRect(r() * W, r() * H, 3, 3); }
+  c.fillStyle = '#8a6446'; c.fillRect(22, 30, W - 44, 40); c.fillStyle = '#9b7354'; c.fillRect(22, 30, W - 44, 8); c.fillStyle = '#6e4f37'; c.fillRect(22, 64, W - 44, 6);
+  for (const x of [W * .5 - 1.1 / 3 * W, W * .5 + 1.1 / 3 * W]) { c.fillStyle = '#7d8590'; c.fillRect(x - 9, 0, 18, H); c.fillStyle = '#c9d0d8'; c.fillRect(x - 5, 0, 10, H); c.fillStyle = '#eef2f5'; c.fillRect(x - 2, 0, 3, H); }
+}); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; });
+const RNG = seed => { let s = seed >>> 0 || 1; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+// its fade: clear at both ends, solid in the middle (the alpha map keeps still while the sleepers scroll)
+const trackFade = () => TX.get('tc5-trackfade', () => canvasTex(4, 256, (c, W, H) => { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#000'); g.addColorStop(.12, '#fff'); g.addColorStop(.88, '#fff'); g.addColorStop(1, '#000'); c.fillStyle = g; c.fillRect(0, 0, W, H); }));
+
 // ═════════════════════════ 창 안 풍경 (three painted strips over a still sky; offsets only) ═════════════════════════
 const tile = (w, h, draw) => { const t = canvasTex(w, h, draw); t.wrapS = THREE.RepeatWrapping; return t; };
 const viewTex = () => ({
@@ -220,7 +266,7 @@ const B = {};
 B.tc5shell = (f, T, o = {}) => {
   const C = P(o), W = o.w || 4, L = o.len || 6;
   f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
-  f.add(mc('tc5-shell2|' + [o.v, W, L, o.nose ? 1 : 0, o.tail ? 1 : 0, o.half ? 1 : 0].join(','), ({ add, tube }) => {
+  f.add(mc('tc5-shell3|' + [o.v, W, L, o.nose ? 1 : 0, o.tail ? 1 : 0, o.half ? 1 : 0, o.noTrack ? 1 : 0].join(','), ({ add, tube }) => {
     add(G.box(W + .3, .56, L, .05), C.body, 0, -.33, 0);
     add(G.box(W + .34, .09, L + .02, .02), C.line, 0, -.06, 0);
     add(G.box(W + .36, .05, L + .03, .012), C.trim, 0, -.2, 0);
@@ -240,11 +286,14 @@ B.tc5shell = (f, T, o = {}) => {
     }
     add(G.box(1.3, .32, 1.0, .05), '#4f5b63', .4, -.84, 0); for (let k = 0; k < 5; k++) add(G.box(.02, .22, .8, .005), '#3d474e', 1.06, -.84, -.4 + k * .2);
     add(G.cyl(.22, .22, 1.0, 12), '#5e6a72', -.8, -.86, 0, HP, 0, 0);
-    // the track: two rails, sleepers, a gravel bed — just under this car, a little longer than it
-    const TL = L + .7;
-    add(G.box(2.6, .18, TL, .07), S.gravel, 0, -1.56, 0); add(G.box(2.3, .06, TL - .1, .03), shade(S.gravel, .06), 0, -1.47, 0);
-    for (let z = -TL / 2 + .25; z < TL / 2; z += .55) add(G.box(2.2, .08, .22, .02), S.sleeper, 0, -1.43, z);
-    for (const sx of [-1, 1]) { add(G.box(.09, .1, TL, .01), S.rail, sx * 1.1, -1.35, 0); add(G.box(.14, .03, TL, .005), '#7d8590', sx * 1.1, -1.4, 0); }
+    // the track: two rails, sleepers, a gravel bed — just under this car, a little longer than it (o.noTrack: a rolling track runs
+    // under the whole train instead — tc5track)
+    if (!o.noTrack) {
+      const TL = L + .7;
+      add(G.box(2.6, .18, TL, .07), S.gravel, 0, -1.56, 0); add(G.box(2.3, .06, TL - .1, .03), shade(S.gravel, .06), 0, -1.47, 0);
+      for (let z = -TL / 2 + .25; z < TL / 2; z += .55) add(G.box(2.2, .08, .22, .02), S.sleeper, 0, -1.43, z);
+      for (const sx of [-1, 1]) { add(G.box(.09, .1, TL, .01), S.rail, sx * 1.1, -1.35, 0); add(G.box(.14, .03, TL, .005), '#7d8590', sx * 1.1, -1.4, 0); }
+    }
     if (o.nose) {
       add(G.box(W - .2, .34, .2, .06), '#3c4a52', 0, -.78, -L / 2 - .18); add(G.box(W - .8, .12, .24, .04), C.trim, 0, -.58, -L / 2 - .2);
       for (const x of [-1.3, 1.3]) { add(G.cyl(.14, .14, .1, 14), '#f4f1e6', x, -.33, -L / 2 - .16, HP, 0, 0); add(G.cyl(.09, .09, .02, 12), '#fff3b8', x, -.33, -L / 2 - .21, HP, 0, 0); }
@@ -351,21 +400,26 @@ B.tc5wall = (f, T, o = {}) => {
 
 // ═════════════════════════ 기차 창 ═════════════════════════
 // (wall piece: placed at the far wall, local +z into the car): a rounded frame with a half-height sash bar, the flowing view, a sill;
-// o.blind a roller blind (label '롤 블라인드' — the stage's tunnel zoom skips a window with its blind down), o.curtain café curtains (a
-// part), o.cup a cup on the sill, o.bell a stop bell on the frame
+// o.hh / o.cy the opening's height and middle; o.sill 'full' (old) · 'short' (a thin ledge just the window's width — over a seat back) ·
+// 'none' (a box seat's table is the ledge); o.blind a roller blind (label '롤 블라인드' — the stage's tunnel zoom skips a window with its
+// blind down), o.curtain café curtains (a part), o.cup a cup on the sill, o.bell a stop bell on the frame
+// (사용자 메모 10/24 "창가쪽 선반이 좀 길어. 의자에 닿는 선반이 어딨어", "선반이 의자 뚫고 나왔다": the old sill ran wider than the window into
+// the box seats' backs and, low under the long seats' windows, through their backs)
 B.twindow5 = (f, T, o = {}) => {
-  const C = P(o), W = o.ww || 1.6, H = 1.42, cy = 1.68;
+  const C = P(o), W = o.ww || 1.6, H = o.hh || 1.42, cy = o.cy ?? 1.68, sill = o.sill || 'full';
   foldWall(f); f.noSolid = true;
-  f.add(mc('twindow5b|' + o.v + W, ({ add }) => {
+  f.add(mc('twindow5c|' + [o.v, W, H, cy, sill].join(','), ({ add }) => {
     add(G.box(W + .22, .11, .12, .04), C.glassF, 0, cy + H / 2 + .05, .04); add(G.box(W + .22, .11, .12, .04), C.glassF, 0, cy - H / 2 - .05, .04);
     for (const s of [-1, 1]) add(G.box(.11, H + .22, .12, .04), C.glassF, s * (W / 2 + .05), cy, .04);
     add(G.box(W, .06, .06, .02), C.glassF, 0, cy + H * .14, .05);
     for (const s of [-1, 1]) add(G.box(.05, .1, .04, .01), S.steel, s * W / 4, cy + H * .14 + .06, .08);
-    add(G.box(W + .34, .05, .24, .02), C.up2, 0, cy - H / 2 - .11, .11); add(G.box(W + .34, .02, .02, .005), C.trim, 0, cy - H / 2 - .1, .23);
+    if (sill === 'full') { add(G.box(W + .34, .05, .24, .02), C.up2, 0, cy - H / 2 - .11, .11); add(G.box(W + .34, .02, .02, .005), C.trim, 0, cy - H / 2 - .1, .23); }
+    else if (sill === 'short') { add(G.box(W + .06, .04, .13, .015), C.up2, 0, cy - H / 2 - .12, .07); add(G.box(W + .06, .015, .015, .004), C.trim, 0, cy - H / 2 - .11, .135); }
   }));
   f.tick = flowView(f, W, H, cy, .02);
-  f.add(mc('twindow5-glint', ({ add }) => { add(G.box(.05, .5, .004, .002), '#ffffff', -W * .3, cy + .1, .05, 0, 0, .5); add(G.box(.025, .34, .004, .002), '#ffffff', -W * .22, cy + .16, .05, 0, 0, .5); }));
-  if (o.cup) f.add(mc('twindow5-cup', ({ add, tube }) => { add(G.cyl(.05, .042, .1, 12), '#ffffff', .55, cy - H / 2 - .03, .14); add(G.cyl(.046, .046, .01, 12), '#c98a52', .55, cy - H / 2 + .02, .14); tube([.6, cy - H / 2 - .01, .14], [.62, cy - H / 2 - .05, .14], .012, '#ffffff', 5); }));
+  f.add(mc('twindow5-glint2|' + W, ({ add }) => { add(G.box(.05, H * .36, .004, .002), '#ffffff', -W * .3, cy + .1, .05, 0, 0, .5); add(G.box(.025, H * .24, .004, .002), '#ffffff', -W * .22, cy + .16, .05, 0, 0, .5); }));
+  const sy = cy - H / 2 - (sill === 'short' ? .1 : .07);
+  if (o.cup && sill !== 'none') f.add(mc('twindow5-cup2', ({ add, tube }) => { add(G.cyl(.045, .038, .09, 12), '#ffffff', 0, .045, 0); add(G.cyl(.041, .041, .01, 12), '#c98a52', 0, .085, 0); tube([.045, .07, 0], [.06, .03, 0], .011, '#ffffff', 5); }).translateX(.5).translateY(sy).translateZ(.09));
   if (o.bell) {
     f.add(mc('twindow5-bell', ({ add }) => { add(G.box(.12, .16, .05, .03), S.white, W / 2 + .05, cy - .25, .12); add(G.cyl(.035, .035, .03, 12), S.yellow, W / 2 + .05, cy - .25, .15, HP, 0, 0); }));
     const lb = flat(.16, .06, labelTex('bell', '내리실 때 누르세요', '#fff3c8', '#3a2f3f')); put(lb, W / 2 + .05, cy - .1, .126); f.add(lb);
@@ -379,15 +433,15 @@ B.twindow5 = (f, T, o = {}) => {
     }));
     bl.scale.y = H * .6;
     const p = f.part('lift', bl, t => { bl.scale.y = Math.max(.05, H * .6 * (1 - .92 * t)); }, { label: '롤 블라인드', sfx: 'swish', dur: .4 });
-    f.spot('inside', null, -.4, cy - H / 2 - .07, .16, { part: p, maxH: .25, label: '블라인드 뒤 창턱', scale: .75 });
-  } else if (!o.noSill) f.spot('on', null, o.cup ? -.3 : .25, cy - H / 2 - .07, .16, { maxH: .25, label: '창턱', scale: .78 });
+    if (sill !== 'none') f.spot('inside', null, -.4, sy + .01, sill === 'short' ? .08 : .16, { part: p, maxH: .25, label: '블라인드 뒤 창턱', scale: .75 });
+  } else if (!o.noSill && sill !== 'none') f.spot('on', null, o.cup ? -.3 : .25, sy + .01, sill === 'short' ? .08 : .16, { maxH: .25, label: '창턱', scale: .78 });
   if (o.curtain) {
     f.add(mc('twindow5-rod|' + W, ({ add }) => { add(G.cyl(.022, .022, W + .4, 8), C.wood, 0, cy + H / 2 + .16, .2, 0, 0, HP); for (const s of [-1, 1]) add(G.sph(.04, 8, 6), C.wood, s * (W / 2 + .2), cy + H / 2 + .16, .2); }));
     const cs = [-1, 1].map(s => {
       const g = grp(); put(g, s * (W / 2 + .08), cy + H / 2 + .14, .2); f.add(g);
-      g.add(mc('twindow5-curtain2|' + s, ({ add }) => {
-        for (let k = 0; k < 4; k++) add(G.box(.11, 1.1, .05, .03), k % 2 ? S.coral : shade(S.coral, .08), -s * k * .085, -.55, (k % 2) * .02);
-        add(G.box(.42, .05, .07, .02), PAL.a.line, -s * .13, -.7, .03);
+      g.add(mc('twindow5-curtain3|' + s + H, ({ add }) => {
+        for (let k = 0; k < 4; k++) add(G.box(.11, H * .78, .05, .03), k % 2 ? S.coral : shade(S.coral, .08), -s * k * .085, -H * .39, (k % 2) * .02);
+        add(G.box(.42, .05, .07, .02), PAL.a.line, -s * .13, -H * .5, .03);
         for (let k = 0; k < 4; k++) add(G.sph(.018, 6, 4), '#ffffff', -s * k * .085, -.22 - (k % 2) * .44, .05);
       }));
       return g;
@@ -397,32 +451,35 @@ B.twindow5 = (f, T, o = {}) => {
 };
 
 // ═════════════════════════ 창 쪽 출입문 + 정리권 발권기 ═════════════════════════
-// (wall piece at the far wall, 1.2 wide, local +z into the car): two sliding leaves with their own little windows (the view flows in
+// (wall piece at the far wall, o.dw wide (1.2), local +z into the car): two sliding leaves with their own little windows (the view flows in
 // them too — it goes with the leaves), a yellow step line, a grab bar; beside it (o.ticket: +1 / -1 side) the numbered-ticket
 // machine on its post (a tap and a ticket slides out) and a stop bell
 B.tc5door = (f, T, o = {}) => {
-  const C = P(o), DWd = 1.2, DH = 2.15, side = o.ticket || 1;
+  const C = P(o), DWd = o.dw || 1.2, DH = 2.15, side = o.ticket || 1;
   foldWall(f); f.noSolid = true;
-  f.add(mc('tc5-doorframe|' + o.v, ({ add, tube }) => {
+  f.add(mc('tc5-doorframe2|' + o.v + DWd, ({ add, tube }) => {
     add(G.box(DWd + .24, .14, .14, .04), C.glassF, 0, DH + .07, .05);
     for (const s of [-1, 1]) add(G.box(.12, DH, .14, .04), C.glassF, s * (DWd / 2 + .06), DH / 2, .05);
     add(G.box(DWd + .2, .025, .4, .01), S.steel, 0, .013, .2); add(G.box(DWd + .2, .012, .07, .005), S.yellow, 0, .028, .38);
+    for (let k = 0; k < 6; k++) add(G.box(DWd + .1, .006, .02, .002), '#9aa3ae', 0, .027, .06 + k * .055);
     for (const s of [-1, 1]) tube([s * (DWd / 2 + .16), .9, .16], [s * (DWd / 2 + .16), 1.7, .16], .022, S.steel, 8);
   }));
+  const LW = DWd / 2;
   const leaves = [-1, 1].map(s => {
     const g = grp(); put(g, s * DWd / 4, 0, .04); f.add(g);
-    g.add(mc('tc5-leaf|' + o.v, ({ add }) => {
-      add(G.box(DWd / 2 - .02, DH - .02, .05, .02), C.door, 0, (DH - .02) / 2, 0);
-      add(G.box(DWd / 2 - .16, .06, .06, .01), C.trim, 0, .95, .01); add(G.box(.04, .3, .04, .01), S.steel, -s * (DWd / 4 - .07), 1.0, .04);
+    g.add(mc('tc5-leaf2|' + o.v + DWd, ({ add }) => {
+      add(G.box(LW - .02, DH - .02, .05, .02), C.door, 0, (DH - .02) / 2, 0);
+      add(G.box(LW - .1, .66, .02, .04), PAL.a.line, 0, 1.62, .026); add(G.box(.03, DH - .1, .06, .01), '#4d4958', s * (-LW / 2 + .01), DH / 2, .01);
+      add(G.box(LW - .16, .06, .06, .01), C.trim, 0, .95, .01); add(G.box(.04, .3, .04, .01), S.steel, -s * (LW / 2 - .07), 1.0, .04);
+      add(G.box(LW - .06, .22, .02, .01), S.steel, 0, .13, .026);
     }));
     return g;
   });
-  const ticks = leaves.map(g => flowView(f, DWd / 2 - .2, .62, 1.62, .03, g));
+  const ticks = leaves.map(g => flowView(f, LW - .2, .58, 1.62, .04, g));
   f.tick = t => { for (const k of ticks) k(t); };
-  f.part('door', leaves, (t, a, b) => { leaves[0].position.x = a.p.x - .45 * t; leaves[1].position.x = b.p.x + .45 * t; }, { label: '출입문', sfx: 'slide', dur: .45 });
-  f.spot('on', null, .3, .03, .26, { maxH: .3, label: '출입문 발판', scale: .85 });
+  f.part('door', leaves, (t, a, b) => { leaves[0].position.x = a.p.x - LW * .75 * t; leaves[1].position.x = b.p.x + LW * .75 * t; }, { label: '출입문', sfx: 'slide', dur: .45 });
+  f.spot('on', null, .25, .03, .26, { maxH: .3, label: '출입문 발판', scale: .85 });
   if (o.ticket) {
-    // (the machine stands by the door on a post: grey box, the coloured ticket mouth, '정리권' plate, a ticket that slides out)
     const tx = side * (DWd / 2 + .42);
     f.add(mc('tc5-ticketm|' + side, ({ add, tube }) => {
       tube([tx, 0, .2], [tx, 1.0, .2], .03, S.steel2, 8); add(G.box(.3, .34, .22, .05), '#e2e5ea', tx, 1.15, .2); add(G.box(.32, .06, .24, .02), C.trim, tx, 1.34, .2);
@@ -436,27 +493,50 @@ B.tc5door = (f, T, o = {}) => {
     f.spot('on', null, tx, 1.375, .2, { maxH: .22, label: '발권기 위', scale: .65 });
   }
 };
+// a real drawer (사용자 메모 "의자밑 서랍 디테일. 다른 서랍도 있는데 열쇠잠긴거 이것도"): the front with rounded edges, a label card in a brass
+// holder, a recessed pull; behind it the box — sides, back, bottom — so an opened drawer is a drawer, not a floating plate
+function drawerBox(C, w, h, d, key) {
+  return mc('tc5-drawerbox|' + key + [w, h, d].join(','), ({ add }) => {
+    add(G.box(w, h, .06, .025), C.up, 0, 0, 0); add(G.box(w - .06, h - .06, .012, .02), shade(C.up, -.04), 0, 0, .03);
+    add(G.box(.2, .07, .012, .01), C.trim, 0, h * .18, .038); add(G.box(.15, .04, .008, .006), '#fffaf1', 0, h * .18, .044); add(G.box(.09, .006, .004, .002), '#8b8790', 0, h * .18, .049);
+    add(G.box(.22, .035, .04, .012), S.steel, 0, -h * .2, .045); add(G.box(.18, .012, .02, .004), S.steel2, 0, -h * .2 - .02, .03);
+    for (const s of [-1, 1]) add(G.box(.025, h - .05, d, .008), C.up2, s * (w / 2 - .02), -.01, -d / 2 - .02);
+    add(G.box(w - .02, .02, d, .006), C.up2, 0, -h / 2 + .03, -d / 2 - .02); add(G.box(w - .02, h - .07, .025, .008), C.up2, 0, -.02, -d - .02);
+  });
+}
 
 // ═════════════════════════ 롱시트 ═════════════════════════
-// (len × .62, back at local -z): one long cushion with the moquette, a soft back, the heater grille under it, steel armrests;
-// o.drawer: a drawer in the base (padlock); o.stuff: 'paper' (newspaper + cup noodles) · 'mikan' (net of tangerines + tea) · 'umbrella'
+// (len × .62, back at local -z): one long cushion with the moquette, a soft back, the heater grille under it, steel armrests with clear
+// panels; o.drawer: a real drawer in the base (padlock); o.stuff: 'paper' (a printed newspaper folded on the seat + cup noodles with
+// chopsticks — 사용자 메모 "신문인가.. 디테일") · 'mikan' (net of tangerines + tea) · 'umbrella'; o.noUnder: no spot under it
 B.tc5long = (f, T, o = {}) => {
   const C = P(o), L = o.len || 3.2, D = .62, SH = .46;
-  f.add(mc('tc5-long2|' + o.v + L, ({ add, tube }) => {
+  f.add(mc('tc5-long3|' + o.v + L, ({ add, tube }) => {
     add(G.box(L - .04, SH - .16, D - .12, .03), C.up2, 0, (SH - .16) / 2, -.04);
     add(G.box(L - .3, .12, .02, .01), '#d9c49c', 0, .15, D / 2 - .09); for (let k = 0; k < 5; k++) add(G.box(L - .36, .01, .012, .003), '#b49b72', 0, .1 + k * .025, D / 2 - .08);
     add(G.box(L, .18, D, .08), C.seat, 0, SH - .06, 0); add(G.box(L, .56, .2, .09), C.seatD, 0, SH + .3, -D / 2 + .1, -.08, 0, 0);
+    for (let k = 1; k < Math.round(L / .66); k++) add(G.box(.02, .5, .04, .01), shade(C.seatD, -.08), -L / 2 + k * L / Math.round(L / .66), SH + .3, -D / 2 + .21, -.08, 0, 0);
     add(G.box(L + .02, .03, .03, .01), C.trim, 0, SH + .03, D / 2 - .01);
     for (const s of [-1, 1]) { tube([s * (L / 2 + .02), .02, D / 2 - .06], [s * (L / 2 + .02), SH + .3, D / 2 - .06], .022, S.steel, 8); tube([s * (L / 2 + .02), SH + .3, D / 2 - .06], [s * (L / 2 + .02), SH + .44, -D / 2 + .2], .022, S.steel, 8); add(G.box(.014, .3, D - .3, .006), '#e3eef2', s * (L / 2 + .02), SH + .17, .02); }
   }));
   const mq = moquette(C.seat, C.moq), n = Math.max(2, Math.round(L / .66));
   for (let k = 0; k < n; k++) { const p = flat(L / n - .06, D - .14, mq); put(p, -L / 2 + (k + .5) * L / n, SH + .034, .02, -HP); f.add(p); }
   const st = o.stuff;
-  if (st) f.add(mc('tc5-stuff|' + st, ({ add, tube }) => {
-    if (st === 'paper') {
-      add(G.box(.46, .025, .34, .006), S.paper, L / 4 - .2, SH + .05, 0, 0, .25, 0); for (let k = 0; k < 4; k++) add(G.box(.32, .006, .016, .002), '#9aa0aa', L / 4 - .2, SH + .064, -.08 + k * .05, 0, .25, 0);
-      add(G.cyl(.085, .068, .14, 14), '#ffffff', L / 4 + .25, SH + .1, .05); add(G.cyl(.087, .087, .035, 14), S.red, L / 4 + .25, SH + .12, .05); add(G.box(.16, .006, .1, .01), '#f2c46a', L / 4 + .27, SH + .2, -.01, -.9, 0, 0);
-    } else if (st === 'mikan') {
+  if (st === 'paper') {
+    // a newspaper folded in half, its front page up (the print on top), the fold's thickness; the cup noodles beside it, the lid
+    // peeled half back, chopsticks across the top
+    const np = grp(); put(np, L / 4 - .22, SH + .045, 0, 0, .3, 0); f.add(np);
+    np.add(mc('tc5-newsfold', ({ add }) => { add(G.box(.5, .028, .36, .008), '#ece7dc', 0, 0, 0); add(G.cyl(.016, .016, .36, 8), '#e2dccf', -.25, 0, 0, HP, 0, 0); add(G.box(.46, .004, .32, .002), '#d8d2c6', .01, -.012, .01); }));
+    const nt = flat(.48, .34, newsTex()); put(nt, 0, .016, 0, -HP); np.add(nt);
+    const cn = grp(); put(cn, L / 4 + .28, SH + .035, .06); f.add(cn);
+    cn.add(mc('tc5-noodlecup', ({ add, tube }) => {
+      add(G.cyl(.09, .07, .15, 18, false), '#ffffff', 0, .075, 0); add(G.cyl(.093, .093, .02, 18), '#f2ede4', 0, .15, 0);
+      add(G.box(.13, .006, .13, .004), '#f6d27a', .03, .2, -.04, -1.0, 0, .1); add(G.cyl(.08, .08, .006, 16), '#f3c15a', -.01, .158, .02);
+      for (const dz of [-.012, .012]) tube([-.12, .17, dz - .03], [.14, .19, dz + .02], .006, '#d9a86c', 5);
+    }));
+    const band = mesh(new THREE.CylinderGeometry(.087, .077, .07, 18, 1, true), mat('#ffffff', { map: noodleTex(), rim: 0 }), { cast: false }); band.position.y = .085; cn.add(band);
+  } else if (st) f.add(mc('tc5-stuff|' + st, ({ add, tube }) => {
+    if (st === 'mikan') {
       for (let k = 0; k < 5; k++) add(G.sph(.065, 10, 8), S.orange, -L / 4 - .1 + (k % 3) * .11, SH + .1 + Math.floor(k / 3) * .09, (k % 2) * .06);
       for (let k = 0; k < 3; k++) add(G.box(.012, .2, .012, .004), S.red, -L / 4 - .1 + k * .1, SH + .14, .1, 0, 0, (k - 1) * .3);
       add(G.cyl(.045, .045, .2, 10), '#bfe6c4', -L / 4 + .3, SH + .13, .08); add(G.cyl(.03, .03, .04, 8), '#3f9e6a', -L / 4 + .3, SH + .25, .08);
@@ -469,29 +549,31 @@ B.tc5long = (f, T, o = {}) => {
   if (!o.noUnder) f.spot('under', null, -L / 3, .01, D / 2 + .06, { maxH: .2, label: '좌석 밑', scale: .85 });
   if (o.drawer) {
     const dv = grp(); put(dv, L / 4, .17, D / 2 - .07); f.add(dv);
-    dv.add(mc('tc5-drawer2|' + o.v, ({ add }) => { add(G.box(.8, .2, .08, .02), C.up, 0, 0, 0); add(G.box(.22, .04, .03, .01), C.trim, 0, .02, .05); }));
+    dv.add(drawerBox(C, .78, .2, .42, 'long' + o.v));
     const p = f.part('drawer', dv, (t, b) => { dv.position.z = b.p.z + .42 * t; }, { label: '좌석 서랍', sfx: 'drawer', dur: .26 });
-    p.lockable = true; p.lockKind = 'pad'; p.lockAt = { x: .2, y: -.02, z: .06, parent: dv };
-    f.spot('inside', dv, 0, -.08, -.18, { part: p, maxH: .16, label: '좌석 서랍 안', scale: .85 });
+    p.lockable = true; p.lockKind = 'pad'; p.lockAt = { x: .22, y: -.02, z: .07, parent: dv };
+    f.spot('inside', dv, 0, -.07, -.2, { part: p, maxH: .16, label: '좌석 서랍 안', scale: .85 });
   }
 };
 
 // ═════════════════════════ 박스석 ═════════════════════════
 // (one bay by the window, 1.9 along the wall × 1.0 in; local x along the wall, the window at local -z): two benches facing each other
-// with tall backs (moquette), a little table under the window; o.drawer: the left bench's base is a drawer (padlock);
+// with tall backs (moquette), a little table under the window; o.drawer: a real drawer under the left bench (padlock);
 // o.stuff 'bento' (a station bento, tea, tangerines) · 'cards' (cards and a bag of snacks)
 B.tc5box = (f, T, o = {}) => {
   const C = P(o), SH = .46, BW = .95, z0 = -.02;
-  f.add(mc('tc5-box2|' + o.v, ({ add }) => {
+  f.add(mc('tc5-box3|' + o.v, ({ add }) => {
     for (const s of [-1, 1]) {
       const x = s * .62;
       add(G.box(.5, SH - .14, BW - .1, .03), C.up2, x, (SH - .14) / 2, z0);
       add(G.box(.52, .18, BW, .08), C.seat, x, SH - .06, z0);
       add(G.box(.18, .78, BW, .08), C.seatD, s * .9, SH + .4, z0);
+      add(G.box(.04, .6, BW - .2, .02), shade(C.seatD, -.07), s * .81, SH + .4, z0);
       add(G.box(.2, .06, BW + .04, .02), C.wood, s * .9, SH + .82, z0);
       add(G.box(.06, .2, .06, .02), S.steel, s * .9, SH + .9, z0 + BW / 2 - .1);
+      add(G.box(.13, .12, .05, .03), '#ffffff', s * .82, SH + .7, z0 + .25);
     }
-    add(G.box(.44, .04, .34, .015), C.wood, 0, .74, -BW / 2 + .2); add(G.box(.04, .2, .2, .01), S.steel2, 0, .62, -BW / 2 + .1);
+    add(G.box(.44, .04, .34, .015), C.wood, 0, .74, -BW / 2 + .2); add(G.box(.46, .015, .36, .006), C.woodD, 0, .725, -BW / 2 + .2); add(G.box(.04, .2, .2, .01), S.steel2, 0, .62, -BW / 2 + .1);
   }));
   const mq = moquette(C.seat, C.moq);
   for (const s of [-1, 1]) { const p = flat(.44, BW - .12, mq); put(p, s * .62, SH + .034, z0, -HP); f.add(p); }
@@ -509,52 +591,73 @@ B.tc5box = (f, T, o = {}) => {
   f.spot('under', null, 0, .01, z0 + .25, { maxH: .3, label: '좌석 밑', scale: .85 });
   if (o.drawer) {
     const dv = grp(); put(dv, -.62, .17, z0 + BW / 2 - .02); f.add(dv);
-    dv.add(mc('tc5-boxdrawer2|' + o.v, ({ add }) => { add(G.box(.46, .2, .06, .02), C.up, 0, 0, 0); add(G.box(.18, .04, .03, .01), C.trim, 0, .02, .04); }));
+    dv.add(drawerBox(C, .44, .2, .5, 'box' + o.v));
     const p = f.part('drawer', dv, (t, b) => { dv.position.z = b.p.z + .4 * t; }, { label: '좌석 서랍', sfx: 'drawer', dur: .26 });
-    p.lockable = true; p.lockKind = 'pad'; p.lockAt = { x: .12, y: -.02, z: .05, parent: dv };
-    f.spot('inside', dv, 0, -.08, -.2, { part: p, maxH: .16, label: '좌석 서랍 안', scale: .8 });
+    p.lockable = true; p.lockKind = 'pad'; p.lockAt = { x: .13, y: -.02, z: .07, parent: dv };
+    f.spot('inside', dv, 0, -.07, -.22, { part: p, maxH: .16, label: '좌석 서랍 안', scale: .8 });
   }
   f.spot('on', null, .6, SH + .04, z0 + .05, { maxH: .36, label: '좌석 위', scale: .95 });
 };
 
 // ═════════════════════════ 짐 선반 ═════════════════════════
-// (wall piece along the far wall, local x along it): brackets and slats at 2.44 m over the windows; the big suitcase (o.case: its x)
-// comes forward off the rack (lockable — 너굴이 hides behind it, "…선반 위는 반칙"), a backpack (o.pack: its x) lifts, a duffel bag;
-// o.straps: the grab rail with hanging rings and two hanging posters (o.hang: their x); o.noCase: no suitcase (a second rack)
+// (wall piece along the far wall, local x along it): short brackets just over the windows (o.ry, 2.44), a front bar and slats; the big
+// suitcase (o.case: its x — corner guards, wheels, a pull handle, a tag, stickers) comes forward off the rack (lockable — 너굴이 hides
+// behind it, "…선반 위는 반칙"), a backpack (o.pack: its x — pockets, a bottle, a charm) lifts, a duffel bag (o.duffel: its x);
+// o.straps: the grab rail with leather straps and rings, and hanging posters (o.hang: their x, printed on both faces);
+// o.noCase: no suitcase (a second rack). (사용자 메모 10/24 "가방, 모자 오브젝트 디테일", "손잡이와 광고 디테일")
 B.tc5rack = (f, T, o = {}) => {
-  const C = P(o), L = o.len || 3.6, RY = 2.44, cx = o.case ?? -L / 4;
+  const C = P(o), L = o.len || 3.6, RY = o.ry ?? 2.44, cx = o.case ?? -L / 4, BR = o.brackets || [-L / 2 + .1, 0, L / 2 - .1];
   f.noSolid = true; f.collideBox = [-L / 2, RY - .05, 0, L / 2, RY + .6, .62]; foldWall(f);
-  f.add(mc('tc5-rack2|' + [o.v, L, o.straps ? 1 : 0, o.duffel ?? 'n'].join(','), ({ add, tube }) => {
-    for (const x of [-L / 2 + .1, 0, L / 2 - .1]) { add(G.box(.05, .05, .58, .012), S.steel, x, RY, .3); tube([x, RY, .04], [x, RY - .26, .04], .022, S.steel, 6); tube([x, RY - .26, .04], [x, RY, .5], .016, S.steel, 6); }
-    add(G.box(L, .035, .035, .01), S.steel, 0, RY, .58);
+  f.add(mc('tc5-rack3|' + [o.v, L, RY, o.straps ? 1 : 0, o.duffel ?? 'n', BR.join(':'), (o.hang || []).join(':')].join(','), ({ add, tube }) => {
+    for (const x of BR) { add(G.box(.05, .05, .58, .012), S.steel, x, RY, .3); tube([x, RY - .1, .02], [x, RY, .4], .018, S.steel, 6); add(G.box(.08, .14, .03, .01), S.steel2, x, RY - .06, .015); }
+    add(G.box(L, .035, .035, .01), S.steel, 0, RY, .58); add(G.box(L, .03, .03, .01), S.steel, 0, RY + .1, .6);
     for (let k = 0; k < 6; k++) add(G.box(L - .05, .018, .04, .004), S.steel2, 0, RY - .01, .1 + k * .09);
-    if (o.duffel != null) { add(G.cyl(.16, .16, .6, 14), C.low, o.duffel, RY + .17, .3, 0, 0, HP); for (const dx of [-.2, .2]) add(G.cyl(.165, .165, .04, 14), C.bodyD, o.duffel + dx, RY + .17, .3, 0, 0, HP);
-      for (const z of [.24, .36]) { tube([o.duffel - .1, RY + .3, z], [o.duffel - .07, RY + .4, z], .014, C.bodyD, 6); tube([o.duffel - .07, RY + .4, z], [o.duffel + .07, RY + .4, z], .014, C.bodyD, 6); tube([o.duffel + .07, RY + .4, z], [o.duffel + .1, RY + .3, z], .014, C.bodyD, 6); } }
+    if (o.duffel != null) {
+      const d = o.duffel;
+      add(G.cyl(.17, .17, .62, 16), C.low, d, RY + .18, .3, 0, 0, HP); for (const dx of [-.22, .22]) add(G.cyl(.175, .175, .05, 16), C.bodyD, d + dx, RY + .18, .3, 0, 0, HP);
+      add(G.box(.5, .02, .02, .005), S.steel2, d, RY + .345, .3); add(G.box(.04, .03, .02, .005), S.yellow, d + .2, RY + .35, .31);
+      for (const z of [.22, .38]) { tube([d - .1, RY + .3, z], [d - .07, RY + .42, z], .015, C.bodyD, 6); tube([d - .07, RY + .42, z], [d + .07, RY + .42, z], .015, C.bodyD, 6); tube([d + .07, RY + .42, z], [d + .1, RY + .3, z], .015, C.bodyD, 6); }
+      tube([d - .3, RY + .2, .45], [d, RY + .02, .55], .012, '#4d4958', 5); tube([d, RY + .02, .55], [d + .3, RY + .2, .45], .012, '#4d4958', 5);
+    }
     if (o.straps) {
-      tube([-L / 2, RY + .1, .95], [L / 2, RY + .1, .95], .03, S.steel, 10); for (const x of [-L / 2 + .2, L / 2 - .2]) tube([x, RY + .1, .95], [x, RY + .1, .5], .02, S.steel2, 6);
-      for (let x = -L / 2 + .3; x < L / 2 - .2; x += .45) { if ((o.hang || []).some(h => Math.abs(h - x) < .3)) continue; add(G.box(.03, .26, .01, .004), '#6b4a3a', x, RY - .06, .95); add(G.tor(.06, .015, PI * 2, 6, 12), S.white, x, RY - .24, .95); }
+      tube([-L / 2, RY + .16, .95], [L / 2, RY + .16, .95], .03, S.steel, 10); for (const x of [-L / 2 + .2, L / 2 - .2]) tube([x, RY + .16, .95], [x, RY + .16, .5], .02, S.steel2, 6);
+      for (let x = -L / 2 + .3; x < L / 2 - .2; x += .45) {
+        if ((o.hang || []).some(h => Math.abs(h - x) < .32)) continue;
+        // a leather strap looped over the rail (its loop, two rivets), a soft white ring with a grip band
+        add(G.tor(.04, .012, PI * 2, 5, 12), '#6b4a3a', x, RY + .16, .95, 0, HP, 0); add(G.box(.036, .26, .014, .006), '#7a5442', x, RY - .02, .95);
+        for (const dy of [.05, -.09]) add(G.sph(.008, 5, 4), '#d9b382', x, RY + dy, .958);
+        add(G.box(.05, .05, .03, .01), '#5c3f31', x, RY - .16, .95); add(G.tor(.068, .02, PI * 2, 8, 18), S.white, x, RY - .25, .95); add(G.tor(.069, .023, PI * .5, 8, 8), '#f2963a', x, RY - .25, .95, 0, 0, -PI * .75);
+      }
     }
   }));
-  // hanging posters from the grab rail (both faces)
+  // hanging posters from the grab rail: a clip bar, two hooks, the print on both faces (each face its own plane, so neither reads backwards)
   for (const [k, hx] of (o.hang || []).entries()) {
-    f.add(put(mc('tc5-hangclip', ({ add }) => { add(G.box(.46, .03, .02, .01), S.steel2, 0, 0, 0); for (const s of [-1, 1]) add(G.box(.01, .1, .01, .003), S.steel2, s * .2, .06, 0); }), hx, RY - .02, .95));
-    const pp = flat(.44, .32, posterTex(k + 2), { side: THREE.DoubleSide }); put(pp, hx, RY - .2, .95); f.add(pp);
+    f.add(put(mc('tc5-hangclip2', ({ add, tube }) => { add(G.box(.5, .035, .03, .01), S.steel2, 0, 0, 0); for (const s of [-1, 1]) tube([s * .2, .02, 0], [s * .18, .17, 0], .008, S.steel2, 4); add(G.box(.5, .035, .03, .01), S.steel2, 0, -.36, 0); }), hx, RY - .02, .95));
+    for (const face of [0, 1]) { const pp = flat(.46, .34, posterTex(k + 2 + face)); put(pp, hx, RY - .2, .95 + (face ? -.006 : .006), 0, face ? PI : 0); f.add(pp); }
   }
   if (o.noCase) { f.spot('on', null, o.duffel != null ? o.duffel + .7 : 0, RY + .02, .3, { maxH: .3, label: '짐 선반 위', scale: .85 }); return; }
   const sc = grp(); put(sc, cx, RY + .02, .32); f.add(sc);
-  sc.add(mc('tc5-suitcase2', ({ add, tube }) => {
+  sc.add(mc('tc5-suitcase3', ({ add, tube }) => {
     add(G.box(.64, .44, .36, .07), S.coral, 0, .22, 0); for (const x of [-.18, .18]) add(G.box(.04, .44, .38, .01), S.coral2, x, .22, 0);
-    tube([-.1, .45, 0], [-.08, .52, 0], .016, S.dark, 6); tube([-.08, .52, 0], [.08, .52, 0], .016, S.dark, 6); tube([.08, .52, 0], [.1, .45, 0], .016, S.dark, 6);
+    for (const sx of [-1, 1]) for (const sy of [0, 1]) add(G.box(.08, .08, .38, .03), '#9e4f45', sx * .29, .04 + sy * .36, 0);
+    for (const sx of [-1, 1]) add(G.cyl(.035, .035, .03, 10), S.dark, sx * .24, -.005, .13, HP, 0, 0);
+    tube([-.1, .45, 0], [-.08, .53, 0], .016, S.dark, 6); tube([-.08, .53, 0], [.08, .53, 0], .018, S.dark, 6); tube([.08, .53, 0], [.1, .45, 0], .016, S.dark, 6);
+    for (const sx of [-1, 1]) add(G.box(.02, .1, .02, .005), S.steel2, sx * .1, .48, -.12);
     add(G.box(.14, .1, .01, .03), S.yellow, -.12, .3, .185); add(G.cyl(.05, .05, .01, 12), '#8fd3f4', .14, .14, .186, HP, 0, 0); add(G.box(.1, .06, .01, .02), '#ffffff', .08, .32, .186);
+    add(G.sph(.04, 8, 6), '#ff9fb8', .2, .3, .185, 0, 0, 0, [1, 1, .2]);
+    tube([-.26, .44, .1], [-.3, .3, .2], .006, '#e0d6c0', 4); add(G.box(.08, .05, .008, .01), '#fff3c8', -.3, .27, .21, 0, 0, .3);
   }));
   const p = f.part('lift', sc, (t, b) => { sc.position.z = b.p.z + .34 * t; sc.position.y = b.p.y + .05 * Math.sin(t * PI); sc.rotation.x = .3 * t; }, { label: '짐 선반 여행 가방', sfx: 'lift_fabric', dur: .45 });
   p.lockable = true; p.lockAt = { x: 0, y: .22, z: .2, parent: sc };
   f.spot('on', null, cx, RY + .02, .24, { part: p, maxH: .45, label: '여행 가방 뒤', scale: .95 });
   if (o.pack != null) {
     const bp = grp(); put(bp, o.pack, RY + .01, .3); f.add(bp);
-    bp.add(mc('tc5-backpack', ({ add, tube }) => {
-      add(G.box(.38, .4, .26, .1), S.blue, 0, .2, 0); add(G.box(.28, .16, .08, .04), S.yellow, 0, .14, .14); add(G.box(.2, .02, .01, .004), PAL.a.line, 0, .18, .18);
-      tube([-.08, .4, -.02], [0, .47, -.02], .014, S.dark, 5); tube([0, .47, -.02], [.08, .4, -.02], .014, S.dark, 5);
+    bp.add(mc('tc5-backpack2', ({ add, tube }) => {
+      add(G.box(.38, .42, .26, .12), S.blue, 0, .21, 0); add(G.box(.3, .18, .09, .05), S.yellow, 0, .14, .14); add(G.box(.22, .012, .01, .004), PAL.a.line, 0, .21, .186);
+      add(G.box(.2, .1, .06, .03), '#4a6fb0', 0, .36, .12); for (const sx of [-1, 1]) { add(G.box(.06, .16, .1, .03), '#4a6fb0', sx * .2, .14, .02); }
+      add(G.cyl(.03, .03, .14, 8), '#bfe6c4', .21, .22, .03); add(G.cyl(.02, .02, .03, 8), '#3f9e6a', .21, .3, .03);
+      tube([-.08, .42, -.02], [0, .5, -.02], .014, S.dark, 5); tube([0, .5, -.02], [.08, .42, -.02], .014, S.dark, 5);
+      tube([.05, .3, .15], [.08, .22, .19], .005, S.steel2, 4); add(G.sph(.03, 8, 6), '#ff9fb8', .08, .2, .2);
     }));
     const q = f.part('lift', bp, (t, b) => { bp.position.z = b.p.z + .3 * t; bp.rotation.z = .25 * t; }, { label: '배낭', sfx: 'lift_fabric', dur: .35 });
     f.spot('on', null, o.pack, RY + .02, .18, { part: q, maxH: .32, label: '배낭 뒤', scale: .85 });
@@ -574,11 +677,17 @@ B.tc5pole = (f, T, o = {}) => {
 
 // ═════════════════════════ 칸 끝벽 ═════════════════════════
 // (across one car's end, local x across the car, o.dir = which way the car's inside is along local z): o.kind
-//   'door'  low wall either side, a tall column by the window wall (the car's sign, a fire box), the gangway doorway with a sliding
-//           door (code lock) — behind it, in the gangway, a place big enough for 너굴이
-//   'arch'  the same without the door · 'rear' a low end
-//   'cab'   the driver's cab: a partition (glazed over the far half), the route map and the destination board over the door, the fare
-//           box by it; behind, the console with gauges, levers, the driver's cap and the timetable, the seat, the big nose window
+//   'door'  a tall column by the window wall (the car's sign, a fire box), low wall on the near side, the gangway doorway; its sliding
+//           door (rubber edges, a big rounded window, a kick plate, '2호차') stands parked open in the pocket wall on the far side
+//           (사용자 메모 10/24 "몽글이 문 뚫린다. 문도 퀄 높혀줘": a closed door across the walk was walked through) — o.closed keeps the old
+//           closing door (lockable, code) for the preview maps
+//   'arch'  the same without the door; o.ticket: the numbered-ticket machine on the column, by the side door
+//   'rear'  a low end
+//   'cab'   the driver's cab, o.depth deep (사용자 메모 "기관실 좁아. 앞쪽 왤케 그리다 말았어"): the partition (glazed over the far half, low
+//           on the near half with the fare box), the route map and destination board over its door (a part); behind it a rubber floor,
+//           the console with three gauges, a screen, button rows, the controller and the brake, a microphone, the timetable and the
+//           driver's cap, a padded seat on its post, an extinguisher; the nose — a lower panel, the big front windows on thick posts,
+//           a header, sun visors and wipers
 //   'deck'  the tail's open view deck: a low rail, a lamp and a little flag
 const DW = .6;
 B.tc5end = (f, T, o = {}) => {
@@ -589,69 +698,131 @@ B.tc5end = (f, T, o = {}) => {
       tube([X0 + .1, .95, 0], [W / 2 - .1, .95, 0], .035, C.trim, 10); tube([X0 + .1, .5, 0], [W / 2 - .1, .5, 0], .025, C.trim, 8);
       for (let x = X0 + .1; x <= W / 2; x += .45) tube([x, 0, 0], [x, .95, 0], .025, C.bodyD, 6);
       add(G.box(W + .2, .08, .5, .02), C.body, 0, -.02, out * .2);
-      // the tail lamp on its post, a little pennant on the rail
       tube([X0 + .3, .95, 0], [X0 + .3, 1.35, 0], .025, S.steel2, 6); add(G.box(.16, .2, .16, .04), S.dark, X0 + .3, 1.45, 0); add(G.cyl(.05, .05, .02, 12), S.red, X0 + .3, 1.45, out * .085, HP, 0, 0);
       tube([W / 2 - .4, .95, 0], [W / 2 - .4, 1.5, 0], .015, C.wood, 6); add(G.box(.01, .16, .26, .004), S.yellow, W / 2 - .4, 1.42, out * .13);
     }));
     if (o.spot !== false) f.spot('on', null, X0 + .7, .02, inC * .25, { maxH: .3, label: '꼬리 난간', scale: .8 });
     return;
   }
-  const cab = kind === 'cab', tall = cab ? 2.0 : kind === 'rear' ? 1.0 : .62;
-  f.walkBoxes = [[X0, 0, -.07, -DW - .05, 2.6, .07], [DW + .05, 0, -.07, W / 2, .6, .07]];
+  const cab = kind === 'cab', parked = kind === 'door' && !o.closed, D = o.depth || .97;
+  const tall = cab ? 1.15 : kind === 'rear' ? 1.0 : parked ? 2.2 : .62;
+  f.walkBoxes = cab ? [[X0, 0, -.07, W / 2, 2.6, .07]] : [[X0, 0, Math.min(-.07, inC * .15), -DW - .05, 2.6, Math.max(.07, inC * .15)], [DW + .05, 0, -.07, W / 2, .6, .07]];
   if (cab) f.walkBoxes.push([DW + .17, 0, Math.min(inC * .09, inC * .39), DW + .53, 1.5, Math.max(inC * .09, inC * .39)]);
-  f.add(mc('tc5-end2|' + [o.v, W, kind].join(','), ({ add, tube }) => {
+  f.add(mc('tc5-end3|' + [o.v, W, kind, D, parked ? 1 : 0].join(','), ({ add, tube }) => {
     add(G.box(-DW - X0, tall, .14, .03), C.up, (X0 - DW) / 2, tall / 2, 0); add(G.box(-DW - X0 + .04, .05, .18, .02), C.trim, (X0 - DW) / 2, tall + .02, 0);
-    const nh = cab ? 1.0 : Math.min(tall, .62);
+    const nh = cab ? 1.15 : Math.min(tall, .62);
     add(G.box(W / 2 - DW, nh, .14, .03), C.up, (W / 2 + DW) / 2, nh / 2, 0); add(G.box(W / 2 - DW + .04, .05, .18, .02), C.trim, (W / 2 + DW) / 2, nh + .02, 0);
     add(G.box(.7, WH - .1, .16, .03), C.up, X0 + .35, (WH - .1) / 2, 0); add(G.box(.74, .06, .2, .02), C.trim, X0 + .37, WH - .08, 0);
-    if (kind !== 'rear') { for (const s of [-1, 1]) add(G.box(.08, 2.05, .2, .02), S.steel, s * (DW + .02), 1.02, 0); add(G.box(DW * 2 + .2, .08, .2, .02), S.steel, 0, 2.07, 0); }
+    if (kind !== 'rear') { for (const s of [-1, 1]) add(G.box(.08, 2.05, .2, .02), S.steel, s * (DW + .02), 1.02, 0); add(G.box(DW * 2 + .2, .08, .2, .02), S.steel, 0, 2.07, 0); add(G.box(DW * 2, .015, .22, .005), S.yellow, 0, .008, 0); }
     else add(G.box(DW * 2, .62, .14, .03), C.up, 0, .31, 0);
-    if (kind === 'door' || kind === 'arch') { add(G.box(.42, .5, .1, .03), S.red, X0 + .35, .55, inC * .1); add(G.box(.3, .36, .01, .02), '#ffffff', X0 + .35, .58, inC * .155); }
+    if (kind === 'door' || kind === 'arch') { add(G.box(.42, .5, .1, .03), S.red, X0 + .35, .55, inC * .1); add(G.box(.3, .36, .01, .02), '#ffffff', X0 + .35, .58, inC * .155); add(G.cyl(.06, .06, .3, 10), S.red, X0 + .35, .5, inC * .2); }
+    if (kind === 'arch' && o.ticket) {
+      // the numbered-ticket machine on the column, facing into the car
+      add(G.box(.3, .34, .2, .05), '#e2e5ea', X0 + .4, 1.2, inC * .17); add(G.box(.32, .06, .22, .02), C.trim, X0 + .4, 1.39, inC * .17);
+      add(G.box(.18, .05, .03, .01), S.dark, X0 + .4, 1.1, inC * .28); add(G.cyl(.04, .04, .03, 12), S.red, X0 + .48, 1.24, inC * .28, HP, 0, 0);
+      add(G.box(.1, .006, .06, .002), S.paper, X0 + .4, 1.085, inC * .3); add(G.box(.12, .16, .05, .03), S.white, X0 + .4, .82, inC * .1); add(G.cyl(.035, .035, .03, 12), S.yellow, X0 + .4, .82, inC * .135, HP, 0, 0);
+    }
     if (cab) {
-      // the partition's glazing over the far half, a beam to carry the boards
-      add(G.box(-DW - X0 - .7, .06, .16, .02), C.glassF, (X0 + .7 - DW) / 2, 2.6, 0); add(G.box(W, .1, .18, .03), C.glassF, 0, 2.7, 0);
-      // the fare box by the door, on the near half
+      const zc = out * D;
+      // the partition: waist high all across (so the cab shows over it), a frame of two posts and a top beam that carries the boards,
+      // the fare box by the gate
+      add(G.box(W, .1, .18, .03), C.glassF, 0, 2.7, 0); for (const x of [X0 + .78, W / 2 - .06]) add(G.box(.1, 1.6, .14, .03), C.glassF, x, 1.9, 0);
       add(G.box(.36, .5, .3, .05), S.dark, DW + .35, 1.25, inC * .24); add(G.box(.3, .06, .24, .02), '#8fd3f4', DW + .35, 1.52, inC * .24); add(G.box(.12, .02, .04, .005), '#ffd37a', DW + .35, 1.4, inC * .4);
-      // the console under the nose window, gauges, the controller and brake handles, the driver's cap and the timetable board
-      add(G.box(W - .3, .8, .5, .06), C.bodyD, 0, .4, out * .75); add(G.box(W - .4, .06, .52, .02), '#45414f', 0, .82, out * .72, -.25, 0, 0);
-      add(G.box(.06, .3, .06, .01), S.dark, .7, 1.0, out * .62); add(G.sph(.06, 10, 8), S.red, .7, 1.16, out * .62);
-      add(G.box(.05, .26, .05, .01), S.dark, -.9, .98, out * .62); add(G.box(.16, .05, .05, .01), S.dark, -.86, 1.1, out * .62);
-      add(G.cyl(.13, .14, .06, 16), '#2d3a4a', -.25, .9, out * .58); add(G.box(.28, .02, .1, .02), '#2d3a4a', -.25, .88, out * .48);
-      add(G.box(.3, .4, .02, .01), '#d9b382', 1.2, 1.15, out * .95); add(G.box(.26, .3, .005, .005), S.paper, 1.2, 1.12, out * .94);
-      add(G.box(.5, .1, .5, .05), C.seatD, .3, .5, out * .35); add(G.box(.5, .5, .1, .05), C.seatD, .3, .75, out * .12); add(G.cyl(.04, .04, .45, 8), S.steel2, .3, .22, out * .35);
-      // the nose wall: a low panel, posts and a beam round the big front window, a wiper
-      add(G.box(W, .95, .12, .03), C.up, 0, .475, out * .97); add(G.box(W + .04, .06, .16, .02), C.trim, 0, .96, out * .97);
-      for (const x of [X0 + .08, 0, W / 2 - .08]) add(G.box(.12, WH - .95, .14, .03), C.glassF, x, (WH + .95) / 2, out * .97);
-      add(G.box(W, .14, .14, .03), C.glassF, 0, WH - .05, out * .97);
-      tube([-.6, 1.05, out * .92], [-1.1, 1.6, out * .92], .015, S.dark, 5);
+      // the cab floor (the tiles under it are cut away: nobody walks in) — a ribbed rubber plate
+      add(G.box(W - .1, .05, D - .1, .02), '#5b5868', 0, -.02, out * D / 2); for (let k = 0; k < 8; k++) add(G.box(W - .2, .01, .03, .004), '#6c6878', 0, .01, out * (.15 + k * (D - .3) / 7));
+      // the nose: lower panel, the window band on thick posts, a header, sun visors, wipers
+      add(G.box(W, 1.0, .14, .03), C.up, 0, .5, zc - out * .07); add(G.box(W + .04, .06, .18, .02), C.trim, 0, 1.0, zc - out * .07);
+      add(G.box(W, .5, .05, .02), C.low, 0, .45, zc - out * .16);
+      for (const x of [X0 + .1, 0, W / 2 - .1]) add(G.box(x === 0 ? .14 : .2, WH - 1.0, .16, .04), C.glassF, x, (WH + 1.0) / 2, zc - out * .07);
+      add(G.box(W, .18, .18, .04), C.glassF, 0, WH - .06, zc - out * .07); add(G.box(W - .3, .07, .2, .02), C.bodyD, 0, WH - .2, zc - out * .1);
+      for (const x of [-1.0, 1.0]) { add(G.box(.7, .05, .32, .02), '#4d6b5f', x, 2.48, zc - out * .25, out * .5, 0, 0); }
+      for (const x of [-.95, .95]) { tube([x, 1.08, zc - out * .17], [x + (x < 0 ? .5 : -.5), 1.6, zc - out * .17], .014, S.dark, 5); add(G.sph(.03, 6, 4), S.dark, x, 1.08, zc - out * .17); }
+      // the console across the front: a sloped desk, its lighter top
+      const cz = zc - out * .45;
+      add(G.box(W - .3, .82, .56, .06), C.bodyD, 0, .41, cz); add(G.box(W - .34, .06, .6, .03), '#5a5f6e', 0, .85, cz + out * .02, out * .28, 0, 0);
+      add(G.box(W - .5, .3, .06, .03), '#4b5160', 0, 1.04, cz - out * .22);
+      // buttons, the screen frame, the controller (left) and the brake (right), a microphone, the timetable board, the driver's cap
+      for (let k = 0; k < 6; k++) add(G.cyl(.028, .028, .025, 10), ['#e5554b', '#6cc46a', '#f6cf5a', '#5f86c4', '#ffffff', '#e5554b'][k], .5 + (k % 3) * .1, .9, cz + out * (k < 3 ? .05 : -.07), out * .28 - HP, 0, 0);
+      add(G.box(.42, .26, .04, .02), S.dark, -.15, 1.06, cz - out * .19);
+      add(G.box(.12, .08, .2, .03), S.dark, -1.15, .92, cz + out * .1); add(G.box(.05, .3, .05, .01), '#2d2a33', -1.15, 1.05, cz + out * .1, out * .3, 0, 0); add(G.sph(.055, 10, 8), S.dark, -1.15, 1.2, cz + out * .05);
+      add(G.box(.12, .08, .2, .03), S.dark, 1.15, .92, cz + out * .1); add(G.box(.05, .26, .05, .01), '#2d2a33', 1.15, 1.03, cz + out * .1, -out * .3, 0, 0); add(G.sph(.05, 10, 8), S.red, 1.15, 1.16, cz + out * .15);
+      tube([.95, .9, cz + out * .1], [.85, 1.15, cz + out * .05], .01, S.dark, 5); add(G.cyl(.025, .03, .06, 8), S.dark, .83, 1.18, cz + out * .05);
+      add(G.box(.26, .34, .02, .01), '#d9b382', 1.55, 1.1, zc - out * .15); add(G.box(.22, .26, .006, .004), S.paper, 1.55, 1.08, zc - out * .165); add(G.box(.08, .03, .02, .005), S.steel, 1.55, 1.26, zc - out * .17);
+      add(G.cyl(.11, .12, .08, 16), '#34466b', .35, .92, cz + out * .12); add(G.cyl(.13, .13, .012, 16), '#26354f', .35, .885, cz + out * .18); add(G.box(.06, .04, .01, .01), C.trim, .35, .93, cz + out * .23);
+      // the driver's seat on its post, an extinguisher in the corner
+      // (a shallow cab — the preview maps' — has no room for the seat: only the console)
+      const sz = zc - out * 1.05;
+      if (D >= 1.4) {
+        add(G.cyl(.05, .07, .42, 10), S.steel2, -.3, .21, sz); add(G.cyl(.22, .22, .03, 14), S.steel2, -.3, .02, sz);
+        add(G.box(.55, .12, .52, .06), '#34466b', -.3, .5, sz); add(G.box(.55, .6, .12, .06), '#34466b', -.3, .84, sz + inC * .25); add(G.box(.32, .18, .1, .05), '#3f5580', -.3, 1.22, sz + inC * .26);
+        for (const s of [-1, 1]) add(G.box(.06, .06, .36, .02), '#26354f', -.3 + s * .3, .66, sz);
+      }
+      add(G.cyl(.08, .08, .34, 12), S.red, 1.65, .2, out * .3); add(G.box(.1, .06, .06, .02), S.dark, 1.65, .4, out * .3);
+    }
+    if (parked) {
+      // the pocket wall's face and its edge strip, where the door slides away
+      add(G.box(.06, 2.2, .18, .02), S.steel, -DW - .1, 1.1, 0);
     }
   }));
   if (cab) {
-    const gl = mesh(new THREE.PlaneGeometry(W - .2, WH - 1.1), new THREE.MeshBasicMaterial({ color: '#bfe5f8' }), { cast: false }); put(gl, 0, (WH + .95) / 2, out * 1.0, 0, inC < 0 ? PI : 0); f.add(gl);
-    // gauges on the console's slope, the route map and the destination board over the door (facing into the car)
-    for (const [k, x] of [[0, -.6], [1, -.2]]) { const d = mesh(new THREE.CircleGeometry(.09, 20), mat('#ffffff', { map: dialTex(k), rim: 0 }), { cast: false }); d.position.set(x, .87, out * .7); d.rotation.set(-HP + .25 * inC, 0, 0); f.add(d); }
+    const zc = out * D;
+    // the big front windows: a still view of hills and sky (the land comes at them, not past)
+    const F = viewTex();
+    for (const s of [-1, 1]) {
+      const cw = W / 2 - .2, sky = mesh(new THREE.PlaneGeometry(cw, WH - 1.25), new THREE.MeshBasicMaterial({ map: F.sky }), { cast: false }); sky.material.toneMapped = false;
+      put(sky, s * (W / 4 + .02), (WH + 1.0) / 2 - .06, zc - out * .02, 0, inC < 0 ? PI : 0); f.add(sky);
+      const far = F.far.clone(); far.repeat.set(cw / 9, 1); far.offset.x = s * .3; far.needsUpdate = true;
+      const fm = new THREE.MeshBasicMaterial({ map: far, transparent: true, depthWrite: false }); fm.toneMapped = false;
+      const fp = mesh(new THREE.PlaneGeometry(cw, WH - 1.25), fm, { cast: false }); put(fp, s * (W / 4 + .02), (WH + 1.0) / 2 - .06, zc - out * .025, 0, inC < 0 ? PI : 0); fp.layers.set(2); fp.userData.noOcclude = true; f.add(fp);
+    }
+    const cz = zc - out * .45;
+    for (const [k, x, r] of [[0, -.75, .09], [1, -.5, .09], [0, .05, .12]]) { const d = mesh(new THREE.CircleGeometry(r, 22), mat('#ffffff', { map: dialTex(k), rim: 0 }), { cast: false }); d.position.set(x, 1.04 + (r > .1 ? .02 : 0), cz - out * .185); d.rotation.y = inC < 0 ? PI : 0; f.add(d); }
+    const scr = mesh(new THREE.PlaneGeometry(.36, .2), new THREE.MeshBasicMaterial({ map: TX.get('tc5-screen', () => canvasTex(128, 72, (c, Wd, H) => { c.fillStyle = '#1d3b5a'; c.fillRect(0, 0, Wd, H); c.strokeStyle = '#5fd3ff'; c.lineWidth = 2; for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(8, 12 + k * 12); c.lineTo(8 + 20 + (k * 37) % 90, 12 + k * 12); c.stroke(); } c.fillStyle = '#ffd37a'; c.fillRect(Wd - 30, 10, 20, 20); })) }), { cast: false });
+    scr.material.toneMapped = false; put(scr, -.15, 1.06, cz - out * .215, 0, inC < 0 ? PI : 0); f.add(scr);
     const rm = flat(1.7, .36, routeTex()); put(rm, .55, 2.36, inC * .08, 0, inC < 0 ? PI : 0); f.add(rm);
     const ld = flat(1.0, .19, ledTex()); put(ld, -.9, 2.84, inC * .1, 0, inC < 0 ? PI : 0); f.add(ld);
     f.spot('on', null, DW + .35, 1.55, inC * .24, { maxH: .22, label: '운임함 위', scale: .65 });
   }
-  if (cab || kind === 'door') {
+  if (cab || (kind === 'door' && o.closed)) {
     const dv = grp(); put(dv, 0, 0, inC * .09); f.add(dv);
-    dv.add(mc('tc5-door2|' + o.v + kind, ({ add }) => {
-      add(G.box(1.18, 2.0, .05, .025), C.door, 0, 1.0, 0); add(G.box(.5, .6, .02, .04), PAL.a.line, 0, 1.42, inC * .03); add(G.box(.42, .52, .02, .03), '#cfe9f5', 0, 1.42, inC * .04);
-      add(G.box(.035, .32, .04, .01), S.steel, .46, 1.0, inC * .03); add(G.box(.26, .08, .01, .02), C.trim, 0, .62, inC * .03);
-    }));
+    dv.add(doorLeaf(C, inC, cab));
     const p = f.part('door', dv, (t, b) => { dv.position.x = b.p.x - 1.06 * t; }, { label: cab ? '운전실 문' : '연결 통로 문', sfx: 'slide', dur: .4 });
     if (!cab) { p.lockable = true; p.lockKind = 'code'; p.lockAt = { x: .34, y: 1.0, z: inC * .05, parent: dv }; }
-    f.spot('inside', null, cab ? .3 : .05, cab ? .56 : .02, out * (cab ? .35 : .5), { part: p, maxH: cab ? .3 : .62, label: cab ? '운전석 위' : '연결 통로 안', scale: cab ? .8 : 1 });
-    if (cab) f.spot('on', null, -.4, .9, out * .74, { maxH: .22, label: '운전대 위', scale: .7 });
-    if (!cab && o.sign) { const sg = flat(.56, .18, labelTex('car' + o.sign, o.sign === 2 ? '2호차' : '1호차', PAL.a.bodyD, '#ffffff', 256, 80)); put(sg, X0 + .35, 2.3, inC * .085, 0, inC < 0 ? PI : 0); f.add(sg); }
+    const zc = out * D;
+    const seatOK = D >= 1.4;
+    f.spot('inside', null, cab ? -.3 : .05, cab ? (seatOK ? .56 : .9) : .02, cab ? (seatOK ? zc - out * 1.05 : zc - out * .45) : out * .5, { part: p, maxH: cab ? .3 : .62, label: cab ? '운전석 위' : '연결 통로 안', scale: cab ? .8 : 1 });
+    if (cab) { f.spot('on', null, .7, .92, zc - out * .45 + out * .05, { maxH: .22, label: '운전대 위', scale: .7 }); f.spot('on', null, .12, .92, zc - out * .45 + out * .12, { maxH: .22, label: '기관사 모자 옆', scale: .65 }); }
+  } else if (parked) {
+    const dv = grp(); put(dv, -1.25, 0, inC * .1); f.add(dv); dv.add(doorLeaf(C, inC, false));
+    f.spot('on', null, .4, .02, out * .42, { maxH: .5, label: '연결 통로 구석', scale: .9 });
   }
+  if (o.sign) { const sg = flat(.56, .18, labelTex('car' + o.sign, o.sign === 2 ? '2호차' : '1호차', PAL.a.bodyD, '#ffffff', 256, 80)); put(sg, X0 + .35, 2.3, inC * .085, 0, inC < 0 ? PI : 0); f.add(sg); }
 };
+// a sliding door leaf: rubber edges, a big window with rounded corners and a cream rim, a recessed pull, a steel kick plate,
+// a '2호차' sticker (cab doors: a smaller window)
+function doorLeaf(C, inC, cab) {
+  // (the cab's is a waist-high gate: a padded top rail, a little 운전실 plate)
+  if (cab) return mc('tc5-cabgate|' + [inC, C.door].join(','), ({ add }) => {
+    add(G.box(1.16, 1.0, .06, .03), C.door, 0, .55, 0); add(G.box(1.2, .07, .09, .03), S.steel, 0, 1.08, 0);
+    for (const s of [-1, 1]) add(G.box(.04, 1.0, .07, .012), '#4d4958', s * .58, .55, 0);
+    add(G.box(.5, .3, .02, .04), PAL.a.line, 0, .72, inC * .032); add(G.box(.44, .24, .02, .03), '#cfe9f5', 0, .72, inC * .04);
+    add(G.box(.035, .2, .02, .01), S.steel, .46, .7, inC * .04); add(G.box(1.1, .16, .02, .01), S.steel, 0, .1, inC * .032);
+  });
+  return mc('tc5-doorleaf|' + [inC, cab ? 1 : 0, C.door].join(','), ({ add }) => {
+    add(G.box(1.18, 2.0, .06, .03), C.door, 0, 1.0, 0);
+    for (const s of [-1, 1]) add(G.box(.04, 2.0, .07, .012), '#4d4958', s * .6, 1.0, 0);
+    const wh = cab ? .5 : .72, wy = cab ? 1.5 : 1.42;
+    add(G.box(.62, wh + .1, .02, .05), PAL.a.line, 0, wy, inC * .032); add(G.box(.54, wh, .02, .05), '#cfe9f5', 0, wy, inC * .04); add(G.box(.06, wh * .8, .004, .003), '#ffffff', -.16, wy + .04, inC * .052, 0, 0, .4);
+    add(G.box(.06, .3, .03, .015), '#3f3b49', .46, 1.0, inC * .03); add(G.box(.035, .24, .02, .01), S.steel, .46, 1.0, inC * .04);
+    add(G.box(1.1, .2, .02, .01), S.steel, 0, .12, inC * .032); add(G.box(.28, .08, .012, .02), C.trim, 0, .66, inC * .034);
+  });
+}
 
 // ═════════════════════════ 연결 통로 ═════════════════════════
-// (between the cars, its middle at the gap's middle; o.len along z, o.dx: how far the second car sits over to +x — the walkway runs
-// on the slant between the two doors): tread plate, rubber bellows — the far side tall, the near side low; the near bellows "출렁":
-// a tap and its halves bulge apart, something hides between them; o.umbrella: a red umbrella left leaning in the corner
+// (the walk between the cars, its middle at the gap's middle; o.len along z, o.dx: how far the second car sits over to +x): steel
+// threshold plates with yellow edges at both ends, a ribbed tread plate with its hinge line, rubber bellows in rounded folds — the far
+// side tall with a top cover and a handrail, the near side low; little signs (← 1호차 · 2호차 →); the near bellows "출렁": a tap and its
+// halves bulge apart, something hides between them; o.umbrella a red umbrella left in the corner (사용자 메모 "복도 디테일 잡아줘!!!!")
 B.tc5gang = (f, T, o = {}) => {
   const L = o.len || 1, dx = o.dx || 0, HW = o.hw || .9, xc = z => dx * z / L, sk = Math.atan2(dx, L);
   f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
@@ -659,22 +830,27 @@ B.tc5gang = (f, T, o = {}) => {
   const sh = new THREE.Shape(); sh.moveTo(xc(-L / 2) - HW, L / 2); sh.lineTo(xc(-L / 2) + HW, L / 2); sh.lineTo(xc(L / 2) + HW, -L / 2); sh.lineTo(xc(L / 2) - HW, -L / 2); sh.lineTo(xc(-L / 2) - HW, L / 2);
   const pg = new THREE.ShapeGeometry(sh); pg.rotateX(-HP);
   const tx = tread().clone(); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(HW, L / 2); tx.needsUpdate = true;
-  const pm = mesh(pg, mat('#ffffff', { map: tx, rim: 0 }), { cast: false }); pm.position.y = .012; f.add(pm);
-  f.add(mc('tc5-gang2|' + [L, dx, HW, o.umbrella ? 1 : 0].join(','), ({ add, tube }) => {
+  const pm = mesh(pg, mat('#ffffff', { map: tx, rim: 0 }), { cast: false }); pm.position.y = .014; f.add(pm);
+  const RB = '#8d8a9c', RB2 = '#a6a3b5', RBd = '#6f6b80';
+  f.add(mc('tc5-gang3|' + [L, dx, HW, o.umbrella ? 1 : 0].join(','), ({ add, tube }) => {
     add(G.box(2 * HW + Math.abs(dx) + .2, .5, L + .1, .05), '#3c3a46', 0, -.32, 0);
-    const n = Math.max(5, Math.round(L / .13));
-    for (let k = 0; k < n; k++) { const z = -L / 2 + (k + .5) * L / n; add(G.box(.13, 2.3, L / n + .01, .03), k % 2 ? S.rubber : S.rubber2, xc(z) - HW - .07 - (k % 2 ? .02 : -.02), 1.15, z, 0, sk, 0); }
-    add(G.box(.26, .1, L / Math.cos(sk) + .05, .03), S.dark, xc(0) - HW - .07, 2.33, 0, 0, sk, 0);
-    tube([xc(-L / 2 + .1) - HW + .04, .95, -L / 2 + .1], [xc(L / 2 - .1) - HW + .04, .95, L / 2 - .1], .025, S.steel, 8);
-    for (const z of [-L / 2 + .02, L / 2 - .02]) add(G.box(2 * HW, .012, .05, .004), S.yellow, xc(z), .018, z);
-    if (o.umbrella) { tube([xc(0) - HW + .22, .02, -L / 2 + .2], [xc(0) - HW + .1, .9, -L / 2 + .14], .03, S.red, 8); add(G.tor(.05, .014, PI, 6, 10), '#8a5a34', xc(0) - HW + .12, .94, -L / 2 + .14, 0, HP, 0); }
+    for (const z of [-L / 2 + .06, L / 2 - .06]) { add(G.box(2 * HW, .03, .14, .01), S.steel, xc(z), .016, z); add(G.box(2 * HW, .012, .04, .004), S.yellow, xc(z), .034, z + (z < 0 ? -.05 : .05)); }
+    add(G.box(2 * HW - .1, .008, .02, .004), '#8f98a6', xc(0), .02, 0);
+    // the far bellows: round folds (a cylinder each, side by side), a dark top cover, a handrail on brackets
+    const n = Math.max(5, Math.round(L / .12));
+    for (let k = 0; k < n; k++) { const z = -L / 2 + (k + .5) * L / n, x = xc(z) - HW - .08; add(G.box(.1, 2.28, L / n * .7, .03), k % 2 ? RB : RB2, x - (k % 2 ? .02 : 0), 1.14, z, 0, sk, 0); add(G.cyl(L / n * .32, L / n * .32, 2.28, 8), k % 2 ? RBd : RB, x + .04, 1.14, z); }
+    add(G.box(.3, .12, L / Math.cos(sk) + .08, .04), S.dark, xc(0) - HW - .08, 2.34, 0, 0, sk, 0); add(G.box(.32, .03, L / Math.cos(sk) + .1, .01), S.steel2, xc(0) - HW - .08, 2.4, 0, 0, sk, 0);
+    tube([xc(-L / 2 + .1) - HW + .05, .95, -L / 2 + .1], [xc(L / 2 - .1) - HW + .05, .95, L / 2 - .1], .026, S.steel, 8);
+    for (const z of [-L / 2 + .12, L / 2 - .12]) tube([xc(z) - HW + .05, .95, z], [xc(z) - HW - .04, .95, z], .02, S.steel2, 6);
+    if (o.umbrella) { tube([xc(0) - HW + .24, .02, -L / 2 + .22], [xc(0) - HW + .12, .9, -L / 2 + .16], .03, '#e8574a', 8); add(G.tor(.05, .014, PI, 6, 10), '#8a5a34', xc(0) - HW + .14, .94, -L / 2 + .16, 0, HP, 0); add(G.cone(.07, .3, 8), '#d9473c', xc(0) - HW + .22, .2, -L / 2 + .21, .14, 0, 0); }
   }));
+  for (const [k, z] of [[0, -L / 2 + .3], [1, L / 2 - .3]]) { const sg = flat(.42, .13, gangSignTex(k)); put(sg, xc(z) - HW + .02, 1.55, z, 0, HP); f.add(sg); }
   const halves = [-1, 1].map(sd => {
     const g = grp(); put(g, xc(sd * L / 4) + HW + .07, 0, sd * L / 4); g.rotation.y = sk; f.add(g);
-    g.add(mc('tc5-bellow2|' + L, ({ add }) => {
-      const m = Math.max(3, Math.round(L / 2 / .12));
-      for (let k = 0; k < m; k++) { const z = -L / 4 + (k + .5) * L / 2 / m; add(G.box(.14, 1.2, L / 2 / m, .03), k % 2 ? S.rubber : S.rubber2, (k % 2 ? .02 : -.02), .6, z); }
-      add(G.box(.24, .08, L / 2, .03), S.dark, 0, 1.24, 0);
+    g.add(mc('tc5-bellow3|' + L, ({ add }) => {
+      const m = Math.max(3, Math.round(L / 2 / .11));
+      for (let k = 0; k < m; k++) { const z = -L / 4 + (k + .5) * L / 2 / m; add(G.box(.12, 1.18, L / 2 / m * .7, .03), k % 2 ? RB : RB2, (k % 2 ? .02 : 0), .59, z); add(G.cyl(L / 2 / m * .32, L / 2 / m * .32, 1.18, 8), k % 2 ? RBd : RB, -.04, .59, z); }
+      add(G.box(.26, .1, L / 2, .04), S.dark, 0, 1.24, 0);
     }));
     return g;
   });
@@ -745,14 +921,56 @@ B.tc5cargo = (f, T, o = {}) => {
 };
 
 // ═════════════════════════ 바닥 짐 ═════════════════════════
+// (사용자 메모 "가방 … 오브젝트 디테일"): a hard-shell suitcase (ribs, four wheels, a pull handle up, a luggage tag, a sticker) and a teal
+// travel bag (handles, a zip, a striped band) beside it
 B.tc5bags = (f, T, o = {}) => {
-  f.add(mc('tc5-bags2', ({ add, tube }) => {
-    add(G.box(.42, .6, .26, .07), S.blue, 0, .3, 0); add(G.box(.3, .2, .08, .04), S.yellow, 0, .26, .16);
-    for (const s of [-1, 1]) add(G.cyl(.035, .035, .03, 8), S.dark, s * .14, .03, -.1, 0, 0, HP);
-    tube([-.08, .6, -.04], [-.08, .82, -.04], .018, S.steel2, 6); tube([.08, .6, -.04], [.08, .82, -.04], .018, S.steel2, 6); tube([-.08, .82, -.04], [.08, .82, -.04], .024, S.dark, 6);
-    add(G.box(.46, .28, .3, .1), '#a2c8bb', .44, .14, .08, 0, .3, 0); add(G.box(.2, .02, .01, .004), PAL.a.line, .44, .2, .24, 0, .3, 0);
+  f.add(mc('tc5-bags3', ({ add, tube }) => {
+    add(G.box(.42, .6, .26, .07), S.blue, 0, .34, 0); for (const x of [-.12, 0, .12]) add(G.box(.035, .54, .27, .01), '#527bbd', x, .34, 0);
+    add(G.box(.43, .03, .27, .01), '#3f5f9c', 0, .5, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { add(G.cyl(.035, .035, .03, 10), S.dark, sx * .16, .035, sz * .09, 0, 0, HP); add(G.box(.04, .04, .04, .01), '#3f5f9c', sx * .16, .07, sz * .09); }
+    for (const sx of [-1, 1]) tube([sx * .08, .64, -.08], [sx * .08, .9, -.08], .012, S.steel2, 6); add(G.box(.22, .045, .05, .02), S.dark, 0, .91, -.08);
+    add(G.box(.3, .18, .02, .02), S.yellow, 0, .3, .14); add(G.sph(.045, 8, 6), '#ff9fb8', -.12, .45, .135, 0, 0, 0, [1, 1, .2]);
+    tube([.15, .6, .1], [.2, .5, .16], .005, '#e0d6c0', 4); add(G.box(.06, .08, .008, .01), '#fff3c8', .21, .46, .17, 0, 0, -.2);
+    add(G.box(.48, .3, .3, .12), '#a2c8bb', .5, .15, .1, 0, .3, 0); add(G.box(.46, .03, .02, .005), S.steel2, .5, .3, .18, 0, .3, 0); add(G.box(.48, .06, .31, .02), '#7fb3a4', .5, .1, .1, 0, .3, 0);
+    for (const sz of [-.06, .06]) { tube([.38, .29, .1 + sz], [.44, .42, .12 + sz], .014, '#5f8f80', 5); tube([.44, .42, .12 + sz], [.58, .42, .06 + sz], .014, '#5f8f80', 5); tube([.58, .42, .06 + sz], [.63, .29, .04 + sz], .014, '#5f8f80', 5); }
   }));
-  if (o.spot !== false) f.spot('on', null, .44, .29, .08, { maxH: .26, label: '짐 위', scale: .8 });
+  if (o.spot !== false) f.spot('on', null, .5, .33, .1, { maxH: .26, label: '짐 위', scale: .8 });
+};
+
+// ═════════════════════════ 흐르는 선로 + 흔들림 ═════════════════════════
+// (under the whole train, o.len long): one plane of track — gravel, the wooden sleepers, two steel rails — whose picture slides back
+// under the wheels as the train goes; its ends fade into the sky (the fade keeps still, only the sleepers move — 사용자 메모 "레일은
+// 앞으로 가는것처럼 계속 뒤로 가면서… 사라지게… 가로 나무만 움직이면"). Offsets only, 30 times a second, nothing rebuilt.
+// It also rocks the car (사용자 메모 "기차니까 약간 흔들리게"): the room leans a little side to side with a slow jolt now and then; the
+// track leans back the same, so the rails stay level under the wheels. (Only when nothing else moves the room — the stage's tunnel
+// staging sways it its own way.)
+B.tc5track = (f, T, o = {}) => {
+  const L = o.len || 18, Wd = 3.0, Y = o.y ?? -1.36, SP = .55;
+  f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
+  const tex = trackTex().clone(); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1, L / SP); tex.needsUpdate = true;
+  const m = new THREE.MeshBasicMaterial({ map: tex, alphaMap: trackFade(), transparent: true, depthWrite: false }); m.toneMapped = false;
+  const tg = grp(); f.add(tg);
+  const pl = mesh(new THREE.PlaneGeometry(Wd, L), m, { cast: false }); put(pl, 0, Y, 0, -HP); pl.layers.set(2); pl.renderOrder = 0; pl.userData.noOcclude = true; tg.add(pl);
+  f.live = [tg];
+  const amp = o.rock ?? .009, spd = o.speed ?? 3.2;
+  let last = -1, mine = null, pause = 0;
+  f.tick = t => {
+    const fr = Math.floor(t * 30); if (fr === last) return; last = fr;
+    const y = (t * spd / SP) % 1; tex.offset.y = y;
+    const room = f.group.parent; if (!room || t < pause) return;
+    if (mine != null && Math.abs(room.rotation.z - mine) > 1e-6) { mine = null; pause = t + 3; return; }
+    const jolt = Math.max(0, Math.sin(t * .9) - .985) * 40;
+    const a = amp * (Math.sin(t * 3.6) * .7 + Math.sin(t * 1.7 + 1.3) * .3) + amp * .6 * Math.sin(t * 22) * jolt;
+    room.rotation.z = a; mine = a; tg.rotation.z = -a;
+  };
+};
+// the aisle runner (flat, walked over): o.len × o.w
+B.tc5mat = (f, T, o = {}) => {
+  const L = o.len || 3, W = o.w || 1.1;
+  f.noSolid = true; f.collideBox = [0, 0, 0, 0, 0, 0];
+  const t = matTex().clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, L / 1.6); t.needsUpdate = true;
+  const p = mesh(new THREE.PlaneGeometry(W, L), mat('#ffffff', { map: t, rim: 0 }), { cast: false }); put(p, 0, .008, 0, -HP); p.receiveShadow = true; f.add(p);
+  f.add(mc('tc5-matedge|' + L + W, ({ add }) => { for (const s of [-1, 1]) add(G.box(W + .02, .012, .03, .004), '#5f8f80', 0, .006, s * L / 2); }));
 };
 
 export const TRAINCAR5_BUILDERS = B;
@@ -771,4 +989,6 @@ export const TRAINCAR5_INFO = {
   tc5cab: { w: 4, d: 1, name: '운전실', hidden: true },
   tc5cargo: { w: 2.4, d: .8, name: '짐칸', hidden: true },
   tc5bags: { w: 1, d: .5, name: '바닥 짐', hidden: true },
+  tc5track: { w: 3, d: 18, name: '흐르는 선로', hidden: true },
+  tc5mat: { w: 1.1, d: 3, name: '통로 매트', hidden: true },
 };

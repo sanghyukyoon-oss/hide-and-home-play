@@ -42,8 +42,9 @@ export function installCinema(LAYOUTS, THEMES) {
       F('cin_screen', SCREEN_AT[0], SCREEN_AT[1], HP, null, SCREEN_AT[2]),
       F('cin_curtain', -4.08, -.35, HP, null, CIN.STAGE.h),
       // 객석: 좌석 줄 둘(넷씩) + 마지막 줄은 커플석과 좌석 둘 (모두 스크린을 봄)
-      F('cin_seatrow', -2.95, -.35, -HP, { n: 4, under: [1, 2] }), F('cin_seatrow', -2.0, -.35, -HP, { n: 4, under: [0, 3] }),
-      F('cin_twinseat', -1.05, -.98, -HP), F('cin_seatrow', -1.05, .25, -HP, { n: 2, under: [1] }),
+      // (opts.row·first: 등받이 번호판 글자 — 디테일 10/24)
+      F('cin_seatrow', -2.95, -.35, -HP, { n: 4, under: [1, 2], row: 'A' }), F('cin_seatrow', -2.0, -.35, -HP, { n: 4, under: [0, 3], row: 'B' }),
+      F('cin_twinseat', -1.05, -.98, -HP, { row: 'C' }), F('cin_seatrow', -1.05, .25, -HP, { n: 2, under: [1], row: 'C', first: 3 }),
       // 로비: 다락 밑 상영관 문, 팝콘 매점(위 선반), 팝콘 통 매표소, 오늘의 상영 판, 포스터 받침, 벤치·휴지통
       F('cin_hall_door', 1.0, -1.33), F('cin_popcorn', 2.12, -.88),
       F('cin_ticketbooth', 3.9, -2.2, .35), F('cin_showtimes', 3.95, -.5, -.6),

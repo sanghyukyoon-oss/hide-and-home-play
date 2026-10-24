@@ -15,7 +15,8 @@
 // cin_screen 이름이 '-screen'으로 끝나는 화면 면(f.screen)·f.film(숨김, art/cinema/film.png) · cin_popcorn 유리 뚜껑 부품·f.popcornPile·f.spill·f.keySpot ·
 // cin_curtain 부품 하나(천 두 폭이 가운데서 갈라져 양옆으로 주름이 모이며 걷힘, 줄도 같은 부품 — f.cord) · cin_seatrow 좌석마다 접히는 부품 + 좌석 밑 자리.
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, shade, fadeDisc, starShape, STYLE } from './kit.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { put, grp, mat, mesh, canvasTex, shade, fadeDisc, starShape, heartShape, roundRect, STYLE } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { clothBend } from './clothbend.js';
 import { FONT, paperSheet, paperFill } from './gpt-paper.js';
@@ -67,6 +68,34 @@ const say = (c, s, x, y, maxW, px, color, o = {}) => {
   c.fillStyle = color; c.fillText(s, x, y);
 };
 const T = s => tr(s);
+// (디테일 1차 10/24 — 사용자 31판 "전체적으로 디테일이 안잡혀있어 … 모든 오브젝트를 다 디테일 잡았으면": 아래 도우미로 팝콘 알·두꺼운 필름 띠·전구 줄)
+// 팝콘 한 알: 크기 다른 혹 셋(흰·크림·가끔 버터)이 뭉친 꽃 모양, 반쯤은 작은 갈색 껍질 — 매끈한 공 하나(흰 구름 덩어리) X
+const KS = once(() => G.sph(1, 6, 3));
+const kernel = (add, x, y, z, s, r, hull = true) => {
+  const a = r() * PI * 2, c2 = r() < .3 ? BUTTER : '#fbe8c0';
+  add(KS(), POP, x, y, z, 0, a, 0, s * .6);
+  add(KS(), '#fffaf0', x + Math.cos(a) * s * .46, y + s * .18, z + Math.sin(a) * s * .46, 0, 0, 0, s * .48);
+  add(KS(), c2, x + Math.cos(a + 2.4) * s * .42, y - s * .08, z + Math.sin(a + 2.4) * s * .42, 0, 0, 0, s * .42);
+  if (hull && r() < .45) add(KS(), '#c98a4a', x + Math.cos(a - 2.2) * s * .5, y - s * .2, z + Math.sin(a - 2.2) * s * .5, 0, 0, 0, s * .17);
+};
+// 반복 소품의 작은 상자는 둥근 모서리 없이 (꼭짓점 아끼기)
+const PB = (w, h, d) => G.pbox(w, h, d);
+// 작은 전구 여럿을 한 덩어리로 (색만 빛남, 그림자 없음)
+const bulbRow = (pts, r, c = BULB) => mesh(mergeGeometries(pts.map(([x, y, z]) => new THREE.SphereGeometry(r, 8, 6).translate(x, y, z)), false), mat(c, { emissive: '#ffe2a0', ei: 1.0 }), { cast: false });
+// 두께 있는 필름 띠: 점 P를 따라 폭 2·HW, 두께 TH — 윗면에 필름 그림(2 m 한 장), 아랫면·옆은 짙은 필름 바탕; side(i)는 i번째 점의 폭 방향
+const filmRibbon = (P, HW, TH, side, tex = filmTex()) => {
+  const V = a => new THREE.Vector3(...a), pts = P.map(V), n = pts.length, sd = pts.map((_, i) => V(side(i)).normalize());
+  const up = pts.map((_, i) => { const t = pts[Math.min(n - 1, i + 1)].clone().sub(pts[Math.max(0, i - 1)]).normalize(), u = new THREE.Vector3().crossVectors(sd[i], t).normalize(); return u.y < 0 ? u.negate() : u; });
+  let L = 0; const len = pts.map((p, i) => (i && (L += p.distanceTo(pts[i - 1])), L));
+  const pos = [], uv = [], idx = [];
+  const at = (i, k, d) => pts[i].clone().addScaledVector(sd[i], k * HW).addScaledVector(up[i], -d * TH);
+  const strip = (k0, d0, k1, d1, va, vb) => { const b = pos.length / 3; for (let i = 0; i < n; i++) { const A = at(i, k0, d0), Bp = at(i, k1, d1); pos.push(A.x, A.y, A.z, Bp.x, Bp.y, Bp.z); uv.push(len[i] / 2, va, len[i] / 2, vb); if (i) { const a = b + (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } } };
+  strip(-1, 0, 1, 0, 0, 1); strip(-1, 1, 1, 1, .03, .03); strip(-1, 0, -1, 1, .03, .03); strip(1, 0, 1, 1, .03, .03);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  return mesh(g, texMat(repTex(tex, 1, 1), { rough: .6, side: THREE.DoubleSide }), { cast: true });
+};
+// 기울어진 판 위의 점 (판 가운데 c, x축으로 rx 기울임) — 액자·글자판 위 장식을 판에 붙일 때
+const onTilt = (c, rx, dx, dy, dz = 0) => [c[0] + dx, c[1] + dy * Math.cos(rx) - dz * Math.sin(rx), c[2] + dy * Math.sin(rx) + dz * Math.cos(rx)];
 
 // ── 색 (큰 면은 순하게, 쨍한 색은 작은 것에만) ──────────────────────────────────────────────────────────────────
 const WALLB = '#efdccd', WAIN = '#a8705a', WAIND = '#86533f', GOLD = '#d9b25e', GOLDD = '#b48c40', CREAM = '#fff4e2', INK = '#3a2c34',
@@ -95,13 +124,24 @@ const wainTex = once(() => canvasTex(256, 128, (c, W, H) => {
     c.strokeStyle = 'rgba(70,40,30,.18)'; c.lineWidth = 1; for (let k = 0; k < 3; k++) { const gx = x + 6 + r() * 20; c.beginPath(); c.moveTo(gx, 0); c.bezierCurveTo(gx + 4, H * .3, gx - 4, H * .6, gx + 2, H); c.stroke(); } }
   c.fillStyle = shade(WAIN, .12); c.fillRect(0, 0, W, 6);
 }));
-// 객석 카펫: 순한 와인색에 마름모 격자, 이음마다 금빛 점 (1 m 한 장)
-const carpetTex = once(() => canvasTex(256, 256, (c, W, H) => {
+// 객석 카펫: 순한 와인색에 두 줄 마름모 격자, 마름모마다 아르데코 부채, 이음마다 금빛 점, 결 (1 m 한 장)
+const carpetTex = once(() => canvasTex(512, 512, (c, W, H) => {
   c.fillStyle = '#92474f'; c.fillRect(0, 0, W, H); const r = rnd(5);
-  for (let i = 0; i < 900; i++) { c.fillStyle = r() < .5 ? 'rgba(255,220,200,.05)' : 'rgba(40,10,20,.07)'; c.fillRect(r() * W, r() * H, 2, 2); }
-  c.strokeStyle = '#a3585d'; c.lineWidth = 3;
-  for (let k = -4; k < 8; k++) { c.beginPath(); c.moveTo(k * 64, 0); c.lineTo(k * 64 + H, H); c.stroke(); c.beginPath(); c.moveTo(k * 64 + H, 0); c.lineTo(k * 64, H); c.stroke(); }
-  c.fillStyle = '#cfa45e'; for (let y = 0; y <= H; y += 32) for (let x = (y / 32 % 2) * 32; x <= W; x += 64) { c.beginPath(); c.arc(x, y, 3.5, 0, PI * 2); c.fill(); }
+  for (let i = 0; i < 3200; i++) { c.fillStyle = r() < .5 ? 'rgba(255,220,200,.05)' : 'rgba(40,10,20,.07)'; c.fillRect(r() * W, r() * H, 2, 2); }
+  for (const [col, lw, off] of [['#a3585d', 6, 0], ['#7f3c44', 2, 9], ['#7f3c44', 2, -9]]) {
+    c.strokeStyle = col; c.lineWidth = lw;
+    for (let k = -8; k < 9; k++) { c.beginPath(); c.moveTo(k * 128 + off, 0); c.lineTo(k * 128 + H + off, H); c.stroke(); c.beginPath(); c.moveTo(k * 128 + H - off, 0); c.lineTo(k * 128 - off, H); c.stroke(); }
+  }
+  // 마름모 가운데 부채 (위로 펼친 반원, 살 다섯)
+  for (let j = 0; j <= 8; j++) for (let i = 0; i <= 8; i++) {
+    if ((i + j) % 2 === 0) continue;
+    const x = i * 64, y = j * 64;
+    c.fillStyle = '#a9545c'; c.beginPath(); c.moveTo(x, y + 10); c.arc(x, y + 10, 22, PI, 0); c.closePath(); c.fill();
+    c.strokeStyle = '#c99a5c'; c.lineWidth = 2; c.beginPath(); c.arc(x, y + 10, 22, PI, 0); c.stroke();
+    for (let k = 1; k < 5; k++) { const a = PI + k * PI / 5; c.beginPath(); c.moveTo(x, y + 10); c.lineTo(x + Math.cos(a) * 20, y + 10 + Math.sin(a) * 20); c.stroke(); }
+    c.fillStyle = '#d9b06a'; c.beginPath(); c.arc(x, y + 10, 4, 0, PI * 2); c.fill();
+  }
+  c.fillStyle = '#cfa45e'; for (let j = 0; j <= 8; j++) for (let i = 0; i <= 8; i++) if ((i + j) % 2 === 0) { c.beginPath(); c.arc(i * 64, j * 64, 5, 0, PI * 2); c.fill(); }
 }));
 // 로비 바닥: 크림·테라코타 바둑판 타일 (0.5 m 타일, 1 m 한 장), 줄눈과 작은 점
 const lobbyTex = once(() => canvasTex(256, 256, (c, W, H) => {
@@ -109,6 +149,8 @@ const lobbyTex = once(() => canvasTex(256, 256, (c, W, H) => {
   for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { c.fillStyle = (i + j) % 2 ? '#d59a83' : '#efe1ca'; c.fillRect(i * 128, j * 128, 128, 128); }
   for (let i = 0; i < 500; i++) { c.fillStyle = r() < .5 ? 'rgba(120,70,50,.12)' : 'rgba(255,255,255,.2)'; c.fillRect(r() * W, r() * H, 2, 2); }
   c.strokeStyle = '#c4ab90'; c.lineWidth = 3; for (let k = 0; k <= 256; k += 128) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k, H); c.stroke(); c.beginPath(); c.moveTo(0, k); c.lineTo(W, k); c.stroke(); }
+  // (디테일 10/24) 타일 귀마다 작은 금빛 마름모 박이
+  for (let y = 0; y <= H; y += 128) for (let x = 0; x <= W; x += 128) { c.fillStyle = '#c9a46a'; c.beginPath(); c.moveTo(x, y - 11); c.lineTo(x + 11, y); c.lineTo(x, y + 11); c.lineTo(x - 11, y); c.closePath(); c.fill(); c.fillStyle = '#efe1ca'; c.beginPath(); c.arc(x, y, 3, 0, PI * 2); c.fill(); }
 }));
 // 빨간 카펫 길: 진홍에 금빛 테두리 두 줄, 가운데 작은 마름모 (폭 한 장, 1 m 길이)
 const runnerTex = once(() => canvasTex(128, 256, (c, W, H) => {
@@ -127,17 +169,27 @@ const paveTex = once(() => canvasTex(256, 256, (c, W, H) => {
 const stageTex = once(() => canvasTex(256, 128, (c, W, H) => {
   const r = rnd(2); for (let y = 0; y < H; y += 21) { c.fillStyle = shade('#d6a066', -.05 + r() * .07); c.fillRect(0, y, W, 20); c.fillStyle = '#8f5f3a'; c.fillRect(0, y + 20, W, 1.5); for (let k = 0; k < 2; k++) c.fillRect(r() * W, y, 1.5, 20); }
 }));
-// 필름 띠: 짙은 바탕, 위아래 톱니 구멍, 호박빛 칸마다 작은 그림자 (2 m 한 장)
-const filmTex = once(() => canvasTex(512, 64, (c, W, H) => {
+// 필름 띠: 짙은 바탕(위아래 가는 테), 둥근 네모 톱니 구멍, 호박빛 칸 여섯 — 칸마다 작은 그림(몽글이·별·집·팝콘·고양이·하트), 칸 사이 눈금 (2 m 한 장)
+const FILM_PIC = [
+  (c, x, y, h) => { c.beginPath(); c.ellipse(x, y + h * .08, h * .3, h * .24, 0, 0, PI * 2); c.fill(); c.fillStyle = '#f2c46e'; c.beginPath(); c.arc(x - h * .1, y + h * .02, h * .045, 0, PI * 2); c.arc(x + h * .1, y + h * .02, h * .045, 0, PI * 2); c.fill(); },
+  (c, x, y, h) => { c.beginPath(); for (let i = 0; i < 10; i++) { const a = -HP + i * PI / 5, rr = i % 2 ? h * .14 : h * .34; i ? c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) : c.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); c.fill(); },
+  (c, x, y, h) => { c.fillRect(x - h * .26, y - h * .02, h * .52, h * .34); c.beginPath(); c.moveTo(x - h * .36, y); c.lineTo(x, y - h * .32); c.lineTo(x + h * .36, y); c.closePath(); c.fill(); c.fillStyle = '#f2c46e'; c.fillRect(x - h * .06, y + h * .12, h * .12, h * .2); },
+  (c, x, y, h) => { c.beginPath(); c.moveTo(x - h * .24, y - h * .02); c.lineTo(x + h * .24, y - h * .02); c.lineTo(x + h * .18, y + h * .36); c.lineTo(x - h * .18, y + h * .36); c.closePath(); c.fill(); for (const [dx, dy, rr] of [[-.14, -.1, .11], [0, -.16, .13], [.14, -.1, .11]]) { c.beginPath(); c.arc(x + dx * h, y + dy * h, rr * h, 0, PI * 2); c.fill(); } },
+  (c, x, y, h) => { c.beginPath(); c.arc(x, y + h * .06, h * .26, 0, PI * 2); c.fill(); c.beginPath(); c.moveTo(x - h * .25, y - h * .02); c.lineTo(x - h * .2, y - h * .34); c.lineTo(x - h * .04, y - h * .16); c.moveTo(x + h * .25, y - h * .02); c.lineTo(x + h * .2, y - h * .34); c.lineTo(x + h * .04, y - h * .16); c.fill(); },
+  (c, x, y, h) => { c.beginPath(); c.moveTo(x, y + h * .32); c.bezierCurveTo(x - h * .08, y + h * .22, x - h * .36, y + h * .06, x - h * .3, y - h * .14); c.bezierCurveTo(x - h * .24, y - h * .32, x - h * .04, y - h * .28, x, y - h * .12); c.bezierCurveTo(x + h * .04, y - h * .28, x + h * .24, y - h * .32, x + h * .3, y - h * .14); c.bezierCurveTo(x + h * .36, y + h * .06, x + h * .08, y + h * .22, x, y + h * .32); c.fill(); },
+];
+const filmTex = once(() => canvasTex(1024, 128, (c, W, H) => {
   c.fillStyle = '#3b2c2b'; c.fillRect(0, 0, W, H);
-  c.fillStyle = '#efe2c8'; for (let x = 6; x < W; x += 24) { c.fillRect(x, 4, 12, 8); c.fillRect(x, H - 12, 12, 8); }
-  const r = rnd(13);
+  c.fillStyle = '#4c3a37'; c.fillRect(0, 6, W, 2); c.fillRect(0, H - 8, W, 2);
+  c.fillStyle = '#efe2c8'; for (let x = 8; x < W; x += 32) for (const y of [11, H - 27]) { roundRect(c, x, y, 16, 16, 4); c.fill(); }
+  const r = rnd(13), fw = W / 6;
   for (let k = 0; k < 6; k++) {
-    const x = 6 + k * 84; c.fillStyle = '#e7b45e'; c.fillRect(x, 16, 76, 32); c.fillStyle = 'rgba(80,50,30,.55)';
-    if (k % 3 === 0) { c.beginPath(); c.arc(x + 38, 36, 10, 0, PI * 2); c.fill(); c.fillRect(x + 10, 42, 56, 6); }
-    else if (k % 3 === 1) { c.fillRect(x + 12, 26, 18, 22); c.fillRect(x + 40, 20, 24, 28); }
-    else { c.beginPath(); c.moveTo(x + 10, 46); c.lineTo(x + 38, 20); c.lineTo(x + 66, 46); c.fill(); }
-    c.fillStyle = 'rgba(255,240,210,.18)'; c.fillRect(x + r() * 70, 16, 1, 32);
+    const x = k * fw + 7, w = fw - 14, y = 33, h = H - 66;
+    const g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#f2c46e'); g.addColorStop(1, '#d99a52'); c.fillStyle = g; roundRect(c, x, y, w, h, 5); c.fill();
+    c.fillStyle = 'rgba(86,52,32,.62)'; FILM_PIC[k](c, x + w / 2, y + h / 2, h);
+    c.strokeStyle = 'rgba(60,35,25,.45)'; c.lineWidth = 2; roundRect(c, x + 1, y + 1, w - 2, h - 2, 5); c.stroke();
+    c.fillStyle = 'rgba(255,240,210,.22)'; c.fillRect(x + 8 + r() * (w - 16), y + 2, 1.5, h - 4); c.fillRect(x + 8, y + 5, w * .35, 3);
+    c.fillStyle = '#8a6a52'; c.fillRect(k * fw - 1, H / 2 - 7, 2, 14);
   }
 }));
 // 비상구: 초록 상자에 흰 달리는 사람과 글자
@@ -166,12 +218,19 @@ const POSTERS = [
     for (const x of [.32, .62]) { c.fillStyle = '#fff4e2'; c.beginPath(); c.arc(w * x, h * .44, 16, PI, 0); c.fill(); c.fillStyle = '#24453a'; c.beginPath(); c.arc(w * x - 5, h * .41, 3, 0, PI * 2); c.arc(w * x + 5, h * .41, 3, 0, PI * 2); c.fill(); } } },
 ];
 const POST = [];
-const posterTex = k => POST[k] || (POST[k] = canvasTex(192, 256, (c, w, h) => {
+// (디테일 10/24: 종이 질감 — 안쪽 테두리, 출연·제작 글줄, 동그란 관람 딱지, 접힌 자국 십자, 바랜 가장자리와 잔 얼룩)
+const posterTex = k => POST[k] || (POST[k] = canvasTex(288, 384, (c, w, h) => {
   const P = POSTERS[k], g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, P.bg[0]); g.addColorStop(1, P.bg[1]); c.fillStyle = g; c.fillRect(0, 0, w, h);
-  P.draw(c, w, h);
-  say(c, T(P.t), w / 2, h * .16, w * .86, 26, P.ink, { weight: 'bold' }); say(c, T(P.sub), w / 2, h * .86, w * .7, 16, P.ink);
-  c.fillStyle = 'rgba(255,245,225,.28)'; c.fillRect(0, 0, w, h);   // 빛바램
-  const r = rnd(k + 3); c.fillStyle = 'rgba(90,60,40,.18)'; for (let i = 0; i < 30; i++) c.fillRect(r() * w, r() * h, 2 + r() * 3, 1 + r() * 2);
+  c.save(); c.scale(1.5, 1.5); P.draw(c, w / 1.5, h / 1.5); c.restore();
+  c.strokeStyle = P.ink; c.globalAlpha = .55; c.lineWidth = 3; c.strokeRect(12, 12, w - 24, h - 24); c.lineWidth = 1; c.strokeRect(18, 18, w - 36, h - 36); c.globalAlpha = 1;
+  say(c, T(P.t), w / 2, h * .15, w * .8, 40, P.ink, { weight: 'bold' }); say(c, T(P.sub), w / 2, h * .82, w * .66, 24, P.ink);
+  c.fillStyle = P.ink; c.globalAlpha = .4; for (let i = 0; i < 3; i++) { const lw = w * (.56 - i * .1); c.fillRect((w - lw) / 2, h * .88 + i * 9, lw, 3); } c.globalAlpha = 1;
+  c.fillStyle = '#e0545c'; c.beginPath(); c.arc(w - 40, 44, 15, 0, PI * 2); c.fill(); c.strokeStyle = '#fff4e2'; c.lineWidth = 2.5; c.stroke(); say(c, '★', w - 40, 45, 22, 16, '#fff4e2');
+  c.fillStyle = 'rgba(255,245,225,.26)'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(255,250,235,.35)'; c.lineWidth = 2; c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.moveTo(0, h / 2); c.lineTo(w, h / 2); c.stroke();
+  c.strokeStyle = 'rgba(90,60,40,.12)'; c.lineWidth = 1; c.beginPath(); c.moveTo(w / 2 + 2, 0); c.lineTo(w / 2 + 2, h); c.moveTo(0, h / 2 + 2); c.lineTo(w, h / 2 + 2); c.stroke();
+  const r = rnd(k + 3); c.fillStyle = 'rgba(90,60,40,.16)'; for (let i = 0; i < 70; i++) c.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 2);
+  c.fillStyle = 'rgba(255,250,235,.5)'; for (let i = 0; i < 26; i++) { const t = r(); c.fillRect(t < .5 ? r() * w : (t < .75 ? 0 : w - 3), t < .25 ? 0 : t < .5 ? h - 3 : r() * h, 3 + r() * 6, 3); }
 }));
 // 매점 메뉴판: 짙은 초록 칠판에 분필 글씨
 const menuTex = once(() => canvasTex(256, 136, (c, W, H) => {
@@ -266,7 +325,7 @@ B.cin_shell = (f, T0) => {
   // 떨어진 팝콘·표 반쪽·손전등 (로비와 객석 바닥)
   f.add(mc('cin-floorbits', ({ add }) => {
     const r = rnd(21);
-    for (const [cx, cz, n] of [[2.3, -.35, 7], [-1.2, 1.25, 5], [-2.55, -1.75, 4], [3.2, .9, 3]]) for (let k = 0; k < n; k++) add(G.sph(.028 + r() * .012, 6, 5), r() < .7 ? POP : BUTTER, cx + (r() - .5) * .5, .025, cz + (r() - .5) * .35);
+    for (const [cx, cz, n] of [[2.3, -.35, 7], [-1.2, 1.25, 5], [-2.55, -1.75, 4], [3.2, .9, 3]]) for (let k = 0; k < n; k++) kernel(add, cx + (r() - .5) * .5, .03, cz + (r() - .5) * .35, .05 + r() * .018, r, k % 2 === 0);
     // 표 반쪽 둘 (찢긴 끝)
     for (const [x, z, a, c] of [[1.75, .55, .5, '#f3d8a0'], [1.95, .7, -.3, '#f6c2c2']]) { add(G.box(.13, .006, .07, .002), c, x, .012, z, 0, a, 0); add(G.box(.02, .007, .07, .002), shade(c, -.15), x + Math.cos(a) * .055, .013, z - Math.sin(a) * .055, 0, a, 0); }
     // 안내원 손전등 (뒷줄 통로 바닥에 굴러다님)
@@ -282,12 +341,15 @@ B.cin_shell = (f, T0) => {
       add(G.box(RW, .06, .06, .02), GOLD, 0, .95, Z0 + .03);                   // 허리 몰딩
       add(G.box(RW + .1, .1, .12, .03), GOLD, -.05, NH - .05, Z0 + .02);       // 위 몰딩
       add(G.box(RW + .1, .05, .1, .02), GOLDD, -.05, 2.98, Z0 + .03);          // 필름 띠 아래 테
+      // 필름 띠를 받친 짙은 판, 위아래 금빛 테와 테마다 박힌 징
+      add(PB(RW, .46, .025), '#3b2c2b', 0, 3.21, Z0 + .0125);
+      for (const y of [2.99, 3.43]) { add(PB(RW, .025, .04), GOLD, 0, y, Z0 + .02); for (let x = -RW / 2 + .15; x < RW / 2; x += .3) add(PB(.025, .025, .012), GOLDD, x, y, Z0 + .044); }
       // 오른쪽 끝 기둥 (보이는 끝면)
       add(G.box(.22, NH + .1, .42, .04), '#e8d6c6', X1 + .02, (NH + .1) / 2, Z0 - NT / 2 + .03); add(G.box(.26, .1, .46, .03), GOLD, X1 + .02, NH + .1, Z0 - NT / 2 + .03);
     }));
     const wp = quad(RW, 2.0, texMat(repTex(wallTex(), RW, 2.0), { rough: .9 })); put(wp, 0, .97 + 1.0, Z0 + .003); N.g.add(wp);
     const wn = quad(RW, .82, texMat(repTex(wainTex(), RW / .8, 1), { rough: .8 })); put(wn, 0, .14 + .41, Z0 + .004); N.g.add(wn);
-    const fr = quad(RW, .42, texMat(repTex(filmTex(), RW / 2, 1), { rough: .6 })); put(fr, 0, 3.0 + .21, Z0 + .006); N.g.add(fr);
+    const fr = quad(RW, .42, texMat(repTex(filmTex(), RW / 2, 1), { rough: .6 })); put(fr, 0, 3.0 + .21, Z0 + .027); N.g.add(fr);
     // 무릎 벽
     N.knee.add(mc('cin-nwall-knee', ({ add }) => { add(G.box(RW, .42, NT, .04), '#e3cdbd', 0, .21, Z0 - NT / 2); add(G.box(RW, .05, NT + .04, .02), GOLD, 0, .42, Z0 - NT / 2); }));
     // 장식: 벽 촛대, 비상구, 포스터, 테이프 자국
@@ -307,11 +369,24 @@ B.cin_shell = (f, T0) => {
       const tri = new THREE.Shape(); tri.moveTo(0, 0); tri.lineTo(.14, 0); tri.lineTo(0, -.12); tri.closePath(); add(ext(tri, .004, 2), '#e8a67e', -3.51, 1.82, Z0 + .012);
       // 관계자 외 출입금지 판 (구석)
       add(G.box(.46, .16, .02, .01), '#c9bfae', 3.0, 1.6, Z0 + .012);
+      // 판벽 테 (판자마다 짙은 나무 네모 테, 비상구 문 자리는 비움)
+      for (let x = -RW / 2 + .5; x < RW / 2 - .2; x += .9) {
+        if (Math.abs(x + 2.35) < .78) continue;
+        for (const y of [.27, .83]) add(PB(.66, .028, .02), WAIND, x, y, Z0 + .012);
+        for (const sx of [-1, 1]) add(PB(.028, .58, .02), WAIND, x + sx * .33, .55, Z0 + .012);
+        add(PB(.5, .012, .012), GOLDD, x, .72, Z0 + .02);
+      }
+      // 옛 포스터 액자 (금빛 테·짙은 받침판) + 위 작은 갓 등
+      add(PB(.7, .94, .012), '#5a2f33', -1.45, 1.5, Z0 + .008);
+      for (const [w, h, dx, dy] of [[.76, .05, 0, .48], [.76, .05, 0, -.48], [.05, 1.0, -.38, 0], [.05, 1.0, .38, 0]]) add(G.box(w, h, .04, .012), GOLD, -1.45 + dx, 1.5 + dy, Z0 + .022);
+      for (const [dx, dy] of [[-.38, .48], [.38, .48], [-.38, -.48], [.38, -.48]]) add(G.sph(.03, 8, 6), GOLDD, -1.45 + dx, 1.5 + dy, Z0 + .045);
+      add(PB(.03, .03, .16), GOLDD, -1.45, 2.1, Z0 + .08); add(G.cone(.075, .08, 12), '#3d5048', -1.45, 2.07, Z0 + .17, PI, 0, 0);
     }));
     { const m = quad(.56, .2, basic(exitTex(), '#d8ffe6')); put(m, -2.35, 2.32, Z0 + .07); N.deco.add(m); N.deco.add(put(mc('cin-exitbox', ({ add }) => add(G.box(.62, .26, .1, .02), '#e9efe9', 0, 0, 0)), -2.35, 2.32, Z0 + .02)); }
     { const m = quad(.27, .2, texMat(closedTex(), { rim: 0 })); put(m, -2.35, 1.5, Z0 + .107); N.deco.add(m); }
     { const m = quad(.44, .14, texMat(staffTex(), { rim: 0 })); put(m, 3.0, 1.6, Z0 + .024); N.deco.add(m); }
-    { const p = paperSheet(.62, .86, posterTex(0), { hold: 'tape' }); put(p, -1.45, 1.5, Z0 + .006); N.deco.add(p); }
+    { const p = paperSheet(.62, .86, posterTex(0), { hold: 'none', curl: false }); put(p, -1.45, 1.5, Z0 + .012); N.deco.add(p); }
+    { const b = mesh(new THREE.SphereGeometry(.03, 8, 6), mat('#fff3d0', { emissive: '#ffe2a0', ei: 1.0 }), { cast: false }); put(b, -1.45, 2.03, Z0 + .17); N.deco.add(b); }
     // 촛대 불빛 (색만: 벽에 번지는 빛, 바닥 웅덩이)
     for (const x of [-3.75, -.6]) { const b = mesh(new THREE.SphereGeometry(.06, 10, 8), mat('#fff3d0', { emissive: GLOWC, ei: 1.2 }), { cast: false }); put(b, x, 2.26, Z0 + .09); N.deco.add(b); N.deco.add(halo(x, 2.3, Z0 + .25, 1.1, '#ffcf8a', .45)); f.add(pool(x, .02, Z0 + .9, .9, '#ffb86a', .32)); }
     tagWall(N.g, 'N'); tagWall(N.deco, 'N'); tagWall(N.knee, 'N');
@@ -346,16 +421,9 @@ B.cin_shell = (f, T0) => {
       add(G.box(.8, .56, .7, .06), STONE, X0 - .3, .16, 2.05); add(G.box(.86, .08, .76, .03), shade(STONE, -.08), X0 - .3, .46, 2.05);
     }));
     // 릴에서 풀린 필름 띠 (납작한 띠 — 톱니 구멍·칸 그림): 감긴 필름 꼭대기에서 뒤로 풀려 나와 뒷벽 위에 내려앉고, 벽 안쪽의 필름 띠 장식으로 이어짐
+    // (디테일 10/24: 두께 1.6 cm — 옆에서 봐도 종이 한 장이 아니라 필름 띠)
     { const P = [[-4.8, 5.13, -.35], [-4.8, 5.08, -1.0], [-4.79, 4.92, -1.6], [-4.75, 4.55, -2.2], [-4.66, 4.05, -2.7], [-4.5, 3.62, -3.05], [-4.2, 3.535, -3.12], [-3.95, 3.535, -3.08]];
-      const pos = [], uv = [], idx = [], HW = .16; let L = 0;
-      P.forEach((c, i) => {
-        if (i) L += Math.hypot(c[0] - P[i - 1][0], c[1] - P[i - 1][1], c[2] - P[i - 1][2]);
-        const k = ss(Math.max(0, Math.min(1, (i - 2) / 4))), wx = 1 - k, wz = k, n = Math.hypot(wx, wz);
-        pos.push(c[0] - wx / n * HW, c[1], c[2] - wz / n * HW, c[0] + wx / n * HW, c[1], c[2] + wz / n * HW); uv.push(L / 2, 0, L / 2, 1);
-        if (i) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-      });
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
-      W.deco.add(mesh(g, texMat(repTex(filmTex(), 1, 1), { rough: .6, side: THREE.DoubleSide }), { cast: true })); }
+      W.deco.add(filmRibbon(P, .16, .016, i => { const k = ss(Math.max(0, Math.min(1, (i - 2) / 4))); return [1 - k, 0, k]; })); }
     tagWall(W.g, 'W'); tagWall(W.deco, 'W'); tagWall(W.knee, 'W');
   }
 
@@ -485,25 +553,48 @@ B.cin_marquee = (f, T0) => {
   f.updateView = Wd => { if (Wd && Number.isFinite(Wd.yaw)) { const v = Math.cos(Wd.yaw) >= -.18; if (sign.visible !== v) { sign.visible = v; Wd.shadowDirty = true; Wd.idsDirty = true; } } };
 };
 
+// 팝콘 통 위 띠: 크림 바탕에 빨간 글자 '★ 별빛극장 · 팝콘 ★'을 둘레로 셋
+const bucketBandTex = once(() => canvasTex(1024, 64, (c, W, H) => {
+  c.fillStyle = CREAM; c.fillRect(0, 0, W, H); c.fillStyle = '#d9b25e'; c.fillRect(0, 0, W, 5); c.fillRect(0, H - 5, W, 5);
+  for (let k = 0; k < 3; k++) { const x = (k + .5) * W / 3; say(c, T('별빛극장') + ' · ' + T('팝콘'), x, H / 2 + 2, W / 3 - 90, 34, '#c4413f', { weight: 'bold' }); say(c, '★', x - W / 6 + 22, H / 2 + 2, 30, 30, '#d9b25e'); }
+}));
 // ── 매표소 = 거대 팝콘 통: 빨강·크림 줄무늬 통, 위로 넘치는 팝콘, 앞에 창구(유리·말구멍), 동전 접시 받침, 그 밑 서랍(code), 옆에 테이프 포스터 ──
 B.cin_ticketbooth = (f, T0) => {
   const RB = .66, RT = .82, H = 2.6, rAt = y => RB + (RT - RB) * y / H;
   const body = mesh(new THREE.CylinderGeometry(RT, RB, H, 40), texMat(stripeTex(), { rough: .7 })); put(body, 0, H / 2, 0); f.add(body);
   f.add(mc('cin-kiosk', ({ add }) => {
     add(G.tor(RT + .01, .075, PI * 2, 8, 44), CREAM, 0, H, 0, HP, 0, 0); add(G.cyl(RB + .04, RB + .06, .1, 40), '#b8383f', 0, .05, 0);
+    // (디테일 10/24) 통 테 밑 물결 주름 띠(크림 반달 24), 바닥 굽의 금줄, 띠 글자판 위아래 금테
+    for (let k = 0; k < 24; k++) { const a = k / 24 * PI * 2, rr = RT + .012; add(G.sph(.05, 6, 4), CREAM, Math.sin(a) * rr, H - .085, Math.cos(a) * rr, 0, a, 0, [1.1, .7, .45]); }
+    add(G.tor(RB + .055, .014, PI * 2, 4, 40), GOLD, 0, .1, 0, HP, 0, 0);
+    for (const y of [2.235, 2.365]) add(G.tor(rAt(y) + .008, .012, PI * 2, 4, 44), GOLD, 0, y, 0, HP, 0, 0);
+    // 넘치는 팝콘: 알갱이 모양(혹 셋 + 껍질)으로, 가운데가 봉긋, 통 테 밖으로 흘러내린 몇 알
     const r = rnd(17);
-    for (let k = 0; k < 74; k++) { const a = r() * PI * 2, rr = RT * Math.sqrt(r()) * .95, y = H + .04 + (1 - (rr / RT) ** 2) * .46 + r() * .07, s = .09 + r() * .07; add(G.sph(s, 8, 6), [POP, POP, BUTTER, '#fff8e8'][k % 4], Math.cos(a) * rr, y, Math.sin(a) * rr, r(), r(), 0, [1, .85, 1]); }
-    for (let k = 0; k < 9; k++) { const a = -.9 + k * .45 + r() * .2; add(G.sph(.08 + r() * .03, 8, 6), k % 3 ? POP : BUTTER, Math.sin(a) * (RT + .03), H - .05 - r() * .12, Math.cos(a) * (RT + .03)); }
+    add(G.sph(RT - .06, 18, 8), '#f8e8c4', 0, H + .04, 0, 0, 0, 0, [1, .36, 1]);
+    for (let k = 0; k < 64; k++) { const a = r() * PI * 2, rr = RT * Math.sqrt(r()) * .93, y = H + .05 + (1 - (rr / RT) ** 2) * .44 + r() * .06, s = .15 + r() * .08; kernel(add, Math.cos(a) * rr, y, Math.sin(a) * rr, s, r); }
+    for (let k = 0; k < 9; k++) { const a = -.9 + k * .45 + r() * .2; kernel(add, Math.sin(a) * (RT + .05), H - .04 - r() * .12, Math.cos(a) * (RT + .05), .13 + r() * .04, r, false); }
     // 창구: 앞으로 튀어나온 상자, 금빛 테, 안쪽 어두움, 반쯤 친 크림 커튼
     const zf = rAt(1.38) + .04;
     add(G.box(.7, .56, .2, .03), CREAM, 0, 1.38, zf - .08); add(G.box(.58, .44, .04, .01), '#3b2c3a', 0, 1.38, zf - .02);
     for (const [w, h, x, y] of [[.66, .05, 0, 1.63], [.66, .05, 0, 1.13], [.05, .52, -.33, 1.38], [.05, .52, .33, 1.38]]) add(G.box(w, h, .05, .015), GOLD, x, y, zf + .02);
     add(G.box(.56, .12, .02, .01), '#f2e3c4', 0, 1.53, zf - .005);
-    add(G.cyl(.05, .05, .012, 14), CHROME, 0, 1.27, zf + .035, HP, 0, 0);
-    // 받침 (동전 접시·표 뭉치)
+    // 말구멍: 크롬 둥근 판에 구멍 일곱(가운데 + 둘레 여섯), 테
+    add(G.cyl(.06, .06, .012, 18), CHROME, 0, 1.3, zf + .035, HP, 0, 0); add(G.tor(.06, .008, PI * 2, 4, 20), '#aab0bd', 0, 1.3, zf + .042);
+    for (let k = 0; k < 7; k++) { const a = k * PI / 3, rr = k ? .032 : 0; add(G.cyl(.008, .008, .006, 6), '#3b3446', Math.cos(a) * rr, 1.3 + Math.sin(a) * rr, zf + .043, HP, 0, 0); }
+    // 유리 가운데 세로 살, 창 아래 돈 내미는 홈 (짙은 반달 구멍 + 금테)
+    add(PB(.018, .42, .02), GOLDD, 0, 1.44, zf + .02);
+    add(PB(.22, .026, .01), '#2a2230', 0, 1.13, zf + .048);
+    // 받침 (동전 접시·표 뭉치·종)
     add(G.box(.8, .05, .26, .015), WOOD, 0, 1.085, zf + .1); add(G.box(.8, .02, .02, .005), GOLDD, 0, 1.06, zf + .23);
-    add(G.cyl(.09, .07, .024, 16), '#c9a446', -.2, 1.122, zf + .13); for (const [dx, dz] of [[-.03, .01], [.03, -.02], [.0, .035]]) add(G.cyl(.024, .024, .007, 10), '#e8d07a', -.2 + dx, 1.138, zf + .13 + dz);
-    add(G.cyl(.045, .045, .09, 12), '#e8b0a0', .02, 1.155, zf + .1, 0, 0, HP); add(G.box(.06, .004, .1, .002), '#f6efe2', .1, 1.113, zf + .14, 0, .3, 0);
+    for (const sx of [-1, 1]) { add(PB(.03, .1, .03), WOODD, sx * .34, 1.01, zf + .2); }
+    add(G.cyl(.09, .07, .024, 16), '#c9a446', -.2, 1.122, zf + .13); add(G.tor(.088, .01, PI * 2, 4, 20), '#b48c40', -.2, 1.134, zf + .13, HP, 0, 0);
+    for (const [dx, dz] of [[-.03, .01], [.03, -.02], [.0, .035], [.025, .03]]) add(G.cyl(.024, .024, .007, 10), '#e8d07a', -.2 + dx, 1.138, zf + .13 + dz);
+    // 표 두루마리: 작은 받침 둘 사이 분홍 표 롤, 앞으로 풀려 나온 표 두 장(절취선)
+    for (const sx of [-1, 1]) add(PB(.012, .1, .07), '#9aa0ad', .02 + sx * .055, 1.16, zf + .08);
+    add(G.cyl(.045, .045, .095, 14), '#e8b0a0', .02, 1.165, zf + .08, 0, 0, HP); add(G.cyl(.016, .016, .12, 8), '#6f7680', .02, 1.165, zf + .08, 0, 0, HP);
+    for (let k = 0; k < 2; k++) { add(PB(.07, .004, .075), k ? '#f6c2c2' : '#f3d8a0', .02, 1.115 + k * .002, zf + .145 + k * .074, .05, 0, 0); add(PB(.07, .005, .004), '#c48a6a', .02, 1.118 + k * .002, zf + .183 + k * .074); }
+    // 손님 부르는 종 (은빛)
+    add(G.cyl(.04, .045, .01, 14), '#7d7672', -.345, 1.115, zf + .18); add(G.sph(.033, 12, 6), '#dde0e8', -.345, 1.12, zf + .18, 0, 0, 0, [1, .9, 1]); add(G.sph(.008, 6, 4), '#9aa0ad', -.345, 1.155, zf + .18);
     // 서랍 집 (받침 밑)
     add(G.box(.62, .26, .2, .02), CREAM, 0, .9, zf - .08);
     // 간판 받침판과 작은 등
@@ -511,7 +602,11 @@ B.cin_ticketbooth = (f, T0) => {
   }));
   { const m = quad(.58, .19, texMat(kioskSignTex(), { rim: 0 })); put(m, 0, 1.86, rAt(1.86) + .047); f.add(m); }
   { const b = mesh(new THREE.SphereGeometry(.04, 8, 6), mat('#fff3d0', { emissive: GLOWC, ei: 1.3 }), { cast: false }); put(b, 0, 2.08, rAt(2.0) + .12); f.add(b); f.add(halo(0, 2.0, rAt(2.0) + .2, .8, '#ffcf8a', .4)); }
-  { const zf = rAt(1.38) + .04; const g = mesh(new THREE.PlaneGeometry(.56, .42), mat('#cfe8f2', { opacity: .3, rim: 0 }), { cast: false }); put(g, 0, 1.38, zf + .005); f.add(keep(g)); }
+  { const zf = rAt(1.38) + .04; const g = mesh(new THREE.PlaneGeometry(.56, .42), mat('#cfe8f2', { opacity: .3, rim: 0 }), { cast: false }); put(g, 0, 1.38, zf + .005); f.add(keep(g));
+    // 유리 반짝임 사선 둘 (색만)
+    for (const [x, w] of [[-.16, .05], [-.08, .02]]) { const sh = mesh(new THREE.PlaneGeometry(w, .36), mat('#ffffff', { opacity: .35, rim: 0 }), { cast: false }); put(sh, x, 1.4, zf + .008, 0, 0, -.5); f.add(colourOnly(keep(sh))); } }
+  // 통 위 띠 글자판 (둘레 한 바퀴)
+  { const m = mesh(new THREE.CylinderGeometry(rAt(2.36) + .006, rAt(2.24) + .006, .12, 48, 1, true), texMat(bucketBandTex(), { rough: .7 })); put(m, 0, 2.3, 0); f.add(m); }
   { const a = .95, r = rAt(1.2) + .015; const p = paperSheet(.4, .56, posterTex(2), { hold: 'tape' }); put(p, Math.sin(a) * r, 1.2, Math.cos(a) * r, 0, a, 0); f.add(p); }
   // 서랍 (code 자물쇠가 설 수 있음): 앞으로 빠짐, 안에 자리
   const zf = rAt(1.38) + .04, dv = grp(); put(dv, 0, .9, zf - .1); f.add(dv);
@@ -539,6 +634,11 @@ B.cin_showtimes = (f, T0) => {
   f.add(mc('cin-showtimes', ({ add }) => {
     for (const s of [1, -1]) { add(G.box(W + .08, H + .08, .05, .02), WOODD, 0, H / 2 + .02, s * .14, -s * tilt, 0, 0); }
     add(G.box(W + .14, .05, .08, .02), WOODD, 0, H + .07, 0); add(G.box(.05, .1, .34, .01), IRON, W / 2 + .06, H * .55, 0); add(G.box(.05, .1, .34, .01), IRON, -W / 2 - .06, H * .55, 0);
+    // (디테일 10/24) 앞판 금빛 귀 장식 넷, 위 손잡이 고리, 다리 끝 고무 발
+    const C = [0, H / 2 + .02, .14];
+    for (const [dx, dy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { const p = onTilt(C, -tilt, dx * (W / 2 - .01), dy * (H / 2 - .01), .03); add(PB(.07, .07, .012), GOLD, ...p, -tilt, 0, dx * dy * .0); }
+    add(G.tor(.06, .014, PI, 4, 12), GOLDD, 0, H + .1, 0); 
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.08, .03, .07, .01), '#4a3a3a', sx * (W / 2 - .02), .015, sz * (.14 + H * Math.sin(tilt) * .5));
   }));
   const m = quad(W, H * .92, texMat(showTex(), { rim: .05 })); put(m, 0, H / 2 + .02, .14 + .03, -tilt); f.add(m);
   f.board = m;
@@ -549,36 +649,74 @@ B.cin_showtimes = (f, T0) => {
 
 // ── 팝콘 매점: 줄무늬 카운터(아래 칸 문 — pad 여분), 위에 유리 뚜껑 팝콘 기계, 그 위 벽 선반(열쇠가 걸림 → 팝콘이 넘치면 툭),
 // 다락 앞면엔 메뉴판. 기계를 누르면 퐁퐁: 팝콘 더미가 부풀고 넘쳐 카운터·바닥으로 (f.popcornPile, f.spill), 걸린 열쇠는 카운터로 떨어짐(엔진 dropHung) ──
-const menuStripTex = once(() => canvasTex(384, 72, (c, W, H) => {
-  c.fillStyle = '#35503f'; c.fillRect(0, 0, W, H); c.strokeStyle = '#c9a46a'; c.lineWidth = 6; c.strokeRect(3, 3, W - 6, H - 6);
-  say(c, T('매점'), 44, H / 2 + 1, 66, 26, '#ffe28a', { weight: 'bold' });
-  [['팝콘', '3,000'], ['콜라', '1,500'], ['오징어', '2,000']].forEach(([a, b], i) => { const x = 98 + i * 96; say(c, T(a), x + 30, H / 2 - 10, 88, 17, '#f3efe2'); say(c, b, x + 30, H / 2 + 14, 80, 15, '#f6d98a'); });
+// (디테일 10/24: 칠판 결·분필 자국, 메뉴마다 작은 그림(팝콘 통·콜라 컵·오징어)과 값, 가운데는 열쇠가 걸리는 황동 고리판 — 열쇠가 글자를 안 가림)
+const MENU_ICON = {
+  '팝콘': (c, x, y) => { c.fillStyle = '#e0545c'; c.beginPath(); c.moveTo(x - 15, y - 6); c.lineTo(x + 15, y - 6); c.lineTo(x + 11, y + 22); c.lineTo(x - 11, y + 22); c.closePath(); c.fill(); c.fillStyle = '#fff4e2'; for (const dx of [-7, 3]) c.fillRect(x + dx, y - 6, 4, 28); for (const [dx, dy, rr] of [[-9, -10, 7], [0, -14, 8], [9, -10, 7], [-3, -6, 6], [5, -5, 6]]) { c.beginPath(); c.arc(x + dx, y + dy, rr, 0, PI * 2); c.fill(); } },
+  '콜라': (c, x, y) => { c.fillStyle = '#c94a50'; c.beginPath(); c.moveTo(x - 12, y - 10); c.lineTo(x + 12, y - 10); c.lineTo(x + 9, y + 22); c.lineTo(x - 9, y + 22); c.closePath(); c.fill(); c.fillStyle = '#fff4e2'; c.fillRect(x - 13, y - 14, 26, 5); c.fillRect(x - 8, y + 2, 16, 5); c.strokeStyle = '#f3efe2'; c.lineWidth = 3; c.beginPath(); c.moveTo(x + 3, y - 14); c.lineTo(x + 8, y - 28); c.stroke(); },
+  '오징어': (c, x, y) => { c.fillStyle = '#f3dcae'; c.beginPath(); c.moveTo(x, y - 22); c.lineTo(x + 11, y - 4); c.lineTo(x + 9, y + 8); c.lineTo(x - 9, y + 8); c.lineTo(x - 11, y - 4); c.closePath(); c.fill(); c.strokeStyle = '#f3dcae'; c.lineWidth = 3; c.lineCap = 'round'; for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x + k * 4, y + 8); c.quadraticCurveTo(x + k * 6, y + 16, x + k * 5, y + 24); c.stroke(); } c.fillStyle = '#35503f'; c.beginPath(); c.arc(x - 4, y + 1, 2, 0, PI * 2); c.arc(x + 4, y + 1, 2, 0, PI * 2); c.fill(); },
+};
+const menuStripTex = once(() => canvasTex(784, 160, (c, W, H) => {
+  c.fillStyle = '#35503f'; c.fillRect(0, 0, W, H); const r = rnd(23);
+  for (let i = 0; i < 260; i++) { c.fillStyle = r() < .5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)'; c.fillRect(r() * W, r() * H, 2 + r() * 14, 1.5); }
+  c.strokeStyle = 'rgba(243,239,226,.09)'; c.lineWidth = 9; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(40 + i * 260, 30 + r() * 90); c.quadraticCurveTo(140 + i * 260, 10 + r() * 140, 220 + i * 260, 40 + r() * 80); c.stroke(); }
+  c.strokeStyle = '#c9a46a'; c.lineWidth = 10; c.strokeRect(5, 5, W - 10, H - 10); c.strokeStyle = 'rgba(255,240,200,.35)'; c.lineWidth = 2; c.strokeRect(14, 14, W - 28, H - 28);
+  say(c, T('매점'), 72, H / 2 + 2, 110, 50, '#ffe28a', { weight: 'bold', stroke: '#24382c', sw: 6 });
+  c.fillStyle = 'rgba(243,239,226,.4)'; c.fillRect(134, 26, 3, H - 52); c.fillRect(W - 336, 26, 3, H - 52);
+  // 가운데 고리판 (열쇠 자리 x -.02 m → 376 px)
+  const hx = 376; c.fillStyle = '#b48c40'; c.beginPath(); c.ellipse(hx, H / 2, 70, 56, 0, 0, PI * 2); c.fill();
+  c.fillStyle = '#d9b25e'; c.beginPath(); c.ellipse(hx, H / 2, 62, 48, 0, 0, PI * 2); c.fill();
+  c.strokeStyle = '#b48c40'; c.lineWidth = 2; c.beginPath(); c.ellipse(hx, H / 2, 52, 38, 0, 0, PI * 2); c.stroke();
+  c.fillStyle = '#8a6a32'; for (const dx of [-44, 44]) { c.beginPath(); c.arc(hx + dx, H / 2, 4, 0, PI * 2); c.fill(); }
+  const item = (name, price, x) => { MENU_ICON[name](c, x, H / 2 - 4); say(c, T(name), x + 80, H / 2 - 18, 104, 30, '#f3efe2', { weight: 'bold' }); say(c, price, x + 80, H / 2 + 22, 100, 27, '#f6d98a'); };
+  item('팝콘', '3,000', 168); item('콜라', '1,500', W - 302); item('오징어', '2,000', W - 156);
 }));
 const popSignTex = once(() => canvasTex(160, 40, (c, W, H) => { c.fillStyle = '#c94a50'; c.fillRect(0, 0, W, H); say(c, LANG === 'en' ? 'POPCORN' : '팝콘', W / 2, H / 2 + 1, W * .86, 28, '#fff3d6', { weight: 'bold' }); }));
 B.cin_popcorn = (f, T0) => {
   const CW = 1.0, CD = .56, CH = .88, MX = -.12, BACK = -.36, MENUZ = -.3;
-  f.add(mc('cin-popcorn-counter', ({ add }) => {
+  f.add(mc('cin-popcorn-counter', ({ add, tube }) => {
     add(G.box(.04, CH, CD, .01), '#f3e2c8', -CW / 2 + .02, CH / 2, 0); add(G.box(.04, CH, CD, .01), '#f3e2c8', CW / 2 - .02, CH / 2, 0);
     add(G.box(CW, CH, .04, .01), '#f3e2c8', 0, CH / 2, -CD / 2 + .02); add(G.box(CW, .06, CD, .01), '#6a4a3e', 0, .03, 0);
     add(G.box(CW - .08, .02, CD - .08, .005), '#6a4a3e', 0, .42, -.02); add(G.box(CW - .08, CH - .1, .01, .005), '#5c4036', 0, CH / 2, -CD / 2 + .045);
     add(G.box(CW + .06, .05, CD + .06, .02), WOOD, 0, CH + .025, 0); add(G.box(CW + .06, .015, .02, .005), GOLDD, 0, CH, CD / 2 + .03);
-    // 기계: 빨간 받침, 금빛 기둥 넷, 지붕, 위 글자판; 안쪽 주전자
+    add(PB(CW - .02, .05, .012), GOLDD, 0, .035, CD / 2 + .006);
+    // 기계 (디테일 10/24 — 사용자 사진 '팝콘 기계'): 빨간 받침(앞 금판·바람구멍·손잡이 둘), 금빛 둥근 기둥 넷과 공 장식, 지붕 밑 물결 차양,
+    // 지붕 네 귀 공, 위 글자판; 안쪽엔 매달린 은빛 주전자(뚜껑·젓는 손잡이·줄 둘)
     add(G.box(.52, .13, .4, .02), KRED, MX, CH + .115, 0); add(G.box(.54, .02, .42, .01), GOLD, MX, CH + .18, 0);
-    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(G.box(.03, .42, .03, .008), GOLD, MX + sx * .245, CH + .4, sz * .185);
+    add(PB(.3, .07, .01), GOLD, MX, CH + .115, .205); for (let k = -1; k <= 1; k++) add(PB(.06, .012, .006), '#8a3a3e', MX + k * .08, CH + .115, .212);
+    for (const sx of [-1, 1]) { add(G.cyl(.022, .022, .02, 12), CREAM, MX + sx * .2, CH + .115, .21, HP, 0, 0); add(G.sph(.012, 8, 6), IRON, MX + sx * .2, CH + .115, .222); }
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { add(G.cyl(.016, .016, .42, 10), GOLD, MX + sx * .245, CH + .4, sz * .185); for (const y of [CH + .2, CH + .6]) add(G.sph(.024, 8, 6), GOLDD, MX + sx * .245, y, sz * .185); }
     add(G.box(.56, .07, .44, .02), KRED, MX, CH + .645, 0); add(G.box(.58, .02, .46, .01), GOLD, MX, CH + .61, 0);
-    add(G.box(.36, .13, .03, .02), KRED, MX, CH + .745, 0);
-    add(G.cyl(.085, .07, .1, 14), '#cfd3dc', MX + .03, CH + .5, -.02, .3, 0, .2); add(G.cyl(.01, .01, .1, 6), '#9aa0ad', MX + .03, CH + .58, -.02);
-    // 카운터 위 살림: 컵에 꽂힌 빨대, 냅킨 통, 손전등
-    add(G.cyl(.04, .035, .1, 10), '#f6efe2', .36, CH + .05, -.18); for (const dx of [-.01, .012]) add(G.cyl(.006, .006, .12, 5), ['#e0545c', '#4f86b8'][dx > 0 ? 1 : 0], .36 + dx, CH + .13, -.18, 0, 0, dx * 6);
-    add(G.box(.12, .08, .06, .01), '#d9dde6', .2, CH + .04, -.2);
-    // 위 선반 (다락 앞 밑, 쇠 받침 둘): 옛 필름 통 하나, 깡통 컵
-    add(G.box(.74, .035, .2, .01), WOOD, MX, 1.82, BACK + .12); for (const sx of [-1, 1]) { add(G.box(.025, .16, .025, .005), IRON, MX + sx * .3, 1.89, BACK + .03); add(G.box(.025, .025, .16, .005), IRON, MX + sx * .3, 1.8, BACK + .1); }
+    { const hs = new THREE.Shape(); hs.moveTo(-.04, 0); hs.absarc(0, 0, .04, PI, 0, false); hs.closePath(); const hd = ext(hs, .012, 8);
+      for (let k = 0; k < 7; k++) add(hd, k % 2 ? CREAM : KRED, MX - .24 + k * .08, CH + .6, .222);
+      for (const sx of [-1, 1]) for (let k = 0; k < 5; k++) add(hd, k % 2 ? CREAM : KRED, MX + sx * .292, CH + .6, -.16 + k * .08, 0, sx * HP, 0); }
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(G.sph(.026, 8, 6), GOLD, MX + sx * .27, CH + .7, sz * .2);
+    add(G.box(.36, .13, .03, .02), KRED, MX, CH + .745, 0); add(G.box(.38, .02, .04, .01), GOLD, MX, CH + .815, 0);
+    add(G.cyl(.08, .068, .1, 16), '#cfd3dc', MX + .03, CH + .49, -.02, 0, 0, .25); add(G.tor(.08, .01, PI * 2, 4, 18), '#aab0bd', MX + .043, CH + .54, -.02, HP, 0, .25);
+    add(G.cone(.075, .035, 14), '#dde0e8', MX + .045, CH + .56, -.02, 0, 0, .25); add(G.cyl(.008, .008, .06, 6), '#9aa0ad', MX + .05, CH + .6, -.02); add(G.sph(.016, 8, 6), KRED, MX + .05, CH + .6, -.02);
+    for (const dz of [-.075, .075]) { add(G.sph(.012, 6, 4), '#9aa0ad', MX + .03, CH + .5, -.02 + dz); tube([MX + .03, CH + .5, -.02 + dz], [MX + .01, CH + .61, -.02 + dz * 1.2], .006, '#9aa0ad', 5); }
+    { const r = rnd(41); for (let k = 0; k < 3; k++) kernel(add, MX - .045 - k * .02, CH + .5 - k * .03, -.02 + (k - 1) * .03, .05, r, false); }
+    // 카운터 위 살림: 줄무늬 종이컵에 꽂힌 빨대, 냅킨 통(한 장 빼꼼)
+    add(G.cyl(.04, .035, .1, 12), '#f6efe2', .36, CH + .05, -.18); for (const y of [.02, .065]) add(G.cyl(.0405, .038, .012, 12), KRED, .36, CH + y, -.18);
+    for (const dx of [-.01, .012]) add(G.cyl(.006, .006, .12, 5), ['#e0545c', '#4f86b8'][dx > 0 ? 1 : 0], .36 + dx, CH + .13, -.18, 0, 0, dx * 6);
+    add(G.box(.12, .08, .06, .01), '#d9dde6', .2, CH + .04, -.2); add(PB(.07, .03, .004), '#fffdf6', .2, CH + .09, -.2, 0, 0, .1); add(PB(.08, .02, .002), GOLD, .2, CH + .045, -.169);
+    // 위 선반 둘 (다락 앞 밑, 쇠 받침): 가운데를 비워 열쇠가 메뉴판 고리에 매달려 내려옴 — 왼쪽엔 옛 필름 통, 오른쪽엔 깡통 컵과 작은 팝콘 상자
+    add(G.box(.34, .035, .2, .01), WOOD, MX - .2, 1.82, BACK + .12); add(G.box(.2, .035, .2, .01), WOOD, .15, 1.82, BACK + .12);
+    for (const x of [MX - .3, .2]) { add(G.box(.025, .16, .025, .005), IRON, x, 1.89, BACK + .03); add(G.box(.025, .025, .16, .005), IRON, x, 1.8, BACK + .1); }
+    add(PB(.34, .012, .012), GOLDD, MX - .2, 1.8, BACK + .22); add(PB(.2, .012, .012), GOLDD, .15, 1.8, BACK + .22);
     add(G.cyl(.12, .12, .035, 18), '#9aa0ad', MX - .2, 1.856, BACK + .12); add(G.cyl(.05, .05, .036, 12), '#6f7680', MX - .2, 1.857, BACK + .12);
-    add(G.cyl(.035, .035, .08, 10), '#c9cfe0', MX + .27, 1.88, BACK + .1);
-    // 메뉴판 받침 (다락 앞면)
+    for (let k = 0; k < 4; k++) { const a = k * HP + .4; add(G.cyl(.022, .022, .037, 8), '#7d8490', MX - .2 + Math.cos(a) * .08, 1.857, BACK + .12 + Math.sin(a) * .08); }
+    add(G.cyl(.035, .035, .08, 10), '#c9cfe0', MX + .27, 1.88, BACK + .1); add(G.tor(.035, .006, PI * 2, 4, 12), '#9aa0ad', MX + .27, 1.92, BACK + .1, HP, 0, 0);
+    add(PB(.05, .07, .05), KRED, .225, 1.873, BACK + .14); add(PB(.012, .07, .052), CREAM, .225, 1.873, BACK + .14);
+    { const r = rnd(43); for (let k = 0; k < 3; k++) kernel(add, .215 + k * .012, 1.92 + (k % 2) * .01, BACK + .13 + (k - 1) * .015, .028, r, false); }
+    // 메뉴판 받침 (다락 앞면)과 금테, 가운데 열쇠 고리(받침 장식 + 앞으로 나온 황동 못, 끝 공) — 걸린 열쇠의 하트 구멍에 끼움
     add(G.box(1.02, .24, .03, .02), '#2a3a30', 0, 2.08, MENUZ);
+    for (const [w, h, x, y] of [[1.06, .03, 0, 2.205], [1.06, .03, 0, 1.955], [.03, .28, -.525, 2.08], [.03, .28, .525, 2.08]]) add(G.box(w, h, .04, .008), GOLD, x, y, MENUZ + .01);
+    add(G.cyl(.026, .03, .012, 14), GOLDD, -.02, 2.02, MENUZ + .022, HP, 0, 0);
+    add(G.cyl(.009, .009, .1, 8), GOLD, -.02, 2.02, MENUZ + .067, HP, 0, 0); add(G.sph(.017, 10, 8), GOLD, -.02, 2.02, MENUZ + .118);
   }));
-  { const m = quad(.98, .2, texMat(menuStripTex(), { rim: 0 })); put(m, 0, 2.08, MENUZ + .017); f.add(m); }
+  // 기계 안 따뜻한 작은 등, 글자판 양 끝 전구, 메뉴판 위 전구 줄 (색만 빛남)
+  f.add(bulbRow([[MX - .12, CH + .575, -.12], [MX - .2, CH + .745, .028], [MX + .2, CH + .745, .028], ...Array.from({ length: 11 }, (_, i) => [-.45 + i * .09, 2.232, MENUZ + .03])], .019));
+  { const m = quad(.98, .2, texMat(menuStripTex(), { rim: 0 })); put(m, 0, 2.08, MENUZ + .0165); f.add(m); }
   { const m = quad(.34, .1, texMat(popSignTex(), { rim: 0 })); put(m, MX, CH + .745, .017); f.add(m); }
   // 아래 칸 문 (줄무늬 판): 왼쪽 경첩, 여분 pad 자물쇠 자리
   const dv = grp(); put(dv, -CW / 2 + .05, .08, CD / 2 + .01); f.add(dv);
@@ -594,14 +732,24 @@ B.cin_popcorn = (f, T0) => {
     machine.add(keep(put(mesh(new THREE.PlaneGeometry(.48, .42), gm, { cast: false }), 0, .22, -.19)));
     for (const sx of [-1, 1]) machine.add(keep(put(mesh(new THREE.PlaneGeometry(.36, .42), gm, { cast: false }), sx * .24, .22, -.01, 0, HP, 0))); }
   const pile = grp(); put(pile, 0, .02, 0); machine.add(pile);
-  pile.add(mc('cin-popcorn-pile', ({ add }) => { const r = rnd(5); for (let k = 0; k < 34; k++) add(G.sph(.045 + r() * .02, 7, 5), [POP, POP, BUTTER][k % 3], (r() - .5) * .38, .03 + r() * .07, (r() - .5) * .28); }));
+  // (알이 한 알 한 알 보이게: 버터 바닥 한 겹 위에 듬성듬성 격자로 — 빽빽하면 테두리선이 합쳐져 흰 구름 덩어리로 읽힘)
+  pile.add(mc('cin-popcorn-pile', ({ add }) => {
+    const r = rnd(5); add(G.box(.4, .03, .3, .012), '#f3dca8', 0, .015, 0);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) kernel(add, -.15 + i * .1 + (r() - .5) * .03, .05 + r() * .02, -.1 + j * .1 + (r() - .5) * .03, .085 + r() * .02, r);
+    for (let k = 0; k < 4; k++) kernel(add, -.1 + k * .07, .11 + r() * .02, (r() - .5) * .1, .08, r);
+  }));
+  // 팝콘 국자 (뒤 왼쪽 구석에 기대 둠): 은빛 구멍 국자 + 빨간 손잡이
+  machine.add(mc('cin-popcorn-scoop', ({ add, tube }) => {
+    add(G.cyl(.05, .036, .045, 14, true), '#dde0e8', -.17, .07, -.1, .5, 0, .2); add(G.cyl(.036, .036, .004, 14), '#aab0bd', -.168, .05, -.105, .5, 0, .2);
+    tube([-.15, .09, -.08], [-.08, .33, -.03], .009, '#c9cfe0', 6); tube([-.1, .26, -.045], [-.07, .37, -.02], .015, KRED, 8);
+  }));
   const spill = grp(); f.add(spill);
   const SP = []; { const r = rnd(9); for (let k = 0; k < 18; k++) { const floor = k > 12, x = floor ? (r() - .4) * .7 : MX + (r() - .5) * .8, z = floor ? CD / 2 + .12 + r() * .35 : (r() - .2) * .4, y = floor ? .03 : CH + .07; if (!floor && Math.abs(x - MX) < .27 && Math.abs(z) < .2) continue; SP.push([x, y, z]); } }
-  SP.forEach(([x, y, z], k) => { const m = mesh(new THREE.SphereGeometry(.05, 7, 5), mat(k % 3 ? POP : BUTTER), { cast: false }); m.scale.set(0, 0, 0); put(m, x, y, z); m.userData.y0 = y; m.userData.noMerge = true; spill.add(m); });
+  SP.forEach(([x, y, z], k) => { const m = mc('cin-kernel|' + (k % 3), ({ add }) => kernel(add, 0, 0, 0, .085, rnd(31 + k % 3), k % 3 === 0)); m.castShadow = false; m.scale.set(0, 0, 0); put(m, x, y, z); m.userData.y0 = y; m.userData.noMerge = true; spill.add(m); });
   f.popcornPile = pile; f.spill = spill; (f.live || (f.live = [])).push(pile, spill);
   const lid = grp(); put(lid, MX, CH + .6, .2); f.add(lid);
   lid.add(keep(put(mesh(new THREE.PlaneGeometry(.46, .38), mat('#dff3ff', { opacity: .35, rim: 0, side: THREE.DoubleSide }), { cast: false }), 0, -.2, 0)));
-  lid.add(mc('cin-popcorn-lid', ({ add }) => { add(G.box(.48, .025, .02, .006), GOLD, 0, -.39, 0); add(G.box(.48, .02, .02, .006), GOLD, 0, -.01, 0); for (const sx of [-1, 1]) add(G.box(.02, .4, .02, .006), GOLD, sx * .235, -.2, 0); add(G.sph(.025, 8, 6), '#ffffff', 0, -.36, .03); }));
+  lid.add(mc('cin-popcorn-lid', ({ add }) => { add(G.box(.48, .025, .02, .006), GOLD, 0, -.39, 0); add(G.box(.48, .02, .02, .006), GOLD, 0, -.01, 0); for (const sx of [-1, 1]) add(G.box(.02, .4, .02, .006), GOLD, sx * .235, -.2, 0); add(G.sph(.025, 8, 6), '#ffffff', 0, -.36, .03); add(G.box(.08, .016, .02, .006), GOLDD, 0, -.36, .02); }));
   const n = SP.length;
   const p = f.part('lid', [lid, machine], t => {
     lid.rotation.x = -2.6 * ss(Math.min(1, t * 2.2));
@@ -612,7 +760,9 @@ B.cin_popcorn = (f, T0) => {
   f.spot('inside', machine, 0, .15, .03, { part: p, maxH: .24, label: '팝콘 기계 안', scale: .75 });
   // 걸린 열쇠가 떨어질 자리 (판짜기는 안 씀 — reserved), 위 선반의 열쇠 고리 자리(hang)
   f.spot('inside', null, MX + .38, CH + .055, .16, { part: p, maxH: .2, label: '넘친 팝콘 사이', scale: .8 }).reserved = true;
-  f.keySpot = f.spot('on', null, MX + .1, 1.84, BACK + .12, { maxH: .24, label: '팝콘 위 선반', scale: .8 });
+  // (디테일 10/24: 걸린 열쇠는 벽에 선 채(wallFace — 7판 도르래 고리와 같은 방식) 메뉴판 못에 하트 구멍으로 매달림 — 누워 있던 열쇠가 고리 쪽으로
+  // 비틀려 '도넛 + 분홍 공'으로만 보였음, 사용자 10/24 "열쇠는 왜이럼"; 크기 ×0.7 = 약 47 cm, 두 선반 사이로 내려와 기계 지붕엔 안 닿음)
+  f.keySpot = f.spot('on', null, MX + .1, 1.84, BACK + .12, { maxH: .24, label: '팝콘 위 선반', scale: .7, wallFace: true });
   f.keySpot.hang = p;
   f.spot('on', null, .34, CH + .05, .1, { maxH: 0.45, label: '매점 카운터 위', scale: 1 });
 };
@@ -632,6 +782,7 @@ B.cin_hall_door = (f, T0) => {
     add(G.box(.86, .24, .03, .02), '#6a2a36', 0, 2.08, .15);
   }));
   { const m = quad(.82, .2, texMat(hallSignTex(), { rim: 0 })); put(m, 0, 2.08, .167); f.add(m); }
+  f.add(bulbRow([-.39, -.13, .13, .39].map(x => [x, 2.215, .16]), .018));
   // (문짝 둘: 경첩이 바깥, 만나는 쪽이 가운데 — s = -1 왼쪽, 1 오른쪽)
   const leaf = (s) => {
     const pv = grp(); put(pv, s * (DW + .02), .06, Z); f.add(pv);
@@ -640,6 +791,10 @@ B.cin_hall_door = (f, T0) => {
       for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) add(G.sph(.014, 6, 5), GOLD, -s * DW / 2 - .18 + i * .12, .2 + j * .2, .034);
       add(G.cyl(.1, .1, .02, 18), '#3b3446', -s * DW / 2, 1.32, .03, HP, 0, 0); add(G.tor(.1, .02, PI * 2, 6, 20), GOLD, -s * DW / 2, 1.32, .04);
       add(G.box(.08, .26, .02, .006), GOLD, -s * (DW - .07), .95, .04);
+      // (디테일 10/24) 누빔 테두리 줄, 아래 황동 발판, 둥근 창 안 반짝임 줄
+      for (const [w, h, dx, dy] of [[DW - .06, .018, 0, DH - .05], [DW - .06, .018, 0, .1], [.018, DH - .15, -(DW / 2 - .03), DH / 2 + .02], [.018, DH - .15, DW / 2 - .03, DH / 2 + .02]]) add(PB(w, h, .008), '#7d2f38', -s * DW / 2 + dx, dy, .033);
+      add(PB(DW - .04, .1, .012), GOLDD, -s * DW / 2, .05, .036);
+      add(PB(.1, .016, .005), '#9fb0c8', -s * DW / 2 - .02, 1.35, .042, 0, 0, .6);
     }));
     return pv;
   };
@@ -651,26 +806,48 @@ B.cin_hall_door = (f, T0) => {
 };
 
 // ── 접이식 좌석 줄 (빨간 벨벳, 나무 등판, 쇠 팔걸이 다리): 좌석마다 접히는 부품, 좌석 밑 숨김 자리 (opts.n 좌석 수, opts.under 자리 둘 좌석) ──
+// (디테일 10/24 — 사용자 사진 '좌석 줄'): 방석은 앞 둥근 말이·누빔 줄, 등받이는 세로 골 셋 누빔 + 위 말이, 뒤 나무 껍데기엔 짙은 판·징·번호판,
+// 팔걸이마다 컵홀더, 줄 끝 옆판엔 줄 글자 원판 (opts.row 'A'…, opts.first 첫 번호)
 const seatParts = (f, xs, wide = false) => xs.map(x => {
   const pv = grp(); put(pv, x, .44, -.12); f.add(pv);
   const w = wide ? 1.04 : .48;
-  pv.add(mc('cin-seat-cushion|' + w, ({ add }) => { add(G.box(w, .11, .42, .05), VELVET, 0, 0, .21); add(G.box(w - .02, .03, .4, .01), VELVETD, 0, -.065, .21); add(G.box(w * .4, .015, .012, .004), shade(VELVET, .15), 0, .056, .4); }));
+  pv.add(mc('cin-seat-cushion2|' + w, ({ add }) => {
+    add(G.box(w, .11, .42, .05), VELVET, 0, 0, .21); add(G.box(w - .02, .03, .4, .01), VELVETD, 0, -.065, .21);
+    add(G.cyl(.058, .058, w - .02, 14), shade(VELVET, .05), 0, -.002, .385, 0, 0, HP);
+    for (let k = 1; k < (wide ? 6 : 3); k++) add(PB(.012, .006, .32), VELVETD, -w / 2 + k * w / (wide ? 6 : 3), .056, .19);
+  }));
   return { pv, x };
 });
+const SEATNO = {}, ROWT = {};
+const seatNoTex = s => SEATNO[s] || (SEATNO[s] = canvasTex(96, 44, (c, W, H) => { c.fillStyle = '#e8c46a'; c.fillRect(0, 0, W, H); c.strokeStyle = '#a8803c'; c.lineWidth = 4; c.strokeRect(2, 2, W - 4, H - 4); say(c, s, W / 2, H / 2 + 2, W * .8, 30, '#5a3a22', { weight: 'bold' }); }));
+const rowTex = s => ROWT[s] || (ROWT[s] = canvasTex(96, 96, (c, W, H) => { c.fillStyle = '#d9b25e'; c.beginPath(); c.arc(W / 2, H / 2, W / 2 - 2, 0, PI * 2); c.fill(); c.fillStyle = '#6a2a36'; c.beginPath(); c.arc(W / 2, H / 2, W / 2 - 10, 0, PI * 2); c.fill(); say(c, s, W / 2, H / 2 + 3, W * .6, 50, '#ffe6a6', { weight: 'bold' }); }));
+const BACK_TILT = -.1;
+const seatBack = (add, x, yc) => {
+  const C = [x, yc, -.2], at = (dx, dy, dz) => onTilt(C, BACK_TILT, dx, dy, dz);
+  for (const k of [-1, 0, 1]) add(G.box(.155, .5, .1, .045), k ? VELVET : shade(VELVET, .06), ...at(k * .163, -.02, 0), BACK_TILT, 0, 0);
+  for (const k of [-.5, .5]) add(PB(.012, .46, .09), VELVETD, ...at(k * .163, -.02, .006), BACK_TILT, 0, 0);
+  add(G.cyl(.055, .055, .5, 14), shade(VELVET, -.03), ...at(0, .25, -.01), 0, 0, HP);
+  add(G.box(.52, .6, .04, .03), SEATBK, ...at(0, .01, -.07), BACK_TILT, 0, 0);
+  add(PB(.4, .38, .01), shade(SEATBK, -.12), ...at(0, -.04, -.093), BACK_TILT, 0, 0);
+  for (const [dx, dy] of [[-.2, .2], [.2, .2], [-.2, -.25], [.2, -.25]]) add(G.sph(.014, 5, 4), GOLDD, ...at(dx, dy, -.094));
+  add(PB(.13, .055, .012), GOLDD, ...at(0, .2, -.094), BACK_TILT, 0, 0);
+};
+// 팔걸이 위 컵홀더 (둥근 받침 + 금테 + 짙은 구멍)
+const cupHolder = (add, x) => { add(G.cyl(.052, .052, .05, 10), WOODD, x, .63, .16); add(G.tor(.042, .011, PI * 2, 3, 12), GOLDD, x, .657, .16, HP, 0, 0); add(G.cyl(.034, .034, .012, 8), '#2a2230', x, .652, .16); };
+// 등받이 뒤 번호판 글자 (좌석마다 따로 — 줄 글자 + 번호)
+const seatNumbers = (f, xs, row, first, yc) => { if (!row) return; xs.forEach((x, i) => { const m = quad(.11, .045, texMat(seatNoTex(row + (first + i)), { rim: 0 })); put(m, ...onTilt([x, yc, -.2], BACK_TILT, 0, .2, -.104), BACK_TILT, PI, 0); f.add(m); }); };
+const rowDisc = (f, row, x, s) => { if (!row) return; const m = mesh(new THREE.CircleGeometry(.085, 24), texMat(rowTex(row), { rim: 0 }), { cast: false }); put(m, x + s * .047, .34, -.04, 0, s * HP, 0); f.add(m); };
 B.cin_seatrow = (f, T0, o = {}) => {
   const n = o.n || 4, SPC = .6, x0 = -(n - 1) / 2 * SPC, xs = Array.from({ length: n }, (_, i) => x0 + i * SPC);
   f.add(mc('cin-seatrow|' + n, ({ add }) => {
-    for (const x of xs) {
-      add(G.box(.5, .56, .1, .05), VELVET, x, .74, -.2, -.1, 0, 0); add(G.box(.52, .58, .04, .03), SEATBK, x, .75, -.27, -.1, 0, 0);
-      for (const [bx, by] of [[-.12, .84], [.12, .84], [-.12, .64], [.12, .64]]) add(G.sph(.018, 6, 5), VELVETD, x + bx, by, -.146 + (by - .74) * .1);
-      add(G.box(.1, .03, .012, .004), GOLD, x, 1.0, -.31, -.1, 0, 0);
-      add(G.box(.42, .04, .06, .01), IRON, x, .34, -.12);
-    }
+    for (const x of xs) { seatBack(add, x, .74); add(G.box(.42, .04, .06, .01), IRON, x, .34, -.12); }
     for (let i = 0; i <= n; i++) { const x = x0 - SPC / 2 + i * SPC, end = i === 0 || i === n;
-      add(G.box(end ? .07 : .05, .6, .46, .02), end ? IRON : '#5a5468', x, .3, -.04); add(G.box(.08, .05, .48, .02), WOODD, x, .63, -.02);
-      if (end) { const ox = x + (i ? .04 : -.04); add(G.tor(.1, .02, PI * 2, 6, 16), GOLD, ox, .34, -.04, 0, HP, 0); add(G.sph(.04, 8, 6), GOLD, ox, .34, -.04); } }
+      add(G.box(end ? .07 : .05, .6, .46, .02), end ? IRON : '#5a5468', x, .3, -.04); add(G.box(.08, .05, .48, .02), WOODD, x, .63, -.02); cupHolder(add, x);
+      if (end) { const ox = x + (i ? .04 : -.04); add(G.tor(.1, .016, PI * 2, 6, 20), GOLD, ox, .34, -.04, 0, HP, 0); add(G.cyl(.09, .09, .01, 20), '#6a2a36', ox - (i ? .002 : -.002), .34, -.04, 0, 0, HP); } }
     add(G.box(n * SPC + .1, .04, .08, .01), IRON, 0, .03, -.22);
   }));
+  seatNumbers(f, xs, o.row, o.first || 1, .74);
+  rowDisc(f, o.row, x0 - SPC / 2, -1); rowDisc(f, o.row, x0 - SPC / 2 + n * SPC, 1);
   const under = new Set(o.under || xs.map((_, i) => i).filter(i => i % 2 === 1));
   f.seats = seatParts(f, xs).map(({ pv, x }, i) => {
     const p = f.part('lift', pv, (t, b) => { pv.rotation.x = b.r.x - 1.45 * t; }, { label: '접이식 좌석', sfx: 'lift', dur: .28 });
@@ -679,18 +856,18 @@ B.cin_seatrow = (f, T0, o = {}) => {
   });
 };
 // ── 붙어 있는 의자 두 개 (커플석): 가운데 팔걸이 없이 한 방석, 두 등판 사이 황동 사슬과 하트 판 ───────────────────────────
-B.cin_twinseat = (f, T0) => {
+B.cin_twinseat = (f, T0, o = {}) => {
   const xs = [-.28, .28];
   f.add(mc('cin-twinseat', ({ add, tube }) => {
-    for (const x of xs) { add(G.box(.5, .58, .1, .05), VELVET, x, .75, -.2, -.1, 0, 0); add(G.box(.52, .6, .04, .03), SEATBK, x, .76, -.27, -.1, 0, 0);
-      for (const [bx, by] of [[-.12, .86], [.12, .86], [-.12, .66], [.12, .66]]) add(G.sph(.018, 6, 5), VELVETD, x + bx, by, -.146 + (by - .75) * .1); }
-    for (const x of [-.6, .6]) { add(G.box(.07, .6, .46, .02), IRON, x, .3, -.04); add(G.box(.08, .05, .48, .02), WOODD, x, .63, -.02); }
+    for (const x of xs) seatBack(add, x, .75);
+    for (const x of [-.6, .6]) { add(G.box(.07, .6, .46, .02), IRON, x, .3, -.04); add(G.box(.08, .05, .48, .02), WOODD, x, .63, -.02); cupHolder(add, x); }
     add(G.box(1.16, .04, .06, .01), IRON, 0, .34, -.12); add(G.box(1.26, .04, .08, .01), IRON, 0, .03, -.22);
     // 사슬 (등판 꼭대기 사이로 처짐)과 하트 판
     for (let k = 0; k < 5; k++) { const t = (k + .5) / 5, x = -.18 + t * .36, y = 1.02 - Math.sin(t * PI) * .07; add(G.tor(.022, .006, PI * 2, 4, 10), GOLD, x, y, -.28, 0, k % 2 ? HP : 0, 0); }
     const hs = new THREE.Shape(); hs.moveTo(0, -.05); hs.bezierCurveTo(-.01, -.04, -.06, -.01, -.06, .02); hs.bezierCurveTo(-.06, .05, -.02, .06, 0, .03); hs.bezierCurveTo(.02, .06, .06, .05, .06, .02); hs.bezierCurveTo(.06, -.01, .01, -.04, 0, -.05);
     add(G.ext(hs, .015, 0, 6), GOLD, 0, .94, -.3);
   }));
+  seatNumbers(f, xs, o.row, o.first || 1, .75);
   const [{ pv }] = seatParts(f, [0], true);
   const p = f.part('lift', pv, (t, b) => { pv.rotation.x = b.r.x - 1.45 * t; }, { label: '커플석 방석', sfx: 'lift', dur: .3 });
   f.seats = [p];
@@ -713,6 +890,9 @@ B.cin_screen = (f, T0) => {
     add(G.box(SW + .3, SH + .3, .08, .03), '#26222c', 0, YC, -.05);
     for (const sx of [-1, 1]) add(G.box(.1, YC - SH / 2 - .12, .1, .02), '#3a3540', sx * (SW / 2 - .25), (YC - SH / 2 - .12) / 2, -.08);
     add(G.box(SW + .4, .06, .14, .02), GOLDD, 0, YC + SH / 2 + .18, -.03);
+    // (디테일 10/24) 화면 둘레 가는 금테와 아래 스피커 둘(천 망·금테)
+    for (const [w, h, x, y] of [[SW + .06, .03, 0, YC + SH / 2 + .015], [SW + .06, .03, 0, YC - SH / 2 - .015], [.03, SH, -SW / 2 - .015, YC], [.03, SH, SW / 2 + .015, YC]]) add(PB(w, h, .02), GOLDD, x, y, .0);
+    for (const sx of [-1, 1]) { add(G.box(.42, .34, .1, .03), '#3a3540', sx * .95, .2, -.06); add(PB(.36, .28, .01), '#5e5670', sx * .95, .2, -.005); add(G.tor(.1, .012, PI * 2, 4, 18), GOLDD, sx * .95, .2, .0); }
   }));
   const g = new THREE.PlaneGeometry(SW, SH); g.name = 'cin-screen';
   const scr = mesh(g, mat('#f2ede4', { rough: .95, rim: .04 }), { cast: false }); scr.name = 'cin-screen'; scr.userData.noMerge = true; put(scr, 0, YC, .006); f.add(scr);
@@ -735,7 +915,17 @@ B.cin_curtain = (f, T0) => {
     for (let k = 0; k < 4; k++) add(G.tor(.42, .07, PI, 6, 18), CURTAIN, -CW / 2 + .42 + k * .82, TOP + .02, .1, 0, 0, PI);
     add(G.box(CW + .7, .04, .16, .01), GOLD, 0, TOP + .39, .03); for (let k = 0; k < 22; k++) add(G.cyl(.012, .006, .09, 5), GOLD, -CW / 2 - .3 + k * .18, TOP - .08 + (k % 4 === 1 || k % 4 === 2 ? -.06 : 0), .16);
     add(G.ext(starShape(.13, .06), .04, 0, 4), GOLD, 0, TOP + .17, .1);
-    for (const s of [-1, 1]) { add(pleat(.5, 2.52, .045, .17), CURTAIND, s * (CW / 2 + .12), .0, .08); add(G.tor(.13, .03, PI * 2, 6, 16), GOLD, s * (CW / 2 + .12), 1.05, .1, HP, 0, 0); add(G.sph(.05, 8, 6), GOLD, s * (CW / 2 + .2), .95, .18); }
+    // (디테일 10/24 — 사용자 사진 '커튼'): 휘장 이음마다 늘어진 금술 다섯(공 + 갓 + 술), 휘장 위 금빛 장대와 끝 공, 묶은 양옆 커튼엔 꼰 금줄 고리와 큰 술
+    for (let k = 0; k <= 4; k++) { const x = -CW / 2 + .01 + k * .82; add(G.sph(.04, 8, 6), GOLD, x, TOP - .02, .19); add(G.cone(.05, .12, 10), '#e8c25a', x, TOP - .12, .19, PI, 0, 0); for (let j = 0; j < 6; j++) { const a = j / 6 * PI * 2; add(G.cyl(.006, .004, .1, 3, true), GOLDD, x + Math.cos(a) * .035, TOP - .22, .19 + Math.sin(a) * .035); } }
+    add(G.cyl(.03, .03, CW + .58, 10), GOLDD, 0, TOP + .43, .06, 0, 0, HP); for (const s of [-1, 1]) { add(G.sph(.055, 10, 8), GOLD, s * (CW / 2 + .29), TOP + .43, .06); add(G.cone(.035, .08, 8), GOLD, s * (CW / 2 + .29), TOP + .52, .06); }
+    for (const s of [-1, 1]) {
+      add(pleat(.5, 2.52, .045, .17), CURTAIND, s * (CW / 2 + .12), .0, .08); add(pleat(.52, .06, .045, .17, .03), GOLD, s * (CW / 2 + .12), .02, .08);
+      const tx = s * (CW / 2 + .12), ty = 1.05;
+      for (let k = 0; k < 10; k++) { const a = k / 10 * PI * 2; add(G.sph(.026, 5, 3), k % 2 ? GOLD : GOLDD, tx + Math.cos(a) * .13, ty + Math.sin(a) * .13 * .35, .1 + Math.sin(a) * .13 * .9); }
+      const hx = s * (CW / 2 + .22); add(G.sph(.06, 10, 8), GOLD, hx, .93, .2); add(G.cone(.08, .2, 12), '#e8c25a', hx, .78, .2, PI, 0, 0);
+      add(G.tor(.06, .014, PI * 2, 4, 14), GOLDD, hx, .86, .2, HP, 0, 0);
+      for (let j = 0; j < 8; j++) { const a = j / 8 * PI * 2; add(G.cyl(.007, .005, .14, 3, true), GOLDD, hx + Math.cos(a) * .06, .62, .2 + Math.sin(a) * .06); }
+    }
     add(G.box(.5, .05, .05, .02), GOLDD, CX + .2, TOP + .3, .1);
   }));
   // 가운데서 갈라지는 두 폭: 바깥 끝(축)으로 주름이 모이며 걷힘 — 진짜 무대 막처럼 (위로 걷으면 차양처럼 화면 윗부분을, 관객 쪽으로 말면
@@ -744,6 +934,11 @@ B.cin_curtain = (f, T0) => {
     const pv = grp(); put(pv, s * CW / 2, 0, s > 0 ? .015 : 0); f.add(pv);
     pv.add(put(mesh(pleat(CW / 2 + .04, CH), mat(CURTAIN, { rough: .92, side: THREE.DoubleSide })), -s * CW / 4, .05, 0));
     pv.add(put(mesh(pleat(CW / 2 + .04, .07, .05, .22, .03), mat(GOLD, { side: THREE.DoubleSide })), -s * CW / 4, .02, 0));
+    // 단 끝 금빛 술 (주름 물결을 따라 — 부품과 같이 모이며 걷힘)
+    pv.add(put(mc('cin-curtain-fringe|' + s, ({ add }) => {
+      const w = CW / 2 + .04, kk = PI * 2 / .22;
+      for (let u = -w / 2 + .02; u < w / 2; u += .04) { const z = -.05 * Math.sin(kk * (u + w / 2)) + .022; add(G.cyl(.008, .005, .07, 3, true), GOLDD, u, .065, z); }
+    }), -s * CW / 4, .02, 0));
     return pv;
   };
   const pl = half(-1), pr = half(1);
@@ -767,7 +962,13 @@ const BOOTHG = { W: 2.1, D: 1.14, H: 1.45, HX: .1, HY: .68, HR: .52, LENS: [-2.1
 export const CIN_BOOTH = BOOTHG;
 const reelGroup = (r, key) => {
   const g = grp(), s = new THREE.Shape(); circle(s, 0, 0, r); for (let k = 0; k < 5; k++) { const a = HP + k * PI * 2 / 5; s.holes.push(circle(new THREE.Path(), Math.cos(a) * r * .55, Math.sin(a) * r * .55, r * .22)); }
-  g.add(mc('cin-reel|' + key, ({ add }) => { for (const z of [.06, -.1]) add(ext(s, .035, 20), REEL, 0, 0, z); add(G.cyl(r * .78, r * .78, .12, 24), FILM, 0, 0, -.02, HP, 0, 0); add(G.cyl(r * .2, r * .2, .2, 14), REELD, 0, 0, -.02, HP, 0, 0); add(G.tor(r, .02, PI * 2, 4, 32), REELD, 0, 0, .08); }));
+  // (디테일 10/24: 구멍 사이로 감긴 필름 결 셋, 앞뒤 테, 가운데 육각 너트와 볼트 셋)
+  g.add(mc('cin-reel|' + key, ({ add }) => {
+    for (const z of [.06, -.1]) add(ext(s, .035, 20), REEL, 0, 0, z); add(G.cyl(r * .78, r * .78, .12, 24), FILM, 0, 0, -.02, HP, 0, 0); add(G.cyl(r * .2, r * .2, .2, 14), REELD, 0, 0, -.02, HP, 0, 0);
+    add(G.tor(r, .02, PI * 2, 4, 32), REELD, 0, 0, .08); add(G.tor(r, .02, PI * 2, 4, 32), REELD, 0, 0, -.1);
+    for (const k of [.42, .58, .72]) add(G.tor(r * k, .004, PI * 2, 3, 28), '#6e544c', 0, 0, .042);
+    add(G.cyl(r * .13, r * .13, .03, 6), CHROME, 0, 0, .105, HP, 0, 0); for (let k = 0; k < 3; k++) { const a = k * PI * 2 / 3 + .5; add(G.sph(r * .03, 6, 4), '#9aa0ad', Math.cos(a) * r * .17, Math.sin(a) * r * .17, .098); }
+  }));
   return g;
 };
 B.cin_projroom_door = (f, T0) => {
@@ -792,7 +993,20 @@ B.cin_projroom_door = (f, T0) => {
     add(G.box(BW - .2, BH - .2, .02, .01), '#3d4a52', 0, BH / 2, -FZ + .09);
     add(G.box(.42, .28, .32, .03), '#8a6a52', .2, .2, .1); add(G.box(.44, .03, .34, .01), '#6c5242', .2, .35, .1);
     add(G.cyl(.04, .05, .06, 10), IRON, -.1, BH - .05, -.05);
+    // (디테일 10/24 — 사용자 사진 '영사기'): 앞 모서리 크롬 띠, 계기판(바늘·눈금, 숫자 없음), 통풍구 테, 동쪽 옆 바람살, 지붕 테 리벳, 렌즈 통 크롬 고리,
+    // 지붕 필름 홈 — 두 릴 사이 필름이 실제로 홈으로 감겨 들어감
+    for (const sx of [-1, 1]) add(PB(.035, BH - .04, .035), CHROME, sx * (BW / 2 - .005), BH / 2, FZ - .01);
+    add(G.cyl(.11, .11, .03, 20), CHROME, -.66, .62, FZ + .01, HP, 0, 0); add(G.cyl(.09, .09, .032, 20), CREAM, -.66, .62, FZ + .014, HP, 0, 0);
+    for (let k = 0; k < 7; k++) { const a = PI * .15 + k * PI * .7 / 6; add(PB(.006, .022, .006), INK, -.66 + Math.cos(a) * .07, .62 + Math.sin(a) * .07, FZ + .031, 0, 0, a - HP); }
+    add(PB(.008, .07, .005), KRED, -.66 + .02, .62 + .027, FZ + .033, 0, 0, -.65); add(G.sph(.012, 8, 6), INK, -.66, .62, FZ + .033);
+    add(PB(.3, .02, .03), CHROME, .84, .43, FZ + .015); add(PB(.3, .02, .03), CHROME, .84, .93, FZ + .015);
+    for (let k = 0; k < 6; k++) add(PB(.02, .035, .48), BOOTHD, BW / 2 + .01, .38 + k * .09, 0);
+    for (const [y, z] of [[.24, -.4], [.24, .4], [1.2, -.4], [1.2, .4]]) add(G.sph(.022, 6, 5), CHROME, BW / 2 + .012, y, z);
+    for (let k = 0; k < 9; k++) add(G.sph(.02, 6, 5), CHROME, -BW / 2 + .1 + k * (BW - .2) / 8, BH + .07, FZ + .075);
+    for (const x of [-BW / 2 - .22, -BW / 2 - .46]) add(G.tor(.31, .02, PI * 2, 4, 28), CHROME, x, .78, 0, 0, HP, 0);
+    add(PB(.32, .025, .15), '#1e2428', .12, BH + .142, -.08); for (const dz of [-.08, .08]) add(PB(.34, .02, .02), CHROME, .12, BH + .15, -.08 + dz);
   }));
+  f.add(filmRibbon([[-.186, BH + .365, -.08], [-.1, BH + .25, -.08], [0, BH + .185, -.08], [.12, BH + .155, -.08], [.24, BH + .185, -.08], [.34, BH + .25, -.08], [.425, BH + .332, -.08]], .05, .008, () => [0, 0, 1]));
   { const m = quad(.44, .15, texMat(boothPlateTex(), { rim: 0 })); put(m, -.66, 1.08, FZ + .015); f.add(m); }
   { const b = mesh(new THREE.SphereGeometry(.06, 10, 8), mat('#fff3d0', { emissive: GLOWC, ei: 1.2 }), { cast: false }); put(b, -.1, BH - .12, -.05); f.add(b); }
   { const b = mesh(new THREE.SphereGeometry(.04, 8, 6), mat('#ff7a6a', { emissive: '#ff5a4a', ei: 1.0 }), { cast: false }); put(b, -.66, 1.24, FZ + .04); f.add(b); }
@@ -831,7 +1045,18 @@ B.cin_projector = (f, T0, o = {}) => {
     add(G.cyl(.065, .07, .2, 16), '#2e3e44', 0, .64, .34, HP, 0, 0); add(G.tor(.066, .015, PI * 2, 4, 18), CHROME, 0, .64, .44);
     add(G.box(.04, .3, .04, .01), CHROME, 0, .92, .14, .3, 0, 0); add(G.box(.04, .3, .04, .01), CHROME, 0, .9, -.24, -.3, 0, 0);
     add(G.cyl(.12, .12, .03, 20), '#c9a446', .145, .62, .02, 0, 0, HP);
+    // (디테일 10/24) 렌즈 통 크롬 고리 둘·초점 손잡이, 램프 집 갈비 셋·옆 바람구멍, 몸 위 바람살, 옆판 톱니바퀴 둘·필름 문, 받침 발 셋
+    for (const z of [.3, .38]) add(G.tor(.07, .012, PI * 2, 4, 18), CHROME, 0, .64, z); add(G.cyl(.022, .022, .04, 10), CHROME, .08, .64, .34, 0, 0, HP);
+    for (const y of [.79, .86, .93]) add(G.tor(.102, .01, PI * 2, 4, 18), CHROME, 0, y, -.15, HP, 0, 0);
+    for (let k = -1; k <= 1; k++) add(PB(.012, .1, .022), '#2e3e44', .1, .86, -.15 + k * .045);
+    for (let k = 0; k < 4; k++) add(PB(.16, .006, .018), '#2e3e44', 0, .801, .0 + k * .035);
+    for (const [y, z] of [[.52, .14], [.56, -.13]]) { add(G.cyl(.035, .035, .05, 12), CHROME, .16, y, z, 0, 0, HP); add(G.cyl(.012, .012, .054, 6), IRON, .16, y, z, 0, 0, HP); }
+    add(PB(.05, .1, .04), '#2e3e44', .155, .65, .275);
+    for (let k = 0; k < 3; k++) { const a = k * PI * 2 / 3; add(PB(.05, .02, .14), IRON, Math.cos(a) * .12, .01, Math.sin(a) * .12, 0, -a, 0); }
   }));
+  // 필름 길: 앞 릴에서 몸 위로 내려와, 옆판(카메라 쪽)에서 톱니바퀴·필름 문을 돌아 뒤로 감김
+  body.add(filmRibbon([[-.02, .96, .24], [-.02, .88, .225], [-.02, .8, .21]], .03, .006, () => [1, 0, 0]));
+  body.add(filmRibbon([[.155, .79, .21], [.155, .72, .225], [.155, .66, .245], [.155, .58, .23], [.155, .52, .18], [.155, .49, .1], [.155, .49, -.04], [.155, .52, -.14], [.155, .6, -.19], [.155, .7, -.2], [.155, .79, -.19]], .025, .006, () => [1, 0, 0]));
   { const g = mesh(new THREE.CircleGeometry(.05, 16), mat('#e8f4ff', { emissive: '#bfe0ff', ei: .6, rim: 0 }), { cast: false }); put(g, 0, .64, .445); body.add(g); }
   // 릴 둘 (옆으로 봄: 면이 ±x)
   f.reels = [[.14, 1.08, .2], [-.24, 1.04, .2]].map(([z, y, r], i) => { const g = reelGroup(r, 'p' + i); put(g, 0, y, z, 0, HP, 0); body.add(g); return g; });
@@ -866,8 +1091,14 @@ B.cin_filmcans = (f, T0) => {
       add(G.cyl(r, r, .07, 24), '#c9ccd6', x, r + .06, 0, HP, 0, 0); add(G.tor(r, .012, PI * 2, 4, 24), '#9aa0ad', x, r + .06, .036);
       add(G.cyl(r * .22, r * .22, .074, 12), '#6f7680', x, r + .06, 0, HP, 0, 0);
       for (let k = 0; k < 4; k++) { const a = k * HP + .4; add(G.cyl(r * .14, r * .14, .074, 10), '#8a909c', x + Math.cos(a) * r * .55, r + .06 + Math.sin(a) * r * .55, 0, HP, 0, 0); }
+      // (디테일 10/24) 뚜껑 둘레 눌린 골 둘, 옆 걸쇠, 글자 없는 크림 종이 띠
+      for (const k of [.72, .88]) add(G.tor(r * k, .005, PI * 2, 3, 22), '#b4b8c4', x, r + .06, .037);
+      add(PB(.03, .05, .08), '#8a909c', x + r + .005, r + .06, 0); add(PB(.012, .02, .084), '#6f7680', x + r + .02, r + .06, 0);
+      add(PB(r * .9, .028, .002), '#efe2c8', x, r + .06 - r * .62, .038);
     }
   }));
+  // 가운데 통에서 받침 위로 흘러내린 필름 한 가닥
+  f.add(filmRibbon([[.06, .3, .04], [.12, .24, .07], [.15, .14, .09], [.13, .085, .11], [.06, .065, .12]], .022, .004, () => [0, 0, 1]));
   f.spot('on', null, .4, .06, 0, { maxH: 0.45, label: '필름 통 받침 끝', scale: 1 });
 };
 
@@ -876,6 +1107,14 @@ B.cin_posterstand = (f, T0, o = {}) => {
   f.add(mc('cin-posterstand', ({ add, tube }) => {
     tube([-.28, 0, .12], [-.2, 1.5, 0], .018, GOLDD, 6); tube([.28, 0, .12], [.2, 1.5, 0], .018, GOLDD, 6); tube([0, 0, -.32], [0, 1.4, -.02], .018, GOLDD, 6);
     add(G.box(.6, .03, .05, .01), GOLD, 0, .48, .08); add(G.box(.62, .84, .05, .02), '#3a2c34', 0, .92, .05, -.08, 0, 0);
+    // (디테일 10/24) 포스터 둘레 금빛 액자 테·귀 장식, 위 반원 왕관, 다리 끝 공, 받침 사이 가로대
+    const C = [0, .92, .05];
+    for (const [w, h, dx, dy] of [[.6, .035, 0, .39], [.6, .035, 0, -.39], [.035, .8, -.29, 0], [.035, .8, .29, 0]]) add(G.box(w, h, .02, .008), GOLD, ...onTilt(C, -.08, dx, dy, .033), -.08, 0, 0);
+    for (const [dx, dy] of [[-.29, .39], [.29, .39], [-.29, -.39], [.29, -.39]]) add(G.sph(.022, 8, 6), GOLDD, ...onTilt(C, -.08, dx, dy, .045));
+    { const fan = new THREE.Shape(); fan.moveTo(-.16, 0); fan.absarc(0, 0, .16, PI, 0, true); fan.closePath(); add(ext(fan, .03, 10), GOLD, ...onTilt(C, -.08, 0, .41, -.01), -.08, 0, 0); }
+    add(G.ext(starShape(.05, .022), .02, 0, 4), GOLDD, ...onTilt(C, -.08, 0, .49, .02), -.08, 0, 0);
+    for (const p of [[-.28, 0, .12], [.28, 0, .12], [0, 0, -.32]]) add(G.sph(.03, 8, 6), GOLDD, p[0], .02, p[2]);
+    tube([-.25, .25, .1], [0, .25, -.2], .012, GOLDD, 5); tube([.25, .25, .1], [0, .25, -.2], .012, GOLDD, 5);
   }));
   { const m = quad(.54, .76, texMat(posterTex(o.k ?? 1), { rim: .05 })); put(m, 0, .92, .08, -.08); f.add(m); }
   f.spot('behind', null, 0, 0, -.42, { maxH: 0.5, label: '포스터 받침 뒤', scale: 1 });

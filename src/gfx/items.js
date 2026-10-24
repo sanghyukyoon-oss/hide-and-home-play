@@ -491,13 +491,26 @@ export const ITEMS = {
     return g;
   } },
   // ── chain items
+  // (31판 사용자 10/24 "열쇠는 왜이럼": 노란 도넛 + 분홍 공으로만 읽힘 → 진짜 열쇠 — 하트 구멍 뚫린 도톰한 머리, 목 고리 둘, 몸통, 톱니 난 날.
+  // 크기·자리는 그대로: 머리 가운데 x -.1(걸린 열쇠가 매달리는 점, stage.js swingHung), 날 끝 x .11, 톱니는 +z, 두께 y .006~.034)
   key: { name: '열쇠', h: .06, flat: true, special: 'key', build() {
-    const g = grp(), m = '#ffc93c';
-    g.add(put(tor(.05, .018, m, GOLD), -.1, .02, 0, Math.PI / 2));
-    g.add(put(cyl(.016, .016, .17, m, GOLD, 10), .02, .02, 0, 0, 0, Math.PI / 2));
-    g.add(put(rbox(.025, .02, .05, m, .005, GOLD), .07, .02, .03));
-    g.add(put(rbox(.025, .02, .04, m, .005, GOLD), .1, .02, .025));
-    g.add(put(sph(.02, '#ff5d8a', GLOSS), -.1, .02, 0));
+    const g = grp(), m = '#ffc93c', dk = '#e3a52c';
+    g.add(put(mesh(geo('key2-bow', () => {
+      const s = new THREE.Shape(); s.absarc(-.1, 0, .058, 0, Math.PI * 2, false);
+      const h = new THREE.Path(), pts = heartShape(.03).getPoints(10);
+      pts.forEach(({ x, y }, i) => { const u = -.1 - (y - .006), v = x; i ? h.lineTo(u, v) : h.moveTo(u, v); }); s.holes.push(h);
+      const e = new THREE.ExtrudeGeometry(s, { depth: .018, bevelEnabled: true, bevelThickness: .005, bevelSize: .006, bevelSegments: 2, curveSegments: 16 });
+      e.rotateX(Math.PI / 2); e.translate(0, .029, 0); return e;
+    }), mat(m, GOLD)), 0, 0, 0));
+    for (const x of [-.046, -.03]) g.add(put(cyl(.021, .021, .01, dk, GOLD, 14), x, .02, 0, 0, 0, Math.PI / 2));
+    g.add(put(cyl(.014, .014, .15, m, GOLD, 12), .025, .02, 0, 0, 0, Math.PI / 2));
+    g.add(put(sph(.0145, m, GOLD, 12, 8), .1, .02, 0));
+    g.add(put(mesh(geo('key2-bit', () => {
+      const s = new THREE.Shape(), P = [[.044, .004], [.044, .056], [.058, .056], [.058, .04], [.07, .04], [.07, .052], [.082, .052], [.082, .034], [.094, .034], [.094, .047], [.11, .047], [.11, .004]];
+      P.forEach(([x, y], i) => i ? s.lineTo(x, y) : s.moveTo(x, y)); s.closePath();
+      const e = new THREE.ExtrudeGeometry(s, { depth: .01, bevelEnabled: true, bevelThickness: .003, bevelSize: .002, bevelSegments: 1 });
+      e.rotateX(Math.PI / 2); e.translate(0, .025, 0); return e;
+    }), mat(m, GOLD)), 0, 0, 0));
     return g;
   } },
   // (③ 10/22, GPT 3-n notes, user: "쪽지 … 접혀 있는 게 나을 것 같은데", "삼각은 좀 이상하고 3가지 다양하게"): one of GPT's
@@ -527,9 +540,18 @@ export const ITEMS = {
   } },
   // ── decoys / clutter (never targets)
   mug: { name: '머그컵', h: .14, decoy: true, build(o = {}) {
-    const g = grp(), c = o.color || '#9be7c4';
-    g.add(put(cyl(.06, .055, .12, c, null, 16), 0, .06, 0));
-    g.add(put(tor(.035, .012, c), .065, .065, 0));
+    // (사용자 메모 10/24 28판 "컵이랑 선그란스? 이것도 디테일 잡아줘"): a rounded rim with the cream inside and the coffee in it, a little
+    // foot ring, a thick round handle on two joints, a band and a heart on the side
+    const g = grp(), c = o.color || '#9be7c4', cD = shade(c, -.14);
+    g.add(put(cyl(.06, .054, .118, c, null, 22), 0, .061, 0));
+    g.add(put(cyl(.052, .052, .008, cD, null, 20), 0, .004, 0));
+    g.add(put(tor(.057, .007, shade(c, .1), null, Math.PI * 2, 8, 26), 0, .12, 0, Math.PI / 2, 0, 0));
+    g.add(put(cyl(.052, .052, .006, '#fffaf1', null, 20), 0, .116, 0));
+    g.add(put(cyl(.046, .046, .006, '#8a5a3c', null, 20), 0, .109, 0));
+    g.add(put(cyl(.0605, .057, .018, '#fffaf1', null, 22, true), 0, .05, 0));
+    g.add(put(tor(.034, .013, c, null, Math.PI * 1.25, 8, 18), .066, .064, 0, 0, 0, -Math.PI * .62));
+    for (const y of [.096, .036]) g.add(put(sph(.012, cD, null, 10, 8), .061, y, 0));
+    const h = put(sph(.016, '#ff7f9e', null, 12, 10), 0, .078, .057); h.scale.set(1, .85, .35); g.add(h);
     return g;
   } },
   // 책: a little stack with cream page edges and a ribbon bookmark, so it reads as books, not erasers

@@ -1551,16 +1551,23 @@ export const BUILDING_ITEMS = {
   } },
   // 선글라스: red-framed sunglasses lying open, the arms folded under, a glint on each lens
   sunglasses: { name: '선글라스', h: .05, flat: true, build() {
-    const g = grp(), fr = '#ff5a4a';
-    g.add(mc('it-sunglasses', ({ add, tube }) => {
+    // (사용자 메모 10/24 28판 "컵이랑 선그란스? 이것도 디테일 잡아줘"): rounded lenses with a navy-to-dark tint and a big glint, thick red
+    // rims, a brow bar, nose pads on little arms, hinges with silver studs, the arms folded under with darker tips
+    const g = grp(), fr = '#ff5a4a', frD = '#d8433a';
+    g.add(mc('it-sunglasses2', ({ add, tube }) => {
       for (const sx of [-1, 1]) {
-        add(G.cyl(.048, .048, .01, 20), '#2f3346', sx * .062, .03, 0, 0, 0, 0, [1, 1, .82]);
-        add(G.tor(.05, .009, PI * 2, 5, 22), fr, sx * .062, .03, 0, HP, 0, 0, [1, .82, 1]);
-        add(G.pbox(.03, .004, .008), WHITE, sx * .062 - .015, .035 + .004, -.012, 0, .5, 0);
+        add(G.cyl(.05, .05, .012, 24), '#283049', sx * .064, .032, 0, 0, 0, 0, [1, 1, .84]);
+        add(G.cyl(.032, .032, .013, 18), '#3b4766', sx * .064 + sx * .006, .034, -.006, 0, 0, 0, [1, 1, .8]);
+        add(G.tor(.052, .011, PI * 2, 6, 26), fr, sx * .064, .032, 0, HP, 0, 0, [1, .84, 1]);
+        add(G.pbox(.034, .004, .009), WHITE, sx * .064 - .016, .04, -.014, 0, .5, 0); add(G.pbox(.012, .004, .006), WHITE, sx * .064 + .012, .04, .016, 0, .5, 0);
+        add(G.box(.05, .012, .014, .005), frD, sx * .072, .04, -.038, 0, 0, 0);
+        add(G.box(.014, .016, .02, .005), fr, sx * .118, .034, -.026); add(G.sph(.006, 6, 4), '#d9dde3', sx * .124, .043, -.026);
+        add(G.sph(.008, 6, 4), '#e8eef4', sx * .012, .02, .01);
+        tube([sx * .02, .03, .002], [sx * .012, .02, .01], .003, '#c3c9d2', 4);
       }
-      tube([-.016, .034, -.01], [.016, .034, -.01], .007, fr, 6);
-      add(G.box(.15, .01, .012, .004), fr, -.01, .012, -.05, 0, .06, 0);
-      add(G.box(.15, .01, .012, .004), fr, .01, .023, -.062, 0, -.06, 0);
+      tube([-.016, .038, -.012], [.016, .038, -.012], .008, fr, 6);
+      add(G.box(.15, .011, .013, .004), fr, -.01, .012, -.05, 0, .06, 0); add(G.box(.04, .012, .014, .004), frD, -.075, .012, -.054, 0, .06, 0);
+      add(G.box(.15, .011, .013, .004), fr, .01, .024, -.062, 0, -.06, 0); add(G.box(.04, .012, .014, .004), frD, .075, .024, -.066, 0, -.06, 0);
     }));
     return g;
   } },

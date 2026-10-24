@@ -25,7 +25,7 @@ export function makeTraincar5a(theme) {
   const v = 'a', X0 = -2, zA = -3.5, zB = 3.5;
   const win = (z, o = {}) => ft('twindow5', X0, z, HP, { v, ...o });
   return { ...base(theme), w: 4, d: 13,
-    cut: [{ i: 0, j: 6, w: 1, d: 1 }, { i: 3, j: 6, w: 1, d: 1 }],
+    cut: [{ i: 0, j: 0, w: 4, d: 1 }, { i: 0, j: 6, w: 1, d: 1 }, { i: 3, j: 6, w: 1, d: 1 }],
     floorZones: [{ i: 1, j: 6, w: 2, d: 1, kind: 'planks', a: '#6b6878', b: '#615e6e' }],
     friendAt: [.4, 4.6],
     furniture: [
@@ -77,6 +77,8 @@ export function makeTraincar5b(theme) {
 }
 
 // ── 28판 최종 키 traincar5 (⑧ 10/24, 허브가 A를 고름 → 디테일): A 바탕, 시작 화면에서 창 안 흐르는 띠가 보이게 yaw .62(양 끝은 조금 잘림)
+// (사용자 메모 10/24 손보기: 객차 흔들림·흐르는 선로, 통로 문은 열어 둠(몽글이가 뚫고 지나가지 않게)·문 퀄, 창턱 길이, 운전실 2 m로 넓히고 앞쪽 끝까지,
+//  가방·모자·서랍·신문·손잡이·광고·복도 디테일)
 //   1호차 (z -6.5..-.5): 앞코 운전실(칸막이 위 노선도·행선 표시, 운임함, 문 안에 계기판·운전석·기관사 모자·운행표·큰 앞창),
 //     창 쪽 롱시트(좌석 서랍 자물쇠, 놓고 간 신문·컵라면)와 가까운 쪽 롱시트(귤 망·차), 짐 선반(여행 가방 = 너굴이 자리·배낭),
 //     손잡이 봉과 걸린 광고 둘, 창 둘(롤 블라인드 / 하차 벨), 창 쪽 출입문(문 창에도 풍경이 흐름) + 정리권 발권기, 문 위 벽 선풍기,
@@ -87,29 +89,35 @@ export function makeTraincar5b(theme) {
 export function makeTraincar5(theme) {
   const v = 'a', X0 = -2, zA = -3.5, zB = 3.5;
   const win = (z, o = {}) => ft('twindow5', X0, z, HP, { v, ww: 1.3, ...o });
+  // (사용자 메모 10/24: 1호차 창은 롱시트 등받이 위로 올리고 얇은 창턱만 — 창턱이 등받이를 뚫지 않게; 2호차 박스석 창은 창턱 없이 탁자가 창턱)
+  const win1 = (z, o = {}) => win(z, { ww: 1.0, hh: 1.2, cy: 1.78, sill: 'short', ...o });
   return { ...base(theme), w: 4, d: 13, yaw: .62,
-    cut: [{ i: 0, j: 6, w: 1, d: 1 }, { i: 3, j: 6, w: 1, d: 1 }],
+    // the cab's two tiles have no floor to walk on (its own rubber floor is drawn) · the gap between the cars but for the walk across
+    cut: [{ i: 0, j: 0, w: 4, d: 2 }, { i: 0, j: 6, w: 1, d: 1 }, { i: 3, j: 6, w: 1, d: 1 }],
     floorZones: [{ i: 1, j: 6, w: 2, d: 1, kind: 'planks', a: '#6b6878', b: '#615e6e' }],
     friendAt: [.4, 4.6],
     furniture: [
-      // 1호차
-      ft('tc5shell', 0, zA, 0, { v, w: 4, len: 6, nose: true, carNo: 1 }), ft('tc5wall', 0, zA, 0, { v, w: 4, len: 6, ads: true, fan: -1.55 }),
-      ft('tc5end', 0, -5.55, 0, { v, w: 4, kind: 'cab', dir: 1 }),
-      win(-4.7, { blind: true }), win(-3.0, { bell: true }),
-      ft('tc5door', X0, -1.55, HP, { v, ticket: -1 }),
-      ft('tc5long', X0 + .31, -3.6, HP, { v, len: 2.8, drawer: true, stuff: 'paper' }), ft('tc5long', 1.69, -3.6, -HP, { v, len: 2.8, stuff: 'mikan', noUnder: true }),
-      ft('tc5rack', X0, -3.6, HP, { v, len: 3.0, straps: true, case: .7, pack: -.65, hang: [0] }),
-      ft('tc5pole', 1.3, -1.95, 0, { v }),
-      ft('tc5end', 0, -.57, 0, { v, w: 4, kind: 'arch', dir: -1 }),
+      // 흐르는 선로(두 량 밑 한 판, 침목만 뒤로 흐르고 양 끝은 옅어짐) + 객차 흔들림
+      ft('tc5track', 0, 0, 0, { len: 20 }),
+      // 1호차: 넓힌 운전실(2 m) · 운전실 옆 창 · 창 둘(롤 블라인드 / 하차 벨) · 롱시트 둘 · 짐 선반 · 옆 출입문 · 세로 봉 · 정리권 발권기 · 통로 매트
+      ft('tc5shell', 0, zA, 0, { v, w: 4, len: 6, nose: true, carNo: 1, noTrack: true }), ft('tc5wall', 0, zA, 0, { v, w: 4, len: 6, ads: true, fan: -1.25 }),
+      ft('tc5end', 0, -4.5, 0, { v, w: 4, kind: 'cab', dir: 1, depth: 2.0 }),
+      win(-5.55, { ww: .9, hh: 1.0, cy: 1.85, sill: 'none', noSill: true }),
+      win1(-3.6, { blind: true }), win1(-2.45, { bell: true }),
+      ft('tc5door', X0, -1.25, HP, { v, dw: .8 }),
+      ft('tc5long', X0 + .31, -2.95, HP, { v, len: 2.1, drawer: true, stuff: 'paper' }), ft('tc5long', 1.69, -2.75, -HP, { v, len: 3.0, stuff: 'mikan', noUnder: true }),
+      ft('tc5rack', X0, -2.95, HP, { v, len: 2.2, ry: 2.52, brackets: [-1.0, 0, 1.0], straps: true, case: .6, pack: -.55, hang: [0] }),
+      ft('tc5pole', 1.15, -1.0, 0, { v }), ft('tc5mat', 0, -2.6, 0, { len: 3.4, w: 1.1 }),
+      ft('tc5end', 0, -.57, 0, { v, w: 4, kind: 'arch', dir: -1, ticket: true }),
       // 연결 통로
       ft('tc5gang', 0, 0, 0, { len: 1, hw: .9, umbrella: true }),
-      // 2호차
+      // 2호차: 통로 문(주머니 벽에 열어 둠) · 박스석 둘 · 창 셋 · 더플백 선반 · 바닥 짐 · 통로 매트 · 꼬리 전망석
       ft('tc5end', 0, .57, 0, { v, w: 4, kind: 'door', dir: 1, sign: 2 }),
-      ft('tc5shell', 0, zB, 0, { v, w: 4, len: 6, tail: true, carNo: 2 }), ft('tc5wall', 0, zB, 0, { v, w: 4, len: 6, ads: true, posters: [2.72], pk: 1 }),
-      win(1.75, { curtain: true, cup: true }), win(3.7), win(5.55, { noSill: true }),
+      ft('tc5shell', 0, zB, 0, { v, w: 4, len: 6, tail: true, carNo: 2, noTrack: true }), ft('tc5wall', 0, zB, 0, { v, w: 4, len: 6, ads: true, posters: [2.72], pk: 1 }),
+      win(1.75, { curtain: true, sill: 'none' }), win(3.7, { sill: 'none' }), win(5.55, { ww: 1.1, hh: 1.2, cy: 1.78, sill: 'short', noSill: true }),
       ft('tc5box', X0 + .5, 1.75, HP, { v, drawer: true, stuff: 'bento' }), ft('tc5box', X0 + .5, 3.7, HP, { v, stuff: 'cards' }),
-      ft('tc5rack', X0, 2.72, HP, { v, len: 3.6, noCase: true, duffel: -.9 }),
-      ft('tc5bags', 1.35, 2.3, -.4, { v, spot: false }),
+      ft('tc5rack', X0, 2.72, HP, { v, len: 3.6, ry: 2.52, noCase: true, duffel: -.9 }),
+      ft('tc5bags', 1.35, 2.3, -.4, { v }), ft('tc5mat', .45, 2.85, 0, { len: 3.9, w: 1.1 }),
       ft('tc5view', 0, 5.2, 0, { v, w: 1.6 }), ft('tc5end', 0, 6.42, 0, { v, w: 4, kind: 'deck', dir: -1, spot: false })] };
 }
 

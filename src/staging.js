@@ -66,10 +66,18 @@ function sway(S, dur, amp = .004) {
   return S.tw.run(dur, k => { g.rotation.z = z0 + Math.sin(k * dur * 11) * amp * Math.sin(k * Math.PI); }).then(() => { g.rotation.z = z0; });
 }
 function hatMesh() {
+  // (사용자 메모 10/24 28판 "가방, 모자 오브젝트 디테일"): 너굴이's straw hat — a wide brim in woven rings, a round crown with a dent,
+  // a red ribbon round it tied in a bow at the side with two tails
   const g = new THREE.Group(), m = c => new THREE.MeshToonMaterial({ color: c });
-  const brim = new THREE.Mesh(new THREE.CylinderGeometry(.17, .17, .018, 24), m('#e8c36a')); g.add(brim);
-  const top = new THREE.Mesh(new THREE.SphereGeometry(.11, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), m('#f0d27e')); top.position.y = .008; top.scale.y = .9; g.add(top);
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(.112, .112, .03, 20, 1, true), m('#e2584f')); band.position.y = .025; g.add(band);
+  const add = (geo, c, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, m(c)); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); g.add(o); return o; };
+  add(new THREE.CylinderGeometry(.19, .19, .016, 32), '#e8c36a');
+  for (const [r, c] of [[.185, '#d9b25a'], [.16, '#efcf7c'], [.135, '#d9b25a']]) add(new THREE.TorusGeometry(r, .006, 4, 32), c, 0, .009, 0, Math.PI / 2);
+  add(new THREE.SphereGeometry(.112, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), '#f0d27e', 0, .008, 0, 0, 0, 0, 1, .95, 1);
+  add(new THREE.CylinderGeometry(.03, .05, .02, 14), '#e2bf68', 0, .112, 0);
+  add(new THREE.CylinderGeometry(.114, .114, .034, 24, 1, true), '#e2584f', 0, .03, 0);
+  add(new THREE.SphereGeometry(.026, 10, 8), '#e2584f', .1, .035, .05, 0, .6, 0, 1.2, .8, .6); add(new THREE.SphereGeometry(.026, 10, 8), '#e2584f', .1, .035, -.0, 0, -.6, 0, 1.2, .8, .6);
+  add(new THREE.BoxGeometry(.016, .05, .012), '#c94a42', .12, .0, .03, 0, 0, .3); add(new THREE.BoxGeometry(.016, .05, .012), '#c94a42', .125, .0, .0, 0, 0, -.25);
+  add(new THREE.SphereGeometry(.014, 8, 6), '#c94a42', .11, .035, .025);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
