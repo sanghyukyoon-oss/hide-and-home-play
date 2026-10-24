@@ -44,7 +44,8 @@ export const DECOY_SIZE = { umbrella: [.55, .45], strawhat: [.36, .3], slipper: 
 // 손바닥만 한 물건의 긴 변 상한(m) — 34 cm로 키우면 의자 좌석·화분·캐릭터보다 커짐 (아트 점검 2차 10/24: 왕관 10·17·63·69, 블록 55·65,
 // 공 65, 도넛 1·2판, 머그 36; ②)
 // (티슈 상자 22 cm: 23판 장독대에서 의자·평상보다 큰 장난감 상자처럼 보임 — GPT 정밀 QA ART-10, ②)
-export const LONG_MAX = { crown: .2, block: .14, ball: .24, ball2: .24, donut: .17, mug: .18, tissue: .22 };
+// (⑪ 10/24 밤: 33판 빨래방 바닥의 카운터 호출 종이 캐릭터 머리만 함 → 16 cm)
+export const LONG_MAX = { crown: .2, block: .14, ball: .24, ball2: .24, donut: .17, mug: .18, tissue: .22, gpt_deskbell: .16 };
 export function wantScale(type, spot, role, want = .34) {
   // (a decoy: 1.08 of the place's scale, but never under ~17 cm on its longest side — in a small place a mug came out 12 cm and a
   // book stack 15 cm, ⑥ 10/24 5판 실폰 "ㅈㄴ 작은 컵이랑 책이 가끔 등장함")

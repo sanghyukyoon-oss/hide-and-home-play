@@ -91,15 +91,30 @@ export const GPT_ITEMS = {
     g.add(put(box(.065, .01, .008, '#969075', .003), 0, .022, .17)); return g;
   }, .60, { remakeOf: 'earphones' }),
 
+  // (⑪ 10/24 아트 점검 — 사용자 "디테일 떨어지는 아이템": the shell was the sole's outline pushed up, a mint slab that read as a
+  // lump. Now a steam iron: a pointed silver sole with steam holes, a body that rises to the back and narrows to the nose, a
+  // see-through water tank at the nose, the closed handle loop with its steam and spray buttons, the heat dial, a heel to
+  // stand on and a coiled cord out of the back)
   gpt_iron: item('다리미', 'home', () => {
     const g = grp();
-    const outline = [[-.22, -.13], [.13, -.13], [.29, 0], [.13, .13], [-.22, .13]];
-    g.add(put(polygon('iron-sole', outline, .035, C.silver), 0, .025, 0, -Math.PI / 2));
-    g.add(put(polygon('iron-shell', outline.map(([x, y]) => [x * .93, y * .89]), .10, C.mint), 0, .093, 0, -Math.PI / 2));
-    g.add(tube('iron-handle', [[-.17,.13,0],[-.15,.27,0],[.05,.28,0],[.1,.16,0]], .034, C.cream));
-    g.add(put(cylinder(.043, .043, .025, C.peach, 14), .005, .15, 0));
-    g.add(tube('iron-cord', [[-.21,.14,0],[-.31,.14,0],[-.31,.035,.13],[-.19,.02,.22],[-.07,.02,.22]], .013, C.ink));
-    g.add(put(box(.045,.027,.06,C.ink,.007),-.04,.023,.22)); return g;
+    const sole = [[-.22, -.12], [.12, -.12], [.3, 0], [.12, .12], [-.22, .12]];
+    g.add(put(polygon('iron2-sole', sole, .03, C.silver), 0, .02, 0, -Math.PI / 2));
+    for (const [x, z] of [[.15, 0], [.08, -.05], [.08, .05], [0, 0], [-.08, -.05], [-.08, .05]]) g.add(put(cylinder(.008, .008, .004, '#7d8790', 8), x, .001, z));
+    g.add(put(polygon('iron2-skirt', sole.map(([x, y]) => [x * .96, y * .9]), .03, C.navy), 0, .05, 0, -Math.PI / 2));
+    const body = [[-.2, -.105], [.05, -.1], [.22, 0], [.05, .1], [-.2, .105]];
+    g.add(put(polygon('iron2-body', body, .07, C.mint), 0, .097, 0, -Math.PI / 2));
+    g.add(put(ball(.1, C.mint, [1.05, .55, .95]), -.1, .13, 0));
+    g.add(put(polygon('iron2-tank', [[.02, -.075], [.14, -.04], [.19, 0], [.14, .04], [.02, .075]], .05, '#bfe6f2'), .02, .123, 0, -Math.PI / 2));
+    g.add(put(box(.07, .02, .1, '#9fd4ea', .01), .1, .118, 0));
+    g.add(tube('iron2-handle', [[-.2, .15, 0], [-.18, .26, 0], [-.02, .29, 0], [.1, .26, 0], [.13, .17, 0]], .028, C.cream));
+    g.add(put(cylinder(.016, .016, .02, C.red, 12), .07, .286, 0));
+    g.add(put(cylinder(.013, .013, .02, C.blue, 12), .02, .296, 0));
+    g.add(put(cylinder(.04, .04, .02, C.cream, 18), -.07, .19, .0, 0, 0, 0));
+    g.add(put(cylinder(.03, .03, .012, C.peach, 16), -.07, .204, 0));
+    g.add(put(box(.012, .008, .03, C.ink, .003), -.07, .212, .01));
+    g.add(put(box(.03, .1, .16, C.navy, .015), -.235, .07, 0));
+    g.add(tube('iron2-cord', [[-.25, .06, 0], [-.31, .05, .02], [-.33, .03, .11], [-.27, .015, .2], [-.17, .015, .23], [-.07, .015, .2]], .011, C.ink));
+    g.add(put(box(.045, .027, .06, C.ink, .007), -.05, .016, .2, 0, .6, 0)); return g;
   }),
   gpt_hotwaterbottle: item('뜨거운 물주머니', 'home', () => {
     const g = grp();
@@ -311,13 +326,18 @@ export const GPT_ITEMS = {
     // bristle end touch the same .0025-high raw floor as the palette's base.
     g.add(rod([-.21,.0115,.17],[.19,.0205,.17],.009,C.wood));g.add(put(cone(.018,.08,C.brown,null,10),.23,.0205,.17,0,0,-Math.PI/2));return g;
   }, .66),
+  // (⑪ 10/24 아트 점검: a red slab tilted on a navy slab — now a two-hole punch: a steel base with a paper guide and its
+  // ruler marks, the clear chip tray in front with paper dots inside, two punch towers, the curved lever with a rubber grip)
   gpt_holepunch: item('이공 펀치', 'school', () => {
     const g=grp();
-    g.add(put(box(.34,.038,.23,C.navy,.018),0,.022,0));
-    for(const x of[-.10,.10])g.add(put(box(.055,.105,.10,C.silver,.008),x,.083,-.03));
-    g.add(put(box(.34,.045,.21,C.red,.022),0,.145,-.018,-.16));
-    g.add(put(cylinder(.025,.025,.30,C.silver,14),0,.12,-.09,0,0,Math.PI/2));
-    detail(g,.13,.018,0,.065,.119,C.cream);return g;
+    g.add(put(box(.36,.03,.24,C.navy,.014),0,.015,0));
+    g.add(put(box(.33,.012,.07,'#cfe9f2',.006),0,.033,.1));
+    for(let i=0;i<7;i++)g.add(put(box(.006,.004,.025,C.ink,.002),-.15+i*.05,.04,.1));
+    g.add(put(box(.012,.03,.2,C.yellow,.004),-.17,.045,-.01));
+    for(const x of[-.08,.08]){g.add(put(cylinder(.032,.038,.08,C.silver,14),x,.07,-.04));g.add(put(cylinder(.036,.036,.012,C.ink,14),x,.112,-.04));}
+    g.add(put(box(.34,.035,.2,C.red,.03),0,.14,-.02,.18));g.add(put(box(.3,.04,.05,C.ink,.018),0,.12,.085,.3));g.add(put(cylinder(.016,.016,.36,C.silver,12),0,.125,-.11,0,0,Math.PI/2));
+    detail(g,.1,.016,0,.162,-.02,C.cream);
+    return g;
   }, .57),
   gpt_drawingcompass: item('제도 컴퍼스', 'school', () => {
     const g=grp();
@@ -474,13 +494,25 @@ export const GPT_ITEMS = {
     for(let i=0;i<6;i++){let a=i*Math.PI/3;g.add(rod([Math.sin(a)*.043,.216+Math.cos(a)*.043,.068],[Math.sin(a)*.056,.216+Math.cos(a)*.056,.068],.004,C.yellow));}
     detail(g,.065,.012,0,.145,.068,C.cream);return g;
   }, .46),
+  // (⑪ 10/24 아트 점검: a pink ball on eight pink lumps — now a plush octopus: a tall soft head with a crease, shiny eyes
+  // with a white catch-light, cheeks and a little 'o' mouth, eight arms that curl up at the tips with pale suckers under them,
+  // and a stitched patch on the head)
   gpt_octopus: item('문어 봉제인형', 'seaside', () => {
-    const g=grp();
-    oval(g,0,.19,0,1,1.04,.92,'#ce899c',.14);
-    for(let i=0;i<8;i++){const a=i*Math.PI/4;oval(g,Math.sin(a)*.13,.052,Math.cos(a)*.13,1.1,.48,1.1,'#ce899c',.083);oval(g,Math.sin(a)*.18,.035,Math.cos(a)*.18,.55,.18,.55,'#f7a8b8',.04);}
-    for(const x of[-.045,.045])g.add(put(ball(.015,C.ink),x,.20,.125));
-    g.add(put(ring(.018,.006,C.ink,Math.PI),0,.17,.133,0,0,Math.PI));
-    for(const x of[-.075,.075])oval(g,x,.174,.121,1,.6,.20,C.peach,.022);return g;
+    const g=grp(), pk='#e891a8', pl='#fbc9d4', dk='#c9708a';
+    oval(g,0,.2,-.01,1,1.12,.95,pk,.13);
+    g.add(put(ring(.115,.006,dk,Math.PI),0,.25,-.01,Math.PI/2-.2,0,0));
+    oval(g,0,.075,0,1.25,.5,1.25,pk,.12);
+    for(let i=0;i<8;i++){
+      const a=i*Math.PI/4+.2,s=Math.sin(a),c=Math.cos(a),cs=i%2?1:-1;
+      g.add(tube('octo2-arm'+i,[[s*.08,.05,c*.08],[s*.17,.03,c*.17],[s*.24,.03,c*.24],[s*.27+c*.03*cs,.06,c*.27-s*.03*cs],[s*.24+c*.05*cs,.09,c*.24-s*.05*cs]],.03,pk));
+      for(const k of[.15,.21])g.add(put(ball(.009,pl),s*k,.006,c*k));
+    }
+    for(const x of[-.05,.05]){g.add(put(ball(.022,C.ink),x,.2,.115));g.add(put(ball(.007,'#ffffff'),x+.008,.21,.133));}
+    for(const x of[-.085,.085])oval(g,x,.17,.105,1,.6,.25,'#ff9fb2',.024);
+    g.add(put(ring(.012,.005,C.ink),0,.155,.122,0,0,0));
+    g.add(put(box(.05,.045,.012,pl,.01),.06,.3,.03,-.5,.4,.2));
+    for(const k of[-1,1])g.add(put(box(.003,.03,.004,dk,.001),.06+k*.02,.3,.04,-.5,.4,.2));
+    return g;
   }, .63),
 
   gpt_kite: item('리본 연', 'park', () => {
@@ -645,18 +677,27 @@ export const GPT_ITEMS = {
     for(let i=0;i<5;i++)stripe(g,0,.094,-.13-i*.043,.055,.005,C.silver);
     for(const s of[-1,1])for(const z of[-.38,-.43])g.add(put(ball(.014,C.cream,[1.4,.6,1]),s*.054,.069,z));return g;
   }, .68, { flat: true }),
+  // (⑪ 10/24 아트 점검: the jingles sat inside the red rim, so it read as a plain red plate — now a wooden frame with four
+  // slots, a pair of silver jingles standing in each (face out, a pin through), a printed drum head with a star, the rim's
+  // tacks and a ribbon tied through the frame)
   gpt_tambourine: item('탬버린', 'hobby', () => {
-    const g=grp();
-    g.add(put(cylinder(.18,.18,.015,C.cream,24),0,.075,0));
-    g.add(put(ring(.18,.025,C.red),0,.06,0,Math.PI/2));
-    g.add(put(ring(.18,.017,C.red),0,.093,0,Math.PI/2));
-    for(let i=0;i<8;i++){
-      const a=i*Math.PI/4,x=Math.sin(a)*.183,z=Math.cos(a)*.183;
-      g.add(put(cylinder(.033,.033,.005,C.silver,12),x,.04,z));
-      g.add(put(cylinder(.033,.033,.005,C.silver,12),x,.068,z));
-      g.add(rod([x,.025,z],[x,.082,z],.005,C.ink));
-    }return g;
-  }, .59, { flat: true }),
+    const g=grp(), R=.18;
+    g.add(put(cylinder(R,R,.06,C.wood,28),0,.05,0));
+    g.add(put(cylinder(R-.012,R-.012,.062,'#e9b27a',28),0,.05,0));
+    g.add(put(cylinder(R+.004,R+.004,.008,C.cream,28),0,.083,0));
+    g.add(put(polygon('tamb2-star',[...Array(10)].map((_,i)=>{const a=i*Math.PI/5,r=i%2?.04:.09;return[Math.sin(a)*r,Math.cos(a)*r];}),.004,C.red),0,.089,0,-Math.PI/2));
+    g.add(put(ring(.13,.005,C.peach),0,.088,0,Math.PI/2));
+    for(let i=0;i<12;i++){const a=i*Math.PI/6;g.add(put(ball(.007,C.silver),Math.sin(a)*(R-.006),.082,Math.cos(a)*(R-.006)));}
+    for(let i=0;i<4;i++){
+      const a=i*Math.PI/2+.4,x=Math.sin(a)*(R+.016),z=Math.cos(a)*(R+.016);
+      g.add(put(box(.07,.034,.012,C.ink,.004),x-Math.sin(a)*.014,.05,z-Math.cos(a)*.014,0,a,0));
+      for(const k of[-.015,.015]){const d=put(cylinder(.024,.024,.006,'#d9dee3',16),x+Math.cos(a)*k,.05,z-Math.sin(a)*k,Math.PI/2,a,0);d.rotation.order='YXZ';g.add(d);
+        g.add(put(ball(.006,'#9aa3ab'),x+Math.cos(a)*k+Math.sin(a)*.006,.05,z-Math.sin(a)*k+Math.cos(a)*.006));}
+    }
+    g.add(tube('tamb2-ribbon',[[-.17,.05,.07],[-.24,.03,.1],[-.29,.01,.06],[-.33,.005,.12]],.008,C.blue));
+    g.add(tube('tamb2-ribbon2',[[-.17,.05,.07],[-.23,.02,.15],[-.26,.005,.21]],.008,C.yellow));
+    return g;
+  }, .62, { flat: true }),
   gpt_sailboat: item('돛단배 장난감', 'hobby', () => {
     const g=grp();
     g.add(put(polygon('sailboat-hull',[[-.23,.05],[.20,.05],[.14,-.055],[-.13,-.055]],.18,C.red),0,.075,0));

@@ -577,17 +577,49 @@ export const ITEMS = {
     return g;
   } },
   // 블록: a toy brick with four studs on top
+  // (⑪ 10/24 아트 점검 — 사용자 "디테일 떨어지는 아이템": a bare pink lump. Now a 2×2 brick with a lighter top face, a dark
+  // seam where the walls meet the top, each stud with a rim, a shine and a tiny logo dot, the hollow underside's dark lip,
+  // and a small 1×2 brick of another colour leaning on it — so it reads as a toy brick at a glance)
   block: { name: '블록', h: .15, decoy: true, build(o = {}) {
-    const cols = ['#ff6f7d', '#59c3ff', '#7be04f', '#ffd23f'], c = cols[(o.v || 0) % 4];
-    const g = grp(), b = grp(); g.add(b); b.rotation.y = (o.v || 0) * .4;
-    b.add(put(rbox(.16, .1, .16, c, .018), 0, .05, 0));
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.add(put(cyl(.026, .026, .03, c, null, 14), sx * .04, .115, sz * .04));
+    const cols = ['#ff6f7d', '#59c3ff', '#7be04f', '#ffd23f'], v = o.v || 0, c = cols[v % 4], c2 = cols[(v + 1) % 4];
+    const g = grp(), b = grp(); g.add(b); b.rotation.y = v * .4;
+    const brick = (w, d, col, studs) => {
+      const k = grp(), lt = shade(col, .1), dk = shade(col, -.22);
+      k.add(put(rbox(w, .086, d, col, .014), 0, .047, 0));
+      k.add(put(rbox(w - .01, .012, d - .01, lt, .005), 0, .089, 0));
+      k.add(put(rbox(w + .002, .008, d + .002, dk, .003), 0, .006, 0));
+      for (const [sx, sz] of studs) {
+        k.add(put(cyl(.024, .024, .026, col, null, 16), sx, .106, sz));
+        k.add(put(tor(.0235, .0035, dk, null, Math.PI * 2, 6, 18), sx, .119, sz, Math.PI / 2));
+        k.add(put(cyl(.016, .016, .002, lt, null, 14), sx, .1195, sz));
+        k.add(put(sph(.005, '#ffffff', { opacity: .75 }, 8, 6), sx - .009, .121, sz - .008));
+      }
+      return k;
+    };
+    b.add(brick(.16, .16, c, [[-.04, -.04], [.04, -.04], [-.04, .04], [.04, .04]]));
+    const s = brick(.16, .08, c2, [[-.04, 0], [.04, 0]]); s.scale.setScalar(.62);
+    b.add(put(s, .095, 0, .075, 0, .5, -.42));
     return g;
   } },
-  pot: { name: '화분', h: .22, decoy: true, build() {
-    const g = grp();
-    g.add(put(cyl(.07, .055, .1, '#ff9b73', null, 14), 0, .05, 0));
-    g.add(put(sph(.07, '#7cd67a'), 0, .14, 0)); g.add(put(sph(.05, '#5fbf62'), .04, .18, .02)); g.add(put(sph(.045, '#8fe08a'), -.04, .17, -.02));
+  // 화분 (⑪ 10/24 아트 점검: a cone of pot under three green balls — now a terracotta pot with a rolled rim and a band, its
+  // saucer, dark soil with a pebble, and a little rubber plant — real leaves on stems, a centre vein, one new curled leaf)
+  pot: { name: '화분', h: .3, decoy: true, build() {
+    const g = grp(), clay = '#e98a5e', rim = '#f39e72', leaf = '#5cbf5f', leafD = '#3f9a49';
+    g.add(put(cyl(.082, .075, .016, '#d9764d', null, 20), 0, .008, 0));
+    g.add(put(cyl(.068, .052, .1, clay, null, 18), 0, .066, 0));
+    g.add(put(cyl(.077, .073, .026, rim, null, 18), 0, .126, 0));
+    g.add(put(tor(.062, .004, shade(clay, -.18), null, Math.PI * 2, 6, 24), 0, .07, 0, Math.PI / 2));
+    g.add(put(cyl(.066, .066, .006, '#6b4a33', null, 18), 0, .137, 0));
+    g.add(put(sph(.011, '#c9c0b4', null, 8, 6), .03, .141, .025, 0, 0, 0, [1, .6, 1]));
+    g.add(put(cyl(.007, .008, .13, '#6f8f3c', null, 8), 0, .2, 0));
+    [[0, .5, .2, 1.25], [1.25, .7, .19, 1.15], [2.5, .55, .21, 1.2], [3.75, .7, .18, 1.1], [5, .55, .2, 1.15], [.6, -.1, .26, 1], [3.1, -.15, .27, .95], [4.4, .05, .25, .9]].forEach(([a, tilt, y, k]) => {
+      const l = grp();
+      l.add(put(sph(.05 * k, leaf, { rough: .4 }, 14, 10), 0, 0, .055 * k, 0, 0, 0, [.62, .12, 1.25]));
+      l.add(put(cyl(.0025, .0025, .1 * k, leafD, null, 6), 0, .006, .055 * k, Math.PI / 2, 0, 0));
+      l.add(put(cyl(.004, .004, .03, '#6f8f3c', null, 6), 0, 0, .006, Math.PI / 2, 0, 0));
+      g.add(put(l, 0, y, 0, -tilt, a, 0));
+    });
+    g.add(put(cone(.013, .055, '#8fdc76', null, 10), 0, .29, 0, .15, 0, 0));
     return g;
   } },
   // 털실: wound strands all round, a loose end trailing, two knitting needles stuck in
