@@ -12,6 +12,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rbox, sph, hemi, cyl, tor, cone, cap, disc, plane, put, grp, mat, mesh, geo, extrude, canvasTex, texCache, roundRect, shade } from './kit.js';
 import { clothBend, clothWave, clothSlab } from './clothbend.js';
 import { Furn } from './furniture.js';
+import { addPigeon } from './birds.js';
 import { rng } from '../util.js';
 import { tr } from '../i18n.js';
 
@@ -1036,8 +1037,8 @@ B.bench = (f, T, o = {}) => {
   // (o.bigSpots: a map that wants the things on and under its bench bigger — 31판 극장 로비, ② 10/24 '벤치 위' 23 px)
   f.spot('on', null, -.42, sy + .045, 0, { maxH: o.bigSpots ? .55 : .45, label: '벤치 위', scale: o.bigSpots ? 1 : .85 });
   f.spot('under', null, 0, 0, -.02, { maxH: .35, label: '벤치 밑', scale: o.bigSpots ? 1 : .85 });
-  f.add(put(mg('pigeon', '#a9aec8', ({ add }) => { add(G.sph(.09, 12, 9), 0, .09, 0, 0, 0, .15, [1.3, .9, .9]); add(G.sph(.055, 12, 9), .1, .19, 0); add(G.box(.1, .03, .07, .01), -.13, .1, 0, 0, 0, .3); }), -.64, 0, .34, 0, .5, 0));
-  f.add(put(mg('pigeon-b', '#ff9f43', ({ add }) => { add(G.cone(.022, .06, 8), .17, .19, 0, 0, 0, -HP); }), -.64, 0, .34, 0, .5, 0));
+  // 벤치 옆 비둘기 (10/24 공용 새 birds.js: 걷다 멈추고 끄덕끄덕 쪼기)
+  addPigeon(f, -.64, 0, .34, .5, { s: 1.1, range: .1 });
 };
 
 // 나무: a hollow at the roots and a 새집 whose roof lifts

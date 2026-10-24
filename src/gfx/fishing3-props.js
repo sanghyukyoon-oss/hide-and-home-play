@@ -16,6 +16,7 @@ import { put, grp, mat, mesh, canvasTex, texCache } from './kit.js';
 import { G, mc, mt, TX, PI, HP, tuft, flower } from './pc-kit.js';
 import { fitText } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
+import { addPigeon } from './birds.js';
 
 if (EN['낚시터'] == null) EN['낚시터'] = 'Fishing';
 const B = {}, TEX = texCache();
@@ -170,7 +171,7 @@ B.fs3_bench = f => {
   f.spot('inside', null, .45, sy + .045, 0, { part: p, maxH: .3, label: '신문지 밑', scale: .82 });
   f.spot('on', null, -.42, sy + .045, 0, { maxH: .45, label: '벤치 위', scale: .85 });
   f.spot('under', null, 0, 0, -.02, { maxH: .35, label: '벤치 밑', scale: .85 });
-  f.add(put(mc('fs3-pigeon', ({ add }) => { add(G.sph(.09, 12, 9), '#b2b7cf', 0, .09, 0, 0, 0, .15, [1.3, .9, .9]); add(G.sph(.055, 12, 9), '#b2b7cf', .1, .19, 0); add(G.box(.1, .03, .07, .01), '#9aa0bb', -.13, .1, 0, 0, 0, .3); add(G.cone(.022, .06, 8), P.orange, .17, .19, 0, 0, 0, -HP); add(G.sph(.012, 6, 4), '#2a2a3a', .13, .21, .035); add(G.sph(.03, 8, 6), '#9fd0b8', .06, .14, 0, 0, 0, 0, [1, 1, 1.4]); }), -.64, 0, .34, 0, .5, 0));
+  addPigeon(f, -.64, 0, .34, .5, { s: 1.1, range: .1 });
 };
 
 // ── 간판 (1×1): a cream board on two legs — a fish, the word and 개굴이's face ──

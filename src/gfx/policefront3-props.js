@@ -13,10 +13,12 @@ import { HG as G, hmc as rawMc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
 import { makeFurniture } from './furniture.js';
+import { addPigeon } from './birds.js';
 
 const WORDS = { '몽글 파출소': 'Mongle Police Box', '민원 창구': 'Help Desk', '분실물': 'Lost & Found', '경찰': 'POLICE', '순찰함': 'Patrol Box',
   '번호표': 'Ticket', '천천히': 'SLOW', '순찰 중': 'On Patrol', '잠깐 순찰 중이에요': 'Out on patrol', '분실물 찾아가세요': 'Claim your lost items',
-  '자전거 도난 주의': 'Lock your bike', '범죄 신고': 'Report a crime', '어린이 안전': 'Kids first', '경찰 전용': 'Police only', '누르세요': 'Push', '분실물 보관함': 'Lost & Found' };
+  '자전거 도난 주의': 'Lock your bike', '범죄 신고': 'Report a crime', '어린이 안전': 'Kids first', '경찰 전용': 'Police only', '누르세요': 'Push', '분실물 보관함': 'Lost & Found',
+  '파출소 앞 비둘기': 'Pigeons by the police box', '가로수': 'Street tree' };
 for (const k in WORDS) if (EN[k] == null) EN[k] = WORDS[k];
 
 const PI = Math.PI, HP = PI / 2;
@@ -144,7 +146,7 @@ B.pf3_base = f => {
   const tx = -2.6, tz = curb2 + .32, PK = [-2.25, .05];
   const mid = (curb + curb2) / 2;
   f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.8, 0, .01, -.75, .01];
-  f.add(mc('base-v2', ({ add }) => {
+  f.add(mc('base-v3', ({ add }) => {
     // 받침: 차도 높이까지 돌 켜 · 흙 켜 (두께 있는 둥근 블록), 그 위 보도 두 판 (보도 판석 옆면 = 섬 테두리)
     add(G.ext(shapeOf(O), .36, 0, 8), C.stone, 0, ry - .36, 0, -HP, 0, 0);
     add(G.ext(shapeOf(isleOutline(-.06)), .34, .04, 8), C.earth, 0, ry - .74, 0, -HP, 0, 0);
@@ -179,15 +181,84 @@ B.pf3_base = f => {
     add(G.pbox(PK[1] - PK[0], .006, .07), '#ffffff', (PK[0] + PK[1]) / 2, Y, mid - .12); for (const x of PK) add(G.pbox(.07, .006, mid - .12 - curb - .05), '#ffffff', x, Y, (mid - .12 + curb + .05) / 2);
     // 빗물받이 (연석 아래)
     for (const [x, z] of [[-3.5, curb + .2], [4.0, curb2 - .2]]) { add(G.box(.6, .012, .24, .008), '#6c6a80', x, ry + .008, z); for (let k = 0; k < 6; k++) add(G.pbox(.035, .014, .18), '#45435a', x - .22 + k * .088, ry + .01, z); }
-    // 건너편 보도: 볼라드 둘, 가로수 한 그루와 나무 받침 쇠살
+    // 건너편 보도: 볼라드 둘 (가로수는 아래 tree-v2)
     for (const x of [CROSS[0] - .3, CROSS[1] + .3]) { add(G.cyl(.07, .08, .5, 12), '#5b5672', x, .25, curb2 + .35); add(G.cyl(.075, .075, .05, 12), C.yel, x, .4, curb2 + .35); }
-    add(G.box(.62, .02, .44, .01), '#7d7b8e', tx, .014, tz); for (let k = 0; k < 5; k++) add(G.pbox(.012, .022, .4), '#5b5672', tx - .24 + k * .12, .02, tz);
-    add(G.cyl(.06, .08, 1.3, 10), '#8a6a4c', tx, .65, tz); for (const [dx, dy, s, c] of [[0, 1.55, .42, C.grass2], [-.22, 1.38, .3, C.grass], [.24, 1.42, .32, C.grass], [.05, 1.78, .3, C.grass]]) add(G.sph(s, 12, 9), c, tx + dx, dy, tz, 0, 0, 0, [1, .85, .9]);
     // 섬 가장자리 풀 한 줌 (모서리에만 — 한적하게)
     for (const [x, z, s] of [[-4.72, -.6, 1], [-3.9, -2.75, .8], [4.3, -2.45, 1.1], [4.65, -1.9, .8], [4.25, 5.25, .7], [-4.4, 5.2, .75]]) {
       add(G.sph(.2 * s, 10, 8), C.grass, x, .1 * s, z, 0, 0, 0, [1.3, .8, 1.1]);
       add(G.sph(.15 * s, 10, 8), C.grass2, x + .16 * s, .08 * s, z + .1, 0, 0, 0, [1.2, .8, 1]);
     }
+  }));
+  // 가로수 (10/24 사용자 "가로수 디테일 올려줘"): 화강암 받침 테 · 흙 위 쇠 격자 보호 덮개(바깥 테 · 고리 둘 · 살) · 덮개 위로 나온 뿌리 ·
+  // 살짝 기운 줄기(껍질 조각 · 옹이) · 가을 볏짚 잠복소 · 세 갈래 나무 지주목과 가로대 · 가지 넷 · 잎 덩어리 여럿(아래 짙게 · 위 밝게 ·
+  // 노랗게 물든 몇 송이) · 덮개와 보도에 떨어진 잎
+  f.add(mc('tree-v2', ({ add, tube }) => {
+    const X = tx, Z = tz, GW = .62, GD = .44, IRON = '#4f4b63', IRON2 = '#66617d', BARK = '#8a6a4c', BARK2 = '#6f5440';
+    // 받침 테 (보도보다 조금 높은 화강암 네 변) · 흙
+    for (const sz of [-1, 1]) add(G.box(GW + .14, .04, .07, .012), '#dddbd3', X, .022, Z + sz * (GD / 2 + .035));
+    for (const sx of [-1, 1]) add(G.box(.07, .04, GD, .012), '#dddbd3', X + sx * (GW / 2 + .035), .022, Z);
+    add(G.pbox(GW, .012, GD), '#6e5440', X, .008, Z);
+    for (const [dx, dz] of [[-.2, .12], [.22, -.1], [-.08, -.15], [.16, .14]]) add(G.sph(.018, 6, 5), '#9a8a7a', X + dx, .016, Z + dz, 0, 0, 0, [1.2, .5, 1]);
+    // 쇠 격자 덮개: 바깥 테 · 고리 둘 · 고리에서 테까지 살 열둘
+    const GY = .034;
+    for (const sz of [-1, 1]) add(G.box(GW, .024, .03, .006), IRON, X, GY, Z + sz * (GD / 2 - .015));
+    for (const sx of [-1, 1]) add(G.box(.03, .024, GD, .006), IRON, X + sx * (GW / 2 - .015), GY, Z);
+    add(G.tor(.105, .012, PI * 2, 6, 28), IRON, X, GY, Z, HP, 0, 0);
+    add(G.tor(.175, .01, PI * 2, 6, 34), IRON2, X, GY, Z, HP, 0, 0);
+    for (let i = 0; i < 12; i++) {
+      const a = i / 12 * PI * 2 + PI / 12, c = Math.cos(a), sn = Math.sin(a);
+      const t = Math.min((GW / 2 - .03) / Math.max(1e-3, Math.abs(c)), (GD / 2 - .03) / Math.max(1e-3, Math.abs(sn)));
+      const r0 = .11, L = t - r0, rm = (r0 + t) / 2;
+      add(G.pbox(L, .02, .016), i % 2 ? IRON2 : IRON, X + c * rm, GY, Z + sn * rm, 0, -a, 0);
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.012, .012, .008, 8), '#8d88a3', X + sx * (GW / 2 - .015), GY + .014, Z + sz * (GD / 2 - .015));
+    // 줄기 (살짝 기움) · 뿌리 · 껍질 조각 · 옹이
+    const top = [X + .05, 1.22, Z - .03];
+    tube([X, 0, Z], top, .085, BARK, 12, .055);
+    for (let i = 0; i < 5; i++) { const a = i * 1.26 + .4; tube([X + Math.cos(a) * .04, .13, Z + Math.sin(a) * .04], [X + Math.cos(a) * .12, .03, Z + Math.sin(a) * .1], .034, BARK2, 7, .02); }
+    for (const [y, a, w] of [[.28, .3, 1], [.42, 2.4, .8], [1.02, 4.1, .9], [1.12, 1.2, .7], [.95, 3.0, .8]]) {
+      const k = y / 1.22, r = .085 + (.055 - .085) * k + .002;
+      add(G.box(.035 * w, .08 * w, .012, .005), BARK2, X + .05 * k + Math.cos(a) * r, y, Z - .03 * k + Math.sin(a) * r, 0, -a + HP, 0);
+    }
+    add(G.sph(.022, 8, 6), BARK2, X + .05 * .36 + .077, .45, Z - .01, 0, 0, 0, [.6, 1, 1]);
+    add(G.sph(.012, 6, 5), '#4e3a2c', X + .05 * .36 + .088, .45, Z - .01);
+    // 잠복소: 볏짚을 두른 띠와 새끼줄 두 줄, 아래 끝 짚 술
+    add(G.cyl(.088, .093, .24, 16), '#e2c27a', X + .05 * .52, .64, Z - .03 * .52);
+    for (let i = 0; i < 16; i++) { const a = i / 16 * PI * 2; add(G.box(.012, .22, .008, .003), i % 2 ? '#cfa95e' : '#ead196', X + .026 + Math.cos(a) * .092, .64, Z - .016 + Math.sin(a) * .092, 0, -a + HP, 0); }
+    for (const y of [.56, .73]) add(G.tor(.094, .009, PI * 2, 5, 20), '#8a6a3c', X + .026, y, Z - .016, HP, 0, 0);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * PI * 2 + .2; add(G.cone(.012, .05, 4), '#d9b86c', X + .026 + Math.cos(a) * .088, .505, Z - .016 + Math.sin(a) * .088, PI, 0, 0); }
+    // 지주목: 보도에 박힌 세 나무 기둥이 줄기 쪽으로 기대고, 가로대 셋, 줄기에 묶은 검은 고무 띠
+    const TY = .98, tk = [X + .05 * .8, TY, Z - .03 * .8];
+    const legs = [[X - .37, Z + .03], [X + .22, Z - .27], [X + .14, Z + .2]];
+    const at = (b, t) => [b[0] + (tk[0] - b[0]) * t, t * TY, b[1] + (tk[2] - b[1]) * t];
+    for (const [lx, lz] of legs) {
+      const d = Math.hypot(tk[0] - lx, tk[2] - lz), k = .07 / d;
+      tube([lx, 0, lz], [tk[0] + (lx - tk[0]) * k, TY + .06, tk[2] + (lz - tk[2]) * k], .022, '#c99a62', 8, .019);
+      add(G.cyl(.026, .026, .03, 8), '#a8743f', lx, .015, lz);
+    }
+    for (let i = 0; i < 3; i++) { const A = legs[i], Bq = legs[(i + 1) % 3]; tube(at(A, .62), at(Bq, .62), .014, '#b88a54', 6); }
+    add(G.cyl(.068, .068, .05, 14), '#3b3550', ...tk);
+    // 가지: 줄기 끝에서 넷, 잔가지 몇
+    const br = [[-.34, 1.55, .1], [.36, 1.58, -.12], [-.08, 1.72, -.2], [.12, 1.7, .22]];
+    for (const [dx, y, dz] of br) {
+      tube(top, [X + dx, y, Z + dz], .042, BARK, 8, .022);
+      tube([X + dx, y, Z + dz], [X + dx * 1.3, y + .16, Z + dz * 1.4], .02, BARK, 6, .01);
+    }
+    tube([top[0], top[1] - .1, top[2]], [X - .2, 1.36, Z - .14], .03, BARK, 7, .014);
+    // 잎 덩어리: 아래쪽 그늘 → 가운데 → 위 밝은 면 → 노랗게 물든 몇 송이
+    add(G.sph(.36, 14, 10), '#4f8f42', X + .02, 1.42, Z, 0, 0, 0, [1.25, .42, 1.1]);
+    const LV = [
+      [0, 1.64, 0, .4, '#5fa64a'], [-.33, 1.52, .06, .28, '#5fa64a'], [.34, 1.54, -.05, .29, '#5fa64a'], [-.12, 1.52, .27, .26, C.grass2],
+      [.15, 1.5, -.27, .25, '#5fa64a'], [-.22, 1.86, -.08, .3, C.grass2], [.21, 1.86, .1, .3, C.grass], [-.38, 1.74, -.13, .21, C.grass2],
+      [.39, 1.76, .15, .21, C.grass], [.02, 2.04, .02, .27, '#9ad36c'], [-.12, 1.7, .32, .2, C.grass], [.18, 1.72, -.3, .19, C.grass2],
+      [.1, 2.18, .1, .14, '#b6e283'], [-.25, 2.0, .17, .13, '#b6e283'], [.3, 1.98, -.06, .12, '#a9dc77'],
+      [.33, 1.44, .18, .12, '#d6d45e'], [-.31, 1.97, -.24, .11, '#e2cf55'], [-.42, 1.48, -.1, .1, '#cfd25c'],
+    ];
+    for (const [dx, y, dz, r, c] of LV) add(G.sph(r, 14, 10), c, X + dx, y, Z + dz, 0, 0, 0, [1, .86, 1]);
+    // 떨어진 잎 (덮개 위 · 보도)
+    for (const [dx, dz, a, c] of [[-.16, .1, .3, '#e2cf55'], [.12, -.12, 1.4, '#9ad36c'], [.24, .08, 2.2, '#d6d45e'], [-.24, -.12, .9, '#e2cf55'],
+      [.5, .16, 1.9, '#d6d45e'], [-.52, -.06, 2.7, '#9ad36c'], [.06, .2, .5, '#e2cf55']])
+      add(G.sph(.026, 7, 4), c, X + dx, .048, Z + dz, 0, a, 0, [1.3, .18, .8]);
   }));
   // 겉면: 보도블록 · 아스팔트 · 연석 옆면(화강암) · 맨홀 · 노면 글자
   const pm = mat('#ffffff', { map: paverTex(), rough: .75, rim: .1 });
@@ -446,11 +517,20 @@ B.pf3_town = (f, T) => {
   }));
 };
 
+// ── 건너편 보도의 비둘기 둘 (10/24 사용자 "비둘기 제대로 만들고 애니메이션도"): 공용 새 birds.js — 회청색 하나는 보도를 오가고,
+// 흰 얼룩 하나는 제자리에서 쪼고 두리번 (벤치 옆 비둘기는 벤치 조각 몫) ────────────────────────────────────────────────
+B.pf3_pigeons = f => {
+  f.noSolid = true; f.noOccupied = true; f.collideBox = [-.001, -.2, -.001, .001, -.15, .001];
+  addPigeon(f, -.95, .012, 5.3, .1, { tone: 'grey', range: .26, s: 1.1, seed: 3 });
+  addPigeon(f, -.3, .012, 5.42, PI - .35, { tone: 'pied', range: .08, s: 1.05, seed: 8 });
+};
+
 export const PF3_BUILDERS = B;
 export const PF3_INFO = {
   pf3_base: { w: .1, d: .1, name: '파출소 앞 둥근 섬', price: 0, hidden: true, floor: true },
   pf3_station: { w: .1, d: .1, name: '몽글 파출소', price: 0, hidden: true, floor: true },
   pf3_signal: { w: .4, d: .4, name: '신호등', price: 0, hidden: true },
+  pf3_pigeons: { w: .1, d: .1, name: '파출소 앞 비둘기', price: 0, hidden: true, floor: true },
   pf3_far: { w: .1, d: .1, name: '이어지는 동네 (22판 골목)', price: 0, hidden: true, floor: true },
   pf3_town: { w: .1, d: .1, name: '하얀 동네 (배경)', price: 0, hidden: true, floor: true },
 };

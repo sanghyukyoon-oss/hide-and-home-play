@@ -980,7 +980,8 @@ export const GRAY = new Set([3, 9, ...planAt('gray')]);
 export const FRIEND_HIDE = new Set([11, 15, 19, 27, 29, 38, 47, 50, 58, 67]);   // (27 = 28판 기차 객실 ★ — 너굴이가 터널 지나는 사이 숨음, 기차 여행 편 10/21)   // (1장: 1판 tutorial and the 12판 서재 only; 6장's opener is the 간식 stage, so 51판 camp1)
 // how many things beside the friend (0-based; else half the stage's count, 2~3): 16판 교실 4 — "물건들 좀 더 찾게 해 줄래? 쉽게
 // 느껴짐" (user 10/20, it was 친구+1)
-const FRIEND_BONUS = { 15: 4 };
+// (28판 기차 traincar5, 대표 맵 10/24 허브: 기차 여행 물건 8개 다 — 친구판 기본 2~3개면 8개 목록 중 3개만 나왔음)
+const FRIEND_BONUS = { 15: 4, 27: 6 };
 // (D1 10/19, user "추천대로": 22·41판 — 3·5장 첫 판 — are hidden-object stages now; '★장치 → 보스 → 친구' at the chapter turns read
 // as three thin stages in a row. The chapter's new lock still sits at a chain end there; the friend says hello in the start line, 스토리 룸)
 // 숨은그림 판의 물건 수와 그중 자물쇠 사슬 끝에 있는 물건 수 (stage number from 1; 레벨 세션 B1: ≤ 60 % of the spots you can
@@ -1042,7 +1043,7 @@ export function stageSpec(idx) {
   if (s.room === 'cafefreezer') { s.lockOn = { ...s.lockOn, pad: ['fz_locker'], color: ['fz_supplycab'] }; s.items = ['icecream', 'cheese', 'milk', 'bubbletea', 'cupcake', 'teddy', 'medal']; }
   // (31판 별빛극장 보스 ② 10/23 — 스토리 룸 안 A, ⑧ cinema): 매표소 서랍 = 상영 시간표 비밀번호, 상영관 문 = 열쇠(팝콘 기계가 퐁퐁 하면
   // 위에 걸린 열쇠가 툭), 영사실 문 = 필름 통 셋 색. 보스 판이지만 관찰 단서를 씀(골목 장이 23·26·27판에서 가르친 것이 보스에서 돌아옴)
-  if (s.room === 'cinema' && s.boss) Object.assign(s, { zoom: 1.6, itemSize: .6, items: ['star', 'trophy', 'icecream', 'headphones', 'teddy', 'gift', 'candy'], obsBoss: true, obsCine: true, obsKind: 'timetable', lockOn: { code: ['cin_ticketbooth'], pad: ['cin_hall_door'], color: ['cin_projroom_door'] }, clueHang: { pad: 'cin_popcorn' } });
+  if (s.room === 'cinema' && s.boss) Object.assign(s, { zoom: 1.6, itemSize: .6, items: ['trophy', 'headphones', 'gpt_octopus', 'gpt_binoculars', 'gpt_tambourine', 'icecream', 'star', 'candy'], obsBoss: true, obsCine: true, obsKind: 'timetable', lockOn: { code: ['cin_ticketbooth'], pad: ['cin_hall_door'], color: ['cin_projroom_door'] }, clueHang: { pad: 'cin_popcorn' } });
   if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
   // (18판 새 안 otakuloft3·4·5, ① 10/23: 같은 부품 키라 같은 장치·자물쇠 — 새 맵 스위치로 열릴 때)
   if (s.room === 'otakuloft3' || s.room === 'otakuloft4' || s.room === 'otakuloft5') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
@@ -1270,7 +1271,11 @@ export function planStage(room, spec, story = null) {
   // (19~50 다시 짜기 10/21): a stage with its own list takes only from it (socks still only at the laundromat), the common pool
   // only if the list runs short
   const fixed = spec.items && spec.items.filter(t => ITEMS[t] && !tool(t) && (!SOCKS.has(t) || sockRoom(spec.room)));
+  // (② 10/24 다양하게: 예비 물건이 있는 목록 — 이 방에 맞는 자리가 하나도 없는 물건은 먼저 빼서, 뽑힌 n개가 다 놓이게)
+  const fitsHere = fixed?.filter(t => room.spots.some(s => !s.reserved && fits(t, s)));
+  if (fitsHere && fitsHere.length >= spec.n) fixed.splice(0, fixed.length, ...fitsHere);
   if (fixed?.length) { const f = r.shuffle(fixed.slice()); targets.length = 0; targets.push(...f.slice(0, spec.n)); for (const t of turnT) if (targets.length < spec.n && !targets.includes(t)) targets.push(t); }
+  const spares = fixed?.length ? fixed.filter(t => !targets.includes(t)) : [];
   if (spec.force) { targets.unshift(...spec.force); targets.length = Math.min(targets.length, spec.n); }   // 사건 판: the hidden friend's marker comes first, so the first lock guards it
   const placements = [];   // { type, spot, role: 'target'|'key'|'note'|'decoy', code }
   const locks = [];        // { part, kind, code }
@@ -1476,7 +1481,12 @@ export function planStage(room, spec, story = null) {
     }
     if (!s && want.behind > 0) { s = take(x => x.kind === 'under' || x.kind === 'behind', type); if (s) want.behind--; }
     if (!s) s = take(x => x.kind === 'on', type) || (!spec.ho && take(x => (x.kind === 'under' || x.kind === 'behind'), type)) || take(x => x.kind === 'inside' && !lockedParts.has(x.part) && okIn(x), type) || (spec.ho && take(x => (x.kind === 'under' || x.kind === 'behind'), type));
-    if (s) placements.push({ type, spot: s, role: 'target' });
+    // (② 10/24 다양하게: 놓을 자리가 없으면 판 목록의 예비 물건으로 바꿔 — 15판 8개 중 5개만 놓이던 것)
+    if (!s) for (const alt of spares) {
+      s = take(x => x.kind === 'on', alt) || take(x => x.kind === 'under' || x.kind === 'behind', alt) || take(x => x.kind === 'inside' && !lockedParts.has(x.part) && okIn(x), alt);
+      if (s) { spares.splice(spares.indexOf(alt), 1); targets[ti] = alt; break; }
+    }
+    if (s) placements.push({ type: targets[ti], spot: s, role: 'target' });
   }
   placingTarget = false;
   // decoys: clutter in plain sight + red herrings inside containers

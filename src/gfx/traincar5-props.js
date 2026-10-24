@@ -482,7 +482,7 @@ B.tc5door = (f, T, o = {}) => {
   const ticks = leaves.map(g => flowView(f, LW - .2, .58, 1.62, .04, g));
   f.tick = t => { for (const k of ticks) k(t); };
   f.part('door', leaves, (t, a, b) => { leaves[0].position.x = a.p.x - LW * .75 * t; leaves[1].position.x = b.p.x + LW * .75 * t; }, { label: '출입문', sfx: 'slide', dur: .45 });
-  f.spot('on', null, .25, .03, .26, { maxH: .3, label: '출입문 발판', scale: .85 });
+  f.spot('on', null, .25, .03, .26, { maxH: 0.5, label: '출입문 발판', scale: 1 });
   if (o.ticket) {
     const tx = side * (DWd / 2 + .42);
     f.add(mc('tc5-ticketm|' + side, ({ add, tube }) => {
@@ -548,8 +548,8 @@ B.tc5long = (f, T, o = {}) => {
       tube([L / 2 + .02, .05, D / 2 + .04], [L / 2 - .02, .78, D / 2 - .02], .035, '#5f86c4', 8); add(G.tor(.05, .014, PI, 6, 10), '#8a5a34', L / 2 - .05, .82, D / 2 - .02, 0, HP, 0);
     }
   }));
-  if (st !== 'paper') f.spot('on', null, L / 4, SH + .04, .05, { maxH: .36, label: '좌석 위', scale: .95 });
-  else f.spot('on', null, -L / 4, SH + .04, .05, { maxH: .36, label: '좌석 위', scale: .95 });
+  if (st !== 'paper') f.spot('on', null, L / 4, SH + .04, .05, { maxH: 0.5, label: '좌석 위', scale: 1 });
+  else f.spot('on', null, -L / 4, SH + .04, .05, { maxH: 0.5, label: '좌석 위', scale: 1 });
   if (!o.noUnder) f.spot('under', null, -L / 3, .01, D / 2 + .06, { maxH: .2, label: '좌석 밑', scale: .85 });
   if (o.drawer) {
     const dv = grp(); put(dv, L / 4, .17, D / 2 - .07); f.add(dv);
@@ -591,7 +591,7 @@ B.tc5box = (f, T, o = {}) => {
       add(G.box(.14, .18, .05, .03), '#ffd23c', .12, .85, -BW / 2 + .16, -.2, 0, 0);
     }
   }));
-  f.spot('on', null, st === 'bento' ? .1 : -.1, .76, -BW / 2 + .28, { maxH: .26, label: '창가 탁자 위', scale: .8 });
+  f.spot('on', null, st === 'bento' ? .1 : -.1, .76, -BW / 2 + .28, { maxH: 0.36, label: '창가 탁자 위', scale: 0.9 });
   f.spot('under', null, 0, .01, z0 + .25, { maxH: .3, label: '좌석 밑', scale: .85 });
   if (o.drawer) {
     const dv = grp(); put(dv, -.62, .17, z0 + BW / 2 - .02); f.add(dv);
@@ -600,7 +600,7 @@ B.tc5box = (f, T, o = {}) => {
     p.lockable = true; p.lockKind = 'pad'; p.lockAt = { x: .13, y: -.02, z: .07, parent: dv };
     f.spot('inside', dv, 0, -.07, -.22, { part: p, maxH: .16, label: '좌석 서랍 안', scale: .8 });
   }
-  f.spot('on', null, .6, SH + .04, z0 + .05, { maxH: .36, label: '좌석 위', scale: .95 });
+  f.spot('on', null, .6, SH + .04, z0 + .05, { maxH: 0.5, label: '좌석 위', scale: 1 });
 };
 
 // ═════════════════════════ 가방 (제대로) ═════════════════════════
@@ -671,19 +671,19 @@ B.tc5rack = (f, T, o = {}) => {
     f.add(put(mc('tc5-hangclip2', ({ add, tube }) => { add(G.box(.5, .035, .03, .01), S.steel2, 0, 0, 0); for (const s of [-1, 1]) tube([s * .2, .02, 0], [s * .18, .17, 0], .008, S.steel2, 4); add(G.box(.5, .035, .03, .01), S.steel2, 0, -.36, 0); }), hx, RY - .02, .95));
     for (const face of [0, 1]) { const pp = flat(.46, .34, posterTex(k + 2 + face)); put(pp, hx, RY - .2, .95 + (face ? -.006 : .006), 0, face ? PI : 0); f.add(pp); }
   }
-  if (o.noCase) { f.spot('on', null, o.duffel != null ? o.duffel + .7 : 0, RY + .02, .3, { maxH: .3, label: '짐 선반 위', scale: .85 }); return; }
+  if (o.noCase) { f.spot('on', null, o.duffel != null ? o.duffel + .7 : 0, RY + .02, .3, { maxH: 0.45, label: '짐 선반 위', scale: 1 }); return; }
   const sc = grp(); put(sc, cx, RY + .02, .32); f.add(sc);
   { const lay = grp(); put(lay, .36, .12, 0); lay.rotation.set(-HP, HP, 0, 'YXZ'); sc.add(lay);
     lay.add(mc('tc5-suitcase4', ({ add, tube }) => suitcase(add, tube, { w: .4, h: .56, d: .22, col: '#ec8a78', colD: '#c9675a', up: 0 }))); }
   const p = f.part('lift', sc, (t, b) => { sc.position.z = b.p.z + .34 * t; sc.position.y = b.p.y + .05 * Math.sin(t * PI); sc.rotation.x = .3 * t; }, { label: '짐 선반 여행 가방', sfx: 'lift_fabric', dur: .45 });
   p.lockable = true; p.lockAt = { x: 0, y: .22, z: .2, parent: sc };
-  f.spot('on', null, cx, RY + .02, .24, { part: p, maxH: .45, label: '여행 가방 뒤', scale: .95 });
+  f.spot('on', null, cx, RY + .02, .24, { part: p, maxH: 0.45, label: '여행 가방 뒤', scale: 1 });
   if (o.pack != null) {
     const bp = grp(); put(bp, o.pack, RY + .01, .3); f.add(bp);
     bp.add(put(mc('tc5-backpack3', ({ add, tube }) => backpack(add, tube, {})), 0, 0, 0, 0, 0, 0, .82));
     const q = f.part('lift', bp, (t, b) => { bp.position.z = b.p.z + .3 * t; bp.rotation.z = .25 * t; }, { label: '배낭', sfx: 'lift_fabric', dur: .35 });
-    f.spot('on', null, o.pack, RY + .02, .18, { part: q, maxH: .32, label: '배낭 뒤', scale: .85 });
-  } else f.spot('on', null, cx + .9, RY + .02, .3, { maxH: .3, label: '짐 선반 위', scale: .85 });
+    f.spot('on', null, o.pack, RY + .02, .18, { part: q, maxH: 0.4, label: '배낭 뒤', scale: 0.95 });
+  } else f.spot('on', null, cx + .9, RY + .02, .3, { maxH: 0.45, label: '짐 선반 위', scale: 1 });
 };
 
 // ═════════════════════════ 세로 손잡이 봉 + 하차 벨 ═════════════════════════
@@ -723,7 +723,7 @@ B.tc5end = (f, T, o = {}) => {
       tube([X0 + .3, .95, 0], [X0 + .3, 1.35, 0], .025, S.steel2, 6); add(G.box(.16, .2, .16, .04), S.dark, X0 + .3, 1.45, 0); add(G.cyl(.05, .05, .02, 12), S.red, X0 + .3, 1.45, out * .085, HP, 0, 0);
       tube([W / 2 - .4, .95, 0], [W / 2 - .4, 1.5, 0], .015, C.wood, 6); add(G.box(.01, .16, .26, .004), S.yellow, W / 2 - .4, 1.42, out * .13);
     }));
-    if (o.spot !== false) f.spot('on', null, X0 + .7, .02, inC * .25, { maxH: .3, label: '꼬리 난간', scale: .8 });
+    if (o.spot !== false) f.spot('on', null, X0 + .7, .02, inC * .25, { maxH: 0.5, label: '꼬리 난간', scale: 1 });
     return;
   }
   const cab = kind === 'cab', parked = kind === 'door' && !o.closed, D = o.depth || .97;
@@ -831,7 +831,7 @@ B.tc5end = (f, T, o = {}) => {
     if (cab) { f.spot('on', null, .7, .92, zc - out * .45 + out * .05, { maxH: .22, label: '운전대 위', scale: .7 }); f.spot('on', null, .12, .92, zc - out * .45 + out * .12, { maxH: .22, label: '기관사 모자 옆', scale: .65 }); }
   } else if (parked) {
     const dv = grp(); put(dv, -1.25, 0, inC * .1); f.add(dv); dv.add(doorLeaf(C, inC, false));
-    f.spot('on', null, .4, .02, out * .42, { maxH: .5, label: '연결 통로 구석', scale: .9 });
+    f.spot('on', null, .4, .02, out * .42, { maxH: 0.5, label: '연결 통로 구석', scale: 1 });
   }
   if (o.sign) { const sg = flat(.56, .18, labelTex('car' + o.sign, o.sign === 2 ? '2호차' : '1호차', PAL.a.bodyD, '#ffffff', 256, 80)); put(sg, X0 + .35, 2.3, inC * .085, 0, inC < 0 ? PI : 0); f.add(sg); }
 };
@@ -910,7 +910,7 @@ B.tc5view = (f, T, o = {}) => {
     add(G.box(.36, .3, .12, .1), S.yellow, W / 2 - .45, SH + .22, -.18, -.25, 0, 0);
   }));
   const p = flat(W - .4, .6, moquette(C.seat, C.moq)); put(p, 0, SH + .056, .02, -HP); f.add(p);
-  f.spot('on', null, -.3, SH + .06, .05, { maxH: .34, label: '전망석 위', scale: .95 });
+  f.spot('on', null, -.3, SH + .06, .05, { maxH: 0.5, label: '전망석 위', scale: 1 });
   f.spot('under', null, .4, .01, .42, { maxH: .2, label: '전망석 밑', scale: .8 });
 };
 
@@ -929,7 +929,7 @@ B.tc5cab = (f, T, o = {}) => {
   const gl = mesh(new THREE.PlaneGeometry(W - .8, WH - 1.2), new THREE.MeshBasicMaterial({ color: '#bfe5f8' }), { cast: false }); put(gl, .35, (WH + 1.0) / 2, -.45); f.add(gl);
   const seat = grp(); put(seat, .3, 0, .25); f.add(seat);
   seat.add(mc('tc5-cabseat|' + o.v, ({ add }) => { add(G.cyl(.04, .04, .42, 8), S.steel2, 0, .21, 0); add(G.box(.5, .1, .5, .05), C.seatD, 0, .46, 0); add(G.box(.5, .5, .1, .05), C.seatD, 0, .72, .22); }));
-  f.spot('on', null, .3, .52, .22, { maxH: .3, label: '운전석 위', scale: .85 });
+  f.spot('on', null, .3, .52, .22, { maxH: 0.45, label: '운전석 위', scale: 0.95 });
   f.spot('on', null, -.4, .8, -.12, { maxH: .22, label: '운전대 위', scale: .7 });
 };
 
@@ -953,8 +953,8 @@ B.tc5cargo = (f, T, o = {}) => {
   const p = f.part('door', dv, (t, b) => { dv.rotation.y = -1.3 * t; }, { label: '짐칸 문', sfx: 'open', dur: .35 });
   p.lockable = true; p.lockKind = 'pad'; p.lockAt = { x: L - .08, y: .8, z: .04, parent: dv };
   f.spot('inside', null, -.9, .82, .05, { part: p, maxH: .5, label: '짐칸 안', scale: .9 });
-  f.spot('on', null, .8, .62, -.18, { maxH: .3, label: '상자 위', scale: .85 });
-  f.spot('on', null, .75, .01, .5, { maxH: .3, label: '자전거 옆', scale: .85 });
+  f.spot('on', null, .8, .62, -.18, { maxH: 0.45, label: '상자 위', scale: 1 });
+  f.spot('on', null, .75, .01, .5, { maxH: 0.5, label: '자전거 옆', scale: 1 });
 };
 
 // ═════════════════════════ 바닥 짐 ═════════════════════════
@@ -963,7 +963,7 @@ B.tc5cargo = (f, T, o = {}) => {
 B.tc5bags = (f, T, o = {}) => {
   f.add(mc('tc5-bags4', ({ add, tube }) => suitcase(add, tube, {})));
   const dg = grp(); put(dg, .04, 0, .4, 0, .2, 0); f.add(dg); dg.add(mc('tc5-floorduffel', ({ add, tube }) => duffel(add, tube, { r: .14, len: .52 })));
-  if (o.spot !== false) f.spot('on', null, .04, .29, .4, { maxH: .26, label: '짐 위', scale: .8 });
+  if (o.spot !== false) f.spot('on', null, .04, .29, .4, { maxH: 0.4, label: '짐 위', scale: 0.9 });
 };
 
 // ═════════════════════════ 흐르는 선로 + 흔들림 ═════════════════════════
@@ -1101,7 +1101,7 @@ B.tc5side = (f, T, o = {}) => {
       return l;
     });
     f.part('door', leaves, (t, a, b) => { leaves[0].position.x = a.p.x - LW * .75 * t; leaves[1].position.x = b.p.x + LW * .75 * t; }, { label: '출입문', sfx: 'slide', dur: .45 });
-    f.spot('on', null, XN - .25, .03, d.z + .2, { maxH: .3, label: '출입문 발판', scale: .85 });
+    f.spot('on', null, XN - .25, .03, d.z + .2, { maxH: 0.5, label: '출입문 발판', scale: 1 });
   }
   if (f._ticks) { const ts = f._ticks; f.tick = t => { for (const k of ts) k(t); }; }
   // the roof's edge over this side and the cut section at both ends of the car
@@ -1235,7 +1235,7 @@ B.tc5tunnel = (f, T, o = {}) => {
     for (const g of halves) { g.scale.x = 1 + .5 * t + w * 4; g.rotation.z = -.1 * t - w; }
   }, { label: '고무 주름막', sfx: 'rustle', dur: .45 });
   f.spot('inside', null, HW + .02, .02, 0, { part: bp, maxH: .5, label: '주름막 사이', scale: .9 });
-  f.spot('on', null, .3, .02, .22, { maxH: .5, label: '연결 통로 구석', scale: .9 });
+  f.spot('on', null, .3, .02, .22, { maxH: 0.5, label: '연결 통로 구석', scale: 1 });
 };
 
 // ═════════════════════════ 차체 아래 (기계다운 밑) ═════════════════════════

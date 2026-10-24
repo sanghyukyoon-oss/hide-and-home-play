@@ -352,7 +352,9 @@ B.bathtub = (f, T, o = {}) => {
     }
     tube([-PX, RY, PZF], [PX, RY, PZF], .017, STEEL, 6);
   }));
-  const CW = 2 * PX - .04, CH = RY - .05 - (dark ? .72 : .3);
+  // (9판 사용자 10/23·10/24 "커튼 욕조쪽으로 들어갈때 뚫림": the curtain hangs a little in front of the tub, so seen from above its hem
+// still met the rim's line — it stops well above the rim now, open, half or shut)
+  const CW = 2 * PX - .04, CH = RY - .05 - .88;
   const cg = new THREE.Group(); put(cg, -PX + .02, RY - .035, PZF);
   cg.add(mg('bathtub-curtain|' + curt, mat('#ffffff', { map: dotTex(curt), side: DS }), ({ addM }) => {
     const g = new THREE.PlaneGeometry(CW, CH, 24, 1); g.translate(CW / 2, -CH / 2, 0);

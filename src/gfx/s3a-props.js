@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { put, grp, shade } from './kit.js';
 import { clothBend } from './clothbend.js';
+import { addSparrow } from './birds.js';
 import { G, mc, mt, TX, PI, HP, mix, pondTex, texMat, paintTex, stone, lily, lotus, cattails, daisy, tuft, crown, butterfly, dragonfly, scenery, rainFall } from './s3-kit.js';
 
 const B = {};
@@ -227,13 +228,7 @@ B.s3a_bench = (f, T, o = {}) => {
   f.spot('on', null, -.42, sy + .045, 0, { maxH: .45, label: '벤치 위', scale: .85 });
   f.spot('under', null, 0, 0, -.02, { maxH: .35, label: '벤치 밑', scale: .85 });
   // a sparrow on the backrest's end
-  f.add(mc('s3a-sparrow', ({ add }) => {
-    add(G.sph(.075, 12, 9), '#c99a74', 0, 0, 0, 0, 0, .1, [1.25, .95, .95]); add(G.sph(.055, 12, 9), '#f4e8d8', .02, -.02, .03, 0, 0, 0, [1.1, .8, .8]);
-    add(G.sph(.05, 12, 9), '#c99a74', .085, .06, 0); add(G.sph(.03, 8, 6), '#ffffff', .1, .05, .03, 0, 0, 0, [1, .9, .5]);
-    add(G.cone(.016, .035, 6), '#ffb84a', .14, .055, 0, 0, 0, -HP); add(G.sph(.009, 6, 5), '#2a1d33', .105, .075, .035);
-    add(G.box(.08, .018, .05, .008), '#8a6448', -.1, .01, 0, 0, 0, .35);
-  }));
-  f.group.children.at(-1).position.set(-.62, .9, -.3);
+  addSparrow(f, -.62, .83, -.27, .35, { s: 1.15, turn: .6 });
 };
 
 // ── 낚시터 간판 (1×1): 크림 판에 그린 물고기와 물결, 작은 박공 지붕, 판자 다리 ──────────────────────────────────────

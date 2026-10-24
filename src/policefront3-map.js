@@ -16,7 +16,7 @@ export const PF3_LAYOUT = {
   w: 9, d: 5, exact: true, noEntry: true, slab: 'none', bleed: null, fitW: 9.45, homeShift: [-1.56, -2.03],
   wallH: 0, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
   furniture: [
-    at('pf3_base', 0, 0), at('pf3_station', 0, 0), at('pf3_far', 0, 0), at('pf3_town', 0, 0),
+    at('pf3_base', 0, 0), at('pf3_station', 0, 0), at('pf3_far', 0, 0), at('pf3_town', 0, 0), at('pf3_pigeons', 0, 0),
     // 파출소 안: 정수기 · 수배 게시판 아래 책상과 의자 · 왼벽 주민 우편함
     at('watercooler', -2.55, -1.92),
     at('wantedboard', -.95, -2.285),

@@ -41,14 +41,18 @@ const DECOY_LONG = .17, DECOY_MIN = .15;   // 흩뿌림 소품의 긴 변 (m): �
 // 실제로 큰 흩뿌림 소품은 제 크기대로 (m, [바라는 긴 변, 이보다 작으면 안 놓음]): 접은 우산·밀짚모자가 20 cm, 슬리퍼가 10 cm로 장난감처럼
 // 보였음 — 사용자 10/24 2판 "쓰레빠 웰케 작아짐… 작게 들어간 오브젝트 발견해서 크기 맞춰줘", 1~31판 측정(①)
 export const DECOY_SIZE = { umbrella: [.55, .45], strawhat: [.36, .3], slipper: [.26, .22], ball2: [.24, .2], books: [.22, .19], gimbap2: [.21, .18] };
+// 손바닥만 한 물건의 긴 변 상한(m) — 34 cm로 키우면 의자 좌석·화분·캐릭터보다 커짐 (아트 점검 2차 10/24: 왕관 10·17·63·69, 블록 55·65,
+// 공 65, 도넛 1·2판, 머그 36; ②)
+export const LONG_MAX = { crown: .2, block: .14, ball: .24, ball2: .24, donut: .17, mug: .18 };
 export function wantScale(type, spot, role, want = .34) {
   // (a decoy: 1.08 of the place's scale, but never under ~17 cm on its longest side — in a small place a mug came out 12 cm and a
   // book stack 15 cm, ⑥ 10/24 5판 실폰 "ㅈㄴ 작은 컵이랑 책이 가끔 등장함")
-  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2, D = DECOY_SIZE[type]; return Math.max(1.08, Math.min(D ? 4 : 2.4, (D ? D[0] : DECOY_LONG) / (spot.scale || 1) / big)); }
+  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2, D = DECOY_SIZE[type], d = Math.max(1.08, Math.min(D ? 4 : 2.4, (D ? D[0] : DECOY_LONG) / (spot.scale || 1) / big)); return LONG_MAX[type] ? Math.min(d, LONG_MAX[type] / (spot.scale || 1) / big) : d; }
   const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2;
   const room = (spot.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (spot.scale || 1));
   const ss = spot.scale || 1, lim = ITEMS[type]?.flat ? 2.4 : room;
-  return Math.max(1.15, Math.min(lim, Math.max(1.25, Math.min(2.4, want / ss / big))));
+  const sc = Math.max(1.15, Math.min(lim, Math.max(1.25, Math.min(2.4, want / ss / big))));
+  return LONG_MAX[type] ? Math.min(sc, LONG_MAX[type] / ss / big) : sc;
 }
 
 // the room round a place: free distance along the furniture's own ±x and ±z (and which way is out of its front)
