@@ -1535,6 +1535,9 @@ const HIDEOUT = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'f
 HIDEOUT.push('tc4rack', 'tc4endwall');
 // (28판 traincar5 ⑧ 10/24: 짐 선반 여행 가방 먼저 — 대본 '…선반 위는 반칙'; 연결 통로 문 뒤도 너굴이 크기 자리)
 HIDEOUT.push('tc5rack', 'tc5end');
+// (28판 B안 traincar6 ⑧ 10/24, 미리보기 키: 짐칸 선반 여행 가방 먼저 — '…선반 위는 반칙', 통로 문 뒤; 한 량 단면이 화면에 크게 — 시작 줌 1.4)
+HIDEOUT.push('tc6rack', 'tc6end');
+ROOM_ZOOM.traincar6 = 1.4;
 export function planIncident(room, spec, story = null) {
   const given = Array.isArray(spec.lock) ? spec.lock.slice() : spec.lock === 'both' ? ['pad', 'code'] : spec.lock ? [spec.lock] : [];
   const DOOR = ['pad', 'code', 'color'];

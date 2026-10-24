@@ -13,20 +13,30 @@ calmAll(P, .55); calmAll(RACE_P, .55);   // (원본 놀이터 배색에 맞춰 �
 const ring=(parent,R,r,color,x,y,z)=>{const m=put(tor(R,r,color,null,PI*2,5,20),x,y,z);parent.add(m);return m;};
 function inside(f,parent,part,x,y,z,labelText,maxH=.65) { return f.spot('inside',parent,x,y,z,{part,maxH,label:labelText,scale:1.05}); }
 
+// (⑥ 10/24 아트 점검 "민무늬 세면대 같음" — 46판): a park fountain — a rim of stone blocks with a cream cap, a tiled pale-blue
+// floor, water with ripples and two lily pads, a stone column with a bowl and a spout on top, three arcs of water falling from
+// the spout past the bowl's rim, and a green cast-iron valve post with the lever. Part, pivots and the coin place as before.
 B.gptwidefountain=(f,T,o={})=>{
-  const P=o.fix1022?RACE_P:BASE_WIDE_P,g=f.group;
-  cylinder(g,1.1,1.12,.16,P.honey,0,.08,0,20);const wall=ring(g,.98,.07,P.cream,0,.215,0);wall.rotation.x=PI/2;
-  // A wide, genuinely empty front basin receives the native collectible coin at its full phone-readable size.
-  const rim=ring(g,.94,.1,P.honey,0,.31,0);rim.rotation.x=PI/2;
-  cylinder(g,.86,.86,.045,P.cream,0,.19,0,20);
-  const water=group(g,0,.29,0);cylinder(water,.85,.85,.025,P.water);
-  cylinder(g,.12,.16,.27,P.honey,0,.36,-.38);cylinder(g,.07,.07,.25,P.wood,0,.61,-.38);
-  box(g,.15,.45,.16,P.wood,-1.04,.35,.08);const lever=group(g,-1.04,.55,.08);rod(lever,[0,0,0],[0,.36,0],.045,P.wood);ball(lever,.1,P.red,0,.4,0);ring(g,.09,.028,P.wood,-1.04,.55,.1);
+  const g=f.group, ST='#e6ddcf', ST2='#d6ccbd', CAP='#fff4e2', WAT='#7fd0f0';
+  cylinder(g,1.1,1.14,.08,'#cfc6b8',0,.04,0,24);
+  for(let k=0;k<16;k++){const a=k/16*PI*2,m=box(g,.4,.26,.17,k%2?ST:ST2,Math.sin(a)*.98,.21,Math.cos(a)*.98,.035);m.rotation.y=a;}
+  const cap=ring(g,.98,.075,CAP,0,.35,0);cap.rotation.x=PI/2;
+  cylinder(g,.86,.86,.045,'#a9dceb',0,.19,0,24);
+  for(const r of [.35,.62])ring(g,r,.008,'#8fcfe0',0,.215,0).rotation.x=PI/2;
+  const water=group(g,0,.29,0);cylinder(water,.85,.85,.025,WAT,0,0,0,24);
+  for(const r of [.3,.55])ring(water,r,.008,'#e3f6ff',0,.015,-.1).rotation.x=PI/2;
+  for(const [x,z,s] of [[-.52,-.05,1],[.56,.02,.8]]){const pad=cylinder(water,.1*s,.1*s,.012,'#6fbf6a',x,.018,z,14);pad.scale.z=.9;}
+  ball(water,.03,'#ff9fb5',-.52,.04,-.05);
+  cylinder(g,.17,.21,.1,ST2,0,.25,-.38,16);cylinder(g,.09,.1,.24,ST,0,.42,-.38,14);
+  cylinder(g,.26,.12,.1,ST,0,.59,-.38,18);const bowl=ring(g,.25,.03,CAP,0,.64,-.38);bowl.rotation.x=PI/2;cylinder(g,.22,.22,.012,WAT,0,.635,-.38,18);
+  cylinder(g,.04,.05,.2,ST,0,.74,-.38,10);cylinder(g,.07,.04,.06,CAP,0,.86,-.38,12);ball(g,.035,'#e8c45a',0,.9,-.38);
+  box(g,.17,.48,.17,'#4f8f74',-1.04,.3,.08,.03);box(g,.21,.05,.21,'#3f7a62',-1.04,.56,.08,.02);box(g,.12,.08,.012,'#e8c45a',-1.04,.36,.17,.008);
+  const lever=group(g,-1.04,.6,.08);rod(lever,[0,0,0],[0,.34,0],.04,'#c9cfe0');ball(lever,.09,'#ff6b57',0,.38,0);ring(g,.08,.025,'#3f7a62',-1.04,.6,.1);
   const streams=group(g,0,.24,-.38);
   for(let k=0;k<3;k++){
-    const a=k*PI*2/3,points=[];
-    for(let i=0;i<7;i++){const t=i/6;points.push([Math.cos(a)*.36*t,.5*(1-t)+Math.sin(t*PI)*.28,Math.sin(a)*.36*t]);}
-    for(let i=0;i<6;i++)rod(streams,points[i],points[i+1],.042,P.water);
+    const a=k*PI*2/3+PI/2,points=[];
+    for(let i=0;i<8;i++){const t=i/7;points.push([Math.cos(a)*.5*t,.62*(1-t)+Math.sin(t*PI)*.18,Math.sin(a)*.5*t]);}
+    for(let i=0;i<7;i++)rod(streams,points[i],points[i+1],.03,'#bfe9fb');
   }
   const p=mechanism(f,'lever',[lever,streams,water],t=>{
     lever.rotation.z=-t*1.05;const stop=phase(t,.08,.48);streams.scale.y=Math.max(.015,1-stop);streams.visible=stop<.995;water.position.y=.29-.13*stop;

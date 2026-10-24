@@ -377,6 +377,8 @@ RECIPES.traincar3 = { ...RECIPES.traincar, sky: ['#3b4664', '#48546f', '#323b56'
 // land going by, bright near-white light; the land's own layered slab is the base (no block)
 // (28판 traincar5 · 블록아웃 5a·5b ⑧ 10/24): 27판 station4와 같은 맑은 낮빛 — 하늘색 그라데이션 한 장, 흰 햇빛; 차체가 제 받침이라 block 없음
 RECIPES.traincar5 = RECIPES.traincar5a = RECIPES.traincar5b = { light: { ambColor: '#f3f7fc', amb: 1.36, sunColor: '#fff7ec', sun: 2.5, shadow: .52 }, sky: ['#86c8ee', '#c6e7f8', '#e9f6fc'], itemSize: .42 };
+// (28판 B안 traincar6 ⑧ 10/24: 같은 맑은 낮빛)
+RECIPES.traincar6 = RECIPES.traincar5;
 RECIPES.traincar4 = { light: { ambColor: '#f3f7fc', amb: 1.36, sunColor: '#fff7e8', sun: 2.5, shadow: .5 }, sky: ['#7cc3ee', '#bfe5f8', '#e6f6fd'], itemSize: .48 };
 // 27판 벚꽃마을역 station4 (⑧ 10/24, 허브 "새 맵은 맑은 낮빛 — 노을·누런 아침빛 X", "싱그럽고 깨끗한"): 맑은 하늘색 배경, 흰 햇빛; 둥근 섬이 제 받침이라 rim·block 없음
 RECIPES.station4 = { light: { ambColor: '#f3f7fc', amb: 1.36, sunColor: '#fff7ec', sun: 2.5, shadow: .52 }, sky: ['#86c8ee', '#c6e7f8', '#e9f6fc'], itemSize: .4 };

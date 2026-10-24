@@ -91,22 +91,46 @@ function plinth(add,w,d) {
 function scenery(f) { f.gptScenery=true; f.noSolid=true; f.collideBox=[-.01,-1.1,-.01,.01,-1.02,.01]; }
 
 
+// (⑥ 10/24 아트 점검 "빈 옷장처럼 보이고 민무늬" — 67판 정전 사무실): a real 분전반 — a soft grey steel cabinet on a concrete
+// pad, the breaker board on its front (two rows of white breakers with black toggles, a big main breaker, a cream label strip), a
+// round meter, a yellow ⚡ warning sticker, a taped 점검표, conduits running up into the ceiling, and the 두꺼비집 knife switch
+// on the right with a red grip. Below: the cable cubby behind a flap (cables, a spare fuse box). Part, pivots and spots as before.
 B.gptfusebox=f=>{
-  shape('fusebox-body',({add,tube})=>{
-    box(add,1.72,.16,.8,C.cream,0,.08,0,.04);
-    for(const x of [-.74,.74])box(add,.12,1.72,.68,C.mint,x,1.02,-.1,.03);
-    box(add,1.6,1.72,.1,C.mint,0,1.02,-.39,.025);
-    box(add,1.68,.12,.73,C.cream,0,1.93,-.1,.035);
-    box(add,1.38,.07,.64,C.woodD,0,.3,-.1,.02);
-    box(add,.48,.65,.09,C.cream,.35,1.2,-.25,.035);
-    for(let k=0;k<3;k++){box(add,.13,.38,.065,C.gold,-.5+k*.16,1.3,-.23,.02);tube([-.5+k*.16,1.51,-.23],[-.5+k*.16,1.7,-.23],.02,C.coral,5);}
-    for(let k=0;k<3;k++)tube([-.46+k*.35,1.87,-.32],[-.46+k*.35,2.17,-.32],.04,[C.coral,C.gold,C.teal][k],6);
-    box(add,.14,.55,.04,C.woodD,.36,1.14,-.17,.02);
+  const ST='#d6dbe2', STD='#a9b2c4', INK2='#3b3550', CRM='#fff4e2', YEL='#ffc23d', RED='#ff6b57', PAD='#cfc8bd';
+  shape('fusebox-body2',({add,tube})=>{
+    box(add,1.72,.16,.8,PAD,0,.08,0,.04);
+    box(add,1.52,.04,.68,STD,0,.18,-.1,.015);
+    for(const x of [-.74,.74])box(add,.06,1.76,.68,ST,x,1.04,-.1,.02);
+    box(add,1.52,1.76,.06,STD,0,1.04,-.41,.02);
+    box(add,1.52,.06,.68,ST,0,.64,-.1,.015);
+    box(add,1.6,.1,.75,ST,0,1.93,-.1,.03);
+    box(add,1.48,1.22,.62,ST,0,1.26,-.13,.03);
+    box(add,1.5,1.24,.02,STD,0,1.26,.185,.01);
+    box(add,.92,.82,.03,'#8b93a6',-.24,1.3,.2,.02);
+    for(const [y,n] of [[1.5,6],[1.16,6]]){
+      box(add,.84,.05,.02,CRM,-.24,y+.17,.215,.008);
+      for(let k=0;k<n;k++){const x=-.6+k*.12;box(add,.09,.24,.05,'#f6f3fb',x,y,.225,.012);box(add,.035,.07,.035,INK2,x,y+.02,.255,.008);}
+    }
+    box(add,.2,.3,.06,'#f6f3fb',-.24,.98,.225,.015);box(add,.07,.1,.04,RED,-.24,1.0,.26,.01);
+    add(G.cyl(.11,.11,.04,22),'#f6f3fb',-.48,1.82,.2,HP,0,0);add(G.tor(.11,.014,PI*2,4,22),STD,-.48,1.82,.222);
+    add(G.box(.008,.075,.006,.002),RED,-.46,1.84,.226,0,0,-.6);add(G.sph(.012,6,5),INK2,-.48,1.82,.228);
+    const tri=new THREE.Shape();tri.moveTo(-.09,0);tri.lineTo(.09,0);tri.lineTo(0,.16);tri.closePath();
+    add(G.ext(tri,.006,0,1),YEL,.36,1.66,.205);add(G.ext(tri,.004,0,1),INK2,.36,1.675,.209,0,0,0,[.7,.7,1]);
+    const bolt=new THREE.Shape();bolt.moveTo(.012,.11);bolt.lineTo(-.02,.05);bolt.lineTo(.004,.05);bolt.lineTo(-.012,0);bolt.lineTo(.022,.062);bolt.lineTo(-.002,.062);bolt.closePath();
+    add(G.ext(bolt,.004,0,1),YEL,.36,1.68,.214);
+    box(add,.2,.26,.008,CRM,.58,1.62,.198,.004,0,0,.06);for(let k=0;k<4;k++)box(add,.14,.012,.004,'#c9b89a',.58,1.69-k*.05,.203,.002,0,0,.06);
+    box(add,.08,.03,.006,'#f2dfa0',.58,1.76,.204,.002,0,0,-.2);
+    box(add,.3,.5,.05,STD,.5,1.1,.21,.015);for(const y of [.95,1.25])add(G.cyl(.025,.025,.06,10),'#c9cfe0',.5,y,.24,HP,0,0);
+    for(const x of [.12,.36,.6])tube([x,1.98,-.3],[x,2.4,-.3],.035,'#c9cfe0',8);
+    for(const x of [.12,.36,.6])add(G.tor(.042,.01,PI*2,4,12),STD,x,2.05,-.3,HP,0,0);
+    box(add,1.36,.4,.04,'#5b5672',0,.4,-.37,.01);
+    tube([-.6,.24,-.3],[-.3,.5,-.3],.03,'#3b3550',6);tube([-.3,.5,-.3],[.2,.3,-.3],.03,'#3b3550',6);tube([-.5,.22,-.25],[.4,.45,-.3],.024,RED,6);tube([-.2,.22,-.22],[.55,.26,-.32],.024,'#3fae7a',6);
+    box(add,.26,.16,.2,'#e8bb82',.42,.27,-.14,.015);box(add,.27,.03,.21,'#f6e2b0',.42,.3,-.14,.006);
   },f.group);
-  const lever=group(f.group,.36,.92,-.04);
-  shape('fusebox-lever',({add})=>{box(add,.1,.48,.1,C.steel,0,.24,0,.03);add(G.sph(.13,10,8),C.coral,0,.5,0);},lever);
+  const lever=group(f.group,.5,1.1,.26);
+  shape('fusebox-lever2',({add})=>{box(add,.06,.42,.05,'#c9cfe0',0,.2,0,.015);add(G.cyl(.04,.04,.2,12),RED,0,.42,0,0,0,HP);for(const s of [-1,1])add(G.sph(.042,10,8),RED,s*.1,.42,0);},lever);
   const flap=group(f.group,-.68,.35,.3);
-  shape('fusebox-lower-flap',({add})=>{box(add,1.35,.48,.08,C.cream,.675,.24,0,.035);box(add,.31,.055,.06,C.gold,.675,.24,.065,.018);},flap);
+  shape('fusebox-lower-flap2',({add})=>{box(add,1.35,.48,.05,ST,.675,.24,-.03,.02);for(const y of [.14,.22,.3])box(add,.5,.018,.01,STD,.675,y,0,.004);box(add,.18,.05,.04,YEL,1.18,.4,.005,.012);box(add,.12,.03,.03,'#a9b2c4',.2,.24,.01,.01);},flap);
   const p=part(f,'lever',[lever,flap],t=>{lever.rotation.x=1.25*step(t,0,.45);flap.rotation.y=-1.6*step(t,.5,1);},'두꺼비집 레버','latch',2.5);
   p.gptRecipe='flashlight-fuse-lights-safe';p.gptChain={role:'support',stages:[{at:0,sfx:'latch'},{at:.25,sfx:'creak'},{at:.65,sfx:'click'}],reaction:'비상등이 켜졌다!'};
   p.gptHandle=lever;p.gptTouchRadius=.7;

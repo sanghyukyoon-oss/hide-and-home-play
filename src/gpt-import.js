@@ -60,6 +60,8 @@ import { installGptDetails } from './gfx/gpt-details.js';
 import { installTraincar4 } from './traincar4-map.js';
 // 28판 봄빛 로컬 전차 두 량 traincar5 (⑧ 10/24 — 하늘색 한 장 바깥, 창 안만 흐름, 공중에 뜬 두 량 단면; 블록아웃 5a·5b는 미리보기로): traincar5-map.js
 import { installTraincar5 } from './traincar5-map.js';
+// 28판 B안 2층 식당·침대 열차 한 량 인형집 단면 traincar6 (⑧ 10/24, 미리보기 키 — NEW_MAPS는 그대로): traincar6-map.js
+import { installTraincar6 } from './traincar6-map.js';
 import { installUndermall } from './undermall-map.js';
 // 39판 새 맵 카페 지하 냉동 창고 cafefreezer (⑨ 10/23): 흙 속 단면 지하 + 냉동실·도르래 바구니 얼음·온풍기 — cafefreezer-map.js
 import { installCafefreezer } from './cafefreezer-map.js';
@@ -109,6 +111,7 @@ export function installGpt(MAPS, THEMES, LAYOUTS) {
   installGptDetails(MAPS, LAYOUTS);
   installTraincar4(MAPS, THEMES, LAYOUTS); GPT_STAGE.traincar4 = 28;
   installTraincar5(MAPS, THEMES, LAYOUTS); GPT_STAGE.traincar5 = GPT_STAGE.traincar5a = GPT_STAGE.traincar5b = 28;
+  installTraincar6(MAPS, THEMES, LAYOUTS); GPT_STAGE.traincar6 = 28;
   installUndermall(MAPS, THEMES);
   installCafefreezer(LAYOUTS, THEMES);
   installSeaside2(LAYOUTS, THEMES);

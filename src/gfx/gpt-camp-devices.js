@@ -5,7 +5,7 @@ import { calmAll } from './gpt-calm.js';
 import { HG as G, hmc } from './house-props.js';
 import { Char } from './chars.js';
 import { bakeItem } from './bake.js';
-import { STYLE } from './kit.js';
+import { STYLE, shade, put, mesh, geo, mat } from './kit.js';
 
 const PI = Math.PI, HP = PI / 2;
 // (⑥ 10/22 들여오기 — "누래": greens for the pines and grass, a teal tent, a sky-blue telescope, a red-brown for the dark wood,
@@ -173,13 +173,6 @@ B.gptfire_fan = (f, T, o = {}) => {
       tube([.32 - Math.cos(a) * .55, .2, .02 - Math.sin(a) * .55], [.32 + Math.cos(a) * .55, .26, .02 + Math.sin(a) * .55], .115, C.woodD, 7);
       add(G.cyl(.1, .1, .02, 7), '#e9b35d', .32 + Math.cos(a) * .56, .26, .02 + Math.sin(a) * .56, HP, a, 0);
     }
-    // Green iron fan, broad wooden crank and solid support feet, connected to the fire by a short bellows nozzle.
-    add(G.box(.7, .13, .66, .05), C.woodD, -1.15, .07, .04);
-    add(G.box(.14, .66, .14, .035), C.teal, -1.15, .45, .04);
-    add(G.cyl(.36, .36, .13, 16), C.teal, -1.15, .88, .04, HP, 0, 0);
-    add(G.cyl(.29, .29, .015, 16), '#7ee067', -1.15, .88, .115, HP, 0, 0);
-    tube([-.92, .7, .04], [-.42, .4, .04], .105, '#db9e52', 9, .16);
-    for (let i = 0; i < 4; i++) add(G.tor(.125 - i * .008, .016, PI * 2, 4, 12), '#d47e2b', -.9 + i * .09, .67 - i * .055, .04, 0, 0, -.98);
     // Blanket trivet outside the fire ring; when tilted it reveals the smoke signal instead of crossing through the flame.
     for (const x of [-.25, .95]) tube([x, .08, -.76], [x, 1.33, -.76], .045, C.woodD, 6);
     tube([-.32, 1.33, -.76], [1.02, 1.33, -.76], .05, C.woodD, 6);
@@ -192,17 +185,29 @@ B.gptfire_fan = (f, T, o = {}) => {
     }
   }));
   flame.scale.y = .35;
-  const blades = group(f.group, -1.15, .88, .15);
-  blades.add(fireMc('fire-fan-blades', ({ add }) => {
-    for (let i = 0; i < 4; i++) { const a = i * HP; add(G.box(.17, .32, .04, .06), C.yellow, Math.sin(a) * .13, Math.cos(a) * .13, 0, 0, 0, -a - .3); }
-    add(G.cyl(.075, .075, .08, 10), '#e09167', 0, 0, .03, HP, 0, 0);
+  // the bellows (⑥ 10/24 아트 점검 "개구리 받침의 둥근 부채로 정체불명" — a green disc fan on a post): a 풀무 lying on two
+  // wooden blocks by the fire ring — two pear-shaped wooden boards with brass studs, folded leather between them, a brass
+  // nozzle into the fire, handles out of the wide end. Pumping it (the top board and its handle) fans the flame up.
+  const HX = -.6, HY = .315, HZ = .04, bw = '#c98f58', lea = '#9a5a3e', brass = '#e0b25a';
+  const pear = (() => { const sh = new THREE.Shape(); sh.moveTo(0, -.1); sh.quadraticCurveTo(-.3, -.14, -.52, -.24); sh.quadraticCurveTo(-.8, -.26, -.8, 0); sh.quadraticCurveTo(-.8, .26, -.52, .24); sh.quadraticCurveTo(-.3, .14, 0, .1); sh.closePath(); return sh; })();
+  staticPart(f, 'fire-bellows-base', ({ add }) => {
+    for (const x of [-.85, -1.2]) add(G.box(.12, .16, .4, .03), '#8a5a44', HX + x + .6, .08, HZ);
+    add(G.ext(pear, .035, .008, 10), bw, HX, .165, HZ, -HP, 0, 0);
+    for (let i = 0; i < 4; i++) { const k = 1 - i * .06; add(G.ext(pear, .028, .004, 10), i % 2 ? lea : '#b07048', HX - .02, .2 + i * .028, HZ, -HP, 0, 0, [k, k, 1]); }
+    add(G.cyl(.05, .03, .36, 12), brass, HX + .16, .27, HZ, 0, 0, HP); add(G.tor(.05, .012, PI * 2, 5, 14), brass, HX, .27, HZ, 0, HP, 0);
+  });
+  const blades = group(f.group, HX, HY, HZ);
+  blades.add(mc('fire-bellows-top', ({ add }) => {
+    add(G.ext(pear, .035, .008, 10), bw, 0, 0, 0, -HP, 0, 0, [1, 1, 1]);
+    for (const [x, z] of [[-.2, -.1], [-.2, .1], [-.5, -.18], [-.5, .18], [-.7, 0]]) add(G.sph(.016, 8, 6), brass, x, .04, z, 0, 0, 0, [1, .5, 1]);
+    add(G.ext((() => { const h = new THREE.Shape(); h.moveTo(0, .02); h.quadraticCurveTo(-.03, .06, 0, .1); h.quadraticCurveTo(.03, .06, 0, .02); return h; })(), .012, .003, 6), '#ff7a6a', -.48, .045, 0, -HP, 0, 0, [1.6, 1.6, 1]);
   }));
-  const crank = group(f.group, -1.15, .88, -.08);
-  crank.add(fireMc('fire-fan-crank', ({ add }) => {
-    add(G.box(.07, .4, .07, .02), C.woodD, 0, -.14, 0);
-    add(G.cyl(.065, .065, .22, 9), '#e57f62', 0, -.32, -.08, HP, 0, 0);
+  const crank = group(f.group, HX, HY, HZ);
+  crank.add(mc('fire-bellows-handle', ({ add }) => {
+    add(G.box(.26, .035, .07, .015), bw, -.9, .02, 0);
+    add(G.cap(.03, .1, 2, 8), '#8a5a44', -1.03, .02, 0, HP, 0, 0);
   }));
-  const fan = mech(f, 'lever', [blades, crank, flame], t => { blades.rotation.z = -t * PI * 8; crank.rotation.z = -t * PI * 4; flame.scale.y = .35 + .65 * t; }, 'fire-fan', '불을 부치는 수동 선풍기', .8);
+  const fan = mech(f, 'lever', [blades, crank, flame], t => { const pump = -.24 * Math.abs(Math.sin(t * PI * 3)); blades.rotation.z = pump; crank.rotation.z = pump; flame.scale.y = .35 + .65 * t; }, 'fire-fan', '불을 부치는 수동 선풍기', .8);
   fan.gptChain = ['fire-smoke', 'fire-basket'];
   fan.sfx = 'gearUp'; fan.gptEndSfx = 'click';
   const blanket = group(f.group, .32, 1.3, -.76);
@@ -245,19 +250,19 @@ B.gptfire_treebasket = (f, T, o = {}) => {
     tube([.2, 2.62, -.04], [.86, 2.78, .06], .06, C.bark, 6, .08);
     tube([.45, 2.68, 0], [.62, 2.98, -.06], .035, C.bark, 5, .05);
     tube([-.41, 2.1, -.16], [-1.0, 2.64, -.35], .075, C.bark, 7, .11);
-    for (const [x, y, z, r, c] of [[-.7, 2.9, -.3, .52, '#5fcf7c'], [-.15, 3.12, -.38, .5, '#8fd86a'], [-.4, 3.32, -.2, .42, '#6fdc86'], [.15, 2.88, -.16, .36, '#7fd46f'], [-.95, 2.7, -.1, .34, '#8fd86a']])
-      add(G.sph(r, 12, 9), c, x, y, z, 0, 0, 0, [1.05, .88, 1]);
     tube([.74, 2.76, .1], [.74, 2.64, .1], .018, C.steel, 5);
     add(G.cyl(.15, .15, .07, 16), C.woodD, .74, 2.52, .12, HP, 0, 0);
     add(G.tor(.15, .022, PI * 2, 5, 18), C.bark, .74, 2.52, .16);
     add(G.cyl(.04, .04, .1, 8), C.steel, .74, 2.52, .12, HP, 0, 0);
     tube([-.34, .7, .05], [.6, 2.5, .14], .022, C.rope, 5);
     add(G.box(.3, .26, .15, .04), C.navy, -.3, .74, .08);
-    // A star weather-vane is scenery; every animal uses the game's canonical character builders.
-    star(add, -.85, 2.66, -.21, .18, C.yellow);
-    tube([-.85, 2.39, -.21], [-.85, 2.66, -.21], .025, C.woodD, 6);
     for (const a of [0, 2, 4]) tube([-.42, .1, -.22], [-.42 + Math.cos(a) * .4, .03, -.22 + Math.sin(a) * .4], .065, C.bark, 6, .14);
   });
+  // the crown: pine tiers like the camp's own pines (⑥ 10/24 아트 점검 "공 잎 나무가 소나무 사이에서 튐" — round leaf balls)
+  { const g1 = (T && T.pine) || '#2c9f4f', prof = (r, h) => [[0, h], [r * .3, h * .72], [r * .72, h * .3], [r, .02], [r * .82, -.03], [0, .04]].map(([x, y]) => new THREE.Vector2(x, y));
+    for (const [r, h, y, k] of [[.62, .7, 1.85, 0], [.54, .66, 2.3, .05], [.42, .6, 2.74, .1], [.26, .52, 3.14, .14]])
+      f.add(put(mesh(geo(`fire-tree-pine|${r}|${h}`, () => new THREE.LatheGeometry(prof(r, h), 20)), mat(shade(g1, k), { side: THREE.DoubleSide })), -.42, y, -.17));
+    f.add(mc('fire-tree-cones', ({ add }) => { for (const [x, z, a] of [[.2, .3, .3], [-.8, .2, 1.2]]) add(G.sph(.05, 10, 8), '#a0643c', x, .05, z, 0, a, HP, [1, 1.4, 1]); })); }
   if (o.gptStage === 60) return;
   const basket = group(f.group, .74, 1.46, .16);   // (② 10/23: hung just under the pulley wheel)
   basket.add(fireMc('fire-tree-basket-panda-cameo', ({ add, tube }) => {
