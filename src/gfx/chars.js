@@ -92,6 +92,21 @@ function inkLine(key, pts, r = .015, color = '#2a1d33') {
 }
 const arcLL = (n, f) => Array.from({ length: n + 1 }, (_, i) => f(i / n));
 // a soft tube through points whose radius follows rf(t), t = 0..1 (tails); ends taper closed
+// a fur pattern for a plume (along = x, round = y): the body colour, darker at the root, two dark bands, a cream tip with a ragged
+// edge, and short fur strokes leaning along it
+const FUR = new Map();
+function furTex(body, f) {
+  const key = body + '|' + f.band + '|' + f.tip; if (FUR.has(key)) return FUR.get(key);
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const x = cv.getContext('2d');
+  const gr = x.createLinearGradient(0, 0, 256, 0); gr.addColorStop(0, shade(body, -.16)); gr.addColorStop(.25, body); gr.addColorStop(1, shade(body, .08));
+  x.fillStyle = gr; x.fillRect(0, 0, 256, 64);
+  for (const u of [.36, .6]) { x.fillStyle = f.band; x.beginPath(); for (let v = 0; v <= 64; v += 4) { const w = 13 + Math.sin(v * .7) * 3; x.lineTo(u * 256 - w / 2 + Math.sin(v * .5) * 3, v); } for (let v = 64; v >= 0; v -= 4) { const w = 13 + Math.cos(v * .6) * 3; x.lineTo(u * 256 + w / 2 + Math.sin(v * .5) * 3, v); } x.fill(); }
+  x.fillStyle = f.tip; x.beginPath(); x.moveTo(256, 0); for (let v = 0; v <= 64; v += 4) x.lineTo(212 + Math.sin(v * .9) * 8 + (v % 8 ? 6 : 0), v); x.lineTo(256, 64); x.fill();
+  let a = 7; const R = () => (a = (a * 9301 + 49297) % 233280) / 233280;
+  x.lineCap = 'round';
+  for (let i = 0; i < 320; i++) { const u = R() * 256, v = R() * 64; x.strokeStyle = R() < .5 ? 'rgba(255,240,220,.35)' : 'rgba(90,40,20,.22)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(u, v); x.lineTo(u + 7 + R() * 5, v + (R() - .5) * 3); x.stroke(); }
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; FUR.set(key, tex); return tex;
+}
 function plumeGeo(key, pts, rf, seg = 30, rad = 12) {
   return geo('pl|' + key, () => {
     const curve = new THREE.CatmullRomCurve3(pts.map(q => new THREE.Vector3(...q)));
@@ -291,7 +306,7 @@ export const CHAR_DEFS = {
   coolcat: { name: '쿨냥', body: '#a7aed3', ear: 'kitty', earC: '#ffb6c8', scale: .6, nose: '#ff8fa8', look: { mouth: 'smirk' }, tail: 'cat', twitch: true,
     pattern: [['#ffffff', P(.1, .02, .15, .1), P(-.1, .02, .15, .1), P(0, -.62, .45, .34)], ['#8790bd', P(0, .72, .05, .14), P(.22, .68, .045, .12, -.3), P(-.22, .68, .045, .12, .3)]],
     acc: ['sunglasses'], idle: 'cool', react: 'coolcat' },
-  squirrel: { name: '다람이', body: '#e3a06e', ear: 'squirrel', earC: '#ffd9c2', scale: .58, nose: '#5a3440', tail: 'fluffy', twitch: true,
+  squirrel: { name: '다람이', body: '#e3a06e', ear: 'squirrel', earC: '#ffd9c2', scale: .58, nose: '#5a3440', tail: 'fluffy', tailFur: { band: '#a8592e', tip: '#fff0dc' }, twitch: true,
     pattern: [['#fff0dc', P(0, -.45, .6, .42), P(.32, .04, .3, .2, -.2), P(-.32, .04, .3, .2, .2)]],
     acc: [['hairband', { color: '#ff7fae', bow: true, side: 0 }]], prop: 'lollipop', idle: 'squirrel', react: 'squirrel' },
   // 말썽이 (2026-10-17): the prankster who barges into a stage, grabs something you haven't found yet and hides it
@@ -732,7 +747,20 @@ export class Char {
     } else if (d.tail === 'fluffy') {
       // a big plume: up the back, curling forward over the head
       put(t, 0, .2, -.34);
-      t.add(mesh(plumeGeo('fluffy', [[0, -.02, .02], [-.04, .14, -.22], [-.16, .42, -.34], [-.3, .7, -.3], [-.38, .92, -.14], [-.3, 1.02, .02]], k => .23 * roundEnds(k, .45) * (1 - .3 * k)), mat(shade(body, -.04), { rough: .62 })));
+      const pts = [[0, -.02, .02], [-.04, .14, -.22], [-.16, .42, -.34], [-.3, .7, -.3], [-.38, .92, -.14], [-.3, 1.02, .02]];
+      // (⑪ 10/24, 41·47판: from behind 다람이's tail read as an orange lump) d.tailFur: fur strokes along it, two dark bands, a cream
+      // tip, and a few tufts out of its tip so its outline is a brush, not a balloon
+      const fur = d.tailFur;
+      t.add(mesh(plumeGeo('fluffy', pts, k => .23 * roundEnds(k, .45) * (1 - .3 * k)), fur ? mat('#ffffff', { rough: .62, map: furTex(body, fur) }) : mat(shade(body, -.04), { rough: .62 })));
+      if (fur) {
+        const curve = new THREE.CatmullRomCurve3(pts.map(q => new THREE.Vector3(...q))), c = new THREE.Vector3(), tg = new THREE.Vector3();
+        for (const [k, side, len] of [[.84, -1, .1], [.9, 1, .11], [.95, -.4, .12], [.78, 1, .09], [.72, -1, .08]]) {
+          curve.getPointAt(k, c); curve.getTangentAt(k, tg);
+          const tuft = new THREE.Mesh(new THREE.ConeGeometry(.045, len * 2.2, 6), mat(k > .8 ? fur.tip : shade(body, .06), { rough: .62 }));
+          tuft.position.copy(c).add(new THREE.Vector3(side * .1, .03, -.04)); tuft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tg.clone().add(new THREE.Vector3(side * .5, .3, 0)).normalize());
+          t.add(tuft);
+        }
+      }
     } else if (d.tail === 'cat') {
       put(t, .2, .12, -.36);
       t.add(mesh(plumeGeo('cat', [[0, 0, 0], [.12, .1, -.08], [.22, .36, -.1], [.2, .58, -.04], [.09, .66, .02]], k => .058 * roundEnds(k, .22)), mat(shade(body, -.04), { rough: .62 })));

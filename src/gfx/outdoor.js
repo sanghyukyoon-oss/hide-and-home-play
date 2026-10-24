@@ -1251,22 +1251,42 @@ B.firewood = (f, T) => {
   // (⑥ 10/24 2차 점검 "여전히 판자 같은 천": a thin sheet now (1.2 cm), sagging past the ends of the top logs (not over the
   // middle, where the thing hidden under it sits), deep soft
   // folds where it hangs down the front and the left, a wavy hem with a stitched edge, grommets and tie cords)
+  // (⑥ 10/25 ⑪ 점검 "50~60판 캠프 방수포가 위에서 보면 얇은 판": seen from the game's high camera the top was one flat green
+  // field. Now it drapes: it rides over the two top logs and falls away on all four sides (back and right too), creases run
+  // into the hanging edges, two ropes cross the top and pinch the cloth down along their lines, and the cloth itself has a
+  // canvas weave, sewn seams, a darker hem and a stitched patch, so even straight from above it reads as fabric)
   const TC = '#5aa66a';
-  const tarp = grp(mesh(geo('fw-tarp3', () => {
-    const g = new THREE.BoxGeometry(.92, .012, .95, 30, 1, 30), q = g.attributes.position;
-    for (let i = 0; i < q.count; i++) {
-      const x = q.getX(i), z = q.getZ(i) + .475, fz = Math.max(0, z - .76) / .19, fx = Math.max(0, -.3 - x) / .16;
-      const d = Math.min(Math.abs(x - .1225), Math.abs(x + .1225)), top = (1 - Math.min(1, fz + fx)), sag = .022 * Math.min(1, Math.max(0, d - .12) / .12) * top;
-      const droop = .3 * fz * fz + .22 * fx * fx, fold = .04 * Math.sin(x * 26 + z * 3) * fz + .04 * Math.sin(z * 24) * fx + .006 * Math.sin(x * 9 + z * 11) * top;
-      q.setXYZ(i, x - .05 * fx * fx + fold * fx, q.getY(i) - droop - sag + fold * (1 - fz * .4), z + .05 * fz + fold * fz * .6);
-    }
+  const drape = (x, z, y = 0) => {
+    const fx = Math.max(0, -.3 - x) / .16, fr = Math.max(0, x - .24) / .22, fz = Math.max(0, z - .76) / .19, fb = Math.max(0, .16 - z) / .16;
+    const top = 1 - Math.min(1, fz + fx + fr + fb), d = Math.min(Math.abs(x - .1225), Math.abs(x + .1225));
+    const sag = .022 * Math.min(1, Math.max(0, d - .12) / .12) * top;
+    const pinch = [-.2, .2].reduce((a, r) => a + .02 * Math.exp(-(((x - r) / .03) ** 2)), 0) * Math.max(top, .35);
+    const droop = .3 * fz * fz + .22 * fx * fx + .2 * fr * fr + .16 * fb * fb;
+    const fold = .04 * Math.sin(x * 26 + z * 3) * fz + .04 * Math.sin(z * 24) * fx + .035 * Math.sin(z * 21 + 1.3) * fr + .03 * Math.sin(x * 23 + .7) * fb;
+    const crease = (.012 * Math.sin(x * 15 + z * 8) + .009 * Math.sin(x * 6 - z * 17 + 2)) * top;
+    return [x - .05 * fx * fx + .04 * fr * fr + fold * (fx + fr), y - droop - sag - pinch + crease + fold * (1 - fz * .4) * (1 - top), z + .05 * fz - .05 * fb + fold * (fz + fb) * .6];
+  };
+  const canvas = tex('fw-tarp-canvas', 256, 256, (c, w, h) => {
+    c.fillStyle = TC; c.fillRect(0, 0, w, h);
+    c.globalAlpha = .045; c.fillStyle = '#ffffff'; for (let k = 0; k < w; k += 2) c.fillRect(k, 0, .6, h); c.fillStyle = '#1f4a2a'; for (let k = 1; k < h; k += 2) c.fillRect(0, k, w, .6);
+    c.globalAlpha = 1; c.fillStyle = shade(TC, -.22); for (const u of [w / 3, w * 2 / 3]) c.fillRect(u - 1, 0, 2, h);
+    c.fillStyle = shade(TC, .25); for (const u of [w / 3, w * 2 / 3]) for (let k = 2; k < h; k += 6) c.fillRect(u + 2, k, .8, 3);
+    c.fillStyle = shade(TC, -.12); c.fillRect(0, 0, w, 3); c.fillRect(0, h - 3, w, 3); c.fillRect(0, 0, 3, h); c.fillRect(w - 3, 0, 3, h);
+    c.fillStyle = shade(TC, -.1); c.fillRect(86, 14, 26, 20); c.fillStyle = shade(TC, .3); for (let k = 0; k < 26; k += 4) { c.fillRect(86 + k, 13, 2, .8); c.fillRect(86 + k, 34, 2, .8); } for (let k = 0; k < 20; k += 4) { c.fillRect(85, 14 + k, .8, 2); c.fillRect(112, 14 + k, .8, 2); }
+  });
+  const tarp = grp(mesh(geo('fw-tarp4', () => {
+    const g = new THREE.BoxGeometry(.92, .012, .95, 36, 1, 36), q = g.attributes.position;
+    for (let i = 0; i < q.count; i++) { const v = drape(q.getX(i), q.getZ(i) + .475, q.getY(i)); q.setXYZ(i, v[0], v[1], v[2]); }
     g.computeVertexNormals(); return g;
-  }), mat(TC, { side: THREE.DoubleSide, rough: .95 })));
-  tarp.add(put(mesh(geo('fw-tarp3-hem', () => { const pts = []; for (let i = 0; i <= 24; i++) { const x = -.46 + .92 * i / 24; pts.push(new THREE.Vector3(x, -.3 + .028 * Math.sin(x * 26 + 3.4), .99 + .02 * Math.sin(x * 26))); } return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, .008, 5); }), mat(shade(TC, -.2))), 0, 0, 0));
-  for (const x of [-.4, .4]) tarp.add(put(tor(.014, .005, '#d9dde4', null, PI * 2, 4, 10), x, -.26, .99));
-  put(tarp, cx, .73, -.38); f.add(tarp);   // (a thin cloth: up a little so the top logs don't poke through)
-  f.add(mg('fw-ties', '#e8d9b8', ({ tube }) => { for (const x of [-.4, .4]) tube([cx + x, .47, .61], [cx + x * 1.15, .02, .76], .007, 5); }));
-  f.add(mg('fw-pegs', '#c49a64', ({ add }) => { for (const x of [-.4, .4]) add(G.cone(.018, .1, 6), cx + x * 1.15, .03, .76, PI, 0, 0); }));
+  }), mat('#ffffff', { map: canvas, side: THREE.DoubleSide, rough: .95 })));
+  const along = (pts, k) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2]))), k, .008, 5);
+  tarp.add(mesh(geo('fw-tarp4-hem', () => { const pts = []; for (let i = 0; i <= 30; i++) pts.push(drape(-.46 + .92 * i / 30, .95, -.002)); return along(pts, 48); }), mat(shade(TC, -.1))));
+  tarp.add(mesh(geo('fw-tarp4-hemr', () => { const pts = []; for (let i = 0; i <= 30; i++) pts.push(drape(.46, .95 * i / 30, -.002)); return along(pts, 48); }), mat(shade(TC, -.1))));
+  tarp.add(mesh(geo('fw-tarp4-ropes', () => mergeGeometries([-.2, .2].map(r => { const pts = []; for (let i = 0; i <= 30; i++) pts.push(drape(r, .95 * i / 30, .012)); return along(pts, 60); }))), mat('#e8d9b8')));
+  for (const [x, z] of [[-.4, .95], [.4, .95], [.46, .3], [.46, .62]]) { const v = drape(x, z, .004); tarp.add(put(tor(.014, .005, '#d9dde4', null, PI * 2, 4, 10), v[0], v[1] + .02, v[2] + .005, 0, x > .45 ? HP : 0, 0)); }
+  put(tarp, cx, .73, -.38); f.add(tarp);
+  f.add(mg('fw-ties', '#e8d9b8', ({ tube }) => { for (const x of [-.2, .2]) { const v = drape(x, .95, .012); tube([cx + v[0], .73 + v[1], -.38 + v[2]], [cx + x * 1.6, .02, .76], .007, 5); } const r = drape(.46, .2, .012); tube([cx + r[0], .73 + r[1], -.38 + r[2]], [cx + .66, .02, -.5], .007, 5); }));
+  f.add(mg('fw-pegs', '#c49a64', ({ add }) => { for (const x of [-.2, .2]) add(G.cone(.018, .1, 6), cx + x * 1.6, .03, .76, PI, 0, 0); add(G.cone(.018, .1, 6), cx + .66, .03, -.5, PI, 0, 0); }));
   const p = f.part('lid', tarp, t => { tarp.rotation.x = -1.7 * t; }, { label: '방수포', sfx: 'swish' });
   p.lockable = true; p.lockKind = 'lever'; f.lockAt = { x: .1, y: -.16, z: .92, parent: tarp };   // (just proud of the drooping front cloth)
   f.spot('inside', null, cx, .66, 0, { part: p, maxH: .35, label: '방수포 밑', scale: .85 });
