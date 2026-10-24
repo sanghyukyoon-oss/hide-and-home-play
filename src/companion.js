@@ -198,6 +198,13 @@ export class Companion {
     this.buddy = want && !cast.has(want) ? new Char(want) : null; this.resting = !!want && !this.buddy;
     if (this.buddy) { W.root.add(this.buddy.root); this.besideHero(W); }
   }
+  // once the stage is set (33판 user 10/24 "쿨냥이 박스 뚫음": a pile of boxes put down after the buddy had its spot stood round
+  // it): the buddy whose floor has filled steps out beside 몽글이 again
+  settle(W) {
+    const b = this.buddy; if (!b?.root.visible) return;
+    const p = b.root.position, t = this.tiles.find(q => Math.hypot(q.x - p.x, q.z - p.z) < .05);
+    if (t?.R?.clearAt && !t.R.clearAt(t.x, t.z, .25)) this.besideHero(W);
+  }
   // the buddy on free floor next to 몽글이 (half a step to a step away, same level), facing you; none → it waits out of sight
   besideHero(W) {
     const b = this.buddy; if (!b) return null;
@@ -206,7 +213,7 @@ export class Companion {
     // nor standing in front of 몽글이 as you look (beside it, or behind it a little to one side)
     const rx = Math.cos(W.yaw), rz = -Math.sin(W.yaw), fx = Math.sin(W.yaw), fz = Math.cos(W.yaw);
     for (const t of this.tiles) {
-      if (t === h || t.stair || taken.has(t) || Math.abs((t.y || 0) - (h.y || 0)) > .05) continue;
+      if (t === h || t.stair || taken.has(t) || Math.abs((t.y || 0) - (h.y || 0)) > .05 || (t.R?.clearAt && !t.R.clearAt(t.x, t.z, .25))) continue;
       const d = Math.hypot(t.x - h.x, t.z - h.z); if (d < .6 || d > 1.7) continue;   // (.5 had the two touching — 44·51판)
       // (a step and a half away only when nothing nearer can be seen — 겹침 QA 10/20: 7판 every spot within 1.2 m was behind the slide)
       const far = d > 1.2, seen = this.seen(W, t, roots); if (far && !seen) continue;

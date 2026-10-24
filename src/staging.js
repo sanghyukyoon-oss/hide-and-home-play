@@ -717,7 +717,31 @@ const ticketGone = {
     await c.wait(1.1);
   },
 };
-function sockMesh() { const g = new THREE.Group(); const a = new THREE.Mesh(new THREE.CapsuleGeometry(.04, .12, 4, 8), toon('#ff7eb6')); g.add(a); const b = new THREE.Mesh(new THREE.CapsuleGeometry(.035, .05, 4, 8), toon('#ff7eb6')); b.rotation.z = Math.PI / 2; b.position.set(.04, -.07, 0); g.add(b); return g; }
+// 33판's runaway sock (user 10/24 "처음에 나올 때 양말이 허접함" — it was two pink capsules): a real sock, a tube bent from the leg to
+// the toe, a ribbed white cuff with a pink stripe, a darker heel and toe, two stripes round the leg
+let SOCK_TEX = null;
+function sockTex() {
+  if (SOCK_TEX) return SOCK_TEX;
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 32; const x = cv.getContext('2d');
+  x.fillStyle = '#ff8fc0'; x.fillRect(0, 0, 256, 32);
+  x.fillStyle = '#fff6fa'; x.fillRect(0, 0, 46, 32);
+  for (let i = 4; i < 46; i += 6) { x.fillStyle = 'rgba(230,190,210,.8)'; x.fillRect(i, 0, 2, 32); }
+  x.fillStyle = '#ff5c9a'; x.fillRect(30, 0, 7, 32);
+  x.fillStyle = '#fff6fa'; x.fillRect(78, 0, 9, 32); x.fillRect(100, 0, 9, 32);
+  x.fillStyle = '#e8467f'; x.fillRect(150, 0, 30, 32); x.fillRect(222, 0, 34, 32);
+  SOCK_TEX = new THREE.CanvasTexture(cv); SOCK_TEX.colorSpace = THREE.SRGBColorSpace;
+  return SOCK_TEX;
+}
+function sockMesh() {
+  const path = new THREE.CatmullRomCurve3([V(0, .2, 0), V(0, .1, 0), V(0, .03, 0), V(.03, -.025, 0), V(.09, -.04, 0), V(.17, -.035, 0)]);
+  const tube = new THREE.TubeGeometry(path, 40, .042, 14, false);
+  const m = new THREE.MeshToonMaterial({ map: sockTex(), emissive: new THREE.Color('#ff9cc8'), emissiveIntensity: .28 });
+  const g = new THREE.Group(), body = new THREE.Mesh(tube, m); g.add(body);
+  // the open top (a dark mouth) and the round toe
+  const mouth = new THREE.Mesh(new THREE.CircleGeometry(.04, 14), new THREE.MeshToonMaterial({ color: '#c9437a', side: THREE.DoubleSide })); mouth.rotation.x = -Math.PI / 2; mouth.position.y = .2; g.add(mouth);
+  const toe = new THREE.Mesh(new THREE.SphereGeometry(.042, 14, 10), new THREE.MeshToonMaterial({ color: '#e8467f' })); toe.position.set(.17, -.035, 0); g.add(toe);
+  g.position.y = .04; const o = new THREE.Group(); o.add(g); o.scale.setScalar(1.4); return o;
+}
 const washerSock = {
   async start(S, c) {
     const G = S.G, W = G.world, w = findF(S, /washer/); if (!w) return;
@@ -725,12 +749,25 @@ const washerSock = {
     await W.flyTo(S.tw, { target: top.clone().add(V(0, -.3, 0)), zoom: Math.min(6, W.zoom * 1.7), dur: .6 });
     G.audio.sfx('washerSlam'); await c.wait(.3);
     const stop = G.audio.loopSfx?.('washerRumble', .6); c.finish = () => { stop?.(); g.position.x = x0; g.position.z = z0; };
+    // soap bubbles rise off the top while it churns
+    const st = W.toScreen(top), foam = setInterval(() => { if (S.dead || c.skipped) return; W.fx.burst(st.x + (Math.random() - .5) * 60, st.y - 6, { n: 3, colors: ['#ffffff', '#e6f6ff', '#d8ecff'], shape: 'circle', speed: 40, up: 70, gravity: -60, size: 9 + Math.random() * 6, life: 1 }); }, 120);
     await Promise.race([S.tw.run(1.4, k => { g.position.x = x0 + Math.sin(k * 70) * .012; g.position.z = z0 + Math.cos(k * 53) * .01; W.shadowDirty = true; }), c.wait(1.4)]);
+    clearInterval(foam);
     g.position.x = x0; g.position.z = z0;
-    // one sock flies out and is gone
-    const sock = place(S, sockMesh(), top.clone()), d = V(1.8, 0, .6);
-    G.audio.sfx('whoosh');
-    await S.tw.run(.6, k => { sock.position.set(top.x + d.x * k, top.y + Math.sin(k * Math.PI) * .9, top.z + d.z * k); sock.rotation.z = k * 9; });
+    // one sock pops out of the top — a puff of suds — flaps up, spinning slow, and is gone with a pop over the street
+    // (toward you and a little aside, so it stays in view the whole way)
+    const tc = V(W.cam.position.x - top.x, 0, W.cam.position.z - top.z).normalize(), d = tc.clone().multiplyScalar(1.1).add(V(-tc.z, 0, tc.x).multiplyScalar(.5));
+    const sock = place(S, sockMesh(), top.clone());
+    G.audio.sfx('pop', 3); G.audio.sfx('whoosh');
+    W.fx.burst(st.x, st.y - 8, { n: 14, colors: ['#ffffff', '#e6f6ff'], shape: 'circle', speed: 140, up: 120, gravity: 120, size: 10, life: .6 });
+    await S.tw.run(1.4, k => {
+      const e = ease.outCubic(k), up = Math.sin(Math.min(1, k * 1.6) * Math.PI / 2) * .8 - Math.max(0, k - .7) * .6;
+      sock.position.set(top.x + d.x * e, top.y + .1 + up, top.z + d.z * e);
+      sock.rotation.set(Math.sin(k * 12) * .5, k * 4, Math.sin(k * 9) * .6 + k * 3);
+      const sq = 1 + Math.sin(k * 20) * .08; sock.scale.set(1.4 * sq, 1.4 / sq, 1.4);
+    });
+    { const q = W.toScreen(sock.getWorldPosition(V(0, 0, 0))); W.fx.burst(q.x, q.y, { n: 10, colors: ['#ff8fc0', '#ffffff'], shape: 'star', speed: 120, size: 8, life: .5 }); }
+    G.audio.sfx('pop', 6);
     sock.visible = false; stop?.();
     await c.wait(.6);
   },

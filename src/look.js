@@ -1109,6 +1109,9 @@ export class Look {
       put(f.group, ex, e.y || 0, ez, 0, ery, 0, e.s || null);
       f.group.userData.lookFill = true;
       room.group.add(f.group); this.filled.push(f.group);
+      // (solid for whoever stands about — 33판 user 10/24 "쿨냥이 박스 뚫음": a walker was put down in the laundry's box pile; not a
+      // piece of the room's furniture, so nothing hides in it and it isn't on any list)
+      (room.extraSolids ||= []).push(f.group); room._solid = null; room._walkBodies = null;
     }
   }
 

@@ -260,6 +260,7 @@ export class Room {
     if (!this._solid) {
       this.group.updateMatrixWorld(true);
       this._solid = [...this.furns, ...this.decors].filter(q => q.type !== 'rug' && !(q.y > 1) && !q.f.noSolid && !q.f.walkSolids).map(q => new THREE.Box3().setFromObject(q.f.group, true))
+        .concat((this.extraSolids || []).map(g => new THREE.Box3().setFromObject(g, true)))   // (look.js fill: props nobody finds anything in, still solid)
         .filter(b => !b.isEmpty() && b.max.y - b.min.y > .06 && b.min.y < this.group.position.y + .7)
         // a big piece of scenery (GPT 옥상·파출소·거리) gives its own walking barriers instead of one box round all of it: boxes, objects or a function giving them
         .concat(this.furns.flatMap(q => [].concat(typeof q.f.walkBoxes === 'function' ? q.f.walkBoxes() : q.f.walkBoxes || []).map(a => a.isObject3D ? new THREE.Box3().setFromObject(a, true)

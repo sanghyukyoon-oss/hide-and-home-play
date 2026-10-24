@@ -93,7 +93,7 @@ import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK, COZY_NIGHT, COZY
 import { heroLayout } from '../heroes.js';
 import { KITS } from '../gfx/modelkit-props.js';
 import { IN_APP } from '../build.js';
-import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS } from '../mongletv.js';   // 몽글 TV (10/19)
+import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS, TV_GAMES } from '../mongletv.js';   // 몽글 TV (10/19)
 import { openArtHunt } from '../arthunt.js';   // 10판 그림 속 숨은그림 (10/23)
 import { songDrift } from '../songdrift.js';   // 오래 못 찾으면 노래가 빨라짐 (10/21)
 
@@ -407,7 +407,14 @@ export class StageScene {
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
     // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
     this.tvGame = !this.custom && !this.preview && !this.model && !this.spec.timed && !(this.spec.tut <= 2) ? tvGameFor(this.idx) : null;
-    if (!this.G.bot && this.tvGame) this.tvs = tvScreens((this.room.rooms || [this.room]).flatMap(R => R.furns).map(e => e.f).filter(f => f !== this.plan.tv?.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); }, cta: true });
+    // (18판 오락실 10/24, user: "오락실 판에 우리 미니게임들 좀 넣자"): an arcade cabinet with a screen plays too, each its own game —
+    // a bonus, on any stage that has one (the timed one too: the clock stops while it's open, as for the TV)
+    const recs = (this.room.rooms || [this.room]).flatMap(R => R.furns).filter(e => e.f !== this.plan.tv?.f), tvF = recs.map(e => e.f);
+    const arcs = !this.custom && !this.preview && !this.model ? recs.filter(e => e.f.screen?.isMesh && /arcade/.test(e.type)) : [];
+    // (the game that goes with the name on the cabinet's marquee — ① otakuloft5 kind 0 몽글 점프 · 1 별똥 슈팅 · 2 너굴 레이서; else in turn)
+    const BY_KIND = ['run', 'brk', 'stack'];
+    arcs.forEach((e, i) => { const k = e.opts?.kind ?? e.kind; e.f.arcadeGame = k != null && BY_KIND[k % 3] || TV_GAMES[(i + this.idx) % TV_GAMES.length]; });
+    if (!this.G.bot && (this.tvGame || arcs.length)) this.tvs = tvScreens(this.tvGame ? tvF : arcs.map(e => e.f), { off: f => { const gt = this.grayTarget(f); return !!(gt && !gt.found); }, cta: true });
     this.tvs?.each((f, p) => sweepAddTv(this, f, p));   // (the pulley's shine on it: a shine means you can press it — 10/20)
     if (this.v2) v2Prep(this);
     W.shadowDirty = true;
@@ -438,6 +445,7 @@ export class StageScene {
     if (this.dead) return;
     if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
     stagingPrep(this);
+    this.hero?.settle?.(G.world);
     const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
     // 13판 이삿짐 (10/21, user: "트럭 먼저 나오고 상자 날아가고 그다음에 집 배경으로 챕터 나오면 될거같은데 순서"): the truck and
     // the pile first, then the chapter card over the room itself (its 3D hello, not the comic panel), then the talk
@@ -503,6 +511,7 @@ export class StageScene {
     raidStart(this);   // (타이머 털기: the owner starts counting)
     if (this.spec.room === 'frogpond' && !custom) reelSetup(this);   // (29판: the bucket's catch, set last — the start's spreading moved it out; the bucket is under water, winding it up is how you see it)
     this.running = true; this.tStart = this.t;
+    this.hero?.settle?.(G.world);   // (the friend you brought, off any piece put down since it took its spot)
     // 7·11판: 먹물이 was here too — its footprints, laid on the view you actually play from (after the intro's camera)
     if (sceneAt(this.idx)?.trace && !custom && !this.preview && !this.villain) (async () => {
       for (let i = 0; i < 25 && (G.world.flying || this.cine) && !this.dead; i++) await this.tw.wait(.1);
@@ -739,7 +748,7 @@ export class StageScene {
     if (hit.kind === 'furn' && this.plan.tv && hit.furn === this.plan.tv.f) return this.useTv();
     // 몽글 TV (10/19): a tap on the screen plays; on the body only when no drawer or door is right by the finger
     const tvf = hit.kind === 'furn' && this.tvAt(hit.furn) ? hit.furn : null;
-    if (tvf && this.tvs.screenAt(G.world, tvf, x, y)) return this.openTv();
+    if (tvf && this.tvs.screenAt(G.world, tvf, x, y)) return this.openTv(tvf);
     if (hit.kind === 'furn' && stagingTap(this, hit.furn)) return;   // (31판 극장 간판: a touch puts one letter out)
     // R7 (level report): a locked piece of furniture answers a tap on its body — its nearest locked door or drawer reacts
     if (hit.kind === 'furn') { const lp = this.lockedPartNear(hit.furn, x, y); if (lp) return this.onPart(lp, x, y); }
@@ -750,7 +759,7 @@ export class StageScene {
     // (QA3-fb5 10/19, user: "스테이지2에서 책상 서랍이 잘 안닫힘") — a drawer or door often shows only a sliver past its own
     // furniture (2판's desk drawer: ~16 px of front, open or shut); a tap on the body right by one works that one
     if (hit.kind === 'furn') { const hp = hit.furn.parts?.find(p => p.handle); if (hp) return this.nudgeHandle(hp); }
-    if (hit.kind === 'furn') { const np = this.partNear(hit.furn, x, y); if (np) return this.onPart(np, x, y); if (tvf) return this.openTv(); return; }
+    if (hit.kind === 'furn') { const np = this.partNear(hit.furn, x, y); if (np) return this.onPart(np, x, y); if (tvf) return this.openTv(tvf); return; }
     if (this.kitPileTap?.(x, y)) return;   // 13판's pile of boxes: free, like a piece of furniture's body (레벨 세션 10/20)
     this.addMiss(x, y, true);
   }
@@ -1990,7 +1999,7 @@ export class StageScene {
   tvAt(furn) { return !!this.tvs?.has(furn); }
   // the stage stops while it's open (clock, hint sparkle, the 톡 timers: update() is paused); a win pays once a stage: +3
   // taps and the coins together (tvReward)
-  async openTv() {
+  async openTv(f = null) {
     const G = this.G;
     if (G.tv || this.paused || this.result || !this.running || G.ui.panelOpen || G.bot) return;
     this.paused = true; G.audio.sfx('click');
@@ -2000,7 +2009,7 @@ export class StageScene {
       win: () => this.tvReward(),
     };
     this.tvs?.cta(false);
-    await openMongleTV(G, { level: tvLevel(this.idx), game: this.tvGame, pay });
+    await openMongleTV(G, { level: tvLevel(this.idx), game: f?.arcadeGame || this.tvGame, pay });
     if (this.dead) return;
     this.paused = false; this.idle = 0;
     if (this._tvFly) { const f = this._tvFly; this._tvFly = null; this.rewardFly(f); }
@@ -2933,7 +2942,7 @@ export class StageScene {
         const x = o.x + i - R.w / 2 + .5, z = o.z + j - R.d / 2 + .5;
         if (!R.clearAt(x, z, .4)) continue;   // a free tile next to a bin can still be too tight for a body
         if (this.sides && !offWall(this.sides, x, o.y, z)) continue;   // (nor hugging a wall, a cliff, a hedge)
-        if (Math.hypot(x - fa[0], z - fa[1]) < .95) continue;
+        if (Math.hypot(x - fa[0], z - fa[1]) < 1.25) continue;   // (⑪ 10/24 61·69판: a walker a metre from the host stood into it from the camera's side)
         free.push({ i, j, x, z, y: o.y, R });
       }
     }
@@ -2967,7 +2976,9 @@ export class StageScene {
     const taken = new Set();
     for (let k = 0; k < want && pool.length; k++) {
       const kind = pool[(seed + k * 3) % pool.length]; pool.splice(pool.indexOf(kind), 1);
-      const opts = free.filter(t => !taken.has(t));
+      // (a tile still clear now — 33판 user 10/24 "쿨냥이 박스 뚫음": a pile of boxes put down after the tiles were counted had a
+      // walker standing in its middle; the same check as each step of the walk)
+      const opts = free.filter(t => !taken.has(t) && (!t.R?.clearAt || t.R.clearAt(t.x, t.z, .3))); if (!opts.length) break;
       const t = opts[(seed * 7 + k * 5) % opts.length]; taken.add(t);
       const ch = new Char(kind);
       ch.root.position.set(t.x, t.y || 0, t.z);
@@ -2990,8 +3001,8 @@ export class StageScene {
       // you brought or the host
       const bodies = [this.hero?.ch, this.hero?.buddy, this.friend?.root.visible ? this.friend : null, this.cameo?.ch, this.villain?.hide ? this.villain.ch : null].filter(Boolean).map(c => c.root.position);   // (and the peeking friend, 먹물이 in hiding — 겹침 QA 10/19: 13판 a walker .35 m from the peeker)
       const nb = free.filter(t => t.R === n.t.R && Math.abs(t.i - n.t.i) + Math.abs(t.j - n.t.j) === 1 && !this.npcs.some(o => o !== n && (o.t === t || o.next === t))
-        && !bodies.some(b => Math.hypot(b.x - t.x, b.z - t.z) < .75)
-        && t.R.clearAt((t.x + n.t.x) / 2, (t.z + n.t.z) / 2, .32));   // and the way between is clear too
+        && !bodies.some(b => Math.hypot(b.x - t.x, b.z - t.z) < 1)
+        && t.R.clearAt((t.x + n.t.x) / 2, (t.z + n.t.z) / 2, .32) && t.R.clearAt(t.x, t.z, .3));   // and the way between is clear too, and the tile itself
       if (nb.length && Math.random() < .75) {
         const t = nb[Math.floor(Math.random() * nb.length)]; n.next = t;
         if (ch.def.glide) await ch.glideTo(tw, t.x, t.z, { speed: 1.4 });
@@ -3035,7 +3046,11 @@ export class StageScene {
     if (!short && this.col) return this.subline(ch, text, ms, name);
     const b = h('div', { class: 'bubble pop' }, text);
     this.G.ui.wui.append(b);
-    const p = this.G.world.toScreen(V.copy(ch.root.position).setY(ch.root.position.y + ch.headTop() + .2));
+    // (over the head in the world — 19판 user 10/24 "멍멍이랑 말풍선 떨어져 있음": a friend inside a piece of furniture, like the dog in
+    // its doghouse, has a position of its own inside that piece, and read as a place in the room the bubble sat far off)
+    ch.root.updateWorldMatrix(true, false);
+    const wp = ch.root.getWorldPosition(new THREE.Vector3()), up = ch.root.parent ? ch.root.parent.getWorldScale(new THREE.Vector3()).y : 1;
+    const p = this.G.world.toScreen(wp.setY(wp.y + ch.headTop() * up + .2));
     b.style.left = p.x + 'px'; b.style.top = Math.max(40, p.y) + 'px';   // (placed once — ui.js keepIn keeps it inside the screen)
     const kill = () => b.remove();
     setTimeout(kill, ms);

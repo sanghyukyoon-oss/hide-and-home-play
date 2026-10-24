@@ -95,7 +95,12 @@ function lines(S) {
       cap.replaceChildren(...(i < 0 ? [s] : [s.slice(0, i), h('b', { class: 'ftm ' + m[1] }, m[0]), s.slice(i + m[0].length)]));
       cap.classList.remove('ftnew'); void cap.offsetWidth; cap.classList.add('ftnew');
     },
-    keepAt: (x, y) => { keep.style.transform = `translate(${x.toFixed(1)}px, ${(y - 52).toFixed(1)}px)`; keep.classList.add('on'); },
+    // (user 10/24: "'떼지 마' 말풍선을 약간 크게" — 1.3×, and kept whole on the screen: its ↻ on the right, the top edge)
+    keepAt: (x, y) => {
+      const w = keep.offsetWidth || 120, hgt = keep.offsetHeight || 40;
+      const cx = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 48, x)), cy = Math.max(hgt + 12, y - 60);
+      keep.style.transform = `translate(${cx.toFixed(1)}px, ${cy.toFixed(1)}px)`; keep.classList.add('on');
+    },
     keepOff: () => keep.classList.remove('on', 'turning'),
     // (user 10/20, via 인수인계: a small ↻ turning beside "떼지 마!" while the turn lasts — '뗄 때까지' seen, not read)
     turning: on => keep.classList.toggle('turning', !!on),
@@ -218,10 +223,10 @@ function css() {
 .ftcap .ftm { font-weight: normal; display: inline-block; line-height: 1; padding: .06em .28em .24em; vertical-align: .02em; border-radius: 8px; color: #fff; }
 .ftcap .ftm.move { background: #4dabf7; }
 .ftcap .ftm.spin { background: #ff6f91; }
-.ftkeep { position: absolute; left: 0; top: 0; z-index: 31; pointer-events: none; translate: -50% -100%; padding: 3px 11px; border-radius: 12px; background: #fff; color: #3b2a55; border: 2.5px solid #3b2a55; font-size: 15px; white-space: nowrap; opacity: 0; transition: opacity .15s; }
-.ftkeep::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -7px; border: 7px solid transparent; border-top-color: #3b2a55; border-bottom: 0; }
+.ftkeep { position: absolute; left: 0; top: 0; z-index: 31; pointer-events: none; translate: -50% -100%; padding: 4px 14px; border-radius: 16px; background: #fff; color: #3b2a55; border: 3px solid #3b2a55; font-size: 20px; white-space: nowrap; opacity: 0; transition: opacity .15s; }
+.ftkeep::after { content: ''; position: absolute; left: 50%; bottom: -12px; margin-left: -9px; border: 9px solid transparent; border-top-color: #3b2a55; border-bottom: 0; }
 .ftkeep.on { opacity: 1; }
-.ftkeep .ftspin { position: absolute; right: -30px; top: 50%; margin-top: -13px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #ff6f91; color: #fff; font-style: normal; font-size: 18px; line-height: 1; border: 2px solid #3b2a55; opacity: 0; transition: opacity .15s; }
+.ftkeep .ftspin { position: absolute; right: -40px; top: 50%; margin-top: -17px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #ff6f91; color: #fff; font-style: normal; font-size: 23px; line-height: 1; border: 2.5px solid #3b2a55; opacity: 0; transition: opacity .15s; }
 .ftkeep.turning .ftspin { opacity: 1; animation: ftspin .9s linear infinite; }
 @keyframes ftspin { to { rotate: 360deg; } }
 `));

@@ -102,23 +102,32 @@ const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
 // One sheet (10/19, user: "뭔가 텍스처도 겹쳐 있어"): the picture is opaque and covers the whole screen, the set's own
 // screen is hidden while it shows, and the flicker dims it instead of fading it — a see-through plane sat on layer 2 (no
 // ink, not in the ID pass), so the old screen's face and lines showed through it.
+// (18판 오락실 10/24, user: "오락실 판에 우리 미니게임들 좀 넣자. TV 미니게임 알지?"): an arcade cabinet with a screen of its own (f.screen)
+// is a screen too, each with its own game (f.arcadeGame) — its channel on the picture, 'CH 2'…
 export function tvScreens(furns, { off = null, cta = false } = {}) {
-  const b = document.createElement('canvas'); b.width = 64; b.height = 36;
-  const g0 = g; g = b.getContext('2d');
-  rect(0, 0, 64, 36, '#1d1640'); rect(0, 12, 64, 10, '#2a2058'); rect(0, 18, 64, 10, '#35296c');
-  for (const [x, y] of [[4, 3], [13, 7], [21, 2], [30, 9], [38, 4], [45, 10], [9, 12], [34, 1], [26, 14]]) rect(x, y, 1, 1, '#fff6c8');
-  MOON.forEach((r, j) => [...r].forEach((q, i) => { if (q === 'y') rect(52 + i, 3 + j, 1, 1, '#ffe9a8'); }));
-  rect(0, 28, 64, 8, '#5b4a3a'); for (let x = 0; x < 64; x += 8) rect(x, 28, 1, 8, '#6d5a47'); rect(0, 28, 64, 1, '#7d6852');
-  cbox(14, 21, 12, 7, 0); spr('mong', 30, 19); spr('bunny', 46, 15);
-  g = g0;
+  const pics = new Map();
+  const picture = game => {
+    if (pics.has(game)) return pics.get(game);
+    const b = document.createElement('canvas'); b.width = 64; b.height = 36;
+    const g0 = g; g = b.getContext('2d');
+    rect(0, 0, 64, 36, '#1d1640'); rect(0, 12, 64, 10, '#2a2058'); rect(0, 18, 64, 10, '#35296c');
+    for (const [x, y] of [[4, 3], [13, 7], [21, 2], [30, 9], [38, 4], [45, 10], [9, 12], [34, 1], [26, 14]]) rect(x, y, 1, 1, '#fff6c8');
+    MOON.forEach((r, j) => [...r].forEach((q, i) => { if (q === 'y') rect(52 + i, 3 + j, 1, 1, '#ffe9a8'); }));
+    rect(0, 28, 64, 8, '#5b4a3a'); for (let x = 0; x < 64; x += 8) rect(x, 28, 1, 8, '#6d5a47'); rect(0, 28, 64, 1, '#7d6852');
+    cbox(14, 21, 12, 7, 0); spr('mong', 30, 19); spr('bunny', 46, 15);
+    if (game && TV_CH[game]) px('CH ' + TV_CH[game], 12, 8, '#7bff9a');
+    g = g0;
+    const c = document.createElement('canvas'); c.width = 256; c.height = 144;
+    const gc = c.getContext('2d'); gc.imageSmoothingEnabled = false;
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+    const P = { b, c, gc, tex }; pics.set(game, P); paint(P); return P;
+  };
   // the screen at 4× (the pixel picture stays crisp), and on a stage's playable TV the call to play on top (5판 user 10/23: "별 이펙트
   // 같은 거나… 플레이! 버튼이 있어야 되나(모니터 안에서)"): stars twinkling round a '▶ 플레이!' button that bobs, until you've played
-  const c = document.createElement('canvas'); c.width = 256; c.height = 144;
-  const gc = c.getContext('2d'); gc.imageSmoothingEnabled = false;
   const SPARK = [[30, 22, 0], [222, 18, 1.7], [196, 62, 3.1], [56, 70, 4.4], [128, 12, 2.3]];
   let ctaOn = cta, ctaT = 0, ctaWait = 0;
   const PLAY = tr(PLAY_KO);
-  const paint = () => {
+  function paint({ b, gc }) {
     gc.drawImage(b, 0, 0, 256, 144);
     if (!ctaOn) return;
     for (const [x, y, ph] of SPARK) {
@@ -135,13 +144,14 @@ export function tvScreens(furns, { off = null, cta = false } = {}) {
     const tw = gc.measureText(PLAY).width, tri = 14 * sc, x0 = 128 - (tri + 6 * sc + tw) / 2, cy = y + h / 2;
     gc.beginPath(); gc.moveTo(x0, cy - tri * .6); gc.lineTo(x0 + tri, cy); gc.lineTo(x0, cy + tri * .6); gc.closePath(); gc.fill();
     gc.fillText(PLAY, x0 + tri + 6 * sc, cy + 1);
-  };
-  paint();
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+  }
+  const repaint = () => { for (const P of pics.values()) { paint(P); P.tex.needsUpdate = true; } };
   const list = new Map(), sz = new THREE.Vector3(), ct = new THREE.Vector3();
   for (const f of furns) {
-    if (!f || !TV_TYPES.has(f.type) || list.has(f)) continue;
-    let scr = null; f.group.traverse(o => { if (!scr && o.isMesh && /-screen$/.test(o.geometry?.name || '')) scr = o; });
+    const arcade = !!(f?.arcadeGame && f.screen?.isMesh);
+    if (!f || !(TV_TYPES.has(f.type) || arcade) || list.has(f)) continue;
+    let scr = arcade ? f.screen : null; if (!scr) f.group.traverse(o => { if (!scr && o.isMesh && /-screen$/.test(o.geometry?.name || '')) scr = o; });
+    const tex = picture(arcade ? f.arcadeGame : null).tex;
     const e = { f, scr, plane: null, mat0: null, wait: 1 + Math.random() * 1.6, k: -1, on: false, lvl: -1 };
     if (scr) {
       const geo = scr.geometry; if (!geo.boundingBox) geo.computeBoundingBox();
@@ -156,10 +166,10 @@ export function tvScreens(furns, { off = null, cta = false } = {}) {
   const FLICK = [.3, 1, .55, 1], DARK = .06;   // (brightness: off, then the flicker steps)
   return {
     has: f => list.has(f),
-    cta(on) { if (ctaOn === !!on) return; ctaOn = !!on; paint(); tex.needsUpdate = true; },
+    cta(on) { if (ctaOn === !!on) return; ctaOn = !!on; repaint(); },
     each: fn => { for (const e of list.values()) fn(e.f, e.plane); },   // (the stage gives each one the pulley's shine — sweep.js sweepAddTv)
     update(dt) {
-      if (ctaOn && list.size) { ctaT += dt; ctaWait -= dt; if (ctaWait <= 0) { ctaWait = .07; paint(); tex.needsUpdate = true; } }
+      if (ctaOn && list.size) { ctaT += dt; ctaWait -= dt; if (ctaWait <= 0) { ctaWait = .07; repaint(); } }
       for (const e of list.values()) {
         const p = e.plane; if (!p) continue;
         const dark = !!off?.(e.f);
@@ -180,7 +190,7 @@ export function tvScreens(furns, { off = null, cta = false } = {}) {
     },
     dispose() {
       for (const e of list.values()) if (e.plane) { e.plane.parent?.remove(e.plane); e.plane.geometry.dispose(); e.plane.material.dispose(); if (e.mat0 !== e.plane.material) e.mat0.dispose(); if (e.scr) e.scr.visible = true; }
-      list.clear(); tex.dispose(); c.width = c.height = 0; b.width = b.height = 0;
+      list.clear(); for (const P of pics.values()) { P.tex.dispose(); P.c.width = P.c.height = 0; P.b.width = P.b.height = 0; } pics.clear();
     },
   };
 }
