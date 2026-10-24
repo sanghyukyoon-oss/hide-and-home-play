@@ -27,6 +27,8 @@ import { Hand } from '../handhold.js';   // 손에 든 보물: 하나씩 크게 
 // once in the middle of each region (level design 10/18): the first after stage 5 as a gentle try, then after 17, 26, 36, 45,
 // 55, 65 — no longer right after a region's escape-room boss (two bosses back to back)
 // 10/18: also the old flashlight-boss slots after 31 and 49 (user chose 보물 지키기 new maps there)
+// 조이스틱이 막히면 이만큼씩 틀어 본다(라디안, 가까운 것부터): 벽·난간·계단 줄을 따라 미끄러지게 (② 10/24)
+const SLIDE = [0, .26, -.26, .52, -.52, .79, -.79, 1.05, -1.05, 1.31, -1.31];
 export const BOSS_AFTER = [17, 26, 36, 48, 54];
 const SEP = .55;   // 너굴이와 몽글이 몸 사이 (겹침 QA 규칙 0.55 m — 10/20 user: "너굴이가 몽글이 몸을 뚫고 지나가요")   // 18·27·37·49·55판 뒤 (10/18 밤: one a chapter from 2장, the 골목 one back)
 const BOSS_MAPS = { 17: 'house2f', 26: 'alleyhouse', 36: 'shopmap', 48: 'parkwide', 54: 'cabin' };
@@ -168,7 +170,7 @@ export class BossScene {
     { const allH = bridgeGrid(walkGrid(this.rooms, .24, { raised: true }), { raised: true }), set = new Set(best), seenH = new Set(); let pick = best;
       for (const t of allH) { if (seenH.has(t)) continue; const comp = [], q = [t]; seenH.add(t); while (q.length) { const u = q.pop(); comp.push(u); for (const v of u.nb) if (!seenH.has(v)) { seenH.add(v); q.push(v); } }
         if (comp.some(u => best.some(b => Math.hypot(b.x - u.x, b.z - u.z) < .05 && Math.abs((b.y || 0) - (u.y || 0)) < .1)) && comp.length >= pick.length) pick = comp; }
-      this.htiles = pick.length ? pick : best; }
+      this.htiles = this.headroom(pick.length ? pick : best); }
     // hiding places: the walkable point right beside each piece something can be tucked under, inside or behind
     this.spots = [];
     for (const R of this.rooms) for (const r of R.furns) {
@@ -538,7 +540,9 @@ export class BossScene {
           const sc = dot * Math.min(d, 2); if (sc > gs) { gs = sc; g = t; }
         }
         const path = g ? gridPath(cur, g) : null;
-        this._padRoute = { path: path && path.length <= 10 ? path : null, until: this.t + .4, mx: mx / ml, mz: mz / ml };
+        // (a way round that starts by walking back against the thumb read as 몽글이 turning away — ② 10/24: not taken)
+        const back = path?.length && ((path[0].x - p.x) * mx + (path[0].z - p.z) * mz) / ml < -.05;
+        this._padRoute = { path: path && path.length <= 10 && !back ? path : null, until: this.t + .4, mx: mx / ml, mz: mz / ml };
       }
       const P = this._padRoute.path; if (!P?.length) return false;
       const n = P[0], ex = n.x - p.x, ez = n.z - p.z, d = Math.hypot(ex, ez);
@@ -550,8 +554,31 @@ export class BossScene {
     // the stairs' side — counts as stuck and starts one)
     const ml0 = Math.hypot(mx, mz) || 1, Rk = this._padRoute, onRoute = Rk?.path?.length && Rk.until > this.t && (Rk.mx * mx + Rk.mz * mz) / ml0 > .87;
     const gain = () => ((p.x - x0) * mx + (p.z - z0) * mz) / ml0;
+    // (② 10/24, 사용자 "몽글이 좀 부드럽고 잘 다니게 해줘"): straight first, then the push turned a little at a time (nearest first, at
+    // its share of the speed) — sliding along a wall, a rail or the stairs' line like a thumb expects; the grid steer after that, and
+    // the short way round only once it has been held up a moment (steer and route taking turns frame by frame went zigzag)
     let went = onRoute && route();
-    if (!went) { went = tryAt(p.x + mx * st, p.z + mz * st) || steer(); if (!went || gain() < st * .35) went = route() || went; }
+    if (!went) {
+      for (const a of SLIDE) {
+        const c = Math.cos(a), s = Math.sin(a), k = st * Math.max(.45, c);
+        if (tryAt(p.x + (mx * c - mz * s) / ml0 * k, p.z + (mx * s + mz * c) / ml0 * k)) { went = true; break; }
+      }
+      if (!went) went = steer();
+      // (caught in a pocket off the grid's lines — between a tile and a piece's corner: out to the nearest tile within .9 m the thumb
+      // points at (within ~70°) that it can walk straight to)
+      if (!went) {
+        let to = null, bs = 0;
+        for (const t of T) {
+          if (Math.abs((t.y || 0) - p.y) > .3) continue;
+          const ex = t.x - p.x, ez = t.z - p.z, d = Math.hypot(ex, ez); if (d < .05 || d > .9) continue;
+          const dot = (ex * mx + ez * mz) / d / ml0; if (dot < .34) continue;
+          const sc = dot / (.3 + d); if (sc > bs && this.canStep(p.x, p.z, t.x, t.z)) { bs = sc; to = t; }
+        }
+        if (to) { const ex = to.x - p.x, ez = to.z - p.z, d = Math.hypot(ex, ez), s = Math.min(d, st); p.x += ex / d * s; p.z += ez / d * s; this._ht = d - s < .2 ? to : null; went = true; }
+      }
+      if (went && gain() > st * .3) this._blockT = 0;
+      else if ((this._blockT = (this._blockT || 0) + dt) > .2) went = route() || went;
+    }
     if (went || tryAt(p.x + mx * st, p.z) || tryAt(p.x, p.z + mz * st)) { if (Math.hypot(p.x - sp.x, p.z - sp.z) >= SEP) this._pushT = 0; }
     // still caught somewhere off the grid (an old save's spot, a gap the grid left): pushed half a second without getting anywhere, a little
     // hop to the nearest open tile the way it's pushed — on the grid, a push into a wall is just a wall
@@ -570,8 +597,10 @@ export class BossScene {
         this.G.audio.sfx('hop');
       }
     }
-    const a = Math.atan2(mx, mz), r = this.hero.root.rotation.y; this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 12);
-    this.hero.lift = Math.abs(Math.sin(this.t * 14)) * .06;
+    // (② 10/24: faces the way it really goes — smoothed, so a slide along a wall or a turn on the stairs doesn't shake its head;
+    // standing pressed into a wall it turns to the push, slowly)
+    { const mvx = p.x - x0, mvz = p.z - z0, mv = Math.hypot(mvx, mvz), a = mv > st * .3 ? Math.atan2(mvx, mvz) : Math.atan2(mx, mz), r = this.hero.root.rotation.y;
+      this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * (mv > st * .3 ? 10 : 4)); }
     // (10/24 user: "몽글이 계단 어색하게 오름") the height is where 몽글이 stands between its tile and the joined one it's between, not
     // the nearer tile's alone — stair steps sit half a metre apart, so following the nearest went up in jerks
     { const t = this._ht || near3(T, p.x, p.y, p.z); if (t) {
@@ -581,8 +610,45 @@ export class BossScene {
         const k = ((p.x - t.x) * ex + (p.z - t.z) * ez) / L; if (k <= 0 || k >= 1) continue;
         const d = Math.hypot(t.x + ex * k - p.x, t.z + ez * k - p.z); if (d < bd) { bd = d; y = (t.y || 0) + ((u.y || 0) - (t.y || 0)) * k; }
       }
-      p.y += (y - p.y) * Math.min(1, dt * 16);
-    } }
+      // (② 10/24: on the stairs the treads themselves — the grid's heights between two tiles ran under the steps in places and
+      // 몽글이 walked half sunk into them, "몸이 계단을 뚫음"): never lower than the tread right under it
+      const slope = (t.nb || []).some(u => Math.abs((u.y || 0) - (t.y || 0)) > .05);
+      // (and up or down no faster than it walks along — a tread's edge is a .17 m step, taken as a slope, not a jump)
+      const dy = (y - p.y) * Math.min(1, dt * 12), cap = Math.max(.012, Math.hypot(p.x - x0, p.z - z0) * 1.1);
+      p.y += Math.max(-cap, Math.min(cap, dy));
+      // the body (not 몽글이's place on the grid — the walk's own logic keeps that) stands on the tread under it: the body rises the
+      // gap, smoothed, and the walk's bob is small on the stairs (a full .06 m hop on every step read as stumbling up them)
+      let off = 0;
+      if (slope) { const ty = this.treadY(p.x, p.y, p.z); if (ty != null && ty > p.y) off = ty - p.y; }
+      this._treadOff = (this._treadOff || 0) + (off - (this._treadOff || 0)) * Math.min(1, dt * 10);
+      this.hero.lift = Math.abs(Math.sin(this.t * 14)) * (slope ? .015 : .06) + this._treadOff / (this.hero.root.scale.y || 1);
+    } else this.hero.lift = Math.abs(Math.sin(this.t * 14)) * .06; }
+  }
+  // (② 10/24, user: "몽글이 계단 어색하게 오름" — on the phone 몽글이 walked in under the stairs' first steps, half inside them): 몽글이's
+  // floor without the tiles that have a stair or a piece of furniture's underside less than .9 m over them; the stairs' own tiles and
+  // the ones joined to them stay (that's the way on)
+  headroom(tiles) {
+    this.room.group.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster(), o = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+    const slope = t => (t.nb || []).some(u => Math.abs((u.y || 0) - (t.y || 0)) > .05);
+    const keep = new Set(tiles.filter(t => slope(t) || (t.nb || []).some(slope)));
+    const low = new Set(tiles.filter(t => {
+      if (keep.has(t)) return false;
+      ray.set(o.set(t.x, (t.y || 0) + .05, t.z), up); ray.far = .85;
+      return ray.intersectObject(this.room.group, true).some(h => h.object.visible && !h.object.userData.proxy);
+    }));
+    if (!low.size) return tiles;
+    const out = tiles.filter(t => !low.has(t));
+    for (const t of out) if (t.nb) t.nb = t.nb.filter(u => !low.has(u));
+    return out;
+  }
+  // the highest tread under a point, up to .8 m above where the grid puts 몽글이 (a ray down through the room, flat faces only):
+  // 26판 골목집's stair tiles sit half a metre under the treads themselves
+  treadY(x, y, z) {
+    const R = this._tray || (this._tray = { ray: new THREE.Raycaster(), o: new THREE.Vector3(), d: new THREE.Vector3(0, -1, 0) });
+    R.ray.set(R.o.set(x, y + 1, z), R.d); R.ray.far = 1.6;
+    const h = R.ray.intersectObject(this.room.group, true).find(q => q.object.visible && !q.object.userData.proxy && q.face && q.face.normal.y > .9 && q.point.y <= y + .8);
+    return h ? h.point.y : null;
   }
   // whatever is still in your hands when it stops counting goes somewhere at random
   hideRest() {
