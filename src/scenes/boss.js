@@ -572,7 +572,17 @@ export class BossScene {
     }
     const a = Math.atan2(mx, mz), r = this.hero.root.rotation.y; this.hero.root.rotation.y = r + Math.atan2(Math.sin(a - r), Math.cos(a - r)) * Math.min(1, dt * 12);
     this.hero.lift = Math.abs(Math.sin(this.t * 14)) * .06;
-    { const t = this._ht || near3(T, p.x, p.y, p.z); if (t) p.y += ((t.y || 0) - p.y) * Math.min(1, dt * 10); }
+    // (10/24 user: "몽글이 계단 어색하게 오름") the height is where 몽글이 stands between its tile and the joined one it's between, not
+    // the nearer tile's alone — stair steps sit half a metre apart, so following the nearest went up in jerks
+    { const t = this._ht || near3(T, p.x, p.y, p.z); if (t) {
+      let y = t.y || 0, bd = .3;
+      for (const u of t.nb || []) {
+        const ex = u.x - t.x, ez = u.z - t.z, L = ex * ex + ez * ez; if (!L || Math.abs((u.y || 0) - (t.y || 0)) < .02) continue;
+        const k = ((p.x - t.x) * ex + (p.z - t.z) * ez) / L; if (k <= 0 || k >= 1) continue;
+        const d = Math.hypot(t.x + ex * k - p.x, t.z + ez * k - p.z); if (d < bd) { bd = d; y = (t.y || 0) + ((u.y || 0) - (t.y || 0)) * k; }
+      }
+      p.y += (y - p.y) * Math.min(1, dt * 16);
+    } }
   }
   // whatever is still in your hands when it stops counting goes somewhere at random
   hideRest() {
