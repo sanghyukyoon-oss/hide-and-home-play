@@ -717,9 +717,11 @@ export const MAPS = {
       // the big park: a playground on the left, the pond in the middle, a picnic corner on the right
       // (10/19 겹침 QA: the swings stood on the climbing wall's foot and through the tree — swings (2,0)→(3,0), tree (4,0)→(7,1))
       // (10/23 아트 점검 48-1: the ice-cream cart's awning hung over the pond's rim and water — cart and planter swap: the cart to (6,4), its back on open grass)
+      // (10/24 아트 점검 v2-2: at (6,4) its canopy still hung over the pond's rim — the canopy reaches back past the cart: cart and bench swap, the cart to the
+      // front-left corner by the bin (open grass behind it), the bench to the front of the pond)
       furniture: [F('slidetower', 0, 0), F('swings2', 3, 0), F('tree', 7, 1), F('picnic2', 5, 0), F('bush', 7, 0),
         F('springrider', 2, 2), F('pond', 3, 2), F('streetlamp2', 6, 2), F('bbqgrill', 7, 2), F('hopscotch', 0, 3), F('reeds', 2, 4),
-        F('icecart', 6, 4), F('parkbin', 0, 5), F('bench', 1, 5), F('planter', 5, 5), F('tree', 7, 5)] }) },
+        F('parkbin', 0, 5), F('icecart', 1, 5), F('bench', 3, 5), F('planter', 5, 5), F('tree', 7, 5)] }) },
   ] }),
   // 큰 캠핑장
   campwide: () => ({ theme: THEMES.campwide, friendAt: [2.5, 1.5], nBonus: 3, rooms: [

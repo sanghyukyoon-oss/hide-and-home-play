@@ -915,7 +915,54 @@ export async function stagingCrossing(S, part) {
   } finally { xs.forEach(f => { f.ringing = false; }); S._crossRun = false; }
 }
 
-const FX = { bagPop, tunnel, trainIn, sunsetTrain, partsDispatch, pengShake, jarHide, inkyTraceLook, smokeCat, sniffPoint, boardStop, whistleTest, capOn,
+// ── 29판 흑백 (개굴이네 연잎 연못 집 frogpond, 10/24 — 스토리 룸 islandGray stage: { start: 'grayArrive', end: 'inkyTree' })
+// 시작: 개굴이가 집 데크(기둥 위 둥근 마루 — 없으면 물가 잔교·좌대)에서 폴짝 뛰어내려 착지 → 물방울 튐; 바로 뒤 먹물이 대시로 색이 빠짐(stage.js inkyDash)
+const deckTop = S => {
+  const r = [...(S.room.rooms || [S.room])].flatMap(R => R.furns).find(q => q.f.heroKey === 's3c_house') || findF(S, /^(lakedeck|fishdock)$/);
+  if (!r) return null;
+  const b = new THREE.Box3().setFromObject(r.f.group);
+  return r.f.heroKey === 's3c_house' ? V((b.min.x + b.max.x) / 2, b.min.y + .8, (b.min.z + b.max.z) / 2 + .35) : V((b.min.x + b.max.x) / 2, b.min.y + .32, (b.min.z + b.max.z) / 2);
+};
+const grayArrive = {
+  async start(S, c) {
+    const G = S.G, W = G.world, f = chOf(S); if (!f) return;
+    const p0 = f.root.position.clone(), top = deckTop(S);
+    const from = top ? f.root.parent.worldToLocal(top.clone()) : p0.clone().setY(p0.y + .5);
+    // (no 먹물이 dash to drain it: the colour stays on until the hop lands, then drains here)
+    const u = W.post?.u.gray, drain = !!(S.spec.gray && u && u.value > .5 && !S._dash);
+    if (drain) u.value = 0;
+    c.finish = () => { f.root.position.copy(p0); f.squash = 0; if (drain) u.value = 1; };
+    await lookAt(S, f, 1.25, .45);
+    f.root.position.copy(from); f.faceTo(W.cam.position.x, W.cam.position.z); f.setFace?.('happy'); G.audio.sfx('pop');
+    await c.wait(.35);
+    // the hop down off the deck: up a little, then down onto the lawn
+    const dy = from.y - p0.y;
+    await Promise.race([S.tw.run(.62, k => { f.root.position.lerpVectors(from, p0, k); f.root.position.y = p0.y + dy * (1 - k) + .45 * 4 * k * (1 - k); }, ease.inOutQuad), c.wait(.62)]);
+    f.root.position.copy(p0); f.squash = .4; G.audio.sfx('blub');
+    const s = scr(W, f, .05); W.fx.burst(s.x, s.y, { n: 16, colors: ['#8fd3ff', '#ffffff'], shape: 'dot', speed: 200, size: 7, gravity: 520, up: 140, life: .55 });
+    f.setFace?.('wow');
+    if (drain) { G.audio.sfx('whoosh'); await Promise.race([S.tw.run(.7, k => { u.value = k; }, ease.inOutQuad), c.wait(.7)]); u.value = 1; }
+    await c.wait(.6);
+  },
+};
+// 끝: 색이 다 돌아온 뒤 — 먹물이가 큰 나무 꼭대기(없으면 개굴이 집 지붕 위)에 앉아 손을 흔듦; 카메라가 올려다봄
+const inkyTree = {
+  async end(S, c) {
+    const G = S.G, W = G.world, ch = S.villain?.ch; if (!ch) return;
+    const tree = findF(S, /^(tree|bigtree)$/), house = [...(S.room.rooms || [S.room])].flatMap(R => R.furns).find(q => q.f.heroKey === 's3c_house');
+    const r = tree || house; if (!r) return;
+    // (stage.js: 먹물이's bolt off the edge is still running on its own tween — let it end first, then it is up there)
+    for (let i = 0; i < 30 && ch.root.visible && !c.skipped; i++) await c.wait(.1);
+    const b = new THREE.Box3().setFromObject(r.f.group), top = V((b.min.x + b.max.x) / 2, b.max.y - (tree ? .12 : .05), (b.min.z + b.max.z) / 2);
+    ch.root.visible = true; ch.root.scale.setScalar(.85);
+    ch.root.position.copy(ch.root.parent.worldToLocal(top.clone())); ch.faceTo(W.cam.position.x, W.cam.position.z); ch.setFace?.('happy'); ch.pose = 'wave';
+    G.world.idsDirty = true;
+    await lookAt(S, ch, 1.3, .6);
+    G.audio.sfx('pop'); ch.bump?.(.4);
+    await c.wait(1.8);
+  },
+};
+const FX = { grayArrive, inkyTree, bagPop, tunnel, trainIn, sunsetTrain, partsDispatch, pengShake, jarHide, inkyTraceLook, smokeCat, sniffPoint, boardStop, whistleTest, capOn,
   twoChairs, bagOnChair, bagBurst, policeLights, crayonBox, comeHome, crayonWall, konbiniTicket, ticketGone, washerSock, sandShake, parfaitSpill, flagPick,
   marqueeFlicker, projectorFilm };
 export const STAGING_KEYS = Object.keys(FX);

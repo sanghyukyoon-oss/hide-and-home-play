@@ -162,7 +162,7 @@ B.s3a_fishdock = f => {
 
 // ── 나무 (1×1): 판의 얼굴 — 결 있는 줄기와 뿌리, 크고 폭신한 세 톤 잎 덩어리, 연분홍 꽃 몇 송이; 크림 새집(지붕이 들림), 밑동 구멍 ──────
 B.s3a_tree = (f, T, o = {}) => {
-  if (o.vivid) f.collideBox = [-.3, 0, -.3, .3, 1.6, .3];   // (A: just the trunk — the big crown's box stopped the tackle box's lid at a third)
+  if (o.vivid || o.detail) f.collideBox = [-.3, 0, -.3, .3, 1.6, .3];   // (A: just the trunk — the big crown's box stopped the tackle box's lid at a third)
   f.add(mt('s3a-tree-trunk', TX.bark(), ({ add, tube }) => {
     add(G.cyl(.15, .22, 1.55, 16), '#a8734a', 0, .77, 0, 0, 0, .03, 1, .25);
     for (let i = 0; i < 5; i++) { const a = i * 1.26 + .5; tube([Math.sin(a) * .1, .26, Math.cos(a) * .1], [Math.sin(a) * .36, .02, Math.cos(a) * .36], .085, '#9c6a43', 10, .035); }
@@ -170,9 +170,9 @@ B.s3a_tree = (f, T, o = {}) => {
   }));
   f.add(mc('s3a-tree-hollow', ({ add }) => { add(G.sph(.12, 14, 10), '#3d2a2a', 0, .14, .17, 0, 0, 0, [1, 1.3, .4]); add(G.tor(.12, .025, PI * 2, 6, 18), '#8a5a38', 0, .14, .175, 0, 0, 0, [1, 1.3, 1]); }));
   f.spot('behind', null, 0, 0, .33, { maxH: .25, label: '나무 밑동', scale: .7 });
-  if (o.vivid) f.add(mt('s3a-tree-crown-v', TX.leaf(), ({ add }) => crown(add, 0, 2.08, 0, .74, '#6fc46a', '#54ab5c', '#a2dc80', 5, { n: 16, c: ['#ffd1df', '#ffffff', '#ffc1d4'] })));
+  if (o.vivid || o.detail) f.add(mt('s3a-tree-crown-v', TX.leaf(), ({ add }) => crown(add, 0, 2.08, 0, .74, '#6fc46a', '#54ab5c', '#a2dc80', 5, { n: 16, c: ['#ffd1df', '#ffffff', '#ffc1d4'] })));
   else f.add(mc('s3a-tree-crown', ({ add }) => crown(add, 0, 2.08, 0, .74, '#6fc46a', '#54ab5c', '#a2dc80', 5, { n: 16, c: ['#ffd1df', '#ffffff', '#ffc1d4'] })));
-  if (o.vivid) f.add(mc('s3a-tree-foot', ({ add }) => {
+  if (o.vivid || o.detail) f.add(mc('s3a-tree-foot', ({ add }) => {
     for (const [x, z, s2, c] of [[.3, -.18, 1, '#ff7a6a'], [.36, -.05, .7, '#fff1e0']]) { add(G.cyl(.016 * s2, .02 * s2, .07 * s2, 8), '#fff6e6', x, .035 * s2, z); add(G.sph(.045 * s2, 12, 8, ), c, x, .075 * s2, z, 0, 0, 0, [1, .6, 1]); if (c !== '#fff1e0') for (const [dx, dz] of [[.015, .01], [-.012, .016], [0, -.018]]) add(G.sph(.008, 6, 4), '#ffffff', x + dx * s2, .1 * s2, z + dz * s2); }
   }));
   // the birdhouse: cream walls, an open front (low lip + header) so what sits inside shows once the roof is up, a perch
@@ -186,9 +186,9 @@ B.s3a_tree = (f, T, o = {}) => {
     add(G.box(.06, .3, .03, .008), '#a8734a', hx, hy - .2, hz - .12);
     add(G.sph(.016, 8, 6), '#7fc8a8', hx - .07, hy + .085, hz + .105); add(G.sph(.016, 8, 6), '#ffb6c8', hx + .07, hy + .085, hz + .105);
   }));
-  const roof = grp(mc('s3a-bh-roof' + (o.vivid ? '-v' : ''), ({ add }) => { add(G.box(.16, .028, .26, .01), '#ff8a7a', -.06, .03, 0, 0, 0, .62); add(G.box(.16, .028, .26, .01), '#ff8a7a', .06, .03, 0, 0, 0, -.62); add(G.sph(.022, 8, 6), '#ffffff', 0, .085, 0);
+  const roof = grp(mc('s3a-bh-roof' + (o.vivid || o.detail ? '-v' : ''), ({ add }) => { add(G.box(.16, .028, .26, .01), '#ff8a7a', -.06, .03, 0, 0, 0, .62); add(G.box(.16, .028, .26, .01), '#ff8a7a', .06, .03, 0, 0, 0, -.62); add(G.sph(.022, 8, 6), '#ffffff', 0, .085, 0);
     // (A) rows of little shingles on both slopes
-    if (o.vivid) for (const sx of [-1, 1]) for (let r = 0; r < 3; r++) for (let q = 0; q < 4; q++) add(G.box(.05, .012, .06, .004), shade('#ff8a7a', (r + q) % 2 ? .06 : -.05), sx * (.03 + r * .043), .052 - r * .027, -.09 + q * .06, 0, 0, -sx * .62);
+    if (o.vivid || o.detail) for (const sx of [-1, 1]) for (let r = 0; r < 3; r++) for (let q = 0; q < 4; q++) add(G.box(.05, .012, .06, .004), shade('#ff8a7a', (r + q) % 2 ? .06 : -.05), sx * (.03 + r * .043), .052 - r * .027, -.09 + q * .06, 0, 0, -sx * .62);
   }));
   put(roof, hx, hy + .11, hz); f.add(roof);
   const p = f.part('lift', roof, (t, b) => { roof.position.y = b.p.y + .2 * t; roof.position.x = b.p.x + .12 * t; roof.rotation.z = -.5 * t; }, { label: '새집 지붕', sfx: 'lift' });
@@ -264,12 +264,19 @@ B.s3a_fishsign = f => {
 
 // ── 낚시 도구함 (1×1): 민트 두 단 상자, 크림 띠, 놋쇠 걸쇠·손잡이; 뚜껑 안 칸칸이 찌·루어 ────────────────────────────────
 B.s3a_tacklebox = (f, T, o = {}) => {
-  const C = o.vivid ? '#3fae86' : '#4fbf9c', vk = o.vivid ? '-v' : '';
+  const C = o.vivid ? '#3fae86' : '#4fbf9c', vk = o.vivid ? '-v' : o.detail ? '-d' : '';
   f.add(mc('s3a-tackle' + vk, ({ add, tube }) => {
     add(G.box(.62, .26, .38, .035), C, 0, .13, 0);
     add(G.box(.64, .05, .4, .015), '#fff2d6', 0, .19, 0);
     for (const sx of [-1, 1]) add(G.box(.07, .06, .025, .01), '#e9b84a', sx * .2, .19, .205);
-    add(G.box(.5, .02, .3, .006), shade(C, -.3), 0, .255, 0);
+    // (C 10/24 사용자 "오브젝트 디테일 부족": the tray inside is a pale mint, not a dark hole, and its little rooms hold a fish lure,
+    // red-and-white floats, a spool of line and a few hooks)
+    add(G.box(.5, .02, .3, .006), o.detail ? '#dff3ea' : shade(C, -.3), 0, .255, 0);
+    if (o.detail) {
+      for (const [x, c] of [[-.2, '#ffb36a'], [.19, '#8fd0ff']]) { add(G.sph(.03, 10, 8), c, x, .275, -.08, 0, 0, 0, [1.6, .8, .8]); add(G.cone(.022, .04, 4), c, x + .055, .275, -.08, 0, 0, -HP); add(G.sph(.007, 6, 4), '#2a1d33', x - .028, .282, -.07); add(G.tor(.012, .003, PI * 1.4, 4, 8), '#aab6c8', x + .005, .262, -.06, HP, 0, 0); }
+      for (const x of [-.07, .06]) { add(G.sph(.022, 8, 6), '#ff6a6a', x, .282, -.09); add(G.sph(.021, 8, 6), '#ffffff', x, .262, -.09, 0, 0, 0, [1, .7, 1]); add(G.cyl(.004, .004, .03, 4), '#ff6a6a', x, .305, -.09); }
+      add(G.cyl(.032, .032, .04, 14), '#fff6e6', -.2, .278, .1, HP, 0, 0); add(G.cyl(.026, .026, .042, 14), '#8fd0ff', -.2, .278, .1, HP, 0, 0);
+    }
     for (const [x, c] of [[-.2, '#ff6a6a'], [-.07, '#ffd84a'], [.06, '#7fb8ff'], [.19, '#ff9ec2']]) { add(G.cap(.024, .07, 2, 6), c, x, .265, .03, 0, 0, HP); add(G.sph(.016, 6, 5), '#ffffff', x + .05, .265, .03); }
     for (const x of [-.135, 0, .135]) add(G.box(.01, .03, .28, .003), '#e8f6f0', x, .265, 0);
   }));
@@ -277,6 +284,8 @@ B.s3a_tacklebox = (f, T, o = {}) => {
   lid.add(mc('s3a-tacklelid' + vk, ({ add, tube }) => {
     add(G.box(.62, .07, .38, .03), shade(C, .08), 0, .035, .19);
     tube([-.12, .07, .19], [-.1, .14, .19], .014, '#e9b84a', 6); tube([.12, .07, .19], [.1, .14, .19], .014, '#e9b84a', 6); tube([-.1, .14, .19], [.1, .14, .19], .016, '#e9b84a', 6);
+    // (C) a frog sticker on the lid and a white rim round it
+    if (o.detail) { add(G.box(.5, .006, .28, .004), '#e9fbf2', 0, .072, .19); add(G.cyl(.06, .06, .008, 18), '#7fcf6a', .17, .077, .26); for (const sx of [-1, 1]) { add(G.cyl(.022, .022, .01, 12), '#7fcf6a', .17 + sx * .036, .078, .21); add(G.cyl(.011, .011, .012, 10), '#ffffff', .17 + sx * .036, .08, .21); } }
   }));
   const p = f.part('lid', lid, (t, b) => { lid.rotation.x = -1.6 * t; }, { label: '도구함 뚜껑', sfx: 'open' });
   f.spot('inside', null, 0, .25, 0, { part: p, maxH: .14, label: '도구함 안', scale: .6 });
@@ -303,13 +312,13 @@ B.s3a_baitbucket = (f, T, o = {}) => {
 // ── 갈대 (1×1): 부들과 납작한 갈대 잎, 연보라 붓꽃 둘, 발치의 조약돌 ──────────────────────────────────────────────────
 B.s3a_reeds = (f, T, o = {}) => {
   const seed = o.seed || 1;
-  f.add(mc('s3a-reeds|' + seed + (o.vivid ? '-v' : ''), ({ add, tube }) => {
-    cattails(add, tube, 0, 0, 1, seed, 12);
-    for (const [x, z, h] of [[.18, .12, .42], [-.16, .16, .36]]) { add(G.cyl(.006, .007, h, 4), '#5fa45a', x, h / 2, z); for (let k = 0; k < 3; k++) { const a = k * 2.09; add(G.sph(.04, 8, 6), '#c4b2f2', x + Math.cos(a) * .03, h + .01, z + Math.sin(a) * .03, 0, -a, .9, [1.4, .45, .8]); } add(G.sph(.018, 6, 5), '#ffe27a', x, h + .03, z); }
-    stone(add, .22, -.14, .08, 3); stone(add, -.2, -.1, .06, 5); stone(add, .05, .24, .07, 8);
-    if (o.vivid && seed === 1) dragonfly(add, .05, .74, .02, .9, '#ff8a5a');
+  f.add(mc('s3a-reeds|' + seed + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add, tube }) => {
+    cattails(add, tube, 0, 0, 1, seed, 12, .2);   // (round an empty middle: what hides here sits in it, nothing through it)
+    for (const [x, z, h] of [[.25, .15, .42], [-.21, .21, .36]]) { add(G.cyl(.006, .007, h, 4), '#5fa45a', x, h / 2, z); for (let k = 0; k < 3; k++) { const a = k * 2.09; add(G.sph(.04, 8, 6), '#c4b2f2', x + Math.cos(a) * .03, h + .01, z + Math.sin(a) * .03, 0, -a, .9, [1.4, .45, .8]); } add(G.sph(.018, 6, 5), '#ffe27a', x, h + .03, z); }
+    stone(add, .28, -.17, .08, 3); stone(add, -.27, -.12, .06, 5); stone(add, .06, .31, .07, 8);
+    if ((o.vivid || o.detail) && seed === 1) dragonfly(add, .05, .74, .02, .9, '#ff8a5a');
   }));
-  f.spot('inside', null, 0, 0, .05, { maxH: .26, label: '갈대 속', scale: .7 });
+  f.spot('inside', null, 0, 0, 0, { maxH: .26, label: '갈대 속', scale: .7 });
 };
 
 // ── 파라솔 의자 (1×1): 산호·크림 여덟 폭 파라솔(물결 끝단), 흰 대, 하늘색 줄무늬 나무 비치 의자 ─────────────────────────────
@@ -342,7 +351,7 @@ B.s3a_parasol = (f, T, o = {}) => {
 
 // ── 아이스박스 (1×1): 하늘색 몸통에 흰 띠·흰 뚜껑, 회색 손잡이; 안은 흰 안감·얼음·캔 (자물쇠 가능) ────────────────────────────
 B.s3a_cooler = (f, T, o = {}) => {
-  const vk = o.vivid ? '-v' : '', body = o.vivid ? '#3f8cff' : '#5fbde6', W = .66, H = .4, D = .44, z0 = -.04, fz = z0 + D / 2;
+  const vk = o.vivid ? '-v' : o.detail ? '-d' : '', body = o.vivid ? '#3f8cff' : '#5fbde6', W = .66, H = .4, D = .44, z0 = -.04, fz = z0 + D / 2;
   f.add(mc('s3a-cooler-body' + vk, ({ add }) => {
     const t = .04, r = .016;
     add(G.box(W, t, D, r), body, 0, t / 2, z0);
@@ -350,7 +359,7 @@ B.s3a_cooler = (f, T, o = {}) => {
     for (const sx of [-1, 1]) add(G.box(t, H, D, r), body, sx * (W / 2 - t / 2), H / 2, z0);
     add(G.box(W + .012, .06, D + .012, .012), '#ffffff', 0, .1, z0);
     for (const sx of [-1, 1]) { add(G.box(.05, .07, .2, .02), '#9aa6b8', sx * (W / 2 + .02), H - .1, z0); }
-    if (o.vivid) { add(G.box(.24, .06, .012, .006), '#ffffff', -.12, .25, fz + .004); add(G.sph(.022, 8, 6), '#ffd84a', -.2, .25, fz + .012); add(G.box(.12, .015, .012, .003), '#ff6a6a', -.07, .25, fz + .012);
+    if (o.vivid || o.detail) { add(G.box(.24, .06, .012, .006), '#ffffff', -.12, .25, fz + .004); add(G.sph(.022, 8, 6), '#ffd84a', -.2, .25, fz + .012); add(G.box(.12, .015, .012, .003), '#ff6a6a', -.07, .25, fz + .012);
       add(G.cyl(.022, .022, .02, 10), '#c9cfdc', W / 2 - .07, .05, fz + .006, HP, 0, 0); }
   }));
   const iw = W - .08, idp = D - .08, fy = .215;
@@ -385,10 +394,10 @@ const plaidTex = () => paintTex('s3a-plaid', 128, 128, (c, w, h) => {
 });
 B.s3a_campchair = (f, T, o = {}) => {
   const sy = .4, seat = '#7cc4ec';
-  f.add(mc('s3a-cchair' + (o.vivid ? '-v' : ''), ({ add, tube }) => {
+  f.add(mc('s3a-cchair' + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add, tube }) => {
     for (const sx of [-1, 1]) { const x = sx * .26, c = '#5a6a86'; tube([x, 0, .2], [x, sy + .02, -.2], .022, c); tube([x, 0, -.2], [x, sy + .02, .2], .022, c); tube([x, sy + .02, -.2], [x, .9, -.32], .02, c); tube([x, sy + .18, .22], [x, sy + .18, -.24], .022, c); }
     add(G.cyl(.045, .04, .08, 14), '#ffcf3c', .31, sy + .2, .17);
-    if (o.vivid) { add(G.cyl(.032, .028, .1, 12), '#fff6d6', .31, sy + .27, .17); add(G.cyl(.03, .03, .01, 12), '#ffe27a', .31, sy + .315, .17); tube([.31, sy + .3, .17], [.33, sy + .38, .16], .004, '#ff6a8a', 4); add(G.sph(.016, 8, 6), '#9fe07a', .3, sy + .325, .18, 0, 0, 0, [1, .4, 1]);
+    if (o.vivid || o.detail) { add(G.cyl(.032, .028, .1, 12), '#fff6d6', .31, sy + .27, .17); add(G.cyl(.03, .03, .01, 12), '#ffe27a', .31, sy + .315, .17); tube([.31, sy + .3, .17], [.33, sy + .38, .16], .004, '#ff6a8a', 4); add(G.sph(.016, 8, 6), '#9fe07a', .3, sy + .325, .18, 0, 0, 0, [1, .4, 1]);
       add(G.box(.04, .12, .16, .01), '#5aa0d0', -.29, sy + .1, .02); }
     add(G.box(.52, .04, .42, .015), seat, 0, sy, 0, .05, 0, 0);
     add(G.box(.52, .46, .035, .015), seat, 0, sy + .27, -.26, -.22, 0, 0);
@@ -405,8 +414,8 @@ B.s3a_campchair = (f, T, o = {}) => {
 B.s3a_bush = (f, T, o = {}) => {
   const half = sx => {
     const pv = new THREE.Group(); put(pv, sx * .46, 0, 0, 0, sx > 0 ? PI : 0, 0);
-    pv.add(mc('s3a-bush-half' + (o.vivid && sx < 0 ? '-v' : ''), ({ add }) => {
-      if (o.vivid && sx < 0) { add(G.sph(.028, 10, 8), '#ff4f5e', .36, .5, .22, 0, 0, 0, [1, .6, 1.2]); add(G.sph(.014, 8, 6), '#2a1d33', .36, .51, .25); for (const [dx, dz] of [[.012, -.006], [-.012, -.006], [0, -.02]]) add(G.sph(.006, 6, 4), '#2a1d33', .36 + dx, .517, .22 + dz); }
+    pv.add(mc('s3a-bush-half' + ((o.vivid || o.detail) && sx < 0 ? '-v' : ''), ({ add }) => {
+      if ((o.vivid || o.detail) && sx < 0) { add(G.sph(.028, 10, 8), '#ff4f5e', .36, .5, .22, 0, 0, 0, [1, .6, 1.2]); add(G.sph(.014, 8, 6), '#2a1d33', .36, .51, .25); for (const [dx, dz] of [[.012, -.006], [-.012, -.006], [0, -.02]]) add(G.sph(.006, 6, 4), '#2a1d33', .36 + dx, .517, .22 + dz); }
       for (const [x, y, z, r, c] of [[.24, .28, 0, .3, '#5fae5f'], [.14, .22, .2, .22, '#6fbb64'], [.14, .22, -.2, .22, '#549f58'], [.3, .5, .05, .22, '#6fbb64'], [.12, .46, -.04, .2, '#5fae5f']]) add(G.sph(r, 16, 11), c, x, y, z);
       for (const [x, y, z, c] of [[.2, .5, .24, '#a9c6ff'], [.38, .62, .1, '#c9b8f6'], [.08, .4, .3, '#ffffff'], [.42, .34, .24, '#a9c6ff'], [.26, .64, -.14, '#ffffff']]) {
         for (let k = 0; k < 7; k++) { const a = k * .9, b = (k % 3) * .5; add(G.sph(.032, 8, 6), k % 4 ? c : mix(c, '#ffffff', .5), x + Math.cos(a) * .05 * Math.cos(b), y + Math.sin(b) * .04, z + Math.sin(a) * .05 * Math.cos(b)); }
@@ -440,12 +449,12 @@ B.s3a_picnic = (f, T, o = {}) => {
   const basket = grp(); f.add(basket);
   const t = .03;
   for (const [w, h, d, x, y, z] of [[W, t, D, 0, y0 + t / 2, z0], [W, H, t, 0, y0 + H / 2, z0 - D / 2 + t / 2], [W, H, t, 0, y0 + H / 2, z0 + D / 2 - t / 2], [t, H, D, -W / 2 + t / 2, y0 + H / 2, z0], [t, H, D, W / 2 - t / 2, y0 + H / 2, z0]]) basket.add(put(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wm), x, y, z));
-  f.add(mc('s3a-pic-bits' + (o.vivid ? '-v' : ''), ({ add }) => {
+  f.add(mc('s3a-pic-bits' + (o.vivid ? '-v' : o.detail ? '-d' : ''), ({ add }) => {
     for (const sx of [-1, 1]) add(G.tor(.055, .014, PI, 5, 12), '#b9803f', sx * (W / 2 + .005), y0 + H - .07, z0, 0, HP, 0);
     add(G.cyl(.055, .055, .22, 16), '#7cc4ec', .3, .13, .25); add(G.cyl(.058, .058, .045, 16), '#ffffff', .3, .26, .25);
     add(G.cyl(.11, .1, .02, 18), '#ffffff', -.3, .03, .28);
     for (const [x, z] of [[-.33, .26], [-.27, .3], [-.3, .22]]) { add(G.sph(.026, 8, 6), '#ff5a6a', x, .055, z, 0, 0, 0, [1, 1.15, 1]); add(G.cone(.018, .015, 5), '#5fae5a', x, .085, z); }
-    if (o.vivid) { add(G.box(.16, .006, .16, .002), '#fff6e0', .28, .023, -.28, 0, .5, 0);
+    if (o.vivid || o.detail) { add(G.box(.16, .006, .16, .002), '#fff6e0', .28, .023, -.28, 0, .5, 0);
       for (const [y, c, h] of [[.03, '#f2d29a', .018], [.045, '#8fd06a', .008], [.053, '#ff8a7a', .008], [.064, '#ffe08a', .01], [.077, '#f2d29a', .018]]) add(new THREE.CylinderGeometry(.07, .07, h, 3), c, .28, y, -.28, 0, .5, 0); }
   }));
   const lid = grp(mc('s3a-pic-lid', ({ add }) => { add(G.box(W + .04, .045, D + .04, .018), '#c98f4c', 0, .022, D / 2 + .02); add(G.box(W - .08, .02, D - .06, .008), '#e2b06c', 0, .05, D / 2 + .02); add(G.box(.1, .025, .03, .008), '#b9803f', 0, .02, D + .045); }));

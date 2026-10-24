@@ -66,16 +66,29 @@ function shoreBand(pts, rows, wob = 0, lace = 0) {
   scenery(m); m.renderOrder = 1; return m;
 }
 
+const beachSkirt = (pts, d0, R, y) => {
+  const n = pts.length, pos = [], idx = [];
+  for (const [x, z] of pts) { const L = Math.hypot(x, z) || 1; pos.push(x + x / L * d0, y, z + z / L * d0); }
+  for (const [x, z] of pts) { const L = Math.hypot(x, z) || 1; pos.push(x / L * R, y, z / L * R); }
+  for (let i = 0; i < n; i++) { const a = i, b = (i + 1) % n; idx.push(a, a + n, b, b, a + n, b + n); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, side: THREE.DoubleSide }));
+  m.castShadow = false; m.receiveShadow = false; m.raycast = () => {}; m.userData.noOcclude = true; m.userData.noMerge = true; return m;
+};
 // ── 섬 (판 바닥): B와 같은 풀밭+모래 물가 한 덩어리, 연못물(옥빛, 빗방울 고리), 물가 풀포기·조약돌·붓꽃, 연잎 무리 ─────────────────
 B.s3c_island = (f, T) => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.7, 0, .01, -.65, .01];
   const pts = ISLAND_C;
   f.add(groundMesh(pts, beachGeo(pts, .5, 0, -.085), { ...T, grass: T.grass || '#88cc72', clover: 18, daisies: 10, meadowSeed: 47 }, { sand: '#efe3c4' }));
+  // (10/24 사용자 "섬 테두리 하얀 백사장에는 외곽선을 없앨 수 있는지"): the beach's ink line comes from the island ending against
+  // nothing in the outline pass (the pond is drawn without one). An unseen skirt — no colour, no depth in the picture, only in
+  // the outline pass, as the island's own piece — carries the beach on flat out under the pond, so the shore has no edge to ink
+  f.add(beachSkirt(pts, .46, 26, -.086));
   lakeWater(f, { pts: scaleOutline(pts, .45), y: W, R: 24, near: '#aee9df', mid: '#82d6d2', far: '#93d6e4', sky: '#d8eef2', rainy: true, glint: 9 });
   // dry sand → wet sand → a lace of foam → the clear shallows
   f.add(shoreBand(pts, [[.16, '#b9a47a', 0], [.3, '#b9a47a', .32], [.42, '#b4a079', .4]]));
   f.add(shoreBand(pts, [[.41, '#ffffff', 0], [.46, '#ffffff', .95], [.52, '#ffffff', .7], [.6, '#ffffff', .35], [.72, '#ffffff', 0]], .035, .55));
-  const skip = [[4.75, 1.0], [3.45, 4.05]];   // (the waterwheel's foot and the lily steps — stage3-maps.js)
+  const skip = [[4.75, 1.0], [4.75, 5.55]];   // (the waterwheel's foot and the lily steps out on the water — stage3-maps.js)
   f.add(mc('s3c-shore', ({ add }) => {
     const r = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(31);
     for (let i = 0; i < pts.length; i++) {
@@ -132,10 +145,12 @@ B.s3c_house = f => {
     add(G.tor(.505, .022, PI * 2, 6, 36), '#f0d9b2', 0, Y + .77, Z0 - .12, HP, 0, 0); add(G.tor(.52, .02, PI * 2, 6, 36), '#e8cfa6', 0, Y + .05, Z0 - .12, HP, 0, 0);
     // the door (+z): a mint door in a cream frame with a round porthole, hinges and a knob; a striped mat on the deck
     const dz = Z0 - .12 + .505;
-    add(G.box(.3, .34, .04, .02), '#7fd3b8', 0, Y + .24, dz); add(G.cyl(.15, .15, .04, 18, false), '#7fd3b8', 0, Y + .41, dz, HP, 0, 0);
+    // (the door itself is a part below — it swings open; behind it the warm-lit doorway, hidden inside the shut door)
+    add(G.box(.28, .32, .006, .002), '#ffe39a', 0, Y + .24, dz + .003); add(G.cyl(.14, .14, .006, 18), '#ffe39a', 0, Y + .41, dz + .003, HP, 0, 0);
+    add(G.box(.22, .012, .006, .002), '#f2c46a', 0, Y + .09, dz + .004);
     add(G.tor(.17, .022, PI, 6, 18), '#fff6e6', 0, Y + .41, dz + .012); for (const sx of [-1, 1]) add(G.box(.035, .36, .03, .01), '#fff6e6', sx * .17, Y + .23, dz + .012);
-    add(G.cyl(.055, .055, .02, 16), '#bfe6f6', 0, Y + .38, dz + .022, HP, 0, 0); add(G.tor(.055, .012, PI * 2, 5, 16), '#5fb7a0', 0, Y + .38, dz + .03);
-    add(G.sph(.022, 8, 6), '#ffd84a', .09, Y + .25, dz + .028); for (const y of [.12, .32]) add(G.box(.03, .04, .012, .004), '#c9a95a', -.13, Y + y, dz + .024);
+    // a little frog plaque over the door
+    add(G.sph(.06, 14, 10), '#7fcf6a', 0, Y + .63, dz + .012, 0, 0, 0, [1.2, .8, .35]); for (const sx of [-1, 1]) { add(G.sph(.022, 10, 8), '#7fcf6a', sx * .035, Y + .675, dz + .016, 0, 0, 0, [1, 1, .5]); add(G.sph(.01, 8, 6), '#2a1d33', sx * .035, Y + .678, dz + .026); }
     add(G.box(.3, .012, .16, .004), '#ffb3a6', 0, Y + .045, dz + .12); for (const x of [-.09, 0, .09]) add(G.box(.035, .013, .16, .002), '#fff1ec', x, Y + .046, dz + .12);
     // the round window (+x): a cream frame, a cross of bars, warm light inside, a little curtain tied at both sides and a potted sprout on the sill
     const wx = .49, wy = Y + .42, wz = Z0 - .2;
@@ -164,8 +179,37 @@ B.s3c_house = f => {
     tube([.37, Y + .05, Z0 + .43], [.4, Y + .38, Z0 + .46], .02, '#a9c8ff', 6); add(G.tor(.035, .01, PI, 4, 8), '#a9c8ff', .43, Y + .38, Z0 + .46);
     for (const sx of [-1, 1]) { add(G.cyl(.032, .034, .1, 10), '#ffd84a', -.05 + sx * .05 + .45, Y + .05, Z0 + .6); add(G.box(.06, .03, .1, .01), '#ffd84a', -.05 + sx * .05 + .45, Y + .015, Z0 + .63); }
   }));
+  // the door: hinged on its left, swings out onto the deck — seen from the front its warm doorway shows (a touch: 10/24 사용자
+  // "인터랙션이 있으면 좋겠음"; the bench sits a little further left so the open door clears it)
+  const DZ = Z0 - .12 + .505, door = grp(); put(door, -.15, 0, DZ); root.add(door);
+  door.add(mc('s3c-door', ({ add }) => {
+    add(G.box(.3, .34, .04, .02), '#7fd3b8', .15, Y + .24, 0); add(G.cyl(.15, .15, .04, 18, false), '#7fd3b8', .15, Y + .41, 0, HP, 0, 0);
+    for (const x of [.06, .15, .24]) add(G.box(.008, .3, .006, .002), '#6cc2a6', x, Y + .23, .021);
+    add(G.cyl(.055, .055, .02, 16), '#bfe6f6', .15, Y + .38, .022, HP, 0, 0); add(G.tor(.055, .012, PI * 2, 5, 16), '#5fb7a0', .15, Y + .38, .03);
+    add(G.sph(.022, 8, 6), '#ffd84a', .24, Y + .25, .028); for (const y of [.12, .32]) add(G.box(.03, .04, .012, .004), '#c9a95a', .02, Y + y, .024);
+  }));
+  const dp = f.part('door', door, t => { door.rotation.y = -1.2 * t; }, { label: '개굴이 집 문', sfx: 'open', dur: .4 });
+  dp.gpt2Reach = true;   // (nothing hides behind it: a touch that only opens and shuts)
+  // more of the house (10/24 "집 디테일 올리기"): a rain chain down the left side into a little barrel, a pot of fern on the deck,
+  // and a mailbox on a post by the ladder's foot whose flap opens
+  root.add(mc('s3c-house-more', ({ add, tube }) => {
+    for (let k = 0; k < 7; k++) add(G.tor(.022, .006, PI * 2, 4, 10), '#c9a95a', -.7, Y + .72 - k * .066, Z0 - .02, 0, k % 2 ? HP : 0, 0);
+    add(G.cyl(.1, .09, .2, 16), '#c98f5a', -.66, Y + .14, Z0 - .02); for (const y of [.07, .2]) add(G.tor(.1 - y * .03, .009, PI * 2, 4, 18), '#8a95a8', -.66, Y + y, Z0 - .02, HP, 0, 0);
+    add(G.cyl(.085, .085, .01, 16), '#9fdcf2', -.66, Y + .235, Z0 - .02); add(G.tor(.035, .004, PI * 2, 4, 12), '#ffffff', -.68, Y + .242, Z0 - .02, HP, 0, 0);
+    add(G.cyl(.065, .05, .1, 12), '#e9845a', .64, Y + .09, Z0 + .02); add(G.tor(.066, .008, PI * 2, 4, 14), '#f29a72', .64, Y + .14, Z0 + .02, HP, 0, 0);
+    for (let k = 0; k < 7; k++) { const a = k * .9; add(G.sph(.05, 8, 6), k % 2 ? '#5fae5a' : '#79c46a', .64 + Math.cos(a) * .05, Y + .2 + (k % 3) * .02, Z0 + .02 + Math.sin(a) * .05, 0, -a, .7, [1.5, .4, .7]); }
+    add(G.box(.04, .42, .04, .01), WOODD, .9, .21, Z0 + .62); add(G.box(.12, .05, .14, .01), WOODD, .9, .43, Z0 + .62);
+    add(G.box(.13, .12, .2, .03), '#ff9aa8', .9, .52, Z0 + .62); add(G.cyl(.065, .065, .2, 14, false, 0, PI), '#ff9aa8', .9, .58, Z0 + .62, HP, 0, 0);
+    add(G.box(.012, .1, .03, .004), '#ffd84a', .97, .63, Z0 + .58);
+  }));
+  const flap = grp(); put(flap, .9, .46, Z0 + .725); root.add(flap);
+  flap.add(mc('s3c-mailflap', ({ add }) => { add(G.box(.12, .14, .012, .004), '#ff8a9a', 0, .07, 0); add(G.sph(.012, 6, 4), '#ffffff', 0, .1, .01); }));
+  const letter = grp(); put(letter, .9, .5, Z0 + .66); root.add(letter);
+  letter.add(mc('s3c-letter', ({ add }) => { add(G.box(.09, .06, .004, .001), '#fffaf0', 0, 0, 0); add(G.box(.02, .02, .006, .002), '#7fcf6a', .025, .015, .002); }));
+  const mp = f.part('lid', [flap, letter], (t, bF, bL) => { flap.rotation.x = 1.5 * t; letter.position.z = bL.p.z + .1 * t; letter.position.y = bL.p.y + .03 * t; letter.rotation.x = -.3 * t; }, { label: '우편함', sfx: 'open' });
+  mp.gpt2Reach = true;
   // the porch bench (the old bench's three places: on it, the newspaper on it, under the house among the stilts)
-  const BX = -.36, BZ = Z0 + .5, BY = Y + .04, br = -.5;
+  const BX = -.45, BZ = Z0 + .46, BY = Y + .04, br = -.6;
   root.add(put(mc('s3c-bench', ({ add }) => {
     add(G.box(.5, .04, .18, .012), WOODL, 0, .2, 0); add(G.box(.5, .12, .03, .012), WOOD, 0, .32, -.09);
     for (const sx of [-1, 1]) add(G.box(.04, .2, .16, .01), WOODD, sx * .21, .1, 0);
@@ -183,8 +227,8 @@ B.s3c_house = f => {
 // ── 물레방아 (정본 '낚시 좌대' 자리 — 같은 부품·같은 감기): 물가 작은 나무 마루, 물에 반쯤 잠긴 나무 바퀴, 물 위로 뻗은 도르래 팔과
 // 양동이 — 손잡이를 터치하면 저절로 감겨 양동이가 올라오고(바퀴도 돎) 매번 다른 게 걸려요 (reelcatch) ─────────────────────────
 B.s3c_wheel = f => {
-  const D = .8, Y = .16, X0 = -.95, X1 = .35;
-  f.collideBox = [X0, 0, -D / 2, X1 + .9, Y + .9, D / 2];
+  const D = .8, Y = .16, X0 = -.95, X1 = .35, AZ0 = -.34, AZ1 = -.66;
+  f.collideBox = [X0, 0, -.85, X1 + .9, Y + .9, D / 2];
   f.add(mt('s3c-wheel-deck', TX.plank(), ({ add }) => { let k = 0; for (let x = X0 + .11; x < X1; x += .215, k++) add(G.box(.2, .05, D, .014), k % 3 === 1 ? WOODL : k % 3 === 2 ? shade(WOOD, -.05) : WOOD, x, Y, 0, 0, 0, 0, 1, { w: .45 }); }));
   f.add(mc('s3c-wheel-frame', ({ add, tube }) => {
     for (const sz of [-1, 1]) add(G.box(X1 - X0 + .04, .06, .07, .015), WOODD, (X0 + X1) / 2, Y - .045, sz * (D / 2 - .04));
@@ -193,9 +237,10 @@ B.s3c_wheel = f => {
     for (const sz of [-.3, .3]) add(G.box(.08, .9, .08, .02), WOODD, .85, .22, sz);
     add(G.cyl(.04, .04, .7, 10), '#8a6448', .85, .5, 0, HP, 0, 0);
     // the arm out over the water with a pulley, on a post at the deck's edge; the stool; a watering can
-    add(G.box(.08, 1.05, .08, .02), WOODD, X1 - .05, Y + .52, -.3);
-    tube([X1 - .05, Y + 1.0, -.3], [X1 + .95, Y + 1.0, -.3], .035, WOOD, 8); tube([X1 - .05, Y + .7, -.3], [X1 + .35, Y + .98, -.3], .025, WOODD, 6);
-    add(G.cyl(.06, .06, .04, 14), '#8a95a8', X1 + .9, Y + .96, -.3, HP, 0, 0);
+    // (10/24 사용자 "물레방아와 바구니가 닿음": the arm reaches out past the wheel's side, so the bucket hangs clear of the paddles)
+    add(G.box(.08, 1.05, .08, .02), WOODD, X1 - .05, Y + .52, AZ0);
+    tube([X1 - .05, Y + 1.0, AZ0], [X1 + .95, Y + 1.0, AZ1 - .02], .035, WOOD, 8); tube([X1 - .05, Y + .7, AZ0], [X1 + .35, Y + .98, AZ0 + (AZ1 - AZ0) * .4], .025, WOODD, 6);
+    add(G.cyl(.06, .06, .04, 14), '#8a95a8', X1 + .9, Y + .96, AZ1, HP, 0, 0);
     add(G.cyl(.15, .15, .05, 18), WOODL, -.55, Y + .2, .05);
     for (const a of [0, 2.09, 4.19]) tube([-.55 + Math.cos(a) * .11, Y + .02, .05 + Math.sin(a) * .11], [-.55 + Math.cos(a) * .08, Y + .2, .05 + Math.sin(a) * .08], .018, WOODD, 6);
     add(G.cyl(.145, .15, .05, 18), '#ffc6d6', -.55, Y + .25, .05);
@@ -218,9 +263,9 @@ B.s3c_wheel = f => {
     for (let k = 0; k < 14; k++) { const a = k / 14 * PI * 2; add(G.sph(.05, 8, 5), '#ffffff', .85 + Math.cos(a) * .5, W + .01, Math.sin(a) * .3, 0, -a, 0, [1.6, .18, .7]); }
   })));
   // the crank on the arm's post (the reel's part) and the rope with the bucket (the keep-net's place)
-  const crank = grp(); put(crank, X1 - .05, Y + .62, -.22); f.add(crank);
+  const crank = grp(); put(crank, X1 - .05, Y + .62, AZ0 + .08); f.add(crank);
   crank.add(mc('s3c-crank', ({ add }) => { add(G.cyl(.065, .065, .05, 16), '#ffcf3c', 0, 0, 0, HP, 0, 0); add(G.box(.025, .11, .025, .008), '#8a6448', 0, -.05, .04); add(G.sph(.026, 8, 6), '#ff8f8a', 0, -.11, .05); }));
-  const BXp = X1 + .9, BZp = -.3, yLo = -.45, yHi = Y + .45;
+  const BXp = X1 + .9, BZp = AZ1, yLo = -.45, yHi = Y + .45;
   const bucket = grp(); put(bucket, BXp, yLo, BZp); f.add(bucket);
   bucket.add(mc('s3c-bucket', ({ add, tube }) => {
     for (let k = 0; k < 14; k++) { const a = k / 14 * PI * 2; add(G.box(.072, .24, .02, .006), k % 2 ? WOOD : shade(WOOD, -.07), Math.cos(a) * .155, .12, Math.sin(a) * .155, 0, -a + HP, 0, [1, 1, 1]); }
@@ -264,14 +309,29 @@ B.s3c_lilysteps = f => {
 
 // ── 노란 비 우산 의자 (정본 '파라솔 의자' 자리): 땅에 꽂아 둔 큰 노란·크림 우산(물방울 맺힘), 밑에 분홍 방석 나무 의자 ──────────────
 B.s3c_umbrella = f => {
-  f.collideBox = [-.25, 0, -.22, .25, .66, .32];   // (the pole and the chair: the wide canopy's box held the cooler's lid at a third — 10/24)
+  f.collideBox = [-.25, 0, -.22, .45, .66, .32];   // (the pole and the chair: the wide canopy's box held the cooler's lid at a third — 10/24)
+  // the canopy on its own pivot: a touch gives it a twirl that flicks the rain off (10/24 "인터랙션이 있으면 좋겠음")
+  const tilt = grp(); put(tilt, .06, 1.3, -.1, .08, 0, -.06); f.add(tilt);
+  const spin = grp(); tilt.add(spin);
+  spin.add(mc('s3c-umb-canopy', ({ add, tube }) => {
+    for (let k = 0; k < 8; k++) { const c = k % 2 ? '#fff6dc' : '#ffd84a', g = new THREE.ConeGeometry(.74, .36, 4, 1, true, k * PI / 4, PI / 4); add(g, c, 0, .08, 0);
+      const a = k * PI / 4 + PI / 8; add(G.sph(.07, 10, 6), c, Math.sin(a) * .69, -.09, Math.cos(a) * .69, 0, a, 0, [1.4, .5, .5]); }
+    add(G.cone(.75, .02, 8), '#fff1b8', 0, -.09, 0, PI, 0, 0);
+    for (let k = 0; k < 8; k++) { const a = k * PI / 4; tube([0, -.2, 0], [Math.sin(a) * .66, -.1, Math.cos(a) * .66], .006, '#e9d9b0', 4); }
+    add(G.cyl(.03, .03, .06, 10), '#f6f2ea', 0, -.2, 0);
+    add(G.sph(.045, 10, 8), '#ff8f8a', 0, .3, 0);
+    for (const [x, z] of [[.4, .3], [-.35, .25], [.1, -.55], [-.5, -.3]]) add(G.sph(.022, 8, 6), '#eafaff', x * .9, -.04 + .22 * (1 - Math.hypot(x, z)), z * .9, 0, 0, 0, [1, .7, 1]);
+    for (const a of [.4, 2.3, 4.1]) add(G.sph(.016, 8, 6), '#dff6ff', Math.sin(a) * .72, -.2, Math.cos(a) * .72, 0, 0, 0, [.8, 1.6, .8]);
+  }));
+  const up = f.part('lift', spin, t => { spin.rotation.y = t * PI * 2; spin.position.y = .03 * Math.sin(t * PI); }, { label: '노란 우산', sfx: 'swish', dur: .7 });
+  up.gpt2Reach = true;
   f.add(mc('s3c-umbrella', ({ add, tube }) => {
     tube([0, 0, -.12], [.06, 1.42, -.1], .022, '#f6f2ea', 8); add(G.tor(.05, .014, PI, 5, 10), '#ff8f8a', -.05, .03, -.12, 0, 0, PI);
-    for (let k = 0; k < 8; k++) { const c = k % 2 ? '#fff6dc' : '#ffd84a', g = new THREE.ConeGeometry(.74, .36, 4, 1, true, k * PI / 4, PI / 4); add(g, c, .06, 1.38, -.1, .08, 0, -.06);
-      const a = k * PI / 4 + PI / 8; add(G.sph(.07, 10, 6), c, .06 + Math.sin(a) * .69, 1.21 + Math.cos(a) * .05, -.1 + Math.cos(a) * .69, 0, a, 0, [1.4, .5, .5]); }
-    add(G.cone(.75, .02, 8), '#fff1b8', .06, 1.21, -.1, PI, 0, 0);
-    add(G.sph(.045, 10, 8), '#ff8f8a', .07, 1.6, -.1);
-    for (const [x, z] of [[.4, .3], [-.35, .25], [.1, -.55], [-.5, -.3]]) add(G.sph(.022, 8, 6), '#eafaff', .06 + x * .9, 1.26 + .22 * (1 - Math.hypot(x, z)), -.1 + z * .9, 0, 0, 0, [1, .7, 1]);
+    // a striped towel over the chair's back, a stump table with a glass of melon juice
+    add(G.box(.26, .012, .16, .004), '#bfe9f6', 0, .64, -.06, -.12, 0, 0); add(G.box(.26, .14, .012, .004), '#bfe9f6', 0, .58, .02, -.12, 0, 0);
+    for (const x of [-.08, .08]) add(G.box(.03, .145, .014, .002), '#ffffff', x, .58, .022, -.12, 0, 0);
+    add(G.cyl(.1, .11, .22, 14), '#b07a4c', .34, .11, .18); add(G.cyl(.1, .1, .012, 14), '#efd2a2', .34, .226, .18); add(G.tor(.06, .004, PI * 2, 4, 14), '#d9b384', .34, .233, .18, HP, 0, 0);
+    add(G.cyl(.032, .026, .09, 12), '#eafaff', .32, .277, .17); add(G.cyl(.028, .024, .06, 12), '#9fe07a', .32, .27, .17); tube([.33, .29, .17], [.36, .36, .16], .004, '#ff8fa8', 4);
     // the little wooden chair
     add(G.box(.4, .04, .34, .012), WOODL, 0, .3, .12);
     add(G.box(.4, .3, .035, .012), WOOD, 0, .48, -.03, -.12, 0, 0);
@@ -310,19 +370,27 @@ B.s3c_weather = f => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.7, 0, .01, -.65, .01];   // (rain and rainbow are no obstacle: their box held every lid and the waterwheel's bucket at a third — 10/24)
   // the sunshower (shared with A — s3-kit.js rainFall): a ring where a drop lands on the pond
   const rain = rainFall(f, { wet: (x, z) => !inIsland(x, z, .45) && Math.hypot(x, z) < 8, ringY: W + .006 });
-  // the faint rainbow standing up out of the pond behind the island (six soft bands)
-  const bands = ['#ff9a9a', '#ffc98a', '#fff09a', '#a8e6a0', '#9fd2f6', '#c4b2f2'], bows = [];
-  bands.forEach((c, k) => {
-    const g = new THREE.TorusGeometry(2.5 - k * .11, .056, 6, 56, PI);
-    const bm = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .34, depthWrite: false }));
-    bm.position.set(-8.6, -.3, -3.2); bm.rotation.y = PI / 4; scenery(bm); bm.renderOrder = -1; f.add(bm); bows.push(bm);
+  // the rainbow behind the island (10/24 사용자 "무지개를 더 크게, 섬에 더 가깝게, 아래 경계를 지우고 살짝 그라데이션"): one soft
+  // painted arc — the colours melt into each other, its feet fade into the pond instead of ending on a hard line
+  const bowTex = paintTex('s3c-bow', 512, 272, (c, w, h) => {
+    const cx = w / 2, cy = h, R1 = 250, R0 = 182, g = c.createRadialGradient(cx, cy, R0, cx, cy, R1);
+    [[0, 'rgba(196,178,242,0)'], [.1, 'rgba(196,178,242,.85)'], [.26, 'rgba(159,210,246,.9)'], [.42, 'rgba(168,230,160,.9)'], [.58, 'rgba(255,240,154,.92)'], [.74, 'rgba(255,201,138,.9)'], [.9, 'rgba(255,154,154,.85)'], [1, 'rgba(255,154,154,0)']].forEach(([t, col]) => g.addColorStop(t, col));
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.globalCompositeOperation = 'destination-in';
+    const f2 = c.createLinearGradient(0, 0, 0, h); f2.addColorStop(0, 'rgba(0,0,0,1)'); f2.addColorStop(.45, 'rgba(0,0,0,1)'); f2.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = f2; c.fillRect(0, 0, w, h); c.globalCompositeOperation = 'source-over';
   });
+  bowTex.wrapS = bowTex.wrapT = THREE.ClampToEdgeWrapping;
+  const BOW = .62, BR = 4.6, bm = new THREE.Mesh(new THREE.PlaneGeometry(BR * 2 * 512 / 500, BR * 272 / 250), new THREE.MeshBasicMaterial({ map: bowTex, transparent: true, opacity: BOW, depthWrite: false, fog: false }));
+  { const u = -5.6, v = -.9; bm.position.set((u + v) * SQ, BR * 272 / 250 / 2 - .55, (u - v) * SQ); }
+  bm.rotation.y = PI / 4; scenery(bm); bm.renderOrder = -1; f.add(bm);
+  const bows = [bm];
   // (29판 흑백 10/24, 허브 "처음엔 색이 빠진 연못 집 + 여우비, 찾을수록 색이 돌아오고 마지막에 비가 그치며 무지개"): stage.js calls
   // onGray at a grey stage's start and onColor once all the colour is back (colorBloom)
   let bowK = null;
   f.onGray = () => { for (const b of bows) b.visible = false; };
   f.onColor = () => { rain.stop(); bowK = 0; for (const b of bows) { b.visible = true; b.material.opacity = 0; } };
-  const prevW = f.weather; f.weather = t => { prevW?.(t); if (bowK != null && bowK < 1) { bowK = Math.min(1, bowK + 1 / 45); for (const b of bows) b.material.opacity = .34 * bowK; } };
+  const prevW = f.weather; f.weather = t => { prevW?.(t); if (bowK != null && bowK < 1) { bowK = Math.min(1, bowK + 1 / 45); for (const b of bows) b.material.opacity = BOW * bowK; } };
   const life = mc('s3c-life', ({ add }) => {
     for (const [x0, z0, nn, s] of [[-4.3, -1.6, 4, 1], [4.2, -2.4, 3, .9], [2.4, 4.0, 3, .85], [-3.6, 2.8, 3, .9]]) { const [x, z] = stretchC([x0, z0]); for (let k = 0; k < nn; k++) { const a = k * 2.3 + x; lily(add, x + Math.cos(a) * .3 * s, z + Math.sin(a) * .25 * s, (.13 + (k % 3) * .04) * s, a, W); if (k === 1) lotus2(add, x + Math.cos(a) * .3 * s, z + Math.sin(a) * .25 * s, .75); } }
     { const [x, z] = stretchC([1.2, 3.4]); dragonfly(add, x, .9, z, .4, '#7fb8e8'); } { const [x, z] = stretchC([-2.4, 1.2]); butterfly(add, x, .8, z, '#ffd3e4', .5, .85); }

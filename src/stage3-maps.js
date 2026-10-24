@@ -63,17 +63,19 @@ export function installStage3(LAYOUTS, THEMES) {
   Object.assign(EN, { '개굴이네 연잎 연못 집': "Froggy's Lily Pond House", '물레방아 양동이': 'Waterwheel bucket', '물속 양동이': 'Bucket in the water',
     '물가 의자 위': 'On the pond-side stool', '물가 마루 밑': 'Under the pond deck', '현관 벤치 위': 'On the porch bench', '집 밑': 'Under the house',
     '우산 의자 위': 'On the umbrella chair', '우산 의자 밑': 'Under the umbrella chair',
-    '개굴이 집': "Froggy's house", '물레방아': 'Waterwheel', '연잎 징검다리': 'Lily-pad steps', '노란 우산 의자': 'Yellow umbrella chair', '개굴이 간판': "Froggy's sign" });
+    '개굴이 집': "Froggy's house", '물레방아': 'Waterwheel', '연잎 징검다리': 'Lily-pad steps', '노란 우산 의자': 'Yellow umbrella chair', '개굴이 간판': "Froggy's sign",
+    '노란 우산': 'Yellow umbrella', '개굴이 집 문': "Froggy's front door", '우편함': 'Mailbox' });
   THEMES.frogpond = { ...S3T, name: '개굴이네 연잎 연못 집' };
   // (다듬기 10/24: 섬과 자리를 화면 위아래로 펼침 — stretchC, s3c-props.js; 물에 걸치는 물레방아·연잎 징검다리는 펼친 물가에 맞춘 자리 그대로)
   const HC = (type, x, z, a, hero, o) => { const [X, Z] = stretchC([x, z]); return HA(type, X, Z, a, hero, o); };
+  const DC = { detail: true };   // (10/24 사용자 "전체적으로 오브젝트 디테일이 부족": A의 잔디테일(새집 기와·버섯·무당벌레·컵·케이크…)을 C 색 그대로)
   LAYOUTS.frogpond = islandMap(9, 8, THEMES.frogpond, [
     AT('s3c_island', 0, 0), AT('s3c_weather', 0, 0),
-    HC('bench', -1.65, -1.5, 0, 's3c_house'), HC('tree', 1.75, -2.0, 0, 's3a_tree'), HC('fishsign', .35, -1.75, -.2, 's3c_sign'),
-    HA('fishdock', 4.45, .95, 0, 's3c_wheel'), HC('baitbucket', 2.3, -.85, 0, 's3a_baitbucket'), HC('tacklebox', -.15, -.65, .3, 's3a_tacklebox'),
-    HA('pond', 4.1, 4.8, .71, 's3c_lilysteps'), HC('parasol', .95, 1.25, -.4, 's3c_umbrella'),
-    HC('picnic', -1.45, .75, .25, 's3a_picnic'), HC('cooler', 1.85, .9, -.5, 's3a_cooler'), HC('campchair', -2.75, .6, .9, 's3a_campchair'),
-    HC('bush', -2.85, -.5, .4, 's3a_bush'),
-    HC('reeds', -3.25, 1.85, 0, 's3a_reeds', { seed: 1 }), HC('reeds', 1.55, 2.8, 0, 's3a_reeds', { seed: 2 }), HC('reeds', 3.0, -1.55, 0, 's3a_reeds', { seed: 3 }),
+    HC('bench', -1.65, -1.5, 0, 's3c_house'), HC('tree', 1.75, -2.0, 0, 's3a_tree', DC), HC('fishsign', .35, -1.75, -.2, 's3c_sign'),
+    HA('fishdock', 4.45, .95, 0, 's3c_wheel'), HC('baitbucket', 2.3, -.85, 0, 's3a_baitbucket', DC), HC('tacklebox', -.15, -.65, .3, 's3a_tacklebox', DC),
+    HA('pond', 4.75, 5.55, .71, 's3c_lilysteps'), HC('parasol', .95, 1.25, -.4, 's3c_umbrella'),
+    HC('picnic', -1.45, .75, .25, 's3a_picnic', DC), HC('cooler', 1.85, .9, -.5, 's3a_cooler', DC), HC('campchair', -2.75, .6, .9, 's3a_campchair', DC),
+    HC('bush', -2.85, -.5, .4, 's3a_bush', DC),
+    HC('reeds', -3.25, 1.85, 0, 's3a_reeds', { seed: 1, ...DC }), HC('reeds', 1.55, 2.8, 0, 's3a_reeds', { seed: 2, ...DC }), HC('reeds', 3.0, -1.55, 0, 's3a_reeds', { seed: 3, ...DC }),
   ], { friendAt: stretchC([-.55, -.3]), fitW: 8.2 });
 }

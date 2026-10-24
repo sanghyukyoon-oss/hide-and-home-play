@@ -143,10 +143,18 @@ export function lotus(add, x, z, s = 1, y = .05, col = '#ffb6cc', col2 = '#ffe0e
   add(G.sph(.026 * s, 10, 7), '#ffd84a', x, y + .07 * s, z);
 }
 // cattails and reed leaves (flat blades that bend), a clump round (x, z)
-export function cattails(add, tube, x, z, s = 1, seed = 1, n = 9) {
+export function cattails(add, tube, x, z, s = 1, seed = 1, n = 9, hole = 0) {
   const r = rng(seed * 11 + 2);
   for (let k = 0; k < n; k++) {
-    const a = k * 2.4 + r(), rr = (.04 + r() * .14) * s, px = x + Math.cos(a) * rr, pz = z + Math.sin(a) * rr, h = (.5 + r() * .38) * s, lean = (r() - .5) * .2;
+    const a = k * 2.4 + r(), rr = hole ? (hole + r() * .12) * s : (.04 + r() * .14) * s, px = x + Math.cos(a) * rr, pz = z + Math.sin(a) * rr, h = (.5 + r() * .38) * s, lean = (r() - .5) * .2;
+    // (hole: a clump round an empty middle where something can sit — every blade and stalk leans outward, none through the middle;
+    // 10/24 사용자 "오리가 다 뚫림", "수풀이 뚫린 곳이 너무 짜증남")
+    if (hole) {
+      const out = .08 + Math.abs(lean) * 1.2, ox = Math.cos(a), oz = Math.sin(a);
+      if (k % 3 === 0) { const tx = px + ox * h * out, tz = pz + oz * h * out; tube([px, 0, pz], [tx, h, tz], .008 * s, '#6aa84f', 5); add(G.cap(.024 * s, .1 * s, 2, 8), '#9a6440', tx + ox * .01, h + .02 * s, tz + oz * .01); add(G.cyl(.004, .004, .06 * s, 4), '#6aa84f', tx + ox * .02, h + .1 * s, tz + oz * .02); }
+      else { const b = G.box(.034 * s, h, .006, 0); b.translate(0, h / 2, 0); b.rotateX(out); b.rotateY(PI / 2 - a); add(b, k % 2 ? '#7cc062' : '#5fae5a', px, 0, pz); }
+      continue;
+    }
     if (k % 3 === 0) { tube([px, 0, pz], [px + lean * .6, h, pz + lean * .3], .008 * s, '#6aa84f', 5); add(G.cap(.024 * s, .1 * s, 2, 8), '#9a6440', px + lean * .62, h + .02 * s, pz + lean * .31); add(G.cyl(.004, .004, .06 * s, 4), '#6aa84f', px + lean * .64, h + .1 * s, pz + lean * .32); }
     else { const b = G.box(.034 * s, h, .006, 0); b.translate(0, h / 2, 0); add(b, k % 2 ? '#7cc062' : '#5fae5a', px, 0, pz, lean * 1.6, a, (r() - .5) * .35); }
   }
