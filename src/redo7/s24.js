@@ -56,8 +56,10 @@ const K = (ko, en) => { if (EN[ko] == null) EN[ko] = en; return ko; };
 // ② 레벨의 24판 연쇄 표(gpt-chains-a.js CHAINS_A.skatebowl, ② 10/23)와 같은 짜임 — ② 줄이 정본에 들어오면 그쪽을 쓰고(아래 install은
 // 비어 있을 때만 채움), 아직이면 이 줄: 음수대에 호스가 빠져 있어요 → 호스를 찾아 끼우고 물 레버 → 물줄기가 보울로 → 배수구 뚜껑이
 // 둥실 → 배수구 안에 색 조각(찾을 물건 하나). 도구는 ②의 호스(items.js skbhose)가 있으면 그것, 없으면 레버 손잡이.
+// (② 10/24: 호스는 보드 보관함 안에서 기다림 — 자물쇠 없는 흑백판이라 캡슐 출구 같은 좁은 칸에 들어가 손가락이 안 닿던 것; 이름 영어)
+K('호스', 'Hose');
 export const SKB_CHAIN = () => ({
-  steps: [{ dev: 'skb_fountain#0:0', tool: ITEMS.skbhose ? 'skbhose' : 'chainlever', dur: 2.6, payoff: 'skb_bowl#0:0', links: [{ dev: 'skb_bowl#0:0', at: .72 }],
+  steps: [{ dev: 'skb_fountain#0:0', tool: ITEMS.skbhose ? 'skbhose' : 'chainlever', toolIn: 'skb_kiosk#0:1', dur: 2.6, payoff: 'skb_bowl#0:0', links: [{ dev: 'skb_bowl#0:0', at: .72 }],
     sfx: [[.03, 'latch'], [.18, 'whoosh'], [.42, 'blub'], [.62, 'blub'], [.8, 'lift_metal'], [.96, 'pop']],
     need: ITEMS.skbhose ? K('음수대에 호스가 빠져 있어! 파크 어딘가에 있을 텐데', 'The drinking fountain has no hose! It must be somewhere in the park') : K('음수대 물 레버에 손잡이가 빠져 있어! 손잡이가 어디 있을까?', 'The fountain lever has no handle! Where could it be?'),
     found: ITEMS.skbhose ? K('호스다! 음수대에 끼워 보자', 'A hose! Fit it on the drinking fountain') : K('레버 손잡이다! 보울 옆 음수대에 끼워 보자', 'A lever handle! Fit it on the fountain by the bowl'),

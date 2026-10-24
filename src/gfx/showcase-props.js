@@ -66,6 +66,7 @@ B.secretshelf = (f, T) => {
     for (const dz of [-.12, .12]) add(G.box(1.96, .025, .04, .008), BRASS, 0, .0125, z0 + dz);
     for (const sx of [-.98, .98]) add(G.box(.05, .05, .32, .01), BRASS2, sx, .025, z0);
     for (let k = -4; k <= 4; k++) add(G.box(.02, .012, .3, .004), BRASS2, k * .22, .006, z0);
+    for (let k = -8; k <= 8; k++) for (const dz of [-.12, .12]) add(G.sph(.008, 6, 5), BRASS2, k * .115, .026, z0 + dz, 0, 0, 0, [1, .5, 1]);
   }));
   // ── the cupboard in the wall behind the case (fixed)
   const AW = .8, AH = 1.22, AD = .24, ax = -.5, az = ZW + AD / 2;
@@ -90,6 +91,7 @@ B.secretshelf = (f, T) => {
     add(G.sph(.035, 12, 10), BRASS, DW - .1, .5, .04);
     // a little star window
     add(G.cyl(.09, .09, .02, 16), '#fff3b0', DW / 2, DH - DW / 2, .02, HP, 0, 0);
+    add(G.tor(.09, .012, PI * 2, 5, 18), BRASS2, DW / 2, DH - DW / 2, .03); for (const y of [.18, DH - .5]) add(G.box(.04, .1, .02, .006), BRASS2, .01, y, .025); add(G.box(.03, .05, .01, .004), BRASS2, DW - .1, .42, .03); add(G.cyl(.006, .006, .012, 6), '#2a1d33', DW - .1, .43, .037, HP, 0, 0);
   }));
   const pd = f.part('door', dv, t => { dv.rotation.y = -1.9 * t; }, { label: '비밀 문', sfx: 'door', dur: .45 });
   pd.secret = true;
@@ -97,15 +99,22 @@ B.secretshelf = (f, T) => {
   sd.reserved = true;   // only the friend hides here
   // ── the marble run on the wall above the cupboard (fixed), ending in a cup on the latch
   const RUN = [[-.9, 1.92], [-.14, 1.78], [-.86, 1.62], [-.22, 1.47]], rz = ZW + .05;
-  f.add(mc('secretshelf-run', ({ add, tube }) => {
+  // (⑥ 10/24 사용자 12판 "장치들 디테일 레벨업": two thin rods for a run) — a real wooden marble run: U troughs with a pale
+  // floor and side walls, a funnel at the top, brass brackets into the wall under every turn with screw heads, little coloured
+  // bumpers at the turns, and the brass rod from the cup down to the latch in two guides
+  f.add(mc('secretshelf-run2', ({ add, tube }) => {
+    const zc = rz + .02;
     for (let i = 0; i < RUN.length - 1; i++) {
-      const [x1, y1] = RUN[i], [x2, y2] = RUN[i + 1];
-      tube([x1, y1 - .03, rz], [x2, y2 - .03, rz], .012, WOODD, 6);
-      tube([x1, y1 - .03, rz + .04], [x2, y2 - .03, rz + .04], .012, WOODD, 6);
-      add(G.box(.03, .05, .06, .008), WOOD, x2, y2 - .05, rz + .02);
+      const [x1, y1] = RUN[i], [x2, y2] = RUN[i + 1], L = Math.hypot(x2 - x1, y2 - y1) + .06, ang = Math.atan2(y2 - y1, x2 - x1), mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      add(G.box(L, .014, .1, .004), '#f0d3a8', mx, my - .047, zc, 0, 0, ang);
+      for (const s of [-1, 1]) add(G.box(L, .045, .014, .004), WOOD, mx, my - .03, zc + s * .05, 0, 0, ang);
+      add(G.box(.05, .05, .1, .01), ['#ff8f7a', '#8fd3f4', '#ffd23f'][i], x2 + Math.sign(x2 - x1) * .03, y2 - .025, zc);
+      add(G.box(.03, .03, zc - ZW + .02, .006), BRASS2, x2, y2 - .07, (zc + ZW) / 2 - .01); add(G.sph(.012, 6, 5), BRASS, x2, y2 - .07, zc + .055, 0, 0, 0, [1, 1, .5]);
     }
-    add(G.box(.08, .05, .07, .01), WOOD, RUN[0][0] - .04, RUN[0][1] - .04, rz + .02);
-    tube([-.07, 1.32, rz + .03], [-.07, .66, ZW + AD + .03], .008, BRASS2, 6);   // the rod from the cup down to the latch
+    add(G.cone(.09, .1, 16, true), WOOD, RUN[0][0], RUN[0][1] + .04, zc, PI, 0, 0); add(G.tor(.088, .01, PI * 2, 5, 18), WOODD, RUN[0][0], RUN[0][1] + .09, zc, HP, 0, 0);
+    add(G.box(.03, .03, zc - ZW + .02, .006), BRASS2, RUN[0][0], RUN[0][1] - .06, (zc + ZW) / 2 - .01);
+    tube([-.07, 1.32, rz + .03], [-.07, .66, ZW + AD + .03], .008, BRASS2, 6);
+    for (const y of [1.1, .85]) { const t = (1.32 - y) / (1.32 - .66), z = rz + .03 + (ZW + AD + .03 - rz - .03) * t; add(G.box(.04, .02, .03, .006), BRASS, -.07, y, z); }
   }));
   const marble = mesh(new THREE.SphereGeometry(.05, 16, 12), mat('#3d8bff', { rough: .2, emissive: '#3d8bff', ei: .35 }));
   marble.userData.noMerge = true; put(marble, RUN[0][0], RUN[0][1] + .01, rz + .02); f.add(marble);
@@ -113,9 +122,12 @@ B.secretshelf = (f, T) => {
   const cupPv = grp(); put(cupPv, -.1, 1.36, rz + .03); f.add(cupPv);
   const cup = mesh(new THREE.CylinderGeometry(.055, .04, .07, 14, 1, true), mat(BRASS, { side: THREE.DoubleSide }));
   cup.userData.noMerge = true; put(cup, 0, 0, 0); cupPv.add(cup);
+  cupPv.add(mc('secretshelf-cupbits', ({ add }) => { add(G.tor(.055, .008, PI * 2, 5, 16), BRASS2, 0, .035, 0, HP, 0, 0); add(G.cyl(.04, .04, .008, 14), BRASS2, 0, -.035, 0); add(G.box(.12, .012, .012, .004), BRASS2, .08, -.03, 0); add(G.sph(.022, 10, 8), '#5b5672', .14, -.03, 0); }));
   const latch = mesh(new THREE.BoxGeometry(.18, .03, .03), mat(BRASS2)); latch.userData.noMerge = true;
   // a bolt across the door's right edge; it swings up when the cup tips
   const latchPv = grp(); put(latchPv, -.07, .62, dz + .03); latchPv.add(put(latch, -.08, 0, 0)); f.add(latchPv);
+  latchPv.add(mc('secretshelf-latchbits', ({ add }) => { add(G.sph(.022, 10, 8), BRASS, -.17, 0, 0); add(G.cyl(.018, .018, .04, 10), BRASS2, 0, 0, 0, HP, 0, 0); }));
+  f.add(mc('secretshelf-latchguide', ({ add }) => { for (const x of [-.2, -.12]) add(G.box(.025, .06, .02, .006), BRASS2, x, .62, dz + .012); }));
   // ── the case itself: one moving part, sliding right along the rail
   const sv = grp(); put(sv, -.5, 0, 0); f.add(sv);
   sv.add(mc('secretshelf-case', ({ add }) => {
@@ -123,6 +135,8 @@ B.secretshelf = (f, T) => {
     add(G.pbox(W - .09, H - .08, .015), BACK, 0, H / 2, back + .01);
     for (const y of levels) add(G.box(W - .09, .035, D - .03, .006), WOOD, 0, y - .0175, z0 + .01);
     add(G.box(W + .05, .05, D + .04, .012), WOODD, 0, H + .025, z0 + .01);
+    add(G.box(W + .09, .03, D + .07, .01), WOOD, 0, H + .06, z0 + .02); for (const sx of [-1, 1]) add(G.box(.06, .12, .03, .01), WOODD, sx * (W / 2 - .01), H - .06, z0 + D / 2 + .005);
+    for (const y of levels) { add(G.box(W - .09, .03, .012, .004), WOODD, 0, y - .02, z0 + D / 2 - .004); add(G.box(.08, .022, .006, .003), '#fff4e2', -.3, y - .02, z0 + D / 2 + .004); }
     for (const sx of [-1, 1]) add(G.cyl(.035, .035, .03, 12), BRASS2, sx * .34, .03, z0, HP, 0, 0);   // wheels on the rail
     // ordinary books on the other shelves
     const cols = ['#ff8f7a', '#8fd3f4', '#ffd23f', '#9be38f', '#c9a7ff', '#ffb07a', '#7fb7ff', '#ff9fb5'];

@@ -550,7 +550,7 @@ B.officedesk = (f, T) => {
   const top = col(T, 'wood'), ped = col(T, 'body'), dr = col(T, 'accent2'), tk = [top, ped, dr].join(',');
   const z0 = -.1, D = .76, ty = .74, tt = .045, px = .64, PW = .46, PD = .66, top_y = ty + tt;
   const mx = -.22, mz = z0 - .2, bez = '#fbf7ef';
-  f.add(mc('officedesk|' + tk, ({ add }) => {
+  f.add(mc('officedesk|' + tk, ({ add, tube }) => {
     add(G.box(1.88, tt, D, .02), top, 0, ty + tt / 2, z0);
     add(G.box(.06, ty, .64, .02), STEEL, -.86, ty / 2, z0);
     add(G.box(.08, .04, .7, .015), STEEL2, -.86, .02, z0);
@@ -585,6 +585,15 @@ B.officedesk = (f, T) => {
     add(G.cap(.04, .1, 2, 8), LEAF, .78, top_y + .16, z0 - .26);
     add(G.cap(.022, .04, 2, 6), LEAF, .83, top_y + .17, z0 - .26, 0, 0, -.9);
     add(G.sph(.022, 6, 5), BLUSH, .78, top_y + .245, z0 - .26);
+    // (⑥ 10/24 사용자 16판 "컴퓨터·컴퓨터 책상 다시"): the monitor's rounded back and its cable down behind the desk, a power
+    // button and a little webcam; a two-tier paper tray with sheets, a ring binder and a framed photo; a pen pot
+    add(G.box(.5, .32, .09, .06), shade(bez, -.06), mx, top_y + .44, mz - .07);
+    add(G.sph(.009, 6, 5), DARK, mx + .3, top_y + .225, mz + .028); add(G.box(.06, .025, .03, .01), DARK, mx, top_y + .685, mz + .005); add(G.sph(.007, 6, 5), '#5f8fd8', mx, top_y + .685, mz + .021);
+    tube([mx + .05, top_y + .3, mz - .12], [mx + .1, top_y + .02, mz - .2], .008, DARK, 4); tube([mx + .1, top_y + .02, mz - .2], [mx + .2, ty - .1, z0 - D / 2 + .05], .008, DARK, 4);
+    for (const k of [0, 1]) { add(G.box(.26, .012, .2, .004), '#c9cfe0', .32, top_y + .01 + k * .07, z0 + .16); for (const sx of [-1, 1]) add(G.pbox(.008, .07, .2), '#a9b2c8', .32 + sx * .126, top_y + .045, z0 + .16); add(G.box(.21, .008, .28, .002), WHITE, .32, top_y + .021 + k * .07, z0 + .16, 0, (k - .5) * .1, 0); }
+    add(G.box(.06, .26, .2, .01), '#5f8fd8', .58, top_y + .13, z0 - .24); add(G.box(.064, .06, .1, .004), WHITE, .58, top_y + .17, z0 - .24 + .001);
+    add(G.box(.14, .18, .02, .01), '#e8bb82', .5, top_y + .09, z0 - .3, -.2, .3, 0); add(G.pbox(.11, .14, .004), '#bfe4f4', .5 + .004, top_y + .09, z0 - .3 + .012, -.2, .3, 0);
+    add(G.cyl(.035, .03, .1, 12), '#7fc6e8', .14, top_y + .05, z0 - .27); for (const [dx, c] of [[-.01, '#ff6b57'], [.012, '#2a1d33'], [0, '#ffd23f']]) add(G.cyl(.005, .005, .14, 5), c, .14 + dx, top_y + .11, z0 - .27 + (dx ? 0 : .01), dx * 6, 0, dx * 8);
   }));
   f.add(mg('officedesk-screen', atlasMat(), ({ add }) => add(quadGeo(.64, .38, RG.screen), mx, top_y + .45, mz + .026)));
   const dv = new THREE.Group(); put(dv, px, ty - .14, z0 + PD / 2 + .018);

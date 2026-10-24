@@ -980,7 +980,7 @@ export const GRAY = new Set([3, 9, ...planAt('gray')]);
 export const FRIEND_HIDE = new Set([11, 15, 19, 27, 29, 38, 47, 50, 58, 67]);   // (27 = 28판 기차 객실 ★ — 너굴이가 터널 지나는 사이 숨음, 기차 여행 편 10/21)   // (1장: 1판 tutorial and the 12판 서재 only; 6장's opener is the 간식 stage, so 51판 camp1)
 // how many things beside the friend (0-based; else half the stage's count, 2~3): 16판 교실 4 — "물건들 좀 더 찾게 해 줄래? 쉽게
 // 느껴짐" (user 10/20, it was 친구+1)
-// (28판 기차 traincar5, 대표 맵 10/24 허브: 기차 여행 물건 8개 다 — 친구판 기본 2~3개면 8개 목록 중 3개만 나왔음)
+// (28판 기차 traincar5, 대표 맵 10/24 허브: 기차 여행 물건 8개 중 6개 — 친구판 기본 2~3개면 8개 목록 중 3개만 나왔음)
 const FRIEND_BONUS = { 15: 4, 27: 6 };
 // (D1 10/19, user "추천대로": 22·41판 — 3·5장 첫 판 — are hidden-object stages now; '★장치 → 보스 → 친구' at the chapter turns read
 // as three thin stages in a row. The chapter's new lock still sits at a chain end there; the friend says hello in the start line, 스토리 룸)

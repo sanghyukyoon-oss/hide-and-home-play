@@ -45,6 +45,8 @@ export function fixSmall(S) {
   for (const it of S.targets) {
     if (performance.now() - t0 > 400) break;   // (a time budget, not a hitch)
     if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role !== 'target') continue;
+    // (24판 ② 10/23: a chain's reward stays where the chain ends — the 배수구 — however small; the chain's own camera shows it)
+    if (it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     const px0 = screenPx(W, it.g); if (px0 >= MIN_PX) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), lockedIn = old.part?.lock ? old.part : null, wasIn = !!old.part;
     const free = s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && fits(it.type, s);
@@ -68,7 +70,7 @@ export function fixSmall(S) {
     if (lockedIn && bestPx < MIN_PX) {
       const here = it.spot;
       for (const o of S.targets) {
-        if (o === it || o.found || o.friend || o.furnTarget || o.hang || o.pileHidden || !o.g || !o.spot || o.role !== 'target' || o.spot.part?.lock || !fits(o.type, here) || !fits(it.type, o.spot)) continue;
+        if (o === it || o.found || o.friend || o.furnTarget || o.hang || o.pileHidden || !o.g || !o.spot || o.role !== 'target' || o.spot.part?.lock || o.spot.part?.chainVia || o.spot.part?.device === 'chain' || !fits(o.type, here) || !fits(it.type, o.spot)) continue;
         const there = o.spot, si = it.g.scale.x / (here.scale || 1), so = o.g.scale.x / (there.scale || 1);
         moveFull(S, it, there); moveFull(S, o, here);
         const a1 = screenPx(W, o.g), b1 = screenPx(W, it.g);

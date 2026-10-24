@@ -697,6 +697,16 @@ B.loftbed = (f, T) => {
     add(G.box(.3, .016, .21, .006), '#e8ebf2', lx, DT + .008, lz);
     add(G.pbox(.26, .004, .1), '#c9cfdc', lx, DT + .018, lz - .03);
     addM(G.box(.3, .2, .012, .006), LM, '#e8ebf2');
+    // (⑥ 10/24 사용자 15판 "노트북 다시 디자인"): rows of little keys, a trackpad, the hinge bar, a webcam dot, stickers on the
+    // lid's back (a heart and a star), and its charger cable running off the desk edge
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 10; k++) add(G.pbox(.02, .004, .016), '#f6f7fb', lx - .108 + k * .024, DT + .021, lz - .07 + r * .021);
+    add(G.pbox(.12, .004, .018), '#f6f7fb', lx, DT + .021, lz + .015);
+    add(G.box(.09, .003, .055, .004), '#d6dbe6', lx, DT + .018, lz + .065);
+    add(G.cyl(.008, .008, .26, 8), '#c9cfdc', lx, DT + .018, lz - .103, 0, 0, HP);
+    addM(G.sph(.005, 6, 5), LM.clone().multiply(xf(0, .088, .008)), '#3a3a48');
+    addM(G.ext(heartShape(.025), .003, 0, 6), LM.clone().multiply(xf(-.06, .02, -.008, 0, PI, 0)), '#ff9fb5');
+    addM(G.cyl(.022, .022, .003, 10), LM.clone().multiply(xf(.07, -.03, -.008, HP, 0, 0)), MUSTARD);
+    tube([lx + .15, DT + .01, lz - .05], [lx + .3, DT + .005, lz - .2], .005, '#f6f7fb', 4); tube([lx + .3, DT + .005, lz - .2], [lx + .34, DT - .25, lz - .22], .005, '#f6f7fb', 4);
     add(G.cyl(.06, .065, .02, 16), acc2, .2, DT + .01, -.18);
     tube([.2, DT + .02, -.18], [.17, DT + .3, -.15], .011, acc2, 6);
     tube([.17, DT + .3, -.15], [.1, DT + .31, -.05], .011, acc2, 6);
@@ -1179,6 +1189,12 @@ B.foldtable = (f, T) => {
     add(G.sph(.016, 8, 6), MUSTARD, px + .04, TY + .072, pz + .03, 0, 0, 0, [1, .5, 1]);
     for (const [dx, dz] of [[-.05, -.03], [-.02, .05], [.05, -.05], [-.06, .03]]) add(G.tor(.007, .003, PI * 2, 3, 8), LEAF, px + dx, TY + .067, pz + dz, HP, 0, 0);
     for (const s of [-1, 1]) add(G.tor(.024, .006, PI, 3, 8), shade(POT, -.12), px + s * .13, TY + .075, pz, 0, 0, s > 0 ? -HP : HP);
+    // (⑥ 10/24 사용자 15판 "라면 등 디테일"): a fishcake slice with its pink swirl, a sheet of 김 leaning on the rim, a few more
+    // noodle loops, beads of oil shining on the soup
+    add(G.cyl(.026, .026, .006, 14), '#fff4e2', px - .045, TY + .068, pz - .02, .15, 0, .1); add(G.tor(.012, .003, PI * 1.6, 3, 10), '#ff8fb0', px - .045, TY + .072, pz - .02, HP + .15, 0, 0);
+    add(G.box(.05, .065, .004, .002), '#2f4a3a', px + .02, TY + .085, pz - .07, -.5, .2, 0);
+    for (let k = 0; k < 5; k++) { const a = k * 1.3 + .5; add(G.tor(.016, .005, PI * 1.3, 3, 8), '#ffe08a', px + Math.cos(a) * .07, TY + .066, pz + Math.sin(a) * .07, HP, 0, a); }
+    for (const [dx, dz, r] of [[.06, .02, .008], [-.07, .05, .006], [.0, -.06, .007], [.07, -.04, .005]]) add(G.sph(r, 6, 5), '#ffd08a', px + dx, TY + .066, pz + dz, 0, 0, 0, [1, .3, 1]);
     // the lid, used as a plate
     const lx = .04, lz = -.22;
     add(G.lathe([[0, 0], [.04, 0], [.115, .02], [.11, .024], [.04, .008], [0, .008]], 22), POT, lx, TY, lz);
@@ -1240,6 +1256,13 @@ B.pcdesk = (f, T) => {
     add(G.box(.42, .02, .16, .008), '#f6f4f0', MX, TY + .022, -.1);
     add(G.sph(.03, 12, 8), WHITE, .13, TY + .012 + .011, -.07, 0, 0, 0, [.8, .42, 1.2]);
     add(G.cyl(.005, .005, .012, 8), DARK, .13, TY + .012 + .022, -.085, 0, 0, HP);
+    // (⑥ 10/24 사용자 15판 "컴퓨터 책상 디테일"): a little speaker by the monitor, a mug of cocoa on the mat, sticky notes on the
+    // bezel, the monitor's cable down the back, a phone stand with the phone in it
+    add(G.box(.07, .13, .07, .015), CHAR, -.46, TY + .065, -.38); for (const y of [.05, .1]) add(G.cyl(y === .05 ? .022 : .012, y === .05 ? .022 : .012, .004, 12), '#4a4658', -.46, TY + y, -.344, HP, 0, 0);
+    add(G.cyl(.032, .028, .07, 12), acc, -.33, TY + .041, -.17); add(G.tor(.018, .006, PI * 2, 3, 8), acc, -.296, TY + .045, -.17); add(G.cyl(.028, .028, .003, 12), '#8a5a3c', -.33, TY + .073, -.17);
+    for (const [x, y, c, r] of [[-.36, 1.17, '#ffe066', .1], [-.31, 1.19, '#ff9fb5', -.08]]) add(G.box(.04, .04, .003, .002), c, MX + x + .12, y - .02, -.324, 0, 0, r);
+    tube([MX, .95, -.37], [MX + .05, TY + .02, -.43], .006, DARK, 4); tube([MX + .05, TY + .02, -.43], [MX + .08, .2, -.47], .006, DARK, 4);
+    add(G.box(.06, .012, .05, .004), '#c9cfe0', .02, TY + .006, -.3); add(G.box(.05, .09, .008, .004), '#c9cfe0', .02, TY + .05, -.315, -.25, 0, 0); add(G.box(.044, .085, .006, .004), '#3a3a48', .02, TY + .055, -.308, -.25, 0, 0);
     // pegboard things: a little shelf with a cactus, headphones, pegs
     add(G.box(.24, .015, .1, .005), wood, .31, 1.0, -.4);
     for (const sx of [-1, 1]) add(G.box(.012, .06, .08, .004), STEEL2, .31 + sx * .1, .97, -.41);

@@ -334,7 +334,10 @@ export function chainPlan(S, plan, cp) {
     // 첫 단 도구: 판 자물쇠 뒤 물건 자리 → 없으면 아무 칸 안 → 없으면 아무 데나
     const x0 = steps[0], tool = x0.st.tool;
     let tp = null;
-    for (const k of x0.st.behind || ['pad', 'code', 'color']) {
+    // (toolIn: the part the first tool waits in when the stage has no lock to put it behind — 24판 흑백: the board locker, not the
+    // capsule machine's narrow chute where no finger reaches it; ② 10/24)
+    if (x0.st.toolIn) { const TP = findPart(room, x0.st.toolIn), s = TP && !plan.locks.some(l => l.part === TP) && take(TP, tool); if (s) { tp = { type: tool, spot: s, role: 'gadget', code: tool, forPart: x0.P }; plan.placements.push(tp); } }
+    if (!tp) for (const k of x0.st.behind || ['pad', 'code', 'color']) {
       const L = plan.locks.find(l => l.kind === k && !Ps.has(l.part)); if (!L) continue;
       tp = plan.placements.find(p => p.role === 'target' && p.spot.part === L.part && p.type !== 'friendtoken' && fits(tool, p.spot));
       if (tp) { plan.targets.splice(plan.targets.indexOf(tp.type), 1); Object.assign(tp, { type: tool, role: 'gadget', code: tool, forPart: x0.P }); break; }

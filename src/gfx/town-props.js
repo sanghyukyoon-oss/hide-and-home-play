@@ -89,26 +89,47 @@ B.wantedboard = f => {
 };
 
 // ── 학생 책상 (1×1): faces the board (-z); the pupil sits on the +z side, the cubby under the top opens to them
+// (⑥ 10/24 사용자 16판 "교실 책상 디테일 다시" — a blue-topped box): a real 교실 책상 — a honey top with a darker edge band and a
+// pencil groove, a name sticker, steel legs with foot caps and a crossbar, the open cubby with two textbooks in it, a bag on the
+// side hook; on top an open notebook with ruled lines, a zip pencil case, a pencil and an eraser. The chair: a moulded seat
+// and a curved back on a steel frame with a bar between the back legs.
 B.schooldesk = (f, T) => {
-  const top = .66, DW = .62, DD = .44, dz = -.1, cz = .3;
-  f.add(mc('schooldesk', ({ add }) => {
-    add(G.box(DW, .035, DD, .012), '#e9c28a', 0, top, dz);
-    // the cubby under the top, open toward the chair: a floor, a dark back and two sides (레벨 세션 10/18: it was one solid box,
-    // so whatever sat in '책상 서랍 속' was inside the box — no view could see it)
+  const top = .66, DW = .62, DD = .44, dz = -.1, cz = .3, TOPC = '#e9c28a', EDGE = '#c9975a', FR = '#8f9bb8';
+  f.add(mc('schooldesk2', ({ add, tube }) => {
+    add(G.box(DW, .03, DD, .01), TOPC, 0, top + .003, dz);
+    add(G.box(DW + .01, .022, DD + .01, .008), EDGE, 0, top - .015, dz);
+    add(G.pbox(.3, .004, .02), shade(TOPC, -.12), -.05, top + .019, dz - DD / 2 + .04);
+    add(G.pbox(.1, .035, .004), WHITE, 0, top - .016, dz + DD / 2 + .006); add(G.pbox(.08, .006, .002), '#8fd3f4', 0, top - .01, dz + DD / 2 + .009);
+    // the cubby, open toward the chair (레벨 세션 10/18: never one solid box), two textbooks inside
     const CW = DW - .04, CD = DD - .06, cy0 = top - .15, cz0 = dz - .02;
     add(G.pbox(CW, .012, CD), '#7d93bd', 0, cy0 + .006, cz0);
-    add(G.pbox(CW, .12, .012), '#9fb4d8', 0, cy0 + .06, cz0 - CD / 2 + .006);           // back, the same blue outside
-    add(G.pbox(CW - .03, .1, .004), '#2f3f7a', 0, cy0 + .06, cz0 - CD / 2 + .014);       // its dark inside
+    add(G.pbox(CW, .12, .012), '#9fb4d8', 0, cy0 + .06, cz0 - CD / 2 + .006);
+    add(G.pbox(CW - .03, .1, .004), '#2f3f7a', 0, cy0 + .06, cz0 - CD / 2 + .014);
     for (const sx of [-1, 1]) add(G.pbox(.012, .12, CD), '#9fb4d8', sx * (CW / 2 - .006), cy0 + .06, cz0);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.016, .016, top - .03, 8), STEEL2, sx * (DW / 2 - .05), (top - .03) / 2, dz + sz * (DD / 2 - .05));
-    // the chair
-    add(G.box(.38, .03, .36, .01), '#e9c28a', 0, .42, cz);
-    add(G.box(.38, .24, .025, .01), '#e9c28a', 0, .62, cz + .17);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.014, .014, .41, 8), STEEL2, sx * .16, .205, cz + sz * .15);
-    add(G.cyl(.012, .012, .3, 8), STEEL2, 0, .56, cz + .17, 0, 0, HP);
-    // a notebook and a pencil case on top
-    add(G.box(.18, .012, .24, .004), '#ffffff', -.12, top + .024, dz + .02, 0, .2, 0); add(G.box(.17, .004, .23, .002), '#8fd3f4', -.12, top + .031, dz + .02, 0, .2, 0);
-    add(G.cap(.03, .14, 2, 8), '#ff9fb5', .17, top + .045, dz - .08, 0, 0, HP);
+    for (const [x, c, h] of [[-.2, '#ff8a7a', .1], [-.17, '#7fc6e8', .09]]) add(G.box(.025, h, .2, .004), c, x, cy0 + .012 + h / 2, cz0 - .04);
+    // legs: steel with grey foot caps, a crossbar low between the side pairs, the bag hook
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) { add(G.cyl(.016, .016, top - .05, 8), FR, sx * (DW / 2 - .05), (top - .05) / 2 + .02, dz + sz * (DD / 2 - .05)); add(G.cyl(.02, .02, .02, 8), DARK, sx * (DW / 2 - .05), .01, dz + sz * (DD / 2 - .05)); }
+      add(G.cyl(.011, .011, DD - .1, 6), FR, sx * (DW / 2 - .05), .12, dz, HP, 0, 0);
+    }
+    add(G.box(.012, .05, .012, .004), FR, DW / 2 + .006, top - .06, dz + .1); add(G.tor(.016, .004, PI, 3, 8), FR, DW / 2 + .02, top - .085, dz + .1, 0, HP, PI);
+    add(G.box(.06, .2, .16, .03), '#ff9a6a', DW / 2 + .045, top - .2, dz + .1); add(G.box(.064, .07, .1, .02), shade('#ff9a6a', -.12), DW / 2 + .05, top - .23, dz + .1);
+    tube([DW / 2 + .02, top - .095, dz + .07], [DW / 2 + .02, top - .095, dz + .13], .006, DARK, 4);
+    // on top: an open notebook (ruled), a zip pencil case, a pencil, an eraser
+    for (const s of [-1, 1]) { add(G.box(.12, .008, .17, .003), WHITE, -.12 + s * .062, top + .022, dz + .03, 0, .15, s * -.03); }
+    for (let k = 0; k < 5; k++) add(G.pbox(.2, .002, .004), '#a8c8e8', -.12, top + .0275, dz - .03 + k * .03, 0, .15, 0);
+    add(G.cap(.03, .14, 2, 8), '#ff9fb5', .17, top + .045, dz - .08, 0, 0, HP); add(G.pbox(.15, .004, .006), '#e8e0d0', .17, top + .075, dz - .08); add(G.sph(.009, 6, 5), '#c9cfe0', .25, top + .07, dz - .08);
+    add(G.cyl(.006, .006, .15, 6), YEL, -.13, top + .034, dz + .13, 0, .15, HP); add(G.cone(.006, .015, 6), '#f0d3a8', -.13 + Math.cos(.15) * .082, top + .034, dz + .13 - Math.sin(.15) * .082, 0, .15, -HP);
+    add(G.box(.04, .015, .022, .004), WHITE, .04, top + .025, dz - .15, 0, .3, 0); add(G.box(.042, .006, .024, .002), '#7fc6e8', .04, top + .031, dz - .15, 0, .3, 0);
+    // the chair: a moulded seat, a curved back, a steel frame
+    add(G.box(.38, .025, .36, .012), TOPC, 0, .43, cz); add(G.box(.39, .014, .37, .006), EDGE, 0, .412, cz);
+    for (let k = 0; k < 5; k++) { const a = (k - 2) * .14; add(G.box(.08, .2, .022, .008), TOPC, Math.sin(a) * .24, .64, cz + .2 - Math.cos(a) * .04, -.08, a, 0); }
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) { add(G.cyl(.014, .014, .41, 8), FR, sx * .16, .205, cz + sz * .15); add(G.cyl(.018, .018, .016, 8), DARK, sx * .16, .008, cz + sz * .15); }
+      tube([sx * .16, .4, cz + .15], [sx * .17, .76, cz + .19], .013, FR, 6);
+    }
+    add(G.cyl(.012, .012, .32, 8), FR, 0, .54, cz + .17, 0, 0, HP);
+    add(G.cyl(.01, .01, .3, 6), FR, 0, .1, cz, 0, 0, HP);
   }));
   f.spot('on', null, .14, top + .02, dz + .06, { maxH: .3, label: '책상 위', scale: .8 });
   f.spot('under', null, 0, top - .138, dz + .15, { maxH: .1, label: '책상 서랍 속', scale: .7 });   // at the mouth of the open cubby: a peek of it shows

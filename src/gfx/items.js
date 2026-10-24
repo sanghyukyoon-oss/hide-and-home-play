@@ -182,6 +182,14 @@ export const ITEMS = {
     for (const sy of [-1, 1]) g.add(put(sph(.012, '#9aa3b2'), 0, .14 + sy * .11, .02));
     return g;
   } },
+  // (24판 스케이트 파크 ② 10/23: the drinking fountain's hose — a green coil and a brass nozzle; 25판 next door has a crank handle)
+  skbhose: { name: '호스', h: .07, flat: true, noCollect: true, build() {
+    const g = grp();
+    for (const [y, r] of [[.012, .085], [.03, .078], [.048, .07]]) g.add(put(tor(r, .014, '#4fae6a', GLOSS, Math.PI * 2, 8, 22), 0, y, 0, Math.PI / 2, 0, 0));
+    g.add(put(cyl(.016, .016, .09, '#4fae6a', GLOSS, 10), .1, .02, .03, 0, 0, Math.PI / 2));
+    g.add(put(cyl(.012, .02, .05, '#e0b45c', GOLD, 10), .16, .02, .03, 0, 0, Math.PI / 2));
+    return g;
+  } },
   crank: { name: '건조대 손잡이', h: .06, flat: true, noCollect: true, build() {
     const g = grp();
     g.add(put(cyl(.012, .012, .16, '#a9b2c8', null, 10), 0, .015, 0, Math.PI / 2, 0, 0));

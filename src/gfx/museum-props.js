@@ -5,7 +5,7 @@
 // A painting swings out from the wall (something may be tucked behind it); a draped piece can be unveiled; a crate with a
 // lid; an easel; the guide desk's drawer; a bench; velvet ropes; the Thinker as a bronze 몽글이.
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, texCache } from './kit.js';
+import { put, grp, mat, mesh, geo, canvasTex, texCache } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -200,6 +200,13 @@ B.thinker = f => {
     add(G.sph(.042, 10, 8), BZ3, .04, T0 + .335, .16);
     tube([-.13, T0 + .26, .05], [-.09, T0 + .17, .14], .033, BZ2, 8);
     add(G.sph(.038, 10, 8), BZ3, -.08, T0 + .17, .16);
+    // (⑥ 10/24 사용자 10판 "조각상 디테일"): worn bright spots where hands rub a bronze (the nose, the knees, the paw), toe beans,
+    // the tail curled round the rock, moss-green patina on the rock
+    add(G.sph(.016, 8, 6), '#d9c08a', .02, T0 + .39, .195); for (const s of [-1, 1]) add(G.sph(.022, 8, 6), '#c9ad78', s * .08, T0 + .17, .175, 0, 0, 0, [1, .6, .6]);
+    add(G.sph(.02, 8, 6), '#c9ad78', .045, T0 + .35, .19, 0, 0, 0, [1, .6, .6]);
+    for (const s of [-1, 1]) for (const k of [-1, 0, 1]) add(G.sph(.01, 6, 5), BZ3, s * .08 + k * .018, T0 + .055, .22, 0, 0, 0, [1, 1, .5]);
+    tube([-.12, T0 + .1, -.1], [-.2, T0 + .1, .02], .028, BZ2, 8); tube([-.2, T0 + .1, .02], [-.17, T0 + .13, .12], .024, BZ2, 8); add(G.sph(.03, 8, 6), BZ3, -.16, T0 + .14, .13);
+    for (const [x, z, r] of [[-.15, .1, .03], [.12, -.1, .025], [-.05, -.15, .028], [.16, .05, .022]]) add(G.sph(r, 8, 6), '#6f8a6a', x, T0 + .06, z, 0, x * 9, 0, [1.3, .4, 1]);
   }));
   f.spot('behind', null, 0, 0, -.38, { maxH: .35, label: '조각상 뒤', scale: .7 });
   f.spot('on', null, .19, T0, .17, { maxH: .14, label: '조각상 받침 위', scale: .5 });
@@ -409,17 +416,44 @@ B.guidedesk = f => {
   f.spot('on', null, .38, TH + .05, .02, { maxH: .3, label: '안내 데스크 위', scale: .65 });
 };
 
-// 그리스 항아리: a black-figure amphora on a low plinth — orange clay, a black band of little running mochi
+// 그리스 항아리: a black-figure amphora on a low plinth
+// (⑥ 10/24 사용자 10판 "조각상 디테일": an orange egg with a black belt) — a real amphora: a narrow black foot, an egg body
+// widest high up, a slim neck and a rolled black lip, two black loop handles from neck to shoulder; painted all round —
+// a meander key at the neck, a black-figure panel of 몽글이 runners on the belly, a band of rays at the foot
+const amphoraTex = () => tex('amphora-paint', 512, 256, (c, w, h) => {
+  const CL = '#e0874a', BK = '#2a1d22';
+  c.fillStyle = CL; c.fillRect(0, 0, w, h);
+  c.fillStyle = BK; c.fillRect(0, 0, w, h * .07); c.fillRect(0, h * .93, w, h * .07);
+  // the neck: a meander key between two lines
+  const ny = h * .14; c.fillRect(0, ny - 14, w, 3); c.fillRect(0, ny + 14, w, 3);
+  c.strokeStyle = BK; c.lineWidth = 3;
+  for (let x = 0; x < w; x += 24) { c.beginPath(); c.moveTo(x, ny + 10); c.lineTo(x, ny - 9); c.lineTo(x + 16, ny - 9); c.lineTo(x + 16, ny + 3); c.lineTo(x + 8, ny + 3); c.lineTo(x + 8, ny - 3); c.stroke(); }
+  // the belly panel: running mochi in black, between two bands
+  const by = h * .5; c.fillRect(0, by - 46, w, 5); c.fillRect(0, by + 42, w, 5);
+  for (let k = 0; k < 4; k++) {
+    const x = 64 + k * 128, y = by + 6, lean = k % 2 ? -1 : 1;
+    c.fillStyle = BK; c.beginPath(); c.ellipse(x, y, 26, 22, lean * .15, 0, 7); c.fill();
+    for (const s of [-1, 1]) { c.beginPath(); c.ellipse(x + s * 18, y - 18, 7, 10, s * .5, 0, 7); c.fill(); }
+    c.lineWidth = 6; c.lineCap = 'round'; c.strokeStyle = BK;
+    c.beginPath(); c.moveTo(x - 12, y + 18); c.lineTo(x - 26 * lean, y + 34); c.stroke(); c.beginPath(); c.moveTo(x + 10, y + 18); c.lineTo(x + 22 * lean, y + 36); c.stroke();
+    c.beginPath(); c.moveTo(x + 20 * lean, y - 2); c.lineTo(x + 38 * lean, y - 16); c.stroke();
+    c.fillStyle = CL; for (const s of [-1, 1]) { c.beginPath(); c.arc(x + s * 8 + lean * 4, y - 4, 3, 0, 7); c.fill(); }
+    c.strokeStyle = CL; c.lineWidth = 2; c.beginPath(); c.arc(x + lean * 4, y + 3, 5, .2, Math.PI - .2); c.stroke();
+  }
+  // the foot: a band of black rays
+  c.fillStyle = BK; for (let x = 0; x < w; x += 22) { c.beginPath(); c.moveTo(x, h * .9); c.lineTo(x + 11, h * .76); c.lineTo(x + 22, h * .9); c.fill(); }
+  c.fillRect(0, h * .74, w, 3);
+});
 B.amphora = f => {
-  const PH = .34;
-  f.add(mc('amphora2', ({ add, tube }) => {
-    plinth(add, .46, PH + .04, .46);
-    const pts = [[.05, 0], [.13, .03], [.2, .14], [.21, .3], [.17, .44], [.09, .52], [.075, .62], [.11, .66]].map(([r, y]) => new THREE.Vector2(r, y));
-    add(new THREE.LatheGeometry(pts, 20), '#e08a3c', 0, PH + .04, 0);
-    add(G.cyl(.205, .21, .1, 20, true), '#2a1d22', 0, PH + .04 + .26, 0);   // the black band
-    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; add(G.sph(.028, 8, 6), '#e08a3c', Math.cos(a) * .213, PH + .04 + .27, Math.sin(a) * .213, 0, 0, 0, [1, 1, .4]); }
-    for (const sx of [-1, 1]) tube([sx * .08, PH + .04 + .6, 0], [sx * .19, PH + .04 + .4, 0], .018, '#d97a30', 6);   // handles
+  const PH = .34, Y0 = PH + .04, H = .66;
+  f.add(mc('amphora3', ({ add, tube }) => {
+    plinth(add, .46, Y0, .46);
+    add(G.cyl(.075, .09, .04, 18), '#2a1d22', 0, Y0 + .02, 0);
+    add(G.tor(.095, .014, PI * 2, 6, 24), '#2a1d22', 0, Y0 + .04 + H - .002, 0, HP, 0, 0);
+    for (const sx of [-1, 1]) { tube([sx * .07, Y0 + .64, 0], [sx * .17, Y0 + .66, 0], .016, '#2a1d22', 6); tube([sx * .17, Y0 + .66, 0], [sx * .2, Y0 + .49, 0], .016, '#2a1d22', 6); }
   }));
+  const pts = [[.06, 0], [.075, .04], [.13, .1], [.19, .24], [.215, .36], [.2, .44], [.15, .51], [.085, .55], [.07, .6], [.075, .64], [.1, .66], [.085, .668], [.06, .66], [0, .66]];
+  f.add(put(mesh(geo('amphora3-body', () => { const g = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 28), p = g.attributes.position, uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, Math.min(1, p.getY(i) / H)); return g; }), mat('#ffffff', { map: amphoraTex(), rough: .5 })), 0, Y0 + .04, 0));
   f.spot('behind', null, 0, 0, -.36, { maxH: .35, label: '항아리 뒤', scale: .7 });
 };
 // 도넛 조각상: a giant pink-glazed donut standing on its edge on a plinth — pop art
