@@ -44,7 +44,7 @@ import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
-import { TUT_B, TUTB_TXT, tutB1, tutB2 } from '../tutb.js';
+import { TUT_B, TUTB_TXT, tutB1, tutB2, turnLine1, firstFinds, firstFindsTalk } from '../tutb.js';
 import { NOTE3D, showNote3D } from '../noteview3d.js';
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
@@ -239,6 +239,8 @@ export class StageScene {
     if (!custom && !this.preview) this.spec = { ...this.spec, recentTypes: recentT.filter(e => e.i !== this.idx).flatMap(e => e.t) };
     const chainP = custom || this.preview ? null : chainPrep(this.room, this.spec);   // (조립판도: 보조 장치만 — gpt-chains recipeFor, ② 10/22)   // (②b 10/22: a GPT map's chained device — gpt-chains.js)
     this.plan = custom ? planCustom(this.room, custom, this.spec.seed) : this.kit ? planModel(this.room, this.spec, this.story) : (this.incident && this.spec.tut === 1 && planFirst(this.room, this.spec)) || (this.incident && this.spec.showcase && planShow(this.room, this.spec, this.story)) || (this.incident && planIncident(this.room, { ...this.spec, habit: HABIT_BREAK.has(this.idx) ? null : habitOf(th.friend) }, this.story)) || planStage(this.room, this.spec, this.story);
+    // (1판: three things in plain sight beside the friend — tutb.js firstFinds, ② 10/26)
+    if (this.plan?.first && this.spec.tut === 1 && TUT_B) firstFinds(this.plan, this.room);
     if (chainP) this.plan = chainPlan(this, this.plan, chainP);
     if (this.incident && !this.plan.incident) this.incident = false;
     if (!custom && !this.model && !this.preview) this.decoysCut = capDecoys(this.plan, this.spec);   // 함정 상한 (stages.js)
@@ -522,6 +524,8 @@ export class StageScene {
     if (TUT_B && this.spec.tut === 2) tutB2(this);
     else {
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
+    // (1판: 토순이 says what she dropped — ② 10/26)
+    if (this.spec.tut === 1 && this.plan?.first && this.targets.some(t => !t.friend)) firstFindsTalk(this);
     if (this.spec.tut === 2) { this.tutorial2(); if (TILT_ON || !DBL_ON) this.teachTilt(); }
     }
     if (this.scene?.card) newCard(G, this.scene.card);
@@ -1238,6 +1242,8 @@ export class StageScene {
       // the friend is found, but the stage ends only when everything is (user, 10/18: "캐릭터 찾으면 나머지 물건 안 찾아도
       // 깨지는 거 ㅈ같다니까") — the friend stays out and asks for the rest
       if (this.targets.every(t => t.found)) this.win();
+      // (1판: 토순이 names what she dropped instead — tutb.js firstFindsTalk, ② 10/26)
+      else if (this.spec.tut === 1 && this.plan?.first) this.idle = 0;
       else { const n = this.targets.filter(t => !t.found).length; this.say(f, `남은 물건 ${n}개도 찾아 줘!`, 2200); this.idle = 0; }
     }
   }
@@ -2701,7 +2707,8 @@ export class StageScene {
     // a caption box each, then your turn), ③ the dial below. If ② already brought the box's front round, the dial gets one
     // line of its own — done once it's pushed a little (or 12 s)
     if (TUT_B && W.scheme === 'F' && !this.botOn()) {
-      await ftapLesson1(this);
+      // (② 10/26: the one line, no three-beat play — user "한 문장 나오는 튜토가 바로 나와야")
+      await turnLine1(this);
       if (this.dead || this.result) return;
       if (turnDone() && dial && !this.friendItem?.found) {
         let dl = 0; const prevR = W.onRotate; W.onRotate = d => { prevR?.(d); if (W._tdHeld) dl += Math.abs(d) || 0; };

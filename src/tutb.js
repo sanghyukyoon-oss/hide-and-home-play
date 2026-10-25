@@ -3,13 +3,14 @@
 // brings back the old lessons (A) on this device.
 //  1판: as A (user 10/22 "1은 원래 것이 나은 것 같음"; tutB1 below is kept, unused), but in the order 이동 → 이동 중 터치 (the
 //       three-beat lesson, teachftap ftapLesson1) → 돌림판 (user 10/25). 2판 unused → 3판 the three-beat play once (armFtapB).
-//  2판: one line for 5 s — how to turn while moving. If you haven't turned in 20 s, the hand shows it once (no three steps).
+//  2판: one line for 5 s — how to turn while moving (② 10/26 검토: "조작 안내는 짧게 한 번만" — the hand after 20 s is gone).
 //       Turning at all ends it, quietly.
 //  Gone in B: the three-beat lesson on 2판 (it is 1판 ② now), the tilt and double-tap lessons, the controls
 //  summary on 2판's result (still in 더보기 → 조작 도움말).
 import { h, ICON } from './ui.js';
 import { EN } from './i18n-en-dict.js';
 import { tr } from './i18n.js';
+import { Raycaster, Vector3 } from 'three';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
 const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
@@ -83,7 +84,6 @@ export async function tutB2(S) {
       await S.tw.wait(.25);
       if (W.ptrs?.size) turn += Math.abs(W.yaw - y); y = W.yaw;
       if (turn > .3) break;
-      if (S.t - t0 > 20 && !tag.classList.contains('on')) { await hand(S, 'turn'); }
       if (S.t - t0 > 60) break;
     }
   } finally { clearInterval(iv); tag.classList.remove('on'); setTimeout(() => tag.remove(), 300); }
@@ -97,4 +97,68 @@ function keepCss() {
 .tbkeep::after{content:'';position:absolute;left:50%;bottom:-13px;margin-left:-10px;border:10px solid transparent;border-top-color:#3b2a55;border-bottom:0}
 .tbkeep.on{opacity:1}`;
   document.head.append(s);
+}
+
+// 1판 ② (② 레벨 10/26, user on the phone: "한 문장 나오는 튜토가 바로 나와야 되는데 그러고 회전판 설명해야" — no three-beat play on
+// 1판 any more): the one line, the "떼지 마!" tag over a dragging finger, done once a drag-then-touch turn has gone ~20° (or 15 s)
+export async function turnLine1(S) {
+  const G = S.G, W = G.world;
+  if (W.scheme !== 'F' || S.botOn?.()) return false;
+  while (!S.dead && !S.result && (S.tutEls || S.t - (S._tutEnd ?? -9) < 1.2)) await S.tw.wait(.2);
+  if (S.dead || S.result) return false;
+  const txt = tr(TUTB_TXT.turn).replace(/이동|dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/회전|turn/, w => `<span class="tkw tn">${w}</span>`);
+  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px`, html: txt });
+  keepCss();
+  const tag = h('div', { class: 'tbkeep' }, h('b', {}, tr(TUTB_TXT.keep)), h('span', {}, tr(TUTB_TXT.keep2)));
+  G.ui.tut.append(line, tag); S.tutEls = [line, tag];
+  let turned = 0, ok = false; const t0 = S.t, prev = W.onRotate;
+  W.onRotate = d => { prev?.(d); if (W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld) turned += Math.abs(d) || 0; };
+  try {
+    while (!S.dead && !S.result && S.t - t0 < 15) {
+      const ps = [...(W.ptrs?.values() || [])];
+      if (ps.length === 1 && !S.paused) { const p = ps[0]; tag.style.left = Math.max(120, Math.min(innerWidth - 120, p.x)) + 'px'; tag.style.top = Math.max(150, p.y - 70) + 'px'; tag.classList.add('on'); }
+      else tag.classList.remove('on');
+      if (turned > .15 && !W.ptrs.size) { ok = true; break; }
+      await S.tw.wait(.05);
+    }
+  } finally {
+    W.onRotate = prev; line.remove(); tag.remove(); if (S.tutEls?.[0] === line) { S.tutEls = null; S._tutEnd = S.t; }
+  }
+  if (ok) { const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; G.persist?.(); G.audio.sfx('special'); }
+  return ok;
+}
+// 1판 (user: "하나 찾으니까 종료된다 … 몇 개 눈에 보이는 거 좀 더 찾게"): beside the friend in the toy box, three things lying in
+// plain sight around 토순이's room — on top of things, toward you, one per piece of furniture — so the moves get some use first
+export const FIRST_FINDS = ['star', 'gift', 'teddy'];
+export function firstFinds(plan, room) {
+  if (!plan?.first) return plan;
+  const used = new Set(plan.placements.map(p => p.spot)), furns = new Set(), V = room.spotWorld ? null : null; void V;
+  const at = s => (room.spotWorld ? room.spotWorld(s) : s.anchor.getWorldPosition(new s.anchor.position.constructor()));
+  // (nothing over it within 1.2 m: the desk under the loft hid the gift from every turn of the dial — ② 10/26 손 시험)
+  room.group.updateMatrixWorld(true);
+  const ray = new Raycaster(), up = new Vector3(0, 1, 0);
+  const open = p => { ray.set(new Vector3(p.x, p.y + .25, p.z), up); ray.far = 1.2; return !ray.intersectObject(room.group, true).some(h => h.object.visible && !h.object.userData.proxy); };
+  const c = room.spots.filter(s => s.kind === 'on' && !s.part && !s.reserved && !used.has(s) && s.maxH >= .17 && (s.scale || 1) >= .65)
+    .map(s => ({ s, p: at(s) })).filter(o => o.p.y < 1.3 && open(o.p)).sort((a, b) => (b.p.x + b.p.z) - (a.p.x + a.p.z));
+  for (const type of FIRST_FINDS) {
+    const o = c.find(o => !used.has(o.s) && !furns.has(o.s.furn)) || c.find(o => !used.has(o.s));
+    if (!o) break;
+    used.add(o.s); furns.add(o.s.furn);
+    plan.placements.push({ type, spot: o.s, role: 'target' }); plan.targets.push(type);
+  }
+  return plan;
+}
+// 1판: once the friend is found, 토순이 says what she dropped (스토리 룸 10/26 — the things by name, not where)
+export const FIRST_SAY = [
+  K('히히, 들켰다! …아, 숨다가 떨어뜨린 게 있어.', 'Hehe, you found me! …Oh, I dropped some things while hiding.'),
+  K('별이랑 선물이랑 곰인형! 같이 찾아 줘!', 'A star, a gift and a teddy bear! Help me find them!'),
+];
+export async function firstFindsTalk(S) {
+  const fr = () => S.targets.find(t => t.friend);
+  while (!S.dead && !S.result && !fr()?.found) await S.tw.wait(.3);
+  if (S.dead || S.result || S.targets.every(t => t.found)) return;
+  for (let i = 0; i < 30 && (S.talking || S.cine || S.G.world.flying) && !S.dead; i++) await S.tw.wait(.2);
+  const who = S.friend?.root ? S.friend : null; if (!who || S.dead || S.result) return;
+  S.say(who, FIRST_SAY[0], 2400); await S.tw.wait(2.6);
+  if (!S.dead && !S.result) S.say(who, FIRST_SAY[1], 2600);
 }

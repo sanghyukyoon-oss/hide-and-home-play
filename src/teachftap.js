@@ -70,21 +70,39 @@ export async function ftapLesson1(S) {
 // three-beat play once, a while into the stage (12 s, the glass free) — 4판, or 5판 if 4판's was cut short. Once; never for one who used it.
 // (user 10/25: "2판에 안 쓰면 3판에 저 방법으로 설명") now 2판 on: used there (or in 3판 before it shows) → never; still unused →
 // the play on 3판, a caption box per beat (4판 if 3판's was cut short). The 4~5판 condition is gone
+// (② 레벨 10/26, user: "3판 정도 중반 이후에도 이동 중 그거 안 쓰면 개구리가 설명해 주는 것처럼 자세하게"): 2판·3판 count whether a
+// drag-then-touch turn happened (tut.ftapUsed). Never used by the time a third of 3판's things are found (half: the rest were
+// found before the play even began — 손 시험 10/26) → 개굴이 (3판's host) steps in:
+// (lines: 스토리 룸 10/26) a line, the three-beat play with its captions, then your turn (the lesson's own loop), a line when you've done it. Once, 3판 only
+// (the 4판 fallback and the start-of-stage 12 s timing are gone)
+export const FROG = {
+  intro: K('개굴! 빙글 돌리기, 아직 안 써 봤지? 내가 보여 줄게!', 'Ribbit! Haven\'t tried spinning yet? Watch me!'),
+  you: K('이제 네 차례야, 개굴! 한 손가락으로 드래그하면서 다른 손가락으로 터치!', 'Your turn, ribbit! Drag with one finger and tap with another!'),
+  yay: K('개굴개굴! 됐다! 이제 구석구석 빙글 돌려 볼 수 있어!', 'Ribbit ribbit! You got it! Now you can spin around and check every corner!'),
+};
 export function armFtapB(S) {
   const G = S.G, W = G.world;
-  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 1 || S.idx > 3 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
+  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 1 || S.idx > 2 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
   const T = G.save.tut || (G.save.tut = {});
   if (T.ftapRe || T.ftapUsed) return;
   const prevRot = W.onRotate;
   W.onRotate = d => { prevRot?.(d); if (fturning(W) && !T.ftapUsed) { T.ftapUsed = 1; G.persist?.(); } };
-  if (S.idx < 2) return;
+  if (S.idx !== 2) return;
   const stop = () => S.dead || !!S.result || !!T.ftapUsed || !!T.ftapRe;
+  const list = () => S.targets.filter(t => !t.friend), half = () => { const l = list(); return l.length && l.filter(t => t.found).length >= Math.ceil(l.length / 3); };
   (async () => {
-    for (let i = 0; i < 240 && !(S.running && S.t - (S.tStart ?? S.t) > 12); i++) { if (stop()) return; await S.tw.wait(.5); }
+    while (!stop() && !half()) await S.tw.wait(.5);
     if (!await waitStart(S, stop)) return;
-    const L = lines(S); S.tutEls = L.els;
-    try { if (await play(S, L)) { T.ftapRe = 1; G.persist?.(); await S.tw.wait(.6); } }
-    finally { L.remove(); if (S.tutEls === L.els) { S.tutEls = null; S._tutEnd = S.t; } }
+    T.ftapRe = 1; G.persist?.();
+    const who = S.friend?.root ? S.friend : null; S.frogLesson = true;
+    if (who) { S.say(who, FROG.intro, 2400); await S.tw.wait(2.4); }
+    if (S.dead || S.result) return;
+    const st = { turned: 0, force: true };
+    const prev = W.onRotate;
+    W.onRotate = d => { prev?.(d); if (!fturning(W) || st.got) return; st.turned += Math.abs(d) || 0; if (st.turned >= .35) { st.got = true; const U = G.save.tut || (G.save.tut = {}); U.ftap = 1; U.ftapUsed = 1; G.persist?.(); } };
+    await lesson(S, st, () => { if (who) S.say(who, FROG.you, 3000); });
+    if (st.got && who && !S.dead && !S.result) S.say(who, FROG.yay, 2200);
+    S.frogLesson = false;
   })();
 }
 
@@ -158,17 +176,19 @@ const got = S => {
 
 // the lesson: the three-beat play at the start, then your turn — the line follows your fingers. It ends once you've done it
 // (③, then the badge), after 8 s with no finger, or after 30 s (the stage's own lessons wait meanwhile)
-async function lesson(S, st) {
+async function lesson(S, st, afterPlay = null) {
   const G = S.G, W = G.world;
-  const over = () => S.dead || !!S.result || (!!G.save.tut?.ftap && !st.got);
+  const over = () => S.dead || !!S.result || (!st.force && !!G.save.tut?.ftap && !st.got);
   if (!await waitStart(S, () => over() || st.got)) return;
   const T = G.save.tut || (G.save.tut = {}); T.ftapN = (T.ftapN || 0) + 1; G.persist?.();
   const L = lines(S); S.tutEls = L.els; st.live = true;
   const t0 = S.t;
   let played = false, quiet = 0, free = 0, turned = false, backT = -9;
   try {
-    while (!over() && S.t - t0 < 30) {
-      if (!st.got && !played && free >= .3) { played = await play(S, L); free = 0; quiet = 0; continue; }
+    while (!over() && S.t - t0 < 30 && !(st.gotT != null && S.t - st.gotT >= 1.2)) {
+      // (a finger on the glass cuts the play; it used to start over every time — 손 시험 10/26: 30 s of the first beat. Twice cut →
+      // straight to your turn)
+      if (!st.got && !played && free >= .3 && (st.cuts || 0) < 2) { played = await play(S, L); free = 0; quiet = 0; if (played) afterPlay?.(); else if ((st.cuts = (st.cuts || 0) + 1) >= 2) { played = true; afterPlay?.(); } continue; }
       const dt = .05;
       if (W.ptrs.size) {
         free = 0; quiet = 0;
@@ -177,7 +197,9 @@ async function lesson(S, st) {
         L.say('spin'); L.keepAt(f.x, f.y); L.turning(spin); if (spin) turned = true;
       } else {
         L.keepOff();
-        if (turned) { turned = false; backT = S.t; }
+        if (turned) { turned = false; backT = S.t;
+          // (개굴이 수업: a turn seen and let go is it — the 20° bar missed short real tries, 손 시험 10/26)
+          if (st.force && !st.got) { st.got = true; st.gotT = S.t; const U = G.save.tut || (G.save.tut = {}); U.ftap = 1; U.ftapUsed = 1; G.persist?.(); } }
         L.say(S.t - backT < 1.6 ? 'back' : 'move');
         if (st.got && S.t - backT >= 1.2) break;   // done it, let go, ③ read: then the badge
         if (calm(S)) free += dt; quiet += dt;
