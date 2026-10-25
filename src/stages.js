@@ -1045,7 +1045,9 @@ export function stageSpec(idx) {
   if (s.room === 'cafefreezer') { s.lockOn = { ...s.lockOn, pad: ['fz_locker'], color: ['fz_supplycab'] }; s.items = ['icecream', 'cheese', 'milk', 'bubbletea', 'cupcake', 'teddy', 'medal']; }
   // (31판 별빛극장 보스 ② 10/23 — 스토리 룸 안 A, ⑧ cinema): 매표소 서랍 = 상영 시간표 비밀번호, 상영관 문 = 열쇠(팝콘 기계가 퐁퐁 하면
   // 위에 걸린 열쇠가 툭), 영사실 문 = 필름 통 셋 색. 보스 판이지만 관찰 단서를 씀(골목 장이 23·26·27판에서 가르친 것이 보스에서 돌아옴)
-  if (s.room === 'cinema' && s.boss) Object.assign(s, { zoom: 1.6, itemSize: .6, items: ['trophy', 'headphones', 'gpt_octopus', 'gpt_binoculars', 'gpt_tambourine', 'icecream', 'star', 'candy'], obsBoss: true, obsCine: true, obsKind: 'timetable', lockOn: { code: ['cin_ticketbooth'], pad: ['cin_hall_door'], color: ['cin_projroom_door'] }, clueHang: { pad: 'cin_popcorn' } });
+  // (31판 극장 물건 ② 10/25, 판별 메모 "여기도 찾는 물건만 또 찾음": 트로피·헤드폰·아이스크림 → 극장 무대 것 마이크·응원봉·액자; 사탕·별은
+  // 매표소 서랍 자물쇠에 들어가는 작은 것이라 남김)
+  if (s.room === 'cinema' && s.boss) Object.assign(s, { zoom: 1.6, itemSize: .6, items: ['mic', 'cheerstick', 'picframe', 'gpt_octopus', 'gpt_binoculars', 'gpt_tambourine', 'candy', 'star'], obsBoss: true, obsCine: true, obsKind: 'timetable', lockOn: { code: ['cin_ticketbooth'], pad: ['cin_hall_door'], color: ['cin_projroom_door'] }, clueHang: { pad: 'cin_popcorn' } });
   if (s.room === 'otakuloft') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }
   // (18판 새 안 otakuloft3·4·5, ① 10/23: 같은 부품 키라 같은 장치·자물쇠 — 새 맵 스위치로 열릴 때)
   if (s.room === 'otakuloft3' || s.room === 'otakuloft4' || s.room === 'otakuloft5') { s.night = true; s.lock = ['pad', 'code']; s.lockOn = { pad: ['arcade3'], code: ['drawerstairs'] }; s.clueHang = { pad: 'loftpulley' }; s.zoom = 1.35; }

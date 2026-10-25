@@ -34,8 +34,9 @@ const k = (re, kinds) => s => re.test(furnOf(s)) && (!kinds || kinds.includes(s.
 const PLACE = {
   fishing: [   // 3판 개굴이 낚시터
     // 오리·고무 오리: 갈대 속(오리가 숨는 곳), 연잎 위(물에 떠 있음) — 담요 밑·새집·아이스박스·신문지 밑은 아니에요
-    [/duck/, s => k(/reeds/)(s) || k(/pond/, ['on'])(s), 'like'],
-    [/duck/, k(/campchair|tree|cooler|bench/, ['inside']), 'never'],   // (벤치 신문지 밑은 싸 둔 간식 자리)
+    // (② 10/25 판별 메모 "수풀이 오리를 뚫음": 갈대 속은 줄기가 오리 몸을 뚫고 지나가 → 연잎 위만, 갈대 속은 X)
+    [/duck/, k(/pond/, ['on']), 'like'],
+    [/duck/, s => k(/reeds|bush|baitbucket|tacklebox/)(s) || k(/campchair|tree|cooler|bench/, ['inside'])(s), 'never'],   // (벤치 신문지 밑은 싸 둔 간식 자리)
     // 축구공: 덤불 속, 벤치 밑, 파라솔 밑 — 새집·도구함·미끼통은 아니에요
     [/^ball/, s => k(/bush/, ['inside'])(s) || k(/bench|parasol/, ['under'])(s), 'like'],
     [/^ball/, k(/tree|tacklebox|baitbucket/, ['inside']), 'never'],
