@@ -200,7 +200,7 @@ export class Game {
   }
   gotCard(kind) {
     const L = this.L, h = L.h;
-    const [img, s1, s2] = kind === 'raccoon' ? [L.thumbs.face_raccoon_happy, '너굴이도 숨었다!', '작은 손 자국 끝은 너굴이 자리 · 속지 마'] : [L.thumbs.face_peng_normal, '눈이 펑펑!', '발자국이 점점 지워져요 · 빨리 따라가'];
+    const [img, s1, s2] = kind === 'raccoon' ? [L.thumbs.face_raccoon_happy, '너굴이도 숨었다!', '작은 손 모양 자국은 너굴이 거야 · 속지 마'] : [L.thumbs.face_peng_normal, '눈이 펑펑!', '발자국이 점점 지워져요 · 빨리 따라가'];
     const c = h('div', { class: 'fp-get' }, h('img', { src: img }), h('div', {}, h('div', { class: 'fp-get-t ol' }, '새로 나왔다!'), h('div', { class: 'fp-get-s' }, s1), h('div', { class: 'fp-get-s' }, s2)));
     document.getElementById('app').append(c); L.audio.sfx('gasp');
     setTimeout(() => { c.classList.add('out'); setTimeout(() => c.remove(), 400); }, 2600);

@@ -138,7 +138,7 @@ export class VisitScene {
     this.rooms = [...practice.filter(p => p.stolen?.length), ...others.map(r => ({ ...r, ownerName: nm[r.owner] || '누군가', stats: stats[r.owner] })), ...practice.filter(p => !p.stolen?.length)];
     this.listEl.innerHTML = '';
     setScoutList(this.rooms);
-    if (!N.ok) this.listEl.append(h('div', { class: 'note' }, '지금은 연습 방만 있어요. 공유된 Claude 링크로 열면 다른 사람이 올린 방도 여기 떠요.'));
+    if (!N.ok) this.listEl.append(h('div', { class: 'note' }, '지금은 연습 방만 있어요. 공유 링크로 열면 다른 사람이 올린 방도 여기 떠요.'));
     else if (!others.length) this.listEl.append(h('div', { class: 'note' }, '아직 올라온 방이 없어요. 내 방을 먼저 올려 볼까요?'));
     for (const r of this.rooms) {
       const done = myResults[r.practice ? r.id : r.owner];

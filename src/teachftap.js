@@ -22,7 +22,7 @@ export const FTAP_CAP = {
   move: K('드래그하면 이동', 'Drag to move'),
   // (user 10/21 튜토 개선: three short beats — "드래그하면 이동" / "드래그하면서, 다른 손으로 톡 터치! → 회전" / "끌던 손을 떼면 다시 이동",
   // the last one's words left to ③: "손을 떼면 다시 이동")
-  spin: K('드래그하면서 다른 손으로 터치! → 회전', 'Drag + tap another finger → turn'),
+  spin: K('드래그하면서 다른 손가락으로 터치! → 회전', 'While dragging, tap with another finger → turn'),
   back: K('손을 떼면 다시 이동', 'Let go → move again'),
   keep: K('떼지 마!', 'Keep holding!'),
 };

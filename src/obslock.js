@@ -27,14 +27,14 @@ const T = {
   title: K('비밀번호', 'Code'), colorTitle: K('색깔 자물쇠', 'Color Lock'),
   hintWall: K('벽시계가 가리키는 시각', 'The time on the wall clock'), hintAlarm: K('알람시계가 가리키는 시각', 'The time on the alarm clock'),
   hintCode: K('알아낸 비밀번호를 맞춰 봐', 'Dial the code you found'), hintNoCode: K('어딘가에 숫자가 있어', 'The numbers are somewhere'),
-  hintVase: K('작은 꽃병부터 큰 꽃병까지', 'From the smallest vase to the biggest'), hintColor: K('찾은 색깔 순서대로', 'In the order you found'),
+  hintVase: K('작은 꽃병부터 큰 꽃병까지', 'From the smallest vase to the biggest'), hintColor: K('찾은 색깔 순서대로', 'In the color order you found'),
   open: K('열기!', 'Open!'), clear: K('지우기', 'Clear'), hour: K('시', 'h'), min: K('분', 'min'),
   wrong: K('아니야… 다시 잘 봐!', 'Not quite… look again!'),
   hands: K('짧은 바늘은 시, 긴 바늘은 분', 'Short hand = hour, long hand = minutes'),
   vases: K('작은 것부터 순서대로!', 'Smallest first!'), ok: K('알겠어!', 'Got it!'),
   lookClock: K('시계', 'Clock'), lookVase: K('꽃병 세 개', 'Three vases'),
   // (③ 10/21, 19~50 다시 짜기 — 스토리 룸: 19판 '119' 포스터, 27판 기차 시간표) two more pictures to read the code off
-  notePoster: K('쪽지: "벽 포스터를 봐! 불나면 몇 번?"', 'Note: "Look at the poster! Fire — which number?"'),
+  notePoster: K('쪽지: "벽 포스터를 봐! 불나면 몇 번?"', 'Note: "Look at the poster! What\'s the number for fires?"'),
   noteTimetable: K('쪽지: "시간표를 봐! 별표 기차는 몇 시?"', 'Note: "Check the timetable! When is the ★ train?"'),
   paperPoster: K('포스터를 봐!', 'Check the poster!'), paperTimetable: K('시간표를 봐!', 'Check the timetable!'),
   paperNumber: K('몇 번?', 'Which number?'), paperStar: K('별표 기차', 'The ★ train'),
@@ -53,7 +53,7 @@ const CINE = {
   noteVase: K('쪽지: "필름 통 세 개를 봐! 작은 것부터"', 'Note: "Look at the three film cans! Smallest first"'),
   paperVase: K('필름 통을 봐!', 'Check the film cans!'), hintVase: K('작은 필름 통부터 큰 통까지', 'From the smallest film can to the biggest'),
   lookVase: K('필름 통 세 개', 'Three film cans'),
-  d1: K('별빛 탐정', 'Starlight Detective'), d2: K('고양이 우주선', 'Cat Spaceship'), d3: K('구름 기차', 'Cloud Train'), d4: K('숨바꼭질 대작전', 'Great Hide-and-Seek'),
+  d1: K('별빛 탐정', 'Starlight Detective'), d2: K('고양이 우주선', 'Cat Spaceship'), d3: K('구름 기차', 'Cloud Train'), d4: K('숨바꼭질 대작전', 'Operation Hide-and-Seek'),
 };
 const BASE = Object.fromEntries(Object.keys(CINE).map(k => [k, T[k]]));
 let CINE_ON = false;

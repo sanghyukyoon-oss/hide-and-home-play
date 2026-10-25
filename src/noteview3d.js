@@ -14,7 +14,7 @@ const K = (ko, en) => { EN[ko] = en; return ko; };
 // on in the game once GPT's folded notes are in (gpt-notes.js) and the user has seen them: until then ?note=3d
 // (③ 10/22: GPT's folded notes are in and picked — on by default; ?note=flat for the old flat note and its fly to the chip)
 export const NOTE3D = !(typeof location !== 'undefined' && /[?&]note=flat(&|$)/.test(location.search));
-export const NOTE_TXT = { fold: K('터치하면 접어서 넣어요', 'Tap to fold it away'), title: K('비밀번호 ♡', 'Password ♡') };
+export const NOTE_TXT = { fold: K('터치하면 접어서 넣어요', 'Tap to fold it away'), title: K('비밀번호 ♡', 'Code ♡') };
 
 // the writing on the face: handwritten digits on ruled paper (the face mesh's own uv 0..1)
 // the writing for a GPT note's inner sheet (its face: one canvas over the whole open sheet, 576 × 768, 8 % kept clear)

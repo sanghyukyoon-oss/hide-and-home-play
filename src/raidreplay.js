@@ -346,7 +346,7 @@ export function askBuyLock(G, onBought) {
     G.addCoins(-LOCK_PRICE); G.audio.sfx('buy'); G.save.raid.locksOwned = owned + 1; G.persist();
     G.ui.closePanel(); G.ui.toast(`자물쇠 ${owned + 1}개째!`, 'green'); onBought?.();
   };
-  G.ui.panel({ title: '자물쇠가 다 쓰였어', color: 'orange', cls: 'lockbuy',
+  G.ui.panel({ title: '자물쇠를 다 썼어', color: 'orange', cls: 'lockbuy',
     body: [h('div', { class: 'lockicon', html: ICON.lock }), h('div', { class: 'txt' }, `지금 ${locksUsed(G.save)}개를 다 걸었어. 하나 더 살까?`), h('div', { class: 'txt sm' }, '잠근 서랍 속 물건은 동네 주민이 거의 못 털어 가')],
     buttons: [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: () => G.ui.closePanel() }),
       G.ui.btn(`사기 ${LOCK_PRICE}`, { color: 'green', icon: 'coin', cls: 'big', onClick: buy })] });

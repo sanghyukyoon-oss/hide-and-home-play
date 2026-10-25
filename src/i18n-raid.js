@@ -8,35 +8,35 @@ addI18n({
   // 털 집 찾기 (10/20)
   '냥펀치DJ': 'DJ Cat Punch', 'K팝 연습실': 'K-pop Studio', '내 무대 밟지 마! …숨긴 건 찾아도 돼.': "Don't step on my stage! …The hidden stuff is fair game.",
   '삼색바리스타': 'Calico Barista', '골목 카페와 부엌': 'Alley Café & Kitchen', '오늘의 원두는… 비밀이야.': "Today's beans are… a secret.",
-  '비 오는 날 연못': 'Rainy Day Pond', '볼주머니 편의점': 'Cheek Pouch Mart', '마당 있는 거실': 'Living Room with a Yard', '절대 못 찾는 서재': "The Study You'll Never Solve",
+  '비 오는 날 연못': 'Rainy Day Pond', '볼주머니 편의점': 'Cheek Pouch Mart', '마당 있는 거실': 'Living Room with a Yard', '절대 못 찾는 서재': "The Impossible Study",
   'Lv.UP!': 'Lv. UP!',
   '털 집 찾는 중…': 'Finding a house to raid…', '찾았다!': 'Found one!', '다른 집을 찾고 있어': 'Looking for another house',
-  '동네에서 털 만한 집을 찾고 있어': 'Looking around the neighbourhood for a house to raid', '집으로': 'Home', '다른 집 찾기': 'Next', '무료': 'Free', '최근에 턴 집': 'Raided lately', '12시간 안에 또 턴 집이라 ⅓만 나와요': 'Raided in the last 12 hours · ⅓ pay',
-  '딸기우유냥': 'Strawberry Milk Cat', '딸기 다락방': 'Strawberry Loft', '내 방 예쁘지? 구경만 하고 가~': 'Pretty, right? Just look, okay~',
-  '턱시도관장': 'Curator Tux', '작은 미술관': 'Little Gallery', '작품엔 손대지 마세요. 숨긴 건… 찾아도 되고.': "Please don't touch the art. The hidden things… fair game.",
+  '동네에서 털 만한 집을 찾고 있어': 'Searching the neighborhood for a house to raid', '집으로': 'Home', '다른 집 찾기': 'Next', '무료': 'Free', '최근에 턴 집': 'Recently raided', '12시간 안에 또 턴 집이라 보상이 ⅓만 나와요': 'Raided within the last 12 hours · ⅓ rewards',
+  '딸기우유냥': 'Strawberry Milk Cat', '딸기 다락방': 'Strawberry Loft', '내 방 예쁘지? 구경만 하고 가~': 'Cute room, right? Just look, okay~',
+  '턱시도관장': 'Curator Tux', '작은 미술관': 'Little Gallery', '작품엔 손대지 마세요. 숨긴 건… 찾아도 되고.': "Please don't touch the art. The hidden things… are fair game.",
   // 타이머 털기 (raidrun.js)
   '보물 털었다!': 'Got the treasure!', '내 거 찾았다!': 'Found mine!', '다 셌다! 거기까지~': "Done counting! That's it~", '어? 벌써 가?': 'Huh? Leaving already?',
   '몽땅 털었다!': 'Cleaned out!', '그만 털기!': 'Raid stopped!', '보물까지 싹!': 'Treasure and all!', '하나도 안 남겼어!': 'Not a thing left!', '찾은 만큼 내 거!': 'What you found is yours!',
-  '찾은 물건': 'Found', '보물 포함': 'treasure too', '되찾은 내 물건': 'Mine, back', '슬쩍 (이미 있음)': 'Snagged (had it)', '전에 몽땅 턴 집이라 ⅓만 나와요': 'Cleaned out before · ⅓ pay',
-  '털기 끝!': 'Raid over!', '★ 절반': '★ Half', '★ 보물': '★ Treasure', '★ 전부': '★ All', '다른 집': 'Other houses', '그만 털기': 'Stop raiding', '보물': 'Treasure', '털기': 'Raid',
+  '찾은 물건': 'Found', '보물 포함': 'incl. treasure', '되찾은 내 물건': 'My things back', '슬쩍 (이미 있음)': 'Snagged (already had)', '전에 몽땅 턴 집이라 ⅓만 나와요': 'Cleaned out before · ⅓ pay',
+  '털기 끝!': 'Raid over!', '★ 절반': '★ Half', '★ 보물': '★ Treasure', '★ 전부': '★ All', '다른 집': 'Another house', '그만 털기': 'Stop raiding', '보물': 'Treasure', '털기': 'Raid',
   // 정찰
   '정찰': 'Scout', '전에 몽땅 턴 집': 'Cleaned out before', '가져올 수 있는 것': 'Up for grabs', '목록': 'List', '다음 집': 'Next house', '털러 가기': 'Raid it!',
   // 다시 보기 (raidreplay.js)
   '방금': 'just now', '복수하러 왔지롱!': 'Revenge time!', '쉿… 아무도 없지?': 'Shh… nobody home?', '여기 수상한데?': 'Looks suspicious…', '어디 보자…': "Let's see…",
   '어디 보자… 딸깍!': "Let's see… click!", '잠겼잖아!': "It's locked!", '헤헤, 이건 내 거~': 'Hehe, mine now~', '없네?': 'Nothing?', '여긴 없네~': 'Nothing here~', '하나도 없잖아! 흥!': 'Nothing at all! Hmph!',
   '자물쇠를 땄어!': 'Lock picked!', '자물쇠가 막았다!': 'The lock held!', '안 들킴!': 'Not found!', '털렸다…': 'Robbed…', '지켜 냈다!': 'Defended!',
-  '안 들킴': 'Not found', '자물쇠가 막음': 'Lock held', '들켰지만 두고 감': 'Found, left behind', '털림': 'Taken', '잘 숨겨 둔 덕분이야!': 'Your hiding paid off!',
+  '안 들킴': 'Stayed hidden', '자물쇠가 막음': 'Lock held', '들켰지만 두고 감': 'Found, left behind', '털림': 'Taken', '잘 숨겨 둔 덕분이야!': 'Your hiding paid off!',
   '터치하면 닫혀': 'tap to shut', '더 꽁꽁 숨기기': 'Hide better', '복수하러 가기': 'Get revenge',
   // 문단속 · 자물쇠
-  '털린 뒤라 문을 꽁꽁 잠갔어': 'Robbed, so the door is locked', '자물쇠가 다 쓰였어': 'Out of padlocks',
+  '털린 뒤라 문을 꽁꽁 잠갔어': 'After the raid, the door is locked tight', '자물쇠를 다 썼어': 'All padlocks in use',
   '잠근 서랍 속 물건은 동네 주민이 거의 못 털어 가': 'Things in a locked drawer are hardly ever taken', '다른 데 걸린 걸 풀어서 옮겨 봐': 'Take one off and move it',
   // 손에 든 물건 (handhold.js — 보물 지키기 · 내 집 숨기기, 10/20)
-  '어디든 터치해서 숨겨!': 'Tap anywhere to hide it!', '셋 다 숨겼어! 위의 시작을 터치': 'All three hidden! Tap Start up top', '꼭 숨겨야 해': 'Must be hidden', '다 숨겼어!': 'All hidden!',
+  '원하는 곳으로 드래그해서 숨겨!': 'Drag it anywhere to hide it!', '셋 다 숨겼어! 위의 시작을 터치': 'All three hidden! Tap Start up top', '꼭 숨겨야 해': 'Must be hidden', '다 숨겼어!': 'All hidden!',
   // 보물 지키기 숨기기 (boss.js, 10/20): 핀·시간 없음·조이스틱
   '✓ 숨겼다!': '✓ Hidden!', '보물을 숨겨! 너굴이는 눈 감고 기다려': 'Hide your treasures! Rocky waits, eyes shut', '바로 시작!': 'Start now!',
-  '셋 다 숨겼어! 곧 너굴이가 찾아': 'All three hidden! Rocky starts looking soon', '조이스틱으로 움직이고, 휘슬로 엉뚱한 데로!': 'Move with the stick, whistle to lure it away!', '비켜~': 'Scoot~',
-  '너굴이가 눈 감고 기다리는 동안 숨길 곳을 터치! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.': 'While Rocky waits with eyes shut, tap a hiding place! In a drawer, behind a curtain, on a shelf… it pops right in where you tap.',
-  '찾기 시작하면 조이스틱으로 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!': 'Once it starts looking, move with the stick — blow the whistle and Rocky runs my way instead!',
+  '셋 다 숨겼어! 곧 너굴이가 찾기 시작해': 'All three hidden! Rocky starts looking soon', '조이스틱으로 움직이고, 휘슬로 너굴이를 따돌려!': 'Move with the joystick, whistle to lure Rocky away!', '비켜~': 'Scoot~',
+  '너굴이가 눈 감고 기다리는 동안 보물을 드래그해서 숨겨. 서랍 안, 커튼 뒤, 선반 위… 놓은 곳에 쏙 들어가.': 'While Rocky waits with eyes shut, drag a treasure to hide it. In a drawer, behind a curtain, on a shelf… it slips right in where you drop it.',
+  '너굴이가 찾기 시작하면 조이스틱으로 움직여. 휘슬을 불면 보물 말고 내 쪽으로 달려와!': 'When Rocky starts looking, move with the joystick. Blow the whistle and Rocky runs to me, not the treasure!',
   // 친구 지킴이 (10/20)
   '친구가 막았다!': 'A friend stopped it!', '안 돼! 몽글이 거야!': "No! That's Mongle's!", '앗!': 'Eek!', '앗! 친구가 지키고 있었어?': 'Eek! A friend was on guard?', '친구가 막음': 'Stopped by friends',
   // 숨기기 = 가구 놓기처럼 (hidehold.js, 10/20)
@@ -51,7 +51,7 @@ addI18n({
   '미끼 상자! 꾸미기에서 방에 놓아 봐': 'Decoy Box! Place it in Decorate', '바나나 껍질! 꾸미기에서 방에 놓아 봐': 'Banana Peel! Place it in Decorate',
   '경보 벨! 숨기기에서 서랍에 달아 봐': 'Alarm Bell! Hang it on a drawer in Hide', '로봇청소기! 꾸미기에서 방에 놓아 봐': 'Robot Vacuum! Place it in Decorate',
   '벨을 다 달았어 · 상점 아이템에서 하나 더': 'All your bells are up · get another in the shop', '벨을 달았어! 이 서랍을 열면 따르릉': 'Bell hung! Open this drawer and it rings',
-  '따르르릉!': 'Brrring!', '미끄덩!': 'Whoops!', '위잉~ 로봇청소기!': 'Vroom~ Robot vacuum!', '미끼 상자를 들고 갔다! 메롱~': 'They took the decoy box! Nyah~', '지키기 도구': 'Guard tool',
+  '따르르릉!': 'Brrring!', '미끄덩!': 'Whoops!', '위잉~ 로봇청소기!': 'Whirr~ Robot vacuum!', '미끼 상자를 들고 갔다! 메롱~': 'They took the decoy box! Nyah~', '지키기 도구': 'Guard tool',
 }, [
   // (② 10/22) 지키기 도구: the news lines and the hide row
   [/^([^·]+?)[이가] 미끼 상자를 들고 갔어! 속았지롱 \+(\d+)$/, (n, c) => `${n} ran off with the decoy box! Fooled! +${c}`],

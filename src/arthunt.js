@@ -12,7 +12,7 @@ import { EN } from './i18n-en-dict.js';
 import { tr } from './i18n.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
-const TXT = { look: K('그림 속에서 찾아 봐!', 'Find them in the painting!'), fish: K('생선', 'Fish'), zoom: K('두 손가락으로 확대 · 두 번 터치하면 2배', 'Pinch to zoom · touch twice for 2×'), found: K('찾음', 'Got') };
+const TXT = { look: K('그림 속 셋을 찾아 봐!', 'Find all three in the painting!'), fish: K('생선', 'Fish'), zoom: K('두 손가락으로 확대 · 두 번 터치하면 2배', 'Pinch to zoom · double-tap for 2×'), found: K('찾음', 'Found') };
 
 const W = 640, H = 400;
 // the things, in the 640×400 picture's units: where (x, y — its middle), how wide (size), turned (rot, radians), how see-through

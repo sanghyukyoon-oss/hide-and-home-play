@@ -150,8 +150,8 @@ export class BossScene {
       const { playDialog } = await import('../story.js');
       await playDialog(G, [
         { who: 'raccoon', text: '이번엔 보물 지키기야! 네가 제일 아끼는 보물 3개, 내가 다 찾으면 내 거~' },
-        { who: 'mong', text: '너굴이가 눈 감고 기다리는 동안 숨길 곳을 터치! 서랍 안, 커튼 뒤, 선반 위… 누른 곳에 바로 쏙 들어가.' },
-        { who: 'mong', text: '찾기 시작하면 조이스틱으로 움직이고, 휘슬을 불면 너굴이가 내 쪽으로 엉뚱하게 달려와!' },
+        { who: 'mong', text: '너굴이가 눈 감고 기다리는 동안 보물을 드래그해서 숨겨. 서랍 안, 커튼 뒤, 선반 위… 놓은 곳에 쏙 들어가.' },
+        { who: 'mong', text: '너굴이가 찾기 시작하면 조이스틱으로 움직여. 휘슬을 불면 보물 말고 내 쪽으로 달려와!' },
         { who: 'raccoon', text: '시간 끝까지 하나라도 남으면 네 승리! 각오해~' },
       ], { title: '보스 · 보물 지키기' });
       if (this.dead) return;
@@ -235,7 +235,7 @@ export class BossScene {
       c.addEventListener('click', () => { G.audio.sfx('click'); if (t.spot) this.unhide(t); this.holdStart(t); });
       this.cardsEl.append(c);
     }
-    this.tlEl.textContent = this.treasures.every(t => t.spot) ? '셋 다 숨겼어! 곧 너굴이가 찾아' : '보물을 골라, 드래그해서 숨겨!';
+    this.tlEl.textContent = this.treasures.every(t => t.spot) ? '셋 다 숨겼어! 곧 너굴이가 찾기 시작해' : '보물을 골라, 드래그해서 숨겨!';
   }
   holdStart(t) {
     const G = this.G, W = G.world;
@@ -436,8 +436,8 @@ export class BossScene {
   hideTreasure(at = null, quiet = false, fs = undefined) {
     const G = this.G, s = at || this.spotNear(), t = this.treasures.find(x => !x.spot);
     if (!t || this.phase !== 'count') return;
-    if (!s) { G.ui.toast('숨길 가구를 터치해 봐!', ''); return; }
-    if (s.tre) { G.ui.toast('여긴 벌써 숨겼어! 다른 곳에', ''); return; }
+    if (!s) { G.ui.toast('숨길 가구 쪽으로 드래그해 봐!', ''); return; }
+    if (s.tre) { G.ui.toast('여긴 벌써 숨겼어! 다른 데 숨겨 봐', ''); return; }
     t.spot = s; s.tre = t;
     if (fs === undefined) fs = (s.f.spots || []).filter(q => !q.bossTre)[Math.floor(Math.random() * Math.max(1, (s.f.spots || []).length))] || null;
     const g = t.g = buildItem(t.type);
@@ -470,7 +470,7 @@ export class BossScene {
   startSeek() {
     const G = this.G, W = G.world;
     this.holdEnd(true); this.hideRest(); this.phase = 'seek'; this.sState = 'search'; this.nextHeld();
-    this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '조이스틱으로 움직이고, 휘슬로 엉뚱한 데로!'; this.seek.root.rotation.y += Math.PI;
+    this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '조이스틱으로 움직이고, 휘슬로 너굴이를 따돌려!'; this.seek.root.rotation.y += Math.PI;
     W.joyOn = true; W.onPad = (dir, v, dt) => this.padMove(dir, v, dt);
   }
   // the pad moves 몽글이 the way it is pushed on the screen; never into furniture, never into 너굴이 (SEP)

@@ -150,7 +150,7 @@ export class LobbyScene extends MyHomeScene {
     const side = h('div', { class: 'homeside' },
       ui.btn('지도', { color: 'purple', cls: 'sm', onClick: () => openRoadmap(G) }),
       this.bookBtn = bookBadge(G, ui.btn('도감', { color: 'purple', cls: 'sm', onClick: () => openCardBook(G) })),
-      this.shopBtn = ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('스테이지 2를 깨면 열려!', 'red') }),
+      this.shopBtn = ui.btn('상점', { color: 'purple', cls: 'sm', onClick: () => open ? this.shop() : ui.toast('2판을 깨면 열려!', 'red') }),
       ui.btn('더보기', { color: 'purple', cls: 'sm', onClick: () => openMore(G, [town, mapB(), sndB()]) }));
     col.append(side);
     this.playBtn = playButton(G); this.playBtn.querySelector('.sub')?.remove(); this.playBtn.classList.remove('stack');   // (③ 10/21: no '동네 골목 10/10 · 방탈출' line — the button says the stage)
@@ -163,7 +163,7 @@ export class LobbyScene extends MyHomeScene {
       ui.toast(grantGift(G, c), 'green'); takeGiftPick(G, i, c); this.setMode('lobby');
     };
     const news = unseen(S).length;
-    const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : go() });
+    const lock = (label, color, icon, go) => ui.btn(label, { color, icon: open ? icon : 'lock', disabled: !open, onClick: dis => dis ? ui.toast('2판을 깨면 열려!', 'red') : go() });
     const row = h('div', { class: 'row2 three' },
       (() => { const b = lock('꾸미기', 'orange', 'paint', () => { if (open && (q.length || sb)) return giftNow(); if (call) this.invTab = 'friends'; this.setMode('edit'); }), nx = open && this.growNext?.();   // (👋: straight to the 친구 tab)
           // (방 넓히기: the room can grow now → a 🔨 on 꾸미기; the lobby's close-up doesn't show its sign)

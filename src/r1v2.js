@@ -44,8 +44,8 @@ const SND = {
   cooler: { s: 'latch', w: K('…딸깍!', '…Click!') }, minifridge: { s: 'latch', w: '…딸깍!' },
   picnic: { s: 'rustle', w: K('…바스락!', '…Rustle!') }, laundrybasket: { s: 'rustle', w: '…바스락!' }, bush: { s: 'rustle', w: '…바스락!' },
   tacklebox: { s: 'clink', w: K('…찰칵!', '…Clack!') }, lockers: { s: 'clink', w: '…찰칵!' }, safe: { s: 'clink', w: '…찰칵!' },
-  recordcab: { s: 'slide', w: K('…스르륵!', '…Shhk!') },
-  tvlow: { s: 'drawer', w: K('…드르륵!', '…Rrrk!') }, drawers: { s: 'drawer', w: '…드르륵!' }, dresser: { s: 'drawer', w: '…드르륵!' },
+  recordcab: { s: 'slide', w: K('…스르륵!', '…Swish!') },
+  tvlow: { s: 'drawer', w: K('…드르륵!', '…Rattle!') }, drawers: { s: 'drawer', w: '…드르륵!' }, dresser: { s: 'drawer', w: '…드르륵!' },
   wardrobe: { s: 'creak', w: K('…끼익!', '…Creak!') }, closet: { s: 'creak', w: '…끼익!' }, dishcab: { s: 'creak', w: '…끼익!' },
   fridge: { s: 'thunk', w: K('…덜컹!', '…Thud!') }, bigfridge: { s: 'thunk', w: '…덜컹!' },
 };
@@ -405,7 +405,7 @@ export function v2AfterFound(S) {
 }
 // ★ found them · ★ at most one wrong pick · ★ no hint before they were found (help for the leftovers is free)
 export const v2Stars = S => 1 + (S.v2.miss <= 1 ? 1 : 0) + ((S.v2.hintsAtFound ?? S.hintsUsed ?? 0) === 0 ? 1 : 0);
-export const v2StarWhy = S => [[K('★ 친구 찾기', '★ Found them'), true], [K(`★ 헛짚기 ${S.v2.miss}번`, `★ Wrong picks: ${S.v2.miss}`), S.v2.miss <= 1], [K('★ 힌트 없이', '★ No hints'), (S.v2.hintsAtFound ?? S.hintsUsed ?? 0) === 0]];
+export const v2StarWhy = S => [[K('★ 친구 찾기', '★ Found the friend'), true], [K(`★ 헛짚기 ${S.v2.miss}번`, `★ Wrong picks: ${S.v2.miss}`), S.v2.miss <= 1], [K('★ 힌트 없이', '★ No hints'), (S.v2.hintsAtFound ?? S.hintsUsed ?? 0) === 0]];
 export const v2Title = S => S.v2.miss === 0 ? T.stamp : v2Stars(S) === 3 ? K('최고야!', 'Brilliant!') : K('찾았다!', 'Found you!');
 export const v2Stamp = S => S.v2.miss === 0 ? h('div', { class: 'v2stamp ol' }, T.stamp) : null;
 

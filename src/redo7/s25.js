@@ -22,7 +22,7 @@ const at = (o, type, x, z, a = 0, opts) => AT(type, x - o[0], z - o[1], a, opts)
 export function install(ctx) {
   const { LAYOUTS, THEMES, MAPS, SWAP, LOOK, SPEC } = ctx;
   registerFurniture(CS3_BUILDERS, CS3_INFO);
-  addI18n({ ...CS3_EN, '멍뭉이네 모퉁이 행복슈퍼': "Mong's Corner Happy Mart" });
+  addI18n({ ...CS3_EN, '멍뭉이네 모퉁이 행복슈퍼': "Woofy's Corner Happy Mart" });
   const old = THEMES.alley3 || {}, kon = THEMES.konbini || THEMES.my || {};
   THEMES.cornershop3 = { ...old, name: '멍뭉이네 모퉁이 행복슈퍼', friend: old.friend ?? 'shiba', bg: ['#fbe9d8', '#f4dcc6'] };
   // 가게 안: 흰 타일 벽에 민트 징두리, 회백 체크 바닥 (편의점 소품 색은 편의점 테마 그대로)

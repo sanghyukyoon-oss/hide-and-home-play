@@ -4,7 +4,7 @@ import { MINI_AFTER, BOSS_GAMES } from './minis.js';
 import { BOSS_AFTER } from './scenes/boss.js';
 import { LENS_MAX } from './lens.js';
 
-EN['놀이 이어하기'] = 'Continue activity';
+EN['놀이 이어하기'] = 'Keep playing';
 export const followupLabel = f => f.scene === 'boss' ? '보물 지키기' : ({ yasik: '엄마 몰래 야식', hotel: '몽글 호텔 X박 X일', wakeup: '아침 깨우기 장치', whack: '두더지 숨바꼭질', redlight: '무궁화 꽃이 피었습니다', blanket: '이불 속 누구게?', spot: '너굴이의 바꿔치기', lamp: '손전등 술래' }[f.kind] || '놀이');
 
 export function followupAt(after) {

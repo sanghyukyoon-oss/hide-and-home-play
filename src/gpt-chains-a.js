@@ -10,7 +10,7 @@ export const CHAINS_A = {
   gptfirestation: {
     aux: [{ dev: 'gpt_firebell#0:0', dur: 1.6, sfx: [[.02, 'doorBell'], [.3, 'ratchet'], [.62, 'swish'], [.86, 'land']],
       links: [{ dev: 'gpt_firehouse#0:0', at: .2 }, { dev: 'gpt_firepole#0:0', at: .5 }, { dev: 'gpt_firedoghouse#0:0', at: .8 }],
-      line: K('따르릉! 출동이다! …소방견은 아직 자는 중', 'Ring-ring! Call-out! …the fire dog is still asleep') },
+      line: K('따르릉! 출동이다! …소방견은 아직 자는 중', 'Ring-ring! Emergency call! …but the fire dog is still asleep') },
       { dev: 'gpt_hosetower#0:0', sfx: [[.05, 'ratchet'], [.8, 'clink']] },
       { dev: 'gpt_firetraining#0:0', dur: 1.2, sfx: [[.05, 'ratchet'], [.4, 'blub'], [.9, 'thunk']], line: K('물줄기 명중! 과녁이 넘어갔어', 'Bull’s-eye! The target tips over') },
       { dev: 'gpt_fireflipsign#0:0', sfx: [[.5, 'flip']] }],
@@ -23,7 +23,7 @@ export const CHAINS_A = {
       sfx: [[.02, 'whistle'], [.14, 'clink'], [.38, 'clink'], [.66, 'thunk'], [.86, 'pop'], [.97, 'fanfare']],
       need: K('개집 앞 출발 단추가 조용해… 호루라기가 있으면 불어 볼 텐데', 'The start button by the kennel is quiet… if only we had a whistle'),
       found: K('호루라기다! 개집 앞 코스에서 불어 보자', 'A whistle! Blow it at the course by the kennel'),
-      line: K('삐익! 공이 데굴, 화분이 툭… 명예 순경 모자 받침이 펼쳐졌어!', 'Wheeet! The ball rolls, the pot tips… up comes the honorary officer’s stand!') }],
+      line: K('삐익! 공이 데굴, 화분이 툭… 명예 순경 모자 받침이 펼쳐졌어!', 'Wheeet! The ball rolls, the pot tips… up pops the honorary officer’s hat stand!') }],
     aux: [{ dev: 'gptgearcabinet#0:0', sfx: [[.05, 'ratchet'], [.4, 'gearUp'], [.9, 'slide']] },
       { dev: 'gptweightbench#0:0', sfx: [[.05, 'thunk'], [.55, 'slide']], line: K('뼈다귀 하나에 저울이 기울었어', 'One bone tips the scale') },
       { dev: 'gptcadetlift#0:0', sfx: [[.05, 'latch'], [.35, 'ratchet'], [.85, 'land']] },

@@ -800,7 +800,7 @@ export class Game {
     else if (this.dropped.length) this.setHint(this.scurry ? '후다닥 말고 살금살금!' : '떨어진 간식 위로 가면 주워요');
     else if (this.mode === 'doze' && DOZING.has(this.mState)) this.setHint(this.scurry ? '후다닥! (다 들려)' : this._snoring ? (this.moving ? '드르렁~ 지금은 안 들려' : '드르렁~ 지금이야!') : this.moving ? '쉿… 발소리 들려' : !this.everMoved ? '아래를 드래그해서 살금살금' : '코 골 때 움직이면 안 들려');
     else if (n) this.setHint(this.scurry ? '후다닥하면 간식이 흔들려!' : this.moving ? '방으로 살금살금…' : '방문으로 돌아가자');
-    else this.setHint(this.scurry ? '후다닥! (끝까지 밀면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 드래그해서 살금살금' : live ? '아래 리모컨을 터치하면 엄마가 가요' : '멈춤 · 몸을 낮췄어');
+    else this.setHint(this.scurry ? '후다닥! (끝까지 드래그하면 시끄러워)' : this.moving ? '살금살금…' : !this.everMoved ? '아래를 드래그해서 살금살금' : live ? '아래 리모컨을 터치하면 엄마가 가요' : '멈춤 · 몸을 낮췄어');
     this.hint.classList.toggle('first', !this.everMoved);
     { const at = nearFridge, busy = at && (this.grabbing || this.btnId != null); this.fbtn.classList.toggle('near', at && !busy); this.fbtn.classList.toggle('far', !at); this.fbtn.classList.toggle('busy', busy); }
     if (this.dog && !this.dog.awake && (this.zzT -= dt) <= 0) { this.zzT = 2.4; const d = this.dog.root.position, s = W.toScreen(new THREE.Vector3(d.x, this.dog.headTop() + .15, d.z)); L.ui.floatText(s.x + 10, s.y, 'Zz', ''); }

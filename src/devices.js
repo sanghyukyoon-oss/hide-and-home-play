@@ -14,7 +14,7 @@ import { asRoom } from './roomalias.js';
 import { runChain } from './gpt-chains.js';
 
 const K = (ko, en) => { EN[ko] = en; return ko; };
-for (const [ko, en] of [['수문 손잡이', 'Sluice handle'], ['수문 연못', 'Sluice pond'], ['수문 바퀴', 'Sluice wheel'], ['보물상자', 'Treasure chest'], ['보물상자 안', 'In the treasure chest'],
+for (const [ko, en] of [['수문 손잡이', 'Floodgate handle'], ['수문 연못', 'Floodgate pond'], ['수문 바퀴', 'Floodgate wheel'], ['보물상자', 'Treasure chest'], ['보물상자 안', 'In the treasure chest'],
   ['연못 바닥', 'Pond bottom'], ['연못 돌담 뒤', 'Behind the pond wall'], ['연못 돌담 위', 'On the pond wall'],
   ['천 원 지폐', '1000-won bill'], ['500원 동전', '500-won coin'], ['동전 컵', 'Coin cup'], ['도르래 손잡이', 'Pulley handle'], ['도르래 장독대', 'Pulley jar stand'],
   ['응원봉', 'Light-stick'], ['무대 리프트', 'Stage lift'], ['리프트 무대', 'Lift stage'],
@@ -92,7 +92,7 @@ const PLANS = {
     plan.placements.push({ type: 'colornote', spot: f.floorSpot, role: 'color', code, forPart: lid });
     const wl = { part: wheel, kind: 'gadget', code: 'sluicehandle' }, cl = { part: lid, kind: 'color', code };
     plan.locks.push(wl, cl);
-    wheel.needMsg = K('물속에서 뽀글뽀글… 수문으로 물을 빼 보자! 근데 바퀴 손잡이가 빠져 있어', 'Bubbles in the water… Let the pond out through the gate! But the wheel has no handle');
+    wheel.needMsg = K('물속에서 뽀글뽀글… 수문으로 물을 빼 보자! 근데 바퀴 손잡이가 빠져 있어', 'Bubbles in the water… Let\'s drain the pond through the floodgate! But the wheel\'s handle is missing');
     wheel.needItem = 'sluicehandle';
     plan.placements.push({ type: 'friendtoken', spot: lid.spots[0], role: 'target' });
     plan.targets.unshift('friendtoken');
@@ -157,7 +157,7 @@ PLANS.pulley = (room, spec, story, planStage, big) => {
   if (!spec.clueHang?.pad) nest(plan, 'pad', 'color');   // (20판 옥상: the key's step is the quilt instead — it hangs in it until it lifts)
   const bl = { part: big, kind: 'gadget', code: 'pulleyhandle' };
   plan.locks.push(bl);
-  big.needMsg = K('누름돌이 너무 무거워서 뚜껑이 안 열려! 도르래로 들면 될 텐데… 손잡이가 빠졌네', "The pressing stone is too heavy to lift! The pulley could hoist it… but its handle is missing");
+  big.needMsg = K('누름돌이 너무 무거워서 뚜껑이 안 열려! 도르래로 들면 될 텐데… 손잡이가 빠졌네', "The weight stone is too heavy — the lid won't open! The pulley could lift it… but its handle is missing");
   big.needItem = 'pulleyhandle';
   plan.placements.push({ type: 'friendtoken', spot: big.spots[0], role: 'target' });
   plan.targets.unshift('friendtoken');
@@ -189,7 +189,7 @@ PLANS.starloft = (room, spec, story, planStage, hatch) => {
   nest(plan, 'pad', 'code');
   const hl = { part: hatch, kind: 'gadget', code: 'matches' };
   plan.locks.push(hl);
-  hatch.needMsg = K('다락 문이 꽉 닫혀 있어. 별 모양 걸쇠네… 아래 별 랜턴에 불을 켜 볼까? 성냥이 필요해', "The attic hatch is shut tight. A star-shaped latch… Light the star lantern below? You'll need matches");
+  hatch.needMsg = K('다락 문이 꽉 닫혀 있어. 별 모양 걸쇠네… 아래 별 랜턴에 불을 켜 볼까? 성냥이 필요해', "The attic hatch is shut tight. A star-shaped latch… Shall we light the star lantern below? We need matches");
   hatch.needItem = 'matches';
   plan.placements.push({ type: 'friendtoken', spot: hatch.spots[0], role: 'target' });
   plan.targets.unshift('friendtoken');
@@ -233,7 +233,7 @@ const RUN = {
     if (S.dead) return;
     f.handle.visible = true; G.audio.sfx('pop', 2);
     await tw.wait(.3);
-    if (S.friendHidden) S.hideSay([K('개, 개굴?! 물이… 빠진다?!', 'R-ribbit?! The water… is going?!')]);
+    if (S.friendHidden) S.hideSay([K('개, 개굴?! 물이… 빠진다?!', 'R-ribbit?! The water\'s… draining?!')]);
     // the stream out of the gate and its splashes while the water runs out
     let on = true;
     const spray = (async () => {
@@ -429,7 +429,7 @@ RUN.stagelift = async (S, part) => {
   if (S.dead) return;
   f.stick.visible = true; G.audio.sfx('pop', 4);
   await tw.wait(.3);
-  if (S.friendHidden) S.hideSay([K('둠칫…! 조명 켜졌다?!', 'Boom-chk…! The lights are on?!')]);
+  if (S.friendHidden) S.hideSay([K('둠칫…! 조명 켜졌다?!', 'Boom-tss…! The lights came on?!')]);
   // the light show: beams sweep, notes go up, sparkles over the stage
   f.beams.forEach(b => { b.visible = true; });
   const notes = [0, 2, 4, 7, 9, 12]; let n = 0, last = 0;
@@ -562,12 +562,12 @@ export function deviceTell(S, part, line) {
 
 // what the tools say when found (stage.js onFound)
 // (12판 비밀 서재 ② 10/23: the run's empty start and the marble's name — stage.js solveShowcase)
-K('구슬 길 출발점이 비어 있어! 파란 구슬을 찾아서 올려 줘', 'The start of the marble run is empty! Find the blue marble and put it on'); K('파란 구슬', 'Blue marble');
+K('구슬 길 출발점이 비어 있어! 파란 구슬을 찾아서 올려 줘', 'The start of the marble run is empty! Find the blue marble and set it there'); K('파란 구슬', 'Blue marble');
 // (39판 ② 10/24: the freezer handle's own name in the tool pill — English mode showed it in Korean)
 K('냉동 창고 핸들', 'Freezer handle');
 export const DEVICE_FOUND = {
   bluemarble: K('파란 구슬이다! 책장 뒤 구슬 길에 올리면 될 것 같아', 'A blue marble! It must go on the marble run behind the bookcase'),
-  sluicehandle: K('수문 손잡이다! 연못 수문 바퀴에 끼워 보자', 'The sluice handle! Fit it on the pond gate wheel'),
+  sluicehandle: K('수문 손잡이다! 연못 수문 바퀴에 끼워 보자', 'The floodgate handle! Fit it on the pond\'s floodgate wheel'),
   bill1000: K('천 원짜리 지폐다! 동전 교환기에 넣어 보자', 'A 1000-won bill! Try the coin changer'),
   coin500: K('500원 동전! 건조기에 넣어 보자', 'A 500-won coin! Put it in the dryer'),
   fzhandle: K('냉동 창고 핸들이다! 문에 끼워 보자', "The freezer handle! Let's fit it on the door"),
@@ -619,7 +619,7 @@ RUN.flagboat = async (S, part) => {
   }, ease.inOutSine);
   const s = W.toScreen(top); W.fx.burst(s.x, s.y, { n: 10, shape: 'star', colors: ['#ffe14d', '#ffffff', '#e8414e'], speed: 140, life: .5, size: 9 });
   G.audio.sfx('star');
-  if (S.friendHidden) S.hideSay([K('냥? 저 깃발… 데크로 오라는 신호다냥!', 'Mew? That flag… the signal to come in to the deck!')]);
+  if (S.friendHidden) S.hideSay([K('냥? 저 깃발… 데크로 오라는 신호다냥!', 'Mew? That flag… it\'s the signal to come to the deck, meow!')]);
   // the boat comes in, bobbing
   const z0 = boat.position.z;
   await tw.run(1.5, k => { f.pin.rotation.z -= .35; f.flag.rotation.y = Math.sin(k * 20) * .15; boat.position.z = z0 + (f.boatIn - z0) * k; boat.position.y = Math.sin(k * Math.PI * 3) * .03; boat.rotation.z = Math.sin(k * Math.PI * 2) * .04; W.shadowDirty = true; }, ease.inOutSine);
@@ -669,7 +669,7 @@ PLANS.arcadeprize = (room, spec, story, planStage, flap) => {
   else { const s = P.part.spots.find(x => !x.reserved && !used.has(x)); if (!s) return null; plan.placements.push({ type: 'friendtoken', spot: s, role: 'target' }); plan.targets.unshift('friendtoken'); }
   const gl = { part: flap, kind: 'gadget', code: 'gametoken' };
   plan.locks.push(gl);
-  flap.needMsg = K('경품 오락기야! 동전을 넣으면 뭔가 나올지도… 오락실 코인이 필요해', 'A prize arcade! Put a token in and something might come out… you need an arcade token');
+  flap.needMsg = K('경품 오락기야! 동전을 넣으면 뭔가 나올지도… 오락실 코인이 필요해', 'A prize machine! Put a token in and something might pop out… we need an arcade token');
   flap.needItem = 'gametoken';
   plan.incident = { part: P.part, lock: P };
   plan.showcase = { kind: 'arcadeprize', flap };
@@ -694,7 +694,7 @@ RUN.arcadeprize = async (S, part) => {
   if (S.dead) return;
   await S.togglePart(part, true);
 };
-DEVICE_FOUND.gametoken = K('오락실 코인이다! 빨간 경품 오락기에 넣어 보자', 'An arcade token! Try it in the red prize arcade');
+DEVICE_FOUND.gametoken = K('오락실 코인이다! 빨간 경품 오락기에 넣어 보자', 'An arcade token! Try it in the red prize machine');
 
 // ── 36·43~70판 GPT 맵 연쇄 장치 (②b 10/22, gpt-chains.js): the tool in, the machine runs, the next one goes by itself
 RUN.chain = (S, part) => runChain(S, part, clearYaw);

@@ -11,6 +11,7 @@ import { buildItem } from './gfx/items.js';
 import { mat } from './gfx/kit.js';
 import { h } from './ui.js';
 import { ease } from './util.js';
+import { LANG } from './i18n.js';
 
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, opts });
 const D = (type, wall, u, opts) => ({ type, wall, u, opts });
@@ -110,7 +111,7 @@ const TINTS = ['#ff8fb8', '#7fd6c0', '#ffd23f', '#9f8fff'];
 class Spot {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '너굴이의 바꿔치기'; this.face = 'raccoon';   // (너굴이, not 먹물이: its name isn't known before 64판 — 검토 H7)
-    this.goal = '너굴이가 바꿔 놓은 곳을 터치! (틀리면 3초, 다시 보기는 4초가 줄어)';   // (GPT QA ST-NAME: was 먹물이 — not named before 64판)
+    this.goal = '너굴이가 바꿔 놓은 곳을 터치! (틀리면 3초, 다시 보면 4초 줄어)';   // (GPT QA ST-NAME: was 먹물이 — not named before 64판)
     this.tip = '처음 모습을 잘 봐 둬! 색이 바뀐 것, 사라진 것, 돌아간 것, 새로 생긴 것.';
     this.intro = [{ who: 'raccoon', text: '히히, 이 방 내가 몰래 바꿔 놓을 거야. 어디가 바뀌었는지 맞혀 볼래?' },
       { who: 'mong', text: '처음 모습을 잘 봐 두고, 바뀐 곳을 터치! 헷갈리면 "처음 모습"을 잠깐 볼 수 있어.' }];
@@ -194,6 +195,7 @@ class Spot {
 
 // ── ③ 무궁화 꽃이 피었습니다 (alley): hold to run at 너굴이 while it chants; still when it turns
 const SYL = ['무', '궁', '화', '꽃', '이', '피', '었', '습', '니', '다'];
+const SYL_EN = ['Red', 'light,', 'red', 'light,', 'green', 'light,', 'green', 'light,', 'ready…', 'STOP!'];
 class RedLight {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '무궁화 꽃이 피었습니다'; this.face = 'raccoon';
@@ -238,7 +240,8 @@ class RedLight {
         if (this.si >= SYL.length) { this.state = 'look'; this.st = rnd(1.2, 2.0); this.grace = .16; this.seek.root.rotation.y = 0; this.seek.setFace('sus'); S.say(this.seek, '다!', 700); }
         else this.st = this.gaps[this.si];
       }
-      S.setStatus(SYL.slice(0, Math.max(1, this.si)).join('').replace('화꽃', '화 꽃').replace('이피', '이 피'), 'green');
+      // (10/25 스토리 룸: 영어판에서 첫 글자 '무'가 사전에 걸려 "Radish"로 떴다 — 영어는 같은 박자로 영어 구호를 늘려 보임)
+      S.setStatus(LANG === 'en' ? SYL_EN.slice(0, Math.max(1, this.si)).join(' ') : SYL.slice(0, Math.max(1, this.si)).join('').replace('화꽃', '화 꽃').replace('이피', '이 피'), 'green');
     } else if (this.state === 'look') {
       this.grace -= dt; this.st -= dt; S.setStatus('얼음!! 👀', 'red');
       if (this.st <= 0) this.chant();
@@ -353,10 +356,10 @@ const POPPERS = ['bunny', 'frog', 'hamster', 'squirrel', 'shiba', 'panda'];
 class Whack {
   constructor(S, P) {
     this.S = S; this.P = P; this.title = '두더지 숨바꼭질'; this.face = 'frog';
-    this.goal = '덤불 뒤에서 쏙 나온 친구를 터치! 너굴이는 누르면 안 돼';
+    this.goal = '덤불 뒤에서 쏙 나온 친구를 터치! 너굴이는 터치하면 안 돼';
     this.tip = '너굴이(술래)가 나오면 꾹 참기! 친구만 터치.';
     this.intro = [{ who: 'frog', text: '개굴! 덤불 뒤에 친구들이 숨었다 나왔다 해. 나올 때 터치하면 찾은 거야!' },
-      { who: 'raccoon', text: '나도 가끔 나올 건데… 나를 누르면 하나 빼기다~!' }];
+      { who: 'raccoon', text: '나도 가끔 나올 건데… 나를 터치하면 하나 빼기다~!' }];
     this.goalN = P.goal || 12; this.time = P.time || 35;
   }
   map() {
@@ -439,7 +442,7 @@ class Lamp {
     this.goal = '손전등으로 비추고, 보이는 친구를 터치! "킥킥" 소리가 힌트야';
     this.tip = '말풍선 "킥킥"이 뜬 곳 근처를 비춰 봐!';
     this.intro = [{ who: 'panda', text: '캠핑의 꽃은 밤 숨바꼭질! 손전등 하나로 다섯 명 찾아 봐~' },
-      { who: 'mong', text: '화면을 문지르면 손전등이 따라와. 불빛에 보이는 친구를 터치!' }];
+      { who: 'mong', text: '화면을 드래그하면 손전등이 따라와. 불빛에 보이는 친구를 터치!' }];
     this.time = P.time || 50; this.n = P.n || 5; this.decoys = P.decoys || 0;
     this.bg = ['#1d2250', '#2c2a5e']; this.light = { ambColor: '#5a63b8', amb: .7, sunColor: '#9fa9ff', sun: .45 };
     // the boss version (user, 10/18: "손전등 술래를 보스로 키우기" — it was more fun than the flashlight boss): a bigger floor,

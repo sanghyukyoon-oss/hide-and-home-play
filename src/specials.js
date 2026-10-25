@@ -35,16 +35,16 @@ export const SPECIALS = [
   // 설계해주는게 낫겠어. 스페셜에 물건이나 가구 살수있게 풀어지는게 어때? 보상창 안떠도 되고 뱃지 넘버만 올라가는것 동의"): every ten 도감 cards
   // (friends met + things collected, 121 in all) opens one for buying — no gift, no window, a number on 상점. Prices 300 → 900:
   // a stage pays ~130 coins, so each is a few stages of saving (1~20판 ≈ 2,300 · 1~70판 ≈ 9,200)
-  { t: 'sp_neonlamp', price: 300, need: ['cards', 10], say: K('도감 10장이면 열려요', 'Opens at 10 cards in the book') },
-  { t: 'sp_guitar', price: 360, need: ['cards', 20], say: K('도감 20장이면 열려요', 'Opens at 20 cards in the book') },
-  { t: 'sp_jukebox', price: 420, need: ['cards', 30], say: K('도감 30장이면 열려요', 'Opens at 30 cards in the book') },
-  { t: 'sp_rocket', price: 480, need: ['cards', 40], say: K('도감 40장이면 열려요', 'Opens at 40 cards in the book') },
-  { t: 'sp_arcade', price: 540, need: ['cards', 50], say: K('도감 50장이면 열려요', 'Opens at 50 cards in the book') },
-  { t: 'sp_scope', price: 600, need: ['cards', 60], say: K('도감 60장이면 열려요', 'Opens at 60 cards in the book') },
-  { t: 'sp_hammock', price: 660, need: ['cards', 70], say: K('도감 70장이면 열려요', 'Opens at 70 cards in the book') },
-  { t: 'sp_piano', price: 720, need: ['cards', 80], say: K('도감 80장이면 열려요', 'Opens at 80 cards in the book') },
-  { t: 'sp_moto', price: 800, need: ['cards', 90], say: K('도감 90장이면 열려요', 'Opens at 90 cards in the book') },
-  { t: 'sp_dino', price: 900, need: ['cards', 100], say: K('도감 100장이면 열려요', 'Opens at 100 cards in the book') },
+  { t: 'sp_neonlamp', price: 300, need: ['cards', 10], say: K('도감 10장이면 열려요', 'Collect 10 cards to unlock') },
+  { t: 'sp_guitar', price: 360, need: ['cards', 20], say: K('도감 20장이면 열려요', 'Collect 20 cards to unlock') },
+  { t: 'sp_jukebox', price: 420, need: ['cards', 30], say: K('도감 30장이면 열려요', 'Collect 30 cards to unlock') },
+  { t: 'sp_rocket', price: 480, need: ['cards', 40], say: K('도감 40장이면 열려요', 'Collect 40 cards to unlock') },
+  { t: 'sp_arcade', price: 540, need: ['cards', 50], say: K('도감 50장이면 열려요', 'Collect 50 cards to unlock') },
+  { t: 'sp_scope', price: 600, need: ['cards', 60], say: K('도감 60장이면 열려요', 'Collect 60 cards to unlock') },
+  { t: 'sp_hammock', price: 660, need: ['cards', 70], say: K('도감 70장이면 열려요', 'Collect 70 cards to unlock') },
+  { t: 'sp_piano', price: 720, need: ['cards', 80], say: K('도감 80장이면 열려요', 'Collect 80 cards to unlock') },
+  { t: 'sp_moto', price: 800, need: ['cards', 90], say: K('도감 90장이면 열려요', 'Collect 90 cards to unlock') },
+  { t: 'sp_dino', price: 900, need: ['cards', 100], say: K('도감 100장이면 열려요', 'Collect 100 cards to unlock') },
   { t: 'grindrail', price: 220, need: ['raids', 2], say: K('친구네 털기 2번', "Raid friends' homes 2 times") },
   { t: 'schooldesk', price: 240, need: ['stage', 10], say: K('10판 깨기', 'Clear stage 10') },
   { t: 'gf_musicbox', price: 260, need: ['stage', 12], say: K('12판 깨기', 'Clear stage 12') },
@@ -64,7 +64,7 @@ export const SPECIALS = [
   { t: 'sp2_radio', price: 300, need: ['stage', 5], say: K('5판 깨기', 'Clear stage 5') },
   { t: 'sp2_mushlamp', price: 320, need: ['stars3', 3], say: K('별 셋 3판', '3 stars on 3 stages') },
   { t: 'sp2_neonheart', price: 340, need: ['stage', 8], say: K('8판 깨기', 'Clear stage 8') },
-  { t: 'sp2_teepee', price: 340, need: ['raids', 1], say: K('친구네 털기 1번', "Raid friends' homes 1 time") },
+  { t: 'sp2_teepee', price: 340, need: ['raids', 1], say: K('친구네 털기 1번', "Raid a friend's home once") },
   { t: 'sp2_bigbear', price: 360, need: ['stars3', 8], say: K('별 셋 8판', '3 stars on 8 stages') },
   { t: 'sp2_globe', price: 380, need: ['stage', 18], say: K('18판 깨기', 'Clear stage 18') },
   { t: 'sp2_cotton', price: 400, need: ['keeps', 1], say: K('털림 막기 1번', 'Keep your treasure safe from 1 raid') },
@@ -84,8 +84,8 @@ export const SPECIALS = [
   { t: 'sp2_claw', price: 700, need: ['stars3', 30], say: K('별 셋 30판', '3 stars on 30 stages') },
   { t: 'sp2_dj', price: 740, need: ['stage', 60], say: K('60판 깨기', 'Clear stage 60') },
   { t: 'sp2_phonebox', price: 780, need: ['keeps', 5], say: K('털림 막기 5번', 'Keep your treasure safe from 5 raids') },
-  { t: 'sp2_ferris', price: 850, need: ['cards', 110], say: K('도감 110장이면 열려요', 'Opens at 110 cards in the book') },
-  { t: 'sp2_bumper', price: 950, need: ['cards', 120], say: K('도감 120장이면 열려요', 'Opens at 120 cards in the book') },
+  { t: 'sp2_ferris', price: 850, need: ['cards', 110], say: K('도감 110장이면 열려요', 'Collect 110 cards to unlock') },
+  { t: 'sp2_bumper', price: 950, need: ['cards', 120], say: K('도감 120장이면 열려요', 'Collect 120 cards to unlock') },
   // 스페셜 3차 4개 (⑥ 내 방 10/24, user: "지붕이랑 아이템들 새로 추가해주고"): 가챠 머신 · 고무 풀장 · 붕어빵 포장마차 · 즉석사진 부스
   { t: 'sp3_gacha', price: 440, need: ['stage', 16], say: K('16판 깨기', 'Clear stage 16') },
   { t: 'sp3_pool', price: 520, need: ['stars3', 22], say: K('별 셋 22판', '3 stars on 22 stages') },
@@ -99,8 +99,8 @@ export function specialState(save, sp, f = feats(save)) {
 }
 export const SPECIAL_TXT = {
   head: K('스페셜', 'Special'),
-  note: K('맵에서 거의 못 보는 특별한 가구예요. 조건을 채우면 열려요.', 'Rare pieces you hardly see in the stages. Meet the condition to open one.'),
-  locked: K('아직 잠겨 있어! 조건을 채우면 열려', 'Still locked! Meet the condition to open it'),
+  note: K('판에서 거의 못 보는 특별한 가구예요. 조건을 채우면 열려요.', 'Rare furniture you hardly ever see in stages. Meet the goal to unlock one.'),
+  locked: K('아직 잠겨 있어! 조건을 채우면 열려', 'Still locked! Meet the goal to unlock it'),
 };
 // how many card-opened specials there are now (the lobby turns a new one into a number on 상점 — ③ 10/21)
 export const cardOpened = (cards, has = () => true) => SPECIALS.filter(sp => sp.need[0] === 'cards' && cards >= sp.need[1] && has(sp.t)).length;

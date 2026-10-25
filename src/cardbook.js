@@ -164,7 +164,7 @@ function zoom(c, G) {
   // (~10 px: 3% of the card's width)
   const slices = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(z => h('div', { class: 'cb-slice', style: `transform: translateZ(${-z * 1.1}px)` }));
   const wrap = h('div', { class: 'cb-wrap' }, ...slices, card); card.style.transform = 'translateZ(0)';
-  const layer = h('div', { class: 'cb-zoom' }, wrap, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 문질러 봐 · 바깥을 누르면 닫혀요'));
+  const layer = h('div', { class: 'cb-zoom' }, wrap, ...(diary ? [diary] : []), ...(heroBtn ? [heroBtn] : []), h('div', { class: 'cb-tip' }, '카드를 드래그해 봐 · 바깥을 터치하면 닫혀요'));
   // (user 10/22 "카드 움직일 때 왜 이렇게 덜덜덜 … 부드럽게 슥"): the finger was measured against the card's own box, which moves
   // as the card turns — so each tilt changed the next one (shake); and each move jumped. Now: the box is taken once, flat, and
   // a frame loop eases the card toward the finger (and back when you let go), one transform a frame

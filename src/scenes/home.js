@@ -1045,7 +1045,7 @@ export class HomeScene {
       : G.ui.btn('자물쇠 사기', { color: 'orange', icon: 'lock', cls: 'sm', onClick: () => { markSeen(G); G.ui.closePanel(); askBuyLock(G, goHide); } });
     const tookThing = took.some(e => e.item);
     G.ui.panel({ title: '내가 없는 동안…', color: took.length ? 'red' : 'green',
-      body: [...rows, h('div', { class: 'txt' }, tookThing ? '털어 간 친구 방에 가서 다 찾으면 되찾을 수 있어!' : took.length ? '자물쇠를 걸면 덜 털려!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자'),
+      body: [...rows, h('div', { class: 'txt' }, tookThing ? '털어 간 친구 방에 가서 찾아내면 되찾을 수 있어!' : took.length ? '자물쇠를 걸면 덜 털려!' : '잘 숨겨 둔 덕분이야! 더 꽁꽁 숨겨 보자'),
         ...(took.length && shieldLeft(G.save) ? [h('div', { class: 'shieldline', html: ICON.lock }, h('span', {}, `문단속! ${shieldTxt(shieldLeft(G.save))} 동안 아무도 못 와`))] : [])],
       buttons: last ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), ...(lockBtn ? [lockBtn] : []), G.ui.btn('다시 보기', { color: 'green', icon: 'play', cls: 'big', onClick: () => replay(last) })]
         : tookThing ? [G.ui.btn('나중에', { color: 'gray', cls: 'sm', onClick: close }), lockBtn, G.ui.btn('되찾으러 가기', { color: 'green', cls: 'big', onClick: () => { markSeen(G); G.go('visit', { force: holderOf(G.save) }); } })]
@@ -1116,9 +1116,9 @@ export class HomeScene {
     // played) is sent to that boss first — it was the only way to the ending (QA 10/18)
     this.playBtn = playButton(G);
     const unlocked = G.homeOpen();
-    const roomBtn = ui.btn('내 집', { color: 'orange', icon: unlocked ? 'home' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '꾸미고 숨기기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : G.go('myhome') });
+    const roomBtn = ui.btn('내 집', { color: 'orange', icon: unlocked ? 'home' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '꾸미고 숨기기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('2판을 깨면 열려!', 'red') : G.go('myhome') });
     if (unlocked && !G.save.tut?.home) roomBtn.classList.add('pulse');   // just opened: point the way
-    const raidBtn = ui.btn('놀러 가기', { color: 'pink', icon: unlocked ? 'play' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '남이 숨긴 방 찾기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('스테이지 2를 깨면 열려!', 'red') : G.go('visit') });
+    const raidBtn = ui.btn('놀러 가기', { color: 'pink', icon: unlocked ? 'play' : 'lock', disabled: !unlocked, cls: 'stack', sub: unlocked ? '남이 숨긴 물건 찾기' : '스테이지 2 클리어', onClick: (dis) => dis ? ui.toast('2판을 깨면 열려!', 'red') : G.go('visit') });
     // the side column stays short so it never reaches the play button on a short screen (Safari with its bars, a phone
     // turned sideways): 지도 and 도감 stay out, everything else lives behind 더보기
     const side = h('div', { class: 'homeside' });   // (one colour for the side buttons: same role, same look — 2D UI 정리 ② 10/19)

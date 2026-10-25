@@ -440,7 +440,7 @@ export class Game {
     this.miss();
     L.log({ tap: grey ? 'grey' : 'wrong', t: +this.t.toFixed(1), kind: c.kind });
   }
-  whiff(x, y) { this.L.audio.sfx('tap', 4); this.L.ui.floatText(x, y - 20, '톡…', ''); this.miss(); }
+  whiff(x, y) { this.L.audio.sfx('tap', 4); this.L.ui.floatText(x, y - 20, '허탕…', ''); this.miss(); }
   // three wild taps in a moment and 몽글이's head spins
   miss() {
     for (const a of this.agents) a.dirty = true; this.lastMiss = this.t;   // no 눈썰미 bonus for a lucky guess among wild taps

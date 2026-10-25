@@ -27,7 +27,7 @@ export const STORIES = {
     lines: {
       blocked: ['내 자리다냥! 비켜 줄 생각 없다냥.', '흥! 맛있는 거라도 주면 몰라도~', '생선 냄새가 나면 생각해 볼게냥.'],
       fed: '냠냠… 이, 이번만 봐준다냥!',
-      tap: ['흥.', '냥…', '내 일기장 아니다냥!', '(꼬리를 휙)'],
+      tap: ['흥.', '냥…', '일기장? 그런 거 모른다냥!', '(꼬리를 휙)'],
     },
     outro: [
       { who: 'cat', text: '…사실 일기장에 내 얘기가 있나 궁금했다냥.' },
@@ -102,7 +102,7 @@ Object.assign(STORIES, {
     intro: [{ who: 'squirrel', text: '겨울 대비 도토리를 숨겼는데, 어디 숨겼는지 기억이 안 나!' }, { who: 'mong', text: '다람쥐는 원래 그렇대~' }] },
   45: { id: 'park-tag', title: '너굴이의 공원 숨바꼭질',
     intro: [{ who: 'raccoon', text: '이번엔 공원이다! 내가 열까지 세는 동안 찾아봐~' }] },
-  48: { id: 'park-boss', title: '소풍 바구니를 지켜라', cast: 'frog',
+  48: { id: 'park-boss', title: '사라진 소풍 도시락', cast: 'frog',
     intro: [
       { who: 'frog', text: '개굴! 소풍 도시락을 누가 몽땅 숨겼어!' },
       { who: 'squirrel', text: '나 아니야! …아마도.' },
@@ -147,7 +147,7 @@ Object.assign(STORIES, {
       { who: 'mong', text: '마지막 숨바꼭질, 가 보자!' },
     ],
     secret: 'diary',
-    lines: { tap: ['논리적으로 생각해 봐!', '삐빅. 힌트: 위를 봐.', '거의 다 왔어!'] },
+    lines: { tap: ['흠. 논리적으로 생각해 봐.', '삐빅. 힌트: 위를 봐.', '거의 다 왔어!'] },
     outro: [
       { who: 'nerd', text: '상자 안엔… 동네 친구들이 쓴 편지가 가득해. "몽글아 고마워!"' },
       { who: 'mong', text: '…다들 나 몰래 이런 걸 준비했구나.' },

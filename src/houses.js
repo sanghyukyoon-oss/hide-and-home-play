@@ -38,7 +38,7 @@ export const HOUSES = [
   {
     id: 'npc-sleepy', v: 1, tier: 1,
     owner: { id: 'practice-2', nick: '졸졸이', face: 'sleepy', lv: 8 },
-    title: '낮잠 마당', brag: '자다가 어디 숨겼는지 까먹었어…',
+    title: '낮잠 마당', brag: '음냐… 자다가 어디 숨겼는지 까먹었어…',
     zone: {
       type: 'yard', size: 5, paint: fl('fl-grass'),
       furniture: [
@@ -65,7 +65,7 @@ export const HOUSES = [
   {
     id: 'npc-boardking', v: 1, tier: 2,
     owner: { id: 'practice-1', nick: '보드킹', face: 'skater', lv: 14 },
-    title: '스케이트 창고', brag: '보드 타고 숨겼으니까 빠르게 찾아 봐!',
+    title: '스케이트 창고', brag: '요! 보드 타고 휙휙 숨겼어. 빨리 찾아 봐!',
     zone: {
       type: 'storage', size: 5, paint: { ...wp('wp-plaid'), ...fl('fl-terrazzo') },
       decor: [D('posterwall', 'W', 1.2), D('posterwall', 'W', -.4), D('saleposters', 'N', 3)],
@@ -79,7 +79,7 @@ export const HOUSES = [
   {
     id: 'npc-hamster', v: 1, tier: 2,
     owner: { id: 'practice-5', nick: '햄찌', face: 'hamster', lv: 16 },
-    title: '볼주머니 편의점', brag: '볼에 넣을까 하다가 참았어!',
+    title: '볼주머니 편의점', brag: '웁웁! 볼에 넣을까 하다가 참았어!',
     zone: {
       type: 'room', size: 5, paint: { ...wp('wp-stripe'), ...fl('fl-hex2') },
       decor: [D('saleposters', 'N', -2.4), D('yummyposter', 'N', .4), D('clockposter', 'W', 1.6), D('welcome', 'W', -1)],
@@ -103,7 +103,7 @@ export const HOUSES = [
   {
     id: 'npc-panda', v: 1, tier: 2,
     owner: { id: 'practice-7', nick: '판다', face: 'panda', lv: 20 },
-    title: '대나무 공원', brag: '판다는 숨바꼭질 고수야.',
+    title: '대나무 공원', brag: '천천히 찾아 봐. 판다는 숨바꼭질 고수야.',
     zone: {
       type: 'park', size: 5, paint: fl('fl-grass'),
       furniture: [
@@ -156,7 +156,7 @@ export const HOUSES = [
   {
     id: 'npc-grumpy', v: 1, tier: 4,
     owner: { id: 'practice-0', nick: '삐딱이', face: 'grumpy', lv: 36 },
-    title: '절대 못 찾는 서재', brag: '흥, 이번엔 절대 못 찾을걸?',
+    title: '절대 못 찾는 서재', brag: '…흥. 이번엔 절대 못 찾을걸.',
     zone: pair(
       { type: 'room', size: 2, paint: { ...wp('wp-moon'), ...fl('fl-herring2') }, decor: [D('artstars', 'N', 0), D('catclock', 'W', 1.4)],
         furniture: [F('bookshelf', 0, 0), F('bookshelf', 1, 0), F('desk', 3, 0), F('bookshelf', 5, 0), F('floorlamp', 0, 2), F('rug', 2, 2), F('sofa', 2, 4), F('table', 3, 2), F('safe', 5, 3, 3), F('filecab', 0, 4), F('recordcab', 0, 5), F('chest', 5, 5)] },
@@ -166,7 +166,7 @@ export const HOUSES = [
   {
     id: 'npc-nerd', v: 1, tier: 4,
     owner: { id: 'practice-3', nick: '박사', face: 'nerd', lv: 40 },
-    title: '수수께끼 연구실', brag: '논리적으로 생각하면 다 찾을 수 있지.',
+    title: '수수께끼 연구실', brag: '흠. 논리적으로 생각하면 다 찾을 수 있지.',
     zone: {
       type: 'room', size: 5, paint: { ...wp('wp-tile'), ...fl('fl-mint') },
       decor: [D('whiteboard', 'N', -1.6), D('chalkboard', 'W', .6), D('window', 'N', 2)],

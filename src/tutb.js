@@ -16,10 +16,10 @@ const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search
 export const TUT_B = (() => { const q = QS.get('tut'); if (q === 'b' || q === 'a') { try { localStorage.setItem('sbk-tut', q); } catch {} return q === 'b'; } try { return localStorage.getItem('sbk-tut') !== 'a'; } catch { return true; } })();
 export function setTutB(on) { try { localStorage.setItem('sbk-tut', on ? 'b' : 'a'); } catch {} }
 export const TUTB_TXT = {
-  turn: K('이동하면서 다른 손가락으로 터치하면 잠깐 회전돼요', 'While dragging, touch with another finger to turn for a moment'),
-  keep: K('떼지 마!', 'Keep holding!'), keep2: K('다른 손가락으로 터치!', 'Touch with another finger!'),
+  turn: K('이동하면서 다른 손가락으로 터치하면 잠깐 회전돼요', 'While dragging, tap with another finger to turn for a moment'),
+  keep: K('떼지 마!', 'Keep holding!'), keep2: K('다른 손가락으로 터치!', 'Tap with another finger!'),
   // (1판 ③, after the drag + touch lesson turned the box's front into view already: the dial still gets its line)
-  dial: K('돌림판을 밀어도 회전돼', 'The dial turns the room too'),
+  dial: K('돌림판을 드래그해도 회전돼', 'Dragging the dial turns the room too'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 

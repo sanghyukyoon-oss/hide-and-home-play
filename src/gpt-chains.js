@@ -101,7 +101,7 @@ export const CHAINS = {
       need: K('도르래 크랭크에 손잡이가 빠져 있어! 나무 위 바구니에 뭐가 달그락…', 'The pulley crank has no handle! Something rattles in the basket up the tree…'),
       line: K('바구니가 내려왔다! 왕도토리가 들어 있어', 'The basket is down! A big acorn inside') },
     { dev: 'gpt_p2acornhouse#0:1', tool: 'chainacorn', avoid: ['acorn'], dur: 2.2, sfx: [[.05, 'place'], [.25, 'thunk'], [.6, 'latch'], [.95, 'special']],
-      need: K('다람쥐 집 저울이 한쪽으로 들려 있어. 뭔가 무거운 걸 올려야 하나?', "The squirrel house's scale is tipped up. Something heavy goes on it?"),
+      need: K('다람쥐 집 저울이 한쪽으로 들려 있어. 뭔가 무거운 걸 올려야 하나?', "The scale at the squirrel house is tipped up. Maybe it needs something heavy?"),
       found: K('왕도토리다! 다람쥐 집 저울에 올려 보자', 'A big acorn! Put it on the squirrel house scale'),
       line: K('…도토리 하나에 집이 열려?!', '…One acorn opens the house?!') }],
     aux: [{ dev: 'gpt_p2scope#0:0', sfx: [[.5, 'swish']], line: K('망원경 카드: "나무 위 바구니 → 다람쥐 집"', 'The telescope card: "basket up the tree → squirrel house"') },
@@ -137,7 +137,7 @@ export const CHAINS = {
   // 2층 손 흔드는 너굴이 → 3층 물건). 시간 판이라 장난감 하나, 안 건드려도 클리어
   lobbymap: {
     layout: { room: 0, decor: { elevator: 'gpt_floor_elevator' } },
-    aux: [{ dev: 'gpt_floor_elevator#0:1', sfx: [[.05, 'stationChime'], [.27, 'ratchet'], [.53, 'door_metal'], [.96, 'pop']], repeat: true, line: K('너굴아, 엘리베이터에서 뭐 해?', 'Raccoon, what are you doing in the elevator?') }],
+    aux: [{ dev: 'gpt_floor_elevator#0:1', sfx: [[.05, 'stationChime'], [.27, 'ratchet'], [.53, 'door_metal'], [.96, 'pop']], repeat: true, line: K('너굴아, 엘리베이터에서 뭐 해?', 'Rocky, what are you doing in the elevator?') }],
   },
   // 57판 넓은 캠프장(원본) + GPT 모닥불 ★캠프파이어(6장 주인공): 오른쪽 바비큐·바위 자리에 작은 모닥불 선풍기, 뒤 텐트 옆에 신호 나무 바구니
   // (허브 10/22 밤: 캠프 소품 크기·갈색·초록, 가운데는 비움, 판다 X).
@@ -177,7 +177,7 @@ export const CHAINS = {
       sfx: [[.06, 'clink'], [.32, 'clink'], [.56, 'clink'], [.76, 'doorBell'], [.98, 'fanfare']],
       need: K('구슬 길 꼭대기 구슬 자리가 비어 있어! 대회 구슬이 어디 있지?', 'The marble slot at the top of the run is empty! Where is the contest marble?'),
       found: K('대회 구슬이다! 시상대 구슬 길 꼭대기에 올려 보자', 'The contest marble! Put it at the top of the podium run'),
-      line: K('띵! …종이 개굴이 모자였어?! 도르래가 상품을 올린다!', 'Ding! …the bell was a frog hat?! The pulley hoists the prize!') }],
+      line: K('띵! …개굴이 모자가 종이었어?! 도르래가 상품을 올린다!', 'Ding! …Froggy\'s hat was a bell?! The pulley hoists the prize!') }],
     aux: [{ dev: 'gptstarterbarrier#0:0', line: K('물총 발사! 출발봉이 번쩍', 'Squirt! Up goes the start bar') },
       { dev: 'gptofficialbench#0:2', line: K('점수판 뒤에 "시계를 봐!"', 'Behind the scoreboard: "Check the clock!"') },
       { dev: 'gptcontestswing#0:0' }],
@@ -189,8 +189,8 @@ export const CHAINS = {
       sfx: [[.02, 'latch'], [.15, 'waterLap'], [.4, 'gearUp'], [.7, 'ratchet'], [.95, 'giggle']],
       need: K('물레 레버에 손잡이가 빠져 있어! 물길만 열면 물레가 돌 텐데…', 'The water-wheel lever has no handle! Open the channel and the wheel would turn…'),
       found: K('레버 손잡이다! 모래 언덕 물레 레버에 끼워 보자', 'A lever handle! Fit it on the water-wheel lever on the sand hill'),
-      line: K('물레가 돌아 자루가 올라온다! …비상식량 아니고 선물용이야!', 'The wheel turns and up comes the sack! …It is a gift, not snacks!') }],
-    aux: [{ dev: 'gptsandbox#0:0', sfx: [[.2, 'creak'], [.8, 'thump']], line: K('굴착기 버킷으로 모래 한 삽!', 'One scoop of sand!') },
+      line: K('물레가 돌아 자루가 올라온다! …비상식량 아니고 선물용이야!', 'The wheel turns and up comes the sack! …It\'s a gift, not emergency snacks!') }],
+    aux: [{ dev: 'gptsandbox#0:0', sfx: [[.2, 'creak'], [.8, 'thump']], line: K('굴착기 버킷으로 모래 한 삽!', 'The digger scoops up some sand!') },
       { dev: 'gptbalancelog#0:0', line: K('선물 무게는 똑같이!', 'Gifts weigh the same!') }, { dev: 'gpthamper#0:1', sfx: [[.3, 'rustle']] }, { dev: 'gptsunflowerbox#0:1', sfx: [[.4, 'flip']] }],
   },
   // 46판 너굴이와 경주(시간 판): 장치 둘만 — 분수 레버(물이 그치면 바닥 동전), 미니 구슬 길
@@ -251,7 +251,7 @@ export const CHAINS = {
       sfx: [[.05, 'click'], [.25, 'clink'], [.5, 'ratchet'], [.75, 'stationChime'], [.95, 'pop']],
       need: K('키네틱 아트 꼭대기 구슬 자리가 비어 있어. 마지막 구슬은 어디 있지?', 'The top of the kinetic sculpture has an empty marble cup. Where is the last marble?'),
       found: K('마지막 구슬이다! 로비 키네틱 아트에 올려 보자', 'The last marble! Put it on the lobby sculpture'),
-      line: K('"마지막 퍼즐은 같이 풀자" …데구루루, 띵!', '"Let us solve the last puzzle together" …roll, roll, ding!') }],
+      line: K('"마지막 퍼즐은 같이 풀자" …데구루루, 띵!', '"Let\'s solve the last puzzle together" …roll, roll, ding!') }],
     aux: [{ dev: 'gpt_floor_elevator#0:1', sfx: [[.05, 'stationChime'], [.4, 'ratchet'], [.7, 'door_metal'], [.95, 'pop']] }, { dev: 'gpt_flip_directory#0:0', sfx: [[.5, 'flip']] }, { dev: 'gpt_revolving_door#0:0', sfx: [[.3, 'door']] }],
     at: { 66: { aux: [{ dev: 'gpt_floor_elevator#0:1', sfx: [[.05, 'stationChime'], [.4, 'ratchet'], [.7, 'door_metal'], [.95, 'pop']] }, { dev: 'gpt_atrium_auxlever#0:0', sfx: [[.2, 'latch'], [.8, 'stationChime']] }] },
       70: { aux: [{ dev: 'gpt_chapter_gallery#0:0', sfx: [[.05, 'crossingNear'], [.4, 'trainPass'], [.9, 'stationChime']] }, { dev: 'gpt_chapter_gallery#0:1', sfx: [[.1, 'click'], [.4, 'ratchet'], [.8, 'giggle']] },

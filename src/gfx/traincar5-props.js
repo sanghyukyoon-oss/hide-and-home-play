@@ -25,7 +25,7 @@ import { addI18n } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2;
 const K = (ko, en) => { if (EN[ko] == null) EN[ko] = en; return ko; };
-for (const [ko, en] of [['롱시트', 'Long seat'], ['박스석', 'Box seat'], ['좌석 서랍', 'Seat drawer'], ['좌석 서랍 안', 'In the seat drawer'], ['좌석 위', 'On the seat'],
+for (const [ko, en] of [['롱시트', 'Long bench seat'], ['박스석', 'Box seat'], ['좌석 서랍', 'Seat drawer'], ['좌석 서랍 안', 'In the seat drawer'], ['좌석 위', 'On the seat'],
   ['좌석 밑', 'Under the seat'], ['창가 탁자 위', 'On the window table'], ['창턱', 'Window sill'], ['롤 블라인드', 'Roller blind'], ['블라인드 뒤 창턱', 'Behind the blind'], ['커튼', 'Curtain'],
   ['짐 선반', 'Luggage rack'], ['짐 선반 여행 가방', 'Suitcase on the rack'], ['여행 가방 뒤', 'Behind the suitcase'], ['짐 선반 위', 'On the rack'], ['배낭', 'Backpack'], ['배낭 뒤', 'Behind the backpack'],
   ['연결 통로 문', 'Gangway door'], ['연결 통로 안', 'In the gangway'], ['고무 주름막', 'Rubber bellows'], ['주름막 사이', 'In the bellows'], ['연결 통로', 'Gangway'],
@@ -154,7 +154,7 @@ addI18n({
   '컵라면': 'Cup noodles', '매운맛': 'Spicy', '1호차': 'Car 1', '2호차': 'Car 2', '운전실 안': 'In the cab', '기관사 모자 옆': "Beside the driver's cap",
   '흐르는 선로': 'Rolling track', '통로 매트': 'Aisle mat', '연결 통로 구석': 'Gangway corner', '운임함': 'Fare box', '정리권': 'Ticket',
   '앞창': 'Front window', '계기판': 'Instrument panel', '서랍 이름표': 'Drawer label',
-  '봄빛 로컬 전차': 'Spring Local Train', '청록 로컬 전차': 'Teal local train', '레트로 노면 전차': 'Retro streetcar',
+  '봄빛 로컬 전차': 'Spring Local Train', '청록 로컬 전차': 'Teal Local Train', '레트로 노면 전차': 'Retro Streetcar',
   '칸 옆벽': 'Car side wall', '꼬리 끝벽': 'Tail end wall', '통로 끝벽': 'Gangway end wall', '차체 아래': 'Undercarriage',
 });
 // the folded newspaper's front page: masthead, headline, a photo, columns (our lettering, Korean and English)

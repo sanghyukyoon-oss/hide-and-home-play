@@ -145,7 +145,7 @@ export async function raidSettle(S, why) {
       h('div', { class: 'reward', html: ICON.coin }, cv),
       // 내 Lv: the XP this raid gave, the bar filling, Lv.UP when it tips over
       (() => { const L = lvOf(G.save); return h('div', { class: 'xpline' + (lu.up ? ' up' : '') }, h('b', { class: 'xplv ol' }, `Lv.${L.lv}`), h('div', { class: 'xpbar' }, h('i', { style: `width:${Math.round(L.into / L.need * 100)}%` })), h('span', { class: 'xpn' }, `경험치 +${xp}`), ...(lu.up ? [h('span', { class: 'xpup ol' }, 'Lv.UP!')] : [])); })(),
-      ...(R.repeat ? [h('div', { class: 'txt' }, '12시간 안에 또 턴 집이라 ⅓만 나와요')] : []),
+      ...(R.repeat ? [h('div', { class: 'txt' }, '12시간 안에 또 턴 집이라 보상이 ⅓만 나와요')] : []),
       ...(lensLine ? [h('div', { class: 'txt lensline' }, lensLine)] : []),
       ...(left.length ? [h('div', { class: 'txt' }, `아직 ${ga(ownerOf(S))} 내 물건 ${left.length}개를 갖고 있어. 다시 털러 오자!`)] : []),
       ...(got ? [h('div', { class: 'memento' }, h('img', { src: G.thumbs['item_' + got.item] }), h('div', {}, h('b', {}, '슬쩍 챙김!'), h('div', {}, ITEMS[got.item]?.name || '')))] : []),

@@ -34,7 +34,7 @@ export const JD_LAYOUT = {
 addI18n({
   '장독대 마당 둥근 섬': 'Jar terrace yard', '삐딱이네 집': "Grumpy's house", '담과 대문': 'Wall and gate',
   '화분 줄': 'Row of pots', '플라스틱 의자': 'Plastic stool',
-  '빗물받이 옆': 'By the drain', '꽃 상자 사이': 'Among the flower box', '현관 매트': 'Doormat', '현관 매트 밑': 'Under the doormat',
+  '빗물받이 옆': 'By the drain', '꽃 상자 사이': 'Between the flower boxes', '현관 매트': 'Doormat', '현관 매트 밑': 'Under the doormat',
   '반지하 계단 아래': 'At the foot of the basement stairs', '반지하 창 앞': 'By the basement window',
   '우유 주머니': 'Milk bag', '우유 주머니 안': 'In the milk bag', '담 밑': 'At the foot of the wall',
   '소쿠리 덮은 항아리': 'Jar under a basket', '소쿠리 덮은 항아리 안': 'In the basket-covered jar', '면보 덮은 항아리': 'Cloth-covered jar', '면보 덮은 항아리 안': 'In the cloth-covered jar',

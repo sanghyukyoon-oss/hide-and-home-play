@@ -25,10 +25,10 @@ import { hasWall, hasFloor, patternThumb } from './patterns.js';   // 벽지·�
 // box's piece nobody has shown you, stays in the grid as its own picture gone dark (no name, no price) under the rest
 const K = (ko, en) => { EN[ko] = en; return ko; };
 const SIL_TXT = {
-  head: K('아직 안 열린 가구', 'Furniture not open yet'),
+  head: K('아직 안 열린 가구', 'Locked furniture'),
   box: K('장을 끝내면 들어와', 'Comes when the chapter ends'),   // (no chapter box since 10/20: its pieces come into the shop at the chapter's end)
-  boxToast: K('그 장 마지막 판을 깨면 상점에 들어와!', 'It comes to the shop when you clear the chapter\'s last stage!'),
-  chToast: K('아직 안 열렸어! 그 장에 가면 상점에 들어와', 'Not open yet! It comes to the shop in its chapter'),
+  boxToast: K('그 장 마지막 판을 깨면 상점에 들어와!', 'Clear the chapter\'s last stage and it comes to the shop!'),
+  chToast: K('아직 안 열렸어! 그 장에 가면 상점에 들어와', 'Locked! It shows up in the shop once you reach its chapter'),
 };
 const chOpens = c => K(`${c}장에서 열려`, `Opens in chapter ${c}`);
 const PAT_LATER = K('다음 장에 들어오는 무늬', 'Patterns coming in later chapters');

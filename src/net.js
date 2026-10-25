@@ -127,14 +127,14 @@ export async function names(ids) {
 // ── neighbourhood rooms: the game's own characters hid things in their places. Always there, so the visit list is
 // never empty; real players' rooms mix in when the shared store has some. They are characters, not fake players.
 export const RESIDENTS = [
-  { face: 'grumpy', nick: '삐딱이', title: '절대 못 찾는 방', brag: '흥, 이번엔 절대 못 찾을걸?' },
-  { face: 'skater', nick: '보드킹', title: '스케이트 창고', brag: '보드 타고 숨겼으니까 빠르게 찾아 봐!' },
-  { face: 'sleepy', nick: '졸졸이', title: '낮잠 마당', brag: '자다가 어디 숨겼는지 까먹었어…' },
-  { face: 'nerd', nick: '박사', title: '수수께끼 연구실', brag: '논리적으로 생각하면 다 찾을 수 있지.' },
+  { face: 'grumpy', nick: '삐딱이', title: '절대 못 찾는 방', brag: '…흥. 이번엔 절대 못 찾을걸.' },
+  { face: 'skater', nick: '보드킹', title: '스케이트 창고', brag: '요! 보드 타고 휙휙 숨겼어. 빨리 찾아 봐!' },
+  { face: 'sleepy', nick: '졸졸이', title: '낮잠 마당', brag: '음냐… 자다가 어디 숨겼는지 까먹었어…' },
+  { face: 'nerd', nick: '박사', title: '수수께끼 연구실', brag: '흠. 논리적으로 생각하면 다 찾을 수 있지.' },
   { face: 'shiba', nick: '멍뭉이', title: '뼈다귀 숨김터', brag: '멍! 킁킁 냄새로 찾아 봐!' },
-  { face: 'hamster', nick: '햄찌', title: '볼주머니 창고', brag: '볼에 넣을까 하다가 참았어!' },
+  { face: 'hamster', nick: '햄찌', title: '볼주머니 창고', brag: '웁웁! 볼에 넣을까 하다가 참았어!' },
   { face: 'frog', nick: '개굴이', title: '비 오는 날 방', brag: '개굴! 연못 근처를 잘 봐~' },
-  { face: 'panda', nick: '판다', title: '대나무 공원', brag: '판다는 숨바꼭질 고수야.' },
+  { face: 'panda', nick: '판다', title: '대나무 공원', brag: '천천히 찾아 봐. 판다는 숨바꼭질 고수야.' },
 ];
 export function practiceRooms(build) {
   return RESIDENTS.map((R, i) => {

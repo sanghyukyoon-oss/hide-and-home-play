@@ -870,7 +870,7 @@ export class Game {
     if (!S.hit && S.t >= PAT * .5) {
       S.hit = true; S.k++; it.prog = S.k / n;
       const k = Math.min(1, it.prog) * .97; it.x = it.x0 + (it.ex - it.x0) * k; it.z = it.z0 + (it.ez - it.z0) * k; it.bump = 1;
-      this.sfx.pat(); const s = this.scr(it.x, it.y + it.hh * 2 + .05, it.z); this.L.ui.floatText(s.x + (Math.random() - .5) * 34, s.y - S.k * 8, '톡', 'cr-tok');
+      this.sfx.pat(); const s = this.scr(it.x, it.y + it.hh * 2 + .05, it.z); this.L.ui.floatText(s.x + (Math.random() - .5) * 34, s.y - S.k * 8, '토닥', 'cr-tok');
       if (S.k >= n) { it.state = 'teeter'; it.tt = 0; this.L.audio.sfx('wobble'); this.swat = null; this.watchT = .8; this.L.log({ swat: it.type, t: +this.t.toFixed(1) }); return; }
     }
     if (S.t >= PAT) { S.t -= PAT; S.hit = false; }
@@ -960,7 +960,7 @@ export class Game {
     this.after(.12, () => { L.say(this.catTag, '…야옹?', 1100); this.sfx.meow(.85); });
     const near = this.lastHitPt && this.t - this.lastHit < 5 && Math.hypot(this.lastHitPt.x - this.p.x, this.lastHitPt.z - this.p.z) < 1.6;
     const riding = this.vac && this.cs === this.vac.surf;
-    this.after(.7, () => { if (this.result || o.s !== 'look') return; L.say(this.ownerTag, riding ? 'ㅋㅋ 또 탔네' : near ? '…너지?' : pick(['…추로?', '…아닌가?', '착하다 우리 추로~']), 1100, 'think'); if (near) me.setFace('sweat'); });
+    this.after(.7, () => { if (this.result || o.s !== 'look') return; L.say(this.ownerTag, riding ? '풉, 또 탔네' : near ? '…너지?' : pick(['…추로?', '…아닌가?', '착하다 우리 추로~']), 1100, 'think'); if (near) me.setFace('sweat'); });
     if (!this.aegyoGot) this.after(.85, () => { if (this.aegyoGot || this.result) return; this.aegyoGot = true; this.aegyo = 2; this.gotCard('애교', '주인이 쳐다볼 때 추로를 터치 · 한 밤에 두 번'); });
   }
   doAegyo() {
@@ -1251,7 +1251,7 @@ export class Game {
     if (o === 'hmm' || this.ow.noiseAt != null) return ['흠…? 손 떼면 얼음!', true];
     if (o === 'turn' || o === 'look' || o === 'glare') return [this.aegyoUsable() ? '얼음! · 추로를 터치하면 애교' : this.isActive() ? '보고 있어! 손 떼!' : '얼음… 세상 순한 척', true];
     if (o === 'melt') return ['애교 성공! 주인이 녹았다', false];
-    if (this.swat) return ['콕… 콕… 툭!', false];
+    if (this.swat) return ['살짝… 살짝… 툭!', false];
     if (this.paw) return [this.unlocked ? '드르륵… 조금만 더!' : '아직 잠겨 있다냥…', false];
     if (this.vac && this.cs === this.vac.surf) return ['청소기 타는 중~ 움직여도 안 들켜', false];
     if (this.unlocked) return ['츄르 서랍장을 꾹 누르고 있기!', false];

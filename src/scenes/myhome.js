@@ -105,7 +105,7 @@ export class MyHomeScene {
         await playDialog(G, inside ? HOME_TUT.missed : HOME_TUT.found); if (this.dead) return;   // tucked inside → she gives up
       }
       await playDialog(G, HOME_TUT.bye);
-      if (raidLater && !this.dead) G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', '');
+      if (raidLater && !this.dead) G.ui.toast('서랍 속에 넣고 자물쇠까지 걸면 잘 안 털려', '');
     }
   }
   // frame the zone whatever its size (rooms can be widened in the shop)
@@ -417,7 +417,7 @@ export class MyHomeScene {
       ui.btn('꾸미기', { color: 'orange', icon: 'paint', onClick: () => this.setMode('edit') }),
       ui.btn('숨기기', { color: 'purple', icon: 'hide', onClick: () => this.setMode('hide') }),
       ui.btn('상점', { color: 'yellow', icon: 'shop', onClick: () => this.shop() })));
-    bar.append(ui.btn('놀러 가기', { color: 'green', icon: 'play', cls: 'big stack', sub: '다른 사람이 숨긴 방 찾기', onClick: () => G.go('visit') }));
+    bar.append(ui.btn('놀러 가기', { color: 'green', icon: 'play', cls: 'big stack', sub: '다른 사람이 숨긴 물건 찾기', onClick: () => G.go('visit') }));
     this.col.append(bar);
     this.renderRecord();
   }
@@ -434,7 +434,7 @@ export class MyHomeScene {
     const el = this.recordEl; if (!el || this.mode !== 'view') return;
     const G = this.G, H = this.H, N = net();
     el.innerHTML = '';
-    if (!H.published) { el.append(h('span', {}, '아직 올린 방이 없어요. 숨기기에서 방을 꾸며 올려 보세요!')); return; }
+    if (!H.published) { el.append(h('span', {}, '아직 올린 방이 없어요. 숨기기에서 물건을 숨기고 올려 보세요!')); return; }
     if (!N.ok) { el.append(h('span', {}, `올린 방: ${HOME_ZONES.find(z => z.id === H.published.zoneId)?.name || ''} · 물건 ${H.published.count}개 (연습 모드에선 나만 볼 수 있어요)`)); return; }
     const s = this.stats;
     if (!s) { el.append(h('span', {}, '기록 불러오는 중…')); return; }
@@ -677,7 +677,7 @@ export class MyHomeScene {
     this.col.append(h('div', { class: 'hint' }, hintSpan));
     if (zoneMsg) setTimeout(() => { if (!this.dead) hintSpan.textContent = tr(hintTxt); }, 2600);
     const tut = G.save.tut || (G.save.tut = {});
-    if (!tut.raidTip && !this.busyTut) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속·자물쇠 안일수록 동네 주민이 못 털어 가', ''), 900); }   // (not during the lobby's first hide: it sat on the hide tip — 2D UI 정리 ③)
+    if (!tut.raidTip && !this.busyTut) { tut.raidTip = 1; G.persist(); setTimeout(() => !this.dead && G.ui.toast('서랍 속에 넣고 자물쇠까지 걸면 잘 안 털려', ''), 900); }   // (not during the lobby's first hide: it sat on the hide tip — 2D UI 정리 ③)
     const bar = h('div', { class: 'modebar' });
     // (③ 10/21, user: "숨기기에서 물건 스크롤이 안됨. 이것도 태그별로 소팅 되게 … 내가풀어보기 방올리기 옆에 뒤로가기 버튼"): chips over
     // the list to show one kind, the list follows the finger, and a back button beside the two
@@ -705,7 +705,7 @@ export class MyHomeScene {
     const chain = t === 'key' || t === 'note', full = !chain && t && !this.items[t] && this.targetCount() >= MAX_HIDE;
     if (!t || full) { hand.done(full ? `${MAX_HIDE}개 다 숨겼어! 옮기려면 드래그해` : '다 숨겼어!'); return; }
     const k = Math.min(MAX_HIDE, this.targetCount() + (this.items[t] ? 0 : 1));
-    hand.show(t, { name: ITEMS[t]?.name || '', label: chain ? '꼭 숨겨야 해' : `숨길 물건 ${k}/${MAX_HIDE}`, hint: '어디든 터치해서 숨겨!', count: chain ? '' : `${k}/${MAX_HIDE}`, big });
+    hand.show(t, { name: ITEMS[t]?.name || '', label: chain ? '꼭 숨겨야 해' : `숨길 물건 ${k}/${MAX_HIDE}`, hint: '원하는 곳으로 드래그해서 숨겨!', count: chain ? '' : `${k}/${MAX_HIDE}`, big });
   }
   renderHideCards() {
     const G = this.G, hid = this.H.hide;
@@ -875,13 +875,13 @@ export class MyHomeScene {
       G.audio.sfx('win'); G.world.fx.confetti(70);
       G.ui.panel({ title: '방을 올렸어요!', color: 'green', body: [
         h('div', { class: 'big-txt' }, `${this.zone.name} · 숨긴 물건 ${doc.count}개`),
-        h('div', { class: 'txt' }, '이 게임을 여는 다른 사람들이 내 방에 찾으러 와요. 못 찾고 돌아가면 보상을 받아요!'),
+        h('div', { class: 'txt' }, '다른 사람들이 내 방에 찾으러 와요. 못 찾고 돌아가면 내가 보상을 받아요!'),
       ], buttons: [keepOn, G.ui.btn('놀러 가기', { color: 'green', icon: 'play', onClick: () => G.go('visit') })] });
     } else if (res.why === 'offline') {
       G.audio.sfx('place');
       G.ui.panel({ title: '이 기기에 저장했어요', color: 'blue', body: [
         h('div', { class: 'big-txt' }, `${this.zone.name} · 숨긴 물건 ${doc.count}개`),
-        h('div', { class: 'txt' }, '지금은 연습 모드라 다른 사람에게는 아직 안 보여요. 공유된 Claude 링크로 열면 다른 사람이 찾으러 올 수 있어요.'),
+        h('div', { class: 'txt' }, '지금은 연습 모드라 다른 사람에게는 아직 안 보여요. 공유 링크로 열면 다른 사람이 찾으러 올 수 있어요.'),
       ], buttons: [keepOn, G.ui.btn('놀러 가기', { color: 'green', icon: 'play', onClick: () => G.go('visit') })] });
     } else {
       G.audio.sfx('miss');

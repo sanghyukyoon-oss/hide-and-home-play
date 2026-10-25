@@ -139,7 +139,7 @@ const TAUNT = {
   idle: ['어디 있게~? 메롱!', '하나도 안 보이지? 후후', '회색이라 헷갈리지~?', '포기하면 편해~', '바로 코앞에 있는데~?', '눈 크게 떠 봐~'],
   miss: ['땡! 거기 아니야~', '틀렸지롱~', '어림없지!', '헛다리 짚었네~'],
   found: ['어? 그걸 찾았어?!', '흥, 운이 좋았네!', '이번엔 봐준 거야!', '쳇, 들켰다…'],
-  furn: ['그 큰 걸 이제 봤어? ㅎㅎ', '가구까지 찾다니!'],
+  furn: ['그 큰 걸 이제야 봤어? 히히', '가구까지 찾다니!'],
 };
 
 // how many 흑백판 come before this one (the first two teach the rule — 4·10판)
@@ -2624,7 +2624,7 @@ export class StageScene {
     W.eBase = W.eMode = 'move';
     if (!await step('한 손가락으로 드래그하면 이동! 쓱 드래그해 봐', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => pan > 160)) return;
     this.rotAccum = 0;
-    if (!await step('이번엔 돌려 보자! ↻ 회전을 누르거나, 드래그 중에 다른 손가락으로 터치!', 'tap', at(mt), () => W.eBase === 'turn' || this.rotAccum > .3, 30, mb)) return;
+    if (!await step('이번엔 돌려 보자! ↻ 회전을 터치하거나, 드래그 중에 다른 손가락으로 터치!', 'tap', at(mt), () => W.eBase === 'turn' || this.rotAccum > .3, 30, mb)) return;
     if (W.eBase === 'turn' && !await step('이제 드래그하면 방이 빙글! 손을 떼도 회전 그대로야', 'swipe', { x: innerWidth / 2, y: innerHeight * .58 }, () => this.rotAccum > 1.0)) return;
     if (W.eBase === 'turn' && !await step('다시 움직이려면 ✥ 이동을 터치!', 'tap', at(mm), () => W.eBase === 'move', 12, mb)) return;
     const z0 = W.zoom, gauge = document.querySelector('.zgauge');
@@ -3326,7 +3326,7 @@ export class StageScene {
     const over = this._tapOver || 0, bonus = over && !this.model ? paid - Math.round((coins - over * 5) * (first?.repeat ? 1 / 3 : 1)) : 0;
     if (!this.model) { await G.ui.countUp(cv, 0, paid - bonus, 700, v => { if (v % 10 === 0) G.audio.sfx('coin', 0); }); if (bonus > 0 && !this.dead) await this.tapCoins(cv, paid - bonus, over, bonus); }   // (a model kit pays in the model, not coins)
     // (QA 10/20: under the coin row, not inside it — in English the line ran off the panel's right edge)
-    if (first?.repeat) (cv.parentElement || cv).after(h('div', { class: 'txt sm' }, '다시 찾은 방이라 보상이 1/3이에요'));
+    if (first?.repeat) (cv.parentElement || cv).after(h('div', { class: 'txt sm' }, '다시 깬 방이라 보상이 1/3이에요'));
     if (first?.allClear) { W.fx.confetti(220); setTimeout(() => !this.dead && W.fx.confetti(160), 900); }
     for (const z of first?.newZones || []) setTimeout(() => G.ui.toast(`내 집에 ${ga(z)} 생겼어!`, 'green'), 1700);
   }

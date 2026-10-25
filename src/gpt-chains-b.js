@@ -14,7 +14,7 @@ export const CHAINS_B = {
     clue: { dev: 'sp_lamp#0:0', lock: 'lostbox', any: true, shadow: true, pill: '💡 ?:??', toast: K('가로등을 끄니 개구리 그림자 배에 숫자가!', 'With the lamp off, there are numbers on the frog shadow’s tummy!') },
     steps: [{ dev: 'sp_startower#0:0', tool: 'chainwinder', behind: ['code', 'pad'], dur: 2.0, body: true,
       sfx: [[.05, 'ratchet'], [.4, 'special'], [.9, 'pop']],
-      need: K('별 등불 태엽 구멍이 비어 있어! 감으면 별이 돌 것 같은데', 'The star lamp’s winding hole is empty! Wind it and the star would spin'),
+      need: K('별 등불 태엽 구멍이 비어 있어! 감으면 별이 돌 것 같은데', 'The star lamp’s winding key is missing! Wind it up and the star might spin'),
       found: K('태엽 손잡이다! 놀이탑 별 등불에 끼워 보자', 'A winding key! Fit it on the star lamp on the tower'),
       line: K('별 등불이 빙글~ 별 상자가 열렸어!', 'The star lamp spins~ and the star box opens!') }],
     aux: [{ dev: 'sp_swings#0:0', sfx: [[.1, 'creak'], [.6, 'creak']] }, { dev: 'sp_spinner#0:0', sfx: [[.05, 'gearUp'], [.6, 'swish']], line: K('뺑뺑이 빙글빙글~ 어지러워', 'Round and round~ dizzy!') },
@@ -33,7 +33,7 @@ export const CHAINS_B = {
       found: K('수문 손잡이다! 개울가 징검다리 말뚝에 꽂아 보자', 'The gate handle! Put it in the post by the stepping stones'),
       line: K('징검다리가 쑥쑥! …건너편 반딧불 병이 퐁 열렸어', 'Up come the stepping stones! …and the firefly jar across pops open') }],
     aux: [{ dev: 'vl_scope#0:0', sfx: [[.1, 'swish'], [.8, 'special']], line: K('망원경 끝에 별자리… 반딧불 병 쪽이야!', 'A constellation in the telescope… pointing at the firefly jar!') },
-      { dev: 'vl_sleepmat#0:0', line: K('베개 밑은 졸졸이 비밀 서랍', 'Under the pillow: Jolly’s secret drawer') }],
+      { dev: 'vl_sleepmat#0:0', line: K('베개 밑은 졸졸이 비밀 서랍', 'Under the pillow: Dozy’s secret drawer') }],
   },
   // 56판 개울가 징검다리 캠핑(시간 판): 장난감 둘 — 손 펌프(물이 콸콸), 해먹
   creekcamp: {
