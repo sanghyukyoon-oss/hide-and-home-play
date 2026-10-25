@@ -76,8 +76,9 @@ import { bumpFeat } from './specials.js';   // 스페셜 칸의 해금 조건 (1
 import { installI18n, i18nMisses, LANG, setLang } from './i18n.js';
 import { openGallery, playGame } from './gallery.js';
 import { queueFollowup, normalizeFollowup, routeFollowup } from './followup.js';
-import { VERSION_LABEL } from './build.js';
+import { VERSION_LABEL, QA_TOOLS } from './build.js';
 import { installAppBack } from './appback.js';
+import { installPortrait } from './portrait.js';
 installI18n();   // English players see English everywhere (see i18n.js)
 registerFurniture(GPT_HERO_BUILDERS, GPT_HERO_INFO);
 
@@ -383,6 +384,7 @@ const G = {
 for (const z of HOME_ZONES) if (G.zoneOpen(z.id)) G.ensureZone(z.id);
 window.G = G;
 installAppBack(G);   // Android app only (src/appback.js)
+installPortrait(G);   // 세로 전용: 터치 기기를 가로로 돌리면 '세로로 돌려 주세요' (src/portrait.js, 10/26)
 // 배치 편집 is the author's tool: shown to the artifact's owner only (and always when running outside claude.ai)
 G.owner = false;
 G.ownerP = (async () => { try { if (!window.claude?.use) return (G.owner = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || qs.has('owner')); const u = await window.claude.use('user'); return (G.owner = !!(await u?.isOwner?.())); } catch { return false; } })();   // the public web copy (GitHub Pages) shows no author tools
@@ -497,7 +499,7 @@ function frame(now) {
     fpsNow = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0;
     // adaptive quality: supersampling is what keeps the ink lines smooth, so only give it up after ~5 s of real
     // struggle (never while loading, switching scenes or in a background tab) and take it back when frames recover
-    if (save.settings?.perf) {
+    if (save.settings?.perf && QA_TOOLS) {
       let el = document.getElementById('perf');
       if (!el) { el = document.createElement('div'); el.id = 'perf'; document.body.append(el); }
       // count the scene itself (the renderer's own counter only sees the last post-processing pass)

@@ -2,8 +2,11 @@
 // A small "후보정" button (top right, under the stage badge) opens sliders that change the post pass live. A moved slider wins over the stage's own
 // value on every stage until 기본값 (kept on this device, localStorage 'sbk-fx'); 값 복사 copies the numbers to send back.
 // Not in the Android app build. Test tool — goes before the store build (출품 전 정리).
-import { IN_APP } from './build.js';
+import { IN_APP, QA_TOOLS } from './build.js';
 import { SHADE } from './gfx/style.js';
+// (user 10/25: "후보정이랑 치트? 세팅용 메뉴 … 제거하자") the team's only now: ?qa=1 (or ?fx=1) — not on the public page; a device's
+// saved sliders are ignored without it, so a tester's look never leaks into a player's game
+const FX_ON = !IN_APP && (QA_TOOLS || (typeof location !== 'undefined' && /[?&]fx=1(&|$)/.test(location.search)));
 
 const KEY = 'sbk-fx';
 // [key, label, min, max, step]
@@ -35,7 +38,7 @@ const SH0 = { shine: SHADE.u.shineA.value, shineS: (.995 - SHADE.u.shineT.value)
   shineM: SHADE.u.shineM.value, rimM: SHADE.u.rimM.value, shineC: '#' + SHADE.u.shineC.value.getHexString(), rimC: '#' + SHADE.u.rimC.value.getHexString() };
 const NIGHT_SHINE = .35;   // 밤·정전 판의 반짝 점 (10/23 사용자 "어두울 때는 약하게")
 let over = {};
-try { over = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { over = {}; }
+if (FX_ON) try { over = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { over = {}; }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(over)); } catch { /* storage blocked: this visit only */ } };
 
 // what the post pass has now (the stage's own values, before the sliders)
@@ -65,7 +68,7 @@ function put(P) {
 }
 
 export function installFxPanel(world) {
-  if (IN_APP || document.getElementById('fxbtn')) return;
+  if (!FX_ON || document.getElementById('fxbtn')) return;
   const css = document.createElement('style');
   css.textContent = `
 #fxbtn{position:fixed;right:10px;top:calc(56px + env(safe-area-inset-top));z-index:9000;font:600 12px/1 system-ui,sans-serif;

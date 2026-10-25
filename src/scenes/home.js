@@ -923,7 +923,8 @@ export function openMore(G, extra = []) {
     // 놀이 모음 lists 'N판 뒤 · 안 쓰임' notes for the team: hidden in the submitted builds — the app's store build and the public
     // web page; it shows for the owner (localhost, ?owner, the artifact's owner) and in the app's Debug APK (user, 10/19)
     QA_TOOLS && ui.btn('놀이 모음', { color: 'green', cls: 'sm qa', onClick: () => { ui.closePanel(); setTimeout(() => openGallery(G), 200); } }),
-    ui.btn('세팅', { color: 'blue', onClick: () => { ui.closePanel(); openTune(G); } }),
+    // (user 10/25 "후보정이랑 치트? 세팅용 메뉴 … 제거하자": 세팅 and 튜토리얼 B go with the team's tools — ?qa=1)
+    QA_TOOLS && ui.btn('세팅', { color: 'blue', cls: 'sm qa', onClick: () => { ui.closePanel(); openTune(G); } }),
     ui.btn('조작 도움말', { color: 'blue', onClick: () => { ui.closePanel(); setTimeout(() => openHelp(G), 200); } }),   // (10/20: the controls and 1판~10판 again)
     // (10/19 user: "옵션에 리셋(아예 처음 시작하는 것처럼) 기존 진행사항 지우고 새로 하는 버튼") — asks once, then reloads with ?reset
     ui.btn('처음부터 새로', { color: 'red', cls: 'sm reset', onClick: () => { ui.closePanel(); setTimeout(() => ui.panel({ title: '처음부터 새로', color: 'red', close: () => {},
@@ -933,7 +934,7 @@ export function openMore(G, extra = []) {
     QA_TOOLS && ui.btn('새 아트', { color: 'yellow', cls: 'sm qa', onClick: () => { ui.closePanel(); preview('apt'); } }),
     ui.btn(LANG === 'en' ? '한국어로' : 'English', { color: 'purple', onClick: () => setLang(LANG === 'en' ? 'ko' : 'en') }),
     // 튜토리얼 B (③ 10/22: a lighter 1·2판 to try — this device; tutb.js)
-    ui.btn(TUT_B ? '튜토리얼 B 끄기' : '튜토리얼 B 켜기', { color: TUT_B ? 'gray' : 'green', cls: 'sm', onClick: () => { setTutB(!TUT_B); const u = new URLSearchParams(location.search); u.delete('tut'); location.replace(location.pathname + (u.toString() ? '?' + u : '') + location.hash); } }),
+    QA_TOOLS && ui.btn(TUT_B ? '튜토리얼 B 끄기' : '튜토리얼 B 켜기', { color: TUT_B ? 'gray' : 'green', cls: 'sm qa', onClick: () => { setTutB(!TUT_B); const u = new URLSearchParams(location.search); u.delete('tut'); location.replace(location.pathname + (u.toString() ? '?' + u : '') + location.hash); } }),
     // compare the new incident stages with the old find-the-list stages (10/17 pivot)
     QA_TOOLS && ui.btn(G.save.settings?.oldMode ? '판 방식: 물건 찾기' : '판 방식: 사건', { color: 'green', cls: 'sm qa', onClick: () => { const S = G.save.settings || (G.save.settings = {}); S.oldMode = !S.oldMode; G.persist(); ui.closePanel(); ui.toast(S.oldMode ? '이제 판이 물건 목록 찾기로 나와 (옛 방식)' : '이제 판이 사건으로 나와: 숨은 친구를 찾아라!', 'green'); } }),
     ...layBtn, ...extra, ...(fs ? [fs] : []),

@@ -1550,6 +1550,8 @@ const GROUND = {
   dirt(c, S, T) {
     const base = col(T, 'dirt'), r = rng(16);
     c.fillStyle = base; c.fillRect(0, 0, S, S);
+    // (⑪ 10/26 아트 점검 '캠프 판 땅이 넓은 주황 판': 숲속 캠핑장답게 군데군데 이끼 낀 풀밭 — 큰 면은 부드러운 연두, 흙은 길처럼 남김)
+    if (T && T.campGrass) for (let i = 0; i < 16; i++) { const x = r() * S, y = r() * S, rad = 60 + r() * 90; wrap(S, x, y, rad * 1.3, (X, Yy) => { c.fillStyle = T.campGrass; blob(c, X, Yy, rad); c.fillStyle = shade(T.campGrass, .04); blob(c, X - rad * .2, Yy - rad * .15, rad * .55); }); }
     for (let i = 0; i < 50; i++) { const x = r() * S, y = r() * S, rad = 14 + r() * 44, lt = r() < .45; wrap(S, x, y, rad, (X, Yy) => { c.fillStyle = lt ? shade(base, .04) : shade(base, -.05); blob(c, X, Yy, rad); }); }
     for (let i = 0; i < 1800; i++) { c.fillStyle = r() < .5 ? 'rgba(255,240,220,.22)' : 'rgba(70,40,20,.2)'; c.fillRect(r() * S, r() * S, 1.5, 1.5); }
     for (let i = 0; i < 70; i++) { const x = r() * S, y = r() * S, w = 3 + r() * 5; wrap(S, x, y, 10, (X, Yy) => { c.fillStyle = r() < .5 ? '#b9b2c4' : '#a59eb2'; c.beginPath(); c.ellipse(X, Yy, w, w * .7, r() * 3, 0, PI * 2); c.fill(); c.fillStyle = 'rgba(255,255,255,.45)'; blob(c, X - w * .3, Yy - w * .25, w * .3); }); }

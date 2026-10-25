@@ -1,7 +1,7 @@
 // Shop panel: furniture, wallpaper, paint, floors and home-zone expansions, all bought with in-game coins.
 import { h, ICON } from './ui.js';
 import { FURN_INFO } from './gfx/furniture.js';
-import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STYLES, ZONE_SIZES, GPT_ROOFS, pinZoneFurniture, furnPrice, zoneLayout, STARTER } from './catalog.js';
+import { SHOP_FURN, WALLPAPERS, PAINTS, FLOORS, HOME_ZONES, ZONE_TYPES, HOME_STYLES, ZONE_SIZES, GPT_ROOFS, WINGS, pinZoneFurniture, furnPrice, zoneLayout, STARTER } from './catalog.js';
 import { makeGptRoof, roofId } from './gfx/gpt-roofs.js';
 import { Room } from './room.js';
 import { clearRoofFreeItems, roofHideDraft } from './freehide.js';
@@ -274,6 +274,24 @@ export function openShop(G, ctx = {}, tab = 'furn') {
             if (ECON) { ui.closePanel(); ctx.onClose?.(); ctx.onChange?.('grow', from); return; }   // (방 넓히기: the walls go out in the room, as from its sign)
             G.audio.sfx('win'); ui.toast(`${ga(zone.name)} ${S.w}×${S.d}로 넓어졌어!`, 'green'); ctx.onChange?.('paint'); render(); } }));
       });
+      // 곁 공간 (⑥ 10/26, gfx/home-wings.js): after the steps, pieces built onto the outside of the room — each asks for a room size;
+      // bought once, put on and taken off freely (taken off, what was hidden on the roof or the side spaces comes back to the hand)
+      if (zone && ZONE_TYPES[zone.type]?.indoor) {
+        H.owned.wing ||= [];
+        for (const wg of WINGS) {
+          const owned = H.owned.wing.includes(wg.id), on = (zone.wings || []).includes(wg.id), ready = cur >= wg.need, S = ZONE_SIZES[wg.need];
+          grid.append(card(G, { swatch: swatch(wg.sw[0], wg.sw[1], 'wood'), name: wg.name, sub: ready ? wg.sub : `${S.w} × ${S.d}부터`, price: owned ? null : wg.price, tag: on ? '사용 중' : owned ? '보유' : null,
+            action: owned ? (on ? '떼기' : '붙이기') : null,
+            onUse: () => {
+              if (!ready) { ui.toast(`방을 ${S.w} × ${S.d}까지 넓히면 붙일 수 있어`, 'red'); G.audio.sfx('miss'); return; }
+              if (!owned) { if ((G.save.coins || 0) < wg.price) { ui.toast('코인이 모자라!', 'red'); G.audio.sfx('miss'); return; } G.addCoins(-wg.price); H.owned.wing.push(wg.id); G.audio.sfx('buy'); }
+              clearWingHides(H, zone, G.scene?.room);
+              zone.wings = on && owned ? (zone.wings || []).filter(x => x !== wg.id) : [...new Set([...(zone.wings || []), wg.id])];
+              if (!zone.wings.length) delete zone.wings;
+              G.persist(); G.audio.sfx('place'); ui.toast(on && owned ? `${wg.name} 뗐어` : `${ga(wg.name)} 붙었어!`, 'green'); ctx.onChange?.('paint'); render(); peekShop(G, ctx);
+            } }));
+        }
+      }
     } else if (tab === 'zone') {
       note.textContent = '스테이지를 깨면 무료로 열리고, 미리 사서 열 수도 있어요.';
       for (const z of HOME_ZONES) {
@@ -344,6 +362,18 @@ export function openShop(G, ctx = {}, tab = 'furn') {
 // 바르기 대 보기 (③ 10/21): with the shop open the new walls went on behind it and showed only once it was shut —
 // the shop steps down out of the way for a moment so the room shows them, then comes back on the same tab (a touch brings it back at once)
 const PEEK = typeof location === 'undefined' || !/[?&]shoppeek=0(&|$)/.test(location.search);   // (on: 검토 10/21 '기본은 넣는 쪽'; ?shoppeek=0 for the old way)
+// 곁 공간을 붙이거나 떼면 지붕의 장식 번호가 밀림 (room.js — 곁 공간이 지붕 앞에 지어짐): what was hidden on the roof or on the side
+// spaces goes back to the hand, its locks and bells too, as a roof change already does (clearRoofFreeItems)
+function clearWingHides(H, zone, room) {
+  const hid = H.hide; if (!hid || hid.zoneId !== zone.id || !room) return 0;
+  const idx = room.decors.map((r, i) => r.roof ? i : -1).filter(i => i >= 0);
+  const hit = k => typeof k === 'string' && (/^w[a-z]+:/.test(k) || idx.some(i => k.startsWith('d' + i + ':')));
+  const before = hid.items.length;
+  hid.items = hid.items.filter(e => !(hit(e.spot) || hit(e.part) || (e.free && idx.some(i => e.free.host === 'd:' + i))));
+  for (const k of Object.keys(hid.locks || {})) if (hit(k)) delete hid.locks[k];
+  for (const k of Object.keys(hid.bells || {})) if (hit(k)) delete hid.bells[k];
+  return before - hid.items.length;
+}
 function peekShop(G, ctx) {
   const ui = G.ui, p = ui.panelOpen; if (!PEEK || !p || p._peek) return;
   p._peek = true; ctx.onPreview?.(true); ui.overlay.classList.add('shoppeek');

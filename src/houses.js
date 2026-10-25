@@ -10,7 +10,7 @@ const fl = id => { const f = FLOORS.find(x => x.id === id); return f ? { floorKi
 const F = (type, i, j, rot = 0, opts) => ({ type, i, j, rot, ...(opts ? { opts } : {}) });
 const D = (type, wall, u) => ({ type, wall, u });
 // two rooms side by side: a (left, its east wall a doorway) and b (right, open onto a), their back walls in one line
-const SIZES = [[5, 5], [6, 5], [6, 6], [7, 6], [7, 7], [8, 7]];   // (catalog.js ZONE_SIZES)
+const SIZES = [[5, 5], [6, 5], [6, 6], [7, 6], [7, 7], [8, 7], [8, 8], [9, 8], [9, 9]];   // (catalog.js ZONE_SIZES)
 const pair = (a, b) => {
   const [wa, da] = SIZES[a.size || 0], [wb, db] = SIZES[b.size || 0];
   return { type: a.type, rooms: [
@@ -26,7 +26,7 @@ export const HOUSES = [
     owner: { id: 'npc-strawberry', nick: '딸기우유냥', face: 'hayang', lv: 6 },
     title: '딸기 다락방', brag: '내 방 예쁘지? 구경만 하고 가~',
     zone: {
-      type: 'room', size: 4, paint: { ...wp('wp-gingham'), ...fl('fl-pink') },
+      type: 'room', wings: ['veranda', 'flowerbed'], size: 4, paint: { ...wp('wp-gingham'), ...fl('fl-pink') },
       decor: [D('curtainwin', 'N', .6), D('artpearl', 'W', 1.2), D('posterwall', 'N', 2.6), D('catclock', 'W', -1.4)],
       furniture: [
         F('loftbed', 0, 0), F('photoheart', 2, 0), F('mirror2', 4, 0), F('plantshelf', 5, 0), F('hanger', 6, 0),
@@ -118,7 +118,7 @@ export const HOUSES = [
     owner: { id: 'npc-dj', nick: '냥펀치DJ', face: 'dj', lv: 17 },
     title: 'K팝 연습실', brag: '내 무대 밟지 마! …숨긴 건 찾아도 돼.',
     zone: {
-      type: 'room', size: 5, paint: { ...wp('wp-star'), ...fl('fl-carpet') },
+      type: 'room', wings: ['greenhouse'], size: 5, paint: { ...wp('wp-star'), ...fl('fl-carpet') },
       decor: [D('posterwall', 'N', 3), D('posterwall', 'W', 1.6), D('posterwall', 'W', -.2), D('curtainwin', 'N', -2.6)],
       furniture: [
         F('kpopstage', 2, 0), F('speaker', 1, 0), F('speaker', 5, 0), F('micstand', 3, 2), F('mirror2', 7, 0), F('hanger', 6, 0),
@@ -133,7 +133,7 @@ export const HOUSES = [
     owner: { id: 'npc-tuxedo', nick: '턱시도관장', face: 'tuxedo', lv: 27 },
     title: '작은 미술관', brag: '작품엔 손대지 마세요. 숨긴 건… 찾아도 되고.',
     zone: {
-      type: 'room', size: 5, paint: { ...wp('wp-diamond'), ...fl('fl-marble') },
+      type: 'room', wings: ['veranda', 'flowerbed', 'greenhouse'], size: 5, paint: { ...wp('wp-diamond'), ...fl('fl-marble') },
       decor: [D('artstars', 'N', -2), D('artwave', 'N', 1.6), D('artlisa', 'W', .8), D('artpearl', 'W', -1.4)],
       furniture: [
         F('amphora', 0, 0), F('thinker', 4, 0), F('amphora', 7, 0),

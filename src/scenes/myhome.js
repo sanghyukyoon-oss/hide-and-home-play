@@ -126,6 +126,7 @@ export class MyHomeScene {
   // the whole home's floor (the zone you're in at the origin): { x0, x1, z0, z1, w, d, cx, cz }
   mapBox() {
     const R = this.room, b = { x0: -R.w / 2, x1: R.w / 2, z0: -R.d / 2, z1: R.d / 2 };
+    for (const q of R.wingBoxes || []) { b.x0 = Math.min(b.x0, q.x0); b.x1 = Math.max(b.x1, q.x1); b.z0 = Math.min(b.z0, q.z0); b.z1 = Math.max(b.z1, q.z1); }
     for (const n of this.nbs || []) { const p = n.room.group.position; b.x0 = Math.min(b.x0, p.x - n.room.w / 2); b.x1 = Math.max(b.x1, p.x + n.room.w / 2); b.z0 = Math.min(b.z0, p.z - n.room.d / 2); b.z1 = Math.max(b.z1, p.z + n.room.d / 2); }
     return { ...b, w: b.x1 - b.x0, d: b.z1 - b.z0, cx: (b.x0 + b.x1) / 2, cz: (b.z0 + b.z1) / 2 };
   }
@@ -838,7 +839,7 @@ export class MyHomeScene {
       v: 2, title: this.zone.name, face: 'mong',
       zone: { type: this.zone.type, furniture: this.zone.furniture.map(f => ({ type: f.type, i: f.i, j: f.j, rot: f.rot, id: f.id, ...(f.x != null ? { x: f.x, z: f.z, a: f.a } : {}) })), paint: this.zone.paint || {},
         ...(this.zone.style ? { style: this.zone.style } : {}), ...(this.zone.size ? { size: this.zone.size } : {}),
-        ...(this.zone.roof ? { roof: this.zone.roof, roofTurn: this.zone.roofTurn || 0 } : {}) },
+        ...(this.zone.roof ? { roof: this.zone.roof, roofTurn: this.zone.roofTurn || 0 } : {}), ...(this.zone.wings?.length ? { wings: [...this.zone.wings] } : {}) },
       hidden: hid.items.map(e => e.free ? { item: e.item, free: e.free } : { item: e.item, spot: e.spot }), locks: Object.entries(hid.locks).map(([part, kind]) => ({ part, kind })), code: hid.code || '000',
       count: this.targetCount(),
     };

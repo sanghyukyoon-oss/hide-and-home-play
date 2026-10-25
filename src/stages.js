@@ -39,7 +39,8 @@ export const THEMES = {
 const OUT = (name, friend, bg, extra) => ({ ...THEMES.my, name, friend, bg, trim: '#ffffff', ...extra });
 const ALLEY = { floorKind: 'asphalt', base: '#b9b4c8', floor: '#7d7b8e', floor2: '#6b697c', wall: '#f4e8d4', wall2: '#d9745a' };
 const PARK = { floorKind: 'grass', base: '#8fcf6a', floor: '#8fd46a', floor2: '#7cc45a' };
-const CAMP = { floorKind: 'dirt', base: '#c99a6b', floor: '#c99a6b', floor2: '#b38358' };
+// (⑪ 10/26 아트 점검: 주황 흙이 화면을 덮어 탁함 → 흙은 한 톤 부드럽게, 이끼 풀 패치(campGrass)를 섞음)
+const CAMP = { floorKind: 'dirt', base: '#cfa77c', floor: '#cfa77c', floor2: '#ba9068', dirt: '#cfa77c', campGrass: '#a9cf86' };
 Object.assign(THEMES, {
   alley1: OUT('삐딱이네 골목길', 'grumpy', ['#fff0de', '#f6dcc2'], { ...ALLEY }),
   alley2: OUT('보드킹의 계단 골목', 'skater', ['#ffeede', '#f1d9cf'], { ...ALLEY, plaster: '#f1e4e8', brick: '#c9846e', gate: '#3b8fd8' }),

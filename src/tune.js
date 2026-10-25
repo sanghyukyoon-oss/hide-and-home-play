@@ -3,6 +3,7 @@
 import { ART, TUNE, applyArt } from './gfx/style.js';
 import { STYLE } from './gfx/kit.js';
 import { h } from './ui.js';
+import { QA_TOOLS } from './build.js';
 
 const KEY = 'sumbakkokjip.tune';
 const DEF = { ...TUNE, shadowStr: ART.shadowStr, shade: ART.shade, mid: ART.mid, lineW: ART.lineW, ink: ART.ink, sharpen: ART.sharpen };
@@ -16,6 +17,7 @@ const FIELDS = [
 ];
 
 export function loadTune(W) {
+  if (!QA_TOOLS) return;   // (user 10/25: 세팅 is the team's — ?qa=1; a device's saved look stays out of the players' game)
   let o = null;
   try { o = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch {}
   if (o) apply(W, o);

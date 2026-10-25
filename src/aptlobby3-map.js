@@ -27,6 +27,8 @@ export function installAptLobby3({ THEMES, MAPS, PLAN }) {
       furniture: [F('plant', 0, 0), F('plant', 3, 0), F('gpt_parcelcabinet', 4, 0),
         F('bench', 0, 2, 1), F('boxes', 0, 4), F('lockbox', 1, 4), F('dolly', 4, 3), F('umbrellastand', 5, 4),
         F('lowwall', 0, 5), F('lowwall', 2, 5),
+        // (⑪ 10/26 아트 점검 '빈 바닥': 크림 대리석이 화면 절반을 차지해 휑함 → 가운데 큰 러그, 기다리는 소파·정수기·잡지꽂이)
+        F('rug', 2, 2), F('lobbysofa', 4, 1, 2), F('watercan', 5, 2, 3), F('magazinerack', 1, 3, 1),
         at('al3_pillar', 2.85, -2.5)],
       decor: [D('al3_elevator', 'N', -1.0), D('al3_sconce', 'N', -2.5), D('al3_sconce', 'N', .5), D('clock', 'N', 1.55),
         D('mailboxes2', 'W', -.9), D('noticeboard', 'W', 1.0), D('firebox', 'W', -2.55), D('al3_sconce', 'W', 2.2)] } },

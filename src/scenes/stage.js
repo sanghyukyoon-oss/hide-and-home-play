@@ -92,7 +92,7 @@ import { MODEL_STAGES, modelSpec, planModel, kitForce, kitRunner, kitSetup, kitF
 import { lookRecipe, lookTheme, lookLayout, setSky, Look, LOOK, COZY_NIGHT, COZY_DARK } from '../look.js';   // 룩 레벨업 실험 (?look=0 = off)
 import { heroLayout } from '../heroes.js';
 import { KITS } from '../gfx/modelkit-props.js';
-import { IN_APP } from '../build.js';
+import { IN_APP, QA_TOOLS } from '../build.js';
 import { tvScreens, openMongleTV, tvLevel, tvGameFor, TV_COINS, TV_TAPS, TV_GAMES } from '../mongletv.js';   // 몽글 TV (10/19)
 import { openArtHunt } from '../arthunt.js';   // 10판 그림 속 숨은그림 (10/23)
 import { songDrift } from '../songdrift.js';   // 오래 못 찾으면 노래가 빨라짐 (10/21)
@@ -3451,7 +3451,8 @@ export class StageScene {
     }));
     const tools = [];
     if (this.custom) tools.push(this.raidRun ? ui.btn('그만 털기', { color: 'orange', cls: 'sm', onClick: () => raidSettle(this, 'stop') }) : ui.btn('포기하기', { color: 'red', cls: 'sm', onClick: () => this.lose('giveup') }));
-    if (G.owner) {
+    // (user 10/25 "세팅용 메뉴 … 제거하자": the owner alone isn't enough any more — the artifact's owner plays it as a player; ?qa=1)
+    if (G.owner && QA_TOOLS) {
       if (!this.custom && !this.preview && this.idx >= 0 && this.idx < 70) tools.push(ui.btn('배치 고치기', { color: 'orange', cls: 'sm', onClick: () => G.go('layedit', { idx: this.idx }) }));
       tools.push(ui.btn('세팅', { color: 'blue', cls: 'sm', onClick: () => { ui.closePanel(); openTune(G, { onClose: () => { if (!this.dead && !this.result) this.pause(); } }); } }));   // stays paused while tuning
       const perfLbl = () => S.perf ? '성능 표시 끄기' : '성능 표시';

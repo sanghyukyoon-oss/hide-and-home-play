@@ -2,7 +2,8 @@
 import { THEMES } from './stages.js';
 import { FURN_INFO } from './gfx/furniture.js';
 import { GPT_ROOFS } from './gfx/gpt-roofs.js';
-export { GPT_ROOFS };
+import { WINGS } from './gfx/home-wings.js';
+export { GPT_ROOFS, WINGS };
 
 const MY = THEMES.my;
 
@@ -124,7 +125,8 @@ export const HOME_STYLES = [
 export function addHomeStyle(st) { if (!HOME_STYLES.some(s => s.id === st.id)) HOME_STYLES.push(st); }
 export const styleOf = zone => HOME_STYLES.find(s => s.id === zone.style) || null;
 // Room sizes (상점 · 방 크기): each step makes the zone a little bigger; furniture keeps its place relative to the centre
-export const ZONE_SIZES = [{ w: 5, d: 5, price: 0 }, { w: 6, d: 5, price: 300 }, { w: 6, d: 6, price: 500 }, { w: 7, d: 6, price: 800 }, { w: 7, d: 7, price: 1200 }, { w: 8, d: 7, price: 1800 }];
+// (⑥ 10/26 사용자 "방 넓히는 거 위주로 약간 더": three more steps, 8×8 · 9×8 · 9×9 — roomdoc.js takes sizes up to 8)
+export const ZONE_SIZES = [{ w: 5, d: 5, price: 0 }, { w: 6, d: 5, price: 300 }, { w: 6, d: 6, price: 500 }, { w: 7, d: 6, price: 800 }, { w: 7, d: 7, price: 1200 }, { w: 8, d: 7, price: 1800 }, { w: 8, d: 8, price: 2400 }, { w: 9, d: 8, price: 3000 }, { w: 9, d: 9, price: 3800 }];
 export const zoneSize = zone => ZONE_SIZES[Math.min(zone.size || 0, ZONE_SIZES.length - 1)];
 
 export function zoneLayout(zone) {
@@ -133,6 +135,7 @@ export function zoneLayout(zone) {
   const theme = { ...base, ...(zone.paint || {}) };
   return { w: S.w, d: S.d, theme, furniture: zone.furniture.map(f => ({ ...f })), decor: zone.decor || st?.decor || Z.decor, door: zone.door !== undefined ? zone.door : st && 'door' in st ? st.door : Z.door, walls: { ...(st?.walls || Z.walls), ...(zone.walls || {}) }, indoor: Z.indoor, stack: true,
     ...(Z.indoor && zone.roof ? { gptRoof: zone.roof, gptRoofTurn: zone.roofTurn || 0 } : {}),
+    ...(Z.indoor && Array.isArray(zone.wings) && zone.wings.length ? { wings: zone.wings } : {}),
     ...(st?.bleed ? { bleed: {} } : {}) };
 }
 // a house of several rooms joined (털 집 찾기 프리셋, 10/20): { rooms: [{ at: [x, z], ...zone }] } → a map like the stages' two-room homes

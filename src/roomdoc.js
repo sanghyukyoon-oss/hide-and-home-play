@@ -4,7 +4,7 @@
 // the room: known furniture / items / lock kinds, no item hidden twice, every lock has its key or note in the room.
 import { ITEMS } from './gfx/items.js';
 import { FURN_INFO } from './gfx/furniture.js';
-import { ZONE_TYPES, GPT_ROOFS } from './catalog.js';
+import { ZONE_TYPES, GPT_ROOFS, WINGS } from './catalog.js';
 import { roofId } from './gfx/gpt-roofs.js';
 
 const HOST = /^(room|f:[A-Za-z0-9_-]{1,40}|d:\d{1,3}|p:[^\s]{1,80})$/;
@@ -22,6 +22,7 @@ export function validateRoom(doc) {
   if (z.size != null && !(Number.isInteger(z.size) && z.size >= 0 && z.size <= 8)) return '방 크기가 이상해요';
   if (z.roof != null && !GPT_ROOFS.some(r => r.id === roofId(z.roof))) return '모르는 지붕이에요';
   if (z.roofTurn != null && !(Number.isInteger(z.roofTurn) && z.roofTurn >= 0 && z.roofTurn < 4)) return '지붕 방향이 이상해요';
+  if (z.wings != null && !(Array.isArray(z.wings) && z.wings.length <= WINGS.length && z.wings.every(w => WINGS.some(x => x.id === w)) && new Set(z.wings).size === z.wings.length)) return '곁 공간이 이상해요';
   const ids = new Set();
   for (const f of z.furniture) {
     if (!f || typeof f !== 'object' || !own(FURN_INFO, f.type)) return '모르는 가구가 있어요';

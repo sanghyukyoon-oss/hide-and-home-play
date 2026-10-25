@@ -4,6 +4,7 @@ import { rbox, put, grp, mat, mesh, geo, canvasTex, shade, plane, sph } from './
 import { makeFurniture, FURN_INFO, Furn } from './gfx/furniture.js';
 import { GPT_LOFT_TOP } from './gfx/gpt-loft-props.js';
 import { makeGptRoof } from './gfx/gpt-roofs.js';
+import { WINGS, WING_IDS, WING_BUILD, wingBox } from './gfx/home-wings.js';
 import { clamp } from './util.js';
 import { houseRail, gableTop, timberFrame, entryNook } from './gfx/house-props.js';
 import { atticTop } from './gfx/bunnyattic-props.js';   // 2판 다락 (10/20)
@@ -170,6 +171,17 @@ export class Room {
     if (layout.door) this.doorDecor = this.addDecor('door', layout.door.wall, layout.door.u);
     // a window or door on a side with no wall at all (a map's open side onto the next room) would hang in the air
     for (const rec of this.decors) if ((layout.walls?.[rec.wall] || 'wall') === 'none') { rec.f.group.visible = false; rec.hidden = true; }
+    // 곁 공간 (⑥ 10/26, gfx/home-wings.js): a veranda, a greenhouse nook, a flower yard built onto the outside of a home room —
+    // before the roof, so a room without them keeps its decor numbers; their own spot keys (indexSpots) hold the rest
+    this.wingBoxes = [];
+    for (const id of WING_IDS) if (layout.wings?.includes(id)) {
+      const f = new Furn('wing_' + id, this.w, this.d); f.noSolid = true;
+      const r = WING_BUILD[id](f, this.w, this.d, this.T, layout.wings) || {};
+      f.finalize(); this.group.add(f.group);
+      const rec = { type: 'wing_' + id, f, roof: true, wing: id, hidden: false, stand: r.stand };
+      f.rec = rec; f.name = WINGS.find(x => x.id === id).name; this.decors.push(rec);
+      this.wingBoxes.push(wingBox(id, this.w, this.d, layout.wings));
+    }
     // A roof is a room option, with native hiding anchors. Appended after wall decor keeps existing spot keys stable.
     if (layout.gptRoof) {
       const roof = makeGptRoof(layout.gptRoof, this.w, this.d, { ...this.T, wallH: layout.wallH || WALL_H }, layout.gptRoofTurn || 0);
@@ -886,6 +898,7 @@ export class Room {
   // stand point in front of a furniture / decor piece (world)
   frontOf(f) {
     const rec = f.rec, v = new THREE.Vector3();
+    if (rec?.stand) return new THREE.Vector3(...rec.stand);
     if (rec?.roof) {
       const roof = f.group.children[0], cover = roof.userData.gptRoofCoverage;
       v.set(0, 0, (cover?.front || 0) + .55).applyMatrix4(roof.matrix);
@@ -1097,6 +1110,6 @@ function fallbackBoundary(kind, len, T) {
 export function indexSpots(room) {
   const spots = {}, parts = {};
   room.furns.forEach(r => { r.f.spots.forEach(s => { s.key = r.id + ':' + s.idx; spots[s.key] = s; }); r.f.parts.forEach((p, i) => { p.key = r.id + ':p' + i; parts[p.key] = p; }); });
-  room.decors.forEach((d, di) => { d.f.spots.forEach(s => { s.key = 'd' + di + ':' + s.idx; spots[s.key] = s; }); d.f.parts.forEach((p, i) => { p.key = 'd' + di + ':p' + i; parts[p.key] = p; }); });
+  room.decors.forEach((d, di) => { const pre = d.wing ? 'w' + d.wing : 'd' + di; d.f.spots.forEach(s => { s.key = pre + ':' + s.idx; spots[s.key] = s; }); d.f.parts.forEach((p, i) => { p.key = pre + ':p' + i; parts[p.key] = p; }); });
   return { spots, parts };
 }
