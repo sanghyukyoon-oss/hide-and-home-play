@@ -49,17 +49,33 @@ export function armFtap(S) {
   lesson(S, st);
 }
 
+// 1판 ② (user 10/25: "1판에 다 설명하고 … 처음에 이동, 이동 중 터치 설명하고 돌림판 설명"): the same lesson — the three-beat play,
+// a caption box per beat, then your turn and the '새로 얻었다!' badge — right after 1판's move lesson; the dial comes after it.
+// Resolves when it's over (done, nobody tried, or 30 s). Tutorial B only (A keeps it on 2판)
+export async function ftapLesson1(S) {
+  const G = S.G, W = G.world;
+  if (!FTAP_ON || W.scheme !== 'F' || S.botOn?.() || G.save.tut?.ftap) return;
+  const st = { turned: 0 };
+  const prevRot = W.onRotate;
+  W.onRotate = d => { prevRot?.(d); if (!fturning(W) || G.save.tut?.ftap) return; st.turned += Math.abs(d) || 0;
+    if (st.turned < .35) return;
+    const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; T.ftapUsed = 1; G.persist?.(); st.got = true; };
+  await lesson(S, st);
+}
+
 // 튜토리얼 B 뒤 한 번 더 (10/24, user: "튜토 지났는데도 4~5판까지 '이동 중 터치'를 안 쓰면, 중간에 저번에 만든 상세한 튜토를 한 번
 // 재생하면 좋겠어"): 3~5판 each count whether a drag-then-touch turn happened (saved: tut.ftapUsed); still never by 4판, the detailed
 // three-beat play once, a while into the stage (12 s, the glass free) — 4판, or 5판 if 4판's was cut short. Once; never for one who used it.
+// (user 10/25: "2판에 안 쓰면 3판에 저 방법으로 설명") now 2판 on: used there (or in 3판 before it shows) → never; still unused →
+// the play on 3판, a caption box per beat (4판 if 3판's was cut short). The 4~5판 condition is gone
 export function armFtapB(S) {
   const G = S.G, W = G.world;
-  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 2 || S.idx > 4 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
+  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 1 || S.idx > 3 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
   const T = G.save.tut || (G.save.tut = {});
   if (T.ftapRe || T.ftapUsed) return;
   const prevRot = W.onRotate;
   W.onRotate = d => { prevRot?.(d); if (fturning(W) && !T.ftapUsed) { T.ftapUsed = 1; G.persist?.(); } };
-  if (S.idx < 3) return;
+  if (S.idx < 2) return;
   const stop = () => S.dead || !!S.result || !!T.ftapUsed || !!T.ftapRe;
   (async () => {
     for (let i = 0; i < 240 && !(S.running && S.t - (S.tStart ?? S.t) > 12); i++) { if (stop()) return; await S.tw.wait(.5); }

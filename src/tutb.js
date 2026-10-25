@@ -1,10 +1,11 @@
 // 튜토리얼 B (③ 10/22, user: "지금 좀 과한 거 아닌가", "토순이집 들어가면 그냥 '이동 중에 터치를 하면 회전으로 잠시 바뀌어요' 이런 안내
 // 하나면"): a lighter start. B is the default since 10/22 (user: "b로 하고 글자 노출 시간 좀 더 늘려"); ?tut=a or 더보기 → 튜토리얼 B 끄기
 // brings back the old lessons (A) on this device.
-//  1판: as A (user 10/22 "1은 원래 것이 나은 것 같음"; tutB1 below is kept, unused).
+//  1판: as A (user 10/22 "1은 원래 것이 나은 것 같음"; tutB1 below is kept, unused), but in the order 이동 → 이동 중 터치 (the
+//       three-beat lesson, teachftap ftapLesson1) → 돌림판 (user 10/25). 2판 unused → 3판 the three-beat play once (armFtapB).
 //  2판: one line for 5 s — how to turn while moving. If you haven't turned in 20 s, the hand shows it once (no three steps).
 //       Turning at all ends it, quietly.
-//  Gone in B: the three-beat drag + touch lesson and its '새로 얻었다' badge, the tilt and double-tap lessons, the controls
+//  Gone in B: the three-beat lesson on 2판 (it is 1판 ② now), the tilt and double-tap lessons, the controls
 //  summary on 2판's result (still in 더보기 → 조작 도움말).
 import { h, ICON } from './ui.js';
 import { EN } from './i18n-en-dict.js';
@@ -17,6 +18,8 @@ export function setTutB(on) { try { localStorage.setItem('sbk-tut', on ? 'b' : '
 export const TUTB_TXT = {
   turn: K('이동하면서 다른 손가락으로 터치하면 잠깐 회전돼요', 'While dragging, touch with another finger to turn for a moment'),
   keep: K('떼지 마!', 'Keep holding!'), keep2: K('다른 손가락으로 터치!', 'Touch with another finger!'),
+  // (1판 ③, after the drag + touch lesson turned the box's front into view already: the dial still gets its line)
+  dial: K('돌림판을 밀어도 회전돼', 'The dial turns the room too'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 

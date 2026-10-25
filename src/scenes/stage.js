@@ -44,14 +44,14 @@ import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
-import { TUT_B, tutB1, tutB2 } from '../tutb.js';
+import { TUT_B, TUTB_TXT, tutB1, tutB2 } from '../tutb.js';
 import { NOTE3D, showNote3D } from '../noteview3d.js';
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
 import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
 import { closeUp, closeBack, clearParts, clearTurn, covered } from '../closeup.js';
 import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
-import { armFtap, armFtapB } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
+import { armFtap, armFtapB, ftapLesson1 } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
 import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
@@ -2694,9 +2694,20 @@ export class StageScene {
     // (user 10/21: "처음부터 회전하는 목적을 알려준다 — 상자 앞쪽을 보자!", one hand on the dial showing the way; done when the box's
     // front really shows; skipped once the box is open or the friend found)
     const turnDone = () => front() || !!this.friendItem?.found || box.t > .5;
+    const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
+    // 튜토리얼 B (user 10/25: "처음에 이동, 이동 중 터치 설명하고 돌림판 설명"): ② the drag + touch lesson (teachftap — three beats,
+    // a caption box each, then your turn), ③ the dial below. If ② already brought the box's front round, the dial gets one
+    // line of its own — done once it's pushed a little (or 12 s)
+    if (TUT_B && W.scheme === 'F' && !this.botOn()) {
+      await ftapLesson1(this);
+      if (this.dead || this.result) return;
+      if (turnDone() && dial && !this.friendItem?.found) {
+        let dl = 0; const prevR = W.onRotate; W.onRotate = d => { prevR?.(d); if (W._tdHeld) dl += Math.abs(d) || 0; };
+        await this.teach(TUTB_TXT.dial, 'dialr', () => at(dial), () => dl > .5, null, 12);
+      }
+    }
     if (!turnDone()) {
       // 기본 조작 F (조작감 세션 10/18): one finger always moves; the turn dial bottom right turns the room (or a two-finger twist)
-      const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
       if (W.scheme === 'F' && dial) {
         // (user 10/19: "오른쪽으로 돌리라고 손가락 나와야 할 듯") the hand presses on the dial and pushes it the way that shows the
         // box's front soonest (measured 10/19: today's box needs 60° one way, 155° the other) — pushing right turns the view
