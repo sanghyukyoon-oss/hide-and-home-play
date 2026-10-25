@@ -697,7 +697,9 @@ export class StageScene {
     return { obj: hit.node, m: hit.kind === 'char' ? .07 : .06 };
   }
   pickExact(x, y) {
-    const hits = this.G.world.pick(x, y, this.pickRoots());
+    // (⑤ QA 10/25: a thing already found that stays where it lay no longer stands in front of what is under it — on 64판 the
+    // found abacus on the grey office chair took every tap on the chair, the chair never got its colour and the stage could not end)
+    const hits = this.G.world.pick(x, y, this.pickRoots()).filter(hh => { const c = this.classify(hh.object); return !(c.kind === 'item' && c.item?.found); });
     if (!hits.length) return { kind: 'none' };
     const d0 = hits[0].distance;
     const ih = hits.find(hh => hh.distance - d0 < .3 && this.classify(hh.object).kind === 'item');
