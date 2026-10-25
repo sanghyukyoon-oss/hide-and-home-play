@@ -1258,11 +1258,17 @@ B.tc5chassis = (f, T, o = {}) => {
     add(G.box(W + .16, .14, L - .06, .03), UF, 0, -.45, 0);
     add(G.box(W - .3, .06, L - .3, .02), UF2, 0, -.55, 0);
     // under the frame, near side: an equipment box with louvres and a yellow tag, an air tank on straps, a pipe run; far side: two boxes
-    add(G.box(1.2, .36, .5, .05), UF2, .2, -.72, W / 2 - .45); for (let k = 0; k < 5; k++) add(G.box(.9, .022, .02, .004), UF, .2, -.62 - k * .055, W / 2 - .19);
-    add(G.box(.14, .08, .01, .01), '#f2c14e', .65, -.62, W / 2 - .195);
-    add(G.cyl(.15, .15, 1.0, 14), UF3, -.9, -.7, 0, 0, 0, HP); for (const dz of [-.3, .3]) add(G.tor(.152, .012, PI * 2, 4, 16), UF, -.9 + dz, -.7, 0, 0, HP, 0);
-    tube([-L / 2 + 1.9, -.56, W / 2 - .2], [L / 2 - 1.9, -.56, W / 2 - .2], .022, '#1f1c26', 6);
-    add(G.box(.9, .3, .5, .05), UF2, .1, -.7, -W / 2 + .45); add(G.box(.6, .26, .4, .04), UF3, -.9, -.68, -W / 2 + .5);
+    // (the machinery along the sides the camera sees — x is across the car, z along it; they sat in the middle under the floor,
+    // hidden from every side, 메모 점검 10/25 '차체 아래 기계 흔적 못 찾음')
+    for (const [bz, bl] of [[.35, 1.0]]) {
+      add(G.box(.46, .38, bl, .05), UF2, W / 2 - .3, -.72, bz);
+      for (let k = 0; k < 5; k++) add(G.box(.02, .024, bl - .22, .004), UF, W / 2 - .06, -.6 - k * .055, bz);
+    }
+    add(G.box(.01, .09, .16, .01), '#f2c14e', W / 2 - .065, -.62, .7);
+    add(G.cyl(.15, .15, .7, 14), UF3, W / 2 - .32, -.7, -.6, HP, 0, 0); for (const dz of [-.22, .22]) add(G.tor(.152, .012, PI * 2, 4, 16), UF, W / 2 - .32, -.7, -.6 + dz);
+    tube([W / 2 - .12, -.55, -L / 2 + 1.9], [W / 2 - .12, -.55, L / 2 - 1.9], .022, '#1f1c26', 6);
+    tube([W / 2 - .2, -.88, -.95], [W / 2 - .2, -.88, .85], .018, '#2a2732', 6);
+    add(G.box(.42, .3, .9, .05), UF2, -W / 2 + .3, -.7, .1); add(G.box(.36, .26, .6, .04), UF3, -W / 2 + .3, -.68, -.95);
     // the bogies
     for (const bz of [-BZ, BZ]) {
       add(G.box(2.5, .16, .55, .05), UF2, 0, -.66, bz); add(G.cyl(.18, .2, .1, 14), UF, 0, -.56, bz);

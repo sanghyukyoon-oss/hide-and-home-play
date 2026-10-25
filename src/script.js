@@ -1518,7 +1518,7 @@ K('졸졸이 코풍선', "Dozy's Nose Bubble"); K('멍뭉이 어질어질', 'Diz
 K('토순이랑 단짝 · 바로 옆집이 좋아요', "Bunbun's bestie · wants to be next door"); K('단짝 토순이·곰돌이까지 여섯 집!', 'Six homes, plus besties Bunbun & Bearie!');
 K('판다랑 멍뭉이도 이사 왔어요', 'Panda and Woofy moved in too'); K('토순아, 반가워!', 'Hi, Bunbun!'); K('졸졸이가 헤드폰을 끼고 잔다…', "Dozy's napping with headphones on…");
 K('졸졸이 방', "Dozy's Room"); K('멍뭉이가 자고 있어. 뛰면 깨!', "Woofy's asleep. Don't run!");
-K('멍뭉이 순경의 파출소 앞', "Outside Officer Woofy's Police Station"); K('멍뭉이 순경의 파출소', "Officer Woofy's Police Station"); K('토순이네 교실', "Bunbun's Classroom");
+K('멍뭉이 순경의 파출소 앞', "Officer Woofy's Station"); K('멍뭉이 순경의 파출소', "Officer Woofy's Police Station"); K('토순이네 교실', "Bunbun's Classroom");
 K('멍뭉이네 마당 2층집', "Woofy's House with a Yard"); K('토순이랑 단짝 · 바로 옆방이 좋아요', "Bunbun's bestie · wants the room next door");
 K('판다랑 멍뭉이도 체크인했어요', 'Panda and Woofy checked in too'); K('단짝 토순이·곰돌이까지 방이 꽉 찼어요!', "Every room's taken, besties Bunbun & Bearie too!");
 K('둠칫이가 또 왔어요… 이번엔 여섯 명!', "DJ Bop's back… six guests this time!"); K('손전등 술래', 'Flashlight Tag'); K('손전등 술래 · 보스', 'Flashlight Tag · Boss');
