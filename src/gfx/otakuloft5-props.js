@@ -919,6 +919,70 @@ B.ol5_rain = f => {
   rainFall(f, { n: 110, w: 10.5, d: 9.6, cx: .35, cz: .4, top: 5.6, opacity: .34, seed: 18, ringY: ISY + .02, out: inHouse,
     wet: (x, z) => !inHouse(x, z) && x > -4.2 && x < 4.9 && z > -3.7 && z < 4.5 });
 };
+// ── 오락기 디테일 더하기 (⑥ 10/25 memo-check "18판 오락기 전부 디테일업"): 부품·자리 약속은 그대로 두고 겉에만 덧붙임 ──────────────────
+// 오락기: 마키 위아래 꼬마 전구 줄, 화면 둘레 종류 색 테와 모서리 별, 조작판 앞 턱의 그림 안내 카드(스틱·단추 그림), 옆 컵걸이(캔 음료),
+// 앞 몸의 몽글이 스티커, 의자 옆에 떨어진 동전. 인형 뽑기: 간판 아래 전구 줄, 유리 반사 두 줄, 안쪽 천장 등, 옆 경품 티켓이 말려 나옴,
+// 받침의 환기 구멍. 캡슐 뽑기: 받침 쟁반에 빈 캡슐 반쪽들, 옆에 빈 캡슐 통. 동전 교환기: 간판 위 전구, 금빛 500 동전 그림, 위에 동전 주머니
+const plus = (k, fn) => { const b = B[k]; B[k] = (f, T, o = {}) => { b(f, T, o); fn(f, T, o); }; };
+const cardIcons = once(() => canvasTex(256, 32, (c, W, H) => {
+  c.fillStyle = '#fffaf0'; c.fillRect(0, 0, W, H); c.fillStyle = '#4a3a52';
+  for (const x0 of [8, 136]) {
+    dot(c, x0 + 14, 16, 9); c.fillStyle = '#fffaf0'; dot(c, x0 + 14, 16, 5); c.fillStyle = '#4a3a52';
+    for (const [dx, dy, a] of [[0, -13, 0], [13, 0, HP], [0, 13, PI], [-13, 0, -HP]]) { c.save(); c.translate(x0 + 14 + dx * .9, 16 + dy * .9); c.rotate(a); c.beginPath(); c.moveTo(0, -3); c.lineTo(3, 1); c.lineTo(-3, 1); c.closePath(); c.fill(); c.restore(); }
+    [BUTTER, MINT5, PINK5].forEach((col, i) => { c.fillStyle = col; dot(c, x0 + 46 + i * 22, 16, 7); c.fillStyle = '#4a3a52'; c.beginPath(); c.arc(x0 + 46 + i * 22, 16, 7, 0, PI * 2); c.lineWidth = 2; c.strokeStyle = '#4a3a52'; c.stroke(); });
+    c.fillRect(x0 + 112, 6, 2, 20);
+  }
+}));
+const BULB = '#fff1c4';
+plus('ol5_cab', (f, T, o) => {
+  const k = (o.kind || 0) % 3, C = CABS[k], W = .72, z0 = -.12, ST = .045, PA = .4636, MA = -.1974, FZ = z0 + .3, sx0 = o.prize ? .16 : 0, sz = z0 + .34 + .44;
+  f.add(lamp('cab-bulbs', BULB, ({ add }) => { for (const y of [1.792, 1.568]) for (let i = 0; i < 9; i++) add(G.sph(.013, 8, 6), BULB, -.3 + i * .075, y, z0 + .252); }, 1.4));
+  const bz = grp(); put(bz, 0, 1.301, z0 + .088, MA, 0, 0); f.add(bz);
+  bz.add(mc('ol5-cab-bezel|' + k, ({ add }) => {
+    for (const sy of [-1, 1]) add(G.box(.6, .022, .008, .004), C.acc, 0, sy * .166, 0); for (const sx of [-1, 1]) add(G.box(.022, .35, .008, .004), C.acc, sx * .296, 0, 0);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(G.cyl(.018, .018, .01, 5), '#fffaf0', sx * .296, sy * .166, .004, HP, 0, 0);
+  }));
+  const cp = grp(); cp.position.set(0, 1.005, z0 + .31); cp.rotation.x = PA; f.add(cp);
+  { const m = mesh(new THREE.PlaneGeometry(.5, .03), mat('#ffffff', { map: cardIcons(), rim: 0 }), { cast: false }); put(m, 0, .011, .108, -HP, 0, 0); cp.add(m); }
+  f.add(mc('ol5-cab-plus|' + k, ({ add, tube }) => {
+    const cx = W / 2 + ST + .05;
+    add(G.tor(.04, .008, PI * 2, 5, 16), STEEL5D, cx, .99, z0 + .3, HP, 0, 0); add(G.cyl(.04, .04, .006, 14), STEEL5D, cx, .96, z0 + .3); tube([cx - .04, .99, z0 + .3], [cx - .045 - .01, .99, z0 + .3], .008, STEEL5D, 5);
+    if (k !== 1) { add(G.cyl(.03, .03, .1, 12), k ? PINK5 : SKY5, cx, 1.012, z0 + .3); add(G.cyl(.026, .026, .006, 12), STEEL5, cx, 1.065, z0 + .3); add(G.box(.026, .04, .004, .002), '#ffffff', cx, 1.01, z0 + .331); }
+    const mx = .22, my = .53, mz = FZ + .004;
+    add(G.cyl(.042, .042, .006, 18), '#ffffff', mx, my, mz, HP, 0, 0); add(G.cyl(.034, .034, .008, 18), '#fff6ee', mx, my, mz + .001, HP, 0, 0);
+    for (const s of [-1, 1]) { add(G.sph(.006, 6, 5), INK5, mx + s * .012, my + .004, mz + .006); add(G.sph(.008, 6, 5), CHEEK, mx + s * .022, my - .008, mz + .005, 0, 0, 0, [1, .6, .4]); add(G.sph(.012, 6, 5), '#fff6ee', mx + s * .027, my + .03, mz + .002); }
+    add(G.cyl(.016, .016, .004, 12), '#e2b54e', sx0 + .22, .004, sz + .1); add(G.box(.004, .001, .012, .001), '#c99a36', sx0 + .22, .007, sz + .1);
+  }));
+});
+plus('ol5_claw', (f, T, o) => {
+  const k = (o.kind || 0) % 2, W = .76, D = .7, z0 = -.04, BY = .72, GY = 1.56, FZ = z0 + D / 2;
+  f.add(lamp('claw-bulbs', BULB, ({ add }) => { for (let i = 0; i < 9; i++) add(G.sph(.013, 8, 6), BULB, -.33 + i * .0825, GY + .015, FZ + .012); }, 1.4));
+  f.add(lamp('claw-inner', '#fffaf0', ({ add }) => add(G.pbox(W - .14, .012, .05), '#fffaf0', 0, GY - .03, z0), 1.0));
+  for (const [x, w] of [[-.18, .05], [-.1, .02]]) { const g = mesh(new THREE.PlaneGeometry(w, GY - BY - .14), mat('#ffffff', { opacity: .28, rim: 0 }), { cast: false }); put(g, x, (BY + GY) / 2 + .02, FZ - .012, 0, 0, -.12); f.add(g); }
+  f.add(mc('ol5-claw-plus|' + k, ({ add }) => {
+    add(G.box(.012, .06, .1, .004), STEEL5D, W / 2 + .006, .5, z0 + .1); add(G.pbox(.004, .012, .07), INK5, W / 2 + .013, .5, z0 + .1);
+    for (let i = 0; i < 5; i++) add(G.box(.004, .05, .06, .002), i % 2 ? '#ffc2d6' : '#ffd9e5', W / 2 + .012 + i * .004, .46 - i * .045, z0 + .1, 0, 0, -.25 * i);
+    for (let i = 0; i < 4; i++) add(G.box(.12, .008, .004, .002), PLUM, -.22, .2 + i * .03, FZ + .004);
+  }));
+});
+plus('ol5_gacha', (f, T) => {
+  const z0 = -.16, BY = .3;
+  f.add(mc('ol5-gacha-plus', ({ add }) => {
+    for (const [x, z, c, r] of [[.26, .24, PINK5, 0], [.33, .27, '#ffffff', 1.2], [.3, .29, SKY5, 2.4]]) add(new THREE.SphereGeometry(.035, 12, 6, 0, PI * 2, 0, HP), c, x, BY + .014, z0 + z, PI, r, 0);
+    add(G.cyl(.09, .08, .26, 16, true), '#c9d7e8', .58, .13, z0 + .12); add(G.cyl(.085, .075, .255, 16, true), '#b0c0d6', .58, .132, z0 + .12, 0, 0, 0, [-1, 1, 1]); add(G.cyl(.075, .075, .01, 16), '#b0c0d6', .58, .005, z0 + .12); add(G.tor(.09, .008, PI * 2, 4, 18), '#ffffff', .58, .26, z0 + .12, HP, 0, 0);
+    for (const [x, z, c] of [[.56, .1, BUTTER], [.6, .14, MINT5], [.57, .15, '#ffffff']]) add(new THREE.SphereGeometry(.032, 12, 6, 0, PI * 2, 0, HP), c, x, .2, z0 + z, PI, x * 9, 0);
+  }));
+});
+plus('ol5_changer', (f, T) => {
+  const z0 = -.18, W = .58, H = 1.5, D = .44, FZ = z0 + D / 2;
+  f.add(lamp('changer-bulbs', BULB, ({ add }) => { for (let i = 0; i < 7; i++) add(G.sph(.012, 8, 6), BULB, -.24 + i * .08, H - .005, FZ + .022); }, 1.4));
+  f.add(mc('ol5-changer-plus', ({ add }) => {
+    add(G.cyl(.07, .07, .012, 24), '#e2b54e', 0, .2, FZ + .004, HP, 0, 0); add(G.cyl(.056, .056, .014, 24), '#f2cf6a', 0, .2, FZ + .006, HP, 0, 0); add(G.tor(.045, .004, PI * 2, 4, 20), '#c99a36', 0, .2, FZ + .014);
+    add(G.sph(.08, 12, 10), '#c98a52', .12, H + .06, z0, 0, 0, 0, [1, .8, 1]); add(G.tor(.03, .008, PI * 2, 4, 12), '#e8d9b8', .12, H + .12, z0, HP, 0, 0);
+    for (let i = 0; i < 3; i++) add(G.cyl(.02, .02, .006, 12), '#e2b54e', -.12 + i * .012, H + .015 + i * .007, z0 + .05);
+  }));
+});
+
 export const OL5_BUILDERS = B;
 export const OL5_INFO = {
   ol5_shell: { w: 1, d: 1, name: '너굴이네 오락실 2층집', hidden: true, price: 0 },

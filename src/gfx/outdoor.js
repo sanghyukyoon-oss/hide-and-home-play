@@ -1422,6 +1422,24 @@ B.trunk = (f, T) => {
   f.spot('on', lid, 0, .17, D / 2 + .015, { maxH: .35, label: '트렁크 위', scale: .8 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
 
+// 평상 생활감 (⑥ 10/25 memo-check "20판 전체 디테일"): 목침 하나, 태극 무늬 부채, 모기향 접시(연기 한 가닥), 개어 둔 줄무늬 수건
+{ const b = B.pyeongsang; B.pyeongsang = (f, T, o) => {
+  b(f, T, o);
+  const top = .42, zc = -.07;
+  f.add(mg('pys-pillow', '#c98f58', ({ add }) => { add(G.box(.26, .1, .12, .025), -.12, top + .07, zc - .24, 0, .15, 0); }));
+  f.add(mg('pys-pillow-end', '#8f5a34', ({ add }) => { for (const s of [-1, 1]) add(G.box(.008, .075, .09, .004), -.12 + s * Math.cos(.15) * .132, top + .07, zc - .24 - s * Math.sin(.15) * .132, 0, .15, 0); }));
+  const fan = grp(); put(fan, .06, top + .026, zc + .2, 0, .5, 0); f.add(fan);
+  fan.add(put(new THREE.Mesh(new THREE.CircleGeometry(.11, 20, 0, PI), mat('#e8343a', { side: THREE.DoubleSide })), 0, 0, 0, -HP, 0, 0));
+  fan.add(put(new THREE.Mesh(new THREE.CircleGeometry(.11, 20, PI, PI), mat('#3f6fd0', { side: THREE.DoubleSide })), 0, 0, 0, -HP, 0, 0));
+  fan.add(put(tor(.11, .006, '#d9a466', null, PI * 2, 4, 24), 0, .002, 0, HP, 0, 0)); fan.add(put(cyl(.009, .009, .16, '#d9a466', null, 6), 0, .004, .17, HP, 0, 0));
+  const cx = .82, cz = zc + .3;
+  f.add(put(cyl(.07, .06, .015, '#b8bfcc', null, 16), cx, top + .008, cz));
+  f.add(put(mg('pys-coil', '#3f7a4a', ({ add }) => { for (const r of [.05, .036, .022]) add(G.tor(r, .005, PI * 1.8, 4, 18), 0, .02, 0, HP, 0, r * 30); }), cx, top, cz));
+  f.add(put(cyl(.004, .004, .002, '#ff8a3c', null, 6), cx + .05, top + .025, cz));
+  f.add(put(new THREE.Mesh(geo('pys-smoke', () => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([0, .04, .1, .16, .22].map((y, i) => new THREE.Vector3(Math.sin(i * 1.7) * .02, y, Math.cos(i * 1.3) * .015))), 16, .005, 4)), mat('#e8eef4', { opacity: .55 })), cx + .05, top + .025, cz));
+  f.add(mg('pys-towel', '#ffd0dc', ({ add }) => add(G.box(.18, .035, .12, .014), -.24, top + .036, zc + .22, 0, -.2, 0)));
+  f.add(mg('pys-towel-st', '#ffffff', ({ add }) => { for (const d of [-.03, .03]) add(G.box(.182, .037, .012, .004), -.24 - Math.sin(.2) * d, top + .036, zc + .22 + Math.cos(.2) * d, 0, -.2, 0); }));
+}; }
 export const OUTDOOR_BUILDERS = B;
 
 export const OUTDOOR_INFO = {

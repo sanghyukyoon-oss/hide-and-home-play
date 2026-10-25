@@ -336,6 +336,25 @@ export function buildParfait() {
   g.add(put(cyl(.13, .05, .05, '#cfe8f6', foot, 22), 0, .21, 0));
   g.add(put(cyl(.21, .13, .44, '#d8f0ff', glass, 28, true), 0, .45, 0));                  // the glass (see-through)
   g.add(put(tor(.21, .012, '#ffffff', null, Math.PI * 2, 8, 36), 0, .67, 0, Math.PI / 2, 0, 0));   // rim
+  // (⑥ 10/25 memo-check 34 "파르페 조형 디테일 — 투명한 큰 잔이 빈 윤곽처럼"): the glass gets a body you can see — sixteen fluted
+  // ridges down its sides, a gold lip over the white rim and a gold band at its waist; inside, a dashed ring in each layer's own
+  // colour marks where that piece will go (cereal at the bottom … cream at the top), so the empty glass reads as a mould waiting
+  // to be filled; a lace edge round the doily, a piping bag of cream and a jar of sprinkles beside it
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * Math.PI * 2, rm = .175, tilt = Math.atan2(.08, .44), r = rbox(.008, .45, .006, '#ffffff', .002, { opacity: .55 });
+    r.position.set(Math.cos(a) * rm, .45, Math.sin(a) * rm); r.rotation.order = 'YXZ'; r.rotation.set(tilt, Math.PI / 2 - a, 0); g.add(r);
+  }
+  g.add(put(tor(.212, .01, '#f2cf6a', null, Math.PI * 2, 6, 36), 0, .683, 0, Math.PI / 2, 0, 0));
+  g.add(put(tor(.135, .01, '#f2cf6a', null, Math.PI * 2, 6, 30), 0, .238, 0, Math.PI / 2, 0, 0));
+  for (const [key, y, c] of [['pf_cereal', .275, CEREAL], ['pf_icecream', .37, PINK], ['pf_banana', .455, '#ffe27a'], ['pf_strawberry', .54, '#ff7a90'], ['pf_cream', .63, CREAM]]) {
+    const r = .13 + (.21 - .13) * (y - .23) / .44 - .012, ring = grp(); g.add(ring);
+    for (let i = 0; i < 12; i++) ring.add(put(tor(r, .006, c, null, Math.PI / 9, 4, 6), 0, y, 0, Math.PI / 2, 0, i / 12 * Math.PI * 2));
+    Object.defineProperty(ring, 'visible', { get: () => !layers[key]?.visible, set() {} });
+  }
+  for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2; g.add(put(sph(.022, '#ffffff', null, 8, 6), Math.cos(a) * .262, .006, Math.sin(a) * .262, 0, 0, 0, [1, .35, 1])); }
+  { const bag = grp(); put(bag, -.3, .03, .14, 0, .6, 1.25); g.add(bag); bag.add(put(cone(.05, .2, '#ffffff', null, 14), 0, .1, 0, Math.PI, 0, 0)); bag.add(put(cyl(.052, .05, .03, '#fff6ee', null, 14), 0, .21, 0)); bag.add(put(cone(.016, .04, '#c3ccd8', null, 8), 0, -.02, 0, Math.PI, 0, 0)); bag.add(put(tor(.03, .006, '#ff8fb3', null, Math.PI * 2, 4, 12), 0, .23, 0, Math.PI / 2, 0, 0)); }
+  { const jar = grp(); put(jar, -.18, .006, .3); g.add(jar); jar.add(put(cyl(.04, .04, .1, '#e8f6ff', { opacity: .55 }, 14), 0, .05, 0)); jar.add(put(cyl(.042, .042, .025, '#ff8fb3', null, 14), 0, .112, 0));
+    for (let i = 0; i < 14; i++) jar.add(put(rbox(.012, .006, .006, ['#ff6fa6', '#7fd6c0', '#ffe27a', '#7fb5ff'][i % 4], .002), Math.cos(i * 2.4) * .025, .012 + (i % 5) * .013, Math.sin(i * 2.4) * .025, 0, i, 0)); }
   for (const [x, h, w] of [[-.1, .3, .022], [-.065, .2, .011]]) g.add(put(rbox(w, h, .004, '#ffffff', .002, { opacity: .7 }), x, .47, Math.sqrt(.172 * .172 - x * x), 0, Math.atan2(x, Math.sqrt(.172 * .172 - x * x)), 0));
   g.add(put(cyl(.009, .007, .78, '#c3ccd8', null, 8), .09, .62, -.07, .12, 0, -.2));
   g.add(put(sph(.026, '#c3ccd8', null, 10, 8), .015, .25, -.115, 0, 0, 0, [1, .45, 1.4]));

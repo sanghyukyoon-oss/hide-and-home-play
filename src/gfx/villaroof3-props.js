@@ -14,6 +14,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, mat, mesh, geo, canvasTex, texCache, STYLE } from './kit.js';
 import { HG as G, hxf as xf, hmc as mc } from './house-props.js';
 import { LANG, addI18n } from '../i18n.js';
+import { addPigeon } from './birds.js';
 
 addI18n({
   '햇살빌라 몸통과 옥상': 'Sunny Villa and its roof', '햇살빌라 동네': 'Sunny Villa neighbourhood', '계단실과 물탱크': 'Stair hut and water tank',
@@ -752,6 +753,41 @@ B.vr3_tap = (f, T) => {
   f.spot('inside', null, PX + .34, .02, PZ - .02, { maxH: .2, label: '파란 양동이 안', scale: .5 });
   f.spot('beside', null, .28, 0, -.3, { maxH: .26, label: '수도 옆', scale: .6 });
 };
+
+// ── 20판 디테일 더하기 (⑥ 10/25 memo-check "20판 전체 디테일") — 자리·부품은 그대로, 큰 것부터 ──────────────────────────────
+// 물탱크: 띠 밑으로 흘러내린 물때 자국, 옆에 붙은 수위계(투명 관에 파란 물), 받침 둘레 볼트, 뚜껑 비탈에 앉은 비둘기 둘.
+// 난간 갓돌: 뒤(북) 갓돌에 고추 모종 화분 넷(빨간 고추)·물뿌리개, 서쪽 갓돌에 고추 말리는 채반과 빨래집게 통
+const plus = (k, fn) => { const b = B[k]; B[k] = (f, T, o = {}) => { b(f, T, o); fn(f, T, o); }; };
+plus('vr3_stairhut', f => {
+  const H = 1.95, TY = H + .15, TR = .74, TH = 1.3, TX = .14, TZ = -.24;
+  f.add(mc('vr3-tank-plus', ({ add, tube }) => {
+    for (const [a, y, l] of [[.35, .5, .16], [.62, .8, .12], [.9, .5, .2], [1.18, 1.1, .1], [1.45, .8, .14], [.15, 1.1, .12]]) add(G.pbox(.022, l, .006), '#d29a2a', TX + Math.cos(a) * (TR + .012), TY + .22 + y - l / 2 - .03, TZ + Math.sin(a) * (TR + .012), 0, -a + HP, 0);
+    const ga = .2, gx = TX + Math.cos(ga) * (TR + .05), gz = TZ + Math.sin(ga) * (TR + .05);
+    tube([gx, TY + .3, gz], [gx, TY + 1.36, gz], .022, '#e8f6ff', 8); tube([gx, TY + .31, gz], [gx, TY + 1.0, gz], .016, '#5aa3e0', 8);
+    for (const y of [TY + .3, TY + 1.36]) { add(G.box(.06, .03, .06, .01), STEEL, gx, y, gz); tube([gx, y, gz], [TX + Math.cos(ga) * TR, y, TZ + Math.sin(ga) * TR], .012, STEEL, 5); }
+    for (let i = 0; i < 4; i++) add(G.pbox(.03, .004, .004), DARK, gx + .02, TY + .5 + i * .22, gz + .02);
+    for (let i = 0; i < 20; i++) { const a = i / 20 * PI * 2; add(G.sph(.016, 6, 4), STEEL, TX + Math.cos(a) * (TR + .01), TY + .245, TZ + Math.sin(a) * (TR + .01)); }
+  }));
+  const top = TY + .22 + TH, dome = r => top + TR * .28 * Math.sqrt(Math.max(0, 1 - (r / TR) ** 2));
+  addPigeon(f, TX + .44, dome(.46) + .005, TZ + .1, 1.9, { seed: 7 });
+  addPigeon(f, TX + .26, dome(.42) + .005, TZ + .36, 2.6, { seed: 3, s: .9 });
+});
+plus('vr3_villa', f => {
+  const zN = -BZ + IN / 2, xW = -BX + IN / 2, cap = PH + .07;
+  f.add(mc('vr3-parapet-plus', ({ add, tube }) => {
+    for (const [i, x] of [-3.0, -2.62, -2.24, -1.86].entries()) {
+      add(G.cyl(.075, .058, .13, 12), i % 2 ? '#e8b089' : POT, x, cap + .065, zN); add(G.cyl(.068, .068, .01, 12), '#6a4a34', x, cap + .126, zN);
+      for (let k = 0; k < 5; k++) { const a = k * 1.3 + i; add(G.sph(.034, 7, 5), k % 2 ? LEAF : LEAF2, x + Math.cos(a) * .04, cap + .17 + (k % 3) * .03, zN + Math.sin(a) * .04, 0, a, .4, [1, .6, 1]); }
+      for (let k = 0; k < 3; k++) { const a = k * 2.1 + i * .7; add(G.cap(.01, .04, 2, 5), k === 2 ? LEAF : '#e8343a', x + Math.cos(a) * .045, cap + .16, zN + Math.sin(a) * .045, .2, 0, .3); }
+      tube([x, cap + .13, zN], [x + .01, cap + .26, zN - .01], .005, '#a8733f', 3);
+    }
+    add(G.cyl(.06, .07, .13, 12), '#5aa86a', -1.45, cap + .065, zN); tube([-1.4, cap + .09, zN], [-1.28, cap + .16, zN], .012, '#5aa86a', 5); add(G.tor(.045, .01, PI, 4, 10), '#5aa86a', -1.49, cap + .13, zN, 0, 0, HP);
+    const tz = -1.1;
+    add(G.cyl(.14, .13, .03, 20), '#d9b885', xW, cap + .015, tz); add(G.tor(.14, .012, PI * 2, 4, 22), '#c4a06a', xW, cap + .03, tz, HP, 0, 0);
+    for (let k = 0; k < 14; k++) { const a = k * 2.4, r = .03 + (k % 5) * .022; add(G.cap(.011, .07, 2, 5), k % 4 ? '#e8343a' : '#c92a30', xW + Math.cos(a) * r, cap + .04, tz + Math.sin(a) * r, HP, a, 0); }
+    add(G.cyl(.045, .045, .08, 12), '#7fb5ff', xW, cap + .04, -.5); for (let k = 0; k < 4; k++) add(G.box(.008, .04, .016, .003), ['#ffcf5c', '#ff8fb3', '#7fd6c0', '#ffffff'][k], xW - .015 + (k % 2) * .03, cap + .09, -.5 - .012 + (k >> 1) * .024);
+  }));
+});
 
 export const VR3_BUILDERS = B;
 export const VR3_INFO = {
