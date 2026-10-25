@@ -17,10 +17,12 @@ const QS = typeof location !== 'undefined' ? new URLSearchParams(location.search
 export const TUT_B = (() => { const q = QS.get('tut'); if (q === 'b' || q === 'a') { try { localStorage.setItem('sbk-tut', q); } catch {} return q === 'b'; } try { return localStorage.getItem('sbk-tut') !== 'a'; } catch { return true; } })();
 export function setTutB(on) { try { localStorage.setItem('sbk-tut', on ? 'b' : 'a'); } catch {} }
 export const TUTB_TXT = {
-  turn: K('이동하면서 다른 손가락으로 터치하면 잠깐 회전돼요', 'While dragging, tap with another finger to turn for a moment'),
-  keep: K('떼지 마!', 'Keep holding!'), keep2: K('다른 손가락으로 터치!', 'Tap with another finger!'),
-  // (1판 ③, after the drag + touch lesson turned the box's front into view already: the dial still gets its line)
-  dial: K('돌림판을 드래그해도 회전돼', 'Dragging the dial turns the room too'),
+  // (② 10/26 마지막 정리 — 허브 추천안·사용자 "떼지마 멘트가 쎄지 않음? 터치하고 나면 회전에 대해서 설명하는 멘트로"): one line at a time, the
+  // same words in 1판·2판·3판's 개굴이 lesson; '떼지 마!' is gone everywhere
+  look: K('드래그해서 둘러봐!', 'Drag to look around!'),
+  turn: K('드래그한 채로 다른 손가락으로 터치!', 'Keep dragging and tap with another finger!'),
+  spin: K('빙글~ 방이 돌아가요! 손을 떼면 다시 이동', 'The room spins! Let go to move again'),
+  dial: K('아래 돌림판을 드래그해도 돌릴 수 있어요', 'You can also drag the dial below to turn'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 
@@ -56,37 +58,12 @@ export async function tutB1(S) {
     }
   } finally { T.off(); }
 }
-// 2판: one line; 20 s with no turn of yours → the hand once; a turn ends it
+// 2판: nothing if the turn was used on 1판; else the same one line as 1판 (②→③), once
 export async function tutB2(S) {
-  const G = S.G, W = G.world;
-  for (let i = 0; i < 40 && (S.talking || S.cine || W.flying || !S.running); i++) await S.tw.wait(.25);
-  if (S.dead || S.result) return;
-  // (the game's own lesson card — .tip, as in teach(): ink border, the same font and colours)
-  // (이동·회전 in coloured boxes, as the old lessons did — user 10/22 "이동, 회전에 전처럼 네모 색깔 네모로 강조")
-  const txt = tr(TUTB_TXT.turn).replace(/이동|dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/회전|turn/, w => `<span class="tkw tn">${w}</span>`);
-  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px;transition:opacity .4s`, html: txt }); G.ui.tut.append(line);
-  setTimeout(() => { line.style.opacity = '0'; setTimeout(() => line.remove(), 450); }, 5000);
-  // (user 10/24: "'떼지 마' 튜토리얼에 넣어 달랬는데" — the B lesson had no such tag) while one finger drags, a big "떼지 마!" over it
-  // (kept on screen, toward the middle) with "다른 손가락으로 터치!" under it; gone when the turn is done or the finger lifts
-  keepCss();
-  const tag = h('div', { class: 'tbkeep' }, h('b', {}, tr(TUTB_TXT.keep)), h('span', {}, tr(TUTB_TXT.keep2))); G.ui.tut.append(tag);
-  const place = () => {
-    const ps = [...(W.ptrs?.values() || [])];
-    if (ps.length !== 1 || S.paused || S.talking) { tag.classList.remove('on'); return; }
-    const p = ps[0], w = tag.offsetWidth || 220, hgt = tag.offsetHeight || 80;
-    const x = Math.max(w / 2 + 10, Math.min(innerWidth - w / 2 - 10, p.x * .6 + innerWidth / 2 * .4)), yy = Math.max(hgt + 70, Math.min(innerHeight - 160, p.y - 70));
-    tag.style.left = x + 'px'; tag.style.top = yy + 'px'; tag.classList.add('on');
-  };
-  const iv = setInterval(place, 50);
-  let turn = 0, y = W.yaw; const t0 = S.t;
-  try {
-    while (!S.dead && !S.result) {
-      await S.tw.wait(.25);
-      if (W.ptrs?.size) turn += Math.abs(W.yaw - y); y = W.yaw;
-      if (turn > .3) break;
-      if (S.t - t0 > 60) break;
-    }
-  } finally { clearInterval(iv); tag.classList.remove('on'); setTimeout(() => tag.remove(), 300); }
+  const T = S.G.save.tut || {};
+  if (T.ftap) return;
+  for (let i = 0; i < 40 && (S.talking || S.cine || S.G.world.flying || !S.running); i++) await S.tw.wait(.25);
+  if (!S.dead && !S.result) await turnLine1(S);
 }
 let kcss = false;
 function keepCss() {
@@ -106,25 +83,28 @@ export async function turnLine1(S) {
   if (W.scheme !== 'F' || S.botOn?.()) return false;
   while (!S.dead && !S.result && (S.tutEls || S.t - (S._tutEnd ?? -9) < 1.2)) await S.tw.wait(.2);
   if (S.dead || S.result) return false;
-  const txt = tr(TUTB_TXT.turn).replace(/이동|dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/회전|turn/, w => `<span class="tkw tn">${w}</span>`);
-  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px`, html: txt });
-  keepCss();
-  const tag = h('div', { class: 'tbkeep' }, h('b', {}, tr(TUTB_TXT.keep)), h('span', {}, tr(TUTB_TXT.keep2)));
-  G.ui.tut.append(line, tag); S.tutEls = [line, tag];
-  let turned = 0, ok = false; const t0 = S.t, prev = W.onRotate;
-  W.onRotate = d => { prev?.(d); if (W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld) turned += Math.abs(d) || 0; };
+  // one bubble: ② shows once a finger has dragged ~1 s (or after 4 s of nothing), ③ takes its place the moment the room turns,
+  // for 1.5 s, then it's done (20 s and no turn: it goes quietly)
+  const colour = k => tr(TUTB_TXT[k]).replace(/드래그한 채로|Keep dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/빙글~|spins!/, w => `<span class="tkw tn">${w}</span>`);
+  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px;opacity:0;transition:opacity .25s` });
+  G.ui.tut.append(line); S.tutEls = [line];
+  let said = null; const say = k => { if (k === said) return; said = k; line.innerHTML = colour(k); line.style.opacity = '1'; };
+  const t0 = S.t; let held = 0, spinT = null, ok = false;
   try {
-    while (!S.dead && !S.result && S.t - t0 < 15) {
-      const ps = [...(W.ptrs?.values() || [])];
-      if (ps.length === 1 && !S.paused) { const p = ps[0]; tag.style.left = Math.max(120, Math.min(innerWidth - 120, p.x)) + 'px'; tag.style.top = Math.max(150, p.y - 70) + 'px'; tag.classList.add('on'); }
-      else tag.classList.remove('on');
-      if (turned > .15 && !W.ptrs.size) { ok = true; break; }
+    while (!S.dead && !S.result && S.t - t0 < 20) {
+      const spin = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
+      if (spin && spinT == null) { spinT = S.t; say('spin'); G.audio.sfx('special'); }
+      if (spinT != null) { if (S.t - spinT >= 1.5 && !W.ptrs.size) { ok = true; break; } if (S.t - spinT >= 3) { ok = true; break; } }
+      else {
+        held = W.ptrs.size === 1 ? held + .05 : 0;
+        if (held >= 1 || S.t - t0 > 4) say('turn');
+      }
       await S.tw.wait(.05);
     }
   } finally {
-    W.onRotate = prev; line.remove(); tag.remove(); if (S.tutEls?.[0] === line) { S.tutEls = null; S._tutEnd = S.t; }
+    line.remove(); if (S.tutEls?.[0] === line) { S.tutEls = null; S._tutEnd = S.t; }
   }
-  if (ok) { const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; G.persist?.(); G.audio.sfx('special'); }
+  if (ok) { const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; G.persist?.(); }
   return ok;
 }
 // 1판 (user: "하나 찾으니까 종료된다 … 몇 개 눈에 보이는 거 좀 더 찾게"): beside the friend in the toy box, three things lying in

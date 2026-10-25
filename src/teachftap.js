@@ -19,16 +19,14 @@ const K = (ko, en) => { EN[ko] = en; return ko; };
 export const FTAP_ON = typeof location === 'undefined' || !/[?&]ftapteach=0(&|$)/.test(location.search);
 // the words (스토리 룸 10/20 밤): three beats, the tag, and the badge
 export const FTAP_CAP = {
-  move: K('드래그하면 이동', 'Drag to move'),
-  // (user 10/21 튜토 개선: three short beats — "드래그하면 이동" / "드래그하면서, 다른 손으로 톡 터치! → 회전" / "끌던 손을 떼면 다시 이동",
-  // the last one's words left to ③: "손을 떼면 다시 이동")
-  spin: K('드래그하면서 다른 손가락으로 터치! → 회전', 'While dragging, tap with another finger → turn'),
-  back: K('손을 떼면 다시 이동', 'Let go → move again'),
-  keep: K('떼지 마!', 'Keep holding!'),
+  // (② 10/26 마지막 정리: 1판과 같은 말 — 이동 / 드래그한 채로 다른 손가락으로 터치 / 빙글 회전·손을 떼면 다시 이동; '떼지 마!' 뺌)
+  move: K('드래그해서 둘러봐!', 'Drag to look around!'),
+  spin: K('드래그한 채로 다른 손가락으로 터치!', 'Keep dragging and tap with another finger!'),
+  back: K('빙글~ 방이 돌아가요! 손을 떼면 다시 이동', 'The room spins! Let go to move again'),
 };
 export const FTAP_CARD = { top: K('새로 얻었다!', 'New move!'), big: K('빙글 돌리기', 'Spin'), small: K('드래그 중 터치', 'Drag + tap') };
 // the mode word in each line, coloured: 이동 sky blue, 회전 pink (스토리 룸: "잠깐 바뀌었다 돌아온다"가 글을 다 안 읽어도 보이게)
-const MODE = [['회전', 'spin'], ['turn', 'spin'], ['spin', 'spin'], ['이동', 'move'], ['moving', 'move'], ['move', 'move'], ['Drag', 'move']];
+const MODE = [['빙글~', 'spin'], ['spins!', 'spin'], ['드래그한 채로', 'move'], ['Keep dragging', 'move'], ['둘러봐', 'move'], ['look around', 'move']];
 
 // a drag that a second-finger touch turned into a turn (not the dial, not the 회전 badge of the E controls)
 const fturning = W => W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
@@ -142,7 +140,7 @@ async function waitStart(S, stop) {
 // the line at the top (its mode word coloured) and the "떼지 마!" tag over the first finger
 function lines(S) {
   css();
-  const cap = h('div', { class: 'tip ftcap', style: `left:50%;top:${innerHeight * .2}px` }), keep = h('div', { class: 'ftkeep' }, tr(FTAP_CAP.keep), h('i', { class: 'ftspin' }, '↻'));
+  const cap = h('div', { class: 'tip ftcap', style: `left:50%;top:${innerHeight * .2}px` }), keep = h('div', { class: 'ftkeep', style: 'display:none' });
   let said = null;
   const L = {
     els: [cap, keep],
@@ -194,7 +192,7 @@ async function lesson(S, st, afterPlay = null) {
         free = 0; quiet = 0;
         const f = [...W.ptrs.values()][0];
         const spin = W.eMode === 'turn' && W.eBase !== 'turn';
-        L.say('spin'); L.keepAt(f.x, f.y); L.turning(spin); if (spin) turned = true;
+        L.say(spin ? 'back' : 'spin'); void f; if (spin) turned = true;
       } else {
         L.keepOff();
         if (turned) { turned = false; backT = S.t;
@@ -245,11 +243,11 @@ async function play(S, L) {
     if (!await step(.2)) return false;
     B.classList.remove('down', 'on');
     if (!await step(.25)) return false;
-    L.turning(true);
+    L.say('back');
     if (!await drag(x1, x2, 1.3, W._turnPivot())) return false;
     // ③ 손 떼면 다시 이동 — it lifts, comes down again and drags: the room slides again
     if (!await step(.25)) return false;
-    A.classList.remove('down'); L.keepOff(); L.say('back'); W.switchFx?.('move');
+    A.classList.remove('down'); L.keepOff(); L.say('move'); W.switchFx?.('move');
     if (!await step(.55)) return false;
     A.classList.add('down');
     if (!await drag(x2, x3, .9)) return false;
