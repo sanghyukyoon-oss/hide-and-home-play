@@ -59,7 +59,9 @@ export async function ftapLesson1(S) {
   const prevRot = W.onRotate;
   W.onRotate = d => { prevRot?.(d); if (!fturning(W) || G.save.tut?.ftap) return; st.turned += Math.abs(d) || 0;
     if (st.turned < .35) return;
-    const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; T.ftapUsed = 1; G.persist?.(); st.got = true; };
+    // (⑤ QA 10/25: not tut.ftapUsed here — that means "used it on 2판 (or 3판)"; set by the lesson it kept 3판's play away from
+    // one who learned it in 1판 but never used it on 2판, against the user's "2판에 안 쓰면 3판에 저 방법으로 설명")
+    const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; G.persist?.(); st.got = true; };
   await lesson(S, st);
 }
 
