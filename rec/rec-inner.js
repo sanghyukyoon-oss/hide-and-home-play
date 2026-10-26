@@ -113,9 +113,11 @@
     for (const sec of m.GALLERY) for (const it of sec.items) {
       if (it.type === 'model' || /안 쓰임|보류|캠페인 밖|시제품|새 버전/.test(it.slots || '')) continue;
       const lvs = it.lvs || [];
-      const afters = lvs.some(v => v.after != null) ? lvs.map(v => v.after != null ? v.after + 1 : null)
-        : ((it.slots || '').match(/\d+/g) || []).map(Number);
-      afters.forEach((n, k) => { if (n && n <= 70) (bonus[n] ||= []).push({ id: it.id, k: Math.min(k, Math.max(0, lvs.length - 1)), name: it.name + (lvs[k]?.label ? ' · ' + lvs[k].label : '') }); });
+      // 'after'가 있으면 그 판 뒤, 없으면 slots 앞쪽의 "12 · 40 · 70판 뒤"만 읽음 ("21판 뒤 (3박 4일)"의 3·4는 판이 아님)
+      const head = ((it.slots || '').match(/^[\d\s·]+(?=판)/) || [''])[0];
+      const afters = lvs.some(v => v.after != null) ? lvs.map(v => v.after != null ? v.after + 1 : null) : (head.match(/\d+/g) || []).map(Number);
+      const off = lvs.some(v => v.after != null) ? 0 : Math.max(0, lvs.length - afters.length);   // (슬롯이 단계보다 적으면 뒤쪽 단계 — 호텔 21판 뒤 = 3박 4일)
+      afters.forEach((n, j) => { const k = Math.min(lvs.length - 1, j + off); if (n && n <= 70) (bonus[n] ||= []).push({ id: it.id, k, name: it.name + (lvs[k]?.label ? ' · ' + lvs[k].label : '') }); });
     }
     seq = [];
     for (let n = 1; n <= 70; n++) { seq.push({ n, name: n + '판' }); for (const b of bonus[n] || []) seq.push({ ...b, name: n + '판 뒤 · ' + b.name }); }
@@ -128,6 +130,8 @@
     if (pos < 0) { const i = G.scene && G.scene.name === 'stage' ? G.scene.idx + 1 : 1; pos = Math.max(0, L.findIndex(x => x.n === i)); }
     pos = Math.max(0, Math.min(L.length - 1, pos + d));
     const it = L[pos];
+    // 놀이 연습(playMode) 중에 판으로 가면 게임이 홈으로 돌려보냄 — 녹화판에선 연습 저장을 먼저 되돌리고 바로 판으로
+    if (G.playMode) { try { const snap = JSON.parse(G.playMode.snap); for (const k of Object.keys(G.save)) delete G.save[k]; Object.assign(G.save, snap); } catch {} G.playMode = null; }
     if (it.n) G.go('stage', { idx: it.n - 1, direct: true });
     else window.__recGallery.playGame(G, it.id, it.k);
     return it.name;
