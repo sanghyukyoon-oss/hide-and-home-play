@@ -14,6 +14,7 @@
 // 경품 진열장은 이 파일에서 새로 지음(GPT 캡슐 뽑기 gpt_gacha는 폐기).
 import * as THREE from 'three';
 import { put, grp, mat, mesh, canvasTex, shade, roundRect } from './kit.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { HG as G, hmc as mc, hxf as xf } from './house-props.js';
 import { rrect, circle, ext, islandShape, ISY, rainTex, tileTex, foldWall, tagWall, basic, rnd, CURB, EARTH, EARTHD, PAVED, LEAF, LEAF2, POLE, WARM, CREAM, CORAL, INKY } from './otakuloft3-props.js';
 import { warmPaper, seg } from './otakuloft4-props.js';
@@ -227,12 +228,15 @@ B.ol5_shell = (f, T) => {
   { const g = mesh(new THREE.PlaneGeometry(4.9, .86), mat(GLASS, { opacity: .3, rough: .2 }), { cast: false }); put(g, 0, Y2 + .47, SZ - .05); f.add(g); }
   // (10/24 사용자 "위(2층)가 좀 어색하고 썰렁 … 어둡지만 컬러풀하고 화사하게"): a string of fairy lights draped post to post along the
   // railing's top rail — little glowing bulbs in pink, mint, butter and lilac — and a second one along the back wall's top
-  { const cols = ['#ff3fa8', '#1fe4ff', '#ffd23a', '#9b5cff'], mats = cols.map(c => mat(c, { emissive: c, ei: 1.4 })), wire = [], bulb = new THREE.SphereGeometry(.048, 10, 8);
+  // (⑤ 성능 10/26: the 41 bulbs were a mesh each — 82 draw calls a frame for colour + IDs; now one mesh a colour, the same
+  // spheres in the same places)
+  { const cols = ['#ff3fa8', '#1fe4ff', '#ffd23a', '#9b5cff'], mats = cols.map(c => mat(c, { emissive: c, ei: 1.4 })), wire = [], bulb = new THREE.SphereGeometry(.048, 10, 8), per = cols.map(() => []);
     const drape = (x0, x1, y, z, n, sag, k0) => { for (let i = 0; i <= n; i++) { const t = i / n, x = x0 + (x1 - x0) * t, yy = y - sag * 4 * t * (1 - t); wire.push([x, yy, z]);
-      if (i > 0 && i < n) { const m = new THREE.Mesh(bulb, mats[(k0 + i) % 4]); m.position.set(x, yy - .045, z); m.scale.set(1, 1.25, 1); m.userData.noMerge = true; f.add(m); } } };
+      if (i > 0 && i < n) { const g = bulb.clone(); g.scale(1, 1.25, 1); g.translate(x, yy - .045, z); per[(k0 + i) % 4].push(g); } } };
     const posts = [-2.45, -1.2, 0, 1.2, 2.45];
     for (let k = 0; k < posts.length - 1; k++) drape(posts[k], posts[k + 1], Y2 + .93, SZ - .02, 6, .16, k);
     for (let k = 0; k < 3; k++) drape(-3.2 + k * 2.2, -1.0 + k * 2.2, Y2 + 2.25, NZ + .06, 8, .22, k + 1);
+    per.forEach((gs, c) => { if (!gs.length) return; const m = new THREE.Mesh(mergeGeometries(gs), mats[c]); m.userData.noMerge = true; f.add(m); gs.forEach(g => g.dispose()); });
     f.add(mc('ol5-fairywire', ({ tube }) => { for (let i = 1; i < wire.length; i++) if (Math.abs(wire[i][0] - wire[i - 1][0]) < .5) tube(wire[i - 1], wire[i], .006, '#3d3a52', 4); }));
   }
   { const b = mesh(new THREE.BoxGeometry(1.2, .04, .12), mat('#f4f8ff', { emissive: '#f4f8ff', ei: 1.0 }), { cast: false }); put(b, 0, SLAB_B - .06, -1.6); f.add(b); }

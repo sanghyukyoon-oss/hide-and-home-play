@@ -384,7 +384,9 @@ export class World {
     const L = QUALITY[n = clamp(n, 0, QUALITY.length - 1)];
     if (this.level === n) return; this.level = n;
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, L.dpr));
-    const sh = PHONE ? Math.min(1024, L.shadow) : L.shadow;
+    // (⑤ 성능 10/26: a phone on the low steps of the ladder — a low-memory phone starts on step 2, a struggling one is moved
+    // down to it — draws its shadow map at 512; the normal and high steps keep 1024)
+    const sh = PHONE ? Math.min(n >= 2 ? 512 : 1024, L.shadow) : L.shadow;
     if (this.sun.shadow.mapSize.x !== sh) { this.sun.shadow.mapSize.set(sh, sh); this.sun.shadow.map?.dispose(); this.sun.shadow.map = null; }
     this.maxSS = L.ss; this.resize();
     this._applyAO();
