@@ -86,9 +86,11 @@ export async function turnLine1(S) {
   // one bubble: ② shows once a finger has dragged ~1 s (or after 4 s of nothing), ③ takes its place the moment the room turns,
   // for 1.5 s, then it's done (20 s and no turn: it goes quietly)
   const colour = k => tr(TUTB_TXT[k]).replace(/드래그한 채로|Keep dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/빙글~|spins!/, w => `<span class="tkw tn">${w}</span>`);
-  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px;opacity:0;transition:opacity .25s` });
-  G.ui.tut.append(line); S.tutEls = [line];
-  let said = null; const say = k => { if (k === said) return; said = k; line.innerHTML = colour(k); line.style.opacity = '1'; };
+  // (the card goes on the screen with its words already in it: put up empty, its own pop animation showed a blank box first — user
+  // 10/26 "글자 나오기 전에 뭐 이상한 네모 뜬다")
+  const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` });
+  S.tutEls = [line];
+  let said = null; const say = k => { if (k === said) return; said = k; line.innerHTML = colour(k); if (!line.isConnected) G.ui.tut.append(line); };
   const t0 = S.t; let held = 0, spinT = null, ok = false;
   try {
     while (!S.dead && !S.result && S.t - t0 < 20) {
@@ -135,10 +137,11 @@ export const FIRST_SAY = [
 ];
 export async function firstFindsTalk(S) {
   const fr = () => S.targets.find(t => t.friend);
-  while (!S.dead && !S.result && !fr()?.found) await S.tw.wait(.3);
+  // (after the friend is found and the lesson's lines are done: one line at a time)
+  while (!S.dead && !S.result && (!fr()?.found || S.tutStep !== 3 || S.tutEls)) await S.tw.wait(.3);
   if (S.dead || S.result || S.targets.every(t => t.found)) return;
   for (let i = 0; i < 30 && (S.talking || S.cine || S.G.world.flying) && !S.dead; i++) await S.tw.wait(.2);
   const who = S.friend?.root ? S.friend : null; if (!who || S.dead || S.result) return;
-  S.say(who, FIRST_SAY[0], 2400); await S.tw.wait(2.6);
-  if (!S.dead && !S.result) S.say(who, FIRST_SAY[1], 2600);
+  S.sayNow(who, FIRST_SAY[0], 2400); await S.tw.wait(2.6);
+  if (!S.dead && !S.result) S.sayNow(who, FIRST_SAY[1], 2600);
 }

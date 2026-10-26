@@ -211,6 +211,8 @@ export class UI {
     else { p.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.7)', opacity: 0 }], { duration: 160, easing: 'ease-in' }).onfinish = () => p.remove(); }
   }
   toast(text, color = '') {
+    // (1~3판 한 번에 하나만: the stage may hold a toast back while a lesson or a line is showing — stage.js hushed, ② 10/26)
+    if (this.hush?.()) return;
     const t = h('div', { class: 'toast ' + color }, text);
     // one at a time: the newest replaces what was showing (three stacked boxes covered the top of the room)
     for (const o of [...this.toasts.children]) { o.classList.add('gone'); setTimeout(() => o.remove(), 160); }

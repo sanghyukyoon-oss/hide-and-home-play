@@ -521,6 +521,8 @@ export class StageScene {
     })();
     // (튜토리얼 B — tutb.js, ③ 10/22: ?tut=b or 더보기: in 2판 a line and a hand only if needed, instead of the lessons)
     // (user 10/22: "1은 원래 것이 나은 것 같음" — B changes 2판 only)
+    // (1~3판 한 번에 하나만 — toasts too)
+    G.ui.hush = () => !this.dead && this.hushed();
     if (TUT_B && this.spec.tut === 2) tutB2(this);
     else {
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
@@ -565,6 +567,7 @@ export class StageScene {
     fitPrep(null);
     clearTimeout(this._moveT);
     G.world.onTap = null; G.world.onRotate = null; G.world.tapInstant = null; G.world.onPress = null; G.world.tapZoomable = null;
+    G.ui.hush = null;
     G.world.camLock = false;   // (the model-kit assembly holds the camera; leaving mid-way must not keep it held)
     G.ui.clear(); this.tw.clear();
   }
@@ -1146,7 +1149,8 @@ export class StageScene {
     this.hero?.react('event', pc, this.tw);
     this.wobble(part.furn.group);
     // (the words at most every 13 s, or when you've been still a while — 1판 had "킥…"/"삐죽… 쏙!" every 4-5 s; 검토 재검토 5)
-    const talk = line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10;
+    // (1판: the hint words only when you've been stuck a while — ② 10/26 "푹신한 거 좋아하는데도 봐야 되고 … 정신이 없다")
+    const talk = this.spec.tut === 1 ? this.idle > 15 : line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10;
     this.G.audio.sfx(talk && this.th.friend === 'bunny' && /킥|푸|히|헤/.test(say) ? 'giggleBunny' : 'wobble');   // (토순이's own giggle with her "킥…" — 사운드 10/21)
     if (talk) { this._gigSayT = this.t; this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300); }
   }
@@ -3060,7 +3064,21 @@ export class StageScene {
   // who is talking, held still (user 10/20 on a phone: "말풍선이 누가 말하는지 모르겠고, 움직여서 정신없다" — "말풍선 앞에 얼굴
   // 박아서 고정"): a word or two stays where it popped up over the speaker's head; a line goes in one caption above the tray,
   // the speaker's face and name first, replaced by the next line — never two at once (2D UI 정리 ⑯)
-  say(ch, text, ms = 1200, name) {
+  // 1~3판 한 번에 하나만 (② 10/26, user on the phone: "말풍선이니 뭐니 너무 뭐가 많이 뜨는 거 같아 … 정신이 없다"): while a lesson is on
+  // screen (1판: until its four lines are done) or another line/toast is still showing, a passing line (a giggle, a hint, a 'got it!')
+  // is left out; the lesson's own lines (sayNow) take the place of whatever was showing
+  hushed() {
+    if (this.idx > 2 || this.custom || this.preview) return false;
+    if ((this.spec.tut === 1 && this.tutStep !== 3) || this.tutEls || this.frogLesson) return true;
+    return performance.now() < (this._talkUntil || 0) || !!document.querySelector('.ncard, .ncard-mini');
+  }
+  sayNow(ch, text, ms = 1200, name) { this._lastSay?.kill?.(); this._talkUntil = 0; return this.say(ch, text, ms, name, true); }
+  say(ch, text, ms = 1200, name, force = false) {
+    if (!force && this.hushed()) return { el: null, kill: () => {} };
+    if (this.idx <= 2) this._talkUntil = performance.now() + ms + 250;
+    const r = this._say(ch, text, ms, name); if (this.idx <= 2) this._lastSay = r; return r;
+  }
+  _say(ch, text, ms = 1200, name) {
     this.G.audio.voice?.(text, ch?.kind);   // (목소리 — 10/20)
     const t = String(tr(text) || ''), short = t.replace(/\s/g, '').length <= (/[가-힣]/.test(t) ? 6 : 12);
     if (!short && this.col) return this.subline(ch, text, ms, name);

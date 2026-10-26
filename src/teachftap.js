@@ -93,13 +93,15 @@ export function armFtapB(S) {
     if (!await waitStart(S, stop)) return;
     T.ftapRe = 1; G.persist?.();
     const who = S.friend?.root ? S.friend : null; S.frogLesson = true;
-    if (who) { S.say(who, FROG.intro, 2400); await S.tw.wait(2.4); }
+    if (who) { S.sayNow(who, FROG.intro, 2400); await S.tw.wait(2.4); }
     if (S.dead || S.result) return;
     const st = { turned: 0, force: true };
     const prev = W.onRotate;
     W.onRotate = d => { prev?.(d); if (!fturning(W) || st.got) return; st.turned += Math.abs(d) || 0; if (st.turned >= .35) { st.got = true; const U = G.save.tut || (G.save.tut = {}); U.ftap = 1; U.ftapUsed = 1; G.persist?.(); } };
-    await lesson(S, st, () => { if (who) S.say(who, FROG.you, 3000); });
-    if (st.got && who && !S.dead && !S.result) S.say(who, FROG.yay, 2200);
+    // (one at a time: the caption at the top already says what to do — no bubble beside it)
+    await lesson(S, st);
+    // (after the '새로 얻었다' badge has gone)
+    if (st.got && who && !S.dead && !S.result) { await S.tw.wait(3.2); if (!S.dead && !S.result) S.sayNow(who, FROG.yay, 2200); }
     S.frogLesson = false;
   })();
 }
