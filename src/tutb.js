@@ -20,16 +20,17 @@ export const TUTB_TXT = {
   // (② 10/26 마지막 정리 — 허브 추천안·사용자 "떼지마 멘트가 쎄지 않음? 터치하고 나면 회전에 대해서 설명하는 멘트로"): one line at a time, the
   // same words in 1판·2판·3판's 개굴이 lesson; '떼지 마!' is gone everywhere
   look: K('드래그로 둘러봐요', 'Drag to look around'),
-  turn: K('누른 채 다른 손가락 터치 = 화면 회전!', 'Hold + tap another finger = turn the view!'),
+  turn: K('드래그 + 다른 손가락 한 번 터치 = 회전!', 'Drag + one tap with another finger = rotate!'),
   spin: K('회전 중! 손을 떼면 다시 둘러보기', 'Rotating! Let go to look around again'),
   dial: K('돌리는 방법 하나 더! 아래 돌림판을 드래그', 'Another way to spin: drag the dial below'),
   // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
   // (1판 10/26 실폰: "처음에 너무 길긴한데 … 조금 짧게 해주고 좀 위로 올려줘. 누르면 사라지게도") two short lines, a short dial line
   // (1판 10/26 user: "이동중에 다른손으로 터치 한번 하면 회전으로 바뀜 이거 진짜 설명 어렵다" → 사용자가 고른 문구; the switch is shown by the loop)
-  how: K('드래그 = 화면 이동\n누른 채 다른 손가락 터치 = 화면 회전!', 'Drag = move the view\nHold + tap another finger = turn the view!'),
+  how: K('드래그 = 화면 이동\n드래그 + 다른 손가락 한 번 터치 = 회전!', 'Drag = move the view\nDrag + one tap with another finger = rotate!'),
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
+  fbHold: K('꾹 누른 채로!', 'Keep holding!'), fbSpin: K('회전!', 'Rotate!'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 
@@ -166,21 +167,28 @@ export async function howCard(S) {
   while (!S.dead && !S.result && (S.tutEls || S.talking || S.cine || W.flying)) await S.tw.wait(.2);
   if (S.dead || S.result) return;
   howCss();
-  const txt = tr(TUTB_TXT.how).replace(/화면 이동|move the view/, w => `<span class="tkw mv">${w}</span>`).replace(/화면 회전!|turn the view!/, w => `<span class="tkw tn">${w}</span>`).split('\n').map(l => `<div class="hw-ln">${l}</div>`).join('');   // (10/26 사용자 A안: 두 줄을 같은 꼴로, 배지는 줄 끝 결과에만)
+  const txt = tr(TUTB_TXT.how).replace(/화면 이동|move the view/, w => `<span class="tkw mv">${w}</span>`).replace(/회전!|rotate!/, w => `<span class="tkw tn">${w}</span>`).split('\n').map(l => `<div class="hw-ln">${l}</div>`).join('');   // (10/26 사용자 A안: 두 줄을 같은 꼴로, 배지는 줄 끝 결과에만)
   const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }), h('div', { class: 'hw-mode' }, '↻'));
   // (up under the top bar — the room and 토순이 stay clear; a touch on it closes it, so does a turn of the room, so do 8 s)
   const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-txt', html: txt }));   // (10/26 사용자 "쓸데없는거 정리해줘": the two lines only — no loop picture, no '터치해서 닫기')
   let shut = false; card.addEventListener('pointerdown', e => { e.stopPropagation(); shut = true; });
   G.ui.tut.append(card); S.tutEls = [card]; TT.how1 = 1; G.persist?.();
   const t0 = S.t; let spunAt = null;
+  // (10/26 사용자: "손가락보다 좀 위에 말풍선으로… 클릭하고 나면 화면 회전! 문구"): while one finger drags, a small bubble just above it
+  // says to keep holding; the moment the other finger's tap turns the drag into turning, it says 회전! and goes. 1판 card only
+  const fb = h('div', { class: 'hw-bub hw-fb', style: 'opacity:0' }); G.ui.tut.append(fb);
+  const fbAt = () => { const f = W.ptrs?.size ? [...W.ptrs.values()][0] : null; if (f) { fb.style.left = f.x + 'px'; fb.style.top = (f.y - 64) + 'px'; } return f; };
   try {
-    while (!S.dead && !S.result && !shut && S.t - t0 < 15) {   // (10/26 사용자 "약간 더 길게… 다 읽히기전에 넘어가서": 8 → 15 s)
+    while (!S.dead && !S.result && !shut && S.t - t0 < 15) {
+      { const f = fbAt(), turning = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
+        const say = spunAt != null ? (S.t - spunAt < 1.6 ? tr(TUTB_TXT.fbSpin) : '') : (f && W.ptrs.size === 1 && !turning ? tr(TUTB_TXT.fbHold) : '');
+        if (fb.textContent !== say) fb.textContent = say; fb.style.opacity = say && f ? '1' : '0'; }   // (10/26 사용자 "약간 더 길게… 다 읽히기전에 넘어가서": 8 → 15 s)
       const spin = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
       if (spin && spunAt == null) { spunAt = S.t; const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; T.ftapUsed = 1; G.persist?.(); }
       if (spunAt != null && S.t - spunAt > 3) break;
       await S.tw.wait(.1);
     }
-  } finally { card.remove(); if (S.tutEls?.[0] === card) { S.tutEls = null; S._tutEnd = S.t - 2; } }
+  } finally { fb.remove(); card.remove(); if (S.tutEls?.[0] === card) { S.tutEls = null; S._tutEnd = S.t - 2; } }
   if (S.dead || S.result) return;
   // card 2, straight after: the dial, a hand on it for a moment
   const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
@@ -204,6 +212,8 @@ function howCss() {
 .hw-bub::before,.hw-bub::after{content:'';position:absolute;left:var(--tx,50%);border:solid transparent;border-bottom:0}
 .hw-bub::before{bottom:-15px;margin-left:-11px;border-width:14px 11px 0;border-top-color:#3b2a55}
 .hw-bub::after{bottom:-9px;margin-left:-7px;border-width:9px 7px 0;border-top-color:#fffaf2}
+
+.hw-fb{transition:opacity .15s;font-size:15px;padding:6px 12px}
 @keyframes hwbub{from{transform:translate(-50%,-100%) scale(.6);opacity:0}}
 .hw-x{font-size:11px;opacity:.55;align-self:flex-end;margin-top:-2px}
 .hw-demo{position:relative;flex:none;width:170px;height:80px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden;zoom:.6}
