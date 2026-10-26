@@ -504,7 +504,14 @@ export const ITEMS = {
   // (31판 사용자 10/24 "열쇠는 왜이럼": 노란 도넛 + 분홍 공으로만 읽힘 → 진짜 열쇠 — 하트 구멍 뚫린 도톰한 머리, 목 고리 둘, 몸통, 톱니 난 날.
   // 크기·자리는 그대로: 머리 가운데 x -.1(걸린 열쇠가 매달리는 점, stage.js swingHung), 날 끝 x .11, 톱니는 +z, 두께 y .006~.034)
   key: { name: '열쇠', h: .06, flat: true, special: 'key', build() {
-    const g = grp(), m = '#ffc93c', dk = '#e3a52c';
+    // (⑪ 10/26 9판 실폰 "크고 못생겼냐": 어두운 판에서 겨자색 판으로 뭉개짐 → 머리 둘레에 진한 갈색 테(윤곽), 금색 한 톤 밝게)
+    const g = grp(), m = '#ffd24a', dk = '#e3a52c';
+    g.add(put(mesh(geo('key2-rim', () => {
+      const s = new THREE.Shape(); s.absarc(-.1, 0, .066, 0, Math.PI * 2, false);
+      const h = new THREE.Path(); h.absarc(-.1, 0, .05, 0, Math.PI * 2, true); s.holes.push(h);
+      const e = new THREE.ExtrudeGeometry(s, { depth: .014, bevelEnabled: true, bevelThickness: .004, bevelSize: .004, bevelSegments: 2, curveSegments: 20 });
+      e.rotateX(Math.PI / 2); e.translate(0, .027, 0); return e;
+    }), mat('#6b3f2a')), 0, 0, 0));
     g.add(put(mesh(geo('key2-bow', () => {
       const s = new THREE.Shape(); s.absarc(-.1, 0, .058, 0, Math.PI * 2, false);
       const h = new THREE.Path(), pts = heartShape(.03).getPoints(10);

@@ -2561,7 +2561,11 @@ export class StageScene {
     // nearest turn of that view (30° steps, a little higher) that shows it
     const v = this.view0 || { yaw: Math.PI / 4, pitch: .62, zoom: this.zoom0 || 1 };
     const y00 = W.yaw, p00 = W.pitch, z00 = W.zoom, t00 = W.target.clone();
-    W.target.copy(W.home); W.zoom = v.zoom || 1;
+    // (9판 10/26, user: "휴지 힌트 써서 찾는데 힌트 이상한데에 알려주고 거기 확인해봐도 아무것도 없음"): the whole room from the first view drew
+    // a small thing at 14~18 px half behind a leg — the view now centres on it and comes in (2.2× the first view's zoom, at most 3.2),
+    // turned the way it's in plain sight from there
+    const hz = Math.min(3.2, (v.zoom || 1) * 2.2), ht = new THREE.Vector3(pos.x, Math.max(W.home.y, pos.y), pos.z);
+    W.target.copy(ht); W.zoom = hz;
     let best = null;
     for (const p of [v.pitch, .62, 1.0, 1.15]) {
       for (let k = 0; k < 12 && !best; k++) {
@@ -2572,7 +2576,7 @@ export class StageScene {
       if (best) break;
     }
     W.yaw = y00; W.pitch = p00; W.zoom = z00; W.target.copy(t00); W.updateCam();
-    await W.flyTo(this.tw, { yaw: best ? best.y : v.yaw, pitch: best ? best.p : v.pitch, zoom: v.zoom || 1, target: W.home.clone(), dur: .6 });
+    await W.flyTo(this.tw, { yaw: best ? best.y : v.yaw, pitch: best ? best.p : v.pitch, zoom: hz, target: ht, dur: .6 });
     // 흑백판: a grey thing on grey stays invisible even with the rings round it — lend it its colour for a moment
     // (user, 10/17: "힌트썼는데도 안보여서")
     if (this.spec.gray && goal.kind === 'item' && !goal.item.g.userData.colored) {

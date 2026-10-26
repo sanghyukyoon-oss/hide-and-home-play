@@ -25,8 +25,8 @@ export const TUTB_TXT = {
   // (user 10/26: "돌림판도 다른 회전 방법으로 설명해 주라니까 한 가지 돌리는 방법 더 있다고 일단 간결하게")
   dial: K('돌리는 방법 하나 더! 아래 돌림판을 드래그', 'Another way to spin: drag the dial below'),
   // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
-  how: K('드래그로 둘러보고, 드래그하면서 다른 손가락으로 한 번 터치하면 돌아가요', 'Drag to look around. While dragging, tap once with another finger to spin'),
-  dial2: K('돌림판으로도 돌릴 수 있어요', 'The dial turns it too'),
+  how: K('드래그로 둘러보고, 드래그하면서 다른 손가락으로 한 번 터치하면 방이 빙글 돌아요', 'Drag to look around. While dragging, tap once with another finger to spin the room'),
+  dial2: K('돌림판으로도 방을 돌릴 수 있어요', 'The dial spins the room too'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
