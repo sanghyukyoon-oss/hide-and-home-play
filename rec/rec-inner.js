@@ -91,7 +91,8 @@
     const need = z === 'br' ? 5 : 3;
     if (a.length >= need) {
       hits[z] = [];
-      if (z === 'br') { hidden = !hidden; hideUI(hidden); }
+      // (10/26 사용자 "esc가 안된다면 우하단 5번"): 녹화 중이면 오른쪽 아래 5번 = 녹화 멈추고 저장, 아니면 UI 숨김/보임
+      if (z === 'br') { let R = null; try { R = parent.__recUI; } catch {} if (R && R.isRec && R.isRec()) R.stop(); else { hidden = !hidden; hideUI(hidden); } }
       else go(z === 'tr' ? 1 : -1);
     }
   };
