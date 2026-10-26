@@ -88,9 +88,13 @@
     }
   };
   const block = e => { if (eat) { e.stopImmediatePropagation(); e.preventDefault(); } };
+  addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === ' ') try { parent.__recUI && parent.__recUI.stop && document.documentElement.contains(cur) && (e.preventDefault(), parent.__recUI.stop()); } catch {} });
   for (const t of ['pointerdown', 'mousedown', 'touchstart']) addEventListener(t, down, { capture: true, passive: false });
   for (const t of ['pointermove', 'pointerup', 'mouseup', 'touchmove', 'touchend', 'click', 'dblclick']) addEventListener(t, block, { capture: true, passive: false });
   window.__recHide = hideUI;
+  // 녹화 중 커서 숨김(부모 창이 부름): 게임 창 안의 모든 요소 커서를 none 으로
+  const cur = document.createElement('style'); cur.textContent = '*,*::before,*::after{cursor:none !important}';
+  window.__recCursor = show => { if (show) cur.remove(); else document.head.appendChild(cur); };
   window.__rec = { canvas: cv, stream: fps => {
     const s = cv.captureStream(fps || 60), c = window.__recCtx;
     if (c) { c.resume?.(); c.__recDest.stream.getAudioTracks().forEach(t => s.addTrack(t)); }

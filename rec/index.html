@@ -45,7 +45,7 @@ async function start() {
   const w = g.contentWindow; let s;
   if ($('ui').value === 'on') {
     // 탭 화면 녹화: 게임 창 영역만 잘라 낸다(버튼·테두리는 창 밖이라 안 찍힘)
-    disp = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 60, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: true, preferCurrentTab: true, selfBrowserSurface: 'include' });
+    disp = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 60, width: { ideal: 1080 }, height: { ideal: 1920 }, cursor: 'never' }, audio: true, preferCurrentTab: true, selfBrowserSurface: 'include' });
     const vt = disp.getVideoTracks()[0];
     if (window.CropTarget && vt.cropTo) await vt.cropTo(await CropTarget.fromElement(g));
     s = new MediaStream([vt]);
@@ -59,10 +59,15 @@ async function start() {
     window.__last = { size: b.size, type, name: a.download };
     disp && disp.getTracks().forEach(t => t.stop()); disp = null;
   };
-  rec.start(1000); t0 = performance.now(); wrap.classList.add('on'); $('rec').classList.add('on'); $('rec').textContent = '■ 정지';
+  rec.start(1000); t0 = performance.now(); quiet(true); $('rec').classList.add('on'); $('rec').textContent = '■ 정지';
   timer = setInterval(() => { const s = (performance.now() - t0) / 1000; $('t').textContent = `REC ${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; }, 250);
 }
-function stop() { rec && rec.state !== 'inactive' && rec.stop(); rec = null; clearInterval(timer); $('t').textContent = '저장 중…'; setTimeout(() => $('t').textContent = '', 1500); wrap.classList.remove('on'); $('rec').classList.remove('on'); $('rec').textContent = '● 녹화'; }
+function stop() { quiet(false); rec && rec.state !== 'inactive' && rec.stop(); rec = null; clearInterval(timer); $('t').textContent = '저장 중…'; setTimeout(() => $('t').textContent = '', 1500); wrap.classList.remove('on'); $('rec').classList.remove('on'); $('rec').textContent = '● 녹화'; }
+// (10/26 사용자 "녹화 관련 ui도 녹화된다… 커서도 녹화됨"): 녹화하는 동안 버튼 막대·빨간 테두리·마우스 커서를 전부 숨김.
+// 멈추기 = Esc 키(또는 스페이스). 게임 창 안 커서는 rec-inner.js 가 같은 신호로 숨김
+const quiet = on => { $('bar').style.visibility = on ? 'hidden' : ''; wrap.classList.toggle('bare', on); document.documentElement.style.cursor = on ? 'none' : '';
+  try { g.contentWindow.__recCursor && g.contentWindow.__recCursor(!on); } catch {} };
+addEventListener('keydown', e => { if (rec && (e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); stop(); } });
 $('rec').onclick = () => rec ? stop() : start().catch(e => { $('t').textContent = '녹화 못 함'; console.error(e); });
 window.__recUI = { start, stop, mime: MIME, chrome: on => { $('bar').style.display = on ? '' : 'none'; wrap.classList.toggle('bare', !on); } };
 </script>
