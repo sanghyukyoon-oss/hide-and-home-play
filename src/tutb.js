@@ -22,7 +22,8 @@ export const TUTB_TXT = {
   look: K('드래그해서 둘러봐!', 'Drag to look around!'),
   turn: K('드래그한 채로 다른 손가락으로 터치!', 'Keep dragging and tap with another finger!'),
   spin: K('빙글~ 방이 돌아가요! 손을 떼면 다시 이동', 'The room spins! Let go to move again'),
-  dial: K('아래 돌림판을 드래그해도 돌릴 수 있어요', 'You can also drag the dial below to turn'),
+  // (user 10/26: "돌림판도 다른 회전 방법으로 설명해 주라니까 한 가지 돌리는 방법 더 있다고 일단 간결하게")
+  dial: K('돌리는 방법 하나 더! 아래 돌림판을 드래그', 'Another way to spin: drag the dial below'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 
@@ -132,7 +133,8 @@ export function firstFinds(plan, room) {
 }
 // 1판: once the friend is found, 토순이 says what she dropped (스토리 룸 10/26 — the things by name, not where)
 export const FIRST_SAY = [
-  K('히히, 들켰다! …아, 숨다가 떨어뜨린 게 있어.', 'Hehe, you found me! …Oh, I dropped some things while hiding.'),
+  // (스토리 룸 10/26: 1판 시작 줄 "이번엔 안 웃을 거야"의 받아치기 — 빠진 카드의 웃음을 이 줄에)
+  K('푸핫! 웃어 버렸다. …아, 숨다가 떨어뜨린 게 있어.', 'Pfft! I laughed. …Oh, I dropped some things while hiding.'),
   K('별이랑 선물이랑 곰인형! 같이 찾아 줘!', 'A star, a gift and a teddy bear! Help me find them!'),
 ];
 export async function firstFindsTalk(S) {
