@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>숨바꼭집 녹화판</title>
+<style>
+:root{--bg:#2b2533;--ink:#3a2f45;--fg:#fff8ee}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif}
+#wrap{position:absolute;left:50%;top:50%;width:540px;height:960px;transform-origin:50% 50%}
+#g{width:540px;height:960px;border:0;display:block;background:#fff}
+#wrap.on{outline:4px solid #ff4d6d;outline-offset:3px}
+#bar{position:fixed;right:12px;top:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch;z-index:5;width:150px}
+#bar button,#bar select,#bar input{font:600 14px system-ui;border-radius:10px;border:2px solid var(--ink);background:var(--fg);color:var(--ink);padding:8px 10px;cursor:pointer}
+#rec.on{background:#ff4d6d;color:#fff}
+#t{color:#fff;font:600 13px ui-monospace,monospace;text-align:center;min-height:16px}
+#bar label{color:#d9cfe4;font-size:12px}
+.row{display:flex;gap:6px}.row input{width:70px}
+@media (max-width:700px){#bar{width:118px;right:6px;top:6px}#bar button,#bar select{font-size:12px;padding:6px}}
+</style>
+</head>
+<body>
+<div id="wrap"><iframe id="g" allow="autoplay; display-capture"></iframe></div>
+<div id="bar">
+  <button id="rec">● 녹화</button>
+  <div id="t"></div>
+  <label>화면 글자·UI</label>
+  <select id="ui"><option value="off">빼고 녹화 (1080×1920)</option><option value="on">넣고 녹화 (크롬, 화면 크기)</option></select>
+  <label>판 바로 가기</label>
+  <div class="row"><input id="lv" type="number" min="1" max="70" placeholder="판"><button id="go">가기</button></div>
+</div>
+<script>
+const $ = id => document.getElementById(id), g = $('g'), wrap = $('wrap');
+const qs = new URLSearchParams(location.search), st = qs.get('stage');
+g.src = 'game.html' + (st ? '?lv=' + (+st) : '');
+if (st) $('lv').value = st;
+$('go').onclick = () => { const n = +$('lv').value; if (n >= 1) { const u = new URL(location.href); u.searchParams.set('stage', n); location.href = u; } };
+const fit = () => { const k = Math.min((innerHeight - 24) / 960, (innerWidth - 24) / 540); wrap.style.transform = `translate(-50%,-50%) scale(${k})`; };
+addEventListener('resize', fit); fit();
+let rec = null, chunks = [], t0 = 0, timer = 0, disp = null;
+const MIME = ['video/mp4;codecs=avc1.64002A,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+const stamp = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
+async function start() {
+  const w = g.contentWindow; let s;
+  if ($('ui').value === 'on') {
+    // 탭 화면 녹화: 게임 창 영역만 잘라 낸다(버튼·테두리는 창 밖이라 안 찍힘)
+    disp = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 60, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: true, preferCurrentTab: true, selfBrowserSurface: 'include' });
+    const vt = disp.getVideoTracks()[0];
+    if (window.CropTarget && vt.cropTo) await vt.cropTo(await CropTarget.fromElement(g));
+    s = new MediaStream([vt]);
+    const a = w.__rec && w.__recCtx ? w.__recCtx.__recDest.stream.getAudioTracks() : disp.getAudioTracks(); a.forEach(t => s.addTrack(t));
+  } else s = w.__rec.stream(60);
+  chunks = []; rec = new MediaRecorder(s, { mimeType: MIME, videoBitsPerSecond: 18e6, audioBitsPerSecond: 192e3 });
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => {
+    const type = (MIME || 'video/webm').split(';')[0], b = new Blob(chunks, { type }), a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = `hideandhome-${stamp()}.${type.includes('mp4') ? 'mp4' : 'webm'}`; document.body.appendChild(a); a.click(); a.remove();
+    window.__last = { size: b.size, type, name: a.download };
+    disp && disp.getTracks().forEach(t => t.stop()); disp = null;
+  };
+  rec.start(1000); t0 = performance.now(); wrap.classList.add('on'); $('rec').classList.add('on'); $('rec').textContent = '■ 정지';
+  timer = setInterval(() => { const s = (performance.now() - t0) / 1000; $('t').textContent = `REC ${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; }, 250);
+}
+function stop() { rec && rec.state !== 'inactive' && rec.stop(); rec = null; clearInterval(timer); $('t').textContent = '저장 중…'; setTimeout(() => $('t').textContent = '', 1500); wrap.classList.remove('on'); $('rec').classList.remove('on'); $('rec').textContent = '● 녹화'; }
+$('rec').onclick = () => rec ? stop() : start().catch(e => { $('t').textContent = '녹화 못 함'; console.error(e); });
+window.__recUI = { start, stop, mime: MIME };
+</script>
+</body>
+</html>
