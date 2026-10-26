@@ -901,6 +901,17 @@ export class LobbyScene extends MyHomeScene {
   }
   update(dt) {
     super.update(dt);
+    // (10/26 사용자 "첫그림에서 몽글이 러그 발 뚫고있는거 진심 거슬리네"): standing on a rug that's down, 몽글이 stands on its top, not the floor
+    { const m = this.mong, R = this.room;
+      if (m && R && !m.hopping && !this._sliding) {
+        if (this._rugRoom !== R || this._rugN !== R.furns.length) { this._rugRoom = R; this._rugN = R.furns.length; this._rugs = R.furns.filter(r => r.type === 'rug').map(r => r.f); this._rugBox = new THREE.Box3(); }
+        const p = m.root.position; let y = 0;
+        for (const f of this._rugs) {
+          const part = R.parts?.find(q => q.furn === f); if (part && part.t > .05) continue;
+          const b = this._rugBox.setFromObject(f.group); if (p.x > b.min.x && p.x < b.max.x && p.z > b.min.z && p.z < b.max.z) y = Math.max(y, Math.min(.12, b.max.y));
+        }
+        if (Math.abs(y - p.y) > .001) p.y += (y - p.y) * Math.min(1, dt * 10);
+      } }
     // (③ 10/21, user: "전체화면 누르면 … 몽글이나 지도가 중심이 좀 윗쪽에 있는거같거든"): the screen grew (full screen, the toolbar
     // gone) — the lobby's view is framed again for the new height, so 몽글이 stays in the middle
     { const W = this.G.world; if (this._fH && this._fH !== W.H && this.mode === 'lobby' && !this.replaying && !W.flying) this.frameLobby(.3); this._fH = W.H; }
