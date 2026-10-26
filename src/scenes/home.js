@@ -1108,7 +1108,9 @@ export class HomeScene {
     const pills = h('div', { class: 'pills' }); this.coinPill = ui.pill('coin', S.coins); this.starPill = ui.pill('star', S.stars || 0);
     pills.append(this.starPill, this.coinPill); col.append(pills);
     G.coinPills = [this.coinPill];
-    const snd = ui.ibtn(G.audio.muted ? 'mute' : 'sound', 'purple', () => { G.audio.setMuted(!G.audio.muted); snd.innerHTML = ''; snd.insertAdjacentHTML('beforeend', ICON[G.audio.muted ? 'mute' : 'sound']); });
+    const snd = ui.ibtn(G.audio.muted ? 'mute' : 'sound', 'purple', () => { G.audio.setMuted(!G.audio.muted); snd.innerHTML = ''; snd.insertAdjacentHTML('beforeend', ICON[G.audio.muted ? 'mute' : 'sound']); sndName(); });
+    // (GPT QA QA05 10/26: the town's sound button had no name) what a press does, kept up to date
+    const sndName = () => { const t = tr(G.audio.muted ? '소리 켜기' : '소리 끄기'); snd.setAttribute('aria-label', t); snd.title = t; snd.setAttribute('aria-pressed', String(!G.audio.muted)); }; sndName();
     snd.style.cssText += 'width:44px;height:44px';
     // no title on the home any more (10/18): the start screen shows the logo, and 몽글이's house with its nameplate says the rest
     const idx = S.stage || 0, sp = stageSpec(idx), th = THEMES[sp.room] || THEMES.bunny, reg = regionOf(idx), endless = idx >= STAGE_COUNT;

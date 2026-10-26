@@ -175,6 +175,16 @@ export class UI {
     });
     if (prev && prev !== document.body && prev.matches?.(':focus-visible')) requestAnimationFrame(() => { if (p.isConnected) (focusables()[0] || p).focus?.(); });
     p._prevFocus = prev;
+    // (GPT QA QA01 10/26: opened with the mouse, the focus stayed behind — Tab went to the stage button and Enter started it) while
+    // it's open, a key aimed at anything behind it is turned back: Tab goes into the window, Enter and Space do nothing there
+    if (prev && !p.contains(prev)) try { prev.blur?.(); } catch {}
+    const guard = e => {
+      if (!p.isConnected || p.classList.contains('closing')) { document.removeEventListener('keydown', guard, true); return; }
+      if (p.contains(e.target) || (e.key !== 'Tab' && e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (e.key === 'Tab') { const f = focusables(); (e.shiftKey ? f[f.length - 1] : f[0])?.focus(); }
+    };
+    document.addEventListener('keydown', guard, true);
     // short screens (a phone browser with its bars, 375×548): the panel shrinks to fit between its ribbon and the notice strip
     // at the bottom instead of running off both edges (QA 10/19: 11판's first clear lost its title, a notice sat on its
     // buttons) — measured unzoomed, once now and once after a result panel's late lines (2D UI 정리 ④)
@@ -182,7 +192,8 @@ export class UI {
       if (!p.isConnected || p.classList.contains('closing')) return;
       p.style.zoom = ''; p.style.margin = '';
       const TOP = 34, BOTTOM = 58, z = Math.min(1, (this.overlay.clientHeight - TOP - BOTTOM) / p.offsetHeight);
-      if (z < 1) { const k = Math.max(.7, z); p.style.zoom = k.toFixed(3); p.style.margin = `${(TOP / k).toFixed(1)}px auto ${(BOTTOM / k).toFixed(1)}px`; }
+      if (z < 1) { const k = Math.max(.45, z);   // (GPT QA QA02 10/26: .7 still ran off a 568×320 window — the ribbon and ✕ cut)
+      p.style.zoom = k.toFixed(3); p.style.margin = `${(TOP / k).toFixed(1)}px auto ${(BOTTOM / k).toFixed(1)}px`; }
     };
     requestAnimationFrame(fit); setTimeout(fit, 900); setTimeout(fit, 1800);   // (and once more after a result's coins have counted up)
     // (GPT QA QA-07 10/24: turned to landscape with a window open, it ran off the top and bottom) — fitted again on every resize
