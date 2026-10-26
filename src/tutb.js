@@ -169,7 +169,7 @@ export async function howCard(S) {
   const txt = tr(TUTB_TXT.how).replace(/드래그로|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/회전으로 변신!|rotate mode!/, w => `<span class="tkw tn">${w}</span>`).replace('\n', '<br>').replace(/→/g, '<i class="hw-ar"></i>');
   const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }), h('div', { class: 'hw-mode' }, '↻'));
   // (up under the top bar — the room and 토순이 stay clear; a touch on it closes it, so does a turn of the room, so do 8 s)
-  const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-txt', html: txt }), demo, h('small', { class: 'hw-x' }, tr(TUTB_TXT.close)));
+  const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-txt', html: txt }));   // (10/26 사용자 "쓸데없는거 정리해줘": the two lines only — no loop picture, no '터치해서 닫기')
   let shut = false; card.addEventListener('pointerdown', e => { e.stopPropagation(); shut = true; });
   G.ui.tut.append(card); S.tutEls = [card]; TT.how1 = 1; G.persist?.();
   const t0 = S.t; let spunAt = null;
