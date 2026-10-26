@@ -44,14 +44,14 @@ import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
-import { TUT_B, TUTB_TXT, tutB1, tutB2, turnLine1, firstFinds, firstFindsTalk, FIRST_SAY, howCard, pointMag } from '../tutb.js';
+import { TUT_B, TUTB_TXT, tutB1, tutB2, firstFinds, firstFindsTalk, FIRST_SAY, howCard, pointMag, spinBadge } from '../tutb.js';
 import { NOTE3D, showNote3D } from '../noteview3d.js';
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
 import { popColors } from '../colorpop.js';   // 흑백판 끝 색이 하나씩 (10/21)
 import { closeUp, closeBack, clearParts, clearTurn, covered } from '../closeup.js';
 import { controlsBlock, openHelp } from '../controlshelp.js';   // 조작 요약 · 도움말 (10/20)   // 말할 때·끝날 때 카메라 (10/19)
-import { armFtap, armFtapB, ftapLesson1 } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
+import { armFtap, armFtapB } from '../teachftap.js';   // 끌다가 톡 회전 수업 (10/19)
 import { FEEL, haptic } from '../feel.js';
 import { shown as isShown } from '../world.js';
 import { persona, CLUE_TELL, HELLO, NEAR, BUMP, BONUS, nextHook } from '../incident-story.js';
@@ -453,7 +453,9 @@ export class StageScene {
     const first1 = this.spec.tut === 1 && !custom && !this.preview && !retry;
     this.quiet1 = this.spec.tut === 1 && TUT_B && !custom && !this.preview;
     // (10/26 user: "또 1장 이거 없어져버렸네" — the chapter card is back, once, before the room; then title and her line together)
-    const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
+    // (1판: the chapter card only the first time — coming back to 1판 after leaving it doesn't play it again, 10/26)
+    const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry && !(first1 && G.save.tut?.cine1));
+    if (cine && first1) { (G.save.tut || (G.save.tut = {})).cine1 = 1; G.persist?.(); }
     // 13판 이삿짐 (10/21, user: "트럭 먼저 나오고 상자 날아가고 그다음에 집 배경으로 챕터 나오면 될거같은데 순서"): the truck and
     // the pile first, then the chapter card over the room itself (its 3D hello, not the comic panel), then the talk
     const truckFirst = !!(this.kit && kitTruck(this));
@@ -530,6 +532,8 @@ export class StageScene {
     // (user 10/22: "1은 원래 것이 나은 것 같음" — B changes 2판 only)
     // (1~3판 한 번에 하나만 — toasts too)
     G.ui.hush = () => !this.dead && this.hushed();
+    // (the ↻ by the finger when a drag turns — tutb.js)
+    if (G.world.scheme === 'F' && !custom && !this.preview) spinBadge(this);
     if (TUT_B && this.spec.tut === 2) tutB2(this);
     else {
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you
@@ -2742,19 +2746,6 @@ export class StageScene {
     // (10/26 user: "처음엔 회전방법 간단하게 말로만 설명하는게 낫지않을까 … 회전 튜토가 이동 튜토 나오고 한참 뒤에 나옴"): on 1판
     // one card right after she hides says it all — move, turn, the dial — no hands, no steps
     if (TUT_B && W.scheme === 'F' && !this.botOn()) { await howCard(this); this.tutStep = 3; return; }
-    if (TUT_B && W.scheme === 'F' && !this.botOn()) {
-      await turnLine1(this);
-      if (this.dead || this.result) return;
-      // (② 10/26 싹 정리, user: "동그라미로 위치까지 알려 주는데 정말 정신없고 난잡하다 스테이지1"): ④ the dial's line, and the lessons end —
-      // no '상자 앞쪽' hand, no tap-the-box hand, no wobble of the box: you look for her yourself
-      if (dial) {
-        let dl = 0; const prevR = W.onRotate; W.onRotate = d => { prevR?.(d); if (W._tdHeld) dl += Math.abs(d) || 0; };
-        await this.teach(TUTB_TXT.dial, 'dialr', () => at(dial), () => dl > .5, null, 8);
-        W.onRotate = prevR;
-      }
-      this.tutStep = 3;
-      return;
-    }
     if (!turnDone()) {
       // 기본 조작 F (조작감 세션 10/18): one finger always moves; the turn dial bottom right turns the room (or a two-finger twist)
       if (W.scheme === 'F' && dial) {

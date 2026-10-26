@@ -19,14 +19,14 @@ const K = (ko, en) => { EN[ko] = en; return ko; };
 export const FTAP_ON = typeof location === 'undefined' || !/[?&]ftapteach=0(&|$)/.test(location.search);
 // the words (스토리 룸 10/20 밤): three beats, the tag, and the badge
 export const FTAP_CAP = {
-  // (② 10/26 마지막 정리: 1판과 같은 말 — 이동 / 드래그한 채로 다른 손가락으로 터치 / 빙글 회전·손을 떼면 다시 이동; '떼지 마!' 뺌)
-  move: K('드래그해서 둘러봐!', 'Drag to look around!'),
-  spin: K('드래그한 채로 다른 손가락으로 터치!', 'Keep dragging and tap with another finger!'),
-  back: K('빙글~ 방이 돌아가요! 손을 떼면 다시 이동', 'The room spins! Let go to move again'),
+  // (10/26 사용자가 고른 1판 문구와 같은 말 — 2판 한 줄·3판 개굴이 수업 모두; 옛 '드래그한 채로…/빙글~…'은 이제 없음)
+  move: K('드래그로 둘러봐요', 'Drag to look around'),
+  spin: K('다른 손가락으로 한 번 터치하면 회전으로 변신!', 'Tap once with another finger — rotate mode!'),
+  back: K('회전 중! 손을 떼면 다시 둘러보기', 'Rotating! Let go to look around again'),
 };
 export const FTAP_CARD = { top: K('새로 얻었다!', 'New trick!'), big: K('빙글 돌리기', 'Spin'), small: K('드래그 중 터치', 'Drag + tap') };
 // the mode word in each line, coloured: 이동 sky blue, 회전 pink (스토리 룸: "잠깐 바뀌었다 돌아온다"가 글을 다 안 읽어도 보이게)
-const MODE = [['빙글~', 'spin'], ['spins!', 'spin'], ['드래그한 채로', 'move'], ['Keep dragging', 'move'], ['둘러봐', 'move'], ['look around', 'move']];
+const MODE = [['회전으로 변신!', 'spin'], ['rotate mode!', 'spin'], ['회전 중!', 'spin'], ['Rotating!', 'spin'], ['드래그로', 'move'], ['Drag', 'move']];
 
 // a drag that a second-finger touch turned into a turn (not the dial, not the 회전 badge of the E controls)
 const fturning = W => W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;

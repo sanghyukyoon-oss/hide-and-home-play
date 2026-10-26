@@ -19,14 +19,14 @@ export function setTutB(on) { try { localStorage.setItem('sbk-tut', on ? 'b' : '
 export const TUTB_TXT = {
   // (② 10/26 마지막 정리 — 허브 추천안·사용자 "떼지마 멘트가 쎄지 않음? 터치하고 나면 회전에 대해서 설명하는 멘트로"): one line at a time, the
   // same words in 1판·2판·3판's 개굴이 lesson; '떼지 마!' is gone everywhere
-  look: K('드래그해서 둘러봐!', 'Drag to look around!'),
-  turn: K('드래그한 채로 다른 손가락으로 터치!', 'Keep dragging and tap with another finger!'),
-  spin: K('빙글~ 방이 돌아가요! 손을 떼면 다시 이동', 'The room spins! Let go to move again'),
-  // (user 10/26: "돌림판도 다른 회전 방법으로 설명해 주라니까 한 가지 돌리는 방법 더 있다고 일단 간결하게")
+  look: K('드래그로 둘러봐요', 'Drag to look around'),
+  turn: K('다른 손가락으로 한 번 터치하면 회전으로 변신!', 'Tap once with another finger — rotate mode!'),
+  spin: K('회전 중! 손을 떼면 다시 둘러보기', 'Rotating! Let go to look around again'),
   dial: K('돌리는 방법 하나 더! 아래 돌림판을 드래그', 'Another way to spin: drag the dial below'),
   // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
   // (1판 10/26 실폰: "처음에 너무 길긴한데 … 조금 짧게 해주고 좀 위로 올려줘. 누르면 사라지게도") two short lines, a short dial line
-  how: K('드래그로 둘러봐요\n드래그하며 다른 손가락으로 터치하면 방이 빙글!', 'Drag to look around\nDrag + tap with another finger: the room spins!'),
+  // (1판 10/26 user: "이동중에 다른손으로 터치 한번 하면 회전으로 바뀜 이거 진짜 설명 어렵다" → 사용자가 고른 문구; the switch is shown by the loop)
+  how: K('드래그로 둘러봐요\n다른 손가락으로 한 번 터치하면 회전으로 변신!', 'Drag to look around\nTap once with another finger — rotate mode!'),
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
@@ -92,7 +92,7 @@ export async function turnLine1(S) {
   if (S.dead || S.result) return false;
   // one bubble: ② shows once a finger has dragged ~1 s (or after 4 s of nothing), ③ takes its place the moment the room turns,
   // for 1.5 s, then it's done (20 s and no turn: it goes quietly)
-  const colour = k => tr(TUTB_TXT[k]).replace(/드래그한 채로|Keep dragging/, w => `<span class="tkw mv">${w}</span>`).replace(/빙글~|spins!/, w => `<span class="tkw tn">${w}</span>`);
+  const colour = k => tr(TUTB_TXT[k]).replace(/회전으로 변신!|rotate mode!/, w => `<span class="tkw tn">${w}</span>`).replace(/회전 중!|Rotating!/, w => `<span class="tkw tn">${w}</span>`);
   // (the card goes on the screen with its words already in it: put up empty, its own pop animation showed a blank box first — user
   // 10/26 "글자 나오기 전에 뭐 이상한 네모 뜬다")
   const line = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` });
@@ -161,15 +161,17 @@ export async function firstFindsTalk(S) {
 // little room spins); it closes once you've turned the room yourself (or after 10 s). Card 2 right after — the dial, pointed at briefly.
 export async function howCard(S) {
   const G = S.G, W = G.world;
+  // (seen and used once — a replay or coming back to 1판 goes straight to finding; never turned yet → it shows again)
+  const TT = G.save.tut || (G.save.tut = {}); if (TT.how1 && TT.ftap) return;
   while (!S.dead && !S.result && (S.tutEls || S.talking || S.cine || W.flying)) await S.tw.wait(.2);
   if (S.dead || S.result) return;
   howCss();
-  const txt = tr(TUTB_TXT.how).replace(/드래그로|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/빙글!|spins!/, w => `<span class="tkw tn">${w}</span>`).replace('\n', '<br>');
-  const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }));
+  const txt = tr(TUTB_TXT.how).replace(/드래그로|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/회전으로 변신!|rotate mode!/, w => `<span class="tkw tn">${w}</span>`).replace('\n', '<br>').replace(/→/g, '<i class="hw-ar"></i>');
+  const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }), h('div', { class: 'hw-mode' }, '↻'));
   // (up under the top bar — the room and 토순이 stay clear; a touch on it closes it, so does a turn of the room, so do 8 s)
-  const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-row' }, h('div', { class: 'hw-txt', html: txt }), demo), h('small', { class: 'hw-x' }, tr(TUTB_TXT.close)));
+  const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-txt', html: txt }), demo, h('small', { class: 'hw-x' }, tr(TUTB_TXT.close)));
   let shut = false; card.addEventListener('pointerdown', e => { e.stopPropagation(); shut = true; });
-  G.ui.tut.append(card); S.tutEls = [card];
+  G.ui.tut.append(card); S.tutEls = [card]; TT.how1 = 1; G.persist?.();
   const t0 = S.t; let spunAt = null;
   try {
     while (!S.dead && !S.result && !shut && S.t - t0 < 8) {
@@ -194,19 +196,23 @@ function howCss() {
   if (hcss) return; hcss = true;
   const s = document.createElement('style');
   s.textContent = `.hw-card{max-width:min(350px,calc(100vw - 24px));display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;padding:8px 12px 6px}
-.hw-row{display:flex;align-items:center;gap:8px}.hw-txt{font-size:17px;line-height:1.35;text-align:left}
+.hw-txt{font-size:16px;line-height:1.4;text-align:center}
+.hw-ar{display:inline-block;width:18px;height:12px;margin:0 4px;vertical-align:middle;background:linear-gradient(#3b2a55,#3b2a55) left center/12px 3px no-repeat;position:relative}.hw-ar::after{content:'';position:absolute;right:0;top:0;border:6px solid transparent;border-left:8px solid #3b2a55;border-right:0}
 .hw-x{font-size:11px;opacity:.55;align-self:flex-end;margin-top:-2px}
-.hw-demo{position:relative;flex:none;width:150px;height:74px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden;zoom:.62}
-.hw-room{position:absolute;left:52px;top:14px;width:46px;height:46px;transform:rotateX(55deg) rotateZ(45deg);border-radius:6px;background:#ffd9c2;border:2px solid #3b2a55;animation:hwSpin 1.5s ease-in-out infinite}
+.hw-demo{position:relative;flex:none;width:170px;height:80px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden;zoom:.6}
+.hw-room{position:absolute;left:60px;top:16px;width:46px;height:46px;transform:translateX(-14px) rotateX(55deg) rotateZ(45deg);border-radius:6px;background:#ffd9c2;border:2px solid #3b2a55;animation:hwRoom 2.4s ease-in-out infinite}
 .hw-room i{position:absolute;width:12px;height:12px;border-radius:3px;background:#8fd3f4}.hw-room i:nth-child(1){left:5px;top:5px}.hw-room i:nth-child(2){right:5px;top:5px;background:#ffe14d}.hw-room i:nth-child(3){left:5px;bottom:5px;background:#ff8fb8}
 .hw-f1,.hw-f2{position:absolute;width:30px;height:30px;opacity:.95}.hw-f1 svg,.hw-f2 svg{width:100%;height:100%}
-.hw-f1{left:14px;top:38px;animation:hwSlide 1.5s ease-in-out infinite}
-.hw-f2{left:108px;top:6px;opacity:0;animation:hwTap 1.5s ease-in-out infinite}
-.hw-pong{position:absolute;left:112px;top:10px;width:20px;height:20px;border-radius:50%;border:3px solid #ffe14d;opacity:0;animation:hwPong 1.5s ease-out infinite}
-@keyframes hwSlide{0%{transform:translateX(0)}60%{transform:translateX(26px)}100%{transform:translateX(26px)}}
-@keyframes hwTap{0%,25%{opacity:0;transform:translateY(-6px)}35%{opacity:1;transform:translateY(0)}48%{opacity:1;transform:translateY(0)}58%,100%{opacity:0;transform:translateY(-6px)}}
-@keyframes hwPong{0%,36%{opacity:0;transform:scale(.4)}40%{opacity:1;transform:scale(.6)}62%{opacity:0;transform:scale(1.6)}100%{opacity:0}}
-@keyframes hwSpin{0%,40%{transform:rotateX(55deg) rotateZ(45deg)}80%,100%{transform:rotateX(55deg) rotateZ(135deg)}}`;
+.hw-f1{left:10px;top:44px;animation:hwSlide 2.4s ease-in-out infinite}
+.hw-f2{left:128px;top:6px;opacity:0;animation:hwTap 2.4s ease-in-out infinite}
+.hw-pong{position:absolute;left:132px;top:10px;width:20px;height:20px;border-radius:50%;border:3px solid #ffe14d;opacity:0;animation:hwPong 2.4s ease-out infinite}
+.hw-mode{position:absolute;left:40px;top:18px;width:24px;height:24px;border-radius:50%;background:#ff7eb0;color:#fff;font:bold 18px/24px sans-serif;text-align:center;opacity:0;animation:hwMode 2.4s ease-in-out infinite}
+@keyframes hwRoom{0%{transform:translateX(-14px) rotateX(55deg) rotateZ(45deg)}32%,46%{transform:translateX(10px) rotateX(55deg) rotateZ(45deg)}84%,100%{transform:translateX(10px) rotateX(55deg) rotateZ(135deg)}}
+@keyframes hwSlide{0%{transform:translateX(0)}32%,46%{transform:translateX(24px)}84%,100%{transform:translateX(50px)}}
+@keyframes hwTap{0%,33%{opacity:0;transform:translateY(-6px)}38%,44%{opacity:1;transform:translateY(0)}50%,100%{opacity:0;transform:translateY(-6px)}}
+@keyframes hwPong{0%,38%{opacity:0;transform:scale(.4)}41%{opacity:1;transform:scale(.6)}58%,100%{opacity:0;transform:scale(1.6)}}
+@keyframes hwMode{0%,40%{opacity:0;transform:scale(.3)}46%{opacity:1;transform:scale(1.3) translateX(24px)}52%,86%{opacity:1;transform:scale(1) translateX(24px)}95%,100%{opacity:0;transform:scale(1) translateX(50px)}}
+`;
   document.head.append(s);
 }
 // 1판, stuck 15 s: the 돋보기 button bounces and says so once, just above it
@@ -217,4 +223,21 @@ export function pointMag(S) {
   S.G.ui.tut.append(tip); S.tutEls = [tip]; S._magTip = tip;
   b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 600);
   setTimeout(() => { tip.remove(); if (S.tutEls?.[0] === tip) { S.tutEls = null; S._tutEnd = S.t; } }, 3500);
+}
+
+// (1판 10/26 허브: "터치했더니 뭔가 바뀌었다를 몸으로") — while a drag has been switched to turning by another finger, a ↻ rides beside
+// that finger; gone when it lifts. Every stage; big on 1판
+export function spinBadge(S) {
+  const W = S.G.world, big = S.idx === 0;
+  const el = h('div', { style: `position:absolute;z-index:32;pointer-events:none;width:${big ? 58 : 38}px;height:${big ? 58 : 38}px;margin:${big ? -29 : -19}px 0 0 ${big ? -29 : -19}px;border-radius:50%;background:#ff7eb0;color:#fff;border:3px solid #3b2a55;font:bold ${big ? 36 : 24}px/${big ? 52 : 32}px sans-serif;text-align:center;opacity:0;transform:scale(.4);transition:opacity .12s,transform .18s cubic-bezier(.3,1.6,.5,1)` }, '↻');
+  S.G.ui.tut.append(el);
+  let on = false;
+  const tick = () => {
+    if (S.dead) { el.remove(); return; }
+    const turning = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs?.size > 0 && !W._tdHeld;
+    if (turning) { const f = [...W.ptrs.values()][0]; el.style.left = (f.x + (big ? 54 : 40)) + 'px'; el.style.top = (f.y - (big ? 54 : 40)) + 'px'; }
+    if (turning !== on) { on = turning; el.style.opacity = on ? '1' : '0'; el.style.transform = on ? 'scale(1)' : 'scale(.4)'; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
