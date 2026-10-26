@@ -33,7 +33,9 @@
 <script>
 const $ = id => document.getElementById(id), g = $('g'), wrap = $('wrap');
 const qs = new URLSearchParams(location.search), st = qs.get('stage');
-g.src = 'game.html?v=' + Date.now() + (st ? '&lv=' + (+st) : '');   // (늘 새 녹화 코드를 받게)
+// ?play=yasik(미니게임 바로, &lv=2면 둘째 단계) · ?qa=1(더보기에 놀이 모음) — 그 밖의 주소 값도 게임에 그대로 넘김
+const pass = new URLSearchParams(location.search); pass.delete('stage'); if (st && !pass.has('play')) pass.set('lv', +st);
+g.src = 'game.html?v=' + Date.now() + (pass.toString() ? '&' + pass : '');   // (늘 새 녹화 코드를 받게)
 if (st) $('lv').value = st;
 $('go').onclick = () => { const n = +$('lv').value; if (n >= 1) { const u = new URL(location.href); u.searchParams.set('stage', n); location.href = u; } };
 const fit = () => { const k = Math.min((innerHeight - 24) / 960, (innerWidth - 24) / 540); wrap.style.transform = `translate(-50%,-50%) scale(${k})`; };
