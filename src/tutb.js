@@ -20,13 +20,13 @@ export const TUTB_TXT = {
   // (② 10/26 마지막 정리 — 허브 추천안·사용자 "떼지마 멘트가 쎄지 않음? 터치하고 나면 회전에 대해서 설명하는 멘트로"): one line at a time, the
   // same words in 1판·2판·3판's 개굴이 lesson; '떼지 마!' is gone everywhere
   look: K('드래그로 둘러봐요', 'Drag to look around'),
-  turn: K('다른 손가락으로 한 번 터치하면 회전으로 변신!', 'Tap once with another finger — rotate mode!'),
+  turn: K('드래그 중 다른 손으로 아무 데나 터치하면 둘러보던 손이 회전으로 변신!', 'While dragging, tap anywhere with another finger — your dragging finger turns to rotate mode!'),
   spin: K('회전 중! 손을 떼면 다시 둘러보기', 'Rotating! Let go to look around again'),
   dial: K('돌리는 방법 하나 더! 아래 돌림판을 드래그', 'Another way to spin: drag the dial below'),
   // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
   // (1판 10/26 실폰: "처음에 너무 길긴한데 … 조금 짧게 해주고 좀 위로 올려줘. 누르면 사라지게도") two short lines, a short dial line
   // (1판 10/26 user: "이동중에 다른손으로 터치 한번 하면 회전으로 바뀜 이거 진짜 설명 어렵다" → 사용자가 고른 문구; the switch is shown by the loop)
-  how: K('드래그로 둘러봐요\n다른 손가락으로 한 번 터치하면 회전으로 변신!', 'Drag to look around\nTap once with another finger — rotate mode!'),
+  how: K('드래그로 둘러보다가 다른 손으로 아무 데나 터치!\n→ 둘러보던 손이 회전으로 변신!', 'While dragging, tap anywhere with another finger!\n→ your dragging finger turns to rotate mode!'),
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
@@ -196,7 +196,7 @@ function howCss() {
   if (hcss) return; hcss = true;
   const s = document.createElement('style');
   s.textContent = `.hw-card{max-width:calc(100vw - 16px);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;padding:8px 12px 6px}
-.hw-txt{font-size:min(15px,3.6vw);line-height:1.45;text-align:center;white-space:nowrap}
+.hw-txt{font-size:min(15px,3.3vw);line-height:1.45;text-align:center;white-space:nowrap}
 .hw-ar{display:inline-block;width:18px;height:12px;margin:0 4px;vertical-align:middle;background:linear-gradient(#3b2a55,#3b2a55) left center/12px 3px no-repeat;position:relative}.hw-ar::after{content:'';position:absolute;right:0;top:0;border:6px solid transparent;border-left:8px solid #3b2a55;border-right:0}
 .hw-x{font-size:11px;opacity:.55;align-self:flex-end;margin-top:-2px}
 .hw-demo{position:relative;flex:none;width:170px;height:80px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden;zoom:.6}

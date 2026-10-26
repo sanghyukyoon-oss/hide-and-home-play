@@ -21,7 +21,7 @@ export const FTAP_ON = typeof location === 'undefined' || !/[?&]ftapteach=0(&|$)
 export const FTAP_CAP = {
   // (10/26 사용자가 고른 1판 문구와 같은 말 — 2판 한 줄·3판 개굴이 수업 모두; 옛 '드래그한 채로…/빙글~…'은 이제 없음)
   move: K('드래그로 둘러봐요', 'Drag to look around'),
-  spin: K('다른 손가락으로 한 번 터치하면 회전으로 변신!', 'Tap once with another finger — rotate mode!'),
+  spin: K('드래그 중 다른 손으로 아무 데나 터치하면 둘러보던 손이 회전으로 변신!', 'While dragging, tap anywhere with another finger — your dragging finger turns to rotate mode!'),
   back: K('회전 중! 손을 떼면 다시 둘러보기', 'Rotating! Let go to look around again'),
 };
 export const FTAP_CARD = { top: K('새로 얻었다!', 'New trick!'), big: K('빙글 돌리기', 'Spin'), small: K('드래그 중 터치', 'Drag + tap') };
