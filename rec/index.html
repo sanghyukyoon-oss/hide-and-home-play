@@ -10,6 +10,7 @@
 #wrap{position:absolute;left:50%;top:50%;width:540px;height:960px;transform-origin:50% 50%}
 #g{width:540px;height:960px;border:0;display:block;background:#fff}
 #wrap.on{outline:4px solid #ff4d6d;outline-offset:3px}
+#wrap.bare{outline:none}
 #bar{position:fixed;right:12px;top:12px;display:flex;flex-direction:column;gap:8px;align-items:stretch;z-index:5;width:150px}
 #bar button,#bar select,#bar input{font:600 14px system-ui;border-radius:10px;border:2px solid var(--ink);background:var(--fg);color:var(--ink);padding:8px 10px;cursor:pointer}
 #rec.on{background:#ff4d6d;color:#fff}
@@ -63,7 +64,7 @@ async function start() {
 }
 function stop() { rec && rec.state !== 'inactive' && rec.stop(); rec = null; clearInterval(timer); $('t').textContent = '저장 중…'; setTimeout(() => $('t').textContent = '', 1500); wrap.classList.remove('on'); $('rec').classList.remove('on'); $('rec').textContent = '● 녹화'; }
 $('rec').onclick = () => rec ? stop() : start().catch(e => { $('t').textContent = '녹화 못 함'; console.error(e); });
-window.__recUI = { start, stop, mime: MIME };
+window.__recUI = { start, stop, mime: MIME, chrome: on => { $('bar').style.display = on ? '' : 'none'; wrap.classList.toggle('bare', !on); } };
 </script>
 </body>
 </html>
