@@ -96,7 +96,8 @@
     }
   };
   const block = e => { if (eat) { e.stopImmediatePropagation(); e.preventDefault(); } };
-  addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === ' ') try { parent.__recUI && parent.__recUI.stop && document.documentElement.contains(cur) && (e.preventDefault(), parent.__recUI.stop()); } catch {} });
+  // (10/26 사용자 "녹화하기 누르면 … 파일도 저장안되고 어케 끊는거야"): 게임 창을 누른 뒤에도 Esc(또는 스페이스)로 녹화를 멈추고 저장
+  addEventListener('keydown', e => { if (e.key !== 'Escape' && e.key !== ' ') return; try { const R = parent.__recUI; if (R && R.isRec && R.isRec()) { e.preventDefault(); R.stop(); } } catch {} }, true);
   // (10/26: pointerdown 하나만 셈 — 예전엔 mousedown·touchstart까지 같은 누름을 두세 번 세어 구석 버튼·줌 막대를 막았음)
   addEventListener('pointerdown', down, { capture: true, passive: false });
   for (const t of ['mousedown', 'touchstart']) addEventListener(t, block, { capture: true, passive: false });

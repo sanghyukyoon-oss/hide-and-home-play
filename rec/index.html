@@ -68,7 +68,7 @@ function stop() { quiet(false); rec && rec.state !== 'inactive' && rec.stop(); r
 const quiet = on => { $('bar').style.visibility = on ? 'hidden' : ''; wrap.classList.toggle('bare', on); };   // (10/26 사용자 "커서 움직이는것도 이상함": 커서는 숨기지 않음 — 'UI 빼고'는 캔버스만 찍어 커서가 원래 안 담기고, 'UI 넣고'는 cursor:'never')
 addEventListener('keydown', e => { if (rec && (e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); stop(); } });
 $('rec').onclick = () => rec ? stop() : start().catch(e => { $('t').textContent = '녹화 못 함'; console.error(e); });
-window.__recUI = { start, stop, mime: MIME, chrome: on => { $('bar').style.display = on ? '' : 'none'; wrap.classList.toggle('bare', !on); } };
+window.__recUI = { start, stop, isRec: () => !!rec, mime: MIME, chrome: on => { $('bar').style.display = on ? '' : 'none'; wrap.classList.toggle('bare', !on); } };
 </script>
 </body>
 </html>
