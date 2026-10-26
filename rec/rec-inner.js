@@ -16,6 +16,8 @@
   let pending = false;
   const copy = () => {
     pending = false;
+    // (10/26 사용자 "언샵 마스크와 샤픈은 그 빌드에서는 빼줄수있어? 후반에서 넣을꺼라서") — both off every frame
+    try { const du = window.G && G.world && G.world.post && G.world.post.du; if (du) { if (du.sharpen) du.sharpen.value = 0; if (du.sharp2) du.sharp2.value = 0; } } catch {}
     const gl = document.getElementById('gl'); if (!gl) return;
     // (10/26) 판마다 다른 바탕: #app 의 radial-gradient(120% 80% at 50% 30%, #fff 0, --bgA 45%, --bgB 100%)를 그대로 다시 그림
     const app = document.getElementById('app'), cs = app && getComputedStyle(app);
@@ -35,7 +37,7 @@
   // (10/26: 2단계는 이제 그림자 512(저사양 최적화)라 녹화가 거칠었음 → 1단계)
   const pin = setInterval(() => {
     const w = window.G && window.G.world; if (!w || !w.setLevel) return;
-    clearInterval(pin); const set = w.setLevel.bind(w); set(1); w.setLevel = () => {};
+    clearInterval(pin); const set = w.setLevel.bind(w); set(0); w.setLevel = () => {};   // (10/26 사용자 "최대화질로": 0 = 슈퍼샘플 2배)
   }, 200);
 
   // 녹화판 저장은 본게임과 따로: 이 창의 localStorage 키 앞에 'rec:'를 붙인다(본게임 진행은 건드리지 않음)
@@ -43,6 +45,11 @@
   SP.getItem = function (k) { return gi.call(this, P + k); };
   SP.setItem = function (k, v) { return si.call(this, P + k, v); };
   SP.removeItem = function (k) { return ri.call(this, P + k); };
+  // (10/26 사용자 "녹화빌드는 비지엠 빼고 효과음만") — the music never starts here; effects play as usual
+  const mute = setInterval(() => {
+    const A = window.G && G.audio; if (!A || !A.music) return;
+    clearInterval(mute); try { A.stopMusic && A.stopMusic(); } catch {} A.music = () => {};
+  }, 200);
   // 모든 판 열기(1~70, 보스·놀이 포함) + 튜토리얼 표시 끄기 — 녹화판 저장에만
   const open = setInterval(() => {
     const G = window.G, J = window.__jam; if (!G || !G.save || !J || !J.ready) return;

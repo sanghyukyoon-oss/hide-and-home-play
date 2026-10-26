@@ -51,7 +51,7 @@ async function start() {
     s = new MediaStream([vt]);
     const a = w.__rec && w.__recCtx ? w.__recCtx.__recDest.stream.getAudioTracks() : disp.getAudioTracks(); a.forEach(t => s.addTrack(t));
   } else s = w.__rec.stream(60);
-  chunks = []; rec = new MediaRecorder(s, { mimeType: MIME, videoBitsPerSecond: 18e6, audioBitsPerSecond: 192e3 });
+  chunks = []; rec = new MediaRecorder(s, { mimeType: MIME, videoBitsPerSecond: 40e6, audioBitsPerSecond: 192e3 });
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   rec.onstop = () => {
     const type = (MIME || 'video/webm').split(';')[0], b = new Blob(chunks, { type }), a = document.createElement('a');
