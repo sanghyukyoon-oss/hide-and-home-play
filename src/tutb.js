@@ -30,7 +30,7 @@ export const TUTB_TXT = {
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
-  fbHold: K('여긴 누른 채로,\n다른 손가락으로 아무 데나 터치!', 'Keep this one down,\ntap anywhere with another finger!'), fbSpin: K('회전!', 'Rotate!'),
+  fbHold: K('여긴 누른 채로,\n다른 손가락으로 아무 데나 터치!', 'Keep this one down,\ntap anywhere with another finger!'), fbSpin: K('회전으로 변신!', 'Now it rotates!'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 
