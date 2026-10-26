@@ -17,10 +17,17 @@
   const copy = () => {
     pending = false;
     const gl = document.getElementById('gl'); if (!gl) return;
-    const g = x.createRadialGradient(W / 2, H * .44, 0, W / 2, H * .44, H * .62);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(.38, '#fffcf7'); g.addColorStop(1, '#f8f1e7');
-    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    // (10/26) 판마다 다른 바탕: #app 의 radial-gradient(120% 80% at 50% 30%, #fff 0, --bgA 45%, --bgB 100%)를 그대로 다시 그림
+    const app = document.getElementById('app'), cs = app && getComputedStyle(app);
+    const A = (cs && cs.getPropertyValue('--bgA').trim()) || '#fffcf7', B = (cs && cs.getPropertyValue('--bgB').trim()) || '#f8f1e7';
+    x.save(); x.fillStyle = B; x.fillRect(0, 0, W, H);
+    x.translate(W / 2, H * .3); x.scale(1.2 * W / (.8 * H), 1);
+    const g = x.createRadialGradient(0, 0, 0, 0, 0, .8 * H);
+    try { g.addColorStop(0, '#ffffff'); g.addColorStop(.45, A); g.addColorStop(1, B); } catch { g.addColorStop(0, '#fff'); g.addColorStop(1, '#f8f1e7'); }
+    x.fillStyle = g; x.fillRect(-W, -H, W * 4, H * 4); x.restore();
     try { x.drawImage(gl, 0, 0, W, H); } catch {}
+    const fx = document.getElementById('fx');   // 반짝이·별 같은 2D 이펙트 층
+    if (fx && fx.width) try { x.drawImage(fx, 0, 0, W, H); } catch {}
   };
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = fn => raf(t => { fn(t); if (!pending) { pending = true; queueMicrotask(copy); } });
