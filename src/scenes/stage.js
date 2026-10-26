@@ -44,7 +44,7 @@ import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
-import { TUT_B, TUTB_TXT, tutB1, tutB2, turnLine1, firstFinds, firstFindsTalk } from '../tutb.js';
+import { TUT_B, TUTB_TXT, tutB1, tutB2, turnLine1, firstFinds, firstFindsTalk, FIRST_SAY } from '../tutb.js';
 import { NOTE3D, showNote3D } from '../noteview3d.js';
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
@@ -1149,8 +1149,8 @@ export class StageScene {
     this.hero?.react('event', pc, this.tw);
     this.wobble(part.furn.group);
     // (the words at most every 13 s, or when you've been still a while — 1판 had "킥…"/"삐죽… 쏙!" every 4-5 s; 검토 재검토 5)
-    // (1판: the hint words only when you've been stuck a while — ② 10/26 "푹신한 거 좋아하는데도 봐야 되고 … 정신이 없다")
-    const talk = this.spec.tut === 1 ? this.idle > 15 : line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10;
+    // (1판: the hint words only after 20 s stuck — ② 10/26 "푹신한 거 좋아하는데도 봐야 되고 … 정신이 없다")
+    const talk = this.spec.tut === 1 ? this.idle > 20 : line || this.t - (this._gigSayT ?? -99) > 13 || this.idle > 10;
     this.G.audio.sfx(talk && this.th.friend === 'bunny' && /킥|푸|히|헤/.test(say) ? 'giggleBunny' : 'wobble');   // (토순이's own giggle with her "킥…" — 사운드 10/21)
     if (talk) { this._gigSayT = this.t; this.say({ root: { position: pc }, headTop: () => .25 }, say, 1300); }
   }
@@ -1195,6 +1195,9 @@ export class StageScene {
     this.hero?.react('event', this.worldCenter(it), this.tw);
     // R2: the third time you find the same friend, their hiding habit fills in on their card (획득감, not a popup)
     if (!this.custom && !this.preview) { const hs = G.save.habitSeen ||= {}, k = this.th.friend; hs[k] = (hs[k] || 0) + 1; if (hs[k] === 2) setTimeout(() => !this.dead && G.ui.toast('도감에 새 칸: 숨는 버릇!', 'green'), 1800); }
+    // (1판, user 10/26: "토순이 줌인되고 다시 원위치 해야 될 것 같은데"): the view as it was, to come back to after one line
+    const cam0 = this.spec.tut === 1 && this.plan?.first && TUT_B ? { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom, target: W.target.clone() } : null;
+    if (cam0) this._revealing = true;
     const pc = this.partCenter(it.spot.part), fy = new THREE.Vector3(); it.spot.part.furn.group.getWorldPosition(fy);
     let d = new THREE.Vector3(W.cam.position.x - pc.x, 0, W.cam.position.z - pc.z).normalize();
     { const furn = it.spot.part.furn, R = (this.room.rooms || [this.room]).find(r => r.furns?.some(e => e.f === furn));   // (10/19 user: 1판 토순이 popped out toward the wall after the view was turned — out the furniture's front, into the room)
@@ -1239,9 +1242,17 @@ export class StageScene {
     W.fx.confetti(70);
     await tw.wait(.9);
     // 대본: the host says what was really going on — once, after the pop-out (no bubble + dialog twice, no stock "next room" ad)
-    if (!this.dead && !this.result && !G.skipTalk && !G.bot) await this.talk(incidentReveal(this.idx, this.th.friend), { title: this.th.name, cam: true });   // (not over a fail panel — QA 10/18)
+    if (cam0 && this.targets.some(t => !t.found)) {
+      // 1판: one line in close, then back to the view you had, smoothly; she asks for the rest from there (tutb.js firstFindsTalk)
+      // (a lesson line still up — found her mid-lesson: her line waits for it, one thing at a time)
+      for (let i = 0; i < 30 && this.tutEls && !this.dead; i++) await tw.wait(.1);
+      if (!this.dead && !this.result) { this.sayNow(f, FIRST_SAY[0], 1700); await tw.wait(1.8); }
+      this._closeBack = null;
+      if (!this.dead && !this.result) await W.flyTo(tw, { yaw: cam0.yaw, pitch: cam0.pitch, zoom: cam0.zoom, target: cam0.target, dur: .8, e: ease.outCubic });
+      this._firstBack = true; this._revealing = false;
+    } else if (!this.dead && !this.result && !G.skipTalk && !G.bot) await this.talk(incidentReveal(this.idx, this.th.friend), { title: this.th.name, cam: true });   // (not over a fail panel — QA 10/18)
     if (!this.result && !this.dead) {
-      if (this.targets.some(t => !t.found)) closeBack(this);   // things still to find: back to where you were
+      if (this.targets.some(t => !t.found) && !cam0) closeBack(this);   // things still to find: back to where you were
       if (this.v2) return v2AfterFound(this);
       // the friend is found, but the stage ends only when everything is (user, 10/18: "캐릭터 찾으면 나머지 물건 안 찾아도
       // 깨지는 거 ㅈ같다니까") — the friend stays out and asks for the rest
@@ -2656,7 +2667,7 @@ export class StageScene {
     // together — the drawer lesson didn't wait): a lesson waits until the one on screen is done; done by then → none at all
     // (and a breath after the last one: two lessons back to back read as one long list of instructions — user 10/20)
     // (QA9 P3: one wait for both — a lesson that came up during the breath (?tilt=1) used to be missed and two showed at once)
-    while (!over() && (this.tutEls || (this.t - (this._tutEnd ?? -9) < 1.5 && !done()))) await this.tw.wait(.2);
+    while (!over() && (this.tutEls || this._revealing || (this.t - (this._tutEnd ?? -9) < 1.5 && !done()))) await this.tw.wait(.2);
     if (over()) return false;
     if (done()) return true;
     const tip = h('div', { class: 'tip', style: `left:50%;top:${innerHeight * .2}px` }, text);
@@ -2669,7 +2680,7 @@ export class StageScene {
       const dt = this.t - t0;
       if (maxT && dt > maxT) { gaveUp = true; break; }   // (a lesson that may end by itself: no chime then)
       if (!said && dt > 18 && more) { said = true; tip.textContent = tr(more); }   // (8 → 18 s — 검토 재검토 4)
-      if (dt > 18 && this.t - ringT > 2) { ringT = this.t; const p = posFn?.(); if (p) { const s = p.sx != null ? { x: p.sx, y: p.sy } : W.toScreen(p); W.fx.ring(s.x, s.y, { r: dt > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); } }
+      if (dt > 18 && this.t - ringT > 2 && this.spec.tut !== 1) { ringT = this.t; const p = posFn?.(); if (p) { const s = p.sx != null ? { x: p.sx, y: p.sy } : W.toScreen(p); W.fx.ring(s.x, s.y, { r: dt > 16 ? 110 : 70, color: '#ffe14d', width: 7 }); } }
       await this.tw.wait(.1);
     }
     tip.remove(); hand.remove(); more$.forEach(e => e.remove()); this.tutEls = null; this.tutHand = null; this.tutHandPos = null; this._tutEnd = this.t;
@@ -2714,10 +2725,15 @@ export class StageScene {
       // (② 10/26: the one line, no three-beat play — user "한 문장 나오는 튜토가 바로 나와야")
       await turnLine1(this);
       if (this.dead || this.result) return;
-      if (turnDone() && dial && !this.friendItem?.found) {
+      // (② 10/26 싹 정리, user: "동그라미로 위치까지 알려 주는데 정말 정신없고 난잡하다 스테이지1"): ④ the dial's line, and the lessons end —
+      // no '상자 앞쪽' hand, no tap-the-box hand, no wobble of the box: you look for her yourself
+      if (dial) {
         let dl = 0; const prevR = W.onRotate; W.onRotate = d => { prevR?.(d); if (W._tdHeld) dl += Math.abs(d) || 0; };
-        await this.teach(TUTB_TXT.dial, 'dialr', () => at(dial), () => dl > .5, null, 12);
+        await this.teach(TUTB_TXT.dial, 'dialr', () => at(dial), () => dl > .5, null, 8);
+        W.onRotate = prevR;
       }
+      this.tutStep = 3;
+      return;
     }
     if (!turnDone()) {
       // 기본 조작 F (조작감 세션 10/18): one finger always moves; the turn dial bottom right turns the room (or a two-finger twist)
@@ -3510,7 +3526,8 @@ export class StageScene {
     if (this.jailed?.in && this.running && !this.result && (this._jT = (this._jT ?? 9) - dt) <= 0) { this._jT = 11 + Math.random() * 5; this.say(this.jailed.ch, JAIL_LINES[(this._jn = (this._jn || 0) + 1) % JAIL_LINES.length], 2000); }   // the one in the cell keeps pleading
     // (a hidden friend giggles once you've looked a while — 10 s, not from the start; every 7–10 s, not 4–9: 레벨 1~10 추천 10/19 —
     // the first stage's lesson keeps its old pace)
-    const gigWait = HINTS_OLD || this.spec.tut === 1 ? (!this.r1 || this.idle > 15) : this.idle > (this.r1 ? 30 : 20);   // (10/21: 10 → 20 s, every 14–20 s — "힌트가 너무 많아")
+    // (1판: the box's wobble and her words say where she is — only after 20 s stuck, ② 10/26 "위치 알려 주는 연출은 20초 막힌 뒤")
+    const gigWait = this.spec.tut === 1 ? this.idle > 20 : HINTS_OLD ? (!this.r1 || this.idle > 15) : this.idle > (this.r1 ? 30 : 20);   // (10/21: 10 → 20 s, every 14–20 s — "힌트가 너무 많아")
     if (this.incident && this.friendHidden && this.running && !this.result && gigWait && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = HINTS_OLD || this.spec.tut === 1 ? (this.idle > 8 ? 4 : 6.5) + Math.random() * 3 : 14 + Math.random() * 6; this.giggle(); }
     if (this.spec.night && !this.result && (this._starT = (this._starT || 0) - dt) <= 0) {
       this._starT = .45 + Math.random() * .5;
@@ -3541,7 +3558,7 @@ export class StageScene {
       // owner's look and 6판's smoke already wait for it; with more left the 힌트 button is there)
       // (10/24 사용자 "처음에 못 찾으면 힌트 알려 줘": 1~3판 배우는 구간만 — 15초 동안 하나도 못 찾으면 판마다 한 번, 가까운 것 쪽으로 부드럽게:
       // 친구가 그쪽을 보고, 그 자리에 옅은 빛이 세 번, 돋보기 버튼이 반짝. 뒤 판은 원래 규칙 그대로; ②)
-      if (this.idx <= 2 && !this._firstHelp && !this.custom && !this.preview && !this.tutEls && !this.talking && this.tStart != null && this.t - Math.max(this.tStart, this.lastFind ?? -99) > 15) {
+      if (this.idx >= 1 && this.idx <= 2 && !this._firstHelp && !this.custom && !this.preview && !this.tutEls && !this.talking && this.tStart != null && this.t - Math.max(this.tStart, this.lastFind ?? -99) > 15) {
         const left = this.targets.filter(t => !t.found && !t.friend && !t.furnTarget && !t.spot?.part?.lock);
         if (left.length) { this._firstHelp = true; this.softGlow(left); }
       }

@@ -142,6 +142,7 @@ export async function firstFindsTalk(S) {
   if (S.dead || S.result || S.targets.every(t => t.found)) return;
   for (let i = 0; i < 30 && (S.talking || S.cine || S.G.world.flying) && !S.dead; i++) await S.tw.wait(.2);
   const who = S.friend?.root ? S.friend : null; if (!who || S.dead || S.result) return;
-  S.sayNow(who, FIRST_SAY[0], 2400); await S.tw.wait(2.6);
+  // (the first line is said in close as she pops out — revealFriend; here, back at your view, the one asking for the rest)
+  for (let i = 0; i < 20 && !S._firstBack && !S.dead; i++) await S.tw.wait(.2);
   if (!S.dead && !S.result) S.sayNow(who, FIRST_SAY[1], 2600);
 }
