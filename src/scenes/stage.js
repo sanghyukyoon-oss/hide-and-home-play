@@ -533,7 +533,7 @@ export class StageScene {
     // (1~3판 한 번에 하나만 — toasts too)
     G.ui.hush = () => !this.dead && this.hushed();
     // (the ↻ by the finger when a drag turns — tutb.js)
-    if (G.world.scheme === 'F' && !custom && !this.preview) spinBadge(this);
+    // (10/26 사용자 "계속 회전할때마다 아이콘 넣는거야? … 아이콘 빼") — the ↻ by the finger is off
     if (TUT_B && this.spec.tut === 2) tutB2(this);
     else {
     if (this.spec.tut === 1) this.tutorial1();   // no clock: the stage waits for you

@@ -195,8 +195,8 @@ let hcss = false;
 function howCss() {
   if (hcss) return; hcss = true;
   const s = document.createElement('style');
-  s.textContent = `.hw-card{max-width:min(350px,calc(100vw - 24px));display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;padding:8px 12px 6px}
-.hw-txt{font-size:16px;line-height:1.4;text-align:center}
+  s.textContent = `.hw-card{max-width:calc(100vw - 16px);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;padding:8px 12px 6px}
+.hw-txt{font-size:min(15px,3.6vw);line-height:1.45;text-align:center;white-space:nowrap}
 .hw-ar{display:inline-block;width:18px;height:12px;margin:0 4px;vertical-align:middle;background:linear-gradient(#3b2a55,#3b2a55) left center/12px 3px no-repeat;position:relative}.hw-ar::after{content:'';position:absolute;right:0;top:0;border:6px solid transparent;border-left:8px solid #3b2a55;border-right:0}
 .hw-x{font-size:11px;opacity:.55;align-self:flex-end;margin-top:-2px}
 .hw-demo{position:relative;flex:none;width:170px;height:80px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden;zoom:.6}
