@@ -30,7 +30,7 @@ export const TUTB_TXT = {
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
-  fbHold: K('꾹 누른 채로!', 'Keep holding!'), fbSpin: K('회전!', 'Rotate!'),
+  fbHold: K('여긴 누른 채로,\n다른 손가락으로 아무 데나 터치!', 'Keep this one down,\ntap anywhere with another finger!'), fbSpin: K('회전!', 'Rotate!'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 
@@ -177,12 +177,12 @@ export async function howCard(S) {
   // (10/26 사용자: "손가락보다 좀 위에 말풍선으로… 클릭하고 나면 화면 회전! 문구"): while one finger drags, a small bubble just above it
   // says to keep holding; the moment the other finger's tap turns the drag into turning, it says 회전! and goes. 1판 card only
   const fb = h('div', { class: 'hw-bub hw-fb', style: 'opacity:0' }); G.ui.tut.append(fb);
-  const fbAt = () => { const f = W.ptrs?.size ? [...W.ptrs.values()][0] : null; if (f) { fb.style.left = f.x + 'px'; fb.style.top = (f.y - 64) + 'px'; } return f; };
+  const fbAt = () => { const f = W.ptrs?.size ? [...W.ptrs.values()][0] : null; if (f) { fb.style.left = f.x + 'px'; fb.style.top = (f.y - 56) + 'px'; } return f; };
   try {
     while (!S.dead && !S.result && !shut && S.t - t0 < 15) {
       { const f = fbAt(), turning = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
         const say = spunAt != null ? (S.t - spunAt < 1.6 ? tr(TUTB_TXT.fbSpin) : '') : (f && W.ptrs.size === 1 && !turning ? tr(TUTB_TXT.fbHold) : '');
-        if (fb.textContent !== say) fb.textContent = say; fb.style.opacity = say && f ? '1' : '0'; }   // (10/26 사용자 "약간 더 길게… 다 읽히기전에 넘어가서": 8 → 15 s)
+        if (fb._say !== say) { fb._say = say; fb.innerHTML = say.replace('\n', '<br>'); } fb.style.opacity = say && f ? '1' : '0'; }   // (10/26 사용자 "약간 더 길게… 다 읽히기전에 넘어가서": 8 → 15 s)
       const spin = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
       if (spin && spunAt == null) { spunAt = S.t; const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; T.ftapUsed = 1; G.persist?.(); }
       if (spunAt != null && S.t - spunAt > 3) break;
@@ -213,7 +213,7 @@ function howCss() {
 .hw-bub::before{bottom:-15px;margin-left:-11px;border-width:14px 11px 0;border-top-color:#3b2a55}
 .hw-bub::after{bottom:-9px;margin-left:-7px;border-width:9px 7px 0;border-top-color:#fffaf2}
 
-.hw-fb{transition:opacity .15s;font-size:15px;padding:6px 12px}
+.hw-fb{transition:opacity .15s;font-size:15px;padding:6px 12px;text-align:center}
 @keyframes hwbub{from{transform:translate(-50%,-100%) scale(.6);opacity:0}}
 .hw-x{font-size:11px;opacity:.55;align-self:flex-end;margin-top:-2px}
 .hw-demo{position:relative;flex:none;width:170px;height:80px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden;zoom:.6}
