@@ -24,10 +24,11 @@
   };
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = fn => raf(t => { fn(t); if (!pending) { pending = true; queueMicrotask(copy); } });
-  // 화질 단계 고정(2: 슈퍼샘플 없이 dpr 2 = 정확히 1080×1920) — 느려져도 해상도를 내리지 않는다
+  // 화질 단계 고정(1: 슈퍼샘플 1.5 + dpr 2 = 1080×1920, 그림자 2048) — 느려져도 내리지 않는다
+  // (10/26: 2단계는 이제 그림자 512(저사양 최적화)라 녹화가 거칠었음 → 1단계)
   const pin = setInterval(() => {
     const w = window.G && window.G.world; if (!w || !w.setLevel) return;
-    clearInterval(pin); const set = w.setLevel.bind(w); set(2); w.setLevel = () => {};
+    clearInterval(pin); const set = w.setLevel.bind(w); set(1); w.setLevel = () => {};
   }, 200);
 
   // 녹화판 저장은 본게임과 따로: 이 창의 localStorage 키 앞에 'rec:'를 붙인다(본게임 진행은 건드리지 않음)
