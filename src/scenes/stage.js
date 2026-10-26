@@ -3614,7 +3614,8 @@ export class StageScene {
     if (this.zoomTools) { if (!this.view0 && this.running) this.view0 = { yaw: W.yaw, pitch: W.pitch, zoom: W.zoom }; const v = this.view0, off = W.zoom > (v?.zoom || this.zoom0 || 1) + .12 || (v && (Math.abs(Math.atan2(Math.sin(W.yaw - v.yaw), Math.cos(W.yaw - v.yaw))) > .2 || Math.abs(W.pitch - v.pitch) > .12)) || W.target.distanceTo(W.home) > .6; this.zoomTools.classList.toggle('show', !!(off && this.running && !this.result && !this.tutEls)); /* (not before play starts: the title band, the kit's box — 10/19; a class, so nothing else showing the HUD can bring it back) */ }
     // (one guide at a time, 1~10판 — user 10/20 "힌트가 너무 많아": while a lesson's hand is up, '처음 시점' waits and the hint
     // button with its count steps back)
-    if (this.hintBtn) { const q = !!this.tutEls; if (q !== this._hintQuiet) { this._hintQuiet = q; this.hintBtn.style.opacity = q ? '.3' : ''; this.hintBtn.style.transition = 'opacity .3s'; } }
+    if (this.hintBtn) { const q = !!this.tutEls && this.tutEls[0] !== this._magTip;   // (10/26 사용자: "막히면 돋보기 하는데 왜 돋보기 투명해지냐")
+      if (q !== this._hintQuiet) { this._hintQuiet = q; this.hintBtn.style.opacity = q ? '.3' : ''; this.hintBtn.style.transition = 'opacity .3s'; } }
     // friend count bubble
     const fp = W.toScreen(V.copy(this.friend.root.position).setY(this.friend.S * 1.05 + .25));
     this.bubble.style.left = fp.x + 'px'; this.bubble.style.top = fp.y + 'px';

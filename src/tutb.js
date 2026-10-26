@@ -26,7 +26,7 @@ export const TUTB_TXT = {
   // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
   // (1판 10/26 실폰: "처음에 너무 길긴한데 … 조금 짧게 해주고 좀 위로 올려줘. 누르면 사라지게도") two short lines, a short dial line
   // (1판 10/26 user: "이동중에 다른손으로 터치 한번 하면 회전으로 바뀜 이거 진짜 설명 어렵다" → 사용자가 고른 문구; the switch is shown by the loop)
-  how: K('드래그로 둘러보다가 다른 손으로 아무 데나 터치!\n→ 둘러보던 손이 회전으로 변신!', 'While dragging, tap anywhere with another finger!\n→ your dragging finger turns to rotate mode!'),
+  how: K('드래그로 둘러보다가\n다른 손으로 아무 데나 터치!\n→ 둘러보던 손이 회전으로 변신!', 'Drag to look around, then\ntap anywhere with another finger!\n→ now your drag is in rotate mode!'),
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
@@ -166,7 +166,7 @@ export async function howCard(S) {
   while (!S.dead && !S.result && (S.tutEls || S.talking || S.cine || W.flying)) await S.tw.wait(.2);
   if (S.dead || S.result) return;
   howCss();
-  const txt = tr(TUTB_TXT.how).replace(/드래그로|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/회전으로 변신!|rotate mode!/, w => `<span class="tkw tn">${w}</span>`).replace('\n', '<br>').replace(/→/g, '<i class="hw-ar"></i>');
+  const txt = tr(TUTB_TXT.how).replace(/드래그로|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/회전으로 변신!|rotate mode!/, w => `<span class="tkw tn">${w}</span>`).split('\n').map(l => `<div class="hw-ln">${l}</div>`).join('').replace(/→ ?/g, '<i class="hw-ar"></i>');
   const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }), h('div', { class: 'hw-mode' }, '↻'));
   // (up under the top bar — the room and 토순이 stay clear; a touch on it closes it, so does a turn of the room, so do 8 s)
   const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-txt', html: txt }));   // (10/26 사용자 "쓸데없는거 정리해줘": the two lines only — no loop picture, no '터치해서 닫기')
@@ -196,8 +196,9 @@ function howCss() {
   if (hcss) return; hcss = true;
   const s = document.createElement('style');
   s.textContent = `.hw-card{max-width:calc(100vw - 16px);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;padding:8px 12px 6px}
-.hw-txt{font-size:min(15px,3.3vw);line-height:1.45;text-align:center;white-space:nowrap}
-.hw-ar{display:inline-block;width:28px;height:20px;margin:0 6px 0 0;vertical-align:-4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 10h15M15 4l7 6-7 6' stroke='%233b2a55' stroke-width='8'/%3E%3Cpath d='M4 10h15M15 4l7 6-7 6' stroke='%23ff8fb8' stroke-width='4'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat}
+.hw-txt{font-size:min(17px,4.4vw);line-height:1.5;text-align:center;white-space:nowrap}   /* (10/26 사용자 "약간 작게 느껴지는데… 글자 정렬 잘": 3 lines, bigger, every piece on one middle line) */
+.hw-ln{display:block;margin:2px 0}.hw-txt .tkw{display:inline-block;vertical-align:middle;line-height:1.3;margin-top:-3px}
+.hw-ar{display:inline-block;width:1.1em;height:.8em;margin:0 .3em 0 0;vertical-align:middle;margin-top:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20'%3E%3Cpath d='M4 10h16M14 4l7 6-7 6' fill='none' stroke='%233b2a55' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
 .hw-bub{position:absolute;z-index:31;transform:translate(-50%,-100%);background:#fffaf2;color:#3b2a55;border:3px solid #3b2a55;border-radius:16px;padding:8px 14px;font-size:15px;line-height:1.3;white-space:nowrap;box-shadow:0 3px 0 #3b2a55;pointer-events:none;animation:hwbub .35s cubic-bezier(.3,1.6,.5,1)}
 .hw-bub::before,.hw-bub::after{content:'';position:absolute;left:var(--tx,50%);border:solid transparent;border-bottom:0}
 .hw-bub::before{bottom:-15px;margin-left:-11px;border-width:14px 11px 0;border-top-color:#3b2a55}
