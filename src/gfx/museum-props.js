@@ -21,6 +21,15 @@ const mochi = (c, x, y, r, body = '#fff6ee', ear = '#ffcfae', look = 0) => {   /
   c.fillStyle = INK; for (const s of [-1, 1]) { c.beginPath(); c.arc(x + s * r * .32 + look * r * .15, y - r * .05, r * .1, 0, 7); c.fill(); }
   c.fillStyle = 'rgba(255,140,160,.55)'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(x + s * r * .55, y + r * .22, r * .16, r * .1, 0, 0, 7); c.fill(); }
 };
+// (10/26 사용자 "스테이지10에서 그림이 보이면 좋겠음 안에 숨은그림찾기 그림이"): the wall's 별밤 shows the very picture the
+// hidden-picture game opens (arthunt.js, GPT's bg.jpg) — the drawn one stays until it loads; 1024 wide is plenty on a wall
+const gptStars = t => {
+  if (t.userData.gpt) return t; t.userData.gpt = true;
+  const im = new Image();
+  im.onload = () => { const c = document.createElement('canvas'); c.width = 1024; c.height = 640; c.getContext('2d').drawImage(im, 0, 0, 1024, 640); t.image = c; t.dispose(); t.needsUpdate = true; };   // (dispose: a new size can't reuse the old GPU storage)
+  im.src = 'art/museum/arthunt/bg.jpg';
+  return t;
+};
 const PAINT = {
   // 몽글 파도: a great clawed wave over three boats of mochi rowers, a small snowy mountain far off
   wave: () => tex('wave', 640, 400, (c, w, h) => {
@@ -54,7 +63,7 @@ const PAINT = {
     c.fillStyle = '#c4473a'; c.fillRect(100, 26, 16, 16);
   }),
   // 별이 빛나는 몽글 마을: swirling sky, eleven stars, a crescent moon, a dark cypress, a sleeping village with a pink roof
-  stars: () => tex('stars', 640, 400, (c, w, h) => {
+  stars: () => gptStars(tex('stars', 640, 400, (c, w, h) => {
     const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#1b2f7a'); g.addColorStop(.7, '#2c4ea6'); g.addColorStop(1, '#22397e'); c.fillStyle = g; c.fillRect(0, 0, w, h);
     c.lineCap = 'round';
     const swirl = (cx, cy, r0, turns, col, lw) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); for (let a = 0; a < turns * PI * 2; a += .08) { const r = r0 * (1 - a / (turns * PI * 2 + 1)); const x = cx + Math.cos(a) * r * 1.6, y = cy + Math.sin(a) * r * .7; a ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); };
@@ -78,7 +87,7 @@ const PAINT = {
     // the cypress
     c.fillStyle = '#16301f'; c.beginPath(); c.moveTo(70, 400); for (let k = 0; k <= 14; k++) { const t = k / 14; c.lineTo(70 + Math.sin(k * 1.7) * 14 - t * 10 - 26 * (1 - t), 400 - t * 320); } for (let k = 14; k >= 0; k--) { const t = k / 14; c.lineTo(70 + Math.cos(k * 1.3) * 14 + t * 6 + 26 * (1 - t), 400 - t * 320); } c.fill();
     c.strokeStyle = '#2d5a3a'; c.lineWidth = 4; for (let k = 0; k < 12; k++) { c.beginPath(); c.arc(70 + (k % 2 ? 8 : -8), 380 - k * 25, 12, 3.6, 5.4); c.stroke(); }
-  }),
+  })),
   // 몽나리자: a mochi in a dark dress, paws folded, a veil, the faint smile, a hazy road and hills behind
   lisa: () => tex('lisa', 360, 480, (c, w, h) => {
     let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#6f7c58'); g.addColorStop(.55, '#a59a6c'); g.addColorStop(1, '#5d4c32'); c.fillStyle = g; c.fillRect(0, 0, w, h);

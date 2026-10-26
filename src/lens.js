@@ -34,14 +34,9 @@ export function takeLens(S) {
   lensBadge(S);
   return ok;
 }
-// none left: never a button that does nothing — the idle sparkle starts now. It counts as a hint (★ 힌트 없이 is gone)
+// (10/26 사용자 실폰: "다쓰고 나서 클릭하면 빤작이로 알려준다는데 힌트가 없습니다 표시만 하게 해줘") — only the line now, no sparkle
 export function noLens(S) {
-  S.G.ui.toast('돋보기가 없네! 대신 반짝이로 알려 줄게', '');
-  S.hintsUsed = (S.hintsUsed || 0) + 1;
-  S.idle = Math.max(S.idle || 0, S.sparkAfter ?? 20); S.twinkleT = 0;   // (stage.js update: it sparkles once idle > sparkAfter)
-  // (one thing left on a 숨은그림 판, F1: the sparkle waits for the owner's look — have the look now, no wait after it)
-  const left = S.targets.filter(t => !t.found);
-  if (S.feelHelp && left.length === 1) { S._oneAt ??= S.t; if (S._gazeAt == null) S.gazeHint(left[0]); S._gazeAt = S.t - 10; }
+  S.G.ui.toast('돋보기가 없어!', 'red');
 }
 // the hint button: true when a magnifier was taken (the hint goes on), false when there was none (the sparkle instead)
 export function lensHint(S) {
