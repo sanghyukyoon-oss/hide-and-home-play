@@ -103,6 +103,35 @@
   addEventListener('pointerdown', down, { capture: true, passive: false });
   for (const t of ['mousedown', 'touchstart']) addEventListener(t, block, { capture: true, passive: false });
   for (const t of ['pointermove', 'pointerup', 'mouseup', 'touchmove', 'touchend', 'click', 'dblclick']) addEventListener(t, block, { capture: true, passive: false });
+  // (10/26 사용자 "스테이지에서 화살표 양옆으로 만들어주고 옆으로 누르면 다음 보너스 나오게"): 판과 판 사이 보너스(놀이·보스)를
+  // 캠페인 순서대로 한 줄로 — 1판, 2판, 3판, 3판 뒤 두더지, 4판 … — 녹화판 양옆 화살표가 __recNav(±1)로 한 칸씩 옮김
+  let seq = null, pos = -1;
+  const buildSeq = async () => {
+    if (seq) return seq;
+    const m = await import(new URL('src/gallery.js', document.baseURI).href);
+    const bonus = {};   // 판 번호 → [{ id, k, name }]
+    for (const sec of m.GALLERY) for (const it of sec.items) {
+      if (it.type === 'model' || /안 쓰임|보류|캠페인 밖|시제품|새 버전/.test(it.slots || '')) continue;
+      const lvs = it.lvs || [];
+      const afters = lvs.some(v => v.after != null) ? lvs.map(v => v.after != null ? v.after + 1 : null)
+        : ((it.slots || '').match(/\d+/g) || []).map(Number);
+      afters.forEach((n, k) => { if (n && n <= 70) (bonus[n] ||= []).push({ id: it.id, k: Math.min(k, Math.max(0, lvs.length - 1)), name: it.name + (lvs[k]?.label ? ' · ' + lvs[k].label : '') }); });
+    }
+    seq = [];
+    for (let n = 1; n <= 70; n++) { seq.push({ n, name: n + '판' }); for (const b of bonus[n] || []) seq.push({ ...b, name: n + '판 뒤 · ' + b.name }); }
+    window.__recGallery = m;
+    return seq;
+  };
+  window.__recNav = async d => {
+    const G = window.G; if (!G) return '';
+    const L = await buildSeq();
+    if (pos < 0) { const i = G.scene && G.scene.name === 'stage' ? G.scene.idx + 1 : 1; pos = Math.max(0, L.findIndex(x => x.n === i)); }
+    pos = Math.max(0, Math.min(L.length - 1, pos + d));
+    const it = L[pos];
+    if (it.n) G.go('stage', { idx: it.n - 1, direct: true });
+    else window.__recGallery.playGame(G, it.id, it.k);
+    return it.name;
+  };
   window.__recHide = hideUI;
   // 녹화 중 커서 숨김(부모 창이 부름): 게임 창 안의 모든 요소 커서를 none 으로
   const cur = document.createElement('style'); cur.textContent = '*,*::before,*::after{cursor:none !important}';

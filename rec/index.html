@@ -18,10 +18,12 @@
 #bar label{color:#d9cfe4;font-size:12px}
 .row{display:flex;gap:6px}.row input{width:70px}
 @media (max-width:700px){#bar{width:118px;right:6px;top:6px}#bar button,#bar select{font-size:12px;padding:6px}}
+.navb{position:fixed;top:50%;transform:translateY(-50%);z-index:6;width:56px;height:96px;border-radius:16px;border:3px solid var(--ink);background:var(--fg);color:var(--ink);font:900 30px system-ui;cursor:pointer}#prev{left:8px}#next{right:8px}#navl{position:fixed;left:50%;bottom:6px;transform:translateX(-50%);color:#fff;font:600 13px system-ui;z-index:6}
 </style>
 </head>
 <body>
 <div id="wrap"><iframe id="g" allow="autoplay; display-capture"></iframe></div>
+<button id="prev" class="navb" title="이전 (판·보너스)">◀</button><button id="next" class="navb" title="다음 (판·보너스)">▶</button><div id="navl"></div>
 <div id="bar">
   <button id="rec">● 녹화</button>
   <div id="t"></div>
@@ -70,6 +72,8 @@ function stop() { quiet(false); rec && rec.state !== 'inactive' && rec.stop(); r
 // 멈추기 = Esc 키(또는 스페이스). 게임 창 안 커서는 rec-inner.js 가 같은 신호로 숨김
 const quiet = on => { $('bar').style.visibility = on ? 'hidden' : ''; wrap.classList.toggle('bare', on); };   // (10/26 사용자 "커서 움직이는것도 이상함": 커서는 숨기지 않음 — 'UI 빼고'는 캔버스만 찍어 커서가 원래 안 담기고, 'UI 넣고'는 cursor:'never')
 addEventListener('keydown', e => { if (rec && (e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); stop(); } });
+const nav = async d => { try { $('navl').textContent = await g.contentWindow.__recNav(d); } catch (e) { console.error(e); } };
+$('prev').onclick = () => nav(-1); $('next').onclick = () => nav(1);
 $('rec').onclick = () => rec ? stop() : start().catch(e => { $('t').textContent = '녹화 못 함'; console.error(e); });
 window.__recUI = { start, stop, isRec: () => !!rec, mime: MIME, chrome: on => { $('bar').style.display = on ? '' : 'none'; wrap.classList.toggle('bare', !on); } };
 </script>
