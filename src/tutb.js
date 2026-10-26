@@ -26,7 +26,7 @@ export const TUTB_TXT = {
   // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
   // (1판 10/26 실폰: "처음에 너무 길긴한데 … 조금 짧게 해주고 좀 위로 올려줘. 누르면 사라지게도") two short lines, a short dial line
   // (1판 10/26 user: "이동중에 다른손으로 터치 한번 하면 회전으로 바뀜 이거 진짜 설명 어렵다" → 사용자가 고른 문구; the switch is shown by the loop)
-  how: K('드래그로 둘러보다가\n다른 손으로 아무 데나 터치!\n→ 둘러보던 손이 회전으로 변신!', 'Drag to look around, then\ntap anywhere with another finger!\n→ now your drag is in rotate mode!'),
+  how: K('드래그하다가 다른 손으로 터치!\n→ 둘러보던 손이 회전으로 변신!', 'Drag, then tap with another finger!\n→ your drag turns into rotate mode!'),
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
@@ -166,7 +166,7 @@ export async function howCard(S) {
   while (!S.dead && !S.result && (S.tutEls || S.talking || S.cine || W.flying)) await S.tw.wait(.2);
   if (S.dead || S.result) return;
   howCss();
-  const txt = tr(TUTB_TXT.how).replace(/드래그로|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/회전으로 변신!|rotate mode!/, w => `<span class="tkw tn">${w}</span>`).split('\n').map(l => `<div class="hw-ln">${l}</div>`).join('').replace(/→ ?/g, '<i class="hw-ar"></i>');
+  const txt = tr(TUTB_TXT.how).replace(/드래그|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/회전으로 변신!|rotate mode!/, w => `<span class="tkw tn">${w}</span>`).split('\n').map(l => `<div class="hw-ln">${l}</div>`).join('').replace(/→ ?/g, '<i class="hw-ar"></i>');
   const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }), h('div', { class: 'hw-mode' }, '↻'));
   // (up under the top bar — the room and 토순이 stay clear; a touch on it closes it, so does a turn of the room, so do 8 s)
   const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-txt', html: txt }));   // (10/26 사용자 "쓸데없는거 정리해줘": the two lines only — no loop picture, no '터치해서 닫기')
@@ -187,7 +187,8 @@ export async function howCard(S) {
   if (dial) {
     let dl = 0; const prevR = W.onRotate; W.onRotate = d => { prevR?.(d); if (W._tdHeld) dl += Math.abs(d) || 0; };
     const at = () => { const b = dial.getBoundingClientRect(); return b.width ? { sx: b.left + b.width / 2, sy: b.top + b.height / 2 } : null; };
-    await bubble(S, TUTB_TXT.dial2, at, () => dl > .4, 5);   // (10/26 사용자 "돋보기랑 돌림판은 말풍선같이")
+    const atTop = () => { const b = dial.getBoundingClientRect(); return b.width ? { sx: b.left + b.width / 2, sy: b.top } : null; };
+    await bubble(S, TUTB_TXT.dial2, atTop, () => dl > .4, 5, .44);   // (leans left, clear of the zoom bar above the dial)   // (10/26 사용자 "돋보기랑 돌림판은 말풍선같이")
     W.onRotate = prevR;
   }
 }
@@ -229,15 +230,15 @@ export function pointMag(S) {
   bubble(S, TUTB_TXT.mag, at, () => false, 4);
 }
 // a speech bubble over a button (돋보기·돌림판), its tail pointing down at it; gone after `secs` or once done() is true
-async function bubble(S, txt, at, done, secs) {
+async function bubble(S, txt, at, done, secs, lean = 0) {
   howCss();
   const p = at(); if (!p) return;
   const el = h('div', { class: 'hw-bub', html: tr(txt) });
   S.G.ui.tut.append(el); S.tutEls = [el]; if (txt === TUTB_TXT.mag) S._magTip = el;   // (stage.js useHint takes it away when the 돋보기 is pressed)
   const place = () => {
     const q = at(); if (!q) return;
-    const w = el.offsetWidth || 160, x = Math.max(w / 2 + 10, Math.min(innerWidth - w / 2 - 10, q.sx));
-    el.style.left = x + 'px'; el.style.top = (q.sy - 14) + 'px'; el.style.setProperty('--tx', (q.sx - x + w / 2) + 'px');
+    const w = el.offsetWidth || 160, x = Math.max(w / 2 + 10, Math.min(innerWidth - w / 2 - 10, q.sx - w * lean));
+    el.style.left = x + 'px'; el.style.top = (q.sy - 20) + 'px'; el.style.setProperty('--tx', Math.max(22, Math.min(w - 22, q.sx - x + w / 2)) + 'px');   // (10/26 사용자 "가려지지 않게": the tail's tip stops above the button)
   };
   place();
   const t0 = S.t;
