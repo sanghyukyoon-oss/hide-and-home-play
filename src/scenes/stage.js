@@ -448,7 +448,10 @@ export class StageScene {
     if (scout && this.raidRun) { const go = await raidScout(this); if (!go || this.dead) return; }   // ② 정찰: the room first, then the raid here
     stagingPrep(this);
     this.hero?.settle?.(G.world);
-    const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
+    // (1판 user 10/26: "1장 하면서 한 번 끊고 다시 맵 보여 주고 다시 저게 나오니까 너무 더러워 … 처음에 이 멘트 나오면 되지 않아?"):
+    // no chapter film on 1판 — the room comes up with its title and 토순이's first line together (the banner isn't waited for)
+    const first1 = this.spec.tut === 1 && !custom && !this.preview && !retry;
+    const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry && !first1);
     // 13판 이삿짐 (10/21, user: "트럭 먼저 나오고 상자 날아가고 그다음에 집 배경으로 챕터 나오면 될거같은데 순서"): the truck and
     // the pile first, then the chapter card over the room itself (its 3D hello, not the comic panel), then the talk
     const truckFirst = !!(this.kit && kitTruck(this));
@@ -459,7 +462,8 @@ export class StageScene {
     // 숨은그림 판 (10/18): the owner stands by, talks at the start and three times while you look (first · half · one left)
     this.hiddenStage = !custom && !this.preview && !this.incident && !this.spec.gray && !this.spec.timed && !this.spec.boss && !(this.spec.tut <= 2) && isHidden(this.idx);   // (4판 key, 7판 code lessons are hidden-object stages too)
     // the goal in one line (대본: "토순이 찾기") — the story is in the talk, not stacked on the banner
-    await G.ui.banner(th.name, custom ? (this.raidRun ? raidGoal(this) : `숨겨 둔 물건 ${this.targets.length}개를 찾아라!`) : this.model ? this.model.goal : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
+    const bn = G.ui.banner(th.name, custom ? (this.raidRun ? raidGoal(this) : `숨겨 둔 물건 ${this.targets.length}개를 찾아라!`) : this.model ? this.model.goal : this.incident ? goalLine(th.friend) : this.spec.gray ? `숨겨진 물건 ${this.targets.length}개를 찾아 색을 되찾아라!` : this.spec.boss ? `숨겨진 물건 ${this.targets.length}개를 찾아라!` : (this.hiddenStage && hiddenGoal(this.idx, this.targets.length)) || `${ga(CHAR_DEFS[th.friend].name)} 숨긴 물건 ${this.targets.length}개를 찾아라!`, 1250);
+    if (!first1) await bn;
     if (this.dead) return;
     if (this.kit && !truckFirst) { await kitIntro(this); if (this.dead) return; }   // 프라모델: the box opens, the pieces scatter (~2.5 s, a tap skips)
     // 판 시작 연출 (스토리 룸 19~34판 staging — staging.js): 3–6 s before the talk, a touch skips it
@@ -504,7 +508,8 @@ export class StageScene {
     if (this.incident) {
       // 대본: this map's scene, else the host's own lines for how many times you've met (a joke from last time comes back)
       const lines = incidentIntro(this.idx, th.friend);
-      if (lines.length && !retry) { await this.openTalk(lines, { title: th.name }); if (this.dead) return; }   // (a retry goes straight to the hide — QA 10/18)
+      // (1판: the banner already says the room's name — the card under it without a title of its own, one name on the screen)
+      if (lines.length && !retry) { await this.openTalk(lines, first1 ? {} : { title: th.name }); if (this.dead) return; }   // (a retry goes straight to the hide — QA 10/18)
       await this.friendHides(); if (this.dead) return;
     } else if (!custom && !this.preview && this.spec.incident && !this.scene?.always && !G.save.settings?.oldMode) {
       // a 사건 판 that fell back to finding things (no big furniture to hide in): the host says so, not a hiding line
