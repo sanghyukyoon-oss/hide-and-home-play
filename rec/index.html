@@ -65,8 +65,7 @@ async function start() {
 function stop() { quiet(false); rec && rec.state !== 'inactive' && rec.stop(); rec = null; clearInterval(timer); $('t').textContent = '저장 중…'; setTimeout(() => $('t').textContent = '', 1500); wrap.classList.remove('on'); $('rec').classList.remove('on'); $('rec').textContent = '● 녹화'; }
 // (10/26 사용자 "녹화 관련 ui도 녹화된다… 커서도 녹화됨"): 녹화하는 동안 버튼 막대·빨간 테두리·마우스 커서를 전부 숨김.
 // 멈추기 = Esc 키(또는 스페이스). 게임 창 안 커서는 rec-inner.js 가 같은 신호로 숨김
-const quiet = on => { $('bar').style.visibility = on ? 'hidden' : ''; wrap.classList.toggle('bare', on); document.documentElement.style.cursor = on ? 'none' : '';
-  try { g.contentWindow.__recCursor && g.contentWindow.__recCursor(!on); } catch {} };
+const quiet = on => { $('bar').style.visibility = on ? 'hidden' : ''; wrap.classList.toggle('bare', on); };   // (10/26 사용자 "커서 움직이는것도 이상함": 커서는 숨기지 않음 — 'UI 빼고'는 캔버스만 찍어 커서가 원래 안 담기고, 'UI 넣고'는 cursor:'never')
 addEventListener('keydown', e => { if (rec && (e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); stop(); } });
 $('rec').onclick = () => rec ? stop() : start().catch(e => { $('t').textContent = '녹화 못 함'; console.error(e); });
 window.__recUI = { start, stop, mime: MIME, chrome: on => { $('bar').style.display = on ? '' : 'none'; wrap.classList.toggle('bare', !on); } };
