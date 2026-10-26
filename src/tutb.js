@@ -174,10 +174,10 @@ export async function howCard(S) {
   G.ui.tut.append(card); S.tutEls = [card]; TT.how1 = 1; G.persist?.();
   const t0 = S.t; let spunAt = null;
   try {
-    while (!S.dead && !S.result && !shut && S.t - t0 < 8) {
+    while (!S.dead && !S.result && !shut && S.t - t0 < 15) {   // (10/26 사용자 "약간 더 길게… 다 읽히기전에 넘어가서": 8 → 15 s)
       const spin = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
       if (spin && spunAt == null) { spunAt = S.t; const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; T.ftapUsed = 1; G.persist?.(); }
-      if (spunAt != null && S.t - spunAt > .8) break;
+      if (spunAt != null && S.t - spunAt > 3) break;
       await S.tw.wait(.1);
     }
   } finally { card.remove(); if (S.tutEls?.[0] === card) { S.tutEls = null; S._tutEnd = S.t - 2; } }
@@ -187,7 +187,7 @@ export async function howCard(S) {
   if (dial) {
     let dl = 0; const prevR = W.onRotate; W.onRotate = d => { prevR?.(d); if (W._tdHeld) dl += Math.abs(d) || 0; };
     const at = () => { const b = dial.getBoundingClientRect(); return b.width ? { sx: b.left + b.width / 2, sy: b.top + b.height / 2 } : null; };
-    await S.teach(TUTB_TXT.dial2, 'dialr', at, () => dl > .4, null, 4);
+    await bubble(S, TUTB_TXT.dial2, at, () => dl > .4, 5);   // (10/26 사용자 "돋보기랑 돌림판은 말풍선같이")
     W.onRotate = prevR;
   }
 }
@@ -197,7 +197,12 @@ function howCss() {
   const s = document.createElement('style');
   s.textContent = `.hw-card{max-width:calc(100vw - 16px);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;padding:8px 12px 6px}
 .hw-txt{font-size:min(15px,3.3vw);line-height:1.45;text-align:center;white-space:nowrap}
-.hw-ar{display:inline-block;width:18px;height:12px;margin:0 4px;vertical-align:middle;background:linear-gradient(#3b2a55,#3b2a55) left center/12px 3px no-repeat;position:relative}.hw-ar::after{content:'';position:absolute;right:0;top:0;border:6px solid transparent;border-left:8px solid #3b2a55;border-right:0}
+.hw-ar{display:inline-block;width:28px;height:20px;margin:0 6px 0 0;vertical-align:-4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 20'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 10h15M15 4l7 6-7 6' stroke='%233b2a55' stroke-width='8'/%3E%3Cpath d='M4 10h15M15 4l7 6-7 6' stroke='%23ff8fb8' stroke-width='4'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat}
+.hw-bub{position:absolute;z-index:31;transform:translate(-50%,-100%);background:#fffaf2;color:#3b2a55;border:3px solid #3b2a55;border-radius:16px;padding:8px 14px;font-size:15px;line-height:1.3;white-space:nowrap;box-shadow:0 3px 0 #3b2a55;pointer-events:none;animation:hwbub .35s cubic-bezier(.3,1.6,.5,1)}
+.hw-bub::before,.hw-bub::after{content:'';position:absolute;left:var(--tx,50%);border:solid transparent;border-bottom:0}
+.hw-bub::before{bottom:-15px;margin-left:-11px;border-width:14px 11px 0;border-top-color:#3b2a55}
+.hw-bub::after{bottom:-9px;margin-left:-7px;border-width:9px 7px 0;border-top-color:#fffaf2}
+@keyframes hwbub{from{transform:translate(-50%,-100%) scale(.6);opacity:0}}
 .hw-x{font-size:11px;opacity:.55;align-self:flex-end;margin-top:-2px}
 .hw-demo{position:relative;flex:none;width:170px;height:80px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden;zoom:.6}
 .hw-room{position:absolute;left:60px;top:16px;width:46px;height:46px;transform:translateX(-14px) rotateX(55deg) rotateZ(45deg);border-radius:6px;background:#ffd9c2;border:2px solid #3b2a55;animation:hwRoom 2.4s ease-in-out infinite}
@@ -218,11 +223,25 @@ function howCss() {
 // 1판, stuck 15 s: the 돋보기 button bounces and says so once, just above it
 export function pointMag(S) {
   const b = S.hintBtn; if (!b) return;
-  const r = b.getBoundingClientRect();
-  const tip = h('div', { class: 'tip', style: `left:${Math.max(110, r.left + r.width / 2)}px;top:${Math.max(80, r.top - 64)}px`, html: tr(TUTB_TXT.mag) });
-  S.G.ui.tut.append(tip); S.tutEls = [tip]; S._magTip = tip;
   b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 600);
-  setTimeout(() => { tip.remove(); if (S.tutEls?.[0] === tip) { S.tutEls = null; S._tutEnd = S.t; } }, 3500);
+  const at = () => { const r = b.getBoundingClientRect(); return r.width ? { sx: r.left + r.width / 2, sy: r.top } : null; };
+  bubble(S, TUTB_TXT.mag, at, () => false, 4);
+}
+// a speech bubble over a button (돋보기·돌림판), its tail pointing down at it; gone after `secs` or once done() is true
+async function bubble(S, txt, at, done, secs) {
+  howCss();
+  const p = at(); if (!p) return;
+  const el = h('div', { class: 'hw-bub', html: tr(txt) });
+  S.G.ui.tut.append(el); S.tutEls = [el]; if (txt === TUTB_TXT.mag) S._magTip = el;   // (stage.js useHint takes it away when the 돋보기 is pressed)
+  const place = () => {
+    const q = at(); if (!q) return;
+    const w = el.offsetWidth || 160, x = Math.max(w / 2 + 10, Math.min(innerWidth - w / 2 - 10, q.sx));
+    el.style.left = x + 'px'; el.style.top = (q.sy - 14) + 'px'; el.style.setProperty('--tx', (q.sx - x + w / 2) + 'px');
+  };
+  place();
+  const t0 = S.t;
+  try { while (!S.dead && !S.result && el.isConnected && S.t - t0 < secs && !done()) { place(); await S.tw.wait(.1); } }
+  finally { el.remove(); if (S.tutEls?.[0] === el) { S.tutEls = null; S._tutEnd = S.t; } }
 }
 
 // (1판 10/26 허브: "터치했더니 뭔가 바뀌었다를 몸으로") — while a drag has been switched to turning by another finger, a ↻ rides beside
