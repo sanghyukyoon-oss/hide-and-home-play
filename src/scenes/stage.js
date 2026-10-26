@@ -564,6 +564,8 @@ export class StageScene {
     if (G.world.post) { G.world.post.u.gray.value = 0; G.world.post.u.grayR.value = -1; G.world.post.bloomOn = false; }
     document.getElementById('app').style.removeProperty('--joyB');
     G.world.root.remove(this.room.group); G.world.root.remove(this.friend.root); this.look?.dispose(); setSky(null);
+    // (1판 토순이's tail sits on the world root, not the room: left there it floated in 2판 — 10/26 "스테이지2의 동그라미 뭐냐")
+    if (this.tail) { this.tail.mesh.parent?.remove(this.tail.mesh); this.tail = null; }
     for (const n of this.npcs || []) { n.on = false; G.world.root.remove(n.ch.root); }
     for (const m of this.prints || []) { G.world.root.remove(m); m.material.dispose(); m.geometry.dispose(); }
     this.ambient?.dispose(); if (this.hero) { disposeTree(this.hero.ch.root); if (this.hero.buddy) disposeTree(this.hero.buddy.root); this.hero.dispose(); }
@@ -1240,7 +1242,8 @@ export class StageScene {
     await tw.run(.6, k => { f.root.position.lerpVectors(pc, to, k); f.root.position.y = pc.y + (to.y - pc.y) * k + Math.sin(k * Math.PI) * .7; f.root.scale.setScalar(.25 + .75 * Math.min(1, k * 1.7)); });
     }
     f.faceTo(W.cam.position.x, W.cam.position.z);
-    closeUp(this, f, { portrait: true });   // (10/19 "등장하거나 말하는 경우 카메라를 잘 잡아 줘야지") in on the friend who popped out, while the room lights up — the same frontal shot every stage
+    // (1판 10/26 user: "토끼 찾고 카메라 액션있지? 그거 없애줘" — the view stays where you are; pop, sound and her line as before)
+    if (!cam0) closeUp(this, f, { portrait: true });   // (10/19 "등장하거나 말하는 경우 카메라를 잘 잡아 줘야지") in on the friend who popped out, while the room lights up — the same frontal shot every stage
     this.tail?.mesh.parent?.remove(this.tail.mesh); this.tail = null;   // 1판: the tail goes back in with her
     // the room lights up: out of the dark, or a warm glow over the day
     const to2 = this.th.light || null, a0 = W.hemi.intensity, s0 = W.sun.intensity;
@@ -1255,7 +1258,6 @@ export class StageScene {
       for (let i = 0; i < 30 && this.tutEls && !this.dead; i++) await tw.wait(.1);
       if (!this.dead && !this.result) { this.sayNow(f, FIRST_SAY[0], 1700); await tw.wait(1.8); }
       this._closeBack = null;
-      if (!this.dead && !this.result) await W.flyTo(tw, { yaw: cam0.yaw, pitch: cam0.pitch, zoom: cam0.zoom, target: cam0.target, dur: .8, e: ease.outCubic });
       this._firstBack = true; this._revealing = false;
     } else if (!this.dead && !this.result && !G.skipTalk && !G.bot) await this.talk(incidentReveal(this.idx, this.th.friend), { title: this.th.name, cam: true });   // (not over a fail panel — QA 10/18)
     if (!this.result && !this.dead) {
@@ -2710,7 +2712,8 @@ export class StageScene {
     this.tutStep = 1;
     if (!P) return this.tutorialLegacy();
     const box = P.box, sc = this.scene || {};
-    this.tail = boxTail(box); W.root.add(this.tail.mesh); W.idsDirty = true;
+    // (not once she's found — it would never be taken away)
+    if (!this.friendItem?.found) { this.tail = boxTail(box); W.root.add(this.tail.mesh); W.idsDirty = true; }
     const front = () => { if (!this.tail) return true; const c = this.tail.center, v = new THREE.Vector3(W.cam.position.x - c.x, 0, W.cam.position.z - c.z).normalize(); return v.dot(this.tail.front) > .3; };
     const donut = this.items.find(i => i.role === 'clue');
     const at = el => { const b = el?.getBoundingClientRect(); return b?.width ? { sx: b.left + b.width / 2, sy: b.top + b.height / 2 } : null; };

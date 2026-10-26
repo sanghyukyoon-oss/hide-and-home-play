@@ -249,7 +249,7 @@ const SCENES = [
   { id: 'aptmap', type: 'incident', room: 'aptmap', host: 'bear', trace: true, hide: K('으헤헤, 따뜻한 데가 좋아~', 'Ehehe, somewhere nice and warm~'),
     intro: [L('bunny', '곰돌이도 집들이 왔어! 숨바꼭질 하재.', 'Bearie came to the housewarming too! Wants to play hide-and-seek.'), LK('bunny', '청소기가 자꾸 이상한 걸 물고 다녀. 조심해!', 'And the robot vacuum keeps carrying weird stuff around. Careful!')],
     reveal: [L('bear', '어… 벌써 찾았어? 따뜻해서 그만.', 'Huh… found me already? It was just so warm in there.'), L('bunny', '이제 다 모였다! 집들이 대성공!', "Everyone's here! Best housewarming ever!"),
-      L('mong', '…한 명 빠졌어. 그 까만 애.', '…One is missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
+      L('mong', '…한 명 빠졌어. 그 까만 애.', '…Someone\'s missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
   // 동네 골목
   { id: 'alley1', type: 'incident', room: 'alley1',
     reveal: [L('grumpy', '…진짜 찾았네.', '…You actually found me.'), L('mong', '…의자가 두 개네.', '…There are two chairs.'), L('grumpy', '하, 하나는 가방 놓는 거야.', "O-one's for my bag.")] },
@@ -303,7 +303,7 @@ const SCENES = [
   { id: 'villaroofInc', stage: { start: 'jarHide', end: 'inkyTraceLook' }, type: 'incident', room: 'villaroof', alt: ['villaroof2'], host: 'bear', trace: true, uses: 'aptmap', hide: K('으헤헤, 항아리 속은 시원하고 깜깜해~', 'Ehehe, it’s cool and dark in the jar~'),
     intro: [L('bunny', '우리 빌라 옥상에서 집들이야! 곰돌이도 왔어, 숨바꼭질 하재.', 'Housewarming on our rooftop! Bearie came too. Wants to play hide-and-seek.')],
     reveal: [L('bear', '어… 벌써 찾았어? 항아리 안이 시원하고 깜깜해서 그만…', 'Huh… found me already? It was so cool and dark in the jar…'), L('bunny', '이제 다 모였다! 집들이 대성공!', "Everyone's here! Best housewarming ever!"),
-      L('mong', '…한 명 빠졌어. 그 까만 애.', '…One is missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
+      L('mong', '…한 명 빠졌어. 그 까만 애.', '…Someone\'s missing. That inky kid.'), L('mong', '다음엔 우리 집에서 놀자. 그 애도 같이.', "Next time, let's play at my place. That kid too.")] },
   // 27판 아침 기차역: 개굴이는 숨지 않고 플랫폼에 서 있어요. 26판 발자국이 역까지 이어짐(trace)
   { id: 'stationH', stage: { start: 'bagPop', moment: 'crossing', end: 'trainIn' }, type: 'hidden', room: 'station', host: 'frog', trace: true, uses: 'streetH', goal: ['개굴이 낚시 가방 속 물건', "things from Froggy's bag"],
     intro: [L('frog', '개굴! 발자국 따라왔어? 난 아침 기차 타고 호수 섬에 낚시 가.', "Ribbit! Followed the footprints? I'm taking the morning train to the lake island to fish."), L('frog', '근데 가방이 터졌어! 기차 오기 전에 다 찾아 줘!', 'But my bag burst open! Find everything before the train comes!')],
@@ -584,7 +584,7 @@ SCENES.push(
     pop: { say: K('에… 에취!', 'Ah… ah-choo!'), move: 'sneeze' },   // (거품이 퐁퐁)
     intro: [L('bunny', '목욕 끝! …근데 내 물건 다 어디 갔지?', "Bath's done! …But where did all my stuff go?"), L('mong', '…거품 속에.', '…In the bubbles.')],
     // (9판이 정전 밤이면 — ② 10/23 dark: 벽 스위치를 찾아 켜는 판, 검토 세션 "9판 시작 정전 한 줄") · lightSay: 스위치를 켰을 때 토순이 한 줄(② stage.js lightsOn이 읽어요)
-    dark: { intro: [L('bunny', '목욕 끝! …앗, 불이 나갔어!', "Bath's done! …Whoa, the lights went out!"), L('bunny', '벽 스위치 어디 있지? 내 물건도 다 어디 갔지?', "Where's the wall switch? And where did all my stuff go?"), L('mong', '…거품 속에.', '…In the bubbles.')] },
+    dark: { intro: [L('bunny', '목욕 끝! …앗, 불이 나갔어!', "Bath's done! …Whoa, the lights went out!"), L('bunny', '벽 스위치 어디 있지? 내 물건도 다 어디 갔지?', "Where's the wall switch? And where did all my stuff go?"), L('mong', '…하나는 거품 속에. 스위치부터 찾자.', "…One's in the bubbles. Switch first.")] },
     lightSay: K('불 켜졌다! …어, 내 물건 다 보여!', "Lights on! …Oh, I can see all my stuff!"),
     say: { first: K('앗, 벌써? 아직 젖었는데!', "Huh, already? It's still wet!"), half: K('반 찾았다! 몸도 다 말랐어.', "Half found! I'm all dry now."), last: K('하나 남았어. 킥… 아니, 안 웃었어.', "One left. Hee… no, I didn't giggle.") },
     after: [L('bunny', '다 찾았다! 이제 파자마 파티 준비 끝!', 'All found! Pajama party: ready!'), L('bunny', '냥냥이도 불렀는데… 별로 안 궁금하대.', "I invited Nyannyan too… \"Not curious,\" apparently.")] },
@@ -896,8 +896,8 @@ export const DO = {
   turnDrag: K('옆으로 드래그해서 방 돌리기', 'Drag sideways to turn the room'), turnDrag2: K('흔들리는 상자 앞이 보일 때까지 쭉 드래그해 봐', 'Drag until the box faces you'),
   turnAny: K('방을 돌려서 상자 앞을 봐', 'Turn the room to face the box'),
   // 기본 조작 F (조작감 세션, 10/18): the turn dial bottom right — push it sideways to turn, up/down to tilt
-  turnDial: K('돌림판을 밀어 봐', 'Slide the dial'),   // (짧게 — user 10/19 "힌트랑 손가락이 너무 많다"; the hand shows where and which way)
-  tilt: K('돌림판을 위아래로 밀어 기울이기', 'Slide the dial up or down to tilt'), tilt2: K('돌림판을 위아래로 쭉 밀면 위에서 내려다볼 수 있어', 'Slide the dial up or down to look from above'),
+  turnDial: K('돌림판을 드래그해 봐', 'Drag the dial'),   // (짧게 — user 10/19 "힌트랑 손가락이 너무 많다"; the hand shows where and which way)
+  tilt: K('돌림판을 위아래로 드래그해서 기울이기', 'Drag the dial up or down to tilt'), tilt2: K('돌림판을 위아래로 쭉 드래그하면 위에서 내려다볼 수 있어', 'Drag the dial up or down to look from above'),
   turnDial2: K('상자 앞이 보일 때까지 쭉', 'Keep going till the box faces you'),
   turnFront: K('상자 앞쪽을 보자!', "Let's see the front of the box!"),   // (1판 회전, 처음부터 왜 돌리는지 — 사용자 10/21 튜토 개선)
   box: K('상자를 터치', 'Tap the box'), box2: K('흔들리는 상자를 터치해 봐', 'Tap the shaking box'),
@@ -939,7 +939,7 @@ const CARDS = {
   mongletv: { t: K('몽글 TV', 'Mongle TV'), s: [['📺', K('판 속 TV·모니터를 터치', 'Tap a TV or monitor in a stage')], ['🎮', K('채널을 골라 한 판', 'Pick a channel and play')], ['✋', K('이기면 손가락 +3, 한 판에 한 번', 'Win for +3 taps, once per stage')]] },   // (몽글 TV, 10/19)
   chain: { t: K('연쇄 장치', 'Domino Gadgets'), s: [['🧩', K('하나를 풀면', 'Solve one thing')], ['⚙️', K('다음 장치가 움직여', 'The next one moves')], ['👀', K('방이 바뀌는 걸 잘 봐', 'Watch the room change')]] },
 };
-K('새로 얻었다!', 'New card!'); K('알겠어!', 'Got it!');
+K('새로 얻었다!', 'New trick!'); K('알겠어!', 'Got it!');
 // 12판 뒤 로비, 같이 다니는 친구 배지와 함께 (스토리 룸 10/19: 토순이 고정 — 1판부터 늘 있는 첫 친구; 방에 없으면 말풍선 없이 배지만)
 export const BUDDY_LINE = L('bunny', '몽글아, 다음 판엔 나도 따라가도 돼?', 'Mongle, can I tag along next stage?');
 // R4 관찰 자물쇠 (검토 세션 10/18): the note only says where to look — the code is the time on a clock in the room (시 : 분

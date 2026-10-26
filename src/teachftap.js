@@ -24,7 +24,7 @@ export const FTAP_CAP = {
   spin: K('드래그한 채로 다른 손가락으로 터치!', 'Keep dragging and tap with another finger!'),
   back: K('빙글~ 방이 돌아가요! 손을 떼면 다시 이동', 'The room spins! Let go to move again'),
 };
-export const FTAP_CARD = { top: K('새로 얻었다!', 'New move!'), big: K('빙글 돌리기', 'Spin'), small: K('드래그 중 터치', 'Drag + tap') };
+export const FTAP_CARD = { top: K('새로 얻었다!', 'New trick!'), big: K('빙글 돌리기', 'Spin'), small: K('드래그 중 터치', 'Drag + tap') };
 // the mode word in each line, coloured: 이동 sky blue, 회전 pink (스토리 룸: "잠깐 바뀌었다 돌아온다"가 글을 다 안 읽어도 보이게)
 const MODE = [['빙글~', 'spin'], ['spins!', 'spin'], ['드래그한 채로', 'move'], ['Keep dragging', 'move'], ['둘러봐', 'move'], ['look around', 'move']];
 
