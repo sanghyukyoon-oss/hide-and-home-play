@@ -67,7 +67,7 @@
   };
   let hidden = false; const hits = { br: [], tr: [], tl: [] };
   const zone = (x, y) => {
-    const w = innerWidth, h = innerHeight, cx = w * .15, cy = h * .15;
+    const w = innerWidth, h = innerHeight, cx = w * .1, cy = h * .08;   // (10/26: 줌 막대·버튼과 덜 겹치게 구석을 좁힘)
     if (x > w - cx && y > h - cy) return 'br';
     if (x > w - cx && y < cy) return 'tr';
     if (x < cx && y < cy) return 'tl';
@@ -85,7 +85,8 @@
     const now = performance.now(), a = hits[z].filter(t => now - t < 1000); a.push(now); hits[z] = a;
     // 게임 화면(3D 캔버스)을 누른 구석 터치는 늘 막고, 구석 HUD 버튼은 첫 번째만 통과시킨다
     const onCanvas = e.target && (e.target.id === 'gl' || e.target === document.body || e.target.id === 'app');
-    eat = onCanvas || a.length >= 2;
+    eat = a.length >= 2;   // (10/26 사용자 "드래그도 어쩌다가 되는거같고 줌인 게이지도 잘 안되고": 첫 터치는 늘 게임에 넘김)
+    void onCanvas;
     if (eat) { e.stopImmediatePropagation(); e.preventDefault(); }
     const need = z === 'br' ? 5 : 3;
     if (a.length >= need) {
@@ -96,7 +97,9 @@
   };
   const block = e => { if (eat) { e.stopImmediatePropagation(); e.preventDefault(); } };
   addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === ' ') try { parent.__recUI && parent.__recUI.stop && document.documentElement.contains(cur) && (e.preventDefault(), parent.__recUI.stop()); } catch {} });
-  for (const t of ['pointerdown', 'mousedown', 'touchstart']) addEventListener(t, down, { capture: true, passive: false });
+  // (10/26: pointerdown 하나만 셈 — 예전엔 mousedown·touchstart까지 같은 누름을 두세 번 세어 구석 버튼·줌 막대를 막았음)
+  addEventListener('pointerdown', down, { capture: true, passive: false });
+  for (const t of ['mousedown', 'touchstart']) addEventListener(t, block, { capture: true, passive: false });
   for (const t of ['pointermove', 'pointerup', 'mouseup', 'touchmove', 'touchend', 'click', 'dblclick']) addEventListener(t, block, { capture: true, passive: false });
   window.__recHide = hideUI;
   // 녹화 중 커서 숨김(부모 창이 부름): 게임 창 안의 모든 요소 커서를 none 으로
