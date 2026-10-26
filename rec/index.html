@@ -59,8 +59,9 @@ async function start() {
     window.__last = { size: b.size, type, name: a.download };
     disp && disp.getTracks().forEach(t => t.stop()); disp = null;
   };
-  rec.start(1000); t0 = performance.now(); quiet(true); $('rec').classList.add('on'); $('rec').textContent = '■ 정지';
-  timer = setInterval(() => { const s = (performance.now() - t0) / 1000; $('t').textContent = `REC ${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; }, 250);
+  rec.start(1000); t0 = performance.now(); quiet($('ui').value === 'on');   // (10/26) 'UI 빼고'는 게임 캔버스만 찍으니 버튼을 그대로 보여 줌 — ■ 정지로 끊음 $('rec').classList.add('on'); $('rec').textContent = '■ 정지';
+  timer = setInterval(() => { const s = (performance.now() - t0) / 1000; if (s >= 90) { stop(); return; }   // (90초면 저절로 멈추고 저장 — 메모리 보호)
+    $('t').textContent = `REC ${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; }, 250);
 }
 function stop() { quiet(false); rec && rec.state !== 'inactive' && rec.stop(); rec = null; clearInterval(timer); $('t').textContent = '저장 중…'; setTimeout(() => $('t').textContent = '', 1500); wrap.classList.remove('on'); $('rec').classList.remove('on'); $('rec').textContent = '● 녹화'; }
 // (10/26 사용자 "녹화 관련 ui도 녹화된다… 커서도 녹화됨"): 녹화하는 동안 버튼 막대·빨간 테두리·마우스 커서를 전부 숨김.
