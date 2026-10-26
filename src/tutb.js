@@ -20,13 +20,13 @@ export const TUTB_TXT = {
   // (② 10/26 마지막 정리 — 허브 추천안·사용자 "떼지마 멘트가 쎄지 않음? 터치하고 나면 회전에 대해서 설명하는 멘트로"): one line at a time, the
   // same words in 1판·2판·3판's 개굴이 lesson; '떼지 마!' is gone everywhere
   look: K('드래그로 둘러봐요', 'Drag to look around'),
-  turn: K('드래그 + 다른 손가락 한 번 터치 = 회전!', 'Drag + one tap with another finger = rotate!'),
+  turn: K('누른 채 다른 손가락 터치 = 화면 회전!', 'Hold + tap another finger = turn the view!'),
   spin: K('회전 중! 손을 떼면 다시 둘러보기', 'Rotating! Let go to look around again'),
   dial: K('돌리는 방법 하나 더! 아래 돌림판을 드래그', 'Another way to spin: drag the dial below'),
   // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
   // (1판 10/26 실폰: "처음에 너무 길긴한데 … 조금 짧게 해주고 좀 위로 올려줘. 누르면 사라지게도") two short lines, a short dial line
   // (1판 10/26 user: "이동중에 다른손으로 터치 한번 하면 회전으로 바뀜 이거 진짜 설명 어렵다" → 사용자가 고른 문구; the switch is shown by the loop)
-  how: K('드래그 = 둘러보기\n드래그 + 다른 손가락 한 번 터치 = 회전!', 'Drag = look around\nDrag + one tap with another finger = rotate!'),
+  how: K('드래그 = 화면 이동\n누른 채 다른 손가락 터치 = 화면 회전!', 'Drag = move the view\nHold + tap another finger = turn the view!'),
   dial2: K('돌림판으로도 돌려요', 'Or turn it with the dial'),
   close: K('터치해서 닫기', 'Tap to close'),
   mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
@@ -166,7 +166,7 @@ export async function howCard(S) {
   while (!S.dead && !S.result && (S.tutEls || S.talking || S.cine || W.flying)) await S.tw.wait(.2);
   if (S.dead || S.result) return;
   howCss();
-  const txt = tr(TUTB_TXT.how).replace(/둘러보기|look around/, w => `<span class="tkw mv">${w}</span>`).replace(/회전!|rotate!/, w => `<span class="tkw tn">${w}</span>`).split('\n').map(l => `<div class="hw-ln">${l}</div>`).join('');   // (10/26 사용자 A안: 두 줄을 같은 꼴로, 배지는 줄 끝 결과에만)
+  const txt = tr(TUTB_TXT.how).replace(/화면 이동|move the view/, w => `<span class="tkw mv">${w}</span>`).replace(/화면 회전!|turn the view!/, w => `<span class="tkw tn">${w}</span>`).split('\n').map(l => `<div class="hw-ln">${l}</div>`).join('');   // (10/26 사용자 A안: 두 줄을 같은 꼴로, 배지는 줄 끝 결과에만)
   const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }), h('div', { class: 'hw-mode' }, '↻'));
   // (up under the top bar — the room and 토순이 stay clear; a touch on it closes it, so does a turn of the room, so do 8 s)
   const card = h('div', { class: 'tip hw-card', style: 'left:50%;top:calc(66px + var(--safeT, 0px))' }, h('div', { class: 'hw-txt', html: txt }));   // (10/26 사용자 "쓸데없는거 정리해줘": the two lines only — no loop picture, no '터치해서 닫기')
