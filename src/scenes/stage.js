@@ -44,7 +44,7 @@ import { Trickster } from '../trickster.js';
 import { markWallFacing } from '../facing.js';
 import { sweepSetup, sweepUpdate, shinePart, sweepAddTv } from '../sweep.js';   // 빛 쓸기 (10/19)
 import { reelSetup, reelCast, reelSay, reelClear } from '../reelcatch.js';   // 낚싯대 릴 뽑기 (10/19)
-import { TUT_B, TUTB_TXT, tutB1, tutB2, turnLine1, firstFinds, firstFindsTalk, FIRST_SAY } from '../tutb.js';
+import { TUT_B, TUTB_TXT, tutB1, tutB2, turnLine1, firstFinds, firstFindsTalk, FIRST_SAY, howCard, pointMag } from '../tutb.js';
 import { NOTE3D, showNote3D } from '../noteview3d.js';
 import { teachDbl, DBL_ON, TILT_ON } from '../teachdbl.js';   // 두 번 톡 확대 수업 (10/19)
 import { keyOpen } from '../keyfx.js';   // 열쇠 따기: 꽂고 돌려 철컥 (10/21)
@@ -451,7 +451,9 @@ export class StageScene {
     // (1판 user 10/26: "1장 하면서 한 번 끊고 다시 맵 보여 주고 다시 저게 나오니까 너무 더러워 … 처음에 이 멘트 나오면 되지 않아?"):
     // no chapter film on 1판 — the room comes up with its title and 토순이's first line together (the banner isn't waited for)
     const first1 = this.spec.tut === 1 && !custom && !this.preview && !retry;
-    const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry && !first1);
+    this.quiet1 = this.spec.tut === 1 && TUT_B && !custom && !this.preview;
+    // (10/26 user: "또 1장 이거 없어져버렸네" — the chapter card is back, once, before the room; then title and her line together)
+    const cine = !!(this.spec.intro && this.spec.chapter && !custom && !retry);
     // 13판 이삿짐 (10/21, user: "트럭 먼저 나오고 상자 날아가고 그다음에 집 배경으로 챕터 나오면 될거같은데 순서"): the truck and
     // the pile first, then the chapter card over the room itself (its 3D hello, not the comic panel), then the talk
     const truckFirst = !!(this.kit && kitTruck(this));
@@ -2531,8 +2533,12 @@ export class StageScene {
   async useHint(paid = false) {
     const G = this.G, W = G.world;
     if (!this.running || this.result || this.paused) return;
+    // (1판: the "막히면 돋보기!" card goes the moment you press it — one thing on the screen)
+    if (this._magTip?.isConnected) { this._magTip.remove(); if (this.tutEls?.[0] === this._magTip) { this.tutEls = null; this._tutEnd = this.t; } }
     if (!this.nextGoal(true)) { G.ui.toast('지금은 더 알려 줄 게 없어!', ''); return; }
     // 경제 B5 (10/19): a free one, else one from the bag — no coins inside a stage; none → the idle sparkle at once
+    // (1판 10/26: the 돋보기 is the stage's help now — its first use there is free, so "막히면 돋보기!" really shows you)
+    if (this.quiet1 && !this._freeLens) { this._freeLens = true; } else
     if (G.econ) { if (!lensHint(this)) return; } else {
     if (this.hints <= 0 && !paid) {
       if (G.save.coins < 60) { G.ui.toast('돋보기가 없어! (코인 60 필요)', 'red'); return; }
@@ -2708,7 +2714,7 @@ export class StageScene {
     // (the donut lesson is gone — 검토 H3 / user: "너무 친절함 튜토가"; the donut still lies there and still answers a tap)
     // ① 이동 먼저 (user 10/19: "이동하는 방법 알려 줘야 함, 회전 방법 전에"): a hand drags across the room, done once the view has
     // moved a little. It is the move lesson (tut.move — 6판's teachMove reminder then stays away); the first time only
-    if (W.scheme === 'F' && !G.save.tut?.move) {
+    if (W.scheme === 'F' && !G.save.tut?.move && !(TUT_B && !this.botOn())) {
       // (user 10/21, 튜토 개선: "화면을 실제로 움직인 명확한 드래그 한 번이면 이동 안내를 완료") one drag that clearly moved the view —
       // let go after ~40 px — is enough; no adding up to a total while the view has plainly moved
       let pan = 0, live = true; const prev = W.onPan;
@@ -2726,8 +2732,10 @@ export class StageScene {
     // 튜토리얼 B (user 10/25: "처음에 이동, 이동 중 터치 설명하고 돌림판 설명"): ② the drag + touch lesson (teachftap — three beats,
     // a caption box each, then your turn), ③ the dial below. If ② already brought the box's front round, the dial gets one
     // line of its own — done once it's pushed a little (or 12 s)
+    // (10/26 user: "처음엔 회전방법 간단하게 말로만 설명하는게 낫지않을까 … 회전 튜토가 이동 튜토 나오고 한참 뒤에 나옴"): on 1판
+    // one card right after she hides says it all — move, turn, the dial — no hands, no steps
+    if (TUT_B && W.scheme === 'F' && !this.botOn()) { await howCard(this); this.tutStep = 3; return; }
     if (TUT_B && W.scheme === 'F' && !this.botOn()) {
-      // (② 10/26: the one line, no three-beat play — user "한 문장 나오는 튜토가 바로 나와야")
       await turnLine1(this);
       if (this.dead || this.result) return;
       // (② 10/26 싹 정리, user: "동그라미로 위치까지 알려 주는데 정말 정신없고 난잡하다 스테이지1"): ④ the dial's line, and the lessons end —
@@ -3531,8 +3539,8 @@ export class StageScene {
     if (this.jailed?.in && this.running && !this.result && (this._jT = (this._jT ?? 9) - dt) <= 0) { this._jT = 11 + Math.random() * 5; this.say(this.jailed.ch, JAIL_LINES[(this._jn = (this._jn || 0) + 1) % JAIL_LINES.length], 2000); }   // the one in the cell keeps pleading
     // (a hidden friend giggles once you've looked a while — 10 s, not from the start; every 7–10 s, not 4–9: 레벨 1~10 추천 10/19 —
     // the first stage's lesson keeps its old pace)
-    // (1판: the box's wobble and her words say where she is — only after 20 s stuck, ② 10/26 "위치 알려 주는 연출은 20초 막힌 뒤")
-    const gigWait = this.spec.tut === 1 ? this.idle > 20 : HINTS_OLD ? (!this.r1 || this.idle > 15) : this.idle > (this.r1 ? 30 : 20);   // (10/21: 10 → 20 s, every 14–20 s — "힌트가 너무 많아")
+    // (1판: no wobble or words telling where she is at all — 10/26 "그 이상한 힌트는 지우고 돋보기 힌트 기능을 알려주면"; the 돋보기 is the help)
+    const gigWait = this.quiet1 ? false : this.spec.tut === 1 ? this.idle > 20 : HINTS_OLD ? (!this.r1 || this.idle > 15) : this.idle > (this.r1 ? 30 : 20);   // (10/21: 10 → 20 s, every 14–20 s — "힌트가 너무 많아")
     if (this.incident && this.friendHidden && this.running && !this.result && gigWait && (this.gigT = (this.gigT ?? 4) - dt) <= 0) { this.gigT = HINTS_OLD || this.spec.tut === 1 ? (this.idle > 8 ? 4 : 6.5) + Math.random() * 3 : 14 + Math.random() * 6; this.giggle(); }
     if (this.spec.night && !this.result && (this._starT = (this._starT || 0) - dt) <= 0) {
       this._starT = .45 + Math.random() * .5;
@@ -3553,7 +3561,7 @@ export class StageScene {
       // time to look yourself first — 12 s in chapters 1-2, 20 s from 3 (레벨 세션 B3, user: "진득하게")
       if (this.sparkAfter == null) { const ch = REGIONS.indexOf(regionOf(this.idx)); this.sparkAfter = this.incident || this.custom || this.spec.timed ? 20 : this.spec.tut <= 2 ? 20 : 35; }   // (10/19 evening "힌트가 너무 많다": 9/12/20 → 20/20/35 s)   // (12 → 20 s on hidden-object stages from 3판: user 10/19 "힌트도 너무 많은 듯")
       // F1: one thing left for 20 s → the owner looks at it; with one left the sparkle waits until 10 s after that look
-      if (this.feelHelp) {
+      if (this.feelHelp && !this.quiet1) {
         const left = this.targets.filter(t => !t.found);
         if (left.length === 1) { this._oneAt ??= this.t; if (this._gazeAt == null && !this._autoHint && this.t - this._oneAt >= 35) { this._gazeAt = this.t; this._autoHint = 'last'; if (HINTS_OLD || !sceneAt(this.idx)?.lastSmoke) this.gazeHint(left[0]); } }   // (6판: the pancake smoke is that stage's look — not both)
         else this._oneAt = this._gazeAt = null;
@@ -3567,6 +3575,8 @@ export class StageScene {
         const left = this.targets.filter(t => !t.found && !t.friend && !t.furnTarget && !t.spot?.part?.lock);
         if (left.length) { this._firstHelp = true; this.softGlow(left); }
       }
+      // (1판 10/26: stuck 15 s after the lessons → the 돋보기 button says it once, "막히면 돋보기!" — no place shown, the button does that)
+      if (this.quiet1 && !this._magTold && this.tutStep === 3 && !this.tutEls && !this.talking && this.tStart != null && this.t - Math.max(this.tStart, this.lastFind ?? -99, this._tutEnd ?? -99) > 15) { this._magTold = true; pointMag(this); }
       // 1~5판 막혔을 때 (2~5판의 숨은그림 — 1판은 친구 찾기의 킥킥이 있어요): 25초 soft, 45초 hard, 판마다 한 번씩, 둘 이상 남았을 때만
       if (this.idx >= 1 && this.idx <= 4 && !this.incident && !this.custom && !this.preview && !this.tutEls && !this.talking) {
         const left = this.targets.filter(t => !t.found && !t.friend && !t.furnTarget);
@@ -3577,7 +3587,7 @@ export class StageScene {
       }
       const lastOnly = HINTS_OLD || this.targets.filter(t => !t.found).length === 1;
       // (10/21: the last thing's sparkle comes once, 10 s after the owner's look — the stage's one automatic help, not every 10 s)
-      if (this.idle > this.sparkAfter && !waitGaze && lastOnly && (HINTS_OLD || (this._autoHint === 'last' && !this._lastSpark))) {
+      if (this.idle > this.sparkAfter && !waitGaze && lastOnly && !this.quiet1 && (HINTS_OLD || (this._autoHint === 'last' && !this._lastSpark))) {
         this.twinkleT -= dt;
         if (this.twinkleT <= 0) {
           this.twinkleT = 10; this._lastSpark = true;   // (4 → 6 → 10 s: "힌트가 너무 많다", 10/19 evening)

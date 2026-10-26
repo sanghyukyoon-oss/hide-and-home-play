@@ -24,6 +24,10 @@ export const TUTB_TXT = {
   spin: K('빙글~ 방이 돌아가요! 손을 떼면 다시 이동', 'The room spins! Let go to move again'),
   // (user 10/26: "돌림판도 다른 회전 방법으로 설명해 주라니까 한 가지 돌리는 방법 더 있다고 일단 간결하게")
   dial: K('돌리는 방법 하나 더! 아래 돌림판을 드래그', 'Another way to spin: drag the dial below'),
+  // (1판 10/26: one card, words only — move, turn and the dial together; and the 돋보기 once when stuck)
+  how: K('드래그로 둘러보고, 드래그하면서 다른 손가락으로 한 번 터치하면 돌아가요', 'Drag to look around. While dragging, tap once with another finger to spin'),
+  dial2: K('돌림판으로도 돌릴 수 있어요', 'The dial turns it too'),
+  mag: K('막히면 돋보기!', 'Stuck? Try the magnifier!'),
   on: K('튜토리얼 B 켜기', 'Tutorial B: on'), off: K('튜토리얼 B 끄기', 'Tutorial B: off'),
 };
 
@@ -62,7 +66,7 @@ export async function tutB1(S) {
 // 2판: nothing if the turn was used on 1판; else the same one line as 1판 (②→③), once
 export async function tutB2(S) {
   const T = S.G.save.tut || {};
-  if (T.ftap) return;
+  if (T.ftap || T.ftapUsed) return;
   for (let i = 0; i < 40 && (S.talking || S.cine || S.G.world.flying || !S.running); i++) await S.tw.wait(.25);
   if (!S.dead && !S.result) await turnLine1(S);
 }
@@ -112,7 +116,8 @@ export async function turnLine1(S) {
 }
 // 1판 (user: "하나 찾으니까 종료된다 … 몇 개 눈에 보이는 거 좀 더 찾게"): beside the friend in the toy box, three things lying in
 // plain sight around 토순이's room — on top of things, toward you, one per piece of furniture — so the moves get some use first
-export const FIRST_FINDS = ['star', 'gift', 'teddy'];
+// (10/26 user: "스테이지 1 찾는 물건 하나 줄여주고" — 토순이 + 2)
+export const FIRST_FINDS = ['star', 'gift'];
 export function firstFinds(plan, room) {
   if (!plan?.first) return plan;
   const used = new Set(plan.placements.map(p => p.spot)), furns = new Set(), V = room.spotWorld ? null : null; void V;
@@ -135,7 +140,7 @@ export function firstFinds(plan, room) {
 export const FIRST_SAY = [
   // (스토리 룸 10/26: 1판 시작 줄 "이번엔 안 웃을 거야"의 받아치기 — 빠진 카드의 웃음을 이 줄에)
   K('푸핫! 웃어 버렸다. …아, 숨다가 떨어뜨린 게 있어.', 'Pfft! I laughed. …Oh, I dropped some things while hiding.'),
-  K('별이랑 선물이랑 곰인형! 같이 찾아 줘!', 'A star, a gift and a teddy bear! Help me find them!'),
+  K('별이랑 선물! 같이 찾아 줘!', 'A star and a gift! Help me find them!'),
 ];
 export async function firstFindsTalk(S) {
   const fr = () => S.targets.find(t => t.friend);
@@ -147,4 +152,63 @@ export async function firstFindsTalk(S) {
   // (the first line is said in close as she pops out — revealFriend; here, back at your view, the one asking for the rest)
   for (let i = 0; i < 20 && !S._firstBack && !S.dead; i++) await S.tw.wait(.2);
   if (!S.dead && !S.result) S.sayNow(who, FIRST_SAY[1], 2600);
+}
+
+// 1판 (10/26 user: "드래그로 둘러보고 드래그하면서 다른손가락으로 터치를 한번 하면 돌아가요 … 돌림판으로도 돌아가요 2개로 … 이동중에 클릭 한번인데
+// 그걸 무슨소린지 모르는 경우가 많음"): card 1 — the words and a little 1.5 s loop inside it (one finger slides, another taps 퐁 once, the
+// little room spins); it closes once you've turned the room yourself (or after 10 s). Card 2 right after — the dial, pointed at briefly.
+export async function howCard(S) {
+  const G = S.G, W = G.world;
+  while (!S.dead && !S.result && (S.tutEls || S.talking || S.cine || W.flying)) await S.tw.wait(.2);
+  if (S.dead || S.result) return;
+  howCss();
+  const txt = tr(TUTB_TXT.how).replace(/드래그로|Drag/, w => `<span class="tkw mv">${w}</span>`).replace(/한 번 터치|tap once/, w => `<span class="tkw tn">${w}</span>`);
+  const demo = h('div', { class: 'hw-demo' }, h('div', { class: 'hw-room' }, h('i'), h('i'), h('i')), h('div', { class: 'hw-f1', html: ICON.hand }), h('div', { class: 'hw-f2', html: ICON.hand }), h('div', { class: 'hw-pong' }));
+  const card = h('div', { class: 'tip hw-card', style: `left:50%;top:${innerHeight * .18}px` }, h('div', { html: txt }), demo);
+  G.ui.tut.append(card); S.tutEls = [card];
+  const t0 = S.t; let spunAt = null;
+  try {
+    while (!S.dead && !S.result && S.t - t0 < 10) {
+      const spin = W.eMode === 'turn' && W.eBase !== 'turn' && W.ptrs.size > 0 && !W._tdHeld;
+      if (spin && spunAt == null) { spunAt = S.t; const T = G.save.tut || (G.save.tut = {}); T.ftap = 1; T.ftapUsed = 1; G.persist?.(); }
+      if (spunAt != null && S.t - spunAt > .8) break;
+      await S.tw.wait(.1);
+    }
+  } finally { card.remove(); if (S.tutEls?.[0] === card) { S.tutEls = null; S._tutEnd = S.t - 2; } }
+  if (S.dead || S.result) return;
+  // card 2, straight after: the dial, a hand on it for a moment
+  const dial = W.turnDial instanceof Element ? W.turnDial : W.turnDial?.el || document.querySelector('.turndial');
+  if (dial) {
+    let dl = 0; const prevR = W.onRotate; W.onRotate = d => { prevR?.(d); if (W._tdHeld) dl += Math.abs(d) || 0; };
+    const at = () => { const b = dial.getBoundingClientRect(); return b.width ? { sx: b.left + b.width / 2, sy: b.top + b.height / 2 } : null; };
+    await S.teach(TUTB_TXT.dial2, 'dialr', at, () => dl > .4, null, 4);
+    W.onRotate = prevR;
+  }
+}
+let hcss = false;
+function howCss() {
+  if (hcss) return; hcss = true;
+  const s = document.createElement('style');
+  s.textContent = `.hw-card{max-width:min(330px,calc(100vw - 32px));display:flex;flex-direction:column;align-items:center;gap:6px}
+.hw-demo{position:relative;width:150px;height:74px;border-radius:12px;background:rgba(59,42,85,.08);overflow:hidden}
+.hw-room{position:absolute;left:52px;top:14px;width:46px;height:46px;transform:rotateX(55deg) rotateZ(45deg);border-radius:6px;background:#ffd9c2;border:2px solid #3b2a55;animation:hwSpin 1.5s ease-in-out infinite}
+.hw-room i{position:absolute;width:12px;height:12px;border-radius:3px;background:#8fd3f4}.hw-room i:nth-child(1){left:5px;top:5px}.hw-room i:nth-child(2){right:5px;top:5px;background:#ffe14d}.hw-room i:nth-child(3){left:5px;bottom:5px;background:#ff8fb8}
+.hw-f1,.hw-f2{position:absolute;width:30px;height:30px;opacity:.95}.hw-f1 svg,.hw-f2 svg{width:100%;height:100%}
+.hw-f1{left:14px;top:38px;animation:hwSlide 1.5s ease-in-out infinite}
+.hw-f2{left:108px;top:6px;opacity:0;animation:hwTap 1.5s ease-in-out infinite}
+.hw-pong{position:absolute;left:112px;top:10px;width:20px;height:20px;border-radius:50%;border:3px solid #ffe14d;opacity:0;animation:hwPong 1.5s ease-out infinite}
+@keyframes hwSlide{0%{transform:translateX(0)}60%{transform:translateX(26px)}100%{transform:translateX(26px)}}
+@keyframes hwTap{0%,25%{opacity:0;transform:translateY(-6px)}35%{opacity:1;transform:translateY(0)}48%{opacity:1;transform:translateY(0)}58%,100%{opacity:0;transform:translateY(-6px)}}
+@keyframes hwPong{0%,36%{opacity:0;transform:scale(.4)}40%{opacity:1;transform:scale(.6)}62%{opacity:0;transform:scale(1.6)}100%{opacity:0}}
+@keyframes hwSpin{0%,40%{transform:rotateX(55deg) rotateZ(45deg)}80%,100%{transform:rotateX(55deg) rotateZ(135deg)}}`;
+  document.head.append(s);
+}
+// 1판, stuck 15 s: the 돋보기 button bounces and says so once, just above it
+export function pointMag(S) {
+  const b = S.hintBtn; if (!b) return;
+  const r = b.getBoundingClientRect();
+  const tip = h('div', { class: 'tip', style: `left:${Math.max(110, r.left + r.width / 2)}px;top:${Math.max(80, r.top - 64)}px`, html: tr(TUTB_TXT.mag) });
+  S.G.ui.tut.append(tip); S.tutEls = [tip]; S._magTip = tip;
+  b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 600);
+  setTimeout(() => { tip.remove(); if (S.tutEls?.[0] === tip) { S.tutEls = null; S._tutEnd = S.t; } }, 3500);
 }

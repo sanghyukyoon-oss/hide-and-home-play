@@ -80,7 +80,8 @@ export const FROG = {
 };
 export function armFtapB(S) {
   const G = S.G, W = G.world;
-  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 1 || S.idx > 2 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
+  // (10/26 허브: 1판 too counts — 1~2판 never used → 3판's 개굴이 at the start)
+  if (!FTAP_ON || W.scheme !== 'F' || S.idx < 0 || S.idx > 2 || S.custom || S.model || S.kit || S.preview || S.spec.timed || S.spec.boss || S.botOn?.()) return;
   const T = G.save.tut || (G.save.tut = {});
   if (T.ftapRe || T.ftapUsed) return;
   const prevRot = W.onRotate;
@@ -89,7 +90,9 @@ export function armFtapB(S) {
   const stop = () => S.dead || !!S.result || !!T.ftapUsed || !!T.ftapRe;
   const list = () => S.targets.filter(t => !t.friend), half = () => { const l = list(); return l.length && l.filter(t => t.found).length >= Math.ceil(l.length / 3); };
   (async () => {
-    while (!stop() && !half()) await S.tw.wait(.5);
+    // (10/26 허브: at 3판's start, a moment after you can play)
+    void half;
+    while (!stop() && !(S.running && S.t - (S.tStart ?? S.t) > 2)) await S.tw.wait(.5);
     if (!await waitStart(S, stop)) return;
     T.ftapRe = 1; G.persist?.();
     const who = S.friend?.root ? S.friend : null; S.frogLesson = true;
