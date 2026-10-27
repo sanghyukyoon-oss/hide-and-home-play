@@ -95,7 +95,7 @@ B.wantedboard = f => {
 // and a curved back on a steel frame with a bar between the back legs.
 B.schooldesk = (f, T) => {
   const top = .66, DW = .62, DD = .44, dz = -.1, cz = .3, TOPC = '#e9c28a', EDGE = '#c9975a', FR = '#8f9bb8';
-  f.add(mc('schooldesk2', ({ add, tube }) => {
+  f.add(mc('schooldesk3', ({ add, tube }) => {
     add(G.box(DW, .03, DD, .01), TOPC, 0, top + .003, dz);
     add(G.box(DW + .01, .022, DD + .01, .008), EDGE, 0, top - .015, dz);
     add(G.pbox(.3, .004, .02), shade(TOPC, -.12), -.05, top + .019, dz - DD / 2 + .04);
@@ -121,9 +121,10 @@ B.schooldesk = (f, T) => {
     add(G.cap(.03, .14, 2, 8), '#ff9fb5', .17, top + .045, dz - .08, 0, 0, HP); add(G.pbox(.15, .004, .006), '#e8e0d0', .17, top + .075, dz - .08); add(G.sph(.009, 6, 5), '#c9cfe0', .25, top + .07, dz - .08);
     add(G.cyl(.006, .006, .15, 6), YEL, -.13, top + .034, dz + .13, 0, .15, HP); add(G.cone(.006, .015, 6), '#f0d3a8', -.13 + Math.cos(.15) * .082, top + .034, dz + .13 - Math.sin(.15) * .082, 0, .15, -HP);
     add(G.box(.04, .015, .022, .004), WHITE, .04, top + .025, dz - .15, 0, .3, 0); add(G.box(.042, .006, .024, .002), '#7fc6e8', .04, top + .031, dz - .15, 0, .3, 0);
-    // the chair: a moulded seat, a curved back, a steel frame
+    // the chair: a moulded seat, one back panel leaning back a little between the two back posts, a steel frame
+    // (10/27 사용자 실폰 16판 "의자 모양이 이상함": the back was five slats fanned out and tipped toward the desk — a loose fence)
     add(G.box(.38, .025, .36, .012), TOPC, 0, .43, cz); add(G.box(.39, .014, .37, .006), EDGE, 0, .412, cz);
-    for (let k = 0; k < 5; k++) { const a = (k - 2) * .14; add(G.box(.08, .2, .022, .008), TOPC, Math.sin(a) * .24, .64, cz + .2 - Math.cos(a) * .04, -.08, a, 0); }
+    add(G.box(.37, .15, .024, .02), TOPC, 0, .665, cz + .182, .11, 0, 0); add(G.box(.375, .012, .028, .005), EDGE, 0, .588, cz + .174, .11, 0, 0);
     for (const sx of [-1, 1]) {
       for (const sz of [-1, 1]) { add(G.cyl(.014, .014, .41, 8), FR, sx * .16, .205, cz + sz * .15); add(G.cyl(.018, .018, .016, 8), DARK, sx * .16, .008, cz + sz * .15); }
       tube([sx * .16, .4, cz + .15], [sx * .17, .76, cz + .19], .013, FR, 6);

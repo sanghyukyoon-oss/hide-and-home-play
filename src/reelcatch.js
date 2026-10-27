@@ -45,7 +45,11 @@ export function reelSetup(S) {
   if ((S.idx === 2 || pond) && spot && !(spot.item && spot.item.role === 'target')) {
     // (a drink, kept cool in the water — 스토리 룸 10/19: a ball or a donut in the net made no sense; and only what fits in it)
     const ok = t => !t.found && !t.friend && !t.spot.part && ITEMS[t.type] && ITEMS[t.type].h * (spot.scale || 1) <= spot.maxH + .001 && spotFits(t.type, spot) && affOk(t.type, spot);
-    const it = (pond && S.targets.find(t => !t.found && !t.friend && !t.spot.part && t.type === 'tadpolejar')) || S.targets.find(t => ok(t) && isCold(t.type) && t.spot.kind !== 'on') || S.targets.find(t => ok(t) && isCold(t.type)) || S.targets.find(t => ok(t) && t.spot.kind !== 'on') || S.targets.find(ok);
+    // (10/27 사용자 실폰 29판: the 오리발 came up the waterwheel "ㅈㄴ 크고 너무 어색함" — at the pond only a small thing from the water
+    // comes up: the tadpole jar, else the rubber duck, else the conch; none of them on the list, nothing moves)
+    const POND_UP = ['tadpolejar', 'rubberduck2', 'gpt_conch'];
+    const pondIt = pond && POND_UP.map(k => S.targets.find(t => !t.found && !t.friend && !t.spot.part && t.type === k)).find(Boolean);
+    const it = pond ? pondIt : S.targets.find(t => ok(t) && isCold(t.type) && t.spot.kind !== 'on') || S.targets.find(t => ok(t) && isCold(t.type)) || S.targets.find(t => ok(t) && t.spot.kind !== 'on') || S.targets.find(ok);
     if (it && !spot.item) moveItem(it, spot);
   }
 }

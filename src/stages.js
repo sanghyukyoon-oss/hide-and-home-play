@@ -771,7 +771,7 @@ export const STAGES = [
   // (9판 정전 ② 10/23, user: "스위치 찾게 해서(혹은 두꺼비집) 그거 찾으면 밝게 변하는 거 어떰?" — dark: a power cut on the night; the switch on a wall)
   { room: 'bunnybath', n: 7, inside: 2, behind: 0, time: 95, lock: ['pad'], night: true, dark: true, lightItem: true, lightAt: [[0, 'N', .1], [0, 'W', 1.1], [1, 'N', -.2]],   // (u: the places the start view sees — ② probe 10/24) clutter: .6, zoom: 1.25, habitMore: true, sureIn: 'bathtub',
     habitRoom: 1, habit: ['bed', 'futon', 'pillow', 'zabuton', 'catbed'], clueOn: { pad: ['plant'] }, clueRoom: 1 },   // ("목욕 끝! …내 물건 다 어디 갔지?" — the bathroom and the bed; one in the tub by the bubbles; the key in the bathroom where the first view reaches, its plant by the door — 검토 P0-1·P1-4)   // (then 이불 속 누구게 — the pajama party)
-  { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55, artHunt: 'artstars' },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
+  { room: 'museum', n: 5, inside: 1, behind: 0, time: 100, lock: ['pad'], clutter: .55, artHunt: 'artstars', thingIn: { console: 'artstars' } },   // 흑백 (GRAY): the museum that lost its colours — 먹물이's first
   { room: 'cat', n: 8, inside: 2, behind: 0, time: 105, lock: ['pad'], clutter: .3, kit: 'cattower' },   // 캣타워 조립판 (10/20, user "조립식 많이 들어가면 좋겠다" — 레벨 세션: 11판·19판; 함정 절반 as 8판; the top bed behind the lock)
   { room: 'study', n: 4, inside: 1, behind: 0, time: 110, clutter: .5, showcase: true },   // 비밀 서재 ★ — the chapter's finale (friend game)
 ];
@@ -1323,12 +1323,24 @@ export function planStage(room, spec, story = null) {
       chainPlaced.push({ type: ht, spot: hs, role: 'target', own: true }, { type: spec.treat.item, spot: ts, role: 'treat', forPart: onPart });
     } else if (hs) { used.delete(hs); }
   }
+  // (10판 10/27, user on the phone: "그 그림 숨은그림찾기 깨고 열면 그 안에 있는 걸로" — the 게임기 lay under the rug with the
+  // friend standing on it): spec.thingIn { thing: piece } puts that thing in that piece's place (the painting the art hunt
+  // opens), as one of the stage's targets; no lock takes that piece
+  for (const [t, ft] of Object.entries(spec.thingIn || {})) {
+    if (!ITEMS[t]) continue;
+    const s = room.spots.find(x => !used.has(x) && x.part && x.furn?.type === ft);
+    if (!s) continue;
+    used.add(s);
+    const i = targets.indexOf(t);
+    if (i >= 0) targets.splice(i, 1); else targets.pop();
+    chainPlaced.push({ type: t, spot: s, role: 'target', own: true });
+  }
   const lockKinds = spec.lock === 'both' ? ['pad', 'code'] : Array.isArray(spec.lock) ? spec.lock : spec.lock ? [spec.lock] : [];
   const prefer = { pad: ['chest', 'mailbox', 'cooler', 'bike', 'picnic', 'tent'], code: ['safe', 'vending', 'shopfront', 'lostbox', 'trunk', 'slide'], color: ['kpopstage', 'wardrobe', 'chest', 'safe', 'gate', 'parkbin', 'trunk'], lever: ['wardrobe', 'safe', 'chest', 'aircon', 'firewood', 'slide'] };
   for (const lk of lockKinds) {
     // (10/19: no lock that faces a wall (facing.js), and a lock only where something on the list may sensibly be inside
     // (affinity.js) — but a lock never goes missing for it: 13판's code lesson lost its fridge when only boxes were left)
-    const all0 = room.parts.filter(p => p.lockable && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p));
+    const all0 = room.parts.filter(p => p.lockable && p.spots.length && (p.reach ?? 1) >= .55 && !locks.some(l => l.part === p) && !chainPlaced.some(c => c.spot.part === p));
     const okWall = p => !p.wallFacing && !p.lockWallFacing, holds = p => p.spots.some(s => targets.slice(ti).some(t => fits(t, s) && affOk(t, s)));
     let free = all0.filter(p => okWall(p) && holds(p));
     // (#94 10/22: not a piece where nothing on the list keeps its size — a 우편함, a 돈통, a 종이 수거함 drew it at 14~24 px; the story's

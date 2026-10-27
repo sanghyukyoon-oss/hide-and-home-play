@@ -285,7 +285,7 @@ export const GPT_ITEMS = {
     for(let i=0;i<4;i++)for(let j=0;j<3;j++)g.add(put(box(.055,.02,.045,i===3&&j===2?C.red:C.cream,.007),-.08+j*.08,.081,-.025+i*.058));
     for(let i=0;i<3;i++)g.add(put(box(.018,.004,.029,C.navy,.002),.03+i*.032,.084,-.122));
     stripe(g,-.08,.082,-.194,.10,.018,C.navy);return g;
-  }, .59, { flat: true }),
+  }, .36, { flat: true }),   // (.59 → .36, 10/27: a desk calculator as big as a pupil's desk top — 16판 stood on the floor like a cabinet)
   gpt_scissors: item('둥근 안전 가위', 'school', () => {
     const g=grp();
     for(const s of[-1,1]){

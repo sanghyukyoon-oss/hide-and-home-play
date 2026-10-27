@@ -148,8 +148,8 @@ function painting(f, key, W, H, Y, label, spotLabel) {
   const art = new THREE.Mesh(new THREE.PlaneGeometry(W - T * 2, H - T * 2), artMat(key)); art.position.set(0, -H / 2, .022); pv.add(art);
   const plaque = grp(); put(plaque, 0, -H - .08, .006); pv.add(plaque);
   plaque.add(mc('artplaque', ({ add }) => add(G.box(.22, .06, .012, .004), '#c9a24a', 0, 0, 0)));
-  // a dark little niche in the wall behind it
-  f.add(mc('artniche|' + W, ({ add }) => add(G.box(Math.min(.36, W * .4), .22, .006, .002), '#4a3a52', 0, Y - .02, .004)));
+  // a dark little niche in the wall behind it (10/27: the big ones a little bigger — 10판's 게임기 sits in the 별밤 one and stuck out)
+  f.add(mc('artniche|' + W, ({ add }) => add(G.box(Math.min(.5, W * .4), W > 1 ? .28 : .22, .006, .002), '#4a3a52', 0, Y - .02, .004)));
   const p = f.part('flip', hinge, t => { hinge.rotation.y = -1.45 * t; }, { label, sfx: 'open', dur: .4 });
   f.spot('inside', null, 0, Y - .1, .012, { part: p, maxH: .09, label: spotLabel, wallFace: true });
 }
