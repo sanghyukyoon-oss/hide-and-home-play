@@ -129,7 +129,8 @@ export const CHAINS = {
   playgroundwide: {
     // (아트 점검 2차 10/24: 아이스크림 수레(4,5) 오른쪽이 분수 물통 안으로 파고듦 → 수레를 왼쪽 빈 칸(2,5)으로, 분수는 85% — 물통이 2×2 칸보다
     // 넓어 옆 쓰레기통·고양이 밥집·피크닉 상 모서리에 닿던 것)
-    layout: { room: 1, remove: ['springrider#0', 'icecart#0'], add: [{ type: 'gptwidefountain', i: 4, j: 3, opts: { scale: .85 } }, { type: 'gptwidemarblerun', i: 0, j: 1 }, { type: 'icecart', i: 2, j: 5 }] },
+    // (⑩ 10/29 실폰 점검: (2,5)로 옮긴 아이스크림 수레는 차양이 그네 다리에 파고듦 → 왼쪽 놀이터에 수레가 하나 있어 오른쪽 것은 뺌)
+    layout: { room: 1, remove: ['springrider#0', 'icecart#0'], add: [{ type: 'gptwidefountain', i: 4, j: 3, opts: { scale: .85 } }, { type: 'gptwidemarblerun', i: 0, j: 1 }] },
     aux: [{ dev: 'gptwidefountain#0:0', sfx: [[.05, 'whoosh'], [.14, 'blub'], [.5, 'blub']], line: K('분수도 잠깐 쉬는 중!', 'Even the fountain takes a break!') },
       { dev: 'gptwidemarblerun#0:0', sfx: [[.05, 'clink'], [.26, 'land'], [.62, 'clink'], [.89, 'doorBell']], line: K('구슬보다 장화가 먼저 도착!', 'The boot beat the marble!') }],
   },

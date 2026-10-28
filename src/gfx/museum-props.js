@@ -11,6 +11,9 @@ import { HG as G, hmc as mc } from './house-props.js';
 const PI = Math.PI, HP = PI / 2;
 const GOLD = '#d9a94a', GOLD2 = '#a8782e', INK = '#2a1d33', BRONZE = '#7a6a52', BRONZE2 = '#9a8664', MARBLE = '#f3efe8';
 const B = {};
+// (②b 10/29 사용자 "1~18판은 완벽하니 건들지 말고 19부터" — ⑩ outdoor.js와 같은 문): the reworked models below only from 19판
+// (scenes/stage.js puts the stage number in globalThis.__sbkStage); 1~18판 and scenes outside a stage keep the old ones
+const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
 
 // ── the paintings (drawn once, cached) ──────────────────────────────────────────────────────────────────────────────
 const TEX = texCache();   // cached per scene generation (kit.js purgeGeo)
@@ -188,7 +191,39 @@ function plinth(add, W, H, D, { plaque = true } = {}) {
 // 생각하는 몽글이: a bronze mochi on a rock, elbow on knee, chin on paw, eyes shut in thought — on a gallery plinth
 B.thinker = f => {
   const PH = .78, T0 = PH + .05, BZ = '#6b5a42', BZ2 = '#8c7654', BZ3 = '#ad9670', BZD = '#3e3226';
-  f.add(mc('thinker2', ({ add, tube }) => {
+  // (②b 10/29 63판 "허접한 오브젝트": up close it read as a brown lump — small dark spheres run together) — a lighter cast
+  // bronze with clear parts: a squared rock, a pear body, round ears, thighs forward and shins down, the right elbow on the
+  // knee with the paw under the chin, the left paw on the other knee, the tail round the rock; worn gold on the nose, knees
+  // and paw, a little green patina in the rock's corners. Kept off the plinth's front-right corner (a thing may sit there)
+  const cx = -.04, cz = -.04, B1 = '#8a7350', B2 = '#a88b5e', B3 = '#c4a674', BD = '#4a3a2a', WORN = '#dcc08a', PAT = '#86a893';
+  if (late19()) f.add(mc('thinker3', ({ add, tube }) => {
+    plinth(add, .52, T0, .52);
+    add(G.box(.34, .16, .28, .06), B1, cx - .02, T0 + .08, cz - .04);
+    add(G.box(.2, .1, .16, .04), B1, cx + .1, T0 + .05, cz - .1, 0, .3, 0);
+    for (const [x, y, z] of [[-.17, .04, .08], [.12, .03, -.17], [-.18, .12, -.16]]) add(G.sph(.026, 8, 6), PAT, cx + x, T0 + y, cz + z, 0, 0, 0, [1.3, .5, 1]);
+    add(G.sph(.15, 18, 14), B2, cx, T0 + .3, cz, 0, 0, 0, [1, 1.05, .95]);
+    add(G.sph(.1, 14, 10), B3, cx, T0 + .27, cz + .1, 0, 0, 0, [1, 1, .5]);
+    for (const s of [-1, 1]) {
+      const kx = cx + s * .08;
+      tube([cx + s * .07, T0 + .2, cz + .02], [kx, T0 + .21, cz + .17], .055, B2, 10); add(G.sph(.056, 12, 10), B2, kx, T0 + .21, cz + .17);
+      tube([kx, T0 + .21, cz + .17], [kx, T0 + .07, cz + .19], .045, B1, 10);
+      add(G.sph(.05, 12, 10), B2, kx, T0 + .045, cz + .22, 0, 0, 0, [1, .6, 1.3]);
+      for (const k of [-1, 0, 1]) add(G.sph(.011, 6, 5), B3, kx + k * .02, T0 + .04, cz + .285, 0, 0, 0, [1, 1, .5]);
+      add(G.sph(.022, 8, 6), WORN, kx, T0 + .25, cz + .2, 0, 0, 0, [1, .6, .6]);
+    }
+    add(G.sph(.15, 18, 14), B2, cx + .01, T0 + .52, cz + .06);
+    for (const s of [-1, 1]) { add(G.sph(.055, 12, 10), B2, cx + .01 + s * .11, T0 + .63, cz + .03); add(G.sph(.03, 10, 8), BD, cx + .01 + s * .11, T0 + .63, cz + .07, 0, 0, 0, [1, 1, .4]); }
+    for (const s of [-1, 1]) add(G.tor(.024, .007, PI, 4, 10), BD, cx + .01 + s * .055, T0 + .54, cz + .2, .3, 0, PI);
+    add(G.sph(.045, 12, 10), B3, cx + .01, T0 + .48, cz + .19, 0, 0, 0, [1.2, .8, .8]);
+    add(G.sph(.016, 8, 6), WORN, cx + .01, T0 + .5, cz + .225);
+    tube([cx + .12, T0 + .38, cz + .03], [cx + .09, T0 + .26, cz + .16], .04, B2, 10); add(G.sph(.042, 10, 8), B2, cx + .09, T0 + .26, cz + .16);
+    tube([cx + .09, T0 + .26, cz + .16], [cx + .04, T0 + .42, cz + .2], .036, B2, 10);
+    add(G.sph(.046, 12, 10), WORN, cx + .04, T0 + .43, cz + .2);
+    tube([cx - .12, T0 + .37, cz + .03], [cx - .1, T0 + .24, cz + .15], .038, B2, 10);
+    add(G.sph(.043, 12, 10), B3, cx - .09, T0 + .23, cz + .18, 0, 0, 0, [1, .8, 1]);
+    add(G.tor(.1, .028, PI * 1.2, 8, 18), B2, cx - .13, T0 + .17, cz - .1, HP, 0, .6); add(G.sph(.034, 10, 8), B3, cx - .2, T0 + .17, cz + .02);
+  }));
+  else f.add(mc('thinker2', ({ add, tube }) => {
     plinth(add, .52, T0, .52);
     // the rock: two flattened lumps
     add(G.sph(.17, 12, 8), BZ, -.02, T0 + .05, -.02, 0, .4, 0, [1.15, .45, .95]);
@@ -348,7 +383,26 @@ B.artcrate = f => {
 
 // 관람 벤치 (2×1): a long padded bench
 B.museumbench = f => {
-  f.add(mc('museumbench', ({ add }) => {
+  // (②b 10/29 63판 "허접한 오브젝트": three blocks) — a gallery ottoman: a buttoned velvet cushion with piping, a wooden
+  // frame with turned legs, a rail between each pair and brass caps, and a visitor's folded guide map left at one end
+  const VEL = '#8a4b5a', VEL2 = '#9c5a69', PIPE = '#6a3a46', WD = '#b98a56', WD2 = '#94683c', BRS = '#d9b45a';
+  if (late19()) f.add(mc('museumbench2', ({ add, tube }) => {
+    add(G.box(1.56, .12, .44, .06), VEL, 0, .38, 0);
+    add(G.box(1.5, .03, .4, .015), VEL2, 0, .435, 0);
+    for (const sz of [-1, 1]) add(G.cyl(.012, .012, 1.52, 6), PIPE, 0, .44, sz * .205, 0, 0, HP);
+    for (const sx of [-1, 1]) add(G.cyl(.012, .012, .4, 6), PIPE, sx * .76, .44, 0, HP, 0, 0);
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 2; j++) { const x = -.6 + i * .3 + (j ? .15 : 0), z = j ? .08 : -.08; if (Math.abs(x) > .7) continue; add(G.sph(.018, 8, 6), PIPE, x, .447, z, 0, 0, 0, [1, .5, 1]); }
+    add(G.box(1.6, .07, .46, .02), WD, 0, .295, 0);
+    add(G.pbox(1.56, .012, .006), WD2, 0, .28, .232);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const x = sx * .7, z = sz * .17;
+      add(G.cyl(.032, .022, .24, 12), WD, x, .16, z); add(G.sph(.034, 10, 8), WD2, x, .2, z, 0, 0, 0, [1, .6, 1]);
+      add(G.cyl(.026, .026, .03, 10), BRS, x, .025, z);
+    }
+    for (const sx of [-1, 1]) tube([sx * .7, .1, -.17], [sx * .7, .1, .17], .014, WD2, 6);
+    add(G.box(.16, .008, .11, .003), '#fbf5e8', -.58, .453, .04, 0, -.25, 0); add(G.box(.07, .009, .11, .003), '#8fc8e8', -.61, .454, .035, 0, -.25, 0);
+  }));
+  else f.add(mc('museumbench', ({ add }) => {
     add(G.box(1.6, .14, .46, .06), '#8a4b5a', 0, .38, 0); add(G.box(1.5, .06, .4, .02), '#6a3a46', 0, .29, 0);
     for (const sx of [-1, 1]) add(G.box(.1, .28, .38, .02), '#c9a46a', sx * .68, .14, 0);
   }));

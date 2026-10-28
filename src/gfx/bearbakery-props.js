@@ -9,8 +9,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, mat, mesh, geo, canvasTex, texCache, shade } from './kit.js';
-import { clothWave, clothSlab } from './clothbend.js';
+import { clothBend, clothWave, clothSlab } from './clothbend.js';
 import { HG as G, hxf as xf, hmc as mc, hleaves as leaves } from './house-props.js';
+import { textTex, fitText } from './gpt-paper.js';
 
 const PI = Math.PI, HP = PI / 2;
 const K = { wood: '#efc07f', woodD: '#c4874d', body: '#fffaf0', sage: '#a9c9a0', sage2: '#8fb787', brick: '#d97a5c', brick2: '#b95f45',
@@ -376,7 +377,9 @@ B.breadbasket = (f, T, o = {}) => {
     const zc0 = clothWave(.44, .3, 3, .012);
     cl0.add(pm('breadbasket0-cloth2|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .12, ({ add }) => add(clothSlab(.44, .3, .016, (x, y) => zc0(x, y) - 1.9 * x * x, .15).rotateX(-.12))));
     f.add(cl0);
-    const p = f.part('lift', cl0, (t, b) => { cl0.position.y = b.p.y + .22 * t; cl0.position.z = b.p.z + .08 * t; cl0.rotation.x = .9 * t; }, { label: '바게트 바구니 천', sfx: 'lift' });
+    // (⑩ 10/29 사용자 "들출 때 제발 벤딩 좀": 19판부터 천이 아래 단부터 말려 올라감 — 1~18판은 그대로 통째로)
+    const p = f.part('lift', cl0, (globalThis.__sbkStage ?? -1) >= 18 ? clothBend(f, cl0, { hinge: [0, .15, 0], along: [0, -1, 0], toward: [0, 0, 1], len: .3, turn: 2.2, tip: .2, rise: .04 })
+      : (t, b) => { cl0.position.y = b.p.y + .22 * t; cl0.position.z = b.p.z + .08 * t; cl0.rotation.x = .9 * t; }, { label: '바게트 바구니 천', sfx: 'lift', dur: .5 });
     f.spot('inside', null, .02, .05, .02, { part: p, maxH: .36, label: '바게트 바구니 안', scale: .8 });
     return;
   }
@@ -393,7 +396,9 @@ B.breadbasket = (f, T, o = {}) => {
     add(drape(.5, .42, (x, z) => .05 * Math.max(0, 1 - (x * x / .045 + z * z / .03)) - .09 * Math.max(0, Math.hypot(x / .25, z / .21) - .78) ** 1.5 * 3 + .006 * Math.sin(x * 30 + z * 9)), 0, .03, 0, .06, .2, 0);
   }));
   f.add(cl1);
-  const p = f.part('lift', cl1, (t, b) => { cl1.position.y = b.p.y + .26 * t; cl1.position.x = b.p.x - .12 * t; cl1.rotation.z = .6 * t; }, { label: '빵 바구니 천', sfx: 'lift' });
+  // (⑩ 10/29: 19판부터 오른쪽 끝을 잡고 젖히듯 천이 휘어 넘어감 — 1~18판은 그대로)
+  const p = f.part('lift', cl1, (globalThis.__sbkStage ?? -1) >= 18 ? clothBend(f, cl1, { hinge: [.25, .03, 0], along: [-1, 0, 0], toward: [0, 1, 0], len: .5, turn: 2.4, tip: .2, rise: .1 })
+    : (t, b) => { cl1.position.y = b.p.y + .26 * t; cl1.position.x = b.p.x - .12 * t; cl1.rotation.z = .6 * t; }, { label: '빵 바구니 천', sfx: 'lift', dur: .5 });
   f.spot('inside', null, -.02, .05, .04, { part: p, maxH: .22, label: '빵 바구니 안', scale: .8 });
 };
 
@@ -636,7 +641,9 @@ B.bkstall = (f, T) => {
   const sk = new THREE.Group(); put(sk, 0, H - .02, D / 2 + .01);
   sk.add(pm('bkstall-skirt|' + tk, mat('#ffffff', { map: gingham(cl), rough: .9, rim: .1 }), .14, ({ add }) => add(G.box(W + .02, .5, .02, .01), 0, -.25, 0)));
   f.add(sk);
-  const p = f.part('lift', sk, (t) => { sk.rotation.x = -1.35 * t; }, { label: '좌판 천', sfx: 'lift', dur: .35 });
+  // (⑩ 10/29: 19판부터 늘어진 천이 아래 단부터 말려 올라감 — 1~18판은 그대로 판처럼)
+  const p = f.part('lift', sk, (globalThis.__sbkStage ?? -1) >= 18 ? clothBend(f, sk, { along: [0, -1, 0], toward: [0, 0, 1], len: .5, turn: 2.6, bias: 2.5, tip: .15 })
+    : (t) => { sk.rotation.x = -1.35 * t; }, { label: '좌판 천', sfx: 'lift', dur: .5 });
   f.spot('inside', null, -.3, .18, .05, { part: p, maxH: .48, label: '빵 좌판 밑', scale: .9 });
   f.spot('on', null, .3, H + .04, .22, { maxH: .3, label: '빵 상자 사이', scale: .75 });
 };
@@ -887,6 +894,58 @@ B.bkfront = (f, T) => {
   f.spot('on', null, -.3, .525, z0 - .04, { maxH: .26, label: '진열 창 안', scale: .75 });
   f.spot('on', null, .45, H + .055, z0, { maxH: .3, label: '창 턱 위', scale: .75 });
 };
+
+// ── fix1029 32~40판 허접한 모델 다시 (19판 이상) ──
+// (fix1029 허브 10/29 사용자 "1~18판은 완벽하니 건들지 말고 19부터": 아래 새 모양은 19판 이상에서만 — scenes/stage.js가 방을 짓기 전에
+// 판 번호를 globalThis.__sbkStage에 둠(⑩ gate19 패치). 1~18판은 원래 빌더 그대로)
+const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
+const FLOUR_LABEL = () => TEX.get('flourlabel', () => textTex(160, 120, (c, w, h) => {
+  c.fillStyle = '#f7ead0'; c.fillRect(0, 0, w, h); c.strokeStyle = '#b8692c'; c.lineWidth = 4; c.strokeRect(4, 4, w - 8, h - 8);
+  c.strokeStyle = '#c98a3c'; c.lineWidth = 3; c.beginPath(); c.moveTo(w / 2, h * .62); c.lineTo(w / 2, h * .18); c.stroke();
+  c.fillStyle = '#c98a3c'; for (let k = 0; k < 4; k++) for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(w / 2 + sx * 6, h * .24 + k * 9, 5, 3, sx * .6, 0, Math.PI * 2); c.fill(); }
+  fitText(c, '밀가루', w / 2, h * .8, w * .84, 26, '#8a4a22');
+}));
+const floursacksLate = (f, T) => {
+  const woodD = col(T, 'woodD'), wood = col(T, 'wood'), tk = [wood, woodD].join(',');
+  const SQ = .72;
+  f.add(mcx('floursacks2|' + tk, ({ add, tube }) => {
+    const sack = (x, z, h, ry, open, tilt = 0) => {
+      const M = xf(x, 0, z, 0, ry, tilt);
+      const at = (g, c, px, py, pz, rx = 0, rry = 0, rz = 0, s = 1) => add(g, c, 0, 0, 0, 0, 0, 0, 1, M.clone().multiply(xf(px, py, pz, rx, rry, rz, s)));
+      const R = .2;
+      if (open) {
+        at(lathe([[0, 0], [R * .78, 0], [R * .96, h * .1], [R, h * .45], [R * .95, h * .8], [R * .9, h]], 18), BURLAP, 0, 0, 0, 0, 0, 0, [1, 1, SQ]);
+        at(G.tor(R * .92, .035, PI * 2, 6, 18), BURLAP2, 0, h - .01, 0, HP, 0, 0, [1, SQ, 1]);
+        at(G.cyl(R * .86, R * .86, .02, 18), FLOUR, 0, h - .03, 0, 0, 0, 0, [1, 1, SQ]);
+        at(G.sph(R * .8, 14, 8), FLOUR, 0, h - .03, 0, 0, 0, 0, [1, .42, SQ]);
+        at(G.cyl(.05, .045, .05, 12), WICKER2, .06, h + .05, .0, 0, 0, .5);
+        at(G.cap(.014, .16, 2, 6), WICKER2, .15, h + .12, -.02, 0, 0, -1.0);
+      } else {
+        at(lathe([[0, 0], [R * .8, 0], [R * .98, h * .1], [R, h * .42], [R * .9, h * .7], [R * .45, h * .9], [R * .2, h * .97], [0, h * .97]], 18), BURLAP, 0, 0, 0, 0, 0, 0, [1, 1, SQ]);
+        at(G.cyl(R * .2, R * .26, h * .1, 12), BURLAP2, 0, h * .99, 0);
+        at(G.tor(R * .22, .014, PI * 2, 4, 14), WICKER2, 0, h * .99, 0, HP, 0, 0);
+        for (let k = 0; k < 7; k++) { const a = k / 7 * PI * 2; at(G.sph(.04, 7, 5), k % 2 ? BURLAP : BURLAP2, Math.cos(a) * .045, h * 1.06, Math.sin(a) * .045, Math.sin(a) * .7, 0, -Math.cos(a) * .7, [.7, 1.2, .5]); }
+        at(G.cap(.006, .07, 2, 4), WICKER2, .05, h * .94, .03, .3, 0, .9);
+      }
+      for (let k = 0; k < 5; k++) at(G.box(.012, .022, .006, .002), BURLAP2, R * .97, h * (.1 + k * .1), 0, 0, 0, .04);
+    };
+    sack(-.2, -.2, .5, .2, false, .04); sack(.18, -.22, .44, -.15, true); sack(-.05, .12, .34, .5, false, -.08);
+    for (const [x, z, s] of [[.02, .3, .09], [-.28, .1, .06], [.32, -.02, .07]]) add(G.sph(s, 10, 6), FLOUR, x, .004, z, 0, 0, 0, [1.4, .08, 1]);
+    const CX = .25, CZ = .22;
+    for (const [dx, dz, w, d] of [[0, -.11, .3, .02], [0, .11, .3, .02], [-.14, 0, .02, .22], [.14, 0, .02, .22]]) for (let k = 0; k < 3; k++) add(G.box(w, .04, d, .006), k % 2 ? wood : shade(wood, -.05), CX + dx, .025 + k * .05, CZ + dz, 0, -.3, 0);
+    add(G.pbox(.27, .02, .2), woodD, CX, .012, CZ, 0, -.3, 0);
+    for (let k = 0; k < 5; k++) add(G.sph(.048, 10, 8), JAM, CX - .08 + (k % 3) * .08 * Math.cos(.3), .15 + (k > 2 ? .03 : 0), CZ - .04 + (k > 2 ? .07 : 0) + (k % 3) * .08 * Math.sin(.3));
+    for (let k = 0; k < 5; k++) add(G.cap(.005, .016, 2, 4), SOIL, CX - .08 + (k % 3) * .08 * Math.cos(.3), .2 + (k > 2 ? .03 : 0), CZ - .04 + (k > 2 ? .07 : 0) + (k % 3) * .08 * Math.sin(.3));
+    add(G.sph(.03, 8, 6), LEAF, CX + .02, .2, CZ - .02, 0, 0, .6, [1.3, .4, .8]);
+  }));
+  for (const [x, z, h, ry, tilt] of [[-.2, -.2, .5, .2, .04], [-.05, .12, .34, .5, -.08]]) {
+    const lab = mesh(geo('flourlabel-q', () => new THREE.PlaneGeometry(.15, .11)), mat('#ffffff', { map: FLOUR_LABEL(), rim: 0 }), { cast: false });
+    const g = new THREE.Group(); put(g, x, 0, z, 0, ry, tilt); g.add(put(lab, 0, h * .38, .2 * SQ + .004)); f.add(g);
+  }
+  f.spot('behind', null, .02, 0, -.42, { maxH: .5, label: '밀가루 포대 뒤', scale: .8 });
+  f.spot('on', null, .3, .16, .26, { maxH: .3, label: '사과 상자 위', scale: .75 });
+};
+{ const old = B.floursacks; B.floursacks = (f, T, o) => (late19() ? floursacksLate(f, T, o) : old(f, T, o)); }
 
 export const BAKERY_BUILDERS = B;
 export const BAKERY_INFO = {

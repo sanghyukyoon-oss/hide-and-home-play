@@ -518,11 +518,15 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     const g = T.gain.gain, t = A.ctx.currentTime;
     g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + sec);
   }
+  // (10/29) the element plays only while the audio context runs: a song started into a suspended or interrupted context (iOS)
+  // ran on silently and was heard from wherever it had got to, or — the old song — a moment before the right one
+  const canPlay = () => !document.hidden && A.ctx?.state === 'running';
   function swap() {
     T.swapT = 0; const w = T.want;
     T.url = w.url; T.el.src = w.url; T.rate = 0; setRate(w.rate);
     fade(0, .02); T.pending = w.level;   // (comes up on 'playing' — a slow network doesn't eat the fade-in)
-    if (!document.hidden) T.el.play()?.catch?.(() => {});   // (refused before a tap: goMusic tries again on the next one)
+    mlog(`swap → ${T.slot}${canPlay() ? '' : ' (waits for the audio to wake)'}`);
+    if (canPlay()) T.el.play()?.catch?.(() => {});   // (refused before a tap: goMusic tries again on the next one)
   }
   function playSlot(slot, rate) {
     if (!T.el) mkTrack();
@@ -534,11 +538,11 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
       if (T.swapT) { clearTimeout(T.swapT); T.swapT = 0; }
       setRate(rate);
       if (T.pending != null) T.pending = level; else if (T.goal !== level) fade(level, .35);
-      if (T.el.paused && !document.hidden) T.el.play()?.catch?.(() => {});
+      if (T.el.paused && canPlay()) T.el.play()?.catch?.(() => {});
       return;
     }
     if (T.swapT) return;   // (the swap under way takes the newest want)
-    if (T.url && !T.el.paused) { fade(0, XF * .45); T.swapT = setTimeout(swap, XF * 450); } else swap();
+    if (T.url && !T.el.paused && canPlay()) { fade(0, XF * .45); T.swapT = setTimeout(swap, XF * 450); } else swap();   // (nothing to hear fading: at once)
   }
   function release() { T.el.pause(); T.el.removeAttribute('src'); try { T.el.load(); } catch {} T.url = null; T.pending = null; }
   function stopTrack(sec = .5) {
@@ -613,10 +617,15 @@ export function createAudio({ storageKey = 'sbk.mute' } = {}) {
     return () => { if (A.mood !== slot) return; if (prev.want) A.music(prev.mood); else A.stopMusic(); };
   };
   // (10/20: the music box that played when a slot had no file is gone — music comes from Suno·Google files only)
+  // (10/29, user on an iPhone: "노래가 한 번씩 재생될 때 조금 재생되고 다시 재생되는 문제가 반복됨") a scene's music asked for
+  // while the audio context wasn't running (iOS: a call, a notification, another app's sound, coming back from the background)
+  // used to be dropped: the old song stayed on the element, and when the context woke the next tap asked again — the old song
+  // played on for a moment, faded, and the scene's own song started over. Now the request is kept and the right file put on
+  // the element at once; it starts (from its top) as soon as the context runs (swap / goMusic)
   A.music = (mood = 'home') => {
     const again = mood === A.mood && A._wantMusic && A._req;
     A.mood = mood; A._wantMusic = true;
-    if (!ensure() || A.ctx.state !== 'running') { if (!again) A._req = null; return; }
+    if (!ensure()) return;
     if (!again) A._req = request(mood);
     playSlot(A._req.slot, A._req.rate);
   };

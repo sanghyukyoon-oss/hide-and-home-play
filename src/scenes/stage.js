@@ -19,13 +19,21 @@ import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, l
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
 import { homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
-import { fixSmall } from '../smallfix.js';   // 작은 물건 안전망 (#94, ② 레벨 10/21)
+import { fixSmall, unhide } from '../smallfix.js';   // 작은 물건 안전망 (#94, ② 레벨 10/21)
 import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
-import { drawnScale, wantScale, capScale, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn, DECOY_SIZE } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
+import { drawnScale, wantScale, capScale, coverCap, coverDraw, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn, DECOY_SIZE } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
 // a placed thing's longest side as drawn (m): its own meshes, not its tap sphere
 const _dl = new THREE.Box3(), _dlb = new THREE.Box3();
+// (19판부터 10/29: the longest side of a thing as drawn, in its own frame — a model variant can be larger than natSize's)
+function ownLong(g) {
+  g.updateMatrixWorld(true); const inv = new THREE.Matrix4().copy(g.matrixWorld).invert(), b = new THREE.Box3(), bb = new THREE.Box3(), m = new THREE.Matrix4(), s = new THREE.Vector3();
+  g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); b.union(bb.copy(o.geometry.boundingBox).applyMatrix4(m.multiplyMatrices(inv, o.matrixWorld))); } });
+  if (b.isEmpty()) return 0;
+  g.getWorldScale(s); const d = b.getSize(new THREE.Vector3());
+  return Math.max(d.x * s.x, d.y * s.y, d.z * s.z);
+}
 function drawnLong(g) {
   g.updateMatrixWorld(true); _dl.makeEmpty();
   g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _dl.union(_dlb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } });
@@ -105,6 +113,8 @@ import { songDrift } from '../songdrift.js';   // 오래 못 찾으면 노래가
 const HIDE_R1 = !/[?&]hide=0(&|$)/.test(location.search);
 const R1_HIDE = ['wardrobe', 'bigfridge', 'fridge', 'chest', 'trunk', 'tent', 'firetruck', 'jailcell', 'patrolcar', 'lockers', 'safe', 'dishcab', 'pastrycase', 'shopfront', 'washer3', 'minifridge', 'tentsmall', 'cooler', 'kpopstage', 'artcrate', 'lostbox', 'vending', 'drawers', 'mailbox', 'picnic', 'bookshelf', 'desk', 'toybox', 'cabinet', 'closet', 'sideboard', 'shoerack', 'laundrybasket', 'dresser',
   'aptwall', 'recyclebins', 'icecart', 'bbqgrill', 'parkbin', 'shrinebox', 'backpack2', 'bathtub', 'bed'];   // 10/18 레벨 세션: 8·41·48·50판 had 0-1 candidates 
+// (21판 policefront3 전용 순찰차 10/29)
+R1_HIDE.push('pf3_patrolcar');
 
 const V = new THREE.Vector3();
 const fmtTime = s => { s = Math.max(0, Math.round(s)); return s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`; };
@@ -221,6 +231,8 @@ export class StageScene {
     const grayL = this.lookR && LOOK.has('light') && this.lookR.gray;
     if (this.spec.gray && grayL) W.setLight(grayL.light);
     this.layout = layout;
+    // (outdoor.js: 19판 이상에서만 새 소품 디테일 — ⑩ 10/29)
+    globalThis.__sbkStage = this.idx;
     this.room = layout.rooms ? new MapRooms(W, layout) : new Room(W, layout);
     this.wallFacing = markWallFacing(this.room);   // 벽을 보는 서랍·자물쇠 (facing.js, 10/19)
     W.root.add(this.room.group);
@@ -233,7 +245,8 @@ export class StageScene {
     // 사건 판 (10/17 pivot): the owner hides behind a lock and finding them is the goal (세팅 → 더보기 has the old way)
     this.incident = !custom && !this.preview && (!!this.spec.incident || this.spec.tut === 1) && !G.save.settings?.oldMode;
     setPlace(custom ? null : this.spec.room);   // (a place the story room went through thing by thing: 3판 — affinity.js)
-    fitPrep(this.room);   // (this room's walls for the box test — fitspot.js)
+    // (this room's walls for the box test — fitspot.js; 19판부터 크기 규칙 10/29)
+    fitPrep(this.room, !custom && !this.preview && this.idx >= 18);
     // what the last three stages played asked for: this one picks other things first (stages.js planStage, 10/20)
     const recentT = G.save.recentT || [];
     if (!custom && !this.preview) this.spec = { ...this.spec, recentTypes: recentT.filter(e => e.i !== this.idx).flatMap(e => e.t) };
@@ -268,8 +281,10 @@ export class StageScene {
       // (the size: wantScale/drawnScale in fitspot.js — ~34 cm on the longest side, at least 1.25×, up to 2.4×; held to the
       // place's box: its headroom and the room round it, so nothing pokes through a cubby wall or a basket — 10/19 user)
       // (a lock's thing that had to take a tight place: as big as the place lets it, never under .6)
-      const want = this.itemWant = this.spec.itemSize || LOOK.has('items') && this.lookR?.itemSize || .34;   // (spec.itemSize: a wide map's own — stages.js ITEM_TUNE, ② 레벨 10/21)
-      const sc = drawnScale(p.type, p.spot, p.role, want) || Math.max(.6, Math.min(wantScale(p.type, p.spot, p.role, want), capScale(p.type, p.spot)));
+      // (사용자 10/29 실폰 "19판부터 고깔·숨긴 물건들 전반적으로 너무 큼", "여행 목베개가 차만 함": 넓은 맵이 물건을 40~70 cm로 키웠음 —
+      // 가구·캐릭터는 gpt-scale.js로 우리 크기라 물건도 1~18판과 같은 크기(38 cm 상한); 작게 보이면 줌·smallfix 자리 옮기기 몫)
+      const want = this.itemWant = Math.min(this.idx >= 18 ? .38 : 9, this.spec.itemSize || LOOK.has('items') && this.lookR?.itemSize || .34);   // (spec.itemSize: a wide map's own — stages.js ITEM_TUNE, ② 레벨 10/21)
+      const sc = Math.min(drawnScale(p.type, p.spot, p.role, want) || Math.max(.6, Math.min(wantScale(p.type, p.spot, p.role, want), capScale(p.type, p.spot))), coverDraw(p.type, p.spot));
       // (and it looks out of its place — 3판 "고무오리 얼굴이 바구니 쪽에 있음", user 10/19: a little either side of that)
       const jit = (r() - .5) * .7; g.userData.jit = jit;
       attachItem(p.spot, g, { rotY: 0, scale: sc }); faceItem(g, p.spot, jit); centerOn(g, p.spot); squareIfCrossing(g, p.spot); settleOn(g, p.spot);
@@ -277,6 +292,8 @@ export class StageScene {
       // (a decoy that clearing its place squeezed under ~15 cm on its longest side reads as a toy of itself — 2판 커튼 뒤 창틀의
       // 토끼 슬리퍼 came out 10 cm, 사용자 10/24 "쓰레빠 웰케 작아짐": fitspot lets a decoy down to 15 cm, fitClear then took 30% more;
       // that place gets none, like a decoy fitspot already turns away)
+      // (19판부터 10/29 사용자 "크기들 좀 맞춰주라니까": 그려진 실제 긴 변이 바라는 크기의 1.1배를 넘으면 줄임 — 26판 슬리퍼 변형 48 cm)
+      if (this.idx >= 18 && !this.custom) { const L = ownLong(g), top = Math.max(want, DECOY_SIZE[p.type]?.[0] || 0) * 1.1; if (L > top) { g.scale.multiplyScalar(top / L); settleOn(g, p.spot); } }
       if (p.role === 'decoy' && drawnLong(g) < (DECOY_SIZE[p.type]?.[1] || .15)) { g.parent?.remove(g); p.spot.itemGroup = null; continue; }
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
       if (p.hang) it.hang = p.hang;   // (7판: on the pulley's top hook, out of reach until the basket comes up — tapHung / dropHung)
@@ -404,6 +421,10 @@ export class StageScene {
     const many = this.incident && this.idx >= 12 && this.targets.filter(t => !t.friend).length >= 3;
     if (!this.custom && !this.preview && (!this.incident || many) && this.idx >= 1 && (this.idx <= 10 || this.hunt || many)) this.tiers = tierPass(this);
     if (!this.custom && !this.preview && sized(this.idx)) this.smallFixed = fixSmall(this);   // (#94: nothing on the list under 28 px on the start view — smallfix.js)
+    // (19판부터 10/29: 어느 각도에서도 안 보이는 찾을 것은 보이는 가까운 자리로 — smallfix.js unhide)
+    if (!this.custom && !this.preview && this.idx >= 18) this.unhidden = unhide(this);
+    // (19판부터 10/29: 자리 옮기기·다시 그리기 뒤에도 그려진 실제 긴 변이 바라는 크기의 1.1배를 넘으면 줄임 — 26판 슬리퍼 48 cm, 22판 우산 68 cm)
+    if (!this.custom && !this.preview && this.idx >= 18) for (const it of this.items) { if (!it.g || it.friend || it.lightSwitch || it.furnTarget) continue; const L = ownLong(it.g), top = Math.max(this.itemWant || .34, DECOY_SIZE[it.type]?.[0] || 0) * 1.1; if (L > top) { it.g.scale.multiplyScalar(top / L); if (it.spot) settleOn(it.g, it.spot); } }
     this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
     // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
@@ -560,6 +581,8 @@ export class StageScene {
 
   exit() {
     this.dead = true;
+    // (⑩ 10/29 gate19-b: 판을 나가면 판 번호를 지움 — 내 방·털기 집·상점·로비는 늘 원래 모양)
+    globalThis.__sbkStage = -1;
     this.clearTapTimers();
     const G = this.G;
     if (this.raidRun && !this.result) { const c = settleOpen(G); if (c) setTimeout(() => G.ui.toast(`털다 나온 집 정산 · 코인 +${c}`, 'green'), 700); }   // (QA9 P2: leaving a raid half way kept nothing)
@@ -931,6 +954,9 @@ export class StageScene {
     moveItem(it, spot);
     // (20판 villaroof3 ① 10/24, 사용자 "떨어진 열쇠가 작음": a place may ask for what lands on it to be at least this long — spot.minLong)
     if (spot.minLong) { const L = drawnLong(it.g); if (L > .01 && L < spot.minLong) { it.g.scale.multiplyScalar(spot.minLong / L); it.g.updateMatrixWorld(true); } }
+    // (20판 villaroof3, 사용자 10/29 "열쇠가 이불에서 떨어지는 연출 다시 해 줘. 허접함": the quilt's own drop — it shivers, the key slips off
+    // its hook, tumbles down an arc, bounces twice and settles with dust and a glint; the camera stays where the player put it)
+    if (spot.minLong) return this.quiltDrop(it, part, from, qW);
     // it falls the way it hung and turns once on the way down into how it lies in the basket, then bounces once (design 10/20)
     const g = it.g, to = g.position.clone(), f = g.parent.worldToLocal(from.clone()), qTo = g.quaternion.clone();
     const qFrom = g.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qW), spin = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
@@ -940,6 +966,38 @@ export class StageScene {
       const p = W.toScreen(this.worldCenter(it)); W.fx.burst(p.x, p.y, { n: 8, shape: 'star', speed: 90, gravity: -40, life: .6, size: 8 });
       this.wobble(part.pivots[0]);
       return this.tw.run(.24, k => { if (!this.dead) g.position.y = to.y + Math.sin(k * Math.PI) * .06; }, ease.linear).then(() => { if (!this.dead) { g.position.copy(to); this.lookHung(it); } });
+    });
+  }
+  quiltDrop(it, part, from, qW) {
+    const G = this.G, W = G.world, g = it.g, to = g.position.clone(), qTo = g.quaternion.clone(), piv = part.pivots[0];
+    const f = g.parent.worldToLocal(from.clone()), qFrom = g.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qW);
+    const ax = new THREE.Vector3(1, 0, .4).normalize(), roll = new THREE.Quaternion(), shake = new THREE.Quaternion(), Z = new THREE.Vector3(0, 0, 1);
+    const peak = Math.max(f.y, to.y) + .12, mid = new THREE.Vector3(), sh0 = piv?.rotation.z ?? 0;
+    g.position.copy(f); g.quaternion.copy(qFrom); g.visible = true;
+    const dust = (n, sz) => { const p = W.toScreen(this.worldCenter(it)); W.fx.burst(p.x, p.y + 6, { n, shape: 'circle', speed: 60, up: 18, gravity: 120, life: .45, size: sz, colors: ['#ffffff', '#efe8dc', '#e2d8c8'] }); };
+    // 1) the quilt shivers and the key trembles on its hook
+    this.wobble(piv);
+    return this.tw.run(.34, k => { if (this.dead) return; const a = Math.sin(k * Math.PI * 6) * (1 - k * .4) * .12; shake.setFromAxisAngle(Z, a); g.quaternion.copy(qFrom).premultiply(shake); }, ease.linear).then(() => {
+      if (this.dead) return; G.audio.sfx('clink');
+      // 2) it slips: up a hair off the hook, then a falling arc with a tumble and a turn into how it will lie
+      return this.tw.run(.5, k => {
+        if (this.dead) return;
+        const h = 1 - (1 - k) * (1 - k);
+        mid.lerpVectors(f, to, k); mid.y = (1 - k) * (1 - k) * f.y + 2 * (1 - k) * k * peak + k * k * to.y;
+        g.position.copy(mid);
+        roll.setFromAxisAngle(ax, Math.PI * 3 * h);
+        g.quaternion.slerpQuaternions(qFrom, qTo, h).premultiply(roll);
+        if (piv) piv.rotation.z = sh0 + Math.sin(k * Math.PI * 3) * (1 - k) * .05;
+      }, ease.linear);
+    }).then(() => {
+      if (this.dead) return; g.position.copy(to); g.quaternion.copy(qTo); if (piv) piv.rotation.z = sh0;
+      G.audio.sfx('land'); dust(10, 9);
+      // 3) two bounces, each smaller, a little tip each time, then still
+      const bump = (hgt, dur, tilt) => this.tw.run(dur, k => { if (this.dead) return; g.position.y = to.y + Math.sin(k * Math.PI) * hgt; shake.setFromAxisAngle(ax, Math.sin(k * Math.PI) * tilt); g.quaternion.copy(qTo).premultiply(shake); }, ease.linear);
+      return bump(.08, .26, .35).then(() => { if (this.dead) return; G.audio.sfx('tap'); dust(5, 6); return bump(.025, .16, .12); });
+    }).then(() => {
+      if (this.dead) return; g.position.copy(to); g.quaternion.copy(qTo);
+      const p = W.toScreen(this.worldCenter(it)); W.fx.burst(p.x, p.y, { n: 6, shape: 'star', speed: 70, gravity: -30, life: .6, size: 8, colors: ['#ffffff', '#fff3a0'] });
     });
   }
   // ...and if it landed small or at the edge (7판's start view: 28 px behind the upstairs railing — 디자인 세션 10/20), the view

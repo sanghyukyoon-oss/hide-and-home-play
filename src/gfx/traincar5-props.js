@@ -1161,11 +1161,23 @@ B.tc5gend = (f, T, o = {}) => {
     add(G.box(DW2 * 2, .015, .24, .005), S.yellow, 0, .008, 0);
   }));
   if (o.sign) { const sg = flat(.5, .14, labelTex('car' + o.sign, o.sign === 2 ? '2호차' : '1호차', PAL.a.bodyD, '#ffffff', 256, 80)); put(sg, 0, DH + .05, inC * .13, 0, inC < 0 ? PI : 0); portal.add(sg); }
-  body.add(mc('tc5-gendwall|' + [o.v, W, inC].join(','), ({ add }) => {
+  body.add(mc('tc5-gendwall|' + [o.v, W, inC].join(','), ({ add, tube }) => {
     const seg = (x0, x1, y0, y1) => { const w = x1 - x0, h = y1 - y0; add(G.box(w, h, .12, .02), C.up, (x0 + x1) / 2, (y0 + y1) / 2, 0); add(G.box(w, h, .025, .008), C.body, (x0 + x1) / 2, (y0 + y1) / 2, out * .072);
       if (y0 < .9) add(G.box(w, Math.min(.86, y1) - y0, .025, .008), C.low, (x0 + x1) / 2, y0 + (Math.min(.86, y1) - y0) / 2, inC * .072); };
     seg(X0, -DW2 - .02, 0, WH); seg(DW2 + .02, W / 2, 0, WH); seg(-DW2 - .02, DW2 + .02, DH + .1, WH);
     add(G.box(W, .05, .18, .02), C.trim, 0, .88, inC * .02); add(G.box(W + .02, .06, .18, .02), C.up2, 0, WH - .02, 0);
+    // (19판~ 다듬기 10/29: the end's outside, seen across the gap when the view turns, was one flat green board) the side's cream line and
+    // orange stripe carried round it, a gutter along the top, a grab bar either side of the doorway, a cable box low on each side with its
+    // jumper cable sagging to the gap's middle (the other car's end hangs the other half)
+    for (const [x0, x1] of [[X0, -DW2 - .02], [DW2 + .02, W / 2]]) {
+      add(G.box(x1 - x0, .26, .02, .005), C.line, (x0 + x1) / 2, 1.0, out * .094); add(G.box(x1 - x0, .045, .024, .004), C.trim, (x0 + x1) / 2, .84, out * .096);
+    }
+    add(G.box(W, .05, .07, .01), C.bodyD, 0, WH - .1, out * .115);
+    for (const s of [-1, 1]) {
+      const x = s * (DW2 + .3); tube([x, .7, out * .14], [x, 1.6, out * .14], .018, S.steel, 6); for (const y of [.7, 1.6]) tube([x, y, out * .085], [x, y, out * .14], .014, S.steel2, 4);
+      const xc = s * (W / 2 - .45); add(G.box(.26, .2, .1, .02), S.dark, xc, .32, out * .135); add(G.box(.2, .03, .02, .005), S.steel2, xc, .4, out * .19);
+      tube([xc, .25, out * .18], [xc, .1, out * .36], .025, S.dark, 6); tube([xc, .1, out * .36], [xc, .14, out * .57], .025, S.dark, 6);
+    }
   }));
   const FX = o.fireX ?? X0 + .45;
   deco.add(mc('tc5-genddeco|' + [inC, o.ticket ? 1 : 0, FX].join(','), ({ add }) => {

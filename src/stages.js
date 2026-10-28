@@ -1,5 +1,5 @@
 import { affOk, affLike, isCold, habitSpot, placeLike } from './affinity.js';
-import { spotFits, shapeFits, fullSize } from './fitspot.js';   // 자리에 맞는 물건 (10/19)   // 물건마다 나올 법한 자리 (10/19)
+import { spotFits, shapeFits, fullSize, coverFits } from './fitspot.js';   // 자리에 맞는 물건 (10/19)   // 물건마다 나올 법한 자리 (10/19)
 import * as THREE from 'three';
 // Room themes, hand-placed layouts, stage specs and a seeded planner that hides targets / keys / decoys.
 import { rng } from './util.js';
@@ -202,7 +202,9 @@ export const LAYOUTS = {
     floorZones: [{ i: 0, j: 0, w: 4, d: 2, kind: 'grass', a: '#9fd27a', b: '#86c063' }, { i: 0, j: 4, w: 2, d: 2, kind: 'grass', a: '#9fd27a', b: '#86c063' },
       { i: 5, j: 4, w: 2, d: 2, kind: 'grass', a: '#9fd27a', b: '#86c063' }, { i: 6, j: 0, w: 1, d: 3, kind: 'grass', a: '#9fd27a', b: '#86c063' }],
     furniture: [F('pine2', 0, 0), F('pine2', 2, 0), F('pavilion', 4, 0), F('pine2', 6, 1), F('trailsign', 1, 0), F('rockpile', 3, 1),
-      F('woodstairs', 0, 2), F('stonewall', 5, 2), F('stream', 2, 3), F('bridge', 3, 3), F('stream', 5, 3), F('spring', 6, 3),
+      // (⑩ 10/29 실폰 점검 50·55판: 다리 양옆 개울 조각(2,3)·(5,3)이 다리 밑 물과 칸 중심이 어긋나 따로 끊긴 웅덩이 셋처럼 보임 → 빼고
+      // 다리 밑 물만 남김, 그 자리엔 바위·덤불)
+      F('woodstairs', 0, 2), F('stonewall', 5, 2), F('rock', 2, 3), F('bridge', 3, 3), F('bush', 5, 3), F('spring', 6, 3),
       F('bench3', 1, 4), F('tentsmall', 0, 5), F('lanterns', 2, 5), F('backpack2', 4, 5), F('shrinebox', 5, 5), F('exerciser', 6, 5)],
     friendAt: [-2.0, .5] },
   // 보드킹의 스케이트 파크: the quarter-pipe on the back wall (its board rolls down when tapped), a painted wall and the
@@ -615,7 +617,8 @@ export const MAPS = {
     { at: [-3.5, 0], layout: { ...LAYOUTS.playground, theme: THEMES.playground } },
     { at: [3.5, 0], layout: { w: 7, d: 6, theme: THEMES.playground, walls: { N: 'none', W: 'none', S: 'none', E: 'none' },
       furniture: [F('aptwall', 0, 0), F('aptwall', 2, 0), F('pavilion2', 4, 0), F('planter', 0, 2), F('picnic2', 2, 2),
-        F('bbqgrill', 6, 2), F('streetlamp2', 0, 4), F('swings2', 1, 4), F('springrider', 4, 3), F('catfeeder', 6, 4), F('icecart', 4, 5),
+        // (⑩ 10/29 실폰 점검 46·49판: 이 가로등(0,4)이 왼쪽 놀이터 가로등과 이음매에서 1 m 간격으로 겹쳐 섬 → 뺌)
+        F('bbqgrill', 6, 2), F('swings2', 1, 4), F('springrider', 4, 3), F('catfeeder', 6, 4), F('icecart', 4, 5),
         // (리포트 v3 개선 4: the 공원 boss had nothing to lock but one box — a lost-property locker, a park bin, the recycling)
         F('lostbox', 6, 0), F('parkbin', 6, 5), F('recyclebins', 0, 5)] } },
   ] }),
@@ -729,7 +732,8 @@ export const MAPS = {
     { at: [0, 0], layout: RM('camp1', 8, 6, { walls: { N: 'cliff', W: 'cliff', S: 'none', E: 'none' },
       furniture: [F('tent', 0, 0), F('pine', 2, 0), F('firewood', 3, 0), F('tent', 5, 0), F('pine', 7, 0),
         F('log', 0, 2, 1), F('lantern', 2, 2), F('campchair', 3, 2), F('cooler', 4, 2), F('trunk', 6, 2), F('campchair', 7, 3, 3),
-        F('rock', 1, 5), F('mushrooms', 4, 5), F('pine', 7, 5), F('rock', 5, 4),
+        // (⑩ 10/29 실폰 점검 57·60판: 버섯(4,5)의 큰 갓이 등 줄 오른쪽 기둥·등에 겹쳐 보임 → 한 칸 옆 (5,5))
+        F('rock', 1, 5), F('mushrooms', 5, 5), F('pine', 7, 5), F('rock', 5, 4),
         F('backpack2', 5, 2), F('lanterns', 2, 4), F('bbqgrill', 6, 4), F('tentsmall', 0, 5)] }) },
   ] }),
 };
@@ -1158,7 +1162,7 @@ export function layoutFor(roomKey, raw = false) {
 
 // (and at the size it will be drawn: its box and the room round it — fitspot.js, 10/19 user "새집 안 축구공", "뚫려 있다")
 // (loose: the headroom only, as before — a lock's last chance, so a lock never goes missing)
-const fits = (type, s, role, loose) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat) && (loose || spotFits(type, s, role));
+const fits = (type, s, role, loose) => ITEMS[type].h * (s.scale || 1) <= s.maxH + .001 && (s.maxH >= .1 || ITEMS[type].flat) && (loose ? coverFits(type, s) : spotFits(type, s, role));
 
 // Mount a lever (or a light switch) where it stays visible: a free wall slot, else a free back-edge tile.
 function mountLever(room, r, pref = null, kind = 'lever') {
@@ -1573,6 +1577,8 @@ HIDEOUT.push('tc4rack', 'tc4endwall');
 HIDEOUT.push('tc5rack', 'tc5end');
 // (28판 B안 traincar6 ⑧ 10/24, 미리보기 키: 짐칸 선반 여행 가방 먼저 — '…선반 위는 반칙', 통로 문 뒤; 한 량 단면이 화면에 크게 — 시작 줌 1.4)
 HIDEOUT.push('tc6rack', 'tc6end');
+// (21판 policefront3 순찰차를 이 맵 전용 새 키로 다시 지음 10/29 — 옛 patrolcar와 같은 대접)
+HIDEOUT.push('pf3_patrolcar');
 ROOM_ZOOM.traincar6 = 1.4;
 export function planIncident(room, spec, story = null) {
   const given = Array.isArray(spec.lock) ? spec.lock.slice() : spec.lock === 'both' ? ['pad', 'code'] : spec.lock ? [spec.lock] : [];

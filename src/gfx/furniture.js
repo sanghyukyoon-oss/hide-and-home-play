@@ -904,6 +904,19 @@ B.bookshelf = (f, T, o = {}) => {
   f.add(mg('bookshelf-photo', atlasMat(), ({ addM }) => addM(quadGeo(.11, .126, RG.photo2), xf(.24, H + .045 + .085, z0 - .02, -.14, -.2, 0).multiply(xf(0, .004, .016)))));
   gaps.forEach((gapAt, li) => f.spot('on', null, gapAt, levels[li], z0 + .03, { maxH: .5, label: `책장 ${3 - li}층`, scale: .85 }));
 };
+// (fix1029 3차 — 37판 등: 돌려 보면 키 큰 책장 뒤가 민 흰 판; 19판 이상에서만 — 허브 '1~18판 그대로') the back gets board seams, a
+// top rail and a little maker's plate, so its back reads as a piece of furniture
+{ const old = B.bookshelf; B.bookshelf = (f, T, o = {}) => {
+  const r = old(f, T, o);
+  if ((globalThis.__sbkStage ?? -1) < 18) return r;
+  const backC = shade(T.accent2, .12), sc = shade(backC, -.22), z = -.3 - .36 / 2 + .013;
+  f.add(mc('bookshelf-back|' + backC, ({ add }) => {
+    for (const x of [-.22, 0, .22]) add(G.pbox(.008, 1.7, .004), sc, x, .94, z);
+    for (const y of [.62, 1.2]) add(G.pbox(.8, .03, .006), sc, 0, y, z - .001);
+    add(G.box(.16, .06, .006, .003), '#e2c070', 0, 1.62, z - .004);
+  }));
+  return r;
+}; }
 
 // ═════════════════════════════════════════════ LIVING ═════════════════════════════════════════════
 // 소파 (2×1): a plump fabric sofa with rounded arms, a button-tufted back and two piped seat cushions (they lift); a
@@ -1393,6 +1406,7 @@ B.tvstand = (f, T) => {
 // 휴지통 (1×1): a round pedal bin — a tapered glazed body with a chrome band, a recycle sticker, a pedal, a domed lid with
 // a handle on a back hinge; crumpled paper inside.
 B.trash = (f, T) => {
+  if ((globalThis.__sbkStage ?? -1) >= 18) return B.trash2(f, T);
   const c = farFrom(T, [T.accent3, T.accent2, T.accent]), cD = shade(c, -.22), tk = [c].join(',');
   f.add(mc('trash|' + tk, ({ add }) => {
     add(G.cyl(.17, .165, .03, 22), CHAR, 0, .015, 0);
@@ -1418,6 +1432,7 @@ B.trash = (f, T) => {
 // 상자 (1×1): a kraft moving box — a '장난감' label with a bear, hand holes, 'this way up' arrows, tape running over the
 // two flaps (they open) and down the sides; crumpled paper in the corners.
 B.boxes = (f, T) => {
+  if ((globalThis.__sbkStage ?? -1) >= 18) return B.boxes2(f, T);
   const W = .72, H = .5, D = .68, t = .028, y0 = .01, [KR, KR2] = kraftFor(T), tk = KR;
   f.add(mc('boxes|' + tk, ({ add }) => {
     for (const sz of [-1, 1]) add(G.box(W, H, t, .008), KR, 0, y0 + H / 2, sz * (D / 2 - t / 2));
@@ -1443,6 +1458,141 @@ B.boxes = (f, T) => {
   const L = flap(-1), R = flap(1);
   const p = f.part('lid', [L, R], (t) => { L.rotation.z = 2.3 * t; R.rotation.z = -2.3 * t; }, { label: '상자', sfx: 'open' });
   f.spot('inside', null, 0, .05, 0, { part: p, maxH: .44, label: '상자 안' });
+};
+
+// 상자 2 (1×1, 19판부터 — ① 10/29 공용 소품 다듬기 "허접한 오브젝트 디벨롭", 1~18판은 위 B.boxes 그대로): the same moving box,
+// built out of real cardboard — fibre-flecked kraft walls with pale corrugated cut edges on top, a shipping label with a
+// barcode and marker scribble, printed this-way-up / keep-dry / fragile marks on the side, packing tape running over the
+// flap seam and down front and back with a torn end, a crease where a corner got squashed, a bubble-wrap sheet and
+// crumpled paper inside, and a tape roll with a marker left on the floor beside it. Same parts, spots and footprint.
+const boxKraftTex = KR => tex('fu-kraft2|' + STYLE.mode + KR, 128, 128, (c, w, h) => {
+  c.fillStyle = tint(KR); c.fillRect(0, 0, w, h);
+  const r = rng(11);
+  for (let i = 0; i < 140; i++) { c.fillStyle = r() < .5 ? 'rgba(120,70,30,.10)' : 'rgba(255,240,210,.16)'; c.fillRect(r() * w, r() * h, 1 + r() * 2.5, .6 + r() * .8); }
+  c.strokeStyle = 'rgba(120,70,30,.06)'; c.lineWidth = 1; for (let x = 3; x < w; x += 6) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+});
+const boxLabelTex = () => tex('fu-boxlabel2|' + STYLE.mode, 192, 128, (c, w, h) => {
+  c.fillStyle = tint('#fffdf7'); roundRect(c, 1, 1, w - 2, h - 2, 4); c.fill();
+  c.fillStyle = tint('#ff6b57'); c.fillRect(1, 1, w - 2, 14);
+  c.fillStyle = '#ffffff'; for (let i = 0; i < 3; i++) blob(c, 12 + i * 10, 8, 3);
+  c.fillStyle = tint('#2a1d33'); let x = 10; const r = rng(5); while (x < 86) { const bw = r() < .5 ? 1 : 2.4; c.fillRect(x, 22, bw, 26); x += bw + 1.4 + r() * 2; }
+  c.font = '9px sans-serif'; c.textAlign = 'left'; c.fillText('No. 0328', 10, 57);
+  c.strokeStyle = tint('#4f6db0'); c.lineWidth = 2.2; c.lineCap = 'round';
+  for (const [y, l] of [[72, 70], [84, 52], [96, 62]]) line(c, [[10, y], [10 + l * .3, y - 3], [10 + l * .6, y + 2], [10 + l, y - 1]]);
+  c.strokeStyle = tint('#ff6b57'); c.lineWidth = 2; roundRect(c, 104, 24, 26 * 1.2 + 44, 52, 6); c.stroke();
+  c.fillStyle = tint('#ff6b57'); c.beginPath(); c.moveTo(118, 34); c.lineTo(140, 34); c.lineTo(133, 52); c.lineTo(125, 52); c.closePath(); c.fill();
+  c.fillRect(128, 52, 2.4, 12); c.fillRect(121, 63, 16, 2.4);
+  c.strokeStyle = tint('#2a1d33'); c.lineWidth = 1.6; line(c, [[150, 36], [158, 28], [166, 36]]); line(c, [[158, 28], [158, 50]]); line(c, [[164, 36], [172, 28], [180, 36]]); line(c, [[172, 28], [172, 50]]);
+  c.fillStyle = tint('#2a1d33'); c.fillRect(148, 58, 34, 2);
+  c.strokeStyle = tint('#ff6b57'); c.lineWidth = 3; c.beginPath(); c.arc(150, 100, 14, 0, PI * 2); c.stroke();
+  c.fillStyle = tint('#ff6b57'); c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText('3', 150, 104);
+});
+const boxMarksTex = KR => tex('fu-boxmarks2|' + STYLE.mode + KR, 128, 128, (c, w, h) => {
+  c.fillStyle = tint(KR); c.fillRect(0, 0, w, h);
+  c.strokeStyle = tint('#5a3a22'); c.fillStyle = tint('#5a3a22'); c.lineWidth = 4; c.lineCap = 'round'; c.lineJoin = 'round';
+  roundRect(c, 6, 6, 56, 56, 6); c.stroke(); roundRect(c, 66, 6, 56, 56, 6); c.stroke(); roundRect(c, 6, 66, 56, 56, 6); c.stroke();
+  for (const ax of [22, 46]) { line(c, [[ax, 50], [ax, 20]]); c.beginPath(); c.moveTo(ax - 8, 26); c.lineTo(ax, 15); c.lineTo(ax + 8, 26); c.fill(); }
+  c.fillRect(14, 52, 40, 3);
+  c.beginPath(); c.arc(94, 34, 18, PI, 0); c.closePath(); c.fill(); line(c, [[94, 34], [94, 52], [88, 54]]);
+  for (const dx of [80, 94, 108]) { c.beginPath(); c.moveTo(dx, 14); c.lineTo(dx - 3, 22); c.stroke(); }
+  c.beginPath(); c.moveTo(22, 76); c.lineTo(46, 76); c.lineTo(40, 98); c.lineTo(28, 98); c.closePath(); c.fill();
+  c.fillRect(32.5, 98, 3, 12); c.fillRect(24, 110, 20, 3);
+  c.fillStyle = tint(KR); c.fillRect(30, 80, 8, 2);
+  c.strokeStyle = tint('#4f6db0'); c.lineWidth = 3; line(c, [[72, 84], [84, 78], [96, 90], [110, 80]]); line(c, [[74, 102], [92, 98], [114, 104]]);
+});
+B.boxes2 = (f, T) => {
+  const W = .72, H = .5, D = .68, t = .028, y0 = .01, [KR, KR2] = kraftFor(T), tk = KR, km = mat('#ffffff', { map: boxKraftTex(KR) });
+  f.add(pm('boxes2-walls|' + tk, km, .5, ({ box }) => {
+    for (const sz of [-1, 1]) box(W, H, t, 0, y0 + H / 2, sz * (D / 2 - t / 2), { r: .006 });
+    for (const sx of [-1, 1]) box(t, H, D - 2 * t, sx * (W / 2 - t / 2), y0 + H / 2, 0, { r: .006 });
+  }));
+  f.add(mc('boxes2|' + tk, ({ add, tube }) => {
+    add(G.pbox(W - 2 * t, .03, D - 2 * t), KR2, 0, y0 + .015, 0);
+    for (const sz of [-1, 1]) add(G.pbox(W - .01, .006, t - .008), shade(KR, .16), 0, y0 + H + .002, sz * (D / 2 - t / 2));
+    for (const sx of [-1, 1]) add(G.pbox(t - .008, .006, D - .01), shade(KR, .16), sx * (W / 2 - t / 2), y0 + H + .002, 0);
+    for (const sx of [-1, 1]) { add(G.sph(.06, 14, 8), '#6e4630', sx * (W / 2 + .001), .4, 0, 0, 0, 0, [.12, .38, 1]) }
+    for (const sz of [-1, 1]) { add(G.pbox(.08, .17, .004), TAPE, 0, y0 + H - .085, sz * (D / 2 + .004)); add(G.pbox(.08, .004, .004), shade(TAPE, -.1), 0, y0 + H - .17, sz * (D / 2 + .005)); }
+    add(G.pbox(.022, .03, .005), shade(TAPE, -.06), .03, y0 + H - .182, D / 2 + .004, 0, 0, .5);
+    tube([-W / 2 + .02, y0 + H - .02, D / 2 + .003], [-W / 2 + .12, y0 + H - .09, D / 2 + .003], .004, shade(KR, -.2), 4);
+    tube([-W / 2 + .003, y0 + H - .02, D / 2 - .02], [-W / 2 + .003, y0 + H - .1, D / 2 - .12], .004, shade(KR, -.2), 4);
+    for (const [x, z, r, c] of [[-.24, -.22, .08, WHITE], [.25, -.24, .075, '#f3ecdf'], [.24, .22, .07, WHITE], [-.25, .2, .065, '#f3ecdf'], [-.02, -.24, .06, '#f6f0e4']]) add(G.sph(r, 7, 5), c, x, .07, z, .4, x * 7, 0, [1, .8, 1]);
+    add(G.box(.26, .02, .22, .008), '#dff0fb', .14, .036, -.12, 0, .3, .06);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) if (i < 3 || j < 2) add(G.sph(.022, 7, 5), '#eef8ff', .14 + (i - 1.5) * .06 * Math.cos(.3) + (j - 1) * .06 * Math.sin(.3), .052 + i * .004, -.12 - (i - 1.5) * .06 * Math.sin(.3) + (j - 1) * .06 * Math.cos(.3), 0, 0, 0, [1, .55, 1]);
+    const rx = .4, rz = .27;
+    add(G.tor(.05, .022, PI * 2, 8, 20), '#c79a52', rx, .022, rz, HP, 0, 0);
+    add(G.tor(.03, .008, PI * 2, 4, 16), '#f1e3c4', rx, .022, rz, HP, 0, 0);
+    add(G.box(.05, .006, .03, .002), TAPE, rx - .07, .004, rz + .01, 0, .3, 0);
+    add(G.cyl(.012, .012, .12, 10), '#2a2a36', .38, .012, .38, 0, .6, HP);
+    add(G.cyl(.0125, .0125, .04, 10), WHITE, .38 + .04 * Math.cos(.6), .012, .38 - .04 * Math.sin(.6), 0, .6, HP);
+  }));
+  f.add(mg('boxes2-label', mat('#ffffff', { map: boxLabelTex() }), ({ add }) => add(new THREE.PlaneGeometry(.3, .2), -.08, .22, D / 2 + .006)));
+  f.add(mg('boxes2-marks|' + tk, mat('#ffffff', { map: boxMarksTex(KR) }), ({ add }) => { add(new THREE.PlaneGeometry(.22, .22), W / 2 + .006, .2, -.16, 0, HP, 0); add(new THREE.PlaneGeometry(.22, .22), -W / 2 - .006, .2, .16, 0, -HP, 0); }));
+  const flap = sx => {
+    const pv = new THREE.Group(); put(pv, sx * W / 2, y0 + H + .012, 0);
+    pv.add(put(pm('boxes2-flapk' + sx + '|' + tk, km, .5, ({ box }) => box(W / 2 - .003, .022, D, -sx * W / 4, 0, 0, { r: .005 })), 0, 0, 0, 0, 0, -sx * .025));
+    pv.add(mc('boxes2-flap' + sx + '|' + tk, ({ add }) => {
+      const tx = -sx * (W / 2 - .04);
+      add(G.pbox(.08, .006, D + .006), TAPE, tx, .014, 0);
+      add(G.pbox(.004, .007, D + .006), shade(TAPE, -.1), tx + sx * .04, .0145, 0);
+      add(G.pbox(W / 2 - .02, .004, .004), shade(KR, .16), -sx * W / 4, .012, D / 2 - .002);
+    }));
+    f.add(pv); return pv;
+  };
+  const L = flap(-1), R = flap(1);
+  const p = f.part('lid', [L, R], (t) => { L.rotation.z = 2.3 * t; R.rotation.z = -2.3 * t; }, { label: '상자', sfx: 'open' });
+  f.spot('inside', null, 0, .05, 0, { part: p, maxH: .44, label: '상자 안' });
+};
+
+// 휴지통 2 (1×1, 19판부터 — ① 10/29, 1~18판은 위 B.trash 그대로): a step-pedal bin from a real kitchen — the bin bag folded
+// down over the rim and tucked, a steel pedal and back hinge rod, a soft rubber foot ring, a lid with a lip tab and a thin
+// steel band, a recycling-arrows sticker and a scuffed band low on the body; inside, crumpled paper, a tissue and a banana
+// peel; on the floor, a paper ball that missed. Same lid part, hinge, label and spot.
+const binStickerTex = c0 => tex('fu-binsticker2|' + STYLE.mode + c0, 128, 64, (c, w, h) => {
+  c.fillStyle = tint(shade(c0, .08)); c.fillRect(0, 0, w, h);
+  c.fillStyle = tint('#ffffff'); roundRect(c, 34, 6, 60, 52, 10); c.fill();
+  c.strokeStyle = tint('#4ea85a'); c.fillStyle = tint('#4ea85a'); c.lineWidth = 4.5; c.lineCap = 'round';
+  for (let k = 0; k < 3; k++) {
+    const a0 = -HP + k * PI * 2 / 3 + .25, a1 = a0 + PI * 2 / 3 - .55, cx = 64, cy = 33, r = 15;
+    c.beginPath(); c.arc(cx, cy, r, a0, a1); c.stroke();
+    const ex = cx + Math.cos(a1) * r, ey = cy + Math.sin(a1) * r, tx = -Math.sin(a1), ty = Math.cos(a1);
+    c.beginPath(); c.moveTo(ex + tx * 7, ey + ty * 7); c.lineTo(ex - ty * 6, ey + tx * 6); c.lineTo(ex + ty * 6, ey - tx * 6); c.closePath(); c.fill();
+  }
+});
+B.trash2 = (f, T) => {
+  const c = farFrom(T, [T.accent3, T.accent2, T.accent]), cD = shade(c, -.22), tk = [c].join(','), BAG = '#eef1f6';
+  const R = y => .165 + .027 * (y - .03) / .47;
+  f.add(mc('trash2|' + tk, ({ add, tube }) => {
+    add(G.cyl(.178, .17, .04, 26), '#4a4458', 0, .02, 0);
+    add(G.tor(.172, .012, PI * 2, 5, 26), shade('#4a4458', .12), 0, .04, 0, HP);
+    add(G.lathe([[0, .03], [.165, .03], [.192, .5], [.205, .5], [.205, .518], [.18, .518]], 30), c, 0, 0, 0);
+    add(G.lathe([[.178, .518], [.158, .06], [0, .06]], 28), cD, 0, 0, 0);
+    add(G.cyl(R(.12) + .002, R(.06) + .002, .06, 30, true), shade(c, -.1), 0, .09, 0);
+    add(G.lathe([[.208, .44], [.213, .47], [.212, .505], [.207, .52], [.19, .524]], 30), BAG, 0, 0, 0);
+    for (const a of [-.9, .7, 2.6]) add(G.sph(.04, 8, 6), shade(BAG, -.04), Math.sin(a) * .214, .45, Math.cos(a) * .214, 0, a, 0, [1, 1.3, .35]);
+    add(G.box(.1, .018, .07, .008), STEEL2, 0, .04, .2);
+    add(G.box(.13, .014, .09, .006), STEEL, 0, .055, .225, .12, 0, 0);
+    for (const x of [-.04, 0, .04]) add(G.pbox(.006, .004, .07), STEEL2, x, .064, .225, .12, 0, 0);
+    tube([-.07, .53, -.208], [.07, .53, -.208], .01, STEEL2, 8);
+    for (const sx of [-1, 1]) add(G.box(.024, .04, .03, .006), STEEL2, sx * .06, .515, -.2);
+    add(G.cap(.006, .38, 2, 6), STEEL2, -.03, .3, -R(.3) - .002);
+    for (const [x, y, z, col, r] of [[-.06, .2, .05, WHITE, .07], [.07, .19, -.04, '#fff3c9', .068], [0, .17, .08, '#e8f4ff', .065], [.05, .26, .07, WHITE, .06], [-.05, .27, -.05, '#fff3c9', .055], [.08, .24, -.09, '#f4f1ea', .05]]) add(G.sph(r, 7, 5), col, x, y, z, .4, x * 9, 0, [1, .85, 1]);
+    for (const a of [0, 2.1, 4.2]) add(G.cone(.026, .1, 6), '#ffd84a', -.08 + Math.cos(a) * .03, .27, .02 + Math.sin(a) * .03, Math.cos(a) * 1.1, 0, -Math.sin(a) * 1.1);
+    add(G.sph(.024, 8, 6), '#c9a44a', -.08, .28, .02);
+    add(G.box(.09, .006, .09, .003), WHITE, .02, .3, -.02, .3, .4, .2);
+    add(G.sph(.042, 7, 5), '#fdfaf2', .27, .036, .2, .5, 1.2, .3, [1, .85, 1]);
+    add(G.sph(.03, 7, 5), '#fff3c9', .31, .028, .1, .2, .3, .7, [1, .8, 1]);
+  }));
+  f.add(mg('trash2-sticker|' + tk, mat('#ffffff', { map: binStickerTex(c) }), ({ add }) => add(new THREE.CylinderGeometry(R(.33) + .003, R(.21) + .003, .12, 12, 1, true, -.8, 1.6), 0, .27, 0)));
+  const pv = new THREE.Group(); put(pv, 0, .53, -.2);
+  pv.add(mc('trash2-lid|' + tk, ({ add }) => {
+    add(G.lathe([[0, -.012], [.215, -.012], [.218, .0], [.2, .02], [.12, .04], [0, .045]], 30), shade(c, .06), 0, 0, .2);
+    add(G.tor(.214, .006, PI * 2, 4, 30), STEEL, 0, -.004, .2, HP, 0, 0);
+    add(G.box(.08, .016, .04, .007), shade(c, -.06), 0, -.006, .2 + .22);
+    add(G.tor(.06, .005, PI * 2, 3, 20), shade(c, .14), 0, .043, .2, HP, 0, 0);
+  }));
+  f.add(pv);
+  const p = f.part('lid', pv, (t) => { pv.rotation.x = -1.6 * t; }, { label: '휴지통', sfx: 'open' });
+  f.spot('inside', null, 0, .33, 0, { part: p, maxH: .35, label: '휴지통 안', scale: .8 });
 };
 
 // 스탠드 (1×1): a tripod floor lamp — three honey legs, a collar and pole, a pleated glowing shade with wooden rims and a
@@ -1475,6 +1625,7 @@ B.lamp = (f, T) => {
 // 의자 (1×1): a wooden stool — a round honey seat on four splayed legs with a ring stretcher, a puffy knitted cushion with
 // a button.
 B.stool = (f, T) => {
+  if ((globalThis.__sbkStage ?? -1) >= 18) return B.stool2(f, T);
   const { wood, woodD } = woods(T), acc = T.accent, tk = [wood, woodD, acc].join(',');
   f.add(wd('stool', wood, ({ geo }) => {
     geo(G.cyl(.23, .21, .06, 24), xf(0, .46, 0));
@@ -1485,6 +1636,37 @@ B.stool = (f, T) => {
     add(G.sph(.016, 8, 6), shade(acc, -.18), 0, .55, 0, 0, 0, 0, [1, .45, 1]);
   }));
   f.add(pm('stool-cushion|' + acc, mat('#ffffff', { map: knitTex(acc) }), .12, ({ geo }) => geo(G.lathe([[0, 0], [.2, 0], [.214, .018], [.205, .042], [.17, .055], [0, .058]], 28), xf(0, .49, 0))));
+  f.spot('on', null, 0, .545, 0, { maxH: .45, label: '의자 위', scale: .9 });
+  f.spot('under', null, 0, 0, .05, { maxH: .35, label: '의자 밑', scale: .8 });
+};
+
+// 의자 2 (1×1, 19판부터 — ① 10/29 공용 소품 다듬기 2, 1~18판은 위 B.stool 그대로): a wooden stool that's been used — grained
+// seat with a rounded lip and an apron ring under it, splayed legs with felt pads and a low cross of stretchers, a knit
+// cushion tufted with a button and tied to two legs with little bows. Same spots.
+B.stool2 = (f, T) => {
+  const { wood, woodD } = woods(T), acc = T.accent, tk = [wood, woodD, acc].join(',');
+  const LEG = [0, 1, 2, 3].map(i => { const a = i / 4 * PI * 2 + PI / 4; return [Math.sin(a), Math.cos(a)]; });
+  const at = (s, c, y) => { const k = (.44 - y) / .44; return [s * (.13 + .06 * k), y, c * (.13 + .06 * k)]; };
+  f.add(wd('stool2', wood, ({ geo }) => {
+    geo(G.cyl(.23, .215, .055, 28), xf(0, .462, 0));
+    geo(G.tor(.222, .012, PI * 2, 6, 28), xf(0, .489, 0, HP, 0, 0));
+    for (const [s, c] of LEG) { const [L, m] = tubeM(at(s, c, .44), at(s, c, .02)); geo(G.cyl(.026, .019, L, 10), m, true); }
+  }));
+  f.add(mc('stool2|' + tk, ({ add, tube }) => {
+    add(G.tor(.15, .016, PI * 2, 6, 28), woodD, 0, .41, 0, HP, 0, 0);
+    for (const [s, c] of LEG) add(G.cyl(.022, .022, .02, 10), '#7a6a5c', ...at(s, c, .01));
+    tube(at(LEG[0][0], LEG[0][1], .16), at(LEG[2][0], LEG[2][1], .16), .011, woodD, 8);
+    tube(at(LEG[1][0], LEG[1][1], .2), at(LEG[3][0], LEG[3][1], .2), .011, woodD, 8);
+    for (const [s, c] of [LEG[0], LEG[3]]) {
+      const [x, , z] = at(s, c, .4);
+      tube([x * .9, .5, z * .9], [x, .4, z], .004, shade(acc, -.12), 4);
+      add(G.tor(.016, .004, PI * 2, 3, 10), shade(acc, -.12), x - .012, .395, z + .012, 0, Math.atan2(x, z), .5);
+      add(G.tor(.016, .004, PI * 2, 3, 10), shade(acc, -.12), x + .012, .395, z - .012, 0, Math.atan2(x, z), -.5);
+    }
+    add(G.sph(.02, 10, 8), shade(acc, -.2), 0, .555, 0, 0, 0, 0, [1, .55, 1]);
+    for (let k = 0; k < 4; k++) { const a = k * HP + PI / 4; add(G.sph(.012, 8, 6), shade(acc, -.14), Math.cos(a) * .1, .547, Math.sin(a) * .1, 0, 0, 0, [1, .4, 1]); }
+  }));
+  f.add(pm('stool2-cushion|' + acc, mat('#ffffff', { map: knitTex(acc) }), .12, ({ geo }) => geo(G.lathe([[0, 0], [.205, 0], [.218, .02], [.21, .046], [.17, .06], [.1, .056], [0, .05]], 30), xf(0, .489, 0))));
   f.spot('on', null, 0, .545, 0, { maxH: .45, label: '의자 위', scale: .9 });
   f.spot('under', null, 0, 0, .05, { maxH: .35, label: '의자 밑', scale: .8 });
 };

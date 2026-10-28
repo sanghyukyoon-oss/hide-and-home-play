@@ -426,6 +426,8 @@ const brickTex = c1 => tex('st-brick|' + c1, 128, 128, (c, w, h) => {
 const transparent = o => { o.castShadow = false; return o; };
 
 const B = {};
+// (10/29 사용자 "허접한 건 디벨롭" — 19판부터만: 1~18판은 그대로, map-41-55-gate19가 두는 판 번호)
+const LATE19 = () => (globalThis.__sbkStage ?? -1) >= 18;
 
 // ═════════════════════════════════════════════ STOREFRONTS ═════════════════════════════════════════════
 // 편의점 (2×1, against the back): a 24h konbini front — striped sign band with the bear mascot, a big window onto
@@ -521,6 +523,21 @@ B.konbini = (f, T) => {
     // the tail: from the back round the left side to the chin, a thick soft tube, the tip a shade darker
     const T0 = [[-.1, .02, -.08], [-.135, .02, -.01], [-.12, .02, .07], [-.06, .02, .115], [.01, .02, .128]].map(q => P(...q));
     for (let n = 0; n < T0.length - 1; n++) { tube(T0[n], T0[n + 1], .018 * k, n < T0.length - 2 ? cat : catD, 8); add(G.sph(.018 * k, 10, 8), n < T0.length - 2 ? cat : catD, ...T0[n + 1]); }
+  }));
+  // (10/29 "허접한 건 디벨롭": turned round, the shop's back was one blank cream board) 19판부터 the staff side — siding seams, a
+  // steel back door under a little canopy and lamp, an exhaust vent, the gas meter and its yellow pipe, a drainpipe, two drink crates
+  if (LATE19()) f.add(mc('konbini-back', ({ add, tube }) => {
+    const bz = z0 - .004;
+    for (let k = 1; k < 8; k++) add(G.pbox(W - .14, .014, .008), '#ece3d3', 0, k * .25, bz);
+    add(G.box(.6, 1.6, .04, .012), '#8f98ad', .42, .8, bz - .016); add(G.pbox(.5, 1.46, .006), '#b4bccd', .42, .82, bz - .039);
+    add(G.pbox(.4, .006, .006), '#8f98ad', .42, 1.1, bz - .043); add(G.box(.035, .16, .045, .01), CHAR, .2, .86, bz - .05);
+    add(G.box(.76, .04, .24, .015), '#6f7a92', .42, 1.72, bz - .12); for (const sx of [-1, 1]) tube([.42 + sx * .34, 1.7, bz - .22], [.42 + sx * .34, 1.82, bz - .01], .008, STEEL2, 5);
+    add(G.sph(.045, 10, 8), '#fff2c2', .42, 1.64, bz - .07, 0, 0, 0, [1, .7, 1]); add(G.cyl(.05, .05, .02, 12), STEEL2, .42, 1.68, bz - .07);
+    add(G.box(.34, .26, .07, .015), ALU, -.42, 1.62, bz - .035); for (let k = 0; k < 4; k++) add(G.pbox(.28, .02, .01), DARK, -.42, 1.53 + k * .06, bz - .072);
+    add(G.box(.18, .24, .1, .02), '#ece8de', -.72, .95, bz - .05); add(G.cyl(.04, .04, .01, 14), '#ffffff', -.72, 1.0, bz - .102, HP, 0, 0);
+    tube([-.72, .83, bz - .05], [-.72, .08, bz - .05], .016, '#f2c94c', 6); tube([-.72, 1.07, bz - .05], [-.72, 2.0, bz - .05], .016, '#f2c94c', 6);
+    tube([-.9, 2.05, bz - .04], [-.9, .04, bz - .04], .03, STEEL2, 8); add(G.box(.12, .03, .1, .01), STEEL2, -.9, .03, bz - .08);
+    for (const [y, c] of [[.15, '#4f86d9'], [.43, '#e8605a']]) { add(G.box(.42, .26, .3, .02), c, -.2, y, bz - .2); for (const sx of [-1, 1]) add(G.pbox(.1, .05, .31), shade(c, -.25), -.2 + sx * .13, y + .06, bz - .2); }
   }));
   // the lit back walls inside (a 24h store glows)
   f.add(mg('konbini-lit', litMat(), ({ add }) => {
@@ -718,6 +735,12 @@ B.stopsign = (f, T) => {
     add(G.ext(oct, .024, 0, 1), '#e9edf3', 0, SY, pz + .037);
     for (const dy of [-.16, .16]) add(G.box(.09, .04, .05, .01), STEEL2, 0, SY + dy, pz + .015);
   }));
+  // (10/29 19판부터) the back of the plate grey like a real sign's, with its clamp bracket and an inspection sticker
+  if (LATE19()) f.add(mc('stopsign-back', ({ add }) => {
+    add(G.ext(oct, .006, 0, 1), '#a9b0c0', 0, SY, pz + .03);
+    add(G.box(.07, .44, .02, .008), STEEL2, 0, SY, pz + .022); for (const dy of [-.16, .16]) add(G.sph(.014, 8, 6), STEEL, .05, SY + dy, pz + .02);
+    add(G.box(.09, .06, .006, .003), '#9fd7a8', -.14, SY - .12, pz + .028);
+  }));
   f.add(mg('stopsign-face', atlasMat(), ({ addM, add }) => {
     addM(shapeAtlas(oct, R, RG.stop), xf(0, SY, pz + .061 + .005));
     add(quadGeo(.4, .05, RG.hazard), 0, .15, bz + .15 + .005);
@@ -782,6 +805,7 @@ B.mirrorpole = (f, T) => {
 
 // 러버콘 (1×1): two rubber cones joined by a striped cone bar, and a third cone in front that lifts.
 B.cones = (f, T) => {
+  if ((globalThis.__sbkStage ?? -1) >= 18) return B.cones2(f, T);
   const cr = y => .125 - .093 * (y - .04) / .5 + .005;
   const cone = (add, x = 0, z = 0) => {
     add(G.box(.3, .04, .3, .014), shade(CONE, -.1), x, .02, z);
@@ -802,6 +826,71 @@ B.cones = (f, T) => {
   const p = f.part('lift', cn, (t, b) => { cn.position.y = b.p.y + .42 * t; cn.position.x = b.p.x - .08 * t; cn.rotation.z = .5 * t; }, { label: '러버콘', sfx: 'lift' });
   f.spot('inside', null, .05, 0, .2, { part: p, maxH: .3, label: '러버콘 밑', scale: .8 });
 };
+
+// 러버콘 2 (1×1, 19판부터 — ① 10/29 공용 소품 다듬기, 1~18판은 위 B.cones 그대로): road-work cones as they stand on a real
+// street — a black rubber foot with a raised collar, an orange body with a dusty band low down, two reflective white bands
+// with a silver edge, a lip at the top; a yellow-and-black striped cone bar whose end sleeves sit over the tips, and a
+// sandbag slung over one foot. Same lift part, spot and footprint.
+B.cones2 = (f, T) => {
+  const RUB = '#3d3a48', cr = y => .125 - .093 * (y - .06) / .5 + .004;
+  const cone = (add, x = 0, z = 0) => {
+    add(G.box(.32, .045, .32, .02), RUB, x, .0225, z);
+    add(G.cyl(.14, .15, .025, 20), shade(RUB, .12), x, .057, z);
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) add(G.cyl(.012, .012, .006, 8), shade(RUB, .2), x + sx * .12, .048, z + sz * .12);
+    add(G.cyl(.035, .127, .5, 20), CONE, x, .31, z);
+    add(G.cyl(cr(.13), cr(.07), .06, 20), shade(CONE, -.14), x, .1, z);
+    for (const [ya, yb] of [[.2, .27], [.35, .4]]) {
+      add(G.cyl(cr(yb) + .003, cr(ya) + .003, yb - ya, 20), '#f6f8fb', x, (ya + yb) / 2, z);
+      for (const y of [ya, yb]) add(G.tor(cr(y) + .003, .0035, PI * 2, 3, 20), '#c9d0dc', x, y, z, HP);
+    }
+    add(G.tor(.04, .008, PI * 2, 4, 14), shade(CONE, -.08), x, .56, z, HP);
+    add(G.cyl(.026, .026, .004, 12), '#4a2a1a', x, .563, z);
+  };
+  const A = [-.25, -.2], Bc = [.25, -.24];
+  f.add(mc('cones2', ({ add, addM }) => {
+    for (const [x, z] of [A, Bc]) cone(add, x, z);
+    const y = .5, a = [A[0], y, A[1]], b = [Bc[0], y, Bc[1]];
+    const [L, m] = tubeM(a, b), N = 9;
+    for (let k = 0; k < N; k++) addM(new THREE.CylinderGeometry(.026, .026, L / N + .001, 10), m.clone().multiply(xf(0, -L / 2 + (k + .5) * L / N, 0)), k % 2 ? CHAR : YELLOW);
+    for (const [x, z] of [A, Bc]) { add(G.tor(.048, .016, PI * 2, 6, 16), YELLOW, x, y, z, HP); add(G.cyl(.05, .05, .03, 14), YELLOW, x, y + .01, z); }
+    const sx = A[0] + .1, sz = A[1] + .13;
+    add(G.sph(.1, 14, 10), '#cfae76', sx, .07, sz, 0, .5, 0, [1.25, .42, .75]);
+    for (const e of [-1, 1]) { add(G.cyl(.022, .04, .05, 10), '#c39c62', sx + e * .13 * Math.cos(.5), .07, sz - e * .13 * Math.sin(.5), 0, .5, e * HP); add(G.tor(.022, .006, PI * 2, 3, 10), '#8f6a3a', sx + e * .105 * Math.cos(.5), .07, sz - e * .105 * Math.sin(.5), 0, .5 + HP, 0); }
+    for (let k = -2; k <= 2; k++) add(G.pbox(.006, .004, .1), '#b08d5a', sx + k * .035 * Math.cos(.5), .112, sz - k * .035 * Math.sin(.5), 0, .5, 0);
+  }));
+  const cn = grp(mc('cones2-lift', ({ add }) => cone(add)));
+  cn.position.set(.05, 0, .2); f.add(cn);
+  const p = f.part('lift', cn, (t, b) => { cn.position.y = b.p.y + .42 * t; cn.position.x = b.p.x - .08 * t; cn.rotation.z = .5 * t; }, { label: '러버콘', sfx: 'lift' });
+  f.spot('inside', null, .05, 0, .2, { part: p, maxH: .3, label: '러버콘 밑', scale: .8 });
+};
+
+// 소화전 디테일 (19·21·22·25판에만 나옴 — ① 10/29 공용 소품 다듬기): the hydrant stood alone on a bare slab. Now a yellow
+// no-parking stripe on the slab's front edge, a crack with two weed tufts, rust streaks under the side caps, chipped paint
+// flecks, and a slim white marker pole with a red reflector and a 119 plate at the back corner.
+const hydPlateTex = () => tex('st-hydplate2|' + STYLE.mode, 96, 64, (c, w, h) => {
+  c.fillStyle = tint('#ffffff'); roundRect(c, 1, 1, w - 2, h - 2, 6); c.fill();
+  c.strokeStyle = tint('#e8453c'); c.lineWidth = 3; roundRect(c, 3, 3, w - 6, h - 6, 5); c.stroke();
+  c.fillStyle = tint('#e8453c'); c.fillRect(14, 24, 14, 22); c.beginPath(); c.arc(21, 24, 8, PI, 0); c.fill(); c.fillRect(9, 30, 24, 6);
+  c.font = 'bold 22px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('119', 62, 34);
+});
+{ const b = B.hydrant; B.hydrant = (f, T) => {
+  b(f, T);
+  const conc = col(T, 'concrete');
+  f.add(mc('hydrant2-ext|' + conc, ({ add, tube }) => {
+    add(G.pbox(.56, .004, .06), YELLOW, 0, .042, .23);
+    tube([-.26, .041, -.12], [-.16, .041, -.04], .004, shade(conc, -.25), 4); tube([-.16, .041, -.04], [-.18, .041, .06], .004, shade(conc, -.25), 4);
+    for (const [x, z] of [[-.17, -.05], [.2, .16]]) for (let k = 0; k < 4; k++) add(G.cone(.012, .07, 5), k % 2 ? LEAF : LEAF2, x + (k - 1.5) * .012, .07, z, 0, 0, (k - 1.5) * .3);
+    for (const sx of [-1, 1]) add(G.pbox(.004, .07, .016), '#b04a34', sx * .109, .28, .03);
+    for (const [x, y, a] of [[.06, .2, .3], [-.07, .4, 1.1], [.09, .43, -.6]]) add(G.sph(.012, 6, 4), CREAM, Math.sin(a) * .11, y, .03 + Math.cos(a) * .11, 0, a, 0, [1, 1, .25]);
+    add(G.box(.06, .03, .06, .01), shade(conc, -.06), .2, .055, -.2);
+    add(G.cyl(.014, .014, .86, 10), WHITE, .2, .47, -.2);
+    for (const y of [.62, .74, .86]) add(G.cyl(.016, .016, .05, 10), RED, .2, y, -.2);
+    add(G.cyl(.03, .03, .012, 14), '#d12b2b', .2, .9, -.183, HP, 0, 0);
+    add(G.cyl(.018, .018, .014, 12), '#ff7a6a', .2, .9, -.176, HP, 0, 0);
+  }));
+  f.add(mg('hydrant2-plate', mat('#ffffff', { map: hydPlateTex() }), ({ add }) => add(new THREE.PlaneGeometry(.15, .1), .2, .48, -.183)));
+  f.add(mc('hydrant2-plateback', ({ add }) => add(G.box(.16, .11, .01, .004), '#e8e8ee', .2, .48, -.19)));
+}; }
 
 // 택배 상자 더미 (1×1): three parcels stacked by the door — a taped one with a shipping label, a darker tomato box, and an
 // open-topped one on top whose flaps open; a padded mailer leans on the side.
@@ -843,6 +932,88 @@ B.boxstack = (f, T) => {
   f.spot('inside', null, x3, y3 + .05, z3, { part: p, maxH: .16, label: '택배 상자 안', scale: .55 });
   f.spot('behind', null, -.1, 0, -.4, { maxH: .45, label: '택배 상자 뒤', scale: .6 });
 };
+
+// 택배 상자 더미 2 (19판부터 — ① 10/29 공용 소품 다듬기 2, 1~18판은 위 B.boxstack 그대로): the same three parcels, now with
+// fibre-flecked kraft on the faces, a squashed-corner crease, pale corrugated cut edges round the open box's rim, brown
+// twine tied round the middle parcel with a bow, a clear invoice pouch on the bottom box's side and a grey poly mailer
+// leaning on the left. Same flaps, spots and footprint.
+const stackKraftTex = c0 => tex('st-kraft2|' + STYLE.mode + c0, 128, 128, (c, w, h) => {
+  c.fillStyle = tint(c0); c.fillRect(0, 0, w, h);
+  let s = 9; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 150; i++) { c.fillStyle = r() < .5 ? 'rgba(120,70,30,.10)' : 'rgba(255,240,210,.16)'; c.fillRect(r() * w, r() * h, 1 + r() * 2.5, .6 + r() * .8); }
+});
+{ const b = B.boxstack; B.boxstack2 = (f, T) => {
+  b(f, T);
+  const W1 = .62, D1 = .46, H1 = .32, z1 = -.06, W2 = .5, D2 = .38, H2 = .26, M2 = xf(-.03, H1 + .002 + H2 / 2, -.08, 0, .12, 0);
+  const W3 = .4, D3 = .3, H3 = .21, x3 = .04, z3 = -.06, y3 = H1 + H2 + .004, t = .02;
+  f.add(mg('boxstack2-k1', mat('#ffffff', { map: stackKraftTex(KRAFT) }), ({ add, addM }) => {
+    add(new THREE.PlaneGeometry(W1 - .02, H1 - .02), 0, H1 / 2, z1 + D1 / 2 + .003);
+    add(new THREE.PlaneGeometry(D1 - .02, H1 - .02), W1 / 2 + .003, H1 / 2, z1, 0, HP, 0);
+    add(new THREE.PlaneGeometry(D3 - .02, H3 - .02), x3 + W3 / 2 + .003, y3 + H3 / 2, z3, 0, HP, 0);
+    add(new THREE.PlaneGeometry(W3 - .02, H3 - .02), x3, y3 + H3 / 2, z3 + D3 / 2 + .003);
+  }));
+  f.add(mg('boxstack2-k2', mat('#ffffff', { map: stackKraftTex(KRAFT2) }), ({ addM }) => {
+    addM(new THREE.PlaneGeometry(W2 - .02, H2 - .02), M2.clone().multiply(xf(0, 0, D2 / 2 + .003)));
+    addM(new THREE.PlaneGeometry(D2 - .02, H2 - .02), M2.clone().multiply(xf(W2 / 2 + .003, 0, 0, 0, HP, 0)));
+  }));
+  f.add(mc('boxstack2-ext', ({ add, addM, tube }) => {
+    for (const sz of [-1, 1]) add(G.pbox(W3 - .006, .005, t - .006), shade(KRAFT, .16), x3, y3 + H3 + .002, z3 + sz * (D3 / 2 - t / 2));
+    for (const sx of [-1, 1]) add(G.pbox(t - .006, .005, D3 - .006), shade(KRAFT, .16), x3 + sx * (W3 / 2 - t / 2), y3 + H3 + .002, z3);
+    tube([W1 / 2 - .12, H1 - .01, z1 + D1 / 2 + .004], [W1 / 2 - .01, H1 - .1, z1 + D1 / 2 + .004], .004, shade(KRAFT, -.22), 4);
+    const TW = '#a8744a';
+    for (const [w, h, d, x, y, z] of [[.008, .008, D2 + .012, -.12, H2 / 2 + .004, 0], [.008, H2 + .012, .008, -.12, 0, D2 / 2 + .004], [.008, H2 + .012, .008, -.12, 0, -D2 / 2 - .004], [W2 + .012, .008, .008, 0, 0, D2 / 2 + .004], [W2 + .012, .008, .008, 0, 0, -D2 / 2 - .004], [.008, .008, D2 + .012, W2 / 2 + .004, 0, 0], [.008, .008, D2 + .012, -W2 / 2 - .004, 0, 0]]) addM(G.pbox(w, h, d), M2.clone().multiply(xf(x, y, z)), TW);
+    for (const a of [.6, -.6]) addM(G.tor(.022, .005, PI * 2, 4, 12), M2.clone().multiply(xf(-.12 + Math.sign(a) * -.025, .0, D2 / 2 + .01, 0, 0, a)), TW);
+    for (const a of [-.25, .25]) addM(G.pbox(.005, .05, .005), M2.clone().multiply(xf(-.12 + a * .06, -.03, D2 / 2 + .01, 0, 0, a)), TW);
+    add(G.pbox(.004, .12, .1), '#e9f3f8', W1 / 2 + .005, .2, z1 + .1);
+    add(G.pbox(.003, .09, .08), WHITE, W1 / 2 + .008, .19, z1 + .1);
+    add(G.box(.04, .3, .28, .03), '#c9ced8', -W1 / 2 - .03, .15, z1 + .06, 0, 0, -.14);
+    add(G.pbox(.004, .05, .2), '#8f97a8', -W1 / 2 - .055, .27, z1 + .06, 0, 0, -.14);
+    add(G.pbox(.004, .08, .1), WHITE, -W1 / 2 - .052, .14, z1 + .1, 0, 0, -.14);
+  }));
+}; B.boxstack = (f, T) => ((globalThis.__sbkStage ?? -1) >= 18 ? B.boxstack2 : b)(f, T); }
+
+// 가로등 디테일 (21·22·30판에만 나옴 — ① 10/29 공용 소품 다듬기 2): the post stood on a bare block. Now a chamfered cap and a
+// rain-stained skirt on the block, weed tufts at its corners, a bike chain with a padlock round the foot of the post, a
+// numbered plate, and two flyers taped round the post — one half torn off.
+const lampFlyerTex = () => tex('st-lampflyer2|' + STYLE.mode, 128, 160, (c, w, h) => {
+  c.fillStyle = tint('#fffaf0'); c.fillRect(0, 0, w, h);
+  c.fillStyle = tint('#ff9f8a'); c.fillRect(0, 0, w, 22);
+  c.fillStyle = tint('#8a8fa8'); blob(c, 64, 70, 26); blob(c, 50, 48, 9); blob(c, 78, 48, 9);
+  c.fillStyle = tint('#fffaf0'); blob(c, 56, 66, 4); blob(c, 72, 66, 4);
+  c.fillStyle = tint('#2a1d33'); blob(c, 56, 66, 2.4); blob(c, 72, 66, 2.4);
+  c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.fillText('010-1234', 64, 118);
+  c.strokeStyle = tint('#2a1d33'); c.lineWidth = 1;
+  for (let x = 8; x < w; x += 15) { c.beginPath(); c.moveTo(x, 132); c.lineTo(x, h); c.stroke(); }
+  c.font = '9px sans-serif'; for (let x = 15; x < w; x += 15) { c.save(); c.translate(x, 146); c.rotate(-HP); c.fillText('1234', 0, 0); c.restore(); }
+});
+const lampPlateTex = () => tex('st-lampplate2|' + STYLE.mode, 64, 96, (c, w, h) => {
+  c.fillStyle = tint('#f4f6fa'); roundRect(c, 1, 1, w - 2, h - 2, 6); c.fill();
+  c.fillStyle = tint('#4f6db0'); c.fillRect(1, 1, w - 2, 20);
+  c.fillStyle = tint('#2a1d33'); c.font = 'bold 22px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('A', 32, 44); c.fillText('17', 32, 72);
+});
+{ const b = B.streetlamp; B.streetlamp = (f, T) => {
+  b(f, T);
+  const conc = col(T, 'concrete'), lamp = col(T, 'lamp'), pz = -.12, rAt = y => .048 - .014 * (y - .46) / 1.9;
+  f.add(mc('streetlamp2-ext|' + [conc, lamp].join(','), ({ add, tube }) => {
+    add(G.box(.48, .025, .48, .01), shade(conc, .06), 0, .168, 0);
+    add(G.pbox(.524, .05, .524), shade(conc, -.1), 0, .025, 0);
+    for (const [x, z] of [[-.25, .25], [.25, .24], [-.24, -.25]]) for (let k = 0; k < 4; k++) add(G.cone(.012, .08, 5), k % 2 ? LEAF : LEAF2, x + (k - 1.5) * .014, .04, z, 0, 0, (k - 1.5) * .35);
+    add(G.tor(.06, .009, PI * 2, 4, 18), '#8c939e', 0, .5, pz, HP + .25, 0, 0);
+    for (let k = 0; k < 4; k++) add(G.tor(.016, .006, PI * 2, 4, 10), '#8c939e', .02 + k * .01, .44 - k * .035, pz + .065 + k * .006, 0, k % 2 ? HP : 0, 0);
+    add(G.box(.06, .07, .03, .01), '#e8b84a', .05, .29, pz + .08);
+    add(G.tor(.022, .007, PI, 4, 10), STEEL2, .05, .325, pz + .08);
+    add(G.box(.075, .115, .006, .003), '#dfe3ea', 0, 1.62, pz + rAt(1.62) + .004);
+    for (const y of [.935, 1.185]) add(G.cyl(rAt(y) + .006, rAt(y) + .006, .022, 16, true), TAPE, 0, y, pz);
+  }));
+  f.add(mg('streetlamp2-plate', mat('#ffffff', { map: lampPlateTex() }), ({ add }) => add(new THREE.PlaneGeometry(.065, .1), 0, 1.62, pz + rAt(1.62) + .008)));
+  f.add(mg('streetlamp2-flyer', mat('#ffffff', { map: lampFlyerTex(), side: THREE.DoubleSide }), ({ add }) => {
+    add(new THREE.CylinderGeometry(rAt(1.2) + .004, rAt(.92) + .004, .26, 12, 1, true, -.95, 1.9), 0, 1.06, pz);
+  }));
+  f.add(mc('streetlamp2-torn', ({ add }) => {
+    add(G.cyl(rAt(1.5) + .004, rAt(1.38) + .004, .1, 10, true), '#fff3c9', 0, 1.44, pz);
+    for (let k = 0; k < 4; k++) add(G.pbox(.012, .03, .003), '#fff3c9', Math.sin(PI + .5 + k * .25) * .046, 1.375 - (k % 2) * .012, pz + Math.cos(PI + .5 + k * .25) * .046);
+  }));
+}; }
 
 // 자전거 (2×1): a step-through city bike (mamachari) with a front wire basket, silver mudguards, a chain guard, a rear
 // rack and a centre stand.
@@ -966,6 +1137,13 @@ B.postbox2 = (f, T) => {
     [[-.08, -.06, .3, WHITE], [.07, -.02, -.4, '#fff4e2'], [-.02, .06, .1, SKY2]].forEach(([x, z, r, c], k) => add(G.box(.17, .008, .11, .003), c, x, y0 + t + .006 + .004 + k * .007, z0 + z, 0, r, 0));
     add(G.box(.024, .02, .03, .005), TOMATO, -.05, y0 + t + .006 + .018, z0 - .05);
   }));
+  // (10/29 19판부터) the back: the collection-times plate, a rib and four bolts instead of one flat red board
+  if (LATE19()) f.add(mc('postbox2-back', ({ add }) => {
+    const bz = z0 - D / 2 - .004;
+    add(G.box(.3, .2, .012, .005), WHITE, 0, y0 + .3, bz); for (let k = 0; k < 4; k++) add(G.pbox(k ? .22 : .16, .01, .004), k ? STEEL2 : TOMATO, 0, y0 + .37 - k * .04, bz - .008);
+    add(G.box(W - .02, .03, .02, .006), DR, 0, y0 + H - .05, bz); add(G.box(W - .02, .03, .02, .006), DR, 0, y0 + .08, bz);
+    for (const sx of [-1, 1]) for (const y of [y0 + .14, y0 + .44]) add(G.sph(.012, 8, 6), STEEL, sx * .17, y, bz - .004);
+  }));
   f.add(mg('postbox2-print', atlasMat(), ({ add }) => add(quadGeo(.3, .15, RG.post), 0, .88, fz + .005)));
   const pv = new THREE.Group(); pv.position.set(0, dy, fz + .0105);
   pv.add(mc('postbox2-door', ({ add }) => {
@@ -1016,6 +1194,12 @@ B.bench2 = (f, T) => {
   }));
   f.add(transparent(mg('bench2-glass', glassMat(), ({ add }) => add(new THREE.PlaneGeometry(.88, 1.4), -.48, 1.225, bz))));
   f.add(mg('bench2-ad', signMat(), ({ add }) => add(quadGeo(.82, 1.23, RG.ad), .47, 1.225, bz + .07 + .005)));
+  // (10/29 19판부터) from the street side the ad box was a blank grey board: the same ad on its back, a route map frame on the post
+  if (LATE19()) {
+    f.add(mg('bench2-ad-back', signMat(), ({ add }) => add(quadGeo(.82, 1.23, RG.ad), .47, 1.225, bz - .03 - .005, 0, PI, 0)));
+    f.add(mc('bench2-back|' + tk, ({ add }) => { add(G.box(.3, .42, .03, .01), ALU, -.48, 1.35, bz - .03); add(G.pbox(.24, .36, .006), '#f4f1e8', -.48, 1.35, bz - .048);
+      for (let k = 0; k < 5; k++) add(G.pbox(.18, .012, .004), k % 2 ? '#3f9be0' : CHAR, -.48, 1.46 - k * .05, bz - .052); }));
+  }
   f.add(mg('bench2-name', atlasMat(), ({ add }) => add(quadGeo(.92, .19, RG.stopname), -.4, RY + .17, .225 + .005)));
   f.spot('under', null, -.35, 0, -.16, { maxH: .38, label: '정류장 벤치 밑', scale: .85 });
   f.spot('on', null, .35, SY + .0175, -.16, { maxH: .45, label: '정류장 벤치 위', scale: .75 });
@@ -1164,6 +1348,7 @@ export const STREET_ITEMS = {
   } },
   // 접은 우산: a folded sky umbrella with a strap, a steel tip and a wooden J handle, lying on its side
   umbrella: { name: '접은 우산', h: .09, flat: true, build() {
+    if ((globalThis.__sbkStage ?? -1) >= 18) return umbrellaLate();
     // a folded umbrella lying down: a fat pleated canopy (eight folds) in yellow with white dots, wound with its strap, a
     // metal tip and a brown crook handle (10/20 "야매한 것들": a thin stick nobody read as an umbrella)
     const g = grp(), uc = '#ffc93a', y = .045, X = .04;
@@ -1186,3 +1371,27 @@ export const STREET_ITEMS = {
     return g;
   } },
 };
+
+// 접은 우산 19판~ (⑩ 10/29 실폰 "숨겨진 물건들도 다 디테일이 떨어지고": from the start camera it read as a flat yellow leaf) — the
+// same folded canopy, now pleated: eight darker fold seams down its length and white dots between them, a red strap with a
+// white snap wound round its middle, a longer steel tip and ferrule, and a big glossy brown crook handle lying flat beside it.
+// Height and footprint as before (flat, .09). 1~18판 keep the old one.
+function umbrellaLate() {
+  const g = grp(), uc = '#ffc93a', y = .045, X = .04, SZ = 1.85;
+  const P = [[0, -.158], [.014, -.155], [.03, -.13], [.043, -.09], [.041, -.02], [.033, .05], [.021, .11], [.008, .145], [0, .147]];
+  const rAt = ly => { for (let i = 1; i < P.length; i++) if (ly <= P[i][1]) { const [r0, y0] = P[i - 1], [r1, y1] = P[i]; return r0 + (r1 - r0) * (ly - y0) / (y1 - y0); } return 0; };
+  g.add(mc('it-umbrella6', ({ add, addM, tube }) => {
+    add(G.lathe(P, 8), uc, X, y, 0, 0, 0, -HP, [1, 1, SZ]);
+    for (let k = 0; k < 8; k++) { const a = (k + .5) * PI / 4, pts = []; for (let i = 0; i <= 6; i++) { const lx = -.13 + i * .043, r = rAt(lx) * 1.01; pts.push([X + lx, y + Math.cos(a) * r, Math.sin(a) * r * SZ]); } for (let i = 0; i < 6; i++) tube(pts[i], pts[i + 1], .004, shade(uc, -.25), 4); }
+    for (const [x, a] of [[-.07, .2], [-.02, 1.0], [.03, -.4], [.08, .6], [.12, -1.0], [-.04, -.8], [.05, 1.8]]) { const r = rAt(x - X) * .98; add(G.sph(.011, 5, 3), WHITE, x, y + Math.cos(a) * r, Math.sin(a) * r * SZ); }
+    add(G.tor(.037, .009, PI * 2, 5, 14), '#e8504a', .01, y, 0, 0, HP, 0, [1, 1, SZ]);
+    add(G.cyl(.011, .011, .006, 10), '#ffffff', .01, y + .044, 0);
+    add(G.cone(.01, .07, 6), STEEL, .225, y, 0, 0, 0, -HP);
+    add(G.cyl(.01, .01, .06, 8), STEEL, -.15, y, 0, 0, 0, HP);
+    add(G.cyl(.024, .024, .05, 10), '#7a4a2a', -.2, y, 0, 0, 0, HP);
+    addM(G.tor(.07, .026, PI, 5, 12), new THREE.Matrix4().makeTranslation(-.225, y, -.07).multiply(new THREE.Matrix4().makeRotationY(-HP)).multiply(new THREE.Matrix4().makeRotationX(HP)), '#7a4a2a');
+    add(G.sph(.026, 8, 6), '#7a4a2a', -.225, y, -.14);
+    add(G.box(.012, .006, .03, .002), '#ffffff', -.2, y + .024, 0);
+  }));
+  return g;
+}

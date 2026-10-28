@@ -8,12 +8,13 @@
 // 장치·자물쇠·보스 연출 부품(patrolcar·lostbox·vending·mailbox·postbox2 …)은 정본 가구 그대로 policefront3-map.js가 놓는다.
 // 좌표는 방 좌표 그대로(두 조각 다 x 0, z 0에 놓임): 방 9 × 5 = 보도와 파출소(걷는 곳), 차도와 건너편 보도는 방 앞(z 2.5~)의 섬.
 import * as THREE from 'three';
-import { put, mat, mesh, canvasTex, texCache, roundRect } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, texCache, roundRect } from './kit.js';
 import { HG as G, hmc as rawMc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
 import { makeFurniture } from './furniture.js';
 import { addPigeon } from './birds.js';
+import { addI18n } from '../i18n.js';
 
 const WORDS = { '몽글 파출소': 'Mongle Police Box', '민원 창구': 'Help Desk', '분실물': 'Lost & Found', '경찰': 'POLICE', '순찰함': 'Patrol Box',
   '번호표': 'Ticket', '천천히': 'SLOW', '순찰 중': 'On Patrol', '잠깐 순찰 중이에요': 'Out on patrol', '분실물 찾아가세요': 'Claim your lost items',
@@ -146,7 +147,7 @@ B.pf3_base = f => {
   const tx = -2.6, tz = curb2 + .32, PK = [-2.25, .05];
   const mid = (curb + curb2) / 2;
   f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.8, 0, .01, -.75, .01];
-  f.add(mc('base-v3', ({ add }) => {
+  f.add(mc('base-v4', ({ add }) => {
     // 받침: 차도 높이까지 돌 켜 · 흙 켜 (두께 있는 둥근 블록), 그 위 보도 두 판 (보도 판석 옆면 = 섬 테두리)
     add(G.ext(shapeOf(O), .36, 0, 8), C.stone, 0, ry - .36, 0, -HP, 0, 0);
     add(G.ext(shapeOf(isleOutline(-.06)), .34, .04, 8), C.earth, 0, ry - .74, 0, -HP, 0, 0);
@@ -183,11 +184,17 @@ B.pf3_base = f => {
     for (const [x, z] of [[-3.5, curb + .2], [4.0, curb2 - .2]]) { add(G.box(.6, .012, .24, .008), '#6c6a80', x, ry + .008, z); for (let k = 0; k < 6; k++) add(G.pbox(.035, .014, .18), '#45435a', x - .22 + k * .088, ry + .01, z); }
     // 건너편 보도: 볼라드 둘 (가로수는 아래 tree-v2)
     for (const x of [CROSS[0] - .3, CROSS[1] + .3]) { add(G.cyl(.07, .08, .5, 12), '#5b5672', x, .25, curb2 + .35); add(G.cyl(.075, .075, .05, 12), C.yel, x, .4, curb2 + .35); }
-    // 섬 가장자리 풀 한 줌 (모서리에만 — 한적하게)
-    for (const [x, z, s] of [[-4.72, -.6, 1], [-3.9, -2.75, .8], [4.3, -2.45, 1.1], [4.65, -1.9, .8], [4.25, 5.25, .7], [-4.4, 5.2, .75]]) {
-      add(G.sph(.2 * s, 10, 8), C.grass, x, .1 * s, z, 0, 0, 0, [1.3, .8, 1.1]);
-      add(G.sph(.15 * s, 10, 8), C.grass2, x + .16 * s, .08 * s, z + .1, 0, 0, 0, [1.2, .8, 1]);
-    }
+    // 섬 가장자리 풀 한 포기 (모서리에만 — 한적하게; 10/29 공 두 개 덩어리 → 낮은 밑동 + 바깥으로 벌어진 잎 여럿, 끝이 밝은 몇 장, 어떤 포기엔 토끼풀 꽃)
+    [[-4.7, .9, 1], [-3.9, -2.75, .8], [4.6, -.35, 1.1], [4.65, -1.9, .8], [4.25, 5.25, .7], [-4.4, 5.2, .75]].forEach(([x, z, s], gi) => {
+      add(G.sph(.13 * s, 12, 8), C.grass2, x, .02 * s, z, 0, 0, 0, [1.4, .45, 1.2]);
+      for (let k = 0; k < 11; k++) {
+        const a = k * 2.399 + gi, r = (.03 + .07 * hash(gi * 31 + k)) * s, hgt = (.17 + .15 * hash(gi * 17 + k * 3)) * s, lean = .25 + .35 * hash(gi * 7 + k);
+        const bx = x + Math.cos(a) * r, bz = z + Math.sin(a) * r, cx = Math.cos(a) * Math.sin(lean) * hgt / 2, cz = Math.sin(a) * Math.sin(lean) * hgt / 2;
+        add(G.cone(.03 * s, hgt, 4), k % 4 === 0 ? '#a6da78' : k % 2 ? C.grass : '#7cbd58', bx + cx, Math.cos(lean) * hgt / 2, bz + cz, Math.sin(a) * lean, 0, -Math.cos(a) * lean, [1, 1, .45]);
+      }
+      if (gi % 2 === 0) for (let k = 0; k < 2; k++) { const fx = x + (k ? .07 : -.05) * s, fz = z + (k ? -.04 : .06) * s, fh = (.2 + .05 * k) * s;
+        add(G.cyl(.006, .006, fh, 5), '#6fb052', fx, fh / 2, fz); add(G.sph(.028 * s, 8, 6), '#ffffff', fx, fh + .01, fz, 0, 0, 0, [1, .8, 1]); add(G.sph(.012 * s, 6, 4), '#f6e7f0', fx, fh + .026 * s, fz); }
+    });
   }));
   // 가로수 (10/24 사용자 "가로수 디테일 올려줘"): 화강암 받침 테 · 흙 위 쇠 격자 보호 덮개(바깥 테 · 고리 둘 · 살) · 덮개 위로 나온 뿌리 ·
   // 살짝 기운 줄기(껍질 조각 · 옹이) · 가을 볏짚 잠복소 · 세 갈래 나무 지주목과 가로대 · 가지 넷 · 잎 덩어리 여럿(아래 짙게 · 위 밝게 ·
@@ -289,24 +296,9 @@ B.pf3_station = f => {
   // 탑 겉면 위 한 점 (a: x축에서 z쪽으로 잰 각)
   const onTower = (a, dr = 0) => [tx + Math.cos(a) * (tr + dr), tz + Math.sin(a) * (tr + dr)];
   f.noSolid = true; f.noOccupied = true; f.collideBox = [0, -.8, 0, .01, -.75, .01];
-  f.add(mc('station-v2', ({ add }) => {
+  f.add(mc('station-v3', ({ add }) => {
     add(G.box(x1 - xi + .02, .016, z1 - zi, .006), '#e9edf5', (xi + x1) / 2, .008, (zi + z1) / 2);
     add(G.box(x1 - xi, .03, .1, .012), C.navy, (xi + x1) / 2, .015, z1 + .02);
-    // 벽 몸통 (흰 타일 겉면은 따로) — 뒷벽, 왼벽(앞 끝 위 모서리를 둥글게 깎은 단면)
-    add(G.box(tx - x0, H, t, .03), C.tile, (x0 + tx) / 2, H / 2, z0 + t / 2);
-    add(G.box(t, H, z1 - RW - z0, .03), C.tile, x0 + t / 2, H / 2, (z0 + z1 - RW) / 2);
-    add(G.box(t, H - RW, RW + .02, .03), C.tile, x0 + t / 2, (H - RW) / 2, z1 - RW / 2 - .01);
-    add(G.cyl(RW, RW, t, 20), C.tile, x0 + t / 2, H - RW, z1 - RW, 0, 0, HP);
-    // 남색 걸레받이 · 허리 하늘 줄 · 위 파란 띠 · 흰 갓돌 (안·밖 함께)
-    for (const [h, y, c] of [[.14, .07, C.navy], [.07, 1.06, C.lblue], [.3, H - .26, C.blue], [.05, H - .08, '#ffffff']]) {
-      add(G.box(tx - x0 + .02, h, t + .03, .01), c, (x0 + tx) / 2, y, z0 + t / 2);
-      const zEnd = y > H - RW ? z1 - RW : z1 + .01;
-      add(G.box(t + .03, h, zEnd - z0, .01), c, x0 + t / 2, y, (z0 + zEnd) / 2);
-    }
-    // 처마: 뒤와 왼쪽에만 얇게 (방 위는 열어 둠)
-    add(G.box(tx - x0 + .3, .12, .82, .04), C.navy, (x0 + tx) / 2 - .15, H + .06, z0 + .33);
-    add(G.box(.8, .12, z1 - z0 - .5, .04), C.navy, x0 + .32, H + .06, (z0 + z1) / 2 - .25);
-    add(G.box(tx - x0 + .2, .03, .74, .02), '#e8ecf4', (x0 + tx) / 2 - .15, H + .135, z0 + .33);
     // 거대 경광등 탑 (이 판의 '거대 소품 건물' — 길모퉁이 탑 자체가 커다란 경광등): 흰 타일 받침(동그란 창) · 은빛 테 ·
     // 빨강/파랑 반반 큰 렌즈(세로 골·가로 띠·하이라이트) · 흰 갓 · 꼭지
     add(G.cyl(tr, tr, BH, 32), C.tile, tx, BH / 2, tz);
@@ -323,18 +315,6 @@ B.pf3_station = f => {
     add(G.cyl(.08, .1, .18, 12), C.steel, tx, TH + .42, tz); add(G.sph(.1, 12, 8), '#ffffff', tx, TH + .55, tz);
     // 렌즈 가운데 흰 판 '112' (카메라 쪽)
     { const a = PI * .27, [cx, czz] = onTower(a, .01); add(G.box(.62, .34, .04, .03), '#ffffff', cx, LY, czz, 0, HP - a, 0); }
-    // 지붕 간판 (받침 다리)
-    for (const x of [-3.3, -.8]) add(G.box(.08, .4, .08, .02), C.steelD, x, H + .32, z0 + .3);
-    add(G.box(3.4, .78, .1, .04), C.navy, -2.05, H + .87, z0 + .3);
-    // 파란 '경찰' 등 (왼벽 앞 끝, 순찰함 위)
-    add(G.box(.44, .27, .16, .04), '#ffffff', x0 + .09, 2.02, z1 + .08);
-    // 바깥 뒷벽 (뒤로 돌려 볼 때): 실외기 · 가스관 · 작은 창 · 빗물 홈통
-    add(G.box(.8, .62, .34, .04), '#eef0f4', -1.4, .42, z0 - .19); add(G.cyl(.22, .22, .02, 22), '#9aa3ba', -1.55, .45, z0 - .37, HP, 0, 0);
-    for (let k = 0; k < 5; k++) add(G.pbox(.012, .4, .012), '#c9cfe0', -1.72 + k * .08, .45, z0 - .38);
-    add(G.box(.3, .3, .02, .01), '#c9cfe0', -1.05, .45, z0 - .37);
-    add(G.cyl(.025, .025, 2.4, 8), '#f2c94c', -3.2, 1.3, z0 - .05); add(G.cyl(.025, .025, 1.6, 8), '#f2c94c', -2.4, 2.4, z0 - .05, 0, 0, HP); add(G.box(.18, .12, .1, .02), '#c9cfe0', -3.2, .9, z0 - .08);
-    add(G.cyl(.045, .045, H, 10), '#b9c1d2', .2, H / 2, z0 - .06);
-    add(G.box(1.1, .7, .06, .02), C.navy, -3.6, 1.75, z0 - .02); add(G.pbox(.98, .58, .02), C.sky, -3.6, 1.75, z0 - .05); add(G.pbox(.02, .58, .03), '#ffffff', -3.6, 1.75, z0 - .06);
     // 길 쪽 민원 창구: 하늘색 판 계산대, 나무 상판, 유리 칸막이 테와 머리 간판, 번호표 기계, 호출 벨, 볼펜, 택배 상자
     add(G.box(cw, .86, .5, .04), '#e7eefb', ccx, .43, cz);
     add(G.box(cw - .1, .12, .03, .01), C.blue, ccx, .62, cz + .26);
@@ -366,9 +346,6 @@ B.pf3_station = f => {
     add(G.box(.2, .07, .1, .025), '#ff8fb0', sl(0) + .02, SHELF[2] + .045, sz); for (const x of [-.06, .06]) add(G.cyl(.03, .03, .03, 10), C.ink, sl(0) + .02 + x, SHELF[2] + .02, sz + .05, HP, 0, 0);
     add(G.box(.1, .14, .05, .02), '#9ad0a8', sl(2) - .05, SHELF[2] + .08, sz); add(G.box(.1, .14, .05, .02), '#9ad0a8', sl(2) + .06, SHELF[2] + .08, sz + .02);
     add(G.tor(.04, .01, PI * 2, 4, 12), C.yel, sl(1), SHELF[2] + .02, sz + .08, HP, 0, 0); add(G.box(.03, .06, .01, .004), C.steel, sl(1) + .04, SHELF[2] + .02, sz + .1);
-    // 왼벽 안: 벽시계 (포스터 위)
-    add(G.cyl(.17, .17, .04, 20), '#ffffff', xi + .03, 2.15, -1.5, 0, 0, HP); add(G.tor(.17, .025, PI * 2, 6, 20), C.navy, xi + .04, 2.15, -1.5, 0, HP, 0);
-    add(G.pbox(.01, .1, .015), C.ink, xi + .065, 2.19, -1.5); add(G.pbox(.01, .015, .08), C.ink, xi + .065, 2.15, -1.47);
     // 입구: 우산꽂이 (우산 셋)
     add(G.cyl(.15, .13, .42, 16), '#9aa3ba', .55, .21, z1 - .3); add(G.tor(.15, .015, PI * 2, 4, 16), '#c9cfe0', .55, .42, z1 - .3, HP, 0, 0);
     for (const [dx, dz, c, r] of [[-.05, 0, '#e8433d', .14], [.05, .04, '#3f6fd8', -.12], [0, -.05, '#ffcf3a', .05]]) { add(G.cyl(.018, .018, .75, 6), C.ink, .55 + dx, .6, z1 - .3 + dz, 0, 0, r); add(G.cone(.07, .5, 8), c, .55 + dx - r * .3, .55, z1 - .3 + dz, 0, 0, r + PI); }
@@ -376,16 +353,64 @@ B.pf3_station = f => {
     for (const s of [-1, 1]) add(G.box(.5, .7, .03, .015), '#ffffff', .3, .37, z1 + .75 + s * .1, -s * .14, 0, 0);
     add(G.box(.52, .04, .26, .01), C.navy, .3, .72, z1 + .75);
   }));
+  // (10/29 사용자 실폰 "21판 엉망": the two walls were one solid piece with the room — turned round, the station's back hid everything
+  // inside. Now each wall folds down to a knee-high stub when the camera is behind it, the way a room's walls do; what hangs on it
+  // (the roof sign, the 경찰 lamp, posters, the clock, the outside pipes) goes while it is down — f.updateView, as the GPT 파출소)
+  const cuts = [], wallCut = n => { const g = new THREE.Group(), d = new THREE.Group(); f.add(g); f.add(d); (f.live ||= []).push(g, d);
+    const q = { g, d, n: new THREE.Vector3(...n), k: 1, stub: .55 / H }; cuts.push(q); return q; };
+  const back = wallCut([0, 0, 1]), left = wallCut([1, 0, 0]);
+  back.g.add(mc('station-back', ({ add }) => {
+    add(G.box(tx - x0, H, t, .03), C.tile, (x0 + tx) / 2, H / 2, z0 + t / 2);
+    for (const [h, y, c] of [[.14, .07, C.navy], [.07, 1.06, C.lblue], [.3, H - .26, C.blue], [.05, H - .08, '#ffffff']]) add(G.box(tx - x0 + .02, h, t + .03, .01), c, (x0 + tx) / 2, y, z0 + t / 2);
+    add(G.box(tx - x0 + .3, .12, .82, .04), C.navy, (x0 + tx) / 2 - .15, H + .06, z0 + .33);
+    add(G.box(tx - x0 + .2, .03, .74, .02), '#e8ecf4', (x0 + tx) / 2 - .15, H + .135, z0 + .33);
+  }));
+  left.g.add(mc('station-left', ({ add }) => {
+    add(G.box(t, H, z1 - RW - z0, .03), C.tile, x0 + t / 2, H / 2, (z0 + z1 - RW) / 2);
+    add(G.box(t, H - RW, RW + .02, .03), C.tile, x0 + t / 2, (H - RW) / 2, z1 - RW / 2 - .01);
+    add(G.cyl(RW, RW, t, 20), C.tile, x0 + t / 2, H - RW, z1 - RW, 0, 0, HP);
+    for (const [h, y, c] of [[.14, .07, C.navy], [.07, 1.06, C.lblue], [.3, H - .26, C.blue], [.05, H - .08, '#ffffff']]) { const zEnd = y > H - RW ? z1 - RW : z1 + .01; add(G.box(t + .03, h, zEnd - z0, .01), c, x0 + t / 2, y, (z0 + zEnd) / 2); }
+    add(G.box(.8, .12, z1 - z0 - .5, .04), C.navy, x0 + .32, H + .06, (z0 + z1) / 2 - .25);
+  }));
+  back.d.add(mc('station-back-deco', ({ add }) => {
+    for (const x of [-3.3, -.8]) add(G.box(.08, .4, .08, .02), C.steelD, x, H + .32, z0 + .3);
+    add(G.box(3.4, .78, .1, .04), C.navy, -2.05, H + .87, z0 + .3);
+    add(G.box(.8, .62, .34, .04), '#eef0f4', -1.4, .42, z0 - .19); add(G.cyl(.22, .22, .02, 22), '#9aa3ba', -1.55, .45, z0 - .37, HP, 0, 0);
+    for (let k = 0; k < 5; k++) add(G.pbox(.012, .4, .012), '#c9cfe0', -1.72 + k * .08, .45, z0 - .38);
+    add(G.box(.3, .3, .02, .01), '#c9cfe0', -1.05, .45, z0 - .37);
+    add(G.cyl(.025, .025, 2.4, 8), '#f2c94c', -3.2, 1.3, z0 - .05); add(G.cyl(.025, .025, 1.6, 8), '#f2c94c', -2.4, 2.4, z0 - .05, 0, 0, HP); add(G.box(.18, .12, .1, .02), '#c9cfe0', -3.2, .9, z0 - .08);
+    add(G.cyl(.045, .045, H, 10), '#b9c1d2', .2, H / 2, z0 - .06);
+    add(G.box(1.1, .7, .06, .02), C.navy, -3.6, 1.75, z0 - .02); add(G.pbox(.98, .58, .02), C.sky, -3.6, 1.75, z0 - .05); add(G.pbox(.02, .58, .03), '#ffffff', -3.6, 1.75, z0 - .06);
+  }));
+  left.d.add(mc('station-left-deco', ({ add }) => {
+    add(G.box(.44, .27, .16, .04), '#ffffff', x0 + .09, 2.02, z1 + .08);
+    add(G.cyl(.17, .17, .04, 20), '#ffffff', xi + .03, 2.15, -1.5, 0, 0, HP); add(G.tor(.17, .025, PI * 2, 6, 20), C.navy, xi + .04, 2.15, -1.5, 0, HP, 0);
+    add(G.pbox(.01, .1, .015), C.ink, xi + .065, 2.19, -1.5); add(G.pbox(.01, .015, .08), C.ink, xi + .065, 2.15, -1.47);
+  }));
+  const camDir = new THREE.Vector3(), nrm = new THREE.Vector3();
+  f.updateView = (W, dt = 1 / 60) => {
+    if (!W || !Number.isFinite(W.yaw)) return;
+    f.group.updateWorldMatrix(true, false);
+    camDir.set(Math.sin(W.yaw), 0, Math.cos(W.yaw));
+    const smooth = 1 - Math.exp(-Math.max(0, dt) * 12);
+    for (const q of cuts) {
+      nrm.copy(q.n).transformDirection(f.group.matrixWorld);
+      const want = nrm.dot(camDir) < -.18 ? 0 : 1, prev = q.k;
+      q.k += (want - q.k) * smooth; if (Math.abs(q.k - want) < .002) q.k = want;
+      if (q.k !== prev) { q.g.scale.y = q.stub + (1 - q.stub) * q.k; W.shadowDirty = true; }
+      if (q.d.visible !== (q.k > .65)) { q.d.visible = q.k > .65; W.shadowDirty = true; W.idsDirty = true; }
+    }
+  };
   // 흰 타일 겉면 · 바닥 타일 · 간판 · 등 · 창구 글자 · 포스터 · 입간판
   const tileMat = (key, len, hgt) => mat('#ffffff', { map: wallTex(key, len, hgt), rough: .6, rim: .12 });
   const backLen = tx - x0 - .02, sideLen = z1 - z0 - RW - .05, tileH = H - .42;
-  f.add(put(mesh(new THREE.PlaneGeometry(backLen, tileH), tileMat('back', backLen, tileH), { cast: false }), (x0 + tx) / 2, .14 + tileH / 2, zi + .005));
-  f.add(put(mesh(new THREE.PlaneGeometry(sideLen, tileH), tileMat('side', sideLen, tileH), { cast: false }), xi + .005, .14 + tileH / 2, z0 + .02 + sideLen / 2, 0, HP, 0));
-  f.add(put(mesh(new THREE.PlaneGeometry(backLen, tileH), tileMat('back', backLen, tileH), { cast: false }), (x0 + tx) / 2, .14 + tileH / 2, z0 - .005, 0, PI, 0));
-  f.add(put(mesh(new THREE.PlaneGeometry(sideLen, tileH), tileMat('side', sideLen, tileH), { cast: false }), x0 - .005, .14 + tileH / 2, z0 + .02 + sideLen / 2, 0, -HP, 0));
+  back.g.add(put(mesh(new THREE.PlaneGeometry(backLen, tileH), tileMat('back', backLen, tileH), { cast: false }), (x0 + tx) / 2, .14 + tileH / 2, zi + .005));
+  left.g.add(put(mesh(new THREE.PlaneGeometry(sideLen, tileH), tileMat('side', sideLen, tileH), { cast: false }), xi + .005, .14 + tileH / 2, z0 + .02 + sideLen / 2, 0, HP, 0));
+  back.g.add(put(mesh(new THREE.PlaneGeometry(backLen, tileH), tileMat('back', backLen, tileH), { cast: false }), (x0 + tx) / 2, .14 + tileH / 2, z0 - .005, 0, PI, 0));
+  left.g.add(put(mesh(new THREE.PlaneGeometry(sideLen, tileH), tileMat('side', sideLen, tileH), { cast: false }), x0 - .005, .14 + tileH / 2, z0 + .02 + sideLen / 2, 0, -HP, 0));
   f.add(flat(rect(xi, zi, x1, z1), mat('#ffffff', { map: inTileTex(), rough: .6, rim: .1 }), .0175));
-  f.add(put(decal(3.25, .7, signTex()), -2.05, H + .87, z0 + .356));
-  f.add(put(decal(.38, .21, small('lamp', 256, 112, '#4d86ef', '#ffffff', '경찰', 40)), x0 + .09, 2.02, z1 + .166));
+  back.d.add(put(decal(3.25, .7, signTex()), -2.05, H + .87, z0 + .356));
+  left.d.add(put(decal(.38, .21, small('lamp', 256, 112, '#4d86ef', '#ffffff', '경찰', 40)), x0 + .09, 2.02, z1 + .166));
   { const a = PI * .27, [px, pz] = onTower(a, .035); f.add(put(decal(.56, .28, small('l112', 256, 128, '#ffffff', C.red, '112', 64)), px, LY, pz, 0, HP - a, 0)); }
   f.add(put(decal(.74, .17, small('desk', 320, 80, '#ffffff', C.navy, '민원 창구', 30, C.blue)), -3.08, 1.55, cz - .058));
   { const gl = mesh(new THREE.PlaneGeometry(cw - .06, .46), mat('#cfe8ff', { opacity: .35, rough: .1, rim: .05 }), { cast: false }); put(gl, ccx, 1.17, cz - .08); f.add(gl); }
@@ -399,21 +424,21 @@ B.pf3_station = f => {
   f.add(put(glass(sd - .04, gh), sx0 + sw - .01, gy, sz, 0, HP, 0));
   f.add(put(decal(.1, .066, small('ticket', 96, 64, '#ffffff', C.navy, '번호표', 11)), cx0 + .2, 1.06, cz + .196));
   // 포스터: 뒷벽 안 (책상 위 오른쪽) · 왼벽 안 · 탑 겉 (카메라 쪽) · 바깥 뒷벽
-  f.add(put(decal(.3, .4, P_LOST()), .06, 1.6, zi + .012, 0, 0, .03));
-  f.add(put(decal(.36, .48, P_KIDS()), xi + .012, 1.6, -1.5, 0, HP, -.02));
+  back.d.add(put(decal(.3, .4, P_LOST()), .06, 1.6, zi + .012, 0, 0, .03));
+  left.d.add(put(decal(.36, .48, P_KIDS()), xi + .012, 1.6, -1.5, 0, HP, -.02));
   { const a = PI * .22, [px, pz] = onTower(a, .012); f.add(put(decal(.36, .48, P_112()), px, .78, pz, 0, HP - a, 0)); }
   { const a = PI * .38, [px, pz] = onTower(a, .012); f.add(put(decal(.36, .48, P_BIKE()), px, .8, pz, 0, HP - a, .04)); }
-  f.add(put(decal(.36, .48, P_112()), -2.5, 1.45, z0 - .012, 0, PI, 0));
+  back.d.add(put(decal(.36, .48, P_112()), -2.5, 1.45, z0 - .012, 0, PI, 0));
   for (const s of [-1, 1]) f.add(put(decal(.42, .5, small('patrol', 200, 240, '#ffffff', C.navy, '잠깐 순찰 중이에요', 34, C.blue)), .3, .4, z1 + .75 + s * .118, -s * .14, s > 0 ? 0 : PI, 0));
-  f.add(put(decal(.26, .15, small('pbox', 160, 96, C.yel, C.navy, '순찰함', 24)), x0 + .09, 1.29, z1 + .176));
-  f.add(mc('pbox', ({ add }) => { add(G.box(.3, .36, .16, .03), C.yel, x0 + .09, 1.3, z1 + .09); add(G.box(.32, .05, .18, .015), C.navy, x0 + .09, 1.5, z1 + .09); }));
+  left.d.add(put(decal(.26, .15, small('pbox', 160, 96, C.yel, C.navy, '순찰함', 24)), x0 + .09, 1.29, z1 + .176));
+  left.d.add(mc('pbox', ({ add }) => { add(G.box(.3, .36, .16, .03), C.yel, x0 + .09, 1.3, z1 + .09); add(G.box(.32, .05, .18, .015), C.navy, x0 + .09, 1.5, z1 + .09); }));
   // 숨김 자리: 분실물 칸 · 창구 · 우산꽂이 · 입간판 · 둥근 탑 옆 · 실외기 뒤
   f.spot('on', null, sx0 + .6, SHELF[0] + .015, sz + .04, { maxH: .36, label: '분실물 유리장 가운데 칸', scale: .85 });
   f.spot('on', null, sx0 + .98, SHELF[1] + .015, sz + .04, { maxH: .36, label: '분실물 유리장 모자 옆', scale: .85 });
   f.spot('on', null, sx0 + .6, .17, sz + .04, { maxH: .36, label: '분실물 유리장 아래 칸', scale: .85 });
   f.spot('on', null, ccx - .45, .92, cz + .1, { maxH: .22, label: '민원 창구 위', scale: .8 });
   f.spot('behind', null, cx1 + .3, .02, cz + .12, { maxH: .22, label: '택배 상자 옆', scale: .8 });
-  f.spot('behind', null, .82, .02, z1 - .25, { maxH: .3, label: '우산꽂이 옆', scale: .85 });
+  f.spot('behind', null, .7, .02, z1 + .05, { maxH: .3, label: '우산꽂이 옆', scale: .85 });
   f.spot('under', null, .3, .02, z1 + .75, { maxH: .3, label: '입간판 밑', scale: .85 });
   f.spot('behind', null, tx + .62, .02, tz + .62, { maxH: .3, label: '둥근 탑 옆', scale: .85 });
   // 걷기 벽: 두 벽 · 탑 · 창구 · 분실물 선반 · 우산꽂이 · 입간판 (방 좌표 그대로)
@@ -468,7 +493,7 @@ B.pf3_signal = f => {
 B.pf3_far = (f, T) => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [-.001, -.2, -.001, .001, -.15, .001];
   f.group.userData.scenery = true;
-  const Y = (T.townY ?? -.86) - .02;
+  const Y = (T.townY ?? -.86) + .02;
   // (동네 배경 gptneighborhood의 옆 골목 x -7.5를 따라 — 그 골목 끝이 22판)
   // (멀리 있는 것처럼 3/4 크기로 — 카메라가 원근이 약해 거리만으로는 작아지지 않음)
   for (const [type, x, z, a] of [['vending', -9.55, -4.7, HP], ['konbini', -9.55, -6.0, HP], ['tteokstall', -9.55, -7.75, HP]]) {
@@ -521,8 +546,140 @@ B.pf3_town = (f, T) => {
 // 흰 얼룩 하나는 제자리에서 쪼고 두리번 (벤치 옆 비둘기는 벤치 조각 몫) ────────────────────────────────────────────────
 B.pf3_pigeons = f => {
   f.noSolid = true; f.noOccupied = true; f.collideBox = [-.001, -.2, -.001, .001, -.15, .001];
-  addPigeon(f, -.95, .012, 5.3, .1, { tone: 'grey', range: .26, s: 1.1, seed: 3 });
-  addPigeon(f, -.3, .012, 5.42, PI - .35, { tone: 'pied', range: .08, s: 1.05, seed: 8 });
+  addPigeon(f, -.95, .012, 5.3, .1, { tone: 'grey', range: .26, s: 1.1, seed: 3, legs: true });
+  addPigeon(f, -.3, .012, 5.42, PI - .35, { tone: 'pied', range: .08, s: 1.05, seed: 8, legs: true });
+};
+
+// ── 순찰차 pf3_patrolcar (10/29 사용자 실폰 "경찰차가 너무 못생김" · "창문과 문이 따로 떨어진 채로 열림"): 이 맵 전용으로 처음부터 다시.
+// 덩어리 큰 장난감 차 — 둥근 흰 몸통, 큰 바퀴와 바퀴집 테, 큰 동그란 전조등, 둥근 지붕 캐빈(유리 너머 앞좌석·뒷좌석·운전대·계기판),
+// 옆엔 남색 띠와 노란 줄 하나, 문에 '경찰', 보닛·뒤판에 'POLICE', 지붕에 빨강·파랑 경광등. 큰 면은 흰색·남색 두 가지로 순하게,
+// 빨강·파랑·노랑은 작은 것에만. 앞문은 판 · 창틀 · 유리 · 띠 · 글자 · 손잡이 · 자물쇠가 한 묶음(앞 경첩)으로 같이 열리고,
+// 열린 자리엔 문틀과 앞좌석이 보인다. 트렁크는 속이 빈 칸에 뚜껑이 들린다. 차는 +x를 보고, 가까운 쪽(+z)이 문 쪽.
+// (정본 공용 patrolcar는 다른 판이 그대로 씀 — 이 맵만 이 키로 바꿔 끼움. 경광등 연출 staging.js는 /patrolcar/로 찾음)
+const CAR = { white: '#ffffff', navy: '#2b3a7c', yel: '#ffcf3a', glass: '#4f6aa8', bump: '#4a4658', tyre: '#2a2a36', hub: '#d4d7e2', seat: '#5a5668',
+  line: '#3a3346', lining: '#6a6582', jamb: '#d9dce6', well: '#3d3a4c', steel: '#a9b2c8' };
+addI18n({ '순찰차 트렁크': 'Patrol car boot', '순찰차 트렁크 안': 'In the patrol car boot', '순찰차 앞자리': 'Patrol car front seat' });
+const carText = (key, text, w, h, color, px) => TEX.get('pf3|cartext|' + key, () => textTex(w, h, (c, W, H) => {
+  fitText(c, text, W / 2, H / 2 + 1, W * .94, px, color, { weight: '800' });
+}));
+const plateTex = () => TEX.get('pf3|carplate', () => textTex(256, 72, (c, w, h) => {
+  c.fillStyle = '#ffffff'; roundRect(c, 1, 1, w - 2, h - 2, 8); c.fill(); c.strokeStyle = CAR.line; c.lineWidth = 2.5; roundRect(c, 3, 3, w - 6, h - 6, 6); c.stroke();
+  c.fillStyle = CAR.line; c.font = '800 24px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('12 3456', w / 2, h / 2 + 1);
+}));
+// a flat outline (x, y) made into a thin plate of the given depth, centred on z = 0
+const plate = (pts, depth) => { const s = new THREE.Shape(); s.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) s.lineTo(p[0], p[1]); const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false }); g.translate(0, 0, -depth / 2); return g; };
+B.pf3_patrolcar = f => {
+  const X0 = -.87, X1 = .87, ZB = .49, BY0 = .17, BY = .6, TB = -.56, RT = 1.08, WR = .21, AX = [.62, -.54], WZ = .44;
+  const ZS = .455, DZ = .5125, FZ = .497;
+  // A 기둥 선 (앞유리 옆): (.42, .6) → (.21, 1.01); 문 앞 기둥은 그보다 .04 뒤
+  const aX = y => .42 - .21 * (y - .6) / .41, dX = y => aX(y) - .045;
+  const D0 = -.12, D1 = dX(BY), HX = D1;
+  const glassMat = mat(CAR.glass, { opacity: .5, rough: .1, rim: .05 });
+  const glassMesh = (g, x, y, z, ry = 0, rz = 0) => { const m = mesh(g, glassMat, { cast: false }); put(m, x, y, z, 0, ry, rz); return m; };
+  f.add(mc('car-v1', ({ add, tube }) => {
+    const W = CAR.white;
+    // 몸통: 앞(보닛·문) 덩어리 + 트렁크 칸(바닥 · 뒤판 · 두 옆판 — 속이 빔)
+    add(G.box(X1 - TB, BY - BY0, ZB * 2, .1, 3), W, (X1 + TB) / 2, (BY + BY0) / 2, 0);
+    add(G.box(TB - X0 + .02, .12, ZB * 2, .05, 2), W, (X0 + TB) / 2, BY0 + .06, 0);
+    add(G.box(.08, BY - BY0, ZB * 2, .04, 2), W, X0 + .04, (BY + BY0) / 2, 0);
+    for (const s of [-1, 1]) add(G.box(TB - X0 + .02, BY - BY0, .07, .03, 2), W, (X0 + TB) / 2, (BY + BY0) / 2, s * (ZB - .035));
+    // 트렁크 속: 어두운 안감 · 뒷바퀴 집 둘
+    add(G.pbox(TB - X0 - .1, .006, ZB * 2 - .16), CAR.lining, (X0 + TB) / 2 + .01, BY0 + .123, 0);
+    for (const s of [-1, 1]) add(G.box(.28, .24, .16, .05, 2), CAR.lining, AX[1] - .08, .3, s * .35);
+    add(G.pbox(.006, BY - BY0 - .14, ZB * 2 - .16), CAR.lining, X0 + .083, (BY + BY0) / 2 + .06, 0);
+    add(G.pbox(.006, BY - BY0 - .14, ZB * 2 - .16), CAR.lining, TB - .003, (BY + BY0) / 2 + .06, 0);
+    // 트렁크 속 소품: 러버콘 하나 (먼 구석)
+    add(G.box(.13, .018, .13, .006), '#ff6a2a', X0 + .15, BY0 + .135, -.12); add(G.cone(.06, .2, 16), '#ff7a33', X0 + .15, BY0 + .24, -.12); add(G.cyl(.036, .046, .04, 16), W, X0 + .15, BY0 + .23, -.12);
+    // 캐빈: 지붕 · A 기둥 · B 기둥 · 뒤 쿼터 판 · 창 아래 턱
+    add(G.box(.74, .08, ZS * 2 + .03, .04, 2), W, -.13, RT - .04, 0);
+    for (const s of [-1, 1]) {
+      tube([aX(BY), BY, s * ZS], [aX(1.01), 1.01, s * ZS], .035, W, 10);
+      add(G.box(.07, .42, .05, .022, 2), W, -.1, .8, s * ZS);
+      add(G.box(.17, .43, .05, .022, 2), W, -.49, .8, s * ZS, 0, 0, -.08);
+    }
+    // 실내: 바닥 · 앞좌석 둘(방석·등받이·머리 받침) · 뒷좌석 · 계기판 · 운전대(왼쪽 = -z)
+    add(G.pbox(.86, .008, ZS * 2 - .1), CAR.line, -.07, BY + .004, 0);
+    for (const s of [-1, 1]) {
+      add(G.box(.22, .08, .26, .035, 2), CAR.seat, -.01, BY + .05, s * .2);
+      add(G.box(.08, .3, .26, .035, 2), CAR.seat, -.13, BY + .2, s * .2, 0, 0, .12);
+      add(G.box(.06, .08, .14, .025, 2), CAR.seat, -.16, BY + .4, s * .2);
+    }
+    add(G.box(.16, .08, ZS * 2 - .14, .035, 2), CAR.seat, -.36, BY + .05, 0);
+    add(G.box(.07, .24, ZS * 2 - .14, .03, 2), CAR.seat, -.43, BY + .17, 0, 0, 0, .1);
+    add(G.box(.12, .1, ZS * 2 - .12, .04, 2), CAR.bump, .28, BY + .06, 0);
+    add(G.tor(.07, .014, PI * 2, 6, 20), CAR.line, .2, BY + .2, -.2, 0, HP, .5);
+    tube([.27, BY + .1, -.2], [.21, BY + .18, -.2], .013, CAR.line, 6);
+    // 범퍼 · 전조등 · 그릴 · 방향등 · 미등
+    for (const x of [X1, X0]) add(G.box(.14, .14, ZB * 2 + .03, .06, 2), CAR.bump, x, .27, 0);
+    for (const s of [-1, 1]) {
+      add(G.sph(.085, 18, 12), '#fff2b8', X1 - .005, .45, s * .3, 0, 0, 0, [.5, 1, 1]);
+      add(G.tor(.087, .018, PI * 2, 6, 22), CAR.steel, X1 - .002, .45, s * .3, 0, HP, 0);
+      add(G.sph(.03, 10, 8), '#ff9a3c', X1 + .06, .32, s * .4, 0, 0, 0, [.7, 1, 1]);
+      add(G.box(.03, .09, .16, .02, 2), '#e8433d', X0 - .002, .5, s * .33);
+    }
+    add(G.box(.03, .08, .3, .03, 2), CAR.line, X1 + .002, .36, 0);
+    // 옆: 남색 띠 · 노란 줄 (가까운 쪽은 문 자리를 비움) · 문틀 자국(열린 문 자리) · 거울
+    const band = (x0, x1, s) => { add(G.pbox(x1 - x0, .09, .008), CAR.navy, (x0 + x1) / 2, .49, s * (ZB + .002)); add(G.pbox(x1 - x0, .024, .008), CAR.yel, (x0 + x1) / 2, .555, s * (ZB + .003)); };
+    band(X0 + .06, X1 - .07, -1); band(X0 + .06, D0 - .005, 1); band(D1 + .005, X1 - .07, 1);
+    add(G.pbox(D1 - D0 - .02, BY - .26, .004), CAR.jamb, (D0 + D1) / 2, (BY + .24) / 2 + .01, ZB + .001);
+    for (const s of [-1, 1]) { tube([.43, .63, s * (ZB - .02)], [.46, .66, s * (ZB + .05)], .014, W, 6); add(G.box(.06, .07, .1, .025, 2), W, .46, .69, s * (ZB + .08)); add(G.pbox(.004, .05, .08), CAR.glass, .432, .69, s * (ZB + .08)); }
+    // 바퀴: 굵은 타이어 · 크림 휠 · 너트 · 바퀴집 테
+    for (const x of AX) for (const s of [-1, 1]) {
+      add(G.tor(WR - .08, .08, PI * 2, 12, 28), CAR.tyre, x, WR - .01, s * WZ, 0, 0, 0, [1, 1, 1.15]);
+      add(G.cyl(WR - .085, WR - .085, .16, 22), '#4a4858', x, WR - .01, s * WZ, HP, 0, 0);
+      add(G.cyl(.095, .085, .02, 22), CAR.hub, x, WR - .01, s * (WZ + .085), HP, 0, 0);
+      for (let k = 0; k < 5; k++) { const a = k * PI * 2 / 5 + .3; add(G.cyl(.012, .012, .02, 6), '#8f93a6', x + Math.cos(a) * .05, WR - .01 + Math.sin(a) * .05, s * (WZ + .095), HP, 0, 0); }
+      add(G.sph(.03, 10, 8), '#b9bdcc', x, WR - .01, s * (WZ + .095), 0, 0, 0, [1, 1, .5]);
+      const half = new THREE.Shape(); half.moveTo(WR + .035, 0); half.absarc(0, 0, WR + .035, 0, PI, false); half.lineTo(WR + .035, 0);
+      add(new THREE.ShapeGeometry(half, 20), CAR.well, x, WR - .01, s * (ZB + .002), 0, s < 0 ? PI : 0, 0);
+      add(G.tor(WR + .035, .032, PI, 6, 22), W, x, WR - .01, s * (ZB + .006), 0, 0, 0, [1, 1, .9]);
+    }
+    // 지붕 경광등: 어두운 받침 · 빨강 · 흰 스피커 · 파랑 (둥근 덩어리) · 뒤 안테나
+    add(G.box(.22, .04, .72, .02, 2), CAR.bump, -.13, RT + .02, 0);
+    add(G.box(.2, .1, .27, .045, 3), '#e8433d', -.13, RT + .09, -.2); add(G.box(.2, .1, .27, .045, 3), '#3f6fe8', -.13, RT + .09, .2);
+    for (const z of [-.2, .2]) add(G.box(.12, .016, .15, .008, 1), '#ffffff', -.13, RT + .148, z);
+    add(G.box(.18, .08, .12, .03, 2), '#f4f6fb', -.13, RT + .08, 0); for (const k of [-1, 0, 1]) add(G.pbox(.005, .05, .012), CAR.line, -.039, RT + .08, k * .03);
+    tube([-.44, RT, -.3], [-.47, RT + .3, -.3], .007, CAR.line, 5); add(G.sph(.016, 8, 6), CAR.line, -.47, RT + .3, -.3);
+  }));
+  // 유리: 앞유리 · 뒷유리 · 먼 쪽 두 장 · 가까운 쪽 뒷창 (가까운 쪽 앞창은 문 묶음 안)
+  const WIN = [[-.07, .62], [aX(.62) - .05, .62], [aX(.965) - .03, .965], [-.07, .965]], RWIN = [[-.41, .62], [-.14, .62], [-.14, .965], [-.42, .965]];
+  f.add(glassMesh(new THREE.BoxGeometry(.014, .43, ZS * 2 - .07), .315, .8, 0, 0, Math.atan2(.21, .41)));
+  f.add(glassMesh(new THREE.BoxGeometry(.014, .36, ZS * 2 - .07), -.555, .8, 0, 0, -.08));
+  f.add(glassMesh(plate(WIN, .012), 0, 0, -ZS)); f.add(glassMesh(plate(RWIN, .012), 0, 0, -ZS)); f.add(glassMesh(plate(RWIN, .012), 0, 0, ZS));
+  // 글자: 보닛 POLICE · 뒤판 POLICE · 먼 쪽 '경찰' · 번호판
+  const dec = (w, h, t) => mesh(new THREE.PlaneGeometry(w, h), mat('#ffffff', { map: t, opacity: .99 }), { cast: false });
+  f.add(put(dec(.36, .1, carText('hood', 'POLICE', 360, 100, CAR.navy, 66)), .6, BY + .002, 0, -HP, 0, 0));
+  f.add(put(dec(.3, .08, carText('back', 'POLICE', 300, 80, CAR.navy, 52)), X0 - .003, .5 + .0, 0, 0, -HP, 0));
+  f.add(put(dec(.34, .12, carText('door', '경찰', 340, 120, CAR.navy, 84)), (D0 + D1) / 2, .36, -ZB - .004, 0, PI, 0));
+  f.add(put(dec(.26, .072, plateTex()), X1 + .075, .27, 0, 0, HP, 0));
+  // 트렁크 뚜껑: 캐빈 뒤 경첩, 앞쪽으로 들림
+  const tg = grp(); put(tg, TB, BY + .05, 0); f.add(tg);
+  tg.add(mc('car-v1-lid', ({ add }) => {
+    add(G.box(TB - X0 + .01, .05, ZB * 2 + .01, .025, 2), CAR.white, -(TB - X0) / 2 - .005, -.025, 0);
+    add(G.box(.05, .022, .16, .01), CAR.bump, -(TB - X0) + .05, .008, 0);
+  }));
+  const tp = f.part('lift', tg, t => { tg.rotation.z = -1.45 * t; }, { label: '순찰차 트렁크', sfx: 'open', dur: .35 });
+  f.spot('inside', null, X0 + .2, BY0 + .126, .1, { part: tp, maxH: .3, label: '순찰차 트렁크 안', scale: .65 });
+  // 앞문 한 묶음: 경첩은 문 앞 끝(x HX, 몸통 겉면) — 판 · 띠 · 노란 줄 · '경찰' · 손잡이 · 안쪽 판 · 창틀 셋 · 유리
+  const dv = grp(); put(dv, HX, 0, DZ); f.add(dv);
+  const lx = x => x - HX, fzl = FZ - DZ;
+  dv.add(mc('car-v1-door', ({ add, tube }) => {
+    add(G.box(D1 - D0, BY - .24, .045, .02, 2), CAR.white, lx((D0 + D1) / 2), (BY + .24) / 2, 0);
+    add(G.pbox(D1 - D0 - .02, .09, .05), CAR.navy, lx((D0 + D1) / 2), .49, 0);
+    add(G.pbox(D1 - D0 - .02, .024, .052), CAR.yel, lx((D0 + D1) / 2), .555, 0);
+    add(G.pbox(D1 - D0 - .06, BY - .3, .004), CAR.jamb, lx((D0 + D1) / 2), (BY + .24) / 2, -.0245);
+    add(G.box(.09, .026, .03, .012), CAR.steel, lx(D0 + .1), .52, .03);
+    add(G.box(.035, .38, .035, .014), CAR.white, lx(D0 + .02), .8, fzl);
+    add(G.box(dX(.98) - D0 - .02, .035, .035, .014), CAR.white, lx((D0 + .02 + dX(.98)) / 2), .98, fzl);
+    tube([lx(dX(BY)), BY, fzl], [lx(dX(.985)), .985, fzl], .018, CAR.white, 8);
+  }));
+  dv.add(put(dec(.34, .12, carText('door', '경찰', 340, 120, CAR.navy, 84)), lx((D0 + D1) / 2), .36, .0235));
+  dv.add(glassMesh(plate(WIN.map(([x, y]) => [lx(x), y]), .012), 0, 0, fzl));
+  const p = f.part('door', dv, t => { dv.rotation.y = 1.15 * t; }, { label: '순찰차 문', sfx: 'door', dur: .35 });
+  p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: lx(D0 + .1), y: .4, z: .03, parent: dv };
+  f.spot('inside', null, -.01, BY + .09, .2, { part: p, maxH: .3, label: '순찰차 앞자리', scale: .7 });
+  f.spot('on', null, -.38, RT, -.12, { maxH: .2, label: '순찰차 지붕 위', scale: .6 });
+  f.spot('under', null, 0, 0, 0, { maxH: .16, label: '순찰차 밑', scale: .7 });
 };
 
 export const PF3_BUILDERS = B;
@@ -533,4 +690,5 @@ export const PF3_INFO = {
   pf3_pigeons: { w: .1, d: .1, name: '파출소 앞 비둘기', price: 0, hidden: true, floor: true },
   pf3_far: { w: .1, d: .1, name: '이어지는 동네 (22판 골목)', price: 0, hidden: true, floor: true },
   pf3_town: { w: .1, d: .1, name: '하얀 동네 (배경)', price: 0, hidden: true, floor: true },
+  pf3_patrolcar: { w: 2, d: 1, name: '순찰차', price: 0, hidden: true },
 };

@@ -177,16 +177,35 @@ B.um_hall = f => {
     // the street on top: joints, the road kerb, a street tree, a lamp, the 출구 1 canopy over the escalator's way up
     add(G.box(NX1 - nx0, .1, .14, .02), C.stone, (nx0 + NX1) / 2, earthY + .08, nz0 + .07);
     add(G.box(.14, .1, WZ1 - nz0, .02), C.stone, nx0 + .07, earthY + .08, (nz0 + WZ1) / 2);
-    { const x = .9, z = nz0 + .5;
-      add(G.box(.5, .05, .5, .02), C.grass, x, earthY + .09, z);
-      tube([x, earthY + .1, z], [x, earthY + .75, z], .045, C.trunk, 6);
-      add(G.sph(.36, 10, 8), C.leaf, x, earthY + 1.0, z); add(G.sph(.26, 10, 8), C.leaf2, x + .2, earthY + .86, z + .1); add(G.sph(.22, 10, 8), C.leaf, x - .18, earthY + .9, z - .05); }
+    // (fix1029 32~40 훑기 — 40판: 초록 네모 판 위 막대 사탕 나무) a tree pit with a cast-iron grate and a kerb, a trunk that thickens at
+    // its foot with two forks, a full round crown of clumps in three greens with a few lighter tufts, a little bench of grass at its foot
+    { const x = .9, z = nz0 + .5, y0 = earthY + .07;
+      add(G.box(.56, .05, .56, .015), C.conc2, x, y0 + .025, z);
+      add(G.box(.46, .02, .46, .01), C.deep, x, y0 + .05, z);
+      for (let k = 0; k < 6; k++) add(G.box(.44, .012, .025, .004), C.dark, x, y0 + .064, z - .19 + k * .076);
+      for (const sx of [-1, 1]) add(G.box(.025, .014, .44, .004), C.dark, x + sx * .2, y0 + .066, z);
+      add(G.cyl(.09, .09, .016, 14), C.grass, x, y0 + .07, z);
+      add(G.cyl(.05, .075, .18, 9), C.trunk, x, y0 + .16, z);
+      tube([x, y0 + .2, z], [x, y0 + .66, z], .045, C.trunk, 7, .05);
+      tube([x, y0 + .5, z], [x + .15, y0 + .76, z + .04], .025, C.trunk, 6);
+      tube([x, y0 + .56, z], [x - .13, y0 + .8, z - .03], .022, C.trunk, 6);
+      const crown = [[0, .98, 0, .3, C.leaf], [.2, .86, .1, .22, C.leaf2], [-.2, .88, -.02, .22, C.leaf2], [.05, .82, .2, .2, C.leaf], [-.05, .84, -.2, .2, C.leaf],
+        [.16, 1.08, -.08, .19, C.leaf], [-.14, 1.1, .1, .19, '#94d47a'], [0, 1.2, 0, .16, '#94d47a'], [.24, .98, -.14, .15, C.leaf2], [-.24, .96, .16, .15, C.leaf]];
+      for (const [dx, dy, dz, r, c] of crown) add(G.sph(r, 12, 9), c, x + dx, y0 + dy, z + dz, 0, dx * 3, 0, [1, .88, 1]);
+      for (const [dx, dy, dz] of [[.1, 1.24, .08], [-.18, 1.16, -.1], [.28, 1.0, .05], [-.06, .9, .3]]) add(G.sph(.06, 8, 6), '#b4e08e', x + dx, y0 + dy, z + dz, 0, 0, 0, [1, .7, 1]); }
     tube([-1.6, earthY + .07, nz0 + .4], [-1.6, earthY + 1.35, nz0 + .4], .03, C.dark, 8);
     tube([-1.6, earthY + 1.35, nz0 + .4], [-1.35, earthY + 1.45, nz0 + .4], .025, C.dark, 6);
     add(G.box(.24, .1, .16, .03), C.dark, -1.27, earthY + 1.42, nz0 + .4); add(G.box(.18, .03, .12, .01), C.tube, -1.27, earthY + 1.36, nz0 + .4);
     for (const [x, z] of [[-3.95, nz1 - .05], [-2.95, nz1 - .05], [-3.95, nz0 + .1], [-2.95, nz0 + .1]]) tube([x, earthY + .07, z], [x, earthY + .95, z], .025, C.steel2, 6);
     add(G.box(1.15, .06, BACK + .1, .02), C.navy, -3.45, earthY + .98, (nz0 + nz1) / 2);
     add(G.box(1.1, .02, BACK + .05, .01), '#b6cfe8', -3.45, earthY + 1.02, (nz0 + nz1) / 2);
+    // (fix1029 40판: 출구 지붕이 민 판) a curved glass roof on ribs over the flat frame, a gutter along its front, a waist rail
+    // round three sides and a green '1' sign plate
+    for (let k = 0; k < 5; k++) { const zz = nz0 + .08 + k * (BACK - .06) / 4; add(G.tor(.565, .018, PI, 4, 16), C.steel2, -3.45, earthY + 1.0, zz, 0, 0, 0, [1.05, .35, 1]); }
+    add(new THREE.CylinderGeometry(.55, .55, BACK, 18, 1, true, HP, PI), '#cfe8ef', -3.45, earthY + 1.0, (nz0 + nz1) / 2, HP, 0, 0, [1.05, 1, .35]);
+    add(G.box(1.2, .04, .05, .01), C.steel2, -3.45, earthY + .95, nz1 - .02);
+    for (const [a, b] of [[[-3.95, .45, nz0 + .1], [-3.95, .45, nz1 - .05]], [[-2.95, .45, nz0 + .1], [-2.95, .45, nz1 - .05]], [[-3.95, .45, nz0 + .1], [-2.95, .45, nz0 + .1]]]) tube([a[0], earthY + a[1], a[2]], [b[0], earthY + b[1], b[2]], .016, C.steel, 6);
+    add(G.cyl(.09, .09, .02, 16), '#3f8f5a', -2.93, earthY + .78, nz1 - .05, 0, 0, HP); add(G.box(.025, .1, .02, .004), C.white, -2.915, earthY + .78, nz1 - .05);
     add(G.box(.9, .05, BACK - .1, .01), C.dark, -3.45, earthY + .075, (nz0 + nz1) / 2);
     // (10/24 아트 점검 40: the street read as one thin empty plate — a bus stop sign, a waiting bench, a planter and a bike rack, a few lumps
     // along the kerb and the corner; the middle of the pavement stays open)
@@ -264,8 +283,16 @@ B.um_hall = f => {
     add(G.box(.1, .03, .1, .01), C.dark, sx0 + .01, .53, sz0 - .01, 0, .5, 0);
     // ── the lost-and-found box (an open crate: an umbrella and a cap sticking out)
     const lx = 3.55, lz = .55;
-    add(G.box(.56, .34, .44, .03), '#e6c28c', lx, .17, lz);
+    // (fix1029 5차 — 40판: 민 상자) an open slatted crate: corner posts, three slats a side with gaps, a rope handle each end, the
+    // inside filled to the rim; a striped scarf draped over the front edge, a lost mitten on the rim, a paper tag on a string
+    add(G.box(.5, .2, .38, .02), '#c99e64', lx, .1, lz);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.05, .36, .05, .01), '#c99e64', lx + sx * .255, .18, lz + sz * .195);
+    for (let k = 0; k < 3; k++) { const y = .06 + k * .11; for (const sz of [-1, 1]) add(G.box(.52, .075, .025, .008), '#e6c28c', lx, y, lz + sz * .21); for (const sx of [-1, 1]) add(G.box(.025, .075, .4, .008), '#e6c28c', lx + sx * .27, y, lz); }
+    for (const sx of [-1, 1]) add(G.tor(.045, .01, PI, 4, 10), '#d9b98a', lx + sx * .285, .28, lz, 0, HP, 0);
     add(G.box(.5, .02, .38, .01), '#c99e64', lx, .33, lz);
+    for (let k = 0; k < 4; k++) add(G.box(.1, .025, .14, .01), k % 2 ? C.red : C.cream, lx - .16, .34 - k * .07, lz + .21 + (k ? .03 : 0), k ? 0 : -.4, 0, 0);
+    add(G.box(.1, .045, .06, .02), C.coral, lx + .24, .37, lz + .12, 0, .3, .2); add(G.box(.04, .03, .03, .01), C.coral, lx + .29, .39, lz + .1, 0, .3, .8);
+    tube([lx + .25, .36, lz - .2], [lx + .3, .26, lz - .25], .004, C.ink, 4); add(G.box(.06, .08, .004, .002), '#fbf3e0', lx + .3, .23, lz - .25, 0, .3, .1);
     tube([lx - .12, .25, lz - .05], [lx - .2, .74, lz - .14], .018, C.navy, 6); add(G.sph(.03, 6, 4), C.navy, lx - .2, .76, lz - .14);
     add(G.cone(.1, .26, 8), C.navy, lx - .11, .34, lz - .04, .2, 0, .15);
     add(G.sph(.09, 10, 6), C.mint, lx + .12, .36, lz + .02, 0, 0, 0, [1, .55, 1]); add(G.box(.12, .02, .07, .01), C.mint, lx + .2, .34, lz + .1);

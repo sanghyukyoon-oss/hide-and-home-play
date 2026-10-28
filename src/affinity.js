@@ -7,6 +7,7 @@
 // its own furniture). ?aff=0 turns it off.
 import * as THREE from 'three';
 import { ITEMS } from './gfx/items.js';
+import { sizeRule } from './fitspot.js';
 
 const ON = typeof location === 'undefined' || !/[?&]aff=0(&|$)/.test(location.search);
 
@@ -23,6 +24,8 @@ const F_TOY = /(chest|toybox|trunk|artcrate|parcel|boxes|crate|lostbox)/;
 const F_DISH = /(dishcab|cupboard|pastrycase)/;   // a glass dish cabinet: dishes and things to eat only
 const F_TRASH = /(trash|bin|recycle)/;          // nothing to eat comes out of the bin
 
+const PAPER = /(전단지|포스터|액자|달력|벽보|게시판|지도판|메뉴판|표지판|시험표)/;
+const LONGS = /^(umbrella|gpt_racket|shovel|gpt_kite|gpt_ukulele|gpt_fryingpan|gpt_rollingpin|gpt_telescope)$/, SOFT = /(이불|베개|빈백|쿠션|방석|담요|식탁보|매트|러그)/, SMALLBOX = /(대야|항아리|바구니|상자|서랍|통|함 안|수거함|우체통|우편함)/;
 const furnOf = s => s.furn?.type || s.part?.furn?.type || '';
 const cat = type => COLD.test(type) ? 'cold' : FOOD.test(type) ? 'food' : CLOTH.test(type) ? 'cloth' : BATH.test(type) ? 'bath' : 'other';
 export const itemKind = cat;   // (숨기기 목록의 '음식' 칩 — ③ 10/21)
@@ -80,6 +83,10 @@ export function affinity(type, spot) {
   if (place && !isCold(type)) for (const [re, at, v] of place) if (re.test(type) && at(spot)) return v;
   // (조립 부품은 화분 흙 위 X: 잎에 묻혀 8판 로봇 몸통이 첫 화면 15 px 파란 조각으로만 보임 — GPT 정밀 QA ART-05, ② 10/24)
   if (/^kit_/.test(type) && /화분 흙/.test(spot.label || '')) return 'never';
+  // (사용자 10/29 실폰 "22판 전단지 들추니 김밥": 먹을 것은 종이 한 장 뒤·밑(전단지·포스터·액자·달력·벽보·게시판·지도판·메뉴판) X)
+  if (sizeRule() && (cat(type) === 'food' || cat(type) === 'cold') && (spot.wallFace || PAPER.test(spot.label || ''))) return 'never';
+  // (사용자 10/29 "큰 물건이 작은 틈 X": 우산·라켓·삽처럼 긴 것은 베개·이불·빈백·쿠션·방석·담요·식탁보 밑이나 대야·항아리·작은 통 안 X)
+  if (sizeRule() && LONGS.test(type) && (SOFT.test(spot.label || '') || /기둥|밑동|줄기/.test(spot.label || '') && (spot.kind === 'under' || spot.kind === 'behind') || spot.kind === 'inside' && SMALLBOX.test(spot.label || '') && !/우산꽂이/.test(spot.label || ''))) return 'never';
   if (spot.kind !== 'inside') return 'ok';
   const f = furnOf(spot), c = cat(type);
   // (every stage, 스토리 룸 원칙 1 "몸이 들어가야 해요"): a birdhouse holds only something smaller than a hand, a camp

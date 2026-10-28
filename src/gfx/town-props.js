@@ -14,7 +14,7 @@
 import * as THREE from 'three';
 import { put, grp, mat, mesh, canvasTex, texCache, roundRect, shade } from './kit.js';
 import { HG as G, hmc as mc, hxf as xf } from './house-props.js';
-import { clothWave, clothSlab } from './clothbend.js';
+import { clothWave, clothSlab, clothBend } from './clothbend.js';
 import { tr } from '../i18n.js';   // (canvas signs don't pass through the page's translator — 10/19)
 
 const PI = Math.PI, HP = PI / 2;
@@ -204,7 +204,144 @@ const FRED = '#ef4a3f', FRED2 = '#c93a31', FGLASS = '#4f6aa8', FBUMP = '#8a8fa3'
 // out in front of the tyre's middle, so its lower half hung under the body and through the ground as a dark crescent; the
 // cream hub cap stood .05 proud of the tyre like a plate. v2: the well is only the arch over the tyre (on the body's face),
 // the tyre has tread blocks and a sidewall line, the rim sits inside the tyre (a dished steel wheel with six nuts and a low hub)
+// (19판 10/29 밤 대수선, 사용자 실폰 "소방차 부품 자체가 안 예쁨·바닥에 파묻혀 안 보임·옆면 문이 벽에 가려짐" — opts.fs3, 19판 새 맵만):
+// 처음부터 다시 만든 장난감 소방차. 둥근 캡오버 운전석(흰 지붕·경광등 막대·큰 앞유리·문에 119 동그라미 표시·손잡이·발판),
+// 회색 범퍼·격자 그릴·둥근 전조등·번호판, 뒤 칸은 은색 말림 셔터 두 칸(열면 헬멧 선반·소화기·감긴 호스)과 호스 릴 칸,
+// 셔터 아래 철판 발판, 지붕엔 회전대 위 사다리, 뒤엔 계단 범퍼·꼬리등, 바퀴는 v2 타이어와 흙받기.
+// 열리는 칸은 차의 -z 쪽(19판에선 카메라 쪽 +x)으로 — 부품 둘(0 앞 칸 자물쇠, 1 뒤 칸)·숨김 자리 넷은 옛 소방차와 같음.
+const T3 = { red: '#ec5446', redD: '#c2423a', white: '#fbf7ef', steel: '#d3d8e2', steelD: '#a2a9b8', dark: '#4a4858', glass: '#7fa7d6', bump: '#9a9fb0', cream: '#f4ead2' };
+const truckDoorTex = () => tex('fs3truck-door', 128, 128, (c, w, h) => {
+  c.fillStyle = '#fbf7ef'; c.beginPath(); c.arc(w / 2, h / 2, w / 2 - 4, 0, 7); c.fill();
+  c.strokeStyle = '#ec5446'; c.lineWidth = 7; c.beginPath(); c.arc(w / 2, h / 2, w / 2 - 12, 0, 7); c.stroke();
+  c.fillStyle = '#ec5446'; c.font = font(44); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('119', w / 2, h / 2 + 3, w - 30);
+});
+const truckPlateTex = () => tex('fs3truck-plate', 160, 56, (c, w, h) => {
+  c.fillStyle = '#fbf7ef'; roundRect(c, 3, 3, w - 6, h - 6, 10); c.fill(); c.strokeStyle = '#4a4858'; c.lineWidth = 4; roundRect(c, 6, 6, w - 12, h - 12, 8); c.stroke();
+  c.fillStyle = '#4a4858'; c.font = font(34); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('119', w / 2, h / 2 + 2, w - 20);
+});
+function fs3Truck(f) {
+  const C = T3, S = -1, Wd = 1.3, zf = Wd / 2, BY0 = .3, LF = .8, LT = 1.36, BT = 1.48, BX0 = -1.3, BX1 = .42, CX0 = .46, CX1 = 1.28, CY1 = 1.56, WR = .34;
+  const LOCK = [-.9, -.27], LW = .56, GY0 = 1.04, GY1 = CY1 - .16, CW = Wd - .04, RX = .25;
+  const AX = [-.78, .86];
+  const cabSide = outline([[CX0 + .05, BY0 + .05], [CX0 + .05, CY1 - .22], [CX0 + .05, CY1 - .05, CX0 + .22, CY1 - .05], [CX1 - .3, CY1 - .05], [CX1 - .05, CY1 - .05, CX1 - .05, CY1 - .3], [CX1 - .05, BY0 + .16], [CX1 - .05, BY0 + .05, CX1 - .16, BY0 + .05], [CX0 + .05, BY0 + .05]]);
+  const SWIN = [[CX0 + .16, GY0], [CX1 - .14, GY0], [CX1 - .14, GY1 - .12], [CX1 - .14, GY1, CX1 - .26, GY1], [CX0 + .16, GY1], [CX0 + .16, GY0]];
+  cabSide.holes.push(outline(SWIN, THREE.Path));
+  f.add(mc('fs3truck-body', ({ add, addM, tube }) => {
+    // ── the back body: solid on the wall side, the near side open into two lockers (their shutters roll up) and the hose bay
+    const zin = S * (zf - .5);
+    add(G.box(BX1 - BX0, BT - BY0, Wd - .5, .07, 3), C.red, (BX0 + BX1) / 2, (BY0 + BT) / 2, -S * .25);
+    add(G.box(BX1 - BX0, LF - BY0, .5, .06, 3), C.red, (BX0 + BX1) / 2, (BY0 + LF) / 2, S * (zf - .25));
+    add(G.box(BX1 - BX0, BT - LT, .5, .05, 3), C.red, (BX0 + BX1) / 2, (LT + BT) / 2, S * (zf - .25));
+    const posts = [[BX0, LOCK[0] - LW / 2], [LOCK[0] + LW / 2, LOCK[1] - LW / 2], [LOCK[1] + LW / 2, RX - .19], [RX + .19, BX1]];
+    for (const [a, b] of posts) if (b - a > .01) add(G.box(b - a, LT - LF + .02, .5, .02), C.red, (a + b) / 2, (LF + LT) / 2, S * (zf - .25));
+    // a thin white frame round each opening, the roll box over it
+    for (const x of LOCK) {
+      for (const [w, h, xx, y] of [[LW + .06, .035, x, LT + .005], [LW + .06, .035, x, LF - .005], [.035, LT - LF, x - LW / 2 - .015, (LF + LT) / 2], [.035, LT - LF, x + LW / 2 + .015, (LF + LT) / 2]]) add(G.box(w, h, .03, .01), C.white, xx, y, S * (zf + .005));
+      add(G.cyl(.055, .055, LW + .02, 16), C.steel, x, LT + .05, S * (zf - .02), 0, 0, HP);
+      for (const s of [-1, 1]) add(G.cyl(.062, .062, .03, 16), C.steelD, x + s * (LW / 2 + .01), LT + .05, S * (zf - .02), 0, 0, HP);
+      // inside: a grey lining, a floor, a shelf with a helmet, an extinguisher, a coil of hose on the floor
+      add(G.pbox(LW, LT - LF, .02), '#8f8aa3', x, (LF + LT) / 2, zin);
+      add(G.pbox(LW, .02, .48), '#b3aec4', x, LF + .01, S * (zf - .26));
+      for (const s of [-1, 1]) add(G.pbox(.02, LT - LF, .48), '#a29db5', x + s * (LW / 2 - .01), (LF + LT) / 2, S * (zf - .26));
+      const k = x === LOCK[0], hx = x + (k ? -.13 : .13), SHY = LF + .3;
+      add(G.box(LW - .04, .025, .2, .008), '#d1ccdc', x, SHY, zin + S * .11);
+      add(G.sph(.1, 16, 10), k ? '#ffcf3a' : C.red, hx, SHY + .015, zin + S * .12, 0, 0, 0, [1.05, .8, 1.15]);
+      add(G.tor(.11, .022, PI * 2, 6, 20), k ? '#e8b22e' : C.redD, hx, SHY + .02, zin + S * .12, HP, 0, 0, [1, 1.25, 1]);
+      add(G.box(.04, .05, .02, .008), '#f7e6a8', hx, SHY + .07, zin + S * .23);
+      const ex = x + (k ? .17 : -.17);
+      add(G.cyl(.05, .05, .2, 14), '#e2403a', ex, LF + .12, zin + S * .12); add(G.sph(.05, 12, 6), '#e2403a', ex, LF + .22, zin + S * .12, 0, 0, 0, [1, .5, 1]);
+      add(G.box(.035, .05, .03, .008), C.dark, ex, LF + .26, zin + S * .12); add(G.pbox(.065, .07, .004), '#ffffff', ex, LF + .12, zin + S * .172);
+      tube([ex + .01, LF + .27, zin + S * .12], [ex + (k ? .07 : -.07), LF + .18, zin + S * .16], .009, C.dark, 5);
+      add(G.tor(.085, .03, PI * 2, 6, 18), C.cream, hx, LF + .05, zin + S * .14, HP, 0, 0);
+    }
+    // the hose bay behind the cab: a dark back, a red drum with cream hose wound on it, the brass nozzle hanging in a clip
+    add(G.pbox(.36, .5, .02), '#6f6a86', RX, (LF + LT) / 2, S * (zf - .3));
+    add(G.box(.4, .03, .32, .01), C.white, RX, LF - .005, S * (zf - .15)); add(G.box(.4, .03, .32, .01), C.white, RX, LT + .005, S * (zf - .15));
+    add(G.cyl(.21, .21, .04, 22), C.redD, RX, (LF + LT) / 2, S * (zf - .27), HP, 0, 0); add(G.cyl(.21, .21, .04, 22), C.redD, RX, (LF + LT) / 2, S * (zf - .02), HP, 0, 0);
+    for (let k = 0; k < 3; k++) add(G.tor(.15 - k * .012, .035, PI * 2, 6, 20), k % 2 ? '#efdcb4' : C.cream, RX, (LF + LT) / 2, S * (zf - .07 - k * .065));
+    add(G.cyl(.05, .05, .27, 12), C.steelD, RX, (LF + LT) / 2, S * (zf - .15), HP, 0, 0);
+    tube([RX + .14, (LF + LT) / 2 - .05, S * (zf - .02)], [RX + .1, LF + .06, S * (zf + .04)], .03, C.cream, 6);
+    add(G.cyl(.032, .022, .1, 10), BRASS, RX + .1, LF + .02, S * (zf + .05));
+    // the white stripe along body and cab, stopped at the wheel arches; a thin red-white checker band under the roof edge
+    const ARCH = AX.map(x => ({ x, y: WR, r: WR + .08 }));
+    for (const sz of [-1, 1]) stripeAround(add, C.white, BX0 + .04, CX1 - .05, .66, .1, sz * (zf + .004), ARCH);
+    for (let k = 0; k < 12; k++) add(G.pbox(.13, .04, .012), k % 2 ? C.white : C.redD, BX0 + .1 + k * .135, BT - .07, -S * (zf + .004));
+    // the top: a steel deck rail round the body, the turntable at the back with the ladder resting forward on a cradle
+    for (const sz of [-1, 1]) { add(G.box(BX1 - BX0 - .1, .03, .03, .01), C.steel, (BX0 + BX1) / 2, BT + .16, sz * (zf - .08)); for (let k = 0; k < 6; k++) add(G.cyl(.012, .012, .16, 6), C.steelD, BX0 + .1 + k * .3, BT + .08, sz * (zf - .08)); }
+    add(G.cyl(.3, .32, .1, 22), C.steelD, BX0 + .38, BT + .05, 0); add(G.cyl(.24, .24, .06, 22), C.steel, BX0 + .38, BT + .12, 0);
+    for (const sz of [-1, 1]) add(G.box(.18, .22, .05, .02), C.redD, BX0 + .38, BT + .24, sz * .2);
+    add(G.cyl(.04, .04, .46, 10), C.steelD, BX0 + .38, BT + .3, 0, HP, 0, 0);
+    add(G.box(.08, .24, .5, .02), C.dark, CX0 - .06, BT + .12, 0);
+    const LA = Math.atan2(.08, 1.6);
+    for (const sz of [-.2, .2]) add(G.box(1.95, .06, .06, .025), C.steel, -.25, BT + .33, sz, 0, 0, -LA);
+    for (let k = 0; k < 10; k++) { const x = -1.12 + k * .2; add(G.cyl(.018, .018, .4, 8), C.steelD, x, BT + .33 - (x + .25) * Math.tan(LA), 0, HP, 0, 0); }
+    // the rear: a grey step bumper with a tread line, round tail lights, a ladder of grab steps, two little hooks
+    add(G.box(.2, .16, Wd + .04, .06, 3), C.bump, BX0 - .06, BY0 + .06, 0); add(G.pbox(.16, .01, Wd - .1), '#7d8194', BX0 - .06, BY0 + .145, 0);
+    for (const sz of [-1, 1]) { add(G.cyl(.06, .06, .03, 16), '#ff6f5e', BX0 - .005, .76, sz * .48, 0, 0, HP); add(G.tor(.06, .012, PI * 2, 4, 16), C.steelD, BX0 - .01, .76, sz * .48, 0, HP, 0); add(G.cyl(.04, .04, .03, 12), '#ffb347', BX0 - .005, .9, sz * .48, 0, 0, HP); }
+    for (let k = 0; k < 3; k++) add(G.box(.04, .03, .3, .012), C.steelD, BX0 - .02, .6 + k * .22, 0);
+    for (const sz of [-1, 1]) tube([BX0 - .02, .55, sz * .19], [BX0 - .02, 1.15, sz * .19], .014, C.steelD, 6);
+    // the running board under the lockers (chequered steel) on its two brackets
+    add(G.box(1.45, .04, .16, .015), C.steel, -.55, BY0 + .02, S * (zf + .02));
+    for (let k = 0; k < 9; k++) add(G.pbox(.1, .006, .1), C.steelD, -1.15 + k * .16, BY0 + .043, S * (zf + .02), 0, .8, 0);
+    // ── the cab: a round red block below the glass, two side frames with windows, a white roof, the front
+    add(G.box(CX1 - CX0, GY0 - BY0 + .04, CW - .04, .16, 4), C.red, (CX0 + CX1) / 2, (BY0 + GY0 + .04) / 2, 0);
+    for (const sz of [-1, 1]) addM(roundSlab(cabSide, .12, .04), xf(0, 0, sz * (CW / 2 - .06)), C.red);
+    add(G.box(CX1 - CX0 - .02, .12, CW - .02, .05, 3), C.white, (CX0 + CX1) / 2 - .01, CY1 - .03, 0);
+    add(G.pbox(.04, GY1 - GY0, CW - .14), C.redD, CX0 + .03, (GY0 + GY1) / 2, 0);
+    add(G.box(.16, .12, CW - .2, .05), C.dark, CX1 - .16, GY0 + .05, 0);
+    for (const sz of [-1, 1]) { add(G.box(.22, .08, .3, .03), '#5a5668', (CX0 + CX1) / 2 - .06, GY0 + .03, sz * .25); add(G.box(.08, .32, .3, .035), '#5a5668', (CX0 + CX1) / 2 - .18, GY0 + .17, sz * .25, 0, 0, .1); }
+    add(G.tor(.09, .016, PI * 2, 6, 18), C.dark, CX1 - .26, GY0 + .2, -.25, 0, HP, .55);
+    // the cab door on the near side: its seam, a handle, a step under it
+    const dz = S * (CW / 2 + .005);
+    for (const [w, h, x, y] of [[.012, GY0 - BY0 - .1, CX0 + .1, (BY0 + GY0) / 2 + .02], [.012, GY0 - BY0 - .1, CX1 - .12, (BY0 + GY0) / 2 + .02]]) add(G.pbox(w, h, .012), C.redD, x, y, dz);
+    add(G.box(.12, .035, .03, .012), C.steelD, CX1 - .22, GY0 - .1, dz + S * .01);
+    add(G.box(.3, .035, .12, .012), C.steel, (CX0 + CX1) / 2, BY0 + .02, S * (zf + .02));
+    // the light bar: a dark base, two red domes and a white middle, and a small horn
+    add(G.box(.2, .05, .9, .03), C.dark, CX0 + .3, CY1 + .045, 0);
+    for (const sz of [-.3, .3]) add(new THREE.SphereGeometry(.1, 16, 8, 0, PI * 2, 0, HP), '#ff4a3a', CX0 + .3, CY1 + .07, sz, 0, 0, 0, [1, .9, 1.3]);
+    add(G.box(.12, .07, .22, .03), C.white, CX0 + .3, CY1 + .1, 0);
+    // wipers, black mirrors on bent arms
+    for (const sz of [-.28, .18]) add(G.box(.025, .022, .34, .008), C.dark, CX1 - .05, GY0 + .07, sz, .5, 0, 0);
+    for (const sz of [-1, 1]) { tube([CX1 - .08, 1.14, sz * (CW / 2)], [CX1 + .04, 1.2, sz * (CW / 2 + .12)], .018, C.dark, 5); add(G.box(.06, .2, .11, .03), C.dark, CX1 + .06, 1.14, sz * (CW / 2 + .15)); }
+    add(G.pbox(.012, .1, CW - .3), C.white, CX1 + .004, .66, 0);
+    // the front: a grille with dark slots, round headlights in rings, orange corner lights, a thick bumper, the plate, tow hooks
+    add(G.box(.05, .28, .54, .04), C.bump, CX1 + .01, .72, 0); for (let k = 0; k < 4; k++) add(G.box(.02, .025, .44, .008), '#6b6f82', CX1 + .035, .62 + k * .065, 0);
+    for (const sz of [-1, 1]) { add(G.sph(.12, 18, 12), '#fff0b0', CX1 - .01, .78, sz * .44, 0, 0, 0, [.5, 1, 1]); add(G.tor(.12, .024, PI * 2, 5, 20), C.steelD, CX1 + .01, .78, sz * .44, 0, HP, 0); add(G.box(.04, .06, .1, .02), '#ff9a3c', CX1 + .02, .58, sz * .5); }
+    add(G.box(.22, .2, Wd + .06, .08, 3), C.bump, CX1 + .06, .4, 0);
+    for (const sz of [-1, 1]) add(G.tor(.035, .012, PI, 4, 10), C.dark, CX1 + .18, .33, sz * .4, 0, HP, PI);
+    // the chassis under it all: a dark frame between the axles, a step box, mud flaps behind the wheels
+    add(G.box(BX1 - BX0 + .7, .12, .6, .03), C.dark, (BX0 + CX1) / 2, BY0 - .02, 0);
+    for (const sz of [-1, 1]) add(G.box(.04, .2, .2, .01), C.dark, AX[0] - WR - .08, .26, sz * (zf - .12));
+    // wheels
+    for (const x of AX) for (const sz of [-1, 1]) { toyWheel2(add, x, WR, sz * (zf - .1), WR, .3, sz, C.cream); wheelArch2(add, x, WR, sz * (zf + .006), WR + .07, C.red, C.redD, '#4a2a2a', BY0); }
+  }));
+  f.add(put(decal(.26, .26, truckDoorTex()), (CX0 + CX1) / 2 + .02, (BY0 + GY0) / 2 + .06, S * (CW / 2 + .012), 0, S < 0 ? PI : 0, 0));
+  f.add(put(decal(.2, .07, truckPlateTex()), CX1 + .175, .42, 0, 0, HP, 0));
+  // the cab's glass
+  f.add(glassOf('fs3truck-glass', C.glass, ({ add, addM }) => {
+    add(G.pbox(.016, CY1 - .28 - GY0, CW - .16), '#ffffff', CX1 - .06, (GY0 + CY1 - .28) / 2, 0);
+    const pg = new THREE.ExtrudeGeometry(outline(SWIN), { depth: .012, bevelEnabled: true, bevelThickness: .001, bevelSize: .015, bevelSegments: 1, curveSegments: 6 }); pg.translate(0, 0, -.006);
+    for (const sz of [-1, 1]) addM(pg, xf(0, 0, sz * (CW / 2 - .06)), '#ffffff');
+  }));
+  // two roll-up lockers on the near side: silver ribbed slats, a red bottom rail with a bar handle
+  for (const [k, x] of [[0, LOCK[0]], [1, LOCK[1]]]) {
+    const sv = grp(); put(sv, x, LT, S * (zf + .012)); sv.rotation.y = S < 0 ? PI : 0; f.add(sv);
+    sv.add(mc('fs3truck-shutter', ({ add }) => {
+      const H = LT - LF;
+      add(G.box(LW - .02, H, .02, .008), C.steel, 0, -H / 2, 0);
+      for (let i = 0; i < 9; i++) add(G.cyl(.011, .011, LW - .04, 6), i % 2 ? '#e3e7ee' : C.steelD, 0, -.04 - i * .055, .012, 0, 0, HP);
+      add(G.box(LW - .02, .06, .035, .012), C.redD, 0, -H + .03, .008);
+      add(G.tor(.07, .012, PI, 4, 12), C.dark, 0, -H + .06, .03, PI, 0, 0);
+    }));
+    const p = f.part('curtain', sv, t => { sv.scale.y = 1 - .88 * t; }, { label: k ? '소방차 뒤 칸' : '소방차 앞 칸', sfx: 'swish', dur: .35 });
+    if (!k) { p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: -(LT - LF) + .06, z: .06, parent: sv }; }
+    f.spot('inside', null, x + (k ? -.02 : .02), LF + .025, S * (zf - .13), { part: p, maxH: .26, label: '소방차 장비 칸', scale: .8 });
+  }
+  f.spot('on', null, -.45, BT + .005, S * .4, { maxH: .26, label: '소방차 지붕 위', scale: .7 });
+  f.spot('under', null, .05, .02, 0, { maxH: .2, label: '소방차 밑', scale: .8 });
+}
 B.firetruck = (f, T, opts = {}) => {
+  if (opts?.fs3) return fs3Truck(f);
   const W2 = opts?.wheels === 'v2';
   // SD proportions (the sheet): 2.4 long in its 3×2 slot, tall — the cab roof at 1.7, wheels .72 across, the lockers up over them
   const L = 2.4, Wd = 1.3, zc = 0, zf = Wd / 2, BY0 = .32, LF = .8, LT = 1.3, BT = 1.45, CX0 = .45, CX1 = 1.2, CY1 = 1.7, WR = .36;
@@ -325,7 +462,7 @@ const coat = (add, x, y, z) => {
   add(G.box(.015, .7, .012, .004), '#6b5530', x, y - .45, z + .04 + zc(0, -.45));
   add(G.box(.12, .03, .02, .008), shade(COAT, -.15), x + .15, y - .54, z + .042 + zc(.15, -.54));
 };
-B.gearrack = f => {
+B.gearrack = (f, T, opts = {}) => {
   const z0 = -.36;
   f.add(mc('gearrack2', ({ add }) => {
     add(G.box(1.8, 1.9, .06, .02), WOOD, 0, .95, z0 - .1);
@@ -342,7 +479,8 @@ B.gearrack = f => {
   }));
   const cv = grp(); put(cv, 0, 1.58, z0 + .04); f.add(cv);
   cv.add(mc('gearrack-coat2', ({ add }) => { coat(add, 0, -.01, 0); add(G.cyl(.02, .02, .1, 6), STEEL2, 0, .02, -.05, HP, 0, 0); }));
-  const p = f.part('lift', cv, t => { cv.rotation.x = -1.2 * t; }, { label: '방화복', sfx: 'swish', dur: .3 });
+  // (19판 10/29 사용자 "방화복 들출 때 벤딩 좀 줘라, 다른 천들처럼" — opts.bend, 19판 새 맵만): 판자처럼 통째로 돌지 않고 아랫단부터 말려 올라감
+  const p = f.part('lift', cv, opts?.bend ? clothBend(f, cv, { hinge: [0, -.02, 0], along: [0, -1, 0], toward: [0, 0, 1], len: .9, turn: 2.6, bias: 2.4, tip: .3, lag: .35, rise: .02, segs: 30 }) : t => { cv.rotation.x = -1.2 * t; }, { label: '방화복', sfx: 'swish', dur: opts?.bend ? .55 : .3 });
   f.spot('inside', null, 0, .5, z0 + .04, { part: p, maxH: .4, label: '방화복 뒤', scale: .8 });
   // (② 레벨 10/21, 19판 "인터렉션과 방탈출적인 요소"): the coat's pocket — a stage's key hangs here (clueHang) and drops behind it when
   // the coat lifts (stage.js dropHung)

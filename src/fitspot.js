@@ -53,12 +53,15 @@ export const LONG_MAX = { crown: .2, block: .14, ball: .24, ball2: .24, donut: .
 export function wantScale(type, spot, role, want = .34) {
   // (a decoy: 1.08 of the place's scale, but never under ~17 cm on its longest side — in a small place a mug came out 12 cm and a
   // book stack 15 cm, ⑥ 10/24 5판 실폰 "ㅈㄴ 작은 컵이랑 책이 가끔 등장함")
-  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2, D = DECOY_SIZE[type], d = Math.max(1.08, Math.min(D ? 4 : 2.4, (D ? D[0] : DECOY_LONG) / (spot.scale || 1) / big)); return LONG_MAX[type] ? Math.min(d, LONG_MAX[type] / (spot.scale || 1) / big) : d; }
+  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2, D = DECOY_SIZE[type], d = Math.min(Math.max(1.08, Math.min(D ? 4 : 2.4, (D ? D[0] : DECOY_LONG) / (spot.scale || 1) / big)), RULE ? Math.max(D ? D[0] : .34, DECOY_LONG) / (spot.scale || 1) / big : Infinity); return LONG_MAX[type] ? Math.min(d, LONG_MAX[type] / (spot.scale || 1) / big) : d; }
   const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2;
   if (DECOY_SIZE[type]) want = Math.max(want, DECOY_SIZE[type][0]);
   const room = (spot.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (spot.scale || 1));
   const ss = spot.scale || 1, lim = ITEMS[type]?.flat ? 2.4 : room;
-  const sc = Math.max(1.15, Math.min(lim, Math.max(1.25, Math.min(2.4, want / ss / big))));
+  // (사용자 10/29 "19판부터 숨긴 물건들 전반적으로 너무 큼": 1.25배 이상 키우는 바닥값이 원래 큰 모델(GPT 라켓·소쿠리·가위)을 60~85 cm로
+  // 만들었음 — 바라는 크기보다 이미 큰 모델은 바라는 크기로 줄여 그림; 작은 모델만 예전처럼 1.25배 이상)
+  const base = want / ss / big;
+  const sc = RULE && base < 1.25 ? Math.min(lim, base) : Math.max(1.15, Math.min(lim, Math.max(1.25, Math.min(2.4, want / ss / big))));
   // (⑪ 10/26 9판 실폰 "여기 열쇠는 왜 이리 크고 못생겼냐": 방 안 세면대 위 열쇠가 30 cm — 실내 판(물건 크기 .42 밑)만 20 cm로; 넓은 바깥 맵은 그대로)
   if (type === 'key' && want < .42) return Math.min(sc, KEY_IN / ss / big);
   return LONG_MAX[type] ? Math.min(sc, LONG_MAX[type] / ss / big) : sc;
@@ -68,8 +71,12 @@ export function wantScale(type, spot, role, want = .34) {
 const _o = new THREE.Vector3(), _d = new THREE.Vector3(), _q = new THREE.Quaternion(), _c = new THREE.Vector3(), _b = new THREE.Box3();
 // the room being planned: its walls, its matrices brought up to date — once per stage, before the planner (stage.js)
 let WALLS = [], ROOMS = [];
-export function fitPrep(room) {
-  WALLS = []; ROOMS = [];
+// (사용자 10/29 "1~18은 어느 정도 완벽하게 해 놨으니까 건들지 말고 19부터 이후로 가자": 덮개 크기·얇은 덮개·크기 바닥값 규칙은 19판부터만 —
+// stage.js가 판마다 켬; 1~18판·내 방·털기는 예전 그대로)
+let RULE = false;
+export const sizeRule = () => RULE;
+export function fitPrep(room, rule = false) {
+  WALLS = []; ROOMS = []; RULE = !!room && !!rule;
   if (!room?.group) return;
   ROOMS = (room.rooms || [room]).map(R => R.group);
   room.group.updateMatrixWorld(true);
@@ -135,6 +142,7 @@ function coverGap(spot, box = false) {
 export function capScale(type, spot, role) {
   if (!ITEMS[type]) return 0;
   if (type === 'friendtoken') return Infinity;   // (not a thing — the marker of where a friend hides)
+  const cc = coverCap(type, spot); if (cc <= 0) return 0;
   // headroom (as before, but for the model's real height)
   const nat = natSize(type), ss = spot.scale || 1;
   let cap = ITEMS[type].flat || spot.kind === 'in' ? Infinity : (spot.maxH + .02) / Math.max(.01, nat.y * ss);
@@ -152,8 +160,44 @@ export function capScale(type, spot, role) {
     cap = Math.min(cap, Math.max(fit(nat.x * ss, nat.z * ss), fit(nat.z * ss, nat.x * ss)));
     if (c.mid) return 0;
   }
+  return Math.min(cap, cc);
+}
+
+// 가리는 것보다 큰 물건 X (사용자 10/29 실폰 "가린 물건보다 큰 물건이 나오지 않게 해줘 제발": 22판 전단지 밑 김밥, 포스터 뒤 우산,
+// 방석보다 큰 연 — 납작한 물건(flat)은 높이 제한이 없고 벽 자리는 옆 공간도 안 재서 우산이 55 cm로 그려졌음): a thing under or behind
+// something you lift, flip or draw aside is no longer or wider than that cover, and behind a thin sheet on a wall (a poster, a flyer,
+// a frame) only a flat thing goes — 5 cm thick at most. The cover is measured in its own frame, shut (its moving pivots only).
+const SHEETS = /^(lift|flip|curtain|picture|cushion|awning)$/, BOXY = /^(door|drawer|lid|slide|shutter|hatch)$/, THIN_IN = .05, COV = new WeakMap(), _cb = new THREE.Box3(), _cbb = new THREE.Box3(), _cm = new THREE.Matrix4(), _cs = new THREE.Vector3();
+function coverSize(p) {
+  if (COV.has(p)) return COV.get(p);
+  let best = null;
+  for (const pv of p.pivots || []) {
+    pv.updateMatrixWorld(true); _cm.copy(pv.matrixWorld).invert(); _cb.makeEmpty();
+    for (const m of meshesOf(pv)) { if (!m.geometry?.attributes?.position || m.visible === false) continue; if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); _cb.union(_cbb.copy(m.geometry.boundingBox).applyMatrix4(new THREE.Matrix4().multiplyMatrices(_cm, m.matrixWorld))); }
+    if (_cb.isEmpty()) continue;
+    pv.getWorldScale(_cs); const d = [(_cb.max.x - _cb.min.x) * Math.abs(_cs.x), (_cb.max.y - _cb.min.y) * Math.abs(_cs.y), (_cb.max.z - _cb.min.z) * Math.abs(_cs.z)].sort((a, b) => b - a);
+    if (!best || d[0] * d[1] > best[0] * best[1]) best = d;
+  }
+  COV.set(p, best); return best;
+}
+const THIN_AT = /(종이|전단지|포스터|액자|달력|메모판|게시판|벽보|지도판|그림|사진|러그|방석|커튼|신문지|매트)/;
+const FLAT_OK = /^(note|notepiece|colornote|postit|letter|receipt|gpt_receipt|lottery|ticket|trainticket|photo|sticker|card|idcard|key|coin|gpt_coin|map|starmap|gpt_luggagetag|gpt_passport|report|stampbook)$/;
+export function coverCap(type, spot) {
+  if (!RULE) return Infinity;
+  const p = spot?.part, sheet = !!p && (SHEETS.test(p.kind) || spot.wallFace && !BOXY.test(p.kind)); if (!sheet || !ITEMS[type]) return Infinity;
+  const c = coverSize(p); if (!c) return Infinity;
+  const n = natSize(type), ss = spot.scale || 1, d = [n.x, n.y, n.z].sort((a, b) => b - a);
+  let cap = Math.min(c[0] * .95 / Math.max(.005, d[0] * ss), c[1] * .95 / Math.max(.005, d[1] * ss));
+  // (허브 10/29 사용자 "종이 뒤에는 쪽지 같은 거나 작은 거 있어야지": 얇은 덮개 — 종이·전단지·포스터·액자·달력·메모판·러그·방석·커튼·신문지 — 는
+  // 납작 전용 자리: 쪽지·사진·카드·열쇠·동전 같은 것만)
+  if ((spot.wallFace && !BOXY.test(p.kind) || THIN_AT.test(spot.label || '') && !/위$/.test(spot.label || '') || c[2] < .035) && !FLAT_OK.test(type)) return 0;
+  if (spot.wallFace && !BOXY.test(p.kind)) cap = Math.min(cap, THIN_IN / Math.max(.002, d[2] * ss));
   return cap;
 }
+// (the planner's last-chance place and the drawing's fallback draw a thing at .6 of its model at least: the cover has to take that)
+export const coverFits = (type, spot) => coverCap(type, spot) >= .6;
+// (the drawing: a thing a device or a fixed list put under a cover it does not fit — 24판 배수구 메달 — keeps its size, never 0; the planner never picks such a place)
+export const coverDraw = (type, spot) => { const c = coverCap(type, spot); return c > 0 ? c : Infinity; };
 
 // fitClear's measure, before the thing is there: its own model on the place at scale sc, turned square to the furniture
 // either way, rays from its middle to the four sides against its furniture and the walls → how much of sc fits (1 = all)
@@ -229,7 +273,8 @@ export function drawnScale(type, spot, role = 'target', want = .34) {
   // (a decoy is clutter: in a tight place it may be drawn smaller, down to .6 — 3판 kept 2 of its 6 otherwise; but not under ~15 cm:
   // smaller it reads as a toy of itself, so the place gets none — ⑥ 10/24)
   if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2; return cap >= .6 && cap * (spot.scale || 1) * big >= (DECOY_SIZE[type]?.[1] || DECOY_MIN) ? cap : 0; }
-  return cap >= Math.max(1, sc * KEEP) ? cap : 0;
+  // (19판부터: a big model drawn smaller than its own size keeps 80% of that)
+  return cap >= (RULE && sc < 1 ? sc * KEEP : Math.max(1, sc * KEEP)) ? cap : 0;
 }
 export const spotFits = (type, spot, role) => drawnScale(type, spot, role) > 0;
 // drawn at (nearly) the full size wanted — ~34 cm on its longest side: not held down by a low headroom (1장's place preference)
@@ -243,7 +288,7 @@ export function shapeFits(type, spot, role = 'target') {
   if (role === 'decoy') { if (!EDGE_KINDS.has(spot.kind)) return true; const d = drawnScale(type, spot, 'decoy'); return d > 0 && probe(type, spot, d, true) > 0; }
   const want = wantScale(type, spot, role), sc = drawnScale(type, spot, role);
   if (!(sc > 0) || sc >= want * 2) return sc > 0;
-  return sc * probe(type, spot, sc) >= Math.max(1, want * KEEP) - 1e-6;
+  return sc * probe(type, spot, sc) >= (RULE && want < 1 ? want * KEEP : Math.max(1, want * KEEP)) - 1e-6;
 }
 
 // which way a thing at this place looks (world yaw: its own +z, where a face or a label is, turned to it)

@@ -325,7 +325,7 @@ for (const [k, T] of Object.entries(TOP)) {
 }
 // the big parfait: a tall glass on a stem; every layer its own group (hidden until its topping is found)
 export function buildParfait() {
-  const g = grp(), layers = {}, glass = { opacity: .28 };
+  const g = grp(), layers = {}, glass = { opacity: .42 };
   // (10/24 아트 점검 34: empty at the start it read as a white bar stool in a glass tube — the foot and stem are glass too now, it stands
   // on a pink paper doily, a long parfait spoon waits in it and two glints run down the front, so it reads as a dessert glass to fill)
   const foot = { opacity: .62 };
@@ -340,15 +340,13 @@ export function buildParfait() {
   // ridges down its sides, a gold lip over the white rim and a gold band at its waist; inside, a dashed ring in each layer's own
   // colour marks where that piece will go (cereal at the bottom … cream at the top), so the empty glass reads as a mould waiting
   // to be filled; a lace edge round the doily, a piping bag of cream and a jar of sprinkles beside it
-  for (let i = 0; i < 12; i++) {
-    const a = i / 12 * Math.PI * 2, rm = .175, tilt = Math.atan2(.08, .44), r = rbox(.008, .45, .006, '#ffffff', .002, { opacity: .55 });
-    r.position.set(Math.cos(a) * rm, .45, Math.sin(a) * rm); r.rotation.order = 'YXZ'; r.rotation.set(tilt, Math.PI / 2 - a, 0); g.add(r);
-  }
+  // (fix1029 32~40 훑기 — 34판: 세로 골 열두 줄이 잉크선에 걸려 철망 바구니처럼 보임) the ridges go; the glass itself is a little
+  // milkier (opacity .28 → .42) so it has a body without them; the dashed rings marking each layer's place (also inked like wire) are soft see-through bands of that layer's colour
   g.add(put(tor(.212, .01, '#f2cf6a', null, Math.PI * 2, 6, 36), 0, .683, 0, Math.PI / 2, 0, 0));
   g.add(put(tor(.135, .01, '#f2cf6a', null, Math.PI * 2, 6, 30), 0, .238, 0, Math.PI / 2, 0, 0));
   for (const [key, y, c] of [['pf_cereal', .275, CEREAL], ['pf_icecream', .37, PINK], ['pf_banana', .455, '#ffe27a'], ['pf_strawberry', .54, '#ff7a90'], ['pf_cream', .63, CREAM]]) {
     const r = .13 + (.21 - .13) * (y - .23) / .44 - .012, ring = grp(); g.add(ring);
-    for (let i = 0; i < 12; i++) ring.add(put(tor(r, .006, c, null, Math.PI / 9, 4, 6), 0, y, 0, Math.PI / 2, 0, i / 12 * Math.PI * 2));
+    ring.add(put(cyl(r, r, .014, c, { opacity: .55 }, 28, true), 0, y, 0));
     Object.defineProperty(ring, 'visible', { get: () => !layers[key]?.visible, set() {} });
   }
   for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2; g.add(put(sph(.022, '#ffffff', null, 8, 6), Math.cos(a) * .262, .006, Math.sin(a) * .262, 0, 0, 0, [1, .35, 1])); }

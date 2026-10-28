@@ -113,6 +113,8 @@ export class BossScene {
     // a real place to play in, not the six-box maze (user, 10/18: "숨기기 맵이 너무 맘에 안 든다… 정사각형 6개 모아둔 맵… 2층맵이라던지
     // 약간 넓거나 야외도 좋으니"): a two-storey house, a yard and a house, the shops side by side, the cabin and its camp
     const cands = [...new Set([BOSS_MAPS[after], ...(reg?.wide || []), sp.room, ...(reg?.rooms || []), 'house2f', 'bear2', 'bear'].filter(Boolean))]; void mz; void nth;
+    // (⑩ 10/29 gate19-b: 보물 지키기도 그 판 번호로 — 19판 이상 뒤면 새 소품 그림, exit에서 지움)
+    globalThis.__sbkStage = after;
     for (const [ci, key] of cands.entries()) {
       const layout = layoutFor(key); if (!layout?.theme && !layout?.rooms) continue;
       const room = layout.rooms ? new MapRooms(W, layout) : new Room(W, layout);
@@ -195,6 +197,7 @@ export class BossScene {
     W.setFit(Math.min(span, 8.6), Math.max(6.6, Math.min(span, 8.6) * .62), .47);
   }
   exit() {
+    globalThis.__sbkStage = -1;
     this.dead = true; const W = this.G.world; delete CHAR_DEFS.raccoon_seek;
     W.onPad = null; W.noDblZoom = false; if (this._was) { W.joyOn = this._was.joy; W.scheme = this._was.scheme; } this.ambient?.dispose();
     for (const o of [this.room.group, this.hero.root, this.seek.root, ...this.treasures.map(t => t.g).filter(Boolean)]) { W.root.remove(o); disposeTree(o); }

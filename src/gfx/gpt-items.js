@@ -51,6 +51,69 @@ function item(name, theme, make, width = .6, opts = {}) {
   };
 }
 
+// 가격표 라벨기 19판~ (⑩ 10/29 실폰 "숨겨진 물건들도 다 디테일이 떨어지고": a red lump from the start camera) — a cream body
+// with a red nose and grip, the white label roll plain to see in its open back with a strip of yellow price labels running
+// along the top to the nose (one hanging off it, ₩ and digits on it), a dark number window with three wheels, a red trigger
+// under the grip and a wrist cord. Footprint width .59 as before; the height stays about the same. 1~18판 keep the old one.
+function pricegunLate() {
+  const g=grp();
+  g.add(put(box(.27,.15,.13,C.cream,.035),-.01,.20,0));
+  g.add(put(box(.07,.13,.135,C.red,.03),.13,.19,0));
+  g.add(put(box(.07,.2,.1,C.red,.025),.0,.085,0,0,0,-.22));
+  g.add(put(box(.03,.09,.06,'#c94a3a',.012),.07,.11,0,0,0,-.22));
+  g.add(put(cylinder(.07,.07,.12,C.cream,20),-.15,.245,0,Math.PI/2));
+  g.add(put(cylinder(.058,.058,.124,C.white,20),-.15,.245,0,Math.PI/2));
+  g.add(put(cylinder(.02,.02,.128,C.silver,10),-.15,.245,0,Math.PI/2));
+  for(const z of [-.064,.064])g.add(put(ring(.07,.008,C.red),-.15,.245,z));
+  for(let i=0;i<4;i++)g.add(put(box(.05,.006,.07,C.yellow,.004),-.09+i*.058,.279,0));
+  g.add(put(box(.06,.006,.075,C.yellow,.004),.19,.2,0,0,0,-1.1));
+  g.add(put(box(.012,.004,.02,C.red,.002),.2,.2,.028,0,0,-1.1));
+  g.add(put(box(.11,.05,.012,C.ink,.008),.0,.21,.068));
+  for(let i=0;i<3;i++)g.add(put(box(.022,.03,.006,C.white,.004),-.03+i*.03,.21,.075));
+  g.add(tube('pricegun-cord',[[-.03,.0,.0],[-.08,-.0,.06],[-.15,.0,.09],[-.2,.0,.04]],.007,C.ink));
+  g.scale.y=.908;
+  return g;
+}
+
+// 헤어드라이어 19판~ (⑩ 10/29 items-2 — from the start camera it read as an orange camera): a soft pink barrel with a white
+// air-intake cap at its back (a grille of rings and slots), a narrow dark concentrator nozzle in front, a handle angled down
+// with a two-step switch and a cream button, a hang loop at its foot and a coiled cord. 1~18판 keep the old one.
+function hairdryerLate() {
+  const g=grp(), PK='#f2a0b0', PKD='#d97f92';
+  g.add(put(cylinder(.1,.11,.26,PK,20),-.01,.24,0,0,0,Math.PI/2));
+  g.add(put(cylinder(.115,.115,.04,C.white,22),-.155,.24,0,0,0,Math.PI/2));
+  for(const r of [.03,.06,.088])g.add(put(ring(r,.006,'#c9c2b8'),-.177,.24,0,0,Math.PI/2));
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;g.add(rod([-.178,.24+Math.sin(a)*.03,Math.cos(a)*.03],[-.178,.24+Math.sin(a)*.088,Math.cos(a)*.088],.004,'#c9c2b8'));}
+  g.add(put(cylinder(.07,.095,.07,PKD,18),.15,.24,0,0,0,Math.PI/2));
+  g.add(put(box(.07,.05,.13,C.ink,.02),.205,.24,0));
+  g.add(put(box(.075,.2,.085,PK,.03),-.03,.1,0,0,0,-.18));
+  g.add(put(box(.03,.07,.02,C.white,.008),-.012,.13,.045,0,0,-.18));
+  g.add(put(box(.018,.025,.012,C.ink,.004),-.012,.15,.055,0,0,-.18));
+  g.add(put(ball(.014,C.cream),.0,.19,.05));
+  g.add(put(ring(.022,.006,PKD),-.055,.008,0,Math.PI/2));
+  g.add(tube('dryer2-cord',[[-.06,.01,0],[-.04,.01,.12],[.08,.012,.15],[.16,.012,.1],[.22,.012,.13]],.011,C.ink));
+  g.add(put(box(.05,.024,.034,C.ink,.008),.24,.014,.14));
+  return g;
+}
+// 여행 어댑터 19판~ (items-2 — the navy panel with two slots and a dot read as a face on a toaster): a white cube with a
+// socket on its front (a round recessed plate with two round holes), two silver flat prongs sticking out of its
+// right side, a slider row in mint, red and blue on top, two USB ports on the left side and a green power light.
+// Width .54 as before (the item() normaliser); about the same height. 1~18판 keep the old one.
+function adapterLate() {
+  const g=grp();
+  g.add(put(box(.24,.2,.24,C.white,.035),0,.1,0));
+  g.add(put(cylinder(.07,.07,.016,'#e9e4da',24),0,.1,.122,Math.PI/2));
+  g.add(put(cylinder(.058,.058,.018,'#d6d0c4',24),0,.1,.124,Math.PI/2));
+  for(const x of [-.026,.026])g.add(put(cylinder(.011,.011,.012,'#6c675f',12),x,.1,.132,Math.PI/2));
+  for(const y of [.07,.13])g.add(put(box(.02,.018,.08,'#c8ccd4',.003),.15,y,0));
+  g.add(put(box(.012,.07,.1,'#e9e4da',.01),.123,.1,0));
+  for(const [i,c] of ['#8dc6b5','#e8604c','#5791be'].entries())g.add(put(box(.05,.012,.03,c,.006),-.06+i*.06,.205,-.03));
+  for(const z of [-.04,.04])g.add(put(box(.004,.016,.04,C.ink,.002),-.123,.1,z));
+  g.add(put(ball(.012,'#59c27a'),.09,.205,.08));
+  g.scale.y=.9;
+  return g;
+}
+
 export const GPT_ITEMS = {
   // TASK remakes: oden/earphones here, coin purse/USB/receipt below.
   // The other sixty entries depict new objects, not recolours.
@@ -150,6 +213,7 @@ export const GPT_ITEMS = {
     g.add(rod([0,.39,0],[0,.46,0],.01,C.ink)); g.add(put(box(.065,.015,.025,C.ink,.006),0,.466,0)); return g;
   }, .60),
   gpt_hairdryer: item('헤어 드라이어', 'home', () => {
+    if ((globalThis.__sbkStage ?? -1) >= 18) return hairdryerLate();
     const g=grp();
     g.add(put(cylinder(.10,.125,.30,C.peach,18),0,.23,0,0,0,Math.PI/2));
     g.add(put(cylinder(.074,.09,.08,C.ink,18),.19,.23,0,0,0,Math.PI/2));
@@ -396,6 +460,7 @@ export const GPT_ITEMS = {
     detail(g,.11,.08,0,.21,.101,C.cream,.009);detail(g,.065,.013,0,.21,.112,C.teal);return g;
   }, .48),
   gpt_traveladapter: item('여행용 멀티 어댑터', 'travel', () => {
+    if ((globalThis.__sbkStage ?? -1) >= 18) return adapterLate();
     const g=grp();
     g.add(put(box(.26,.20,.25,C.cream,.035),0,.10,0));
     detail(g,.195,.145,0,.11,.13,C.navy,.018);
@@ -632,6 +697,7 @@ export const GPT_ITEMS = {
     g.add(put(ball(.049,C.red,[1,.25,1]),0,.231,0));return g;
   }, .51),
   gpt_pricegun: item('가격표 라벨기', 'shop', () => {
+    if ((globalThis.__sbkStage ?? -1) >= 18) return pricegunLate();
     const g=grp();
     g.add(put(box(.28,.16,.14,C.red,.03),-.015,.20,0));
     g.add(put(cylinder(.065,.065,.14,C.red,18),-.14,.24,0,Math.PI/2));

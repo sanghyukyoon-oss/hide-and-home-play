@@ -6,6 +6,7 @@ import { HG as G, hmc } from './house-props.js';
 import { Char } from './chars.js';
 import { bakeItem } from './bake.js';
 import { STYLE, shade, put, mesh, geo, mat } from './kit.js';
+import { clothSlab } from './clothbend.js';
 
 const PI = Math.PI, HP = PI / 2;
 // (⑥ 10/22 들여오기 — "누래": greens for the pines and grass, a teal tent, a sky-blue telescope, a red-brown for the dark wood,
@@ -214,10 +215,18 @@ B.gptfire_fan = (f, T, o = {}) => {
   fan.gptChain = ['fire-smoke', 'fire-basket'];
   fan.sfx = 'gearUp'; fan.gptEndSfx = 'click';
   const blanket = group(f.group, .32, 1.3, -.76);
-  blanket.add(fireMc('fire-smoke-blanket', ({ add }) => {
-    add(G.box(1.3, .62, .065, .035), C.navy, 0, -.28, .015);
-    for (const x of [-.42, -.21, 0, .21, .42]) add(G.box(.085, .58, .014, .01), '#6795e0', x, -.28, .055);
-    add(G.box(1.29, .07, .11, .025), C.wood, 0, -.61, .015);
+  // (⑩ 10/29 실폰 "허접한 오브젝트" — 57판: 받침대에 걸린 덮개가 초록 테 두른 납작한 판(화면)처럼 보임) 젖은 천 덮개: 막대에 걸쳐
+  // 접힌 윗단, 아래로 갈수록 앞으로 처지는 주름 천(세로 주름 결), 짙게 젖은 얼룩, 늘어진 밑단 귀퉁이, 밑단에 맺힌 물방울. 동작(-1.4 젖힘)·부품·자리는 그대로
+  const wz = (x, y) => .028 * Math.sin(x * 11 + .6) * (.25 + -y / .66) + .07 * (-y / .66) ** 2 - .02 * Math.cos(x * 2.4);
+  blanket.add(fireMc('fire-smoke-blanket2', ({ add }) => {
+    add(clothSlab(1.26, .66, .028, wz, .02), '#4f7fb0', 0, 0, .015);
+    for (const x of [-.4, -.13, .13, .4]) add(clothSlab(.07, .62, .01, (x2, y) => wz(x2 + x, y) + .016, .0), '#7aa4cf', x, 0, .015);
+    add(G.cyl(.06, .06, 1.3, 10), '#4f7fb0', 0, .02, .015, 0, 0, HP, [1, 1, .8]);
+    for (const [x, y, sx, sy] of [[-.32, -.42, .16, .1], [.22, -.5, .2, .09], [.05, -.25, .12, .07], [.46, -.3, .09, .12]]) add(G.sph(1, 10, 6), '#3d6690', x, y, .015 + wz(x, y) + .02, 0, 0, 0, [sx, sy, .012]);
+    for (const sx of [-1, 1]) add(G.cone(.07, .12, 6), '#4f7fb0', sx * .58, -.68, .015 + wz(sx * .58, -.66), PI, 0, 0, [1, 1, .4]);
+  }));
+  blanket.add(fireMc('fire-smoke-drips', ({ add }) => {
+    for (const [x, d] of [[-.45, .03], [-.18, .06], [.08, .02], [.31, .05], [.52, .04]]) add(G.sph(.018, 8, 6), '#bfe4f6', x, -.68 - d, .015 + wz(x, -.66) + .005, 0, 0, 0, [1, 1.5, 1]);
   }));
   const smoke = group(f.group, .3, 1.15, -.1);
   smoke.add(fireMc('fire-smoke-signal', ({ add }) => {

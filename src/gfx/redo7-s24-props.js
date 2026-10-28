@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { put, mat, mesh, canvasTex, texCache, roundRect, shade } from './kit.js';
 import { HG as G, hmc as rawMc } from './house-props.js';
+import { clothBend } from './clothbend.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
 
@@ -436,7 +437,8 @@ B.skb_miniramp = f => {
     for (let k = 0; k < 5; k++) add(G.box(deckW / 5 - .004, H - .1, .02, .006), k % 2 ? '#e8e4da' : '#8a9aa6', -deckW / 2 + deckW / 10 + k * deckW / 5, -(H - .1) / 2, 0);
     add(G.cyl(.035, .035, deckW + .04, 10), '#e07a34', 0, .0, 0, 0, 0, HP);
   }));
-  const pc = f.part('lift', cur, t => { cur.scale.y = Math.max(.08, 1 - .92 * t); }, { label: '램프 밑 천막', sfx: 'rustle', dur: .35 });
+  // (⑩ 10/29 사용자 "들출 때 제발 벤딩 좀": 위아래로 납작하게 줄던 천막 — 이제 아랫단부터 둘둘 말려 올라감, 24판 전용)
+  const pc = f.part('lift', cur, clothBend(f, cur, { along: [0, -1, 0], toward: [0, 0, 1], len: H - .1, turn: 4.4, bias: 3, tip: .1 }), { label: '램프 밑 천막', sfx: 'rustle', dur: .6 });
   f.spot('inside', null, -L / 2 + .2, .01, Wd / 2 - .25, { part: pc, maxH: .45, label: '램프 밑 창고', scale: .85 });
   f.spot('on', null, 0, .01, .1, { maxH: .45, label: '램프 가운데', scale: 1 });
   f.spot('on', null, -L / 2 + .2, H + .045, .15, { maxH: .3, label: '왼쪽 덱 위', scale: 1 });
@@ -597,6 +599,10 @@ B.skb_graffiti = f => {
   }));
   const m = mesh(new THREE.PlaneGeometry(L - .5, H - .14), mat('#ffffff', { map: blockTex(), rough: .9, rim: .06 }), { cast: false });
   put(m, 0, H / 2 + .04, T / 2 + .006); f.add(m);
+  // (10/29 "허접한 건 디벨롭": its back was one blank grey slab) the same block courses on the back, a faded poster and a tag
+  { const bk = mesh(new THREE.PlaneGeometry(L - .5, H - .14), mat('#ffffff', { map: blockTex(), rough: .9, rim: .06 }), { cast: false }); put(bk, 0, H / 2 + .04, -T / 2 - .006, 0, PI, 0); f.add(bk); }
+  f.add(mc('blockwall-back', ({ add }) => { add(G.box(.42, .56, .006, .003), '#e9e2d2', .35, .95, -T / 2 - .012); add(G.box(.32, .1, .004, .002), '#8e8a84', .35, 1.1, -T / 2 - .016);
+    for (let k = 0; k < 3; k++) add(G.box(.26, .02, .004, .002), '#b9b5ae', .35, .92 - k * .07, -T / 2 - .016); add(G.box(.5, .12, .004, .02), '#5a6070', -.45, .55, -T / 2 - .012, 0, 0, .12); }));
   f.spot('on', null, -.75, H + .08, 0, { maxH: .3, label: '그래피티 벽 위', scale: .8 });
   f.spot('behind', null, L / 2 + .12, 0, .1, { maxH: .35, label: '그래피티 벽 끝', scale: 1 });
   f.spot('under', null, .95, 0, T / 2 + .35, { maxH: .25, label: '스프레이 통 옆', scale: 1 });
@@ -675,6 +681,20 @@ B.skb_kiosk = f => {
   { const DZ = .36, DY = 1.12, s = new THREE.Shape(); s.moveTo(-D / 2, 0); s.lineTo(D / 2, 0); s.lineTo(D / 2, H); s.lineTo(-D / 2, H); s.lineTo(-D / 2, 0);
     const hole = new THREE.Path(); hole.moveTo(-DZ, 0); hole.lineTo(-DZ, DY); hole.lineTo(DZ, DY); hole.lineTo(DZ, 0); hole.lineTo(-DZ, 0); s.holes.push(hole);
     f.add(put(mesh(new THREE.ShapeGeometry(s), mat('#ffffff', { map: corrTex(MINT), rough: .7, rim: .12 }), { cast: false }), L / 2 + .004, y0, 0, 0, HP, 0)); }
+  // (10/29 "허접한 건 디벨롭": turned round, the container's back and left end were flat mint boxes) the corrugated skin on them too,
+  // a back service hatch with its handle, a gas bottle in a cage and the drain pipe from the roof
+  { const s = new THREE.Shape(); s.moveTo(-L / 2, 0); s.lineTo(L / 2, 0); s.lineTo(L / 2, H); s.lineTo(-L / 2, H); s.lineTo(-L / 2, 0);
+    f.add(put(mesh(new THREE.ShapeGeometry(s), mat('#ffffff', { map: corrTex(MINT), rough: .7, rim: .12 }), { cast: false }), 0, y0, -D / 2 - .004, 0, PI, 0)); }
+  { const s = new THREE.Shape(); s.moveTo(-D / 2, 0); s.lineTo(D / 2, 0); s.lineTo(D / 2, H); s.lineTo(-D / 2, H); s.lineTo(-D / 2, 0);
+    f.add(put(mesh(new THREE.ShapeGeometry(s), mat('#ffffff', { map: corrTex(MINT), rough: .7, rim: .12 }), { cast: false }), -L / 2 - .004, y0, 0, 0, -HP, 0)); }
+  f.add(mc('kiosk-back', ({ add, tube }) => {
+    const bz = -D / 2 - .01;
+    add(G.box(.62, .5, .03, .01), MINT2, .2, y0 + .62, bz); add(G.box(.56, .44, .01, .004), '#b6d2c6', .2, y0 + .62, bz - .016); add(G.box(.14, .03, .04, .01), C.steelD, .2, y0 + .42, bz - .03);
+    add(G.cyl(.11, .11, .5, 14), '#e8605a', -.65, y0 + .25, bz - .2); add(G.sph(.11, 12, 8), '#e8605a', -.65, y0 + .5, bz - .2, 0, 0, 0, [1, .55, 1]); add(G.cyl(.03, .03, .08, 8), C.steelD, -.65, y0 + .6, bz - .2);
+    for (const a of [0, 1, 2, 3]) add(G.box(.012, .62, .012, .004), C.steelD, -.65 + Math.cos(a * HP + PI / 4) * .15, y0 + .31, bz - .2 + Math.sin(a * HP + PI / 4) * .15);
+    for (const y of [.12, .6]) add(G.tor(.15, .008, PI * 2, 4, 16), C.steelD, -.65, y0 + y, bz - .2, HP, 0, 0);
+    tube([L / 2 - .1, y0 + H + .03, bz - .02], [L / 2 - .1, .05, bz - .02], .025, C.steelD, 8); add(G.box(.1, .03, .1, .01), C.steelD, L / 2 - .1, .02, bz - .06);
+  }));
   // 간판 · 메뉴판
   f.add(put(decal(1.05, .27, kioskSign()), 0, y0 + H + .25, D / 2 - .1));
   f.add(put(decal(.3, .38, menuTex()), HX1 + .3, y0 + .85, D / 2 + .008));

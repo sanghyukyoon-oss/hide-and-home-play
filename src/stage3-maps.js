@@ -73,7 +73,7 @@ export function installStage3(LAYOUTS, THEMES) {
   LAYOUTS.frogpond = islandMap(9, 8, THEMES.frogpond, [
     AT('s3c_island', 0, 0), AT('s3c_weather', 0, 0),
     HC('bench', -1.65, -1.5, 0, 's3c_house'), HC('tree', 1.75, -2.0, 0, 's3a_tree', DC), HC('fishsign', .35, -1.75, -.2, 's3c_sign'),
-    HA('fishdock', 4.45, .95, 0, 's3c_wheel'), HC('baitbucket', 2.3, -.85, 0, 's3a_baitbucket', DC), HC('tacklebox', -.15, -.65, .3, null),
+    HA('fishdock', 4.45, .95, 0, 's3c_wheel'), HC('baitbucket', 2.3, -.85, 0, 's3a_baitbucket', DC), HC('tacklebox', -.15, -.65, .3, 's3a_tacklebox', DC),
     HA('pond', 4.75, 5.55, .71, 's3c_lilysteps'), HC('parasol', .95, 1.25, -.4, 's3c_umbrella'),
     HC('picnic', -1.45, .75, .25, 's3a_picnic', DC), HC('cooler', 1.85, .9, -.5, 's3a_cooler', DC), HC('campchair', -2.75, .6, .9, 's3a_campchair', DC),
     HC('bush', -2.85, -.5, .4, 's3a_bush', DC),

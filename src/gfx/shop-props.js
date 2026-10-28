@@ -1444,6 +1444,31 @@ B.clockposter = (f, T) => {
   f.spot('inside', null, 0, PY + cy, .012, { part: p, maxH: .09, label: '시계 뒤', wallFace: true });
 };
 
+// 가게 벽시계 디테일 (25·32·33·34판에만 나옴 — ① 10/29 공용 소품 다듬기 2): a poster and a clock alone on the wall. Now the
+// poster's bottom corner curls off the wall, two sticky notes sit on its edge, and a shop's tear-off month calendar hangs
+// beside it on a nail with a bulldog clip.
+const shopCalTex = () => tex('shop-cal2|' + STYLE.mode, 128, 176, (c, w, h) => {
+  c.fillStyle = tint('#fffdf7'); c.fillRect(0, 0, w, h);
+  c.fillStyle = tint('#ff6b57'); c.fillRect(0, 0, w, 44);
+  c.fillStyle = '#ffffff'; c.font = 'bold 30px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('10', w / 2, 24);
+  c.font = '10px sans-serif';
+  for (let r = 0; r < 5; r++) for (let k = 0; k < 7; k++) { const n = r * 7 + k - 2; if (n < 1 || n > 31) continue; c.fillStyle = tint(k === 0 ? '#ef4a4a' : k === 6 ? '#4f6db0' : '#2a1d33'); c.fillText(String(n), 12 + k * 17, 62 + r * 22); }
+  c.strokeStyle = tint('#ef4a4a'); c.lineWidth = 2; c.beginPath(); c.arc(12 + 4 * 17, 62 + 4 * 22, 9, 0, PI * 2); c.stroke();
+});
+{ const b = B.clockposter; B.clockposter = (f, T) => {
+  b(f, T);
+  f.add(mc('clockposter2-ext', ({ add }) => {
+    add(G.box(.08, .08, .004, .002), '#fff7b8', -.2, 1.53, .016, 0, 0, .08);
+    add(G.box(.07, .07, .004, .002), '#ffc9d6', .24, .98, .016, 0, 0, -.1);
+    add(G.pbox(.1, .09, .004), WHITE, .22, .935, .03, -.5, 0, -.78);
+    add(G.cyl(.008, .008, .03, 8), STEEL2, .39, 1.55, .015, HP, 0, 0);
+    add(G.box(.06, .03, .025, .006), '#3b3550', .39, 1.52, .014);
+    add(G.box(.22, .3, .008, .003), '#e8e2d6', .39, 1.35, .006);
+    add(G.box(.22, .012, .012, .004), '#c9cfe0', .39, 1.502, .012);
+  }));
+  f.add(mg('clockposter2-cal', mat('#ffffff', { map: shopCalTex() }), ({ add }) => add(new THREE.PlaneGeometry(.2, .275), .39, 1.355, .0115)));
+}; }
+
 // ═════════════════════════════════════════════ 룩: 가게를 가게답게 ═════════════════════════════════════════════
 // (10/19 아트 세션, user refs — an isometric cosy café and the TUTU shop: "이런 판이나 이런느낌의 판도 몇개 있었으면")
 // Pieces the look layer (look.js RECIPES.konbini / cafe) hangs on the shop walls and stands on the free floor so the
@@ -1580,6 +1605,75 @@ B.basketstack = (f, T) => {
     for (const sz of [-1, 1]) add(G.tor(.15, .014, PI, 4, 12), '#2a1d33', .0, .445, sz * .12, sz * 1.15, .05, 0);
   }));
 };
+// (fix1029 32~40 훑기 — 32판: 빨간 상자 넷을 겹친 덩어리라 흑백에서 회색 가방처럼 보임; 19판 이상에서만 — 허브 '1~18판 그대로')
+// nested shop baskets: each a hollow tray (thin walls, a white rim), two rows of slots round its sides, the top one's two
+// black handles folded over, a store tag on its end
+const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
+const basketstackLate = (f, T) => {
+  f.add(mc('basketstack2', ({ add }) => {
+    const W = .5, D = .36, H = .2, t = .018, RIM = '#fff4ee', SL = shade(RED, -.35);
+    for (let k = 0; k < 4; k++) {
+      const y = .02 + k * .075, r = k % 2 ? .05 : -.04, ox = r * .4, oz = r * .2;
+      const at = (g, c, x, yy, z, rx = 0, ry = 0, rz = 0, sc = 1) => { const ca = Math.cos(r), sa = Math.sin(r); add(g, c, ox + x * ca + z * sa, y + yy, oz - x * sa + z * ca, rx, r + ry, rz, sc); };
+      for (const sz of [-1, 1]) at(G.box(W, H, t, .006), RED, 0, H / 2, sz * (D / 2 - t / 2));
+      for (const sx of [-1, 1]) at(G.box(t, H, D - 2 * t, .006), RED, sx * (W / 2 - t / 2), H / 2, 0);
+      at(G.pbox(W - 2 * t, .015, D - 2 * t), shade(RED, -.15), 0, .0075, 0);
+      for (const sz of [-1, 1]) at(G.box(W + .012, .025, t + .012, .006), RIM, 0, H, sz * (D / 2 - t / 2));
+      for (const sx of [-1, 1]) at(G.box(t + .012, .025, D + .012, .006), RIM, sx * (W / 2 - t / 2), H, 0);
+      if (k === 3) for (const row of [.06, .13]) {
+        for (const sz of [-1, 1]) for (let i = 0; i < 5; i++) at(G.box(.06, .03, .004, .002), SL, -.18 + i * .09, row, sz * (D / 2 + .001));
+        for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) at(G.box(.004, .03, .06, .002), SL, sx * (W / 2 + .001), row, -.09 + i * .09);
+      } else for (const sz of [-1, 1]) for (let i = 0; i < 5; i++) at(G.box(.06, .022, .004, .002), SL, -.18 + i * .09, H - .035, sz * (D / 2 + .001));
+      for (const sx of [-1, 1]) at(G.box(.006, .03, .1, .004), '#2a1d33', sx * (W / 2 + .004), H - .05, 0);
+    }
+    for (const sz of [-1, 1]) add(G.tor(.15, .014, PI, 4, 12), '#2a1d33', .02, .445, .01 + sz * .12, sz * 1.15, .05, 0);
+    add(G.box(.08, .05, .006, .004), '#ffffff', .02 + .05 * .4, .38, .01 + .19); add(G.pbox(.05, .01, .004), '#4fc28a', .02 + .05 * .4, .39, .01 + .194);
+  }));
+};
+{ const old = B.basketstack; B.basketstack = (f, T, o) => (late19() ? basketstackLate(f, T, o) : old(f, T, o)); }
+// (fix1029 4차 — 32판: 유리문 너머 칸마다 병·캔이 한 줄뿐이라 듬성; 19판 이상에서만) one more row on every shelf at its lip:
+// bottles with a label band and a cap, cans two high with a printed band and a silver top, little milk bottles on the top shelf;
+// the old row and the hiding gaps stay
+{ const old = B.drinkfridge; B.drinkfridge = (f, T, o) => {
+  const r = old(f, T, o);
+  if (!late19()) return r;
+  const SY = [.12, .53, .93, 1.33], BZ = -.12, LIQ = ['#7a3b2a', '#bdf0c4', '#ffe27a', '#c9d96a', '#ffab4c', '#d6f1ff', '#8a5a3c', '#eef8ff'];
+  const CAPS = [TOMATO, LEAF2, '#6cc46a', LEAF, ORANGE, SKY, '#6b3f2a', '#3f86d8'];
+  // the door glass a little clearer (.3 → .16), so the full shelves show through it
+  f.group.traverse(o => { if (o.isMesh && /^drinkfridge-glass/.test(o.geometry?.name || '')) o.material = glassMat(.16); });
+  f.add(mc('drinkfridge-back2', ({ add }) => {
+    const bottle = (x, y, z, h, rr, liq, cap, band) => {
+      add(G.cyl(rr, rr, h * .66, 9), liq, x, y + h * .33, z); add(G.cyl(rr * .45, rr, h * .16, 9), liq, x, y + h * .74, z);
+      add(G.cyl(rr * .5, rr * .5, h * .08, 8), cap, x, y + h * .9, z); add(G.cyl(rr + .004, rr + .004, h * .22, 9), band, x, y + h * .36, z);
+    };
+    const can = (x, y, z, i, d) => { add(G.cyl(.031, .031, .13, 10), shade(DRINKS[i][1], d), x, y + .065, z); add(G.cyl(.034, .034, .04, 10), shade(DRINKS[i][2], d), x, y + .07, z); add(G.cyl(.027, .031, .008, 10), SILVER, x, y + .134, z); };
+    // (the shelf above hides the back of each compartment from the game's high camera, so the new row stands IN FRONT of the
+    // old one, near the shelf's lip; the hiding gaps — 둘째 칸 x −.46…−.15, 아래칸 around x .5 — stay open)
+    const Z1 = BZ + .11, gap = (s2, x) => (s2 === 1 && x > -.5 && x < -.1) || (s2 === 0 && x > .3 && x < .72);
+    for (let k = 0; k < 13; k++) { const x = -.8 + k * .133, i = (k * 3 + 1) % 8; if (!gap(0, x)) bottle(x, SY[0], Z1, .3, .05, LIQ[i], CAPS[i], WHITE); }
+    for (let k = 0; k < 17; k++) { const x = -.81 + k * .101, i = (k * 5 + 1) % 8; if (!gap(1, x)) bottle(x, SY[1], Z1, .23, .034, LIQ[i], CAPS[i], DRINKS[i % DRINKS.length][1]); }
+    for (let k = 0; k < 20; k++) { const x = -.82 + k * .0865, i = (k + 2) % DRINKS.length; can(x, SY[2], Z1, i, 0); if (k % 3 !== 1) can(x, SY[2] + .138, Z1 - .02, (i + 3) % DRINKS.length, -.04); }
+    for (let k = 0; k < 15; k++) { const x = -.8 + k * .114, c = ['#6cc46a', '#ff8fb3', '#ffc23d'][k % 3]; bottle(x, SY[3], Z1, .2, .04, '#fff6dc', c, c); }
+  }));
+  return r;
+}; }
+// (fix1029 5차 — 34판 등: 돌려 보면 잡지 꽂이 뒤가 민 판; 19판 이상에서만) the back: board seams, a framed '잡지 · 신문' plate,
+// two cross rails, a cloth tote hung on a hook
+{ const old = B.magazinerack; B.magazinerack = (f, T, o) => {
+  const r = old(f, T, o);
+  if (!late19()) return r;
+  const wood = col(T, 'wood'), woodD = col(T, 'woodD'), z = -.219;
+  f.add(mc('magazinerack-back|' + wood + woodD, ({ add }) => {
+    for (const x of [-.21, 0, .21]) add(G.pbox(.008, 1.14, .004), shade(wood, -.2), x, .62, z);
+    for (const y of [.35, .95]) add(G.box(.84, .05, .02, .008), woodD, 0, y, z - .008);
+    add(G.box(.3, .12, .012, .006), woodD, 0, 1.12, z - .006); add(G.box(.26, .08, .006, .003), '#fff6e8', 0, 1.12, z - .013);
+    for (const [y, w] of [[1.135, .18], [1.105, .12]]) add(G.pbox(w, .012, .003), INK, 0, y, z - .017);
+    add(G.cyl(.012, .012, .05, 6), STEEL2, .28, .82, z - .025, HP, 0, 0);
+    add(G.box(.2, .24, .03, .02), '#f3e3c3', .28, .62, z - .035); add(G.tor(.06, .008, PI, 4, 10), '#d9c29a', .28, .76, z - .035);
+    add(G.box(.08, .08, .004, .002), '#4fc28a', .28, .6, z - .052);
+  }));
+  return r;
+}; }
 // 빨래방: a washing line high across a wall (o.len long), socks and little tees pegged on it
 B.sockline = (f, T, o = {}) => {
   const L = o.len || 2.4, Y = 2.5, sag = .08, n = 24, at = t => [(-.5 + t) * L, Y - sag * 4 * t * (1 - t), .09];

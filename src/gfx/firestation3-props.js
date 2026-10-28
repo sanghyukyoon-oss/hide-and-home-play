@@ -13,6 +13,7 @@ import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
 import { Char } from './chars.js';
+import { clothBend } from './clothbend.js';
 
 const WORDS = { '소방차 전용': 'Fire engines only', '주정차 금지': 'No parking', '근무표': 'Duty Roster', '안전센터': 'Fire Station', '곰돌이네': "Bear's", '당직실': 'Duty Room', '출동 준비!': 'Ready to roll!', '불조심': 'Fire Safety' };
 for (const k in WORDS) if (EN[k] == null) EN[k] = WORDS[k];
@@ -198,15 +199,24 @@ B.fs3_island = f => {
     add(G.cyl(.03, .03, 1.75, 8), '#a7adb6', .55, .875, SW0 + .32); add(G.cyl(.06, .07, .05, 10), '#8c929b', .55, .025, SW0 + .32);
     // gentle grass tufts and flowers along the beds' edges
     const tuft = (x, z, c = P.grassD) => { for (let k = 0; k < 3; k++) add(G.cone(.035, .11 + k * .02, 4), c, x + (k - 1) * .04, .07, z + (k % 2) * .03, 0, 0, (k - 1) * .3); };
-    for (const [x, z] of [[3.3, -.4], [3.25, .7], [4.5, -.2], [3.0, 1.95], [4.45, 1.6], [3.3, -2.9], [4.5, -2.6], [-4.4, -1.8], [-4.65, -.9], [-4.5, .1], [-4.3, 1.9]]) tuft(x, z);
+    for (const [x, z] of [[3.3, -.4], [3.25, .7], [3.0, 1.95], [4.45, 1.6], [4.5, -2.6], [-4.4, -1.8], [-4.6, -2.6], [-4.3, -3.4], [-4.3, 2.0]]) tuft(x, z);
     const flower = (x, z, c) => { add(G.cyl(.008, .008, .16, 4), P.leafD, x, .1, z); for (let k = 0; k < 5; k++) { const a = k * 1.256; add(G.sph(.03, 6, 4), c, x + Math.cos(a) * .035, .19, z + Math.sin(a) * .035, 0, 0, 0, [1, .5, 1]); } add(G.sph(.022, 6, 4), P.yellow, x, .2, z); };
-    for (const [x, z, c] of [[4.6, .4, P.pink], [4.5, 1.05, '#ffffff'], [3.05, 2.05, P.pink], [-4.6, -.4, '#ffffff'], [-4.45, -1.3, P.pink], [4.6, -1.5, '#ffffff'], [-4.55, 1.7, P.pink]]) flower(x, z, c);
+    for (const [x, z, c] of [[4.6, .4, P.pink], [4.5, 1.05, '#ffffff'], [3.05, 2.05, P.pink], [-4.5, -2.2, '#ffffff'], [-4.45, -1.3, P.pink], [4.7, -2.45, '#ffffff'], [-4.6, 2.05, P.pink]]) flower(x, z, c);
     const bush = (x, z, s) => { for (const [dx, dz, r] of [[0, 0, .32], [.26, .08, .24], [-.22, .1, .22], [.05, .22, .2]]) add(G.sph(r * s, 10, 8), dx > 0 ? P.leaf : P.leafD, x + dx * s, r * s * .85, z + dz * s, 0, 0, 0, [1, .85, 1]); };
     bush(4.45, -3.35, 1); bush(4.55, -1.95, .62);
     // recycling bins by the back corner: blue (paper), green (glass), yellow (cans) with their lids
-    for (const [k, c] of [[0, '#6f9fd0'], [1, '#7fbf7a'], [2, '#f0c75a']]) {
-      const x = 3.25 + k * .44, z = -1.75;
-      add(G.box(.38, .56, .38, .04), c, x, .28, z); add(G.box(.42, .06, .42, .02), shadeHex(c, -.12), x, .59, z); add(G.box(.2, .02, .03, .01), '#ffffff', x, .4, z + .195);
+    // (10/29 대수선 "대충 만든 오브젝트"): 네모 상자 셋 → 바퀴 달린 둥근 수거함 — 살짝 좁아지는 몸통, 테두리 띠, 손잡이 달린 뚜껑(종이함은
+    // 빼꼼 열려 신문이 보임), 앞면 흰 표시판과 재활용 화살표, 뒤 바퀴 두 개
+    for (const [k, c] of [[0, '#7fa9d4'], [1, '#86c483'], [2, '#f0cb67']]) {
+      const x = 3.2 + k * .43, z = -1.75, cd = shadeHex(c, -.14);
+      add(G.cyl(.17, .15, .5, 18), c, x, .29, z, 0, 0, 0, [1, 1, 1.05]); add(G.tor(.172, .018, PI * 2, 5, 20), cd, x, .5, z, HP, 0, 0, [1, 1.05, 1]);
+      add(G.tor(.155, .014, PI * 2, 4, 20), cd, x, .1, z, HP, 0, 0, [1, 1.05, 1]);
+      for (const sx of [-1, 1]) add(G.cyl(.045, .045, .03, 12), '#4a4858', x + sx * .11, .045, z - .15, 0, 0, HP);
+      const open = k === 0 ? -.35 : 0;
+      add(G.cyl(.19, .19, .045, 18), cd, x, .565 - open * .1, z - open * .2, open, 0, 0, [1, 1, 1.05]); add(G.box(.14, .03, .04, .012), shadeHex(c, -.25), x, .6 - open * .1, z + .17 - open * .25, open, 0, 0);
+      if (k === 0) { add(G.box(.2, .05, .16, .01), '#f4f1e8', x, .56, z + .02, 0, .3, 0); add(G.pbox(.16, .008, .12), '#c9c6be', x, .586, z + .02, 0, .3, 0); }
+      add(G.box(.13, .1, .012, .004), '#ffffff', x, .3, z + .17, -.04, 0, 0);
+      for (let q = 0; q < 3; q++) { const a = q * 2.094 + .3; add(G.box(.045, .012, .006, .002), cd, x + Math.cos(a) * .028, .3 + Math.sin(a) * .028, z + .178, 0, 0, a + HP); }
     }
   }));
   // textured surfaces (UV in metres): the stone plaza, the pink pavement, the asphalt, the driveway's concrete, the grass beds
@@ -236,7 +246,7 @@ B.fs3_island = f => {
 const GX0 = -3.6, GX1 = -.2, TX1 = 2.95, BZ = -3.95, BW = .2, FZ = .4, SPRING = 2.9, ARCH = 1.1, FH = 2.4, TWALL = 4.2, APEX = 5.0;
 const GC = (GX0 + GX1) / 2, GH = (GX1 - GX0) / 2, TC = (GX1 + TX1) / 2;
 // the first floor's deck (z DZ0..DZ1), the stairs (x SX, foot at SZ0), the pole (PX, PZ), the bed (BX, BBZ)
-const DZ0 = BZ + BW, DZ1 = -2.25, SX = 2.66, SZ0 = .4, PX = .85, PZ = -1.9, BX = GX1 + .62, BBZ = -3.05;
+const DZ0 = BZ + BW, DZ1 = -2.25, SX = 2.66, SZ0 = .4, PX = .55, PZ = -1.9, BX = GX1 + .62, BBZ = -3.05;
 const archY = (x, a = GH, b = ARCH) => { const u = (x - GC) / a; return Math.abs(u) >= 1 ? 0 : b * Math.sqrt(1 - u * u); };
 
 const signTex = () => tex('sign', 640, 176, (c, w, h) => {
@@ -309,8 +319,12 @@ const badgeTex = () => tex('badge', 160, 176, (c, w, h) => {
   fitText(c, '119', w / 2, h * .45, w * .7, 54, '#e8493f', { weight: '800' });
   c.fillStyle = '#c89232'; c.beginPath(); c.arc(w / 2, h * .72, 9, 0, 7); c.fill();
 });
+// (10/29 대수선, 자리별 보임 검사): 헬멧이 2층 당직실(이불·침대 밑·책상 위)을 기본 카메라에서 통째로 가려서 — 받침점(TC, HY, HZ)을
+// 그대로 두고 .62배로; 뒤챙은 뒷벽 위에 걸치고 앞챙은 당직실 시선 위로
+const HS = .62;
 function helmetRoof(f) {
-  f.add(mc('fs3-helmet', ({ add }) => {
+  const hg = grp(); hg.scale.setScalar(HS); hg.position.set(TC * (1 - HS), HY * (1 - HS), HZ * (1 - HS)); f.add(hg);
+  hg.add(mc('fs3-helmet', ({ add }) => {
     const Y = '#ffc84a', YD = '#e6a42e';
     add(new THREE.SphereGeometry(1.62, 30, 14, 0, PI * 2, 0, HP), Y, TC, HY + .12, HZ, 0, 0, 0, [1, .78, 1.08]);
     // the brim: a broad ellipse, longer and lower at the back (over the wall), turned up a little at the front
@@ -325,7 +339,7 @@ function helmetRoof(f) {
     // the badge holder on the front
     add(G.box(.6, .66, .06, .03), '#c89232', TC, HY + .62, HZ + 1.62, -.48, 0, 0);
   }));
-  f.add(put(decal(.52, .58, badgeTex()), TC, HY + .63, HZ + 1.67, -.48, 0, 0));
+  hg.add(put(decal(.52, .58, badgeTex()), TC, HY + .63, HZ + 1.67, -.48, 0, 0));
 }
 // the duty room upstairs (사용자 10/24 "2층에 물건들 디테일, 퀄리티 올려줘"): every piece a real thing — the hiding spots stay
 // where they were (bed quilt · under the bed · desk top · under the desk · shelf top), and the floor round them is clear
@@ -500,11 +514,13 @@ B.fs3_house = (f, T, opts = {}) => {
       add(G.cyl(.09, .09, .44, 12), P.red, GX0 + BW + .14, .3, z); add(G.sph(.09, 10, 6), P.red, GX0 + BW + .14, .52, z, 0, 0, 0, [1, .6, 1]);
       add(G.box(.05, .08, .16, .015), '#3a3a44', GX0 + BW + .14, .62, z); add(G.box(.13, .1, .005, .002), '#ffffff', GX0 + BW + .14, .3, z + .09);
     }
-    // a tool cart behind the truck (its top is a hiding place) and a stack of spare tyres
-    add(G.box(.62, .07, .42, .02), P.navy, -3.0, .7, -3.3); add(G.box(.62, .07, .42, .02), P.navy, -3.0, .35, -3.3);
-    for (const [x, z] of [[-3.28, -3.48], [-2.72, -3.48], [-3.28, -3.12], [-2.72, -3.12]]) { add(G.cyl(.016, .016, .68, 6), P.steelD, x, .38, z); add(G.sph(.035, 6, 5), '#3a3a44', x, .035, z); }
-    add(G.box(.2, .08, .14, .02), P.red, -3.12, .77, -3.3); add(G.box(.16, .05, .1, .02), P.yellow, -2.88, .76, -3.26);
-    for (let k = 0; k < 3; k++) { add(G.tor(.24, .1, PI * 2, 8, 20), '#4b4b55', -.9, .1 + k * .2, -3.3, HP, 0, 0); add(G.cyl(.14, .14, .14, 14), '#c4c8ce', -.9, .1 + k * .2, -3.3); }
+    // a tool cart at the garage's front left corner, in sight from the start view (its top is a hiding place) and a stack of spare tyres
+    add(G.box(.62, .07, .42, .02), P.navy, -3.05, .7, -.25); add(G.box(.62, .07, .42, .02), P.navy, -3.05, .35, -.25);
+    for (const [x, z] of [[-3.33, -.43], [-2.77, -.43], [-3.33, -.07], [-2.77, -.07]]) { add(G.cyl(.016, .016, .68, 6), P.steelD, x, .38, z); add(G.sph(.035, 6, 5), '#3a3a44', x, .035, z); }
+    add(G.box(.2, .08, .14, .02), P.red, -3.17, .77, -.25); add(G.box(.16, .05, .1, .02), P.yellow, -2.93, .76, -.21);
+    for (let k = 0; k < 3; k++) { add(G.tor(.24, .1, PI * 2, 8, 20), '#4b4b55', 2.3, .1 + k * .2, -3.38, HP, 0, 0); add(G.cyl(.14, .14, .14, 14), '#c4c8ce', 2.3, .1 + k * .2, -3.38); }
+    // a shelf under the hose rack on two brackets
+    add(G.box(1.5, .05, .26, .015), P.woodD, GC - .2, .97, iz + .14); for (const x of [GC - .85, GC + .45]) add(G.box(.04, .16, .2, .01), P.steelD, x, .87, iz + .11);
     // ── duty tower: the first floor deck on posts, a front beam, boards
     add(G.box(TX1 - GX1, .12, DZ1 - DZ0, .03), P.woodD, TC, FH - .06, (DZ0 + DZ1) / 2);
     add(G.box(TX1 - GX1 - .04, .03, DZ1 - DZ0 - .04, .01), P.wood, TC, FH + .015, (DZ0 + DZ1) / 2);
@@ -517,7 +533,7 @@ B.fs3_house = (f, T, opts = {}) => {
       add(G.box(L, .04, .05, .015), P.cream, (x0 + x1) / 2, FH + .36, (z0 + z1) / 2, 0, a, 0);
       for (let k = 0; k <= n; k++) add(G.box(.05, .72, .05, .012), P.navy, x0 + (x1 - x0) * k / n, FH + .36, z0 + (z1 - z0) * k / n);
     };
-    rail(GX1 + .05, DZ1 + .05, .58, DZ1 + .05); rail(1.12, DZ1 + .05, 2.3, DZ1 + .05);
+    rail(GX1 + .05, DZ1 + .05, PX - .27, DZ1 + .05); rail(PX + .27, DZ1 + .05, 2.3, DZ1 + .05);
     rail(GX1 + .05, DZ0 + .05, GX1 + .05, DZ1 + .05); rail(TX1 - .05, DZ0 + .05, TX1 - .05, DZ1 + .05);
     // the tower's upper back wall: a window, a round gable window, siding lines
     for (let y = FH + .3; y < TWALL; y += .3) add(G.pbox(TX1 - GX1 - .3, .014, .012), P.plasterD, TC, y, iz + .002);
@@ -566,21 +582,27 @@ B.fs3_house = (f, T, opts = {}) => {
     add(G.cyl(.42, .45, .08, 24), P.redD, PX, .04, PZ); add(G.cyl(.36, .36, .03, 24), '#f07f6c', PX, .09, PZ);
     add(G.tor(.26, .02, PI * 2, 4, 22), P.cream, PX, .105, PZ, HP, 0, 0);
     // under the deck: rolled spare hoses and boxes in the shade
-    for (let k = 0; k < 2; k++) { add(G.tor(.22, .08, PI * 2, 6, 18), '#f2dcae', 1.0 + k * .55, .09, -3.45, HP, 0, 0); add(G.cyl(.12, .12, .1, 12), P.brass, 1.0 + k * .55, .09, -3.45); }
-    add(G.box(.5, .38, .4, .03), '#d9b384', 2.1, .19, -3.5); add(G.box(.4, .3, .36, .03), '#cfa575', 2.15, .53, -3.5, 0, .2, 0);
-    add(G.box(.5, .02, .1, .005), '#f0e2b8', 2.1, .385, -3.4);
+    for (let k = 0; k < 2; k++) { add(G.tor(.22, .08, PI * 2, 6, 18), k ? '#f6e8c8' : '#f2dcae', 1.1, .085 + k * .165, -3.4, HP, 0, 0); add(G.cyl(.13, .13, .14, 12), P.brassD, 1.1, .085 + k * .165, -3.4); }
+    add(G.cyl(.05, .035, .22, 10), P.brass, 1.42, .05, -3.25, 0, 0, HP);
     // downstairs life: a mop in its bucket, a six-pack of water under the stairs, rubber boots drying by the stair foot
-    add(G.cyl(.16, .13, .3, 14), '#79a9d6', -.55, .15, -2.55); add(G.cyl(.15, .15, .02, 14), '#9fc4e6', -.55, .27, -2.55);
-    add(G.cyl(.016, .016, 1.25, 6), P.woodD, -.55, .78, -2.6, .12, 0, .05); add(G.box(.08, .1, .2, .03), '#e8e2d2', -.55, .25, -2.6);
+    add(G.cyl(.16, .13, .3, 14), '#79a9d6', 1.5, .15, -2.75); add(G.cyl(.15, .15, .02, 14), '#9fc4e6', 1.5, .27, -2.75); add(G.tor(.15, .012, PI, 4, 12), P.steelD, 1.5, .3, -2.75);
+    add(G.cyl(.016, .016, 1.25, 6), P.woodD, 1.5, .78, -2.8, .12, 0, .05); add(G.box(.2, .12, .12, .03), '#e8e2d2', 1.5, .2, -2.78);
     for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { add(G.cyl(.045, .045, .26, 10), '#cfe8f6', 2.52 + i * .1, .13, -1.75 + j * .1); add(G.cyl(.02, .02, .03, 8), '#4d8fd6', 2.52 + i * .1, .275, -1.75 + j * .1); }
-    for (const dz of [0, .15]) { add(G.cyl(.06, .065, .32, 10), '#f2c14e', 2.2, .2, .75 + dz); add(G.box(.12, .07, .2, .03), '#f2c14e', 2.2, .035, .79 + dz); }
+    // (10/29 대수선 "대충 그린 모델": 원기둥+상자 → 장화 한 켤레 — 굽은 목, 반사 띠, 둥근 앞코, 검은 밑창, 한 짝은 살짝 기울게)
+    for (const [dz, tl] of [[0, 0], [.17, .12]]) {
+      const bx = 2.2, bz = .72 + dz, YB = '#f2c14e', YD = '#d9a83a';
+      add(G.cyl(.058, .064, .3, 14), YB, bx, .2, bz, tl, 0, 0); add(G.tor(.058, .014, PI * 2, 4, 14), YD, bx, .35, bz + tl * .15, HP + tl, 0, 0);
+      add(G.cyl(.061, .065, .035, 14), '#f4f4ec', bx, .22, bz + tl * .03, tl, 0, 0);
+      add(G.box(.13, .075, .19, .035, 2), YB, bx, .045, bz + .045); add(G.sph(.066, 12, 8), YB, bx, .05, bz + .13, 0, 0, 0, [1, .75, .9]);
+      add(G.box(.135, .02, .25, .01), '#4a4858', bx, .01, bz + .06);
+    }
     // ── the giant siren on the gable's peak: a squat stand
     const [rx0, ry0, rz0] = sirenAt(H);
     add(G.box(.62, .1, .5, .03), H ? P.stone : P.roofD, rx0, ry0 - .27, rz0); add(G.box(.5, .1, .42, .03), H ? '#f6e9d6' : P.roofL, rx0, ry0 - .18, rz0);
     add(G.cyl(.07, .09, .14, 12), P.steelD, rx0, ry0 - .07, rz0);
     // ── the giant hose reel's wall bracket on the right
-    add(G.box(.3, .9, .12, .03), P.steelD, TX1 + .05, 3.55, BZ + .25);
-    add(G.cyl(.06, .06, .5, 10), P.steelD, TX1 + .55, 3.55, BZ + .45, HP, 0, 0);
+    add(G.box(.3, .9, .12, .03), P.steelD, TX1 + .05, H ? 3.0 : 3.55, BZ + .25);
+    add(G.cyl(.06, .06, .5, 10), P.steelD, TX1 + .55, H ? 3.0 : 3.55, BZ + .45, HP, 0, 0);
   }));
   // textured surfaces: the plaster back wall (one shape: the arch and the gable), its brick plinth, the garage's plastered side
   // wall and brick foot, the garage's concrete floor, the duty room's floorboards
@@ -599,7 +621,8 @@ B.fs3_house = (f, T, opts = {}) => {
   f.add(put(decal(.7, .23, dutyTex()), 1.0, FH + 1.66, BZ + BW + .06));
   f.add(put(decal(.36, .5, posterTex()), 2.1, FH + 1.1, BZ + BW + .05, 0, 0, .04));
 
-  // 0 — the garage shutter: starts two-thirds up (the truck shows), rolls fully up round the drum
+  // 0 — the garage shutter: starts two-thirds up (the truck shows), rolls fully up into the steel box
+  // (10/29 대수선: 드럼 둘레로 말리던 살들이 반지름 .15 원에 열두 장 겹쳐 서로 뚫고 상자 뒤로 삐져나옴 — 상자에 들어가면 숨김)
   const slats = [], N = 12, OPEN = SPRING - .3, SH = OPEN / N, SW = GX1 - GX0 - .72, Z = FZ - .12, TOP = SPRING - .3;
   for (let k = 0; k < N; k++) {
     const g = grp();
@@ -614,7 +637,7 @@ B.fs3_house = (f, T, opts = {}) => {
     slats.forEach((g, k) => {
       const y = SH * (k + .5) + lift * OPEN;
       if (y < TOP) { g.visible = true; g.position.set(GC, y, Z); g.rotation.x = 0; }
-      else { const a = (y - TOP) / .15; g.visible = a < PI * 1.6; g.position.set(GC, TOP + Math.sin(a) * .15, Z - .15 + Math.cos(a) * .15); g.rotation.x = -a; }
+      else { g.visible = false; g.position.set(GC, TOP, Z); g.rotation.x = 0; }
     });
   }, { label: '차고 셔터 올리기', sfx: 'open_metal', dur: .95 });
   shutter.setOpen(0);
@@ -647,18 +670,22 @@ B.fs3_house = (f, T, opts = {}) => {
   sirenP.setOpen(0);
 
   // 2 — the duty-room duvet (lifts: something under it)
-  const bx = BX, bz = BBZ, quilt = grp(); put(quilt, bx, FH + .42, bz - .3); f.add(quilt);
-  quilt.add(mc('fs3-quilt', ({ add }) => {
-    add(G.box(.94, .11, .9, .05), P.blue, 0, 0, .45);
-    for (const x of [-.28, 0, .28]) add(G.box(.05, .012, .88, .006), '#ffffff', x, .058, .45);
-    add(G.box(.92, .05, .18, .02), '#ffffff', 0, .07, .06);
+  // (사용자 10/29 "침대 들출 때 제발 벤딩 좀 줘라, 다른 천들처럼"): 두꺼운 판 대신 얇은 천 — 윗면·양옆·발치 늘어짐, 머리 쪽 접힌 시트;
+  // 들면 발치부터 말려 올라감(gfx/clothbend.js, 다른 이불과 같은 방식)
+  const bx = BX, bz = BBZ, quilt = grp(); put(quilt, bx, FH + .445, bz - .3); f.add(quilt);
+  quilt.add(mc('fs3-quilt-v2', ({ add }) => {
+    add(G.box(.94, .05, .9, .022), P.blue, 0, 0, .45);
+    for (const sx of [-1, 1]) add(G.box(.016, .15, .9, .006), P.blue, sx * .478, -.07, .45);
+    add(G.box(.96, .15, .016, .006), P.blue, 0, -.07, .908);
+    for (const x of [-.28, 0, .28]) add(G.pbox(.04, .006, .86), '#ffffff', x, .027, .47);
+    add(G.box(.95, .03, .16, .012), '#ffffff', 0, .03, .07); add(G.cyl(.022, .022, .95, 12), '#ffffff', 0, .03, -.01, 0, 0, HP);
   }));
-  quilt.add(put(plTex(.9, .7, 'gingham'), 0, .057, .55, -HP, 0, 0));
-  const qp = f.part('lift', quilt, t => { quilt.rotation.x = -1.0 * t; }, { label: '당직실 이불', sfx: 'rustle' });
+  quilt.add(put(plTex(.88, .66, 'gingham'), 0, .0262, .56, -HP, 0, 0));
+  const qp = f.part('lift', quilt, clothBend(f, quilt, { hinge: [0, 0, 0], along: [0, 0, 1], toward: [0, 1, 0], len: .91, turn: 2.3, rise: .1, flaps: true }), { label: '당직실 이불', sfx: 'lift', dur: .6 });
 
   // the giant hose reel (no part: a big still thing that is the building's sign)
-  f.add(mc('fs3-giant-reel', ({ add }) => {
-    const cx = TX1 + .6, cy = 3.55, cz = BZ + .55;
+  f.add(mc('fs3-giant-reel' + (H ? '-h' : ''), ({ add }) => {
+    const cx = TX1 + .6, cy = H ? 3.0 : 3.55, cz = BZ + .55;
     for (const z of [cz - .32, cz + .32]) {
       add(G.cyl(.78, .78, .07, 30), P.red, cx, cy, z, HP, 0, 0);
       add(G.tor(.78, .035, PI * 2, 6, 30), P.redD, cx, cy, z + (z > cz ? .035 : -.035));
@@ -679,12 +706,11 @@ B.fs3_house = (f, T, opts = {}) => {
   f.spot('on', null, 1.75, FH + .745, -3.33, { maxH: .35, label: '당직실 책상 위', scale: .9 });
   f.spot('under', null, 1.75, FH + .03, -3.4, { maxH: .5, label: '책상 밑', scale: .9 });
   f.spot('on', null, 2.68, FH + 1.02, -3.48, { maxH: .3, label: '옷 선반 위', scale: .75 });
-  f.spot('on', null, -3.0, .74, -3.3, { maxH: .5, label: '공구 수레 위', scale: .9 });
-  f.spot('behind', null, -.6, .02, -3.05, { maxH: .4, label: '타이어 더미 옆', scale: .9 });
+  f.spot('on', null, -3.05, .74, -.25, { maxH: .5, label: '공구 수레 위', scale: .9 });
+  f.spot('behind', null, 2.3, .02, -2.86, { maxH: .4, label: '타이어 더미 옆', scale: .9 });
   f.spot('on', null, PX + .2, .11, PZ + .2, { maxH: .5, label: '소방봉 매트 위', scale: .9 });
   f.spot('under', null, SX, .02, -1.4, { maxH: .7, label: '계단 밑', scale: .9 });
-  f.spot('behind', null, 1.6, .02, -3.3, { maxH: .5, label: '호스 뭉치 뒤', scale: .9 });
-  f.spot('on', null, -1.2, 1.0, -3.45, { maxH: .25, label: '호스 걸이 아래 선반', scale: .7 });
+  f.spot('behind', null, 1.72, .02, -3.3, { maxH: .45, label: '호스 뭉치 뒤', scale: .9 });
 
   // walking: the walls, pillars, posts and the stairs' foot are barriers on the ground; upstairs is a deck reached by the stairs
   f.walkBoxes = [
@@ -891,7 +917,11 @@ B.fs3_hosetower = f => {
     add(G.cyl(.06, .06, W - .2, 14), P.steelD, 0, HT - .2, .05, 0, 0, HP); for (const x of [-.25, .2]) add(G.cyl(.12, .12, .1, 18), P.brass, x, HT - .2, .05, 0, 0, HP);
     // the boot shelf inside (a hiding place sits on it) with two pairs of boots
     add(G.box(1.0, .06, .8, .02), P.wood, 0, .56, -.1); for (const x of [-.42, .42]) add(G.box(.06, .2, .76, .015), P.woodD, x, .44, -.1);
-    for (const x of [-.32, -.14]) { add(G.cyl(.06, .065, .3, 12), '#f2c14e', x, .74, -.32); add(G.box(.12, .07, .2, .03), '#f2c14e', x, .625, -.28); add(G.cyl(.067, .067, .03, 12), '#e0a83a', x, .86, -.32); }
+    for (const x of [-.32, -.14]) {
+      add(G.cyl(.058, .064, .28, 14), '#f2c14e', x, .74, -.34); add(G.tor(.058, .014, PI * 2, 4, 14), '#d9a83a', x, .88, -.34, HP, 0, 0);
+      add(G.cyl(.061, .065, .035, 14), '#f4f4ec', x, .76, -.34);
+      add(G.box(.13, .075, .19, .035, 2), '#f2c14e', x, .635, -.295); add(G.sph(.066, 12, 8), '#f2c14e', x, .64, -.21, 0, 0, 0, [1, .75, .9]); add(G.box(.135, .02, .25, .01), '#4a4858', x, .6, -.29);
+    }
     // the ladder up the left side, hoops from 1.8 m
     for (const z of [-.25, .25]) tube([-hw - .12, .35, z], [-hw - .12, HT + .3, z], .028, P.steelD, 6);
     for (let y = .55; y < HT + .2; y += .3) tube([-hw - .12, y, -.25], [-hw - .12, y, .25], .018, P.steel, 5);

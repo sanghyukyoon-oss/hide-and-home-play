@@ -205,6 +205,120 @@ B.libladder = (f, T) => {
   f.spot('beside', null, -.3, 0, .3, { maxH: .3, label: '사다리 옆', scale: .7 });
 };
 
+// ── fix1029 32~40판 허접한 모델 다시 (19판 이상) ──
+// (fix1029 허브 10/29 사용자 "1~18판은 완벽하니 건들지 말고 19부터": 아래 새 모양은 19판 이상에서만 — scenes/stage.js가 방을 짓기 전에
+// 판 번호를 globalThis.__sbkStage에 둠(⑩ gate19 패치). 1~18판은 원래 빌더 그대로)
+const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
+const readingnookLate = (f, T) => {
+  const h = .5, x0 = -1, x1 = 1, z0 = -1.5, z1 = .55;
+  // (fix1029 32~40 훑기 — 37판: 방석이 납작한 원판, 바구니가 상자, 단 앞판·계단이 민 덩어리) the platform's front in framed
+  // panels with a painted row of book spines, plank ends and a pale nosing; the stair with nosed treads and a blue runner; turned
+  // balusters and a round handrail with ball-capped newels; plump square floor cushions with piping and a tufting button, a knit
+  // throw over the rail, a wicker basket of books, a stack of books with a mug on top, a reading lamp with a pleated shade
+  f.add(mc('readingnook2', ({ add, tube }) => {
+    const NOSE = '#f0d3a8', RUN = BLUE2;
+    add(G.box(x1 - x0, h, z1 - z0, .03), WOODD, 0, h / 2, (z0 + z1) / 2);
+    add(G.box(x1 - x0 - .02, .04, z1 - z0 - .02, .01), WOOD, 0, h + .02, (z0 + z1) / 2);
+    for (let k = 0; k < 5; k++) add(G.pbox(.012, .005, z1 - z0 - .04), shade(WOOD, -.08), x0 + .2 + k * .4, h + .042, (z0 + z1) / 2);
+    add(G.box(x1 - x0 + .04, .05, .07, .015), NOSE, 0, h + .015, z1 + .01);
+    add(G.box(.07, .05, z1 - z0 + .04, .015), NOSE, x1 + .01, h + .015, (z0 + z1) / 2);
+    add(G.box(x1 - x0 - .7, h - .1, .03, .01), BLUE, .35, h / 2 - .02, z1 + .01);
+    for (const [cx, w] of [[-.02, .5], [.6, .5]]) {
+      add(G.box(w, h - .2, .015, .008), shade(BLUE, .12), cx, h / 2 - .03, z1 + .03);
+      let x = cx - w / 2 + .04;
+      for (let k = 0; x < cx + w / 2 - .06; k++) { const bw = .04 + (k % 3) * .012, bh = .16 + ((k * 5) % 4) * .025; add(G.box(bw, bh, .008, .003), SPINES[(k + (cx > 0 ? 3 : 0)) % SPINES.length], x + bw / 2, .14 + bh / 2, z1 + .04); x += bw + .012; }
+    }
+    add(G.box(.04, h - .1, .03, .008), WOODD, -.3, h / 2 - .02, z1 + .025);
+    add(G.box(.03, h - .1, z1 - z0 - .08, .01), BLUE, x1 + .01, h / 2 - .02, (z0 + z1) / 2);
+    for (const z of [-1.0, -.2]) add(G.box(.015, h - .2, .55, .008), shade(BLUE, .12), x1 + .03, h / 2 - .03, z);
+    for (let k = 0; k < 3; k++) {
+      const sh = h * (3 - k) / 3, sz = z1 + .15 + k * .3;
+      add(G.box(.7, sh, .3, .02), WOOD, x0 + .4, sh / 2, sz);
+      add(G.box(.74, .035, .06, .012), NOSE, x0 + .4, sh - .005, sz + .13);
+      add(G.box(.36, .012, .28, .004), RUN, x0 + .4, sh + .003, sz);
+      add(G.box(.36, sh - .06, .008, .003), RUN, x0 + .4, (sh - .06) / 2 + .02, sz + .153);
+      for (const sx of [-1, 1]) add(G.cyl(.008, .008, .38, 6), '#c9a24a', x0 + .4 + sx * .19, sh + .012, sz + .12, 0, 0, HP);
+    }
+    const BAL = (x, z) => { add(G.cyl(.016, .016, .4, 8), WOOD, x, h + .25, z); add(G.sph(.026, 8, 6), WOOD, x, h + .16, z); add(G.sph(.022, 8, 6), WOOD, x, h + .36, z); };
+    const NEWEL = (x, z) => { add(G.box(.08, .56, .08, .015), WOODD, x, h + .28, z); add(G.sph(.055, 10, 8), WOOD, x, h + .6, z); add(G.box(.1, .03, .1, .01), WOODD, x, h + .54, z); };
+    for (const z of [z0 + .05, z1 - .05]) NEWEL(x1 - .05, z);
+    NEWEL(.2, z1 - .05);
+    tube([x1 - .05, h + .5, z0 + .05], [x1 - .05, h + .5, z1 - .05], .028, WOOD, 10);
+    tube([.2, h + .5, z1 - .05], [x1 - .05, h + .5, z1 - .05], .028, WOOD, 10);
+    tube([x1 - .05, h + .07, z0 + .05], [x1 - .05, h + .07, z1 - .05], .018, WOODD, 6);
+    tube([.2, h + .07, z1 - .05], [x1 - .05, h + .07, z1 - .05], .018, WOODD, 6);
+    for (let k = 0; k < 8; k++) BAL(x1 - .05, z0 + .27 + k * .23);
+    for (let k = 0; k < 3; k++) BAL(.38 + k * .18, z1 - .05);
+    // a knit throw folded over the east rail, its fringe hanging down
+    add(G.box(.06, .05, .5, .02), '#ffb3c4', x1 - .05, h + .53, -.95);
+    for (const sx of [-1, 1]) { add(G.box(.025, .3, .5, .012), '#ffb3c4', x1 - .05 + sx * .045, h + .38, -.95); for (let k = 0; k < 4; k++) add(G.pbox(.026, .02, .5), k % 2 ? '#ffffff' : '#ff9fb5', x1 - .05 + sx * .046, h + .26 + k * .07, -.95); for (let k = 0; k < 7; k++) add(G.box(.01, .05, .01, .002), '#ffb3c4', x1 - .05 + sx * .05, h + .21, -1.17 + k * .073); }
+    // the green rug, fringed
+    add(G.box(.5, .025, .34, .02), '#c9e0a8', -.55, h + .053, -.55, 0, .4, 0); for (const k of [-1, 0, 1]) add(G.box(.5, .004, .03, .002), '#a8c88a', -.55 + k * .02, h + .067, -.55 + k * .1, 0, .4, 0);
+    // plump square floor cushions: piping round the edge, a tufting button, a little dent
+    for (const [x, z, c, r] of [[-.45, -.9, BLUE2, .3], [-.1, -.55, '#ffd27a', -.2], [.35, -1.0, '#ffb3c4', .5]]) {
+      add(G.box(.46, .13, .46, .06, 3), c, x, h + .105, z, 0, r, 0);
+      add(G.tor(.25, .012, PI * 2, 4, 4), shade(c, -.12), x, h + .105, z, HP, 0, PI / 4 - r, [1.31, 1.31, 1]);
+      add(G.sph(.022, 8, 6), shade(c, -.2), x, h + .172, z, 0, 0, 0, [1, .5, 1]);
+    }
+    // the stool with a mug (handle, steam-less) and a book on it
+    add(G.cyl(.14, .12, .3, 12), WOOD, .55, h + .19, -.2); add(G.cyl(.15, .15, .04, 12), WOODD, .55, h + .36, -.2);
+    for (const a of [0, 2.1, 4.2]) add(G.box(.03, .3, .03, .008), WOODD, .55 + Math.cos(a) * .12, h + .17, -.2 + Math.sin(a) * .12);
+    add(G.cyl(.04, .035, .07, 10), '#ffffff', .62, h + .415, -.26); add(G.tor(.022, .007, PI * 2, 4, 10), '#ffffff', .665, h + .415, -.26, 0, 0, 0);
+    add(G.cyl(.032, .032, .005, 10), '#a8733f', .62, h + .447, -.26);
+    // a wicker basket of books (woven bands, two handles), books standing in it
+    add(G.cyl(.17, .14, .17, 14), '#d9a466', -.65, h + .1, -.25);
+    for (const y of [.05, .1, .15]) add(G.tor(.155 + y * .1, .01, PI * 2, 4, 16), '#b98a4f', -.65, h + .02 + y, -.25, HP, 0, 0);
+    for (const sx of [-1, 1]) add(G.tor(.05, .012, PI, 4, 8), '#b98a4f', -.65 + sx * .17, h + .19, -.25, 0, HP, 0);
+    books(add, -.76, h + .12, -.25, 4, 3, .16);
+    // a stack of books by the wall, a pencil on top
+    for (let k = 0; k < 4; k++) add(G.box(.26 - k * .02, .045, .19, .008), SPINES[(k * 3 + 1) % SPINES.length], .55, h + .06 + k * .046, -1.3, 0, k * .2 - .15, 0);
+    add(G.cyl(.006, .006, .16, 6), '#ffd23f', .55, h + .25, -1.3, HP, .7, 0);
+    // the reading lamp: a weighted foot, a brass stem with an elbow, a pleated cream shade glowing
+    add(G.cyl(.08, .09, .03, 14), '#c9a24a', -.85, h + .055, -1.3); add(G.cyl(.012, .012, .5, 6), '#c9a24a', -.85, h + .32, -1.3);
+    tube([-.85, h + .57, -1.3], [-.7, h + .66, -1.2], .011, '#c9a24a', 6);
+    add(G.cyl(.06, .13, .15, 12, true), '#ffe08a', -.66, h + .62, -1.17); add(G.sph(.035, 8, 6), '#fff6cf', -.66, h + .58, -1.17);
+    for (const [y, r] of [[.545, .13], [.695, .06]]) add(G.tor(r, .01, PI * 2, 4, 16), '#f2c45a', -.66, h + y, -1.17, HP, 0, 0);
+  }));
+  f.spot('under', null, -.1, h + .06, -.55, { maxH: .1, label: '방석 밑', scale: .55 });
+  f.spot('on', null, .55, h + .38, -.2, { maxH: .2, label: '다락 의자 위', scale: .55 });
+  f.spot('behind', null, -.45, h + .04, -1.25, { maxH: .3, label: '다락 구석', scale: .7 });
+  f.spot('under', null, x0 + .4, 0, z1 + .62, { maxH: .15, label: '계단 밑', scale: .55 });
+};
+{ const old = B.readingnook; B.readingnook = (f, T, o) => (late19() ? readingnookLate(f, T, o) : old(f, T, o)); }
+
+// (fix1029 3차 — 37판 돌려 보면 낮은 책장 뒤·사서 책상 뒤가 민 판) the low shelves' backs: plank seams, a call-number card in a brass
+// holder, a child's drawing taped on; the desk's back: three cubbies (stamped return slips in a tray, a tote bag, a box of
+// labels) and a kick plate
+{ const old = B.libshelf; B.libshelf = (f, T, o = {}) => {
+  old(f, T, o);
+  if (!late19()) return;
+  const s = o.seed || 1, ART = ['#ffd27a', '#bfe0f5', '#ffb3c4'][s % 3];
+  f.add(mc('libshelf-back|' + s, ({ add }) => {
+    const z = -.196;
+    for (const x of [-.21, 0, .21]) add(G.box(.008, .82, .006, .002), shade(WOODD, -.2), x, .45, z);
+    add(G.box(.2, .09, .008, .004), '#c9a24a', 0, .74, z - .002); add(G.box(.17, .065, .006, .002), '#fbf3e4', 0, .74, z - .006);
+    for (const [y, w] of [[.755, .12], [.73, .08]]) add(G.pbox(w, .008, .003), DARK, 0, y, z - .01);
+    add(G.box(.26, .2, .004, .002), '#fbf3e4', (s % 2 ? -.2 : .2), .4, z - .002, 0, 0, (s % 2 ? .06 : -.05));
+    add(G.box(.12, .1, .003, .001), ART, (s % 2 ? -.2 : .2), .4, z - .006, 0, 0, (s % 2 ? .06 : -.05));
+    add(G.sph(.03, 8, 6), '#ffe27a', (s % 2 ? -.17 : .23), .44, z - .008, 0, 0, 0, [1, 1, .2]);
+    for (const sx of [-1, 1]) add(G.box(.06, .02, .004, .002), '#f2e2b0', (s % 2 ? -.2 : .2) + sx * .11, .5, z - .006, 0, 0, sx * .5);
+  }));
+}; }
+{ const old = B.libdesk; B.libdesk = (f, T, o) => {
+  old(f, T, o);
+  if (!late19()) return;
+  f.add(mc('libdesk-back', ({ add }) => {
+    const z = -.2;
+    add(G.box(1.7, .06, .02, .01), WOODD, 0, .05, z - .005);
+    for (const x of [-.78, -.3, .2, .78]) add(G.box(.04, .5, .03, .008), WOODD, x, .4, z - .01);
+    add(G.box(1.6, .03, .03, .008), WOODD, 0, .66, z - .01); add(G.box(1.6, .03, .03, .008), WOODD, 0, .15, z - .01);
+    add(G.box(.44, .48, .01, .004), shade(WOOD, -.18), -.54, .4, z - .002); add(G.box(.46, .48, .01, .004), shade(WOOD, -.18), -.05, .4, z - .002); add(G.box(.54, .48, .01, .004), shade(WOOD, -.18), .49, .4, z - .002);
+    add(G.box(.34, .05, .2, .008), '#8fa9d4', -.54, .2, z - .1); for (let k = 0; k < 5; k++) add(G.box(.28, .006, .16, .002), k % 2 ? '#fbf3e4' : '#ffe9c2', -.54, .23 + k * .008, z - .1, 0, k * .04, 0);
+    add(G.box(.3, .3, .1, .04), '#e88a5c', -.05, .32, z - .06); for (const sx of [-1, 1]) add(G.tor(.06, .012, PI, 4, 10), '#c96a40', -.05 + sx * .08, .47, z - .06); add(G.box(.12, .1, .006, .003), '#fbf3e4', -.05, .3, z - .113);
+    add(G.box(.3, .18, .26, .015), '#d7b07c', .49, .25, z - .14); add(G.pbox(.31, .03, .27), '#f1d79e', .49, .3, z - .14);
+    for (let k = 0; k < 3; k++) add(G.box(.08, .05, .02, .004), ['#d9534f', '#5aa88a', '#e8b04a'][k], .4 + k * .09, .36, z - .2, -.3, 0, 0);
+  }));
+}; }
 export const LIBRARY_BUILDERS = B;
 export const LIBRARY_INFO = {
   readingnook: { w: 2, d: 3, name: '독서 다락', price: 520, region: 'apt' },

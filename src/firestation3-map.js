@@ -4,6 +4,9 @@
 // 장치 조각 셋(출동 종 fs3_bell · 호스 건조탑 fs3_hosetower · 소방견 집 fs3_doghouse — ① 10/24 GPT 것을 우리 그림체로 새로) — 장치 표 gpt-chains-a.js.
 // 둘레는 훈련 마당 fs3_yard(gfx/firestation3-bg.js), 소방차는 바퀴 v2(opts.wheels — gfx/town-props.js).
 // 자리: 아치 차고 안에 소방차(앞을 보고, 셔터 아래), 당직 탑 아래층 왼쪽에 장비 걸이(오른쪽을 봄), 기둥 옆에 사물함, 오른쪽 계단으로 2층 당직실;
+// (10/29 밤 대수선, 사용자 "소방차 숨기는 곳 바로 옆이 벽이라 보이지도 않아"): 소방차는 새 모양(opts.fs3)·열리는 칸이 카메라 쪽(+x), 아치 기둥에 안 가리게 놓고
+// 그 옆을 비움; 장비 걸이는 차 옆을 막지 않게 당직 탑 아래 뒤쪽으로(앞을 봄), 방화복·당직실 이불은 휘어지는 천; 사물함은 계단에 안 가리게 왼쪽으로,
+// 호스 건조탑(장치)은 차고 뒤에 숨어 있어서 차고 왼쪽 앞 띠로, 출동 종은 그 앞으로 조금.
 // 건조탑은 차고 왼쪽 잔디 띠(차고에 붙은 탑), 출동 종은 차고 앞 왼쪽, 소방견 집은 앞 오른쪽 잔디 모퉁이; 소화전·콘·택배 상자·자전거만 조금.
 // 대본·물건 풀·빛은 옛 키로 이어짐(roomalias.js firestation3 → firestation).
 import { registerFurniture } from './gfx/furniture.js';
@@ -24,16 +27,16 @@ export function installFirestation3(LAYOUTS, THEMES) {
     furniture: [
       { type: 'fs3_island', x: 0, z: 0 },
       { type: 'fs3_house', x: 0, z: 0 },
-      { type: 'firetruck', x: -1.9, z: -.95, a: -Math.PI / 2, opts: { wheels: 'v2' } },
-      { type: 'gearrack', x: .4, z: -1.15, a: Math.PI / 2 },
-      { type: 'lockers', x: 1.82, z: -1.75 },
-      { type: 'fs3_hosetower', x: -4.33, z: -3.0, s: .7 },
-      { type: 'fs3_bell', x: -4.2, z: 1.05, a: .35 },
+      { type: 'firetruck', x: -1.9, z: -1.4, y: .022, a: -Math.PI / 2, opts: { wheels: 'v2', fs3: true } },
+      { type: 'gearrack', x: -.2, z: -2.45, opts: { bend: true } },
+      { type: 'lockers', x: 1.55, z: -1.75 },
+      { type: 'fs3_hosetower', x: -4.38, z: -.2, s: .7 },
+      { type: 'fs3_bell', x: -4.2, z: 1.35, a: .35 },
       { type: 'fs3_doghouse', x: 3.6, z: 1.8 },
       { type: 'hydrant', x: 1.4, z: 2.55 },
       { type: 'cones', x: 2.45, z: 3.3, y: -.115 },
       { type: 'boxstack', x: 3.6, z: -2.7 },
-      { type: 'bike2', x: 4.35, z: -1.0, a: -Math.PI / 2 },
+      { type: 'bike2', x: 4.35, z: -.65, a: -Math.PI / 2 },
       // 둘레 (사용자 10/24 "배경 뒤쪽에 집 목업? 지우라 그냥 — 소방서랑 잘 어울리는 배경"): 흰 집·먼 빌라 대신 훈련 마당 —
       // 훈련탑·호스 건조대·훈련 소화전 줄·길과 횡단보도, 섬 밑동 높이의 땅에 깔아 섬이 그 위에 솟은 블록으로 (gfx/firestation3-bg.js)
       { type: 'fs3_yard', x: 0, z: 0, y: -.86, opts: { sky: '#cbe7f6' } },

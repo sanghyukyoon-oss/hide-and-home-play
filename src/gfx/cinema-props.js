@@ -401,6 +401,13 @@ B.cin_shell = (f, T0) => {
     W.g.add(mc('cin-reel', ({ add }) => {
       // (모양은 (u = z, v = y)로 그려 y축 -90°로 돌림: 두께가 -x로 나감)
       add(ext(flange(false), .1, 40), REELD, X0 - .5, 0, 0, 0, -HP, 0);
+      // (19판~ 다듬기 10/29: 뒤로 돌리면 바깥 판이 검은 원판 하나 — 그 면은 그려지지 않고 감긴 필름 끝이 비쳤음) 바깥 면을 얇은 판으로 덧대고
+      // 안쪽처럼 구멍 셋(감긴 필름이 보이는 자리)·두꺼운 테·구멍 테·가운데 심
+      add(G.cyl(R - .03, R - .03, .04, 64), REEL, X0 - .62, REEL.y, REEL.z, 0, 0, HP);
+      for (const [u, v, r] of holes) add(G.cyl(r, r, .02, 28), FILM, X0 - .65, v, u, 0, 0, HP);
+      add(G.tor(R - .04, .06, PI * 2, 6, 64), REELD, X0 - .655, REEL.y, REEL.z, 0, HP, 0);
+      for (const [u, v, r] of holes) add(G.tor(r + .02, .035, PI * 2, 6, 28), REELD, X0 - .66, v, u, 0, HP, 0);
+      add(G.cyl(.5, .5, .03, 24), REELD, X0 - .655, REEL.y, REEL.z, 0, 0, HP); add(G.cyl(.2, .2, .03, 18), CHROME, X0 - .67, REEL.y, REEL.z, 0, 0, HP);
       add(G.cyl(R - .45, R - .45, .42, 44), FILM, X0 - .3, REEL.y, REEL.z, 0, 0, HP);
       add(G.cyl(.62, .62, .52, 24), REELD, X0 - .3, REEL.y, REEL.z, 0, 0, HP);   // 가운데 심
       // 안쪽 판 테두리 (두꺼운 테)와 구멍 테
@@ -417,6 +424,9 @@ B.cin_shell = (f, T0) => {
       for (let k = 0; k < 20; k++) { const a = k / 20 * PI * 2, u = REEL.z + Math.cos(a) * (R - .22), v = REEL.y + Math.sin(a) * (R - .22); if (v > .5) add(G.sph(.04, 8, 6), CHROME, X0 + .04, v, u, 0, 0, 0, [.6, 1, 1]); }
       // 감긴 필름 위로 보이는 결 (구멍 안쪽)
       for (const [u, v, r] of holes) for (let k = 0; k < 3; k++) add(G.tor(r * (.5 + k * .18), .008, PI * 2, 3, 20), '#6e544c', X0 - .08, v, u, 0, HP, 0);
+      // 바깥 판 쪽도 같은 리벳·필름 결
+      for (let k = 0; k < 20; k++) { const a = k / 20 * PI * 2, u = REEL.z + Math.cos(a) * (R - .22), v = REEL.y + Math.sin(a) * (R - .22); if (v > .5) add(G.sph(.04, 8, 6), CHROME, X0 - .645, v, u, 0, 0, 0, [.6, 1, 1]); }
+      for (const [u, v, r] of holes) for (let k = 0; k < 3; k++) add(G.tor(r * (.5 + k * .18), .008, PI * 2, 3, 20), '#6e544c', X0 - .662, v, u, 0, HP, 0);
       // 발치 받침 돌 (릴이 서 있는 요람) 앞·뒤
       add(G.box(.8, .62, .7, .06), STONE, X0 - .3, .19, -2.86); add(G.box(.86, .08, .76, .03), shade(STONE, -.08), X0 - .3, .52, -2.86);
       add(G.box(.8, .56, .7, .06), STONE, X0 - .3, .16, 2.05); add(G.box(.86, .08, .76, .03), shade(STONE, -.08), X0 - .3, .46, 2.05);
@@ -464,6 +474,15 @@ B.cin_shell = (f, T0) => {
     add(G.cyl(.36, .36, .06, 20), REEL, 2.82, .38, -2.08, .2, 0, HP); add(G.cyl(.1, .1, .08, 12), REELD, 2.82, .38, -2.08, .2, 0, HP);
     add(G.cyl(.27, .27, .065, 20), FILM, 2.82, .38, -2.08, .2, 0, HP);
   }));
+  // (19판~ 다듬기 10/29: the under-loft's west side was one bare cream board when the view turns round) the same wood wainscot and
+  // gold rail as the hall, two pinned coming-soon posters and a red fire-hose box with its white label
+  f.add(mc('cin-underloft-w', ({ add }) => {
+    add(G.box(.09, .8, LOFT.z1 - Z0, .01), WAIN, LOFT.x0 + .035, .4, (Z0 + LOFT.z1) / 2);
+    add(G.box(.02, .02, LOFT.z1 - Z0, .005), GOLD, LOFT.x0 - .015, .82, (Z0 + LOFT.z1) / 2);
+    add(G.box(.06, .42, .32, .02), '#c4413f', LOFT.x0 - .02, 1.05, -1.5); add(G.box(.01, .1, .2, .004), '#ffffff', LOFT.x0 - .055, 1.18, -1.5);
+    add(G.tor(.08, .02, PI * 2, 5, 14), '#e8e2d2', LOFT.x0 - .06, .98, -1.5, 0, HP, 0);
+  }));
+  for (const [z, k] of [[-2.55, 1], [-2.0, 2]]) { const p = paperSheet(.34, .46, posterTex(k), { hold: 'pin', curl: k === 2 }); put(p, LOFT.x0 - .005, 1.38, z, 0, -HP, 0); f.add(p); }
 
   // ── 바깥: 가로등 하나 (앞 왼쪽), 따뜻한 등 ───────────────────────────────────────────────────────────────────
   f.add(mc('cin-lamp', ({ add, tube }) => {
@@ -896,7 +915,7 @@ B.cin_popcorn = (f, T0) => {
 // ── 상영관 문: 다락 밑 앞면의 쌍여닫이 (빨간 가죽 누빔·황동 징·둥근 창), 뒤에 얕은 칸(소화기·우산), 다락 앞면엔 '상영관' 글자 ─────────
 B.cin_hall_door = (f, T0) => {
   const DW = .52, DH = 1.68, Z = .06;
-  f.add(mc('cin-halldoor', ({ add }) => {
+  f.add(mc('cin-halldoor', ({ add, tube }) => {
     for (const sx of [-1, 1]) add(G.box(.09, 1.9, .16, .02), WAIND, sx * .56, .95, 0);
     add(G.box(1.21, .1, .16, .02), WAIND, 0, 1.85, 0); add(G.box(1.25, .03, .18, .01), GOLD, 0, 1.9, 0);
     // 문 뒤 얕은 칸
@@ -904,6 +923,12 @@ B.cin_hall_door = (f, T0) => {
     add(G.box(1.04, .02, .44, .005), '#8a3f46', 0, .01, -.2);
     add(G.cyl(.07, .07, .34, 12), '#d9453f', -.38, .17, -.32); add(G.cyl(.03, .03, .06, 8), '#3a3540', -.38, .37, -.32);
     add(G.box(.86, .04, .02, .005), GOLDD, 0, 1.3, -.39);
+    // (19판~ 다듬기 10/29: 이 칸의 등이 다락 밑에서 뒤로 돌리면 민 고동색 판 하나) 판자 줄과 가로대, 못에 건 안내원 조끼, 기대 세운 빗자루
+    for (let k = 1; k < 6; k++) add(G.box(.012, 1.76, .01, .003), '#4a262a', -.52 + k * .173, .9, -.445);
+    for (const y of [.35, 1.45]) add(G.box(1.0, .06, .025, .008), '#6a3a3c', 0, y, -.455);
+    add(G.cyl(.012, .012, .06, 6), GOLDD, -.2, 1.6, -.48, HP, 0, 0); add(G.box(.28, .42, .04, .03), '#a8434c', -.2, 1.36, -.49); add(G.box(.12, .2, .045, .02), '#7d2f38', -.2, 1.47, -.49);
+    for (const y of [1.3, 1.2]) add(G.sph(.014, 6, 5), GOLD, -.2, y, -.513);
+    tube([.3, .02, -.62], [.36, 1.15, -.47], .016, '#c9a46a', 5); add(G.cone(.09, .26, 8), '#d8b56c', .3, .1, -.63, .1, 0, 0);
     // 다락 앞면 글자 받침
     add(G.box(.86, .24, .03, .02), '#6a2a36', 0, 2.08, .15);
   }));
@@ -1014,6 +1039,12 @@ B.cin_screen = (f, T0) => {
   const SW = 3.0, SH = 1.7, YC = 1.42;
   f.add(mc('cin-screen-frame', ({ add }) => {
     add(G.box(SW + .3, SH + .3, .08, .03), '#26222c', 0, YC, -.05);
+    // the back, seen when the view turns round and the reel wall folds away (19판~ 다듬기 10/29: one flat black board): warm plank
+    // backing with its battens and bolt heads, a stencilled frame number — thin, the reel wall stands right behind
+    add(G.box(SW + .24, SH + .24, .03, .015), '#8a6448', 0, YC, -.105);
+    for (let k = 0; k < 7; k++) add(G.box(.014, SH + .18, .01, .003), '#6e4d36', -SW / 2 + .05 + k * .48, YC, -.124);
+    for (const dy of [-.55, .55]) { add(G.box(SW + .3, .07, .03, .015), '#6e4d36', 0, YC + dy, -.135); for (let k = 0; k < 6; k++) add(G.sph(.018, 6, 4), '#c9b28a', -SW / 2 + .2 + k * .52, YC + dy, -.152); }
+    add(G.box(.36, .14, .01, .004), '#f2ede4', SW / 2 - .45, YC + .2, -.122); add(G.box(.26, .03, .006, .002), '#6e4d36', SW / 2 - .45, YC + .2, -.128);
     for (const sx of [-1, 1]) add(G.box(.1, YC - SH / 2 - .12, .1, .02), '#3a3540', sx * (SW / 2 - .25), (YC - SH / 2 - .12) / 2, -.08);
     add(G.box(SW + .4, .06, .14, .02), GOLDD, 0, YC + SH / 2 + .18, -.03);
     // (디테일 10/24) 화면 둘레 가는 금테와 아래 스피커 둘(천 망·금테)

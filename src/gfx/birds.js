@@ -191,7 +191,7 @@ export function addPigeon(f, x, y, z, ry = 0, o = {}) {
     if (a === 'puff') { const p = hold(ts, .05, .9, .2); puff = 1 + .09 * p; fan = .18 * p; nod = .15 * p; }
     walker.position.x = px;
     walker.rotation.y = face;
-    for (let i = 0; i < 2; i++) feet[i].position.y = lift[i];
+    for (let i = 0; i < 2; i++) feet[i].position.y = (o.legs ? .06 : 0) + lift[i];
     body.rotation.z = rest.body + lean; body.scale.set(1, puff, puff);
     head.position.x = .085 + thrust; head.rotation.set(0, yaw, nod);
     tail.rotation.z = rest.tail + fan * .4; tail.scale.z = 1 + fan;

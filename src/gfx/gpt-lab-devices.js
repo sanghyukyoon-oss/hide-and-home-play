@@ -97,7 +97,9 @@ function scenery(f) { f.gptScenery=true; f.noSolid=true; f.collideBox=[-.01,-1.1
 // on the right with a red grip. Below: the cable cubby behind a flap (cables, a spare fuse box). Part, pivots and spots as before.
 B.gptfusebox=f=>{
   const ST='#d6dbe2', STD='#a9b2c4', INK2='#3b3550', CRM='#fff4e2', YEL='#ffc23d', RED='#ff6b57', PAD='#cfc8bd';
-  shape('fusebox-body2',({add,tube})=>{
+  // (②b 10/29 67판 "허접한 오브젝트": from behind and the sides it was a bare grey slab) — the back gets three stiffening ribs,
+  // rivets, a louvred vent, a warning sticker and cable glands at the foot; each side a louvred vent too
+  shape('fusebox-body3',({add,tube})=>{
     box(add,1.72,.16,.8,PAD,0,.08,0,.04);
     box(add,1.52,.04,.68,STD,0,.18,-.1,.015);
     for(const x of [-.74,.74])box(add,.06,1.76,.68,ST,x,1.04,-.1,.02);
@@ -118,6 +120,11 @@ B.gptfusebox=f=>{
     add(G.ext(tri,.006,0,1),YEL,.36,1.66,.205);add(G.ext(tri,.004,0,1),INK2,.36,1.675,.209,0,0,0,[.7,.7,1]);
     const bolt=new THREE.Shape();bolt.moveTo(.012,.11);bolt.lineTo(-.02,.05);bolt.lineTo(.004,.05);bolt.lineTo(-.012,0);bolt.lineTo(.022,.062);bolt.lineTo(-.002,.062);bolt.closePath();
     add(G.ext(bolt,.004,0,1),YEL,.36,1.68,.214);
+    for(const y of [.6,1.1,1.6])box(add,1.42,.05,.03,ST,0,y,-.455,.01);
+    for(const x of [-.7,.7])for(const y of [.3,.8,1.3,1.85])add(G.sph(.016,6,5),'#8b93a6',x,y,-.445);
+    for(let k=0;k<5;k++){box(add,.5,.022,.03,'#8b93a6',-.38,1.7+k*.045,-.45,.006,.5,0,0);for(const x of [-.775,.775])box(add,.03,.022,.36,'#8b93a6',x,1.62+k*.045,-.1,.006,0,0,x>0?-.5:.5);}
+    add(G.ext(tri,.006,0,1),YEL,.4,1.25,-.445,0,PI,0);add(G.ext(bolt,.004,0,1),INK2,.4,1.27,-.452,0,PI,0);
+    for(const x of [-.4,-.2,0])add(G.cyl(.035,.04,.05,10),'#5b5672',x,.27,-.455,HP,0,0);
     box(add,.2,.26,.008,CRM,.58,1.62,.198,.004,0,0,.06);for(let k=0;k<4;k++)box(add,.14,.012,.004,'#c9b89a',.58,1.69-k*.05,.203,.002,0,0,.06);
     box(add,.08,.03,.006,'#f2dfa0',.58,1.76,.204,.002,0,0,-.2);
     box(add,.3,.5,.05,STD,.5,1.1,.21,.015);for(const y of [.95,1.25])add(G.cyl(.025,.025,.06,10),'#c9cfe0',.5,y,.24,HP,0,0);

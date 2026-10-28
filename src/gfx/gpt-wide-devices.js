@@ -47,26 +47,36 @@ B.gptwidefountain=(f,T,o={})=>{
   if (o.scale) g.scale.setScalar(o.scale);   // (46판 아트 점검 ② 10/24: the basin is wider than its 2×2 tiles — a smaller one keeps off its neighbours)
 };
 
+// (⑩ 10/29 실폰 "대충 만든 오브젝트" — 43·46판): the run was three 2 m planks slanting between two posts, and from the start
+// camera they cut through the swings and the seesaw like loose boards. Now a compact marble tower: a cream pegboard on two
+// wooden legs with feet (a pale sky board, so it reads off the sand-coloured paving), three short gold-rimmed rails zigzagging down its face, a funnel cup on top, the bell on a bracket at
+// the bottom over a honey tray, the blue boot that jumps beside it. Same part (lever), the same marble path idea, the same spot.
 B.gptwidemarblerun=(f,T,o={})=>{
-  const P=o.fix1022?RACE_P:BASE_WIDE_P,g=f.group;
-  for(const x of [-.82,.82]){box(g,.14,1.38,.18,P.wood,x,.69,-.34);box(g,.48,.1,.7,P.honey,x,.05,-.1);}
-  function trough(a,b){
+  const P=o.fix1022?RACE_P:BASE_WIDE_P,g=f.group,W=1.04,H=1.42,Z=-.22,y0=.12,fz=Z+.05;
+  box(g,W,H,.07,'#cfe9f5',0,y0+H/2,Z,.03);box(g,W+.02,H+.02,.04,P.white,0,y0+H/2,Z-.03,.02);
+  for(const x of [-W/2-.04,W/2+.04]){box(g,.09,y0+H+.04,.12,P.wood,x,(y0+H+.04)/2,Z,.025);box(g,.16,.05,.42,P.honey,x,.025,Z+.06,.02);}
+  box(g,W+.2,.07,.14,P.wood,0,y0+H+.05,Z,.025);
+  for(let r=0;r<6;r++)for(let c=0;c<5;c++)if((r+c)%2===0)ball(g,.016,P.white,-.4+c*.2,y0+.12+r*.24,fz-.01);
+  function rail(a,b){
     const A=new THREE.Vector3(...a),D=new THREE.Vector3(...b).sub(A),q=group(g,...A.clone().addScaledVector(D,.5).toArray());q.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),D.clone().normalize());
-    box(q,D.length(),.075,.4,P.honey,0,-.18,0,.025);for(const z of [-.205,.205])box(q,D.length(),.13,.055,P.mint,0,-.09,z,.02);
+    box(q,D.length()+.06,.03,.15,P.honey,0,-.07,0,.012);for(const z of [-.075,.075])box(q,D.length()+.06,.06,.025,P.gold,0,-.04,z,.01);
+    for(const s of [-1,1])rod(g,[A.x+D.x*(.5+s*.38),A.y+D.y*(.5+s*.38)-.09,fz+.07],[A.x+D.x*(.5+s*.38),A.y+D.y*(.5+s*.38)-.09,fz-.01],.012,P.wood);
   }
-  const path=[[-1.04,1.55,0],[.97,1.23,0],[1.18,1.20,0],[1.18,.86,0],[-.95,.59,0],[-1.15,.56,0],[-1.15,.34,0],[.65,.29,0],[.86,.29,.16]];
-  trough(path[0],path[1]);trough(path[3],path[4]);trough(path[6],path[7]);
-  // Wide open U turns let the large marble actually drop between levels.
-  for(const [x,y] of [[1.18,1.04],[-1.15,.45]]){const funnel=ring(g,.235,.04,P.gold,x,y,0);funnel.rotation.x=PI/2;for(const z of [-.23,.23])rod(g,[x-.08,y+.12,z],[x+.08,y-.12,z],.035,P.gold);}
-  const marble=group(g,...path[0]);ball(marble,.145,P.red);const stripe=ring(marble,.12,.028,P.cream,0,0,0);stripe.rotation.y=PI/2;
-  hollow(g,.66,.19,.6,P.honey,.85,0,.15);const bell=group(g,.85,.62,.15);rod(g,[.85,.63,-.24],[.85,.63,.15],.03,P.wood);cylinder(bell,.07,.2,.22,P.gold,0,-.1,0);ball(bell,.045,P.wood,0,-.24,0);
-  const boot=group(g,.94,.14,.29);box(boot,.16,.1,.25,P.blue);box(boot,.16,.2,.13,P.blue,0,.12,-.06);(f.live||=[]).push(boot);
+  const zr=fz+.08,path=[[-.4,1.5,zr],[.36,1.34,zr],[.44,1.12,zr],[-.36,.95,zr],[-.44,.74,zr],[.3,.58,zr],[.4,.38,zr]];
+  rail(path[0],path[1]);rail(path[2],path[3]);rail(path[4],path[5]);
+  for(const [x,y] of [[.44,1.24],[-.44,.85]]){const c=ring(g,.075,.018,P.gold,x,y,zr);c.rotation.x=PI/2;}
+  const cup=ring(g,.11,.025,P.gold,-.4,1.58,zr);cup.rotation.x=PI/2;cylinder(g,.11,.06,.08,P.honey,-.4,1.56,zr,14);
+  const marble=group(g,...path[0]);ball(marble,.08,P.red);const stripe=ring(marble,.066,.016,P.cream,0,0,0);stripe.rotation.y=PI/2;
+  rod(g,[.4,.5,fz],[.4,.5,zr+.06],.02,P.wood);
+  const bell=group(g,.4,.5,zr+.04);cylinder(bell,.05,.13,.15,P.gold,0,-.08,0,14);ball(bell,.03,P.wood,0,-.17,0);
+  hollow(g,.5,.14,.34,P.honey,.3,0,zr+.02,.04);
+  const boot=group(g,-.05,.08,zr+.08);box(boot,.13,.09,.2,P.blue);box(boot,.13,.18,.1,P.blue,0,.11,-.05);box(boot,.14,.03,.21,P.cream,0,-.04,0,.01);(f.live||=[]).push(boot);
   const p=mechanism(f,'lever',[marble,bell],t=>{
     const k=phase(t,0,.88)*(path.length-1),i=Math.min(path.length-2,Math.floor(k)),u=k-i;marble.position.lerpVectors(new THREE.Vector3(...path[i]),new THREE.Vector3(...path[i+1]),u);marble.rotation.z=-t*PI*9;
-    const hit=phase(t,.86,1);bell.rotation.z=Math.sin(hit*PI*5)*.25*(1-hit);boot.rotation.z=-Math.sin(hit*PI)*.45;
+    const hit=phase(t,.86,1);bell.rotation.z=Math.sin(hit*PI*5)*.25*(1-hit);boot.rotation.z=-Math.sin(hit*PI)*.45;boot.position.y=.08+.12*Math.sin(hit*PI);
   },{label:'미니 구슬 길: 홈통 → 종 → 장화',dur:2.45,sfx:'clink',chain:['구슬','홈통 낙하','종','장화 까꿍']});
   p.gptLoop='clink';p.gptPhases=[{at:.26,sfx:'land'},{at:.62,sfx:'clink'},{at:.89,sfx:'doorBell'}];p.gptFinish='giggle';p.gptFunny='구슬보다 장화가 먼저 도착!';
-  inside(f,g,p,.63,.085,.31,'구슬 종 아래 받침',.4);
+  inside(f,g,p,.3,.07,zr+.02,'구슬 종 아래 받침',.4);
   if (o.scale) g.scale.setScalar(o.scale);   // (43판 아트 점검 ② 10/23: a smaller run under the bike shelter's roofline)
 };
 

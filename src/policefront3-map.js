@@ -1,7 +1,7 @@
 // 21판 동네 파출소 앞 3안 policefront3 (① 10/23 — 사용자 "파출소도 다시 해 줘야 할 듯. 21. 도로에 담장 있고 지금.. 흠.."):
 // 담장 없이 열린 길 모퉁이. 둥근 작은 섬(보도 + 차도 조금, 낮은 연석) 위에 파출소 단면(gfx/policefront3-props.js), 앞에 순찰차·자전거·
 // 우체통·자판기·벤치. 판 표(stages.js PLAN)는 그대로 — 미리보기 ?gptmap=policefront3 (판 자리 21: gpt-import.js GPT_STAGE).
-// 보스 판 부품은 정본 가구 키 그대로: patrolcar(경광등 연출 staging.js) · lostbox · vending(비밀번호 자물쇠 후보) · mailbox · postbox2
+// 보스 판 부품은 정본 가구 키 그대로(순찰차만 이 맵 전용 pf3_patrolcar — 10/29 다시 지음, 경광등 연출 staging.js /patrolcar/) · lostbox · vending(비밀번호 자물쇠 후보) · mailbox · postbox2
 // (열쇠 자물쇠 후보) · noticeboard2 · bench · hydrant · bike2 · streetlamp · cones · plantbig · plant · wantedboard. 대본·물건 풀·빛은
 // roomalias.js가 옛 키 policefront로 이어 준다.
 import { registerFurniture } from './gfx/furniture.js';
@@ -20,20 +20,20 @@ export const PF3_LAYOUT = {
     // 파출소 안: 정수기 · 수배 게시판 아래 책상과 의자 · 왼벽 주민 우편함
     at('watercooler', -2.55, -1.92),
     at('wantedboard', -.95, -2.285),
-    at('officedesk', -.95, -1.83), at('officechair', -.65, -1.05, PI),
-    at('mailbox', -4.265, -.75, HP),
+    at('officedesk', -.95, -1.78), at('officechair', -.65, -.82, PI),
+    at('mailbox', -4.24, -.75, HP),
     // 입구 옆 분실물 보관함 · 오른쪽 모퉁이 마당
     at('lostbox', 1.6, .62),
     at('noticeboard2', 1.9, -.05),
-    at('vending', 2.3, -2.05), at('postbox2', 3.15, -2.05), at('plantbig', 3.85, -1.7),
+    at('vending', 2.37, -2.05), at('postbox2', 3.2, -2.05), at('plantbig', 4.25, -2.35),
     at('bike2', 3.35, -.85),
     at('plant', -4.05, .62),
     // 보도
-    at('streetlamp', -4.15, 2.05), at('bench', -2.55, 1.95), at('hydrant', 4.3, 1.2),
+    at('streetlamp', -4.15, 2.05), at('bench', -2.55, 1.88, 0, { opts: { pigeonLegs: true } }), at('hydrant', 4.3, 1.2),
     // 횡단보도 오른쪽 신호등 (팔이 차도 위로)
-    at('pf3_signal', 3.78, 2.24),
+    at('pf3_signal', 3.78, 2.18),
     // 차도 (연석 아래)
-    at('patrolcar', -1.1, 3.12, 0, { y: RY }), at('cones', -3.6, 2.95, 0, { y: RY }), at('cones', .5, 2.95, 0, { y: RY }),
+    at('pf3_patrolcar', -1.1, 3.12, 0, { y: RY }), at('cones', -2.9, 3.2, 0, { y: RY }), at('cones', .5, 3.2, 0, { y: RY }),
   ],
   decor: [], friendAt: [2.4, -1.0],
 };

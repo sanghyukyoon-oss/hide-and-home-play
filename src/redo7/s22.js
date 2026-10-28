@@ -27,14 +27,15 @@ export function install({ LAYOUTS, THEMES, SWAP, LOOK, SPEC }) {
     furniture: [
       { type: 'st3_base', x: 0, z: 0, a: 0 },
       F('pole', 0, 0), F('konbini', 1, 0), F('vending', 3, 0), F('vending', 4, 0), F('boxstack', 5, 0),
-      F('potgate', 0, 1), F('tteokstall', 0, 2, 1), F('redstools', 1, 2), F('postbox2', 0, 4, 1),
+      F('potgate', 0, 1), F('tteokstall', 0, 2, 1), F('redstools', 1, 2), F('postbox2', 1, 4),
       F('bike2', 1, 1), F('cones', 2, 2), F('manhole', 3, 2), F('cones', 4, 2),
       F('streetlamp', 5, 1), F('hydrant', 5, 2), { ...F('mirrorpole', 5, 4), ry: 35 },
       F('bench2', 3, 4),
+      // (10/29 허브 "고양이 간판이 포장마차 뒤에 가려짐": 간판을 담 끝 빈 자리로, 그 자리 우체통은 보도 쪽으로 한 칸)
       // (10/24 사용자 "정지는 건너편 쪽으로 — 후사경이랑 너무 붙어 있어서": 골목길 건너편 인도 모퉁이, 앞면이 시작 화면에 보이게)
       { type: 'stopsign', x: 5.3, z: 2.0, a: .5 },
     ],
-    decor: [D('catsign', 'W', -.4), D('mailbox', 'N', 2.5)], friendAt: [-.4, .4],
+    decor: [D('catsign', 'W', -2.0), D('mailbox', 'N', 2.5)], friendAt: [-.4, .4],
   };
   SPEC.street3 = s => { s.zoom = 1; };
   // (빛 10/23 허브·사용자 "누렇다, 이전엔 쨍하니 이뻤다": 새 맵은 맑은 낮빛 — 흰 해, 하늘색 하늘; 옛 골목 테마의 늦은 햇살은 덮음)

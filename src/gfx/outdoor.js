@@ -482,6 +482,30 @@ B.mailbox = (f, T) => {
   }
 };
 
+// 우편함 디테일 (21·22·25판에만 나옴 — ① 10/29 공용 소품 다듬기 2): four plain doors under a roof. Now flyers and a pizza menu
+// stuck half out of the top doors (they ride with the doors), a no-flyers sticker on the side, a name strip under each
+// door, little rust drips from the hinges, and a potted succulent someone set on the roof.
+const noFlyerTex = () => tex('od-noflyer2', 64, 64, (c, w, h) => {
+  c.fillStyle = '#ffffff'; roundRect(c, 1, 1, w - 2, h - 2, 8); c.fill();
+  c.fillStyle = '#f6e7c8'; c.fillRect(20, 16, 24, 32); c.strokeStyle = '#c9a46a'; c.lineWidth = 2; for (const y of [24, 31, 38]) { c.beginPath(); c.moveTo(24, y); c.lineTo(40, y); c.stroke(); }
+  c.strokeStyle = '#ef4a4a'; c.lineWidth = 5; c.beginPath(); c.arc(32, 32, 22, 0, PI * 2); c.stroke(); c.beginPath(); c.moveTo(17, 17); c.lineTo(47, 47); c.stroke();
+});
+{ const b = B.mailbox; B.mailbox = (f, T) => {
+  b(f, T);
+  const steel = T.mailbox || '#c9d6df', y0 = 1.0, cw = .3, ch = .23, D = .26, t = .025, W = cw * 2 + t * 3, H = ch * 2 + t * 3, hb = .14;
+  const doors = f.parts.filter(p => p.kind === 'door').map(p => p.pivots[0]);
+  const flyer = (c1, c2, a) => grp(put(rbox(.16, .1, .006, c1, .002), 0, 0, 0), put(rbox(.16, .02, .007, c2, .002), 0, .03, 0)).rotateX(a);
+  if (doors[0]) doors[0].add(put(flyer('#fff3c9', '#ff6b57', -.5), .02, ch - .02, .03));
+  if (doors[1]) { doors[1].add(put(flyer('#ffffff', '#4fb8ff', -.4), -.03, ch - .02, .03)); doors[1].add(put(flyer('#ffd8a8', '#e8452f', -.65), .03, ch - .03, .04)); }
+  f.add(mg('mb2-strip', '#fffaf0', ({ add }) => { for (const cx of [-W / 2 + t + cw / 2, -W / 2 + t + cw * 1.5 + t]) for (const yy of [y0 + t / 2, y0 + H / 2]) add(G.box(.12, .018, .004, .002), cx, yy, D + .004); }));
+  f.add(mg('mb2-rust', '#b0705a', ({ add }) => { for (const cx of [-W / 2 + t + cw / 2, -W / 2 + t + cw * 1.5 + t]) add(G.box(.006, .05, .003, .001), cx + .08, y0 - .025, D - .002); }));
+  f.add(mg('mb2-noflyer', '#ffffff', ({ add }) => add(new THREE.PlaneGeometry(.11, .11), W / 2 + .002, y0 + H * .55, D * .55, 0, HP, 0), { map: noFlyerTex() }));
+  const ry = y0 + H - t + hb + .045, px = W / 2 - .1, pzz = D / 2 + .02;
+  f.add(mg('mb2-pot', '#e88a5c', ({ add }) => { add(G.cyl(.05, .04, .07, 14), px, ry + .035, pzz); add(G.tor(.05, .008), px, ry + .07, pzz, HP, 0, 0); }));
+  f.add(mg('mb2-soil', '#7a5536', ({ add }) => add(G.cyl(.044, .044, .01, 12), px, ry + .068, pzz)));
+  f.add(mg('mb2-succ', '#7fc49a', ({ add }) => { for (let k = 0; k < 7; k++) { const a = k * 2.4, r = k ? .024 : 0; add(G.sph(.022, 8, 6), px + Math.cos(a) * r, ry + .09 + (k ? 0 : .012), pzz + Math.sin(a) * r, 0, -a, k ? .6 : 0, [1, 1.5, .8]); } }));
+}; }
+
 // 초록 대문 (wall): brick pillars, two steel leaves over a shallow doorstep niche, 우유 투입함, 문패, 초인종
 B.gate = (f, T) => {
   const green = col(T, 'gate'), brick = col(T, 'brick'), W = 1.34, D = .34, LH = 1.4, PX = W / 2 + .13;
@@ -598,6 +622,15 @@ B.vending = (f, T) => {
   const fp = f.part('lift', fl, t => { fl.rotation.x = -3 * t; }, { label: '꺼내는 곳', sfx: 'open', dur: .24 });
   f.spot('inside', null, 0, .14, fz + .095, { part: fp, maxH: .2, label: '꺼내는 곳', scale: .6 });
   f.spot('on', null, .1, H, z0, { maxH: .4, label: '자판기 위', scale: .85 });
+  // (10/29 사용자 "허접한 건 디벨롭" — 19판부터만, map-41-55-gate19의 판 번호): turned round, the machine's back was one flat red board:
+  // the cooling vent, two panel seams, the rating plate, a power cord down to a socket box on the ground
+  if ((globalThis.__sbkStage ?? -1) >= 18) {
+    const bz = z0 - D / 2 - .004;
+    f.add(mg('vend-back-dark', '#3b3550', ({ add }) => { for (let k = 0; k < 6; k++) add(G.box(.5, .025, .02, .006), 0, .3 + k * .07, bz - .006); add(G.box(.12, .08, .06, .015), .26, .05, bz - .1); }));
+    f.add(mg('vend-back-steel', '#c9cfe0', ({ add, tube }) => { add(G.box(.58, .48, .015, .01), 0, .47, bz); for (const y of [.95, 1.45]) add(G.box(W - .06, .02, .012, .004), 0, y, bz - .004);
+      tube([.26, .72, bz - .012], [.26, .1, bz - .1], .014, 8); }));
+    f.add(mg('vend-back-plate', '#f4f1e8', ({ add }) => add(G.box(.22, .14, .008, .004), -.2, 1.2, bz - .006)));
+  }
 };
 
 // 스티로폼 텃밭: fish boxes reused as planters (상추, 대파, 무 / 고추, 방울토마토), a terracotta pot of marigolds to lift.
@@ -746,6 +779,15 @@ B.aircon = (f, T) => {
   f.spot('inside', null, hx, hy - .145, fz - .13, { part: p, maxH: .3, label: '실외기 속', scale: .72 });
   f.add(mg('ac-vents', '#b8c2cc', ({ add }) => { for (let i = 0; i < 5; i++) add(G.box(.22, .022, .02, .008), .25, hy - .18 + i * .09, fz + .008); }));
   f.add(mg('ac-pipes', '#f1ead8', ({ add, tube }) => { for (const [y, r] of [[.28, .03], [.38, .026]]) { tube([W / 2 - .02, y, zc + .05], [W / 2 + .07, y, zc + .05], r); add(G.sph(r, 10, 8), W / 2 + .07, y, zc + .05); tube([W / 2 + .07, y, zc + .05], [W / 2 + .07, y, -.5], r); } }));
+  // (10/29 사용자 "허접한 건 디벨롭" — 19판부터만): its back was one blank white board — the finned coil behind a wire guard, the
+  // maker's plate and the service valve cover
+  if ((globalThis.__sbkStage ?? -1) >= 18) {
+    const bz = zc - D / 2 - .004;
+    f.add(mg('ac-back-coil', '#aeb8c4', ({ add }) => { add(G.box(W - .12, H - .14, .012, .004), 0, hy, bz); }));
+    f.add(mg('ac-back-fins', '#7f8a99', ({ add }) => { for (let k = 0; k < 16; k++) add(G.box(.008, H - .16, .016, .002), -W / 2 + .09 + k * (W - .18) / 15, hy, bz - .008); }));
+    f.add(mg('ac-back-guard', '#5f6b7a', ({ add }) => { for (let k = 0; k < 4; k++) add(G.box(W - .1, .012, .012, .004), 0, y0 + .12 + k * (H - .22) / 3, bz - .02); }));
+    f.add(mg('ac-back-plate', '#f4f1e8', ({ add }) => add(G.box(.16, .1, .008, .004), W / 2 - .14, y0 + H - .1, bz - .03)));
+  }
   f.spot('on', null, .14, y0 + H, zc, { maxH: .45, label: '실외기 위', scale: .9 });
   f.spot('under', null, -.05, 0, zc + .1, { maxH: .1, label: '실외기 밑', scale: .7 });
 };
@@ -1038,7 +1080,7 @@ B.bench = (f, T, o = {}) => {
   f.spot('on', null, -.42, sy + .045, 0, { maxH: o.bigSpots ? .55 : .45, label: '벤치 위', scale: o.bigSpots ? 1 : .85 });
   f.spot('under', null, 0, 0, -.02, { maxH: .35, label: '벤치 밑', scale: o.bigSpots ? 1 : .85 });
   // 벤치 옆 비둘기 (10/24 공용 새 birds.js: 걷다 멈추고 끄덕끄덕 쪼기)
-  addPigeon(f, -.64, 0, .34, .5, { s: 1.1, range: .1 });
+  addPigeon(f, -.64, 0, .34, .5, { s: 1.1, range: .1, legs: o.pigeonLegs });
 };
 
 // 나무: a hollow at the roots and a 새집 whose roof lifts
@@ -1068,6 +1110,7 @@ B.tree = (f, T) => {
 
 // 덤불: the two halves lean apart
 B.bush = (f, T) => {
+  if ((globalThis.__sbkStage ?? -1) >= 18) return B.bush2(f, T);
   const leaf = T.hedge || col(T, 'leaf'), fl = T.flower || '#ff8fb8';
   const half = sx => {
     const pv = new THREE.Group(); put(pv, sx * .46, 0, 0, 0, sx > 0 ? PI : 0, 0);
@@ -1080,6 +1123,50 @@ B.bush = (f, T) => {
   f.spot('inside', null, 0, 0, .04, { part: p, maxH: .4, label: '덤불 속', scale: .9 });
   f.spot('behind', null, 0, 0, -.4, { maxH: .4, label: '덤불 뒤', scale: .8 });
   f.spot('on', L, .3, .7, .05, { maxH: .3, label: '덤불 위', scale: .7 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
+};
+
+// 덤불 2 (1×1, 19판부터 — ① 10/29 공용 소품 다듬기, 1~18판은 위 B.bush 그대로): the same two halves that part, now a real
+// clipped shrub — a darker inner mass under clusters of leaves in two greens (paler tips catch the light), five-petal
+// flowers with yellow middles, bare twigs at the foot, bark mulch and a few fallen leaves on the ground, and a little snail
+// resting on a low leaf. Big face stays soft; the flowers and the snail are the colour. Same parts, spots and footprint.
+const bushMix = (a, b, t) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), t).getHexString();
+B.bush2 = (f, T) => {
+  const leaf0 = T.hedge || col(T, 'leaf'), fl = T.flower || '#ff8fb8', leaf = bushMix(leaf0, '#9ccf86', .2), lk = [leaf, fl].join(',');
+  const inner = shade(leaf, -.1), tip = shade(leaf, .12);
+  const BALLS = [[.24, .28, 0, .3], [.14, .22, .2, .22], [.14, .22, -.2, .22], [.3, .5, .05, .22], [.12, .46, -.04, .2]];
+  const Yv = new THREE.Vector3(0, 1, 0);
+  const leaves = (add, addM, pick) => {
+    const r = rng(23);
+    for (const [x, y, z, rad] of BALLS) for (let i = 0; i < 26; i++) {
+      const u = r() * 2 - 1, th = r() * PI * 2, s = Math.sqrt(1 - u * u), n = new THREE.Vector3(s * Math.cos(th), u, s * Math.sin(th));
+      if (n.y < -.45 || x + n.x * rad < .02) continue;
+      const isTip = r() < .32; if (isTip !== pick) continue;
+      const q = new THREE.Quaternion().setFromUnitVectors(Yv, n).multiply(new THREE.Quaternion().setFromAxisAngle(Yv, r() * PI));
+      const sz = .05 + r() * .025, p = new THREE.Vector3(x, y, z).addScaledVector(n, rad * .93);
+      addM(new THREE.SphereGeometry(1, 12, 8), new THREE.Matrix4().compose(p, q, new THREE.Vector3(sz * 1.05, sz * .62, sz * .82)));
+    }
+  };
+  const half = sx => {
+    const pv = new THREE.Group(); put(pv, sx * .46, 0, 0, 0, sx > 0 ? PI : 0, 0);
+    pv.add(mg('bush2-in|' + inner, inner, ({ add }) => { for (const [x, y, z, r] of BALLS) add(G.sph(r * .93, 14, 10), x, y, z); }));
+    pv.add(mg('bush2-leaf|' + leaf, leaf, ({ add, addM }) => leaves(add, addM, false)));
+    pv.add(mg('bush2-tip|' + tip, tip, ({ add, addM }) => leaves(add, addM, true)));
+    pv.add(mg('bush2-petal|' + fl, fl, ({ add }) => { for (const [x, y, z] of [[.2, .46, .26], [.34, .64, .14], [.08, .36, .3], [.4, .34, .22], [.26, .2, -.32]]) for (let k = 0; k < 5; k++) { const a = k / 5 * PI * 2; add(G.sph(.022, 7, 5), x + Math.cos(a) * .024, y + Math.sin(a) * .024, z + .012, 0, 0, a, [1.2, .8, .6]); } }));
+    pv.add(mg('bush2-eye', '#ffd23f', ({ add }) => { for (const [x, y, z] of [[.2, .46, .26], [.34, .64, .14], [.08, .36, .3], [.4, .34, .22], [.26, .2, -.32]]) add(G.sph(.014, 7, 5), x, y, z + .02); }));
+    pv.add(mg('bush2-twig', '#7a5236', ({ tube }) => { for (const [x, z, tx, ty, tz] of [[.2, .04, .24, .16, .1], [.16, -.06, .1, .14, -.14], [.3, .02, .36, .12, -.04]]) { tube([x, 0, z], [tx, ty, tz], .014, 6, .008); } }));
+    f.add(pv); return pv;
+  };
+  const L = half(-1), R = half(1);
+  L.add(mg('bush2-snail-shell', '#d79b5a', ({ add }) => { add(G.sph(.034, 12, 9), .43, .2, .2, 0, 0, 0, [.7, 1, 1]); }));
+  L.add(mg('bush2-snail-swirl', '#9a5f34', ({ add }) => { add(G.tor(.02, .005, PI * 1.7), .455, .2, .2, 0, HP, 0); add(G.tor(.009, .004, PI * 1.6), .46, .2, .2, 0, HP, 0); }));
+  L.add(mg('bush2-snail-body', '#f2e2c4', ({ add, tube }) => { add(G.cap(.013, .06), .43, .17, .23, HP, 0, 0); tube([.43, .175, .26], [.43, .21, .28], .004, 6); tube([.425, .175, .26], [.415, .205, .275], .004, 6); add(G.sph(.007, 6, 5), .43, .212, .282); add(G.sph(.007, 6, 5), .414, .207, .277); }));
+  f.add(mg('bush2-mulch', '#9a6a46', ({ add }) => { const r = rng(7); for (let i = 0; i < 26; i++) { const a = r() * PI * 2, d = .32 + r() * .2; add(G.box(.06, .014, .035, .006), Math.cos(a) * d, .007, Math.sin(a) * d * .8, 0, r() * PI, 0); } }));
+  f.add(mg('bush2-fallen', shade(leaf, .1), ({ add }) => { for (const [x, z, a] of [[-.44, .3, .3], [.4, .34, 1.4], [.08, .44, 2.2]]) add(G.sph(.04, 7, 4), x, .006, z, 0, a, 0, [1.3, .18, .7]); }));
+  f.add(mg('bush2-dry', '#e0b85a', ({ add }) => { for (const [x, z, a] of [[-.3, .42, .9], [.5, .1, 2]]) add(G.sph(.035, 7, 4), x, .006, z, 0, a, 0, [1.3, .18, .7]); }));
+  const p = f.part('lift', [L, R], (t, bl, br) => { L.rotation.z = .55 * t; L.position.x = bl.p.x - .08 * t; R.rotation.z = .55 * t; R.position.x = br.p.x + .08 * t; }, { label: '덤불', sfx: 'swish' });
+  f.spot('inside', null, 0, 0, .04, { part: p, maxH: .4, label: '덤불 속', scale: .9 });
+  f.spot('behind', null, 0, 0, -.4, { maxH: .4, label: '덤불 뒤', scale: .8 });
+  f.spot('on', L, .3, .7, .05, { maxH: .3, label: '덤불 위', scale: .7 });
 };
 
 // 공원 쓰레기통: 일반 / 재활용 lids
@@ -1421,6 +1508,79 @@ B.trunk = (f, T) => {
   f.spot('behind', null, 0, 0, -.42, { maxH: .4, label: '트렁크 뒤', scale: .8 });
   f.spot('on', lid, 0, .17, D / 2 + .015, { maxH: .35, label: '트렁크 위', scale: .8 });   // (레벨 세션 10/18: 숨은그림 판의 'on' 자리)
 };
+
+// (⑩ 10/29 사용자 "1~18판은 완벽하니 건들지 말고 19부터": 아래 디테일 감싸기는 19판 이상에서만 — scenes/stage.js가 방을 짓기 전에
+// 판 번호를 globalThis.__sbkStage에 둠. 1~18판·판 밖 장면은 원래 그림 그대로)
+const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
+// 캠핑 트렁크 디테일 (⑩ 10/29 실폰 "대충 만든 오브젝트" — 51~54판 캠프): the trunk read as a plain green box — plank seams on every
+// face and the lid, brass buckles on the straps, a brass lock plate, rope handles on both ends, two travel stickers on the front
+{ const b = B.trunk; B.trunk = (f, T) => {
+  b(f, T);
+  if (!late19()) return f;
+  const W = .74, H = .38, D = .46, z0 = -.04, fz = z0 + D / 2, wood = T.trunk || '#4f8f7a', seam = shade(wood, -.22);
+  f.add(mg('tr-seams|' + seam, seam, ({ add }) => {
+    for (const y of [.13, .26]) { add(G.box(W - .02, .008, .004, .002), 0, y, fz + .003); add(G.box(W - .02, .008, .004, .002), 0, y, z0 - D / 2 - .003); for (const sx of [-1, 1]) add(G.box(.004, .008, D - .02, .002), sx * (W / 2 + .003), y, z0); }
+  }));
+  f.add(mg('tr-buckles', '#ffcf5c', ({ add }) => { for (const x of [-.22, .22]) { add(G.box(.085, .05, .012, .004), x, H * .62, fz + .02); add(G.box(.05, .022, .014, .003), x, H * .62, fz + .024); } add(G.box(.1, .08, .012, .006), 0, H - .06, fz + .016); }));
+  f.add(mg('tr-handles', '#c9a46a', ({ add }) => { for (const sx of [-1, 1]) { add(G.tor(.06, .012, PI), sx * (W / 2 + .02), H * .62, z0, 0, HP * sx, PI); for (const z of [-.06, .06]) add(G.box(.03, .04, .03, .006), sx * (W / 2 + .012), H * .62, z0 + z); } }));
+  f.add(mg('tr-sticker1', '#ffe6a8', ({ add }) => add(G.box(.11, .08, .004, .015), -.08, .12, fz + .004, 0, 0, .12)));
+  f.add(mg('tr-sticker1b', '#ff8a5c', ({ add }) => { add(G.cone(.03, .04, 3), -.08, .125, fz + .007, HP, 0, .12, [1, 1, .2]); }));
+  f.add(mg('tr-sticker2', '#e9f4ff', ({ add }) => add(G.cyl(.04, .04, .004, 16), .09, .1, fz + .004, HP, 0, 0)));
+  f.add(mg('tr-sticker2b', '#5aa9ec', ({ add }) => { add(G.box(.05, .012, .003, .003), .09, .1, fz + .007); add(G.box(.012, .05, .003, .003), .09, .1, fz + .007); }));
+  const lid = f.parts[0].pivots[0];
+  lid.add(mg('tr-lidseams|' + seam, seam, ({ add }) => { for (const x of [-.12, .05]) add(G.box(.006, .006, D + .02, .002), x, .17, D / 2 + .015); add(G.box(W + .02, .006, .006, .002), 0, .085, D + .032); }));
+  return f;
+}; }
+
+// 공원 쓰레기통 디테일 (⑩ 10/29 실폰 "대충 만든 오브젝트" — 41·42·44·46·47판): two big flat green faces — a dark plinth, a seam
+// between the two bins, framed side panels, a white recycling arrow ring on the right bin, the 재활용 lid capped blue, a paper
+// cup peeking out of the left lid's edge
+{ const b = B.parkbin; B.parkbin = (f, T) => {
+  b(f, T);
+  if (!late19()) return f;
+  const body = col(T, 'bin'), W = .8, H = .84, D = .46, z0 = -.06, fz = z0 + D / 2;
+  f.add(mg('pbin-plinth|' + body, shade(body, -.3), ({ add }) => { add(G.box(W + .04, .06, D + .04, .015), 0, .03, z0); add(G.box(.014, H - .12, .006, .003), 0, (H - .06) / 2 + .03, fz + .003); }));
+  f.add(mg('pbin-sides|' + body, shade(body, .1), ({ add }) => { for (const sx of [-1, 1]) add(G.box(.006, H * .5, D - .14, .004), sx * (W / 2 + .003), H * .45, z0); }));
+  f.add(mg('pbin-recycle', '#ffffff', ({ add }) => { for (let k = 0; k < 3; k++) { const a = k * PI * 2 / 3; add(G.tor(.045, .008, PI * .5), W / 4, H * .22, fz + .006, 0, 0, a); add(G.cone(.016, .025, 3), W / 4 + Math.cos(a + PI * .5) * .045, H * .22 + Math.sin(a + PI * .5) * .045, fz + .006, 0, 0, a + PI, [1, 1, .3]); } }));
+  f.parts[1].pivots[0].add(mg('pbin-bluecap', '#4f8fd8', ({ add }) => add(G.box(W / 2 - .05, .008, D - .02, .004), 0, .062, D / 2 + .01)));
+  f.parts[0].pivots[0].add(mg('pbin-cup', '#ffffff', ({ add }) => { add(G.cyl(.03, .024, .08, 10), -.1, .02, D - .02, .5, 0, .3); }));
+  return f;
+}; }
+
+// 분실물 보관함 디테일 (⑩ 10/29 — 공원 맵): a plain mint box on a post — a hook on its side with a lost red mitten and a folded
+// yellow umbrella hanging from it, a pinned paper on the other side (a cat drawn on it), a grass tuft and two stones at the
+// post's foot, a brass name plate under the door
+{ const b = B.lostbox; B.lostbox = (f, T) => {
+  b(f, T);
+  if (!late19()) return f;
+  const W = .58, H = .5, D = .36, y0 = .52, z0 = -.08, fz = z0 + D / 2;
+  f.add(mg('lb-hook', '#8f8aa0', ({ add }) => { add(G.box(.04, .03, .03, .008), -W / 2 - .015, y0 + H - .08, z0 + .06); add(G.tor(.025, .006, PI), -W / 2 - .04, y0 + H - .1, z0 + .06, 0, HP, PI); }));
+  f.add(mg('lb-mitten', '#ef5b5b', ({ add }) => { add(G.box(.08, .11, .03, .02), -W / 2 - .045, y0 + H - .2, z0 + .06); add(G.box(.035, .05, .03, .012), -W / 2 - .085, y0 + H - .18, z0 + .06, 0, 0, .5); add(G.box(.085, .025, .034, .008), -W / 2 - .045, y0 + H - .14, z0 + .06); }));
+  f.add(mg('lb-umbrella', '#ffd23f', ({ add }) => { add(G.cone(.035, .36, 8), -W / 2 - .03, y0 + H - .3, z0 - .06, PI, 0, 0); }));
+  f.add(mg('lb-umbrella-h', '#8a5a3c', ({ add }) => { add(G.tor(.022, .007, PI), -W / 2 - .03, y0 + H - .1, z0 - .06, 0, HP, 0); }));
+  f.add(mg('lb-poster', '#fff7e6', ({ add }) => add(G.box(.006, .16, .13, .003), W / 2 + .004, y0 + H * .55, z0 + .02)));
+  f.add(mg('lb-poster-cat', '#9a8aa8', ({ add }) => { add(G.sph(.03, 8, 6), W / 2 + .009, y0 + H * .52, z0 + .02, 0, 0, 0, [.2, 1, 1.2]); add(G.cone(.012, .025, 3), W / 2 + .009, y0 + H * .59, z0 + .0, 0, 0, 0, [.2, 1, 1]); add(G.cone(.012, .025, 3), W / 2 + .009, y0 + H * .59, z0 + .04, 0, 0, 0, [.2, 1, 1]); }));
+  f.add(mg('lb-pin', '#ef5b5b', ({ add }) => add(G.sph(.01, 6, 5), W / 2 + .01, y0 + H * .55 + .07, z0 + .02)));
+  f.add(mg('lb-plate', '#e8c45a', ({ add }) => add(G.box(.16, .035, .006, .003), 0, y0 + .04, fz + .03)));
+  f.add(mg('lb-foot', '#7cc45a', ({ add }) => { for (let i = 0; i < 4; i++) add(G.cone(.025, .12, 4), .1 + i * .03, .05, z0 + .13, 0, 0, (i - 1.5) * .3); }));
+  f.add(mg('lb-stones', '#cfc6b8', ({ add }) => { add(G.sph(.05, 8, 6), -.14, .02, z0 + .14, 0, 0, 0, [1.2, .5, 1]); add(G.sph(.035, 8, 6), -.07, .015, z0 + .2, 0, 0, 0, [1.2, .5, 1]); }));
+  return f;
+}; }
+
+// 바위 디테일 (⑩ 10/29 — 캠프 맵의 회색 덩어리): a lighter lichen dappling on the stone, a flat stepping pebble and two small
+// stones round its foot, a fern on the shady side
+{ const b = B.rock; B.rock = (f, T) => {
+  b(f, T);
+  if (!late19()) return f;
+  const rk = f.parts[0].pivots[0], rc = col(T, 'rock');
+  rk.add(mg('rock-lichen', '#d9e8a8', ({ add }) => { for (const [x, y, z, r] of [[.17, .16, .16, .035], [-.2, .12, .14, .028], [.2, .2, -.08, .03], [-.12, .2, .2, .022]]) add(G.sph(r, 8, 6), x, y, z, 0, 0, 0, [1, .35, 1]); }));
+  f.add(mg('rock-pebbles|' + rc, shade(rc, .1), ({ add }) => { add(G.sph(.1, 10, 7), .36, .03, .08, 0, 0, 0, [1.4, .4, 1.1]); add(G.sph(.06, 9, 6), .3, .035, .26, 0, .4, 0, [1, .7, .9]); add(G.sph(.05, 9, 6), -.2, .03, .38, 0, 0, 0, [1.1, .7, 1]); }));
+  // (4차: 혼자 둥근 덩어리로 읽히던 것 — 앞면에 갈라진 금 셋, 뒤로 기댄 작은 바위 하나)
+  rk.add(mg('rock-cracks|' + rc, shade(rc, -.32), ({ add }) => { add(G.box(.006, .12, .006, .002), .06, .2, .33, .25, 0, .35); add(G.box(.006, .07, .006, .002), .09, .13, .33, .25, 0, -.4); add(G.box(.006, .09, .006, .002), -.18, .16, .27, 0, -.6, .2); }));
+  f.add(put(mesh(rockGeo(11), mat(shade(rc, -.06))), .3, .11, -.26, 0, 2, 0, [.2, .19, .18]));
+  f.add(mg('rock-fern', '#5fae4a', ({ add }) => { for (let k = 0; k < 5; k++) { const a = -1 + k * .5; add(G.box(.035, .01, .2, .004), -.3 + Math.sin(a) * .08, .08 + .02 * Math.cos(a), -.26 + Math.cos(a) * .08, -.5, a, 0); } }));
+  return f;
+}; }
 
 // 평상 생활감 (⑥ 10/25 memo-check "20판 전체 디테일"): 목침 하나, 태극 무늬 부채, 모기향 접시(연기 한 가닥), 개어 둔 줄무늬 수건
 { const b = B.pyeongsang; B.pyeongsang = (f, T, o) => {

@@ -29,6 +29,8 @@ export class MiniScene {
     const G = this.G, W = G.world;
     this.tw = new Tweens(); this.kind = kind; this.after = after; this.p = p; this.objs = []; this.chars = []; this.fails = 0;
     this.info = MINI_INFO[kind] || MINI_INFO.spot;
+    // (user 10/29 "미니게임들 약간 카메라 줌인") 바꿔치기 stays near whole: a change may sit in a corner
+    W.fitMul = kind === 'lamp' ? 1.15 : 1.06;
     this.slot = p ? { kind, p } : MINI_AFTER[after]?.kind === kind ? MINI_AFTER[after] : { kind, boss: true }; this.boss = !!this.slot.boss;   // p: 놀이 모음's own settings   // a region's boss game, or a lighter one in between
     this._was = { camLock: W.camLock, joyOn: W.joyOn, gauge: W.gaugeOn };
     W.joyOn = false; W.camLock = true; W.gaugeOn = false; W.onTap = null; W.onDragStart = null; W.onRotate = null;
@@ -172,7 +174,7 @@ export class MiniScene {
     if (this.running && !this.paused) this.game?.bot?.(dt, mode);
   }
   exit() {
-    this.dead = true; const W = this.G.world;
+    this.dead = true; const W = this.G.world; W.fitMul = 1;
     this.clearWorld(); this.pad?.remove();
     W.camLock = this._was.camLock; W.joyOn = this._was.joyOn; W.gaugeOn = this._was.gauge;
     this.G.ui.clear(); this.tw.clear();

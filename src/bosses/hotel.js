@@ -202,9 +202,10 @@ export class Game {
     const vTop = top * cp - zt * sp, vBot = bot * cp - zb * sp, vExt = vTop - vBot, vMid = (vTop + vBot) / 2;
     const H = W.H || innerHeight, a = (W.W || innerWidth) / H;
     const maxNotes = Math.max(0, ...this.trip.nights.map(nt => (nt.ev?.fight ? 1 : 0) + (nt.ev?.bday != null ? 1 : 0) + (nt.ev?.cold ? 1 : 0) + (nt.ev?.closed?.length || 0)));
-    const tb = this.topEl ? this.topEl.getBoundingClientRect().bottom + 6 + maxNotes * 34 : 100, tr = this.bottom ? this.bottom.getBoundingClientRect().top : H * .8;
+    // (user 10/29 "미니게임들 약간 카메라 줌인") room for one night note only — more may lie over the roof sign for a moment
+    const tb = this.topEl ? this.topEl.getBoundingClientRect().bottom + 6 + Math.min(1, maxNotes) * 34 : 100, tr = this.bottom ? this.bottom.getBoundingClientRect().top : H * .8;
     const avail = Math.max(.3, (tr - tb - 14) / H), cy = clamp(((tb + tr) / 2) / H, .3, .7);
-    const viewH = Math.max(vExt / avail, (C * RW + 1.0) / a);
+    const viewH = Math.max(vExt / avail, (C * RW + .45) / a);
     W.yaw = 0; W.pitch = PITCH; W.zoom = 1; W.yawGoal = null; W.vYaw = 0;
     W.target.set(0, vMid / cp, 0); W.home.copy(W.target); this.home0 = W.target.clone();
     W.bounds = 99; W.slack = null; W.camLock = true;

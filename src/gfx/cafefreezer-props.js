@@ -444,7 +444,7 @@ B.fz_basketpulley = (f, T) => {
   // 얼음 (바구니 안): 큰 블록 + 작은 얼음 셋 + 파르페 실루엣
   const ice = grp(); put(ice, 0, .03, 0); bk.add(ice);
   const IW = .8, IH = .9, ID = .68;
-  const iceM = mat(ICE, { opacity: .6, rough: .15, rim: .5 }), iceM2 = mat(ICED, { opacity: .55, rough: .2, rim: .4 });
+  const iceM = mat(ICE, { opacity: .44, rough: .15, rim: .5 }), iceM2 = mat(ICED, { opacity: .55, rough: .2, rim: .4 });
   const big = mesh(G.box(IW, IH, ID, .07, 2), iceM, { cast: false }); put(big, 0, IH / 2, 0); ice.add(big);
   const shine = mc('fz-ice-shine', ({ add }) => {
     add(G.pbox(.04, .52, .01), '#ffffff', -IW / 2 + .12, IH * .6, ID / 2 + .006, 0, 0, .25); add(G.pbox(.025, .26, .01), '#ffffff', -IW / 2 + .21, IH * .68, ID / 2 + .006, 0, 0, .25);
@@ -454,16 +454,23 @@ B.fz_basketpulley = (f, T) => {
   });
   ice.add(shine);
   // 파르페 실루엣 (유리컵·딸기 스쿱·웨하스·체리, 꼭 감은 눈) — 얼음 너머로 비침
-  const sil = grp(); put(sil, 0, .04, .02); sil.scale.setScalar(.82); ice.add(sil);
-  sil.add(mc('fz-ice-parfait', ({ add }) => {
-    add(G.cyl(.1, .055, .07, 14), '#d9f1ff', 0, .04, 0); add(G.cyl(.022, .022, .12, 8), '#d9f1ff', 0, .13, 0);
-    add(G.cyl(.21, .12, .3, 16), '#d9f1ff', 0, .34, 0);
-    add(G.sph(.2, 14, 10), '#ff9fc0', 0, .55, 0, 0, 0, 0, [1.1, .85, 1.05]);
-    add(G.sph(.12, 12, 8), '#fff4e2', -.05, .7, .02);
-    add(G.sph(.055, 10, 8), RED, .02, .82, .02); add(G.cyl(.006, .006, .08, 4), '#5c8a3a', .03, .89, .02, 0, 0, -.3);
-    add(G.box(.05, .22, .03, .01), '#f3c47a', .14, .74, -.04, 0, 0, -.35);
-    for (const s of [-1, 1]) add(G.box(.05, .014, .01, .006), INK, s * .07, .55, .2, 0, 0, s * .2);
+  // (fix1029 4차 — 39판: 얼음 속이 흐릿한 분홍 덩어리) 얼음을 조금 더 맑게(.6 → .44), 파르페를 조금 크게(.82 → .92); 유리컵은 테·굽이
+  // 또렷한 하늘색, 층(콘플레이크·딸기 소스·크림)이 보이고, 딸기·민트 스쿱 둘, 웨하스 둘, 체리, 감은 눈과 볼 — 얼음 속 공기 방울 몇 개
+  const sil = grp(); put(sil, 0, .04, .02); sil.scale.setScalar(.92); ice.add(sil);
+  sil.add(mc('fz-ice-parfait2', ({ add }) => {
+    add(G.cyl(.1, .11, .03, 16), '#a9dcf5', 0, .015, 0); add(G.cyl(.022, .03, .12, 8), '#bfe6fa', 0, .09, 0);
+    add(G.cyl(.06, .03, .04, 12), '#bfe6fa', 0, .17, 0);
+    add(G.cyl(.21, .12, .3, 18), '#c9ecfb', 0, .34, 0);
+    for (const [y, h, c, r0, r1] of [[.21, .07, '#e8b45c', .125, .15], [.28, .05, '#ff6f8a', .15, .17], [.33, .1, '#fff4e2', .17, .2]]) add(G.cyl(r1, r0, h, 18), c, 0, y + h / 2, 0);
+    add(G.tor(.205, .014, PI * 2, 6, 24), '#ffffff', 0, .49, 0, HP, 0, 0);
+    add(G.sph(.17, 14, 10), '#ff8fb3', -.05, .57, 0, 0, 0, 0, [1.1, .85, 1.05]);
+    add(G.sph(.13, 12, 8), '#9be3c8', .1, .55, -.04, 0, 0, 0, [1.1, .85, 1]);
+    add(G.sph(.1, 12, 8), '#fff4e2', -.02, .7, .02, 0, 0, 0, [1.1, .8, 1]);
+    add(G.sph(.055, 10, 8), RED, .02, .8, .02); add(G.cyl(.006, .006, .08, 4), '#5c8a3a', .03, .87, .02, 0, 0, -.3);
+    for (const [x, rz] of [[.15, -.35], [-.15, .4]]) { add(G.box(.05, .22, .03, .01), '#f3c47a', x, .72, -.04, 0, 0, rz); for (let k = 0; k < 3; k++) add(G.pbox(.052, .006, .032), '#d9a050', x - Math.sin(rz) * (k - 1) * .06, .72 + Math.cos(rz) * (k - 1) * .06, -.04, 0, 0, rz); }
+    for (const sx of [-1, 1]) { add(G.tor(.022, .007, PI, 4, 8), INK, sx * .07, .57, .2, 0, 0, PI); add(G.sph(.025, 8, 6), '#ff6f8a', sx * .12, .54, .19, 0, 0, 0, [1, .6, .3]); }
   }));
+  const bub = mc('fz-ice-bubbles', ({ add }) => { for (const [x, y, z, r] of [[-.3, .2, .25, .025], [.28, .62, .22, .02], [-.25, .74, -.2, .03], [.3, .3, -.25, .022], [-.12, .82, .28, .018]]) add(G.sph(r, 8, 6), '#ffffff', x, y, z); }); ice.add(bub);
   const smalls = [];
   for (const [x, z, s, ry] of [[.3, .24, .2, .3], [-.32, .22, .18, -.2], [.32, -.22, .17, .5]]) {
     const m = mesh(G.box(s, s, s, .03, 2), iceM2, { cast: false }); put(m, x, s / 2, z, 0, ry, 0); ice.add(m); smalls.push(m);
@@ -498,7 +505,7 @@ B.fz_basketpulley = (f, T) => {
     big.scale.set(1 - .5 * k, Math.max(.04, 1 - .96 * k), 1 - .5 * k); big.position.y = IH * big.scale.y / 2;
     shine.scale.set(1 - .5 * k, Math.max(.04, 1 - .96 * k), 1 - .5 * k);
     smalls.forEach((m, i) => { const q = c01(t * 1.6 - i * .12); m.scale.setScalar(Math.max(.02, 1 - q)); m.visible = q < .98; });
-    sil.visible = t < .7;
+    sil.visible = t < .7; bub.visible = t < .5;
     drips.visible = t > .05 && t < .97;
     const down = bk.position.y < .3;
     pud.visible = t > .02 && down; const ps = .2 + .75 * k; pud.scale.set(ps, 1, ps * .85);
@@ -654,9 +661,24 @@ B.fz_tubs = (f, T) => {
 
 // ── 냉동실 뒤 우유 상자 더미 (장식 — 문틀 뒤라 숨김 자리 없음)
 B.fz_crates = (f, T) => {
-  f.add(mc('fz-crates', ({ add }) => {
-    for (const [x, y, z] of [[-.25, 0, 0], [.25, 0, 0], [0, .3, 0], [-.25, .6, .02]]) { add(G.box(.46, .28, .4, .03), MILK, x, y + .14, z); add(G.box(.4, .02, .34, .01), '#3d86c6', x, y + .27, z); }
-    add(G.box(.5, .2, .4, .02), KRAFT, .3, .4, .04); add(G.box(.2, .06, .01, .005), RED, .3, .42, .245);
+  // (fix1029 32~40 훑기 — 39판: 우유 상자가 속 찬 네모 덩어리) open plastic milk crates: corner posts, a top rim with hand holes, side
+  // bars with gaps you see through, a slatted floor; the top ones hold rows of milk cartons with gable tops and a blue band;
+  // the kraft box on top has tape and a red 'fragile' strip
+  f.add(mc('fz-crates2', ({ add }) => {
+    const W = .46, H = .28, D = .4, CB = '#3d86c6';
+    const crate = (x, y, z, full) => {
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.04, H, .04, .01), MILK, x + sx * (W / 2 - .02), y + H / 2, z + sz * (D / 2 - .02));
+      for (const sz of [-1, 1]) { add(G.box(W, .045, .03, .01), MILK, x, y + H - .022, z + sz * (D / 2 - .015)); add(G.box(W, .03, .03, .008), MILK, x, y + .015, z + sz * (D / 2 - .015)); for (const yy of [.09, .16]) add(G.box(W - .04, .018, .02, .005), MILK, x, y + yy, z + sz * (D / 2 - .012)); add(G.box(.12, .02, .034, .006), CB, x, y + H - .03, z + sz * (D / 2 - .015)); }
+      for (const sx of [-1, 1]) { add(G.box(.03, .045, D, .01), MILK, x + sx * (W / 2 - .015), y + H - .022, z); add(G.box(.03, .03, D, .008), MILK, x + sx * (W / 2 - .015), y + .015, z); for (const yy of [.09, .16]) add(G.box(.02, .018, D - .04, .005), MILK, x + sx * (W / 2 - .012), y + yy, z); }
+      for (let k = 0; k < 4; k++) add(G.pbox(W - .05, .012, .05), MILK, x, y + .01, z - .14 + k * .095);
+      if (full) for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) {
+        const cx = x - .13 + i * .13, cz = z - .08 + j * .16;
+        add(G.box(.1, .2, .1, .008), '#fbfbf6', cx, y + .12, cz); add(G.pbox(.102, .05, .102), CB, cx, y + .12, cz);
+        add(G.cone(.075, .05, 4), '#fbfbf6', cx, y + .245, cz, 0, PI / 4, 0); add(G.box(.08, .02, .012, .004), '#fbfbf6', cx, y + .275, cz);
+      }
+    };
+    crate(-.25, 0, 0, false); crate(.25, 0, 0, true); crate(0, .3, 0, true); crate(-.25, .6, .02, true);
+    add(G.box(.5, .2, .4, .02), KRAFT, .3, .4, .04); add(G.pbox(.08, .202, .404), '#f1d79e', .3, .4, .04); add(G.box(.2, .05, .01, .005), RED, .3, .42, .245);
   }));
   f.add(frosty(mc('fz-crates-frost', ({ add }) => { for (let k = 0; k < 6; k++) add(G.sph(.05, 7, 5), FROST, -.45 + k * .17, .9, 0, 0, k, 0, [1.4, .4, 1]); })));
 };
@@ -706,10 +728,13 @@ B.fz_supplycab = (f, T) => {
     add(G.pbox(W - .06, .02, D - .04), '#e3e9e9', 0, .58, z0);
     for (let k = 0; k < 2; k++) { add(G.cyl(.05, .04, .3, 12), '#ffffff', .12 + k * .14, .75, z0 - .06); add(G.cyl(.052, .052, .02, 12), '#a8733f', .12 + k * .14, .91, z0 - .06); }
     for (let k = 0; k < 2; k++) add(G.box(.26, .18, .22, .02), KRAFT, .2, .18 + k * .19, z0 - .05, 0, k * .1, 0);
-    add(G.box(.2, .12, .2, .02), '#ffffff', -.15, Hh + .16, z0); add(G.box(.12, .1, .12, .02), '#e8b47c', .2, Hh + .15, z0);
+    add(G.box(.2, .12, .2, .02), '#ffffff', -.15, Hh + .16, z0); add(G.box(.14, .03, .006, .003), '#7fb0dc', -.15, Hh + .17, z0 + .102); add(G.cyl(.03, .03, .004, 10), '#e3eef7', -.15, Hh + .222, z0); add(G.box(.12, .1, .12, .02), '#e8b47c', .2, Hh + .15, z0); add(G.pbox(.03, .102, .122), '#f1d79e', .2, Hh + .15, z0);
   }));
   const pv = grp(); put(pv, -W / 2 + .01, 0, z0 + D / 2 + .01); f.add(pv);
-  pv.add(mc('fz-supplycab-door', ({ add }) => { add(G.box(W - .04, Hh - .1, .025, .01), '#fbfcfc', W / 2 - .01, Hh / 2 + .02, 0); add(G.pbox(.012, Hh - .14, .01), '#dfe6e6', W / 2 - .01, Hh / 2 + .02, .014); add(G.box(.025, .16, .03, .01), CHROME, W - .1, .62, .025); }));
+  pv.add(mc('fz-supplycab-door', ({ add }) => { add(G.box(W - .04, Hh - .1, .025, .01), '#fbfcfc', W / 2 - .01, Hh / 2 + .02, 0); add(G.pbox(.012, Hh - .14, .01), '#dfe6e6', W / 2 - .01, Hh / 2 + .02, .014); add(G.box(.025, .16, .03, .01), CHROME, W - .1, .62, .025);
+    for (const [y, hh] of [[.79, .34], [.33, .42]]) { for (const dy of [-hh / 2, hh / 2]) add(G.box(W - .2, .018, .012, .004), '#e3eaea', W / 2 - .01, y + dy, .018); for (const dx of [-(W - .2) / 2, (W - .2) / 2]) add(G.box(.018, hh, .012, .004), '#e3eaea', W / 2 - .01 + dx, y, .018); }
+    for (let k = 0; k < 4; k++) add(G.box(.2, .012, .01, .004), '#b9c3c6', W / 2 - .01, .14 + k * .03, .018);
+    add(G.box(.11, .08, .006, .003), '#ffd25c', W / 2 - .2, .62, .016, 0, 0, .12); add(G.sph(.012, 6, 4), '#e8414e', W / 2 - .2, .655, .02); }));
   { const m = mesh(new THREE.PlaneGeometry(.22, .09), mat('#ffffff', { map: sign(96, 40, '#ffffff', [['컵', .55, 24, '#a8733f']], { round: 4 }), rough: .9, rim: .1 }), { cast: false }); put(m, W / 2 - .01, .88, .0145); pv.add(m); }
   const p = f.part('door', pv, (t, b) => { pv.rotation.y = b.r.y - 1.7 * t; }, { label: K('계단 밑 비품장', 'Supply cupboard'), sfx: 'open', dur: .4 });
   p.lockable = true; f.lockAt = { x: W / 2 - .1, y: .62, z: z0 + D / 2 + .06 }; p.lockAt = { x: W - .1, y: .62, z: .05, parent: pv };
@@ -787,6 +812,13 @@ B.fz_workbench = (f, T) => {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.05, Hh - .03, .05, .01), STEELD, sx * (W / 2 - .05), (Hh - .03) / 2, sz * (D / 2 - .05));
     add(G.box(W - .1, .025, D - .1, .01), STEEL, 0, .22, 0);
     for (let k = 0; k < 4; k++) add(G.box(.62, .012, .44, .005), k % 2 ? KRAFT : KRAFTD, -.25, .245 + k * .014, 0, 0, k * .04, 0);
+    // (fix1029 5차 — 39판: 아래 칸이 납작 판 한 장) the folded boxes tied with twine and a red 'fragile' print, and on them a little
+    // blue cool box with a white lid and a handle, two ice packs leaning on it; a roll of tape by the leg
+    for (const x of [-.4, -.1]) add(G.box(.012, .07, .46, .003), '#e8d8b8', x, .265, 0); add(G.box(.64, .07, .012, .003), '#e8d8b8', -.25, .265, 0);
+    add(G.box(.16, .004, .06, .002), RED, -.4, .302, .14);
+    add(G.box(.3, .2, .24, .03), '#5aa9ec', -.3, .4, -.04); add(G.box(.32, .04, .26, .02), '#ffffff', -.3, .52, -.04); add(G.box(.14, .03, .03, .01), '#e3e9e9', -.3, .555, -.04);
+    for (const [x, rz] of [[-.5, .25], [-.52, .1]]) add(G.box(.12, .16, .03, .03), '#9fd6ee', x, .4, .1 + x * .1, 0, 0, rz);
+    add(G.cyl(.05, .05, .045, 14), '#c9a37a', W / 2 - .2, .245, .16, 0, 0, 0); add(G.cyl(.025, .025, .047, 10), '#ffffff', W / 2 - .2, .245, .16);
     // 박스 테이프 커터, 저울, 온도계
     add(G.box(.22, .09, .1, .02), RED, .1, Hh + .075, .1); add(G.tor(.05, .025, PI * 2, 6, 14), '#c9a37a', .1, Hh + .13, .1, 0, 0, 0);
     add(G.box(.26, .05, .24, .02), '#ffffff', .48, Hh + .055, -.05); add(G.box(.2, .02, .2, .01), CHROME, .48, Hh + .09, -.05); add(G.box(.1, .03, .01, .005), '#9fe3a6', .48, Hh + .06, .07);

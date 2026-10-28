@@ -47,6 +47,9 @@ export const BOSS_GAME_INFO = {
   redlight: { name: '무궁화 꽃이 피었습니다' }, inky: { name: '먹물이의 바꿔치기' }, picnic: { name: '소풍 보물찾기' }, blanket: { name: '이불 속 누구게?' },
   gohome: { name: '다 같이 집으로!' }, tracks: { name: '발자국 따라 찾기' },
 };
+// (user 10/29 on an iPhone: "미니게임들 약간 카메라 줌인 해 줄래? 잘 안 보여서") each game's board a little bigger — the
+// sides of a diamond-shaped room may go off the edge, never the part you play on; the hotel fits itself (bosses/hotel.js frame)
+const MINI_ZOOM = { hotel: 1.06, whack: 1.15, redlight: 1.15, blanket: 1.1, gohome: 1.15, yasik: 1.08, wakeup: 1.15, churro: 1.1, inky: 1.1, picnic: 1.1, tracks: 1.1, report: 1.08, flashlight: 1.1 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
 const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };
 
@@ -68,6 +71,7 @@ export class BossGameScene {
     this.epilogue = epilogue;
     // interlude: a 쉬어가기 between stages, not a boss — a loss still goes on (smaller reward), marked done as 'm'+after
     this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this._out = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
+    W.fitMul = MINI_ZOOM[this.kind] || 1;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
     // (외부 QA 10/20 TECH-HOTEL-PAUSE-INPUT) the fingers down right now, so the 잠깐! menu can end their presses (menu())
     this._down = new Set();
@@ -298,7 +302,7 @@ export class BossGameScene {
     this.game.botStep?.(dt, mode);
   }
   exit() {
-    this.dead = true; const W = this.G.world;
+    this.dead = true; const W = this.G.world; W.fitMul = 1;
     removeEventListener('pointerdown', this._pd, true); removeEventListener('pointerup', this._pu, true); removeEventListener('pointercancel', this._pu, true);
     this.game?.exit?.();
     if (!this.game && PRE_CSS[this.kind]) document.getElementById(PRE_CSS[this.kind])?.remove();   // (QA10: left before the game was built)

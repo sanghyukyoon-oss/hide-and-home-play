@@ -144,7 +144,8 @@ export class World {
   applyFrustum() {
     const a = this.W / this.H, { w, h, cy } = this.fit;
     // fit width to ~94% of the screen, height to ~62% (portrait the width wins; landscape the height wins)
-    const viewH = Math.max(w / .94 / a, h / .62);
+    // (fitMul: a minigame's own zoom-in — scenes/bossgame.js MINI_ZOOM, user 10/29 "미니게임들 약간 카메라 줌인")
+    const viewH = Math.max(w / .94 / a, h / .62) / (this.fitMul || 1);
     this.viewH = viewH;
     const cam = this.cam;
     cam.top = viewH * cy; cam.bottom = -viewH * (1 - cy);

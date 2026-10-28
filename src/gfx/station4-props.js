@@ -238,6 +238,29 @@ B.s4_station = f => {
       add(G.cyl(.16, .12, .28, 14), '#d98b5f', px, PY + .14, pz); add(G.cyl(.18, .18, .06, 14), '#c97a4f', px, PY + .28, pz); add(G.cyl(.15, .15, .02, 12), '#6b4a33', px, PY + .3, pz);
       leafBush(add, px, pz, .75, '#5fae5a', '#3f8f4f', null, PY + .29); }
   }));
+  // the back and the west end (19판~ 다듬기 10/29: bare plaster over planks when the view turns round): two latticed windows and the
+  // staff door on the back with a lamp over it, a vent, a downpipe from the eave; a small latticed window high on the west end
+  f.add(mc('s4-st2-back', ({ add }) => {
+    const zb = -zf;
+    for (const x of [-1.05, .2]) {
+      add(G.box(.62, .56, .05, .02), C.post, x, y0 + 1.3, zb - .01); add(G.box(.52, .46, .02, .01), C.glass, x, y0 + 1.3, zb - .03);
+      for (const u of [-.13, 0, .13]) add(G.box(.02, .46, .02, .005), C.white, x + u, y0 + 1.3, zb - .045);
+      add(G.box(.52, .02, .02, .005), C.white, x, y0 + 1.3, zb - .045);
+      add(G.box(.72, .05, .13, .015), C.wood, x, y0 + .99, zb - .065); add(G.box(.68, .05, .06, .015), C.post, x, y0 + 1.6, zb - .04);
+    }
+    add(G.box(.64, 1.18, .05, .02), C.post, 1.18, y0 + .59, zb - .01); add(G.box(.52, 1.08, .03, .01), C.wood, 1.18, y0 + .56, zb - .03);
+    for (const v of [.3, .62]) add(G.box(.44, .02, .015, .004), C.post, 1.18, y0 + v, zb - .048);
+    add(G.box(.3, .22, .015, .005), C.glass2, 1.18, y0 + .88, zb - .046); add(G.cyl(.022, .022, .03, 8), C.steel2, 1.38, y0 + .58, zb - .055, HP, 0, 0);
+    add(G.box(.7, .05, .26, .02), C.plinth, 1.18, .025, zb - .14);
+    add(G.box(.06, .1, .1, .015), C.post, 1.18, y0 + 1.36, zb - .07); add(G.sph(.055, 10, 8), '#fff3c4', 1.18, y0 + 1.29, zb - .1);
+    add(G.box(.24, .15, .03, .01), '#c9cdd6', -.42, y0 + 1.5, zb - .02); for (let k = 0; k < 3; k++) add(G.box(.2, .015, .02, .004), '#8f95a3', -.42, y0 + 1.45 + k * .045, zb - .04);
+    add(G.cyl(.035, .035, H + .05, 8), C.steel2, -W / 2 + .2, y0 + (H + .05) / 2, zb - .06); add(G.box(.1, .05, .1, .01), C.steel2, -W / 2 + .2, .04, zb - .1);
+    for (const v of [.5, 1.2, 1.75]) add(G.box(.06, .02, .08, .005), C.post, -W / 2 + .2, y0 + v, zb - .03);
+    const xw = -W / 2;
+    add(G.box(.05, .5, .56, .02), C.post, xw - .01, y0 + 1.35, -.15); add(G.box(.02, .4, .46, .01), C.glass, xw - .03, y0 + 1.35, -.15);
+    for (const u of [-.12, .12]) add(G.box(.02, .4, .02, .005), C.white, xw - .045, y0 + 1.35, -.15 + u);
+    add(G.box(.13, .05, .66, .015), C.wood, xw - .065, y0 + 1.07, -.15);
+  }));
   gableRoof(f, 's4-st2', 0, y0 + H, 0, W, D, .85, .34);
   // the station's name over the eave: 벚꽃마을역 / Sakura Town
   board(f, 1.7, .4, 640, (c, w, h) => {
@@ -509,7 +532,7 @@ B.s4_locker = f => {
 // lever, a poster panel, the take-out pocket with its flap, a dark kick plate; the white cap and side trim
 B.s4_vend = f => {
   const W = .66, Hh = 1.72, D = .6, zf = D / 2, DR = ['#ffd23f', '#7fd6c0', '#ff8f6b', '#ffffff', '#9fc4ff', '#c9a6ff', '#8fdc7a'];
-  f.add(mc('s4-vend2', ({ add }) => {
+  f.add(mc('s4-vend2', ({ add, tube }) => {
     [[-.35, C.red, '#c93a33'], [.35, C.blue, '#3a74b8']].forEach(([x, c, cd], n) => {
       add(G.box(W, Hh, D, .05), c, x, Hh / 2, 0);
       add(G.box(W + .02, .05, D + .02, .02), '#ffffff', x, Hh + .01, 0);
@@ -536,6 +559,12 @@ B.s4_vend = f => {
       // the take-out pocket and its flap, the kick plate
       add(G.box(.46, .2, .03, .02), '#2f2a3a', x, .3, zf + .004); add(G.box(.42, .12, .02, .01), '#5b5672', x, .33, zf + .02, -.25, 0, 0);
       add(G.box(W, .08, .03, .01), '#3a3048', x, .04, zf + .004);
+      // the back, seen from the far side of the platform (19판~ 다듬기 10/29: it was the whole red / blue body): a grey sheet-metal back
+      // in a coloured rim, two banks of vent louvres, a rating plate, the power cord down to its plug
+      add(G.box(W - .08, Hh - .16, .02, .02), '#c9cdd6', x, Hh / 2 + .02, -zf - .006);
+      for (const y0 of [1.15, .3]) for (let k = 0; k < 5; k++) add(G.box(W - .26, .026, .014, .005), '#8f95a3', x, y0 + k * .06, -zf - .018);
+      add(G.box(.15, .1, .01, .004), '#ffffff', x + .14, .86, -zf - .018); add(G.box(.11, .016, .006, .002), cd, x + .14, .89, -zf - .024);
+      tube([x - .2, .55, -zf - .02], [x - .21, .05, -zf - .06], .014, '#2f2a3a', 6); add(G.box(.06, .035, .06, .01), '#2f2a3a', x - .21, .02, -zf - .07);
     });
   }));
   f.spot('beside', null, .82, 0, .1, { maxH: .45, label: '자판기 옆', scale: .7 });
@@ -547,8 +576,14 @@ B.s4_post = f => {
   f.add(mc('s4-post', ({ add }) => {
     add(G.cyl(.21, .21, .84, 18), C.red, 0, .52, 0); add(G.sph(.21, 18, 8), C.red, 0, .94, 0, 0, 0, 0, [1, .55, 1]);
     add(G.cyl(.23, .23, .05, 18), '#c93a33', 0, .96, 0);
-    add(G.cyl(.13, .15, .1, 12), '#4a4256', 0, .05, 0); add(G.box(.2, .04, .06, .01), C.dark, 0, .76, .19);
-    add(G.box(.16, .12, .02, .01), C.white, 0, .55, .21);
+    add(G.cyl(.13, .15, .1, 12), '#4a4256', 0, .05, 0);
+    // (19판~ 다듬기 10/29: one slot and a white square) two letter slots with their lips, the white plate with the red 〒 mark, a band
+    // round the foot, the collection door below with its brass keyhole, a little sign on top
+    for (const sx of [-.07, .07]) { add(G.box(.1, .028, .05, .01), C.dark, sx, .78, .19); add(G.box(.12, .02, .05, .008), '#e04a40', sx, .805, .2, -.35, 0, 0); }
+    add(G.box(.17, .13, .02, .01), C.white, 0, .6, .205); add(G.box(.1, .016, .01, .004), C.red, 0, .635, .217); add(G.box(.1, .016, .01, .004), C.red, 0, .605, .217); add(G.box(.016, .07, .01, .004), C.red, 0, .575, .217);
+    add(G.cyl(.215, .215, .04, 18), '#c93a33', 0, .14, 0);
+    add(G.box(.2, .2, .02, .01), '#d8423a', 0, .34, .205); add(G.cyl(.013, .013, .016, 8), '#e8c66a', .07, .34, .218, HP, 0, 0);
+    add(G.box(.16, .06, .03, .01), '#fbf7f0', 0, 1.06, 0); add(G.cyl(.012, .012, .06, 6), '#c93a33', 0, 1.0, 0);
   }));
   f.spot('behind', null, -.1, 0, -.38, { maxH: .35, label: '우체통 뒤', scale: .6 });
   f.walkSolids = [[-.22, 0, -.22, .22, 1.05, .22]];
@@ -602,15 +637,19 @@ B.s4_namesign = f => {
   f.add(mc('s4-namesign', ({ add }) => {
     for (const x of [-.62, .62]) add(G.cyl(.04, .045, 1.25, 8), C.steel2, x, .62, -.03);
     add(G.box(1.46, .62, .05, .03), '#e8edf2', 0, 1.0, -.03);
+    add(G.box(1.52, .05, .09, .02), C.steel2, 0, 1.335, -.03); add(G.box(1.5, .025, .07, .01), C.steel2, 0, .675, -.03);
   }));
-  board(f, 1.38, .54, 700, (c, w, h) => {
+  // (19판~ 다듬기 10/29: its back was a bare grey slab) printed on both faces, as a real station-name board is
+  const nameFace = (c, w, h) => {
     c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h);
     fitText(c, '벚꽃마을', w / 2, h * .3, w * .6, h * .3, '#3a3048');
     const other = tr('벚꽃마을') === '벚꽃마을' ? 'Sakura Town' : '벚꽃마을';
     c.font = FONT(Math.round(h * .12)); c.fillStyle = '#6b6478'; c.textAlign = 'center'; c.fillText(other, w / 2, h * .54, w * .6);
     c.fillStyle = '#5fae8a'; c.fillRect(0, h * .66, w, h * .12);
     fitText(c, '◀ 몽글동', w * .2, h * .87, w * .36, h * .13, '#3a3048'); fitText(c, '바닷가 ▶', w * .8, h * .87, w * .36, h * .13, '#3a3048');
-  }, 0, 1.0, .0, 0);
+  };
+  board(f, 1.38, .54, 700, nameFace, 0, 1.0, .0, 0);
+  board(f, 1.38, .54, 700, nameFace, 0, 1.0, -.06, Math.PI);
   f.spot('under', null, .2, 0, .15, { maxH: .35, label: '역 이름판 밑', scale: .6 });
   f.walkSolids = [[-.7, 0, -.08, .7, 1.35, .04]];
 };

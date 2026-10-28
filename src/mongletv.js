@@ -202,7 +202,7 @@ function style() {
   const s = document.createElement('style');
   s.textContent = `.mtv{position:absolute;inset:0;z-index:30;pointer-events:auto;display:flex;align-items:center;justify-content:center;background:rgba(42,20,60,.62);touch-action:none;animation:fadein .2s;transition:opacity .18s}
 .mtv.out{opacity:0}
-.mtv-box{position:relative;width:min(calc(100vw - 32px),420px,calc((100vh - 290px) * 1.15));width:min(calc(100vw - 32px),420px,calc((100dvh - 290px) * 1.15));display:flex;flex-direction:column;gap:10px;color:#2b2030;font-family:var(--font)}
+.mtv-box{position:relative;width:min(calc(100vw - 14px),460px,calc((100vh - 290px) * 1.15));width:min(calc(100vw - 14px),460px,calc((100dvh - 290px) * 1.15));display:flex;flex-direction:column;gap:10px;color:#2b2030;font-family:var(--font)}
 .mtv-mon{background:linear-gradient(180deg,#ece4d2,#cfc4ad);border:4px solid #2b2030;border-radius:24px;padding:14px 14px 8px;box-shadow:0 8px 0 -2px #b9ad95,0 14px 24px -10px rgba(43,32,48,.45)}
 .mtv-scr{position:relative;background:#141026;border:4px solid #2b2030;border-radius:14px;overflow:hidden;aspect-ratio:4/3}
 .mtv-scr canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;cursor:pointer;animation:mtvon .32s cubic-bezier(.2,1.2,.4,1)}

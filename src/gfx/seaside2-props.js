@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { put, grp, shade, mat, mesh, geo, canvasTex, texCache, roundRect, starShape } from './kit.js';
 import { HG as G, hmc as mc, hxf as xf } from './house-props.js';
+import { clothBend } from './clothbend.js';
 import { fitText, textTex } from './gpt-paper.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -396,6 +397,17 @@ B.seashop2 = (f, T) => {
     }
     // the back: two windows upstairs
     for (const x of [-.6, .65]) { add(G.box(.5, .58, .03, .01), '#ffffff', x0 + x, 1.95, zb - .012); add(G.box(.025, .54, .025, .006), '#ffffff', x0 + x, 1.95, zb - .034); add(G.box(.56, .04, .09, .01), '#ffffff', x0 + x, 1.65, zb - .04); }
+    // (19판~ 다듬기 10/29: the ground floor at the back was one bare clapboard wall when the view turns round) the back door with its
+    // sill and a little lamp, a small window with a flower box, a coiled hose on its hook; the fish crates stacked round the corner under the
+    // west gable (the back wall stands on the island's edge, so nothing can stand behind it)
+    add(G.box(.56, .96, .04, .015), '#ffffff', x0 + .7, .6, zb - .015); add(G.box(.46, .88, .03, .01), BLUE2, x0 + .7, .57, zb - .03);
+    for (const v of [.3, .62]) add(G.box(.38, .025, .015, .004), '#ffffff', x0 + .7, v, zb - .048); add(G.box(.24, .16, .012, .004), '#cfe8f2', x0 + .7, .86, zb - .048);
+    add(G.cyl(.022, .022, .03, 8), '#e8c66a', x0 + .88, .58, zb - .05, HP, 0, 0); add(G.box(.62, .05, .06, .012), '#d6d0c8', x0 + .7, .125, zb - .03);
+    add(G.box(.06, .08, .07, .01), DARK, x0 + .7, 1.16, zb - .05); add(G.sph(.045, 8, 6), YEL, x0 + .7, 1.1, zb - .08);
+    add(G.box(.5, .44, .04, .012), '#ffffff', x0 - .5, .82, zb - .015); add(G.box(.42, .36, .02, .006), '#cfe8f2', x0 - .5, .82, zb - .03); add(G.box(.02, .36, .02, .005), '#ffffff', x0 - .5, .82, zb - .042);
+    add(G.box(.56, .12, .14, .015), WOODD, x0 - .5, .55, zb - .08); for (let k = 0; k < 5; k++) add(G.sph(.04, 7, 5), k % 2 ? RED : '#ffffff', x0 - .72 + k * .11, .63, zb - .08);
+    for (const [bz, by] of [[-.8, .08], [-.8, .245], [-.5, .08]]) { add(G.box(.2, .16, .28, .015), '#d9b77e', x0 - W / 2 - .12, by, bz); add(G.box(.17, .02, .24, .004), '#c49a5e', x0 - W / 2 - .12, by + .085, bz); }
+    add(G.box(.04, .04, .1, .01), DARK, x0 + .15, .9, zb - .05); add(G.tor(.12, .025, PI * 2, 6, 18), '#5aa36a', x0 + .15, .8, zb - .07); add(G.tor(.09, .025, PI * 2, 6, 18), '#5aa36a', x0 + .15, .8, zb - .09);
     // the gable ends: a shuttered window downstairs, a round window high up
     for (const sx of [-1, 1]) {
       const wxs = x0 + sx * (W / 2 + .012);
@@ -543,6 +555,21 @@ B.seadeck2 = (f, T, o = {}) => {
     add(G.box(.2, .07, .02, .01), DARK, .13, y + .74, -.43, -.3, 0, 0); add(G.box(.13, .03, .006, .004), '#9be38f', .13, y + .745, -.418, -.3, 0, 0);
     for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) add(G.box(.03, .015, .03, .006), [RED, YEL, BLUE2, '#ffffff'][(r + k) % 4], .06 + k * .045, y + .72, -.34 + r * .045);
     add(G.cyl(.03, .03, .08, 10), '#ffffff', .22, y + .745, -.46, 0, 0, HP);
+    // (19판~ 다듬기 10/29: the counter's back was one bare white box when the view turns round) the seller's side: board seams, two open
+    // shelves on brackets (paper bags, a roll of wrapping paper, jars; a stack of trays, the ledger), a cooler and a stool on the deck
+    for (let k = 1; k < 7; k++) add(G.pbox(.008, .5, .006), '#e2dbd0', -1.15 + k * .157, y + .3, -.577);
+    for (const yy of [.2, .4]) { add(G.box(1.0, .025, .1, .006), WHITE, -.6, y + yy, -.625); for (const x of [-1.05, -.15]) add(G.box(.02, .06, .08, .004), '#e2dbd0', x, y + yy - .04, -.615); }
+    for (let k = 0; k < 3; k++) add(G.box(.2, .025, .08, .004), shade('#c9a26b', k % 2 ? -.05 : .03), -.95, y + .227 + k * .026, -.625, 0, k * .12, 0);
+    add(G.cyl(.03, .03, .2, 10), '#ffffff', -.65, y + .245, -.625, 0, 0, HP); add(G.cyl(.012, .012, .22, 6), '#c9a26b', -.65, y + .245, -.625, 0, 0, HP);
+    for (let k = 0; k < 3; k++) { add(G.cyl(.026, .026, .07, 10), '#d8eef6', -.35 + k * .07, y + .25, -.625); add(G.cyl(.028, .028, .015, 10), [RED, YEL, BLUE2][k], -.35 + k * .07, y + .29, -.625); }
+    for (let k = 0; k < 4; k++) add(G.box(.22, .018, .085, .004), k % 2 ? '#f4efe4' : '#ffffff', -.9, y + .422 + k * .019, -.625);
+    add(G.box(.16, .03, .09, .006), BLUE, -.45, y + .428, -.625, 0, .2, 0); add(G.box(.15, .005, .085, .002), '#ffffff', -.45, y + .445, -.625, 0, .2, 0);
+    add(G.cyl(.005, .005, .12, 4), YEL, -.42, y + .452, -.6, 0, 1.2, HP);
+    add(G.box(.34, .2, .22, .03), '#ffffff', -1.0, y + .125, -.82); add(G.box(.36, .045, .24, .015), BLUE2, -1.0, y + .245, -.82);
+    for (const s of [-1, 1]) add(G.box(.03, .05, .06, .008), '#d6d6d6', -1.0 + s * .175, y + .19, -.82);
+    tube([-1.1, y + .27, -.82], [-1.1, y + .3, -.82], .008, '#d6d6d6', 3); tube([-1.1, y + .3, -.82], [-.9, y + .3, -.82], .008, '#d6d6d6', 3); tube([-.9, y + .3, -.82], [-.9, y + .27, -.82], .008, '#d6d6d6', 3);
+    add(G.cyl(.11, .1, .04, 16), WOOD, -.45, y + .36, -.8); for (let k = 0; k < 3; k++) { const a = k * 2.09 + .3; tube([-.45 + Math.cos(a) * .07, y + .34, -.8 + Math.sin(a) * .07], [-.45 + Math.cos(a) * .1, y + .03, -.8 + Math.sin(a) * .1], .012, WOODD, 4); }
+    add(G.tor(.08, .008, PI * 2, 4, 14), WOODD, -.45, y + .16, -.8, HP, 0, 0);
     // the lemon barrel: iron hoops, a heap of lemons with leaves, a price card on a stick
     for (const yy of [.07, .33]) add(G.tor(.165, .012, PI * 2, 4, 18), '#6e5a4e', .55, y + yy, .3, HP, 0, 0);
     for (let k = 0; k < 9; k++) { const a = k * 2.4, r = k < 6 ? .1 : .04; add(G.sph(.055, 9, 7), k % 4 ? YEL : '#ffe066', .55 + Math.cos(a) * r, y + .42 + (k >= 6 ? .045 : 0), .3 + Math.sin(a) * r, 0, a, 0, [1.2, 1, 1]); }
@@ -645,7 +672,8 @@ B.flagdeck2 = (f, T) => {
     for (const s of [-1, 1]) add(G.box(1.32, .14, .02, .01), '#3f8fd0', 0, .02, .28 + s * .28);
     for (const x of [-.35, .3]) tube([x, .18, 0], [x, .19, .56], .008, ROPE, 4);
   }));
-  const p = f.part('lift', cover, (t, b) => { cover.rotation.x = -1.25 * t; cover.position.y = b.p.y + .08 * t; }, { label: '보트 덮개', sfx: 'lift', dur: .34 });
+  // (⑩ 10/29 사용자 "들출 때 제발 벤딩 좀": 판처럼 통째로 젖혀지던 덮개 — 이제 앞 끝부터 말려 뒤로 넘어감, 30판 전용)
+  const p = f.part('lift', cover, clothBend(f, cover, { hinge: [0, .08, 0], along: [0, 0, 1], toward: [0, 1, 0], len: .56, turn: 2.4, tip: .35, rise: .05 }), { label: '보트 덮개', sfx: 'lift', dur: .55 });
   f.spot('inside', boat, -.1, .14, 0, { part: p, maxH: .36, label: '보트 덮개 밑', scale: .85 });
   const tail = grp(); put(tail, .5, .3, .2); tail.visible = false; boat.add(tail);
   tail.add(live(mc('flagdeck2-tail', ({ add }) => { add(G.tor(.09, .035, PI * 1.3, 6, 14), '#f2d2a8', 0, .08, 0, 0, 0, -.5); add(G.sph(.04, 8, 6), '#ffffff', .07, .15, 0); })));

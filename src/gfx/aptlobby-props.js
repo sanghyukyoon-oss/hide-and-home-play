@@ -115,6 +115,81 @@ B.lockbox = (f, T) => {
   f.spot('inside', up, 0, .05, .02, { part: p, maxH: .24, label: '이삿짐 상자 안', scale: .85 });
 };
 
+// ── fix1029 32~40판 허접한 모델 다시 (19판 이상) ──
+// (fix1029 허브 10/29 사용자 "1~18판은 완벽하니 건들지 말고 19부터": 아래 새 모양은 19판 이상에서만 — scenes/stage.js가 방을 짓기 전에
+// 판 번호를 globalThis.__sbkStage에 둠(⑩ gate19 패치). 1~18판은 원래 빌더 그대로)
+const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
+const lowwallLate = (f, T) => {
+  f.add(mc('lowwall2', ({ add }) => {
+    const CAP = '#f7f1e8', VEIN = '#d8d0c6', PL = shade(CREAM, -.12);
+    add(G.box(1.96, .55, .3, .05), CREAM, 0, .275, .3);
+    add(G.box(1.98, .07, .32, .02), PL, 0, .035, .3);
+    for (const sz of [-1, 1]) for (const x of [-.48, .48]) {
+      add(G.box(.82, .3, .012, .01), shade(CREAM, .04), x, .3, .3 + sz * .152);
+      for (const [w, hh, dx, dy] of [[.82, .02, 0, .15], [.82, .02, 0, -.15], [.02, .3, .41, 0], [.02, .3, -.41, 0]]) add(G.box(w, hh, .016, .006), shade(CREAM, -.07), x + dx, .3 + dy, .3 + sz * .155);
+    }
+    add(G.box(2.0, .06, .34, .03), CAP, 0, .58, .3);
+    for (const [x, z, l, r] of [[-.7, .25, .3, .3], [-.2, .35, .22, -.5], [.25, .26, .34, .2], [.75, .33, .2, -.3]]) add(G.pbox(l, .003, .006), VEIN, x, .611, z, 0, r, 0);
+    add(G.cyl(.07, .055, .1, 12), '#d98b5f', -.78, .66, .3); add(G.cyl(.075, .075, .02, 12), shade('#d98b5f', -.1), -.78, .71, .3);
+    for (let k = 0; k < 7; k++) { const a = k / 7 * PI * 2; add(G.cone(.03, .09, 6), k % 2 ? '#7fbf7a' : '#5fae6a', -.78 + Math.cos(a) * .035, .75, .3 + Math.sin(a) * .035, Math.sin(a) * .5, 0, -Math.cos(a) * .5); }
+    add(G.cone(.03, .1, 6), '#8fd47a', -.78, .77, .3);
+  }));
+  f.spot('behind', null, -.4, 0, .05, { maxH: .4, label: '턱 안쪽', scale: .8 });
+  f.spot('on', null, .5, .61, .3, { maxH: .3, label: '턱 위', scale: .7 });
+};
+{ const old = B.lowwall; B.lowwall = (f, T, o) => (late19() ? lowwallLate(f, T, o) : old(f, T, o)); }
+const lockboxLate = (f, T) => {
+  // (fix1029 32~40 훑기 — 38판: 큰 상자 옆에 작은 상자 둘이 박혀 덩어리) one big moving box: tape over its seams, hand holes,
+  // a '이삿짐 · 취급 주의' label, this-way-up arrows, the corners a shade darker, and a webbing strap round it whose buckle is where
+  // the padlock hangs
+  f.add(mc('lockbox2', ({ add }) => {
+    add(G.box(.7, .55, .6, .02), CARD, 0, .275, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.03, .552, .03, .008), CARD2, sx * .343, .276, sz * .293);
+    add(G.pbox(.08, .552, .605), TAPE, 0, .276, 0);
+    add(G.pbox(.705, .07, .605), TAPE, 0, .03, 0);
+    add(G.pbox(.71, .006, .08), TAPE, 0, .552, 0);
+    for (const sx of [-1, 1]) { add(G.sph(.05, 10, 6), '#7a5230', sx * .351, .42, 0, 0, 0, 0, [.1, .38, 1]); }
+    add(G.box(.22, .14, .006, .004), '#fffaf0', -.2, .34, .303); add(G.pbox(.16, .02, .004), '#ef6b5b', -.2, .38, .307);
+    for (const y of [.335, .305]) add(G.pbox(.14, .01, .004), DARK, -.2, y, .307);
+    for (const x of [.13, .2]) { add(G.pbox(.012, .07, .004), DARK, x, .43, .303); add(G.cone(.02, .03, 3), DARK, x, .475, .303); }
+    add(G.box(.05, .72, .62, .006), '#5b6f9a', .2, .3, 0, 0, 0, 0, [1, 1, 1]);
+    add(G.box(.72, .05, .05, .006), '#5b6f9a', .2, .555, 0, 0, HP, 0);
+    add(G.box(.09, .07, .02, .008), '#c9cfe0', .2, .3, .315); add(G.box(.05, .03, .022, .004), DARK, .2, .3, .318);
+  }));
+  const lid = grp(); put(lid, -.35, .55, 0); f.add(lid);
+  lid.add(mc('lockbox-flap', ({ add }) => { add(G.box(.35, .02, .6, .01), CARD2, .175, .01, 0); add(G.pbox(.04, .025, .6), TAPE, .33, .012, 0); }));
+  // packing paper inside under the flap that comes up as it opens — deep in the box nothing was seen (69판's padlock, 레벨 10/21)
+  const up = grp(); put(up, -.17, .26, 0); f.add(up);
+  up.add(mc('lockbox-paper', ({ add }) => { for (let k = 0; k < 4; k++) add(G.sph(.09, 7, 5), k % 2 ? '#f4efe6' : '#e6ddcf', (k % 2 - .5) * .12, .02, (k > 1 ? .5 : -.5) * .16, 0, 0, 0, [1, .45, 1]); }));
+  const p = f.part('lift', [lid, up], (t, bl, bu) => { lid.rotation.z = 1.9 * t; up.position.y = bu.p.y + .3 * t; }, { label: '이삿짐 상자', sfx: 'lift', dur: .3 });
+  p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: .2, y: .3, z: .32 };
+  f.spot('inside', up, 0, .05, .02, { part: p, maxH: .24, label: '이삿짐 상자 안', scale: .85 });
+};
+{ const old = B.lockbox; B.lockbox = (f, T, o) => (late19() ? lockboxLate(f, T, o) : old(f, T, o)); }
+
+// (fix1029 4차 — 38판: 손수레가 초록 납작 판에 바퀴) the deck with rubber anti-slip ribs and grey corner bumpers, swivel caster
+// forks under it, the handle a bent tube with black foam grips, a yellow bungee strap hooked over the handle (19판 이상에서만)
+{ const old = B.dolly; B.dolly = (f, T, o) => {
+  if (!late19()) return old(f, T, o);
+  const TEAL = '#3fa59a';
+  f.add(mc('dolly2', ({ add, tube }) => {
+    add(G.box(.6, .06, .42, .02), TEAL, 0, .16, .05);
+    for (let k = 0; k < 6; k++) add(G.box(.5, .008, .025, .004), shade(TEAL, -.25), 0, .193, -.1 + k * .06);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.06, .07, .06, .02), '#5b5668', sx * .29, .16, .05 + sz * .2);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const x = sx * .23, z = .05 + sz * .15;
+      add(G.box(.07, .02, .07, .006), STEEL2, x, .125, z); for (const s2 of [-1, 1]) add(G.box(.05, .06, .008, .003), STEEL2, x, .095, z + s2 * .03);
+      add(G.cyl(.055, .055, .045, 14), '#3a3446', x, .06, z, HP, 0, 0); add(G.cyl(.025, .025, .05, 10), '#c9cfe0', x, .06, z, HP, 0, 0);
+    }
+    tube([-.28, .2, -.1], [-.28, .72, -.1], .02, STEEL, 8); tube([-.28, .2, .2], [-.28, .72, .2], .02, STEEL, 8);
+    tube([-.28, .72, -.1], [-.3, .78, -.05], .02, STEEL, 8); tube([-.28, .72, .2], [-.3, .78, .15], .02, STEEL, 8); tube([-.3, .78, -.05], [-.3, .78, .15], .02, STEEL, 8);
+    add(G.cyl(.03, .03, .16, 10), DARK, -.3, .78, .05, HP, 0, 0);
+    tube([-.28, .45, -.1], [-.28, .45, .2], .015, STEEL, 6);
+    tube([-.28, .7, -.13], [-.2, .5, -.13], .012, '#ffd25c', 6); tube([-.2, .5, -.13], [-.16, .3, -.12], .012, '#ffd25c', 6); add(G.tor(.02, .006, PI, 4, 8), DARK, -.28, .71, -.13);
+  }));
+  f.spot('on', null, .05, .19, .05, { maxH: .35, label: '손수레 위', scale: .8 });
+  f.spot('under', null, .05, 0, .05, { maxH: .1, label: '손수레 밑', scale: .5 });
+}; }
 export const APTLOBBY_BUILDERS = B;
 // 소화전함 (wall, 현관 2차 10/21): the red fire-hose cabinet every apartment lobby has — a red box with a glass front, the white
 // hose coiled inside, a round red lamp over it and a label strip

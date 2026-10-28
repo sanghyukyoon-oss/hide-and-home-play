@@ -8,7 +8,7 @@ import { ITEMS } from './gfx/items.js';
 import { moveItem } from './hunt.js';
 import { attachItem } from './room.js';
 import { blindFor } from './hunt-blind.js';
-import { spotFits, drawnScale, wantScale, capScale, faceItem, centerOn, nestles, squareIfCrossing, settleOn } from './fitspot.js';
+import { spotFits, drawnScale, wantScale, capScale, coverCap, coverDraw, faceItem, centerOn, nestles, squareIfCrossing, settleOn } from './fitspot.js';
 import { affOk } from './affinity.js';
 
 export const MIN_PX = 28;
@@ -33,7 +33,7 @@ function redraw(it, s, sc) {
 function put(it, s, sc) { moveItem(it, s); if (Math.abs(it.g.scale.x - sc * (s.scale || 1)) > .001) redraw(it, s, sc); }
 function moveFull(S, it, s) {
   moveItem(it, s);
-  const want = S.itemWant || .34, sc = drawnScale(it.type, s, 'target', want) || Math.max(.6, Math.min(wantScale(it.type, s, 'target', want), capScale(it.type, s)));
+  const want = S.itemWant || .34, sc = Math.min(drawnScale(it.type, s, 'target', want) || Math.max(.6, Math.min(wantScale(it.type, s, 'target', want), capScale(it.type, s))), coverDraw(it.type, s));
   redraw(it, s, sc);
   if ((s.kind === 'on' || s.kind === 'inside') && !nestles(s) && !s.wallFace) S.fitClear(s, it.g);
 }
@@ -49,7 +49,7 @@ export function fixSmall(S) {
     // 10/24 허브: not tiny there either — drawn bigger in its own place, up to 2.2×, so a finger finds it (25판 쿠키 봇 빗나감 14번)
     if (it.spot.part?.chainVia || it.spot.part?.device === 'chain') {
       const px = screenPx(W, it.g), sp = it.spot;
-      if (px > 0 && px < MIN_PX) { const sc = it.g.scale.x / (sp.scale || 1) * Math.min(2.2, MIN_PX * 1.15 / px); redraw(it, sp, sc); moved.push(`${it.type}: ${sp.label} ${Math.round(px)}px → 키움`); }
+      if (px > 0 && px < MIN_PX) { const sc = Math.min(it.g.scale.x / (sp.scale || 1) * Math.min(2.2, MIN_PX * 1.15 / px), coverDraw(it.type, sp), Math.max(it.g.scale.x / (sp.scale || 1), wantScale(it.type, sp, 'target', S.itemWant || .34))); redraw(it, sp, sc); moved.push(`${it.type}: ${sp.label} ${Math.round(px)}px → 키움`); }
       continue;
     }
     const px0 = screenPx(W, it.g); if (px0 >= MIN_PX) continue;
@@ -105,5 +105,42 @@ export function fixSmall(S) {
     if (it.spot !== old) moved.push(`${it.type}: ${old.label} ${Math.round(px0)}px → ${it.spot.label} ${Math.round(bestPx)}px`);
   }
   W.idsDirty = true; W.shadowDirty = true;
+  return moved;
+}
+
+// 안 보이는 물건 옮기기 (② 10/29, 사용자 "소방차 숨기는 곳 바로 옆이 벽이라 보이지도 않아"; 20판 38 cm 라켓이 전구 기둥 밑에 깔려 봇도 못 찾음):
+// from 19판, a thing on the list that no view a player can take sees — its place opened, the view centred on it, 8 turns × 2 tilts
+// at zoom 1.5, the tap test (world.visibleAt) — goes to the nearest free open place where one does. Not behind a lock or in a chain.
+function seenAny(S, it) {
+  const W = S.G.world, R = S.room, p = it.spot.part, wasT = p?.t ?? 0, v = it.g.visible;
+  if (p?.setOpen) p.setOpen(1);
+  it.g.visible = true;
+  const c = S.worldCenter(it), y0 = W.yaw, p0 = W.pitch, z0 = W.zoom, t0 = W.target.clone();
+  let ok = false;
+  outer: for (const pt of [.62, 1.0]) for (let k = 0; k < 8; k++) {
+    W.zoom = 1.5; W.pitch = pt; W.yaw = k * Math.PI / 4 + .2; W.target.copy(c); W.clampTarget?.(true); W.updateCam();
+    R.update?.(1); R.group.updateMatrixWorld(true);
+    if (W.visibleAt(it.g, c, [R.group])) { ok = true; break outer; }
+  }
+  W.yaw = y0; W.pitch = p0; W.zoom = z0; W.target.copy(t0); W.updateCam();
+  if (p?.setOpen) p.setOpen(wasT);
+  it.g.visible = v; R.update?.(1);
+  return ok;
+}
+export function unhide(S) {
+  const R = S.room, moved = [], blind = blindFor(S.spec.room) || (() => false), t0 = performance.now();
+  for (const it of S.targets) {
+    if (performance.now() - t0 > 600) break;
+    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role !== 'target' || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (seenAny(S, it)) continue;
+    const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
+    const d = s => s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(c0);
+    const cands = R.spots.filter(s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && (!s.part || (!s.part.lock && (s.part.reach ?? 1) >= .55)) && fits(it.type, s)).sort((a, b) => d(a) - d(b)).slice(0, 12);
+    let dest = null;
+    for (const s of cands) { moveFull(S, it, s); if (seenAny(S, it)) { dest = s; break; } }
+    if (dest) moved.push(`${it.type}: ${old.label} → ${dest.label} (안 보임)`); else put(it, old, sc0);
+    const p = it.spot.part; it.g.visible = !p || p.t > .5;
+  }
+  S.G.world.idsDirty = true;
   return moved;
 }

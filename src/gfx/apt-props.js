@@ -792,7 +792,9 @@ B.laundrybasket = (f, T) => {
     for (const z of [-.1, .1]) add(G.box(.51, .11, .035, .01), WHITE, 0, 0, z);
   }));
   put(tow, 0, .272, 0); f.add(tow);
-  const p = f.part('lift', tow, (t, b) => { tow.position.y = b.p.y + .28 * t; tow.position.z = b.p.z - .1 * t; tow.rotation.x = -.45 * t; }, { label: '빨래 바구니 수건', sfx: 'lift' });
+  // (⑩ 10/29 사용자 "들출 때 제발 벤딩 좀": 19판부터 수건이 앞 끝부터 말려 들림 — 1~18판은 그대로)
+  const p = f.part('lift', tow, (globalThis.__sbkStage ?? -1) >= 18 ? clothBend(f, tow, { hinge: [0, 0, -.18], along: [0, 0, 1], toward: [0, 1, 0], len: .36, turn: 2.4, tip: .3, rise: .08 })
+    : (t, b) => { tow.position.y = b.p.y + .28 * t; tow.position.z = b.p.z - .1 * t; tow.rotation.x = -.45 * t; }, { label: '빨래 바구니 수건', sfx: 'lift', dur: .5 });
   f.spot('inside', null, 0, .222, .02, { part: p, maxH: .3, label: '빨래 바구니 안', scale: .8 });
 };
 
@@ -1111,6 +1113,58 @@ B.wallshelf2 = (f, T) => {
   f.spot('on', null, .27, S[1], .13, { maxH: .45, label: '선반 위칸', scale: .8 });
   f.spot('on', null, .0, S[0], .13, { maxH: .36, label: '선반 아래칸', scale: .8 });
 };
+
+// ── fix1029 32~40판 허접한 모델 다시 (19판 이상) ──
+// (fix1029 허브 10/29 사용자 "1~18판은 완벽하니 건들지 말고 19부터": 아래 새 모양은 19판 이상에서만 — scenes/stage.js가 방을 짓기 전에
+// 판 번호를 globalThis.__sbkStage에 둠(⑩ gate19 패치). 1~18판은 원래 빌더 그대로)
+const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
+const laundrybasketLate = (f, T) => {
+  const bc = col(T, 'accent2'), tw = col(T, 'accent3'), sh = col(T, 'accent'), tk = [bc, tw, sh].join(',');
+  const W = .62, D = .46, H = .34, t = .025, slot = shade(bc, -.18);
+  f.add(mc('laundrybasket|' + tk, ({ add, tube }) => {
+    for (const sz of [-1, 1]) add(G.box(W, H, t, .01), bc, 0, H / 2, sz * (D / 2 - t / 2));
+    for (const sx of [-1, 1]) add(G.box(t, H, D - 2 * t, .01), bc, sx * (W / 2 - t / 2), H / 2, 0);
+    add(G.pbox(W - 2 * t, .02, D - 2 * t), shade(bc, -.1), 0, .01, 0);
+    for (const sz of [-1, 1]) add(G.box(W + .02, .03, t + .02, .01), WHITE, 0, H, sz * (D / 2 - t / 2));
+    for (const sx of [-1, 1]) add(G.box(t + .02, .03, D + .02, .01), WHITE, sx * (W / 2 - t / 2), H, 0);
+    for (const sz of [-1, 1]) for (let k = 0; k < 6; k++) add(G.box(.035, .17, .006, .002), slot, -.225 + k * .09, .16, sz * (D / 2 + .005));
+    for (const sx of [-1, 1]) {
+      add(G.box(.006, .045, .14, .005), slot, sx * (W / 2 + .005), H - .075, 0);
+      for (let k = 0; k < 3; k++) add(G.box(.006, .14, .035, .002), slot, sx * (W / 2 + .005), .14, -.1 + k * .1);
+    }
+    // (fix1029 32~40 훑기 — 33판: 빨래가 상자 두 장, 위 수건이 노란 납작 판이라 덩어리로 보임) a pile of folded laundry: a white tee
+    // with its collar and a fold line, a striped shirt under it, a rolled pair of socks tucked in a corner, a sleeve hanging over
+    // the front rim
+    add(G.box(.5, .07, .34, .03, 2), sh, -.01, .125, -.01, 0, .04, 0);
+    for (const y of [.107, .14]) add(G.pbox(.44, .012, .006), WHITE, -.01, y, .163, 0, .04, 0);
+    add(G.box(.46, .06, .3, .03, 2), WHITE, .01, .19, 0, 0, -.05, 0);
+    add(G.tor(.05, .012, PI, 4, 10), shade(WHITE, -.12), .01, .222, -.1, -HP, 0, 0);
+    add(G.pbox(.42, .004, .004), shade(WHITE, -.1), .01, .221, .04, 0, -.05, 0);
+    for (const [x, z, c] of [[-.2, .12, BLUSH], [-.13, .14, SKY]]) { add(G.sph(.045, 10, 7), c, x, .24, z, 0, 0, 0, [1, .8, 1.2]); add(G.tor(.03, .012, PI * 2, 4, 10), WHITE, x, .24, z + .045, 0, 0, 0); }
+    add(G.box(.13, .014, .06, .005), CORAL, .16, H + .015 + .007, D / 2 - .015);
+    add(G.box(.13, .16, .014, .005), CORAL, .16, H + .022 - .08, D / 2 + .022);
+    add(G.box(.13, .1, .014, .005), CORAL, .16, H - .04, D / 2 - .04);
+    for (const y of [.25, .28]) add(G.pbox(.13, .014, .004), WHITE, .16, y, D / 2 + .029 + .004);
+    add(G.box(.15, .03, .02, .008), shade(CORAL, -.1), .16, H - .14, D / 2 + .022);
+  }));
+  // the big towel on top: folded in three (soft rolled edges), two white bands, a little label tag, its end drooping over the side
+  const tow = grp(mc('laundrybasket-towel3|' + tk, ({ add }) => {
+    add(G.box(.5, .045, .34, .022, 2), tw, 0, -.03, 0);
+    add(G.box(.44, .05, .3, .024, 2), shade(tw, .07), .02, .015, -.005, 0, .06, 0);
+    for (const z of [-.15, .145]) add(G.cyl(.026, .026, .44, 10), shade(tw, -.05), .02, .012, z, 0, .06, HP);
+    for (const x of [-.14, .12]) { add(G.box(.035, .062, .312, .01), WHITE, x, .016, -.005 + x * -.06, 0, .06, 0); add(G.box(.035, .05, .345, .01), WHITE, x - .02, -.03, 0); }
+    for (let k = 0; k < 9; k++) add(G.box(.012, .02, .012, .003), WHITE, -.25, -.03, -.16 + k * .04);
+    add(G.box(.05, .006, .03, .002), '#7fd6c0', .2, .043, .11);
+    add(G.box(.16, .035, .14, .016, 2), BLUSH, -.1, .057, .04, 0, -.3, 0);
+    add(G.box(.16, .006, .03, .002), WHITE, -.1, .076, .04, 0, -.3, 0);
+    add(G.sph(.04, 10, 7), SKY, .1, .07, -.06, 0, .4, 0, [1.3, .75, 1]); add(G.tor(.028, .01, PI * 2, 4, 10), WHITE, .148, .07, -.04, 0, HP + .4, 0);
+  }));
+
+  put(tow, 0, .272, 0); f.add(tow);
+  const p = f.part('lift', tow, (t, b) => { tow.position.y = b.p.y + .28 * t; tow.position.z = b.p.z - .1 * t; tow.rotation.x = -.45 * t; }, { label: '빨래 바구니 수건', sfx: 'lift' });
+  f.spot('inside', null, 0, .222, .02, { part: p, maxH: .3, label: '빨래 바구니 안', scale: .8 });
+};
+{ const old = B.laundrybasket; B.laundrybasket = (f, T, o) => (late19() ? laundrybasketLate(f, T, o) : old(f, T, o)); }
 
 export const APT_BUILDERS = B;
 
