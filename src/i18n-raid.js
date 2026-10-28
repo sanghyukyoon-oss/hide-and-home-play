@@ -34,9 +34,9 @@ addI18n({
   '원하는 곳으로 드래그해서 숨겨!': 'Drag it anywhere to hide it!', '셋 다 숨겼어! 위의 시작을 터치': 'All three hidden! Tap Start up top', '꼭 숨겨야 해': 'Must be hidden', '다 숨겼어!': 'All hidden!',
   // 보물 지키기 숨기기 (boss.js, 10/20): 핀·시간 없음·조이스틱
   '✓ 숨겼다!': '✓ Hidden!', '보물을 숨겨! 너굴이는 눈 감고 기다려': 'Hide your treasures! Rocky waits, eyes shut', '바로 시작!': 'Start now!',
-  '셋 다 숨겼어! 곧 너굴이가 찾기 시작해': 'All three hidden! Rocky starts looking soon', '조이스틱으로 움직이고, 휘슬로 너굴이를 따돌려!': 'Move with the joystick, whistle to lure Rocky away!', '비켜~': 'Scoot~',
+  '셋 다 숨겼어! 곧 너굴이가 찾기 시작해': 'All three hidden! Rocky starts looking soon', '휘슬을 불어 너굴이를 따돌려!': 'Blow the whistle to lure Rocky away!', '비켜~': 'Scoot~',
   '너굴이가 눈 감고 기다리는 동안 보물을 드래그해서 숨겨. 서랍 안, 커튼 뒤, 선반 위… 놓은 곳에 쏙 들어가.': 'While Rocky waits with eyes shut, drag a treasure to hide it. In a drawer, behind a curtain, on a shelf… it slips right in where you drop it.',
-  '너굴이가 찾기 시작하면 조이스틱으로 움직여. 휘슬을 불면 보물 말고 내 쪽으로 달려와!': 'When Rocky starts looking, move with the joystick. Blow the whistle and Rocky runs to me, not the treasure!',
+  '너굴이가 찾기 시작하면 난 가만히 있을게. 휘슬을 불면 보물 말고 내 쪽으로 달려와!': 'When Rocky starts looking, I stay put. Blow the whistle and Rocky runs to me, not the treasure!',
   // 친구 지킴이 (10/20)
   '친구가 막았다!': 'A friend stopped it!', '안 돼! 몽글이 거야!': "No! That's Mongle's!", '앗!': 'Eek!', '앗! 친구가 지키고 있었어?': 'Eek! A friend was on guard?', '친구가 막음': 'Stopped by friends',
   // 숨기기 = 가구 놓기처럼 (hidehold.js, 10/20)

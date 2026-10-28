@@ -153,7 +153,7 @@ export class BossScene {
       await playDialog(G, [
         { who: 'raccoon', text: '이번엔 보물 지키기야! 네가 제일 아끼는 보물 3개, 내가 다 찾으면 내 거~' },
         { who: 'mong', text: '너굴이가 눈 감고 기다리는 동안 보물을 드래그해서 숨겨. 서랍 안, 커튼 뒤, 선반 위… 놓은 곳에 쏙 들어가.' },
-        { who: 'mong', text: '너굴이가 찾기 시작하면 조이스틱으로 움직여. 휘슬을 불면 보물 말고 내 쪽으로 달려와!' },
+        { who: 'mong', text: '너굴이가 찾기 시작하면 난 가만히 있을게. 휘슬을 불면 보물 말고 내 쪽으로 달려와!' },
         { who: 'raccoon', text: '시간 끝까지 하나라도 남으면 네 승리! 각오해~' },
       ], { title: '보스 · 보물 지키기' });
       if (this.dead) return;
@@ -392,6 +392,7 @@ export class BossScene {
     const spot = f && this.spots.find(s => s.f === f);
     // while it counts: the treasure goes straight into the very place you tapped — a drawer, behind the curtain, on the
     // shelf — the way you hide things at home (user, 10/18: "걸어다니면서 숨기지 않고 그냥 내가 원하는 곳에 배치")
+    if (this.phase === 'seek') return;   // (10/29: 찾는 동안 몽글이는 가만히 — 휘슬만)
     if (this.phase === 'count') return;   // (숨기기 = 가구 놓기처럼: 터치로는 숨기지 않아요 — 목록에서 골라 드래그, [여기 숨기기] — 10/20)
     if (f && this.phase === 'count' && this.treasures.some(t => !t.spot)) {
       const fs = (f.spots || []).filter(q => !q.bossTre).sort((a, b) => a.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point) - b.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(hit.point))[0] || null;
@@ -473,8 +474,9 @@ export class BossScene {
   startSeek() {
     const G = this.G, W = G.world;
     this.holdEnd(true); this.hideRest(); this.phase = 'seek'; this.sState = 'search'; this.nextHeld();
-    this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '조이스틱으로 움직이고, 휘슬로 너굴이를 따돌려!'; this.seek.root.rotation.y += Math.PI;
-    W.joyOn = true; W.onPad = (dir, v, dt) => this.padMove(dir, v, dt);
+    this.say(this.seek, '찾는다~!', 1200); G.audio.sfx('special'); this.tlEl.textContent = '휘슬을 불어 너굴이를 따돌려!'; this.seek.root.rotation.y += Math.PI;
+    // (10/29 user: "몽글이 움직이는거 삭제하자. 휘슬만 불 수 있게. 너구리 찾는 거만 카메라로 따라다니게") — no pad while it searches
+    W.joyOn = false; W.onPad = null;
   }
   // the pad moves 몽글이 the way it is pushed on the screen; never into furniture, never into 너굴이 (SEP)
   padMove(dir, v, dt) {
