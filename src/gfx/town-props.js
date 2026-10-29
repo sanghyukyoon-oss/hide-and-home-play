@@ -313,7 +313,7 @@ function fs3Truck(f) {
     add(G.box(BX1 - BX0 + .7, .12, .6, .03), C.dark, (BX0 + CX1) / 2, BY0 - .02, 0);
     for (const sz of [-1, 1]) add(G.box(.04, .2, .2, .01), C.dark, AX[0] - WR - .08, .26, sz * (zf - .12));
     // wheels
-    for (const x of AX) for (const sz of [-1, 1]) { toyWheel2(add, x, WR, sz * (zf - .1), WR, .3, sz, C.cream); wheelArch2(add, x, WR, sz * (zf + .006), WR + .07, C.red, C.redD, '#4a2a2a', BY0); }
+    for (const x of AX) for (const sz of [-1, 1]) { toyWheel2(add, x, WR, sz * (zf - .1), WR, .3, sz, C.cream, true); wheelArch2(add, x, WR, sz * (zf + .006), WR + .07, C.red, C.redD, '#4a2a2a', BY0); }
   }));
   f.add(put(decal(.26, .26, truckDoorTex()), (CX0 + CX1) / 2 + .02, (BY0 + GY0) / 2 + .06, S * (CW / 2 + .012), 0, S < 0 ? PI : 0, 0));
   f.add(put(decal(.2, .07, truckPlateTex()), CX1 + .175, .42, 0, 0, HP, 0));
@@ -591,10 +591,11 @@ const wheelArch2 = (add, x, y, z, R, body, edge, well, yb) => {
 };
 // v2 tyre: a fat round tyre with tread blocks on its face, a line round each sidewall; inside it a dished steel wheel (a
 // cream disc set in, a darker ring, six nuts) and a low domed hub that stays inside the tyre's own width
-const toyWheel2 = (add, x, y, z, R, W, sz, cap = HUBG) => {
+const toyWheel2 = (add, x, y, z, R, W, sz, cap = HUBG, smooth = false) => {
   const r0 = R - W * .45, t = W * .45;
-  add(G.tor(r0, t, PI * 2, 12, 30), TYRE, x, y, z, 0, 0, 0, [1, 1, 1.18]);
-  for (let k = 0; k < 18; k++) { const a = k * PI * 2 / 18; add(G.pbox(.07, .05, W * .78), '#3a3846', x + Math.cos(a) * (R - .012), y + Math.sin(a) * (R - .012), z, 0, 0, a + HP); }
+  add(G.tor(r0, t, PI * 2, smooth ? 18 : 12, smooth ? 64 : 30), TYRE, x, y, z, 0, 0, 0, [1, 1, smooth ? 1.1 : 1.18]);
+  if (smooth) for (const s of [-1, 1]) add(G.tor(R - .004, .01, PI * 2, 4, 64), '#3a3846', x, y, z + s * t * .45);
+  else for (let k = 0; k < 18; k++) { const a = k * PI * 2 / 18; add(G.pbox(.07, .05, W * .78), '#3a3846', x + Math.cos(a) * (R - .012), y + Math.sin(a) * (R - .012), z, 0, 0, a + HP); }
   add(G.tor(r0 + t * .45, .008, PI * 2, 4, 30), '#4a4858', x, y, z + sz * t * 1.02);
   add(G.cyl(r0 - .005, r0 - .005, W * .7, 26), '#4a4858', x, y, z, HP, 0, 0);
   add(G.cyl(r0 * .9, r0 * .82, .03, 26), cap, x, y, z + sz * W * .3, HP, 0, 0);

@@ -215,11 +215,6 @@ B.ol5_shell = (f, T) => {
     add(G.box(RWID + .04, Y2 - SLAB_B + .04, .08, .02), CAB, 0, (SLAB_B + Y2) / 2, SZ + .02); add(G.box(RWID + .06, .045, .1, .015), MOLD, 0, Y2 - .02, SZ + .03);
     add(G.box(RWID + .06, .03, .1, .01), CABD, 0, SLAB_B + .015, SZ + .03);
     for (const x of [-2.2, 0, 2.2]) { add(G.box(1.3, .05, .16, .02), '#d9d3e6', x, SLAB_B - .03, -1.6); }
-    // 매달린 둥근 시계 (양면) — 2층 끝 밑, 가운데 왼쪽
-    for (const x of [-1.95, -1.65]) add(G.cyl(.012, .012, .2, 6), STEEL5D, x, SLAB_B - .1, SZ - .1);
-    add(G.cyl(.3, .3, .1, 26), CREAM, -1.8, 1.86, SZ - .1, HP, 0, 0); add(G.tor(.3, .04, PI * 2, 6, 26), CORAL, -1.8, 1.86, SZ - .1);
-    for (const sz of [-1, 1]) { const z = SZ - .1 + sz * .055; add(G.box(.025, .2, .01, .005), INKY, -1.8, 1.93, z); add(G.box(.15, .025, .01, .005), INKY, -1.74, 1.86, z, 0, 0, .5);
-      for (let k = 0; k < 12; k++) { const a = k * PI / 6; add(G.box(.02, .045, .01, .003), INKY, -1.8 + Math.sin(a) * .24, 1.86 + Math.cos(a) * .24, z, 0, 0, -a); } }
     // 유리 난간 기둥·윗대 (미끄럼틀 입구와 나선 계단 도착 자리는 비움)
     for (const x of [-2.45, -1.2, 0, 1.2, 2.45]) add(G.box(.05, .92, .05, .01), STEEL5, x, Y2 + .46, SZ - .05);
     add(G.cyl(.028, .028, 4.9, 8), MOLD, 0, Y2 + .93, SZ - .05, 0, 0, HP);
@@ -303,6 +298,12 @@ B.ol5_shell = (f, T) => {
     const rm = mesh(new THREE.ShapeGeometry(room2, 8), mat('#ffffff', { map: warmPaper(), rough: .9, rim: .1 }), { cast: false }); put(rm, 0, 0, WT + .009); wall.add(rm);
     W.knee.add(mc('ol5-side-knee', ({ add }) => { add(G.box(WT, .42, 6.12, .05), CAB, WX - WT / 2, .21, .06); add(G.box(WT + .04, .05, 6.12, .02), MOLD, WX - WT / 2, .42, .06); }));
     W.deco.add(mc('ol5-side-trim', ({ add }) => {
+      // 둥근 벽시계 — 왼쪽 벽 높이(1·2층이 트인 앞쪽, 몽글 점프 포스터 위): 앞에 가리는 오락기 없음 (10/29 실폰 "왜 오락기 뒤에 붙어 있는 걸까")
+      { const CZ = 2.3, CY = 2.95, CX = WX + .04;
+        add(G.cyl(.3, .3, .06, 40), CREAM, CX, CY, CZ, 0, 0, HP); add(G.tor(.3, .04, PI * 2, 8, 40), CORAL, CX + .01, CY, CZ, 0, HP, 0);
+        add(G.box(.01, .19, .024, .005), INKY, CX + .036, CY + .07, CZ); add(G.box(.01, .024, .15, .005), INKY, CX + .04, CY + .02, CZ + .045, -.5, 0, 0);
+        add(G.cyl(.024, .024, .012, 10), CORAL, CX + .045, CY, CZ, 0, 0, HP);
+        for (let k = 0; k < 12; k++) { const a = k * PI / 6; add(G.box(.008, k % 3 ? .034 : .055, .018, .003), INKY, CX + .034, CY + Math.cos(a) * .235, CZ + Math.sin(a) * .235, a, 0, 0); } }
       for (let k = 1; k < PROFILE.length; k++) seg(add, WX - WT / 2, WT + .06, PROFILE[k - 1], PROFILE[k], .09, MOLD);
       add(G.tor(.3, .05, PI * 2, 8, 24), '#b98a5c', WX + .03, PORT[1], -PORT[0], 0, HP, 0);
       add(G.box(1.24, .3, .48, .05), CAB, WX - .34 + .62, 1.18, 3.36); add(G.box(1.28, .05, .52, .02), MOLD, WX - .34 + .62, 1.33, 3.36);
