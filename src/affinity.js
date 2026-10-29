@@ -26,7 +26,7 @@ const F_TRASH = /(trash|bin|recycle)/;          // nothing to eat comes out of t
 
 const PAPER = /(전단지|포스터|액자|달력|벽보|게시판|지도판|메뉴판|표지판|시험표)/;
 const MAIL_OK = /^(note|notepiece|colornote|postit|letter|receipt|gpt_receipt|lottery|ticket|trainticket|photo|sticker|card|idcard|key|coin|gpt_coin|map|starmap|gpt_luggagetag|gpt_passport|report|stampbook)$/;
-const LONGS = /^(umbrella|gpt_racket|shovel|gpt_kite|gpt_ukulele|gpt_fryingpan|gpt_rollingpin|gpt_telescope)$/, SOFT = /(이불|베개|빈백|쿠션|방석|담요|식탁보|매트|러그)/, SMALLBOX = /(대야|항아리|바구니|상자|서랍|통|함 안|수거함|우체통|우편함)/;
+const LONGS = /^(umbrella|gpt_racket|shovel|gpt_kite|gpt_ukulele|gpt_fryingpan|gpt_rollingpin|gpt_telescope)$/, SOFT = /(이불|베개|빈백|쿠션|방석|담요|식탁보|매트|러그)/, SMALLBOX = /(대야|항아리|바구니|상자|서랍|통|함 안|수거함|우체통|우편함|양동이|버킷|화분|냄비|코펠)/;
 const furnOf = s => s.furn?.type || s.part?.furn?.type || '';
 const cat = type => COLD.test(type) ? 'cold' : FOOD.test(type) ? 'food' : CLOTH.test(type) ? 'cloth' : BATH.test(type) ? 'bath' : 'other';
 export const itemKind = cat;   // (숨기기 목록의 '음식' 칩 — ③ 10/21)
@@ -86,10 +86,14 @@ export function affinity(type, spot) {
   if (/^kit_/.test(type) && /화분 흙/.test(spot.label || '')) return 'never';
   // (사용자 10/29 실폰 "22판 전단지 들추니 김밥": 먹을 것은 종이 한 장 뒤·밑(전단지·포스터·액자·달력·벽보·게시판·지도판·메뉴판) X)
   if (sizeRule() && (cat(type) === 'food' || cat(type) === 'cold') && (spot.wallFace || PAPER.test(spot.label || ''))) return 'never';
+  // (10/29 20판 "이건 뭐냐": 난간 구석에 세운 라켓이 낮은 옥상 벽 속에 묻혀 셔틀콕 조각만 보임 → 난간 뒤·밑도 X)
   // (사용자 10/29 "큰 물건이 작은 틈 X": 우산·라켓·삽처럼 긴 것은 베개·이불·빈백·쿠션·방석·담요·식탁보 밑이나 대야·항아리·작은 통 안 X)
   // (사용자 10/29 1.0.279 21판 "빨간 우체통 안 선반에 핫도그": 우체통·우편함·편지함 안은 종이·카드·열쇠 같은 납작한 것만)
   if (sizeRule() && /(우체통|우편함|편지함|신문함)/.test(spot.label || '') && !MAIL_OK.test(type)) return 'never';
-  if (sizeRule() && LONGS.test(type) && (SOFT.test(spot.label || '') || /기둥|밑동|줄기/.test(spot.label || '') && (spot.kind === 'under' || spot.kind === 'behind') || spot.kind === 'inside' && SMALLBOX.test(spot.label || '') && !/우산꽂이/.test(spot.label || ''))) return 'never';
+  // (사용자 10/29 20판 "배드민턴 라켓도 저기다 두면 안 되지"·"바구니 뚫렸다": 긴 물건은 말 되는 자리만 — 위·옆(기대기)은 되고, 안은 옷장·사물함·
+  // 신발장·창고·보관함·트렁크만, 밑은 벤치·평상·탁자·책상·의자·침대만, 뒤는 안 됨)
+  if (sizeRule() && LONGS.test(type) && (spot.kind === 'behind' || spot.kind === 'inside' && !/(옷장|사물함|신발장|창고|보관함|트렁크)/.test(spot.label || '') || spot.kind === 'under' && !/(벤치|평상|테이블|탁자|책상|의자|침대)/.test(spot.label || ''))) return 'never';
+  if (sizeRule() && LONGS.test(type) && (SOFT.test(spot.label || '') || /기둥|밑동|줄기|난간/.test(spot.label || '') && (spot.kind === 'under' || spot.kind === 'behind') || spot.kind === 'inside' && SMALLBOX.test(spot.label || '') && !/우산꽂이/.test(spot.label || ''))) return 'never';
   if (spot.kind !== 'inside') return 'ok';
   const f = furnOf(spot), c = cat(type);
   // (every stage, 스토리 룸 원칙 1 "몸이 들어가야 해요"): a birdhouse holds only something smaller than a hand, a camp

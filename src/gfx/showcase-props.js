@@ -151,11 +151,12 @@ B.secretshelf = (f, T) => {
         x0 += w + .008; k++;
       }
     }
-    // a globe and an owl lamp on top
-    add(G.sph(.12, 16, 12), '#6cb4e6', -.22, H + .2, z0); add(G.cyl(.03, .07, .08, 12), WOODD, -.22, H + .09, z0);
-    // (12판 ② 10/23: a globe that reads as one — land and a brass ring — not a big blue ball beside the blue marble you look for)
-    for (const [dx, dy, dz, r] of [[.06, .05, .085, .055], [-.05, .08, .075, .045], [.02, -.03, .11, .05], [-.09, -.02, -.05, .04], [.08, -.04, -.06, .045]]) add(G.sph(r, 10, 8), '#82c879', -.22 + dx, H + .2 + dy, z0 + dz, 0, 0, 0, [1, .6, 1]);
-    add(G.tor(.138, .008, PI * 2, 5, 28), BRASS, -.22, H + .2, z0, 0, HP * .55, .35);
+    // an hourglass and an owl lamp on top (10/29 실폰 12판 "지구본이 너무 여러 개야": the desk has the study's one globe now)
+    for (const y of [H + .01, H + .29]) add(G.cyl(.1, .1, .025, 18), WOODD, -.22, y, z0);
+    for (let k = 0; k < 3; k++) { const a = k * PI * 2 / 3 + .4; add(G.cyl(.012, .012, .28, 8), BRASS, -.22 + Math.cos(a) * .082, H + .15, z0 + Math.sin(a) * .082); }
+    for (const s of [-1, 1]) add(G.sph(.07, 16, 12), '#e8f4fb', -.22, H + .15 + s * .062, z0, 0, 0, 0, [1, .95, 1]);
+    add(G.cyl(.018, .018, .03, 10), '#e8f4fb', -.22, H + .15, z0);
+    add(G.sph(.058, 14, 10), '#f2c25a', -.22, H + .07, z0, 0, 0, 0, [1, .55, 1]); add(G.cone(.03, .05, 12), '#f2c25a', -.22, H + .19, z0, PI, 0, 0);
     add(G.sph(.09, 12, 10), '#d9a066', .24, H + .14, z0); add(G.sph(.03, 8, 6), '#ffffff', .2, H + .17, z0 + .08); add(G.sph(.03, 8, 6), '#ffffff', .28, H + .17, z0 + .08);
   }));
   // the five picture books on the middle shelf: boxes plus one painted strip for the spines

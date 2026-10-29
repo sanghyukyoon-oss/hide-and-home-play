@@ -26,12 +26,16 @@ export function installFirestation3(LAYOUTS, THEMES) {
     cut: [{ i: 0, j: 7, w: 1, d: 1 }, { i: 9, j: 7, w: 1, d: 1 }],
     wallH: 0, walls: { N: 'none', W: 'none', E: 'none', S: 'none' },
     theme: THEMES.firestation3,
+    // (10/29 실폰: 파르페 모자 친구가 섬 뒤 덤불 속에 서 있었음 — 덤불은 섬 장식이라 걷는 칸 검사가 못 봄)
+    npcAvoid: [[4.45, -3.35, .95], [4.55, -1.95, .75]],
     furniture: [
       { type: 'fs3_island', x: 0, z: 0 },
       { type: 'fs3_house', x: 0, z: 0 },
       { type: 'firetruck', x: -1.9, z: -1.4, y: .022, a: -Math.PI / 2, opts: { wheels: 'v2', fs3: true } },
-      { type: 'gearrack', x: -.2, z: -2.45, opts: { bend: true } },
-      { type: 'lockers', x: 1.55, z: -1.75 },
+      // (10/29 실폰: 가운데 방화복이 기본 카메라에서 소방 봉(x .55) 바로 뒤라 봉이 옷을 뚫은 것처럼 보임 → 장비 걸이와 사물함 자리를 맞바꿈:
+      // 봉 뒤엔 단단한 사물함, 걸이는 오른쪽 벽에 앞을 가리는 것 없이)
+      { type: 'gearrack', x: 1.1, z: -2.45, opts: { bend: true } },
+      { type: 'lockers', x: -.45, z: -2.42 },
       { type: 'fs3_hosetower', x: -4.38, z: -.2, s: .7 },
       { type: 'fs3_bell', x: -4.2, z: 1.35, a: .35 },
       { type: 'fs3_doghouse', x: 3.6, z: 1.8 },

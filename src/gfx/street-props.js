@@ -17,8 +17,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, STYLE } from './kit.js';
-import { tr } from '../i18n.js';
+import { grp, put, mat, mesh, geo, canvasTex, texCache, roundRect, shade, STYLE } from './kit.js';
+import { tr, addI18n } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2;
 
@@ -51,6 +51,7 @@ const G = {
 };
 const ni = g => (g.index ? g.toNonIndexed() : g);
 const Y = new THREE.Vector3(0, 1, 0);
+addI18n({ '회오리 감자': 'Tornado potato', '떡꼬치': 'Rice cake skewer' });
 const xf = (x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, s = 1) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z),
   new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), typeof s === 'number' ? new THREE.Vector3(s, s, s) : new THREE.Vector3(s[0], s[1], s[2]));
 const tubeM = (a, b) => { const A = new THREE.Vector3(...a), Bv = new THREE.Vector3(...b), d = Bv.clone().sub(A), L = d.length(); return [L, new THREE.Matrix4().compose(A.clone().add(Bv).multiplyScalar(.5), new THREE.Quaternion().setFromUnitVectors(Y, d.normalize()), new THREE.Vector3(1, 1, 1))]; };
@@ -1320,29 +1321,37 @@ export const STREET_ITEMS = {
     return g;
   } },
   // 삼각김밥: a triangle onigiri in its konbini wrapper — nori band, red tear strip, a ツナマヨ label
-  onigiri: { name: '삼각김밥', h: .17, build() {
-    const g = grp();
-    g.add(mc('it-onigiri2', ({ add }) => {   // (10/22 28판 실폰 "작고 납작": half again as thick, its front where it was — the label stays on it)
-      add(G.ext(triShape(.19, .158, .04, .006), .09, .008, 4), RICE, 0, 0, -.06);
-      add(G.box(.09, .078, .12, .012), NORI, 0, .039, -.018); add(G.box(.092, .008, .122, .003), shade(NORI, .25), 0, .074, -.018);   // (its front 6 mm behind the label)
-      add(G.pbox(.016, .085, .004), TOMATO, 0, .118, .036 + .004);
+  // 삼각김밥: a konbini onigiri (10/29 2차 — 6판 "못 알아봤다", then "이거 맞아?": standing up, the shelf camera only saw its
+  // white top edge): the classic face — a puffy rice triangle, the black nori sheet at the bottom middle wrapping round under
+  // it to the back, the red tear strip from the tip down to the nori, the flavour label on the nori — leaning back a little so
+  // that face looks up at the shelf camera
+  onigiri: { name: '삼각김밥', h: .16, build() {
+    const g = grp(), lie = grp(); put(lie, 0, .024, 0, -.55, 0, 0); g.add(lie);
+    lie.add(mc('it-onigiri4', ({ add }) => {
+      const W = .2, H = .17, D = .06, NW = .1, NH = .085, Z0 = -D / 2;
+      add(G.ext(triShape(W, H, .055, 0), D, .014, 6), RICE, 0, 0, Z0);
+      add(G.box(NW, NH, .005, .003), NORI, 0, NH / 2 + .002, Z0 + D + .016);                           // the nori, front
+      add(G.box(NW, NH * .7, .005, .003), NORI, 0, NH * .35 + .002, Z0 - .016);                        // and round the back
+      add(G.box(NW, .006, D + .03, .003), NORI, 0, -.012, 0);                                            // under the bottom
+      add(G.box(.014, H - NH - .03, .004, .002), TOMATO, 0, NH + (H - NH - .03) / 2, Z0 + D + .016);  // the red tear strip
+      add(G.box(.026, .018, .004, .003), TOMATO, 0, H - .006, Z0 + D + .016);
     }));
-    g.add(mg('it-onigiri-label', atlasMat(), ({ add }) => add(quadGeo(.07, .035, RG.oni), 0, .045, .043 + .005)));
+    lie.add(mg('it-onigiri-label', atlasMat(), ({ add }) => add(quadGeo(.075, .038, RG.oni), 0, .045, -.03 + .06 + .021)));
     return g;
   } },
-  // 어묵 꼬치 (10/21 다시, user "오뎅도.. 다시 만들어"): the fish-cake sheet folded back and forth on a wooden skewer, drawn as
-  // five rounded folds side by side — light and toasted in turn, leaning one way and the other like an accordion, so the
-  // ruffle reads even small; a zig-zag of yellow mustard over the top and broth glints on the high folds
-  fishcake: { name: '어묵 꼬치', h: .09, flat: true, build() {
-    const g = grp(), FC = '#efcb93', FC2 = '#cf8f4d', NF = 5, DX = .046, X0 = -(NF - 1) * DX / 2;
-    g.add(mc('it-fishcake5', ({ add, tube }) => {
-      for (let k = 0; k < NF; k++) {
-        const hi = k % 2 === 0, x = X0 + k * DX;
-        add(G.sph(.06, 7, 5), hi ? FC : FC2, x, hi ? .05 : .042, 0, 0, 0, hi ? .32 : -.32, [.52, .48, 1.58]);
+  // 회오리 감자 (10/29, 2차 — the thin ribbon read as a drill): a tornado potato as the stall sells it — one potato cut in a
+  // spiral and fanned out along the stick, so it shows as a row of round golden chips all leaning the same way, each with a
+  // toasted rim and a dusting of red seasoning; the stick out at both ends
+  fishcake: { name: '회오리 감자', h: .1, flat: true, build() {
+    const g = grp(), Y = .07, N = 11, X0 = -.13, DX = .026;
+    g.add(mc('it-tornado2', ({ add }) => {
+      add(G.cyl(.008, .008, .42, 6), '#e8c690', -.03, Y, 0, 0, 0, HP); add(G.cone(.008, .03, 6), '#e8c690', .195, Y, 0, 0, 0, -HP);
+      for (let k = 0; k < N; k++) {
+        const x = X0 + k * DX, r = .062 - Math.abs(k - (N - 1) / 2) * .0035, spin = 0;
+        add(G.cyl(r, r, .007, 28), k % 2 ? '#f6c650' : '#f9d469', x, Y, 0, spin, 0, HP - .5);
+        add(G.cyl(r + .004, r + .004, .004, 28), '#d68b2c', x - .006, Y, 0, spin, 0, HP - .5);   // the toasted rim, just behind
       }
-      add(G.cyl(.0085, .0085, .37, 6), '#e8c690', -.045, .046, 0, 0, 0, HP); add(G.cone(.0085, .03, 6), '#e8c690', .155, .046, 0, 0, 0, -HP);
-      let prev = null; for (let k = 0; k < NF; k++) { const x = X0 + k * DX, p = [x, (k % 2 === 0 ? .05 : .042) + .027, k % 2 ? -.045 : .045]; if (prev) tube(prev, p, .008, '#ffd21f', 4); prev = p; }
-      for (let k = 0; k < NF; k += 2) add(G.box(.012, .004, .03, .002), '#fffaf0', X0 + k * DX - .008, .079, -.032, 0, 0, .32);
+      for (let k = 1; k < N; k += 2) { const x = X0 + k * DX; for (const [a, rr] of [[.4, .035], [2.3, .045], [4.1, .03]]) add(G.sph(.006, 5, 3), '#e2552d', x + .01, Y + Math.cos(a) * rr, Math.sin(a) * rr, 0, 0, 0, [.5, 1, 1]); }
     }));
     return g;
   } },

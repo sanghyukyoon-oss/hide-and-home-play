@@ -117,19 +117,21 @@ function adapterLate() {
 export const GPT_ITEMS = {
   // TASK remakes: oden/earphones here, coin purse/USB/receipt below.
   // The other sixty entries depict new objects, not recolours.
-  gpt_oden: item('접힌 어묵 꼬치', 'kitchen', () => {
-    const g = grp();
-    // A broad folded sheet threaded through a visible bamboo skewer. Three
-    // alternating rounded folds read as fishcake from the elevated camera.
-    g.add(put(cylinder(.013, .013, .67, '#c67f2a', 10), 0, .018, 0, 0, 0, Math.PI / 2));
-    const folds = grp();
-    for (let i = 0; i < 4; i++) {
-      folds.add(put(box(.095, .11, .26, i % 2 ? '#f8b15b' : '#f4d28d', .024), -.185 + i * .115, .077, 0, 0, 0, i % 2 ? -.23 : .23));
-      // Recess the curved joins from both cut ends. Equal .26 depths would
-      // leave their caps coplanar with the sheet ends before the game's bake.
-      if (i < 3) folds.add(put(cylinder(.056, .056, .232, '#e79738', 12), -.13 + i * .115, .075, 0, Math.PI / 2));
+  gpt_oden: item('떡꼬치', 'kitchen', () => {
+    // (10/29, 2차 — four big red logs read as capsules): a 떡꼬치 as the stall sells it — eight short rice-cake fingers packed
+    // tight across a long stick, each a little different, coated in glossy orange-red gochujang that pools darker between them,
+    // a shine on each top and sesame seeds sprinkled over
+    const g = grp(), SAUCE = '#e4552f', DEEP = '#b9351f', GLAZE = { rough: .2 };
+    g.add(put(cylinder(.011, .011, .7, '#d9a45a', 10), 0, .045, 0, 0, 0, Math.PI / 2));
+    g.add(put(cone(.014, .05, '#d9a45a', null, 10), .37, .045, 0, 0, 0, -Math.PI / 2));
+    for (let i = 0; i < 8; i++) {
+      const x = -.215 + i * .056, L = .15 + ((i * 37) % 5) * .006, r = .027 + (i % 3) * .002, ry = ((i * 53) % 7 - 3) * .03;
+      g.add(put(cyl(r, r, L, SAUCE, GLAZE, 16), x, .045, 0, Math.PI / 2, ry, 0));
+      for (const s of [-1, 1]) g.add(put(sph(r, SAUCE, GLAZE, 14, 8), x - Math.sin(ry) * s * L / 2, .045, s * Math.cos(ry) * L / 2, 0, 0, 0, [1, 1, .35]));
+      g.add(put(box(.008, .003, L * .7, '#ffb39c', .0015), x - .008, .045 + r, 0, 0, ry, 0));
+      for (const [dx, dz] of [[.006, -.05], [-.004, .01], [.008, .055]]) g.add(put(ball(.0055, '#fff6dc', [1, .5, 1.6]), x + dx, .045 + r + .002, dz + ((i * 13) % 3 - 1) * .012));
     }
-    g.add(folds); g.add(put(cone(.018, .06, '#e79738', null, 10), .355, .018, 0, 0, 0, -Math.PI / 2));
+    g.add(put(cylinder(.03, .03, .4, DEEP, 10), 0, .028, 0, 0, 0, Math.PI / 2, [1, .35, 1]));   // the sauce pooled underneath
     return g;
   }, .66, { remakeOf: 'fishcake', flat: true }),
   gpt_earphones: item('열린 무선 이어폰', 'home', () => {

@@ -3094,6 +3094,7 @@ export class StageScene {
         const x = o.x + i - R.w / 2 + .5, z = o.z + j - R.d / 2 + .5;
         if (!R.clearAt(x, z, .4)) continue;   // a free tile next to a bin can still be too tight for a body
         if (this.sides && !offWall(this.sides, x, o.y, z)) continue;   // (nor hugging a wall, a cliff, a hedge)
+        if ((this.layout.npcAvoid || []).some(([ax, az, ar]) => Math.hypot(x - ax, z - az) < ar)) continue;   // (a layout's own no-stand rings — 19판 덤불 10/29: shell decor isn't furniture, so clearAt doesn't see it)
         if (Math.hypot(x - fa[0], z - fa[1]) < 1.25) continue;   // (⑪ 10/24 61·69판: a walker a metre from the host stood into it from the camera's side)
         free.push({ i, j, x, z, y: o.y, R });
       }

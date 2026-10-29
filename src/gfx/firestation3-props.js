@@ -404,7 +404,8 @@ function dutyRoom(add, tube) {
   add(G.sph(.12, 14, 8), P.yellow, sx0 - .02, F + .1, sz0 + .02, 0, 0, 0, [1, .82, 1.12]); add(G.cyl(.165, .165, .015, 18), P.yellow, sx0 - .02, F + .065, sz0 + .04, 0, 0, 0, [1, 1, 1.15]);
   add(G.box(.07, .07, .02, .01), '#c89232', sx0 - .02, F + .16, sz0 + .145, -.4, 0, 0); add(G.tor(.12, .01, PI, 4, 14), '#f4f4f0', sx0 - .02, F + .12, sz0 + .02, 0, HP, 0, [1, 1, 1.1]);
   // the backpack slumped by the shelf: a round body, a pocket with a zip, straps, a little star charm
-  const Bp = at(2.36, -3.2, -.3);
+  // (10/29 실폰: it sat inside the desk's drawer pedestal and the chair — now on the open floor in front of the clothes shelf)
+  const Bp = at(2.74, -3.0, -.5);
   Bp(G.box(.3, .38, .18, .08), '#6f8fb0', 0, F + .2, 0, -.12); Bp(G.box(.22, .14, .06, .03), '#5b7a99', 0, F + .14, .1, -.12);
   Bp(G.pbox(.16, .008, .008), '#e8e2d2', 0, F + .2, .13, -.12); Bp(G.tor(.05, .012, PI, 4, 10), '#3a4a6a', 0, F + .4, -.02, 0, 0, 0);
   Bp(G.sph(.025, 8, 6), P.yellow, .1, F + .1, .14);
@@ -859,13 +860,14 @@ B.fs3_doghouse = (f, T) => {
     add(G.sph(.062, 14, 8), P.red, -.535, FY + .56, hd + .07, 0, 0, 0, [1, .8, 1.05]); add(G.cyl(.082, .082, .012, 16), P.red, -.535, FY + .53, hd + .07);
     add(G.box(.035, .035, .01, .008), P.yellow, -.535, FY + .57, hd + .125);
     tube([.535, FY + .62, hd + .06], [.52, FY + .32, hd + .08], .012, '#4d8fd6', 5); tube([.52, FY + .32, hd + .08], [.55, FY + .22, hd + .07], .012, '#4d8fd6', 5); add(G.tor(.03, .01, PI * 2, 4, 10), P.steelD, .55, FY + .19, hd + .07, HP, 0, 0);
-    // outside: the paw mat, the bowl of kibble, a bone, a toy hydrant
-    add(G.box(.62, .02, .32, .01), '#f2b04a', 0, .01, .98);
-    for (const [x, z] of [[-.18, .94], [-.05, 1.02], [.08, .94], [.2, 1.02]]) { add(G.cyl(.032, .032, .006, 10), '#c97f2a', x, .022, z); for (let k = 0; k < 3; k++) add(G.cyl(.012, .012, .006, 8), '#c97f2a', x - .025 + k * .025, .022, z - .04); }
-    add(G.cyl(.15, .18, .1, 18), P.red, .58, .05, .95); add(G.cyl(.12, .12, .01, 16), '#8a5a34', .58, .095, .95);
-    for (let k = 0; k < 7; k++) add(G.sph(.026, 6, 4), '#b87a4a', .58 + Math.cos(k * 2.3) * .06, .1, .95 + Math.sin(k * 2.3) * .06);
-    add(G.tor(.15, .015, PI * 2, 4, 18), '#ffffff', .58, .1, .95, HP, 0, 0);
-    add(G.cap(.025, .16, 2, 8), '#fff4dc', -.62, .03, .95, 0, .5, HP); for (const s of [-1, 1]) for (const t of [-.04, .04]) add(G.sph(.032, 8, 6), '#fff4dc', -.62 + s * .07 * Math.cos(.5) + t * Math.sin(.5) * .5, .03, .95 - s * .07 * Math.sin(.5) + t * Math.cos(.5) * .5);
+    // outside: the bowl of kibble, a bone, a toy hydrant
+    // (10/29 실폰 "개집 앞 노란 판들 지저분": the paw mat lay half under the step and out over the curb — gone; the step is the doorstep)
+    add(G.cyl(.15, .18, .1, 18), P.red, .58, .05, .87); add(G.cyl(.12, .12, .01, 16), '#8a5a34', .58, .095, .87);
+    for (let k = 0; k < 7; k++) add(G.sph(.026, 6, 4), '#b87a4a', .58 + Math.cos(k * 2.3) * .06, .1, .87 + Math.sin(k * 2.3) * .06);
+    add(G.tor(.15, .015, PI * 2, 4, 18), '#ffffff', .58, .1, .87, HP, 0, 0);
+    { const bx = -.66, bz = .9, ba = .35, ca = Math.cos(ba), sa = Math.sin(ba);   // a chunky bone lying on the floor (10/29: was a flat white outline)
+      add(G.cyl(.034, .034, .2, 14), '#fff4dc', bx, .036, bz, 0, ba, HP);
+      for (const s of [-1, 1]) for (const t of [-1, 1]) add(G.sph(.046, 14, 10), '#fff4dc', bx + s * .12 * ca + t * .036 * sa, .042, bz - s * .12 * sa + t * .036 * ca); }
     add(G.cyl(.05, .055, .16, 12), P.red, .76, .08, .55); add(G.sph(.05, 10, 6), P.red, .76, .16, .55, 0, 0, 0, [1, .7, 1]); for (const s of [-1, 1]) add(G.cyl(.02, .02, .04, 8), P.brass, .76 + s * .06, .1, .55, 0, 0, HP);
   }));
   f.add(put(plTex(.94, .72, 'gingham'), 0, .412, -.03, -HP, 0, 0));

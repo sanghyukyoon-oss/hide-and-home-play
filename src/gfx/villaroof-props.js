@@ -119,12 +119,14 @@ B.snacktable = (f, T, o = {}) => {
     add(G.box(.11, .09, .11, .02), '#9fc8ff', PX, .355, PZ, 0, .3, 0); add(G.pbox(.12, .092, .022), '#ff9fb8', PX, .355, PZ, 0, .3, 0); add(G.pbox(.022, .092, .12), '#ff9fb8', PX, .355, PZ, 0, .3, 0);
     add(G.sph(.028, 6, 5), '#ff9fb8', PX, .41, PZ, 0, .3, 0, [1.4, .6, .8]);
   }));
-  f.add(mc(party ? 'snacktable-p2' : 'snacktable', ({ add }) => {
+  f.add(mc((party ? 'snacktable-p2' : 'snacktable') + (o.cushIn ? '-in' : ''), ({ add }) => {
     add(G.cyl(.32, .32, .05, 18), WOOD, 0, .28, 0); for (const a of [.6, 2.2, 3.8, 5.3]) add(G.box(.04, .26, .04, .01), WOODD, Math.cos(a) * .2, .13, Math.sin(a) * .2);
     add(G.cyl(.06, .07, .16, 12), '#ffd27a', JUG[0], .39, JUG[1]); add(G.tor(.04, .01, PI, 4, 8), '#ffd27a', JUG[0] - .07, .42, JUG[1], 0, PI, 0);
     add(G.cyl(.1, .1, .015, 14), '#ffffff', TAN[0], .31, TAN[1]); for (let k = 0; k < 4; k++) add(G.sph(.032, 8, 6), '#ff9b3a', TAN[0] + Math.cos(k * 1.6) * .045, .34, TAN[1] + Math.sin(k * 1.6) * .045);
     if (!party) { add(G.cyl(.09, .09, .015, 14), '#ffffff', -.12, .31, .14); for (let k = 0; k < 3; k++) add(G.box(.06, .03, .03, .01), '#f3dce6', -.12 + (k - 1) * .04, .33, .14); }
-    for (const [x, z, c] of [[-.48, -.15, '#bfe0b8'], [.45, .3, '#ffb3c4']]) { add(G.box(.32, .07, .32, .05), c, x, .035, z); for (let k = 0; k < 3; k++) add(G.pbox(.32, .004, .02), '#ffffff', x, .072, z - .1 + k * .1); }
+    // (o.cushIn, 20판 10/29 실폰 "방석 진짜 거슬림": one sat under the bench, the other hung off the deck's edge — both on open deck
+    // in front of and behind the table, inside the cell)
+    for (const [x, z, c] of o.cushIn ? [[-.04, .5, '#bfe0b8'], [.27, -.46, '#ffb3c4']] : [[-.48, -.15, '#bfe0b8'], [.45, .3, '#ffb3c4']]) { add(G.box(.32, .07, .32, .05), c, x, .035, z); for (let k = 0; k < 3; k++) add(G.pbox(.32, .004, .02), '#ffffff', x, .072, z - .1 + k * .1); }
     add(G.cyl(party ? .13 : .2, party ? .13 : .2, .012, 18), '#fff4e2', 0, .31, party ? -.03 : 0);
     add(G.cyl(.035, .03, .07, 10), '#9fd6c8', CUPA[0], .345, CUPA[1]); add(G.cyl(.035, .03, .07, 10), '#ffb3c4', CUPB[0], .345, CUPB[1]);
   }));

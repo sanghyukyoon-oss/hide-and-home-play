@@ -169,6 +169,9 @@ export function capScale(type, spot, role) {
   // headroom (as before, but for the model's real height)
   const nat = natSize(type), ss = spot.scale || 1;
   let cap = ITEMS[type].flat || spot.kind === 'in' ? Infinity : (spot.maxH + .02) / Math.max(.01, nat.y * ss);
+  // (사용자 10/29 20판 "이건 뭐냐": 데크 판자 밑 낮은 틈의 배드민턴 라켓(납작한 물건이라 높이 검사를 건너뜀)이 판자를 뚫고 묻혀 빨간 테두리와
+  // 셔틀콕만 보였음 — 납작한 물건도 밑 자리에서는 모델의 실제 높이로 틈을 잼)
+  if (RULE && ITEMS[type].flat && spot.kind === 'under') cap = Math.min(cap, (spot.maxH + .02) / Math.max(.01, nat.y * ss));
   if (spot.part?.kind === 'lift' && !ITEMS[type].flat && RESTS.test(spot.label || '')) { const g = coverGap(spot); if (g != null) cap = Math.min(cap, g / Math.max(.005, nat.y * ss)); }
   // (and in a box with a lid or a top that lifts — a toy chest, a cooler, a laundry basket, an art crate: no taller than the box is deep when shut; 2·5·7판's
   // 34–40 cm things stood 7–12 cm out of the toy chest, 9판's duck 20 cm out of the basket — 레벨 기획안 E, 10/20)
@@ -274,7 +277,8 @@ function probe(type, spot, sc, edgeOnly = false) {
     // out on top of something: no edge of the furniture's own triangles passes through the thing (a floor lamp's pole 1.2 cm
     // off the middle, a plant's thin slanting stem slipped between rays — 겹침 QA 10/20 실측). Its box less 5 mm a side, from
     // 1 cm above the place up (what it stands on is no crossing). In a box or a drawer the closed lid and the insides are fitClear's.
-    if (EDGE_KINDS.has(spot.kind) || RULE && spot.kind === 'beside') {   // (and behind or under a piece: 10판's heart behind the big pot grazed it 4 cm — 겹침 QA v178)
+    // (10/29 20판 "바구니 뚫렸다": 뚜껑 없는 통(양동이) 안도 — 라켓 망이 양동이 벽을 뚫음)
+    if (EDGE_KINDS.has(spot.kind) || RULE && (spot.kind === 'beside' || spot.kind === 'inside' && !spot.part)) {   // (and behind or under a piece: 10판's heart behind the big pot grazed it 4 cm — 겹침 QA v178)
       a.getWorldPosition(_po);
       // (at the size it will be drawn: shrunk by k round its middle when the side rays said a little less fits)
       const kk = edgeOnly ? 1 : Math.max(0, Math.min(1, k)), hx = (_pb.max.x - _pb.min.x) / 2 * kk, hz = (_pb.max.z - _pb.min.z) / 2 * kk;
@@ -294,16 +298,20 @@ function probe(type, spot, sc, edgeOnly = false) {
 // that covers it left out). smallfix.js unpierce moves it.
 const _pb2 = new THREE.Box3(), _pbb2 = new THREE.Box3(), _pc2 = new THREE.Vector3(), _ps2 = new THREE.Vector3(), _pa2 = new THREE.Vector3();
 export function pierced(g, spot) {
-  const a = spot?.anchor, fr = a && furnRoot(a); if (!fr) return false;
+  const a = spot?.anchor; if (!a) return false;
   _pb2.makeEmpty(); g.updateMatrixWorld(true);
   g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _pb2.union(_pbb2.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } });
   if (_pb2.isEmpty()) return false;
   _pb2.getCenter(_pc2); _pb2.getSize(_ps2).multiplyScalar(.35);
   a.getWorldPosition(_pa2);
+  // (사용자 10/29 20판 "이건 뭐냐": 난간 구석에 세운 라켓이 데크 바닥 밑으로 34 cm 묻혀 셔틀콕·테두리 조각만 보였음 — 놓인 자리 바닥보다
+  // 3 cm 넘게 묻힌 것도 관통; 연못·공 풀(in)·덤불 속은 일부러 반쯤 잠김)
+  if (spot.kind !== 'in' && !nestles(spot) && _pb2.min.y < _pa2.y - .03) return true;
   _eb.min.set(_pc2.x - _ps2.x, Math.max(_pc2.y - _ps2.y, _pa2.y + .01), _pc2.z - _ps2.z); _eb.max.set(_pc2.x + _ps2.x, _pc2.y + _ps2.y, _pc2.z + _ps2.z);
   if (_eb.isEmpty()) return false;
-  const own = new Set(); for (const pv of spot.part?.pivots || []) pv.traverse(o => own.add(o));
-  return edgesThrough(meshesOf(fr).filter(o => o.visible !== false && !own.has(o)), _eb);
+  // (and the room's own walls and parapets close by — 20판 난간 구석: the racket stood inside the low roof wall, only its shuttle showing)
+  const fr = furnRoot(a), own = new Set(); for (const pv of spot.part?.pivots || []) pv.traverse(o => own.add(o));
+  return edgesThrough([...(fr ? meshesOf(fr) : []), ...wallsNear(_pa2)].filter(o => o.visible !== false && !own.has(o)), _eb);
 }
 // how big this thing is drawn at this place (× the place's scale), or 0 when it does not fit there
 export function drawnScale(type, spot, role = 'target', want = .34) {
@@ -324,7 +332,7 @@ export const fullSize = (type, spot, min = .29) => { const n = natSize(type), d 
 export function shapeFits(type, spot, role = 'target') {
   if (!PROBE || spot.wallFace || spot.kind === 'in' || nestles(spot) || !ITEMS[type]?.build) return true;
   // (a decoy too, on top of something: nothing running through it — 겹침 QA 10/20, a pot on the monstera's soil)
-  if (role === 'decoy') { if (!EDGE_KINDS.has(spot.kind) && !(RULE && spot.kind === 'beside')) return true; const d = drawnScale(type, spot, 'decoy'); return d > 0 && probe(type, spot, d, true) > 0; }
+  if (role === 'decoy') { if (!EDGE_KINDS.has(spot.kind) && !(RULE && (spot.kind === 'beside' || spot.kind === 'inside' && !spot.part))) return true; const d = drawnScale(type, spot, 'decoy'); return d > 0 && probe(type, spot, d, true) > 0; }
   const want = wantScale(type, spot, role), sc = drawnScale(type, spot, role);
   if (!(sc > 0) || sc >= want * 2) return sc > 0;
   return sc * probe(type, spot, sc) >= (RULE && want < 1 ? want * KEEP : Math.max(1, want * KEEP)) - 1e-6;

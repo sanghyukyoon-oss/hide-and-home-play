@@ -16,6 +16,7 @@ import { put, grp, mat, mesh, geo, canvasTex, texCache, shade, roundRect, fadeDi
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex, paperFill, paperSheet } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
+import { globeTex } from './furniture.js';
 
 const PI = Math.PI, HP = PI / 2;
 const B = {};
@@ -1240,6 +1241,7 @@ B.st_boxes = f => {
 // ── 학용품 선반 (뒷벽 왼쪽, +z 앞): 공책 더미·필통·지구본·리코더·탬버린·줄넘기·스케치북·물감, 아래 서랍 둘 ───────────────
 B.st_shelf = f => {
   const W = 1.55, H = 2.0, D = .4;
+  f.add(put(mesh(geo('st-globe', () => new THREE.SphereGeometry(.15, 32, 20)), mat('#ffffff', { map: globeTex(), rough: .55 })), -.5, 1.13, 0, 0, .9, .41));
   f.add(mc('st-shelf', ({ add, tube }) => {
     for (const s of [-1, 1]) add(G.box(.05, H, D, .02), C.wood, s * (W / 2 - .025), H / 2, 0); add(G.box(W, H, .03, .01), C.woodL, 0, H / 2, -D / 2 + .015);
     for (const y of [.42, .9, 1.38, 1.86]) add(G.box(W - .06, .04, D - .02, .01), C.wood, 0, y, 0); add(G.box(W, .05, D, .01), C.woodD, 0, H, 0);
@@ -1247,9 +1249,9 @@ B.st_shelf = f => {
     for (let k = 0; k < 3; k++) for (let j = 0; j < 4 + k; j++) add(G.box(.2, .022, .27, .004), ['#9fd3e0', '#f7c6d0', '#cfe6b8', '#ffe2a0'][(j + k) % 4], -.55 + k * .24, .45 + j * .024, .02, 0, (j % 2 - .5) * .06, 0);
     add(G.box(.22, .07, .08, .03), C.blue, .2, .475, .05); add(G.box(.22, .07, .08, .03), C.pink, .45, .475, .05);
     // 2단: 지구본 · 스케치북 · 물감 상자
-    add(G.cyl(.08, .1, .03, 12), C.woodD, -.5, .935, 0); add(G.cyl(.01, .01, .1, 6), C.woodD, -.5, .98, 0); add(G.sph(.15, 16, 12), '#7cc0e8', -.5, 1.13, 0);
-    for (const [dx, dy, s] of [[-.06, .05, .07], [.05, -.04, .06], [.02, .1, .04]]) add(G.sph(s, 8, 6), '#7cc06a', -.5 + dx, 1.13 + dy, .1, 0, 0, 0, [1, 1, .6]);
-    add(G.tor(.16, .01, PI, 4, 16), C.metalD, -.5, 1.13, 0, 0, HP, 0);
+    // (10/29 12판 "지구본이 너무 여러 개야" — one globe look everywhere: the desk globe's printed world map, its ball below the shelf's mesh)
+    add(G.cyl(.08, .1, .03, 12), C.woodD, -.5, .935, 0); add(G.cyl(.01, .01, .1, 6), C.woodD, -.5, .98, 0);
+    add(G.tor(.16, .01, PI, 4, 16), C.metalD, -.5, 1.13, 0, 0, HP, .41);
     // 스케치북 둘 (앞을 보고 벽에 기댐, 위 스프링)
     for (const [dz, dx] of [[-.1, .02], [-.04, -.04]]) { add(G.box(.24, .32, .018, .004), '#fbf8f0', dx, 1.08, dz, -.1, 0, 0); for (let k = 0; k < 8; k++) add(G.tor(.01, .003, PI * 2, 3, 8), C.metalD, dx - .1 + k * .028, 1.239, dz - .016, 0, HP, 0); }
     add(G.box(.32, .08, .22, .02), '#ffffff', .35, .96, .03); for (let k = 0; k < 6; k++) add(G.box(.035, .02, .05, .006), [C.red, C.orng, C.yel, C.grn, C.blue, C.purp][k], .23 + k * .045, 1.0, .07);

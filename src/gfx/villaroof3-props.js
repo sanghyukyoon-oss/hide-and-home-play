@@ -736,8 +736,9 @@ B.vr3_tap = (f, T) => {
     for (let k = 0; k < 6; k++) add(G.sph(.121, 14, 10), '#2f7a3f', BX2 - .05, .19, BZ2 - .02, 0, .3 + k * PI / 6, 0, [.18, .9, 1.16]);
     add(G.sph(.08, 10, 8), '#e9cf8a', BX2 + .12, .17, BZ2 + .1, 0, 0, 0, [1, .4, 1]); tube([BX2 + .18, .18, BZ2 + .12], [BX2 + .27, .2, BZ2 + .17], .015, '#c9a46a', 5);
     // 파란 양동이 (숨김 자리) — 솔 하나 걸침
-    // (10/29 사용자 "저 바구니 좀 어케 해 봐": the bucket stood half in the basin — it sits on the floor beside it now)
-    const QX = PX + .62, QZ = PZ + .5;
+    // (10/29 사용자 "저 바구니 좀 어케 해 봐": the bucket stood half in the basin — it sits on the floor beside it now; 10/29 오후
+    // 실폰 still touching the rim, and the parapet cut it on that side → the open floor north of the basin, clear of it and of the tap)
+    const QX = PX + .36, QZ = PZ - .24;
     add(G.cyl(.14, .11, .25, 16, true), '#4a8fe0', QX, .125, QZ); add(G.cyl(.11, .11, .01, 16), '#3a78c8', QX, .006, QZ);
     add(G.tor(.14, .012, PI * 2, 4, 18), '#3a78c8', QX, .25, QZ, HP, 0, 0); add(G.tor(.13, .006, PI, 3, 12), '#9aa3b2', QX, .25, QZ, 0, .6, 0);
     add(G.box(.12, .04, .06, .015), '#ffd86b', QX + .1, .27, QZ + .05, .2, .4, 0); for (let k = 0; k < 4; k++) add(G.pbox(.01, .03, .05), '#e9a23a', QX + .06 + k * .025, .24, QZ + .05);
@@ -754,8 +755,8 @@ B.vr3_tap = (f, T) => {
     tube([PX - .12, .02, PZ + .1], [PX - .03, .95, PZ + .01], .014, '#c99a62', 5);
     add(G.cone(.08, .22, 8), '#e9c47a', PX - .13, .1, PZ + .11, -.09, 0, .09, [1, 1, .45]);
   }));
-  f.spot('inside', null, PX + .62, .02, PZ + .5, { maxH: .2, label: '파란 양동이 안', scale: .5 });
-  f.spot('beside', null, .28, 0, -.3, { maxH: .26, label: '수도 옆', scale: .6 });
+  f.spot('inside', null, PX + .36, .02, PZ - .24, { maxH: .2, label: '파란 양동이 안', scale: .5 });
+  f.spot('beside', null, .2, 0, .32, { maxH: .26, label: '수도 옆', scale: .6 });
 };
 
 // ── 20판 디테일 더하기 (⑥ 10/25 memo-check "20판 전체 디테일") — 자리·부품은 그대로, 큰 것부터 ──────────────────────────────

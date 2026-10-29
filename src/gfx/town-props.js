@@ -280,9 +280,9 @@ function fs3Truck(f) {
     for (const sz of [-1, 1]) { add(G.cyl(.06, .06, .03, 16), '#ff6f5e', BX0 - .005, .76, sz * .48, 0, 0, HP); add(G.tor(.06, .012, PI * 2, 4, 16), C.steelD, BX0 - .01, .76, sz * .48, 0, HP, 0); add(G.cyl(.04, .04, .03, 12), '#ffb347', BX0 - .005, .9, sz * .48, 0, 0, HP); }
     for (let k = 0; k < 3; k++) add(G.box(.04, .03, .3, .012), C.steelD, BX0 - .02, .6 + k * .22, 0);
     for (const sz of [-1, 1]) tube([BX0 - .02, .55, sz * .19], [BX0 - .02, 1.15, sz * .19], .014, C.steelD, 6);
-    // the running board under the lockers (chequered steel) on its two brackets
+    // the running board under the lockers on its two brackets
     add(G.box(1.45, .04, .16, .015), C.steel, -.55, BY0 + .02, S * (zf + .02));
-    for (let k = 0; k < 9; k++) add(G.pbox(.1, .006, .1), C.steelD, -1.15 + k * .16, BY0 + .043, S * (zf + .02), 0, .8, 0);
+    add(G.box(1.41, .008, .12, .003), C.steelD, -.55, BY0 + .044, S * (zf + .02));   // (10/29 실폰: its diamond tread plates read as teeth — one flat tread strip)
     // ── the cab: a round red block below the glass, two side frames with windows, a white roof, the front
     add(G.box(CX1 - CX0, GY0 - BY0 + .04, CW - .04, .16, 4), C.red, (CX0 + CX1) / 2, (BY0 + GY0 + .04) / 2, 0);
     for (const sz of [-1, 1]) addM(roundSlab(cabSide, .12, .04), xf(0, 0, sz * (CW / 2 - .06)), C.red);
@@ -596,6 +596,12 @@ const toyWheel2 = (add, x, y, z, R, W, sz, cap = HUBG, smooth = false) => {
   add(G.tor(r0, t, PI * 2, smooth ? 18 : 12, smooth ? 64 : 30), TYRE, x, y, z, 0, 0, 0, [1, 1, smooth ? 1.1 : 1.18]);
   if (smooth) for (const s of [-1, 1]) add(G.tor(R - .004, .01, PI * 2, 4, 64), '#3a3846', x, y, z + s * t * .45);
   else for (let k = 0; k < 18; k++) { const a = k * PI * 2 / 18; add(G.pbox(.07, .05, W * .78), '#3a3846', x + Math.cos(a) * (R - .012), y + Math.sin(a) * (R - .012), z, 0, 0, a + HP); }
+  if (smooth) {   // (10/29 실폰 "바퀴 중간에 이상한 거": a plain dark rim and one small chrome hub, no cream disc or nuts)
+    add(G.cyl(r0 - .005, r0 - .005, W * .7, 32), '#3f3d4c', x, y, z, HP, 0, 0);
+    add(G.cyl(r0 * .62, r0 * .7, .024, 28), '#c9ced8', x, y, z + sz * W * .36, HP, 0, 0);
+    add(G.sph(r0 * .3, 16, 10), '#eef1f6', x, y, z + sz * W * .38, 0, 0, 0, [1, 1, .45]);
+    return;
+  }
   add(G.tor(r0 + t * .45, .008, PI * 2, 4, 30), '#4a4858', x, y, z + sz * t * 1.02);
   add(G.cyl(r0 - .005, r0 - .005, W * .7, 26), '#4a4858', x, y, z, HP, 0, 0);
   add(G.cyl(r0 * .9, r0 * .82, .03, 26), cap, x, y, z + sz * W * .3, HP, 0, 0);
