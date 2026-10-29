@@ -716,7 +716,8 @@ B.wardrobe = (f, T) => {
     }));
     f.add(pv);
   }
-  const p = f.part('door', [L, R], (t, bl, br) => { L.rotation.y = -2.2 * t; R.rotation.y = 2.2 * t; }, { label: '옷장', sfx: 'open', dur: .32 });
+  // (10/29 사용자 1·2판: 다 열면 왼쪽 문이 옆 서랍장을 뚫음 → 왼쪽 문은 90도까지만)
+  const p = f.part('door', [L, R], (t, bl, br) => { L.rotation.y = -Math.PI / 2 * t; R.rotation.y = 2.2 * t; }, { label: '옷장', sfx: 'open', dur: .32 });
   p.lockable = true; f.lockAt = { x: 0, y: y0 + H * .55, z: zf + .05 };
   f.spot('inside', null, 0, 1.08, z0, { part: p, maxH: .5, label: '옷장 위칸' });
   f.spot('inside', null, 0, y0 + .05, z0, { part: p, maxH: .5, label: '옷장 아래칸' });

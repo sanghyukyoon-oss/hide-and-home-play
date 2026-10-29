@@ -49,7 +49,8 @@ export const BOSS_GAME_INFO = {
 };
 // (user 10/29 on an iPhone: "미니게임들 약간 카메라 줌인 해 줄래? 잘 안 보여서") each game's board a little bigger — the
 // sides of a diamond-shaped room may go off the edge, never the part you play on; the hotel fits itself (bosses/hotel.js frame)
-const MINI_ZOOM = { hotel: 1.06, whack: 1.15, redlight: 1.15, blanket: 1.1, gohome: 1.15, yasik: 1.08, wakeup: 1.15, churro: 1.1, inky: 1.1, picnic: 1.1, tracks: 1.1, report: 1.08, flashlight: 1.1 };
+// (10/29 1시 사용자: 두더지 숨바꼭질 오른쪽 덤불·무궁화 출발선이 잘림 → 둘은 줌 없이, 나머지도 한 단계 낮춤; 이불은 "완벽하다" 그대로)
+const MINI_ZOOM = { hotel: 1.06, whack: .84, redlight: .96, blanket: 1.1, gohome: 1.06, yasik: 1.04, wakeup: 1.06, churro: 1.05, inky: 1.05, picnic: 1, tracks: 1.05, report: 1.04, flashlight: 1.05 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
 const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };
 
