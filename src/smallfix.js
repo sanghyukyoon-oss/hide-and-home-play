@@ -183,7 +183,9 @@ function coverLim(sp) {
 function sizeFix(W, it) {
   const e = extOf(it.g); if (!e) return 1;
   const imax = Math.max(e.x, e.y, e.z), lim = coverLim(it.spot), px = screenPx(W, it.g);
-  const fmax = lim === Infinity ? Infinity : lim * .95 / imax, fmin = px > 0 ? FLOOR / px : 1;
+  // (사용자 10/29 9판 "열쇠가 다른 판보다 큼": 20 px로 키울 때도 열쇠는 22 cm, 그 밖은 42 cm를 넘지 않음 — 화분 흙 위 열쇠가 44 cm)
+  const grow = (it.type === 'key' ? .22 : .42) / imax;
+  const fmax = Math.min(lim === Infinity ? Infinity : lim * .95 / imax, Math.max(1, grow)), fmin = px > 0 ? Math.min(FLOOR / px, Math.max(1, grow)) : 1;
   if (fmin > fmax * 1.001) return 0;
   return Math.min(Math.max(1, fmin), fmax);
 }

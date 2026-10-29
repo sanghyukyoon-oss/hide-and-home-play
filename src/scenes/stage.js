@@ -335,6 +335,8 @@ export class StageScene {
     if (this.plan.showcase?.marble && this.plan.showcase.door.furn.marbleBall) this.plan.showcase.door.furn.marbleBall.visible = false;   // (12판: the run's marble is the one you find — ② 10/23)
     // (9판 ② 10/23: the wall light switch is one of the things to find — tapped, it's found and the lights come on)
     if (this.plan.lightItem) {
+      // (사용자 10/29 9판 "벽 스위치 약간 작게": spec.switchScale — 판의 벽에 붙은 채 제 가운데에서 줄임)
+      if (this.spec.switchScale) { const g0 = this.plan.lightItem.f.group, k = this.spec.switchScale, c = new THREE.Box3().setFromObject(g0).getCenter(new THREE.Vector3()); g0.worldToLocal(c); for (const ch of g0.children) { ch.position.sub(c).multiplyScalar(k).add(c); ch.scale.multiplyScalar(k); } }
       const sw = this.plan.lightItem, it = { type: 'lightswitch', role: 'target', lightSwitch: true, g: sw.f.group, spot: { kind: 'on', label: '전등 스위치', part: null, furn: sw.f }, found: false };
       sw.f.group.userData.item = it; this.items.push(it); G.needThumbs?.(['item_lightswitch']);
     }
@@ -465,6 +467,8 @@ export class StageScene {
     if (!this.custom && !this.preview) this.sizedUp = sizeUp(this);
     // (19판부터 10/29 1.0.280 20판 "연 뚫린 거": 가구 기둥·막대가 관통하는 물건은 다른 자리로 — smallfix.js unpierce)
     if (!this.custom && !this.preview) this.unpierced = unpierce(this);
+    // (사용자 10/29 9판 "도넛은 약간만 키워": spec.itemGrow {type: 배율})
+    for (const [t, k] of Object.entries(this.spec.itemGrow || {})) for (const it of this.items) if (it.type === t && it.g && !it.friend) { it.g.scale.multiplyScalar(k); if (it.spot) settleOn(it.g, it.spot); }
     // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
     // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
