@@ -6,6 +6,7 @@
 // else it sits on the surface under the finger. [여기 숨기기] keeps it there. A tap on the empty room does nothing.
 // Used by 숨기기 at home (scenes/myhome.js); the scene gives: room, spotByKey, items, H, tw, G, placeTreasure(spot), freePlace(s, type, moving, ry).
 import * as THREE from 'three';
+import { realScale } from './fitspot.js';
 import { buildItem, ITEMS } from './gfx/items.js';
 import { pickSurface, resolveHost } from './freehide.js';
 import { h, ICON } from './ui.js';
@@ -34,6 +35,8 @@ export function holdStart(S, type, opts = {}) {
   // reload put it back there (main.js) — it used to be lost
   if (prev) hid.heldPrev = { rec: prev, at }; else delete hid.heldPrev;
   const g = buildItem(type, { code: hid.code || '000' }); g.traverse(o => { if (o.isMesh) o.userData.held = true; });
+  // (② 10/29: 손에 든 것도 실제 크기 — fitspot.js realScale)
+  g.scale.setScalar(realScale(type));
   S.room.group.add(g);
   const ring = new THREE.Mesh(new THREE.RingGeometry(.2, .3, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthTest: false }));
   ring.rotation.x = -Math.PI / 2; ring.renderOrder = 10; ring.raycast = () => {}; S.room.group.add(ring);   // (QA9 P3: the ring never catches the finger's surface pick)

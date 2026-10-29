@@ -53,6 +53,17 @@ export const LONG_MAX = { crown: .2, block: .14, ball: .24, ball2: .24, donut: .
 // (19판부터, 사용자 10/29 "펼쳐진 단서나 종이 중 너무 큰 게 있어": 펼친 종이는 손바닥만 하게 — 1~18판은 stage.js가 그린 뒤 줄임)
 const PAPER_LONG = /^(note|notepiece|colornote|postit|letter|receipt|gpt_receipt|lottery|map|starmap|report|trainticket|ticket)$/;
 const longMax = type => LONG_MAX[type] || (RULE && PAPER_LONG.test(type) ? .21 : 0);
+// 실제 크기 (② 10/29 허브 "판 말고 물건이 그려지는 다른 장면도"): GPT 모델 109종이 원래 크기 34 cm를 넘음(USB 65 cm, 로켓 105 cm) — 내 집
+// 숨기기·내 방·털기 다시 보기·손에 든 물건·미니게임 소품은 모델 크기 그대로 그려서 거인처럼 보였음. 그 장면들은 이 배율을 곱함:
+// 긴 변이 실제 크기(작은 것은 표, 아니면 34 cm)를 넘지 않게. 판(stage)의 물건은 wantScale/drawnScale 그대로
+export const REAL_LONG = { gpt_usb: .08, usb: .08, gpt_coin: .12, coin: .06, keyring: .1, gpt_earphones: .12, gptearphones: .12, gpt_garlic: .1, gpt_chessknight: .12,
+  gpt_sunscreen: .18, gpt_receipt: .16, gpt_passport: .22, gpt_alarmclock: .2, gpt_walkietalkie: .22, gpt_luggagetag: .14, gpt_conch: .18, gpt_drawingcompass: .18,
+  gpt_triangleruler: .25, gpt_tapemeasure: .12, gpt_deskbell: .12, gpt_pricegun: .2, gpt_lintroller: .25, gpt_icecubetray: .28, gpt_snorkelmask: .25, gpt_scissors: .2,
+  gpt_gluegun: .24, medal: .12, glasses: .16, sunglasses: .16 };
+export function realScale(type) {
+  const n = natSize(type), L = Math.max(n.x, n.y, n.z) || .2;
+  return Math.min(1, (REAL_LONG[type] ?? LONG_MAX[type] ?? DECOY_SIZE[type]?.[0] ?? .34) / L);
+}
 export function wantScale(type, spot, role, want = .34) {
   // (a decoy: 1.08 of the place's scale, but never under ~17 cm on its longest side — in a small place a mug came out 12 cm and a
   // book stack 15 cm, ⑥ 10/24 5판 실폰 "ㅈㄴ 작은 컵이랑 책이 가끔 등장함")

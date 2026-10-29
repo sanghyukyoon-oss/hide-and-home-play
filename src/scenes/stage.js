@@ -272,7 +272,8 @@ export class StageScene {
     this.incident = !custom && !this.preview && (!!this.spec.incident || this.spec.tut === 1) && !G.save.settings?.oldMode;
     setPlace(custom ? null : this.spec.room);   // (a place the story room went through thing by thing: 3판 — affinity.js)
     // (this room's walls for the box test — fitspot.js; 19판부터 크기 규칙 10/29)
-    fitPrep(this.room, !custom && !this.preview && this.idx >= 18);
+    // (② 10/29: 친구 집·자유 배치(custom)도 — GPT 모델이 원래 크기 × 1.15 이상으로 커지던 것)
+    fitPrep(this.room, !this.preview && (!!custom || this.idx >= 18));
     // what the last three stages played asked for: this one picks other things first (stages.js planStage, 10/20)
     const recentT = G.save.recentT || [];
     if (!custom && !this.preview) this.spec = { ...this.spec, recentTypes: recentT.filter(e => e.i !== this.idx).flatMap(e => e.t) };

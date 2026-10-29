@@ -5,6 +5,7 @@ import { Room, attachItem, indexSpots } from '../room.js';
 import { cachedGeos, STYLE, forgetMats, rbox, canvasTex, roundRect } from '../gfx/kit.js';   // (QA3-tex11; the 넓히기 sign)
 import { validateRoom } from '../roomdoc.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
+import { realScale } from '../fitspot.js';
 import { FURN_INFO } from '../gfx/furniture.js';
 import { Char } from '../gfx/chars.js';
 import { pickSurface, resolveHost, makeFreeSpot, dropFreeSpot, toLocal, viewsOf } from '../freehide.js';
@@ -354,7 +355,7 @@ export class MyHomeScene {
   }
   putItem(type, spot) {
     const g = buildItem(type, { code: this.H.hide.code || '000' });
-    attachItem(spot, g, { rotY: .3 });
+    attachItem(spot, g, { rotY: .3, scale: realScale(type) });
     const it = { type, spot, g }; g.userData.item = it; spot.item = it; this.items[type] = it;
     this.G.world.idsDirty = true;
     return it;

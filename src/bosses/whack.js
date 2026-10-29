@@ -77,9 +77,11 @@ export class Game {
   }
   frame() {
     const W = this.L.world;
-    W.home.set(-.2, .45, .75); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .95; W.zoom = 1;
+    // (user 10/29 on the phone: "아주 약간 왼쪽으로, 오른쪽 상단 애가 잘려서" and the result card covered the bottom row) the board a
+    // touch left and higher, clear of the card
+    W.home.set(-.08, .45, .63); W.target.copy(W.home); W.yaw = Math.PI / 4; W.pitch = .95; W.zoom = 1;
     W.bounds = 99; W.slack = null; W.camLock = true;
-    W.setFit(7.0, 5.6, .48);
+    W.setFit(7.0, 5.6, .45);
   }
   buildHud() {
     const L = this.L, ui = L.ui, h = L.h, col = ui.col(), LV = this.lv;

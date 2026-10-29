@@ -6,6 +6,7 @@
 // that resident's house (② 정찰). The raid is still raid.js raidOnce's dice; this only plays back its record (ev.rp).
 import * as THREE from 'three';
 import { buildItem, ITEMS } from './gfx/items.js';
+import { realScale } from './fitspot.js';
 import { attachItem } from './room.js';
 import { resolveHost, makeFreeSpot, dropFreeSpot } from './freehide.js';
 import { h, ICON } from './ui.js';
@@ -100,7 +101,7 @@ export async function playRaidReplay(S, ev) {
       else spot = S.spotByKey[e.spot];
       if (!spot || spot.item) continue;
       const g = buildItem(e.item, { code: S.H.hide.code || '000' });
-      attachItem(spot, g, { rotY: .3 });
+      attachItem(spot, g, { rotY: .3, scale: realScale(e.item) });
       if (spot.part && spot.part.t < .5) g.visible = false;
       it = { type: e.item, spot, g }; spot.item = it; temps.push(it);
     }

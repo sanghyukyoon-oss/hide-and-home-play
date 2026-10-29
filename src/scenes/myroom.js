@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Room, attachItem } from '../room.js';
 import { THEMES, LAYOUTS } from '../stages.js';
 import { buildItem, ITEMS, TREASURES } from '../gfx/items.js';
+import { realScale } from '../fitspot.js';
 import { FURN_INFO } from '../gfx/furniture.js';
 import { Char } from '../gfx/chars.js';
 import { h, ICON } from '../ui.js';
@@ -65,7 +66,7 @@ export class MyRoomScene {
   }
   putItem(type, spot, silent = false) {
     const g = buildItem(type, { code: this.M.code || '000' });
-    attachItem(spot, g, { rotY: .3 });
+    attachItem(spot, g, { rotY: .3, scale: realScale(type) });
     const it = { type, spot, g };
     g.userData.item = it; spot.item = it; this.items[type] = it;
     return it;

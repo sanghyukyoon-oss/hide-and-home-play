@@ -145,9 +145,7 @@ export class World {
     const a = this.W / this.H, { w, h, cy } = this.fit;
     // fit width to ~94% of the screen, height to ~62% (portrait the width wins; landscape the height wins)
     // (fitMul: a minigame's own zoom-in — scenes/bossgame.js MINI_ZOOM, user 10/29 "미니게임들 약간 카메라 줌인")
-    // (1.0.278 QA: on a short phone, 375×667, the bigger board ran under the bottom strip) full on a tall phone (390×844), none by 16:9
-    const mk = Math.min(1, Math.max(0, (1 / a - 1.8) / .3));
-    const viewH = Math.max(w / .94 / a, h / .62) / (1 + ((this.fitMul || 1) - 1) * mk);
+    const viewH = Math.max(w / .94 / a, h / .62) / (this.fitMul || 1);
     this.viewH = viewH;
     const cam = this.cam;
     cam.top = viewH * cy; cam.bottom = -viewH * (1 - cy);
@@ -624,6 +622,37 @@ export class World {
   // (a bubble, a burst, a label put where a thing is on the screen: always from the view as it is now — 겹침 QA 10/20, a
   // game set its view and said "내가 술래~!" in the same moment, and the bubble stood in the top corner for three frames
   // because the camera only follows the view at the next frame's update)
+  // a minigame's zoom, fitted (user 10/29: "미니게임 전부 다 안 잘리는 선에서 확대했어야지"): as big as it goes up to max while every
+  // character on the board stays inside the screen between the bars at the top and the strips at the bottom — less than 1
+  // when even the game's own view cut one off
+  fitToSafe(max = 1.15) {
+    this.fitMul = 1; this.applyFrustum(); this.updateCam?.();
+    const H = this.H || innerHeight, Wd = this.W || innerWidth;
+    let top = 0, bot = H;
+    for (const el of document.querySelectorAll('body *')) {
+      if (el.tagName === 'CANVAS' || el.ownerSVGElement || el.closest('#bg, #world-ui, .dlg, #boot, #portrait-only, #toasts')) continue;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || r.height > H * .3 || r.bottom <= 0 || r.top >= H) continue;
+      if (el.checkVisibility ? !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) : getComputedStyle(el).visibility === 'hidden') continue;
+      let op = 1; for (let e = el; e && op > .05; e = e.parentElement) op *= +getComputedStyle(e).opacity; if (op <= .05) continue;
+      if (r.bottom < H * .3) top = Math.max(top, r.bottom); else if (r.top > H * .7) bot = Math.min(bot, r.top);
+    }
+    const chars = new Set();
+    this.root?.traverseVisible(o => { if (o.isMesh && o.userData.char) chars.add(o.userData.char); });
+    const px = Wd / 2, py = H * (this.fit?.cy ?? .5), pad = 6, B = new THREE.Box3(), c = new THREE.Vector3();
+    let m = max;
+    for (const ch of chars) {
+      if (!ch.root?.parent) continue;
+      B.setFromObject(ch.root); if (B.isEmpty()) continue;
+      for (let i = 0; i < 8; i++) {
+        const s = this.toScreen(c.set(i & 1 ? B.max.x : B.min.x, i & 2 ? B.max.y : B.min.y, i & 4 ? B.max.z : B.min.z)), dx = s.x - px, dy = s.y - py;
+        if (dy < -1) m = Math.min(m, (py - top - pad) / -dy); else if (dy > 1) m = Math.min(m, (bot - pad - py) / dy);
+        if (Math.abs(dx) > 1) m = Math.min(m, (px - pad) / Math.abs(dx));
+      }
+    }
+    this.fitMul = Math.max(.75, m); this.applyFrustum(); this.updateCam?.();
+    return this.fitMul;
+  }
   toScreen(v) {
     if (this._camStale()) this.updateCam();
     V.copy(v).project(this.cam);

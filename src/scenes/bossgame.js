@@ -50,7 +50,7 @@ export const BOSS_GAME_INFO = {
 // (user 10/29 on an iPhone: "미니게임들 약간 카메라 줌인 해 줄래? 잘 안 보여서") each game's board a little bigger — the
 // sides of a diamond-shaped room may go off the edge, never the part you play on; the hotel fits itself (bosses/hotel.js frame)
 // (10/29 1시 사용자: 두더지 숨바꼭질 오른쪽 덤불·무궁화 출발선이 잘림 → 둘은 줌 없이, 나머지도 한 단계 낮춤; 이불은 "완벽하다" 그대로)
-const MINI_ZOOM = { hotel: 1.06, whack: .84, redlight: .88, blanket: 1.1, gohome: 1.06, yasik: 1.04, wakeup: 1.06, churro: 1.05, inky: 1.05, picnic: 1, tracks: 1.05, report: 1.04, flashlight: 1.05 };
+const MINI_ZOOM = { hotel: 1.06, whack: 1.0, redlight: .88, blanket: 1.1, gohome: 1.3, yasik: 1.04, wakeup: 1.06, churro: 1.05, inky: 1.05, picnic: 1, tracks: 1.05, report: 1.04, flashlight: 1.05 };
 // the page each game's lab html set on #app (a night sky, a morning sky)
 const APP_FLAGS = { yasik: { night: '1' }, churro: { night: '1' }, flashlight: { night: '1' }, wakeup: { morning: '1' } };
 
@@ -72,7 +72,8 @@ export class BossGameScene {
     this.epilogue = epilogue;
     // interlude: a 쉬어가기 between stages, not a boss — a loss still goes on (smaller reward), marked done as 'm'+after
     this.kind = LOAD[kind] ? kind : 'yasik'; this.after = after; this.lv = lv; this.won = false; this._out = false; this.interlude = interlude; this.passed = false; this.fails = G._bossFails?.[after] || 0;
-    W.fitMul = MINI_ZOOM[this.kind] || 1;
+    // 이불 속 누구게? keeps 1.0.282's view (user 10/29: "이불 속 누구게는 완벽하다"): 1.1 on a tall phone, none by 16:9
+    W.fitMul = this.kind === 'blanket' ? 1 + .1 * Math.min(1, Math.max(0, ((W.H || innerHeight) / (W.W || innerWidth) - 1.8) / .3)) : 1;
     this._was = { scheme: W.scheme, joyOn: W.joyOn, joyHidden: W.joyHidden, gauge: W.gaugeOn, camLock: W.camLock };
     // (외부 QA 10/20 TECH-HOTEL-PAUSE-INPUT) the fingers down right now, so the 잠깐! menu can end their presses (menu())
     this._down = new Set();
@@ -114,6 +115,9 @@ export class BossGameScene {
     await css; if (this.dead) return;
     this.L = this.makeL();
     this.game = new mod.Game(this.L);
+    // fitted once the game has built its board and bars, and again on a turn of the phone
+    const fit = () => { if (!this.dead && this.G.scene === this && this.kind !== 'blanket') this.fitZ = W.fitToSafe(MINI_ZOOM[this.kind] ?? 1.15); };
+    setTimeout(fit, 400); setTimeout(fit, 1500); this._fitR = () => setTimeout(fit, 300); addEventListener('resize', this._fitR);
     await this.game.enter({ lv: this.lv, ...more });   // (more: a game's own extras, e.g. the hotel's night)
   }
   makeL() {
@@ -303,7 +307,7 @@ export class BossGameScene {
     this.game.botStep?.(dt, mode);
   }
   exit() {
-    this.dead = true; const W = this.G.world; W.fitMul = 1;
+    this.dead = true; const W = this.G.world; W.fitMul = 1; removeEventListener('resize', this._fitR);
     removeEventListener('pointerdown', this._pd, true); removeEventListener('pointerup', this._pu, true); removeEventListener('pointercancel', this._pu, true);
     this.game?.exit?.();
     if (!this.game && PRE_CSS[this.kind]) document.getElementById(PRE_CSS[this.kind])?.remove();   // (QA10: left before the game was built)

@@ -6,6 +6,8 @@
 // (screen px) · bot(dt) · dispose(). The scene (scenes/mini.js) gives char(), add(), frame(), say(), setStatus(), setClock(),
 // setHearts(), done(win, text).
 import * as THREE from 'three';
+// (② 10/29 실제 크기: 머리에 인 간식·틀린그림 소품도 34 cm 근처 — fitspot.js realScale)
+import { realScale } from './fitspot.js';
 import { THEMES, layoutFor } from './stages.js';
 import { buildItem } from './gfx/items.js';
 import { mat } from './gfx/kit.js';
@@ -87,7 +89,7 @@ class Sneak {
     if (this.state === 'look' && this.moved > 0 && !cov) return this.caught();
     if (this.dir > 0 && this.x >= this.X1) {   // the fridge: a snack, then back
       this.x = this.X1; this.dir = -1; h.root.rotation.y = -PI / 2; S.G.audio.sfx('special');
-      const snack = buildItem(pick(['cupcake', 'icecream', 'milk'])); snack.scale.setScalar(1.4); snack.position.set(0, h.headTop() + .05, 0); h.root.add(snack);
+      const st = pick(['cupcake', 'icecream', 'milk']), snack = buildItem(st); snack.scale.setScalar(Math.min(1.4, 1.1 * realScale(st))); snack.position.set(0, h.headTop() + .05, 0); h.root.add(snack);
       S.say(h, '간식 챙겼다! 이제 돌아가자', 1300);
     }
     if (this.dir < 0 && this.x <= this.X0) { this.x = this.X0; S.done(true, `간식 작전 성공! 하트 ${this.hearts}개 남았어`); }
@@ -148,7 +150,7 @@ class Spot {
       if (k === 'tint') { const col = new THREE.Color(pick(TINTS)), saved = []; o.f.group.traverse(m => { if (m.isMesh && !m.userData.proxy) saved.push([m, m.material]); }); ch.apply = () => saved.forEach(([m, mt]) => { const c2 = mt.clone(); c2.color = col; m.material = c2; }); ch.revert = () => saved.forEach(([m, mt]) => { m.material = mt; }); }
       if (k === 'hide') { ch.apply = () => { o.f.group.visible = false; }; ch.revert = () => { o.f.group.visible = true; }; }
       if (k === 'turn') { const r0 = o.f.group.rotation.y; ch.apply = () => { o.f.group.rotation.y = r0 + PI / 2; }; ch.revert = () => { o.f.group.rotation.y = r0; }; }
-      if (k === 'add') { const it = buildItem(pick(['crown', 'duck', 'teddy', 'star'])); it.scale.setScalar(1.5); it.position.set(o.c.x, o.b.max.y + .02, o.c.z); it.visible = false; S.add(it); ch.c.y = o.b.max.y + .15; ch.apply = () => { it.visible = true; }; ch.revert = () => { it.visible = false; }; }
+      if (k === 'add') { const at = pick(['crown', 'duck', 'teddy', 'star']), it = buildItem(at); it.scale.setScalar(Math.min(1.5, 1.2 * realScale(at))); it.position.set(o.c.x, o.b.max.y + .02, o.c.z); it.visible = false; S.add(it); ch.c.y = o.b.max.y + .15; ch.apply = () => { it.visible = true; }; ch.revert = () => { it.visible = false; }; }
       out.push(ch);
     }
     return out;
