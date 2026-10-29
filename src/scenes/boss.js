@@ -13,6 +13,7 @@ import { MapRooms } from '../map.js';
 import { layoutFor, stageSpec, THEMES, REGIONS, BOSS_MAZE } from '../stages.js';
 import { Char, CHAR_DEFS, defineChar } from '../gfx/chars.js';
 import { buildItem, ITEMS } from '../gfx/items.js';
+import { natSize, LONG_MAX } from '../fitspot.js';
 import { h, ICON } from '../ui.js';
 import { lensPlus } from '../lens.js';   // 경제 B5 (10/19)
 import { giftRow } from '../gift.js';
@@ -70,6 +71,11 @@ const HIDE = {
 };
 const V = new THREE.Vector3();
 const TREASURE_FALLBACK = ['teddy', 'console', 'crown', 'star', 'gift'];
+// 보물 크기 (② 10/29 1.0.283 실폰 18판 "저렇게 큰 이어폰이 있다고?" — 바닥 이어폰 케이스가 의자만 함): a treasure is drawn at its model's size
+// × .85 but never longer than the thing really is — an earbud case or a medal palm-sized, a crown 20 cm, anything else 34 cm like a
+// stage's things (fitspot.js LONG_MAX for the small ones)
+const TRE_REAL = { gpt_earphones: .12, gptearphones: .12, earphones: .12, medal: .15, gpt_coin: .1, coin: .1, keyring: .12, gpt_usb: .1, usb: .1, glasses: .16, sunglasses: .16 };
+const treSc = type => { const n = natSize(type), L = Math.max(n.x, n.y, n.z) || .2; return Math.min(.85, (TRE_REAL[type] ?? LONG_MAX[type] ?? .34) / L); };
 const NOT_TREASURE = new Set(['key', 'note', 'notepiece', 'colornote', 'sockp', 'report', 'snack']);
 const pick2 = a => a[Math.floor(Math.random() * a.length)];
 
@@ -243,7 +249,7 @@ export class BossScene {
   holdStart(t) {
     const G = this.G, W = G.world;
     this.holdEnd();
-    const g = buildItem(t.type); g.scale.setScalar(.85); W.root.add(g);
+    const g = buildItem(t.type); g.scale.setScalar(treSc(t.type)); W.root.add(g);
     const ring = new THREE.Mesh(new THREE.RingGeometry(.2, .3, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .9, depthTest: false }));
     ring.rotation.x = -Math.PI / 2; ring.renderOrder = 10; W.root.add(ring);
     const ui = G.ui, tool = h('div', { class: 'ftool holdtool' },
@@ -261,10 +267,10 @@ export class BossScene {
   // where a held treasure can go, as at home (hidehold.js): each piece's own hiding places — in a drawer, behind a door, on a
   // shelf — or, for a piece with none, tucked beside it; never one taken
   hidePlaces() {
-    const out = [], V = new THREE.Vector3(), h0 = ITEMS[this.held?.t.type]?.h || .2;
+    const out = [], V = new THREE.Vector3(), h0 = ITEMS[this.held?.t.type]?.h || .2, k0 = this.held ? treSc(this.held.t.type) : .85;
     for (const s of this.spots) {
       if (s.tre) continue;
-      const fl = (s.f.spots || []).filter(q => !q.bossTre && !q.item && q.anchor && h0 * .85 * (q.scale || 1) <= (q.maxH ?? 9) + .001);
+      const fl = (s.f.spots || []).filter(q => !q.bossTre && !q.item && q.anchor && h0 * k0 * (q.scale || 1) <= (q.maxH ?? 9) + .001);
       if (fl.length) for (const fs of fl) out.push({ s, fs, p: fs.anchor.getWorldPosition(V.clone()), label: fs.label || s.name });
       else out.push({ s, fs: null, p: s.c.clone().setY(Math.max(s.c.y, (s.t.y || 0) + .35)), label: s.name });
     }
@@ -447,10 +453,10 @@ export class BossScene {
     const g = t.g = buildItem(t.type);
     if (fs) {
       // into the piece's own hiding place (a drawer or a door opens a moment and shuts again)
-      attachItem(fs, g, { rotY: Math.random() * Math.PI * 2, scale: .85 }); fs.bossTre = t; t.fs = fs;
+      attachItem(fs, g, { rotY: Math.random() * Math.PI * 2, scale: treSc(t.type) }); fs.bossTre = t; t.fs = fs;
       const P = fs.part; if (P && !quiet) { this.tw.run(.2, k => P.setOpen(k)).then(() => this.tw.wait(.45)).then(() => this.tw.run(.2, k => P.setOpen(1 - k))).then(() => { g.visible = false; }); } else if (P) { g.visible = false; P.setOpen(0); }
     } else {   // a piece with no hiding place of its own: tucked in beside it, part way under
-      g.scale.setScalar(.85); g.position.set(s.t.x + (s.c.x - s.t.x) * .5, (s.t.y || 0) + .01, s.t.z + (s.c.z - s.t.z) * .5); g.rotation.y = Math.random() * Math.PI * 2;
+      g.scale.setScalar(treSc(t.type)); g.position.set(s.t.x + (s.c.x - s.t.x) * .5, (s.t.y || 0) + .01, s.t.z + (s.c.z - s.t.z) * .5); g.rotation.y = Math.random() * Math.PI * 2;
       this.G.world.root.add(g);
     }
     this.G.world.idsDirty = true; this.G.world.shadowDirty = true;
