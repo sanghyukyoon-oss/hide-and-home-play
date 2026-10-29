@@ -516,10 +516,8 @@ export const ITEMS = {
       const h = new THREE.Path(); h.absarc(-.122, 0, .034, 0, Math.PI * 2, true); s.holes.push(h);
       return s;
     };
-    g.add(put(mesh(geo('key3-rim', () => {
-      const e = new THREE.ExtrudeGeometry(keyShape(), { depth: .01, bevelEnabled: true, bevelThickness: .003, bevelSize: .004, bevelSegments: 2, curveSegments: 24 });
-      e.rotateX(Math.PI / 2); e.translate(0, .024, 0); return e;
-    }), mat('#8a5326')), 0, 0, 0));
+    // (10/29 1.0.280 사용자 "열쇠 왜 이래": the brown rim layer, once the same size as the body, lay flush inside it and deFlush blew it up into a
+    // wing-shaped blob behind the hanging key — the body's own ink outline is the rim now)
     g.add(put(mesh(geo('key3-body', () => {
       const e = new THREE.ExtrudeGeometry(keyShape(), { depth: .016, bevelEnabled: true, bevelThickness: .004, bevelSize: .004, bevelSegments: 2, curveSegments: 24 });
       e.rotateX(Math.PI / 2); e.translate(0, .028, 0); return e;
