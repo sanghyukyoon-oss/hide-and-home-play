@@ -180,10 +180,11 @@ export const LAYOUTS = {
       F('foldingtable2', 1, 2), F('laundrybasket', 4, 3), F('stool', 3, 1), F('plant', 0, 4), F('laundrybasket', 0, 2)],
     decor: [D('clockposter', 'N', 2.0), D('window', 'W', .9), D('door', 'W', -1.3)], friendAt: [1.4, 1.4] },
   // 동네 카페: the coffee bar and pastry case, little tables, a chalk menu
+  // (10/30 실폰 34판: 시계 포스터의 일력이 문틀에 반쯤 박혀 있었음 — 문을 .25 오른쪽으로, 포스터와 문틀 사이에 일력 자리)
   cafe: { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 2.9,
     furniture: [F('espresso', 0, 0), F('pastrycase', 2, 0), F('bookshelf', 4, 0, 0, { seed: 61 }), F('plant', 5, 0),
       F('cafetable', 1, 2), F('cafetable', 3, 2), F('cafetable', 1, 4), F('cafetable', 4, 4), F('magazinerack', 5, 2), F('rug', 2, 3)],
-    decor: [D('menuboard', 'W', .5), D('clockposter', 'W', -2.2), D('door', 'W', -1.3), D('window', 'N', .5)], friendAt: [1.1, .4] },
+    decor: [D('menuboard', 'W', .5), D('clockposter', 'W', -2.2), D('door', 'W', -1.05), D('window', 'N', .5)], friendAt: [1.1, .4] },
   // 빌딩 로비: the elevator and mailboxes on the walls, a reception desk, a security gate, a sofa
   lobby: { w: 6, d: 5, walls: { N: 'wall', W: 'wall' }, wallH: 3.0,
     furniture: [F('plantbig', 0, 0), F('watercan', 5, 0), F('securitygate', 3, 1), F('lostfound', 5, 2),

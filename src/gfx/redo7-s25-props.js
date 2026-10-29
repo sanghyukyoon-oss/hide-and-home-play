@@ -390,7 +390,8 @@ B.cs3_stand = (f, T) => {
       tube(a, b, .024, '#f4f6ee', 8); tube(b, c1, .02, C.leek, 8); tube(b, c2, .017, '#4fae4c', 8); }
     add(G.cyl(.075, .075, .04, 12), C.red, -1.01, .3, .07);
   }));
-  f.add(mc('eggs', ({ add }) => { add(G.box(.36, .04, .28, .01), '#e6d6b8', .78, .98, -.32, .18, 0, 0); for (let i = 0; i < 12; i++) add(G.sph(.034, 8, 6), C.egg, .66 + (i % 4) * .08, 1.02 + Math.floor(i / 4) * .015, -.4 + Math.floor(i / 4) * .08, 0, 0, 0, [1, 1.25, 1]); }));
+  // (10/30 사용자: the egg tray floated 18 cm above the top board — now it rests on it)
+  f.add(mc('eggs2', ({ add }) => { add(G.box(.36, .04, .28, .01), '#e6d6b8', .78, .8, -.32, .18, 0, 0); for (let i = 0; i < 12; i++) add(G.sph(.034, 8, 6), C.egg, .66 + (i % 4) * .08, .84 + Math.floor(i / 4) * .015, -.4 + Math.floor(i / 4) * .08, 0, 0, 0, [1, 1.25, 1]); }));
   // 값표 (상자 앞에 꽂은 카드)
   [['사과 5천', -.58], ['귤 3천', 0], ['양배추 2천', .58]].forEach(([s, x]) => f.add(put(pane(.26, .13, cardTex('price|' + s, 260, 130, '#fffaf0', C.ink, [s], { line: C.red, lw: 5 })), x, .5, .25, -.2, 0, 0)));
   // (10/30 사용자 "여기코너 정리": what was hidden here stood in the yellow fruit — the top-left box is left empty for it)

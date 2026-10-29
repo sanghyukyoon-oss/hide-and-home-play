@@ -13,7 +13,6 @@ import { closeBack } from './closeup.js';
 import { moveItem } from './hunt.js';
 import { ITEMS, buildItem } from './gfx/items.js';
 import { spotFits } from './fitspot.js';
-import { mat as kitMat } from './gfx/kit.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // (21·31판 bosses: the key sits on the boss's story object — script.js BOSSES → story.js storyFor)
@@ -70,9 +69,7 @@ function sway(S, dur, amp = .004) {
 function hatMesh() {
   // (사용자 메모 10/24 28판 "가방, 모자 오브젝트 디테일"): 너굴이's straw hat — a wide brim in woven rings, a round crown with a dent,
   // a red ribbon round it tied in a bow at the side with two tails
-  // (28판 실폰 10/30 "이모자 뭔지 색깔구리고": a bare toon material shades in two hard steps — the straw read olive in the car's
-  // shade; 19판~ in the game's own material like everything else)
-  const late = (globalThis.__sbkStage ?? -1) >= 18, g = new THREE.Group(), m = c => late ? kitMat(c) : new THREE.MeshToonMaterial({ color: c });
+  const g = new THREE.Group(), m = c => new THREE.MeshToonMaterial({ color: c });
   const add = (geo, c, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, m(c)); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); g.add(o); return o; };
   add(new THREE.CylinderGeometry(.19, .19, .016, 32), '#f2d58a');
   for (const [r, c] of [[.185, '#e3c06a'], [.16, '#f7e3a8'], [.135, '#e3c06a']]) add(new THREE.TorusGeometry(r, .006, 4, 32), c, 0, .009, 0, Math.PI / 2);

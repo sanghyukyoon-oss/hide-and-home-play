@@ -1321,6 +1321,8 @@ export class StageScene {
     // (10/19 겹침 QA: 1판 토순이 came out .29 m from 몽글이, who stands in front of the hideout) onto free floor near there,
     // a body's width from everyone else
     { const t = this.standNear(to, f, .75, 1.3, true); if (t) to.set(t.x, to.y, t.z); }
+    // (30판 실폰 10/30: a piece may name where its friend comes out — out of the boat on the water there's no floor, so onto the deck)
+    if (it.spot.part.friendOut) to.copy(it.spot.part.friendOut());
     // (10/20, user on the phone: 박사님 "문 너머 검은 곳에서 나와야 하는데 하늘에서 그냥 떨어져요") the secret-door stage: out of the dark
     // doorway the bookcase slid away from, at floor height, walking — not a pop out of the cupboard above it
     const sc = this.plan.showcase, viaDoor = sc?.shelf && it.spot.part === sc.door;

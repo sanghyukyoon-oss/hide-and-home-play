@@ -694,6 +694,9 @@ B.flagdeck2 = (f, T) => {
   tail.add(live(mc('flagdeck2-tail', ({ add }) => { add(G.tor(.09, .035, PI * 1.3, 6, 14), '#f2d2a8', 0, .08, 0, 0, 0, -.5); add(G.sph(.04, 8, 6), '#ffffff', .07, .15, 0); })));
   p.pivots.push(pole);
   p.device = 'flagboat';
+  // (30판 실폰 10/30 "배에 타 있는 거냐 뚫려 있는 거냐": found, 냥냥이 popped out to the water's level and stood in the boat's side) she
+  // hops out onto the deck in front of the counter
+  p.friendOut = () => f.group.localToWorld(new THREE.Vector3(-.45, y + .03, .5));
   Object.assign(f, { pin, flag, boat, tail, poleTop: new THREE.Vector3(PX, y + PH - .3, PZ), boatIn: BZ1, boatOut: BZ0, flagUp: y + PH - .42 });
 };
 

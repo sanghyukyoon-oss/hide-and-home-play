@@ -590,7 +590,7 @@ PLANS.flagboat = (room, spec, story, planStage, cover) => {
   const bl = { part: cover, kind: 'gadget', code: 'pinwheel' };
   plan.locks.push(bl);
   // (30판 실폰 10/30 "왜 깃발이 올라가면 배가 정박하는거고": the pinwheel turns the rope reel at the pole's foot — that's what pulls the boat in)
-  cover.needMsg = K('저 보트를 데크로 끌어와야 덮개를 열 수 있는데… 깃대 밑 밧줄 감개는 바람개비가 있어야 돌아가!', "We need to pull that boat in to the deck to lift its cover… the rope reel at the pole's foot only turns with a pinwheel!");
+  cover.needMsg = K('저 보트를 데크까지 당겨 와야 덮개를 열 수 있는데… 깃대 밑 밧줄 감개는 바람개비가 있어야 돌아가!', "We need to pull that boat in to the deck to lift its cover… the rope reel at the pole's foot only turns with a pinwheel!");
   cover.needItem = 'pinwheel';
   plan.placements.push({ type: 'friendtoken', spot: cover.spots[0], role: 'target' });
   plan.targets.unshift('friendtoken');
@@ -620,7 +620,7 @@ RUN.flagboat = async (S, part) => {
   }, ease.inOutSine);
   const s = W.toScreen(top); W.fx.burst(s.x, s.y, { n: 10, shape: 'star', colors: ['#ffe14d', '#ffffff', '#e8414e'], speed: 140, life: .5, size: 9 });
   G.audio.sfx('star');
-  if (S.friendHidden) S.hideSay([K('냥? 바람개비가 도니까 밧줄이 감긴다… 보트째 끌려간다냥!', "Mew? The pinwheel's winding the rope… the whole boat's being pulled in, meow!")]);
+  if (S.friendHidden) S.hideSay([K('냥? 바람개비가 도니까 밧줄이 감긴다… 보트째 딸려 온다냥!', "Mew? The pinwheel's winding the rope… the whole boat's being pulled in, meow!")]);
   // the boat comes in on its rope, wound in at the pole's foot, bobbing
   const z0 = boat.position.z, rope = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, 1, 5), new THREE.MeshToonMaterial({ color: '#d9b77e' }));
   f.group.add(rope);
