@@ -1318,23 +1318,28 @@ export const TRAIL_ITEMS = {
   } },
 };
 
-// 등산 손수건 19판~ (⑩ 10/29 items-2 — a flat red triangle with dots): the same knotted bandana, now printed like one — a
-// white border running along both edges, white paisley drops with a red eye, small white flowers between them, the
-// knot bigger with its two tails. Flat, .04 high, the same size. 1~18판 keep the old one.
+// 등산 손수건 19판~ (10/29 실폰 "등산 손수건 이거 뭔지 잘 모르겠어" — a red triangle with dots read as nothing): the bandana as it
+// sits in a pack, folded into a soft square — two layers, a white border round the top one, white paisley drops with a red
+// eye and little flowers between them, one corner folded back to show the cloth's darker underside, a rolled fold on one side. Flat, about .04 high, the same footprint as before. 1~18판 keep the old one.
 function towelLate() {
-  const g = grp(), RD = '#e8414e', L = .27, HT = L * .5, Z0 = -.06;
-  const tri = (w, h) => { const t = new THREE.Shape(); t.moveTo(-w / 2, 0); t.lineTo(0, -h); t.lineTo(w / 2, 0); t.closePath(); return t; };
-  const at = (u, v) => [(u - .5) * L * (1 - v), Z0 + v * HT];
-  g.add(mc('it-towel5', ({ add, tube }) => {
-    add(G.ext(tri(L, HT), .008, .004, 1), RD, 0, .004, Z0, -HP, 0, 0);
-    add(G.ext(tri(L * .76, HT * .76), .006, .003, 1), shade(RD, -.12), .01, .016, Z0 + .004, -HP, 0, .02);
-    add(G.cyl(.015, .015, L + .012, 10), RD, 0, .016, Z0, 0, 0, HP);
-    for (const sx of [-1, 1]) add(G.ext(tri(.07, .05), .006, .002, 1), shade(RD, .05), sx * (L / 2 - .025), .02, Z0 + .004, -HP + .4, 0, sx * -.5);
-    for (const sx of [-1, 1]) { const [x0, z0] = at(sx < 0 ? .06 : .94, .08), [x1, z1] = at(.5, .88); tube([x0, .022, z0], [x1, .022, z1], .004, WHITE, 4); }
-    for (const [u, v, a] of [[.3, .3, .6], [.66, .28, -.5], [.48, .55, 1.4]]) { const [x, z] = at(u, v); add(G.sph(.02, 8, 4), WHITE, x, .022, z, 0, a, 0, [1.4, .3, 1]); add(G.sph(.007, 5, 3), RD, x, .025, z, 0, 0, 0, [1, .3, 1]); }
-    for (const [u, v] of [[.2, .18], [.8, .18], [.5, .32], [.4, .72], [.58, .72]]) { const [x, z] = at(u, v); for (let k = 0; k < 4; k++) add(G.sph(.005, 4, 2), WHITE, x + Math.cos(k * HP) * .008, .023, z + Math.sin(k * HP) * .008, 0, 0, 0, [1, .4, 1]); }
-    add(G.sph(.03, 8, 6), shade(RD, -.06), -L / 2 - .012, .024, Z0 + .005, 0, 0, 0, [1.2, .8, 1]);
-    for (const [a, l] of [[2.4, .07], [3.6, .065]]) add(G.box(l, .008, .032, .004), RD, -L / 2 - .012 + Math.cos(a) * l * .55, .012, Z0 + .005 - Math.sin(a) * l * .55, 0, a, 0);
+  const g = grp(), RD = '#e23b4a', UN = '#b52a3a', S = .2;
+  const sq = (w) => { const t = new THREE.Shape(); t.moveTo(-w / 2, -w / 2); t.lineTo(w / 2, -w / 2); t.lineTo(w / 2, w / 2); t.lineTo(-w / 2, w / 2); t.closePath(); return t; };
+  const tri = (w) => { const t = new THREE.Shape(); t.moveTo(0, 0); t.lineTo(w, 0); t.lineTo(0, w); t.closePath(); return t; };
+  const drop = (r) => { const t = new THREE.Shape(), a0 = -.3 * PI; t.moveTo(r * Math.cos(a0), r * Math.sin(a0)); t.absarc(0, 0, r, a0, PI, false);
+    t.quadraticCurveTo(-r, -r * 1.2, r * .7, -r * 1.9); t.quadraticCurveTo(r * .75, -r * 1.05, r * Math.cos(a0), r * Math.sin(a0)); return t; };
+  g.add(mc('it-towel6', ({ add }) => {
+    add(G.ext(sq(S), .01, .004, 2), shade(RD, -.08), .006, .005, .006, -HP, 0, 0);                       // the bottom layer, a little out of line
+    add(G.ext(sq(S - .008), .01, .004, 2), RD, 0, .019, 0, -HP, 0, .05);                                  // the top layer
+    add(G.cyl(.011, .011, S - .02, 10), RD, -S / 2 + .006, .024, 0, HP, 0, 0);                             // the rolled fold
+    // the white border, inset round the top layer
+    const R = .05, c = Math.cos(R), sn = Math.sin(R), rot = (x, z) => [x * c + z * sn, -x * sn + z * c], B = S / 2 - .018;
+    for (const [x, z, w, d] of [[0, -B, 2 * B, .007], [0, B, 2 * B, .007], [-B, 0, .007, 2 * B], [B, 0, .007, 2 * B]]) { const [X, Z] = rot(x, z); add(G.box(w, .003, d, .001), WHITE, X, .035, Z, 0, R, 0); }
+    // the corner folded back: the underside showing, darker
+    { const [X, Z] = rot(S / 2 - .01, S / 2 - .01); add(G.ext(tri(.07), .005, .002, 1), UN, X, .036, Z, -HP, 0, R + HP); }
+    // paisley drops with a red eye, little white flowers between
+    for (const [x, z, a, r] of [[-.035, -.04, .5, .026], [.045, -.035, -1.9, .024], [-.045, .04, 2.6, .023], [.025, .03, -.6, .02]]) { const [X, Z] = rot(x, z);
+      add(G.ext(drop(r), .003, .001, 12), WHITE, X, .035, Z, -HP, 0, a); add(G.sph(.006, 6, 3), RD, X, .04, Z, 0, 0, 0, [1, .4, 1]); }
+    for (const [x, z] of [[.0, -.0], [.06, .065], [-.07, -.075], [.07, -.075], [-.075, .075]]) { const [X, Z] = rot(x, z); for (let k = 0; k < 5; k++) { const a = k / 5 * PI * 2; add(G.sph(.0045, 4, 2), WHITE, X + Math.cos(a) * .007, .036, Z + Math.sin(a) * .007, 0, 0, 0, [1, .4, 1]); } add(G.sph(.003, 4, 2), '#ffd23c', X, .038, Z); }
   }));
   return g;
 }

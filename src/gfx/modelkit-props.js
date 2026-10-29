@@ -221,6 +221,7 @@ KITS.parfait = { id: 'parfait', type: 'stack', skin: 'runner', intro: 'box', lid
 // 11판 캣타워·19판 미니 소방차 (10/20): the robot's flow and board; each its own box, payoff and last piece. Their
 // furniture goes to the shop's 기념품, not my room (the user's gift rule — econ.js FREE_KITS is the robot only)
 KITS.cattower = { id: 'cattower', name: '캣타워', parts: CATTOWER, order: ['base', 'pole1', 'pole2', 'house', 'deck', 'top', 'ball'],
+  show: ['house', 'ball', 'pole1', 'top', 'base', 'deck', 'pole2'],   // (the tray's boxes out of build order — 4 7 2 6 1 5 3, 10/29)
   build: { ordered: true, glow: true, ghost: false }, type: 'model', skin: 'tray', intro: 'box', lid: 'kraft', scale: 1.5,   // (the card: the stage's ordinary find list — user 10/20 "캣타워가 프라모델 ui쓰는건 이상한데")
   short: { base: '받침', pole1: '기둥', pole2: '작은 기둥', house: '집', deck: '옆 방석', top: '꼭대기', ball: '깃털 방울' }, runner: '#c8f0e2', color: '#c99554',
   boxArt: 'art/kits/cattower-box.jpg',   // (GPT's box art, 10/20 — 640 px JPEG)

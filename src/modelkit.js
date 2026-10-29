@@ -134,8 +134,11 @@ export function kitRunner(S) {
       h('span', { class: 'kitrun-no' }, String(i + 1)), h('span', { class: 'kitrun-nm' }, K.short?.[p] || (skin === 'list' ? ITEMS[kitItem(kit, p)]?.name || '' : '')),
       h('i', { class: 'kitrun-chk' }), h('b', { class: 'kitrun-stamp' }, '완료'), h('i', { class: 'kitrun-q' }, '?'));   // (a checklist's tick box, a label's stamp, the '?' of the one under the pile)
     if (K.pile?.item === p) c.classList.add('mystery');   // ("다 찾으면 하나 더" — 레벨 세션)
-    c.dataset.p = p; if (framed) c.style.gridArea = p; row.append(c); cells[p] = c;
+    c.dataset.p = p; if (framed) c.style.gridArea = p; cells[p] = c;
   });
+  // (K.show: the tray's cells in another order than the build's — 11판 캣타워 10/29, user "1234567 순서대로라 너무 뻔함": the numbers stay
+  // the build steps, the boxes just aren't lined up in them)
+  for (const p of K.show || K.order) row.append(cells[p]);
   // (a frame's windows aren't square: each picture is trimmed to its piece, so a thin arm fills its thin window; a list's or a
   // label's small picture too, so the thing is as big as it can be)
   if (framed || skin === 'list' || skin === 'labels' || skin === 'tray') for (const p of K.order) trimPic(G, key(p)).then(src => { if (src) cells[p].querySelectorAll('img').forEach(im => { im.src = src; }); });
