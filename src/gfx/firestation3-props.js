@@ -17,6 +17,7 @@ import { clothBend } from './clothbend.js';
 
 const WORDS = { '소방차 전용': 'Fire engines only', '주정차 금지': 'No parking', '근무표': 'Duty Roster', '안전센터': 'Fire Station', '곰돌이네': "Bear's", '당직실': 'Duty Room', '출동 준비!': 'Ready to roll!', '불조심': 'Fire Safety' };
 for (const k in WORDS) if (EN[k] == null) EN[k] = WORDS[k];
+if (EN['소화전'] == null) EN['소화전'] = 'HOSE';
 
 const PI = Math.PI, HP = PI / 2;
 const P = {
@@ -1013,18 +1014,32 @@ B.fs3_hosetower = f => {
     for (let k = 0; k < 12; k++) { const a = k * PI / 6; add(G.box(.03, .03, .03, .006), P.brassD, Math.cos(a) * .135, Math.sin(a) * .135, -.17, 0, 0, a); }
   }));
   const p = f.part('crank', [wheel, hose], t => { wheel.rotation.z = -t * PI * 4; sheave.rotation.x = t * PI * 5; hose.position.y = .7 * t; hose.scale.y = 1 - .15 * t; }, { label: '호스 건조탑 손잡이', sfx: 'ratchet', dur: 1.05 });
-  const s = f.spot('inside', null, .28, .61, .22, { part: p, maxH: .4, label: '건조 호스 아래', scale: .95 });
-  fs3Drawer(f.pullOut(p, s, .65, { w: .45, d: .33, color: '#d9dde3' }), 'hose', .45, .33);
-  // (10/29 1.0.280 사용자 "저 나오는 서랍도 어디서 나오는 거여, 또 크기도 안 맞고": the drawer slid out of thin air — a red steel equipment
-  // cabinet on the boot shelf now holds it: top, sides and back round the drawer, a label plate and rivets, open at the front)
-  f.add(mc('fs3-hose-cab', ({ add }) => {
-    const cx = .28, y0 = .598, H = .15, W2 = .25, z0 = .04, z1 = .4, zc = (z0 + z1) / 2;
-    for (const sx of [-1, 1]) add(G.box(.022, H, z1 - z0, .006), P.redD, cx + sx * W2, y0 + H / 2, zc);
-    add(G.box(W2 * 2 + .022, .022, z1 - z0, .006), P.red, cx, y0 + H, zc); add(G.box(W2 * 2 + .022, .016, z1 - z0, .004), P.redD, cx, y0 - .008, zc);
-    add(G.box(W2 * 2, H, .02, .006), P.redD, cx, y0 + H / 2, z0 + .01);
-    for (const sx of [-1, 1]) for (const sy of [0, 1]) add(G.sph(.008, 6, 4), P.steel, cx + sx * W2, y0 + .02 + sy * (H - .04), z1 + .002);
-    add(G.box(W2 * 2 + .04, .028, .03, .008), P.steelD, cx, y0 + H + .016, z1 - .01);
+  const s = f.spot('inside', null, .34, .63, .24, { part: p, maxH: .36, label: '건조 호스 아래', scale: .9 });
+  // (10/29 1.0.283 사용자 "여전히 뭔지 모르겠다": the drawer and its box were no thing anyone knows — an 옥내 소화전함 now, the red steel hose
+  // cabinet every Korean building has: a glass door with a white hose coiled behind it and its brass nozzle, '소화전' over it and a red
+  // lamp on top; the handwheel's turn slides the door aside and what hides inside is there on the cabinet floor)
+  const hc = { x: .28, y0: .6, H: .44, W: .5, z0: .06, z1: .38 };
+  f.add(mc('fs3-hydrantbox', ({ add }) => {
+    const { x, y0, H, W, z0, z1 } = hc, zc = (z0 + z1) / 2, D = z1 - z0;
+    for (const sx of [-1, 1]) add(G.box(.024, H, D, .006), P.red, x + sx * (W / 2 - .012), y0 + H / 2, zc);
+    add(G.box(W, .024, D, .006), P.red, x, y0 + H - .012, zc); add(G.box(W, .024, D, .006), P.redD, x, y0 + .012, zc);
+    add(G.box(W - .04, H - .04, .02, .006), '#b83a33', x, y0 + H / 2, z0 + .01);
+    for (let k = 0; k < 4; k++) add(G.tor(.085, .02, PI * 2, 6, 20), k % 2 ? '#f3f0e8' : '#e6e1d4', x - .12, y0 + .1 + k * .045, zc - .02, HP, 0, 0);
+    add(G.cyl(.016, .026, .16, 10), P.brass, x - .12, y0 + .3, z0 + .05, HP, 0, 0); add(G.cyl(.03, .03, .03, 12), P.brassD, x - .12, y0 + .3, z0 + .13, HP, 0, 0);
+    add(G.tor(.035, .01, PI * 2, 4, 14), P.red, x + .16, y0 + .34, z0 + .03); add(G.cyl(.01, .01, .05, 8), P.steelD, x + .16, y0 + .34, z0 + .045, HP, 0, 0);
+    add(G.box(W + .02, .02, .03, .006), P.steelD, x, y0 + H + .01, z1 - .01);
+    add(G.cyl(.035, .035, .03, 14), P.redD, x, y0 + H + .035, z1 - .06); add(G.sph(.034, 12, 8), '#ff3b2f', x, y0 + H + .06, z1 - .06, 0, 0, 0, [1, .8, 1]);
   }));
+  f.add(put(decal(.3, .07, plateTex('hydrant', '소화전', 300, 70, '#ffffff', P.redD, P.red)), hc.x, hc.y0 + hc.H + .095, hc.z1 - .02));
+  const door = grp(); put(door, hc.x, hc.y0 + hc.H / 2, hc.z1 + .004); f.add(door);
+  door.add(mc('fs3-hydrantdoor', ({ add }) => {
+    const w = hc.W - .03, h = hc.H - .03;
+    for (const sy of [-1, 1]) add(G.box(w, .03, .02, .006), P.red, 0, sy * (h / 2 - .015), 0);
+    for (const sx of [-1, 1]) add(G.box(.03, h, .02, .006), P.red, sx * (w / 2 - .015), 0, 0);
+    add(G.box(.025, .1, .03, .008), P.steel, w / 2 - .045, 0, .02);
+  }));
+  { const g = mesh(new THREE.PlaneGeometry(hc.W - .09, hc.H - .09), mat('#cfe8f5', { opacity: .35, rough: .1, rim: 0 }), { cast: false }); door.add(g); }
+  { const ap = p.apply, dx0 = door.position.x; p.apply = (t, ...b) => { ap(t, ...b); door.position.x = dx0 - (hc.W - .06) * Math.min(1, t * 1.4); }; }
   f.spot('on', null, 0, .025, 1.3, { maxH: .8, label: '건조탑 앞 바닥', scale: 1 });
 };
 
