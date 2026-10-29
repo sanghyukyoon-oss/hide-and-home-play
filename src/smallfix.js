@@ -8,7 +8,7 @@ import { ITEMS } from './gfx/items.js';
 import { moveItem } from './hunt.js';
 import { attachItem } from './room.js';
 import { blindFor } from './hunt-blind.js';
-import { spotFits, drawnScale, wantScale, capScale, coverCap, coverDraw, faceItem, centerOn, nestles, squareIfCrossing, settleOn } from './fitspot.js';
+import { spotFits, drawnScale, wantScale, capScale, coverCap, coverDraw, pierced, faceItem, centerOn, nestles, squareIfCrossing, settleOn } from './fitspot.js';
 import { affOk } from './affinity.js';
 
 export const MIN_PX = 28;
@@ -201,6 +201,32 @@ export function sizeUp(S) {
     let dest = null;
     for (const s of cands) { moveFull(S, it, s); f = sizeFix(W, it); if (f > 0 && seenAny(S, it)) { if (Math.abs(f - 1) > .01) { it.g.scale.multiplyScalar(f); settleOn(it.g, s); } dest = s; break; } }
     if (dest) out.push(`${it.type}: ${old.label} → ${dest.label} (크기)`); else put(it, old, sc0);
+    const p = it.spot.part; it.g.visible = !p || p.t > .5;
+  }
+  W.idsDirty = true;
+  return out;
+}
+
+// 관통 옮기기 (② 10/29 1.0.280 실폰 20판 "연 뚫린 거": 빨래 기둥이 꽂힌 통 안의 연): from 19판, a thing that an edge of its own piece of
+// furniture runs through (fitspot.js pierced) goes to the nearest free open place where nothing does and it can be seen; a decoy
+// with no such place is taken away.
+export function unpierce(S) {
+  const W = S.G.world, R = S.room, out = [], t0 = performance.now(), blind = blindFor(S.spec.room) || (() => false);
+  R.group.updateMatrixWorld(true);
+  for (const it of [...S.items]) {
+    if (performance.now() - t0 > 600) break;
+    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || (it.role !== 'target' && it.role !== 'decoy') || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (!pierced(it.g, it.spot)) continue;
+    const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
+    let dest = null;
+    if (!old.part?.lock) {
+      const d = s => s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(c0);
+      const cands = R.spots.filter(s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && (!s.part || (!s.part.lock && (s.part.reach ?? 1) >= .55)) && fits(it.type, s)).sort((a, b) => d(a) - d(b)).slice(0, 16);
+      for (const s of cands) { moveFull(S, it, s); if (!pierced(it.g, s) && (it.role === 'decoy' || seenAny(S, it))) { dest = s; break; } }
+    }
+    if (dest) out.push(`${it.type}: ${old.label} → ${dest.label} (관통)`);
+    else if (it.role === 'decoy') { put(it, old, sc0); it.g.parent?.remove(it.g); old.item = null; S.items.splice(S.items.indexOf(it), 1); out.push(`${it.type}: ${old.label} 뺌 (관통)`); continue; }
+    else { put(it, old, sc0); out.push(`${it.type}: ${old.label} 관통 남음`); }
     const p = it.spot.part; it.g.visible = !p || p.t > .5;
   }
   W.idsDirty = true;

@@ -883,7 +883,8 @@ B.fs3_doghouse = (f, T) => {
   roof.add(put(decal(.42, .14, plateTex('dog', '소방견', 252, 84, P.navy, P.cream)), 0, .15, hd + .08 + (D + .3) / 2 - .14));
   const p = f.part('lid', roof, t => { roof.rotation.x = -1.2 * t; dog.update(0); }, { label: '소방견 집 지붕', sfx: 'creak', dur: .6 });
   const s = f.spot('inside', null, .16, .37, -.05, { part: p, maxH: .35, label: '소방견 방석 옆', scale: .95 });
-  fs3Drawer(f.pullOut(p, s, .67, { w: .38, d: .3, color: P.wood }), 'dog', .38, .3);
+  // (10/29: no drawer slides out through the kennel wall — under the lifted roof the treat tray rises up to the eaves)
+  fs3Drawer(f.pullOut(p, s, .67, { w: .38, d: .3, color: P.wood, up: .22 }), 'dog', .38, .3);
   f.spot('on', null, -.5, .025, 1.2, { maxH: .8, label: '개집 앞 바닥', scale: 1 });
 };
 
@@ -1014,6 +1015,16 @@ B.fs3_hosetower = f => {
   const p = f.part('crank', [wheel, hose], t => { wheel.rotation.z = -t * PI * 4; sheave.rotation.x = t * PI * 5; hose.position.y = .7 * t; hose.scale.y = 1 - .15 * t; }, { label: '호스 건조탑 손잡이', sfx: 'ratchet', dur: 1.05 });
   const s = f.spot('inside', null, .28, .61, .22, { part: p, maxH: .4, label: '건조 호스 아래', scale: .95 });
   fs3Drawer(f.pullOut(p, s, .65, { w: .45, d: .33, color: '#d9dde3' }), 'hose', .45, .33);
+  // (10/29 1.0.280 사용자 "저 나오는 서랍도 어디서 나오는 거여, 또 크기도 안 맞고": the drawer slid out of thin air — a red steel equipment
+  // cabinet on the boot shelf now holds it: top, sides and back round the drawer, a label plate and rivets, open at the front)
+  f.add(mc('fs3-hose-cab', ({ add }) => {
+    const cx = .28, y0 = .598, H = .15, W2 = .25, z0 = .04, z1 = .4, zc = (z0 + z1) / 2;
+    for (const sx of [-1, 1]) add(G.box(.022, H, z1 - z0, .006), P.redD, cx + sx * W2, y0 + H / 2, zc);
+    add(G.box(W2 * 2 + .022, .022, z1 - z0, .006), P.red, cx, y0 + H, zc); add(G.box(W2 * 2 + .022, .016, z1 - z0, .004), P.redD, cx, y0 - .008, zc);
+    add(G.box(W2 * 2, H, .02, .006), P.redD, cx, y0 + H / 2, z0 + .01);
+    for (const sx of [-1, 1]) for (const sy of [0, 1]) add(G.sph(.008, 6, 4), P.steel, cx + sx * W2, y0 + .02 + sy * (H - .04), z1 + .002);
+    add(G.box(W2 * 2 + .04, .028, .03, .008), P.steelD, cx, y0 + H + .016, z1 - .01);
+  }));
   f.spot('on', null, 0, .025, 1.3, { maxH: .8, label: '건조탑 앞 바닥', scale: 1 });
 };
 

@@ -119,7 +119,8 @@ export function clearance(spot) {
   }
   // (and straight down its middle, from just under its headroom: a plant's stem, a floor lamp's pole running up through the
   // place — 겹침 QA 10/19, 5판 스탠드 쟁반 · 화분 흙 위 줄기 — nothing but a thing tucked under covers may sit round that)
-  if (spot.kind === 'on' && !spot.wallFace && !nestles(spot)) {   // (out on top of something only: a box's closed lid and its own insides are not a pole)
+  // (19판부터 10/29: 뚜껑 없는 통 안·옆 자리도 — 20판 빨래 기둥이 꽂힌 깡통 위 자리는 'beside')
+  if ((spot.kind === 'on' || RULE && (spot.kind === 'inside' || spot.kind === 'beside') && !spot.part) && !spot.wallFace && !nestles(spot)) {   // (out on top of something only: a box's closed lid and its own insides are not a pole)
     const top = Math.max(.05, Math.min(spot.maxH, .5) - .02) * (spot.scale || 1);
     a.getWorldPosition(_o); _o.y += top; rc.set(_o, _d.set(0, -1, 0)); rc.far = top - .015;
     out.mid = rc.intersectObjects(own, false).length > 0;
@@ -256,7 +257,7 @@ function probe(type, spot, sc, edgeOnly = false) {
     // out on top of something: no edge of the furniture's own triangles passes through the thing (a floor lamp's pole 1.2 cm
     // off the middle, a plant's thin slanting stem slipped between rays — 겹침 QA 10/20 실측). Its box less 5 mm a side, from
     // 1 cm above the place up (what it stands on is no crossing). In a box or a drawer the closed lid and the insides are fitClear's.
-    if (EDGE_KINDS.has(spot.kind)) {   // (and behind or under a piece: 10판's heart behind the big pot grazed it 4 cm — 겹침 QA v178)
+    if (EDGE_KINDS.has(spot.kind) || RULE && spot.kind === 'beside') {   // (and behind or under a piece: 10판's heart behind the big pot grazed it 4 cm — 겹침 QA v178)
       a.getWorldPosition(_po);
       // (at the size it will be drawn: shrunk by k round its middle when the side rays said a little less fits)
       const kk = edgeOnly ? 1 : Math.max(0, Math.min(1, k)), hx = (_pb.max.x - _pb.min.x) / 2 * kk, hz = (_pb.max.z - _pb.min.z) / 2 * kk;
@@ -270,6 +271,22 @@ function probe(type, spot, sc, edgeOnly = false) {
   }
   a.remove(g); g.position.set(0, 0, 0); g.rotation.set(0, 0, 0);
   return (spot._probe[key] = Math.max(0, best));
+}
+// (19판부터 10/29 1.0.280 실폰 20판 "연 뚫린 거 어케 해 봐": 빨래 기둥이 꽂힌 통 안의 연을 기둥이 관통): a thing as drawn — its box, 15% in from
+// each side and from 1 cm above where it stands — has an edge of its own piece of furniture running through it (its own lid or door
+// that covers it left out). smallfix.js unpierce moves it.
+const _pb2 = new THREE.Box3(), _pbb2 = new THREE.Box3(), _pc2 = new THREE.Vector3(), _ps2 = new THREE.Vector3(), _pa2 = new THREE.Vector3();
+export function pierced(g, spot) {
+  const a = spot?.anchor, fr = a && furnRoot(a); if (!fr) return false;
+  _pb2.makeEmpty(); g.updateMatrixWorld(true);
+  g.traverse(o => { if (o.isMesh && !o.userData.proxy && o.geometry) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); _pb2.union(_pbb2.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } });
+  if (_pb2.isEmpty()) return false;
+  _pb2.getCenter(_pc2); _pb2.getSize(_ps2).multiplyScalar(.35);
+  a.getWorldPosition(_pa2);
+  _eb.min.set(_pc2.x - _ps2.x, Math.max(_pc2.y - _ps2.y, _pa2.y + .01), _pc2.z - _ps2.z); _eb.max.set(_pc2.x + _ps2.x, _pc2.y + _ps2.y, _pc2.z + _ps2.z);
+  if (_eb.isEmpty()) return false;
+  const own = new Set(); for (const pv of spot.part?.pivots || []) pv.traverse(o => own.add(o));
+  return edgesThrough(meshesOf(fr).filter(o => o.visible !== false && !own.has(o)), _eb);
 }
 // how big this thing is drawn at this place (× the place's scale), or 0 when it does not fit there
 export function drawnScale(type, spot, role = 'target', want = .34) {
@@ -290,7 +307,7 @@ export const fullSize = (type, spot, min = .29) => { const n = natSize(type), d 
 export function shapeFits(type, spot, role = 'target') {
   if (!PROBE || spot.wallFace || spot.kind === 'in' || nestles(spot) || !ITEMS[type]?.build) return true;
   // (a decoy too, on top of something: nothing running through it — 겹침 QA 10/20, a pot on the monstera's soil)
-  if (role === 'decoy') { if (!EDGE_KINDS.has(spot.kind)) return true; const d = drawnScale(type, spot, 'decoy'); return d > 0 && probe(type, spot, d, true) > 0; }
+  if (role === 'decoy') { if (!EDGE_KINDS.has(spot.kind) && !(RULE && spot.kind === 'beside')) return true; const d = drawnScale(type, spot, 'decoy'); return d > 0 && probe(type, spot, d, true) > 0; }
   const want = wantScale(type, spot, role), sc = drawnScale(type, spot, role);
   if (!(sc > 0) || sc >= want * 2) return sc > 0;
   return sc * probe(type, spot, sc) >= (RULE && want < 1 ? want * KEEP : Math.max(1, want * KEEP)) - 1e-6;

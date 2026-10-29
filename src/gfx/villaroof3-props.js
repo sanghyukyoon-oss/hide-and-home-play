@@ -736,7 +736,8 @@ B.vr3_tap = (f, T) => {
     for (let k = 0; k < 6; k++) add(G.sph(.121, 14, 10), '#2f7a3f', BX2 - .05, .19, BZ2 - .02, 0, .3 + k * PI / 6, 0, [.18, .9, 1.16]);
     add(G.sph(.08, 10, 8), '#e9cf8a', BX2 + .12, .17, BZ2 + .1, 0, 0, 0, [1, .4, 1]); tube([BX2 + .18, .18, BZ2 + .12], [BX2 + .27, .2, BZ2 + .17], .015, '#c9a46a', 5);
     // 파란 양동이 (숨김 자리) — 솔 하나 걸침
-    const QX = PX + .34, QZ = PZ - .02;
+    // (10/29 사용자 "저 바구니 좀 어케 해 봐": the bucket stood half in the basin — it sits on the floor beside it now)
+    const QX = PX + .62, QZ = PZ + .5;
     add(G.cyl(.14, .11, .25, 16, true), '#4a8fe0', QX, .125, QZ); add(G.cyl(.11, .11, .01, 16), '#3a78c8', QX, .006, QZ);
     add(G.tor(.14, .012, PI * 2, 4, 18), '#3a78c8', QX, .25, QZ, HP, 0, 0); add(G.tor(.13, .006, PI, 3, 12), '#9aa3b2', QX, .25, QZ, 0, .6, 0);
     add(G.box(.12, .04, .06, .015), '#ffd86b', QX + .1, .27, QZ + .05, .2, .4, 0); for (let k = 0; k < 4; k++) add(G.pbox(.01, .03, .05), '#e9a23a', QX + .06 + k * .025, .24, QZ + .05);
@@ -745,12 +746,15 @@ B.vr3_tap = (f, T) => {
     for (const s of [-1, 1]) { add(G.cyl(.11, .11, .02, 16), '#3d3a44', RX + s * .14, .11, RZ, 0, 0, HP); add(G.pbox(.02, .28, .04), '#9aa3b2', RX + s * .12, .17, RZ - .02); }
     add(G.cyl(.09, .09, .22, 14), '#5cc278', RX, .2, RZ, 0, 0, HP); for (let k = 0; k < 5; k++) add(G.tor(.095, .012, PI * 2, 4, 16), k % 2 ? '#4fb06a' : '#5cc278', RX - .09 + k * .045, .2, RZ, 0, HP, 0);
     tube([RX - .12, .3, RZ - .02], [RX - .12, .42, RZ - .08], .012, '#9aa3b2', 5); tube([RX + .12, .3, RZ - .02], [RX + .12, .42, RZ - .08], .012, '#9aa3b2', 5); tube([RX - .13, .42, RZ - .08], [RX + .13, .42, RZ - .08], .014, '#3d3a44', 5);
-    tube([RX, .12, RZ - .08], [PX + .05, .03, PZ + .2], .016, '#5cc278', 6); tube([PX + .05, .03, PZ + .2], [PX + .16, .6, PZ], .016, '#5cc278', 6);
+    // (the hose ran under the basin and up through it: round its west side on the floor, up the pipe, over to the tap)
+    tube([RX - .1, .12, RZ - .08], [PX - .2, .025, PZ + .45], .016, '#5cc278', 6); tube([PX - .2, .025, PZ + .45], [PX - .14, .025, PZ + .06], .016, '#5cc278', 6);
+    tube([PX - .14, .025, PZ + .06], [PX - .05, .5, PZ + .05], .016, '#5cc278', 6); tube([PX - .05, .5, PZ + .05], [PX + .15, .62, PZ], .016, '#5cc278', 6);
+    add(G.cyl(.025, .025, .015, 10), '#2e2b33', BX2 + .1, .162, BZ2 - .14); add(G.tor(.2, .006, PI * 1.3, 3, 20), '#cfeaf2', BX2, .163, BZ2, HP, 0, .4);
     // 빗자루 (수도관에 기댐)
     tube([PX - .12, .02, PZ + .1], [PX - .03, .95, PZ + .01], .014, '#c99a62', 5);
     add(G.cone(.08, .22, 8), '#e9c47a', PX - .13, .1, PZ + .11, -.09, 0, .09, [1, 1, .45]);
   }));
-  f.spot('inside', null, PX + .34, .02, PZ - .02, { maxH: .2, label: '파란 양동이 안', scale: .5 });
+  f.spot('inside', null, PX + .62, .02, PZ + .5, { maxH: .2, label: '파란 양동이 안', scale: .5 });
   f.spot('beside', null, .28, 0, -.3, { maxH: .26, label: '수도 옆', scale: .6 });
 };
 

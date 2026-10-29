@@ -19,7 +19,7 @@ import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, l
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
 import { homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
-import { fixSmall, unhide, screenPx, sizeUp } from '../smallfix.js';   // 작은 물건 안전망 (#94, ② 레벨 10/21)
+import { fixSmall, unhide, screenPx, sizeUp, unpierce } from '../smallfix.js';   // 작은 물건 안전망 (#94, ② 레벨 10/21)
 import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
@@ -460,6 +460,8 @@ export class StageScene {
     if (!this.custom && !this.preview) for (const it of this.items) { if (!it.g || !PAPER_T.test(it.type)) continue; const L = ownLong(it.g); if (L > PAPER_MAX) shrinkBy(it, PAPER_MAX / L, this.G.world); }
     // (19판부터 10/29 허브 QA: 가린 것 안에 들어가면서 첫 화면 20 px 이상 — 둘 다 안 되면 다른 자리로; smallfix.js sizeUp)
     if (!this.custom && !this.preview && this.idx >= 18) this.sizedUp = sizeUp(this);
+    // (19판부터 10/29 1.0.280 20판 "연 뚫린 거": 가구 기둥·막대가 관통하는 물건은 다른 자리로 — smallfix.js unpierce)
+    if (!this.custom && !this.preview && this.idx >= 18) this.unpierced = unpierce(this);
     // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
     // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
