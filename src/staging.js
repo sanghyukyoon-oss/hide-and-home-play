@@ -11,7 +11,7 @@ import { trainView } from './gfx/traincar-props.js';
 import { Char } from './gfx/chars.js';
 import { closeBack } from './closeup.js';
 import { moveItem } from './hunt.js';
-import { ITEMS } from './gfx/items.js';
+import { ITEMS, buildItem } from './gfx/items.js';
 import { spotFits } from './fitspot.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -432,11 +432,10 @@ const policeLights = {
     await c.wait(.9);
   },
 };
+// (10/29 사용자: 경찰서 판 엔딩 크레파스가 옛 회색 상자 그대로 → 찾을 물건과 같은 새 크레파스 상자를 세워 들게)
 function crayonBoxMesh() {
-  const g = new THREE.Group();
-  const b = new THREE.Mesh(new THREE.BoxGeometry(.24, .14, .06), toon('#f5e6c8')); g.add(b); g.scale.setScalar(1.6);
-  const cols = ['#ff5a5a', '#ffb13d', '#ffe14d', '#6fd16f', '#5aa6ff', '#a87bff'];
-  cols.forEach((col, i) => { const k = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .08, 6), toon(col)); k.position.set(-.1 + i * .04, .09, 0); g.add(k); });
+  const g = new THREE.Group(), box = buildItem('crayons');
+  box.rotation.x = Math.PI * .42; box.scale.setScalar(1.05); g.add(box);
   return g;
 }
 const crayonBox = {
