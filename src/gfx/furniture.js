@@ -768,6 +768,27 @@ B.drawers = (f, T) => {
   f.spot('on', null, -.18, 1.01, z0, { maxH: .45, label: '서랍장 위' });
 };
 
+// the desk globe's world map (10/29): a deep blue sea with faint parallels, the continents in leaf green with sandy deserts
+// and a dark green rim, white poles — drawn equirectangular, so it wraps the ball the way a real globe's print does
+const globeTex = () => tex('fu-globe-map', 512, 256, (c, w, h) => {
+  const P = (lo, la) => [(lo + 180) / 360 * w, (90 - la) / 180 * h];
+  c.fillStyle = '#3f98de'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1;
+  for (const la of [-60, -30, 0, 30, 60]) { c.beginPath(); c.moveTo(0, P(0, la)[1]); c.lineTo(w, P(0, la)[1]); c.stroke(); }
+  const land = pts => { c.beginPath(); pts.forEach(([lo, la], k) => { const [x, y] = P(lo, la); k ? c.lineTo(x, y) : c.moveTo(x, y); }); c.closePath(); c.fill(); c.stroke(); };
+  c.fillStyle = '#7ccf5c'; c.strokeStyle = '#2f7d3c'; c.lineWidth = 2; c.lineJoin = 'round';
+  const LANDS = [
+    [[-165, 66], [-140, 71], [-95, 73], [-78, 63], [-60, 50], [-80, 31], [-97, 19], [-106, 24], [-124, 45], [-150, 59]],   // N America
+    [[-56, 60], [-22, 70], [-26, 82], [-62, 81]],                                                                          // Greenland
+    [[-80, 10], [-60, 8], [-35, -7], [-41, -23], [-66, -55], [-74, -40], [-81, -5]],                                       // S America
+    [[-10, 36], [0, 50], [-5, 58], [25, 70], [60, 72], [100, 77], [140, 72], [172, 66], [160, 57], [141, 45], [122, 30], [108, 18], [101, 6], [90, 22], [78, 8], [70, 22], [56, 25], [42, 14], [35, 32], [25, 37], [10, 39]],   // Eurasia
+    [[-17, 15], [-6, 35], [10, 37], [32, 31], [43, 12], [51, 11], [40, -15], [32, -28], [20, -35], [12, -18], [9, 4], [-8, 5]],   // Africa
+    [[113, -22], [130, -12], [142, -11], [153, -27], [146, -39], [132, -32], [115, -34]]];                                 // Australia
+  for (const L of LANDS) land(L);
+  c.fillStyle = '#f2d06a'; c.strokeStyle = 'rgba(0,0,0,0)';
+  for (const L of [[[-12, 18], [10, 30], [30, 28], [34, 18], [12, 14]], [[46, 18], [56, 26], [60, 20]], [[122, -22], [136, -18], [140, -28], [124, -30]]]) land(L);
+  c.fillStyle = '#f6fbff'; c.fillRect(0, h - h * .07, w, h * .07); c.fillRect(0, 0, w, h * .035);
+});
 // 책상 (2×1): a honey desk — a cream drawer pedestal (two drawers, brass pulls), a bendy desk lamp, a pen pot, a globe and
 // two books; a wooden chair with a cushion and a spindle back is tucked in front.
 B.desk = (f, T) => {
@@ -810,27 +831,21 @@ B.desk = (f, T) => {
     // pen pot, globe, books
     add(G.cyl(.045, .04, .1, 14), acc, .06, .805 + .05, z0 - .26);
     [[-.015, TOMATO, .14], [.012, SKY, .16], [0, MUSTARD, .13]].forEach(([dx, c, L], k) => tube([.06 + dx, .82, z0 - .26 + (k - 1) * .012], [.06 + dx * 2.2, .82 + L, z0 - .26 + (k - 1) * .02], .007, c, 5));
-    // the globe (⑥ 10/23 밤 2판 실폰 "다 다시 바꿔": three big flat blobs, then a printed band that read as a striped ball): a sea
-    // ball tilted on its axis, lands made of small soft bumps clustered into continents (they sink into the ball, so their edges
-    // follow it), a white cap at the north pole, a full brass ring round it standing on the stem, pins at the poles
+    // the globe (10/29 사용자 "스테이지 1의 지구본도 모델링 다시, 너무 뭔지 모르겠음" — little land bumps read as a spotted ball): the
+    // ball now wears a printed world map (globeTex, its own mesh below), held in a tilted brass half meridian on a stem and a
+    // round wooden foot, brass pins top and bottom of its axis
     add(G.cyl(.065, .075, .022, 18), woodD, .84, .816, z0 - .23);
     add(G.cyl(.04, .05, .012, 14), shade(woodD, .1), .84, .833, z0 - .23);
-    tube([.84, .838, z0 - .23], [.84, .862, z0 - .23], .011, woodD, 8);
-    { const R = .1, gM = xf(.84, .985, z0 - .23, 0, PI / 4, .41), bM = gM.clone().multiply(xf(0, 0, 0, 0, .5, 0)), up = new THREE.Vector3(0, 1, 0);
-      addM(G.sph(R, 24, 16), bM, '#7cc6ee');
-      for (const [la, lo, a] of [[45, 40, .04], [30, 56, .034], [12, 62, .024], [-14, 66, .034], [-36, 70, .026], [50, 160, .044], [44, 196, .05], [56, 226, .04],
-        [30, 216, .03], [10, 166, .04], [-16, 172, .032], [-26, 300, .03]]) {
-        const p = la * PI / 180, l = lo * PI / 180, q = new THREE.Vector3(Math.cos(p) * Math.sin(l), Math.sin(p), Math.cos(p) * Math.cos(l)).multiplyScalar(R - .007);
-        const e = new THREE.Euler().setFromRotationMatrix(new THREE.Matrix4().lookAt(new THREE.Vector3(), q, up));
-        addM(G.sph(1, 12, 8), bM.clone().multiply(xf(q.x, q.y, q.z, e.x, e.y, e.z, [a, a, .015])), '#8fd67a');
-      }
-      addM(G.sph(1, 12, 8), bM.clone().multiply(xf(0, R - .006, 0, 0, 0, 0, [.04, .012, .04])), '#f4fbff');
-      addM(G.tor(.12, .008, PI * 2, 5, 36), xf(.84, .985, z0 - .23, 0, PI / 4, 0), GOLD);
-      for (const s of [-1, 1]) { addM(G.cyl(.006, .006, .024, 6), gM.clone().multiply(xf(0, s * .11, 0)), GOLD); addM(G.sph(.012, 8, 6), gM.clone().multiply(xf(0, s * .124, 0)), GOLD); } }
+    { const gM = xf(.84, .985, z0 - .23, 0, PI / 4, .41), lo = new THREE.Vector3(0, -.124, 0).applyMatrix4(gM);
+      tube([.84, .838, z0 - .23], [lo.x, lo.y, lo.z], .011, woodD, 8);
+      addM(G.tor(.124, .009, PI, 5, 28), gM.clone().multiply(xf(0, 0, 0, 0, 0, -HP)), GOLD);
+      for (const s of [-1, 1]) { addM(G.cyl(.006, .006, .024, 6), gM.clone().multiply(xf(0, s * .11, 0)), GOLD); addM(G.sph(.013, 8, 6), gM.clone().multiply(xf(0, s * .126, 0)), GOLD); } }
     // (⑥ 10/23 사용자 메모 2·7판 "판판한 두 장짜리 책": two real books — gfx/bookbits.js)
     for (const b of bookPieces([{ w: .24, t: .036, d: .17, c: TOMATO, ry: .15, deco: 1 }, { w: .22, t: .032, d: .16, c: MINT, ry: -.1, x: .01, deco: 2, ribbon: true, spine: -1 }])) add(b.g, b.c, .8, .805, z0 + .19);
   }));
   f.add(put(mesh(geo('fu-bulb', () => new THREE.SphereGeometry(.034, 10, 8)), glowMat()), -.632, 1.118, -.224));
+  { const gp = new THREE.Group(); put(gp, .84, .985, z0 - .23, 0, PI / 4, .41); f.add(gp);
+    gp.add(put(mesh(geo('fu-globe', () => new THREE.SphereGeometry(.1, 32, 20)), mat('#ffffff', { map: globeTex(), rough: .55 })), 0, 0, 0, 0, .5, 0)); }
   const inner = shade(body, -.1);
   const drawer = (y, h, c, k, ih, label, spotH, sy, scale) => {
     const pv = new THREE.Group(); put(pv, .62, y, z0 + .37);
