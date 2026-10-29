@@ -8,7 +8,7 @@
 // print (gingham, bricks) is a planar-mapped textured mesh; every moving part its own mesh. Nothing here is sold (hidden).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { put, mat, mesh, geo, canvasTex, texCache, shade, cutFace, liner, minusRect, windowFace } from './kit.js';
+import { put, mat, mesh, geo, canvasTex, texCache, shade, cutFace, liner, minusRect, windowFace, holeFace } from './kit.js';
 import { clothBend, clothWave, clothSlab } from './clothbend.js';
 import { HG as G, hxf as xf, hmc as mc, hleaves as leaves } from './house-props.js';
 import { textTex, fitText } from './gpt-paper.js';
@@ -177,7 +177,9 @@ B.breadcab = (f, T) => {
   const W = .9, D = .48, z0 = -.24, H = 1.95, FZ = z0 + D / 2, S1 = .62, S2 = 1.08, S3 = 1.5, DY0 = .52 + (H - .62) / 2;
   f.add(mcx('breadcab|' + tk, ({ add }) => {
     add(cutFace(G.box(W, H, D, .03), 'z'), wood, 0, H / 2, z0);
-    add(windowFace(W - .06, H - .06, [-.4, .4, -.435, .855]), wood, 0, H / 2, FZ);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid face — a hole behind it, lined; the drawer front covers it shut)
+    add(windowFace(W - .06, H - .06, [[-.4, .4, -.435, .855], [-.365, .365, -.795, -.555]]), wood, 0, H / 2, FZ);
+    add(liner(.76, .282, .42, 'z'), shade(wood, -.15), 0, .299, FZ - .21);
     add(liner(.8, 1.29, .42, 'z'), shade(wood, -.15), 0, DY0, z0 + .01);
     add(G.pbox(W - .1, H - .55, .02), shade(wood, .1), 0, (H + .5) / 2, z0 - D / 2 + .04);
     add(G.box(W + .08, .08, D + .06, .02), woodD, 0, H + .02, z0);
@@ -232,7 +234,9 @@ B.bakecounter = (f, T) => {
   const W = .96, D = .62, z0 = -.18, H = .88, FZ = z0 + D / 2;
   f.add(mcx('bakecounter|' + tk, ({ add }) => {
     add(cutFace(G.box(W - .04, H - .06, D - .04, .02), 'z'), sage, 0, (H - .06) / 2, z0);
-    add(windowFace(W - .08, H - .1, [-.37, .37, -.23, .14]), sage, 0, (H - .06) / 2, z0 + D / 2 - .02);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid face — a hole behind it, lined; the drawer front covers it shut)
+    add(windowFace(W - .08, H - .1, [[-.37, .37, -.23, .14], [-.395, .395, .25, .35]]), sage, 0, (H - .06) / 2, z0 + D / 2 - .02);
+    add(liner(.82, .142, .42, 'z'), shade(sage, -.2), 0, .709, FZ - .23);
     add(liner(.74, .37, .52, 'z'), shade(sage, -.2), 0, .365, z0 + .01);
     add(G.box(W - .1, .07, .03, .01), shade(sage, -.25), 0, .035, FZ - .01);
     add(G.box(W + .02, .08, D + .02, .02), wood, 0, H - .04, z0);
@@ -295,7 +299,9 @@ B.bakeisland = (f, T) => {
   const W = 1.9, D = .7, z0 = 0, H = .9, FZ = z0 + D / 2;
   f.add(mcx('bakeisland|' + tk, ({ add, tube }) => {
     add(cutFace(G.box(W - .06, H - .07, D - .06, .02), 'z'), sage, 0, (H - .07) / 2, z0);
-    add(windowFace(W - .1, H - .11, [.4, .84, -.245, .145]), sage, 0, (H - .07) / 2, z0 + D / 2 - .03);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid face — a hole behind it, lined; the drawer front covers it shut)
+    add(windowFace(W - .1, H - .11, [[.4, .84, -.245, .145], [-.855, -.345, .225, .365], [-.235, .275, .225, .365]]), sage, 0, (H - .07) / 2, z0 + D / 2 - .03);
+    for (const x of [-.6, .02]) add(liner(.54, .182, .44, 'z'), shade(sage, -.2), x, .709, FZ - .03 - .22);
     add(liner(.44, .39, .58, 'z'), shade(sage, -.2), .62, .365, z0 + .01);
     for (let k = 0; k < 9; k++) add(G.pbox(.05, H - .2, .012), sage2, -.86 + k * .215, (H - .07) / 2, z0 - D / 2 + .024);
     add(G.box(W - .12, .07, .03, .01), shade(sage, -.25), 0, .035, FZ - .02);
@@ -797,7 +803,9 @@ B.bkregister = (f, T) => {
   const H = .92, D = .6, z0 = -.05;
   f.add(mcx('bkregister|' + tk, ({ add }) => {
     add(G.box(.92, .08, D, .02), woodD, 0, .04, z0);
-    add(G.box(.88, H - .1, D - .06, .02), wood, 0, .08 + (H - .1) / 2, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid face — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(.88, H - .1, D - .06, .02), [[-.265, .265, .25, .33]], 'z', -1), wood, 0, .08 + (H - .1) / 2, z0);
+    add(liner(.56, .122, .42, 'z', -1), shade(wood, -.25), 0, .779, z0 - .06);
     add(G.box(.7, .5, .02, .02), sage, 0, .45, z0 + D / 2 - .02);
     add(G.box(.6, .4, .012, .01), shade(sage, .08), 0, .45, z0 + D / 2 - .008);
     add(G.box(.98, .05, D + .06, .02), woodD, 0, H, z0);

@@ -130,13 +130,14 @@ function seenAny(S, it) {
 export function unhide(S) {
   const R = S.room, moved = [], blind = blindFor(S.spec.room) || (() => false), t0 = performance.now();
   // (and a thing the planner had to put where it makes no sense — 70판 우편함 주먹밥: the planner's last chance; moves the same way)
+  // (10/29 1.0.280 실폰 "21 스테이지도 쪽지 안 보임" — 순찰차 밑: the clues too — a note, a key, a colour card — not only the things on the list)
   for (const it of S.items) {
     if (performance.now() - t0 > 600) break;
-    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || (it.role !== 'target' && it.role !== 'decoy') || (it.role === 'decoy' && affOk(it.type, it.spot)) || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role === 'secret' || (it.role === 'decoy' && affOk(it.type, it.spot)) || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     if (seenAny(S, it) && affOk(it.type, it.spot)) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
     const d = s => s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(c0);
-    const cands = R.spots.filter(s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && (!s.part || (!s.part.lock && (s.part.reach ?? 1) >= .55)) && fits(it.type, s)).sort((a, b) => d(a) - d(b)).slice(0, 12);
+    const cands = R.spots.filter(s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && (!s.part || (!s.part.lock && (s.part.reach ?? 1) >= .55)) && fits(it.type, s) && !(it.forPart && s.furn === it.forPart.furn)).sort((a, b) => d(a) - d(b)).slice(0, 12);
     let dest = null;
     for (const s of cands) { moveFull(S, it, s); if (seenAny(S, it) && affOk(it.type, s)) { dest = s; break; } }
     if (dest) moved.push(`${it.type}: ${old.label} → ${dest.label} (안 보임·엉뚱한 자리)`); else put(it, old, sc0);
@@ -189,9 +190,9 @@ function sizeFix(W, it) {
 export function sizeUp(S) {
   const W = S.G.world, R = S.room, out = [], t0 = performance.now(), blind = blindFor(S.spec.room) || (() => false);
   W.updateCam?.(); R.group.updateMatrixWorld(true);
-  for (const it of S.targets) {
+  for (const it of S.items.filter(i => i.role !== 'decoy' && i.role !== 'secret')) {
     if (performance.now() - t0 > 500) break;
-    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     let f = sizeFix(W, it);
     if (f > 0) { if (Math.abs(f - 1) > .01) { it.g.scale.multiplyScalar(f); settleOn(it.g, it.spot); out.push(`${it.type} ×${f.toFixed(2)} @${it.spot.label}`); } continue; }
     if (it.spot.part?.lock) continue;

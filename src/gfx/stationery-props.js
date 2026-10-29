@@ -12,7 +12,7 @@
 // 좌표: 방 7 × 5.5 m(가운데 원점, 바닥 y 0), 카메라는 +x +z 쪽에서. 가게 x -3.5..0.95 · z -2.75..0.45, 창고 칸 x 0.95..2.8 · z -2.93..-1.0,
 // 보도 z 0.45..2.75, 연석 z 2.75..2.93(턱 .15), 찻길 z 2.93..3.9.
 import * as THREE from 'three';
-import { put, grp, mat, mesh, geo, canvasTex, texCache, shade, roundRect, fadeDisc, cutFace, liner } from './kit.js';
+import { put, grp, mat, mesh, geo, canvasTex, texCache, shade, roundRect, fadeDisc, cutFace, liner, holeFace } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex, paperFill, paperSheet } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
@@ -842,7 +842,8 @@ B.st_safe = f => {
 B.st_counter = f => {
   const L = 1.9, D = .62, H = 1.0, x0 = -L / 2;
   f.add(mc('st-counter', ({ add }) => {
-    add(G.box(.92, H - .06, D, .02), C.wood, x0 + .46, (H - .06) / 2, 0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(.92, H - .06, D, .02), [[-.415, .415, .2805, .405]]), C.wood, x0 + .46, (H - .06) / 2, 0); add(liner(.84, .1295, .52, 'z'), shade(C.wood, -.3), x0 + .46, .81525, .05);
     add(G.box(L + .06, .06, D + .06, .02), C.woodL, 0, H - .03, 0);
     add(G.box(.06, H - .06, D, .01), C.wood, L / 2 - .03, (H - .06) / 2, 0);
     add(G.box(L - .9, .06, .04, .01), C.woodD, .43, .05, -D / 2 + .02);
@@ -878,7 +879,8 @@ B.st_counter = f => {
   const dv = grp(); put(dv, x0 + .46, .82, D / 2 - .02); f.add(dv);
   dv.add(mc('st-cdrawer', ({ add }) => {
     add(G.box(.82, .02, .5, .01), C.woodL, 0, -.06, -.24); add(G.box(.82, .1, .02, .01), C.woodL, 0, 0, -.48); for (const s of [-1, 1]) add(G.box(.02, .1, .5, .01), C.woodL, s * .4, 0, -.24);
-    add(G.box(.86, .14, .04, .02), C.woodD, 0, 0, .0); add(G.box(.16, .035, .04, .015), C.yel, 0, 0, .035);
+    // (10/29: the body's face behind it is now a hole, so deFlush no longer nudges this front .006 out — set there by hand)
+    add(G.box(.86, .14, .04, .02), C.woodD, 0, 0, .006); add(G.box(.16, .035, .04, .015), C.yel, 0, 0, .035);
   }));
   const p = f.part('drawer', dv, (t, b) => { dv.position.z = b.p.z + .36 * t; }, { label: '계산대 서랍', sfx: 'drawer', dur: .3 });
   f.spot('inside', dv, .05, -.045, -.22, { part: p, maxH: .12, scale: .9, label: '계산대 서랍' });
@@ -894,7 +896,8 @@ B.st_crayonrack = f => {
   const W = 1.5, H = 1.8;
   f.add(mc('st-crayonrack', ({ add }) => {
     add(G.box(W, H, .08, .02), C.woodL, 0, H / 2, -.22); for (const s of [-1, 1]) add(G.box(.06, H, .5, .02), C.wood, s * (W / 2 - .03), H / 2, -.01);
-    add(G.box(W, .42, .5, .02), C.wood, 0, .21, -.01);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, .42, .5, .02), [[-.62, .62, -.14, .14]]), C.wood, 0, .21, -.01); add(liner(1.24, .28, .44, 'z'), shade(C.wood, -.3), 0, .21, .02);
     for (let k = 0; k < 4; k++) { const y = .5 + k * .32, z = .12 - k * .07; add(G.box(W - .12, .03, .3, .01), C.woodD, 0, y, z - .05, -.25, 0, 0); add(G.box(W - .12, .05, .02, .01), C.woodD, 0, y + .04, z + .1); }
     add(G.box(W + .06, .06, .54, .02), C.woodD, 0, H + .03, -.01);
     // 이름판 기둥 · 판

@@ -2,7 +2,7 @@
 // a reading nook on a platform with cushions and a railing; below, low bookshelves, a reading table under green
 // banker's lamps, the librarian's desk, a book drop and a book cart. Warm wood, cream and a dusty blue.
 import * as THREE from 'three';
-import { put, grp, shade, cutFace, liner, minusRect, windowFace } from './kit.js';
+import { put, grp, shade, cutFace, liner, minusRect, windowFace, holeFace } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -123,7 +123,9 @@ B.readtable = (f, T) => {
 // a chair behind it; a drawer that slides out
 B.libdesk = (f, T) => {
   f.add(mc('libdesk', ({ add }) => {
-    add(G.box(1.7, .78, .5, .02), WOOD, 0, .39, .05); add(G.box(1.62, .6, .02, .01), BLUE, 0, .38, .31);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(1.7, .78, .5, .02), [[.205, .695, .1305, .279]]), WOOD, 0, .39, .05); add(holeFace(holeFace(G.box(1.62, .6, .02, .01), [[.205, .695, .1405, .289]]), [[.205, .695, .1405, .289]], 'z', -1), BLUE, 0, .38, .31);
+    add(liner(.49, .1485, .4, 'z'), shade(WOOD, -.25), .45, .59475, .1);
     add(G.box(1.78, .05, .6, .01), WOODD, 0, .8, .03);
     add(G.cyl(.1, .12, .04, 12), '#c9a24a', -.55, .84, -.05); add(G.cyl(.012, .012, .26, 6), '#c9a24a', -.55, .97, -.05); add(G.cyl(.04, .18, .16, 16, true), '#ffe08a', -.55, 1.12, -.03);
     add(G.cyl(.05, .045, .12, 10), '#e88a5c', .55, .88, -.12); for (const x of [.53, .57]) add(G.cyl(.008, .008, .16, 5), DARK, x, .96, -.12);

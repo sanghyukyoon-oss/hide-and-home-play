@@ -9,7 +9,7 @@
 // in the gift table.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { sph, cyl, tor, cone, put, grp, mesh, mat, geo, starShape, heartShape, shade, cutFace, liner, inward } from './kit.js';
+import { sph, cyl, tor, cone, put, grp, mesh, mat, geo, starShape, heartShape, shade, cutFace, liner, inward, holeFace } from './kit.js';
 
 // light shapes (a gift stays under 2k vertices): kit.js's rounded box (2 segments), capsule and bevelled extrusion cost
 // 150 / 390 / 470 vertices each; these are 56 (one bevel) / 90 / ~80
@@ -48,7 +48,9 @@ const B = {};
 // Hiding: the drawer in the front.
 B.gf_musicbox = f => {
   const W = .58, H = .34, D = .42, y0 = .05;
-  f.add(put(rb(W, H, D, PINK, .04), 0, y0 + H / 2, 0));
+  // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+  { const b = rb(W, H, D, PINK, .04); b.geometry = holeFace(b.geometry, [[-.203, .203, -.13, -.015]]); f.add(put(b, 0, y0 + H / 2, 0)); }
+  f.add(put(mesh(liner(.406, .115, .36, 'z'), mat(shade(PINK, -.25))), 0, .1475, .03));
   f.add(put(rb(W + .03, .03, D + .03, GOLD, .012), 0, y0 + H, 0));                       // gold rim
   f.add(put(rb(W + .03, .03, D + .03, GOLD, .012), 0, y0 + .015, 0));
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) f.add(put(sph(.04, GOLD, null, 8, 5), sx * (W / 2 - .04), .035, sz * (D / 2 - .04)));

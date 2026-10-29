@@ -16,7 +16,7 @@
 // cin_curtain 부품 하나(천 두 폭이 가운데서 갈라져 양옆으로 주름이 모이며 걷힘, 줄도 같은 부품 — f.cord) · cin_seatrow 좌석마다 접히는 부품 + 좌석 밑 자리.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { put, grp, mat, mesh, canvasTex, shade, fadeDisc, starShape, heartShape, roundRect, STYLE } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, shade, fadeDisc, starShape, heartShape, roundRect, STYLE, holeFace, liner } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { clothBend } from './clothbend.js';
 import { FONT, paperSheet, paperFill } from './gpt-paper.js';
@@ -741,7 +741,8 @@ B.cin_ticketbooth = (f, T0) => {
     // 손님 부르는 종 (은빛)
     add(G.cyl(.04, .045, .01, 14), '#7d7672', -.345, 1.115, zf + .18); add(G.sph(.033, 12, 6), '#dde0e8', -.345, 1.12, zf + .18, 0, 0, 0, [1, .9, 1]); add(G.sph(.008, 6, 4), '#9aa0ad', -.345, 1.155, zf + .18);
     // 서랍 집 (받침 밑)
-    add(G.box(.62, .26, .2, .02), CREAM, 0, .9, zf - .08);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(.62, .26, .2, .02), [[-.255, .255, -.105, .1]]), CREAM, 0, .9, zf - .08); add(liner(.51, .205, .085, 'z'), shade(CREAM, -.3), 0, .8975, zf - .0225);
     // 간판 받침판과 작은 등
     add(G.box(.64, .24, .05, .02), CREAM, 0, 1.86, rAt(1.86) + .02); add(G.box(.04, .2, .04, .01), IRON, 0, 2.06, rAt(2.0) + .02); add(G.cone(.08, .07, 10), IRON, 0, 2.12, rAt(2.0) + .1);
   }));

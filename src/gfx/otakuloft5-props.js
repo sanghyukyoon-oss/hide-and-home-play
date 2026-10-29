@@ -13,7 +13,7 @@
 // 벽지·판벽에 점수판·포스터·요금표를 붙임. 간판은 아크릴 라이트 박스 + 너굴이 마스코트(한·영 글자). 오락기·인형 뽑기·캡슐 뽑기·동전 교환기·
 // 경품 진열장은 이 파일에서 새로 지음(GPT 캡슐 뽑기 gpt_gacha는 폐기).
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, shade, roundRect, cutFace, liner, windowFace } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, shade, roundRect, cutFace, liner, windowFace, holeFace } from './kit.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { HG as G, hmc as mc, hxf as xf } from './house-props.js';
 import { rrect, circle, ext, islandShape, ISY, rainTex, tileTex, foldWall, tagWall, basic, rnd, CURB, EARTH, EARTHD, PAVED, LEAF, LEAF2, POLE, WARM, CREAM, CORAL, INKY } from './otakuloft3-props.js';
@@ -523,7 +523,9 @@ B.ol5_chest = (f, T, o = {}) => {
   const L = 1.9, H = .78, D = .45, z0 = -.27, DW = .64, DH = .3;
   g.add(mc('ol5-chest2', ({ add }) => {
     add(cutFace(G.box(L, H - .06, D, .03), 'z'), '#f5ede1', 0, .06 + (H - .06) / 2, z0);
-    add(windowFace(L - .06, H - .12, [.44, .84, -.27, .27]), '#f5ede1', 0, .06 + (H - .06) / 2, z0 + D / 2);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(windowFace(L - .06, H - .12, [[.44, .84, -.27, .27], [-.87, -.27, -.3, -.03], [-.2, .33, -.3, -.03], [-.87, -.27, .04, .31], [-.2, .33, .04, .31]]), '#f5ede1', 0, .06 + (H - .06) / 2, z0 + D / 2);
+    for (const [x, y, w] of [[-.57, .255, .6], [.065, .255, .53], [-.57, .595, .6], [.065, .595, .53]]) add(liner(w, .27, .38, 'z'), shade('#f5ede1', -.18), x, y, z0 + D / 2 - .19);
     add(liner(.4, .54, .4, 'z'), shade('#f5ede1', -.18), .64, .42, z0 + D / 2 - .22);
     add(G.box(L + .05, .045, D + .05, .015), WOOD5, 0, H + .045, z0); add(G.box(L + .01, .06, D - .02, .015), WOOD5D, 0, .04, z0);
     for (const sx of [-1, 1]) add(G.box(.07, .05, .07, .02), WOOD5D, sx * (L / 2 - .08), .025, z0 + .1);
@@ -857,7 +859,9 @@ B.ol5_gacha = (f, T) => {
   const units = [0, 1, 2, 3].map(i => ({ i, x: (i % 2 ? 1 : -1) * .215, y: BY + Math.floor(i / 2) * UH, c: GCOL[i] }));
   f.add(mc('ol5-gacha', ({ add }) => {
     // 받침장: 크림 상자, 걸레받이, 나무 윗판, 앞 캡슐 받침(작은 쟁반)
-    add(G.box(.86, BY - .04, SD, .03), '#efe6d8', 0, .04 + (BY - .04) / 2, z0 + .04); add(G.box(.88, .04, SD + .02, .015), PLUM, 0, .02, z0 + .04);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(.86, BY - .04, SD, .03), [[-.295, .295, -.1, -.025]]), '#efe6d8', 0, .04 + (BY - .04) / 2, z0 + .04); add(liner(.59, .075, .4, 'z'), shade('#efe6d8', -.25), 0, .1075, z0 + .12);
+    add(G.box(.88, .04, SD + .02, .015), PLUM, 0, .02, z0 + .04);
     add(G.box(.9, .03, SD + .02, .012), WOOD5, 0, BY - .005, z0 + .04);
     add(G.box(.22, .02, .1, .006), '#fbf4ea', .3, BY + .012, z0 + .26); for (const sx of [-1, 1]) add(G.box(.012, .03, .1, .004), '#fbf4ea', .3 + sx * .105, BY + .025, z0 + .26); add(G.box(.22, .03, .012, .004), '#fbf4ea', .3, BY + .025, z0 + .305);
     for (const u of units) {

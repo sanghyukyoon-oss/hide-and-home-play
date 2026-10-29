@@ -20,6 +20,8 @@ export function installFirestation3(LAYOUTS, THEMES) {
   THEMES.firestation3 = { ...THEMES.firestation, name: '곰돌이네 119 안전센터', floorKind: 'carpet', floor: '#ece5d9', floor2: '#ece5d9', base: '#d3a47a', edge: '#b0805a',
     locker: '#8fb3d3', friend: THEMES.firestation.friend ?? 'bear' };
   LAYOUTS.firestation3 = {
+    // (the mini fire truck is built on the open apron in front of the garage, not in the island's back corner)
+    kitAt: [.4, 1.7],
     w: 10, d: 8, exact: true, noEntry: true, slab: 'none', bleed: null, fitW: 15, yaw: .62,
     cut: [{ i: 0, j: 7, w: 1, d: 1 }, { i: 9, j: 7, w: 1, d: 1 }],
     wallH: 0, walls: { N: 'none', W: 'none', E: 'none', S: 'none' },

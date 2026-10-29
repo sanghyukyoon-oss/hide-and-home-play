@@ -438,14 +438,28 @@ export const ITEMS = {
   } },
   // 크레파스 상자 (16판, 책상 서랍·사물함): an open sky-blue box, a row of rainbow crayons lying inside
   crayons: { name: '크레파스 상자', h: .08, flat: true, build() {
-    const g = grp(), box = '#3fb6ff';
-    g.add(put(rbox(.32, .05, .2, box, .012), 0, .025, 0));
-    g.add(put(rbox(.3, .012, .18, '#fff6dc', .004), 0, .046, 0));
-    g.add(put(rbox(.2, .026, .006, '#ffffff', .003), 0, .026, .1));
-    ['#ff4d5e', '#ff9a2a', '#ffd84a', '#6fd04a', '#2f7fe0', '#8b6cff', '#ff7eb6'].forEach((c, i) => {
-      const z = -.075 + i * .025;
-      g.add(put(cyl(.0115, .0115, .24, c, null, 8), -.012, .064, z, 0, 0, Math.PI / 2));
-      g.add(put(cone(.0115, .03, c, null, 8), .123, .064, z, 0, 0, -Math.PI / 2));
+    // (10/29 사용자 "크레파스 상자 — 판 끝나면 애들이 들고 있는데, 와.. 이것도 다시 만들어라"): a real crayon box — a rounded blue box with a
+    // yellow band, a white front label with a sun and a rainbow, a cream tray with ridges, eight crayons in paper wrappers (coloured
+    // butt and front, a sharpened tip), two of them worn short; same size and height as before
+    const g = grp(), box = '#3fa9f5', band = '#ffd84a';
+    g.add(put(rbox(.32, .05, .2, box, .014), 0, .025, 0));
+    g.add(put(rbox(.322, .014, .202, band, .006), 0, .03, 0));
+    g.add(put(rbox(.3, .008, .18, '#fff3d6', .003), 0, .051, 0));
+    for (let k = 0; k < 7; k++) g.add(put(rbox(.24, .006, .004, '#f0dfb6', .002), -.01, .056, -.0625 + k * .025));
+    g.add(put(rbox(.15, .03, .004, '#ffffff', .003), -.03, .026, .101));
+    g.add(put(sph(.009, '#ff9a2a', null, 10, 8), -.085, .03, .104, 0, 0, 0, [1, 1, .3]));
+    ['#ff4d5e', '#ffd84a', '#2f9fe0'].forEach((c, i) => g.add(put(tor(.03 - i * .007, .0028, c, null, Math.PI, 3, 14), -.02, .016, .104)));
+    g.add(put(rbox(.04, .012, .004, '#2f7fe0', .002), .065, .03, .1025));
+    const cols = ['#ff4d5e', '#ff9a2a', '#ffd84a', '#6fd04a', '#2fb8a0', '#2f7fe0', '#8b6cff', '#ff7eb6'];
+    cols.forEach((c, i) => {
+      const z = -.0785 + i * .0225, L = i === 2 || i === 6 ? .17 : .22, x0 = .1 - L;
+      // end to end, never one inside another (overlapping pieces got lifted off each other by deFlush): a coloured butt, the paper
+      // wrapper a little fatter, the coloured front, the sharpened tip
+      const W0 = x0 + .021, W1 = .1 - .039;
+      g.add(put(cyl(.0105, .0105, .02, c, null, 10), x0 + .01, .067, z, 0, 0, Math.PI / 2));
+      g.add(put(cyl(.0118, .0118, W1 - W0, '#fff4dc', null, 10), (W0 + W1) / 2, .067, z, 0, 0, Math.PI / 2));
+      g.add(put(cyl(.0105, .0105, .038, c, null, 10), .1 - .019, .067, z, 0, 0, Math.PI / 2));
+      g.add(put(cone(.0105, .028, c, null, 10), .114, .067, z, 0, 0, -Math.PI / 2));
     });
     return g;
   } },

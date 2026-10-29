@@ -9,7 +9,7 @@
 // (② 10/21: the four work from a stage's spec alone — clueIn/clueHang, locks — no special rules on a time stage)
 // Same toy contract as oneroom-props.js (origin = footprint centre on the floor, faces +z; wall pieces on the wall's face).
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, shade, cutFace, liner, windowFace } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, shade, cutFace, liner, windowFace, holeFace } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { clothBend } from './clothbend.js';
 
@@ -140,7 +140,9 @@ B.arcade3 = (f, T, o = {}) => {
 B.crtset = (f, T) => {
   const z0 = -.1;
   f.add(mc('crtset', ({ add, tube }) => {
-    add(G.box(1.7, .42, .48, .02), WALNUT, 0, .21, z0); add(G.box(1.66, .02, .44, .005), shade(WALNUT, .12), 0, .43, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(1.7, .42, .48, .02), [[.175, .785, -.1795, -.03]]), WALNUT, 0, .21, z0); add(liner(.61, .1495, .42, 'z'), shade(WALNUT, -.05), .48, .10525, z0 + .03);
+    add(G.box(1.66, .02, .44, .005), shade(WALNUT, .12), 0, .43, z0);
     add(G.box(1.6, .03, .44, .005), shade(WALNUT, -.15), 0, .2, z0);
     // the CRT: a deep body, a rounded bezel, buttons and a speaker grille
     add(G.box(.78, .6, .56, .08), '#d8d2c6', -.28, .74, z0 - .04); add(G.box(.7, .52, .3, .06), '#c9c2b4', -.28, .74, z0 - .38);
@@ -251,7 +253,10 @@ B.drawerstairs = (f, T, o = {}) => {
     const CY = R * 1.7;
     for (let i = 0; i < N; i++) {
       const zc = 1 - (i + .5) * RUN, h = (i + 1) * R, y0 = zc < 0 ? CY : 0;
-      add(G.box(Wd, h - y0, RUN, .015), WOOD, 0, y0 + (h - y0) / 2, zc);
+      // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+      const dy = i * R + R / 2 - (y0 + (h - y0) / 2);
+      add(holeFace(G.box(Wd, h - y0, RUN, .015), [[-.02 - (Wd - .12) / 2, -.02 + (Wd - .12) / 2, dy - (R - .06) / 2 + .005, dy + (R - .06) / 2 - .008]]), WOOD, 0, y0 + (h - y0) / 2, zc);
+      add(liner(Wd - .12, R - .073, RUN - .04, 'z'), shade(WOOD, -.3), -.02, i * R + R / 2 - .0015, zc + .02);
       add(G.box(Wd + .02, .03, RUN + .02, .01), shade(WOOD, .12), 0, h + .015, zc);
       add(G.box(Wd - .2, .01, RUN - .06, .004), '#c9e7d6', 0, h + .032, zc);
     }
@@ -317,7 +322,10 @@ B.loftpulley = (f, T, o = {}) => {
 B.pdrawers = (f, T) => {
   const W = .46, D = .42, z0 = -.25;
   f.add(mc('pdrawers', ({ add }) => {
-    add(G.box(W, .9, D, .03), PLASTIC, 0, .5, z0); for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.sph(.025, 8, 6), DARK, sx * (W / 2 - .04), .025, z0 + sz * (D / 2 - .04));
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, .9, D, .03), [[-.2, .2, -.357, -.125], [-.2, .2, -.077, .155], [-.2, .2, .203, .41]]), PLASTIC, 0, .5, z0);
+    for (const [y, h] of [[.259, .232], [.539, .232], [.8065, .207]]) add(liner(.4, h, .37, 'z'), shade(PLASTIC, -.3), 0, y, z0 + .025);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.sph(.025, 8, 6), DARK, sx * (W / 2 - .04), .025, z0 + sz * (D / 2 - .04));
     add(G.box(.22, .1, .14, .02), '#f2f2f2', -.08, 1.0, z0); add(G.box(.08, .02, .02, .01), '#ff9fb8', -.08, 1.06, z0);
     add(G.cyl(.1, .12, .04, 16), WHITE, .12, .97, z0); add(G.cyl(.015, .015, .26, 6), WHITE, .12, 1.12, z0); add(G.cyl(.14, .14, .04, 20), '#dff3fb', .12, 1.3, z0 + .02, HP, 0, 0); add(G.tor(.14, .01, PI * 2, 4, 20), WHITE, .12, 1.3, z0 + .02);
   }));

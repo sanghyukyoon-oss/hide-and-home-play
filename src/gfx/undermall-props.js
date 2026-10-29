@@ -7,7 +7,7 @@
 //   um_safe(금고, 마지막 자물쇠 — 안에 간식) · um_escalator(컨베이어 변형) · um_revolvingdoor(회전문) · um_lockers(물품 보관함) ·
 //   um_kiosk(분식 매대) · um_mapboard(안내 지도판 — 뒤집기). 장치는 모두 '터치하면 저절로 끝까지'(설계서 원칙 8).
 import * as THREE from 'three';
-import { grp, put, mat, mesh, geo, texCache, roundRect } from './kit.js';
+import { grp, put, mat, mesh, geo, texCache, roundRect, holeFace, liner, shade } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex, paperFill } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
@@ -441,7 +441,9 @@ function clothesStall(f, W, D) {
     // a tall mirror on the left partition
     add(G.box(.025, 1.0, .34, .03), C.wood, -W / 2 + .075, .95, -.1); add(G.box(.012, .92, .28, .03), '#d5ebf2', -W / 2 + .09, .95, -.1);
     // the little cash counter (its drawer is part1) on the right
-    add(G.box(.44, .78, .38, .025), C.wood, .38, .39, -.12); add(G.box(.48, .04, .42, .015), C.cream, .38, .8, -.12);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(.44, .78, .38, .025), [[-.18, .18, .1605, .29]]), C.wood, .38, .39, -.12); add(liner(.36, .1295, .33, 'z'), shade(C.wood, -.3), .38, .61525, -.095);
+    add(G.box(.48, .04, .42, .015), C.cream, .38, .8, -.12);
     add(G.box(.16, .1, .12, .02), C.dark, .44, .87, -.18); add(G.box(.08, .02, .06, .01), C.mint, .44, .93, -.16);
     add(G.box(.12, .1, .02, .01), C.white, .28, .86, -.05, -.4, 0, 0);
   }));
@@ -569,7 +571,8 @@ B.um_kiosk = f => {
   f.walkBoxes = [[-W / 2, 0, -D / 2, W / 2, 1.1, D / 2], [-.5, 0, D / 2, .5, .5, D / 2 + .42]];
   f.noSolid = true;
   f.add(mc('um-kiosk', ({ add, tube }) => {
-    add(G.box(W, H, D, .04), '#f0a040', 0, H / 2, 0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, H, D, .04), [[.15, .55, .2505, .36]]), '#f0a040', 0, H / 2, 0); add(liner(.4, .1095, .33, 'z'), shade('#f0a040', -.3), .35, .73525, .115);
     for (let k = 0; k < 7; k++) add(G.pbox(.09, H - .2, .01), k % 2 ? '#ffd28a' : '#f0a040', -W / 2 + .14 + k * .18, H / 2, D / 2 + .004);
     add(G.box(W + .04, .05, D + .04, .02), C.steel, 0, H + .02, 0);
     // tteokbokki pan: a wide steel tray, red sauce, rice cakes, fish-cake triangles, green onion
@@ -644,7 +647,8 @@ B.um_office = f => {
     // CCTV desk along the corridor wall (inside), three monitors facing in, keyboard, a mug, a walkie-talkie
     add(G.box(.6, .04, 1.36, .015), C.wood, dx, .76, -.37);
     add(G.box(.56, .72, .04, .01), shade2(C.wood), dx, .38, -1.03); add(G.box(.04, .72, 1.3, .01), shade2(C.wood), x0 + .14, .38, -.37);
-    add(G.box(.5, .7, .4, .015), C.wood, dx, .37, .1);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(.5, .7, .4, .015), [[.12, .3, -.165, .165]], 'x'), C.wood, dx, .37, .1); add(liner(.42, .18, .33, 'x'), shade(C.wood, -.3), dx + .04, .58, .1);
     for (const [z, y] of [[-.62, 1.0], [-.18, 1.0], [-.4, 1.36]]) { add(G.box(.08, .34, .44, .02), C.dark, x0 + .25, y, z); add(G.pbox(.012, .3, .4), '#bfe0d0', x0 + .3, y, z); }
     add(G.box(.1, .26, .08, .01), C.dark, x0 + .25, .84, -.4);
     add(G.box(.18, .02, .42, .006), C.steel2, x0 + .52, .79, -.42);

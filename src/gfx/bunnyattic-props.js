@@ -8,7 +8,7 @@
 // wall pieces hang on a wall's inner face (origin at the face, floor height, +z into the room). Static decor is ONE
 // vertex-coloured mesh per piece (hmc), every moving part its own mesh. Nothing here is sold (hidden: true).
 import * as THREE from 'three';
-import { put, mat, mesh, canvasTex, texCache, shade, extrude, starShape, heartShape, cutFace, liner } from './kit.js';
+import { put, mat, mesh, canvasTex, texCache, shade, extrude, starShape, heartShape, cutFace, liner, holeFace } from './kit.js';
 import { clothBend } from './clothbend.js';
 import { HG as G, hxf as xf, hmc as mc, hleaves as leaves } from './house-props.js';
 
@@ -173,7 +173,9 @@ B.windowseat = (f, T) => {
   const W = 1.86, D = .62, z0 = -.17, H = .44, FZ = z0 + D / 2;
   f.add(mcx('windowseat|' + tk, ({ add }) => {
     add(G.box(W, .06, D - .04, .01), shade(woodD, -.1), 0, .03, z0);   // plinth
-    add(G.box(W, H - .06, D, .03), body, 0, (H + .06) / 2, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, H - .06, D, .03), [[-.855, -.065, -.155, .095], [.065, .855, -.155, .095]]), body, 0, (H + .06) / 2, z0);
+    for (const x of [-.46, .46]) add(liner(.79, .25, .52, 'z'), shade(body, -.25), x, .22, FZ - .26);
     for (const sx of [-1, 1]) add(G.box(.07, H, D + .02, .02), wood, sx * (W / 2 - .03), H / 2, z0);
     add(G.box(.06, H - .1, .03, .01), wood, 0, H / 2, FZ + .01);
     add(G.box(W + .04, .05, D + .04, .02), wood, 0, H + .025, z0);

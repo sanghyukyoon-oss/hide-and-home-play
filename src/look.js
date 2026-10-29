@@ -323,6 +323,8 @@ RECIPES.house3 = RECIPES.house2f;
 // 7판 a little brighter (user 10/20 on a phone: "스테이지 7은 약간 더 밝게") — more fill and a whiter sun, a touch lighter shade;
 // the sun stays where it is (no long shadows). 8판 keeps the house light it had.
 RECIPES.house2f = { ...RECIPES.house2f, light: { ambColor: '#f3eff5', amb: 1.36, sunColor: '#ffe6c6', sun: 2.75, shadow: .56 } };
+// (10/29 사용자 실폰 "스테이지 8 약간 누런데… 약간 밝게": 8판 다락 3층집만 — 햇빛·환경광을 흰 쪽으로, 아래 바탕의 살구·갈색을 맑은 연회색으로)
+RECIPES.house3 = { ...RECIPES.house3, light: { ambColor: '#f5f4f7', amb: 1.46, sunColor: '#fff0de', sun: 2.75, shadow: .58 }, sky: ['#a9d4ee', '#eef1ec', '#d6d8cc'] };
 // ── 11~20판 (우리 아파트 장, 10/20 아트 개선안 — 사용자 컨펌 전): the same rule as 1~10 — no white glow behind the room, a
 // mid-value backdrop of the room's own colour and a light mood; the sun stays where it is (no long shadows)
 Object.assign(RECIPES, {

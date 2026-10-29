@@ -19,7 +19,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, starShape, STYLE } from './kit.js';
+import { grp, mat, mesh, geo, canvasTex, texCache, roundRect, shade, starShape, STYLE, holeFace, liner } from './kit.js';
 import { tr } from '../i18n.js';
 
 const PI = Math.PI, HP = PI / 2, DS = THREE.DoubleSide;
@@ -830,7 +830,9 @@ B.counter2 = (f, T) => {
   const inner = shade(body, -.1), SX = .56, SZ = -.1, SW = .44, SD = .36, SH = .3, SM = xf(-.56, TY + .3, -.2, -.38, 0, 0);
   f.add(mc('counter2|' + tk, ({ add, addM, tube }) => {
     add(G.box(2 * HW - .04, .05, D - .04, .01), CHAR, 0, .025, z0 - .01);
-    add(G.box(HW + BX, CH - .05, D, .015), body, (-HW + BX) / 2, .05 + (CH - .05) / 2, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(HW + BX, CH - .05, D, .015), [[-.438, -.002, .172, .355]], 'z', -1), body, (-HW + BX) / 2, .05 + (CH - .05) / 2, z0);
+    add(liner(.436, .183, .4, 'z', -1), shade(body, -.25), -.5, .7385, back + .2);
     add(G.box(HW - BX, CH - BY, D, .015), body, (BX + HW) / 2, BY + (CH - BY) / 2, z0);
     add(G.box(.04, BY - .05, D, .01), body, HW - .02, .05 + (BY - .05) / 2, z0);
     add(G.pbox(HW - BX - .04, .02, D - .04), inner, (BX + HW - .04) / 2, .06, z0 - .02);

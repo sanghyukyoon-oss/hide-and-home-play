@@ -7,7 +7,7 @@
 // None repeats a theme the shop already sells (어항·빨래·컵라면·TV장·텐트·오르골·기차·나무집 are there: checked 10/24).
 // Ink-outlined cel shading like the rest; big faces soft, small things the point colours.
 import * as THREE from 'three';
-import { put, grp, mat, mesh, geo, shade, heartShape, starShape, canvasTex, texCache, rbox, sph, cyl, tor, cone } from './kit.js';
+import { put, grp, mat, mesh, geo, shade, heartShape, starShape, canvasTex, texCache, rbox, sph, cyl, tor, cone, holeFace, liner } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { EN } from '../i18n-en-dict.js';
 
@@ -38,7 +38,8 @@ B.hm_vanity = f => {
   f.add(mc('hm-vanity', ({ add, tube }) => {
     add(G.box(W, .04, D, .015), VW, 0, TY - .02, z0);
     for (const sx of [-1, 1]) { add(G.box(.05, TY - .04, .05, .01), VW, sx * (W / 2 - .04), (TY - .04) / 2, z0 + .15); add(G.box(.05, TY - .04, .05, .01), VW, sx * (W / 2 - .04), (TY - .04) / 2, z0 - .15); add(G.sph(.02, 8, 6), '#e2c070', sx * (W / 2 - .04), .02, z0 + .15); }
-    add(G.box(W - .1, .12, D - .04, .01), shade(VW, -.04), 0, TY - .1, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W - .1, .12, D - .04, .01), [[.07, .33, -.025, .025]]), shade(VW, -.04), 0, TY - .1, z0); add(liner(.3, .08, .34, 'z'), shade(VW, -.3), .2, .64, z0 + .02);
     // the mirror: a frame ring, glass, bulbs round it
     const my = TY + .38; add(G.cyl(.3, .3, .04, 32), '#f4d6dc', 0, my, z0 - .14, HP, 0, 0); add(G.cyl(.25, .25, .045, 32), '#cfe6f2', 0, my, z0 - .14, HP, 0, 0);
     add(G.box(.06, .2, .04, .01), '#f4d6dc', 0, TY + .08, z0 - .15);
@@ -203,7 +204,9 @@ B.hm_fireplace = f => {
 B.hm_sewing = f => {
   const W = .82, TY = .74, D = .46, z0 = -.15, TOP = '#d9a466', IRON = '#4a4458', SEW = '#9ed8c8';
   f.add(mc('hm-sewing', ({ add, tube }) => {
-    add(G.box(W, .04, D, .015), TOP, 0, TY - .02, z0); add(G.box(W - .08, .1, D - .06, .01), shade(TOP, -.08), -.06, TY - .09, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(G.box(W, .04, D, .015), TOP, 0, TY - .02, z0); add(holeFace(G.box(W - .08, .1, D - .06, .01), [[.09, .345, -.03, .028]]), shade(TOP, -.08), -.06, TY - .09, z0);
+    add(liner(.285, .0765, .32, 'z'), shade(TOP, -.35), .1575, .6467, z0 + .04);
     for (const s of [-1, 1]) {
       const x = s * (W / 2 - .06);
       tube([x, .02, z0 - .16], [x, TY - .04, z0 - .16], .016, IRON, 6); tube([x, .02, z0 + .16], [x, TY - .04, z0 + .16], .016, IRON, 6); tube([x, .02, z0 - .2], [x, .02, z0 + .2], .02, IRON, 6);
@@ -392,7 +395,9 @@ B.sp3_bungeo = f => {
   const fish = (add, x, y, z, ry, c = '#e8a24a') => { add(G.sph(.05, 12, 8), c, x, y, z, 0, ry, 0, [1.5, .45, .9]); add(G.cone(.035, .05, 5), c, x - Math.cos(ry) * .085, y, z + Math.sin(ry) * .085, 0, ry, HP, [1, 1, .4]); add(G.sph(.007, 6, 5), shade(c, -.35), x + Math.cos(ry) * .045, y + .02, z - Math.sin(ry) * .045); for (let k = 0; k < 3; k++) add(G.box(.004, .003, .04, .001), shade(c, -.18), x - Math.cos(ry) * (k * .02 - .01), y + .022, z + Math.sin(ry) * (k * .02 - .01), 0, ry, 0); };
   const menu = tex('hm-bungeomenu', 128, 160, (c, w, h) => { c.fillStyle = '#3a3a48'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff6d8'; c.fillRect(6, 6, w - 12, h - 12); c.fillStyle = '#e8a24a'; c.beginPath(); c.ellipse(56, 52, 34, 20, 0, 0, PI * 2); c.fill(); c.beginPath(); c.moveTo(88, 52); c.lineTo(114, 34); c.lineTo(114, 70); c.fill(); c.fillStyle = '#2a1d33'; c.beginPath(); c.arc(38, 46, 4, 0, PI * 2); c.fill(); c.font = 'bold 30px Ssurround, Jua, sans-serif'; c.textAlign = 'center'; c.fillStyle = '#ff6b6b'; c.fillText('3 = 1000', w / 2, 116); c.fillStyle = '#7fb5ff'; c.fillRect(20, 136, w - 40, 6); });
   f.add(mc('sp3-bungeo', ({ add, tube }) => {
-    add(G.box(W, TY - .2, D, .03), CW, 0, .2 + (TY - .2) / 2, z0); add(G.box(W + .06, .04, D + .06, .015), shade(CW, -.18), 0, TY, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, TY - .2, D, .03), [[-.34, .14, .0255, .175]]), CW, 0, .2 + (TY - .2) / 2, z0); add(liner(.48, .1495, .44, 'z'), shade(CW, -.3), -.1, .60025, z0 + .09);
+    add(G.box(W + .06, .04, D + .06, .015), shade(CW, -.18), 0, TY, z0);
     for (let k = 0; k < 7; k++) add(G.box(.005, TY - .26, .006, .002), shade(CW, -.12), -W / 2 + .1 + k * (W - .2) / 6, .2 + (TY - .2) / 2, z0 + D / 2 + .002);
     for (const s of [-1, 1]) { add(G.tor(.17, .022, PI * 2, 6, 22), '#4a4458', s * (W / 2 - .3), .18, z0 + D / 2 + .03); for (let k = 0; k < 6; k++) add(G.box(.006, .32, .006, .002), STEEL2, s * (W / 2 - .3), .18, z0 + D / 2 + .03, 0, 0, k * PI / 6); add(G.cyl(.03, .03, .04, 10), STEEL2, s * (W / 2 - .3), .18, z0 + D / 2 + .03, HP, 0, 0); }
     add(G.cyl(.02, .02, .2, 6), '#4a4458', -W / 2 + .1, .1, z0 - D / 2 + .08); add(G.cyl(.02, .02, .2, 6), '#4a4458', W / 2 - .1, .1, z0 - D / 2 + .08);

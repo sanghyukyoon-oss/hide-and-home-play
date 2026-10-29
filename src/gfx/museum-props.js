@@ -5,7 +5,7 @@
 // A painting swings out from the wall (something may be tucked behind it); a draped piece can be unveiled; a crate with a
 // lid; an easel; the guide desk's drawer; a bench; velvet ropes; the Thinker as a bronze 몽글이.
 import * as THREE from 'three';
-import { put, grp, mat, mesh, geo, canvasTex, texCache } from './kit.js';
+import { put, grp, mat, mesh, geo, canvasTex, texCache, holeFace, liner } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -426,7 +426,8 @@ B.guidedesk = f => {
   const TH = .8, W = 1.6, D = .56, FR = '#d3c8b4', PAN = '#ece4d6', TOP = '#a8764a', TOP2 = '#8a5e38', BR = '#c9a24a';
   f.add(mc('guidedesk2', ({ add, tube }) => {
     add(G.box(W + .05, .08, D + .05, .02), PL_SKIRT, 0, .04, 0);
-    add(G.box(W, TH - .08, D, .02), '#f6f1e8', 0, .08 + (TH - .08) / 2, 0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, TH - .08, D, .02), [[.115, .585, -.135, .05]]), '#f6f1e8', 0, .08 + (TH - .08) / 2, 0); add(liner(.47, .185, .42, 'z'), '#d6cbb8', .35, .3975, .07);
     add(G.box(W + .08, .05, D + .08, .018), TOP, 0, TH + .025, 0);
     add(G.box(W + .03, .02, D + .03, .006), TOP2, 0, TH - .01, 0);
     add(G.pbox(W - .04, .022, .006), BR, 0, TH - .06, D / 2 + .003);

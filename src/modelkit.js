@@ -852,9 +852,12 @@ async function truckIntro(S) {
 // friend and 몽글이 to stand and watch; front tiles and tiles near the friend win ties. The view may turn up to 90° for
 // one (an orthographic view: whether something is in the way depends on the angle only, not on where the camera looks).
 const SIDE = .86;   // (the build's close view: whoever watches stands clear of the robot)
-function buildSpot(S) {
+function buildSpot(S, reach = 0) {
   const t0 = performance.now(), W = S.G.world, f = S.friend.root.position, rc = S.room.center || new THREE.Vector3();
-  const tiles = (S.freeTiles || []).filter(t => (t.R?.clearAt ? t.R.clearAt(t.x, t.z, .45) : true));
+  let tiles = (S.freeTiles || []).filter(t => (t.R?.clearAt ? t.R.clearAt(t.x, t.z, .45) : true));
+  // (a map may name where its kit is built — 19판 소방서: the search kept picking the island's back corner, the friends pressed against the
+  // truck, 사용자 10/29 "막 겹치는 것 같기도 하고, 안정적으로… 제발"): only the open tiles near that point are tried
+  const KA = S.room.L?.kitAt; if (KA) { const near = tiles.filter(t => Math.hypot(t.x - KA[0], t.z - KA[1]) < 1.2); if (near.length) tiles = near; else if (!S.room.clearAt || S.room.clearAt(KA[0], KA[1], .45)) tiles = [{ x: KA[0], z: KA[1], y: 0, R: S.room }]; }
   const y0 = W.yaw, p0 = W.pitch, roots = [S.room.group];
   const seen = q => { const s = W.toScreen(q); const hit = W.pick(s.x, s.y, roots).find(x => !x.object.userData.proxy); return !hit || hit.distance > W.raycaster.ray.origin.distanceTo(q) - .12; };
   // what else would be in the picture (레벨 세션 10/19: a big pot behind the model, a tree over the lower half, a chair
@@ -883,13 +886,13 @@ function buildSpot(S) {
       const y = t.y || 0, at = (k, h) => new THREE.Vector3(t.x + side.x * k, y + h, t.z + side.z * k);
       if (![[0, .08], [0, .45], [0, .88], [.2, .4], [-.2, .4]].every(([k, h]) => seen(at(k, h)))) continue;
       const inRoom = (x, z) => !t.R?.group || (Math.abs(x - t.R.group.position.x) < t.R.w / 2 - .15 && Math.abs(z - t.R.group.position.z) < t.R.d / 2 - .15);   // (clearAt says yes past the room's edge)
-      const room = k => { const q = at(k * SIDE, 0); return inRoom(q.x, q.z) && (!t.R?.clearAt || t.R.clearAt(q.x, q.z, .28)) && seen(at(k * SIDE, .35)); };
+      const room = k => { const q = at(k * (SIDE + (k > 0 ? reach : 0)), 0); return inRoom(q.x, q.z) && (!t.R?.clearAt || t.R.clearAt(q.x, q.z, .28)) && seen(at(k * SIDE, .35)); };
       const c = clutter(new THREE.Vector3(t.x, y + .4, t.z), side, up, view);
       const front = !t.R?.clearAt || t.R.clearAt(t.x + toCam.x * .6, t.z + toCam.z * .6, .34);
       // (room before it on the camera's side: on a small map's front edge the room's low front wall cut the friends' feet and
       // the group sat at the screen's bottom — 11판 냥냥이 부엌, QA 10/20)
       const margin = inRoom(t.x + toCam.x * 1.1, t.z + toCam.z * 1.1);
-      const score = (room(1) ? 2 : 0) + (room(-1) ? 2 : 0) + (t.R?.clearAt?.(t.x, t.z, .7) ? 1 : 0) - c * 1.1 - (front ? 0 : 6)
+      const score = (room(1) ? 5 : 0) + (room(-1) ? 5 : 0) + (t.R?.clearAt?.(t.x, t.z, .7) ? 1 : 0) - c * 1.1 - (front ? 0 : 6)
         + .25 * ((t.x - rc.x) * toCam.x + (t.z - rc.z) * toCam.z) - .15 * Math.hypot(t.x - f.x, t.z - f.z) - di * .6 - (margin ? 0 : 16);   // (heavier than clutter: what is in front steps aside anyway, the room's edge does not)
       if (!best || score > best.score) best = { t, yaw, score, clutter: c };
     }
@@ -920,9 +923,12 @@ async function gather(S, P, R, yaw, dF = SIDE, dH = SIDE) {
   // beside the model on its side; else a step back on that side; else in the room at least (never past its edge: a friend
   // stood half through 11판's wall — QA 10/20)
   const near = (k, d0 = SIDE) => {
-    const qs = [d0, d0 + .1, d0 + .2].map(d => P.clone().addScaledVector(side, k * d).addScaledVector(toCam, -.1));
-    const back = [.35, .55].map(b => P.clone().addScaledVector(side, k * d0 * .6).addScaledVector(toCam, -b));
-    return qs.find(clear) || back.find(clear) || qs.concat(back).find(inRoom) || P.clone().addScaledVector(toCam, -.45);
+    const qs = [d0, d0 + .1, d0 + .2, d0 + .35, d0 + .5].map(d => P.clone().addScaledVector(side, k * d).addScaledVector(toCam, -.1));
+    const back = [.35, .55].map(b => P.clone().addScaledVector(side, k * d0).addScaledVector(toCam, -b));
+    const tuck = [.35, .55].map(b => P.clone().addScaledVector(side, k * d0 * .6).addScaledVector(toCam, -b));
+    const wide = [k, -k].flatMap(g => [0, .1, .2, .3, .4, .5, .6, .8, 1, 1.2, 1.5, 1.8].flatMap(e => [-.1, -.3, .1, -.5, .3, -.7].map(a => P.clone().addScaledVector(side, g * (d0 + e)).addScaledVector(toCam, a))));
+    const open = q => clear(q) && !taken.some(o => Math.hypot(o.x - q.x, o.z - q.z) < .55);   // (a cramped spot, 19판's island corner: further along either side, never behind the model — 10/29)
+    return qs.find(open) || back.find(open) || wide.find(open) || tuck.find(open) || qs.concat(back).find(inRoom) || P.clone().addScaledVector(toCam, -.45);
   };
   // in the way: close to the spot, or anywhere between it and the camera (an orthographic view)
   const inWay = q => { const dx = q.x - P.x, dz = q.z - P.z, along = dx * toCam.x + dz * toCam.z, lat = dx * side.x + dz * side.z; return Math.hypot(dx, dz) < 1.1 || (along > -.25 && Math.abs(lat) < .6); };
@@ -937,14 +943,17 @@ async function gather(S, P, R, yaw, dF = SIDE, dH = SIDE) {
   // into the spot; after the clear nobody starts a new one.)
   const hero = S.hero;
   for (let i = 0; i < 20 && hero?.busy; i++) await S.tw.wait(.1);
+  for (const n of S.npcs || []) if (n !== S.villain) n.on = false;   // (the walkers stop for the build: none walks back into it — 10/29)
+  for (let i = 0; i < 12 && (S.npcs || []).some(n => n.next); i++) await S.tw.wait(.1);
   if (hero?.ch) {   // (always, to the other side: the three of them in the picture together — user 10/20, 8판)
     const to = near(-1, dH);
     taken.push(to); hero.t = hero.nearest(to.x, to.z) || hero.t; jobs.push(poofTo(S, hero.ch, to, yaw));
   }
-  for (const n of S.npcs || []) {
+  for (const n of [...(S.npcs || []), ...(hero?.buddy?.root?.visible ? [{ ch: hero.buddy }] : [])]) {
     if (!n.ch?.root || n === S.villain || !inWay(n.ch.root.position)) continue;
     const to = free(n.ch.root.position);
     if (to) { taken.push(to); n.t = (S.freeTiles || []).find(t => Math.hypot(t.x - to.x, t.z - to.z) < .01) || n.t; jobs.push(poofTo(S, n.ch, to, yaw)); }
+    else { const ch = n.ch, s0 = ch.root.scale.x; jobs.push(S.tw.run(.14, k => ch.root.scale.setScalar(Math.max(.01, s0 * (1 - k)))).then(() => { ch.root.visible = false; ch.root.scale.setScalar(s0); })); }   // (nowhere to go: out of the picture for now)
   }
   await Promise.all(jobs);
 }
@@ -1055,7 +1064,7 @@ function clearShot(S, P, hW, wW, midY, yaw, pitch, own) {
   const offScreen = q => q.r < ox || q.l > ox + sw || q.b < 0 || q.t > sh;
   const half = q => !offScreen(q) && (q.l < ox + 4 || q.r > ox + sw - 4 || q.t < 4);
   const taken = [];
-  for (const ch of (S.npcs || []).filter(n => n !== S.villain).map(n => n.ch)) {   // (the friend and 몽글이 stand in it on purpose)
+  for (const ch of [...(S.npcs || []).filter(n => n !== S.villain).map(n => n.ch), S.hero?.buddy]) {   // (the friend and 몽글이 stand in it on purpose)
     if (!ch?.root?.visible) continue;
     const r0 = rectOf(ch.root);
     if (!half(r0)) continue;
@@ -1083,7 +1092,7 @@ export async function kitBuild(S) {
     if (stack) {
       const p = PF.g.getWorldPosition(new THREE.Vector3()), bb = new THREE.Box3().setFromObject(PF.g), sz = bb.getSize(new THREE.Vector3());
       spot = { p, tile: null, ...standView(S, new THREE.Vector3(p.x, bb.min.y, p.z), sz.y, Math.max(sz.x, sz.z), PF.g) };
-    } else spot = buildSpot(S);
+    } else spot = buildSpot(S, K.id === 'firetruck' ? .3 : 0);
     const { p: P, yaw, pitch, tile } = spot;
     f.setFace('wow'); f.bump?.(.4);
     const goBub = S.say(f, S.kit.go || KIT_GO[K.id] || '다 모았다!', 1600); G.audio.sfx('special');
@@ -1100,15 +1109,18 @@ export async function kitBuild(S) {
     // 구도를 주인공이랑 캐릭 다 좀 모이게 해서 ㅋㅋ 처음엔 그리 나왔는데 지금은 로봇밖에 안 나와" — since the build view was
     // made model-only and big, they stood off the screen's edges)
     const dims = ch => { if (!ch?.root) return { r: 0, h: 0 }; const z = new THREE.Box3().setFromObject(ch.root).getSize(new THREE.Vector3()); return { r: Math.min(Math.max(z.x, z.z) / 2, z.y * .45), h: z.y }; };
-    const fd = dims(f), hd = dims(S.hero?.ch), dF = wW / 2 + fd.r + .04, dH = wW / 2 + hd.r + .04;
+    const roll = K.id === 'firetruck' ? .3 : 0;   // (the fire truck rolls .22 m to the friend's side when done: they stand past it, no hop aside — 10/29)
+    const fd = dims(f), hd = dims(S.hero?.ch), dF = wW / 2 + fd.r + .04 + roll, dH = wW / 2 + hd.r + .08;
     const right = dF + fd.r, left = S.hero?.ch ? dH + hd.r : wW / 2;
     const sideV = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)), Pc = P.clone().addScaledVector(sideV, (right - left) / 2);
     const top = Math.max(midY + hW / 2, P.y + fd.h, P.y + hd.h), bottom = Math.min(midY - hW / 2, P.y);
     const gW = right + left, gH = top - bottom, gMid = (top + bottom) / 2;
     const view = aimView(S, buildView(S, Pc, gH, gW, gMid, pitch), yaw, pitch, new THREE.Vector3(Pc.x, gMid, Pc.z));
     S.kitView = { zoom: +view.zoom.toFixed(2), gH: +gH.toFixed(2), gW: +gW.toFixed(2), hW: +hW.toFixed(2), wW: +wW.toFixed(2), f: [+fd.r.toFixed(2), +fd.h.toFixed(2)], m: [+hd.r.toFixed(2), +hd.h.toFixed(2)] };   // (QA)
+    W.zoomGoal = null; W.yawGoal = null; W.vYaw = 0;
     await Promise.all([W.flyTo(tw, { target: view.target, yaw, pitch, zoom: view.zoom, dur: .7, e: ease.inOutCubic }), gather(S, P, tile?.R, yaw, dF, dH)]);
     if (S.dead) return;
+    const hold = () => { W.yaw = yaw; W.pitch = pitch; W.zoom = view.zoom; W.target.copy(view.target); W.zoomGoal = null; W.yawGoal = null; W.vYaw = 0; };   // (the build's view stays put to the end — 10/29 "안정적으로")
     st.aside = clearShot(S, Pc, gH, gW, gMid, yaw, pitch, stack ? PF.g : null);   // (QA: how many stepped aside)
     { const q = P.clone().addScaledVector(new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), 1.4); f.faceTo?.(q.x, q.z); S.hero?.ch?.faceTo?.(q.x, q.z); }   // (turned to the model's front, half to us: faces, not backs)
     const face = Math.atan2(W.cam.position.x - P.x, W.cam.position.z - P.z), local = v => S.room.group.worldToLocal(v.clone());
@@ -1147,7 +1159,9 @@ export async function kitBuild(S) {
       return pv;
     };
     const scrOf = v => W.toScreen(R.localToWorld(v.clone()));
-    const at = c => stack ? W.toScreen(new THREE.Box3().setFromObject(c.L).getCenter(new THREE.Vector3())) : scrOf(c.C);   // (where a piece goes, on the screen)
+    const at0 = c => stack ? W.toScreen(new THREE.Box3().setFromObject(c.L).getCenter(new THREE.Vector3())) : scrOf(c.C);   // (where a piece goes, on the screen)
+    const spotOf = {}; if (!stack) for (const k of K.order) spotOf[k] = at0(pcs[k]);
+    const at = c => spotOf[c.key] || at0(c);   // (measured once, the model at rest: a piece lands on the same point however the model squashes)
     const hpx = stack ? Math.abs(W.toScreen(new THREE.Vector3(P.x, midY - hW / 2, P.z)).y - W.toScreen(new THREE.Vector3(P.x, midY + hW / 2, P.z)).y)
       : Math.abs(scrOf(new THREE.Vector3(0, 0, 0)).y - scrOf(new THREE.Vector3(0, .7, 0)).y);   // the model's height on screen
     let squash = 0, lastAct = performance.now();
@@ -1219,8 +1233,9 @@ export async function kitBuild(S) {
       await new Promise(r => requestAnimationFrame(r));
       const now = performance.now(), dt = Math.min(.05, (now - last) / 1000); last = now;
       W.lastActive = now;   // full frame rate on phones while it plays
+      hold();
       squash = Math.max(0, squash - dt / .16);
-      const sq = Math.sin(squash * Math.PI) * .08;
+      const sq = Math.sin(squash * Math.PI) * .04;
       if (R) R.scale.set(RSk * (1 + sq * .5), RSk * (1 - sq), RSk * (1 + sq * .5));
       // nothing done for a while: a hand taps the next piece on the board, no words
       if (!hand && now - lastAct > 2600 && !S.botOn()) {
@@ -1315,7 +1330,8 @@ async function truckGo(S, R, pcs, glow) {
     const hops = [];
     for (const ch of who) {
       const p = ch.root.position, rx = p.x - c.x, rz = p.z - c.z, a = rx * fwd.x + rz * fwd.z, sd = rx * side.x + rz * side.z;
-      if (a < -hl / 2 - CL || a > hl / 2 + .22 + CL || Math.abs(sd) > hw / 2 + CL) continue;
+      const cb = new THREE.Box3().setFromObject(ch.root).getSize(new THREE.Vector3()), CLc = Math.min(CL, Math.max(.12, Math.min(Math.max(cb.x, cb.z) / 2, cb.y * .45)) + .04);   // (its own body: whoever the build put beside it stays — 10/29)
+      if (a < -hl / 2 - CLc || a > hl / 2 + .22 + CLc || Math.abs(sd) > hw / 2 + CLc) continue;
       const out = hw / 2 + CL + .1, sg = sd >= 0 ? 1 : -1;
       const cands = [[sg, out], [-sg, out]].map(([g, o]) => p.clone().addScaledVector(side, g * o - sd)).concat([p.clone().addScaledVector(fwd, -hl / 2 - CL - .1 - a)]);
       const to = cands.find(q => room(q.x, q.z)) || cands[0];

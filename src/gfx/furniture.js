@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { bakeStatic } from './bake.js';
-import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, plane, roundRect, shade, STYLE, SHADOW } from './kit.js';
+import { rbox, sph, tor, put, grp, mat, mesh, geo, extrude, starShape, heartShape, canvasTex, texCache, plane, roundRect, shade, STYLE, SHADOW, holeFace, liner } from './kit.js';
 import { clothBend, clothWave, clothSlab } from './clothbend.js';
 import { bookPieces } from './bookbits.js';
 import { gptLock } from './gpt-locks.js';
@@ -731,7 +731,9 @@ B.drawers = (f, T) => {
   const tk = [wood, woodD, body, knob, ...cols].join(',');
   f.add(mc('drawers|' + tk, ({ add, addM }) => {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.035, .024, .07, 10), woodD, sx * .38, .035, z0 + sz * .2);
-    add(G.box(.9, .88, .56, .03), body, 0, .51, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": solid behind the three drawers — three holes, lined; the fronts cover them shut)
+    add(holeFace(G.box(.9, .88, .56, .03), [[-.39, .39, -.385, -.16], [-.39, .39, -.115, .11], [-.39, .39, .155, .38]]), body, 0, .51, z0);
+    for (const y of [.24, .51, .78]) add(liner(.78, .225, .5, 'z'), shade(body, -.25), 0, y - .0025, z0 + .03);
     add(G.box(.84, .04, .02, .006), woodD, 0, .095, fz + .01);
     const fM = xf(.3, 1.01 + .1, z0 - .14, -.12, -.25, 0);
     addM(G.box(.17, .2, .022, .008), fM, woodD);
@@ -785,7 +787,9 @@ B.desk = (f, T) => {
     box(.42, .1, .035, cx, .84, cz + .165, { r: .015 });
   }));
   f.add(mc('desk|' + tk, ({ add, addM, tube }) => {
-    add(G.box(.56, .705, .72, .02), body, .62, .3825, z0);
+    // (10/29 사용자 7판 "책상 서랍 열리는 데 구멍 좀 뚫어라": the pedestal was solid behind both drawers — two holes, lined; the fronts cover them shut)
+    add(holeFace(G.box(.56, .705, .72, .02), [[-.235, .235, .0975, .2975], [-.235, .235, -.2675, .0425]]), body, .62, .3825, z0);
+    for (const [y, h] of [[.58, .2], [.27, .31]]) add(liner(.47, h, .69, 'z'), shade(body, -.25), .62, y, z0 + .015);
     add(G.box(.52, .03, .66, .01), woodD, .62, .015, z0);
     add(G.ext(heartShape(.07), .008, 0, 8), acc, .9 + .002, .5, z0 + .05, 0, HP, 0);
     // chair: spindles and a cushion

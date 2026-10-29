@@ -17,7 +17,7 @@
 //                층마다 몇 개의 큰 덩어리를 옮기기만 함(매 프레임 새 도형 X, 초당 30번), 판이 처음 그려질 때 한 번 지음.
 //                가끔 터널: 화면이 잠깐 어두워졌다 밝아짐(DOM 그늘 한 장, 판 연출 터널과 겹치지 않음).
 import * as THREE from 'three';
-import { put, grp, shade, mat, mesh, canvasTex, texCache, cutFace, liner } from './kit.js';
+import { put, grp, shade, mat, mesh, canvasTex, texCache, cutFace, liner, holeFace } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
@@ -708,7 +708,9 @@ B.tc4booth = (f, T, o = {}) => {
 B.tc4counter = (f, T) => {
   const W = 1.8, D = .66, TY = .9;
   f.add(mc('tc4-counter', ({ add, tube }) => {
-    add(G.box(W, TY - .06, D, .04), C.cream, 0, (TY - .06) / 2, 0); add(G.box(W + .02, .1, D + .02, .03), C.teal, 0, .08, 0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, TY - .06, D, .04), [[-.735, .035, -.015, .27]]), C.cream, 0, (TY - .06) / 2, 0); add(liner(.77, .285, .54, 'z'), shade(C.cream, -.25), -.35, .5475, .06);
+    add(G.box(W + .02, .1, D + .02, .03), C.teal, 0, .08, 0);
     add(G.box(W + .1, .06, D + .12, .03), C.wood, 0, TY - .02, 0); add(G.box(W + .12, .02, D + .14, .01), C.woodD, 0, TY - .055, 0);
     for (const x of [-.6, .6]) add(G.box(.02, TY - .2, .02, .005), C.cream2, x, TY / 2, D / 2 + .005);
     // bento stacks wrapped in paper with a band

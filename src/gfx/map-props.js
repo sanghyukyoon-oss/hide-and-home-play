@@ -556,7 +556,14 @@ B.officedesk = (f, T) => {
     add(G.box(.08, .04, .7, .015), STEEL2, -.86, .02, z0);
     add(G.pbox(1.24, .34, .025), STEEL, -.21, ty - .2, z0 - D / 2 + .06);
     // pedestal: lower file drawer is fixed decor, the top drawer is the part
-    add(G.box(PW, ty - .01, PD, .02), ped, px, (ty - .01) / 2, z0);
+    // (10/29 사용자 "책상 서랍 열었는데 안에 막혀 있음": the pedestal was one solid block round the drawer — now hollow where the drawer
+    // runs: the block below, a band above, two side walls and a back, a dark lining; the drawer front still covers the hole when shut)
+    { const c0 = ty - .245, c1 = ty - .035, hw = (PW - .08) / 2, zb = z0 - PD / 2 + .04, ink = shade(ped, -.3);
+      add(G.box(PW, c0, PD, .02), ped, px, c0 / 2, z0);
+      add(G.box(PW, ty - .01 - c1, PD, .02), ped, px, (c1 + ty - .01) / 2, z0);
+      for (const sx of [-1, 1]) add(G.box(PW / 2 - hw, c1 - c0, PD, .006), ped, px + sx * (hw + (PW / 2 - hw) / 2), (c0 + c1) / 2, z0);
+      add(G.box(PW - .08, c1 - c0, .04, .006), ped, px, (c0 + c1) / 2, z0 - PD / 2 + .02);
+      add(G.pbox(PW - .08, .006, PD - .05), ink, px, c0 + .003, (zb + z0 + PD / 2) / 2); add(G.pbox(PW - .08, c1 - c0, .006), ink, px, (c0 + c1) / 2, zb + .003); }
     add(G.box(PW - .05, .36, .03, .015), shade(dr, .08), px, .25, z0 + PD / 2 + .01);
     add(G.box(.16, .024, .028, .01), STEEL2, px, .38, z0 + PD / 2 + .03);
     add(G.pbox(.12, .055, .008), WHITE, px, .3, z0 + PD / 2 + .028);

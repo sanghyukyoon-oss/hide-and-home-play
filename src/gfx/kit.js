@@ -220,6 +220,42 @@ export function liner(w, h, d, axis = 'y', sign = 1) {
   for (let i = 0; i < N.count; i++) N.setXYZ(i, -N.getX(i), -N.getY(i), -N.getZ(i));
   g.setIndex(keep); g.clearGroups(); return g;
 }
+// (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라") holeFace: rect holes [u0, u1, v0, v1] cut out of the flat face (axis, sign) of a
+// solid body — only the face inside each rect goes, so the outside stays the same triangle for triangle; a drawer front covers
+// the hole when shut and a liner lines it. u, v = the other two axes in xyz order (axis 'z': x, y)
+export function holeFace(g, holes, axis = 'z', sign = 1) {
+  const s = g.index ? g.toNonIndexed() : g.clone(), A = 'xyz'.indexOf(axis), [U, V] = [0, 1, 2].filter(i => i !== A);
+  const P = s.attributes.position, N = s.attributes.normal, UV = s.attributes.uv;
+  let m = -Infinity; for (let i = 0; i < P.count; i++) m = Math.max(m, sign * P.getComponent(i, A));
+  const vert = i => [P.getX(i), P.getY(i), P.getZ(i), N ? N.getX(i) : 0, N ? N.getY(i) : 0, N ? N.getZ(i) : 0, UV ? UV.getX(i) : 0, UV ? UV.getY(i) : 0];
+  const lerp = (a, b, t) => a.map((x, k) => x + (b[k] - x) * t);
+  const clip = (poly, k, c, keepLess) => {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length], ia = keepLess ? a[k] <= c : a[k] >= c, ib = keepLess ? b[k] <= c : b[k] >= c;
+      if (ia) out.push(a);
+      if (ia !== ib) out.push(lerp(a, b, (c - a[k]) / (b[k] - a[k])));
+    }
+    return out.length >= 3 ? out : null;
+  };
+  const tris = [];
+  for (let t = 0; t < P.count; t += 3) {
+    let polys = [[vert(t), vert(t + 1), vert(t + 2)]];
+    if ([0, 1, 2].every(j => sign * P.getComponent(t + j, A) > m - 1e-4)) for (const [u0, u1, v0, v1] of holes) {
+      const next = [];
+      for (const p of polys) {
+        const a = clip(p, U, u0, true), b = clip(p, U, u1, false), mid = clip(p, U, u0, false), mid2 = mid && clip(mid, U, u1, true);
+        const c = mid2 && clip(mid2, V, v0, true), d = mid2 && clip(mid2, V, v1, false);
+        for (const q of [a, b, c, d]) if (q) next.push(q);
+      }
+      polys = next;
+    }
+    for (const p of polys) for (let i = 1; i < p.length - 1; i++) tris.push(p[0], p[i], p[i + 1]);
+  }
+  const out = new THREE.BufferGeometry(), f = (o, n) => new THREE.BufferAttribute(new Float32Array(tris.flatMap(v => v.slice(o, o + n))), n);
+  out.setAttribute('position', f(0, 3)); if (N) out.setAttribute('normal', f(3, 3)); if (UV) out.setAttribute('uv', f(6, 2));
+  return out;
+}
 export function inward(g) { const I = g.index.array, N = g.attributes.normal; for (let t = 0; t < I.length; t += 3) { const v = I[t + 1]; I[t + 1] = I[t + 2]; I[t + 2] = v; } for (let i = 0; i < N.count; i++) N.setXYZ(i, -N.getX(i), -N.getY(i), -N.getZ(i)); return g; }
 // the rest of a rect [x0, x1, y0, y1] once a hole is taken out of it, as rects; windowFace: a face (w × h, centre 0, front at
 // z = 0) with a hole, made of t-deep strips that stand where the cut face was
@@ -228,8 +264,9 @@ export function minusRect([x0, x1, y0, y1], [a, b, c, d]) {
   const m = Math.max(y0, c), n = Math.min(y1, d);
   return [[x0, x1, y0, c], [x0, x1, d, y1], [x0, a, m, n], [b, x1, m, n]].filter(r => r[1] - r[0] > 1e-4 && r[3] - r[2] > 1e-4);
 }
+// (hole may be a list of holes — 10/29 drawers over a cupboard)
 export function windowFace(w, h, hole, t = .02) {
-  const P = minusRect([-w / 2, w / 2, -h / 2, h / 2], hole).map(([a, b, c, d]) => new THREE.BoxGeometry(b - a, d - c, t).translate((a + b) / 2, (c + d) / 2, -t / 2));
+  const P = (Array.isArray(hole[0]) ? hole : [hole]).reduce((R, q) => R.flatMap(r => minusRect(r, q)), [[-w / 2, w / 2, -h / 2, h / 2]]).map(([a, b, c, d]) => new THREE.BoxGeometry(b - a, d - c, t).translate((a + b) / 2, (c + d) / 2, -t / 2));
   return mergeGeometries(P);
 }
 // Mark every mesh under root for picking.

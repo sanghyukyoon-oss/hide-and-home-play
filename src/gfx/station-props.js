@@ -4,7 +4,7 @@
 // cherry tree over a bench, the platform tap and a timetable. Calm: a handful of motifs, room to look. Built from the
 // shared toy kit (one merged mesh per piece) like the fishing ground.
 import * as THREE from 'three';
-import { put, grp, shade } from './kit.js';
+import { put, grp, shade, holeFace, liner } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -179,7 +179,8 @@ B.treesakura = (f, T, o = {}) => {
 B.ticketwin = (f, T) => {
   const W = 1.92, H = 2.25, z0 = -.32, zf = z0 + .2;
   f.add(mc('ticketwin', ({ add }) => {
-    add(G.box(W, H, .4, .03), CREAM, 0, H / 2, z0);
+    // (10/29 사용자 "책상 서랍 열리는 데 구멍 좀 뚫어라": the drawer ran into the solid body — a hole behind it, lined; the drawer front covers it shut)
+    add(holeFace(G.box(W, H, .4, .03), [[-.345, .345, -.6045, -.415]]), CREAM, 0, H / 2, z0); add(liner(.69, .1895, .36, 'z'), shade(CREAM, -.25), 0, .61525, zf - .18);
     add(G.box(W + .06, .14, .5, .03), GREEN, 0, H + .02, z0 + .02);                        // eave
     add(G.box(W, .5, .02, .02), GREEND, 0, .25, zf + .005);                                  // skirting
     // the window: frame, glass, the rounded speaking opening at its foot
