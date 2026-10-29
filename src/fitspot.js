@@ -59,7 +59,9 @@ const longMax = type => LONG_MAX[type] || (RULE && PAPER_LONG.test(type) ? .21 :
 export const REAL_LONG = { gpt_usb: .08, usb: .08, gpt_coin: .12, coin: .06, keyring: .1, gpt_earphones: .12, gptearphones: .12, gpt_garlic: .1, gpt_chessknight: .12,
   gpt_sunscreen: .18, gpt_receipt: .16, gpt_passport: .22, gpt_alarmclock: .2, gpt_walkietalkie: .22, gpt_luggagetag: .14, gpt_conch: .18, gpt_drawingcompass: .18,
   gpt_triangleruler: .25, gpt_tapemeasure: .12, gpt_deskbell: .12, gpt_pricegun: .2, gpt_lintroller: .25, gpt_icecubetray: .28, gpt_snorkelmask: .25, gpt_scissors: .2,
-  gpt_gluegun: .24, medal: .12, glasses: .16, sunglasses: .16 };
+  gpt_gluegun: .24, medal: .12, glasses: .16, sunglasses: .16,
+  // (사용자 10/29 1.0.289 16판 "계산기 = 주판"(벽 주판, 전자계산기는 지금 크기 맞음), 17판 "장갑…사이즈 너무 커", 15판 "보온팩·일기장·줄자·드라이어 다 큼")
+  gpt_abacus: .22, gpt_ovenmitt: .19, gpt_hairdryer: .24, gpt_iron: .26, gpt_hotwaterbottle: .26, gpt_sewingkit: .22, diary: .2, headphones: .2, gamepad: .16, console: .18, remote: .18, gpt_tambourine: .24, gpt_teapot: .24, gpt_thermos: .26 };
 export function realScale(type) {
   const n = natSize(type), L = Math.max(n.x, n.y, n.z) || .2;
   return Math.min(1, (REAL_LONG[type] ?? LONG_MAX[type] ?? DECOY_SIZE[type]?.[0] ?? .34) / L);
@@ -71,7 +73,9 @@ export function wantScale(type, spot, role, want = .34) {
   const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2;
   if (DECOY_SIZE[type]) want = Math.max(want, DECOY_SIZE[type][0]);
   // (19판부터 10/29 1.0.278 QA: 조립 부품(소방차 운전석 등)은 장난감 차 조각 — 38 cm 상한 밖, 48 cm)
-  if (RULE && /^kit_/.test(type)) want = Math.max(want, .48);
+  if (RULE && /^kit_firetruck/.test(type)) want = Math.max(want, .48);
+  // (사용자 10/29 1.0.289 18판 "너는 귀때기가 저만하냐?": 이어폰·USB·동전 지갑 같은 작은 것은 판에서도 실제 크기 — realScale 표)
+  if (RULE && REAL_LONG[type]) want = Math.min(want, REAL_LONG[type] * 1.3);
   const room = (spot.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (spot.scale || 1));
   const ss = spot.scale || 1, lim = ITEMS[type]?.flat ? 2.4 : room;
   // (사용자 10/29 "19판부터 숨긴 물건들 전반적으로 너무 큼": 1.25배 이상 키우는 바닥값이 원래 큰 모델(GPT 라켓·소쿠리·가위)을 60~85 cm로
@@ -91,6 +95,8 @@ let WALLS = [], ROOMS = [];
 // stage.js가 판마다 켬; 1~18판·내 방·털기는 예전 그대로)
 let RULE = false;
 export const sizeRule = () => RULE;
+// (10판 별밤 그림 뒤 게임기처럼 판이 정해 둔 것(thingIn): 예전 크기 그대로 — stage.js가 그릴 때만 잠깐 끔)
+export const setRule = v => { RULE = !!v; };
 export function fitPrep(room, rule = false) {
   WALLS = []; ROOMS = []; RULE = !!room && !!rule;
   if (!room?.group) return;

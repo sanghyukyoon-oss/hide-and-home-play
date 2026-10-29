@@ -10,7 +10,7 @@
 // One bright plastic colour per piece, so each piece reads at phone size by its colour and its outline.
 import * as THREE from 'three';
 import { rbox, sph, cyl, tor, cone, cap, put, grp, extrude, starShape, mesh, mat, geo, canvasTex } from './kit.js';
-import { tr } from '../i18n.js';
+import { tr, addI18n } from '../i18n.js';
 
 const WHITE = '#f6f7ff', BLUE = '#3d7bff', GREEN = '#4cc62e', RED = '#ff4f5e', YELLOW = '#ffc93c', ORANGE = '#ff9a3c',
   CYAN = '#63dcff', PEG = '#d5d9ea', DARK = '#2a2440';
@@ -91,38 +91,59 @@ const ROBOT = {
 // ── 11판 캣타워 (10/20, user: "이렇게 조립식 많이 들어가면 좋겠다" — 레벨 세션: 11판 캣타워·19판 미니 소방차): a flat-pack cat
 // tower, built bottom-up — a round base, a little house, two rope posts, a middle deck, the top bed, a pom-pom on a string.
 // Chunky and pastel; 냥냥이 jumps up into the top bed when it's done (modelkit.js comeAlive)
-const MINT = '#6fdcb4', CT_CREAM = '#fff4e2', WOOD = '#f2b866', ROPE = '#f1dcae', CT_ORANGE = '#ffad42', CT_BALL = '#ffc34a';
+const MINT = '#6fdcb4', CT_CREAM = '#fff4e2', CT_ORANGE = '#ffad42';
+// (10/29 실폰 "뭘 찾아야 할지 모르겠다"·"캣타워 좀 디벨롭해서": each piece now reads as its cat-tower part on the cream kitchen
+// floor — a lavender carpet board with paw prints, thick sisal posts with dark rope turns, an orange house with a cat-head
+// doorway, fluffy-rimmed pink-cushion beds, and a teaser of feathers and a bell)
+const CARPET = '#8a78e0', CARPET_D = '#6a58c4', PAW = '#c4baf6', SISAL = '#ecc07a', SISAL_D = '#c78f4c', CT_HOUSE = '#ff9440',
+  FLUFF = '#fff6fa', CUSH = '#ff8fb4', BELL = '#ffc93c', HOLE = '#4a2e22';
 const ropePost = (g, x, y0, y1, z = 0) => {
-  const h = y1 - y0; g.add(put(cyl(.034, .034, h, ROPE, null, 14), x, y0 + h / 2, z));
-  for (let y = y0 + .022; y < y1 - .008; y += .024) g.add(put(tor(.035, .005, '#d9bd84', null, Math.PI * 2, 6, 16), x, y, z, Math.PI / 2, 0, 0));   // the rope's turns
-  for (const y of [y0 + .012, y1 - .01]) g.add(put(cyl(.042, .042, .02, MINT, null, 16), x, y, z));   // the mint caps
+  const h = y1 - y0; g.add(put(cyl(.042, .042, h, SISAL, null, 18), x, y0 + h / 2, z));
+  for (let y = y0 + .03; y < y1 - .022; y += .026) g.add(put(tor(.0425, .0045, SISAL_D, null, Math.PI * 2, 6, 20), x, y, z, Math.PI / 2 + .16, 0, 0));   // the rope's turns, wound on a slant
+  for (const y of [y0 + .012, y1 - .011]) g.add(put(cyl(.054, .054, .022, CARPET, null, 20), x, y, z));   // carpet caps
 };
-// (as GPT's box art: two rope posts on a round wooden base, a cream house with a round door on the taller one, a cushioned
-// bed on the house's roof, a lower side seat on the other, a pom-pom hanging from the bed)
+const fluffRim = (g, x, y, r, n, s) => { for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2; g.add(put(sph(s, FLUFF, null, 10, 8), x + Math.cos(a) * r, y, Math.sin(a) * r, 0, 0, 0, [1, .75, 1])); } };
+const paw = (g, x, z, y, s = 1) => {
+  g.add(put(sph(.022 * s, PAW, null, 12, 8), x, y, z, 0, 0, 0, [1.15, .22, 1]));
+  for (const [dx, dz] of [[-.024, -.022], [-.008, -.032], [.01, -.032], [.026, -.022]]) g.add(put(sph(.009 * s, PAW, null, 10, 6), x + dx * s, y, z + dz * s, 0, 0, 0, [1, .25, 1]));
+};
+// (as GPT's box art: two rope posts on a carpet board, a house with a round door on the taller one, a cushioned bed on the
+// house's roof, a lower side seat on the other, a toy hanging from the bed)
+addI18n({ '캣타워 깃털 방울': 'Cat tower feather toy', '깃털 방울': 'Feather toy' });
 const CATTOWER = {
-  base: { name: '캣타워 받침', color: WOOD, joint: [0, .02, 0], nub: [[.22, .02, 0], [1, 0, 0]], build(g) {
-    g.add(put(cyl(.24, .24, .022, MINT, null, 30), 0, .011, 0));
-    g.add(put(cyl(.232, .232, .03, WOOD, null, 30), 0, .036, 0));
+  base: { name: '캣타워 받침', color: CARPET, joint: [0, .02, 0], nub: [[.25, .02, 0], [1, 0, 0]], build(g) {
+    g.add(put(rbox(.54, .022, .38, CARPET_D, .01), 0, .011, 0));
+    g.add(put(rbox(.5, .03, .34, CARPET, .014), 0, .036, 0));
+    paw(g, .03, .14, .052); paw(g, -.16, -.1, .052, .9); paw(g, .21, -.11, .052, .9);
   } },
-  pole1: { name: '캣타워 기둥', color: ROPE, joint: [-.07, .14, 0], nub: [[-.07, .2, .04], [0, 0, 1]], build(g) { ropePost(g, -.07, .051, .25); } },
-  pole2: { name: '캣타워 작은 기둥', color: ROPE, joint: [.13, .11, 0], nub: [[.13, .15, .04], [0, 0, 1]], build(g) { ropePost(g, .13, .051, .19); } },
-  house: { name: '캣타워 집', color: CT_CREAM, joint: [-.07, .33, 0], nub: [[.03, .33, 0], [1, 0, 0]], build(g) {
-    g.add(put(rbox(.19, .016, .17, MINT, .006), -.07, .256, 0));                                // its mint floor
-    g.add(put(rbox(.18, .15, .16, CT_CREAM, .02), -.07, .34, 0));
-    g.add(put(tor(.048, .012, CT_ORANGE, null, Math.PI * 2, 8, 22), -.07, .335, .082));         // the round door's rim
-    g.add(put(cyl(.046, .046, .01, '#5a3d2a', null, 20), -.07, .335, .078, Math.PI / 2, 0, 0));   // the dark doorway
+  pole1: { name: '캣타워 기둥', color: SISAL, joint: [-.07, .14, 0], nub: [[-.07, .2, .05], [0, 0, 1]], build(g) { ropePost(g, -.07, .051, .25); } },
+  pole2: { name: '캣타워 작은 기둥', color: SISAL, joint: [.13, .11, 0], nub: [[.13, .15, .05], [0, 0, 1]], build(g) { ropePost(g, .13, .051, .19); } },
+  house: { name: '캣타워 집', color: CT_HOUSE, joint: [-.07, .33, 0], nub: [[.03, .33, 0], [1, 0, 0]], build(g) {
+    g.add(put(rbox(.2, .016, .18, CARPET, .006), -.07, .256, 0));                              // its carpet floor
+    g.add(put(rbox(.19, .15, .17, CT_HOUSE, .024), -.07, .34, 0));
+    g.add(put(rbox(.2, .014, .18, CARPET, .006), -.07, .418, 0));                              // the roof's carpet
+    // the doorway shaped like a cat's head: a dark round hole with two ears, a cream rim, a pink cushion peeking out
+    g.add(put(cyl(.05, .05, .01, HOLE, null, 22), -.07, .33, .083, Math.PI / 2, 0, 0));
+    for (const sx of [-1, 1]) g.add(put(cone(.026, .044, HOLE, null, 4), -.07 + sx * .034, .384, .083, 0, Math.PI / 4, sx * -.4));
+    g.add(put(tor(.052, .007, '#d8702a', null, Math.PI * 2, 6, 24), -.07, .33, .087));
   } },
-  deck: { name: '캣타워 옆 방석', color: MINT, joint: [.13, .21, 0], nub: [[.25, .21, 0], [1, 0, 0]], build(g) {
-    g.add(put(cyl(.11, .11, .03, MINT, null, 24), .13, .205, 0));
-    g.add(put(cyl(.098, .1, .022, CT_CREAM, null, 24), .13, .23, 0));
+  deck: { name: '캣타워 옆 방석', color: CUSH, joint: [.13, .21, 0], nub: [[.26, .21, 0], [1, 0, 0]], build(g) {
+    g.add(put(cyl(.115, .115, .028, CARPET, null, 26), .13, .204, 0));
+    g.add(put(cyl(.088, .092, .024, CUSH, null, 26), .13, .228, 0));
+    fluffRim(g, .13, .226, .1, 15, .024);
   } },
-  top: { name: '캣타워 꼭대기', color: MINT, joint: [-.07, .44, 0], nub: [[.06, .44, 0], [1, 0, 0]], build(g) {
-    g.add(put(cyl(.13, .13, .032, MINT, null, 26), -.07, .432, 0));
-    g.add(put(cyl(.115, .118, .026, CT_CREAM, null, 26), -.07, .46, 0));                          // the cushion
+  top: { name: '캣타워 꼭대기', color: CUSH, joint: [-.07, .44, 0], nub: [[.07, .44, 0], [1, 0, 0]], build(g) {
+    g.add(put(cyl(.138, .138, .03, CARPET, null, 28), -.07, .431, 0));
+    g.add(put(cyl(.105, .11, .026, CUSH, null, 28), -.07, .457, 0));
+    fluffRim(g, -.07, .458, .122, 18, .027);
+    paw(g, -.07, .02, .471, .8);
   } },
-  ball: { name: '캣타워 방울 공', color: CT_BALL, joint: [-.19, .42, 0], nub: [[-.19, .28, .04], [0, 0, 1]], build(g) {
-    g.add(put(cyl(.005, .005, .08, '#5a3d2a', null, 6), -.19, .38, 0));                          // the string, from the bed's edge
-    g.add(put(sph(.034, CT_BALL, null, 14, 12), -.19, .316, 0));
+  ball: { name: '캣타워 깃털 방울', color: BELL, joint: [-.19, .42, 0], nub: [[-.19, .28, .04], [0, 0, 1]], build(g) {
+    g.add(put(cyl(.005, .005, .085, HOLE, null, 6), -.2, .378, 0));                               // the string, from the bed's edge
+    for (const [rz, c] of [[-.45, '#ff6f9c'], [0, '#3fc6d8'], [.45, '#ffd23c']]) g.add(put(cone(.018, .07, c, null, 8), -.2 + Math.sin(rz) * .02, .322, 0, 0, 0, Math.PI + rz));   // feathers
+    g.add(put(sph(.032, BELL, GLOSS, 16, 12), -.2, .3, .012));                                   // the bell
+    g.add(put(rbox(.04, .006, .008, HOLE, .002), -.2, .292, .043));
+    g.add(put(cyl(.01, .01, .012, '#d99a1a', null, 8), -.2, .334, .012));
   } },
 };
 // ── 19판 미니 소방차: a chunky toy fire truck, side on (its length along x), built from the chassis up — the back wheels,
@@ -201,7 +222,7 @@ KITS.parfait = { id: 'parfait', type: 'stack', skin: 'runner', intro: 'box', lid
 // furniture goes to the shop's 기념품, not my room (the user's gift rule — econ.js FREE_KITS is the robot only)
 KITS.cattower = { id: 'cattower', name: '캣타워', parts: CATTOWER, order: ['base', 'pole1', 'pole2', 'house', 'deck', 'top', 'ball'],
   build: { ordered: true, glow: true, ghost: false }, type: 'model', skin: 'tray', intro: 'box', lid: 'kraft', scale: 1.5,   // (the card: the stage's ordinary find list — user 10/20 "캣타워가 프라모델 ui쓰는건 이상한데")
-  short: { base: '받침', pole1: '기둥', pole2: '작은 기둥', house: '집', deck: '옆 방석', top: '꼭대기', ball: '공' }, runner: '#c8f0e2', color: '#c99554',
+  short: { base: '받침', pole1: '기둥', pole2: '작은 기둥', house: '집', deck: '옆 방석', top: '꼭대기', ball: '깃털 방울' }, runner: '#c8f0e2', color: '#c99554',
   boxArt: 'art/kits/cattower-box.jpg',   // (GPT's box art, 10/20 — 640 px JPEG)
   frame: { areas: ['base base pole1 pole2 house', 'deck top pole1 pole2 ball'], cols: [1, 1, .6, .6, 1.3] }, locked: 'top', furn: 'cattower' };
 KITS.firetruck = { id: 'firetruck', name: '미니 소방차', parts: FIRETRUCK, order: ['chassis', 'wheelsB', 'wheelsF', 'cab', 'ladder', 'cannon', 'light'],

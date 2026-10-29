@@ -44,7 +44,7 @@ export function fixSmall(S) {
   const show = it => { const p = it.spot.part; it.g.visible = !p || p.t > .5; };
   for (const it of S.targets) {
     if (performance.now() - t0 > 400) break;   // (a time budget, not a hitch)
-    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role !== 'target') continue;
+    if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role !== 'target') continue;
     // (24판 ② 10/23: a chain's reward stays where the chain ends — the 배수구, 25판 옥상 바구니 — the chain's own camera shows it;
     // 10/24 허브: not tiny there either — drawn bigger in its own place, up to 2.2×, so a finger finds it (25판 쿠키 봇 빗나감 14번)
     if (it.spot.part?.chainVia || it.spot.part?.device === 'chain') {
@@ -133,7 +133,7 @@ export function unhide(S) {
   // (10/29 1.0.280 실폰 "21 스테이지도 쪽지 안 보임" — 순찰차 밑: the clues too — a note, a key, a colour card — not only the things on the list)
   for (const it of S.items) {
     if (performance.now() - t0 > 600) break;
-    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role === 'secret' || (it.role === 'decoy' && affOk(it.type, it.spot)) || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role === 'secret' || (it.role === 'decoy' && affOk(it.type, it.spot)) || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     if (seenAny(S, it) && affOk(it.type, it.spot)) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
     const d = s => s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(c0);
@@ -145,7 +145,7 @@ export function unhide(S) {
   }
   // (behind a lock, where it makes no sense — 70판 202호 우편함 주먹밥: trade places with a thing on the list that does belong there)
   for (const it of S.targets) {
-    if (it.found || it.friend || it.furnTarget || !it.g || !it.spot?.part?.lock || affOk(it.type, it.spot)) continue;
+    if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || !it.g || !it.spot?.part?.lock || affOk(it.type, it.spot)) continue;
     const here = it.spot;
     for (const o of S.targets) {
       if (o === it || o.found || o.friend || o.furnTarget || o.hang || o.pileHidden || o.vacHidden || !o.g || !o.spot || o.spot.part?.lock || o.spot.part?.chainVia || o.spot.part?.device === 'chain' || !fits(o.type, here) || !fits(it.type, o.spot)) continue;
@@ -192,7 +192,7 @@ export function sizeUp(S) {
   W.updateCam?.(); R.group.updateMatrixWorld(true);
   for (const it of S.items.filter(i => i.role !== 'decoy' && i.role !== 'secret')) {
     if (performance.now() - t0 > 500) break;
-    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     let f = sizeFix(W, it);
     if (f > 0) { if (Math.abs(f - 1) > .01) { it.g.scale.multiplyScalar(f); settleOn(it.g, it.spot); out.push(`${it.type} ×${f.toFixed(2)} @${it.spot.label}`); } continue; }
     if (it.spot.part?.lock) continue;
@@ -216,7 +216,7 @@ export function unpierce(S) {
   R.group.updateMatrixWorld(true);
   for (const it of [...S.items]) {
     if (performance.now() - t0 > 600) break;
-    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || (it.role !== 'target' && it.role !== 'decoy') || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || (it.role !== 'target' && it.role !== 'decoy') || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     if (!pierced(it.g, it.spot)) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
     let dest = null;

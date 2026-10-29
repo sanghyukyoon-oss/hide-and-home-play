@@ -35,7 +35,8 @@ export function installOtakuloft5(LAYOUTS, THEMES) {
       UP('futon', 0, 0), UP('bookshelf', 1, 0, 0, { seed: 4 }), UP('pcdesk', 2, 0), UP('tvlow', 3, 0), UP('drawers', 5, 0), UP('floorlamp', 6, 0),
       UP('plant', 1, 1), UP('rug', 2, 1), UP('beanbag', 3, 1), UP('laundrybasket', 6, 1),
       // (10/24 "2층 썰렁": the middle row's empty cells get our own cosy pieces — a cushion pile, a starry mood lamp, a game rack)
-      UP('cushionpile', 0, 1), UP('gf_starlamp', 4, 1), UP('gamerack', 5, 1),
+      // (10/29 실폰 "이 토사물은 대체 뭘까": 쿠션 더미는 이불(1×2)과 같은 칸이라 노란 꽃 방석이 이불 속에 묻혀 얼룩처럼 보였음 → 뺌)
+      UP('gf_starlamp', 4, 1), UP('gamerack', 5, 1),
       // 1층 오락실 — 2층 밑 줄(카메라를 낮춰야 보이는 안쪽): 오락기 둘(하늘·라일락)·캡슐 뽑기·동전 교환기·경품 진열장·택배 상자
       { ...CAB(0, 0, { kind: 1, gap: 1 }), dx: -.06 }, { ...CAB(1, 0, { kind: 2 }), dx: .06 }, F('ol5_gacha', 2, 0), { ...F('ol5_changer', 3, 0), dx: .1 }, F('ol5_prizewall', 4, 0), F('boxstack', 6, 0),
       // 앞(두 층 높이): 왼쪽 미끄럼틀(2층 → 1층), 빨강 경품 오락기(자물쇠), 가운데 집게 크레인 바구니, 인형 뽑기 둘(분홍 곰·민트 토끼), 오른쪽 나선 계단(1층 → 2층)

@@ -23,7 +23,7 @@ import { fixSmall, unhide, screenPx, sizeUp, unpierce } from '../smallfix.js';  
 import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
-import { drawnScale, wantScale, capScale, coverCap, coverDraw, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn, DECOY_SIZE } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
+import { drawnScale, wantScale, capScale, coverCap, coverDraw, sizeRule, setRule, faceItem, centerOn, nestles, fitPrep, squareIfCrossing, settleOn, DECOY_SIZE } from '../fitspot.js';   // 자리에 맞는 물건 (10/19)
 // a placed thing's longest side as drawn (m): its own meshes, not its tap sphere
 const _dl = new THREE.Box3(), _dlb = new THREE.Box3();
 // (19판부터 10/29: the longest side of a thing as drawn, in its own frame — a model variant can be larger than natSize's)
@@ -50,7 +50,7 @@ function shrinkBy(it, f, W) {
 }
 const PAPER_T = /^(note|notepiece|colornote|postit|letter|receipt|gpt_receipt|lottery|map|starmap|report|trainticket|ticket)$/, PAPER_MAX = .22;
 function fitUnderCover(it, W) {
-  if (!it.g || it.friend || it.lightSwitch || it.furnTarget || !it.spot || it.type === 'friendtoken') return;
+  if (it.own || !it.g || it.friend || it.lightSwitch || it.furnTarget || !it.spot || it.type === 'friendtoken') return;
   const sp = it.spot, part = sp.part, ie = boxExt(it.g); if (!ie) return;
   const imax = Math.max(ie.x, ie.y, ie.z);
   let lim = 0;
@@ -273,7 +273,7 @@ export class StageScene {
     setPlace(custom ? null : this.spec.room);   // (a place the story room went through thing by thing: 3판 — affinity.js)
     // (this room's walls for the box test — fitspot.js; 19판부터 크기 규칙 10/29)
     // (② 10/29: 친구 집·자유 배치(custom)도 — GPT 모델이 원래 크기 × 1.15 이상으로 커지던 것)
-    fitPrep(this.room, !this.preview && (!!custom || this.idx >= 18));
+    fitPrep(this.room, !this.preview);
     // what the last three stages played asked for: this one picks other things first (stages.js planStage, 10/20)
     const recentT = G.save.recentT || [];
     if (!custom && !this.preview) this.spec = { ...this.spec, recentTypes: recentT.filter(e => e.i !== this.idx).flatMap(e => e.t) };
@@ -310,8 +310,10 @@ export class StageScene {
       // (a lock's thing that had to take a tight place: as big as the place lets it, never under .6)
       // (사용자 10/29 실폰 "19판부터 고깔·숨긴 물건들 전반적으로 너무 큼", "여행 목베개가 차만 함": 넓은 맵이 물건을 40~70 cm로 키웠음 —
       // 가구·캐릭터는 gpt-scale.js로 우리 크기라 물건도 1~18판과 같은 크기(38 cm 상한); 작게 보이면 줌·smallfix 자리 옮기기 몫)
-      const want = this.itemWant = Math.min(this.idx >= 18 ? .38 : 9, this.spec.itemSize || LOOK.has('items') && this.lookR?.itemSize || .34);   // (spec.itemSize: a wide map's own — stages.js ITEM_TUNE, ② 레벨 10/21)
+      const want = this.itemWant = Math.min(.38, this.spec.itemSize || LOOK.has('items') && this.lookR?.itemSize || .34);   // (spec.itemSize: a wide map's own — stages.js ITEM_TUNE, ② 레벨 10/21)
+      const rule0 = sizeRule(); if (p.own) setRule(false);
       const sc = Math.min(drawnScale(p.type, p.spot, p.role, want) || Math.max(.6, Math.min(wantScale(p.type, p.spot, p.role, want), capScale(p.type, p.spot))), coverDraw(p.type, p.spot));
+      setRule(rule0);
       // (and it looks out of its place — 3판 "고무오리 얼굴이 바구니 쪽에 있음", user 10/19: a little either side of that)
       const jit = (r() - .5) * .7; g.userData.jit = jit;
       attachItem(p.spot, g, { rotY: 0, scale: sc }); faceItem(g, p.spot, jit); centerOn(g, p.spot); squareIfCrossing(g, p.spot); settleOn(g, p.spot);
@@ -320,9 +322,9 @@ export class StageScene {
       // 토끼 슬리퍼 came out 10 cm, 사용자 10/24 "쓰레빠 웰케 작아짐": fitspot lets a decoy down to 15 cm, fitClear then took 30% more;
       // that place gets none, like a decoy fitspot already turns away)
       // (19판부터 10/29 사용자 "크기들 좀 맞춰주라니까": 그려진 실제 긴 변이 바라는 크기의 1.1배를 넘으면 줄임 — 26판 슬리퍼 변형 48 cm)
-      if (this.idx >= 18 && !this.custom) { const L = ownLong(g), top = Math.max(want, DECOY_SIZE[p.type]?.[0] || 0, /^kit_/.test(p.type) ? .48 : 0) * 1.1; if (L > top) { g.scale.multiplyScalar(top / L); settleOn(g, p.spot); } }
+      if (!this.custom && !p.own) { const L = ownLong(g), top = Math.max(want, DECOY_SIZE[p.type]?.[0] || 0, /^kit_/.test(p.type) ? .48 : 0) * 1.1; if (L > top) { g.scale.multiplyScalar(top / L); settleOn(g, p.spot); } }
       if (p.role === 'decoy' && drawnLong(g) < (DECOY_SIZE[p.type]?.[1] || .15)) { g.parent?.remove(g); p.spot.itemGroup = null; continue; }
-      const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
+      const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece, own: !!p.own };
       if (p.hang) it.hang = p.hang;   // (7판: on the pulley's top hook, out of reach until the basket comes up — tapHung / dropHung)
       if (p.vacHidden) { it.vacHidden = true; g.visible = false; }   // rides out on the robot vacuum (아파트 장치판)
       if (p.type === 'friendtoken') { it.friend = true; it.thumb = G.thumbs['face_' + this.th.friend]; this.friendItem = it; }
@@ -449,9 +451,9 @@ export class StageScene {
     if (!this.custom && !this.preview && (!this.incident || many) && this.idx >= 1 && (this.idx <= 10 || this.hunt || many)) this.tiers = tierPass(this);
     if (!this.custom && !this.preview && sized(this.idx)) this.smallFixed = fixSmall(this);   // (#94: nothing on the list under 28 px on the start view — smallfix.js)
     // (19판부터 10/29: 어느 각도에서도 안 보이는 찾을 것은 보이는 가까운 자리로 — smallfix.js unhide)
-    if (!this.custom && !this.preview && this.idx >= 18) this.unhidden = unhide(this);
+    if (!this.custom && !this.preview) this.unhidden = unhide(this);
     // (19판부터 10/29: 자리 옮기기·다시 그리기 뒤에도 그려진 실제 긴 변이 바라는 크기의 1.1배를 넘으면 줄임 — 26판 슬리퍼 48 cm, 22판 우산 68 cm)
-    if (!this.custom && !this.preview && this.idx >= 18) for (const it of this.items) { if (!it.g || it.friend || it.lightSwitch || it.furnTarget) continue; const L = ownLong(it.g), top = Math.max(this.itemWant || .34, DECOY_SIZE[it.type]?.[0] || 0, /^kit_/.test(it.type) ? .48 : 0) * 1.1; if (L > top) shrinkBy(it, top / L, this.G.world); }
+    if (!this.custom && !this.preview) for (const it of this.items) { if (!it.g || it.own || it.friend || it.lightSwitch || it.furnTarget) continue; const L = ownLong(it.g), top = Math.max(this.itemWant || .34, DECOY_SIZE[it.type]?.[0] || 0, /^kit_/.test(it.type) ? .48 : 0) * 1.1; if (L > top) shrinkBy(it, top / L, this.G.world); }
     // (19판부터 10/29 1.0.278 QA "부품보다 큼" 6건: 회전까지 든 화면 상자로 — 안에 든 것은 가린 부품(문·서랍·뚜껑·천·전단지)의 가장 긴 변,
     // 밑·뒤·위의 덮개는 그 가로 폭, 덮개 없는 밑·뒤는 주인 가구 폭(밑 가로, 뒤 가로·높이) 안으로)
     // (사용자 10/29 "1~18판까지도 한번 봐 줄래": 1~18판은 규칙을 켜지 않고, 가린 부품보다 큰 것만 이 단계에서 줄임 — 다른 배치는 그대로)
@@ -460,9 +462,9 @@ export class StageScene {
     // (사용자 10/29 "접힌 종이 말고 펼쳐진 단서나 종이 중 너무 큰 게 있어": 쪽지·메모·영수증·지도 같은 펼친 종이는 모든 판에서 손바닥만 하게 — 긴 변 22 cm; 관찰 자물쇠 쪽지가 obsSetup에서 다시 그려져서 그 뒤)
     if (!this.custom && !this.preview) for (const it of this.items) { if (!it.g || !PAPER_T.test(it.type)) continue; const L = ownLong(it.g); if (L > PAPER_MAX) shrinkBy(it, PAPER_MAX / L, this.G.world); }
     // (19판부터 10/29 허브 QA: 가린 것 안에 들어가면서 첫 화면 20 px 이상 — 둘 다 안 되면 다른 자리로; smallfix.js sizeUp)
-    if (!this.custom && !this.preview && this.idx >= 18) this.sizedUp = sizeUp(this);
+    if (!this.custom && !this.preview) this.sizedUp = sizeUp(this);
     // (19판부터 10/29 1.0.280 20판 "연 뚫린 거": 가구 기둥·막대가 관통하는 물건은 다른 자리로 — smallfix.js unpierce)
-    if (!this.custom && !this.preview && this.idx >= 18) this.unpierced = unpierce(this);
+    if (!this.custom && !this.preview) this.unpierced = unpierce(this);
     // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
     // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
