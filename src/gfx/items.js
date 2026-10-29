@@ -251,6 +251,7 @@ export const ITEMS = {
     return g;
   } },
   apple: { name: '사과', h: .26, build() {
+    if ((globalThis.__sbkStage ?? -1) >= 18) return appleLate();
     const g = grp();
     g.add(put(sph(.11, '#ff4d5e', GLOSS), 0, .1, 0, 0, 0, 0, [1, .9, 1]));
     g.add(put(cyl(.01, .012, .06, '#6b4226'), 0, .22, 0, 0, 0, .2));
@@ -491,6 +492,7 @@ export const ITEMS = {
   } },
   // 밀짚모자 (3판 기차역, 벤치·짐 가방 — 레벨 세션 추가 부탁): a wide straw brim, a round crown, a red ribbon round it
   strawhat: { name: '밀짚모자', h: .13, build() {
+    if ((globalThis.__sbkStage ?? -1) >= 18) return strawhatLate();
     const g = grp(), straw = '#f2cf7a';
     g.add(put(cyl(.17, .17, .014, straw, null, 28), 0, .018, 0, .06, 0, 0));
     g.add(put(cyl(.09, .1, .07, straw, null, 22), 0, .045, 0));
@@ -661,5 +663,36 @@ export function buildItem(type, opts = {}) {
   g.userData.itemType = type;
   const s = opts.scale ?? 1;
   g.scale.setScalar(s);
+  return g;
+}
+
+// 밀짚모자·사과 19판~ (⑧ 10/30 실폰 28판 "이모자 뭔지 색깔구리고 못생김 또 파묻혀잇네", 27판 "사과냐 이거"): 1~18판은 그대로
+// the straw hat: a flat wide brim with a rolled edge (no tilt — the tilted brim sank into the rug on one side), the crown a short
+// drum with a domed top, both in a light straw with darker woven rings, a red band with a bow and two tails lying on the brim
+function strawhatLate() {
+  const g = grp(), straw = '#f8df8e', weave = '#ddb862', band = '#e8455a';
+  g.add(put(cyl(.212, .205, .016, straw, null, 32), 0, .008, 0));
+  g.add(put(tor(.207, .009, straw, null, Math.PI * 2, 6, 32), 0, .012, 0, Math.PI / 2));
+  for (const r of [.13, .155, .18]) g.add(put(tor(r, .0028, weave, null, Math.PI * 2, 3, 32), 0, .017, 0, Math.PI / 2));
+  g.add(put(cyl(.094, .1, .07, straw, null, 26), 0, .05, 0));
+  g.add(put(sph(.095, straw, null, 22, 10), 0, .084, 0, 0, 0, 0, [1, .48, 1]));
+  for (const y of [.068, .1]) g.add(put(tor(y < .09 ? .097 : .078, .003, weave, null, Math.PI * 2, 3, 26), 0, y, 0, Math.PI / 2));
+  g.add(put(cyl(.102, .104, .026, band, null, 26), 0, .03, 0));
+  for (const s of [-1, 1]) g.add(put(sph(.026, band, null, 10, 8), .1, .034, .02 * s, 0, s * .5, 0, [.45, .8, 1.2]));
+  g.add(put(sph(.013, shade(band, -.15), null, 8, 6), .104, .034, 0));
+  for (const s of [-1, 1]) g.add(put(rbox(.012, .006, .05, band, .002), .128, .02, .018 * s, 0, s * .35, -.35));
+  return g;
+}
+// the apple: a real apple's shape turned on a lathe (wide shoulders, a dimple at the stem, narrower to the base), a bit of a
+// lighter blush, a curved stem and one leaf with its vein — no floating see-through shine ball
+function appleLate() {
+  const g = grp();
+  const P = [[0, .006], [.04, 0], [.075, .015], [.104, .05], [.116, .095], [.11, .14], [.088, .18], [.05, .198], [.022, .19], [0, .176]].map(([r, y]) => new THREE.Vector2(r, y));
+  g.add(mesh(new THREE.LatheGeometry(P, 26), mat('#f2414f', GLOSS)));
+  g.add(put(sph(.06, '#ff7a6e', null, 12, 8), -.05, .12, .06, 0, 0, 0, [.9, 1.1, .5]));
+  g.add(put(cyl(.008, .011, .05, '#6b4226', null, 6), .004, .2, 0, 0, 0, .18));
+  g.add(put(cyl(.007, .008, .025, '#6b4226', null, 6), .012, .235, 0, 0, 0, .55));
+  g.add(put(sph(.038, '#5cc046', null, 10, 6), .045, .228, .008, 0, -.3, .5, [1.5, .22, .8]));
+  g.add(put(rbox(.05, .004, .004, '#3f9a36', .001), .045, .232, .008, 0, -.3, .5));
   return g;
 }

@@ -13,6 +13,7 @@ import { closeBack } from './closeup.js';
 import { moveItem } from './hunt.js';
 import { ITEMS, buildItem } from './gfx/items.js';
 import { spotFits } from './fitspot.js';
+import { mat as kitMat } from './gfx/kit.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // (21·31판 bosses: the key sits on the boss's story object — script.js BOSSES → story.js storyFor)
@@ -69,7 +70,9 @@ function sway(S, dur, amp = .004) {
 function hatMesh() {
   // (사용자 메모 10/24 28판 "가방, 모자 오브젝트 디테일"): 너굴이's straw hat — a wide brim in woven rings, a round crown with a dent,
   // a red ribbon round it tied in a bow at the side with two tails
-  const g = new THREE.Group(), m = c => new THREE.MeshToonMaterial({ color: c });
+  // (28판 실폰 10/30 "이모자 뭔지 색깔구리고": a bare toon material shades in two hard steps — the straw read olive in the car's
+  // shade; 19판~ in the game's own material like everything else)
+  const late = (globalThis.__sbkStage ?? -1) >= 18, g = new THREE.Group(), m = c => late ? kitMat(c) : new THREE.MeshToonMaterial({ color: c });
   const add = (geo, c, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, m(c)); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.scale.set(sx, sy, sz); g.add(o); return o; };
   add(new THREE.CylinderGeometry(.19, .19, .016, 32), '#f2d58a');
   for (const [r, c] of [[.185, '#e3c06a'], [.16, '#f7e3a8'], [.135, '#e3c06a']]) add(new THREE.TorusGeometry(r, .006, 4, 32), c, 0, .009, 0, Math.PI / 2);
@@ -117,7 +120,8 @@ const tunnel = {
   hidden(S) {
     const p = S.friendHome; if (!p) return;
     const hat = hatMesh(), R = S.room.rooms ? S.room.rooms[0] : S.room;
-    const lp = R.group.worldToLocal(p.clone()); hat.position.set(lp.x, lp.y + .02, lp.z); hat.rotation.set(.12, Math.random() * 6, .08);
+    // (28판 실폰 10/30 "또 파묻혀잇네": tipped .12 rad, a wide brim sank into the runner on one side — it lies flat now)
+    const lp = R.group.worldToLocal(p.clone()); hat.position.set(lp.x, lp.y + .022, lp.z); hat.rotation.set(0, Math.random() * 6, 0);
     R.group.add(hat); S.stgHat = hat;
   },
 };
@@ -193,7 +197,10 @@ const sunsetTrain = {
     const bg0 = S.th?.bg || ['#ffe9d6', '#fff6ea'], A = new THREE.Color(bg0[0]), B = new THREE.Color(bg0[1]), A1 = new THREE.Color(SUN.bg[0]), B1 = new THREE.Color(SUN.bg[1]);
     const glow = k0 => { const k = k0 * .6; W.hemi.color.copy(hc).lerp(th, k); W.sun.color.copy(sc).lerp(ts, k); W.hemi.intensity = hi * (1 - .08 * k); W.sun.intensity = si * (1 - .15 * k); G.setBg(['#' + A.clone().lerp(A1, k0).getHexString(), '#' + B.clone().lerp(B1, k0).getHexString()]); };
     c.finish = () => glow(1);
-    W.flyTo(S.tw, { zoom: W.zoom * .8, dur: 1.2 });
+    // (30판 실폰 10/30 "몽글이 보이지도 않고": the camera was left where the flag-and-boat run put it — up against the shop's roof;
+    // back to the stage's first view, a little wider, so everyone on the island shows)
+    const v0 = S.view0 || { yaw: Math.PI / 4, pitch: .62 };
+    W.flyTo(S.tw, { target: W.home, yaw: v0.yaw, pitch: v0.pitch, zoom: (v0.zoom || 1) * .85, dur: 1.2 });
     await Promise.race([S.tw.run(1.6, glow, ease.inOutQuad), c.wait(1.6)]);
     glow(1); if (S.dead || c.skipped) return;
     // far off behind the room, the train home goes by — 빠앙
@@ -714,7 +721,10 @@ const konbiniTicket = {
     place(S, sh, a); G.audio.sfx('whoosh');
     await S.tw.run(.45, k => { sh.position.lerpVectors(a, b, k); sh.position.y = a.y + Math.sin(k * Math.PI) * .2; });
     sh.visible = false;
-    S.stgTicket = place(S, ticketMesh(), top.clone().add(V(.08, .012, .05)));
+    // (10/30 사용자 "호수섬 명함? 이거 왜 떠있냐": the counter's box top is the POS screen's height — the half ticket lay in the air over
+    // the price tag; now flat on the counter board itself (counter2 top .95), in the clear patch right of the POS)
+    ctr.f.group.updateMatrixWorld(true);
+    S.stgTicket = place(S, ticketMesh(), ctr.f.group.localToWorld(V(.34, .956, .2)));
     await c.wait(1.2);
   },
 };
@@ -835,7 +845,15 @@ const flagPick = {
 // hat lies on the shelter roof (the crossing's train blows it down)
 function roofHat(S) {
   const sh = findF(S, /platshelter|platformroof/);
-  if (sh && !S.stgRoofHat) { const t = topOf(sh); S.stgRoofHat = place(S, hatMesh(), t.clone().add(V(-.3, .02, 0))); S.stgRoofHat.rotation.set(.15, .6, .1); }
+  // (27판 실폰 10/30 "도넛도 떠잇다": on the box's top — the high edge of the sloping roof — the hat hung ~11 cm over the middle;
+  // now dropped onto the roof where it lies, tilted with it)
+  if (sh && !S.stgRoofHat) {
+    const t = topOf(sh).add(V(-.3, 0, 0)), hit = new THREE.Raycaster(V(t.x, t.y + 2, t.z), V(0, -1, 0)).intersectObject(sh.f.group, true)[0];
+    if (hit) t.y = hit.point.y + .006; else t.y += .02;
+    S.stgRoofHat = place(S, hatMesh(), t);
+    if (hit?.face) { const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld); S.stgRoofHat.quaternion.setFromUnitVectors(V(0, 1, 0), n).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), .6)); }
+    else S.stgRoofHat.rotation.set(.15, .6, .1);
+  }
   // (27판 방탈출: the gold tip of the locker key peeps out from under the brim — what the crossing's train is for)
   if (S.stgRoofHat && S.spec.hatKey && !S.stgHatTip) {
     const m = new THREE.MeshToonMaterial({ color: '#f2c94c' }), tip = new THREE.Group();
@@ -940,12 +958,18 @@ export async function stagingCrossing(S, part) {
     // the freight train along the track (in the track's own frame: the platform train's), fast, right through the crossing
     const F = furnOf(S, 'train') || furnOf(S, 'gpt2_train');   // (GPT 벚꽃역: along its far track, between the platform and the far street)
     if (F) {
-      const tr = freightMesh(); F.r.f.group.add(tr); W.idsDirty = true;
-      const x0 = -7, x1 = 13; tr.position.set(x0, .1, -.02);
+      // (27판 실폰 10/30 "차단기 발동하면 나오는 기차 생략하고 엔딩에 나오는 기차 디벨롭해서 두번 쓰자": no more boxes of a freight
+      // train — the platform's own train, away until the end, runs through without stopping and goes away again; with the train
+      // already in (a retry without the start) nothing runs, only the wind)
+      const car = F.r.type === 'train' ? F.r.f.car : null, home = car && S.stgCarAway ? car.position.x + 40 : null;
+      const tr = car ? (home != null ? car : null) : freightMesh();
+      const x0 = car ? home - 14 : -7, x1 = car ? home + 14 : 13;
+      if (tr && !car) { F.r.f.group.add(tr); tr.position.set(x0, .1, -.02); }
+      if (tr) { tr.position.x = x0; W.idsDirty = true; }
       G.audio.sfx('trainPass'); S.ambient?.gust?.(1.2);
       const hid = (S.items || []).filter(i => i.under?.crossing && !i.found);
       const hat = S.stgRoofHat, fall = hat && !S.stgHatDown && (keyOf(S, 'moment') === 'crossing' || hid.length > 0);
-      const pass = S.tw.run(3, k => { tr.position.x = x0 + (x1 - x0) * k; W.shadowDirty = true; });
+      const pass = tr ? S.tw.run(3, k => { tr.position.x = x0 + (x1 - x0) * k; W.shadowDirty = true; }) : S.tw.wait(3);
       if (fall) {
         S.stgHatDown = true;
         await S.tw.wait(.7); if (S.dead) return;
@@ -963,7 +987,9 @@ export async function stagingCrossing(S, part) {
         if (basket) basket.attach(hat);   // (it rides down with the basket)
         for (const it of hid) hatLanded(S, it);
       }
-      await pass; tr.parent?.remove(tr); tr.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+      await pass;
+      if (tr === car && car) { car.position.x = home - 40; W.idsDirty = true; W.shadowDirty = true; }
+      else if (tr) { tr.parent?.remove(tr); tr.traverse(o => { if (o.isMesh) o.geometry.dispose(); }); }
     }
     // (no hat to blow down — a bot, a retry without the start: the key still comes out when the train has gone)
     for (const it of (S.items || []).filter(i => i.under?.crossing && !i.found)) hatLanded(S, it);

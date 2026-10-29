@@ -589,7 +589,8 @@ PLANS.flagboat = (room, spec, story, planStage, cover) => {
   nest(plan, 'pad', 'color');
   const bl = { part: cover, kind: 'gadget', code: 'pinwheel' };
   plan.locks.push(bl);
-  cover.needMsg = K('저 보트가 데크로 와야 덮개를 열 수 있는데… 깃대 꼭대기에 바람개비 꽂는 자리가 비어 있어!', "That boat has to come in to the deck before we can lift its cover… and the pinwheel socket on top of the flagpole is empty!");
+  // (30판 실폰 10/30 "왜 깃발이 올라가면 배가 정박하는거고": the pinwheel turns the rope reel at the pole's foot — that's what pulls the boat in)
+  cover.needMsg = K('저 보트를 데크로 끌어와야 덮개를 열 수 있는데… 깃대 밑 밧줄 감개는 바람개비가 있어야 돌아가!', "We need to pull that boat in to the deck to lift its cover… the rope reel at the pole's foot only turns with a pinwheel!");
   cover.needItem = 'pinwheel';
   plan.placements.push({ type: 'friendtoken', spot: cover.spots[0], role: 'target' });
   plan.targets.unshift('friendtoken');
@@ -619,10 +620,14 @@ RUN.flagboat = async (S, part) => {
   }, ease.inOutSine);
   const s = W.toScreen(top); W.fx.burst(s.x, s.y, { n: 10, shape: 'star', colors: ['#ffe14d', '#ffffff', '#e8414e'], speed: 140, life: .5, size: 9 });
   G.audio.sfx('star');
-  if (S.friendHidden) S.hideSay([K('냥? 저 깃발… 데크로 오라는 신호다냥!', 'Mew? That flag… it\'s the signal to come to the deck, meow!')]);
-  // the boat comes in, bobbing
-  const z0 = boat.position.z;
-  await tw.run(1.5, k => { f.pin.rotation.z -= .35; f.flag.rotation.y = Math.sin(k * 20) * .15; boat.position.z = z0 + (f.boatIn - z0) * k; boat.position.y = Math.sin(k * Math.PI * 3) * .03; boat.rotation.z = Math.sin(k * Math.PI * 2) * .04; W.shadowDirty = true; }, ease.inOutSine);
+  if (S.friendHidden) S.hideSay([K('냥? 바람개비가 도니까 밧줄이 감긴다… 보트째 끌려간다냥!', "Mew? The pinwheel's winding the rope… the whole boat's being pulled in, meow!")]);
+  // the boat comes in on its rope, wound in at the pole's foot, bobbing
+  const z0 = boat.position.z, rope = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, 1, 5), new THREE.MeshToonMaterial({ color: '#d9b77e' }));
+  f.group.add(rope);
+  const ra = f.poleTop.clone().setY(.48).add(new THREE.Vector3(.1, 0, .06)), rb = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+  const ropeTo = () => { rb.set(.9, .36, 0); boat.localToWorld(rb); f.group.worldToLocal(rb); const d = rb.clone().sub(ra); rope.position.copy(ra).addScaledVector(d, .5); rope.quaternion.setFromUnitVectors(up, d.clone().normalize()); rope.scale.set(1, d.length(), 1); };
+  ropeTo(); W.idsDirty = true;
+  await tw.run(1.5, k => { f.pin.rotation.z -= .35; f.flag.rotation.y = Math.sin(k * 20) * .15; boat.position.z = z0 + (f.boatIn - z0) * k; boat.position.y = Math.sin(k * Math.PI * 3) * .03; boat.rotation.z = Math.sin(k * Math.PI * 2) * .04; ropeTo(); W.shadowDirty = true; }, ease.inOutSine);
   boat.position.y = 0; boat.rotation.z = 0;
   G.audio.sfx('thunk');
   // the cover, three jiggles, then it lifts
@@ -632,13 +637,14 @@ RUN.flagboat = async (S, part) => {
   S.cine = false;
   if (S.dead) return;
   await S.togglePart(part, true);
+  if (f.tail) { f.tail.visible = false; W.shadowDirty = true; }
 };
 // the boat's cover: a cat's tail pokes out and swishes, the cover shivers
 TELL.flagboat = (S, dev, line) => {
   const f = dev.furn, W = S.G.world, tl = f.tail, cv = dev.pivots[0], r0 = cv.rotation.z;
   tl.visible = true; W.shadowDirty = true;
   S.tw.run(1.3, k => { tl.rotation.z = Math.sin(k * Math.PI * 6) * .5; tl.scale.setScalar(Math.min(1, k * 6, (1 - k) * 6)); cv.rotation.z = r0 + Math.sin(k * Math.PI * 6) * .03 * (1 - k); }, ease.linear)
-    .then(() => { tl.visible = false; tl.scale.setScalar(1); cv.rotation.z = r0; });
+    .then(() => { tl.visible = !!S.friendHidden; tl.scale.setScalar(1); cv.rotation.z = r0; });
   S.G.audio.sfx('wobble');
   S.say({ root: { position: f.boat.getWorldPosition(new THREE.Vector3()) }, headTop: () => .5 }, line, 1300);
   return true;

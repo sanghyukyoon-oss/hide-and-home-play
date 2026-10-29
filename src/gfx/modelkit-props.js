@@ -331,13 +331,25 @@ B.kitmovebox = f => { const b = buildMoveBox(1); b.scale.setScalar(1.6); f.add(b
 // strawberry, cream, wafer, cherry. Each topping is a little dish of it as a thing to find; on the parfait it is a layer.
 const CREAM = '#fffaf3', PINK = '#ffb3cc', CHOCO = '#8a5a3c', CEREAL = '#d9964f', BAN = '#ffe27a', STRAW = '#ff5a72', LEAF = '#5cc93a', WAF = '#f0c27a', CHERRY = '#e8233a';
 const dish = (g, c = '#ffffff') => { g.add(put(cyl(.06, .045, .03, c, null, 18), 0, .015, 0)); g.add(put(tor(.058, .006, '#ffd0de', null, Math.PI * 2, 8, 22), 0, .03, 0, Math.PI / 2, 0, 0)); };
+// (10/30 사용자 34판 "파르페 디자인 다시 해라. 마지막에 깃발은 어디에 꼽는겨…": two upright sticks drew as a V / a flag) the wafer is
+// now the parfait's fan wafer — a quarter-round biscuit, point down, a crisscross of baked lines on its face — and on the parfait
+// its point is pushed into the top swirl of cream beside the cherry, the way a café serves it
+const fanWafer = (r, d = .016) => {
+  const sh = new THREE.Shape(), q = Math.PI / 4; sh.moveTo(0, 0); sh.lineTo(r * Math.cos(q), r * Math.sin(q)); sh.absarc(0, 0, r, q, 3 * q, false); sh.lineTo(0, 0);
+  const g = grp(), y0 = -r / 2, LINE = '#c98b3c';
+  g.add(extrude('pf-fan|' + r, sh, d, WAF));
+  for (const a of [-.42, -.14, .14, .42]) g.add(put(rbox(.004, r * .86, .004, LINE, .001), Math.sin(-a) * r * .45, y0 + Math.cos(a) * r * .45, d * .5 + .006, 0, 0, a));
+  for (const rr of [.38, .64, .88]) g.add(put(tor(r * rr, .0022, LINE, null, Math.PI / 2, 4, 14), 0, y0, d * .5 + .006, 0, 0, Math.PI / 4));
+  return g;
+};
+addI18n({ '부채 웨하스': 'Fan wafer' });
 const TOP = {
   pf_cereal: { name: '시리얼', build(g) { dish(g); for (let i = 0; i < 9; i++) { const a = i * 2.4, r = i ? .028 : 0; g.add(put(rbox(.026, .016, .022, i % 3 ? CEREAL : '#b8743a', .006), Math.cos(a) * r, .04 + (i % 3) * .01, Math.sin(a) * r, i, i * .7, 0)); } } },
   pf_icecream: { name: '아이스크림', build(g) { dish(g); g.add(put(sph(.05, PINK, GLOSS, 18, 14), 0, .07, 0)); g.add(put(tor(.045, .012, PINK, null, Math.PI * 2, 8, 20), 0, .04, 0, Math.PI / 2, 0, 0)); } },
   pf_banana: { name: '바나나', build(g) { g.add(put(tor(.06, .02, BAN, null, Math.PI * .9, 10, 20), 0, .02, 0, Math.PI / 2, 0, .2)); g.add(put(sph(.012, '#8a6a3a', null, 8, 6), .06, .02, .01)); } },
   pf_strawberry: { name: '딸기', build(g) { g.add(put(cone(.04, .075, STRAW, GLOSS, 16), 0, .04, 0, Math.PI, 0, 0)); for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; g.add(put(cone(.016, .03, LEAF, null, 6), Math.cos(a) * .022, .08, Math.sin(a) * .022, Math.sin(a) * 1.3, 0, -Math.cos(a) * 1.3)); } } },
   pf_cream: { name: '생크림', build(g) { dish(g); g.add(put(tor(.04, .02, CREAM, null, Math.PI * 2, 10, 22), 0, .045, 0, Math.PI / 2, 0, 0)); g.add(put(tor(.026, .017, CREAM, null, Math.PI * 2, 10, 20), 0, .07, 0, Math.PI / 2, 0, 0)); g.add(put(cone(.02, .04, CREAM, null, 12), 0, .095, 0)); } },
-  pf_wafer: { name: '웨하스', build(g) { for (const [x, rz] of [[-.015, .25], [.015, -.2]]) { const w = put(rbox(.032, .13, .018, WAF, .006), x, .065, 0, 0, 0, rz); g.add(w); } g.add(put(rbox(.034, .006, .02, '#d9a65c', .002), -.015, .09, .006, 0, 0, .25)); } },
+  pf_wafer: { name: '부채 웨하스', build(g) { g.add(put(fanWafer(.12), 0, .065, 0, -.25, 0, 0)); } },
   pf_cherry: { name: '체리', build(g) { g.add(put(sph(.032, CHERRY, GLOSS, 16, 12), 0, .032, 0)); g.add(put(tor(.04, .004, '#5a8a2a', null, Math.PI * .45, 6, 12), -.034, .062, 0, 0, 0, .1)); g.add(put(cone(.012, .03, LEAF, null, 6), .005, .1, 0, 0, 0, -1.2)); } },
 };
 for (const [k, T] of Object.entries(TOP)) {
@@ -405,7 +417,7 @@ export function buildParfait() {
   L('pf_banana', l => { l.add(band(.42, .07, rAt(.42) - .006, rAt(.49) - .006, '#fff3b8')); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + .3; l.add(put(cyl(.04, .04, .014, BAN, null, 14), Math.cos(a) * (rAt(.47) - .012), .46, Math.sin(a) * (rAt(.47) - .012), 0, -a, Math.PI / 2)); } });
   L('pf_strawberry', l => { l.add(band(.49, .1, rAt(.49) - .006, rAt(.59) - .006, '#ff9fb2')); for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; l.add(put(cone(.045, .08, STRAW, GLOSS, 14), Math.cos(a) * .12, .64, Math.sin(a) * .12, Math.PI + Math.sin(a) * .5, 0, Math.cos(a) * .5)); } });
   L('pf_cream', l => { l.add(band(.59, .08, rAt(.59) - .006, .2, CREAM)); l.add(put(tor(.13, .055, CREAM, null, Math.PI * 2, 12, 30), 0, .7, 0, Math.PI / 2, 0, 0)); l.add(put(tor(.08, .045, CREAM, null, Math.PI * 2, 12, 26), 0, .77, 0, Math.PI / 2, 0, 0)); l.add(put(cone(.05, .09, CREAM, null, 16), 0, .84, 0)); });
-  L('pf_wafer', l => { for (const [x, rz] of [[-.07, .3], [.09, -.25]]) l.add(put(rbox(.05, .24, .026, WAF, .008), x, .8, -.04, 0, 0, rz)); l.add(put(sph(.02, CHOCO, null, 10, 8), .02, .79, .1)); l.add(put(sph(.016, CHOCO, null, 10, 8), -.05, .76, .11)); });
+  L('pf_wafer', l => { l.add(put(fanWafer(.26, .022), -.085, .86, -.03, -.15, .25, .32)); l.add(put(sph(.02, CHOCO, null, 10, 8), .06, .79, .11)); l.add(put(sph(.016, CHOCO, null, 10, 8), -.02, .77, .12)); });
   L('pf_cherry', l => { l.add(put(sph(.05, CHERRY, GLOSS, 18, 14), 0, .92, .01)); l.add(put(tor(.05, .006, '#5a8a2a', null, Math.PI * .45, 6, 12), -.045, .965, 0, 0, 0, .15)); });
   return { g, layers };
 }

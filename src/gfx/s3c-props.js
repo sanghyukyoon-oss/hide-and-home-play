@@ -345,7 +345,8 @@ B.s3c_umbrella = f => {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.cyl(.022, .022, .3, 6), WOODD, sx * .17, .15, .12 + sz * .14);
     add(G.box(.32, .03, .26, .012), '#ffc6d6', 0, .335, .12);
   }));
-  f.spot('on', null, 0, .35, .12, { maxH: .3, label: '우산 의자 위', scale: .75 });
+  // (29판 실폰 10/30 "우산 뚫림": 방석 가운데 자리라 긴 물건 끝이 기운 등받이·수건을 뚫음 — 방석 앞쪽으로, 앞 모서리 너머로 살짝 걸치게)
+  f.spot('on', null, 0, .352, .19, { maxH: .3, label: '우산 의자 위', scale: .75 });
   f.spot('under', null, 0, 0, .12, { maxH: .22, label: '우산 의자 밑', scale: .7 });
 };
 

@@ -12,6 +12,10 @@ import { spotFits, drawnScale, wantScale, capScale, coverCap, coverDraw, pierced
 import { affOk } from './affinity.js';
 
 export const MIN_PX = 28;
+// (사용자 10/29 1.0.296 "23판 리모컨, 25판 와플·아이스크림이 처음엔 안 보이고 다시하기 하니까 힌트 자리에 나옴": 놓은 뒤 고치는 단계들에 0.4~0.6초
+// 시간 제한이 있어서, 처음 들어갈 때(모델·셰이더를 처음 만드느라 느린 폰) 중간에 끊겨 몇 물건이 안 보이는 자리에 남았음 — 다시하기는 빨라서 끝까지
+// 돎. 끊기면 첫 판과 다시하기가 달라지니, 판 하나에 한 번 도는 일이라 넉넉히 다 돌게)
+const PASS_BUDGET = 6000;
 const v = new THREE.Vector3();
 export function screenPx(W, obj) {
   const b = new THREE.Box3(); obj.updateMatrixWorld(true);
@@ -43,7 +47,7 @@ export function fixSmall(S) {
   W.updateCam?.(); R.group.updateMatrixWorld(true);
   const show = it => { const p = it.spot.part; it.g.visible = !p || p.t > .5; };
   for (const it of S.targets) {
-    if (performance.now() - t0 > 400) break;   // (a time budget, not a hitch)
+    if (performance.now() - t0 > PASS_BUDGET) break;
     if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role !== 'target') continue;
     // (24판 ② 10/23: a chain's reward stays where the chain ends — the 배수구, 25판 옥상 바구니 — the chain's own camera shows it;
     // 10/24 허브: not tiny there either — drawn bigger in its own place, up to 2.2×, so a finger finds it (25판 쿠키 봇 빗나감 14번)
@@ -132,7 +136,7 @@ export function unhide(S) {
   // (and a thing the planner had to put where it makes no sense — 70판 우편함 주먹밥: the planner's last chance; moves the same way)
   // (10/29 1.0.280 실폰 "21 스테이지도 쪽지 안 보임" — 순찰차 밑: the clues too — a note, a key, a colour card — not only the things on the list)
   for (const it of S.items) {
-    if (performance.now() - t0 > 600) break;
+    if (performance.now() - t0 > PASS_BUDGET) break;
     if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role === 'secret' || (it.role === 'decoy' && affOk(it.type, it.spot)) || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     if (seenAny(S, it) && affOk(it.type, it.spot)) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
@@ -193,7 +197,7 @@ export function sizeUp(S) {
   const W = S.G.world, R = S.room, out = [], t0 = performance.now(), blind = blindFor(S.spec.room) || (() => false);
   W.updateCam?.(); R.group.updateMatrixWorld(true);
   for (const it of S.items.filter(i => i.role !== 'decoy' && i.role !== 'secret')) {
-    if (performance.now() - t0 > 500) break;
+    if (performance.now() - t0 > PASS_BUDGET) break;
     if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     let f = sizeFix(W, it);
     if (f > 0) { if (Math.abs(f - 1) > .01) { it.g.scale.multiplyScalar(f); settleOn(it.g, it.spot); out.push(`${it.type} ×${f.toFixed(2)} @${it.spot.label}`); } continue; }
@@ -217,7 +221,7 @@ export function unpierce(S) {
   const W = S.G.world, R = S.room, out = [], t0 = performance.now(), blind = blindFor(S.spec.room) || (() => false);
   R.group.updateMatrixWorld(true);
   for (const it of [...S.items]) {
-    if (performance.now() - t0 > 600) break;
+    if (performance.now() - t0 > PASS_BUDGET) break;
     if (it.own || it.lightSwitch || !it.spot?.anchor || it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || it.lightSwitch || !it.g || !it.spot || (it.role !== 'target' && it.role !== 'decoy') || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
     if (!pierced(it.g, it.spot)) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);

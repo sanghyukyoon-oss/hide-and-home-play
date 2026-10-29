@@ -54,6 +54,19 @@ const S = { steel: '#c3c9d2', steel2: '#8f98a6', dark: '#3b3647', ink: '#2a2233'
 const P = o => PAL[o.v === 'b' ? 'b' : 'a'];
 const TX = texCache();
 const WH = 2.9;
+// a folded umbrella leaning from its tip (a) up to its crook (b): the pleated canopy in slices along the shaft (eight sides —
+// the folds), a strap with a press stud round it, a steel tip and shaft, the crook handle (28판 실폰 10/30 "우산 좀 알아볼수잇게":
+// a plain stick with a hook)
+const umbFold = (add, tube, a, b, col) => {
+  const at = k => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+  const lean = Math.atan2(b[0] - a[0], b[1] - a[1]), leanZ = Math.atan2(b[2] - a[2], b[1] - a[1]), len = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+  tube(a, b, .011, '#c3c9d2', 5);
+  const R = [.012, .034, .05, .056, .052, .044, .032, .016];
+  for (let i = 0; i < R.length; i++) { const p = at(.08 + i * .085); add(G.cyl(R[i + 1] ?? .01, R[i], len * .085, 8), i % 2 ? col : shade(col, -.06), p[0], p[1] + len * .0425, p[2], leanZ, 0, -lean); }
+  const m = at(.44); add(G.tor(.054, .009, PI * 2, 4, 14), shade(col, -.25), m[0], m[1], m[2], HP + leanZ, 0, -lean); add(G.sph(.012, 6, 4), '#ffffff', m[0] + .05, m[1], m[2]);
+  add(G.cone(.012, .06, 6), '#c3c9d2', a[0], a[1] + .03, a[2], PI + leanZ, 0, -lean);
+  const h = at(.94); add(G.cyl(.022, .022, .07, 8), '#8a5a34', h[0], h[1], h[2], leanZ, 0, -lean);
+};
 const flat = (w, h, tex, o = {}) => mesh(new THREE.PlaneGeometry(w, h), mat('#ffffff', { map: tex, rim: 0, ...o }), { cast: false });
 
 // a wall-side piece goes away while the camera is round on the wall's far side (as a room's wall pieces do)
@@ -541,11 +554,20 @@ B.tc5long = (f, T, o = {}) => {
     const band = mesh(new THREE.CylinderGeometry(.087, .077, .07, 18, 1, true), mat('#ffffff', { map: noodleTex(), rim: 0 }), { cast: false }); band.position.y = .085; cn.add(band);
   } else if (st) f.add(mc('tc5-stuff|' + st, ({ add, tube }) => {
     if (st === 'mikan') {
-      for (let k = 0; k < 5; k++) add(G.sph(.065, 10, 8), S.orange, -L / 4 - .1 + (k % 3) * .11, SH + .1 + Math.floor(k / 3) * .09, (k % 2) * .06);
-      for (let k = 0; k < 3; k++) add(G.box(.012, .2, .012, .004), S.red, -L / 4 - .1 + k * .1, SH + .14, .1, 0, 0, (k - 1) * .3);
-      add(G.cyl(.045, .045, .2, 10), '#bfe6c4', -L / 4 + .3, SH + .13, .08); add(G.cyl(.03, .03, .04, 8), '#3f9e6a', -L / 4 + .3, SH + .25, .08);
+      // (28판 실폰 10/30 "알아볼수잇게": 주황 공 다섯에 빨간 막대 셋 — 망이 막대로 읽힘) a red mesh bag lying on its side: five
+      // tangerines with a dimple, a dark calyx and a leaf on two of them, the net in rings and strands round them, gathered at
+      // one end into a knot with a little paper tag; the bottle of green tea beside it with its label
+      const MX = -L / 4 - .04, MY = SH + .075, T = [[-.09, 0, -.03], [.02, 0, -.05], [.12, 0, -.02], [-.04, 0, .07], [.07, .0, .07], [.02, .1, .01]];
+      for (const [x, y, z] of T) { add(G.sph(.066, 12, 10), S.orange, MX + x, MY + y, z, 0, 0, 0, [1, .88, 1]); add(G.cyl(.012, .012, .008, 6), '#5a6b2a', MX + x, MY + y + .058, z); }
+      for (const [x, y, z] of [T[2], T[5]]) add(G.sph(.026, 6, 4), '#4f9a3a', MX + x + .02, MY + y + .066, z, 0, .6, .4, [1.5, .25, .8]);
+      for (const x of [-.13, -.06, .02, .1, .17]) add(G.tor(.11 - Math.abs(x - .02) * .25, .004, PI, 3, 14), S.red, MX + x, MY - .005, .01, 0, HP, 0);
+      for (const z of [-.1, -.03, .04, .11]) tube([MX - .16, MY + .02, z * .6], [MX + .01, MY + .17, z], .004, S.red, 4), tube([MX + .01, MY + .17, z], [MX + .19, MY + .03, z * .7], .004, S.red, 4);
+      add(G.sph(.02, 8, 6), S.red, MX + .21, MY + .03, 0); tube([MX + .21, MY + .03, 0], [MX + .27, MY - .02, .02], .005, S.red, 4);
+      add(G.box(.05, .035, .004, .002), '#fff6e0', MX + .27, MY - .02, .025, 0, .3, .2);
+      add(G.cyl(.045, .045, .2, 12), '#bfe6c4', -L / 4 + .32, SH + .13, .08); add(G.cyl(.046, .046, .07, 12), '#3f9e6a', -L / 4 + .32, SH + .12, .08);
+      add(G.cyl(.03, .03, .04, 8), '#2f7d52', -L / 4 + .32, SH + .25, .08); add(G.cyl(.035, .045, .02, 12), '#bfe6c4', -L / 4 + .32, SH + .225, .08);
     } else if (st === 'umbrella') {
-      tube([L / 2 + .02, .05, D / 2 + .04], [L / 2 - .02, .78, D / 2 - .02], .035, '#5f86c4', 8); add(G.tor(.05, .014, PI, 6, 10), '#8a5a34', L / 2 - .05, .82, D / 2 - .02, 0, HP, 0);
+      umbFold(add, tube, [L / 2 + .02, .02, D / 2 + .04], [L / 2 - .02, .78, D / 2 - .02], '#5f86c4'); add(G.tor(.05, .016, PI, 6, 10), '#8a5a34', L / 2 - .07, .8, D / 2 - .02, 0, HP, 0);
     }
   }));
   if (st !== 'paper') f.spot('on', null, L / 4, SH + .04, .05, { maxH: 0.5, label: '좌석 위', scale: 1 });
@@ -879,7 +901,7 @@ B.tc5gang = (f, T, o = {}) => {
     add(G.box(.3, .12, L / Math.cos(sk) + .08, .04), S.dark, xc(0) - HW - .08, 2.34, 0, 0, sk, 0); add(G.box(.32, .03, L / Math.cos(sk) + .1, .01), S.steel2, xc(0) - HW - .08, 2.4, 0, 0, sk, 0);
     tube([xc(-L / 2 + .1) - HW + .05, .95, -L / 2 + .1], [xc(L / 2 - .1) - HW + .05, .95, L / 2 - .1], .026, S.steel, 8);
     for (const z of [-L / 2 + .12, L / 2 - .12]) tube([xc(z) - HW + .05, .95, z], [xc(z) - HW - .04, .95, z], .02, S.steel2, 6);
-    if (o.umbrella) { tube([xc(0) - HW + .24, .02, -L / 2 + .22], [xc(0) - HW + .12, .9, -L / 2 + .16], .03, '#e8574a', 8); add(G.tor(.05, .014, PI, 6, 10), '#8a5a34', xc(0) - HW + .14, .94, -L / 2 + .16, 0, HP, 0); add(G.cone(.07, .3, 8), '#d9473c', xc(0) - HW + .22, .2, -L / 2 + .21, .14, 0, 0); }
+    if (o.umbrella) { umbFold(add, tube, [xc(0) - HW + .24, .02, -L / 2 + .22], [xc(0) - HW + .12, .9, -L / 2 + .16], '#e8574a'); add(G.tor(.05, .016, PI, 6, 10), '#8a5a34', xc(0) - HW + .1, .92, -L / 2 + .16, 0, HP, 0); }
   }));
   for (const [k, z] of [[0, -L / 2 + .3], [1, L / 2 - .3]]) { const sg = flat(.42, .13, gangSignTex(k)); put(sg, xc(z) - HW + .02, 1.55, z, 0, HP); f.add(sg); }
   const halves = [-1, 1].map(sd => {
@@ -1230,7 +1252,7 @@ B.tc5tunnel = (f, T, o = {}) => {
     for (const sx of [-1, 1]) add(G.box(.08, .1, L + .02, .02), PAL.a.bodyD, sx * (HW + .27), BH + .05, 0);
     add(G.box(.5, .02, L - .2, .01), '#fff7d6', 0, BH - .005, 0);
     tube([-HW + .05, .95, -L / 2 + .1], [-HW + .05, .95, L / 2 - .1], .026, S.steel, 8); for (const z of [-L / 2 + .12, L / 2 - .12]) tube([-HW + .05, .95, z], [-HW - .04, .95, z], .02, S.steel2, 6);
-    if (o.umbrella) { tube([-HW + .24, .02, -L / 2 + .22], [-HW + .12, .9, -L / 2 + .16], .03, '#e8574a', 8); add(G.tor(.05, .014, PI, 6, 10), '#8a5a34', -HW + .14, .94, -L / 2 + .16, 0, HP, 0); add(G.cone(.07, .3, 8), '#d9473c', -HW + .22, .2, -L / 2 + .21, .14, 0, 0); }
+    if (o.umbrella) { umbFold(add, tube, [-HW + .24, .02, -L / 2 + .22], [-HW + .12, .9, -L / 2 + .16], '#e8574a'); add(G.tor(.05, .016, PI, 6, 10), '#8a5a34', -HW + .1, .92, -L / 2 + .16, 0, HP, 0); }
   }));
   for (const [k, z] of [[0, -L / 2 + .3], [1, L / 2 - .3]]) { const sg = flat(.42, .13, gangSignTex(k)); put(sg, -HW + .02, 1.55, z, 0, HP); f.add(sg); }
   const halves = [-1, 1].map(sd => {

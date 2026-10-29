@@ -390,7 +390,8 @@ B.jd_wall = (f, T) => {
     }));
     f.add(pv); return pv;
   };
-  leaf(g0, 1.75); leaf(g1, PI - 1.75);
+  // (10/30 사용자 "대문 대야 안뚫게 여는 한계 각도 조절": 100° → 75°, the right leaf ran through the red tub)
+  leaf(g0, 1.3); leaf(g1, PI - 1.3);
   // 우유 주머니 (왼 기둥 바깥, 천 주머니 — 안에 숨는 곳)
   const bag = grp(put(mesh(G.box(.2, .22, .08, .03), mat('#ffffff', { map: clothTex() })), 0, -.11, 0), put(mesh(G.box(.22, .03, .1, .01), mat('#8fb6e0')), 0, 0, 0));
   put(bag, g0 - .07, 1.04, z1 + .06); f.add(bag);
@@ -416,12 +417,14 @@ B.jd_wall = (f, T) => {
 // ── 장독대: 막돌 축대 위 판돌, 크기 다른 옹기 여섯 — 금줄 두른 큰 독 · 소쿠리 덮은 독 · 면보 묶은 독 · 뚜껑은 다 들린다 ─────
 // 바닥 2.0 × 1.3 (x ±1.0, z ±.65), 높이 .32; 뒤·왼쪽은 담에 붙음
 const PH = .32;
-const jarPts = (R, H) => [[0, 0], [R * .56, 0], [R * .78, H * .08], [R * .95, H * .3], [R, H * .48], [R * .94, H * .68], [R * .78, H * .83], [R * .66, H * .9], [R * .64, H * .94], [R * .7, H * .96], [R * .7, H], [R * .6, H], [R * .58, H * .97], [0, H * .97]];
+// (10/30 사용자 "항아리도 안에 움푹 들어가게": the mouth goes down into a hollow to H .66 — it was capped just under the rim, and what was
+// hidden in it sat under that cap, unseen)
+const jarPts = (R, H) => [[0, 0], [R * .56, 0], [R * .78, H * .08], [R * .95, H * .3], [R, H * .48], [R * .94, H * .68], [R * .78, H * .83], [R * .66, H * .9], [R * .64, H * .94], [R * .7, H * .96], [R * .7, H], [R * .6, H], [R * .58, H * .97], [R * .56, H * .8], [R * .5, H * .66], [0, H * .66]];
 function jar(f, { x, z, R, H, name, dir, seed, lid = 'lid' }) {
   const y0 = PH, base = seed % 2 ? C.onggi : C.onggiL;
   const g = new THREE.LatheGeometry(jarPts(R, H).map(([r, y]) => new THREE.Vector2(r, y)), 30);
-  f.add(put(mesh(g, mat('#ffffff', { map: onggiTex(base, seed), rough: .38, rim: .22 })), x, y0, z, 0, seed, 0));
-  f.add(put(mesh(new THREE.CircleGeometry(R * .58, 22), mat('#3d2016')), x, y0 + H * .965, z, -HP, 0, 0));
+  f.add(put(mesh(g, mat('#ffffff', { map: onggiTex(base, seed), rough: .38, rim: .22, side: THREE.DoubleSide })), x, y0, z, 0, seed, 0));
+  f.add(put(mesh(new THREE.CircleGeometry(R * .5, 22), mat('#3d2016')), x, y0 + H * .665, z, -HP, 0, 0));
   let pv;
   if (lid === 'basket') {
     // 대나무 소쿠리를 엎어 덮음
@@ -442,7 +445,7 @@ function jar(f, { x, z, R, H, name, dir, seed, lid = 'lid' }) {
   }
   put(pv, x, y0 + H, z); f.add(pv);
   const p = f.part('lift', pv, (t, b) => { pv.position.y = b.p.y + .26 * t; pv.position.x = b.p.x + dir * .16 * t; pv.rotation.z = -dir * .55 * t; }, { label: name + (lid === 'lid' ? ' 뚜껑' : ''), sfx: 'lift' });
-  f.spot('inside', null, x, y0 + H * .9, z, { part: p, maxH: Math.min(.4, H * .55), label: name + ' 안', scale: R < .2 ? .6 : R < .25 ? .72 : .82 });
+  f.spot('inside', null, x, y0 + H * .67, z, { part: p, maxH: Math.min(.4, H * .55), label: name + ' 안', scale: R < .2 ? .6 : R < .25 ? .72 : .82 });
   return pv;
 }
 B.jd_jangdok = f => {

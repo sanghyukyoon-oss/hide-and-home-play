@@ -381,7 +381,7 @@ B.cs3_stand = (f, T) => {
     if (leaf) for (let i = 0; i < 4; i++) add(G.sph(r * .32, 6, 5), leaf, x - .16 + i * .1, y + r * 1.8, z + .02, 0, 0, .4, [1.6, .4, .9]);
   }));
   pile('apple', C.apple, -.58, .55, .06, .07, 11, '#4c9a4a'); pile('mand', C.mandarin, 0, .55, .06, .062, 13);
-  pile('cab', C.cabbage, .58, .55, .06, .11, 4); pile('apple2', '#f7c94b', -.3, .85, -.2, .06, 8); pile('peach', '#ffb3a0', .3, .85, -.2, .065, 7);
+  pile('cab', C.cabbage, .58, .55, .06, .11, 4); pile('peach', '#ffb3a0', .3, .85, -.2, .065, 7);
   f.add(mc('cabvein', ({ add }) => { for (let i = 0; i < 4; i++) add(G.sph(.075, 8, 6), '#d8f0b0', .58 + Math.cos(i * 2.39) * .07, .7, .06 + Math.sin(i * 2.39) * .05, 0, 0, 0, [1, .6, 1]); }));
   // 대파 한 단 (오른 다리에 기대어) · 달걀 판 (왼쪽 위)
   f.add(mc('leek2', ({ add, tube }) => {
@@ -393,7 +393,8 @@ B.cs3_stand = (f, T) => {
   f.add(mc('eggs', ({ add }) => { add(G.box(.36, .04, .28, .01), '#e6d6b8', .78, .98, -.32, .18, 0, 0); for (let i = 0; i < 12; i++) add(G.sph(.034, 8, 6), C.egg, .66 + (i % 4) * .08, 1.02 + Math.floor(i / 4) * .015, -.4 + Math.floor(i / 4) * .08, 0, 0, 0, [1, 1.25, 1]); }));
   // 값표 (상자 앞에 꽂은 카드)
   [['사과 5천', -.58], ['귤 3천', 0], ['양배추 2천', .58]].forEach(([s, x]) => f.add(put(pane(.26, .13, cardTex('price|' + s, 260, 130, '#fffaf0', C.ink, [s], { line: C.red, lw: 5 })), x, .5, .25, -.2, 0, 0)));
-  f.spot('on', null, -.3, .86, -.2, { maxH: .3, label: '좌판 위 상자', scale: .8 });
+  // (10/30 사용자 "여기코너 정리": what was hidden here stood in the yellow fruit — the top-left box is left empty for it)
+  f.spot('on', null, -.3, .84, -.2, { maxH: .3, label: '좌판 위 상자', scale: .8 });
   f.spot('under', null, .1, .02, -.05, { maxH: .36, label: '좌판 밑', scale: .85 });
   f.spot('behind', null, -.6, .02, -.36, { maxH: .4, label: '좌판 뒤', scale: .8 });
   // 앞에 놓인 스티로폼 상자 (뚜껑이 들림)
@@ -483,9 +484,10 @@ B.cs3_cat = (f, T) => {
   head.add(mc('cathead', ({ add }) => {
     add(G.sph(.12, 14, 10), '#3a3445', 0, 0, 0, 0, 0, 0, [1.12, .95, 1]);
     for (const s of [-1, 1]) { add(G.cone(.055, .1, 8), '#3a3445', s * .075, .1, -.01, 0, 0, -s * .3); add(G.cone(.03, .05, 6), '#ff9fb6', s * .075, .095, .012, 0, 0, -s * .3); }
-    add(G.sph(.065, 10, 8), '#fbf6ee', 0, -.04, .08, 0, 0, 0, [1.2, .8, .6]);
-    for (const s of [-1, 1]) add(G.sph(.018, 8, 6), '#f7d36b', s * .05, .02, .105);
-    add(G.sph(.013, 6, 5), '#ff8fa8', 0, -.02, .125);
+    // (10/30 사용자 "가게 문앞 고양이 못생김": small yellow pinpricks for eyes → round ink eyes with a shine, cheeks, a soft muzzle)
+    add(G.sph(.07, 12, 8), '#fbf6ee', 0, -.045, .075, 0, 0, 0, [1.25, .75, .65]);
+    for (const s of [-1, 1]) { add(G.sph(.026, 10, 8), '#2a1d33', s * .052, .015, .1, 0, 0, 0, [1, 1.15, .6]); add(G.sph(.009, 6, 5), '#ffffff', s * .052 + .008, .027, .115); add(G.sph(.022, 8, 6), '#ffb3c4', s * .085, -.035, .085, 0, 0, 0, [1.2, .7, .5]); }
+    add(G.sph(.014, 6, 5), '#ff8fa8', 0, -.025, .125, 0, 0, 0, [1.2, .8, 1]);
   }));
   const tail = new THREE.Group(); put(tail, -.1, .06, -.08); cat.add(tail);
   tail.add(mc('cattail', ({ tube }) => { tube([0, 0, 0], [-.12, .05, .06], .03, '#3a3445', 6); tube([-.12, .05, .06], [-.16, .2, .12], .028, '#3a3445', 6); }));

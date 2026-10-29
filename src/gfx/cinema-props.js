@@ -24,7 +24,7 @@ import { tr, LANG, addI18n } from '../i18n.js';
 import { LOCK_COLORS } from './items.js';
 
 addI18n({
-  '상영 판 앞': 'In front of the showtimes board',
+  '상영 판 앞': 'In front of the showtimes board', '팝콘 기계 지붕 위': 'On the popcorn machine roof',
   '무대 계단 위': 'On the stage step', '무대 앞 바닥 구석': 'Floor corner by the stage',
   '별빛극장': 'Starlight Cinema', '매표소': 'Tickets', '상영관': 'Screen 1', '영사실': 'Projection', '비상구': 'EXIT', '오늘의 상영': 'Now Showing',
   '매점': 'Snack Bar', '팝콘': 'Popcorn', '콜라': 'Cola', '오징어': 'Dried squid', '쥐포': 'Fish jerky', '달려라 몽글이': 'Run, Mongle!', '우주 고양이': 'Space Cat',
@@ -910,7 +910,10 @@ B.cin_popcorn = (f, T0) => {
   f.spot('inside', machine, 0, .15, .03, { part: p, maxH: .24, label: '팝콘 기계 안', scale: .75 });
   // (디테일 10/24: 걸린 열쇠는 벽에 선 채(wallFace — 7판 도르래 고리와 같은 방식) 메뉴판 못에 하트 구멍으로 매달림 — 누워 있던 열쇠가 고리 쪽으로
   // 비틀려 '도넛 + 분홍 공'으로만 보였음, 사용자 10/24 "열쇠는 왜이럼"; 크기 ×0.7 = 약 47 cm, 두 선반 사이로 내려와 기계 지붕엔 안 닿음)
-  f.keySpot = f.spot('on', null, MX + .1, 1.84, BACK + .12, { maxH: .24, label: '팝콘 위 선반', scale: .7, wallFace: true });
+  // (31판 실폰 10/30 "팝콘이 커지는데 왜 열쇠가 떨어져?": it hung on the menu's hook up by the shelves — nothing to do with the
+  // machine) it lies on the machine's roof in plain view; the popcorn swells up under it and overflows, and the key slides off
+  // onto the counter among the spilled kernels (dropHung → '넘친 팝콘 사이')
+  f.keySpot = f.spot('on', null, MX + .13, CH + .685, .11, { maxH: .24, label: '팝콘 기계 지붕 위', scale: .7 });
   f.keySpot.hang = p;
   f.spot('on', null, .34, CH + .05, .1, { maxH: 0.45, label: '매점 카운터 위', scale: 1 });
 };
@@ -1246,7 +1249,9 @@ B.cin_projector = (f, T0, o = {}) => {
 // ── 필름 통 셋 (빈 장식: 무늬·색 없는 은색 통, 크기만 다름)이 선 작은 나무 받침 ─────────────────────────────────────
 B.cin_filmcans = (f, T0) => {
   f.add(mc('cin-filmcans', ({ add }) => {
-    add(G.box(.9, .06, .3, .02), WOOD, 0, .03, 0); for (const x of [-.44, -.13, .14, .32]) add(G.box(.02, .14, .28, .005), WOODD, x, .1, 0);
+    // (31판 실폰 10/30 "필름이랑 시간표 겹침": the place at the base's end was a hand from the small reel — a board set there went
+    // through it; the base runs on to the right and the place sits at its far end)
+    add(G.box(1.3, .06, .3, .02), WOOD, .2, .03, 0); for (const x of [-.44, -.13, .14, .38, .84]) add(G.box(.02, .14, .28, .005), WOODD, x, .1, 0);
     for (const [x, r] of [[-.29, .14], [0, .17], [.23, .1]]) {
       add(G.cyl(r, r, .07, 24), '#c9ccd6', x, r + .06, 0, HP, 0, 0); add(G.tor(r, .012, PI * 2, 4, 24), '#9aa0ad', x, r + .06, .036);
       add(G.cyl(r * .22, r * .22, .074, 12), '#6f7680', x, r + .06, 0, HP, 0, 0);
@@ -1259,7 +1264,7 @@ B.cin_filmcans = (f, T0) => {
   }));
   // 가운데 통에서 받침 위로 흘러내린 필름 한 가닥
   f.add(filmRibbon([[.06, .3, .04], [.12, .24, .07], [.15, .14, .09], [.13, .085, .11], [.06, .065, .12]], .022, .004, () => [0, 0, 1]));
-  f.spot('on', null, .4, .06, 0, { maxH: 0.45, label: '필름 통 받침 끝', scale: 1 });
+  f.spot('on', null, .62, .06, 0, { maxH: 0.45, label: '필름 통 받침 끝', scale: 1 });
 };
 
 // ── 포스터 받침 (황동 이젤에 액자 포스터) ────────────────────────────────────────────────────────────────────

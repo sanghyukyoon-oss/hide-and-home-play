@@ -486,14 +486,19 @@ function hullStrip(L, B, D, j0, j1, inner) {
 }
 function rowBoat(add, tube, L = 1.7, B = .62, D = .3, o = {}) {
   const NS = 14;
-  add(hullStrip(L, B, D, 0, 2, false), '#3f6fae'); add(hullStrip(L, B, D, NS - 2, NS, false), '#3f6fae');
-  add(hullStrip(L, B, D, 2, 4, false), '#f6f2ea'); add(hullStrip(L, B, D, NS - 4, NS - 2, false), '#f6f2ea');
-  add(hullStrip(L, B, D, 4, NS - 4, false), '#b35a4a');
+  // (o.wood — 30판 실폰 10/30 "배인지 덮개인지 저 덩어리 알아볼수 잇게": a wooden boat, its planks in two tones strake by strake,
+  // a white sheer stripe under the rail and a dark keel line)
+  if (o.wood) for (let j = 0; j < NS; j++) add(hullStrip(L, B, D, j, j + 1, false), j === 1 || j === NS - 2 ? '#f6f2ea' : j === 0 || j === NS - 1 ? '#c9844e' : j === 6 || j === 7 ? '#7a4f32' : j % 2 ? '#c27c47' : '#d18e56');
+  else {
+    add(hullStrip(L, B, D, 0, 2, false), '#3f6fae'); add(hullStrip(L, B, D, NS - 2, NS, false), '#3f6fae');
+    add(hullStrip(L, B, D, 2, 4, false), '#f6f2ea'); add(hullStrip(L, B, D, NS - 4, NS - 2, false), '#f6f2ea');
+    add(hullStrip(L, B, D, 4, NS - 4, false), '#b35a4a');
+  }
   add(hullStrip(L, B, D, 0, NS, true), '#e2c49a');
   // 뱃전 테 (위 가장자리를 따라 도는 나무 테) · 이물 끝 · 고물판
   const rim = []; for (let i = 0; i <= 28; i++) { const u = i / 28, t = u > .45 ? (u - .45) / .55 : (.45 - u) / .45, hb = B / 2 * (u > .45 ? Math.sqrt(Math.max(0, 1 - t ** 1.6)) : 1 - .22 * t * t), sh = u > .45 ? .09 * t * t : .02 * t * t; rim.push([-L / 2 + u * L, D + sh, hb]); }
   for (const sd of [-1, 1]) for (let i = 0; i < rim.length - 1; i++) tube([rim[i][0], rim[i][1], sd * rim[i][2]], [rim[i + 1][0], rim[i + 1][1], sd * rim[i + 1][2]], .022, WOODD, 6);
-  add(G.box(.04, D * .9, B * .78, .015), '#3f6fae', -L / 2 + .01, D * .55, 0); add(G.box(.05, .03, B * .8, .01), WOODD, -L / 2 + .01, D + .02, 0);
+  add(G.box(.04, D * .9, B * .78, .015), o.wood ? '#c27c47' : '#3f6fae', -L / 2 + .01, D * .55, 0); add(G.box(.05, .03, B * .8, .01), WOODD, -L / 2 + .01, D + .02, 0);
   add(G.cyl(.02, .02, .14, 8), WOODD, L / 2 - .02, D + .1, 0, 0, 0, -.5);
   // 앉을판 둘 · 노걸이 · 노 (안쪽에 나란히) · 밧줄 고리
   for (const x of [-.32, .22]) add(G.box(.12, .03, B * .86, .01), WOOD, x, D * .72, 0);
@@ -661,21 +666,31 @@ B.flagdeck2 = (f, T) => {
   pin.add(live(mc('flagdeck2-pin', ({ add }) => { for (let k = 0; k < 4; k++) { const a = k * HP; add(G.box(.12, .12, .01, .01), ['#ff8fb8', '#ffd86b', '#8fd3f4', '#9be38f'][k], Math.cos(a) * .07, Math.sin(a) * .07, 0, 0, 0, a + PI / 4, [1, .6, 1]); } add(G.sph(.025, 8, 6), '#ffffff', 0, 0, .01); })));
   const boat = grp(); put(boat, BX, 0, BZ0); f.add(boat);
   boat.add(live(mc('flagdeck2-boat3', ({ add, tube }) => {
-    rowBoat(add, tube, 1.7, .62, .3, { noOars: true });
+    rowBoat(add, tube, 1.7, .62, .3, { wood: true });
     for (const sd of [-1, 1]) { tube([-.62, .3, sd * .33], [.55, .3, sd * .33], .013, WOOD, 5); add(G.box(.16, .012, .06, .004), WOOD, .62, .3, sd * .33); }
     add(G.cap(.04, .1, 4, 10), '#ffffff', .45, .17, .33, 0, 0, HP); tube([.38, .3, .32], [.38, .2, .34], .004, ROPE, 3);
     tube([.86, .36, 0], [1.0, .38, -.1], .012, ROPE, 4);
   })));
   const cover = grp(); put(cover, 0, .26, -.28); boat.add(cover);
-  cover.add(mc('flagdeck2-cover', ({ add, tube }) => {
-    for (let k = 0; k < 6; k++) add(G.box(.22, .05, .56, .02), k % 2 ? '#ffffff' : '#3f8fd0', -.55 + k * .22, .08 + Math.sin((k + .5) / 6 * PI) * .1, .28);
-    for (const s of [-1, 1]) add(G.box(1.32, .14, .02, .01), '#3f8fd0', 0, .02, .28 + s * .28);
-    for (const x of [-.35, .3]) tube([x, .18, 0], [x, .19, .56], .008, ROPE, 4);
+  // (30판 실폰 10/30 "배 너무 못생김", "배인지 덮개인지 저 덩어리 알아볼수 잇게": the cover hid the whole boat) a canvas cover over
+  // the stern half only — the bow stays open (its seat, the oars, the bow rope), so it reads as a little wooden boat with a cover;
+  // cream canvas sagging between its ends, a blue hem down both sides with brass eyelets, two ropes over it
+  cover.add(mc('flagdeck2-cover3', ({ add, tube }) => {
+    const N = 16, X0 = -.8, X1 = -.04, XM = (X0 + X1) / 2, HL = (X1 - X0) / 2, hAt = x => .06 + Math.cos((x - XM) / (HL * 1.08) * HP) * .09;
+    for (let i = 0; i < N; i++) {
+      const xa = X0 + (X1 - X0) * i / N, xb = X0 + (X1 - X0) * (i + 1) / N, xc = (xa + xb) / 2, ya = hAt(xa), yb = hAt(xb), w = Math.hypot(xb - xa, yb - ya) + .004, rz = Math.atan2(yb - ya, xb - xa);
+      add(G.box(w, .026, .6, .006), '#f3ecd8', xc, (ya + yb) / 2, .28, 0, 0, rz);
+      for (const z of [-.008, .568]) { add(G.box(w, .08, .012, .003), '#f3ecd8', xc, (ya + yb) / 2 - .045, z, 0, 0, rz); add(G.box(w, .04, .014, .003), '#3f8fd0', xc, (ya + yb) / 2 - .1, z, 0, 0, rz); }
+    }
+    for (const x of [X0, X1]) add(G.box(.02, .03, .6, .006), '#3f8fd0', x, hAt(x) + .002, .28);
+    for (const z of [-.016, .576]) for (let i = 0; i < 5; i++) { const x = X0 + .08 + i * .15; add(G.tor(.011, .004, PI * 2, 4, 10), '#e8b84a', x, hAt(x) - .1, z); }
+    for (const x of [XM - .2, XM + .2]) tube([x, hAt(x) + .016, -.014], [x, hAt(x) + .02, .574], .008, ROPE, 4);
   }));
   // (⑩ 10/29 사용자 "들출 때 제발 벤딩 좀": 판처럼 통째로 젖혀지던 덮개 — 이제 앞 끝부터 말려 뒤로 넘어감, 30판 전용)
   const p = f.part('lift', cover, clothBend(f, cover, { hinge: [0, .08, 0], along: [0, 0, 1], toward: [0, 1, 0], len: .56, turn: 2.4, tip: .35, rise: .05 }), { label: '보트 덮개', sfx: 'lift', dur: .55 });
-  f.spot('inside', boat, -.1, .14, 0, { part: p, maxH: .36, label: '보트 덮개 밑', scale: .85 });
-  const tail = grp(); put(tail, .5, .3, .2); tail.visible = false; boat.add(tail);
+  f.spot('inside', boat, -.42, .14, 0, { part: p, maxH: .36, label: '보트 덮개 밑', scale: .85 });
+  // (30판 실폰 10/30 "왜 냐옹이는 찾은거냐": 냥냥이's tail pokes out from under the cover's front edge from the start — she's in the boat)
+  const tail = grp(); put(tail, .02, .27, .2, 0, 0, -.2); boat.add(tail);
   tail.add(live(mc('flagdeck2-tail', ({ add }) => { add(G.tor(.09, .035, PI * 1.3, 6, 14), '#f2d2a8', 0, .08, 0, 0, 0, -.5); add(G.sph(.04, 8, 6), '#ffffff', .07, .15, 0); })));
   p.pivots.push(pole);
   p.device = 'flagboat';

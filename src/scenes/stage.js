@@ -50,7 +50,8 @@ function shrinkBy(it, f, W) {
 }
 const PAPER_T = /^(note|notepiece|colornote|postit|letter|receipt|gpt_receipt|lottery|map|starmap|report|trainticket|ticket)$/, PAPER_MAX = .22;
 function fitUnderCover(it, W) {
-  if (it.own || !it.g || it.friend || it.lightSwitch || it.furnTarget || !it.spot || it.type === 'friendtoken') return;
+  // (10/30 33판 "가끔 npc가 작게 나옴": 몰래 엿보는 친구(cameo)는 물건이 아니라 캐릭터 — 크기 줄이기 단계에서 뺌)
+  if (it.own || it.cameo || !it.g || it.friend || it.lightSwitch || it.furnTarget || !it.spot || it.type === 'friendtoken') return;
   const sp = it.spot, part = sp.part, ie = boxExt(it.g); if (!ie) return;
   const imax = Math.max(ie.x, ie.y, ie.z);
   let lim = 0;
@@ -455,7 +456,7 @@ export class StageScene {
     // (19판부터 10/29: 어느 각도에서도 안 보이는 찾을 것은 보이는 가까운 자리로 — smallfix.js unhide)
     if (!this.custom && !this.preview) this.unhidden = unhide(this);
     // (19판부터 10/29: 자리 옮기기·다시 그리기 뒤에도 그려진 실제 긴 변이 바라는 크기의 1.1배를 넘으면 줄임 — 26판 슬리퍼 48 cm, 22판 우산 68 cm)
-    if (!this.custom && !this.preview) for (const it of this.items) { if (!it.g || it.own || it.friend || it.lightSwitch || it.furnTarget) continue; const L = ownLong(it.g), top = Math.max(this.itemWant || .34, DECOY_SIZE[it.type]?.[0] || 0, /^kit_/.test(it.type) ? .48 : 0) * 1.1; if (L > top) shrinkBy(it, top / L, this.G.world); }
+    if (!this.custom && !this.preview) for (const it of this.items) { if (!it.g || it.own || it.cameo || it.friend || it.lightSwitch || it.furnTarget) continue; const L = ownLong(it.g), top = Math.max(this.itemWant || .34, DECOY_SIZE[it.type]?.[0] || 0, /^kit_/.test(it.type) ? .48 : 0) * 1.1; if (L > top) shrinkBy(it, top / L, this.G.world); }
     // (19판부터 10/29 1.0.278 QA "부품보다 큼" 6건: 회전까지 든 화면 상자로 — 안에 든 것은 가린 부품(문·서랍·뚜껑·천·전단지)의 가장 긴 변,
     // 밑·뒤·위의 덮개는 그 가로 폭, 덮개 없는 밑·뒤는 주인 가구 폭(밑 가로, 뒤 가로·높이) 안으로)
     // (사용자 10/29 "1~18판까지도 한번 봐 줄래": 1~18판은 규칙을 켜지 않고, 가린 부품보다 큰 것만 이 단계에서 줄임 — 다른 배치는 그대로)

@@ -92,6 +92,8 @@ export function affinity(type, spot) {
   if (sizeRule() && /(우체통|우편함|편지함|신문함)/.test(spot.label || '') && !MAIL_OK.test(type)) return 'never';
   // (사용자 10/29 20판 "배드민턴 라켓도 저기다 두면 안 되지"·"바구니 뚫렸다": 긴 물건은 말 되는 자리만 — 위·옆(기대기)은 되고, 안은 옷장·사물함·
   // 신발장·창고·보관함·트렁크만, 밑은 벤치·평상·탁자·책상·의자·침대만, 뒤는 안 됨)
+  // (10/30 25판 ⑦: 버터 와플이 '과자 봉지 사이'에서 비슷한 봉지 속에 묻혀 안 보임 — 와플·과자·사탕 같은 포장 과자류는 과자 진열 칸 X)
+  if (/^(gpt_waffle|snack|candy|cookie|chips|cracker|choco)/.test(type) && /(과자 봉지|과자 진열|과자 칸)/.test(spot.label || '')) return 'never';
   if (sizeRule() && LONGS.test(type) && (spot.kind === 'behind' || spot.kind === 'inside' && !/(옷장|사물함|신발장|창고|보관함|트렁크)/.test(spot.label || '') || spot.kind === 'under' && !/(벤치|평상|테이블|탁자|책상|의자|침대)/.test(spot.label || ''))) return 'never';
   if (sizeRule() && LONGS.test(type) && (SOFT.test(spot.label || '') || /기둥|밑동|줄기|난간/.test(spot.label || '') && (spot.kind === 'under' || spot.kind === 'behind') || spot.kind === 'inside' && SMALLBOX.test(spot.label || '') && !/우산꽂이/.test(spot.label || ''))) return 'never';
   if (spot.kind !== 'inside') return 'ok';
