@@ -70,6 +70,9 @@ export function reelCast(S, part) {
   const k = keys[Math.floor(Math.random() * keys.length)];
   R.kind = k;
   for (const s of part.spots) if (s.itemGroup) s.itemGroup.visible = false;
+  // (29판 QA 10/29: with junk up the real catch is hidden in an open net — the hint and the bot went on looking for the hidden thing
+  // and never wound it again; it.under points them at the reel until it goes down. 19판~ only: 1~18 stay as they are)
+  if (S.idx >= 18) for (const s of real) s.item.under = part;
   const spot = part.spots[0], make = JUNK[k].make;
   if (make && spot?.anchor) { const g = make(); g.scale.setScalar(spot.scale || .75); spot.anchor.add(g); R.junk = g; }
   S.G.world.idsDirty = true;
@@ -89,6 +92,7 @@ export function reelSay(S, part) {
 export function reelClear(S, part) {
   const R = part.reel; if (!R) return;
   if (R.junk) { R.junk.parent?.remove(R.junk); R.junk.traverse(o => o.geometry?.dispose?.()); R.junk = null; }
+  for (const s of part.spots) if (s.item?.under === part) s.item.under = null;
   R.kind = null; S.G.world.idsDirty = true;
 }
 export const isJunkUp = part => !!part.reel?.kind;

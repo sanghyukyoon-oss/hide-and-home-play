@@ -8,7 +8,7 @@
 // print (gingham, bricks) is a planar-mapped textured mesh; every moving part its own mesh. Nothing here is sold (hidden).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { put, mat, mesh, geo, canvasTex, texCache, shade } from './kit.js';
+import { put, mat, mesh, geo, canvasTex, texCache, shade, cutFace, liner, minusRect, windowFace } from './kit.js';
 import { clothBend, clothWave, clothSlab } from './clothbend.js';
 import { HG as G, hxf as xf, hmc as mc, hleaves as leaves } from './house-props.js';
 import { textTex, fitText } from './gpt-paper.js';
@@ -146,8 +146,10 @@ B.stove = (f, T) => {
       add(G.cyl(.06, .06, .3, 10), shade(SOIL, (k + r) % 2 ? .06 : 0), x, y, z0 + .12, HP, 0, 0); add(G.cyl(.046, .046, .01, 10), '#f2cf9a', x, y, z0 + .272, HP, 0, 0); }
     // the hob at the right: a cream-tiled body, a honey top, the griddle of pancakes, a copper kettle
     const HX = .66, HW = .66, HT = .86;
-    add(G.box(HW, HT - .05, .62, .02), body, HX, (HT - .05) / 2, -.1);
-    for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) add(G.pbox(.2, .2, .006), r % 2 === k % 2 ? '#e9f2e4' : WHITE, HX - .21 + k * .21, .1 + r * .21, .215);
+    add(cutFace(G.box(HW, HT - .05, .62, .02), 'z'), body, HX, (HT - .05) / 2, -.1);
+    add(windowFace(HW - .04, HT - .09, [-.2, .2, -.185, .205]), body, HX, (HT - .05) / 2, .21);
+    add(liner(.4, .39, .56, 'z'), shade(body, -.16), HX, .415, -.09);
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) for (const [a, b, c, d] of minusRect([HX - .31 + k * .21, HX - .11 + k * .21, r * .21, .2 + r * .21], [.46, .86, .22, .61])) add(G.pbox(b - a, d - c, .006), r % 2 === k % 2 ? '#e9f2e4' : WHITE, (a + b) / 2, (c + d) / 2, .215);
     add(G.box(HW + .04, .05, .66, .02), top, HX, HT - .025, -.1);
     add(G.box(.5, .02, .4, .01), IRON, HX, HT + .01, -.14);
     for (const x of [-.12, .12]) add(G.tor(.08, .008, PI * 2, 3, 20), '#8e88a8', HX + x, HT + .022, -.14, HP, 0, 0);
@@ -163,7 +165,7 @@ B.stove = (f, T) => {
   // the hob's cupboard (a door), the spots
   const dp = door(f, 'stove-door|' + tk, .66, .42, .21 + .015, .5, .5, sage, BRASS, -1);
   const p = f.part('door', dp, t => { dp.rotation.y = 1.7 * t; }, { label: '화구 아래 찬장', sfx: 'open', dur: .3 });
-  f.pullOut(p, f.spot('inside', null, .62, .1, -.1, { part: p, maxH: .4, label: '화구 아래 찬장', scale: .9 }), z0 + BD / 2, { w: .26 });
+  f.pullOut(p, f.spot('inside', null, .62, .23, -.1, { part: p, maxH: .4, label: '화구 아래 찬장', scale: .9 }), z0 + BD / 2, { w: .26 });
   f.spot('under', null, OX + .27, .01, z0 + .14, { maxH: .28, label: '화덕 밑 장작 옆', scale: .75 });
   f.spot('on', null, .84, .86, .1, { maxH: .3, label: '팬케이크 옆', scale: .7 });
 };
@@ -172,9 +174,11 @@ B.stove = (f, T) => {
 // bread inside, a drawer below, a gingham cloth over the top with a basket of rolls. The doors lock (the key lesson).
 B.breadcab = (f, T) => {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), sage = col(T, 'sage'), tk = [wood, woodD, sage].join(',');
-  const W = .9, D = .48, z0 = -.24, H = 1.95, FZ = z0 + D / 2, S1 = .62, S2 = 1.08, S3 = 1.5;
+  const W = .9, D = .48, z0 = -.24, H = 1.95, FZ = z0 + D / 2, S1 = .62, S2 = 1.08, S3 = 1.5, DY0 = .52 + (H - .62) / 2;
   f.add(mcx('breadcab|' + tk, ({ add }) => {
-    add(G.box(W, H, D, .03), wood, 0, H / 2, z0);
+    add(cutFace(G.box(W, H, D, .03), 'z'), wood, 0, H / 2, z0);
+    add(windowFace(W - .06, H - .06, [-.4, .4, -.435, .855]), wood, 0, H / 2, FZ);
+    add(liner(.8, 1.29, .42, 'z'), shade(wood, -.15), 0, DY0, z0 + .01);
     add(G.pbox(W - .1, H - .55, .02), shade(wood, .1), 0, (H + .5) / 2, z0 - D / 2 + .04);
     add(G.box(W + .08, .08, D + .06, .02), woodD, 0, H + .02, z0);
     for (let k = 0; k < 5; k++) add(G.sph(.07, 10, 6), woodD, -.32 + k * .16, H + .05, FZ + .01, 0, 0, 0, [1, .7, .4]);
@@ -227,7 +231,9 @@ B.bakecounter = (f, T) => {
   const sage = col(T, 'sage'), wood = col(T, 'wood'), woodD = col(T, 'woodD'), body = col(T, 'body'), tk = [sage, wood, woodD, body].join(',');
   const W = .96, D = .62, z0 = -.18, H = .88, FZ = z0 + D / 2;
   f.add(mcx('bakecounter|' + tk, ({ add }) => {
-    add(G.box(W - .04, H - .06, D - .04, .02), sage, 0, (H - .06) / 2, z0);
+    add(cutFace(G.box(W - .04, H - .06, D - .04, .02), 'z'), sage, 0, (H - .06) / 2, z0);
+    add(windowFace(W - .08, H - .1, [-.37, .37, -.23, .14]), sage, 0, (H - .06) / 2, z0 + D / 2 - .02);
+    add(liner(.74, .37, .52, 'z'), shade(sage, -.2), 0, .365, z0 + .01);
     add(G.box(W - .1, .07, .03, .01), shade(sage, -.25), 0, .035, FZ - .01);
     add(G.box(W + .02, .08, D + .02, .02), wood, 0, H - .04, z0);
     for (let k = 0; k < 5; k++) add(G.pbox(.012, .081, D + .021), shade(wood, -.08), -.4 + k * .2, H - .04, z0);
@@ -247,7 +253,7 @@ B.bakecounter = (f, T) => {
   f.spot('inside', dw, -.12, -.06, -.2, { part: pd, maxH: .12, label: '반죽대 서랍', scale: .8 });
   const dp = door(f, 'bakecounter-door|' + tk, 0, .37, FZ + .002, W - .1, .5, sage, BRASS, 1);
   const p = f.part('door', dp, t => { dp.rotation.y = -1.6 * t; }, { label: '반죽대 찬장', sfx: 'open', dur: .3 });
-  f.pullOut(p, f.spot('inside', null, .05, .1, z0 + .04, { part: p, maxH: .4, label: '반죽대 찬장', scale: .9 }), FZ);
+  f.pullOut(p, f.spot('inside', null, .05, .19, z0 + .04, { part: p, maxH: .4, label: '반죽대 찬장', scale: .9 }), FZ);
   f.spot('on', null, .14, H + .005, z0 + .06, { maxH: .4, label: '반죽대 위', scale: .85 });
 };
 
@@ -257,7 +263,9 @@ B.bakesink = (f, T) => {
   const sage = col(T, 'sage'), wood = col(T, 'wood'), woodD = col(T, 'woodD'), body = col(T, 'body'), top = col(T, 'top'), tk = [sage, wood, woodD, body, top].join(',');
   const W = .96, D = .62, z0 = -.18, H = .88, FZ = z0 + D / 2;
   f.add(mcx('bakesink|' + tk, ({ add, tube }) => {
-    add(G.box(W - .04, H - .06, D - .04, .02), sage, 0, (H - .06) / 2, z0);
+    add(cutFace(G.box(W - .04, H - .06, D - .04, .02), 'z'), sage, 0, (H - .06) / 2, z0);
+    add(windowFace(W - .08, H - .1, [-.39, -.01, -.25, .19]), sage, 0, (H - .06) / 2, z0 + D / 2 - .02);
+    add(liner(.38, .44, .52, 'z'), shade(sage, -.2), -.2, .38, z0 + .01);
     add(G.box(W - .1, .07, .03, .01), shade(sage, -.25), 0, .035, FZ - .01);
     add(G.box(W + .02, .06, D + .02, .02), top, 0, H - .03, z0);
     add(G.box(.46, .03, .36, .02), WHITE, -.12, H + .005, z0 + .02);
@@ -276,7 +284,7 @@ B.bakesink = (f, T) => {
   f.add(mc('bakesink-rail|' + tk, ({ add }) => add(G.cyl(.01, .01, .34, 6), BRASS, .3, H - .12, FZ + .03, 0, 0, HP)));
   const dp = door(f, 'bakesink-door|' + tk, -.2, .4, FZ + .002, .5, .6, sage, BRASS, 1);
   const p = f.part('door', dp, t => { dp.rotation.y = -1.6 * t; }, { label: '개수대 밑 찬장', sfx: 'open', dur: .3 });
-  f.pullOut(p, f.spot('inside', null, -.18, .1, z0 + .04, { part: p, maxH: .4, label: '개수대 밑 찬장', scale: .9 }), FZ);
+  f.pullOut(p, f.spot('inside', null, -.18, .17, z0 + .04, { part: p, maxH: .4, label: '개수대 밑 찬장', scale: .9 }), FZ);
   f.spot('on', null, .12, H + .005, z0 + .16, { maxH: .35, label: '개수대 옆', scale: .8 });
 };
 
@@ -286,7 +294,9 @@ B.bakeisland = (f, T) => {
   const sage = col(T, 'sage'), sage2 = col(T, 'sage2'), wood = col(T, 'wood'), woodD = col(T, 'woodD'), body = col(T, 'body'), tk = [sage, sage2, wood, woodD, body].join(',');
   const W = 1.9, D = .7, z0 = 0, H = .9, FZ = z0 + D / 2;
   f.add(mcx('bakeisland|' + tk, ({ add, tube }) => {
-    add(G.box(W - .06, H - .07, D - .06, .02), sage, 0, (H - .07) / 2, z0);
+    add(cutFace(G.box(W - .06, H - .07, D - .06, .02), 'z'), sage, 0, (H - .07) / 2, z0);
+    add(windowFace(W - .1, H - .11, [.4, .84, -.245, .145]), sage, 0, (H - .07) / 2, z0 + D / 2 - .03);
+    add(liner(.44, .39, .58, 'z'), shade(sage, -.2), .62, .365, z0 + .01);
     for (let k = 0; k < 9; k++) add(G.pbox(.05, H - .2, .012), sage2, -.86 + k * .215, (H - .07) / 2, z0 - D / 2 + .024);
     add(G.box(W - .12, .07, .03, .01), shade(sage, -.25), 0, .035, FZ - .02);
     add(G.box(W + .06, .07, D + .08, .025), wood, 0, H - .035, z0);
@@ -314,7 +324,7 @@ B.bakeisland = (f, T) => {
   });
   const dp = door(f, 'bakeisland-door|' + tk, .62, .37, FZ + .002, .56, .52, sage, BRASS, -1);
   const p = f.part('door', dp, t => { dp.rotation.y = 1.6 * t; }, { label: '조리대 찬장', sfx: 'open', dur: .3 });
-  f.pullOut(p, f.spot('inside', null, .6, .1, z0 + .02, { part: p, maxH: .42, label: '조리대 찬장', scale: .9 }), FZ);
+  f.pullOut(p, f.spot('inside', null, .6, .18, z0 + .02, { part: p, maxH: .42, label: '조리대 찬장', scale: .9 }), FZ);
   f.spot('on', null, .3, H + .005, z0 + .14, { maxH: .4, label: '조리대 위', scale: .85 });
 };
 
@@ -682,15 +692,16 @@ B.bkcrates = (f, T) => {
   const wood = col(T, 'wood'), woodD = col(T, 'woodD'), tk = [wood, woodD].join(',');
   // (⑥ 10/23 31~70판 훑기: a crate was a solid block with two bands, a stack of slabs — now a dark inside, three slats a
   // side with gaps, corner posts and a hand-hole: a fruit crate)
-  const crate = (add, x, y, z, w, h, d, ry = 0) => {
+  const crate = (add, x, y, z, w, h, d, ry = 0, hollow = false) => {
     const c = Math.cos(ry), sn = Math.sin(ry), at = (lx, lz) => [x + lx * c + lz * sn, z - lx * sn + lz * c];
-    add(G.box(w - .03, h - .02, d - .03, .006), shade(woodD, -.25), x, y + h / 2, z, 0, ry, 0);
-    for (const k of [0, 1, 2]) { const yy = y + h * (.2 + k * .3); add(G.box(w, h * .22, d, .008), wood, x, yy, z, 0, ry, 0); }
+    add(hollow ? liner(w - .03, h - .02, d - .03) : G.box(w - .03, h - .02, d - .03, .006), shade(woodD, -.25), x, y + h / 2, z, 0, ry, 0);
+    for (const k of [0, 1, 2]) { const yy = y + h * (.2 + k * .3); if (!hollow) { add(G.box(w, h * .22, d, .008), wood, x, yy, z, 0, ry, 0); continue; }
+      for (const s of [-1, 1]) { const [px, pz] = at(0, s * (d / 2 - .01)), [qx, qz] = at(s * (w / 2 - .01), 0); add(G.box(w, h * .22, .02, .008), wood, px, yy, pz, 0, ry, 0); add(G.box(.02, h * .22, d - .04, .008), wood, qx, yy, qz, 0, ry, 0); } }
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const [px, pz] = at(sx * (w / 2 - .02), sz * (d / 2 - .02)); add(G.box(.045, h, .045, .01), woodD, px, y + h / 2, pz, 0, ry, 0); }
     for (const sx of [-1, 1]) { const [px, pz] = at(sx * (w / 2 + .002), 0); add(G.box(.008, .035, .11, .006), shade(woodD, -.35), px, y + h * .8, pz, 0, ry, 0); }
   };
   f.add(mcx('bkcrates|' + tk, ({ add }) => {
-    crate(add, -.12, 0, -.1, .5, .3, .4, .1);
+    crate(add, -.12, 0, -.1, .5, .3, .4, .1, true);
     for (let k = 0; k < 6; k++) { const x = -.28 + (k % 3) * .1, z = -.18 + (k >> 1 & 1) * .12; add(G.cyl(.035, .035, .16, 10), WHITE, x + .02, .38, z); add(G.cyl(.037, .037, .02, 10), SKYB, x + .02, .46, z); }
     crate(add, .2, 0, .18, .4, .26, .36, -.2);
     for (let k = 0; k < 5; k++) add(G.sph(.055, 10, 8), '#ffa13c', .12 + (k % 3) * .09, .3, .12 + (k >> 1) * .1);
@@ -741,7 +752,10 @@ B.bkcase = (f, T) => {
   const W = 1.86, D = .7, H = .82, GH = .42;
   f.add(mcx('bkcase|' + tk, ({ add, tube }) => {
     add(G.box(W, .08, D, .02), woodD, 0, .04, 0);
-    add(G.box(W - .06, H - .1, D - .1, .02), sage, 0, .08 + (H - .1) / 2, -.02);
+    add(cutFace(G.box(W - .06, H - .1, D - .1, .02), 'z', -1), sage, 0, .08 + (H - .1) / 2, -.02);
+    add(windowFace(W - .1, H - .14, [-.84, .84, -.2, .32]), sage, 0, .08 + (H - .1) / 2, -D / 2 + .03, 0, PI, 0);
+    add(liner(1.68, .66, .54, 'z', -1), shade(sage, -.2), 0, .43, -.03);
+    add(G.pbox(1.68, .02, .54), shade(sage, -.12), 0, .465, -.03);
     for (let k = 0; k < 8; k++) add(G.pbox(.04, H - .26, .012), sage2, -.78 + k * .223, .5, D / 2 - .065);
     add(G.box(W + .06, .05, D + .06, .02), wood, 0, H, 0);
     // the glass: a sloped front of milky panes, honey frame, end panes
@@ -771,7 +785,7 @@ B.bkcase = (f, T) => {
   bp.add(mc('bkcase-back|' + tk, ({ add }) => { add(G.box(W - .14, .56, .03, .01), shade(sage, -.05), 0, 0, 0); add(G.cap(.012, .1, 2, 6), BRASS, .5, 0, -.025, 0, 0, HP); }));
   f.add(bp);
   const p = f.part('door', bp, (t, b) => { bp.position.x = b.p.x - .85 * t; }, { label: '진열대 뒤 미닫이', sfx: 'drawer', dur: .3 });
-  f.spot('inside', null, .4, .12, -.05, { part: p, maxH: .3, label: '진열대 아래 칸', scale: .85 });
+  f.spot('inside', null, .4, .11, -.05, { part: p, maxH: .3, label: '진열대 아래 칸', scale: .85 });
   f.spot('inside', null, -.3, .48, -.05, { part: p, maxH: .26, label: '진열대 위 칸', scale: .8 });
   f.spot('on', null, .12, H + GH + .06, -.08, { maxH: .3, label: '진열대 위', scale: .75 });
 };

@@ -145,7 +145,9 @@ export class World {
     const a = this.W / this.H, { w, h, cy } = this.fit;
     // fit width to ~94% of the screen, height to ~62% (portrait the width wins; landscape the height wins)
     // (fitMul: a minigame's own zoom-in — scenes/bossgame.js MINI_ZOOM, user 10/29 "미니게임들 약간 카메라 줌인")
-    const viewH = Math.max(w / .94 / a, h / .62) / (this.fitMul || 1);
+    // (1.0.278 QA: on a short phone, 375×667, the bigger board ran under the bottom strip) full on a tall phone (390×844), none by 16:9
+    const mk = Math.min(1, Math.max(0, (1 / a - 1.8) / .3));
+    const viewH = Math.max(w / .94 / a, h / .62) / (1 + ((this.fitMul || 1) - 1) * mk);
     this.viewH = viewH;
     const cam = this.cam;
     cam.top = viewH * cy; cam.bottom = -viewH * (1 - cy);

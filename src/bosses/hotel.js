@@ -198,7 +198,8 @@ export class Game {
   // near-frontal dollhouse view: the whole hotel between the top bar and the bottom bar
   frame() {
     const W = this.L.world, cp = Math.cos(PITCH), sp = Math.sin(PITCH);
-    const top = this.floorY(this.Fn) + .25, bot = -.55, zb = RD / 2 + .32, zt = -RD / 2;
+    // (1.0.278 QA: the lobby guests' name tags hang below the floor — the strip under the hotel covered them) room for them
+    const top = this.floorY(this.Fn) + .25, bot = -.85, zb = RD / 2 + .32, zt = -RD / 2;
     const vTop = top * cp - zt * sp, vBot = bot * cp - zb * sp, vExt = vTop - vBot, vMid = (vTop + vBot) / 2;
     const H = W.H || innerHeight, a = (W.W || innerWidth) / H;
     const maxNotes = Math.max(0, ...this.trip.nights.map(nt => (nt.ev?.fight ? 1 : 0) + (nt.ev?.bday != null ? 1 : 0) + (nt.ev?.cold ? 1 : 0) + (nt.ev?.closed?.length || 0)));

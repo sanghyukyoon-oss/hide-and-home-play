@@ -50,21 +50,26 @@ export const DECOY_SIZE = { umbrella: [.55, .45], strawhat: [.36, .3], slipper: 
 // (⑪ 10/24 밤: 33판 빨래방 바닥의 카운터 호출 종이 캐릭터 머리만 함 → 16 cm)
 const KEY_IN = .2;
 export const LONG_MAX = { crown: .2, block: .14, ball: .24, ball2: .24, donut: .17, mug: .18, tissue: .22, gpt_deskbell: .16 };
+// (19판부터, 사용자 10/29 "펼쳐진 단서나 종이 중 너무 큰 게 있어": 펼친 종이는 손바닥만 하게 — 1~18판은 stage.js가 그린 뒤 줄임)
+const PAPER_LONG = /^(note|notepiece|colornote|postit|letter|receipt|gpt_receipt|lottery|map|starmap|report|trainticket|ticket)$/;
+const longMax = type => LONG_MAX[type] || (RULE && PAPER_LONG.test(type) ? .21 : 0);
 export function wantScale(type, spot, role, want = .34) {
   // (a decoy: 1.08 of the place's scale, but never under ~17 cm on its longest side — in a small place a mug came out 12 cm and a
   // book stack 15 cm, ⑥ 10/24 5판 실폰 "ㅈㄴ 작은 컵이랑 책이 가끔 등장함")
-  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2, D = DECOY_SIZE[type], d = Math.min(Math.max(1.08, Math.min(D ? 4 : 2.4, (D ? D[0] : DECOY_LONG) / (spot.scale || 1) / big)), RULE ? Math.max(D ? D[0] : .34, DECOY_LONG) / (spot.scale || 1) / big : Infinity); return LONG_MAX[type] ? Math.min(d, LONG_MAX[type] / (spot.scale || 1) / big) : d; }
+  if (role === 'decoy') { const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2, D = DECOY_SIZE[type], d = Math.min(Math.max(1.08, Math.min(D ? 4 : 2.4, (D ? D[0] : DECOY_LONG) / (spot.scale || 1) / big)), RULE ? Math.max(D ? D[0] : .34, DECOY_LONG) / (spot.scale || 1) / big : Infinity); return longMax(type) ? Math.min(d, longMax(type) / (spot.scale || 1) / big) : d; }
   const nat = natSize(type), big = Math.max(nat.x, nat.y, nat.z) || .2;
   if (DECOY_SIZE[type]) want = Math.max(want, DECOY_SIZE[type][0]);
+  // (19판부터 10/29 1.0.278 QA: 조립 부품(소방차 운전석 등)은 장난감 차 조각 — 38 cm 상한 밖, 48 cm)
+  if (RULE && /^kit_/.test(type)) want = Math.max(want, .48);
   const room = (spot.maxH + .02) / Math.max(.01, (ITEMS[type]?.h || .2) * (spot.scale || 1));
   const ss = spot.scale || 1, lim = ITEMS[type]?.flat ? 2.4 : room;
   // (사용자 10/29 "19판부터 숨긴 물건들 전반적으로 너무 큼": 1.25배 이상 키우는 바닥값이 원래 큰 모델(GPT 라켓·소쿠리·가위)을 60~85 cm로
   // 만들었음 — 바라는 크기보다 이미 큰 모델은 바라는 크기로 줄여 그림; 작은 모델만 예전처럼 1.25배 이상)
   const base = want / ss / big;
-  const sc = RULE && base < 1.25 ? Math.min(lim, base) : Math.max(1.15, Math.min(lim, Math.max(1.25, Math.min(2.4, want / ss / big))));
+  const sc = RULE && base < 1.25 && !/^kit_/.test(type) ? Math.min(lim, base) : Math.max(1.15, Math.min(lim, Math.max(1.25, Math.min(2.4, want / ss / big))));
   // (⑪ 10/26 9판 실폰 "여기 열쇠는 왜 이리 크고 못생겼냐": 방 안 세면대 위 열쇠가 30 cm — 실내 판(물건 크기 .42 밑)만 20 cm로; 넓은 바깥 맵은 그대로)
   if (type === 'key' && want < .42) return Math.min(sc, KEY_IN / ss / big);
-  return LONG_MAX[type] ? Math.min(sc, LONG_MAX[type] / ss / big) : sc;
+  return longMax(type) ? Math.min(sc, longMax(type) / ss / big) : sc;
 }
 
 // the room round a place: free distance along the furniture's own ±x and ±z (and which way is out of its front)

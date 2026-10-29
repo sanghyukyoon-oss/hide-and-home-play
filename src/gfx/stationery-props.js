@@ -12,7 +12,7 @@
 // 좌표: 방 7 × 5.5 m(가운데 원점, 바닥 y 0), 카메라는 +x +z 쪽에서. 가게 x -3.5..0.95 · z -2.75..0.45, 창고 칸 x 0.95..2.8 · z -2.93..-1.0,
 // 보도 z 0.45..2.75, 연석 z 2.75..2.93(턱 .15), 찻길 z 2.93..3.9.
 import * as THREE from 'three';
-import { put, grp, mat, mesh, geo, canvasTex, texCache, shade, roundRect, fadeDisc } from './kit.js';
+import { put, grp, mat, mesh, geo, canvasTex, texCache, shade, roundRect, fadeDisc, cutFace, liner } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex, paperFill, paperSheet } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
@@ -1222,16 +1222,16 @@ B.st_bench = f => {
 // ── 학용품 박스 더미 (가게 뒤 오른쪽 구석): 위 상자는 날개가 열림 ─────────────────────────────────────────────
 B.st_boxes = f => {
   f.add(mc('st-boxes', ({ add }) => {
-    add(G.box(.56, .4, .44, .02), '#d7b07c', 0, .2, 0); add(G.box(.5, .34, .4, .02), '#c99a64', .02, .57, .0, 0, .08, 0);
-    add(G.box(.44, .05, .36, .01), '#b4864e', .02, .74, .0, 0, .08, 0);
+    add(G.box(.56, .4, .44, .02), '#d7b07c', 0, .2, 0); add(cutFace(G.box(.5, .34, .4, .02)), '#c99a64', .02, .57, .0, 0, .08, 0);
+    add(liner(.46, .17, .36), shade('#c99a64', -.18), .02, .655, 0, 0, .08, 0);
   }));
   decal(f, .54, .36, boxTex(0, '공책 100권'), 0, .2, .221); decal(f, .48, .3, boxTex(1, '연필'), .04, .57, .2 + .016, .08);
   const fl = grp(); put(fl, .02, .75, -.18); f.add(fl);
-  fl.add(mc('st-boxflap', ({ add }) => add(G.box(.46, .015, .2, .005), '#d7b07c', 0, 0, .1)));
+  fl.add(mc('st-boxflap', ({ add }) => { add(G.box(.46, .015, .2, .005), '#d7b07c', 0, 0, .1); add(G.box(.44, .05, .18, .01), '#b4864e', -.007, -.01, .09, 0, .08, 0); }));
   const fr = grp(); put(fr, .02, .75, .2); f.add(fr);
-  fr.add(mc('st-boxflap2', ({ add }) => add(G.box(.46, .015, .2, .005), '#d7b07c', 0, 0, -.1)));
+  fr.add(mc('st-boxflap2', ({ add }) => { add(G.box(.46, .015, .2, .005), '#d7b07c', 0, 0, -.1); add(G.box(.44, .05, .18, .01), '#b4864e', .007, -.01, -.11, 0, .08, 0); }));
   const p = f.part('lid', [fl, fr], t => { fl.rotation.x = -1.9 * t; fr.rotation.x = 1.9 * t; }, { label: '연필 상자 날개', sfx: 'rustle', dur: .4 });
-  f.spot('inside', null, .02, .58, .0, { part: p, maxH: .2, scale: 1, label: '연필 상자 속' });
+  f.spot('inside', null, .02, .57, .0, { part: p, maxH: .2, scale: 1, label: '연필 상자 속' });
 };
 
 // ── 학용품 선반 (뒷벽 왼쪽, +z 앞): 공책 더미·필통·지구본·리코더·탬버린·줄넘기·스케치북·물감, 아래 서랍 둘 ───────────────

@@ -6,7 +6,7 @@
 // 장치(25판 설계서 — 시계 → 계산대 돈통 → 크랭크 손잡이 → 셔터 → 2층 도르래 바구니가 올라가고 → 옥상 바구니가 내려옴): cs3_shutter · cs3_hoist,
 // 둘 다 터치하면 저절로 움직임(드래그 X). 표는 redo7/s25.js.
 import * as THREE from 'three';
-import { put, grp, rbox, mat, mesh, plane, canvasTex, texCache, roundRect, shade } from './kit.js';
+import { put, grp, rbox, mat, mesh, plane, canvasTex, texCache, roundRect, shade, cutFace, liner, windowFace } from './kit.js';
 import { HG as G, hmc as rawMc } from './house-props.js';
 import { MAP_BUILDERS } from './map-props.js';
 import { FLOOR_H } from './house-props.js';
@@ -397,7 +397,7 @@ B.cs3_stand = (f, T) => {
   f.spot('under', null, .1, .02, -.05, { maxH: .36, label: '좌판 밑', scale: .85 });
   f.spot('behind', null, -.6, .02, -.36, { maxH: .4, label: '좌판 뒤', scale: .8 });
   // 앞에 놓인 스티로폼 상자 (뚜껑이 들림)
-  f.add(mc('styro', ({ add }) => { add(G.box(.42, .24, .3, .04), '#f6f6f0', -.3, .12, .32); add(G.box(.44, .02, .32, .01), '#e3e3dc', -.3, .245, .32); }));
+  f.add(mc('styro', ({ add }) => { add(cutFace(G.box(.42, .24, .3, .04)), '#f6f6f0', -.3, .12, .32); add(liner(.34, .185, .22), '#d8d8d0', -.3, .1425, .32); add(windowFace(.44, .32, [-.175, .175, -.115, .115]), '#e3e3dc', -.3, .255, .32, -HP, 0, 0); }));
   f.add(put(pane(.3, .08, cardTex('styro', 300, 80, '#f6f6f0', C.blue, ['싱싱 채소'], { size: 56 })), -.3, .13, .471));
   const lid = new THREE.Group(); put(lid, -.3, .25, .17); f.add(lid);
   lid.add(mc('styrolid', ({ add }) => add(G.box(.44, .04, .32, .02), '#fbfbf6', 0, .02, .16)));

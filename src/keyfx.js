@@ -3,15 +3,17 @@
 // of hitstop), the lock drops off the furniture spinning as the door opens. No camera move, no card, no words.
 // Cheap: one small key (four meshes, the stage's own kit helpers), gone with the lock.
 import * as THREE from 'three';
-import { put, rbox, tor } from './gfx/kit.js';
+import { put, rbox, mesh, mat, geo } from './gfx/kit.js';
 import { ease } from './util.js';
 import { hapticLight } from './feel.js';
 
 function keyMesh() {
   const g = new THREE.Group(), gold = '#ffd23f', o = { metal: .5, rough: .35 };
   g.add(put(rbox(.012, .012, .062, gold, .004, o), 0, 0, .031));         // the shaft, into the hole (−z)
-  g.add(put(rbox(.006, .018, .012, gold, .002, o), 0, -.013, .012));     // a bit to turn the lock
-  g.add(put(tor(.024, .008, gold, o, Math.PI * 2, 8, 20), 0, 0, .085, 0, Math.PI / 2, 0));   // the bow, edge on to you
+  // teeth to turn the lock, and the round flat head with its hole, edge on to you (10/29 열쇠 다시)
+  for (const z of [.008, .02, .032]) g.add(put(rbox(.006, .016, .008, gold, .002, o), 0, -.012, z));
+  g.add(put(mesh(geo('keyfx-bow3', () => { const s = new THREE.Shape(); s.absarc(0, 0, .03, 0, Math.PI * 2, false); const h = new THREE.Path(); h.absarc(0, .008, .011, 0, Math.PI * 2, true); s.holes.push(h);
+    const e = new THREE.ExtrudeGeometry(s, { depth: .008, bevelEnabled: true, bevelThickness: .003, bevelSize: .003, bevelSegments: 1, curveSegments: 20 }); e.translate(0, 0, -.004); e.rotateY(Math.PI / 2); return e; }), mat(gold, o)), 0, .004, .094));
   g.add(put(rbox(.022, .01, .01, gold, .003, o), 0, 0, .064));            // the collar
   return g;
 }

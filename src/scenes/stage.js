@@ -19,7 +19,7 @@ import { LENS_FREE, lensLeft, lensBadge, takeLens, noLens, lensHint, lensBack, l
 import { seenRow } from '../gift.js';   // 결과창 도감 그림 줄 (경제·로비 10/19)
 import { homeRow, PASSAGE_EVERY } from '../starbox.js';   // 별 상자 (경제 A1+A2, 10/19)
 import { tierPass, tiltLayout } from '../tiers.js';   // 보이는 층 (1장 2~11판, 10/18)
-import { fixSmall, unhide } from '../smallfix.js';   // 작은 물건 안전망 (#94, ② 레벨 10/21)
+import { fixSmall, unhide, screenPx, sizeUp } from '../smallfix.js';   // 작은 물건 안전망 (#94, ② 레벨 10/21)
 import { zoneLayout, houseLayout, ZONE_TYPES } from '../catalog.js';
 import { recordPlay, logStage } from '../net.js';
 import { buildItem, ITEMS, LOCK_COLORS } from '../gfx/items.js';
@@ -33,6 +33,32 @@ function ownLong(g) {
   if (b.isEmpty()) return 0;
   g.getWorldScale(s); const d = b.getSize(new THREE.Vector3());
   return Math.max(d.x * s.x, d.y * s.y, d.z * s.z);
+}
+// (a box of its own meshes, not the things put in it)
+function boxExt(o) {
+  const b = new THREE.Box3(), bb = new THREE.Box3(); o.updateMatrixWorld(true);
+  const walk = m => { if (m !== o && m.userData.item) return; if (m.isMesh && !m.userData.proxy && m.geometry && m.visible !== false) { if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); b.union(bb.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld)); } for (const c of m.children) walk(c); };
+  walk(o); return b.isEmpty() ? null : b.getSize(new THREE.Vector3());
+}
+// (허브 10/29: 줄일 때 첫 화면 20 px 밑으로는 안 떨어지게 — 사용자 "사이즈는 잡힌 것 같다", 더 작아지면 X)
+const MIN_SHRINK_PX = 20;
+function shrinkBy(it, f, W) {
+  if (!(f < 1)) return;
+  const px = W ? screenPx(W, it.g) : 0;
+  if (px > 0 && px * f < MIN_SHRINK_PX) f = Math.min(1, MIN_SHRINK_PX / px);
+  if (f < 1) { it.g.scale.multiplyScalar(f); if (it.spot) settleOn(it.g, it.spot); }
+}
+const PAPER_T = /^(note|notepiece|colornote|postit|letter|receipt|gpt_receipt|lottery|map|starmap|report|trainticket|ticket)$/, PAPER_MAX = .22;
+function fitUnderCover(it, W) {
+  if (!it.g || it.friend || it.lightSwitch || it.furnTarget || !it.spot || it.type === 'friendtoken') return;
+  const sp = it.spot, part = sp.part, ie = boxExt(it.g); if (!ie) return;
+  const imax = Math.max(ie.x, ie.y, ie.z);
+  let lim = 0;
+  if (part?.pivots?.length) { const e = new THREE.Vector3(); for (const pv of part.pivots) { const x = boxExt(pv); if (x) e.max(x); } lim = sp.kind === 'inside' || sp.kind === 'in' ? Math.max(e.x, e.y, e.z) : Math.max(e.x, e.z);
+    // (사용자 10/29 1.0.279 23판 "장독 뚜껑 밑 일기장이 입구보다 커서 삐져나옴": 뚜껑·들추는 덮개가 있는 통(항아리·통·상자) 안은 입구 지름 — 뚜껑 가로 폭의 85%)
+    if ((part.kind === 'lid' || part.kind === 'lift') && (sp.kind === 'inside' || sp.kind === 'in')) lim = Math.max(e.x, e.z) * .85; }
+  else if ((sp.kind === 'under' || sp.kind === 'behind') && sp.furn?.group) { const h = boxExt(sp.furn.group); if (h) lim = sp.kind === 'under' ? Math.max(h.x, h.z) : Math.max(h.x, h.y); }
+  if (lim > .05 && imax > lim * .95) shrinkBy(it, lim * .95 / imax, W);
 }
 function drawnLong(g) {
   g.updateMatrixWorld(true); _dl.makeEmpty();
@@ -293,7 +319,7 @@ export class StageScene {
       // 토끼 슬리퍼 came out 10 cm, 사용자 10/24 "쓰레빠 웰케 작아짐": fitspot lets a decoy down to 15 cm, fitClear then took 30% more;
       // that place gets none, like a decoy fitspot already turns away)
       // (19판부터 10/29 사용자 "크기들 좀 맞춰주라니까": 그려진 실제 긴 변이 바라는 크기의 1.1배를 넘으면 줄임 — 26판 슬리퍼 변형 48 cm)
-      if (this.idx >= 18 && !this.custom) { const L = ownLong(g), top = Math.max(want, DECOY_SIZE[p.type]?.[0] || 0) * 1.1; if (L > top) { g.scale.multiplyScalar(top / L); settleOn(g, p.spot); } }
+      if (this.idx >= 18 && !this.custom) { const L = ownLong(g), top = Math.max(want, DECOY_SIZE[p.type]?.[0] || 0, /^kit_/.test(p.type) ? .48 : 0) * 1.1; if (L > top) { g.scale.multiplyScalar(top / L); settleOn(g, p.spot); } }
       if (p.role === 'decoy' && drawnLong(g) < (DECOY_SIZE[p.type]?.[1] || .15)) { g.parent?.remove(g); p.spot.itemGroup = null; continue; }
       const it = { type: p.type, role: p.role, spot: p.spot, g, found: false, code: p.code, forPart: p.forPart, piece: p.piece };
       if (p.hang) it.hang = p.hang;   // (7판: on the pulley's top hook, out of reach until the basket comes up — tapHung / dropHung)
@@ -424,8 +450,16 @@ export class StageScene {
     // (19판부터 10/29: 어느 각도에서도 안 보이는 찾을 것은 보이는 가까운 자리로 — smallfix.js unhide)
     if (!this.custom && !this.preview && this.idx >= 18) this.unhidden = unhide(this);
     // (19판부터 10/29: 자리 옮기기·다시 그리기 뒤에도 그려진 실제 긴 변이 바라는 크기의 1.1배를 넘으면 줄임 — 26판 슬리퍼 48 cm, 22판 우산 68 cm)
-    if (!this.custom && !this.preview && this.idx >= 18) for (const it of this.items) { if (!it.g || it.friend || it.lightSwitch || it.furnTarget) continue; const L = ownLong(it.g), top = Math.max(this.itemWant || .34, DECOY_SIZE[it.type]?.[0] || 0) * 1.1; if (L > top) { it.g.scale.multiplyScalar(top / L); if (it.spot) settleOn(it.g, it.spot); } }
+    if (!this.custom && !this.preview && this.idx >= 18) for (const it of this.items) { if (!it.g || it.friend || it.lightSwitch || it.furnTarget) continue; const L = ownLong(it.g), top = Math.max(this.itemWant || .34, DECOY_SIZE[it.type]?.[0] || 0, /^kit_/.test(it.type) ? .48 : 0) * 1.1; if (L > top) shrinkBy(it, top / L, this.G.world); }
+    // (19판부터 10/29 1.0.278 QA "부품보다 큼" 6건: 회전까지 든 화면 상자로 — 안에 든 것은 가린 부품(문·서랍·뚜껑·천·전단지)의 가장 긴 변,
+    // 밑·뒤·위의 덮개는 그 가로 폭, 덮개 없는 밑·뒤는 주인 가구 폭(밑 가로, 뒤 가로·높이) 안으로)
+    // (사용자 10/29 "1~18판까지도 한번 봐 줄래": 1~18판은 규칙을 켜지 않고, 가린 부품보다 큰 것만 이 단계에서 줄임 — 다른 배치는 그대로)
+    if (!this.custom && !this.preview) for (const it of this.items) fitUnderCover(it, this.G.world);
     this.obs = obsSetup(this);   // R4: the clock / the vases in the room, the note says where to look
+    // (사용자 10/29 "접힌 종이 말고 펼쳐진 단서나 종이 중 너무 큰 게 있어": 쪽지·메모·영수증·지도 같은 펼친 종이는 모든 판에서 손바닥만 하게 — 긴 변 22 cm; 관찰 자물쇠 쪽지가 obsSetup에서 다시 그려져서 그 뒤)
+    if (!this.custom && !this.preview) for (const it of this.items) { if (!it.g || !PAPER_T.test(it.type)) continue; const L = ownLong(it.g); if (L > PAPER_MAX) shrinkBy(it, PAPER_MAX / L, this.G.world); }
+    // (19판부터 10/29 허브 QA: 가린 것 안에 들어가면서 첫 화면 20 px 이상 — 둘 다 안 되면 다른 자리로; smallfix.js sizeUp)
+    if (!this.custom && !this.preview && this.idx >= 18) this.sizedUp = sizeUp(this);
     // 몽글 TV (10/19): on about half the campaign stages (tvGameFor: each its own game, the same on a retry) the room's TVs
     // and monitors are on — a little pixel picture, a flicker now and then — and a tap on one plays (not the TV puzzle's TV;
     // a 흑백 target stays dark until it's found; never for the bots, the tutorials, 너굴이's timed stages or a visit)
@@ -3754,7 +3788,10 @@ export class StageScene {
     let x = s.x, y = s.y;
     if (Math.random() < err) { x += (Math.random() < .5 ? -1 : 1) * (40 + Math.random() * 60); y += (Math.random() - .5) * 80; }
     else {   // (톡: a person taps what they see — when the finger isn't on it, turn instead of wasting a tap)
-      const hit = this.pickAt(x, y), gp = goal.part, ft = goal.item?.furnTarget, on = goal.kind === 'item' ? hit.item === goal.item || (!!goal.item?.inky && hit.kind === 'char' && hit.char === this.villain?.ch) || (!!ft && !hit.item && (hit.furn === ft.f || hit.part?.furn === ft.f)) : hit.part === gp || (!!gp && (hit.furn === gp || hit.furn === gp.furn || hit.part?.furn === gp.furn));   // (a puzzle / TV goal is the furniture itself; a 흑백 furniture target is found by tapping the furniture)
+      // (②b 10/29 64판 QA: a decoy on the grey office chair — its touch ball came first under the finger, so the bot thought it was off
+      // the chair and turned for 100 s; a tap there does go to the chair (tap → grayAt skips a decoy), so count it as on.
+      // A puzzle / TV goal is the furniture itself; a 흑백 furniture target is found by tapping the furniture)
+      const hit = this.pickAt(x, y), gp = goal.part, ft = goal.item?.furnTarget, on = goal.kind === 'item' ? hit.item === goal.item || (!!goal.item?.inky && hit.kind === 'char' && hit.char === this.villain?.ch) || (!!ft && (hit.item?.role === 'decoy' ? this.grayAt(x, y) === goal.item : !hit.item && (hit.furn === ft.f || hit.part?.furn === ft.f))) : hit.part === gp || (!!gp && (hit.furn === gp || hit.furn === gp.furn || hit.part?.furn === gp.furn));
       if (!on) { this._stuck = (this._stuck || 0) + 1; W.rotateBy(this._stuck % 2 ? -110 : 110, 0); this.botT = .25; return; }
     }
     this.tap(x, y);

@@ -4,7 +4,7 @@
 // ceiling fan near the far end, the end wall with a grey sliding door to the next car, a display board and buttons over it, an
 // umbrella on the rail, a lidded snack cart (eggs, cider, banana milk), a newspaper and a cup of noodles on the bench.
 import * as THREE from 'three';
-import { put, grp, shade, mat, mesh, canvasTex } from './kit.js';
+import { put, grp, shade, mat, mesh, canvasTex, cutFace, liner } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -178,7 +178,7 @@ B.tcart = (f, T) => {
   f.add(mc('tcart', ({ add, tube }) => {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { add(G.cyl(.018, .018, TY, 8), STEEL, sx * W / 2, TY / 2 + .06, sz * D / 2); add(G.sph(.04, 8, 6), DARK, sx * W / 2, .04, sz * D / 2); }
     add(G.box(W, .02, D, .01), STEEL, 0, .26, 0); tube([-W / 2, TY + .12, D / 2], [-W / 2 - .12, TY + .2, D / 2], .015, STEEL, 6); tube([-W / 2, TY + .12, -D / 2], [-W / 2 - .12, TY + .2, -D / 2], .015, STEEL, 6); tube([-W / 2 - .12, TY + .2, -D / 2], [-W / 2 - .12, TY + .2, D / 2], .015, STEEL, 6);
-    add(G.box(W + .02, .18, D + .02, .03), YEL, 0, TY + .09, 0);
+    add(cutFace(G.box(W + .02, .18, D + .02, .03)), YEL, 0, TY + .09, 0); add(liner(W - .04, .08, D - .04), shade(YEL, -.2), 0, TY + .14, 0);
     for (const [x, z, c, h] of [[.14, -.06, GREEN, .26], [.24, .08, GREEN, .22], [.05, .1, '#f6e3a1', .18], [.2, -.14, '#f6e3a1', .16]]) { add(G.cyl(.045, .05, h, 12), c, x, TY + .1 + h / 2, z); add(G.cyl(.022, .022, .05, 8), c === GREEN ? '#2d6b3f' : '#e8b84a', x, TY + .12 + h, z); }
     for (let k = 0; k < 6; k++) add(G.sph(.045, 10, 8), '#fff8ee', -.16 + (k % 3) * .07, TY + .2 + Math.floor(k / 3) * .05, -.04 + (k % 2) * .05, 0, 0, 0, [1, 1.25, 1]);
     add(G.box(.22, .015, .08, .004), '#e8574a', -.12, TY + .3, .0);

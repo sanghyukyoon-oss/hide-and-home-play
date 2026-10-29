@@ -902,9 +902,11 @@ B.cin_popcorn = (f, T0) => {
     spill.children.forEach((m, i) => { const s = ss((t - .22 - .6 * i / n) / .16); m.scale.setScalar(s); m.position.y = m.userData.y0 + (1 - s) * .3; });
   }, { label: '팝콘 기계', sfx: 'pop', dur: 1.5 });
   p.steps = [[0, 'pop'], [.18, 'pop'], [.34, 'pop'], [.5, 'pop'], [.66, 'pop'], [.84, 'pop']]; p.gpt2Reach = true;
-  f.spot('inside', machine, 0, .15, .03, { part: p, maxH: .24, label: '팝콘 기계 안', scale: .75 });
   // 걸린 열쇠가 떨어질 자리 (판짜기는 안 씀 — reserved), 위 선반의 열쇠 고리 자리(hang)
+  // (31판 QA 10/29: 이 자리가 '팝콘 기계 안'보다 뒤에 있어서 dropHung이 첫 빈 안쪽 자리인 기계 안으로 떨어뜨림 → 부푼 팝콘 더미에 묻혀
+  // 열쇠가 안 보이고 눌리지도 않음, 봇·도움 봇이 거기서 멈춤 — 떨어질 자리를 먼저 둠)
   f.spot('inside', null, MX + .38, CH + .055, .16, { part: p, maxH: .2, label: '넘친 팝콘 사이', scale: .8 }).reserved = true;
+  f.spot('inside', machine, 0, .15, .03, { part: p, maxH: .24, label: '팝콘 기계 안', scale: .75 });
   // (디테일 10/24: 걸린 열쇠는 벽에 선 채(wallFace — 7판 도르래 고리와 같은 방식) 메뉴판 못에 하트 구멍으로 매달림 — 누워 있던 열쇠가 고리 쪽으로
   // 비틀려 '도넛 + 분홍 공'으로만 보였음, 사용자 10/24 "열쇠는 왜이럼"; 크기 ×0.7 = 약 47 cm, 두 선반 사이로 내려와 기계 지붕엔 안 닿음)
   f.keySpot = f.spot('on', null, MX + .1, 1.84, BACK + .12, { maxH: .24, label: '팝콘 위 선반', scale: .7, wallFace: true });

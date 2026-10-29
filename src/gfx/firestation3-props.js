@@ -739,7 +739,7 @@ addI18n({
   '분리수거함 뒤': 'Behind the recycling bins', '당직실 이불 아래': 'Under the duty-room quilt', '당직실 침대 밑': 'Under the duty-room bed',
   '당직실 책상 위': 'On the duty-room desk', '책상 밑': 'Under the desk', '옷 선반 위': 'On the clothes shelf', '공구 수레 위': 'On the tool cart',
   '타이어 더미 옆': 'Beside the tyre pile', '소방봉 매트 위': 'On the pole’s mat', '계단 밑': 'Under the stairs', '호스 뭉치 뒤': 'Behind the hose rolls',
-  '호스 걸이 아래 선반': 'Shelf under the hose rack', '차고 셔터 올리기': 'Raise the garage shutter', '사이렌 울리기': 'Sound the siren', '당직실 이불': 'Duty-room quilt',
+  '호스 걸이 아래 선반': 'Shelf under the hose rack', '호스 장비': 'HOSE GEAR', '차고 셔터 올리기': 'Raise the garage shutter', '사이렌 울리기': 'Sound the siren', '당직실 이불': 'Duty-room quilt',
   '안전센터 둥근 섬': 'Fire station island', '곰돌이네 119 안전센터': 'Bear’s 119 Fire Station', '안전센터 훈련 마당': 'Fire station drill yard',
 });
 // small lettered plates (the game font, translated in English mode)
@@ -778,10 +778,11 @@ B.fs3_bell = f => {
     for (let i = 0; i < 4; i++) add(G.box(.18, .085, .02, .012), '#f0b49c', -.3 + i * .2, .14, .345); for (let i = 0; i < 2; i++) add(G.box(.18, .085, .02, .012), '#f0b49c', -.3 + i * .6, .25, .345);
     add(G.box(.37, .14, .016, .01), P.brassD, 0, .23, .352);
     add(G.box(.9, .06, .76, .025), P.stone, 0, PY - .03, 0);
+    for (let k = 0; k < 9; k++) add(G.box(.1, .03, .012, .004), k % 2 ? '#3d3a44' : P.yellow, -.4 + k * .1, PY - .03, .383);
     for (const x of [-PX, PX]) {
       add(G.box(.2, .1, .2, .03), P.stone, x, PY + .05, 0);
       add(G.box(.13, TOP - PY, .13, .035), P.wood, x, (PY + TOP) / 2, 0);
-      for (const y of [PY + .22, TOP - .3]) add(G.box(.15, .05, .15, .015), P.brass, x, y, 0);
+      for (const y of [PY + .22, TOP - .3]) { add(G.box(.15, .05, .15, .015), P.brass, x, y, 0); for (const sx of [-1, 1]) add(G.sph(.012, 6, 4), P.brassD, x + sx * .04, y, .077); }
     }
     // the beams: a cross beam, the yoke's bearings, knee braces
     add(G.box(.86, .12, .2, .03), P.woodD, 0, TOP + .02, 0);
@@ -882,10 +883,44 @@ B.fs3_doghouse = (f, T) => {
   roof.add(put(decal(.42, .14, plateTex('dog', '소방견', 252, 84, P.navy, P.cream)), 0, .15, hd + .08 + (D + .3) / 2 - .14));
   const p = f.part('lid', roof, t => { roof.rotation.x = -1.2 * t; dog.update(0); }, { label: '소방견 집 지붕', sfx: 'creak', dur: .6 });
   const s = f.spot('inside', null, .16, .37, -.05, { part: p, maxH: .35, label: '소방견 방석 옆', scale: .95 });
-  f.pullOut(p, s, .67, { w: .38, d: .3, color: P.wood });
+  fs3Drawer(f.pullOut(p, s, .67, { w: .38, d: .3, color: P.wood }), 'dog', .38, .3);
   f.spot('on', null, -.5, .025, 1.2, { maxH: .8, label: '개집 앞 바닥', scale: 1 });
 };
 
+// (19판 10/29 사용자 실폰 "열면 튀어나오는 거 허접해서 뭐가 뭔지 모르겠어"): 판자 한 장이던 pullOut 받침을 속 빈 서랍으로 — 바닥·세 벽·앞판·손잡이와 안 내용물.
+// hose: 빨간 철 장비 서랍(이름표 '호스 장비'·막대 손잡이, 안 구석에 감긴 호스·놋쇠 노즐), dog: 소방견 간식 서랍(뼈다귀 손잡이, 안 구석에 사료 그릇·뼈)
+function fs3Drawer(tr, kind, w, d) {
+  const dog = kind === 'dog', WH = .07, FH = .1, fz = d / 2;
+  tr.add(mc('fs3-drawer-' + kind, ({ add, tube }) => {
+    const side = dog ? P.woodL : P.red, inner = dog ? P.wood : '#d9dde3';
+    for (const s of [-1, 1]) add(G.box(.022, WH, d - .02, .006), side, s * (w / 2 - .011), .01 + WH / 2, -.01);
+    add(G.box(w - .02, WH, .022, .006), side, 0, .01 + WH / 2, -fz + .011);
+    for (const s of [-1, 1]) add(G.pbox(.004, WH - .01, d - .06), inner, s * (w / 2 - .024), .012 + WH / 2, -.01);
+    add(G.box(w + .02, FH, .03, .01), dog ? P.red : P.redD, 0, FH / 2 - .01, fz - .012);
+    add(G.box(w - .03, FH - .03, .008, .004), dog ? '#f0625a' : P.red, 0, FH / 2 - .01, fz + .004);
+    if (dog) {
+      add(G.cap(.013, .1, 2, 8), P.cream, 0, .042, fz + .03, 0, 0, HP);
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(G.sph(.019, 10, 8), P.cream, sx * .064, .042 + sy * .014, fz + .03);
+      for (const sx of [-1, 1]) add(G.cyl(.008, .008, .025, 6), P.brassD, sx * .03, .042, fz + .015, HP, 0, 0);
+      const bx = -w / 2 + .075, bz = -fz + .07;
+      add(G.cyl(.05, .042, .035, 16), P.blue, bx, .028, bz); add(G.cyl(.04, .04, .006, 14), '#9a6a40', bx, .043, bz);
+      for (let k = 0; k < 6; k++) add(G.sph(.014, 6, 4), '#c88a52', bx + Math.cos(k * 2.3) * .022, .047, bz + Math.sin(k * 2.3) * .022);
+      add(G.cap(.011, .06, 2, 6), P.cream, w / 2 - .06, .024, -.02, HP, 0, 0);
+      for (const sz of [-1, 1]) for (const sx of [-1, 1]) add(G.sph(.016, 8, 6), P.cream, w / 2 - .06 + sx * .012, .024, -.02 + sz * .045);
+    } else {
+      for (const sx of [-1, 1]) add(G.box(.02, .02, .03, .006), P.steelD, sx * .07, .03, fz + .02);
+      tube([-.08, .03, fz + .036], [.08, .03, fz + .036], .011, P.steel, 8);
+      const hx = -w / 2 + .075, hz = -fz + .075;
+      for (let k = 0; k < 2; k++) add(G.tor(.042 - k * .016, .011, PI * 2, 6, 18), k ? '#efdcb4' : P.cream, hx, .024 + k * .012, hz, HP, 0, 0);
+      add(G.cyl(.016, .016, .02, 10), P.brass, hx + .045, .022, hz + .03);
+      const nx = w / 2 - .055;
+      add(G.cyl(.016, .026, .13, 12), P.brass, nx, .03, -.01, HP, 0, 0); add(G.cyl(.03, .03, .025, 12), P.red, nx, .03, .065, HP, 0, 0);
+      add(G.cyl(.012, .012, .015, 8), P.brassD, nx, .03, -.082, HP, 0, 0);
+    }
+  }));
+  if (!dog) tr.add(put(decal(.19, .042, plateTex('hosegear', '호스 장비', 228, 50, P.cream, P.redD)), 0, .072, fz + .009));
+  return tr;
+}
 // ── 호스 건조탑 (2×2, placed at .7): a slim tower open at the front — a brick plinth, cream walls with brick quoins, a louvred
 // band and a shingled hip roof with a red pennant; inside, two long flat hoses hang from the pulley bar (they rise when the
 // handwheel on the front turns: part 0) over a boot shelf; a steel ladder up the left side
@@ -914,7 +949,12 @@ B.fs3_hosetower = f => {
     const pen = new THREE.Shape(); pen.moveTo(0, 0); pen.lineTo(.5, -.11); pen.lineTo(0, -.22); pen.lineTo(0, 0);
     add(G.ext(pen, .015, 0, 1), P.red, .02, RY + RH + .92, 0);
     // the pulley bar inside the top and its wheel
-    add(G.cyl(.06, .06, W - .2, 14), P.steelD, 0, HT - .2, .05, 0, 0, HP); for (const x of [-.25, .2]) add(G.cyl(.12, .12, .1, 18), P.brass, x, HT - .2, .05, 0, 0, HP);
+    for (const s of [-1, 1]) { add(G.box(.06, .22, .2, .02), P.steelD, s * (hw - .17), HT - .18, .05); for (const y of [-.1, -.26]) for (const z of [-.03, .13]) add(G.sph(.016, 8, 6), P.steel, s * (hw - .2), HT + y, z); }
+    const SX = -hw + .14, SY = HT - .32, SZ = hd + .03;
+    add(G.box(.08, .08, .34, .02), P.steelD, SX, SY + .2, hd - .1); for (let k = 0; k < 4; k++) add(G.box(.085, .085, .06, .006), k % 2 ? '#3d3a44' : P.yellow, SX, SY + .2, hd - .22 + k * .085);
+    for (const s of [-1, 1]) { add(G.box(.018, .26, .16, .006), P.steelD, SX + s * .045, SY + .06, SZ); add(G.sph(.018, 8, 6), P.steel, SX + s * .058, SY, SZ); add(G.sph(.014, 8, 6), P.steel, SX + s * .058, SY + .16, SZ); }
+    add(G.cyl(.022, .022, .13, 8), P.steel, SX, SY, SZ, 0, 0, HP);
+    tube([SX, SY + .074, SZ], [SX, SY + .074, .05], .016, '#e9d7ae', 6);
     // the boot shelf inside (a hiding place sits on it) with two pairs of boots
     add(G.box(1.0, .06, .8, .02), P.wood, 0, .56, -.1); for (const x of [-.42, .42]) add(G.box(.06, .2, .76, .015), P.woodD, x, .44, -.1);
     for (const x of [-.32, -.14]) {
@@ -926,8 +966,23 @@ B.fs3_hosetower = f => {
     for (const z of [-.25, .25]) tube([-hw - .12, .35, z], [-hw - .12, HT + .3, z], .028, P.steelD, 6);
     for (let y = .55; y < HT + .2; y += .3) tube([-hw - .12, y, -.25], [-hw - .12, y, .25], .018, P.steel, 5);
     for (let y = 1.9; y < HT; y += .6) add(G.tor(.3, .018, PI, 4, 12), P.steelD, -hw - .14, y, 0, 0, HP, 0);
+    for (const z of [-.25, .25]) { tube([-hw - .12, HT + .3, z], [-hw - .02, HT + .45, z * .8], .024, P.steelD, 6); add(G.box(.12, .05, .12, .015), P.steelD, -hw - .1, .38, z); for (let k = 0; k < 4; k++) add(G.box(.13, .03, .13, .005), k % 2 ? '#3d3a44' : P.yellow, -hw - .1, .44 + k * .03, z); }
+    for (let y = 1.0; y < HT; y += .9) for (const z of [-.25, .25]) { add(G.box(.12, .035, .035, .008), P.steelD, -hw - .06, y, z); add(G.sph(.015, 8, 6), P.steel, -hw - .005, y, z); }
     // the handwheel's bracket on the front left quoin
     add(G.box(.16, .16, .1, .03), P.steelD, -hw + .05, 1.35, hd + .04); add(G.cyl(.035, .035, .16, 10), P.steelD, -hw + .05, 1.35, hd + .12, HP, 0, 0);
+    add(G.box(.34, .44, .025, .01), P.steelD, -hw + .05, 1.35, hd + .055); for (const sx of [-1, 1]) for (const sy of [-1, 1]) add(G.sph(.02, 8, 6), P.steel, -hw + .05 + sx * .14, 1.35 + sy * .19, hd + .07);
+    for (let k = 0; k < 5; k++) add(G.box(.068, .06, .012, .004), k % 2 ? '#3d3a44' : P.yellow, -hw + .05 - .136 + k * .068, 1.6, hd + .066);
+    add(G.box(.035, .1, .03, .008), P.red, -hw - .05, 1.47, hd + .1, 0, 0, -.5); add(G.sph(.016, 8, 6), P.steel, -hw - .03, 1.43, hd + .12);
+    tube([-hw + .14, 1.35, hd + .12], [-hw + .14, HT - .32, hd + .12], .016, '#e9d7ae', 6);
+    for (let k = 1; k < 9; k++) add(G.tor(.017, .004, PI * 2, 3, 8), '#d8c294', -hw + .14, 1.35 + (HT - 1.67) * k / 9, hd + .12, HP, 0, 0);
+  }));
+  const sheave = grp(); put(sheave, -hw + .14, HT - .32, hd + .03); f.add(sheave);
+  sheave.add(mc('fs3-tower-sheave', ({ add }) => {
+    const prof = [[.02, -.035], [.1, -.035], [.1, -.022], [.072, 0], [.1, .022], [.1, .035], [.02, .035]];
+    add(new THREE.LatheGeometry(prof.map(([x, y]) => new THREE.Vector2(x, y)), 22), P.red, 0, 0, 0, 0, 0, HP);
+    add(G.tor(.074, .014, PI * 2, 4, 22), '#e9d7ae', 0, 0, 0, 0, HP, 0);
+    add(G.cyl(.035, .035, .08, 12), P.brass, 0, 0, 0, 0, 0, HP);
+    for (let k = 0; k < 4; k++) add(G.cyl(.012, .012, .075, 6), P.redD, 0, Math.cos(k * HP) * .055, Math.sin(k * HP) * .055, 0, 0, HP);
   }));
   // the hoses: two long flat cream hoses folded over the bar, brass couplings at their feet
   const hose = grp(); f.add(hose);
@@ -938,16 +993,27 @@ B.fs3_hosetower = f => {
       add(G.cyl(.065, .065, .14, 12), P.brass, x, HT - .2 - l1 - .06, .17); add(G.cyl(.065, .065, .14, 12), P.brass, x, HT - .2 - l2 - .06, -.07);
       for (let k = 0; k < 3; k++) add(G.pbox(.2, .01, .004), '#e2cfa8', x, HT - .5 - k * .55, .19);
     }
+    add(G.cyl(.06, .06, W - .44, 14), P.steelD, 0, HT - .2, .05, 0, 0, HP);
+    for (let k = 0; k < 9; k++) add(G.cyl(.064, .064, (W - .44) / 9 - .004, 14), k % 2 ? '#3d3a44' : P.yellow, -(W - .44) / 2 + (k + .5) * (W - .44) / 9, HT - .2, .05, 0, 0, HP);
+    for (const s of [-1, 1]) { add(G.cyl(.08, .08, .03, 14), P.steelD, s * (W - .44) / 2, HT - .2, .05, 0, 0, HP); add(G.cyl(.03, .03, .045, 6), P.steel, s * ((W - .44) / 2 + .03), HT - .2, .05, 0, 0, HP); }
+    add(G.box(.16, .12, .12, .025), P.red, -.03, HT - .06, .05); for (const sx of [-1, 1]) add(G.sph(.016, 8, 6), P.steel, -.03 + sx * .05, HT - .06, .115);
+    add(G.tor(.05, .016, PI * 2, 6, 16), P.steelD, -.03, HT + .03, .05);
+    add(G.tor(.06, .022, PI * 1.35, 6, 18), P.steel, -.03, HT - .2, .05, 0, 0, PI * .82); add(G.sph(.026, 8, 6), P.steel, .03, HT - .14, .05);
   }));
   const wheel = grp(); put(wheel, -hw + .05, 1.35, hd + .22); f.add(wheel);
   wheel.add(mc('fs3-tower-handwheel', ({ add, tube }) => {
     add(G.tor(.24, .035, PI * 2, 7, 24), P.red, 0, 0, 0);
     for (let k = 0; k < 3; k++) { const a = k * PI / 3; tube([Math.cos(a) * .22, Math.sin(a) * .22, 0], [-Math.cos(a) * .22, -Math.sin(a) * .22, 0], .016, P.redD, 6); }
     add(G.cyl(.06, .06, .06, 12), P.brass, 0, 0, 0, HP, 0, 0); add(G.cyl(.03, .03, .14, 8), P.woodD, .17, .17, .06, HP, 0, 0);
+    for (let k = 0; k < 6; k++) add(G.sph(.012, 6, 4), P.brassD, Math.cos(k * PI / 3) * .04, Math.sin(k * PI / 3) * .04, .032);
+    add(G.cap(.036, .1, 3, 10), '#3d3a44', .17, .17, .14, HP, 0, 0); for (const z of [.1, .14, .18]) add(G.tor(.037, .007, PI * 2, 3, 12), '#5a5866', .17, .17, z);
+    add(G.cyl(.09, .09, .1, 18), P.steelD, 0, 0, -.1, HP, 0, 0); for (const z of [-.152, -.048]) add(G.cyl(.13, .13, .014, 18), P.steel, 0, 0, z, HP, 0, 0);
+    for (let k = 0; k < 5; k++) add(G.tor(.095, .014, PI * 2, 4, 18), k % 2 ? '#d8c294' : '#e9d7ae', 0, 0, -.135 + k * .021);
+    for (let k = 0; k < 12; k++) { const a = k * PI / 6; add(G.box(.03, .03, .03, .006), P.brassD, Math.cos(a) * .135, Math.sin(a) * .135, -.17, 0, 0, a); }
   }));
-  const p = f.part('crank', [wheel, hose], t => { wheel.rotation.z = -t * PI * 4; hose.position.y = .7 * t; hose.scale.y = 1 - .15 * t; }, { label: '호스 건조탑 손잡이', sfx: 'ratchet', dur: 1.05 });
+  const p = f.part('crank', [wheel, hose], t => { wheel.rotation.z = -t * PI * 4; sheave.rotation.x = t * PI * 5; hose.position.y = .7 * t; hose.scale.y = 1 - .15 * t; }, { label: '호스 건조탑 손잡이', sfx: 'ratchet', dur: 1.05 });
   const s = f.spot('inside', null, .28, .61, .22, { part: p, maxH: .4, label: '건조 호스 아래', scale: .95 });
-  f.pullOut(p, s, .65, { w: .45, d: .33, color: P.wood });
+  fs3Drawer(f.pullOut(p, s, .65, { w: .45, d: .33, color: '#d9dde3' }), 'hose', .45, .33);
   f.spot('on', null, 0, .025, 1.3, { maxH: .8, label: '건조탑 앞 바닥', scale: 1 });
 };
 

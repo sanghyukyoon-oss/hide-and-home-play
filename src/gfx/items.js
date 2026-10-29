@@ -505,29 +505,28 @@ export const ITEMS = {
   // 크기·자리는 그대로: 머리 가운데 x -.1(걸린 열쇠가 매달리는 점, stage.js swingHung), 날 끝 x .11, 톱니는 +z, 두께 y .006~.034)
   key: { name: '열쇠', h: .06, flat: true, special: 'key', build() {
     // (⑪ 10/26 9판 실폰 "크고 못생겼냐": 어두운 판에서 겨자색 판으로 뭉개짐 → 머리 둘레에 진한 갈색 테(윤곽), 금색 한 톤 밝게)
+    // (10/29 실폰 "열쇠가 전혀 열쇠같이 생기지 않고 너무 이상하게 생김": 하트 구멍 도넛 + 가는 막대 → 🔑 같은 집 열쇠 한 덩어리 — 둥근 머리(끝쪽에 고리 구멍),
+    // 어깨 턱, 넓적한 날에 톱니 셋과 비스듬한 끝, 날 홈 한 줄, 구멍 테·머리 하이라이트. 머리 가운데 x -.1·구멍 위끝 x -.152(고리 .05), 날 끝 x .114, 톱니 +z)
     const g = grp(), m = '#ffd24a', dk = '#e3a52c';
-    g.add(put(mesh(geo('key2-rim', () => {
-      const s = new THREE.Shape(); s.absarc(-.1, 0, .066, 0, Math.PI * 2, false);
-      const h = new THREE.Path(); h.absarc(-.1, 0, .05, 0, Math.PI * 2, true); s.holes.push(h);
-      const e = new THREE.ExtrudeGeometry(s, { depth: .014, bevelEnabled: true, bevelThickness: .004, bevelSize: .004, bevelSegments: 2, curveSegments: 20 });
-      e.rotateX(Math.PI / 2); e.translate(0, .027, 0); return e;
-    }), mat('#6b3f2a')), 0, 0, 0));
-    g.add(put(mesh(geo('key2-bow', () => {
-      const s = new THREE.Shape(); s.absarc(-.1, 0, .058, 0, Math.PI * 2, false);
-      const h = new THREE.Path(), pts = heartShape(.03).getPoints(10);
-      pts.forEach(({ x, y }, i) => { const u = -.1 - (y - .006), v = x; i ? h.lineTo(u, v) : h.moveTo(u, v); }); s.holes.push(h);
-      const e = new THREE.ExtrudeGeometry(s, { depth: .018, bevelEnabled: true, bevelThickness: .005, bevelSize: .006, bevelSegments: 2, curveSegments: 16 });
-      e.rotateX(Math.PI / 2); e.translate(0, .029, 0); return e;
+    const keyShape = () => {
+      const s = new THREE.Shape(), a0 = Math.asin(.024 / .066), nx = -.1 + Math.cos(a0) * .066;
+      const P = [[nx, -.024], [-.03, -.024], [-.03, -.034], [-.014, -.034], [-.014, -.022], [.092, -.022], [.108, -.006], [.108, .014], [.1, .034], [.092, .034], [.084, .02], [.074, .04], [.06, .04], [.05, .022], [.04, .034], [.026, .034], [.018, .022], [-.014, .022], [-.014, .034], [-.03, .034], [-.03, .024], [nx, .024]];
+      P.forEach(([x, y], i) => i ? s.lineTo(x, y) : s.moveTo(x, y));
+      s.absarc(-.1, 0, .066, a0, Math.PI * 2 - a0, false);
+      const h = new THREE.Path(); h.absarc(-.122, 0, .034, 0, Math.PI * 2, true); s.holes.push(h);
+      return s;
+    };
+    g.add(put(mesh(geo('key3-rim', () => {
+      const e = new THREE.ExtrudeGeometry(keyShape(), { depth: .01, bevelEnabled: true, bevelThickness: .003, bevelSize: .004, bevelSegments: 2, curveSegments: 24 });
+      e.rotateX(Math.PI / 2); e.translate(0, .024, 0); return e;
+    }), mat('#8a5326')), 0, 0, 0));
+    g.add(put(mesh(geo('key3-body', () => {
+      const e = new THREE.ExtrudeGeometry(keyShape(), { depth: .016, bevelEnabled: true, bevelThickness: .004, bevelSize: .004, bevelSegments: 2, curveSegments: 24 });
+      e.rotateX(Math.PI / 2); e.translate(0, .028, 0); return e;
     }), mat(m, GOLD)), 0, 0, 0));
-    for (const x of [-.046, -.03]) g.add(put(cyl(.021, .021, .01, dk, GOLD, 14), x, .02, 0, 0, 0, Math.PI / 2));
-    g.add(put(cyl(.014, .014, .15, m, GOLD, 12), .025, .02, 0, 0, 0, Math.PI / 2));
-    g.add(put(sph(.0145, m, GOLD, 12, 8), .1, .02, 0));
-    g.add(put(mesh(geo('key2-bit', () => {
-      const s = new THREE.Shape(), P = [[.044, .004], [.044, .056], [.058, .056], [.058, .04], [.07, .04], [.07, .052], [.082, .052], [.082, .034], [.094, .034], [.094, .047], [.11, .047], [.11, .004]];
-      P.forEach(([x, y], i) => i ? s.lineTo(x, y) : s.moveTo(x, y)); s.closePath();
-      const e = new THREE.ExtrudeGeometry(s, { depth: .01, bevelEnabled: true, bevelThickness: .003, bevelSize: .002, bevelSegments: 1 });
-      e.rotateX(Math.PI / 2); e.translate(0, .025, 0); return e;
-    }), mat(m, GOLD)), 0, 0, 0));
+    g.add(put(tor(.035, .005, dk, GOLD, Math.PI * 2, 6, 24), -.122, .032, 0, Math.PI / 2, 0, 0));
+    g.add(put(rbox(.096, .004, .008, dk, .002, GOLD), .04, .032, -.006));
+    g.add(put(cap(.006, .03, '#fff6c8'), -.07, .033, -.04, Math.PI / 2, 0, .9));
     return g;
   } },
   // (③ 10/22, GPT 3-n notes, user: "쪽지 … 접혀 있는 게 나을 것 같은데", "삼각은 좀 이상하고 3가지 다양하게"): one of GPT's

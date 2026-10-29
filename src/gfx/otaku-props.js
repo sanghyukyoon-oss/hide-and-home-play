@@ -9,7 +9,7 @@
 // (② 10/21: the four work from a stage's spec alone — clueIn/clueHang, locks — no special rules on a time stage)
 // Same toy contract as oneroom-props.js (origin = footprint centre on the floor, faces +z; wall pieces on the wall's face).
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, shade } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, shade, cutFace, liner, windowFace } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { clothBend } from './clothbend.js';
 
@@ -89,7 +89,10 @@ B.arcade3 = (f, T, o = {}) => {
   f.add(mc('arcade3|' + k + (o.prize ? 'p' : ''), ({ add }) => {
     const side = new THREE.Shape(); side.moveTo(-D / 2, 0); side.lineTo(D / 2, 0); side.lineTo(D / 2, .88); side.lineTo(D / 2 - .14, 1.0); side.lineTo(D / 2 - .2, 1.42); side.lineTo(-D / 2 + .1, H); side.lineTo(-D / 2, H); side.lineTo(-D / 2, 0);
     for (const sx of [-1, 1]) add(G.ext(side, .04, .01, 2), shade(body, -.1), sx * W / 2 + (sx > 0 ? .04 : 0), 0, z0, 0, -HP, 0);
-    add(G.box(W - .06, .88, D - .04, .02), body, 0, .44, z0);
+    const hx = o.prize ? .02 : -.2;
+    add(cutFace(G.box(W - .06, .88, D - .04, .02), 'z'), body, 0, .44, z0);
+    add(windowFace(W - .1, .84, [hx + .025, hx + .195, -.275, -.065]), body, 0, .44, z0 + D / 2 - .02);
+    add(liner(.17, .21, .4, 'z'), shade(body, -.25), hx + .11, .27, z0 + D / 2 - .22 - .02);
     add(G.box(W - .06, .42, D * .5, .02), body, 0, 1.6, z0 - D * .22);
     add(G.box(W, .2, .1, .03), DARK, 0, 1.72, z0 + .04); add(G.box(W - .1, .12, .02, .02), acc, 0, 1.72, z0 + .1);
     add(G.box(W - .08, .5, .1, .03), CHAR, 0, 1.2, z0 + .02, -.18, 0, 0);
@@ -112,7 +115,7 @@ B.arcade3 = (f, T, o = {}) => {
   hv.add(mc('arcade3-hatch|' + k, ({ add }) => { add(G.box(.22, .26, .02, .01), shade(body, -.08), .11, .13, 0); add(G.cyl(.012, .012, .02, 8), STEEL, .19, .16, .015, HP, 0, 0); }));
   const ph = f.part('door', hv, t => { hv.rotation.y = -1.5 * t; }, { label: '오락기 아래 문', sfx: 'open', dur: .28 });
   ph.lockable = true; ph.lockKind = 'pad'; ph.lockAt = { x: .17, y: .14, z: .04, parent: hv };
-  f.pullOut(ph, f.spot('inside', null, o.prize ? .13 : -.09, .16, z0 + .02, { part: ph, maxH: .22, label: '오락기 아래 칸', scale: .7 }), z0 + D / 2, { w: .22, d: .2, color: '#efe3c8' });
+  f.pullOut(ph, f.spot('inside', null, o.prize ? .13 : -.09, .175, z0 + .02, { part: ph, maxH: .22, label: '오락기 아래 칸', scale: .7 }), z0 + D / 2, { w: .22, d: .2, color: '#efe3c8' });
   if (o.prize) {
     const fl = grp(); put(fl, -.22, .4, z0 + D / 2 + .125); f.add(fl);
     fl.add(mc('arcade3-flap', ({ add }) => { add(G.box(.16, .12, .02, .01), '#ffe14d', 0, -.06, 0); add(G.box(.08, .02, .02, .005), CHAR, 0, -.1, .012); }));

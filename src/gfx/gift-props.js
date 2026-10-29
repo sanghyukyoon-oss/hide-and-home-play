@@ -9,7 +9,7 @@
 // in the gift table.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { sph, cyl, tor, cone, put, grp, mesh, mat, geo, starShape, heartShape } from './kit.js';
+import { sph, cyl, tor, cone, put, grp, mesh, mat, geo, starShape, heartShape, shade, cutFace, liner, inward } from './kit.js';
 
 // light shapes (a gift stays under 2k vertices): kit.js's rounded box (2 segments), capsule and bevelled extrusion cost
 // 150 / 390 / 470 vertices each; these are 56 (one bevel) / 90 / ~80
@@ -206,7 +206,9 @@ B.gf_trophy = f => {
   for (const sx of [-1, 1]) f.add(put(cone(.035, .07, RED, null, 6), sx * .045, .33, .045, 0, 0, sx * -HP));   // ribbon bow
   f.add(put(sph(.02, RED, null, 8, 6), 0, .33, .05));
   const y1 = .39, CH = .3;
-  f.add(put(cyl(.22, .1, CH, GOLD, null, 20), 0, y1 + CH / 2, 0));
+  f.add(put(cyl(.22, .1, CH, GOLD, null, 20, true), 0, y1 + CH / 2, 0));
+  f.add(put(mesh(inward(new THREE.CylinderGeometry(.205, .104, CH - .04, 20, 1, true)), mat(GOLD2)), 0, y1 + .04 + (CH - .04) / 2, 0));
+  f.add(put(mesh(new THREE.CircleGeometry(.104, 20), mat(GOLD2)), 0, y1 + .04, 0, -HP, 0, 0));
   f.add(put(tor(.215, .018, GOLDL, null, PI * 2, 4, 26), 0, y1 + CH, 0, HP, 0, 0));
   f.add(put(tor(.165, .012, GOLD2, null, PI * 2, 4, 24), 0, y1 + CH * .45, 0, HP, 0, 0));
   for (const sx of [-1, 1]) f.add(put(tor(.085, .022, GOLD, null, PI, 6, 12), sx * .19, y1 + CH * .6, 0, 0, 0, -sx * HP));
@@ -321,12 +323,14 @@ B.gf_train = f => {
     g.add(put(sph(.022, k === 1 ? PINK : RED, null, 8, 6), -.02, .085, 0)); g.add(put(sph(.02, LILAC, null, 8, 6), .022, .083, .01));
   });
   // the station house in the middle (the roof lifts off)
-  f.add(put(rb(.24, .14, .18, CREAM, .012), 0, y0 + .07, .02));
+  { const hb = rb(.24, .14, .18, CREAM, .012); hb.geometry = cutFace(hb.geometry); f.add(put(hb, 0, y0 + .07, .02)); }
+  f.add(put(mesh(liner(.216, .13, .156), mat(shade(CREAM, -.15))), 0, y0 + .075, .02));
   f.add(put(rb(.06, .08, .01, WOODD, .004), 0, y0 + .04, .113));
   for (const sx of [-1, 1]) f.add(put(rb(.045, .045, .01, SKY, .004), sx * .075, y0 + .085, .113));
   const roof = grp(); put(roof, 0, y0 + .14, -.07); f.add(roof);
   for (const s of [-1, 1]) roof.add(put(rb(.28, .02, .13, RED, .008), 0, .045, .09 + s * .05, s * .62, 0, 0));
   roof.add(put(rb(.03, .05, .03, CREAM, .006), .07, .09, .07));
+  roof.add(put(rb(.216, .004, .156, CREAM, .001), 0, -.002, .09));
   const p = f.part('lid', roof, t => { roof.rotation.x = -1.4 * t; }, { label: '기차역 지붕', sfx: 'open', dur: .3 });
   f.spot('inside', null, 0, y0 + .01, .02, { part: p, maxH: .13, scale: .55, label: '기차역 안' });
   f.idle = t => { run.rotation.y = t * .7; };

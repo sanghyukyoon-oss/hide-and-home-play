@@ -7,7 +7,7 @@
 //   ph_fountain 작은 돌 분수(부품 0: 옆 레버를 내리면 물줄기 — 분수 레버 장치 15)
 //   ph_acornhouse 다람이네 도토리 집(기둥 위 새집, 지붕 뚜껑 부품 0 — 자물쇠 자리)
 import * as THREE from 'three';
-import { mat, mesh } from './kit.js';
+import { mat, mesh, shade, cutFace, liner, windowFace } from './kit.js';
 import { G, mc, mt, TX, PI, HP, island, blobOutline, tuft, flower, bush, fern } from './pc-kit.js';
 import { EN } from '../i18n-en-dict.js';
 
@@ -156,9 +156,9 @@ B.ph_acornhouse = f => {
 
 B.ph_bigbasket = f => {
   // a big wicker hamper (the boss's lunch): a woven body, a red-check cloth peeking out, a baguette and apples on top of the lid
-  f.add(mt('ph-hamper', TX.cloth(), ({ add }) => { add(G.box(.62, .38, .44, .05), '#d9a464', 0, .19, 0, 0, 0, 0, 1, { w: .12 }); }));
+  f.add(mt('ph-hamper', TX.cloth(), ({ add }) => { add(cutFace(G.box(.62, .38, .44, .05)), '#d9a464', 0, .19, 0, 0, 0, 0, 1, { w: .12 }); add(liner(.52, .32, .34), shade('#d9a464', -.2), 0, .22, 0, 0, 0, 0, 1, { w: .12 }); }));
   f.add(mc('ph-hamper-bits', ({ add, tube }) => {
-    for (let k = 0; k < 5; k++) add(G.box(.64, .02, .46, .01), '#b98547', 0, .05 + k * .075, 0);
+    for (let k = 0; k < 5; k++) add(windowFace(.64, .46, [-.265, .265, -.175, .175]), '#b98547', 0, .06 + k * .075, 0, -HP, 0, 0);
     for (const s of [-1, 1]) { add(G.box(.04, .08, .03, .01), '#7a5238', s * .2, .3, .235); }
     tube([-.22, .42, 0], [0, .62, 0], .025, '#b98547', 6); tube([0, .62, 0], [.22, .42, 0], .025, '#b98547', 6);
     add(G.box(.2, .06, .18, .02), P.red, .33, .1, .15, 0, .4, .3);
@@ -169,7 +169,7 @@ B.ph_bigbasket = f => {
   const p = f.part('lid', lid, t => { lid.rotation.x = -1.3 * t; }, { label: '큰 도시락 바구니', sfx: 'open', dur: .35 });
   p.lockable = true; p.lockKind = 'pad'; f.lockAt = { x: 0, y: .0, z: .45, parent: lid };
   // (봇 10/23: deep inside the hamper the thing hid below the rim — a tray lifts it up to the rim as the lid opens)
-  f.pullOut(p, f.spot('inside', null, 0, .06, 0, { part: p, maxH: .28, label: '큰 바구니 안', scale: .65 }), 0, { w: .5, d: .34, color: '#e2b070', up: .3 });
+  f.pullOut(p, f.spot('inside', null, 0, .06, 0, { part: p, maxH: .28, label: '큰 바구니 안', scale: .65 }), 0, { w: .32, d: .22, color: '#e2b070', up: .3 });
   f.spot('behind', null, 0, 0, -.38, { maxH: .4, label: '큰 바구니 뒤', scale: .7 });
   f.walkSolids = [[-.33, 0, -.24, .33, .45, .24]];
 };

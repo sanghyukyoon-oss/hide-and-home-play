@@ -2,7 +2,7 @@
 // a reading nook on a platform with cushions and a railing; below, low bookshelves, a reading table under green
 // banker's lamps, the librarian's desk, a book drop and a book cart. Warm wood, cream and a dusty blue.
 import * as THREE from 'three';
-import { put, grp, shade } from './kit.js';
+import { put, grp, shade, cutFace, liner, minusRect, windowFace } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 
 const PI = Math.PI, HP = PI / 2;
@@ -150,7 +150,9 @@ B.libdesk = (f, T) => {
 // 반납함 (1×1): a white book-drop box with a slot and a red sign; its front door opens
 B.bookdrop = (f, T) => {
   f.add(mc('bookdrop', ({ add }) => {
-    add(G.box(.62, 1.0, .5, .05), '#f4efe6', 0, .5, -.02);
+    add(cutFace(G.box(.62, 1.0, .5, .05), 'z'), '#f4efe6', 0, .5, -.02);
+    add(windowFace(.52, .9, [-.24, .24, -.38, -.02]), '#f4efe6', 0, .5, .23);
+    add(liner(.48, .36, .43, 'z'), shade('#f4efe6', -.18), 0, .3, -.005);
     add(G.box(.42, .05, .02, .005), DARK, 0, .82, .235);
     add(G.box(.66, .05, .54, .02), shade('#f4efe6', -.08), 0, 1.02, -.02);
     // (⑥ 10/23 31~70판 훑기: a plain white box with a red patch, nothing said what it was — now a book half pushed into the
@@ -159,13 +161,13 @@ B.bookdrop = (f, T) => {
     add(G.box(.24, .17, .02, .01), '#d9534f', 0, .63, .235);
     for (const sx of [-1, 1]) add(G.box(.075, .06, .01, .004), '#ffffff', sx * .04, .665, .248, 0, 0, sx * -.18);
     add(G.box(.012, .04, .01, .003), '#ffffff', 0, .6, .248); add(G.cone(.026, .03, 3), '#ffffff', 0, .57, .248, PI, 0, 0);
-    add(G.box(.64, .05, .01, .004), '#4f86c6', 0, .34, .233);
+    for (const [a, b] of minusRect([-.32, .32, .315, .365], [-.24, .24, .12, .48])) add(G.box(b - a, .05, .01, .004), '#4f86c6', (a + b) / 2, .34, .233);
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.06, .05, .06, .015), DARK, sx * .26, .0, -.02 + sz * .19);
   }));
   const dv = grp(); put(dv, -.27, .1, .24); f.add(dv);
   dv.add(mc('bookdrop-door', ({ add }) => { add(G.box(.54, .4, .025, .01), '#e9e3d8', .27, .2, 0); add(G.box(.08, .03, .03, .01), '#a9b0c2', .48, .2, .02); }));
   const p = f.part('door', dv, t => { dv.rotation.y = -1.5 * t; }, { label: '반납함 문', sfx: 'open', dur: .3 });
-  f.pullOut(p, f.spot('inside', null, 0, .12, 0, { part: p, maxH: .3, label: '반납함 안', scale: .7 }), .26, { w: .28 });
+  f.pullOut(p, f.spot('inside', null, 0, .13, 0, { part: p, maxH: .3, label: '반납함 안', scale: .7 }), .26, { w: .28 });
 };
 
 // 책 수레 (1×1): a white wire book cart on castors, two shelves of returned books

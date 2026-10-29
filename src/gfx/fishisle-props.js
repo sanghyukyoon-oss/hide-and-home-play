@@ -8,7 +8,7 @@
 // 간판·파라솔은 A안(fs3_*) 빌더를 같이 씀. 새 조각: fi_land(섬·물), fi_tree(큰 나무+그네, tree의 새 모양), fi_shop(개구리 지붕 미끼 가게),
 // fi_pier(잔교·나룻배·통발).
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, fadeDisc, texCache } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, fadeDisc, texCache, shade, cutFace, liner } from './kit.js';
 import { G, mc, mt, TX, PI, HP, blobOutline, scaleOutline, shapeOf, tuft, flower } from './pc-kit.js';
 import { fitText } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
@@ -151,11 +151,11 @@ B.fi_shop = f => {
   }));
   const sign = mesh(new THREE.PlaneGeometry(.6, .18), mat('#ffffff', { map: shopSign() })); sign.position.set(-.25, 1.22, .54); f.add(sign);
   // the ice box on the counter end: its lid lifts (the thing inside comes up with it)
-  f.add(mc('fi-icebox', ({ add }) => { add(G.box(.42, .3, .3, .03), '#5fa8e8', -1.25, .15, .9); add(G.box(.44, .03, .03, .01), '#ffffff', -1.25, .2, 1.06); }));
+  f.add(mc('fi-icebox', ({ add }) => { add(cutFace(G.box(.42, .3, .3, .03)), '#5fa8e8', -1.25, .15, .9); add(liner(.36, .22, .24), shade('#5fa8e8', -.15), -1.25, .19, .9); add(G.box(.44, .03, .03, .01), '#ffffff', -1.25, .2, 1.06); }));
   const lid = new THREE.Group(); lid.position.set(-1.25, .3, .75); f.add(lid);
   lid.add(mc('fi-icebox-lid', ({ add }) => { add(G.box(.44, .05, .32, .02), '#ffffff', 0, .025, .15); }));
   const p = f.part('lid', lid, t => { lid.rotation.x = -1.3 * t; }, { label: '얼음 상자 뚜껑', sfx: 'open', dur: .3 });
-  f.pullOut(p, f.spot('inside', null, -1.25, .08, .9, { part: p, maxH: .2, label: '얼음 상자 안', scale: .55 }), 0, { w: .34, d: .22, color: '#e6f6ff', up: .2 });
+  f.pullOut(p, f.spot('inside', null, -1.25, .08, .9, { part: p, maxH: .2, label: '얼음 상자 안', scale: .55 }), 0, { w: .22, d: .15, color: '#e6f6ff', up: .2 });
   f.spot('on', null, -.05, .59, .66, { maxH: .25, label: '가게 창가', scale: .55 });
   f.spot('under', null, .95, 0, .95, { maxH: .4, label: '가게 처마 밑', scale: .7 });
   f.spot('behind', null, -.4, 0, -1.0, { maxH: .5, label: '가게 뒤', scale: .75 });

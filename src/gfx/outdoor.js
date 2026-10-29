@@ -99,6 +99,7 @@ function face(x, y, z, s = 1, ry = 0) {
     add(new THREE.TorusGeometry(.024, .0075, 6, 12, PI), 0, -.042, .004, 0, 0, PI);
   }));
   g.add(mg('face-hi', '#ffffff', ({ add }) => { for (const sx of [-1, 1]) add(G.sph(.011, 8, 6), sx * .065 - .009, .012, .012); }));
+  g.userData.face = true;
   return put(g, x, y, z, 0, ry, 0, s);
 }
 
@@ -1599,6 +1600,14 @@ const late19 = () => (globalThis.__sbkStage ?? -1) >= 18;
   f.add(put(new THREE.Mesh(geo('pys-smoke', () => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([0, .04, .1, .16, .22].map((y, i) => new THREE.Vector3(Math.sin(i * 1.7) * .02, y, Math.cos(i * 1.3) * .015))), 16, .005, 4)), mat('#e8eef4', { opacity: .55 })), cx + .05, top + .025, cz));
   f.add(mg('pys-towel', '#ffd0dc', ({ add }) => add(G.box(.18, .035, .12, .014), -.24, top + .036, zc + .22, 0, -.2, 0)));
   f.add(mg('pys-towel-st', '#ffffff', ({ add }) => { for (const d of [-.03, .03]) add(G.box(.182, .037, .012, .004), -.24 - Math.sin(.2) * d, top + .036, zc + .22 + Math.cos(.2) * d, 0, -.2, 0); }));
+}; }
+// 네모 상자 얼굴 떼기·실루엣 나누기 (① 10/29 공용 소품 다듬기 5 — 21판 실폰 "모양이 비슷한 게 너무 많음": 자판기·분실물 보관함·우편함·
+// 공원 쓰레기통이 다 '얼굴 달린 네모 상자'로 읽힘). 19판부터만 얼굴을 뗌(1~18판·판 밖 장면은 그대로). 부품·자리·자물쇠·크기는 그대로.
+const noFace = root => root.traverse(o => { if (o.userData.face) o.visible = false; });
+for (const k of ['vending', 'lostbox', 'mailbox', 'parkbin']) { const b = B[k]; B[k] = (f, T, o) => {
+  const r = b(f, T, o);
+  if (late19()) noFace(f.group);
+  return r;
 }; }
 export const OUTDOOR_BUILDERS = B;
 

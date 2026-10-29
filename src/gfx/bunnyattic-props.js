@@ -8,7 +8,7 @@
 // wall pieces hang on a wall's inner face (origin at the face, floor height, +z into the room). Static decor is ONE
 // vertex-coloured mesh per piece (hmc), every moving part its own mesh. Nothing here is sold (hidden: true).
 import * as THREE from 'three';
-import { put, mat, mesh, canvasTex, texCache, shade, extrude, starShape, heartShape } from './kit.js';
+import { put, mat, mesh, canvasTex, texCache, shade, extrude, starShape, heartShape, cutFace, liner } from './kit.js';
 import { clothBend } from './clothbend.js';
 import { HG as G, hxf as xf, hmc as mc, hleaves as leaves } from './house-props.js';
 
@@ -304,9 +304,9 @@ B.toytrunk = (f, T) => {
   const tk = [sage, wood, woodD, pink].join(',');
   const W = .86, D = .56, H = .48, z0 = -.12;
   f.add(mcx('toytrunk|' + tk, ({ add }) => {
-    add(G.box(W, H, D, .04), sage, 0, H / 2 + .02, z0);
-    add(G.box(W - .1, .02, D - .1, .01), shade(sage, -.25), 0, H + .015, z0);
-    for (const sx of [-1, 1]) add(G.box(.08, H + .01, D + .02, .015), wood, sx * .26, H / 2 + .02, z0);
+    add(cutFace(G.box(W, H, D, .04)), sage, 0, H / 2 + .02, z0);
+    add(liner(W - .08, H - .04, D - .08), shade(sage, -.25), 0, H / 2 + .04, z0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.08, H + .01, .045, .015), wood, sx * .26, H / 2 + .02, z0 + sz * (D / 2 - .0125));
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(G.box(.07, .07, .07, .015), BRASS, sx * (W / 2 - .02), .06, z0 + sz * (D / 2 - .02));
     add(G.box(.14, .1, .03, .015), BRASS, 0, H - .06, z0 + D / 2 + .01);
     for (const sx of [-1, 1]) add(G.sph(.03, 8, 6), woodD, sx * (W / 2 + .01), H * .6, z0, 0, 0, 0, [.6, 1, 1.6]);

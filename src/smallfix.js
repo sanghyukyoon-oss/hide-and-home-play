@@ -129,18 +129,80 @@ function seenAny(S, it) {
 }
 export function unhide(S) {
   const R = S.room, moved = [], blind = blindFor(S.spec.room) || (() => false), t0 = performance.now();
-  for (const it of S.targets) {
+  // (and a thing the planner had to put where it makes no sense — 70판 우편함 주먹밥: the planner's last chance; moves the same way)
+  for (const it of S.items) {
     if (performance.now() - t0 > 600) break;
-    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.role !== 'target' || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
-    if (seenAny(S, it)) continue;
+    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || (it.role !== 'target' && it.role !== 'decoy') || (it.role === 'decoy' && affOk(it.type, it.spot)) || it.spot.part?.lock || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    if (seenAny(S, it) && affOk(it.type, it.spot)) continue;
     const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
     const d = s => s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(c0);
     const cands = R.spots.filter(s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && (!s.part || (!s.part.lock && (s.part.reach ?? 1) >= .55)) && fits(it.type, s)).sort((a, b) => d(a) - d(b)).slice(0, 12);
     let dest = null;
-    for (const s of cands) { moveFull(S, it, s); if (seenAny(S, it)) { dest = s; break; } }
-    if (dest) moved.push(`${it.type}: ${old.label} → ${dest.label} (안 보임)`); else put(it, old, sc0);
+    for (const s of cands) { moveFull(S, it, s); if (seenAny(S, it) && affOk(it.type, s)) { dest = s; break; } }
+    if (dest) moved.push(`${it.type}: ${old.label} → ${dest.label} (안 보임·엉뚱한 자리)`); else put(it, old, sc0);
     const p = it.spot.part; it.g.visible = !p || p.t > .5;
+  }
+  // (behind a lock, where it makes no sense — 70판 202호 우편함 주먹밥: trade places with a thing on the list that does belong there)
+  for (const it of S.targets) {
+    if (it.found || it.friend || it.furnTarget || !it.g || !it.spot?.part?.lock || affOk(it.type, it.spot)) continue;
+    const here = it.spot;
+    for (const o of S.targets) {
+      if (o === it || o.found || o.friend || o.furnTarget || o.hang || o.pileHidden || o.vacHidden || !o.g || !o.spot || o.spot.part?.lock || o.spot.part?.chainVia || o.spot.part?.device === 'chain' || !fits(o.type, here) || !fits(it.type, o.spot)) continue;
+      const there = o.spot;
+      moveFull(S, o, here); moveFull(S, it, there);
+      for (const x of [o, it]) { const q = x.spot.part; x.g.visible = !q || q.t > .5; }
+      moved.push(`${it.type} ↔ ${o.type} (자물쇠 칸 ${here.label})`); break;
+    }
   }
   S.G.world.idsDirty = true;
   return moved;
+}
+
+// 크기 맞추기 (② 10/29 허브 QA: 첫 화면 18 px 미만 9개 — 19판 소방차 부품 9~16 px, 26판 블록 10 px, 40판 호출 종 12 px; 부품보다 큼 23판
+// 일기장 ×1.22·50판 지도 ×1.06): from 19판, every thing on the list both fits what hides it (its cover's box, the opening of a lidded pot,
+// the piece it sits under or behind — stage.js fitUnderCover's measure) and reads at least FLOOR px on the start view. Scaled within
+// those two where it can be; where it can't, it goes to the nearest free open place where it can (a lock's thing stays in its lock).
+const FLOOR = 20, _bx = new THREE.Box3(), _bb = new THREE.Box3();
+function extOf(o) {
+  _bx.makeEmpty(); o.updateMatrixWorld(true);
+  const walk = m => { if (m !== o && m.userData.item) return; if (m.isMesh && !m.userData.proxy && m.geometry && m.visible !== false) { if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); _bx.union(_bb.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld)); } for (const c of m.children) walk(c); };
+  walk(o); return _bx.isEmpty() ? null : _bx.getSize(new THREE.Vector3());
+}
+function coverLim(sp) {
+  const part = sp.part;
+  if (part?.pivots?.length) {
+    const e = new THREE.Vector3(); for (const pv of part.pivots) { const x = extOf(pv); if (x) e.max(x); }
+    if ((part.kind === 'lid' || part.kind === 'lift') && (sp.kind === 'inside' || sp.kind === 'in')) return Math.max(e.x, e.z) * .85;
+    return sp.kind === 'inside' || sp.kind === 'in' ? Math.max(e.x, e.y, e.z) : Math.max(e.x, e.z);
+  }
+  if ((sp.kind === 'under' || sp.kind === 'behind') && sp.furn?.group) { const h = extOf(sp.furn.group); if (h) return sp.kind === 'under' ? Math.max(h.x, h.z) : Math.max(h.x, h.y); }
+  return Infinity;
+}
+// the scale factor that makes it fit both, or 0 when none does
+function sizeFix(W, it) {
+  const e = extOf(it.g); if (!e) return 1;
+  const imax = Math.max(e.x, e.y, e.z), lim = coverLim(it.spot), px = screenPx(W, it.g);
+  const fmax = lim === Infinity ? Infinity : lim * .95 / imax, fmin = px > 0 ? FLOOR / px : 1;
+  if (fmin > fmax * 1.001) return 0;
+  return Math.min(Math.max(1, fmin), fmax);
+}
+export function sizeUp(S) {
+  const W = S.G.world, R = S.room, out = [], t0 = performance.now(), blind = blindFor(S.spec.room) || (() => false);
+  W.updateCam?.(); R.group.updateMatrixWorld(true);
+  for (const it of S.targets) {
+    if (performance.now() - t0 > 500) break;
+    if (it.found || it.friend || it.furnTarget || it.hang || it.pileHidden || it.vacHidden || !it.g || !it.spot || it.spot.part?.chainVia || it.spot.part?.device === 'chain') continue;
+    let f = sizeFix(W, it);
+    if (f > 0) { if (Math.abs(f - 1) > .01) { it.g.scale.multiplyScalar(f); settleOn(it.g, it.spot); out.push(`${it.type} ×${f.toFixed(2)} @${it.spot.label}`); } continue; }
+    if (it.spot.part?.lock) continue;
+    const old = it.spot, sc0 = it.g.scale.x / (old.scale || 1), c0 = S.worldCenter(it);
+    const d = s => s.anchor.getWorldPosition(new THREE.Vector3()).distanceTo(c0);
+    const cands = R.spots.filter(s => s !== old && !s.item && !s.reserved && !s.hang && !s.wallFace && s.anchor && !blind(s) && (!s.part || (!s.part.lock && (s.part.reach ?? 1) >= .55)) && fits(it.type, s)).sort((a, b) => d(a) - d(b)).slice(0, 16);
+    let dest = null;
+    for (const s of cands) { moveFull(S, it, s); f = sizeFix(W, it); if (f > 0 && seenAny(S, it)) { if (Math.abs(f - 1) > .01) { it.g.scale.multiplyScalar(f); settleOn(it.g, s); } dest = s; break; } }
+    if (dest) out.push(`${it.type}: ${old.label} → ${dest.label} (크기)`); else put(it, old, sc0);
+    const p = it.spot.part; it.g.visible = !p || p.t > .5;
+  }
+  W.idsDirty = true;
+  return out;
 }

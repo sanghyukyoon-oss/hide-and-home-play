@@ -13,7 +13,7 @@
 // 벽지·판벽에 점수판·포스터·요금표를 붙임. 간판은 아크릴 라이트 박스 + 너굴이 마스코트(한·영 글자). 오락기·인형 뽑기·캡슐 뽑기·동전 교환기·
 // 경품 진열장은 이 파일에서 새로 지음(GPT 캡슐 뽑기 gpt_gacha는 폐기).
 import * as THREE from 'three';
-import { put, grp, mat, mesh, canvasTex, shade, roundRect } from './kit.js';
+import { put, grp, mat, mesh, canvasTex, shade, roundRect, cutFace, liner, windowFace } from './kit.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { HG as G, hmc as mc, hxf as xf } from './house-props.js';
 import { rrect, circle, ext, islandShape, ISY, rainTex, tileTex, foldWall, tagWall, basic, rnd, CURB, EARTH, EARTHD, PAVED, LEAF, LEAF2, POLE, WARM, CREAM, CORAL, INKY } from './otakuloft3-props.js';
@@ -522,7 +522,9 @@ B.ol5_chest = (f, T, o = {}) => {
   const g = grp(); g.rotation.y = -HP; f.add(g);   // (자연 좌표: 앞 +z, 길이 x — 방에선 rot 1로 놓여 앞이 방 쪽)
   const L = 1.9, H = .78, D = .45, z0 = -.27, DW = .64, DH = .3;
   g.add(mc('ol5-chest2', ({ add }) => {
-    add(G.box(L, H - .06, D, .03), '#f5ede1', 0, .06 + (H - .06) / 2, z0);
+    add(cutFace(G.box(L, H - .06, D, .03), 'z'), '#f5ede1', 0, .06 + (H - .06) / 2, z0);
+    add(windowFace(L - .06, H - .12, [.44, .84, -.27, .27]), '#f5ede1', 0, .06 + (H - .06) / 2, z0 + D / 2);
+    add(liner(.4, .54, .4, 'z'), shade('#f5ede1', -.18), .64, .42, z0 + D / 2 - .22);
     add(G.box(L + .05, .045, D + .05, .015), WOOD5, 0, H + .045, z0); add(G.box(L + .01, .06, D - .02, .015), WOOD5D, 0, .04, z0);
     for (const sx of [-1, 1]) add(G.box(.07, .05, .07, .02), WOOD5D, sx * (L / 2 - .08), .025, z0 + .1);
     add(G.box(.035, H - .14, D + .01, .01), '#ebe1d3', L / 2 - .6, .06 + (H - .06) / 2, z0);
@@ -558,7 +560,7 @@ B.ol5_chest = (f, T, o = {}) => {
   }));
   const ps = f.part('door', sv, t => { sv.rotation.y = 1.4 * t; }, { label: '서랍장 끝 숨은 칸', sfx: 'creak', dur: .4 });
   ps.lockable = true; ps.lockKind = 'code'; ps.lockAt = { x: -.4, y: .34, z: .04, parent: sv };
-  f.spot('inside', g, L / 2 - .3, .12, z0, { part: ps, maxH: .4, label: '서랍장 끝 숨은 칸', scale: .8 });
+  f.spot('inside', g, L / 2 - .3, .15, z0, { part: ps, maxH: .4, label: '서랍장 끝 숨은 칸', scale: .8 });
   const check = S => { if (ps.t > .5 || ps.lock || drawers.some(d => d.t < .5)) return; S.G.audio.sfx('special'); setTimeout(() => !S.dead && S.togglePart(ps, true), 400); };
   drawers.forEach(d => { d.afterOpen = check; });
   f.secretPart = ps;
@@ -577,22 +579,34 @@ B.ol5_crane = (f, T, o = {}) => {
     add(G.cyl(.09, .07, .1, 14), BUTTER, bx, TOPC - .14, bz); add(G.sph(.05, 10, 8), MOLD, bx, TOPC - .2, bz);
     for (let k = 0; k < 3; k++) { const a = k / 3 * PI * 2; tube([bx, TOPC - .2, bz], [bx + Math.cos(a) * .1, TOPC - .32, bz + Math.sin(a) * .1], .012, STEEL5D, 4); }
     add(G.cyl(.07, .07, .05, 14), STEEL5, .38, 1.0, -.36, HP, 0, 0);
-    tube([.17, TOPC - .1, bz], [.17, TOPC - .22, bz], .006, '#a87a34', 5); add(G.tor(.03, .009, PI * 1.45, 6, 14), '#e0b04a', .165, TOPC - .25, bz, 0, 0, PI);
+    // (10/29 사용자 "열쇠 달린 장치도 별로": the hook the key hangs on reads as a crane hook — a little pulley block on its rope, a thick J hook with a latch)
+    tube([.17, TOPC - .1, bz], [.17, TOPC - .15, bz], .006, '#e8d6a8', 5);
+    add(G.box(.075, .07, .05, .012), BUTTER, .17, TOPC - .18, bz); add(G.cyl(.026, .026, .056, 14), STEEL5, .17, TOPC - .17, bz, HP, 0, 0); add(G.cyl(.008, .008, .062, 8), STEEL5D, .17, TOPC - .17, bz, HP, 0, 0);
+    for (const y of [-.205, -.195]) add(G.box(.077, .006, .052, .002), y < -.2 ? INK5 : BUTTER, .17, TOPC + y, bz);
+    add(G.cyl(.011, .011, .04, 8), STEEL5D, .17, TOPC - .235, bz);
+    add(G.tor(.032, .011, PI * 1.35, 6, 16), '#e0b04a', .17, TOPC - .278, bz, 0, 0, PI * .82); add(G.sph(.014, 8, 6), '#e0b04a', .2, TOPC - .262, bz);
+    add(G.box(.006, .04, .01, .002), STEEL5, .19, TOPC - .26, bz, 0, 0, -.5);
   }));
   const crank = grp(); put(crank, .38, 1.0, -.33); f.add(crank);
   crank.add(mc('ol5-crane-crank', ({ add }) => { add(G.box(.15, .03, .03, .008), STEEL5D, .06, 0, .02); add(G.sph(.04, 10, 8), TOMATO5, .14, 0, .05); }));
   const bk = grp(); put(bk, bx, yB, bz); f.add(bk);
   bk.add(mc('ol5-crane-basket', ({ add }) => {
-    add(G.cyl(.21, .17, .26, 18), '#ff9fc8', 0, .13, 0); add(G.tor(.21, .02, PI * 2, 6, 20), '#e8709f', 0, .26, 0, HP, 0, 0);
-    for (const sx of [-1, 1]) add(G.tor(.07, .012, PI, 4, 10), '#e8709f', sx * .16, .3, 0);
-    add(G.cyl(.18, .18, .03, 16), '#f2dc9a', 0, .2, 0);
+    // (10/29 사용자 "바구니도 별로": a plastic prize basket — ribbed walls, two bands, a rolled rim, moulded grips, a round sticker)
+    add(G.cyl(.205, .165, .26, 24), '#ff9fc8', 0, .13, 0); add(G.cyl(.17, .17, .02, 20), '#e8709f', 0, .01, 0);
+    for (let i = 0; i < 16; i++) { const a = i / 16 * PI * 2, r = .19; add(G.box(.022, .25, .02, .006), '#ffb8d6', Math.cos(a) * r, .135, Math.sin(a) * r, 0, -a, 0); }
+    for (const [y, r] of [[.07, .178], [.17, .195]]) add(G.tor(r, .012, PI * 2, 5, 28), '#e8709f', 0, y, 0, HP, 0, 0);
+    add(G.tor(.208, .026, PI * 2, 6, 28), '#e05f92', 0, .262, 0, HP, 0, 0); add(G.tor(.208, .008, PI * 2, 4, 28), '#ffd6e8', 0, .284, 0, HP, 0, 0);
+    for (const sx of [-1, 1]) { add(G.tor(.075, .016, PI, 5, 12), '#e05f92', sx * .16, .3, 0); add(G.cap(.014, .1, 3, 8), '#fff0f6', sx * .16, .375, 0, 0, 0, HP); }
+    add(G.cyl(.032, .032, .006, 16), BUTTER, 0, .16, .2, HP, 0, 0); add(G.cyl(.018, .018, .008, 12), '#ff7aa8', 0, .16, .202, HP, 0, 0);
+    add(G.cyl(.185, .185, .06, 16), '#f2dc9a', 0, .215, 0);
   }));
   const rope = mesh(new THREE.CylinderGeometry(.006, .006, 1, 5), mat('#e8d6a8')); f.add(rope);
   const setRope = () => { const y0 = TOPC - .22, y1 = bk.position.y + .3, L = Math.max(.02, y0 - y1); rope.scale.y = L; rope.position.set(bx, y1 + L / 2, bz); };
   setRope();
   const p = f.part('slide', [bk, crank], (t, b) => { bk.position.y = b.p.y + (yT - yB) * t; bk.rotation.z = Math.sin(t * PI * 3) * .04 * (1 - t); crank.rotation.z = -t * PI * 6; setRope(); }, { label: '크레인 바구니', sfx: 'swish', dur: 1.2 });
   p.handle = crank;
-  f.spot('inside', bk, 0, .23, 0, { part: p, maxH: .26, label: '크레인 바구니 안', scale: .85 });
+  // (10/29: a flat key in the basket lay below the rim and the bot — and a player — could not see it: the straw bed sits up near the rim)
+  f.spot('inside', bk, 0, .25, 0, { part: p, maxH: .26, label: '크레인 바구니 안', scale: .85 });
   f.spot('on', null, .17, TOPC - .56, bz, { maxH: .24, label: '크레인 집게 밑 고리', scale: .8, wallFace: true }).hang = p;
   f.spot('behind', null, .3, 0, -.25, { maxH: .3, label: '크레인 기둥 옆', scale: .7 });
 };
@@ -665,7 +679,10 @@ B.ol5_cab = (f, T, o = {}) => {
     for (const sx of [-1, 1]) add(G.ext(side, ST, .012, 4), C.side, sx < 0 ? -W / 2 : W / 2 + ST, 0, z0, 0, -HP, 0);
     for (const sx of [-1, 1]) for (let i = 1; i < edge.length; i++) seg(add, sx * (W / 2 + ST / 2), ST + .034, [z0 + edge[i - 1][0] + .006, edge[i - 1][1]], [z0 + edge[i][0] + .006, edge[i][1]], .03, C.mold);
     // 앞몸·걸레받이·위판·뒤판(환기 구멍)·마키 갓
-    add(G.box(W, .8, .62, .02), CABF, 0, .4, z0 - .02);
+    const hx = o.prize ? -.02 : -.15;
+    add(cutFace(G.box(W, .8, .62, .02), 'z'), CABF, 0, .4, z0 - .02);
+    add(windowFace(W - .04, .76, [hx + .02, hx + .28, -.24, .06]), CABF, 0, .4, z0 + .29);
+    add(liner(.26, .3, .4, 'z'), shade(CABF, -.25), hx + .15, .31, z0 + .07);
     add(G.box(W + .1, .08, .05, .02), INK5, 0, .04, FZ);
     add(G.box(W, .26, .24, .03), CABF, 0, 1.68, z0 + .12); add(G.box(W, .05, .58, .015), CABF, 0, 1.885, z0 - .05);
     add(G.box(W, 1.84, .03, .01), shade(CABF, -.08), 0, .93, z0 - .325);
@@ -716,7 +733,7 @@ B.ol5_cab = (f, T, o = {}) => {
   }));
   const ph = f.part('door', hv, t => { hv.rotation.y = -1.5 * t; }, { label: '오락기 아래 문', sfx: 'open', dur: .28 });
   ph.lockable = true; ph.lockKind = 'pad'; ph.lockAt = { x: .27, y: .12, z: .04, parent: hv };
-  f.pullOut(ph, f.spot('inside', null, hx + .15, .18, z0 + .06, { part: ph, maxH: .24, label: '오락기 아래 칸', scale: .7 }), FZ, { w: .24, d: .2, color: '#efe3c8' });
+  f.pullOut(ph, f.spot('inside', null, hx + .15, .17, z0 + .06, { part: ph, maxH: .24, label: '오락기 아래 칸', scale: .7 }), FZ, { w: .24, d: .2, color: '#efe3c8' });
   if (o.prize) {
     const pz = z0 + .36, fl = grp(); put(fl, -.2, .44, pz + .075); f.add(fl);
     fl.add(mc('ol5-cab-flap', ({ add }) => { add(G.box(.17, .14, .02, .01), BUTTER, 0, -.07, 0); add(G.box(.08, .02, .02, .006), INK5, 0, -.12, .012); add(G.box(.11, .028, .004, .003), '#ffffff', 0, -.04, .012); }));
@@ -756,7 +773,17 @@ B.ol5_claw = (f, T, o = {}) => {
   const cx = -.2, cz = FZ - .15;
   f.add(mc('ol5-claw|' + k, ({ add, tube }) => {
     // 받침: 둥근 몸·걸레받이·크림 턱
-    add(G.box(W, BY - .07, D, .05), C.body, 0, .07 + (BY - .07) / 2, z0);
+    // (10/29 사용자 "크레인 기계 아래 서랍 구멍 안 뚫었고": the body was one solid block behind the prize flap — now the flap opens on a hollow bin)
+    { const x0 = cx - .13, x1 = cx + .09, y0 = .15, y1 = .41, zb = FZ - .27, H0 = .07, H1 = BY;
+      add(G.box(x0 + W / 2, H1 - H0, D, .05), C.body, (-W / 2 + x0) / 2, (H0 + H1) / 2, z0);
+      add(G.box(W / 2 - x1, H1 - H0, D, .05), C.body, (x1 + W / 2) / 2, (H0 + H1) / 2, z0);
+      add(G.box(x1 - x0 + .02, y0 - H0, D, .02), C.body, (x0 + x1) / 2, (H0 + y0) / 2, z0);
+      add(G.box(x1 - x0 + .02, H1 - y1, D, .02), C.body, (x0 + x1) / 2, (y1 + H1) / 2, z0);
+      add(G.box(x1 - x0 + .02, y1 - y0, zb - (z0 - D / 2), .02), C.body, (x0 + x1) / 2, (y0 + y1) / 2, (zb + z0 - D / 2) / 2);
+      add(G.box(x1 - x0, .012, FZ - zb, .004), '#4a4466', (x0 + x1) / 2, y0 + .006, (zb + FZ) / 2);
+      add(G.box(x1 - x0, y1 - y0, .012, .004), '#3a3550', (x0 + x1) / 2, (y0 + y1) / 2, zb + .006);
+      for (const x of [x0 + .006, x1 - .006]) add(G.box(.012, y1 - y0, FZ - zb, .004), '#433d5c', x, (y0 + y1) / 2, (zb + FZ) / 2);
+      add(G.box(x1 - x0 + .03, .02, .02, .006), RAIL, (x0 + x1) / 2, y0, FZ - .005); add(G.box(x1 - x0 + .03, .02, .02, .006), RAIL, (x0 + x1) / 2, y1, FZ - .005); }
     add(G.box(W + .03, .07, D + .03, .025), PLUM, 0, .035, z0);
     add(G.box(W + .05, .05, D + .05, .02), RAIL, 0, BY + .005, z0);
     // 얼굴 (받침 앞 가운데 위): 눈·볼·ω 입
@@ -804,7 +831,7 @@ B.ol5_claw = (f, T, o = {}) => {
   const fl = grp(); put(fl, cx - .02, .4, FZ + .006); f.add(fl);
   fl.add(mc('ol5-claw-flap|' + k, ({ add }) => { add(G.box(.2, .24, .018, .01), '#e9e4ef', 0, -.12, 0); add(G.box(.15, .15, .004, .004), PLUM, 0, -.1, .011); add(G.box(.1, .022, .02, .006), TOMATO5, 0, -.2, .014); }));
   const p = f.part('door', fl, t => { fl.rotation.x = 1.3 * t; }, { label: '인형 나오는 곳', sfx: 'open', dur: .24 });
-  f.spot('inside', null, cx - .02, .17, FZ - .1, { part: p, maxH: .18, label: '인형 나오는 곳', scale: .55 });
+  f.spot('inside', null, cx - .02, .162, FZ - .12, { part: p, maxH: .2, label: '인형 나오는 곳', scale: .55 });
   f.spot('on', null, 0, HY + .005, z0 - .05, { maxH: .26, label: '인형 뽑기 기계 위', scale: .7 });
   f.spot('behind', null, .12, 0, z0 - D / 2 - .14, { maxH: .45, label: '인형 뽑기 기계 뒤', scale: .7 });
 };

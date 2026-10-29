@@ -17,7 +17,7 @@
 //                층마다 몇 개의 큰 덩어리를 옮기기만 함(매 프레임 새 도형 X, 초당 30번), 판이 처음 그려질 때 한 번 지음.
 //                가끔 터널: 화면이 잠깐 어두워졌다 밝아짐(DOM 그늘 한 장, 판 연출 터널과 겹치지 않음).
 import * as THREE from 'three';
-import { put, grp, shade, mat, mesh, canvasTex, texCache } from './kit.js';
+import { put, grp, shade, mat, mesh, canvasTex, texCache, cutFace, liner } from './kit.js';
 import { HG as G, hmc as mc } from './house-props.js';
 import { fitText, textTex } from './gpt-paper.js';
 import { EN } from '../i18n-en-dict.js';
@@ -647,7 +647,7 @@ B.tc4cart = (f, T) => {
   f.add(mc('tc4-cart', ({ add, tube }) => {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { add(G.cyl(.02, .02, TY - .05, 8), C.steel, sx * W / 2, (TY - .05) / 2 + .07, sz * D / 2); add(G.sph(.045, 8, 6), C.dark, sx * W / 2, .045, sz * D / 2); }
     add(G.box(W, .025, D, .01), C.steel, 0, .3, 0); add(G.box(.36, .12, .3, .02), '#e9dcc2', -.12, .37, 0); for (let k = 0; k < 3; k++) add(G.cyl(.04, .045, .16, 10), ['#bfe6c4', '#ffd8a8', '#cde8ff'][k], .18 + k * .09, .39, .04);
-    add(G.box(W + .04, .26, D + .04, .04), C.teal, 0, TY + .02, 0); add(G.box(W + .06, .04, D + .06, .015), C.orange, 0, TY - .1, 0);
+    add(cutFace(G.box(W + .04, .26, D + .04, .04)), C.teal, 0, TY + .02, 0); add(liner(W - .04, .14, D - .04), C.tealD, 0, TY + .08, 0); add(G.box(W + .06, .04, D + .06, .015), C.orange, 0, TY - .1, 0);
     tube([-W / 2 - .02, TY + .1, D / 2], [-W / 2 - .16, TY + .22, D / 2], .016, C.steel, 6); tube([-W / 2 - .02, TY + .1, -D / 2], [-W / 2 - .16, TY + .22, -D / 2], .016, C.steel, 6); tube([-W / 2 - .16, TY + .22, -D / 2], [-W / 2 - .16, TY + .22, D / 2], .016, C.steel, 6);
     // the snack bags clipped along the side
     for (let k = 0; k < 4; k++) { add(G.box(.13, .17, .03, .02), ['#ff9f8a', '#ffd23c', '#9be38f', '#8fd3f4'][k], -.27 + k * .18, TY - .02, D / 2 + .04); add(G.box(.13, .02, .035, .005), C.steel2, -.27 + k * .18, TY + .07, D / 2 + .04); }

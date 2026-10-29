@@ -1,6 +1,7 @@
 // Shared geometry/material kit. Everything is procedural: rounded boxes, spheres, capsules, soft rim light.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const GEO = new Map(), MAT = new Map();
 export const cachedGeos = () => new Set(GEO.values());   // (myhome.js frees a rebuilt room but keeps the shared shapes)
@@ -204,6 +205,32 @@ export function shade(hex, amt) {
   const hsl = {}; c.getHSL(hsl);
   c.setHSL(hsl.h, hsl.s, Math.max(0, Math.min(1, hsl.l + amt)));
   return '#' + c.getHexString();
+}
+// (10/29 실폰 "서랍 같은 거 열었는데 안에 막혀 있는 거 많음") hollow a solid body, its outside untouched: cutFace drops the
+// flat face that a lid or door covers (the rounded edges round it stay), liner lines the hole with an open box seen from inside
+export function cutFace(g, axis = 'y', sign = 1) {
+  const P = g.attributes.position, A = 'xyz'.indexOf(axis), src = g.index ? Array.from(g.index.array) : [...Array(P.count).keys()], keep = [];
+  let m = -Infinity; for (let i = 0; i < P.count; i++) m = Math.max(m, sign * P.getComponent(i, A));
+  for (let t = 0; t < src.length; t += 3) if (![0, 1, 2].every(j => sign * P.getComponent(src[t + j], A) > m - 1e-4)) keep.push(src[t], src[t + 1], src[t + 2]);
+  const out = g.clone(); out.setIndex(keep); out.clearGroups(); return out;
+}
+export function liner(w, h, d, axis = 'y', sign = 1) {
+  const g = new THREE.BoxGeometry(w, h, d), gr = g.groups['xyz'.indexOf(axis) * 2 + (sign > 0 ? 0 : 1)], I = g.index.array, N = g.attributes.normal, keep = [];
+  for (let t = 0; t < I.length; t += 3) if (t < gr.start || t >= gr.start + gr.count) keep.push(I[t], I[t + 2], I[t + 1]);
+  for (let i = 0; i < N.count; i++) N.setXYZ(i, -N.getX(i), -N.getY(i), -N.getZ(i));
+  g.setIndex(keep); g.clearGroups(); return g;
+}
+export function inward(g) { const I = g.index.array, N = g.attributes.normal; for (let t = 0; t < I.length; t += 3) { const v = I[t + 1]; I[t + 1] = I[t + 2]; I[t + 2] = v; } for (let i = 0; i < N.count; i++) N.setXYZ(i, -N.getX(i), -N.getY(i), -N.getZ(i)); return g; }
+// the rest of a rect [x0, x1, y0, y1] once a hole is taken out of it, as rects; windowFace: a face (w × h, centre 0, front at
+// z = 0) with a hole, made of t-deep strips that stand where the cut face was
+export function minusRect([x0, x1, y0, y1], [a, b, c, d]) {
+  if (b <= x0 || a >= x1 || d <= y0 || c >= y1) return [[x0, x1, y0, y1]];
+  const m = Math.max(y0, c), n = Math.min(y1, d);
+  return [[x0, x1, y0, c], [x0, x1, d, y1], [x0, a, m, n], [b, x1, m, n]].filter(r => r[1] - r[0] > 1e-4 && r[3] - r[2] > 1e-4);
+}
+export function windowFace(w, h, hole, t = .02) {
+  const P = minusRect([-w / 2, w / 2, -h / 2, h / 2], hole).map(([a, b, c, d]) => new THREE.BoxGeometry(b - a, d - c, t).translate((a + b) / 2, (c + d) / 2, -t / 2));
+  return mergeGeometries(P);
 }
 // Mark every mesh under root for picking.
 export function tag(root, data) { root.traverse(o => { if (o.isMesh) Object.assign(o.userData, data); }); return root; }
