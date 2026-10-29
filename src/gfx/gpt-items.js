@@ -310,12 +310,21 @@ export const GPT_ITEMS = {
     for(const z of[-.036,.022])g.add(put(box(.25,.005,.004,'#e4a95d',.001),0,.148,z));return g;
   }, .66, { flat: true }),
   gpt_ovenmitt: item('누빔 오븐 장갑', 'kitchen', () => {
-    const g=grp();
-    g.add(put(box(.20,.065,.34,C.red,.055),-.02,.037,-.01));
-    g.add(put(ball(.073,C.red,[.8,.47,1.35]),.105,.038,-.045));
-    g.add(put(box(.21,.075,.065,C.cream,.018),-.02,.04,.165));
-    for(let i=-2;i<=2;i++)g.add(put(box(.014,.004,.245,'#f5a4a8',.003),-.02+i*.033,.072,-.025,0,i%2?.1:-.1));
-    g.add(put(ring(.027,.007,C.cream),-.09,.04,.21,Math.PI/2));return g;
+    // (10/29 실폰 "장갑인지 뭔지 모르겠다": a flat red block read as nothing — now a real mitten lying flat: a rounded hand
+    // with its own thumb split off to the side, diamond quilting stitched on top, a cream cuff and a hanging loop)
+    const g=grp(), ext=(key,mk,d)=>geo(key,()=>new THREE.ExtrudeGeometry(mk(),{depth:d,bevelEnabled:true,bevelThickness:.014,bevelSize:.014,bevelSegments:3,curveSegments:14}));
+    const hand=mesh(ext('gpt-mitt-hand',()=>{const sh=new THREE.Shape();sh.moveTo(-.1,-.11);sh.lineTo(.062,-.11);sh.lineTo(.062,.06);sh.absarc(-.019,.06,.081,0,Math.PI,false);sh.lineTo(-.1,-.11);return sh;},.05),mat(C.red));
+    g.add(put(hand,0,.014,0,-Math.PI/2,0,0));
+    const thumb=mesh(ext('gpt-mitt-thumb',()=>{const sh=new THREE.Shape();sh.absellipse(0,0,.032,.062,0,Math.PI*2,false);return sh;},.036),mat(C.red));
+    g.add(put(thumb,.098,.014,-.005,-Math.PI/2,0,-.55));
+    const Y=.079;
+    for(const dir of[-1,1])for(let c=-.24;c<=.24;c+=.046){   // the quilting: a diamond grid, clipped to the hand's flat middle
+      const xa=(-.13-c)/dir,xb=(.085-c)/dir,lo=Math.max(-.082,Math.min(xa,xb)),hi=Math.min(.046,Math.max(xa,xb));if(hi-lo<.02)continue;
+      const dx=hi-lo,dz=dir*dx,L=Math.hypot(dx,dz);g.add(put(box(.006,.004,L,'#ff9e9e',.002),(lo+hi)/2,Y,c+dir*(lo+hi)/2,0,Math.atan2(dx,dz),0));
+    }
+    g.add(put(box(.215,.072,.07,C.cream,.022),-.019,.036,.14));
+    for(const z of[.112,.168])g.add(put(box(.2,.008,.006,'#e4cfa8',.002),-.019,.073,z));
+    g.add(put(ring(.026,.007,C.cream),-.095,.036,.198,Math.PI/2));return g;
   }, .56, { flat: true }),
   gpt_juicer: item('오렌지 착즙기', 'kitchen', () => {
     const g=grp();
